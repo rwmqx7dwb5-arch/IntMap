@@ -609,7 +609,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      EN/JP branches, so German/Russian users got English answers ("AI Briefがドイツ語・ロシア語では英語になる").
      Appended to the SYSTEM prompt of the free-TEXT generators ONLY — never the JSON geocoders (place names
      must stay canonical) nor the connectivity test. Harmless/​reinforcing for EN/JP. */
-  function _aiLangName(){ return IM_AI._aiLangName.apply(this,arguments); } function _aiLangLine(){ return IM_AI._aiLangLine.apply(this,arguments); } window._aiLangLine=_aiLangLine;   /* (#R318) both moved to js/ai-core.js — the instruction that names the reply language belongs with the transport that carries it, and the app shell has no line to spare (tests/r168 #8). ⚠ `_aiLangName` used to tell THREE of the nine languages to answer in English; js/lang-registry.js `englishName()` says why. */
+  function _aiLangName(){ return IM_AI._aiLangName.apply(this,arguments); } function _aiLangLine(){ return IM_AI._aiLangLine.apply(this,arguments); } window._aiLangLine=_aiLangLine;   /* (#R318) both moved to js/ai-core.js — the instruction that names the reply language belongs with the transport that carries it, and the app shell has no line to spare (tests/r168 #8 — a line ceiling retired in #R786). ⚠ `_aiLangName` used to tell THREE of the nine languages to answer in English; js/lang-registry.js `englishName()` says why. */
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
   window.aiRenderSettings=aiRenderSettings;
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
@@ -1042,7 +1042,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function aiSetBtnBusy(){ return IM_AI.aiSetBtnBusy.apply(this,arguments); }
   function aiSyncFeatureButtons(){ return IM_AI.aiSyncFeatureButtons.apply(this,arguments); }
   function aiToast(){ return IM_AI.aiToast.apply(this,arguments); }
-  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); } function aiUsageSummary(){ return IM_AI.aiUsageSummary.apply(this,arguments); }   /* (#R753) these two share a line with their neighbour on purpose: the app SHELL is line-budgeted (tests/r168 #8) and a bridge is not code */
+  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); } function aiUsageSummary(){ return IM_AI.aiUsageSummary.apply(this,arguments); }   /* (#R753) these two share a line with their neighbour on purpose: the app SHELL is line-budgeted (tests/r168 #8 — a line ceiling retired in #R786) and a bridge is not code */
   function aiUsesLeft(){ return IM_AI.aiUsesLeft.apply(this,arguments); }
   function aiVisionReady(){ return IM_AI.aiVisionReady.apply(this,arguments); }
   function aiWaitMapIdle(){ return IM_AI.aiWaitMapIdle.apply(this,arguments); }
@@ -1101,7 +1101,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function updateCoord(){ return IM_READOUT.updateCoord.apply(this,arguments); }
   function updateLayerReadout(){ return IM_READOUT.updateLayerReadout.apply(this,arguments); }
   function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); } function demTilePoints(){ return IM_READOUT.demTilePoints.apply(this,arguments); } function releaseDEMHold(){ return IM_READOUT.releaseDEMHold.apply(this,arguments); }   /* (#R221) one point per DEM TILE, and the pin the intensity field holds them with */
-  function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); } function demVoidStats(){ return IM_READOUT.demVoidStats.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames; (#R265) …and the holes in the published elevation data, counted (the shell has a line budget — tests/r168 #8) */
+  function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); } function demVoidStats(){ return IM_READOUT.demVoidStats.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames; (#R265) …and the holes in the published elevation data, counted (the shell has a line budget — tests/r168 #8 — a line ceiling retired in #R786) */
   const IM_ELEVPROF=window.IntMapModules.elevationProfile(IM_HOST);
   function _openProfilePanel(){ return IM_ELEVPROF._openProfilePanel.apply(this,arguments); }
 
@@ -1218,7 +1218,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ const cp=document.getElementById('country-popup'); if(cp&&cp.style.display==='block'&&window._cpCurrent){ const s=countryStats[window._cpCurrent.code]; const body=document.getElementById('cp-body'); if(s&&body) body.innerHTML=topBtns()+renderCountryDetailBody(s); } }catch(_){}
       try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(); }catch(_){}
       try{ if(GE().layers.has('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
-    }catch(_){} }  function _reapplyPPP(){ if(_pppLast) _mergePPP(_pppLast.pc,_pppLast.tot); }   /* (#R375) js/countries-ui.js adds rows to this table long after the merge ran; they need the same figures. Replays the KEPT payload — never a second copy of the merge. ⚠ ON THIS LINE because tests/r168 #8 budgets the app shell at 8,000 lines and it was at 7,999; the WHY lives at the call site, which is not in the shell. */
+    }catch(_){} }  function _reapplyPPP(){ if(_pppLast) _mergePPP(_pppLast.pc,_pppLast.tot); }   /* (#R375) js/countries-ui.js adds rows to this table long after the merge ran; they need the same figures. Replays the KEPT payload — never a second copy of the merge. ⚠ ON THIS LINE because tests/r168 #8 — a line ceiling retired in #R786 budgets the app shell at 8,000 lines and it was at 7,999; the WHY lives at the call site, which is not in the shell. */
   function loadGdpPPP(){
     if(gdpPPPPromise) return gdpPPPPromise;
     gdpPPPPromise=(async()=>{
@@ -1247,8 +1247,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const fmtMoney=(b)=>!b?'—':(b>=1000?'$'+(b/1000).toFixed(2)+'T':'$'+b.toFixed(0)+'B');
   const fmtPc=(v)=>v?'$'+Math.round(v).toLocaleString():'—';
   /* (#R240) a country's name in the reader's language. The MECHANISM is in js/countries-ui.js
-     (`window._imCldrRegion`) rather than here: tests/r168 #8 budgets this shell at 8,200 lines and
-     the rule that test states is that the ceiling follows the floor DOWN — so a new mechanism goes
+     (`window._imCldrRegion`) rather than here: a mechanism with a name is a subject of its own
+     file, and the shell does not grow to hold one — so a new mechanism goes
      where the feature lives, never into the shell. See there for why it is CLDR and not a table. */
   const cName=(s,f)=>{
     if(currentLang==='jp'&&s&&s.nameJp) return s.nameJp;
@@ -1675,8 +1675,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ if(window._mCenterLL && window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const c=window._mCenterLL(); pt={x:c.px.x,y:c.px.y}; ll={lng:c.lng,lat:c.lat}; } }catch(_){}
       showContextMenu(pt, ll); });
     /* (#R498) the long-press, the crosshair, the centre readout and the "Add point" pill left for
-       js/mobile-map-input.js — one surface, and the shell budget (tests/r168 #8, tests/r479 ⑧) had
-       one line of headroom. Mounted from the two positions the blocks occupied, because both
+       js/mobile-map-input.js — one surface, in one file. Mounted from the two positions the blocks occupied, because both
        register listeners whose order relative to their neighbours is observable. */
     IM_MOBIN.longPress();
     /* Reposition pin popup on every render — keeps it pinned to lng/lat with no drift */
@@ -2446,8 +2445,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function ymdISO(d){ return window.IntMapHistScale.ymd(d); }   /* (#R679) ONE owner — the second copy broke below year 0 (js/hist-scale.js `ymd`). ⚠ A HOISTED DECLARATION, not a const: js/news-timeline.js binds `HOST.ymdISO` at FACTORY time (tests/r167 ⑤'s dead-zone rule) */
 
   /* (#R289) THE KERNEL MOVED TO js/chronos.js — 「IntMap統一時間機能を、これよりChronosという名称に」,
-     and a thing with a name is a subject, which gets its own file (tests/r168 #8: this round adds
-     to the shell, so something coherent has to leave it). What stays here is the ONE thing it used
+     and a thing with a name is a subject, which gets its own file. What stays here is the ONE thing it used
      to reach into this closure for — `newsDate`, the recent-archive facet every news reader tests.
      Registered FIRST, so «the kernel keeps newsDate in lock-step before anybody else runs» is still
      exactly true. */
@@ -2561,7 +2559,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     OS._bindCatalog=function(fn){ if(typeof fn==='function') OS.catalog=fn; };
     OS.ready=function(){ return !!_dispatch; };
     return OS;
-  })();  try{ installCapabilityKernel(window.IntMapOS, IM_HOST, { GE:()=>window.IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas capability registry not installed',e); }catch(_){} }   /* (#R318) execute() and the rest of the capability kernel — js/atlas-executor.js holds the eleven steps AND the reason they are not written out here (the app-shell budget, tests/r168 #8). ⚠ the lifecycle goes to `emit`, not into the 200-entry syscall ring: one operation emits four to six events and would flush the command log it shares. */
+  })();  try{ installCapabilityKernel(window.IntMapOS, IM_HOST, { GE:()=>window.IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas capability registry not installed',e); }catch(_){} }   /* (#R318) execute() and the rest of the capability kernel — js/atlas-executor.js holds the eleven steps AND the reason they are not written out here (the app-shell budget, tests/r168 #8 — a line ceiling retired in #R786). ⚠ the lifecycle goes to `emit`, not into the 200-entry syscall ring: one operation emits four to six events and would flush the command log it shares. */
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
   /* ══ (#R243) 「自動で左サイドバーをあける動作もやれ」 — one action, not a second mechanism ═══════
      js/window-manager.js has to open this column when a panel arrives in it while the dock mode is
@@ -2638,7 +2636,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        but the MAP's Countries(info) overlay (cb-countries) is now fully manual — it is neither auto-enabled on
        entering the tab nor auto-disabled on leaving it. The checkbox in the Layers panel still works as always. */
     function _setCountriesInfo(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
-  /* (#R238) the dock's glue is in js/window-manager.js beside the mechanism (`wireDock`) — which is also what keeps this file and the SHELL under tests/r200 ⑤ and tests/r168 #8. */
+  /* (#R238) the dock's glue is in js/window-manager.js beside the mechanism (`wireDock`) — which is also what keeps the glue beside the mechanism rather than in the shell. */
   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるように」 — the Layers button, the palette and Atlas, one command (the module is lazy) */
   IntMapOS.register('sim.seismic', (ctx)=>window.IntMapLazy.need('seismic').then(()=>{ try{ return !!(window.IntMapSeismic&&window.IntMapSeismic.open(((ctx&&ctx.params)||{}).at||{})); }catch(_){ return false; } }),
     {label:'Earthquake simulator', btn:'btn-seismic-sim', group:'sim'});
@@ -3626,7 +3624,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  window.IntMapModules.usElections(IM_HOST); window.IntMapModules.warFronts(IM_HOST); window.IntMapModules.netHealth(IM_HOST); window.IntMapModules.elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/r168 #8 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
+  window.IntMapModules.usElections(IM_HOST); window.IntMapModules.warFronts(IM_HOST); window.IntMapModules.netHealth(IM_HOST); window.IntMapModules.elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/r168 #8 — a line ceiling retired in #R786 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
@@ -4206,7 +4204,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      INSTRUCTION (「以下のレイヤーは削除」) — seven remain and the list lives in js/layer-packs.js. */
   window.IntMapModules.gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/r168 #8) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ window.IntMapModules.precipAnnual(IM_HOST); window.IntMapModules.outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same shell budget, and after worldPacks for the same toolkit reason as the two above. */
+  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/r168 #8 — a line ceiling retired in #R786) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ window.IntMapModules.precipAnnual(IM_HOST); window.IntMapModules.outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical

@@ -1,3 +1,99 @@
+## R795 — **形式を固定していた検査を、守りたい性質の検査に置き換えた（所有権リファクタの段 1）**
+
+〈利用者「IntMap のアーキテクチャを総合的に分析して、品質・速度・安定性・保守性を大幅に改善する
+リファクタリングをして。必要なのはファイルの分割をさらに進めることより、状態・依存関係・非同期処理・
+メモリの所有者を明確にするリファクタ。最優先はリファクタを妨げているテストを改めること」。
+9 段の順序が指定され、「あなたが必要だと思ったものは全部」——この回は**段 1**〉
+
+### 0. 実測（着手前・R783 `7d654b2d`）
+
+| 何 | 実測 |
+|---|---|
+| `js/runtime.js` のライフサイクル | 5 動詞・世代番号なし。`load` 中に `dispose` されても完了後の `activate` が `active` にする経路が実在。失敗した `load` の promise は `c.p` に残る |
+| 所有者タグ `capability:` を渡している登録 | **js/ 内で 0 件**。`dispose(name)` を呼ぶ経路も 0 件（3 capability は `suspend` まで） |
+| スケジューラ `_tick()` | `frame()` 1 件のフレームでも READ／WRITE の**全項目**が走る。無効化情報は実行判定に使われていない |
+| `IM_HOST` | 277 項目（getter 274・後付け 3・うち 55 が書ける）。`HOST.` 参照 129 ファイル 4,154 件、40% が `HOST.lang` |
+| `window.IntMap*` | 283 名（`window.*` 全体 606 名） |
+| 行数の天井 | **21 か所**（r168 #8 と 20 の写し）。shell **8,049 / 8,050**、atlas-console **4,906 / 4,908** |
+| src/main.js | 11 行に 2〜5 本の import が畳まれ、各行のコメントが「shell の行予算のため」と述べる |
+| `tests/r175` ③ | js/ 全 318 ファイルに「export しないトップレベル宣言の禁止」と「export は js/ 内で名前付き import されること」 |
+
+### 1. ⚠⚠⚠ 宣言の禁止は、守っていた性質より長生きしていた
+
+`tests/r175` ③ の規則は Vite 移行（#R175）の罠を捕まえるものだった——classic script のトップレベル
+`const` は window global で、module のそれは private なので、移行の途中で名前解決が黙って変わる。
+その**危険**は「どこかのファイルが、何にも解決しない裸の名前を読む」であって、それは
+`scripts/check-split-scope.mjs` が自由識別子ごとに、スコープを解決するパーサで直接測っている。
+
+規則の側は**形式**になっていて、費用を払わせていた:
+- `js/gis-core.js` と `js/gis-runtime.js` が**互いを import**する（各 export に js/ の読み手が要るから。
+  両ファイルのコメント自身がそう述べる）
+- `js/runtime.js` の `everyTick.pending` が Map を**関数のプロパティ**に吊るす（module-scope の `const` が禁止だから）
+- 組立器を**閉包 1 個**に包んで 1 バインディングにする（`mountGis` / `makeGisRuntime`）
+
+⇒ 禁止は撤去。残すのは「export に読み手が居ること」で、これは `scripts/export-readers.mjs` に
+導出を 1 つ置き、読み手を `js/` だけでなく **`src/`・`scripts/`・`tests/`** に広げた。ヘッドレスの
+入口（`makeGisRuntime`）の唯一の呼び手が「それがヘッドレスで動くことを証明するテスト」なのは
+生きている証拠であって、js/ からの import を強いた結果が上の循環だった。
+
+⚠ **循環そのものは今回消していない。** 並行セッション `wt-r785-gis-foundation` が `js/gis-core.js`・
+`js/gis-runtime.js` を含む 14 ファイルを**未コミットで編集中**（`git status` で実測）。同じファイルを
+2 セッションに書かせない（`AGENTS.md` §6）。規則が変わったので、あちらの着地後に `gis-core.js:79-80`
+の import と re-export を消し、`tests/r783-headless-runtime-checks` の import 先を `gis-runtime.js` に
+向ければ終わる。
+
+### 2. ⚠⚠⚠ 行数の天井は 21 か所にあって、測っていたのは長さだった
+
+r168 #8 の 8,050 は r350 ⑨c と r479 ⑧ に写され、atlas-console の 4,908／4,910／5,300 が 9 ファイル、
+app-body の 4,400 が 2、widgets の 130 が 1、index.html の段階ごとの天井（#R162〜#R169、33,500→6,200）
+が 7。r168 #8 の註は 8 回の上げ下げの経緯で 100 行になっていた。
+
+産んだもの: src/main.js の 11 行（`import 'a'; import 'b'; import 'c';   /* … ON THIS LINE because the
+app shell has a line budget (tests/r168 #8) */`）、lazy-modules の switch の case 4 行、毎ラウンドの
+「余白 1 行」。**行数は、機能が外へ出たのか、隣の行に繋がれただけなのかを区別できない。**
+
+⇒ 21 か所を全部撤去。天井が**本来測りたかったもの**は 2 つで、どちらも計器がある:
+- **初期配信量**——`npm run check:perf`（既存。eager のバイトと module 数を build から両方向ラチェット）
+- **結合の広さ**——`npm run check:surface`（新規。`scripts/global-surface.mjs`）。`IM_HOST` の項目
+  （getter／setter／後付け）と `js/`・`src/` が `window.*` に代入する名前を、**名前で**
+  `tests/global-surface-baseline.json` と両方向に照合する。増えた名前は「新しい結合」（DEV-NOTES に
+  理由を書いて `--update`）、減った名前は「基準が古い」（同じく `--update` が受領証）。
+  数ではなく名前なので、diff が**どの項目か**を言う——段 3 で `IM_HOST` が縮む受領証はこれになる。
+
+### 3. ⚠⚠ r168 #1〜#3 は綴りを固定し、マーカーを 2 回張り替えていた
+
+`const IM_X=window.IntMapModules.x(IM_HOST);` と `function n(){ return IM_X.n.apply(this,arguments); }`
+の文字列一致、6 呼び出しの文字オフセット、手で並べた「eager な使用」4 本（#R372・#R408 で綴りを更新）。
+⇒ acorn で `js/app-body.js` の閉包（`DOMContentLoaded` ハンドラの中の**最大の関数本体**＝`_imAppBoot`、
+名指しではなく探す）を読み、性質を測る:
+- 各 factory は **map の代入より後**に **1 回**、`IM_HOST` だけを渡して束ねられる（束ねる const 名は導出）
+- 各 export は shell に **hoisted な function 宣言**として 1 つあり、`K.n.apply(this, arguments)` か
+  `K.n.call(this, ...arguments)` で **this と全引数**を転送する
+- factory の文より前に、**評価中に**（入れ子の関数本体の外で）その factory が提供する名前に触れる文が無い
+- factory の並びの中に、factory の束ね・window へ公開する factory 呼び出し・shim 以外の文が無い
+r168 #8 は「stylesheet は css/ に」と「本体が shell に戻っていない」だけを残し、後者の針は
+各モジュールの**最長の 5 行から導出**する（手書きの 3 針を廃止）。
+
+### 4. 実装したもの
+
+| 何 | どこ |
+|---|---|
+| export の読み手の導出 | `scripts/export-readers.mjs`（新規）。r175 ③ と r786 が読む |
+| 共有窓口の計器と門 | `scripts/global-surface.mjs`（新規）・`tests/global-surface-baseline.json`・`check:surface` |
+| r175 ③ の書き換え | 宣言の禁止を撤去、読み手を 4 ディレクトリへ。split-scope も同じファイルで走る |
+| r168 #1〜#3・#8 の書き換え | AST。`shimOf`／`callOf` の文字列と 100 行の天井史を撤去 |
+| 20 か所の天井の撤去 | r162〜r167・r169・r199・r200・r249・r292・r298・r318・r350・r419・r479・r511・r663・r667・r775 |
+| 畳んだ行の展開 | src/main.js 11 行・js/lazy-modules.js 4 行。「shell budget のため」の文を削除、残る言及は「撤去済み」と註 |
+| 文書 | `docs/TESTING.md`（新しい節）・`docs/FILES.md`・`Architecture.md` §1.1・実行戦略の表・verifier 役 |
+| 回帰 | `tests/r786-arch-ownership-checks.test.mjs`——合成ツリーで 3 計器が**欠陥を検出する**ことを示す |
+
+### 5. 段 2 以降（次のラウンド）
+
+段 2: `js/runtime.js` に capability ごとの**世代番号**と**scope**（通信・購読・タイマー・Observer・
+Worker ジョブ・描画資源の所有者）を足し、`activate` は load 完了時に世代を照合、失敗した `load` は
+メモしない、開閉 N 回で登録簿が増えないことを回帰にする。R708 が 4 機能で手書きした「古い完了を拒む」
+を基盤へ移す。段 3 の候補は `js/radiation-layer.js`（HOST 参照 2・Atlas dispatch 1 本・時刻・遅延）。
+
 ## R790 — 添付ファイルは、読み取った瞬間に末尾を捨てていた——取り寄せても戻らない理由
 
 〈利用者の指摘「Atlasに添付したファイルは、長すぎると先頭部分しか読み込んでくれない問題をどうにかして」〉
@@ -464,6 +560,8 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 > 4,240 行へ切り、60 ラウンドで 14,704 行に戻った——**境界は固定値ではなく、動かすもの**である。
 
 ## 索引 — このファイルのラウンド（新しい順）
+
+- **#R795** — **形式を固定していた検査を、守りたい性質の検査に置き換えた（所有権リファクタの段 1）**〈利用者「品質・速度・安定性・保守性を大幅に改善するリファクタリング。必要なのはファイル分割ではなく、状態・依存・非同期・メモリの所有者を明確にすること。まずリファクタを妨げるテストを改める」〉／⚠⚠⚠ **`tests/r175` ③ の「export しないトップレベル宣言の禁止」は形式の規則になっていた**——守っていた危険（裸の名前が何にも解決しない）は `scripts/check-split-scope.mjs` が直接測っていて、規則の残した費用は `js/gis-core.js` ⇄ `js/gis-runtime.js` の相互 import・`everyTick.pending` という関数プロパティ・閉包 1 個に包んだ組立器。撤去し、「export に読み手が居る」は `scripts/export-readers.mjs`（読み手は `js/`・`src/`・`scripts/`・`tests/`）で測る／⚠⚠⚠ **行数の天井は 21 か所にあり、shell は 8,049 / 8,050・atlas-console は 4,906 / 4,908 だった**。産んだのは src/main.js の 11 行に畳まれた 2〜5 本の import と、lazy-modules の畳まれた case で、初期配信量も結合の広さも測っていない⇒ 全部撤去し、初期配信量は既にある `check:perf`、結合の広さは新しい `check:surface`（`IM_HOST` 277 項目・`window.*` 606 名を**名前で**両方向ラチェット）が測る／⚠⚠ **r168 #1〜#3 は shim・factory 呼び出し・位置を文字列で固定し、マーカーを 2 回張り替えていた**⇒ acorn で閉包を読み、「factory は map の後に 1 回」「shim は hoisted で this と全引数を転送」「評価中の文が提供前の名前に触れない」を性質として測る／⚠ 並行セッション `wt-r785-gis-foundation` が gis-core / gis-runtime を未コミットで編集中なので、循環 import の撤去は**今回は触らず**、規則の側だけ変えた（あちらの着地後に 1 行で消せる）／段 2 以降（Runtime の世代管理・scope・機能の明示的依存）は次のラウンド
 
 - **#R783** — **取得・計算・説明を同じ条件のまま最後までつないだ（外部監査の P0〜P3 を 1 ラウンドで・13 並列実装）**〈利用者「勝手に範囲狭めるな全部やれ」。News の Ask Atlas 3 件 ＋ GIS 監査の全項目 ＋ #R773 の未了〉／⚠⚠⚠ **申告した能力が実行されていなかったのが 3 つ**: ⑴ `supplierFor()` が `where/cursor/limit` を申告し loader 経路は 1 つも適用せず、しかも `coverage.filteredBy:"supplier"` と記録していた（3 行で実測: `limit 1` → `1,2,3` かつ `next:null`）⇒ `pageOf()` を唯一の実装にして両経路が通る ⑵ **`attach.recall` は Atlas から一度も実行できなかった**——能力表の的の列が `text` で、唯一の引数 `name` がその一覧に無く dispatch 手前で `needs_input`（#R773 の未了の正体。検査は 144 能力を走らせて構造で測る） ⑶ 取得前の記述が 5 欄で、監査の 5 主題のうち **4 つがゼロ**（`describe()` の 24 slot へ）／⚠⚠⚠ **`coverOf()` の 5 点近道は凹形を 100% と報告**（閉形式 0.92000389922・格子規模で **+701.66 km²** 過大）。検査点を増やしても解決しないので**証明できる問い**（辺が画素箱に触れ得るか・360° 全周）に置換⇒**旧実装より 4.8〜17.6 倍速い**／⚠⚠ **`MultiPolygon` のパート間を誰も見ていなかった**（実データ `ecoregions` の **126/635 が本当に汚れており**、独立 sweep-line が 568/568 を裏付け）。`alignTo` が配列の深さを決めつけていたので**1 周ずれた枠の boolean が常に空**だった／⚠⚠ **単位を捨てていたのは関数呼び出し**（`abs/round/min/max/coalesce/number` が `unit:null`。`null` が 4 つの別の事実を運んでいた）。量の意味（種類・空間・時間・期間と許される集計）を足し、**未申告は許可ではない**／⚠ **上流に全件性は無い**（航空: 980 格子のうち 856 しか訊かれていない）ので `complete` は**上流の文**——`all` には到達できない。⚠ 束の `acquireBundle()` は**必ず決着する**（旧分岐は callback を呼ばず promise が永久に pending）／⚠ **Worker は数ではなくメモリで詰まる**（64 MiB 予算・在空中の全部に対する天井。`take` を await していなかったので中止が落ち、ピークが格子全体になっていた）／⚠⚠ **自前の読み手だけでは外部互換を主張できない**⇒ GDAL 3.12.4 を wheel で入れて COG と GeoPackage を読み返す。⚠ **第三者は必要だが十分ではない**——初版 COG の重複 tag を **GDAL も cog_validate も受理した**（捕まえたのは独立の IFD walker）／⚠ **誤差は面と場所で桁が違う**（84°N の EPSG:3857 で面積 +10744%）。`areaScale` は**その面の台**に対する比で、`exact:true` は台についての主張だった。`certify()` が包絡と実測を返し、`tolerance` を満たせないときは**数を出さず満たせる面を挙げる**／⚠⚠⚠ **News の Ask Atlas は本文が 0 バイトだった**（出来事の **43.5% は `body` が 1 文字も無い**＝モデルに届くのは見出し 1 行）⇒ 押した瞬間に**読む面そのものを読む**・自由入力欄・チップは押下で退く。切られた本文は**切ったと述べる**／⚠ この回が踏んだ「綴りを固定した検査」**3 件**（`R756 ⑩`・`R738 ⑪`・`R254 ⑩`）はどれも正しい変更を落第させた⇒**測るべき事実**へ付け替えた／⚠ 3-D の deep 2 本は**退行ではなく観測器の待ち方**（固定 1,200/1,400ms。CI では同テストが 29.6/46.4 秒）⇒ 条件を待つ形に直し、**閾値は 1 つも下げていない**
 

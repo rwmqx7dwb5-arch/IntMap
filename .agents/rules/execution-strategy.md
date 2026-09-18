@@ -71,17 +71,18 @@
 | 歴史都市名 | `npm run check:histcities` |
 | CShapes の国境と、その下 | `npm run check:cshapes` `npm run check:histborders` |
 | 全時代の国境（紀元前も） | `npm run check:histeras` |
-| 歴史的な政体名（3 記録に 1 つの表） | `npm run check:histnames` |
+| 歴史的な政体名 | `npm run check:histnames` |
 | 歴史的な行政区分 | `npm run check:histadmin` |
 | 歴史地図が述べていること | `npm run check:histfidelity` |
 | 導出した令制国 | `npm run check:kuni` |
 | 現代の区分を遡らせた穴埋め | `npm run check:histfill` |
 | 国境のどの辺を描くか | `npm run check:bordercoast` |
-| 拡大時の精密な輪郭（409 MB） | `npm run check:borderdetail` |
+| 拡大時の精密な輪郭 | `npm run check:borderdetail` |
 | 歴史地点（Pleiades） | `npm run check:histplaces` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |
 | Atlas の観測器の判定 | `npm run check:atlasrepeat` |
+| 共有窓口 | `npm run check:surface` |
 | 起動費用（**build が要る**） | `npm run check:perf` |
 | 配られる資産（**build が要る**） | `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |

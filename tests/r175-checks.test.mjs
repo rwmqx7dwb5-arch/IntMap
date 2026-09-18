@@ -12,9 +12,10 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import * as acorn from 'acorn';
 import { appSource } from './app-source.mjs';
 import { jsReachability } from '../scripts/js-reachability.mjs';
+import { deadExports } from '../scripts/export-readers.mjs';
+import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
 const root = new URL('../', import.meta.url);
 const ROOT = fileURLToPath(root);
@@ -228,76 +229,35 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
   assert.equal(new Set(imported).size, imported.length, 'no module is imported twice');
 });
 
-test('R175 ③: no js/ module has an UNEXPORTED top-level declaration, and every export is imported by name', () => {
-  /* This is THE property the whole migration rests on. A classic script's top-level `const`/`function`
-     is a global; a module's is private. Every one of these files publishes itself on `window` and has
-     no top-level declaration at all, so bundling them cannot change a single name resolution — and if
-     someone ever adds one, this test fails before the silent breakage ships.
-     ⚠ (#R199) …with one form now named EXPLICITLY rather than passing by accident: `export function
-     makeAtlasReply(…)`. Until this round the walk below matched `FunctionDeclaration` on ast.body, and an
-     exported one is wrapped in an ExportNamedDeclaration — so it would have slipped through silently, and
-     a test that lets a whole category through by accident is not a test. The category is ALLOWED, and the
-     reason is the invariant itself rather than an exception to it: an exported binding is module-private
-     exactly like a non-exported one, it cannot become a global, and it is reachable ONLY through an
-     explicit `import` — which is strictly more checkable than the window.IntMapModules registry the user
-     asked us to stop depending on. So: unexported top-level declarations still fail (they are the ones
-     that would have been globals), and each export must be imported somewhere by name, or it is dead. */
-  const offenders = [];
-  const exported = [];
-  const importedNames = new Set();
-  for (const f of jsFiles) {
-    const src = readFileSync(join(ROOT, 'js', f), 'utf8');
-    for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\//g)) {
-      for (const n of m[1].split(',')) { const nm = n.trim().split(/\s+as\s+/)[0].trim(); if (nm) importedNames.add(nm); }
-    }
-    /* ⚠ (#R576) …AND THE OTHER FORM OF "IMPORTED BY NAME", WHICH THIS TEST COULD NOT SEE.
-       A module that must NOT join the startup bundle is reached with a dynamic import and its
-       export read off the namespace object:
-
-           const CAP = (await import('./atlas-view-capture.js')).makeViewCapture({ … });   js/screenshot.js:44
-
-       That is the same fact as a static `import { makeViewCapture }` — the export is reached, by
-       name, from js/ — and the regex above cannot match it. It has never mattered until now only
-       because js/atlas-console.js ALSO imports that one statically, so the name arrived in the set
-       for an unrelated reason. js/geo-import.js (#R576) has no such second caller by design: a
-       static import of it from js/map-ui.js would pull the whole decoder into the eager graph and
-       break the `eager/modules` budget (`npm run check:perf`), which is the entire reason the
-       import is dynamic. So the question this test asks stays the same — "does any js/ module reach
-       this export?" — and the second way of reaching one is now counted too. (#R488: a check that
-       fixes a SPELLING of a live path stops seeing the path the day the spelling changes.) */
-    const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
-    (function walk(node, seen) {
-      if (!node || typeof node !== 'object' || seen.has(node)) return;
-      seen.add(node);
-      /* (await import('./x.js')).NAME  —  and  (await import('./x.js')).NAME.member */
-      if (node.type === 'MemberExpression' && !node.computed && node.property && node.property.name) {
-        const o = node.object;
-        const imp = (o && o.type === 'AwaitExpression') ? o.argument : o;
-        if (imp && imp.type === 'ImportExpression' && imp.source && typeof imp.source.value === 'string'
-          && imp.source.value.startsWith('./')) importedNames.add(node.property.name);
-      }
-      for (const k of Object.keys(node)) {
-        const v = node[k];
-        if (Array.isArray(v)) v.forEach((c) => walk(c, seen));
-        else if (v && typeof v === 'object' && typeof v.type === 'string') walk(v, seen);
-      }
-    })(ast, new Set());
-    for (const n of ast.body) {
-      if (n.type === 'ExportNamedDeclaration' && n.declaration) {
-        const d = n.declaration;
-        if (d.id) exported.push({ file: f, name: d.id.name });
-        else (d.declarations || []).forEach((x) => { if (x.id && x.id.name) exported.push({ file: f, name: x.id.name }); });
-        continue;
-      }
-      if (n.type === 'ExportDefaultDeclaration' || n.type === 'ExportAllDeclaration') { offenders.push(`js/${f}: default/star export — export the factory by name`); continue; }
-      if (n.type === 'FunctionDeclaration' || n.type === 'ClassDeclaration') offenders.push(`js/${f}: ${n.type} ${n.id && n.id.name}`);
-      if (n.type === 'VariableDeclaration') offenders.push(`js/${f}: ${n.kind} declaration`);
-    }
-  }
-  assert.deepEqual(offenders, [], 'these must be wrapped, exported, or attached to window instead:\n' + offenders.join('\n'));
-  const dead = exported.filter((e) => !importedNames.has(e.name)).map((e) => `js/${e.file}: ${e.name}`);
-  assert.deepEqual(dead, [], 'exported but never imported by name — dead code:\n' + dead.join('\n'));
+test('R175 ③: every export of a js/ module is reached by name from another file', () => {
+  /* (#R786) THIS TEST USED TO ASK TWO THINGS, AND ONE OF THEM WAS A RULE ABOUT SHAPE.
+     ① "no js/ module has an unexported top-level declaration" was the Vite migration's tripwire:
+        a classic script's top-level `const` was a window global, a module's is private, so a
+        declaration that appeared during the migration could silently change a name resolution.
+        The hazard it guarded is "some file reads a bare name that resolves to nothing" — and that
+        is what scripts/check-split-scope.mjs measures DIRECTLY, for every free identifier of every
+        js/ file, with a scope-resolving parser (r168 #7 runs it). The ban outlived its reason and
+        became a cost: js/gis-core.js and js/gis-runtime.js imported EACH OTHER so that each export
+        had a js/ reader; js/runtime.js hung a Map off a function (`everyTick.pending`) because a
+        module-scope `const` was forbidden; whole assemblers were wrapped in one closure to be one
+        binding. None of that made the program safer. An ordinary module with private top-level
+        functions is the normal thing this rule now permits.
+     ② "every export is imported by name" is kept, as the property it always meant — an export no
+        file reaches is dead code — but a READER is anything in the repository that reaches the
+        name (js/, src/, scripts/, tests/), not only a js/ sibling: a headless entry point whose
+        only caller is the test that proves it works headlessly is alive, and forcing a js/ import
+        of it is how the cycle above was born. The derivation is scripts/export-readers.mjs. */
+  const { dead } = deadExports(ROOT);
+  assert.deepEqual(dead, [], 'exported but never reached by name from another file — dead code:\n' + dead.join('\n'));
 });
+
+test('R175 ③: no js/ module reads a name that resolves to nothing (the property the declaration ban stood for)', () => {
+  /* (#R786) the replacement for the ban is not "nothing"; it is the free-identifier check, run here
+     as well as in r168 #7 so that a reader of THIS file sees what holds the migration up. */
+  const problems = checkSplitScope();
+  assert.deepEqual(problems, [], 'split-scope problems:\n' + problems.map((p) => `${p.file}: ${p.msg}`).join('\n'));
+});
+
 
 test('R175 ③: index.html is markup again — the program is not inlined in it', () => {
   const inline = [...index.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1].length);

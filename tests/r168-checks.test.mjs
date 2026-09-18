@@ -72,8 +72,6 @@ const NAMES = Object.keys(MODULES);
    in practice only `$` can occur — but a partial escape is the kind of thing that is right until the
    day it isn't, and CodeQL flags it (js/incomplete-sanitization) rather than guess. */
 const rx = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const shimOf = (m, n) => `function ${n}(){ return ${MODULES[m].k}.${n}.apply(this,arguments); }`;
-const callOf = (m) => `const ${MODULES[m].k}=window.IntMapModules.${m}(IM_HOST);`;
 
 /* Closure values these modules read that are REASSIGNED at runtime → live host getters, never a bare
    identifier inside a js/ file. A captured copy would silently go stale (the #R162 shape). */
@@ -88,93 +86,171 @@ const LIVE = {
   communityAddArmed: 'communityAddArmed',
 };
 
-test('R168 #1 all six files are loaded and every factory is declared and instantiated once', () => {
+/* ── (#R786) THE SHELL IS READ WITH A PARSER, NOT MATCHED AS TEXT ───────────────────────────────
+   Until this round #1–#3 pinned the factory call, the shim and their POSITIONS as literal strings
+   (`const IM_X=window.IntMapModules.x(IM_HOST);`, `function n(){ return IM_X.n.apply(this,arguments); }`,
+   four hand-listed "eager uses" whose spelling had to be refreshed twice). What those strings stood
+   for is three properties, and the properties are what is measured now:
+     · each factory is instantiated exactly once, after the map exists;
+     · each exported name reaches the shell as a HOISTED declaration that forwards receiver and
+       arguments — hoisted, because call sites above the factory call must still work;
+     · nothing that runs while the closure is still evaluating touches a moved name before the
+       factory that provides it has run.
+   The shell's exact spelling is free to change; the properties are not. */
+const bodyAst = acorn.parse(rd('js/app-body.js'), { ecmaVersion: 'latest', sourceType: 'module', locations: true });
+function closureBody() {
+  for (const s of bodyAst.body) {
+    if (s.type !== 'ExpressionStatement' || s.expression.type !== 'CallExpression') continue;
+    const c = s.expression;
+    const isDCL = c.callee.type === 'MemberExpression' && c.callee.property.name === 'addEventListener'
+      && c.arguments[0] && c.arguments[0].value === 'DOMContentLoaded';
+    if (isDCL && c.arguments[1] && /Function/.test(c.arguments[1].type)) {
+      /* (#R786) the handler is `() => { const _imAppBoot = () => { …the program… }; … }` since the
+         boot barrier (#R180): the closure whose statements matter is the LARGEST function body
+         declared directly inside it, found rather than named. */
+      let best = c.arguments[1].body.body;
+      for (const st of best) {
+        if (st.type !== 'VariableDeclaration') continue;
+        for (const d of st.declarations) if (d.init && /Function/.test(d.init.type) && d.init.body.type === 'BlockStatement' && d.init.body.body.length > best.length) best = d.init.body.body;
+      }
+      return best;
+    }
+  }
+  throw new Error('DOMContentLoaded handler not found in js/app-body.js');
+}
+const STMTS = closureBody();
+const SKIP = new Set(['loc', 'start', 'end', 'type']);
+const isModulesCall = (n, m) => !!n && n.type === 'CallExpression' && n.callee.type === 'MemberExpression'
+  && !n.callee.computed && (m === null || n.callee.property.name === m)
+  && n.callee.object.type === 'MemberExpression' && n.callee.object.property.name === 'IntMapModules'
+  && n.callee.object.object.type === 'Identifier' && n.callee.object.object.name === 'window';
+/* the statement index and the const the shell binds each factory to — DERIVED, not spelled */
+function factorySite(m) {
+  const hits = [];
+  STMTS.forEach((s, i) => {
+    if (s.type !== 'VariableDeclaration') return;
+    for (const d of s.declarations) if (isModulesCall(d.init, m) && d.id.type === 'Identifier') hits.push({ i, k: d.id.name, args: d.init.arguments });
+  });
+  return hits;
+}
+/* identifiers referenced while the closure EVALUATES: everything in a statement except what is
+   inside a nested function body (those run later, when called) */
+function eagerIdents(node, out) {
+  if (!node || typeof node !== 'object') return out;
+  if (Array.isArray(node)) { node.forEach((x) => eagerIdents(x, out)); return out; }
+  if (/Function/.test(node.type)) return out;
+  if (node.type === 'Identifier') { out.add(node.name); return out; }
+  if (node.type === 'MemberExpression') { eagerIdents(node.object, out); if (node.computed) eagerIdents(node.property, out); return out; }
+  if (node.type === 'Property' && !node.computed) { eagerIdents(node.value, out); return out; }
+  for (const k of Object.keys(node)) { if (SKIP.has(k)) continue; eagerIdents(node[k], out); }
+  return out;
+}
+function eagerAssigns(stmt, name) {
+  let hit = false;
+  (function walk(n) {
+    if (!n || typeof n !== 'object' || hit) return;
+    if (Array.isArray(n)) { n.forEach(walk); return; }
+    if (/Function/.test(n.type)) return;
+    if (n.type === 'AssignmentExpression' && n.left.type === 'Identifier' && n.left.name === name) { hit = true; return; }
+    for (const k of Object.keys(n)) { if (SKIP.has(k)) continue; walk(n[k]); }
+  })(stmt);
+  return hit;
+}
+/* the exported names of a module: the object its factory returns, read from the AST */
+function factoryExports(file, m) {
+  const ast = acorn.parse(rd(file), { ecmaVersion: 'latest', sourceType: 'module' });
+  let fn = null;
+  (function walk(n) {
+    if (!n || typeof n !== 'object' || fn) return;
+    if (Array.isArray(n)) { n.forEach(walk); return; }
+    if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression' && !n.left.computed && n.left.property.name === m
+      && n.left.object.type === 'MemberExpression' && n.left.object.property.name === 'IntMapModules' && /Function/.test(n.right.type)) { fn = n.right; return; }
+    for (const k of Object.keys(n)) { if (SKIP.has(k)) continue; walk(n[k]); }
+  })(ast);
+  assert.ok(fn, file + ' declares the ' + m + ' factory on window.IntMapModules');
+  const body = fn.body.body;
+  const ret = body[body.length - 1];
+  assert.ok(ret && ret.type === 'ReturnStatement' && ret.argument && ret.argument.type === 'ObjectExpression', file + ': the factory ends by returning its export object');
+  const declared = new Set();
+  for (const s of body) if (s.type === 'FunctionDeclaration' && s.id) declared.add(s.id.name);
+  const names = ret.argument.properties.map((p) => (p.key && (p.key.name || p.key.value)));
+  for (const n of names) assert.ok(declared.has(n), file + ': export ' + n + ' is a function declared inside the module, not re-exported junk');
+  return names;
+}
+
+test('R168 #1 all six files are loaded and every factory is declared and instantiated once, after the map exists', () => {
+  const mapAt = STMTS.findIndex((s) => eagerAssigns(s, 'map'));
+  assert.ok(mapAt >= 0, 'the closure assigns `map` while evaluating (the view is built in the shell)');
   for (const m of NAMES) {
     const { file } = MODULES[m];
     const src = rd(file);
     assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
     assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
       `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${m}=function(HOST){`),
-      `${file} declares the ${m} factory taking (HOST)`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
-    const calls = html.split(callOf(m)).length - 1;
-    assert.equal(calls, 1, `index.html must instantiate ${m} exactly once (found ${calls})`);
     const defined = [...src.matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)].map((x) => x[1]);
     assert.deepEqual(defined, [m], `${file} defines exactly one factory`);
+    const sites = factorySite(m);
+    assert.equal(sites.length, 1, `the shell instantiates ${m} exactly once (found ${sites.length})`);
+    assert.ok(sites[0].i > mapAt, `${m} is instantiated AFTER the map is constructed`);
+    assert.ok(sites[0].args.length === 1 && sites[0].args[0].type === 'Identifier' && sites[0].args[0].name === 'IM_HOST', `${m} is handed the host object and nothing else`);
     assert.match(html, new RegExp(`'${m}'`), `the boot guard names the ${m} factory, so a missing file cannot hide`);
   }
 });
 
-test('R168 #2 THE SHIM CONTRACT: every exported name is a hoisted forwarding declaration', () => {
+test('R168 #2 THE SHIM CONTRACT: every exported name is a hoisted declaration that forwards receiver and arguments', () => {
   for (const m of NAMES) {
     const { file, exports } = MODULES[m];
-    const src = rd(file);
-
-    // (a) the module returns exactly the declared export list.
-    const retAt = src.lastIndexOf('return {');
-    const ret = src.slice(retAt, src.indexOf('};', retAt) + 2);
-    const returned = ret.replace(/^return \{|\};$/g, '').split(',').map((s) => s.trim()).filter(Boolean);
+    const returned = factoryExports(file, m);
     assert.deepEqual(returned, exports, `${file} must return exactly its declared exports`);
-
+    const k = factorySite(m)[0].k;
     for (const n of exports) {
-      // (b) each one really is a function declared INSIDE the module (not, say, re-exported junk).
-      assert.match(src, new RegExp(`(?:^|\\n)\\s*(?:async\\s+)?function ${n}\\(`),
-        `${file} declares function ${n}`);
-
-      // (c) index.html keeps exactly one shim, and it is a hoisted function DECLARATION that
-      //     forwards receiver AND arguments. `const ${n}=…` would break every call site above the
-      //     factory (TDZ) and `(...a)=>` would silently drop `this`.
-      const shim = shimOf(m, n);
-      assert.equal(html.split(shim).length - 1, 1, `index.html holds exactly one shim for ${n}: ${shim}`);
-
-      // (d) and index.html no longer declares the real thing anywhere.
-      const inline = [...code(html).matchAll(new RegExp(`(?:^|[^.\\w$])(?:async\\s+function|function|const|let|var)\\s+${rx(n)}(?![\\w$])`, 'g'))];
-      assert.equal(inline.length, 1, `${n} must exist in index.html only as its shim (found ${inline.length} declarations)`);
+      /* one declaration of the name in the shell, and it is a function DECLARATION (hoisted) */
+      const decls = STMTS.filter((s) => (s.type === 'FunctionDeclaration' && s.id && s.id.name === n)
+        || (s.type === 'VariableDeclaration' && s.declarations.some((d) => d.id.type === 'Identifier' && d.id.name === n)));
+      assert.equal(decls.length, 1, `${n} is declared exactly once in the shell (found ${decls.length})`);
+      const d = decls[0];
+      assert.equal(d.type, 'FunctionDeclaration', `${n}'s shim is a hoisted function declaration — a const would break every call site above the factory (TDZ)`);
+      const body = d.body.body;
+      assert.ok(body.length === 1 && body[0].type === 'ReturnStatement' && body[0].argument && body[0].argument.type === 'CallExpression', `${n}'s shim does nothing but forward`);
+      const call = body[0].argument;
+      const callee = call.callee;
+      /* K.n.apply(this, arguments)  or  K.n.call(this, ...arguments) */
+      const viaApply = callee.type === 'MemberExpression' && !callee.computed && (callee.property.name === 'apply' || callee.property.name === 'call')
+        && callee.object.type === 'MemberExpression' && callee.object.property.name === n
+        && callee.object.object.type === 'Identifier' && callee.object.object.name === k;
+      assert.ok(viaApply, `${n}'s shim forwards to ${k}.${n} through apply/call`);
+      assert.ok(call.arguments[0] && call.arguments[0].type === 'ThisExpression', `${n}'s shim forwards its receiver (this)`);
+      const argsOk = callee.property.name === 'apply'
+        ? (call.arguments[1] && call.arguments[1].type === 'Identifier' && call.arguments[1].name === 'arguments')
+        : (call.arguments[1] && call.arguments[1].type === 'SpreadElement' && call.arguments[1].argument.name === 'arguments');
+      assert.ok(argsOk, `${n}'s shim forwards every argument`);
     }
   }
 });
 
-test('R168 #3 POSITION: the six calls sit together after the map is built, before any eager use', () => {
-  // The factories are called much earlier than the statements they replaced, which is only a
-  // question of TWO boundaries: `map` must already exist (it is assigned exactly once, in the
-  // maplibregl.Map try block), and nothing that runs during closure evaluation may have used a
-  // moved name yet. Both are asserted here against real offsets.
-    /* (#R178) the construction is spelled `map=GE().ui.createView({` now: even the PRIMARY view goes
-     through the engine contract, since js/geo-engine.js is imported before app-body.js runs. The
-     invariant is unchanged — one binding, one place, everything else after it. */
-  const mapAssign = html.indexOf('map=GE().ui.createView({');
-  assert.ok(mapAssign > 0, 'the app constructs the map exactly where expected');
-  assert.equal(html.split('map=GE().ui.createView({').length - 1, 1, '`map` is assigned in exactly one place');
-
-  const at = NAMES.map((m) => ({ m, i: html.indexOf(callOf(m)) }));
-  for (const x of at) assert.ok(x.i > mapAssign, `${x.m} is instantiated AFTER the map is constructed`);
-  assert.deepEqual(at.slice().sort((a, b) => a.i - b.i).map((x) => x.m), NAMES, 'the six calls keep their declared order');
-  const last = Math.max(...at.map((x) => x.i));
-
-  // The five places that USE a moved name while the closure is still evaluating (as opposed to
-  // inside a function body that runs later). Every one must come after the last factory call.
-  const eager = [
-    'window.IntMapModules.layerPreviews(',   // takes loadCountryData as an argument
-    'window.renderCompanies=renderCompanies;',
-    'window.showCompanyDetail=showCompanyDetail;',
-    'window._imOpenSetPassword=_openSetPassword;',
-    /* boot calls it as a bare statement, near the end. ⚠ (#R372) the marker moved when the boot pass
-       became `fetchData({background:true})` — the INVARIANT (this eager use runs after the factories)
-       did not, so the string is refreshed rather than the assertion weakened. */
-    /* ⚠ (#R408) …and it moved again when the poll went onto js/runtime.js's one timer wheel. Same
-       invariant, same treatment: refresh the marker, do not weaken the assertion. */
-    "everyTick('app-body:news-poll',180000,()=>fetchData({background:true})); bootSupabase();",
-  ];
-  const lf = html.replace(/\r\n/g, '\n');            // index.html is CRLF in the working tree
-  const lastLF = Math.max(...NAMES.map((m) => lf.indexOf(callOf(m))));
-  for (const e of eager) {
-    const i = typeof e === 'string' ? lf.indexOf(e) : lf.search(e);
-    assert.ok(i > 0, `the eager use ${e} still exists`);
-    assert.ok(i > lastLF, `${e} must run after the factories (it evaluates a moved name eagerly)`);
+test('R168 #3 POSITION: nothing evaluated before a factory call touches a name that factory provides', () => {
+  for (const m of NAMES) {
+    const site = factorySite(m)[0];
+    const moved = new Set([site.k, ...MODULES[m].exports]);
+    for (let i = 0; i < site.i; i++) {
+      const used = eagerIdents(STMTS[i], new Set());
+      for (const n of moved) assert.ok(!used.has(n), `statement ${i} (line ${STMTS[i].loc.start.line}) evaluates ${n} before ${m}'s factory has run (statement ${site.i})`);
+    }
   }
-  assert.ok(last > 0);
+  /* …and the factories run as one block: no statement between the first and the last of them
+     does anything but bind a factory or declare a shim — a side effect wedged in there would run against a
+     half-assembled shell. */
+  const sites = NAMES.map((m) => factorySite(m)[0].i).sort((a, b) => a - b);
+  for (let i = sites[0]; i <= sites[sites.length - 1]; i++) {
+    const s = STMTS[i];
+    const ok = s.type === 'FunctionDeclaration'   /* a shim: hoisted, runs nothing */
+      || (s.type === 'VariableDeclaration' && s.declarations.every((d) => isModulesCall(d.init, null)))
+      || (s.type === 'ExpressionStatement' && isModulesCall(s.expression, null));   /* a factory that publishes on window instead of returning */
+    assert.ok(ok, `statement ${i} (line ${s.loc.start.line}) sits inside the factory block but is neither a factory binding nor a shim`);
+  }
 });
+
 
 test('R168 #4 DECLARATION-ONLY: a factory body does nothing while it runs', () => {
   // This is the property that makes calling all six early safe. If any factory body held a
@@ -250,120 +326,32 @@ test('R168 #7 the parser-backed split-scope check still passes across all six ne
   assert.deepEqual(problems, [], 'split-scope problems:\n' + problems.map((p) => `${p.file}: ${p.msg}`).join('\n'));
 });
 
-test('R168 #8 index.html shrank and no module body came back inline', () => {
-  const lines = html.split('\n').length;
-  /* ⚠ (#R193) 8,200 → 8,600, and the reason is worth stating because raising a tripwire to make
-     one's own change pass is exactly the move this file exists to catch.
-     What this test is FOR is the two assertions below it: the stylesheet stays in css/, and no moved
-     module body came back inline. Those are unchanged and still pass. The NUMBER is a budget on the
-     app shell — index.html + src/main.js + src/vendor.js + js/app-body.js + js/geo-engine.js — and
-     the shell had been sitting at 8,191 of 8,200 for several rounds, i.e. nine lines of headroom.
-     #R193 added a new RENDERER CAPABILITY (the dynamic-image primitive: a geographic quad the app
-     repaints every frame with no encoder in the path), and the MapLibre half of it has to live in
-     js/geo-engine.js because that is the one file allowed to know the renderer — the coupling gate
-     enforces it. +77 there, +28 in app-body (the ancestor-walk hint and the gazetteer warm-up),
-     +29 across index.html/vendor/main.
-     Growth of an ADAPTER when the contract grows is not the regression this guards against. The
-     shell is nonetheless close to its budget: js/app-body.js's satellite-protocol block (~250 lines,
-     self-contained) is the obvious next thing to move out under standing rule 13.
-     ⚠ (#R195) 8,600 → 8,300, because the paragraph above named a debt and this round PAID it rather
-     than carrying it. js/sat-proto.js took the 259-line satellite block out whole (8,492 → 8,233),
-     so the budget goes back down to fit — a ceiling raised once and never lowered stops asserting
-     anything at all, which is #R194's lesson in one line. Headroom is 67 lines, deliberately tight.
-     The next surface to leave under standing rule 13 is js/atlas-console.js (6,571 lines), which is
-     not in this shell but is the other half of 「中心部がまだ巨大」; it needs a split of its own
-     because its themes — the planner, the SYS catalogue, the renderer — are interleaved, not stacked.
-     ⚠ (#R196) 8,300 → 8,200. This round added to the shell (a real sky in every basemap, the
-     prefetch memo, the pick hand-off) and then took more out than it put in: js/geodesy.js carried
-     off the 111-line antimeridian/pole-safe block and js/tile-warm.js the 110-line tile-acceleration
-     block, 8,363 → 8,171. Same rule as #R195 — the ceiling follows the floor DOWN, never the other
-     way. Headroom is 29 lines.
-     The next surface named by 「中心部がまだ巨大」 is still js/atlas-console.js (6,571 lines), which
-     is not in this shell and needs a split of its own.
-     ⚠ (#R322) 8,200 → 7,950, and the round that lowered it is the round that first went OVER. The
-     renderer-command census (「同じ命令を繰り返す無駄を実測に基づいて消す」) had to be in the adapter
-     for the same reason #R193's dynamic-image primitive did — js/geo-engine.js is the one file
-     allowed to know the renderer — and the shell went to 8,285. This paragraph is where a round
-     would normally argue for 8,300. Instead the two things this file has been asking for happened:
-       · js/geo-command-log.js took the census's comparisons, switches and tally (316 lines). It
-         names no renderer, so the coupling gate does not care where it lives, and the five adapter
-         methods went back to being one-liners that ask it a question.
-       · js/camera-math.js took the camera geometry whole (407 lines) — the mercator projection, the
-         eye position for a camera, the pitch that saturates, the zoom floor on a sphere. It is pure
-         (arguments in, numbers out) and #R179's own note already said so. The single piece that
-         could NOT go is `gGuard`, which asks MapLibre whether a camera is reachable; it stays in the
-         adapter and is passed to the solvers as their `guard` argument, as it always was.
-     8,199 → 8,285 → 7,923. Headroom is 27 lines, which is the point: a ceiling with room to spare
-     has stopped asserting anything (#R194).
-     ⚠ (#R341) 7,950 → 8,000, and the reason is stated because raising a tripwire to pass one's own
-     change is what this file exists to catch. #R341 added a RENDERER CAPABILITY — a cloud of tens of
-     thousands of oriented, self-animating aircraft glyphs — and the CONTRACT half of it has to live
-     in js/geo-engine.js because that is the one file allowed to know the renderer; the coupling gate
-     (scripts/engine-coupling.mjs) is what enforces that. Measured: +27 in geo-engine (four adapter
-     methods, four facade lines, one capability), +24 in lazy-modules and +11 in main.js for the
-     module registry and the worker client. 7,923 → 7,975.
-     #R193's own words apply unchanged — "growth of an ADAPTER when the contract grows is not the
-     regression this guards against" — and the IMPLEMENTATION deliberately did not land here:
-     js/aircraft-points.js (the WebGL layer), js/aviation-live.js (the controller),
-     src/aviation-worker.js (the store) are ~1,100 lines that are in NEITHER this shell nor the
-     eager bundle.
-     Headroom is 25 lines. The debt this round did NOT pay is js/data-layers.js (5,800 lines, of
-     which ~1,320 are aircraft): the original per-browser sweep is kept intact for the rollback
-     window §28 Phase G requires, and deleting it is what the next round can pay this back with.
-     ⚠ (#R386) 8,000 → 8,020, and the measurement is written down because raising a tripwire to make
-     one's own change pass is exactly the move this file exists to catch. #R386 put the News tab on
-     `news_events` — one event per card instead of one article. The IMPLEMENTATION is 590 lines in
-     js/news-events.js, which is NOT in this shell and NOT in the eager bundle (it is fetched when
-     the News tab is opened). What landed here is only the seam, and it was cut down twice before
-     this number was touched — 44 lines first written, then 12:
-
-       index.html         +1   the category chip row (one element; its prose is in docs/NEWS-EVENTS.md §9)
-       js/app-body.js    +12   the second flag (`NEWS_EVENT_MODE` — the #R40 `USE_SERVER_NEWS` path is a
-                               DIFFERENT switch and stays false), `newsSurfaceMode()` (which answers from
-                               the ITEMS, not from the flag, because Atlas and the production smoke read
-                               it), and three branches in computeFilteredNews: an event's ★ lives in
-                               `saved_news_events`, search reaches the member headlines, and the category
-                               chip filters the list and the pins through ONE predicate.
-       js/lazy-modules.js  +0   folded onto the rows that were already there.
-
-     Headroom is 8 lines. The debt this round did NOT pay is js/app-body.js itself (4,331 lines): the
-     news predicate now serves two surfaces and is the natural thing to lift out of the shell next.
-     ⚠ (#R465) 8,020 → 8,050, and the measurement is written down because raising a tripwire to make
-     one's own change pass is exactly the move this file exists to catch. The shell was at 8,019 —
-     ONE line of headroom — and what landed is 26 lines in index.html and nothing at all in the other
-     four files:
-
-       index.html  +26   `__imDocStale()` and the capture-phase error listener that feeds it: the
-                         recovery for a browser that answers a navigation from its own HTTP cache
-                         with the PREVIOUS build's document, whose hashed entry the current deploy no
-                         longer has (measured on production 2026-08-25 — entry 404, IntMapConsole and
-                         IntMapAtlasAgent both undefined, nothing booted).
-
-     THE POINT OF THE DEFECT IS THAT THIS CANNOT LIVE ANYWHERE ELSE, and both exclusions are measured
-     rather than assumed:
-       · not under assets/ — that directory is precisely what is missing; code shipped there is code
-         that never arrives in the failure it is meant to answer;
-       · not in sw.js — the worker is registered from js/tile-warm.js, i.e. from INSIDE that same
-         bundle, so a reader who meets this failure may have no worker at all. It would also put a
-         round trip on every warm start (§1.1's startup budget) and give a fetch handler the power to
-         strand every returning reader. See DECISIONS.md.
-     The explanation was cut to a seven-line pointer at Architecture.md §1.1 / DECISIONS.md /
-     DEV-NOTES #R465 rather than carried here, which is the same shape the #R372 note uses; the first
-     draft of this block was 59 lines. 8,019 → 8,045. Headroom is 5 lines.
-     The debt this round did NOT pay is the one #R386 named and left: js/app-body.js (4,331 lines).
-     Paying it is an unrelated refactor, which is why this round did not reach for it. */
-  assert.ok(lines < 8_050, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
+test('R168 #8 no module body came back inline, and the stylesheet stays in css/', () => {
+  /* (#R786) THE LINE CEILING IS GONE. From #R168 to #R465 this test held `lines < N` over the app
+     shell, and the paragraph above the number grew by one measurement per round as N moved
+     8,200 → 8,600 → 8,300 → 8,200 → 7,950 → 8,000 → 8,020 → 8,050 (the history is in git and in
+     DEV-NOTES). What it produced in the end was not a smaller program: eleven `import` lines in
+     src/main.js folded two to five modules each onto one line "for the shell budget", switch
+     cases folded the same way in js/lazy-modules.js, and every round's note said the shell was at
+     N−1. A count of LINES cannot tell a feature that moved out from a line that was joined to its
+     neighbour, so it had stopped measuring what it was for. What it was for is measured directly:
+       · what the browser must fetch and evaluate before the map is usable — `npm run check:perf`
+         (scripts/perf-budget.mjs) ratchets the EAGER bytes and module count both ways, in CI, from
+         the build itself;
+       · how much of the program reaches through one shared object — `npm run check:surface`
+         (scripts/global-surface.mjs) ratchets the IM_HOST members and the window.* names the
+         program publishes, shrink-only.
+     The two assertions below are the ones this test was always about. */
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
-  // A leftover in-page copy of a moved body would WIN over the module (a later function declaration
-  // overwrites an earlier one). Probe with a line from deep inside each of the three biggest bodies,
-  // so the needle cannot accidentally match the one-line shim that legitimately carries the name.
-  const deep = {
-    'js/auth-ui.js': "const settingsBtn=document.getElementById('btn-open-settings')",
-    'js/news-ui.js': "if(!GE.layers.hasSource('news-points')){",
-    'js/countries-ui.js': "const feed=document.getElementById('countries-feed')",
-  };
-  for (const [file, needle] of Object.entries(deep)) {
-    assert.ok(rd(file).includes(needle), `${file} really carries the body this probes for`);
-    assert.ok(!html.includes(needle), `index.html must not still hold an inline copy of ${file}: ${needle}`);
+  /* A leftover in-page copy of a moved body would WIN over the module (a later function declaration
+     overwrites an earlier one). Probe with the longest code lines of EACH module — derived, so a
+     module whose body is rewritten keeps being probed for — and require none of them in the shell. */
+  const shellCode = code(html);
+  for (const m of NAMES) {
+    const { file } = MODULES[m];
+    const probes = code(rd(file)).split('\n').map((l) => l.trim()).filter((l) => l.length >= 60 && !/^(return|\}|\{)/.test(l))
+      .sort((a, b) => b.length - a.length).slice(0, 5);
+    assert.ok(probes.length >= 3, file + ' really carries a body to probe for');
+    for (const needle of probes) assert.ok(!shellCode.includes(needle), `the shell must not still hold an inline copy of ${file}: ${needle.slice(0, 80)}`);
   }
 });

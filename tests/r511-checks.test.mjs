@@ -378,7 +378,7 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   assert.ok(ovl, '_OVL has a compose row');
   const C = makeAtlasMapCompose({});
   assert.deepEqual(ovl[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')), C.LAYERS, '_OVL.compose lists exactly the layers the module draws');
-  assert.ok(con.split(String.fromCharCode(10)).length < 4_910, 'js/atlas-console.js stayed under its shrink-only ceiling — the room came from blank lines, and #R543 took the last of them');
+  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.match(R('docs/FILES.md'), /atlas-map-compose\.js/, 'docs/FILES.md describes the file');
   assert.match(R('js/atlas-styles.js'), /\.atl-geo-n\{/, 'the badge is styled');
 });

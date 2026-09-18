@@ -108,9 +108,10 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   URL を組み立てる口は `window.cartoTileURL()` / `window.cartoTiles()` の2つだけで、
   `js/app-body.js` / `js/compare.js` / `js/playground.js` / `js/layer-previews.js` は
   ホスト名を綴らない（`tests/r479-checks.test.mjs` ② が綴りそのものを禁じる）。
-  ⚠ **`src/vendor.js` ではなく専用ファイルなのは app shell の行数予算のため**（`tests/r168` #8 と
-  `tests/r350` ⑨c。予算は index.html＋src/main.js＋src/vendor.js＋js/app-body.js＋js/geo-engine.js＋
-  js/lazy-modules.js で 8,050 行未満）。ベクタ移行もこのファイルに来る。
+  ⚠ **`src/vendor.js` ではなく専用ファイルなのは、基図の鍵と URL 組み立てが 1 か所に閉じるため**
+  （かつては app shell の行数予算がその理由だった。行数の天井は撤去され、shell の広さは
+  `npm run check:surface` が `IM_HOST` の項目と `window.*` の公開名で測る——この節の下）。
+  ベクタ移行もこのファイルに来る。
   これも**公開前提**の鍵——静的サイトはタイル URL を読み手のブラウザへ渡すので、基図キーが
   秘密である配置は存在しない。無料枠は 5,000,000 タイル要求/月（ラスタ＋ベクタ合算）。
 - **ソースマップは本番に出さない**（`vite.config.js` の `build.sourcemap` は false）。
@@ -123,6 +124,22 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   天井が残っていれば「天井が古い」として落とす。async chunk と `dist/` の合計は**天井だけ**で、
   縮むのは自由。**最大 chunk は Cesium（4.7 MB）だが既定セッションは1バイトも取らない**ので、
   「いちばん大きい chunk」を見るゲートは起動費用について何も言っていない。
+- **共有窓口の広さも計器で見る。** `npm run check:surface`（`scripts/global-surface.mjs`）が、
+  `js/app-body.js` の `IM_HOST` の項目（getter／setter／後付けの代入）と、`js/`・`src/` が
+  `window.*` に代入する公開名を**名前で** `tests/global-surface-baseline.json` と両方向に照合する。
+  増えた名前は「新しい結合」で、`DEV-NOTES.md` に理由を書いて `--update` で受け入れる。減った名前は
+  「基準が古い」で、同じく `--update` がその縮小の受領証になる。
+  ⚠ **行数の天井は撤去した。** `tests/r168` #8 と 20 か所の写しが app shell（8,050 行）・index.html・
+  `js/atlas-console.js`・`js/app-body.js`・`js/widgets.js` に持っていた行数の上限は、
+  1 行に複数の `import` や `case` を畳ませただけで、初期配信量も結合の広さも測っていなかった。
+  初期配信量は上の `check:perf`、結合の広さはこの `check:surface` が測る。
+- **`js/` のモジュールの形は普通の ES Module でよい。** かつて `tests/r175-checks` ③ が
+  「export しないトップレベル宣言」を禁じていた（classic script から module へ移した回の罠を
+  捕まえるため）。その規則は形式の規則になっていて、`js/gis-core.js` と `js/gis-runtime.js` が
+  互いを import する・`js/runtime.js` が Map を関数のプロパティに吊るす、という形を生んだ。
+  いまは `scripts/check-split-scope.mjs`（自由識別子が何にも解決しないことを捕まえる）と
+  `scripts/export-readers.mjs`（export に読み手が居ること。読み手は `js/`・`src/`・`scripts/`・
+  `tests/` の全部）が、その規則が守っていた**性質**のほうを測る。
 - **配られるファイルは1つ残らず「誰が読むか」を持つ。** `npm run check:assets`
   （`scripts/asset-report.mjs`）が `dist/` の全ファイルを、**ソースが実際に含んでいる文字列**と
   突き合わせて分類する——`exact`（`js/` `src/` `css/` `*.html` `sw.js` が名指し）／`prefix`

@@ -502,14 +502,7 @@ test('R350 ⑨c: the exported envelope carries the identity of the call it came 
   assert.ok(core.includes('citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task }; }'),
     'the exported envelope drops the call identity on the way out');
   assert.ok(read('js/app-body.js').includes('get askAIJSONEnvelope()'), 'the host does not forward the envelope at all');
-  const shell = ['index.html', 'src/main.js', 'src/vendor.js', 'js/app-body.js', 'js/geo-engine.js', 'js/lazy-modules.js']
-    .map((f) => read(f)).join('\n').split('\n').length;
-  /* ⚠ (#R386) the number lives in tests/r168 #8, where the reason for each rise is written down.
-     This copy exists so a round that grows the shell HERE cannot pass by only looking at its own
-     file — so it has to move with it. 8,000 → 8,020 → 8,050: see the measurement in tests/r168 #8.
-     ⚠ (#R465) and it worked exactly as intended: that round raised the ceiling in r168 #8, ran the
-     whole suite, and THIS copy is what stayed red — 2,842 passed, this one failed. */
-  assert.ok(shell < 8050, 'this round grew the app shell to ' + shell + ' lines — tests/r168 #8 budgets it');
+  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
 });
 
 test('R350 ⑨d: the proxy knows the task, budgets it, and refuses a shape the client cannot audit', () => {
