@@ -231,7 +231,11 @@ export const ATTACH_VIEW = (function () {
  *  `L` は console の 5 言語ヘルパをそのまま受け取る（訳を 2 か所に持たない）。 */
 export function attachViewStrings(L) {
   return {
-    truncated: L('Only the first part was sent', '先頭部分のみ送信', 'Nur der erste Teil gesendet', 'Отправлено только начало', 'Solo se envió el principio'),
+    /* ⚠ (#R790) もう「送ったのはここまで、残りは消えた」ではない——全文は保たれていて、
+       Atlas は尋ねられれば続きを取り寄せる（js/atlas-attach-log.js の page()）。この文はその
+       事実を述べる。旧文言「先頭部分のみ送信」は消えた残りを示唆しており、実装が直った今は
+       それ自体が読者への誤った説明だった。 */
+    truncated: L('Only the first part is sent automatically — ask and Atlas reads on', '自動で送るのは先頭部分のみ。続きは尋ねれば読み込みます', 'Nur der erste Teil wird automatisch gesendet — frag nach, dann liest Atlas weiter', 'Автоматически отправляется только начало — спросите, и Atlas прочитает дальше', 'Solo se envía automáticamente el principio; pregunta y Atlas seguirá leyendo'),
     gone: L('This attachment is no longer available', 'この添付はもう開けません', 'Dieser Anhang ist nicht mehr verfügbar', 'Это вложение больше недоступно', 'Este adjunto ya no está disponible'),
     openExternally: L('Open in a new tab', '新しいタブで開く', 'In neuem Tab öffnen', 'Открыть в новой вкладке', 'Abrir en una pestaña nueva'),
     /* ⚠ 畳みのボタンは**残りの量を述べる**。「…」や矢印 1 個では、畳まれているものが 3 行なのか

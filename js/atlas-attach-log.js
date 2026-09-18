@@ -20,6 +20,14 @@
  *  要るかどうかは Atlas が決めて取り寄せる（能力 `attach.recall`。⚠ 常設の道具にはしない——毎ターン全リクエストに載る面は 12,000 字の天井を持っていて、そこへ足すと道具の面が再びカタログになる。`find_capability` が返す 1 件として置く）——
  *  CONSTITUTION.md §5「Atlas に全権、機構は縛らない」。
  *
+ *  ⚠⚠⚠ (#R790) 利用者の実測その2:「添付したファイルは、長すぎると先頭部分しか読み込んでくれない」。
+ *  「120,000 字が上限」は**1 ターンに自動で載る量**のつもりだったが、js/atlas-attach.js は
+ *  その字数で読み取った時点の文字列そのものを切り捨てていた——だから同じファイルを `attach.recall`
+ *  で取り寄せても、返るのは同じ切り詰められた先頭で、末尾は最初から存在しなかった。今は
+ *  ATL_FILE.read が全文を保つ。ここが「窓」で切るのは**送るとき**だけ（`carry` は自動で載る先頭の
+ *  1 窓、`page` は `attach.recall` が offset 付きで呼ぶたびの次の窓）——画像と PDF が
+ *  「全部持っているが送るのは要求されたときだけ」なのと同じ形を、テキストにも適用しただけ。
+ *
  *  ⚠ 台帳はターン番号を持つ。編集（#R298 の Edit）が履歴を巻き戻すとき、**添付も一緒に巻き戻る**
  *  ——巻き戻したはずのターンの添付が残っていると、消えた質問の資料だけが会話に居座る。
  * ==========================================================================*/
@@ -75,23 +83,42 @@ export const ATTACH_LOG = (function () {
   /** 今のターンの分を除いた、以前のターンの記録（新しい順）。 */
   function earlier(turn) { return log.filter((e) => e.turn < turn).map((e) => e.rec).reverse(); }
 
+  /** テキストを「窓」で 1 回ぶん切り出す。offset 省略時は先頭から、limit 省略時は全文。
+   *  ⚠ (#R790) `carry` の自動掲載と `attach.recall`（下の case）の取り寄せが**同じ窓**を使う——
+   *  切り方を 2 か所に持たない。ここでの `more` は「まだ続きがある」で、`carry` はそれを
+   *  記録の `truncated`（読者への表示用と同じ語）にそのまま渡す。 */
+  function page(rec, offset, limit) {
+    const full = String((rec && rec.text) || '');
+    const lim = Math.max(1, Math.floor(Number(limit) || 0) || full.length || 1);
+    const off = Math.max(0, Math.min(full.length, Math.floor(Number(offset) || 0)));
+    const text = full.slice(off, off + lim);
+    const next = off + text.length;
+    return { text: text, offset: off, next: next, total: full.length, more: next < full.length };
+  }
+
   /** 今のターンに載せるテキスト添付。今回の分が先、余った枠に以前の分を新しい順で入れる。
    *  ⚠ 枠はサーバと同じ `ATL_FILE.LIMITS`。ここで切るのは、切られたことを IntMap が知るため
-   *  （サーバが黙って落とすと、読者にもモデルにも何が欠けたか分からない）。 */
+   *  （サーバが黙って落とすと、読者にもモデルにも何が欠けたか分からない）。
+   *  ⚠⚠⚠ (#R790) 記録の `.text` はもう事前に切られていない（js/atlas-attach.js）ので、
+   *  ここが**唯一**このターンへ実際に送る分を決める場所になった——1 件ぶんは `page()` の先頭窓
+   *  （`L.textPerFile`）、その先は `attach.recall` に offset 付きで取りに来させる。 */
   function carry(turn, files, limits) {
     const L = limits || { files: 8, textTotal: 400000 };
-    const out = (files || []).filter((f) => f && f.kind === 'text').map((f) => ({ name: f.name, text: f.text, truncated: !!f.truncated }));
+    const per = L.textPerFile || 120000;
+    const bound = (f) => { const c = page(f, 0, per); return { name: f.name, text: c.text, truncated: c.more || !!f.truncated }; };
+    const out = (files || []).filter((f) => f && f.kind === 'text').map(bound);
     let used = out.reduce((n, f) => n + f.text.length, 0);
     const put = new Set(out.map((f) => String(f.name)));   /* (#R783) このターンに目の前へ置いた名前——declare がここを読む */
     for (const rec of earlier(turn)) {
       if (rec.kind !== 'text') continue;
       if (out.length >= L.files) break;
-      if (used + rec.text.length > L.textTotal) continue;
+      const b = bound(rec);
+      if (used + b.text.length > L.textTotal) continue;
       /* ⚠ いつ添付されたものかを名前が述べる。「今このメッセージに付いている」と
          「前に付けられた」を同じ顔で渡すと、モデルは読者が今見せたものだと思って答える。 */
-      out.push({ name: rec.name + EARLIER_TAG, text: rec.text, truncated: !!rec.truncated });
+      out.push({ name: rec.name + EARLIER_TAG, text: b.text, truncated: b.truncated });
       put.add(String(rec.name));
-      used += rec.text.length;
+      used += b.text.length;
     }
     carriedTurn = turn; carriedNames = put;
     return out;
@@ -144,5 +171,5 @@ export const ATTACH_LOG = (function () {
   /** 台帳に在るものの名前（読者向けの文と、道具の誤りの説明に使う）。 */
   function names(turn) { return earlier(turn + 1).map((r) => r.name); }
 
-  return { remember: remember, rewind: rewind, reset: reset, carry: carry, declare: declare, find: find, names: names, earlier: earlier };
+  return { remember: remember, rewind: rewind, reset: reset, carry: carry, declare: declare, find: find, names: names, earlier: earlier, page: page };
 })();

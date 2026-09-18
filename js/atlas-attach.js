@@ -509,11 +509,20 @@ export const ATL_FILE = (function () {
     for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     return btoa(s);
   }
+  /* ⚠⚠⚠ (#R790) THIS USED TO CUT `text` TO LIMITS.textPerFile RIGHT HERE, PERMANENTLY. That is the
+     defect a reader reported as "attach a long file and only the beginning gets read": the bytes
+     past the cut were never decoded into anything that survived past this function, so `attach.recall`
+     — built in #R773 to bring back what a turn did not send — could only ever hand back the same
+     already-truncated head, because the tail had already been thrown away here, before the ledger
+     ever saw it. The full text is now kept. What rides along a turn automatically is bounded LATER,
+     at send time (ATTACH_LOG.carry / .page in js/atlas-attach-log.js) — the same place images and
+     PDFs are already held back and recalled on demand, rather than at the one point that can never
+     be revisited. `truncated` keeps its old meaning for the viewer: "longer than what is sent by
+     default", not "the rest is gone". */
   function textDesc(name, size, t, from) {
-    let text = t.text, truncated = false;
-    if (text.length > LIMITS.textPerFile) { text = text.slice(0, LIMITS.textPerFile); truncated = true; }
+    const text = t.text;
     if (!text.trim()) return { kind: 'unsupported', name: name, size: size, why: 'empty' };
-    return { kind: 'text', name: name, size: size, text: text, truncated: truncated, encoding: t.encoding, from: from };
+    return { kind: 'text', name: name, size: size, text: text, truncated: text.length > LIMITS.textPerFile, encoding: t.encoding, from: from };
   }
 
   /* ── THE ONE QUESTION THE UI ASKS ────────────────────────────────────────────────────────── */
@@ -542,7 +551,14 @@ export const ATL_FILE = (function () {
     if (sig === 'ole') return { kind: 'unsupported', name: name, size: size, why: 'legacy-office' };
     if (sig === 'zip') {
       const z = zipOpen(buf);
-      const r = z ? await containerText(z, LIMITS.textPerFile) : null;
+      /* ⚠ (#R790) NOT LIMITS.textPerFile ANY MORE. `budget` here only stops the xlsx/generic-archive
+         branches of containerText() from decompressing forever (docx/pptx/odf/kmz ignore it and
+         already extract in full) — it is a memory ceiling on THIS read, not the per-turn send budget,
+         and conflating the two is what made a multi-sheet workbook's later sheets unreachable even
+         through attach.recall. Reused rather than invented: the same ceiling already bounds how many
+         raw bytes this function will read into memory at all (LIMITS.readBytes, above), so decompressed
+         text is capped at the same order of magnitude a legitimate document could ever need. */
+      const r = z ? await containerText(z, LIMITS.readBytes) : null;
       if (r && r.text) return textDesc(name, size, { text: r.text, encoding: 'utf-8' }, r.kind);
       return { kind: 'unsupported', name: name, size: size, why: z ? 'archive' : 'binary' };
     }
