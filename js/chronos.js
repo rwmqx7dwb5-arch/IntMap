@@ -1,3 +1,4 @@
+// @ts-check
 /* ============================================================================
  *  IntMap · CHRONOS — the spacetime kernel   (#R94, named and moved out #R289)
  * ----------------------------------------------------------------------------
@@ -120,7 +121,7 @@ window.IntMapTime=(function(){
   OS.iso=()=>ymdISO(_when||now());
   OS.year=()=>(_when||now()).getFullYear();
   OS.isLive=()=>_when==null;
-  try{ Object.defineProperty(OS,'min',{get:ymin,enumerable:true,configurable:true}); }catch(_){ OS.min=ymin(); }
+  try{ Object.defineProperty(OS,'min',{get:ymin,enumerable:true,configurable:true}); }catch(_){ /** @type {{min:number}} */ (OS).min=ymin(); }
   OS.state=()=>ev('query');
   OS.on=function(fn){ if(typeof fn==='function'){ subs.push(fn); return ()=>{ const i=subs.indexOf(fn); if(i>=0) subs.splice(i,1); }; } return ()=>{}; };
   OS.set=function(d,opts){ opts=opts||{};

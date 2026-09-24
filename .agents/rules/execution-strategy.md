@@ -58,7 +58,7 @@
 | 触った主題 | ゲート |
 |---|---|
 | 何であれ（構文・JSON/YAML・merge marker・秘密） | `npm run check:static` |
-| レンダラに触れるコード | `npm run check:engine` |
+| レンダラ・型に触れるコード | `npm run check:engine` `npm run check:types` |
 | 利用者に見える文字列 | `npm run check:i18n` |
 | 企業アトラス | `npm run check:companies` |
 | 文書 | `npm run check:docs` |
@@ -82,8 +82,7 @@
 | Atlas の能力表 | `npm run check:capabilities` |
 | Atlas の観測器の判定 | `npm run check:atlasrepeat` |
 | 共有窓口 | `npm run check:surface` |
-| 起動費用（**build が要る**） | `npm run check:perf` |
-| 配られる資産（**build が要る**） | `npm run check:assets` |
+| 起動費用・配られる資産（**build が要る**） | `npm run check:perf` `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |
 
 ⚠ 段 3 を作業の途中で何度も回さない（`AGENTS.md` §4）。⚠ 段を飛ばして push しない。

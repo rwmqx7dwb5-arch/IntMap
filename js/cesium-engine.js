@@ -1,3 +1,4 @@
+// @ts-check
 /* ============================================================================
  *  IntMap · THE SECOND ENGINE — CesiumJS behind the same contract  (#R180)
  * ----------------------------------------------------------------------------
@@ -1794,7 +1795,9 @@ window.IntMapCesiumEngine=(function(){
            frame of a gesture is announced once the flag is already down, and the whole
            movestart…moveend pair arrives again as an echo. Measured on a throttled
            machine at 3 Hz, that echo landed 330 ms after the glide finished. */
+        // @ts-expect-error — js/cesium-input.js writes _inputActive onto this view; the class never declares it, and a field would add an own property
         if(this._inputActive) return;
+        // @ts-expect-error — the same for _inputTouched (the last touch's timestamp), also written only by js/cesium-input.js
         if(this._inputTouched&&(Date.now()-this._inputTouched)<500) return;
         if(!moving){ moving=true; this.fire('movestart',{}); this.fire('dragstart',{}); }
         this.fire('move',{}); this.fire('zoom',{});
@@ -2641,7 +2644,7 @@ window.IntMapCesiumEngine=(function(){
      method, so engineFacade can bind either one and no call site can tell. Where
      Cesium genuinely cannot answer, the method says NO (returns false/null) —
      never a value that looks like a yes. */
-  const CESIUM_CAPS={ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
+  /** @type {import('../types/geo-engine').GeoEngineCapabilities} */ const CESIUM_CAPS={ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
     rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true,
     projection:true, extrusion3d:true, solid3d:false, orbit3d:true,
     /* (#R341) tens of thousands of oriented, self-animating glyphs from buffers the caller already
@@ -2661,7 +2664,7 @@ window.IntMapCesiumEngine=(function(){
        discovered as a missing layer (#R162) */
     styleGaps:()=>{ try{ return window.IntMapStyle.gaps(); }catch(_){ return []; } } };
 
-  function makeCesiumAdapter(_m,ViewClass){
+  /** @returns {import('../types/geo-engine').CesiumAdapter} */ function makeCesiumAdapter(_m,ViewClass){
     const V=()=>_m();
     const num=(v,d)=>isFinite(v)?v:d;
     let _decl=null, _lastBranch='n/a';

@@ -1,3 +1,4 @@
+// @ts-check
 /* ============================================================================
  *  IntMap · LOAD-ON-DEMAND MODULES — window.IntMapLazy  (#R209)
  * ----------------------------------------------------------------------------
@@ -120,7 +121,7 @@ export const LAZY_REGISTRY = Object.freeze({
 export const LAZY_NAMES = Object.freeze(Object.keys(LAZY_REGISTRY).filter((n) => !LAZY_REGISTRY[n].self));
 export const CARRIED_NAMES = Object.freeze(['aircraftPoints']);
 
-export function makeLazyModules(HOST) {
+/** @param {import('../types/im-host').IMHost} HOST */ export function makeLazyModules(HOST) {
   return (function () {
     /* ⚠ THE ALIAS IS DELIBERATE AND IT IS NOT COSMETIC. The mount calls below are byte-identical to
        the ones js/app-body.js used to make, down to the host's name, and three suites (#R163 #1,

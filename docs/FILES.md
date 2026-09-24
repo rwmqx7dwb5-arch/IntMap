@@ -42,6 +42,15 @@ google….html                    Google Search Console 認証用
 package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
 .nvmrc                          Node のバージョン（CI・ローカル共通）
 vite.config.js                  ビルド設定（チャンク分割・静的アセットのコピー・prebuild フック）
+tsconfig.json                   `npm run check:types`（tsc --noEmit）の設定。checkJs は off で、
+                                `// @ts-check` を持つ js/ ファイルだけが検査される（一覧は持たない）
+types/geo-engine.d.ts           地図エンジンの契約の型: 両アダプタ共通のメンバー・片方だけのメンバー・
+                                8 名前空間のファサード・能力表。js/geo-engine.js と js/cesium-engine.js が
+                                これで注釈され、片方にだけ足したメソッドは型エラーになる
+types/chronos.d.ts              window.IntMapTime（js/chronos.js）の公開形
+types/globals.d.ts              検査対象が読む window の名前（js/src が公開するもの／それ以外が公開するもの
+                                の 2 区分。前者は tests/global-surface-baseline.json に在ること）
+types/im-host.d.ts              IM_HOST の宣言済み部分（名前と書き込み可否が check:surface の基準と一致すること）
 playwright.config.js            hermetic なブラウザ試験（webServer=scripts/serve.mjs）
 playwright.prod.config.js       実 URL に対する本番スモーク（webServer 無し・retry 3）
 AGENTS.md                       毎セッション自動で読む恒久指示（作業の進め方・ワークフロー・確認要件・
@@ -1353,6 +1362,9 @@ scripts/
                                   async chunk と dist の合計は**天井だけ**（縮むのは自由）。
                                   ⚠ `requests` と `modules` は**バイトではなく個数**なので完全一致で見る。
                                   基準は `tests/perf-baseline.json`（追跡対象）。`--update` で更新。
+  typecheck.mjs                   **型検査のゲート**（`npm run check:types`）。同梱の typescript で
+                                  `tsc --noEmit -p tsconfig.json` を走らせ、その終了コードを返す。typescript が
+                                  入っていなければ「`npm install` が要る」と言って落ちる（退行と区別するため）
   global-surface.mjs              **共有窓口の広さのゲート**（`npm run check:surface`）。`IM_HOST` の項目と
                                   `js/`・`src/` が `window.*` に代入する公開名を**名前で**
                                   `tests/global-surface-baseline.json` と両方向に照合する。行数の天井の代わり。

@@ -200,6 +200,51 @@ npm run preview          # serve an existing dist/ without rebuilding it
 Use `npm run dev` while editing and `npm run serve` when you want to see exactly what ships.
 `file://` is still unsupported, and now doubly so: the entry is an ES module.
 
+### Gating: the renderer contract, typed — `npm run check:types` (typecheck-gate)
+
+**What it closes.** The two adapters behind `window.IntMapGeoEngine` — `makeMapLibreAdapter` in
+js/geo-engine.js and `makeCesiumAdapter` in js/cesium-engine.js — were held together by a sentence in
+Architecture.md §1.2 (「アダプタにだけ足したメソッドは静かに落ちる」) and by AST checks that compare the
+capability *tables*, never the method *sets*. Measured when the gate was written: the adapters returned
+156 and 142 members, 15 on the MapLibre side only and 1 on the Cesium side only, and nothing in the
+repository said which.
+
+**What it runs.** `node scripts/typecheck.mjs` → `tsc --noEmit -p tsconfig.json` (TypeScript pinned in
+`devDependencies`; a file rather than a bare `tsc` because `scripts/ci-gates.mjs` refuses a gate that
+does not point at `scripts/*.mjs`, and so that a missing install says so instead of looking like a regression). The contract
+is declared in `types/geo-engine.d.ts`; both adapter factories are annotated `@returns` with it, the
+facade with `GeoEngineFacade`, and the three capability tables with `GeoEngineCapabilities`. So:
+
+| change | result |
+|---|---|
+| a method added to one adapter and not declared | excess property (TS2353) |
+| a member declared required and missing from one adapter | missing property (TS2322 / TS2741), naming the adapter that lacks it |
+| the facade calling an adapter method the contract lacks | TS2339 |
+| a capability key in one table and not the type | excess / missing property |
+
+A member only one engine has is declared in `MapLibreOnly` / `CesiumOnly`, so it is optional on the
+type the facade sees; the facade feature-tests it (`A().x ? A().x() : fallback`).
+
+**Who is checked.** `checkJs` is off. A js/ file is in the population when it carries `// @ts-check`
+among its leading comments — no list anywhere else. `include` covers all of js/ only so that imports
+resolve and types flow; an unchecked file reports nothing. The first population is where the contract
+lives: js/geo-engine.js, js/cesium-engine.js, js/runtime.js, js/lazy-modules.js, js/chronos.js
+(`window.IntMapTime` is typed by `types/chronos.d.ts`). `strict` is off (DECISIONS.md «型検査は段階的に»).
+The globals a checked file reads are declared in `types/globals.d.ts`, and the part of `IM_HOST` it
+reads in `types/im-host.d.ts`; neither may name what `check:surface`'s register does not
+(`tests/typecheck-gate-checks.test.mjs`).
+
+**Its regression test runs the compiler.** `tests/typecheck-gate-checks.test.mjs` copies js/ and
+types/ to a temporary directory, confirms the copy passes, then applies one mutation at a time — a
+method on the MapLibre adapter only, on the Cesium adapter only, a required member one adapter lacks,
+a facade call the contract lacks, and `// @ts-check` added to an unlisted probe file — and asserts that
+each one fails with a diagnostic in the file it should (about 10 s: six compiler runs).
+
+⚠ **Not caught yet:** the facade calling an OPTIONAL member without the feature test. That needs
+`strictNullChecks`, which on the current population reports 309 errors: 192 `possibly null` (TS18047,
+142 of them `Cesium`, which is `null` until boot) and 16 on the facade's own guards (TS2722 — a guard
+on `A().x` does not narrow the second call `A().x()`). Turning it on is a separate change.
+
 ### Gating: the global surface — `npm run check:surface` (#R795)
 
 **What it replaced.** From #R168 to #R795 `tests/r168-checks` #8 held `lines < N` over the app shell

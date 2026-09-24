@@ -190,6 +190,19 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   誤検知せず、ローカル変数 `map` も依存とみなさない）。
   ⚠ 契約に無い関数名をアダプタにだけ足すと「2つ目以降」が静かに落ちる——**アダプタに足したメソッドは
   必ず契約側にも出すこと**。
+- **契約は型として宣言され、コンパイラが両エンジンに対して検査する**（`npm run check:types` ＝
+  `tsc --noEmit`）。`types/geo-engine.d.ts` が、両アダプタが持つ**共通メンバー**（`GeoEngineAdapterCore`）、
+  片方だけが持つメンバー（`MapLibreOnly` / `CesiumOnly`。ファサードから見ると任意で、ファサードは
+  `A().x ? A().x() : 既定値` で確かめて呼ぶ）、8 名前空間のファサード（`GeoEngineFacade`）、能力表
+  （`GeoEngineCapabilities`）を宣言する。`makeMapLibreAdapter` / `makeCesiumAdapter` / `engineFacade` と
+  3 つの能力表はそれぞれの型で注釈されているので、**片方のアダプタにだけ足したメソッド**・**一方に
+  欠けた必須メンバー**・**契約に無いメソッドを呼ぶファサード**はどれも型エラーになる。
+  検査の母集合は `// @ts-check` を持つファイル（いまは `js/geo-engine.js`・`js/cesium-engine.js`・
+  `js/runtime.js`・`js/lazy-modules.js`・`js/chronos.js`）で、`tsconfig.json` に一覧は無い。
+  `window.IntMapTime` は `types/chronos.d.ts`、検査対象が読む window の名前は `types/globals.d.ts`、
+  `IM_HOST` のうち宣言済みの部分は `types/im-host.d.ts`（どちらも `check:surface` の基準と矛盾しない
+  ことを検査が確かめる）。⚠ 任意メンバーを確かめずに呼ぶ誤りは、`strictNullChecks` が要るので
+  まだ捕まらない（`docs/TESTING.md`）。
 - **アダプタはビューごとのファクトリ**（`makeMapLibreAdapter`。状態もビューごと）で、
   追加ビュー（`js/compare.js` の比較地図・`js/playground.js`・`js/flight-sim.js` のミニマップ）は
   `ui.createSubView` が返す同じ形を使う。マーカー／ポップアップは**ビューに**付く
@@ -4628,7 +4641,8 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 - `applyTheme()` / `_reassertBase()` / `styledata` の自己修復まわり。
 - 投影・3D・compare の同期。Isolate のマスク順序。
 - ai-proxy / refresh-news の鍵・上限・再利用ロジック。
-- `js/geo-engine.js` の契約（アダプタにだけメソッドを足さない）。
+- `js/geo-engine.js` の契約（アダプタにだけメソッドを足さない。足すなら `types/geo-engine.d.ts` にも
+  宣言する——`npm run check:types` が両エンジンを突き合わせる）。
 
 ---
 

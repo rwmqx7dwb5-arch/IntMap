@@ -45,6 +45,7 @@ developer_instructions = '''
 | `npm run check:capabilities` | Atlas の能力表と実装の一致 |
 | `npm run check:atlasrepeat` | 観測器が「失敗していないこと」を失敗と報告しないか（繰り返しの原因） |
 | `npm run check:surface` | 共有窓口の広さ——`IM_HOST` の項目と `window.*` の公開名を**名前で**基準（`tests/global-surface-baseline.json`）と両方向に照合する。増えたら「新しい結合」、減ったら「基準が古い」。行数の天井（`tests/r168` #8 と 10 か所の写し）の代わり |
+| `npm run check:types` | `tsc --noEmit`。`// @ts-check` を持つ js/ ファイルを型検査する。地図エンジンの契約（`types/geo-engine.d.ts`）を MapLibre と Cesium の**両**アダプタが満たすか——片方にだけ足したメソッド・一方に欠けた必須メンバー・契約に無いメソッドを呼ぶファサードが赤。⚠ 「typescript is not installed」は `npm install` の不足であって退行ではない |
 | `npm run check:testbudget` | 試験時間の天井（下がるだけの数） |
 | `npm test` | source 半分と browser 半分が並列に走る |
 

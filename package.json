@@ -72,6 +72,8 @@
     "check:atlasrepeat": "node scripts/atlas-repeat.mjs",
     "//check:surface": "(#R795) THE GLOBAL SURFACE. tests/r168 #8 and twenty copies held a LINE ceiling over the app shell from #R168 to #R795, and what it produced was folded import lines and a note every round saying the shell was at N−1 — a count of lines cannot tell a feature that moved out from a line joined to its neighbour. This measures what that ceiling was for: how much of the program reaches through one shared object. Two registers, as NAMES rather than counts — the members of IM_HOST (js/app-body.js) and every window.* a js/ or src/ file assigns — ratcheted both ways against tests/global-surface-baseline.json like check:perf: a new name must be named in DEV-NOTES and accepted with --update, and a name that is gone must be recorded the same way so the baseline keeps asserting what it says. Offline, under a second.",
     "check:surface": "node scripts/global-surface.mjs --check",
+    "//check:types": "(typecheck-gate) THE RENDERER SEAM, CHECKED BY A COMPILER. types/geo-engine.d.ts declares the contract both adapters (js/geo-engine.js and js/cesium-engine.js) return; a method added to one adapter only, or a required one missing from either, is a type error rather than a sentence in Architecture.md §1.2. The population is every js/ file that carries `// @ts-check` at the top (tsconfig.json: checkJs off, include js/**) — there is no second list. typescript is pinned exactly because a compiler minor can add diagnostics.",
+    "check:types": "node scripts/typecheck.mjs",
     "audit:capabilities": "node scripts/atlas-capability-audit.mjs --json",
     "//master": "(#R282) the master copy is the OneDrive working directory (AGENTS.md §6), and until this existed no step in the workflow was responsible for it: a round could merge, deploy and back up to USB while OneDrive stayed fifteen commits behind. `master:sync` is the last step of every task; `master:check` is the gate the USB mirror runs first. NOT in `npm test` — on a CI runner the checkout is a detached PR ref and 'behind origin/main' is the correct state there. What CI can prove about the rule is in tests/r282-checks.test.mjs.",
     "//setup:codex": "(#R704) the machine-local half of «Codex と同じ使用感». The repository half — AGENTS.md plus .agents/ rendered into .claude/ and .codex/ — is gated by check:agents; ~/.codex/config.toml is OUTSIDE the repository and holds the four facts that gate cannot reach. MEASURED #R704: [hooks.state] was EMPTY, i.e. the SessionStart hook this repo ships had never run in Codex at all, so no Codex session ever received the branch/round line or the one memory store #R696 built; model_reasoning_effort was low; neither approval_policy nor sandbox_mode was set; and the memory store and every round worktree sit outside any workspace, so workspace-write could not write them until they were named. Deliberately NOT a check:* gate: it measures THIS machine and a CI runner has no ~/.codex — what CI can prove about it is in tests/r704-codex-parity-seamless-checks.test.mjs.",
@@ -111,6 +113,7 @@
     "opencc-js": "^1.4.1",
     "opentype.js": "^2.0.0",
     "pdfjs-dist": "4.10.38",
+    "typescript": "7.0.2",
     "vite": "6.4.3",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
