@@ -118,6 +118,12 @@ export function makeRuntime(HOST) {
       _stats.frames++; _stats.lastMs = dt; if (dt > _stats.maxMs) _stats.maxMs = dt;
     }
 
+    function _unownedLive() {
+      let n = 0;
+      for (const m of [READ, WRITE, ONCE, IDLE, TIMERS]) for (const e of m.values()) if (!e.cap) n++;
+      return n;
+    }
+
     function _now() { try { return performance.now(); } catch (_) { return Date.now(); } }
 
     function _oops(key, err) {
@@ -510,7 +516,10 @@ export function makeRuntime(HOST) {
       /* what the instrument reads — js/perf-hud.js and tests/r234. Counts, not opinions. */
       stats: () => ({
         reads: READ.size, writes: WRITE.size, camera: CAM.size, timers: TIMERS.size,
-        capabilities: CAPS.size, suspended: SUSPENDED.size, unowned: _own.unowned,
+        capabilities: CAPS.size, suspended: SUSPENDED.size,
+        /* LIVE registrations with no owner (production measured the first version as a cumulative counter that
+           grew by one per satellite toggle and never came down — a number that only rises cannot be driven to zero) */
+        unowned: _unownedLive(), unownedEver: _own.unowned,
         frames: _stats.frames, tasks: _stats.tasks, lastMs: _stats.lastMs, maxMs: _stats.maxMs,
       }),
     };
