@@ -1,4 +1,4 @@
-/* R799 — what 46 questions put to the production Atlas measured, written as the defects themselves.
+/* R801 — what 46 questions put to the production Atlas measured, written as the defects themselves.
  *
  * Every assertion below names a thing a reader SAW on https://rwmqx7dwb5-arch.github.io/IntMap/
  * (build 2026-09-18-R783, signed in) and not the shape of the repair, because a check written as the
@@ -29,7 +29,7 @@ const top = (q) => CAPS.search(q, { want: 3, min: 1 }).ranked.map((r) => r.id);
    「東京の今日の天気と、今後3日間の予報を教えて。」 — data.weather never called; the reader was told the
    numbers could not be obtained, with the temperature layer painted on the map behind that sentence.
    IntMap authors in English AND Japanese (CONSTITUTION.md §7): a door only English opens is shut. */
-test('R799 ① a request in Japanese reaches the same capability the English one reaches', () => {
+test('R801 ① a request in Japanese reaches the same capability the English one reaches', () => {
   for (const [ja, en, id] of [
     ['東京から大阪までの鉄道ルート', 'plan a rail route from Tokyo to Osaka', 'routing.route'],
     ['天気予報', 'weather forecast', 'data.weather'],
@@ -47,7 +47,7 @@ test('R799 ① a request in Japanese reaches the same capability the English one
    ids in alphabetical order — and «nuclear power plants …» answered the first eight «map.*».
    That is worse than answering nothing: Atlas believed them, rephrased, and spent the whole turn.
    A capability is a match because something in the request MATCHED IT, never because of where it sits. */
-test('R799 ② a match is evidence about that capability, not its place in the registry', () => {
+test('R801 ② a match is evidence about that capability, not its place in the registry', () => {
   const runs = {};
   for (const id of CAPS.all().map((c) => c.id)) { const p = id.split('.')[0]; (runs[p] = runs[p] || []).push(id); }
   for (const p of Object.keys(runs)) runs[p].sort();
@@ -65,7 +65,7 @@ test('R799 ② a match is evidence about that capability, not its place in the r
 });
 
 /* ══ ③ A THANK-YOU IS STILL NOT A SPATIAL QUERY (#R745's measurement, kept) ═══════════════════════ */
-test('R799 ③ a request that names nothing IntMap has still matches nothing', () => {
+test('R801 ③ a request that names nothing IntMap has still matches nothing', () => {
   assert.deepEqual(top('ありがとう'), [], 'ありがとう → ' + top('ありがとう').join(', '));
 });
 
@@ -76,7 +76,7 @@ test('R799 ③ a request that names nothing IntMap has still matches nothing', (
    for «Draw the 200 nautical mile EEZ around Iceland» (6 m 51 s). The cause is that the pin surface had
    no painter's declaration (#R742's third rung), so the verdict fell to a CARDINAL — and a redraw of
    the same pins moves no count. The surface must be one the reading holds and the painter can name. */
-test('R799 ④ the markers are a surface the painter declares and the reading holds', () => {
+test('R801 ④ the markers are a surface the painter declares and the reading holds', () => {
   const era = codeOnly(readLF(join(ROOT, 'js/atlas-era-highlight.js')));
   assert.match(era, /PAINTED_IDS\s*=\s*\{[\s\S]{0,900}?\bpoi\s*:/, 'the reading holds a «poi» surface');
   assert.match(CONSOLE_SRC, /_ERA\.paintState\(\{[^}]*\bpoi\s*:\s*\(\)\s*=>\s*_pois/, 'the console supplies the markers to that reading');
@@ -89,7 +89,7 @@ test('R799 ④ the markers are a surface the painter declares and the reading ho
    Pacific」 and 「to simplify U.⏎⏎S. Antarctic Program flights」 — the reflow put a paragraph break inside
    «No. 25» and inside «U.S.». ⚠ AND THE GENUINE BOUNDARIES MUST STILL SPLIT: a repair that joins
    «…the Red Sea. The Nile…» has replaced one defect with another. */
-test('R799 ⑤ the reflow keeps an abbreviation whole and still splits real sentences', () => {
+test('R801 ⑤ the reflow keeps an abbreviation whole and still splits real sentences', () => {
   const src = codeOnly(readLF(join(ROOT, 'js/atlas-reply.js')));
   const line = src.split('\n').find((l) => l.indexOf('const _ATL_ATOM=') >= 0);
   assert.ok(line, 'the held atoms are one declaration');
@@ -111,7 +111,7 @@ test('R799 ⑤ the reflow keeps an abbreviation whole and still splits real sent
    data.layerValues {place:'Korean Peninsula'} and {place:'Amazon Basin'} answered
    「◈ map center — BWh · Hot desert」: a reading of wherever the reader happened to be looking, handed
    back as an answer about the place they named. */
-test('R799 ⑥ a named place that did not resolve is not answered about the map centre', () => {
+test('R801 ⑥ a named place that did not resolve is not answered about the map centre', () => {
   const i = CONSOLE_SRC.indexOf("case 'layerData':");
   assert.ok(i > 0, 'the layer reading is one case');
   const body = CONSOLE_SRC.slice(i, i + 4000);
@@ -126,7 +126,7 @@ test('R799 ⑥ a named place that did not resolve is not answered about the map 
    Five consecutive turns opened by clearing 「the previous Syria highlight」, each spending an operation
    on a map that held nothing, because the state kept naming a highlight clearHl() had already emptied.
    The name is forgotten where the set is emptied, so every clearing path gets it. */
-test('R799 ⑦ emptying the highlight forgets what it was called', () => {
+test('R801 ⑦ emptying the highlight forgets what it was called', () => {
   const fn = liftFunction(CONSOLE_SRC, 'clearHl');
   assert.match(fn, /_hl\s*=\s*new Set\(\)/, 'clearHl empties the set');
   assert.match(fn, /_wctx\.highlight\s*=\s*null/, 'and forgets the name the state reports from');
@@ -138,7 +138,7 @@ test('R799 ⑦ emptying the highlight forgets what it was called', () => {
    me which of them are NOT in the top 10 by total GDP» drew both tables and the choropleth, and all the
    prose the reader received was «I'm comparing the two rankings now.» The closing call existed but was
    reachable only when NOTHING had been said, and a first-step narration is something. */
-test('R799 ⑧ a turn that ran out still gets the step that writes the answer', () => {
+test('R801 ⑧ a turn that ran out still gets the step that writes the answer', () => {
   const cutLine = AGENT_SRC.split('\n').find((l) => /CUT_STOPS\s*=/.test(l));
   assert.ok(cutLine, 'the stops that cut a turn short are named in one place');
   const CUT = new Function('return ' + cutLine.replace(/^[^=]*=/, '').replace(/;\s*$/, ''))();

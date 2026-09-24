@@ -3834,8 +3834,8 @@ disconnect／close を持つもの、または関数）で**登録したもの�
 返す。`alive()` はその scope が今の世代のものか、`guard(fn)` は release 後に届いた結果を捨てる
 継続。scope 経由の登録は所有者名のタグと `name:` 接頭辞の鍵を自動で持つ（実測: `capability:` を
 手で渡していた登録は js/ に 0 件——手で付ける札は付いていない札）。`RT.scope(name)` /
-`RT.scope(name,'active')` で動詞の外からも取れる。`stats().unowned` は**所有者の無い登録の数**で、
-0 に向けて減らす計器。⚠ **DEM／Köppen／凡例／Playground が各自で手書きしている「古い完了を拒む」は、
+`RT.scope(name,'active')` で動詞の外からも取れる。`stats().unowned` は**いま生きている所有者の無い登録の数**で、
+0 に向けて減らす計器（累積は `unownedEver`。本番実測で累積しか無かった版は衛星のトグルごとに 1 増え続けた）。⚠ **DEM／Köppen／凡例／Playground が各自で手書きしている「古い完了を拒む」は、
 この機構の 4 つの写しである**——新しく書くときはこちらを使う。
 
 状態は `defined` → `loading` → `loaded` / `failed` → `active`、そして `disposed`。

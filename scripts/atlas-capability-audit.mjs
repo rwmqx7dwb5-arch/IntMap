@@ -67,8 +67,8 @@ export function dispatchGroups(src) {
   return out;
 }
 
-/* ⚠ (#R799) THE CAPABILITIES WHOSE CATALOGUE ENTRY STILL SAYS NOTHING ABOUT THEM — check ㉓'s floor.
-   OBSERVATION: measured 2026-09-18 by ㉓ itself against js/atlas-catalog-text.js, after #R799 filled
+/* ⚠ (#R801) THE CAPABILITIES WHOSE CATALOGUE ENTRY STILL SAYS NOTHING ABOUT THEM — check ㉓'s floor.
+   OBSERVATION: measured 2026-09-18 by ㉓ itself against js/atlas-catalog-text.js, after #R801 filled
    the weather, facility, radiation and locate entries: 62 of the 143 documented capabilities carry no
    word of their own subject in English, in Japanese, or in either. EXPIRES ENTRY BY ENTRY: the moment
    one describes itself, ㉓ says so by name and the line is deleted — the list may only shrink, and a
@@ -507,7 +507,7 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
       `${n} capabilities require a target`);
   }
 
-  /* ㉓ (#R799) A CAPABILITY IS FINDABLE BY THE WORDS OF ITS OWN SUBJECT, IN ENGLISH AND IN JAPANESE.
+  /* ㉓ (#R801) A CAPABILITY IS FINDABLE BY THE WORDS OF ITS OWN SUBJECT, IN ENGLISH AND IN JAPANESE.
         ⑤ asks whether SOME block names a capability at all. It said yes about `data.weather`, whose
         entire entry in the catalogue was `{"type":"weather","place":str};` — the call syntax and not
         one word about weather. MEASURED on production (2026-09-18, build R783): the whole catalogue
@@ -533,7 +533,7 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
         either — that ceiling is the registry's, and a capability whose only vocabulary is 「表示」 is
         as unfindable as one with no vocabulary at all.
 
-        ⚠ THE LEDGER BELOW IS A FLOOR, NOT AN ALLOWANCE. Observation: on 2026-09-18, with #R799's
+        ⚠ THE LEDGER BELOW IS A FLOOR, NOT AN ALLOWANCE. Observation: on 2026-09-18, with #R801's
         fills in place, 143 capabilities carry a catalogue block and SIXTY of them still say nothing
         about themselves in one of the two languages IntMap writes (CONSTITUTION.md §7). Naming them
         one by one rather than counting them is what stops a filled hole from hiding a new one. It

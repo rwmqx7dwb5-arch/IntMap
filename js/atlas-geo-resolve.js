@@ -75,7 +75,7 @@ makeAtlasGeoResolve.looksLikeCountryIdentifier = function looksLikeCountryIdenti
 };
 
 
-/* ══ ⚠⚠⚠ (#R799) THREE DOORS ASK 「IS THIS WHAT WAS ASKED FOR?」 AND ONLY THIS ONE KNEW HOW ═══════
+/* ══ ⚠⚠⚠ (#R801) THREE DOORS ASK 「IS THIS WHAT WAS ASKED FOR?」 AND ONLY THIS ONE KNEW HOW ═══════
    Measured on the deployed build (2026-09-18, build R783), through the calls the product actually
    makes. `IntMapRouteGeocode.suggest('Sahara')` answered **New York** — not a resemblance, a row
    whose name shares no letter with the query: free-text Nominatim drops the terms it cannot match,
@@ -173,7 +173,7 @@ makeAtlasGeoResolve.placeRules = (function(){
       if(/^(amenity|shop|tourism|leisure|office|building|man_made|highway|railway|historic|craft|healthcare|barrier|power|aeroway)$/.test(c)) return -0.6;
       if(/^(country|state|region|province|county|city|town|district|municipality|island|continent|borough|department)$/.test(at)) return 0.3;
       if(c==='place'||c==='boundary'||c==='natural') return 0.22; return 0; }
-    /* ⚠⚠⚠ (#R799) A STREET NAMED AFTER A REGION IS NOT THE REGION, AND THE TILT ABOVE LOSES WHEN IT IS
+    /* ⚠⚠⚠ (#R801) A STREET NAMED AFTER A REGION IS NOT THE REGION, AND THE TILT ABOVE LOSES WHEN IT IS
        THE ONLY ENTRANT. `_classBonus` subtracts 0.6 from the classes that are things you stand in front
        of (a shop, a building, a road…). That is a RANKING tilt, and measured on 2026-09-18
        `geocode('Amazon Basin')` returned **Amazon Basin Bend, Lutz, Florida** — a residential street —
@@ -252,7 +252,7 @@ try{ window.IntMapPlaceRules = makeAtlasGeoResolve.placeRules; }catch(_){}
 
 export function makeAtlasGeoResolve(HOST, CTX) {
   const GE=CTX.GE, L=CTX.L, cName=CTX.cName, countryStats=CTX.countryStats, esc=CTX.esc, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup;
-    /* (#R799) the module-level rules above, under their ORIGINAL names, so every line of the body
+    /* (#R801) the module-level rules above, under their ORIGINAL names, so every line of the body
        below is the line that was there before they moved out of this closure. Six names, which is
        exactly the set this factory reads: two the two resolvers ask, one the region resolver and
        `placeExtent` ask, and three js/atlas-console.js takes back out of the returned surface. */
@@ -322,7 +322,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       let best=null,bs=-Infinity;
       for(const o of j){ if(!o||!isFinite(+o.lat)||!isFinite(+o.lon)) continue;
         const ag=_rankableFor(core,o); if(!ag) continue;   /* the honest miss lives here (#R737: agreement AND the gazetteer's own floor) */
-        if(!_namesakeOk(core,o)) continue;   /* (#R799) …and a doorway only answers to its own whole name */
+        if(!_namesakeOk(core,o)) continue;   /* (#R801) …and a doorway only answers to its own whole name */
         const sc=(+o.importance||0)+_classBonus(o)+0.5*ag; if(sc>bs){ bs=sc; best=o; } }
       return best; }
     async function geocode(place){ place=String(place||'').trim();
@@ -336,7 +336,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
          place ATLAS last touched and is no more the reader than the map centre is. */
       if(SELFLOC_RE.test(place)){ const sl=await _selfLoc(); return sl?_setLast({lng:sl.lng,lat:sl.lat,name:sl.name}):null; }
       { const c=_coordPlace(place); if(c) return _setLast(c); }
-      /* ⚠⚠⚠ (#R799) THE STORE THAT ANSWERS THIS CORRECTLY IS FORTY LINES AWAY AND WAS NEVER ASKED.
+      /* ⚠⚠⚠ (#R801) THE STORE THAT ANSWERS THIS CORRECTLY IS FORTY LINES AWAY AND WAS NEVER ASKED.
          `placeExtent` opens with exactly this line and has since #R53; `geocode` — the door 39 dispatch
          cases call, and the one `layerData` resolves a place with — went straight to free-text
          Nominatim. Measured on the deployed build 2026-09-18: 「the Alps」 came back as a landuse
@@ -489,7 +489,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
            ⚠ AND IT STANDS DOWN WHEN SOMETHING ELSE VOUCHES. With a web-verified `anchor` the location has
            independent evidence, so the spelling is no longer the only thing that can speak — the same
            condition the honest-miss guard below already uses. */
-        if(!anchor){ const _core=_queryCore(place); const _agree=j.filter(x=>_rankableFor(_core,x)>0&&_namesakeOk(_core,x));   /* (#R799) the same two clauses this file's other resolver applies — one rule, both doors */
+        if(!anchor){ const _core=_queryCore(place); const _agree=j.filter(x=>_rankableFor(_core,x)>0&&_namesakeOk(_core,x));   /* (#R801) the same two clauses this file's other resolver applies — one rule, both doors */
           if(!_agree.length) return null;   /* nothing here is called what was asked for → an honest miss, never a stranger */
           j=_agree; }
         const _q=String(place).trim().toLowerCase();

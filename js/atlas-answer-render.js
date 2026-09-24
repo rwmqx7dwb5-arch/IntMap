@@ -41,7 +41,7 @@ export function makeAtlasAnswerRender() {
   }
   function hostOf(u) { try { return new URL(String(u)).hostname.replace(/^www\./, ''); } catch (_) { return ''; } }
 
-  /* ── (#R799) A HEADING IS A FIELD, AND A FIELD IS ITS OWN ONLY SOURCE OF TRUTH ─────────────────
+  /* ── (#R801) A HEADING IS A FIELD, AND A FIELD IS ITS OWN ONLY SOURCE OF TRUTH ─────────────────
      Observed in production (build 2026-09-18-R783, 「南極大陸の1人あたりGDP」): every heading of the
      answer was drawn TWICE — 「条約上の位置 / 条約上の位置」, in all three sections — because the
      section's heading reached the reader by two routes at once. `section.heading` is a field of the
@@ -88,7 +88,7 @@ export function makeAtlasAnswerRender() {
     return lines.join('\n');
   }
 
-  /* ⚠ (#R799) EMPHASIS OVER THE WHOLE OF A FIELD EMPHASISES NOTHING, AND IS READ AS A HEADING.
+  /* ⚠ (#R801) EMPHASIS OVER THE WHOLE OF A FIELD EMPHASISES NOTHING, AND IS READ AS A HEADING.
      Same production answer: the direct answer — a 50-character declarative sentence — was drawn as
      `<h4 class="atl-h atl-h4 atl-hb">`. `atl-hb` is only reachable through js/atlas-markdown.js's
      RE_LEAD, which reads a line that is nothing but a bold run as an author-written section lead;

@@ -1507,7 +1507,7 @@ export function makeAtlasCapabilities(HOST) {
       });
       return _docNorm;
     }
-    /* ══ (#R799) A BLOCK IS NOT A CAPABILITY ═════════════════════════════════════════════════════
+    /* ══ (#R801) A BLOCK IS NOT A CAPABILITY ═════════════════════════════════════════════════════
        js/atlas-catalog-text.js documents the 145 capabilities in 60 SHARED blocks, and the biggest of
        them documents THIRTY-THREE at once — data.weather, map.pin, routing.route, layers.aircraftTrack
        and twenty-nine others. Two things follow, and both were wrong here.
@@ -1748,7 +1748,7 @@ export function makeAtlasCapabilities(HOST) {
     })();
     API.VERB_HINTS = VERB_HINTS;
 
-    /* ⚠⚠⚠ (#R799) THE RULE #R727 ③ GAVE THE DOCUMENTATION, GIVEN ALSO TO THE ALIASES. `hasTerm` above
+    /* ⚠⚠⚠ (#R801) THE RULE #R727 ③ GAVE THE DOCUMENTATION, GIVEN ALSO TO THE ALIASES. `hasTerm` above
        knows that «iss» is not inside «missile» — and the alias match forty lines below it was a bare
        `indexOf`, so «ratio» was inside «duration». MEASURED on the production request «plan a rail
        route from Tokyo to Osaka with duration and distance»: data.ratio scored 65 (40 for its alias
@@ -1765,7 +1765,7 @@ export function makeAtlasCapabilities(HOST) {
       var re = _spellRe[na] || (_spellRe[na] = new RegExp('(^|[^a-z0-9])' + na.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       return re.test(nq);
     }
-    /* ⚠⚠⚠ (#R799) A CATEGORY HINT CANNOT TELL TWO CAPABILITIES APART, SO IT MUST NOT DECIDE WHICH OF
+    /* ⚠⚠⚠ (#R801) A CATEGORY HINT CANNOT TELL TWO CAPABILITIES APART, SO IT MUST NOT DECIDE WHICH OF
        THEM COMES FIRST. Every row of VERB_TERMS is keyed by CATEGORY, so a hit awards the same +8 to
        every capability in that category: 「経路」 gives routing.route and navigation.voice eight points
        each, and eleven routing capabilities came back on EXACTLY EIGHT — at which point the tie-break
@@ -1800,7 +1800,7 @@ export function makeAtlasCapabilities(HOST) {
          → matches: [], and Atlas, told IntMap had no such control, went researching a position the
          satellite layer was propagating. Each distinct term of the request that the block carries
          adds a little; the cap keeps a long block from outranking an exact alias. It is SELF evidence
-         because #R799 made it evidence about this capability rather than about the thirty others its
+         because #R801 made it evidence about this capability rather than about the thirty others its
          block also documents. */
       self += docTermScore(cap, nq);
       if (ctx) {
@@ -1817,7 +1817,7 @@ export function makeAtlasCapabilities(HOST) {
     /* search(q, opts) — the ranking. `opts.min` is the score below which a capability is not
        CONFIDENTLY relevant; when too few clear that bar the caller widens, and the widest setting
        is the whole registry. Nothing is ever dropped for being 141st in the DOM.
-       ⚠ (#R799) `self` IS THE FIRST KEY AND THE ALPHABET IS THE LAST.
+       ⚠ (#R801) `self` IS THE FIRST KEY AND THE ALPHABET IS THE LAST.
        ⚠⚠⚠ AND A CATEGORY HINT STOPS NAMING ITS WHOLE CATEGORY THE MOMENT SOMETHING IN THAT CATEGORY IS
        NAMED. This is the second half of the production failure, and it was worse than an empty answer.
        MEASURED (2026-09-18, build R783) on 「世界の原子力発電所を地図に表示して、日本のものだけ強調して。」:

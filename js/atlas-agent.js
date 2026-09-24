@@ -138,7 +138,7 @@ export function makeAtlasAgent() {
     /* the typed note each unmet declaration comes back as. "map_not_drawn" is #R511's spelling and
        stays exactly that, because it is the one a reader of the transcript already knows. */
     const GATE_CODE = { map: 'map_not_drawn', chart: 'chart_not_drawn', mixed: 'output_not_produced' };
-    /* ── (#R799) THE STOPS THAT MEAN «THE TURN RAN OUT», AS OPPOSED TO «ATLAS FINISHED». Every value
+    /* ── (#R801) THE STOPS THAT MEAN «THE TURN RAN OUT», AS OPPOSED TO «ATLAS FINISHED». Every value
           here is one this loop sets when a ceiling closed the turn; 'answered' is Atlas deciding it
           is done, and 'aborted' / 'transport' / 'awaiting_user' each already carry their own meaning
           to the reader. ⚠ THIS IS THE SET js/atlas-console.js KEEPS ITS OWN COPY OF (`__atlCut`,
@@ -720,7 +720,7 @@ export function makeAtlasAgent() {
          one thing that asks for an answer was skipped. What the condition is about is the reader
          having nothing — that is `text`, and it is already in the line. The prompt names what the
          transcript actually contains, so nothing invites a claim about work that did not happen. */
-      /* ⚠⚠⚠ (#R799) …AND A TURN THAT RAN OUT HAD ALREADY FILLED THE SLOT THIS ASKS ABOUT.
+      /* ⚠⚠⚠ (#R801) …AND A TURN THAT RAN OUT HAD ALREADY FILLED THE SLOT THIS ASKS ABOUT.
          MEASURED on production 2026-09-18 (build 2026-09-18-R783), ten questions: SIX turns showed
          the reader the working-limit note, and several of those had SUCCEEDED at the work. The two
          worst — 「…top 10 countries by GDP per capita … which of them are NOT in the top 10 by total
@@ -740,12 +740,12 @@ export function makeAtlasAgent() {
       let writeAnswer = false;
       if (!String(text || '').trim() && stopped !== 'aborted' && stopped !== 'transport'
           && stopped !== 'awaiting_user') writeAnswer = true;
-      if (cutShort) writeAnswer = true;   /* (#R799) the turn ran out — see above */
+      if (cutShort) writeAnswer = true;   /* (#R801) the turn ran out — see above */
       if (writeAnswer) {
         try {
           const last = await model({
             system: opts.system || '',
-            /* (#R799) the third prompt is for the turn that ran out with prose already in `text`;
+            /* (#R801) the third prompt is for the turn that ran out with prose already in `text`;
                the two below are #R742's and are reached on exactly the turns they were written for.
                Like them it names what the transcript CONTAINS, so nothing invites a claim about work
                that did not happen, and it tells Atlas to say which part is left rather than to
@@ -764,7 +764,7 @@ export function makeAtlasAgent() {
                 + 'and if it cannot be answered, say that and say why.' }]),
             tools: [], step: lim.maxSteps, signal: opts.signal, final: true,
           });
-          /* ⚠ (#R799) AND A CALL THAT CAME BACK WITH NOTHING DOES NOT ERASE WHAT THE TURN HAD. On the
+          /* ⚠ (#R801) AND A CALL THAT CAME BACK WITH NOTHING DOES NOT ERASE WHAT THE TURN HAD. On the
              empty-`text` path this is the same assignment it always was (「」 over 「」); on the new one
              there is something to lose, and losing it would trade a partial answer for silence. */
           if (last && typeof last.text === 'string' && last.text.trim()) text = last.text;
