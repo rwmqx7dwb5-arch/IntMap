@@ -97,6 +97,18 @@
  *  made — the shape .agents/rules/historical-verification.md §2-3 names.
  *  ⚠ AND IT DOES NOT STOP THE LOAD. Refusing to open a project because the kernel moved would cost the
  *  reader their work to tell them something they can only act on once they have it back.
+ *
+ *  ══ #R819 — 「正しく計算し直す」と「正しく使い回す」を両立させる ═══════════════════════════════
+ *  ⚠ NOTHING ABOVE CHANGES. The recipe is still the only thing written to disk, `stale` is still what
+ *  a failed rebuild leaves behind, and a load with no cache runs exactly the calls it ran before.
+ *  What is added (see CACHE_KEY_VERSION, far below) is a MEMORY OF ONE RUN, held in this tab's memory
+ *  and keyed by every condition that produced it: the inputs' CONTENT (sha256 of the payload, never a
+ *  timestamp), what those inputs declare, which upstream they came from, the parameters, and the
+ *  kernels' versions. All five equal, or there is no reuse — and an engine that cannot be measured
+ *  gets no key at all, because compareEngine's 「測れなかった」 is not 「同じ」.
+ *  ⚠ AND A REUSED RECORD IS COMPARED, WHOLE, AGAINST THE DESCRIPTION OF THE ONE THE OP PRODUCED. A
+ *  disagreement between recipe and memory cannot be lived with quietly: the entry is dropped and the
+ *  kernel runs. 「食い違いうる設計なら作らない」 — this is how that is met, by measurement.
  * ==========================================================================*/
 
 export function makeGisProject() {
@@ -499,10 +511,12 @@ export function makeGisProject() {
         const O = ops();
         if (!O || typeof O.run !== 'function') return Promise.resolve({ ok: false, why: 'ops-unavailable' });
         try { reg.remove(step.id); } catch (_) { }
-        return Promise.resolve(O.run({
+        /* (#R819) Through runStep, which is O.run plus 「この条件でこの答えは既に計算してある」. With no
+           key or no entry it IS O.run, with the same arguments. */
+        return runStep({
           id: step.id, op: step.op, inputs: step.inputs || [], params: step.params || {}, title: step.title,
-        }, opts || null)).then((res) => {
-          if (res && res.ok) return { ok: true };
+        }, opts || null).then((res) => {
+          if (res && res.ok) return { ok: true, fromCache: res.fromCache === true };
           return { ok: false, why: (res && res.why) || 'op-failed', detail: res && res.detail };
         }, (e) => ({ ok: false, why: 'op-failed', detail: errText(e) }));
       }
@@ -550,7 +564,11 @@ export function makeGisProject() {
     /* One shape for every exit of load(), so a caller never has to ask whether a field is there before
        reading it. ⚠ The lists are EMPTY, which is 「何も無かった」 — the same claim they make when the
        load ran and found nothing to report, and a different claim from a missing key. */
-    function loadShell() { return { restored: 0, failed: [], engineChanged: [], engineUnknown: [], declarationsRefused: [], savedVersion: null }; }
+    /* ⚠ (#R819) `reused` IS PART OF THE SHAPE, and it is 「計算し直さずに済んだ段」 — never a claim that
+       they were skipped. A reused step is restored under its own id with the answer its own recipe
+       produces under conditions that were measured to be the same; it is counted in `restored` exactly
+       as a recomputed one is, and named here as well so a reader can see which. */
+    function loadShell() { return { restored: 0, reused: [], failed: [], engineChanged: [], engineUnknown: [], declarationsRefused: [], savedVersion: null }; }
 
     function load(id, opts) {
       const reg = registry();
@@ -563,6 +581,7 @@ export function makeGisProject() {
         if (!rec || !Array.isArray(rec.steps)) return Object.assign(loadShell(), { ok: false, why: 'not-found' });
         const failed = [];
         const declarationsRefused = [];
+        const reused = [];
         let restored = 0;
 
         /* ⚠ ASKED OF EVERY SAVED STEP, BEFORE ANY OF THEM RUNS. The question is about the RECIPE — 「この
@@ -590,12 +609,12 @@ export function makeGisProject() {
           if (sig && sig.aborted) { cancelled = true; failed.push({ id: step.id, why: 'cancelled', detail: { step: i + 1, steps: steps } }); return; }
           if (onp) { try { onp({ step: i + 1, steps: steps, id: step.id, op: step.op || null, done: null, total: null }); } catch (_) { } }
           return restoreStep(reg, step, { signal: sig, onProgress: (inner) => { if (onp) { try { onp({ step: i + 1, steps: steps, id: step.id, op: step.op || null, done: inner.done, total: inner.total }); } catch (_) { } } } }).then((res) => {
-            if (res.ok) restored++;
+            if (res.ok) { restored++; if (res.fromCache) reused.push(step.id); }
             else failed.push({ id: step.id, why: res.why, detail: res.detail || null });
             for (const d of (res.declarationsRefused || [])) declarationsRefused.push(Object.assign({ id: step.id }, d));
           });
         }), Promise.resolve()).then(() => ({
-          ok: failed.length === 0, id: rec.id, restored, failed, cancelled: cancelled,
+          ok: failed.length === 0, id: rec.id, restored, reused, failed, cancelled: cancelled,
           /* ⚠ THE PROJECT IS BACK AND IT MAY NO LONGER MEAN THE SAME THING. These three are not
              failures — every step above them restored — and they are not decoration either: they are
              the difference between 「開けた」 and 「開けたものが保存した日と同じ」. */
@@ -653,16 +672,16 @@ export function makeGisProject() {
        fact about them whether the reader stopped it or the op refused. */
     function setParams(datasetId, params, opts) {
       const reg = registry();
-      if (!reg) return Promise.resolve({ ok: false, why: 'registry-missing', rebuilt: [], failed: [] });
+      if (!reg) return Promise.resolve({ ok: false, why: 'registry-missing', rebuilt: [], reused: [], failed: [] });
       const target = reg.get(datasetId);
-      if (!target) return Promise.resolve({ ok: false, why: 'no-such-dataset', rebuilt: [], failed: [] });
+      if (!target) return Promise.resolve({ ok: false, why: 'no-such-dataset', rebuilt: [], reused: [], failed: [] });
       if (!target.provenance || target.provenance.kind !== 'op') {
-        return Promise.resolve({ ok: false, why: 'not-an-op', rebuilt: [], failed: [] });
+        return Promise.resolve({ ok: false, why: 'not-an-op', rebuilt: [], reused: [], failed: [] });
       }
       const O = ops();
-      if (!O || typeof O.run !== 'function') return Promise.resolve({ ok: false, why: 'ops-unavailable', rebuilt: [], failed: [] });
+      if (!O || typeof O.run !== 'function') return Promise.resolve({ ok: false, why: 'ops-unavailable', rebuilt: [], reused: [], failed: [] });
       const order = affectedOrder(reg, datasetId);
-      if (!order) return Promise.resolve({ ok: false, why: 'cycle', rebuilt: [], failed: [] });
+      if (!order) return Promise.resolve({ ok: false, why: 'cycle', rebuilt: [], reused: [], failed: [] });
 
       /* Every recipe is read BEFORE anything is removed — each rebuild deletes its own record, and a
          downstream recipe read after that deletion would be read off a dataset that no longer
@@ -715,7 +734,7 @@ export function makeGisProject() {
         } catch (_) { }
       }
 
-      const rebuilt = [], failed = [];
+      const rebuilt = [], reused = [], failed = [];
       let stopped = false;
       /* The chain's own progress, around each op's. A reader watching 「3 / 7 · 12,400 / 40,000」 is
          told two different things — which step, and where inside it — and only the first of those is
@@ -751,10 +770,13 @@ export function makeGisProject() {
         report(i, step, null);
         const held = snapshot(step.id);
         try { reg.remove(step.id); } catch (_) { }
-        return Promise.resolve(O.run({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title },
-          { signal: sig, onProgress: (inner) => report(i, step, inner) }))
+        /* (#R819) 「半径を 10km に変えて、また 5km に戻す」 is the case this exists for: the second
+           change asks a question that was already answered under conditions nothing has moved. Through
+           runStep — which is O.run with the same arguments whenever there is no entry to reuse. */
+        return runStep({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title },
+          { signal: sig, onProgress: (inner) => report(i, step, inner) })
           .then((res) => {
-            if (res && res.ok) { rebuilt.push(step.id); return; }
+            if (res && res.ok) { rebuilt.push(step.id); if (res.fromCache) reused.push(step.id); return; }
             stopped = true;
             const why = (res && res.why) || 'op-failed';
             failed.push({ id: step.id, why: why, detail: (res && res.detail) || null });
@@ -765,7 +787,7 @@ export function makeGisProject() {
             failed.push({ id: step.id, why: 'op-failed', detail: errText(e) });
             restore(held, 'op-failed');
           });
-      }), Promise.resolve()).then(() => ({ ok: failed.length === 0, rebuilt, failed }));
+      }), Promise.resolve()).then(() => ({ ok: failed.length === 0, rebuilt, reused, failed }));
     }
 
     /* Sync, so a panel can grey a button out before any promise. It answers the question it can
@@ -776,6 +798,339 @@ export function makeGisProject() {
       return !!idbGlobal();
     }
 
+    /* ══ ⚠⚠⚠ (#R819) 「再現できること」と「毎回ぜんぶ計算し直すこと」は別のこと ══════════════════════
+       THE RECIPE REMAINS THE ORIGINAL. Everything above this line is unchanged in what it BELIEVES: a
+       derived dataset is `{op, inputs, params}` and nothing else is written to disk, because a stored
+       answer beside a changed input is the one state this file exists to prevent. What is added here
+       is not a second source of truth — it is a MEMORY OF ONE RUN, and it may be consulted only when
+       every condition that produced that run is measurably the same one.
+
+       ⚠ SO THE ANSWER IS NOT KEYED BY ITS NAME, IT IS KEYED BY ITS CONDITIONS. The key is the sha256
+       of, in one canonical document:
+         op / params / title   what the reader asked for — the recipe itself, and the title because
+                               js/gis-ops.js composes an output title out of its inputs' titles
+         inputs[].content      sha256 of each input's PAYLOAD (payloadText → the same canonical form
+                               manifest() fingerprints with). ⚠ BYTES, NEVER A TIMESTAMP. 「新しいから
+                               同じ」 is [[intmap-deployed-combination-is-unmeasured]] one layer down;
+                               `createdAt` is deliberately absent from every part of this key, in both
+                               directions — a rebuilt input that came out identical is identical
+         inputs[].conditions   what an op reads BESIDES the coordinates: the record's whole description
+                               (crs, sourceCrs, the declared time axis, the columns with their units
+                               and who stated them, the bands, `stale`) plus the reader's own
+                               declarations(). Taken WHOLE from describe() rather than as a list of the
+                               fields somebody thought of ([[intmap-discovered-list-is-a-photograph]])
+         inputs[].upstream     every non-op ancestor's provenance verbatim — which acquisition, which
+                               file, which stated time these bytes are FROM. The content hash already
+                               covers what they contain; this states what they are OF, so an entry can
+                               never be reused across two different upstream snapshots that happen to
+                               have hashed the same
+         engine                engineNow() — the kernels, DISCOVERED, exactly as #R749 discovers them
+       ⚠ AND THE ENGINE IS ONLY A KEY WHEN IT IS MEASURABLE. compareEngine is the one judgement in this
+       file about 「同じエンジンか」, and it is asked here too (`engineKeyable`): a part that states no
+       version makes the verdict 'unknown', 「測れなかった」 is not 「同じ」, and an unmeasurable engine
+       gets NO KEY AT ALL rather than a key that quietly matches. Nothing is remembered and nothing is
+       reused; the run takes the path it takes today, to the letter.
+
+       ⚠ AND A REUSED RECORD IS VERIFIED, NOT TRUSTED. Restoring goes through the registry's own door
+       (add()), and the record that comes back is compared — canonically, whole — against the
+       description of the record the op actually produced. If they differ in any respect the entry is
+       DROPPED and the op runs. That is what makes 「レシピとキャッシュが食い違う」 unreachable rather
+       than unlikely: a disagreement cannot survive the moment it would be used.
+
+       ⚠ THIS FILE STILL COMPUTES NOTHING (scripts/gis-kernel-versions.mjs's NOT_A_KERNEL row). The
+       cache produces no number; it hands back one a kernel produced, or it steps aside. CACHE_KEY_
+       VERSION is the shape of the key material, and raising it can only cause misses. */
+    const CACHE_KEY_VERSION = 1;
+
+    /* The budget. ⚠ Observation: a vector op's output in this repository's own checks measures in
+       kilobytes, while ONE band of a 4,000 × 4,000 float64 grid is 128 MB — so the ceiling is not a
+       count, it is bytes, and an entry larger than the whole budget is never remembered rather than
+       evicting everything else to hold it. Expires if the app starts holding payloads of a different
+       order (a reader importing national rasters), which is why configure() exists and why these two
+       numbers live in ONE place that cache.limits() reports. */
+    const cacheLimits = { maxEntries: 24, maxBytes: 48 * 1024 * 1024 };
+    const CACHE = new Map();
+    let cacheOn = true;
+    /* The receipt. Background work that did not run and background work that ran and was refused look
+       identical from outside ([[intmap-background-work-needs-a-receipt]]), and 「使われた」「鍵を作れ
+       なかった」「食い違ったので捨てた」 are three different things a reader of this module can act on. */
+    const cacheLedger = { hits: 0, misses: 0, stored: 0, evicted: 0, unkeyable: 0, mismatched: 0, tooLarge: 0 };
+
+    function deepCopy(v) {
+      /* A typed array is not JSON: `JSON.stringify(Float64Array)` is `{"0":…}`, one key per sample. */
+      if (ArrayBuffer.isView(v) && typeof v.slice === 'function') return v.slice();
+      try { if (typeof structuredClone === 'function') return structuredClone(v); } catch (_) { }
+      try { return JSON.parse(JSON.stringify(v)); } catch (_) { return null; }
+    }
+
+    /* ⚠ TWO FIELDS ARE LEFT OUT, AND EACH IS NAMED FOR WHAT IT IS A PROPERTY OF. `id` is what the
+       answer is CALLED — the same answer under a new name is the same answer, and it is what makes one
+       remembered run reusable by a second step that asks the same question. `createdAt` is WHEN THE
+       RECORD WAS REGISTERED, which is now, for a record registered now. Everything else in a
+       description is a property of the answer and is compared. */
+    function stableDescription(desc) {
+      if (!desc || typeof desc !== 'object') return null;
+      const out = {};
+      for (const k of Object.keys(desc)) { if (k === 'id' || k === 'createdAt') continue; out[k] = desc[k]; }
+      return out;
+    }
+
+    /* What an op reads about an input besides its coordinates. `createdAt` is dropped for the reason
+       above; the input's `id` is KEPT, because the recipe names it and the output's provenance records
+       it. */
+    function conditionsOf(reg, id) {
+      const desc = (typeof reg.describe === 'function') ? reg.describe(id) : null;
+      if (!desc) return null;
+      const record = {};
+      for (const k of Object.keys(desc)) { if (k === 'createdAt') continue; record[k] = desc[k]; }
+      const declared = (typeof reg.declarations === 'function') ? reg.declarations(id) : null;
+      return { record: record, declared: declared };
+    }
+
+    /* Which upstream these bytes are OF — every ancestor that is not itself a recipe, verbatim. */
+    function upstreamOf(reg, id) {
+      if (typeof reg.lineage !== 'function') return null;
+      const out = [];
+      let chain;
+      try { chain = reg.lineage(id) || []; } catch (_) { return null; }
+      for (const anc of chain) {
+        const p = (anc && anc.provenance) || { kind: 'unknown' };
+        if (String(p.kind || '') === 'op') continue;
+        let copy = null;
+        try { copy = JSON.parse(JSON.stringify(p)); } catch (_) { return null; }
+        out.push({ id: anc.id, upstream: copy });
+      }
+      return out;
+    }
+
+    async function inputIdentity(reg, id) {
+      const rec = (typeof reg.get === 'function') ? reg.get(id) : null;
+      if (!rec) return null;
+      const text = payloadText(rec);
+      if (text == null) return null;
+      const content = await sha256Hex(text);
+      if (content == null) return null;                      /* no digest here → no key, no reuse */
+      const cond = conditionsOf(reg, id);
+      if (!cond) return null;
+      const up = upstreamOf(reg, id);
+      if (up == null) return null;
+      return { id: String(id), content: content, conditions: cond, upstream: up };
+    }
+
+    /* ⚠ ASKED THROUGH compareEngine, so this file keeps ONE opinion about what an engine comparison is
+       (#R749's three states). A version nobody states makes the verdict 'unknown', and an engine with
+       no parts at all is not an engine that agrees — it is a build where nothing said anything. */
+    function engineKeyable(e) {
+      if (!e || typeof e !== 'object' || !Object.keys(e).length) return false;
+      return compareEngine(e, e) === 'same';
+    }
+
+    /* `part` is null for 「この段まるごと」. It is a slot rather than a boolean because a step can be
+       computed in pieces — a warp writing one window at a time — and a window's result is the answer to
+       the SAME conditions plus which window it is. Nothing in this file produces one; the door is here
+       so that a producer of partial results keys them against the same five axes instead of inventing a
+       sixth vocabulary. */
+    /* ⚠ THE FIELD IS `reason`, NOT `why`, AND THE DIFFERENCE IS REAL. Every `why` this file returns is
+       a REFUSAL A READER IS SHOWN — the header lists them, and tests/r729-gis-core-checks ④ measures
+       that each has a sentence in js/gis-panel.js. 「鍵を作れなかった」 refuses nobody: the run happens
+       exactly as it would have, and nothing about it reaches a panel. Spelling it `why` would put five
+       codes into the reader-facing vocabulary that no reader can ever be shown, which makes that gate's
+       population say something false about what a reader can meet. */
+    async function cacheKey(step, part) {
+      if (!cacheOn) return { ok: false, reason: 'cache-disabled' };
+      const reg = registry();
+      if (!reg || typeof reg.get !== 'function') return { ok: false, reason: 'registry-missing' };
+      const engine = engineNow();
+      if (!engineKeyable(engine)) return { ok: false, reason: 'engine-unmeasurable', detail: engineCopy(engine) };
+      const inputs = [];
+      for (const id of (Array.isArray(step && step.inputs) ? step.inputs : [])) {
+        const ident = await inputIdentity(reg, id);
+        if (!ident) return { ok: false, reason: 'input-unmeasurable', detail: { id: (id == null) ? null : String(id) } };
+        inputs.push(ident);
+      }
+      const material = {
+        v: CACHE_KEY_VERSION,
+        op: (step && step.op != null) ? String(step.op) : null,
+        params: (step && step.params && typeof step.params === 'object') ? step.params : {},
+        title: (step && step.title != null && String(step.title) !== '') ? String(step.title) : null,
+        inputs: inputs,
+        engine: engine,
+        part: (part === undefined) ? null : part,
+      };
+      let key = null;
+      try { key = await sha256Hex(canonical(material)); } catch (_) { key = null; }
+      if (key == null) return { ok: false, reason: 'no-digest' };
+      return { ok: true, key: key, engine: engine };
+    }
+
+    function payloadBytes(payload) {
+      if (!payload) return 0;
+      if (payload.kind === 'raster') {
+        let bin = 0;
+        for (const a of (payload.samples || [])) {
+          if (a && typeof a.byteLength === 'number') bin += a.byteLength;
+          else if (Array.isArray(a)) bin += a.length * 8;
+        }
+        return bin + (byteSize({ width: payload.width, height: payload.height, grid: payload.grid, bands: payload.bands }) || 0);
+      }
+      if (payload.kind === 'value') return byteSize(payload.value) || 0;
+      return byteSize(payload.features) || 0;
+    }
+
+    /* The payload, COPIED. The registry hands back the array it holds; keeping that reference would let
+       anything that edits a record edit the remembered answer with it, and a cache that can be written
+       through is not a record of what was computed. */
+    function payloadCopy(rec) {
+      if (String(rec.kind || 'vector') === 'raster') {
+        const bands = Array.isArray(rec.bands) ? rec.bands : [];
+        const samples = [];
+        for (let i = 0; i < bands.length; i++) {
+          let v = null;
+          try { v = rec.read(i); } catch (_) { return null; }
+          if (!v) return null;
+          samples.push(deepCopy(v));
+        }
+        return { kind: 'raster', width: rec.width, height: rec.height, grid: deepCopy(rec.grid), bands: deepCopy(bands), samples: samples };
+      }
+      let f = null;
+      try { f = rec.features(); } catch (_) { return null; }
+      if (!Array.isArray(f)) return null;
+      const copy = deepCopy(f);
+      return copy ? { kind: 'vector', features: copy } : null;
+    }
+
+    function cacheBytesTotal() {
+      let n = 0;
+      for (const e of CACHE.values()) n += (e.bytes || 0);
+      return n;
+    }
+
+    /* Least recently USED, and the timestamp orders eviction only — it is never asked whether two
+       things are the same. */
+    function evict() {
+      while (CACHE.size > cacheLimits.maxEntries || cacheBytesTotal() > cacheLimits.maxBytes) {
+        let oldestKey = null, oldestAt = Infinity;
+        for (const [k, e] of CACHE) { if (e.usedAt < oldestAt) { oldestAt = e.usedAt; oldestKey = k; } }
+        if (oldestKey == null) break;
+        CACHE.delete(oldestKey);
+        cacheLedger.evicted++;
+      }
+    }
+
+    /* The inverse of js/gis-datasets.js's applyInherited: the unit statements that produced these
+       columns, read back off the columns. ⚠ IT IS NOT TRUSTED — if the round trip does not reproduce
+       the description exactly, reuse() drops the entry and the op runs. A second opinion about what a
+       column states would be a second opinion; a reversal that is CHECKED is a measurement. */
+    function statementsFrom(fields) {
+      if (!Array.isArray(fields)) return null;
+      const out = {};
+      for (const f of fields) {
+        if (!f || f.unit == null) continue;
+        out[f.name] = {
+          unit: f.unit,
+          unitStated: (f.unitStatedAt != null) ? f.unitStatedAt : ((f.unitStated != null) ? f.unitStated : null),
+          unitFrom: (f.unitFrom != null) ? f.unitFrom : null,
+        };
+      }
+      return Object.keys(out).length ? out : null;
+    }
+
+    function remember(key, rec, stats, reg) {
+      if (!cacheOn || key == null || !rec || !reg) return;
+      const payload = payloadCopy(rec);
+      if (!payload) return;
+      const desc = stableDescription((typeof reg.describe === 'function') ? reg.describe(rec.id) : null);
+      if (!desc) return;
+      const bytes = payloadBytes(payload);
+      if (bytes > cacheLimits.maxBytes) { cacheLedger.tooLarge++; return; }
+      const at = Date.now();
+      CACHE.delete(key);
+      CACHE.set(key, { key: key, kind: payload.kind, payload: payload, describe: desc, stats: (stats == null) ? null : deepCopy(stats), bytes: bytes, at: at, usedAt: at });
+      cacheLedger.stored++;
+      evict();
+    }
+
+    /* Hand back a remembered answer under the caller's id — or nothing, having left the registry as it
+       found it. ⚠ THE ID MUST ALREADY BE FREE: both callers remove the old record before they run, and
+       this door does not remove anything it did not add. */
+    function reuse(key, step, reg) {
+      const e = CACHE.get(key);
+      if (!e) { cacheLedger.misses++; return null; }
+      let rec = null;
+      try {
+        if (e.kind === 'raster') {
+          const held = (e.payload.samples || []).map(deepCopy);
+          rec = reg.add({
+            kind: 'raster', id: step.id, title: e.describe.title,
+            sourceCrs: e.describe.sourceCrs || null,
+            provenance: deepCopy(e.describe.provenance),
+            time: deepCopy(e.describe.time),
+            width: e.payload.width, height: e.payload.height, grid: deepCopy(e.payload.grid),
+            bands: deepCopy(e.payload.bands),
+            read: (i) => (held[i] || []),
+          });
+        } else {
+          rec = reg.add({
+            id: step.id, title: e.describe.title,
+            features: deepCopy(e.payload.features),
+            sourceCrs: e.describe.sourceCrs || null,
+            provenance: deepCopy(e.describe.provenance),
+            time: deepCopy(e.describe.time),
+            fieldStatements: statementsFrom(e.describe.fields),
+          });
+        }
+      } catch (_) { rec = null; }
+      /* ⚠ THE ENTRY IS KEPT HERE. A refused add is about THIS registration — an id still in use, most
+         likely — and not about whether the remembered answer is still the answer; throwing the memory
+         away would punish a good entry for the caller's timing. The op runs, as it would have. */
+      if (!rec) { cacheLedger.misses++; return null; }
+      const got = stableDescription(reg.describe(rec.id));
+      if (canonical(got) !== canonical(e.describe)) {
+        /* ⚠ THE DISAGREEMENT IS RESOLVED BY THE KERNEL, not by this file. Whatever came back is
+           removed, the entry is forgotten, and the caller falls through to the op. */
+        try { reg.remove(step.id); } catch (_) { }
+        CACHE.delete(key);
+        cacheLedger.mismatched++;
+        return null;
+      }
+      e.usedAt = Date.now();
+      cacheLedger.hits++;
+      return { dataset: rec, stats: e.stats };
+    }
+
+    /* ⚠ THE ONE DOOR THE TWO RE-RUN PATHS GO THROUGH. With no key, with the cache off, or with a miss,
+       what happens is `O.run(step, opts)` and nothing else — the same call, the same arguments, the
+       same result object. A hit returns the op's own shape with `fromCache:true` added, because a
+       caller reporting 「計算し直した」 about a step that was not computed is the missing receipt this
+       repository keeps re-learning about. */
+    async function runStep(step, opts) {
+      const O = ops();
+      if (!O || typeof O.run !== 'function') return { ok: false, why: 'ops-unavailable' };
+      const reg = registry();
+      const sig = (opts && opts.signal) || null;
+      /* ⚠ A STOP ALREADY PRESSED IS THE OP'S ANSWER TO GIVE. Serving a remembered result here would
+         turn 「中止しました」 into a rebuilt step, which is a different thing to tell a reader. */
+      const k = (reg && !(sig && sig.aborted)) ? await cacheKey(step, null) : { ok: false, reason: 'not-consulted' };
+      let key = null;
+      if (k.ok) {
+        key = k.key;
+        const hit = reuse(key, step, reg);
+        if (hit) return { ok: true, dataset: hit.dataset, stats: hit.stats || undefined, fromCache: true };
+      } else if (k.reason !== 'cache-disabled' && k.reason !== 'not-consulted') {
+        cacheLedger.unkeyable++;
+      }
+      /* ⚠ THE SIGNAL AND THE PROGRESS ARE HANDED OVER HERE, which is what makes the stop button a
+         control with an effect (#R738 ⑥). Both callers used to write this call out themselves; the
+         arguments are the same five fields and the same two options, normalised in one place now that
+         one function makes the call. */
+      const res = await O.run({
+        id: step.id, op: step.op, inputs: step.inputs || [], params: step.params || {}, title: step.title,
+      }, { signal: sig, onProgress: (opts && typeof opts.onProgress === 'function') ? opts.onProgress : null });
+      if (res && res.ok && res.dataset && key) { try { remember(key, res.dataset, res.stats, reg); } catch (_) { } }
+      return res;
+    }
+
+    function cacheClear() { CACHE.clear(); }
 
     /* ══ ⚠⚠⚠ (#R765) 「作業を再開できる」と「その結果をもう一度出せる」は別のこと ══════════════════
        save()/load() above make an analysis RESUMABLE: the inputs come back whole, the ops replay, and
@@ -1167,6 +1522,55 @@ export function makeGisProject() {
       save, load, list, remove, setParams, available,
       /* (#R765) 「この数は何から、どうやって出たのか」を 1 つの文書に — と、それが同じ答えかを測る口 */
       manifest, verify, manifestVersion: MANIFEST_VERSION,
+      /* ══ (#R819) 不変条件を鍵にした結果の記憶。⚠ THE RECIPE IS STILL THE ORIGINAL — this hands back an
+         answer a kernel computed, under conditions measured to be the same one, or it steps aside.
+           enabled/setEnabled  off restores the path this module took before this round, to the letter
+                               (and forgets what it held: an entry nobody may consult is not a saving)
+           keyFor(step, part)  the key, or the REASON there is none — 'engine-unmeasurable',
+                               'input-unmeasurable', 'no-digest', 'cache-disabled', 'registry-missing'.
+                               `part` is the slot for a piece of a step (a warp's window): the same five
+                               axes plus which piece, so a producer of partial results never has to
+                               invent a second vocabulary for 「同じ条件か」
+           putValue/getValue   the receptacle for such a piece. It stores what it is handed and states
+                               nothing about it; what a piece MEANS belongs to whoever computes it
+           stats/limits        the receipt and the budget (see cacheLimits) */
+      cache: {
+        enabled: () => cacheOn,
+        setEnabled: (v) => { cacheOn = !!v; if (!cacheOn) cacheClear(); return cacheOn; },
+        clear: cacheClear,
+        keyFor: (step, part) => cacheKey(step || {}, part),
+        putValue: (key, value) => {
+          if (!cacheOn || key == null) return false;
+          const copy = deepCopy(value);
+          if (copy === null && value !== null) return false;
+          const payload = { kind: 'value', value: copy };
+          const bytes = payloadBytes(payload);
+          if (bytes > cacheLimits.maxBytes) { cacheLedger.tooLarge++; return false; }
+          const at = Date.now();
+          CACHE.delete(String(key));
+          CACHE.set(String(key), { key: String(key), kind: 'value', payload: payload, describe: null, stats: null, bytes: bytes, at: at, usedAt: at });
+          cacheLedger.stored++;
+          evict();
+          return true;
+        },
+        getValue: (key) => {
+          const e = CACHE.get(String(key));
+          if (!e || e.kind !== 'value') { cacheLedger.misses++; return null; }
+          e.usedAt = Date.now();
+          cacheLedger.hits++;
+          return deepCopy(e.payload.value);
+        },
+        stats: () => Object.assign({ entries: CACHE.size, bytes: cacheBytesTotal(), keyVersion: CACHE_KEY_VERSION }, cacheLedger),
+        limits: () => Object.assign({}, cacheLimits),
+        configure: (next) => {
+          if (next && typeof next === 'object') {
+            if (typeof next.maxEntries === 'number' && isFinite(next.maxEntries) && next.maxEntries >= 0) cacheLimits.maxEntries = Math.floor(next.maxEntries);
+            if (typeof next.maxBytes === 'number' && isFinite(next.maxBytes) && next.maxBytes >= 0) cacheLimits.maxBytes = Math.floor(next.maxBytes);
+            evict();
+          }
+          return Object.assign({}, cacheLimits);
+        },
+      },
       /* named so a test or a panel can talk about the store without re-deriving the strings */
       dbName: DB_NAME, storeName: STORE, recordVersion: RECORD_VERSION,
       /* (#R749) What the kernels say they are RIGHT NOW — the other half of what a saved step's

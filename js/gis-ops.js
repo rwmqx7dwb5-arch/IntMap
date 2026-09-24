@@ -489,6 +489,36 @@ export function makeGisOps() {
        left out of the requirement (it was two hand-written lists one line apart until this round).
        `areaWeightedMean` is the door for the remedy js/gis-units.js hands back — see the note there. */
     const AGG_STATS = ['count', 'sum', 'mean', 'min', 'max', 'areaWeightedMean'];
+    /* ══ ⚠⚠⚠ (#R819) 「面積で重み付ける」 には 2 つの面積があり、片方しか無かった ══════
+       `areaWeightedMean` weighted every member by ITS OWN ground area, whole, however little of it
+       lay in the zone — so what it computed was Σ v·A(P) / Σ A(P) over the members that TOUCH the
+       zone, which is not 「この区域内の面積加重平均」 and is not the mean of anything a reader asked
+       for. MEASURED on two members crossing one zone: value 10 over 100 km² of which 1 km² is inside,
+       value 100 over 1 km² all of which is inside — the answer was 10.89, and the mean over the ground
+       that is actually inside the zone is 55.
+       ⚠ BOTH ARE REAL QUESTIONS, WHICH IS WHY THIS IS A BASIS AND NOT A CORRECTION. 「区域に
+       かかった事業所を、その規模で重み付けて」 weights by the member's own extent on purpose; 「この
+       区域の平均」 weights by what is inside. A silent switch would change a number under a name the
+       reader chose — the argument the `mean` / `areaWeightedMean` refusal makes one screen down — so
+       'memberArea' stays the default and every existing call answers bit for bit what it answered.
+       ⚠ THE TWO QUESTIONS ARE ASKED SEPARATELY, AND THEY GIVE DIFFERENT ANSWERS. 「この面に
+       重なるか」 is GG.attempt.intersects; 「どれだけ寄与するか」 is the area of the intersection.
+       MEASURED: a line crossing the zone and a point inside it are MEMBERS (the predicate answers
+       them through their own dimension) and neither has any ground, so each is counted and weighs
+       nothing; a neighbouring polygon that shares only an edge is not a member at all, because the
+       intersection of two areal shapes over a shared border is empty. Deriving membership FROM the
+       intersection would silently drop the first pair, and weighting FROM the predicate would give
+       a line the whole of the member's extent. */
+    const AGG_WEIGHT_BASES = ['memberArea', 'intersectionArea'];
+
+    /* ══ ⚠ (#R819) 読み方は 4 つ、算術は量が決める ═══════════════════════════════════════════════
+       `profile` / `reach` が読者に出す問いは 「この区域について、その量の何が知りたいのか」 であって
+       「どの関数を呼ぶか」 ではない。同じ 'total' が、画素の総量では Σ value、密度では Σ value·km²
+       （js/gis-raster.js の total rule）、地物では Σ value になる——どれになるかは
+       js/gis-units.js が量について下す判定であり、この表は主題ごとの分岐を 1 つも持たない。
+       ⚠ 述べられなければ**量の measure から導く**（nominal → composition、extensive → total、
+       intensive → typical）。既定を 1 つ書くと、分類の格子に平均を出すことになる。 */
+    const PROFILE_READINGS = ['total', 'typical', 'composition', 'presence'];
 
     /* ── どの面の上で計算したのか (#R756) ──────────────────────────────────────────────────────
        An outside review of R752 said the ops do not state, per op, which surface they compute on.
@@ -1050,11 +1080,122 @@ export function makeGisOps() {
           { name: 'field', type: 'field', required: false, input: 1, requiredWhen: { stat: AGG_STATS.filter((s) => s !== 'count') } },
           { name: 'outName', type: 'text', required: false },
           /* ⚠ (#R783) その列は何の量か。js/gis-units.js's vocabulary (`quantityVocabulary()` —
-             kind / space / time / period / unit), stated by the caller because NOTHING in this app
-             declares one yet: a dataset's `fields` carry a unit and no quantity. Omitted, the
-             verdict is 'undeclared' and the run is exactly what it was before — this layer does not
-             read silence as permission, and it does not read it as a refusal either. */
+             kind / space / time / period / unit / denominator), stated by the caller.
+             ⚠⚠ (#R819) AND NOW ALSO STATED BY THE COLUMN. The sentence here used to end 「a
+             dataset's `fields` carry a unit and no quantity」 — which was true, and meant this
+             parameter had to be RETYPED at every step of a chain or the verdict fell back to
+             'undeclared' over a column whose author had described it perfectly well. A column that
+             states one is now read through quantityFor(); the caller still wins, and which of the
+             two spoke travels in `quantityStatedBy`. Omitted on both sides, the verdict is
+             'undeclared' and the run is exactly what it was before — this layer does not read
+             silence as permission, and it does not read it as a refusal either. */
           { name: 'quantity', type: 'quantity', required: false, input: 1 },
+          /* (#R819) 面積の重みを、どの面積で。See AGG_WEIGHT_BASES for the measurement that made this
+             a parameter rather than a fix. It is a reading of `areaWeightedMean` and of nothing else,
+             so naming it with another stat is refused rather than ignored — the same rule `zonal`'s
+             `total` states about `sum`. */
+          { name: 'weightBy', type: 'enum', required: false, default: 'memberArea', values: AGG_WEIGHT_BASES },
+        ],
+      },
+      /* ══ (#R819) 集合についての問い ═══════════════════════════════════════════════════════════
+         `validate` は「この幾何は幾何か」を、`repair` はその直しを答える。どちらも 1 つの地物に
+         ついての問いで、「この区域群は区分か」——重複・隙間・合っていない共有境界——は誰にも
+         訊けなかった。js/gis-geometry.js coverage() がその計算を持ち、この宣言がその扉である。
+         ⚠ 答えは件数ではなく**幾何**で返る。行 1 本が 1 つの所見で、その図形は次の op の入力に
+         そのまま渡せる（面積を測る・地図に描く・difference で切り落とす）。
+         ⚠ 重なりは自動的に誤りではない。'forbid' / 'report' / 'allow' は呼び手が条件ごとに述べ、
+         'report' は測るが違反にしない——係争・重複・継ぎ目は幾何では区別できない
+         （.agents/rules/historical-verification.md §2-5）。何も述べない呼び出しは、空虚な緑では
+         なく拒否で終わる（kernel の `coverage-nothing-asked`）。
+         ⚠ 値の集合はこの層のものではないので `valuesOf` で訊く。既定もここには無い——述べな
+         かった条件は kernel の 'allow'（＝計算しない）であって、この層が選んだ既定ではない。 */
+      coverage: {
+        id: 'coverage',
+        surface: ['degree-plane'], inputs: 1, accepts: ['Polygon'], output: 'same-as-input',
+        needsGeodesy: true, needsGeometry: true,
+        params: [
+          { name: 'overlaps', type: 'enum', required: false, valuesOf: 'coverage-modes' },
+          { name: 'gaps', type: 'enum', required: false, valuesOf: 'coverage-modes' },
+          { name: 'edges', type: 'enum', required: false, valuesOf: 'coverage-modes' },
+          /* 両方とも距離（km）で、両方とも呼び手のものである。既定 0 ＝書かれているとおりに測る。 */
+          { name: 'gapToleranceKm', type: 'number', required: false, unit: 'km' },
+          { name: 'edgeToleranceKm', type: 'number', required: false, unit: 'km' },
+          { name: 'limit', type: 'number', required: false },
+        ],
+      },
+      /* ══ (#R819) 同じ区域・同じ条件で、複数のデータを比べられる形に ═══════════════════════════
+         「この区域の人口・土地被覆・標高・施設数を、出典と対象時点つきでまとめて」。新しい幾何も
+         新しい算術も無い——`zonal` と `aggregate` をそのまま走らせ、この op が足すのは⑴どの集計が
+         その量について意味を持つかを js/gis-units.js に訊いて**選ぶ**こと、⑵走らせた条件・出典・
+         対象時点をその列の隣に**述べる**こと、⑶答えられなかったときに列を空にせず**理由を残す**
+         ことの 3 つである。
+         ⚠ 結果の「群」は、同じ区域データセットに対してこの op を重ねることで出来る。列は
+         `outName` を接頭辞とする一群として書かれるので、2 つ目の出典が 1 つ目を上書きすることは
+         なく（`output-column-in-use`）、1 つの表の中で条件ごと並ぶ。
+         ⚠ 入力 1 の種別が 'any' なのは、同じ問いが格子にも地物にも出せるからである——どちらで
+         答えたかは行に載る。 */
+      profile: {
+        id: 'profile',
+        surface: ['degree-plane', 'degree-grid'], inputs: 2, accepts: ['Polygon', 'any'], kinds: ['vector', 'any'],
+        output: 'same-as-input',
+        needsGeodesy: true, needsGeometry: true,
+        params: [
+          { name: 'band', type: 'field', required: false, input: 1 },
+          { name: 'field', type: 'field', required: false, input: 1 },
+          { name: 'quantity', type: 'quantity', required: false, input: 1 },
+          /* 読み方であって算術ではない。どの算術になるかは量が決める（PROFILE_READINGS の註）。 */
+          { name: 'reading', type: 'enum', required: false, values: PROFILE_READINGS },
+          /* 対象時点。⚠ 比較されるだけで、データに代入されることは無い——上流が述べていない日付を
+             コードが埋めるのが .agents/rules/historical-verification.md §2-3 の禁じるものである。 */
+          { name: 'asOf', type: 'text', required: false },
+          { name: 'boundary', type: 'enum', required: false, valuesOf: 'zonal-boundary' },
+          { name: 'weightBy', type: 'enum', required: false, valuesOf: 'aggregate-weight-bases' },
+          { name: 'total', type: 'enum', required: false, valuesOf: 'total-rules' },
+          { name: 'outName', type: 'text', required: false },
+        ],
+      },
+      /* ══ (#R819) 区域区分が変わっているときに、何を同じ対象として比べるのか ═══════════════════
+         年で絞れば済むのは、区分が動いていないときだけである。この op が返すのは⑴対応表（交差の
+         幾何と、双方から見た面積の割合）⑵按分（頼まれ、かつその量について意味を持つときだけ）
+         ⑶**比べられない部分**——片方にしか地面が無いところ——であり、3 つとも次の処理に渡せる
+         1 つのデータセットの行である。
+         ⚠ 割合は返すが、「分割」「併合」「同一」の判定は返さない。その判定は閾値であり、閾値は
+         この層が持てない読者の主張である（.agents/rules/no-ad-hoc-hardcoding.md §4）。
+         ⚠ 時点は**述べられていれば**運ばれ、述べられていなければ「述べられていない」と載る。
+         現代の区分を遡らせることも、片方の日付をもう片方に代入することもしない。
+         ⚠ それぞれの側が本当に分割になっているかは ① の coverage が測り、条件は 'report' で
+         ある——重複は誤りではなく、係争・重複・継ぎ目を機械は分けられない。 */
+      compareZones: {
+        id: 'compareZones',
+        surface: ['degree-plane'], inputs: 2, accepts: ['Polygon', 'Polygon'], output: 'Polygon',
+        needsGeodesy: true, needsGeometry: true,
+        params: [
+          { name: 'field', type: 'field', required: false, input: 0 },
+          { name: 'quantity', type: 'quantity', required: false, input: 0 },
+          { name: 'outName', type: 'text', required: false },
+        ],
+      },
+      /* ══ (#R819) 既にある到達圏を、他のデータと同じ土俵に乗せる ═════════════════════════════
+         到達圏（道路ネットワークの isochrone）は既にあり、地図に描ける。描くことと**比べられる
+         こと**は別で、この op は後者を足す: 施設ごとの到達圏について `profile` と同じ評価を行い、
+         そのうえで到達圏どうしの**重なりの地面**を測る。
+         ⚠⚠ 重なりを測るのは飾りではない。到達圏は普通に重なるので、施設ごとの人口を足し上げると
+         同じ人間を何度も数える。その事実を述べない表は、読者が気づけない誤りを配る。 */
+      reach: {
+        id: 'reach',
+        surface: ['degree-plane', 'degree-grid'], inputs: 2, accepts: ['Polygon', 'any'], kinds: ['vector', 'any'],
+        output: 'same-as-input',
+        needsGeodesy: true, needsGeometry: true,
+        params: [
+          { name: 'band', type: 'field', required: false, input: 1 },
+          { name: 'field', type: 'field', required: false, input: 1 },
+          { name: 'quantity', type: 'quantity', required: false, input: 1 },
+          { name: 'reading', type: 'enum', required: false, values: PROFILE_READINGS },
+          { name: 'asOf', type: 'text', required: false },
+          { name: 'boundary', type: 'enum', required: false, valuesOf: 'zonal-boundary' },
+          { name: 'weightBy', type: 'enum', required: false, valuesOf: 'aggregate-weight-bases' },
+          { name: 'total', type: 'enum', required: false, valuesOf: 'total-rules' },
+          { name: 'outName', type: 'text', required: false },
         ],
       },
     };
@@ -1141,6 +1282,24 @@ export function makeGisOps() {
           return list.length ? list : null;
         } catch (_) { return null; }
       },
+      /* (#R819) 「重複・隙間・辺をどう扱うと述べるのか」 — the three words belong to
+         js/gis-geometry.js's coverage(), which refuses an unknown one by name with its own list.
+         ⚠ ASKED, NOT RETYPED, for the reason `total-rules` above is asked: a kernel that grows a
+         fourth word would leave a copy here refusing it. A kernel that does not publish the set
+         answers null — 「訊けなかった」 — and the reader's word still travels down, where the
+         kernel refuses it with the vocabulary in hand. */
+      'coverage-modes': () => {
+        const GG = geometry();
+        if (!GG || typeof GG.coverageModes !== 'function') return null;
+        try { const v = GG.coverageModes(); return (Array.isArray(v) && v.length) ? v : null; } catch (_) { return null; }
+      },
+      /* (#R819) 区域の統計についての 3 つの選択は、この層の中に既に正本がある——`zonal` の
+         `boundary`、`aggregate` の `weightBy`、`zonal` の `total`。`profile` と `reach` は同じ問いを
+         読者に出すので、その値の集合は**その宣言から導く**。ここに書き写すと、片方を直したときに
+         もう片方が古い集合を提示する（.agents/rules/no-ad-hoc-hardcoding.md §1 の「既にある仕組みの
+         写し」）。DECL はこの関数が呼ばれる時点では組み上がっている。 */
+      'zonal-boundary': () => paramValues(DECL.zonal, 'boundary'),
+      'aggregate-weight-bases': () => paramValues(DECL.aggregate, 'weightBy'),
       'plane-spellings': () => {
         const CK = crsKernel();
         if (!CK || typeof CK.planeSpellings !== 'function') return null;
@@ -1295,7 +1454,14 @@ export function makeGisOps() {
       const IX = indexKernel();
       if (IX && typeof IX.build === 'function' && typeof IX.queryEach === 'function') {
         let ix = null;
-        try { ix = IX.build(members); } catch (_) { ix = null; }
+        /* ⚠ (#R819) 索引の種別は測ってから選ぶ。js/gis-index.js は項目自身の幅から
+           「grid なら always に入る件数」を数え、その割合で一様格子と階層を選ぶ（`auto`）。
+           手で「このデータは大きい図形が多い」と書くのが .agents/rules/no-ad-hoc-hardcoding.md の
+           禁じる事例ごとの記述で、割合は実データから導かれる。⚠ 選択が変えるのは**候補集合**だけで
+           答えではない——下の boxesMeet と、その先の述語が同じ順序で同じ集合に効く。
+           種別を建てられなければ既定（一様格子）へ落ちる。 */
+        try { ix = IX.build(members, { kind: 'auto' }); } catch (_) { ix = null; }
+        if (!ix) { try { ix = IX.build(members); } catch (_) { ix = null; } }
         if (ix) {
           return {
             indexed: true,
@@ -1310,7 +1476,10 @@ export function makeGisOps() {
                  exist in two files; js/gis-index.js is wrap-aware and this walk is not, so the two
                  also disagreed about the seam. One padded box, one rule, one seam decision. */
               const q = padBoxKm(box, padKm);
-              try { IX.queryEach(ix, q, (m) => (boxesMeet(q, m.bbox) ? fn(m) : true)); }
+              /* ⚠ (#R819) 箱の判定は索引に**渡す**。走らせる場所は前と同じ（候補を配る点）だが、
+                 索引の外で起きていたので「実際に幾何判定した件数」を誰も数えられなかった。渡すと
+                 stats().delivered がその実数になる——数え方は 1 か所のまま。 */
+              try { IX.queryEach(ix, q, fn, { test: (m) => boxesMeet(q, m.bbox) }); }
               catch (_) { for (const m of members) { if (!boxesMeet(q, m.bbox)) continue; if (fn(m) === false) break; } }
             },
             stats: () => { try { return IX.stats(ix); } catch (_) { return null; } },
@@ -1367,6 +1536,36 @@ export function makeGisOps() {
       return fail('bad-param', { param: 'quantity', value: String(raw) });
     }
 
+    /* ⚠⚠ (#R819) 列が自分について述べたこと。The unit has been readable off a field since
+       #R759 (unitOfField); the quantity was reaching `bands` and stopping there, so `aggregate`
+       could only ever be told what it was measuring by a caller retyping the declaration at every
+       step. A raster's band and a vector's column are asked the SAME way, because js/gis-datasets.js
+       states that a grid's columns ARE its bands — one picker, and now one reader of what that
+       picker points at. */
+    function quantityOfField(ds, name) {
+      if (name == null) return null;
+      const f = ((ds && ds.fields) || []).find((x) => x && String(x.name) === String(name));
+      return (f && f.quantity && typeof f.quantity === 'object') ? f.quantity : null;
+    }
+
+    /* The quantity this run is about, and WHO said so. ⚠ THE ORDER IS NOT A PREFERENCE — a caller
+       who states one is answering about THIS run, and a column's statement is about the column in
+       general, so where they differ the caller is the later and more specific statement. (`convert`
+       refuses that disagreement instead, and for the reason its note gives: converting FROM a unit
+       the column's author did not state would be a claim about somebody else's data. Nothing is
+       rewritten here — one spec is judged and the other is left alone.)
+       ⚠ 'column' AND 'band' ARE DIFFERENT AUTHORS and both are kept: js/gis-raster.js already
+       answers 'caller' / 'band' for the same question about a grid's total, and folding a vector
+       column into 'band' would say a grid stated what a table stated. */
+    function quantityFor(raw, ds, field) {
+      const qs = quantitySpecOf(raw);
+      if (!qs.ok) return qs;
+      if (qs.spec != null) return { ok: true, spec: qs.spec, from: 'caller' };
+      const col = quantityOfField(ds, field);
+      if (col != null) return { ok: true, spec: col, from: 'column' };
+      return { ok: true, spec: null, from: null };
+    }
+
     function aggregationVerdict(spec, method, over) {
       const UQ = unitKernel();
       /* ⚠ 「訊けなかった」 IS ITS OWN STATE. A build with no unit module cannot say whether the
@@ -1382,13 +1581,22 @@ export function makeGisOps() {
        was nothing to say: a run over an undeclared quantity records the verdict, and a build with no
        unit kernel records that it could not ask — but a caller that declared nothing on a `count`
        gets the same record it always got. */
-    function aggregationRecord(agg, spec, weight) {
+    function aggregationRecord(agg, spec, weight, from, basis) {
       if (!agg) return null;
       const out = { method: agg.method || null, over: agg.over || null, verdict: agg.verdict || null };
       if (agg.why != null) out.why = String(agg.why);
       if (agg.remedy != null) out.remedy = String(agg.remedy);
       if (weight) out.weight = String(weight);
-      if (spec != null) out.quantityStatedBy = 'caller';
+      /* ⚠ (#R819) 誰が述べたのかは、述べられたことと同じだけ記録に要る。This wrote the literal
+         'caller' because the caller was the only thing that COULD state one; now that a column and a
+         band can, a record saying 'caller' over a column's statement would name the wrong author
+         ([[intmap-data-must-not-claim-an-author-it-lacks]]). With no quantity there is no author, so
+         the key stays off the record exactly as before. */
+      if (spec != null) out.quantityStatedBy = from ? String(from) : 'caller';
+      /* どの面積で重み付けたか（AGG_WEIGHT_BASES）。Only where a weight was actually applied, for the
+         reason `weight` itself is conditional: a record stating a basis for an unweighted run
+         describes nothing. */
+      if (weight && basis) out.weightBasis = String(basis);
       return out;
     }
 
@@ -2181,6 +2389,11 @@ export function makeGisOps() {
        relate test against. ⚠ The id is the feature's own when it has one and its ORDINAL when it
        does not — the output says which window produced it, and an output that could not say would
        make the reader's first question about it unanswerable. */
+    /* (#R819) その地物の身元。⚠ 規則は 1 つで、`coverage` が返す添字も `compareZones` の対応表も
+       clip の `_clipId` と同じこの規則で名前になる——2 か所に書けば、同じ地物が 2 つの名前で
+       出力に載る日が来る。 */
+    function featureIdentity(f, i) { return (f && f.id != null) ? f.id : i; }
+
     function windowsOf(ds) {
       const out = [];
       const feats = ds.features();
@@ -2188,7 +2401,7 @@ export function makeGisOps() {
         const f = feats[i];
         const g = f && f.geometry;
         if (!g || !polygonsOf(g).length) continue;
-        out.push({ id: (f && f.id != null) ? f.id : i, geometry: g, bbox: bboxOf(g), props: props(f) });
+        out.push({ id: featureIdentity(f, i), geometry: g, bbox: bboxOf(g), props: props(f) });
       }
       return out;
     }
@@ -2599,8 +2812,20 @@ export function makeGisOps() {
       /* (#R783) 「この量をこの方法で集計してよいか」 — asked of js/gis-units.js, never decided here.
          See aggregationVerdict for what each verdict does and for why an undeclared quantity leaves
          this run bit-for-bit what it was. */
-      const qs = quantitySpecOf(params.quantity);
+      const qs = quantityFor(params.quantity, memberDs, field);
       if (!qs.ok) return qs;
+      /* (#R819) 面積の重みを、どの面積で。Validated here so the refusal carries the vocabulary, and
+         defaulted from the declaration rather than from a literal — the rule `zonal`'s `boundary`
+         states, for the same reason. */
+      const wDecl = DECL.aggregate.params.find((p) => p.name === 'weightBy');
+      const weightBy = (params.weightBy == null || String(params.weightBy) === '') ? wDecl.default : String(params.weightBy);
+      if (wDecl.values.indexOf(weightBy) < 0) return fail('bad-param', { param: 'weightBy', value: params.weightBy, values: wDecl.values.slice() });
+      /* ⚠ A BASIS NAMED ON A STAT THAT DOES NOT WEIGHT IS REFUSED, NOT IGNORED. 「区域内の面積で
+         重み付けたい」 written on a `mean` is a reader asking for arithmetic they did not select, and
+         answering it with the plain mean would hand back a number under their instruction. */
+      if (params.weightBy != null && String(params.weightBy) !== '' && stat !== 'areaWeightedMean') {
+        return fail('bad-param', { param: 'weightBy', value: String(params.weightBy), detail: 'weight-basis-is-a-reading-of-areaWeightedMean' });
+      }
       const agg = aggregationVerdict(qs.spec, stat, 'space');
       let weight = null;
       if (agg.verdict === 'refused') {
@@ -2634,10 +2859,13 @@ export function makeGisOps() {
         const g = f && f.geometry;
         if (!g) continue;
         /* (#R783) 面積は、使う stat のときだけ測る。It is the member's OWN ground area and it does
-           not depend on the zone, so it is measured once per member rather than once per pair. */
+           not depend on the zone, so it is measured once per member rather than once per pair.
+           ⚠ (#R819) AND ONLY FOR THE BASIS THAT ASKS FOR IT. The intersection's area DOES depend
+           on the zone, so it cannot be measured here at all — and measuring the member's own as well
+           would be a clip's worth of arithmetic nothing reads. */
         members.push({
           geometry: g, bbox: bboxOf(g), raw: (field ? props(f)[field] : null),
-          areaKm2: (stat === 'areaWeightedMean') ? areaKm2(g) : null,
+          areaKm2: (stat === 'areaWeightedMean' && weightBy === 'memberArea') ? areaKm2(g) : null,
         });
       }
 
@@ -2680,10 +2908,28 @@ export function makeGisOps() {
           if (min == null || v < min) min = v;
           if (max == null || v > max) max = v;
           if (stat === 'areaWeightedMean') {
-            const a = m.areaKm2;
+            let a = m.areaKm2;
+            if (weightBy === 'intersectionArea') {
+              /* ⚠ THE SECOND QUESTION, ASKED SEPARATELY FROM THE FIRST. `intersects` above decided
+                 MEMBERSHIP; this decides CONTRIBUTION, and the two differ for exactly the things a
+                 reader brings to a 区域別集計 — a parcel straddling the border, a line, a shape that
+                 shares an edge. js/gis-geometry.js answers an empty intersection with `geometry:null`
+                 and `ok:true` (a point or a line has no interior to intersect), so 「触れているだけ」
+                 arrives here as 0 km² and lands in the counter below instead of in the weight. */
+              const ia = GG.attempt.intersection(m.geometry, g);
+              /* ⚠ AND A PAIR IT COULD NOT MEASURE IS NOT A PAIR WITH NO OVERLAP (#R743). The ledger
+                 is the same one the membership test reports through: a clipper that threw must not
+                 become 「この地物は区域の外」 inside a total the reader divides by. */
+              if (!led.ok(ia)) return true;
+              a = ia.geometry ? areaKm2(ia.geometry) : 0;
+            }
             /* ⚠ A MEMBER WITH NO AREA CARRIES NO WEIGHT, AND IT IS COUNTED. A point has no ground,
                so weighting by it is not defined — and dropping it in silence would make the answer
-               「面積で重み付けた平均」 over a set the reader was never told was smaller. */
+               「面積で重み付けた平均」 over a set the reader was never told was smaller. Under
+               'intersectionArea' the same counter also holds a member whose overlap with the zone
+               has no area, which is the same fact about the same member: it is in the zone and it
+               weighs nothing. ⚠ It is NOT the same counter as `_statSkipped` — 「値が読めない」 and
+               「地面を持たない」 are two different things for the reader to go and fix. */
             if (a == null || !(a > 0)) { noWeight++; return true; }
             wsum += v * a; wtot += a;
           }
@@ -2706,12 +2952,16 @@ export function makeGisOps() {
              not beside it cannot be checked. */
           extra._weightKm2 = wtot;
           extra._statNoWeight = noWeight;
+          /* (#R819) 同じ列名の下に 2 つの算術があるので、どちらだったかが行に載る。Without it
+             `_weightKm2` is a total whose meaning depends on a parameter the row does not carry, and
+             two tables computed a month apart cannot be told apart at all. */
+          extra._weightBy = weightBy;
         }
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
       }
       /* (#R783) 実行した規則は答えとレシピの両方に残る。⚠ `resolved` is written ONLY when there was
          something to say, so an existing call registers the record it has always registered. */
-      const rule = aggregationRecord(agg, qs.spec, weight);
+      const rule = aggregationRecord(agg, qs.spec, weight, qs.from, (stat === 'areaWeightedMean') ? weightBy : null);
       const res = withGeoStats({ ok: true, features: out }, led, rule ? { aggregation: rule } : null);
       if (res.ok && rule && (qs.spec != null || agg.verdict !== 'undeclared')) res.resolved = { aggregation: rule };
       return res;
@@ -2804,9 +3054,15 @@ export function makeGisOps() {
          sum is not the verdict about what they asked for — 「密度は足せない、面積を掛けてから足せ」 IS
          the remedy that makes `areaIntegral` the right arithmetic, and refusing on it here would
          refuse the very thing the kernel recommended. */
-      const qs = quantitySpecOf(params.quantity);
+      /* (#R819) 呼び手 → 帯（＝列）。The band's own declaration was already the fallback here; what
+         changes is that the answer now SAYS which of the two spoke, in the same words the vector side
+         uses, instead of recording every judged run as the caller's. */
+      const qs = quantityFor(params.quantity, rasDs, band.name);
       if (!qs.ok) return qs;
+      /* The band is asked directly as well as through `fields`: js/gis-datasets.js now carries a
+         band's declaration onto the column, and a record built before it did still states it here. */
       const spec = (qs.spec != null) ? qs.spec : ((band.quantity != null) ? band.quantity : null);
+      const quantityFrom = (qs.from === 'caller') ? 'caller' : ((spec != null) ? 'band' : null);
       const total = (params.total == null || String(params.total) === '') ? null : String(params.total);
       if (total) {
         if (stat !== 'sum') return fail('bad-param', { param: 'total', value: total, detail: 'total-rule-is-a-reading-of-sum' });
@@ -2855,8 +3111,13 @@ export function makeGisOps() {
         const z = await RK.zonal(rasDs, b.index, g, {
           classes: stat === 'classes', ctx: ctx, boundary: boundary,
           /* (#R783) 呼び手が述べた量と、述べた「合計」の読み方。Both are optional and the kernel
-             answers exactly as before when neither is given. */
-          quantity: qs.spec, total: total,
+             answers exactly as before when neither is given.
+             ⚠ (#R819) THE CALLER'S OWN DECLARATION, AND ONLY THAT. js/gis-raster.js decides the
+             author of the quantity it used the same way this op does — 「呼び手が述べたなら 'caller'、
+             さもなくば帯が述べた」 — so handing it the band's statement dressed as a parameter would
+             make the grid report its OWN declaration as the reader's
+             ([[intmap-data-must-not-claim-an-author-it-lacks]]). The fallback is its to perform. */
+          quantity: (qs.from === 'caller') ? qs.spec : null, total: total,
           /* (#R764) 「この多角形は何 km² か」 is this file's rule, and the kernel is handed it rather
              than growing a second one. See js/gis-raster.js coverOf. */
           areaOf: areaKm2,
@@ -2904,12 +3165,16 @@ export function makeGisOps() {
         if (weight === 'area') extra._meanWeight = 'area';
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
       }
-      const rule = aggregationRecord(agg, qs.spec, weight);
+      /* ⚠ THE RECORD IS ABOUT THE SPEC THAT WAS JUDGED, not only about the one the caller typed.
+         `aggregationRecord` writes an author only where there is a quantity to have one, and until
+         this round a band's declaration produced a verdict with nobody's name on it — the run was
+         judged by it and the record did not say so. */
+      const rule = aggregationRecord(agg, spec, weight, quantityFrom, null);
       const stats = { aggregation: rule };
       if (total) stats.total = total;
       const res = { ok: true, features: out, stats: stats };
       /* 実行した規則はレシピにも残る（run() の `resolved`）——ただし述べることがあったときだけ。 */
-      if (total || qs.spec != null || (rule && rule.verdict !== 'undeclared')) {
+      if (total || spec != null || (rule && rule.verdict !== 'undeclared')) {
         res.resolved = total ? { aggregation: rule, total: total } : { aggregation: rule };
       }
       return res;
@@ -2948,9 +3213,81 @@ export function makeGisOps() {
       return { ok: true, raster: r.raster, stats: { kept: r.kept, dropped: r.dropped, nodata: r.nodataCount } };
     }
 
+    /* ══ (#R819) 予算を超える出力を、窓で書き出して覚えておく ═════════════════════════════════════
+       両側が在って、繋がっていなかった。js/gis-warp.js は `opts.sink` を持つ——出力を丸ごと抱えず
+       窓ごとに渡す扉——が受け取り手がどこにも無く、js/gis-project.js の結果キャッシュは
+       `keyFor(step, part)` を持つ——「その段のどの断片か」で鍵を作る扉——が断片を作る者がどこにも
+       無かった。下の runResample がその 1 本である。
+
+       ⚠⚠ 既定は 1 ビットも変わらない。予算の内側の要求、キャッシュの無い構築、鍵を作れない段では、
+       今日とまったく同じ道（sink 無し・出力は warp が丸ごと保持）を通る。
+       ⚠ 予算を超えていて sink も持てないときに黙って縮めない。js/gis-warp.js が
+       `memory.overBudget` と `output-resident-no-sink` を述べ、その陳述をそのまま stats で運ぶ
+       （CONSTITUTION.md §5——予算は仕事の上限ではない）。
+       ⚠ 中止した途中結果を、完成した答えとして覚えない。窓は書かれた順に鍵の下へ置かれるが、
+       **その一覧（plan）は warp が end まで到達したときにだけ**置かれる。plan の無い窓はどの読み手
+       からも参照されず、LRU が落とす。再walk（attempt > 1）の窓は attempt ごとに別の鍵になるので、
+       捨てられた試行の窓が次の答えに混ざる経路が無い。
+       ⚠ この 1 本が減らすのは **warp の峰**（出力まるごと → 窓 1 枚）であって、この runner が
+       返す格子そのものではない: 登録されるデータセットは全画素を持つ raster なので、組み立ては
+       ここで起きる。窓が買うのはもう 1 つ——同じ条件の同じ窓が**もう一度計算されない**ことである。 */
+
+    /* 結果キャッシュの扉。無い構築では null＝「訊けなかった」で、既定の道に落ちる。 */
+    function projectCache() {
+      try {
+        const P = (typeof window !== 'undefined') ? window.IntMapGisProject : null;
+        const c = (P && P.cache) || null;
+        if (!c || typeof c.keyFor !== 'function' || typeof c.putValue !== 'function' || typeof c.getValue !== 'function') return null;
+        if (typeof c.enabled === 'function' && !c.enabled()) return null;
+        return c;
+      } catch (_) { return null; }
+    }
+
+    /* ⚠ 予算の数はこの file のものではない。js/gis-worker.js の `budgetBytes()` が正本で、
+       そこに観測が書いてある（.agents/rules/no-ad-hoc-hardcoding.md §4-3）。null は
+       「訊けなかった」——予算が無いなら、超えているかどうかも言えない。 */
+    function budgetBytesNow() {
+      const W = workerKernel();
+      if (!W || typeof W.budgetBytes !== 'function') return null;
+      let v = null;
+      try { v = W.budgetBytes(); } catch (_) { v = null; }
+      return (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
+    }
+
+    /* 1 つの窓の鍵。⚠ 5 軸（入力内容・解析条件・外部データ版・parameter・カーネル版）は
+       cache.keyFor が持っていて、`part` が足すのは「その段のどの断片か」だけである。 */
+    function warpWindowPart(attempt, row0, rows) { return { warp: 'window', attempt: attempt, row0: row0, rows: rows }; }
+
+    /* 覚えてある窓から格子を組み直す。⚠ 1 枚でも欠けていれば null——半分の答えを完成した答えと
+       して返さない。欠けていれば warp が普通に走る。 */
+    async function warpFromWindows(C, step, plan, cells) {
+      if (!plan || !Array.isArray(plan.windows) || !plan.windows.length) return null;
+      const bandCount = plan.bands | 0;
+      if (!(bandCount > 0)) return null;
+      const held = [];
+      for (let i = 0; i < bandCount; i++) {
+        try { held.push(new Float64Array(cells)); } catch (_) { return null; }
+      }
+      let filled = 0;
+      for (const w of plan.windows) {
+        const k = await C.keyFor(step, warpWindowPart(w.attempt, w.row0, w.rows));
+        if (!k || !k.ok) return null;
+        const v = C.getValue(k.key);
+        if (!v || !Array.isArray(v.bands) || v.bands.length !== bandCount) return null;
+        for (let b = 0; b < bandCount; b++) {
+          const src = v.bands[b];
+          if (!src || src.length !== w.rows * plan.width) return null;
+          held[b].set(src, w.row0 * plan.width);
+        }
+        filled += w.rows;
+      }
+      if (filled !== plan.height) return null;
+      return held;
+    }
+
     /* ── resample: where `grid-mismatch` has been pointing since #R749 (#R752) ─────────────────── */
 
-    async function runResample(aDs, bDs, params, ctx) {
+    async function runResample(aDs, bDs, params, ctx, step) {
       const WK = warpKernel();
       const method = String(params.method == null ? '' : params.method);
       /* ⚠ NO DEFAULT, and the refusal comes from the kernel that owns the set. js/gis-warp.js refuses
@@ -2984,17 +3321,261 @@ export function makeGisOps() {
          working cancel. A grid large enough to be worth cancelling was exactly the one that could
          not be. The kernels stay synchronous when `ctx` is absent, so a caller with no cancel path
          is not made to await -- the shape that would have been two implementations of one walk. */
+      /* ══ 出力だけで予算を食うのか ═══════════════════════════════════════════════════════════
+         固定の常駐分（復号した原格子・緯度軸・角の行）は warp が計画するまで測れない。ここで
+         測れるのは出力の項で、それこそ warp 自身が `output-resident-no-sink` と名指す項である。 */
+      const bandCount = (Array.isArray(aDs.bands) && aDs.bands.length) ? aDs.bands.length : 1;
+      const cells = (target.width | 0) * (target.height | 0);
+      const budget = budgetBytesNow();
+      const overBudget = (budget != null && (cells * bandCount * 8) > budget);
+      const C = overBudget ? projectCache() : null;
+      /* 受領証。⚠ 「窓で走らなかった」と「窓で走ったが覚えられなかった」と「そもそも予算を
+         超えていない」は、外から同じに見える（[[intmap-background-work-needs-a-receipt]]）。 */
+      const windowing = { overBudget: overBudget, budgetBytes: budget, windowed: false, reused: false, stored: false, reason: null };
+      let planKey = null;
+      if (overBudget && !C) windowing.reason = 'cache-unavailable';
+      if (C) {
+        const pk = await C.keyFor(step || {}, { warp: 'plan' });
+        if (!pk || !pk.ok) windowing.reason = (pk && pk.reason) || 'no-key';
+        else {
+          planKey = pk.key;
+          /* ⚠ 同じ条件で同じ窓が既に在るなら、warp を走らせない——「もう済んでいる」と述べて
+             同じ答えを返すのが、この repository の反復の直し方である
+             （.agents/rules/one-pass-or-a-reason.md §1）。 */
+          const plan = C.getValue(planKey);
+          const held = plan ? await warpFromWindows(C, step || {}, plan, cells) : null;
+          if (held) {
+            windowing.windowed = true; windowing.reused = true;
+            const rep = Object.assign({}, plan.report || {}, { windows: windowing });
+            return {
+              ok: true,
+              raster: Object.assign({}, plan.written, { read: (i) => { const k = (i == null) ? 0 : i; return (k >= 0 && k < held.length) ? held[k] : null; } }),
+              stats: rep, shapeOnly: [1],
+            };
+          }
+        }
+      }
+
+      /* ══ 窓で書き出す ═══════════════════════════════════════════════════════════════════════
+         ⚠ 組み立てはここで起きる: 登録されるのは全画素を持つ raster で、窓は warp の峰と
+         「もう一度計算しない」ことのためにある（上の註）。 */
+      let held = null, planWindows = null, attemptNow = 1, allStored = true;
+      const sink = planKey ? {
+        begin: (d) => {
+          /* ⚠ attempt > 1 は「やり直し」である。前の試行のために取ったものは捨てる——鍵は
+             attempt を含むので、捨てた窓が次の答えに混ざる経路が無い。 */
+          attemptNow = d.attempt | 0;
+          planWindows = [];
+          allStored = true;
+          held = [];
+          for (let i = 0; i < (d.bands | 0); i++) {
+            try { held.push(new Float64Array((d.width | 0) * (d.height | 0))); }
+            catch (_) { held = null; return { ok: false, why: 'raster-too-large', detail: { cells: (d.width | 0) * (d.height | 0), bands: d.bands } }; }
+          }
+          return undefined;
+        },
+        write: async (w) => {
+          if (!held) return { ok: false, why: 'raster-too-large', detail: { row0: w.row0 } };
+          for (let b = 0; b < held.length && b < w.bands.length; b++) held[b].set(w.bands[b], w.row0 * w.width);
+          const k = await C.keyFor(step || {}, warpWindowPart(attemptNow, w.row0, w.rows));
+          if (!k || !k.ok) { allStored = false; return undefined; }
+          /* ⚠ 覚えられなかったことは失敗ではない（大きすぎる窓は置かれない）。答えは既に
+             組み立てられているので、次の run がもう一度計算するだけである。 */
+          if (!C.putValue(k.key, { row0: w.row0, rows: w.rows, width: w.width, bands: w.bands })) { allStored = false; return undefined; }
+          planWindows.push({ attempt: attemptNow, row0: w.row0, rows: w.rows });
+          return undefined;
+        },
+        end: () => undefined,
+      } : null;
+
       const r = await WK.resample(aDs, target, {
         method: method,
         ctx: ctx,
         signal: (ctx && ctx.signal) || null,
         onProgress: (ctx && ctx.onProgress) || null,
+        /* ⚠ 予算は**述べて**渡す。sink を出しておいて予算を述べないのは js/gis-warp.js が
+           `warp-budget-not-stated` で断る一件だが、渡す理由はそれだけではない: 予算を知らない
+           warp は `memory.overBudget` を null——「測れなかった」——としか言えず、
+           「超えていたが sink を持てなかった」という陳述そのものが消える。数は同じ正本
+           （js/gis-worker.js `budgetBytes()`）から来ていて、この runner が発明したものではない。
+           ⚠ 窓を使わない道で予算を述べても、計算は 1 ビットも変わらない——予算が決めるのは
+           「まだ選べたもの」（窓の高さ・別スレッドの塊）だけで、ここではそのどちらも無い。 */
+        budgetBytes: (budget == null) ? undefined : budget,
+        sink: sink || undefined,
       });
       if (!r || !r.ok) return r || fail('resample-failed');
       /* ⚠ (#R763) b LENT ITS LATTICE AND NOTHING ELSE. Said here because this is where it was decided
          — `target` above is built out of b's grid, and every value in the answer came from a. Without
          this the record claims to be about a span of time that no pixel in it is from. */
-      return { ok: true, raster: r.grid, stats: r.report, shapeOnly: [1] };
+      if (!sink) {
+        /* 既定の道。⚠ `overBudget` の陳述は warp のもので、ここで握り潰さない。 */
+        const rep = windowing.overBudget ? Object.assign({}, r.report, { windows: windowing }) : r.report;
+        return { ok: true, raster: r.grid, stats: rep, shapeOnly: [1] };
+      }
+      /* 窓で走った。⚠ 一覧（plan）を置くのは**ここ**——end まで到達し、全部の窓が置けたとき
+         だけである。途中で止まった run はここに来ない。 */
+      if (!held || !r.written) return fail('resample-failed');
+      windowing.windowed = true;
+      if (allStored && planWindows && planWindows.length) {
+        windowing.stored = C.putValue(planKey, {
+          width: r.written.width, height: r.written.height, bands: held.length,
+          windows: planWindows, written: r.written, report: r.report,
+        });
+      } else windowing.reason = windowing.reason || 'window-not-stored';
+      const grid = Object.assign({}, r.written, { read: (i) => { const k = (i == null) ? 0 : i; return (k >= 0 && k < held.length) ? held[k] : null; } });
+      return { ok: true, raster: grid, stats: Object.assign({}, r.report, { windows: windowing }), shapeOnly: [1] };
+    }
+
+    /* ══ (#R819) rasterCalc の式を、もう一方のスレッドで ═══════════════════════════════════════
+       ⚠ docs/GIS-CORE.md §3.6 NAMED THIS ONE AS THE THING THAT COULD NOT TRAVEL: 「`fn` はクロージャ
+       （js/gis-expr.js の compile 済みで AST と数値規則を閉じ込めている）で、Worker は fn.toString()
+       を評価するので job-not-self-contained になる」. js/gis-raster.js `combine` says the same
+       sentence about the same `fn` and points at the way out. What travels now is not the closure —
+       it is DATA (the tree, which parse() already builds as plain JSON, and two planes of numbers)
+       plus THREE FUNCTIONS shipped as their own source: js/gis-expr.js's kernel, js/gis-datasets.js's
+       number rule, and the one below.
+       ⚠ THE ANSWER IS NOT ALLOWED TO DEPEND ON WHICH THREAD RAN IT, so `combine` STILL ASSEMBLES THE
+       GRID. Everything it owns — 「二つの格子は一つの格子か」, 「この画素は欠損か」, the counts, the
+       band declaration — stays exactly where it was; what the worker replaces is the ARITHMETIC
+       INSIDE `fn`, which is the part that costs. The pixels are handed to `combine` in the order it
+       walks them and EACH ONE IS CHECKED against the plane it was computed from, so the coupling to
+       that order is measured rather than assumed: a pixel whose pair does not match is computed on
+       this thread, by the same compiled expression, and the answer is the same either way.
+       ⚠ A RUN THAT COULD NOT BE STOPPED IS NOT STARTED — js/gis-raster.js's rule, verbatim, for the
+       same reason: a reader's stop button over an unstoppable job is decoration. */
+    const CALC_BAND_LIB = 'ops.rastercalc.band';
+    /* What ONE PIXEL costs while it is in the air: its `a`, its `b` and the answer coming back —
+       three float64, and the two inputs travel as values rather than as a typed buffer (see
+       calcPlane), which is of the same order per element. The budget itself is js/gis-worker.js's
+       (`budgetBytes()`); this is the per-unit cost it cannot know, and it expires if the answer
+       stops being float64. */
+    const CALC_BYTES_PER_PIXEL = 24;
+    /* ⚠ A REASON, NOT A REFUSAL, AND THE DIFFERENCE IS WHO READS IT. This word never reaches a
+       reader: `runBlocks` hands it back to the code below, which throws the carried pass away and
+       computes the whole expression on this thread — the reader gets their grid, and a `stats.worker`
+       note saying which thread answered. js/gis-raster.js's `diff` says the same word about the same
+       fact and for the same reason does not spell it as a `why:` either: a refusal code is something
+       js/gis-panel.js owes a sentence to (tests/r729-gis-core-checks ④), and nobody is owed a
+       sentence for a run that succeeded. */
+    const CARRIED_ANSWER_BAD = 'worker-answer-malformed';
+
+    /* ⚠ THE ONE PLACE 「真偽値は帯では何か」 IS DECIDED, AND BOTH THREADS CALL IT. `a > b` is a
+       question a reader will ask of two grids and a mask of 1/0 is the honest answer to it; a void
+       stays a void. ⚠ SELF-CONTAINED, because js/gis-worker.js ships it by evaluating its own text —
+       and `NaN` rather than `null` for 「答えが無い」 only because a Float64Array is what comes back
+       from the job; js/gis-raster.js `combine` reads both as the same void. */
+    function calcValueToBand(v) {
+      if (v === true) return 1;
+      if (v === false) return 0;
+      return (typeof v === 'number') ? v : NaN;
+    }
+
+    /* One input band as the plane the other thread reads: every void already `null`, which is the
+       SAME VALUE `combine` hands `fn` on this thread.
+       ⚠⚠⚠ AND IT IS `null` AND NOT NaN, WHICH IS NOT A STYLE CHOICE — a first attempt shipped these
+       as Float64Arrays with NaN for the voids (transferable, half the bytes) and it was WRONG in a
+       way arithmetic could not show: js/gis-expr.js reads a non-finite number as missing inside
+       `toNumber`, so `a - b` agreed on every pixel, while `coalesce(a, b)` and `isnull(a)` ask
+       `v == null` and a NaN is a number to them. The carried pass answered a void where this thread
+       answered b, on a real pixel, and only a corpus that reached those two functions found it —
+       「両方が同じだけ間違っていれば緑」 in the space of ONE encoding decision. A typed plane cannot
+       hold 「無い」, so the plane is values.
+       ⚠ 「このセルは欠損か」 IS ASKED OF js/gis-raster.js, not restated: the sentinel a producer
+       declared is that file's judgement and a second spelling of it here is how the two threads
+       would come to disagree about a −9999. */
+    function calcPlane(RK, V, n) {
+      const src = V.values;
+      const out = new Array(n);
+      for (let i = 0; i < n; i++) { const x = src[i]; out[i] = RK.missing(x, V.nodata) ? null : x; }
+      return out;
+    }
+
+    /* → { ok:true, values, planeA, planeB }               the expression, computed off this thread
+       → { ok:false, cancelled:true, partial }             the reader stopped it
+       → { ok:false, reason, detail }                      it could not be carried; compute it here */
+    async function calcOffThread(EK, RK, W, R, ast, A, B, n, total, ctx) {
+      const no = (reason, detail) => ({ ok: false, reason: reason, detail: detail || null });
+
+      /* ① 運べるか — asked before a thread, a plane or a copy is spent (js/gis-expr.js owns the
+         judgement, and it answers in the vocabulary this layer already hands readers). */
+      const port = EK.portable(ast);
+      if (!port.ok) return no(port.why, port.detail);
+
+      /* ② 扉。`install` provides the expression kernel and THE number rule — js/gis-datasets.js's
+         own factory, because a rule spelled a second time inside the job is a second rule. */
+      const inst = EK.worker.install(W, { rule: R && R.numberRuleFactory });
+      if (!inst.ok) return no(inst.reason, inst.detail);
+      const conv = W.provide(CALC_BAND_LIB, calcValueToBand);
+      if (!conv || !conv.ok) return no((conv && conv.why) || 'library-not-provided', (conv && conv.detail) || null);
+
+      /* ③ 止められない走りは始めない。*/
+      let stop = null;
+      if (ctx) {
+        if (typeof AbortController !== 'function') return no('stop-handle-unavailable');
+        stop = new AbortController();
+        /* Carried, not re-read: the reader's cancel must reach the thread, or it stops working the
+           moment the work moves one call deeper. */
+        if (ctx.signal) { try { ctx.signal.addEventListener('abort', () => stop.abort(), { once: true }); } catch (_) { } }
+      }
+
+      /* ④ 予算に収まる分割。The number of pixels in flight is js/gis-worker.js's arithmetic over its
+         own budget, not a constant written here. */
+      const plan = W.planBlocks({ units: n, bytesPerUnit: CALC_BYTES_PER_PIXEL, inFlight: W.maxConcurrency() });
+      if (!plan || !plan.ok) return no(plan ? plan.why : 'plan-invalid', plan ? plan.detail : null);
+
+      let PA, PB, out;
+      try { PA = calcPlane(RK, A, n); PB = calcPlane(RK, B, n); out = new Float64Array(n); }
+      catch (e) { return no('planes-not-allocatable', { cells: n }); }
+
+      let stopped = false;
+      const res = await W.runBlocks(EK.worker.job, plan, {
+        /* ⚠ `own:'caller'` — the planes carry 「無い」 (see calcPlane) so they are values and not a
+           buffer, and there is nothing in this payload to hand over. Claiming `worker` would say
+           something about the transfer that is not true of it. The ANSWER travels the other way with
+           no copy at all: the job offers its Float64Array for transfer. */
+        own: 'caller',
+        signal: stop ? stop.signal : null,
+        make: (from, count) => ({
+          ast: ast,
+          bands: { a: PA.slice(from, from + count), b: PB.slice(from, from + count) },
+          length: count,
+          convert: CALC_BAND_LIB,
+        }),
+        take: async (value, from, count) => {
+          const v = value ? value.values : null;
+          /* The worker is a runner, not an authority: an answer of the wrong shape is refused here
+             rather than written into a grid that would look finished. */
+          if (!v || typeof v.length !== 'number' || v.length !== count) {
+            return { ok: false, why: CARRIED_ANSWER_BAD, detail: { at: from, got: v ? v.length : null, want: count } };
+          }
+          /* ⚠ THE PACER IS ASKED WHERE THE UNITS ARRIVE, AND BEFORE THE BLOCK IS WRITTEN. A block is
+             what actually completed, and `runBlocks` awaits this — so a 「止めて」 read here ends the
+             blocks still in the air instead of being noticed after the last one lands; asking first
+             is what keeps `partial` a true count of what was written rather than one block ahead. */
+          if (ctx) {
+            const go = await ctx.tick(count, total);
+            if (!go) { stopped = true; return { ok: false, why: 'cancelled' }; }
+          }
+          out.set(v, from);
+          return { ok: true };
+        },
+      });
+
+      if (stopped) return { ok: false, cancelled: true, partial: (res && res.partial) || null };
+      if (!res || !res.ok) {
+        const why = res ? res.why : 'worker-answered-nothing';
+        /* ⚠ A CANCELLATION IS NOT A BROKEN WORKER. Re-running the expression here would spend the
+           whole grid on this thread on behalf of a reader who had just asked for none of it. */
+        if (why === 'aborted' || why === 'cancelled') return { ok: false, cancelled: true, partial: (res && res.partial) || null };
+        /* ⚠ `partial` TRAVELS WITH THE REASON. `take` wrote into a grid this layer owns, so a
+           refusal that did not say so is one a reader could take for 「何も起きなかった」 — it is
+           thrown away here (the whole expression is computed again on this thread), and the note
+           the reader sees says how much had been written before it was. */
+        const detail = Object.assign({}, res && res.detail ? res.detail : null);
+        if (res && res.partial) detail.partial = res.partial;
+        return no(why, Object.keys(detail).length ? detail : null);
+      }
+      return { ok: true, values: out, planeA: PA, planeB: PB };
     }
 
     /* ── rasterCalc: one expression kernel, asked about a pixel instead of a row (#R752) ───────── */
@@ -3042,17 +3623,18 @@ export function makeGisOps() {
 
       const row = { a: null, b: null };
       let firstError = null;
-      const fn = (x, y) => {
+      /* ⚠ A BOOLEAN IS NOT A MEASUREMENT, but `a > b` is a question a reader will ask of two grids
+         and a mask of 1/0 is the honest answer to it. A missing value stays missing: js/gis-expr.js
+         propagates absence rather than calling it zero, and this band writes a void for it.
+         ⚠ (#R819) THE CONVERSION IS `calcValueToBand`, WHICH IS ALSO WHAT THE OTHER THREAD RUNS —
+         one implementation, two callers, so the two paths cannot disagree about a pixel. A refused
+         pixel and a non-numeric one both come back as NaN, which js/gis-raster.js `combine` reads as
+         the same void it read `null` as. */
+      const here = (x, y) => {
         row.a = x; row.b = y;
         const r = c.fn(row);
-        if (r && r.error) { if (!firstError) firstError = r.error; return null; }
-        const v = r ? r.value : null;
-        /* ⚠ A BOOLEAN IS NOT A MEASUREMENT, but `a > b` is a question a reader will ask of two grids
-           and a mask of 1/0 is the honest answer to it. null stays null: js/gis-expr.js propagates
-           absence rather than calling it zero, and this band writes a void for it. */
-        if (v === true) return 1;
-        if (v === false) return 0;
-        return (typeof v === 'number') ? v : null;
+        if (r && r.error) { if (!firstError) firstError = r.error; return NaN; }
+        return calcValueToBand(r ? r.value : null);
       };
 
       const band = (aDs.bands[ba.index] || {});
@@ -3066,7 +3648,65 @@ export function makeGisOps() {
       const unit = (params.unit != null && String(params.unit).trim() !== '') ? String(params.unit).trim() : calcUnit;
 
       if (!(await ctx.tick(1, 1))) return fail('cancelled', { done: ctx.done(), total: 1 });
-      const r = await RK.combine(aDs, bDs, ba.index, bb.index, fn, { name: name, unit: unit, nodata: band.nodata, ctx: ctx });
+
+      /* ══ (#R819) もう一方のスレッドへ運ぶ。運べなければ、ここで同じ答えを出す ══════════════
+         ⚠ THE ATTEMPT IS GUARDED BY WHAT IT NEEDS AND BY NOTHING ELSE: a door, two readable bands of
+         the same length, and a tree the expression kernel can carry. Everything a refusal here would
+         have named — an invalid raster, two grids that are not one grid, a band that cannot be read —
+         is `combine`'s to answer, and it answers it below on either path, so nothing is judged twice
+         and no refusal changes because a Worker happened to be mounted. */
+      const n = aDs.width * aDs.height;
+      const W = workerKernel();
+      const A = W ? RK.values(aDs, ba.index) : null;
+      const B = W ? RK.values(bDs, bb.index) : null;
+      let carried = null, cursor = 0, note = null;
+      if (!W) note = 'not-used: worker-not-mounted';
+      else if (!A.ok || !B.ok) note = 'not-used: ' + ((A.ok ? B : A).why || 'band-unreadable');
+      else if (A.values.length !== n || B.values.length !== n) note = 'not-used: plane-length-mismatch';
+      else {
+        const hint = (ctx ? ctx.done() : 0) + n * 2;
+        const off = await calcOffThread(EK, RK, W, R, c.ast, A, B, n, hint, ctx);
+        /* ⚠ 中止は「答えが無い」ではない。A half-written plane is thrown away rather than
+           registered, and `partial` — what the run had already written into this layer's own output
+           before it stopped — travels with the refusal so it cannot be read as 「何も起きなかった」. */
+        if (!off.ok && off.cancelled) {
+          const d = { done: ctx.done(), total: hint };
+          if (off.partial) d.partial = off.partial;
+          return fail('cancelled', d);
+        }
+        if (off.ok) { carried = off; note = 'used'; }
+        else {
+          note = 'not-used: ' + off.reason;
+          if (off.detail && off.detail.partial) {
+            const p = off.detail.partial;
+            note += ' (recomputed here after ' + p.blocks + '/' + p.of + ' blocks)';
+          }
+        }
+      }
+
+      /* ⚠ THE ORDER IS CHECKED, NOT ASSUMED. `combine` walks its pixels in index order and this
+         consumes the carried answers in that order — so the coupling is stated HERE, per pixel,
+         against the very planes the answer was computed from. A pixel whose pair does not match is
+         computed by the same compiled expression on this thread: the answer is identical either way,
+         and a walk that ever changed order would cost time rather than correctness. */
+      let recomputed = 0;
+      const fn = carried ? ((x, y) => {
+        const i = cursor++;
+        const same = i < n && carried.planeA[i] === x && carried.planeB[i] === y;
+        if (same) return carried.values[i];
+        recomputed++;
+        return here(x, y);
+      }) : here;
+
+      /* ⚠ ONE BUDGET FOR THE WHOLE RUN. The expression pass and this assembly pass are both real
+         work, so a reader's progress line counts both instead of sweeping 0→100% twice. Derived
+         from what has actually been reported, so a run that never reached the other thread reports
+         the walk it is about to do and nothing else. */
+      const totalOut = ctx ? (ctx.done() + n) : n;
+      const ctxOut = (ctx && carried)
+        ? { aborted: ctx.aborted, done: ctx.done, signal: ctx.signal, onProgress: ctx.onProgress, tick: (u) => ctx.tick(u, totalOut) }
+        : ctx;
+      const r = await RK.combine(aDs, bDs, ba.index, bb.index, fn, { name: name, unit: unit, nodata: band.nodata, ctx: ctxOut });
       if (!r || !r.ok) return r || fail('calc-failed');
       /* ⚠ AN EXPRESSION THAT BROKE ON EVERY PIXEL IS NOT AN EMPTY GRID, and the kernel counts those
          separately from voids for exactly this moment. Registering a grid of NaN under the reader's
@@ -3074,7 +3714,19 @@ export function makeGisOps() {
       if (r.failed > 0 && r.count === 0) return fail('expr-failed-every-pixel', { pixels: r.failed, error: firstError || r.failedError || null });
       return {
         ok: true, raster: r.raster,
-        stats: { count: r.count, nodata: r.nodataCount, failed: r.failed, error: r.failedError || null },
+        /* ⚠ (#R819) WHICH THREAD ANSWERED IS PART OF THE ANSWER, not a log line — the same three
+           answers `rasterDiff` gives, for the same reason: 「使った」 と 「使えなかった理由」 と
+           「口そのものが無かった」 are three different facts and folding any two of them together is
+           this project's recorded 「訊けなかった」 と 「無かった」 を同じ答えにする shape. */
+        /* ⚠ AND 「使った」 IS MEASURED, NOT CLAIMED. An entrance that carried the expression, threw
+           the answer away and computed every pixel here again would be indistinguishable from this
+           one if the note were written from the intent ([[intmap-restate-the-defect-not-the-fix]]),
+           so a pixel the carried pass did not answer is COUNTED and said. Bare `used` means the
+           numbers in this grid are the ones the other thread produced. */
+        stats: {
+          count: r.count, nodata: r.nodataCount, failed: r.failed, error: r.failedError || null,
+          worker: (carried && recomputed > 0) ? (note + ': ' + recomputed + ' pixels recomputed here') : note,
+        },
       };
     }
 
@@ -3379,16 +4031,230 @@ export function makeGisOps() {
       return p === '' ? '_geom' : p;
     }
 
+    /* ══ (#R819) 多数の地物の妥当性検査を、もう一方のスレッドで ══════════════════════════════════
+       ⚠⚠⚠ THE DEFECT, MEASURED BEFORE THIS WAS WRITTEN. js/gis-geometry.js grew a door to the other
+       thread (`worker.install` / `ready` / `request`) and js/gis-worker.js grew the intake that
+       dispatches it — and NOTHING IN js/ EVER BUILT A PAYLOAD FOR EITHER. The geometry job was a
+       registered job with no caller, which is the exact state tests/r759-gis-worker-checks ④ exists
+       for: 「Worker が在る」 と 「普段の分析が Worker で走る」 は別である.
+
+       WHY THIS OP AND NOT ANOTHER. Only three operations can be carried at all — the ones a kernel
+       built with NO clipper and NO geodesy can still answer, and that set is DERIVED by asking such
+       a kernel (js/gis-geometry.js `worker.ops()`), never listed: today it is `validate`, `areal`
+       and `pointInGeometry`. Of those:
+         · `areal` is a spherical-excess sum — ONE PASS of arithmetic over the positions, of the
+           same order as the copy that would carry them, so the copy buys nothing;
+         · `pointInGeometry` is asked ONE POINT AT A TIME by the windowing walks above, and a single
+           ray cast is cheaper than a message;
+         · `validate` is the walk THIS FILE already pays for once per feature, and it is the one with
+           a sweep line in it — js/gis-geometry.js's own note 「3,000 municipal boundaries of 2,000
+           vertices each is 6 million edges」 is about this walk, and its worst case is quadratic
+           (a reader runs `validate` precisely when they suspect the rings are a mess).
+       MEASURED on data/ecoregions_2017.geojson — 847 features, the record that kernel's own comments
+       cite — validate spends 7,291 ms on this thread against 1,091 ms of structured clone for the
+       same geometries (6.7×), and every one of those milliseconds is time the map is not drawn in.
+
+       ⚠ THE ANSWER IS NOT ALLOWED TO DEPEND ON WHICH THREAD RAN IT. One feature per call, because
+       that is the unit validate answers about: a whole dataset could be packed into a single
+       GeometryCollection and sent once, and it would answer a DIFFERENT question — the finding cap
+       (`limit`, 200 by default) is per call, so one 40,000-crossing ring would truncate the report
+       of every feature after it. The rows, the columns, the counts and the prefix are assembled
+       below exactly as they were, out of the same kernel answer.
+       ⚠ A RUN THAT COULD NOT BE STOPPED IS NOT STARTED, and a carried pass that was refused is
+       thrown away WHOLE — every feature is then validated here, by the same kernel, to the same
+       answer, and `stats.worker` says which thread did it and why. */
+
+    /* The kernel's own name for that walk. ⚠ Not a second spelling of anything: `GG.validate` above
+       is this name, and `worker.ready()` refuses BY IT if the dep-less kernel ever stops offering it
+       — so a rename upstream becomes a stated refusal here rather than a silent main-thread run. */
+    const VALIDATE_OP = 'validate';
+
+    /* How many positions a geometry is, counted on the RAW arrays, because those are the arrays that
+       travel. ⚠ NOT js/gis-geometry.js's `ringsOf` / `pointsOf`: those answer 「この幾何の使える環は
+       どれか」 — deduplicated, closed, filtered — which is a different (smaller) number than what is
+       copied, and a walk that costs about as much as the thing it is measuring. */
+    function positionsIn(g) {
+      if (!g || typeof g !== 'object') return 0;
+      if (g.type === 'GeometryCollection') {
+        let sum = 0;
+        for (const s of (g.geometries || [])) sum += positionsIn(s);
+        return sum;
+      }
+      let n = 0;
+      const walk = (a) => {
+        if (!Array.isArray(a)) return;
+        if (typeof a[0] === 'number') { n++; return; }
+        for (const x of a) walk(x);
+      };
+      walk(g.coordinates);
+      return n;
+    }
+
+    /* ⚠ 観測 (2026-09-19 · node 22 · このリポジトリの data/ecoregions_2017.geojson 847 地物):
+       validate 1 件の中央値は、地物の位置数で 〈<10: 0.023 ms〉〈10–50: 0.051〉〈50–100: 0.123〉
+       〈100–250: 0.357〉〈250–500: 1.478〉〈500–1000: 6.589〉。空に近い多角形 1 件を別スレッドへ
+       往復させる費用は同じ機械で 0.44 ms（中央値・50 回）だった——その 2 つが入れ替わるのが
+       250 位置あたりで、この記録では 847 件中 357 件がそれ以上、その 357 件が検査時間 7,291 ms の
+       うち 6,905 ms（94.7%）を占める。床の下の 490 件は合わせて 386 ms しかなく、1 件ずつ往復
+       させればそのほうが高くつく。⚠ これは上限ではない (CONSTITUTION.md §5)——床の下の地物も
+       同じ kernel で同じ答えまで検査される。決めているのは「運ぶか」だけである。
+       ⚠ 失効条件: この歩行の位置あたりの費用が変わったとき（掃引線の入れ替え）、または運び方が
+       「1 呼び出し 1 地物の構造化複製」でなくなったとき（束ねる受け口ができたとき）。
+       ⚠ 正本: この数が要るのはここだけ。塊の上限は発明せず js/gis-worker.js の予算に訊く（下の④）。 */
+    const VALIDATE_CARRY_FLOOR = 250;
+    /* 1 位置が運ばれている間の費用。`[lng, lat]` は 2 つの float64（16 B）を 2 要素の Array が
+       持つ形で、V8 での実測は 72 B/位置（node 22 · --expose-gc · 1e6 件の heapUsed 差）。運ばれて
+       いる間はこちらとあちらの両方にあるので倍。⚠ 予算そのものはこの file のものではない——
+       js/gis-worker.js `budgetBytes()` が正本で、これはその予算が知りようのない「単位あたりの
+       費用」だけである（上の CALC_BYTES_PER_PIXEL と同じ分担）。位置が float64 の組でなくなれば
+       失効する。 */
+    const VALIDATE_BYTES_PER_POSITION = 144;
+    /* 運ぶ価値のあるものが 1 件も無かった。⚠ A REASON, NOT A REFUSAL — 上の CARRIED_ANSWER_BAD と
+       同じ理由で `why:` の語彙ではない。読者が受け取るのは答えと、どちらのスレッドが出したかの
+       註だけで、成功した実行について誰も文を負っていない。 */
+    const NOTHING_WORTH_CARRYING = 'nothing-large-enough';
+
+    /* → { ok:true, answers }                  地物の添字 → kernel の value（運べたものだけ）
+       → { ok:false, cancelled:true }          読者が止めた
+       → { ok:false, reason, detail }          運べなかった。全部こちらで検査する */
+    async function validateOffThread(GG, W, fs, ctx) {
+      const no = (reason, detail) => ({ ok: false, reason: reason, detail: detail || null });
+      if (!W) return no('worker-not-mounted');
+      /* 「口はあるが、この構築の幾何 kernel には別スレッドの扉が無い」を、無い関数を呼んで落ちる
+         前に名指す——古い版の kernel を積んだ構築で起こりうる唯一の形である。 */
+      if (!GG || !GG.worker || typeof GG.worker.install !== 'function' || typeof GG.worker.request !== 'function') {
+        return no('geometry-worker-door-missing');
+      }
+      if (typeof W.run !== 'function' || typeof W.planBlocks !== 'function' || typeof W.maxConcurrency !== 'function') {
+        return no('worker-door-invalid');
+      }
+
+      /* ① どれが大きいか。1 回だけ歩き、この数を床と予算の両方に訊く——2 つ目の測り方を作らない。 */
+      const size = new Array(fs.length);
+      let biggest = 0, worth = 0;
+      for (let i = 0; i < fs.length; i++) {
+        const n = positionsIn((fs[i] && fs[i].geometry) || null);
+        size[i] = n;
+        if (n > biggest) biggest = n;
+        if (n >= VALIDATE_CARRY_FLOOR) worth++;
+      }
+      /* ⚠ 扉を開ける前に。運ぶ価値が無いのにスレッドを立てるのは、まさにこの層が測って避けると
+         決めたほうの費用である。 */
+      if (!worth) return no(NOTHING_WORTH_CARRYING, { features: fs.length, floor: VALIDATE_CARRY_FLOOR, largest: biggest });
+
+      /* ② 扉。install が渡すのは kernel の factory そのもの（写しではなく、あちらで評価される同じ
+         source text）。`ready` は形を 1 つも複製する前に、kernel 自身の語で断る。 */
+      const inst = GG.worker.install(W);
+      if (!inst.ok) return no(inst.reason, inst.detail);
+      const rdy = GG.worker.ready(W, VALIDATE_OP);
+      if (!rdy.ok) return no(rdy.why, rdy.detail);
+
+      /* ③ 止められない走りは始めない。読者の中止は**運んで**渡す——読み直しでは、仕事が 1 段
+         深くなった瞬間に効かなくなる。 */
+      let stop = null;
+      if (ctx) {
+        if (typeof AbortController !== 'function') return no('stop-handle-unavailable');
+        if (ctx.signal && ctx.signal.aborted) return { ok: false, cancelled: true };
+        stop = new AbortController();
+        if (ctx.signal) { try { ctx.signal.addEventListener('abort', () => stop.abort(), { once: true }); } catch (_) { } }
+      }
+
+      /* ④ 予算。1 つの塊に入る位置の数は js/gis-worker.js が自分の予算の上でする算術であって、
+         ここに書かれた定数ではない。これより大きい 1 地物は運べない——塊に割れる仕事ではない
+         ので（1 呼び出し＝1 地物）、その地物はこちらで検査される。 */
+      const plan = W.planBlocks({ units: biggest, bytesPerUnit: VALIDATE_BYTES_PER_POSITION, inFlight: W.maxConcurrency() });
+      if (!plan || !plan.ok) return no(plan ? plan.why : 'plan-invalid', plan ? plan.detail : null);
+      const cap = plan.plan.unitsPerBlock;
+      const queue = [];
+      for (let i = 0; i < fs.length; i++) if (size[i] >= VALIDATE_CARRY_FLOOR && size[i] <= cap) queue.push(i);
+      if (!queue.length) return no('nothing-fits-the-budget', { floor: VALIDATE_CARRY_FLOOR, largest: biggest, fits: cap });
+
+      /* ⑤ 走らせる。同時に幾つ、はこの層が決めない——js/gis-worker.js が持つただ 1 つの上限に
+         訊く。`runBlocks` を使わないのは、塊の中で分けられる仕事ではないからである。 */
+      const answers = new Map();
+      let cancelled = false, failed = null, next = 0;
+      const lanes = Math.max(1, Math.min(W.maxConcurrency(), queue.length));
+      const lane = async () => {
+        while (!cancelled && !failed) {
+          const k = next++;
+          if (k >= queue.length) return;
+          const i = queue[k];
+          const res = await W.run(W.geometryJob, GG.worker.request(VALIDATE_OP, [fs[i].geometry]), {
+            /* 運ぶのは読者のデータそのもので、譲れる buffer は 1 つも無い（GeoJSON は数の入れ子）。
+               `own:'worker'` と述べるのは、この積荷について真でないことを述べることになる。 */
+            own: 'caller',
+            signal: stop ? stop.signal : null,
+          });
+          if (!res || !res.ok) {
+            const why = res ? res.why : 'worker-answered-nothing';
+            /* ⚠ 読者が止めたのと、こちらが止めたのは別である。下で `failed` を立てた lane は
+               まだ空中にある呼び出しを終わらせるので、その巻き添えの `aborted` を
+               「読者が中止した」と読むと、断った理由が答えから消える。 */
+            if (why === 'aborted' || why === 'cancelled') { if (!failed) cancelled = true; return; }
+            failed = { why: why, detail: res ? res.detail : null };
+            if (stop) { try { stop.abort(); } catch (_) { } }
+            return;
+          }
+          /* Worker は走者であって権威ではない。形の違う答えは、完成して見える表に書き込む前に
+             ここで断る——断ればこの pass は丸ごと捨てられ、同じ kernel がこちらで答える。
+             ⚠ 包みは 2 枚あり、どちらもこちらが決めた形ではない: 外側は js/gis-worker.js の
+             「どの library が答えたか」(`op` は渡した kernel の名前で、演算の名前ではない)、
+             内側は js/gis-geometry.js `call` の {ok, value} である。 */
+          const v = res.value;
+          const call = (v && v.op === GG.worker.op) ? v.value : null;
+          const value = (call && call.ok === true) ? call.value : null;
+          if (!value || typeof value !== 'object' || typeof value.valid !== 'boolean' || !Array.isArray(value.problems)) {
+            failed = { why: CARRIED_ANSWER_BAD, detail: { at: i, op: (v && v.op) || null } };
+            if (stop) { try { stop.abort(); } catch (_) { } }
+            return;
+          }
+          answers.set(i, value);
+          /* ⚠ 拍子は**単位が着いたところ**で訊く。ここで読んだ「止めて」が、まだ空中にある呼び
+             出しを終わらせる——最後の 1 件が着いてから気づくのでは中止にならない。運ばれた地物は
+             ここで 1 つ数え、下の組み立ての loop は運ばれなかったものだけを数える。合わせて
+             ちょうど 1 地物 1 拍である。 */
+          if (ctx) {
+            const go = await ctx.tick(1, fs.length);
+            if (!go) { cancelled = true; if (stop) { try { stop.abort(); } catch (_) { } } return; }
+          }
+        }
+      };
+      const running = [];
+      for (let i = 0; i < lanes; i++) running.push(lane());
+      await Promise.all(running);
+
+      /* ⚠ 途中まで運べた答えは、答えではない。止められた run はここで終わり、書きかけの表は
+         登録されない（下の runValidate が `cancelled` を返す）。断った理由があるならそれが先で、
+         巻き添えの中止でそれを隠さない。 */
+      if (failed) return no(failed.why, failed.detail);
+      if (cancelled) return { ok: false, cancelled: true };
+      return { ok: true, answers: answers };
+    }
+
     async function runValidate(ds, params, ctx) {
       const GG = geometry();
       const px = validityPrefix(params);
       const fs = ds.features();
+      /* ⚠ 運ぶ試みが先に立つが、答えを組み立てるのはこの下の 1 本の loop のままである。運べた
+         地物は kernel の答えを持って、運べなかった地物は同じ kernel にここで訊いて、同じ列に
+         なる——どちらのスレッドが走ったかは `stats.worker` の註にしか現れない。 */
+      const carried = await validateOffThread(GG, workerKernel(), fs, ctx);
+      if (carried.cancelled) return fail('cancelled', { done: ctx.done(), total: fs.length });
+      const answers = carried.ok ? carried.answers : null;
+      /* ⚠ 「口そのものが無かった」 は 「使えなかった」 に畳まない。件数まで述べるのは、運ぶのが
+         大きい地物だけだからである——`used` とだけ書けば、床の下の地物までがあちらで走ったと
+         読める。 */
+      const note = carried.ok
+        ? ('used: ' + answers.size + ' of ' + fs.length + ' features')
+        : ('not-used: ' + carried.reason);
       const out = [];
       let invalid = 0, unmeasured = 0;
-      for (const f of fs) {
-        if (!(await ctx.tick(1, fs.length))) return fail('cancelled', { done: ctx.done(), total: fs.length });
+      for (let fi = 0; fi < fs.length; fi++) {
+        const f = fs[fi];
+        const had = !!(answers && answers.has(fi));
+        if (!had && !(await ctx.tick(1, fs.length))) return fail('cancelled', { done: ctx.done(), total: fs.length });
         const g = (f && f.geometry) || null;
-        const v = GG.validate(g);
+        const v = had ? { ok: true, value: answers.get(fi) } : GG.validate(g);
         let extra;
         if (!v || !v.ok) {
           /* ⚠ 「幾何が無い」 IS NOT 「妥当である」. A statistics table travels through this op with
@@ -3412,7 +4278,7 @@ export function makeGisOps() {
         }
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
       }
-      return { ok: true, features: out, stats: { invalid: invalid, unmeasured: unmeasured, total: fs.length } };
+      return { ok: true, features: out, stats: { invalid: invalid, unmeasured: unmeasured, total: fs.length, worker: note } };
     }
 
     async function runRepair(ds, params, ctx) {
@@ -3451,6 +4317,474 @@ export function makeGisOps() {
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: geom });
       }
       return { ok: true, features: out, stats: { changed: changed, refused: refused, emptied: emptied, total: fs.length } };
+    }
+
+    /* ══ (#R819) 集合についての問い — coverage ═══════════════════════════════════════════════════
+       算術は 1 行も無い。js/gis-geometry.js coverage() が測り、この runner がするのは⑴その答えを
+       **次の処理の入力になるデータセット**に直すこと ⑵所見が指している地物を身元で名指すこと
+       ⑶拒否をそのまま上へ運ぶこと の 3 つである。 */
+
+    /* 「述べられていない」と「空文字」を同じに扱う。panel のテキスト欄は空文字を送る。 */
+    function wordOf(v) { return (v == null || String(v).trim() === '') ? null : String(v).trim(); }
+    /* 数の欄も同じ——空欄は「述べていない」であって 0 ではない。⚠ 読めない数はこの層で 0 に
+       丸めない: kernel が `bad-tolerance` で名指して断るほうが、読者に何が起きたか伝わる。 */
+    function numOf(v) { return (v == null || String(v).trim() === '') ? null : v; }
+
+    async function runCoverage(ds, params, ctx) {
+      const GG = geometry();
+      /* run() は module と clipper までを見る。「この構築の幾何は集合について答えられるのか」は
+         扉そのものに訊く——古い版の kernel を積んだ構築で、無い関数を呼んで落ちるより、
+         既にある語で断るほうがよい。 */
+      if (!GG || typeof GG.coverage !== 'function') return fail('geometry-unavailable', { needs: 'coverage' });
+      const feats = ds.features();
+      if (!feats.length) return fail('no-features', { input: 0 });
+      /* 添字 → 身元。kernel は**渡した配列の位置**で所見を述べるので、対応表は渡すその配列から
+         作る（並べ替えない・間引かない）。 */
+      const ids = feats.map((f, i) => featureIdentity(f, i));
+      /* 走査は kernel の中で一息に終わる。譲れるのはその前だけで、中止はそこで観測される。 */
+      if (!(await ctx.tick(1, 1))) return fail('cancelled', { done: ctx.done(), total: 1 });
+      const r = GG.coverage(feats, {
+        overlaps: wordOf(params.overlaps), gaps: wordOf(params.gaps), edges: wordOf(params.edges),
+        gapToleranceKm: numOf(params.gapToleranceKm), edgeToleranceKm: numOf(params.edgeToleranceKm),
+        limit: numOf(params.limit),
+      });
+      /* ⚠ 拒否は kernel の語彙のまま上がる。ここで言い換えれば、同じ 1 つの事実に 2 つの綴りが
+         出来る——この file が `geometry-op-unavailable` について既に断っていることと同じ。 */
+      if (!r || !r.ok) return r || fail('geometry-failed', { failed: 1 });
+      const v = r.value || {};
+      const row = (fin, tolerated) => {
+        const g = (fin && fin.geometry) || null;
+        const d = (fin && fin.detail) || {};
+        const extra = {
+          _coverage: String(fin.kind),
+          /* ⚠ 添字ではなく身元。この列で元のデータセットに結び直せなければ、所見は「どこかに
+             重複がある」で終わってしまう。 */
+          _coverageOf: (fin.features || []).map((i) => ids[i]),
+          /* 'report' で測ったもの・許容の内側だったものは、違反ではない。同じ表に載せて、
+             どちらだったかを列で述べる。 */
+          _coverageTolerated: !!tolerated,
+        };
+        if (d.toleranceKm != null) extra._coverageToleranceKm = d.toleranceKm;
+        if (d.why != null) extra._coverageWhy = String(d.why);
+        if (d.edges != null) extra._coverageEdges = d.edges;
+        /* 面を持つ所見には面積を——`clip` が `_areaKm2` を載せるのと同じ規則、同じ実装。 */
+        if (g && polygonsOf(g).length) extra._areaKm2 = areaKm2(g);
+        return { type: 'Feature', properties: extra, geometry: g };
+      };
+      const out = [];
+      for (const fin of (v.findings || [])) out.push(row(fin, false));
+      for (const fin of (v.tolerated || [])) out.push(row(fin, true));
+      const stats = {
+        conforms: v.conforms, counts: v.counts, asked: v.asked,
+        truncated: !!v.truncated, findings: (v.findings || []).length, tolerated: (v.tolerated || []).length,
+      };
+      /* 述べなかった条件は kernel の 'allow' として解決されている。レシピの隣に置くのは、
+         「何を訊いたか」が無い 0 件は読めないからである。 */
+      return { ok: true, features: out, stats: stats, resolved: { coverage: v.asked || null } };
+    }
+
+    /* ══ (#R819) 区域についての評価 — profile / reach が共有する 1 本 ═════════════════════════════
+       ⚠ 新しい幾何も新しい算術もここには無い。走るのは `zonal` と `aggregate` そのもので、この層が
+       足すのは次の 3 つだけ:
+         ① どの集計がその量について意味を持つかを js/gis-units.js に訊いて**選ぶ**
+         ② 走らせた条件（出典・算術・時点・量を述べたのは誰か）を、その列の隣に**述べる**
+         ③ 答えられなかったときに、値の列を null で埋めずに**理由を残す**
+       ③ が要るのは、null が「そこには何も無かった」とも読めるからである——runZonal が同じ理由で
+       零ではなく拒否を返している。ここでは**その出典だけ**が答えられないので、段全体を落とさず
+       行に理由を書く。 */
+
+    /* 量の measure（extensive / intensive / nominal）。⚠ 判定は units kernel のもので、
+       「人口ならこう」のような主題ごとの分岐はこの file に 1 つも無い。 */
+    function measureOf(spec) {
+      const UQ = unitKernel();
+      if (!UQ || typeof UQ.quantity !== 'function') return null;
+      let p = null;
+      try { p = UQ.quantity(spec); } catch (_) { p = null; }
+      return (p && p.ok && p.q) ? (p.q.measure || null) : null;
+    }
+
+    /* 読み方が述べられていなければ、量が決める。⚠ 既定を 1 つ書くと、分類の格子に平均を出す。 */
+    function readingFor(measure, isRaster, named) {
+      if (measure === 'nominal') return isRaster ? 'composition' : 'presence';
+      if (measure === 'extensive') return 'total';
+      if (measure === 'intensive') return 'typical';
+      /* 量が述べられていないとき。読む値があるなら「その区域で典型的にいくらか」、無いなら
+         「いくつあるか」——どちらも量の宣言を要さない問いである。 */
+      return named ? 'typical' : 'presence';
+    }
+
+    /* 読み方 → その入力の上の算術。⚠ 対応表であって判断ではない: 意味を持つかどうかは下で
+       units kernel に訊き、持たなければ走らせない。 */
+    function methodFor(reading, isRaster) {
+      if (reading === 'presence') return 'count';
+      if (reading === 'composition') return isRaster ? 'classes' : null;
+      if (reading === 'total') return 'sum';
+      return isRaster ? 'mean' : 'areaWeightedMean';
+    }
+
+    /* データセットが述べている時点。⚠ 述べていなければ null であって、今日でもファイル名でも
+       隣の行でもない（.agents/rules/historical-verification.md §2-3）。 */
+    function timeStatement(R, ds) {
+      const t = ds && ds.time;
+      if (!t) return null;
+      const span = (typeof R.timeSpan === 'function') ? R.timeSpan(ds) : null;
+      return { kind: String(t.kind), start: span ? span.start : null, end: span ? span.end : null };
+    }
+
+    /* 読者が述べた対象時点と、出典が述べている時点の関係。⚠ 出典に書き込まない——比較して、
+       その結果を述べるだけ。 */
+    function timeMatch(stated, srcTime) {
+      if (stated == null) return null;
+      if (!srcTime) return 'source-undeclared';
+      if (srcTime.start == null && srcTime.end == null) return 'source-undeclared';
+      if (srcTime.start != null && stated.end < srcTime.start) return 'outside';
+      if (srcTime.end != null && stated.start > srcTime.end) return 'outside';
+      return 'covers';
+    }
+
+    /* 出典が述べている取得の完全性（provenance.coverage）。無ければ null＝「述べていない」。 */
+    function coverageStatement(ds) {
+      const c = (ds && ds.provenance && ds.provenance.coverage) || null;
+      if (!c) return null;
+      return { completeness: c.completeness == null ? null : String(c.completeness), reason: c.reason == null ? null : String(c.reason) };
+    }
+
+    async function runProfileLike(who, zoneDs, srcDs, params, R, ctx) {
+      const isRaster = String(srcDs.kind || 'vector') === 'raster';
+      /* 格子を渡されたときだけ格子の kernel が要る。宣言で `needsRaster` にすると、地物だけを
+         読む呼び出しまで「載っていない」で断ることになる。 */
+      if (isRaster && !rasterKernel()) return fail('raster-unavailable');
+
+      const field = wordOf(params.field), band = wordOf(params.band);
+      /* 列と帯を取り違えた呼び出しは、黙って片方を無視せずに断る。 */
+      if (!isRaster && band != null) return fail('bad-param', { param: 'band', value: band, kind: 'vector' });
+      if (isRaster && field != null) return fail('bad-param', { param: 'field', value: field, kind: 'raster' });
+      if (!isRaster && field != null && !hasField(srcDs, field)) return fail('unknown-field', { field: field });
+
+      /* 量: 呼び手 → 列（`quantityFor` の規則）。格子は帯自身の宣言も読む——runZonal と同じ順で、
+         同じ 2 人の著者を同じ順に訊く。 */
+      const named = isRaster ? band : field;
+      const qs = quantityFor(params.quantity, srcDs, named);
+      if (!qs.ok) return qs;
+      let spec = qs.spec, statedBy = qs.from;
+      if (spec == null && isRaster) {
+        const bi = bandIndexOf(srcDs, band);
+        if (!bi.ok) return bi.res;
+        const b = (srcDs.bands[bi.index] || {});
+        if (b.quantity != null) { spec = b.quantity; statedBy = 'band'; }
+      }
+
+      const asked = wordOf(params.reading);
+      if (asked != null && PROFILE_READINGS.indexOf(asked) < 0) return fail('bad-param', { param: 'reading', value: asked, values: PROFILE_READINGS.slice() });
+      const reading = asked || readingFor(measureOf(spec), isRaster, named);
+      const method = methodFor(reading, isRaster);
+      /* 地物の上に「構成（どの分類がどれだけ）」は無い: `aggregate` は分類ごとの面積を持たない。
+         黙って別の答えを出すより、要るものを名指して断る。 */
+      if (method == null) return fail('bad-param', { param: 'reading', value: reading, kind: 'vector' });
+
+      /* ④ その算術はこの量について意味を持つか。⚠ `classes` は「どの分類がどれだけ」なので、
+         units kernel には majority と同じ問いを出す——runZonal が同じ変換をしている。 */
+      const agg = aggregationVerdict(spec, (method === 'classes') ? 'majority' : method, 'space');
+
+      const asOfWord = wordOf(params.asOf);
+      let asOf = null;
+      if (asOfWord != null) {
+        asOf = (typeof R.momentOf === 'function') ? R.momentOf(asOfWord) : null;
+        if (!asOf) return fail('bad-param', { param: 'asOf', value: asOfWord });
+      }
+      const srcTime = timeStatement(R, srcDs);
+      const match = timeMatch(asOf, srcTime);
+
+      const outName = wordOf(params.outName) || (reading + '_' + (named || (isRaster ? 'band' : 'features')));
+      /* この op が足す列も、読者の列を潰してはならない——値の列については delegate 自身が同じ
+         規則で断る（`output-column-in-use`）。 */
+      const sideNames = [outName + '_source', outName + '_method', outName + '_time', outName + '_quantityFrom', outName + '_why'];
+      if (asOfWord != null) sideNames.push(outName + '_asOf', outName + '_timeMatch');
+      for (const nm of sideNames) if (hasField(zoneDs, nm)) return fail('output-column-in-use', { name: nm });
+
+      const weightBy = (method === 'areaWeightedMean')
+        /* ⚠ 区域の統計における「面積」は**区域の中の地面**である。member 自身の広がりで重み付ける
+           読み方も実在するので、述べられていればそれに従う（AGG_WEIGHT_BASES の註）。 */
+        ? (wordOf(params.weightBy) || 'intersectionArea')
+        : null;
+
+      const delegate = (total) => (isRaster
+        ? runZonal(zoneDs, srcDs, {
+          band: band, stat: method, outName: outName, boundary: wordOf(params.boundary), total: total,
+          /* ⚠ 呼び手の宣言だけを渡す。帯が述べたものを parameter に着せ替えると、格子が自分の
+             宣言を読者のものとして記録する（[[intmap-data-must-not-claim-an-author-it-lacks]]）。 */
+          quantity: (qs.from === 'caller') ? params.quantity : null,
+        }, R, ctx)
+        : runAggregate(zoneDs, srcDs, {
+          stat: method, field: field, outName: outName, weightBy: weightBy,
+          quantity: (qs.from === 'caller') ? params.quantity : null,
+        }, R, ctx));
+
+      let total = wordOf(params.total);
+      let unanswered = null, res = null;
+      const weightOk = (isRaster && method === 'mean' && agg.weight === 'area');
+      if (agg.verdict === 'refused' || (agg.verdict === 'needs-weight' && !weightOk)) {
+        /* ⚠ 「密度は足せない、面積を掛けてから足せ」は拒否ではなく**処方**である。js/gis-raster.js
+           の total rule がその算術を持っているので、走らせる前に諦めない。規則の名前はこの file に
+           1 つも書かれていない: 公開されている集合から 1 つ試し、合わなければ**その拒否が返した
+           `fits`** が正しい規則を教える（.agents/rules/one-pass-or-a-reason.md §5——2 度目は、
+           1 度目が実際に返した事実で違うことをする）。 */
+        const rules = (isRaster && method === 'sum' && !total) ? paramValues(DECL.zonal, 'total') : null;
+        if (rules && rules.length) {
+          let t = rules[0];
+          let attempt = await delegate(t);
+          if (!attempt.ok && attempt.why === 'total-rule-refused') {
+            const fits = (attempt.detail && Array.isArray(attempt.detail.fits)) ? attempt.detail.fits.filter((x) => x !== t) : [];
+            if (fits.length) { t = fits[0]; attempt = await delegate(t); }
+          }
+          if (attempt.ok) { total = t; res = attempt; }
+          else if (attempt.why === 'total-rule-refused' || attempt.why === 'aggregation-refused') {
+            unanswered = { why: (attempt.detail && attempt.detail.why) || attempt.why, remedy: agg.remedy || null, verdict: agg.verdict };
+          } else return attempt;                       /* 段そのものが組み立て違いなら、それは拒否 */
+        } else {
+          unanswered = { why: agg.why || null, remedy: agg.remedy || null, verdict: agg.verdict };
+        }
+      }
+      if (!res && !unanswered) {
+        res = await delegate(total);
+        if (!res || !res.ok) return res || fail('zonal-failed');
+      }
+
+      const statement = {
+        of: who, source: srcDs.id, sourceKind: isRaster ? 'raster' : 'vector',
+        column: outName, reading: reading, method: method, total: total || null,
+        weightBy: weightBy, boundary: isRaster ? (wordOf(params.boundary) || null) : null,
+        quantityStatedBy: (spec != null) ? (statedBy || 'caller') : null,
+        time: srcTime, asOf: asOfWord, timeMatch: match,
+        coverage: coverageStatement(srcDs),
+        answered: !unanswered,
+        why: unanswered ? (unanswered.why || null) : null,
+        remedy: unanswered ? (unanswered.remedy || null) : null,
+      };
+      const side = {};
+      side[outName + '_source'] = String(srcDs.id);
+      side[outName + '_method'] = unanswered ? null : String(total || method);
+      side[outName + '_time'] = srcTime;
+      side[outName + '_quantityFrom'] = statement.quantityStatedBy;
+      /* ⚠ 空欄にしない。答えられなかったのはこの出典についてであって、区域についてではない。 */
+      side[outName + '_why'] = statement.why;
+      if (asOfWord != null) { side[outName + '_asOf'] = asOfWord; side[outName + '_timeMatch'] = match; }
+
+      if (unanswered) {
+        /* 区域はそのまま、値の列は**作らない**。null の列は「そこには何も無い」と読めてしまう。 */
+        const zones = zoneDs.features();
+        const out = [];
+        for (const f of zones) {
+          if (!(await ctx.tick(1, zones.length))) return fail('cancelled', { done: ctx.done(), total: zones.length });
+          out.push({ type: 'Feature', properties: withProps(props(f), side), geometry: (f && f.geometry) || null });
+        }
+        return { ok: true, features: out, stats: { profile: statement }, resolved: { profile: statement } };
+      }
+
+      const out = res.features.map((f) => ({ type: 'Feature', properties: withProps(props(f), side), geometry: (f && f.geometry) || null }));
+      const stats = Object.assign({}, res.stats || {}, { profile: statement });
+      const resolved = Object.assign({}, res.resolved || {}, { profile: statement });
+      return { ok: true, features: out, stats: stats, resolved: resolved };
+    }
+
+    async function runProfile(zoneDs, srcDs, params, R, ctx) { return runProfileLike('profile', zoneDs, srcDs, params, R, ctx); }
+
+    /* ══ (#R819) 到達圏を、他のデータと同じ土俵に ═══════════════════════════════════════════════
+       評価そのものは `profile` と同じ 1 本を通る（同じ列・同じ条件の述べ方でなければ「比べられる」
+       にならない）。足すのは到達圏どうしの**重なりの地面**で、これが無いと施設ごとの人口を足した
+       読者は同じ人間を何度も数える。 */
+    async function runReach(reachDs, srcDs, params, R, ctx) {
+      const GG = geometry();
+      if (!GG || typeof GG.coverage !== 'function') return fail('geometry-unavailable', { needs: 'coverage' });
+      const base = await runProfileLike('reach', reachDs, srcDs, params, R, ctx);
+      if (!base || !base.ok) return base || fail('zonal-failed');
+
+      const feats = reachDs.features();
+      const ids = feats.map((f, i) => featureIdentity(f, i));
+      /* ⚠ 'report'。到達圏が重なるのは誤りではない——測って述べるためのものである。 */
+      const cov = GG.coverage(feats, { overlaps: 'report' });
+      if (!cov || !cov.ok) return cov || fail('geometry-failed', { failed: 1 });
+      const v = cov.value || {};
+      /* 1 つの到達圏について、他のどれかと共有している地面は 1 枚である（2 つと重なっていても
+         地面は 1 度しか数えない）ので、断片を union してから測る。 */
+      const pieces = new Map();
+      for (const fin of (v.findings || []).concat(v.tolerated || [])) {
+        if (!fin || fin.kind !== 'overlap' || !fin.geometry) continue;
+        for (const i of (fin.features || [])) {
+          if (!pieces.has(i)) pieces.set(i, []);
+          pieces.get(i).push(fin.geometry);
+        }
+      }
+      const led = makeGeoLedger();
+      const overlapKm2 = new Map();
+      for (const [i, list] of pieces) {
+        if (!(await ctx.tick(1, pieces.size))) return fail('cancelled', { done: ctx.done(), total: pieces.size });
+        if (list.length === 1) { overlapKm2.set(i, areaKm2(list[0])); continue; }
+        const u = GG.attempt.union(list);
+        if (!led.ok(u)) continue;
+        overlapKm2.set(i, u.geometry ? areaKm2(u.geometry) : 0);
+      }
+
+      const prov = reachDs.provenance || {};
+      const recipe = { kind: String(prov.kind || 'unknown'), op: prov.op == null ? null : String(prov.op), params: prov.params || null };
+      const reachTime = timeStatement(R, reachDs);
+      /* ⚠⚠ 行と到達圏の対応は、**数えて**決める。評価を行った runner は地面を持たない行を落とすので
+         （`!g || polygonsOf(g).length === 0`）、出てきた行の i 番目が元の i 番目だとは限らない——
+         そこを取り違えると、重なりの地面が隣の施設の行に載る。落ちた行が無いとき（長さが一致）と
+         1 つも落ちなかったとき（答えられなかった経路）の 2 つだけが対応づけられる場合で、
+         どちらでもなければ**身元を名乗らない**: 間違った身元より、無い身元のほうがよい。 */
+      const areal = [];
+      for (let i = 0; i < feats.length; i++) { const g = feats[i] && feats[i].geometry; if (g && polygonsOf(g).length) areal.push(i); }
+      const mapRow = (base.features.length === areal.length) ? ((k) => areal[k])
+        : ((base.features.length === feats.length) ? ((k) => k) : null);
+      const out = base.features.map((f, k) => {
+        const i = mapRow ? mapRow(k) : null;
+        const ov = (i != null && overlapKm2.has(i)) ? overlapKm2.get(i) : 0;
+        const own = (f && f.properties && typeof f.properties._areaKm2 === 'number') ? f.properties._areaKm2 : (f && f.geometry ? areaKm2(f.geometry) : null);
+        const extra = {
+          /* ⚠ 対応が取れなかった行には、重なりの数を書かない。0 と「測れなかった」を同じ欄に
+             入れるのは、この層が他所で何度も断っている取り違えである。 */
+          _reachOverlapKm2: mapRow ? ov : null,
+          /* 誰とも共有していない地面。⚠ 差であって、独立な測定ではない——同じ 2 つの面積から
+             出しているので、読者はどちらも見て確かめられる。 */
+          _reachExclusiveKm2: (own == null || !mapRow) ? null : Math.max(0, own - ov),
+          _reachOf: (i == null || ids[i] == null) ? null : ids[i],
+          _reachFrom: recipe.op || recipe.kind,
+          _reachTime: reachTime,
+        };
+        return { type: 'Feature', properties: withProps(props(f), extra), geometry: (f && f.geometry) || null };
+      });
+      const overlaps = pieces.size;
+      const reach = {
+        recipe: recipe, time: reachTime, catchments: feats.length,
+        overlapping: overlaps,
+        /* ⚠ 「足し上げると二重に数える」は、読者が知らないと直せない事実である。 */
+        sumDoubleCounts: overlaps > 0,
+        /* 行と到達圏の対応が取れたか。取れていない答えは、重なりの欄を持たない。 */
+        aligned: !!mapRow,
+        truncated: !!v.truncated,
+      };
+      const stats = Object.assign({}, base.stats || {}, { reach: reach });
+      const resolved = Object.assign({}, base.resolved || {}, { reach: reach });
+      /* 幾何が答えられなかった union があれば、その事実は withGeoStats が同じ 1 か所で述べる。 */
+      return withGeoStats({ ok: true, features: out, stats: stats, resolved: resolved }, led);
+    }
+
+    /* ══ (#R819) 区域区分が変わっているとき、何を同じ対象として比べるのか ═══════════════════════
+       ⚠ 対応表は `intersect` と同じ 1 つの交差演算で作る。それでも runOverlay を呼ばないのは、
+       あの op の行が**左側の身元を運んでいない**（`_overlayId` は右側のもの）ためで、区分の対応表は
+       両側の身元が無ければ対応表ではない。使っているのは同じ kernel の同じ扉・同じ索引・同じ
+       面積関数で、新しい幾何は 1 つも無い。 */
+    async function runCompareZones(aDs, bDs, params, R, ctx) {
+      const GG = geometry();
+      if (!GG || typeof GG.coverage !== 'function') return fail('geometry-unavailable', { needs: 'coverage' });
+      const A = windowsOf(aDs), B = windowsOf(bDs);
+      if (!A.length) return fail('no-features', { input: 0 });
+      if (!B.length) return fail('no-features', { input: 1 });
+
+      const field = wordOf(params.field);
+      if (field != null && !hasField(aDs, field)) return fail('unknown-field', { field: field });
+      const qs = quantityFor(params.quantity, aDs, field);
+      if (!qs.ok) return qs;
+      /* ⚠ 按分は「足せる量」にしか意味が無い。人口は按分できるが、人口密度・比率・分類は
+         できない——判定は js/gis-units.js のもので、断られたら列を作らずに理由を載せる。 */
+      const agg = field ? aggregationVerdict(qs.spec, 'sum', 'space') : null;
+      const apportionable = !!(agg && agg.verdict !== 'refused' && agg.verdict !== 'needs-weight');
+      const outName = field ? (wordOf(params.outName) || (field + '_apportioned')) : null;
+      if (outName && (hasField(aDs, outName) || hasField(bDs, outName))) return fail('output-column-in-use', { name: outName });
+
+      const timeA = timeStatement(R, aDs), timeB = timeStatement(R, bDs);
+      for (const b of B) b.areaKm2 = areaKm2(b.geometry);
+      const cand = candidateSource(B);
+      const led = makeGeoLedger();
+      const out = [];
+      let matched = 0;
+      for (let i = 0; i < A.length; i++) {
+        if (!(await ctx.tick(1, A.length))) return fail('cancelled', { done: ctx.done(), total: A.length });
+        const a = A[i];
+        const aArea = areaKm2(a.geometry);
+        const av = field ? R.asNumber(a.props[field]) : null;
+        cand.each(a.bbox, 0, (b) => {
+          const r = GG.attempt.intersection(a.geometry, b.geometry);
+          if (!led.ok(r)) return true;
+          if (!r.geometry) return true;                         /* 触れているだけは対応ではない */
+          const ia = areaKm2(r.geometry);
+          const extra = {
+            _compare: 'match', _compareA: a.id, _compareB: b.id,
+            _areaKm2: ia, _compareFromKm2: aArea, _compareToKm2: b.areaKm2,
+            /* ⚠ 割合は返すが、「分割」「併合」「同一」の判定は返さない。それは閾値であり、
+               閾値はこの層が持てない読者の主張である。 */
+            _compareShareOfA: (aArea > 0) ? (ia / aArea) : null,
+            _compareShareOfB: (b.areaKm2 > 0) ? (ia / b.areaKm2) : null,
+            _compareTimeA: timeA, _compareTimeB: timeB,
+          };
+          if (field) {
+            if (!apportionable) extra._compareApportionWhy = (agg && agg.why) ? String(agg.why) : 'quantity-undeclared';
+            else if (av == null) extra._compareApportionWhy = 'value-unreadable';
+            else if (!(aArea > 0)) extra._compareApportionWhy = 'source-unit-has-no-area';
+            else {
+              extra[outName] = av * (ia / aArea);
+              extra._compareApportionBy = 'area-share';
+              /* ⚠ 仮定は出力に載る。面積で按分することは「その単位の中では一様に分布している」と
+                 述べることであり、述べずに数だけ配るのは読者に検証させない。 */
+              extra._compareApportionAssumption = 'uniform-within-source-unit';
+            }
+          }
+          matched++;
+          out.push({ type: 'Feature', properties: extra, geometry: r.geometry });
+          return true;
+        });
+      }
+
+      /* 比べられない部分——片方にしか地面が無いところ。⚠ ①の coverage に、もう一方の union を
+         「覆っているはずの範囲」として渡して訊く。差分を自前で組むより、同じ 1 つの判定が
+         同じ答えを返すほうがよい。 */
+      const unionOf = (list) => GG.attempt.union(list.map((x) => x.geometry));
+      const uA = unionOf(A), uB = unionOf(B);
+      if (!led.ok(uA) || !led.ok(uB)) return fail('geometry-failed', { failed: led.failed(), why: led.why(), detail: led.detail() });
+      const unmatched = (setList, coverGeom, tag) => {
+        if (!coverGeom) return null;
+        const r = GG.coverage(setList.map((x) => x.geometry), { cover: coverGeom });
+        if (!r || !r.ok) return r || fail('geometry-failed', { failed: 1 });
+        const v = r.value || {};
+        for (const fin of (v.findings || []).concat(v.tolerated || [])) {
+          if (!fin || fin.kind !== 'uncovered' || !fin.geometry) continue;
+          out.push({
+            type: 'Feature',
+            properties: {
+              _compare: tag, _areaKm2: areaKm2(fin.geometry),
+              _compareTimeA: timeA, _compareTimeB: timeB,
+            },
+            geometry: fin.geometry,
+          });
+        }
+        return null;
+      };
+      /* A の地面のうち B が覆っていないところ ＝ B の集合を A の範囲について訊く。 */
+      const r1 = unmatched(B, uA.geometry, 'unmatched-a');
+      if (r1) return r1;
+      const r2 = unmatched(A, uB.geometry, 'unmatched-b');
+      if (r2) return r2;
+
+      /* それぞれの側が本当に分割になっているか。⚠ 条件は 'report' ——重なりは誤りではなく、
+         係争・重複・継ぎ目を機械は分けられない。数えるだけで、違反にはしない。 */
+      const partition = (list) => {
+        const r = GG.coverage(list.map((x) => x.geometry), { overlaps: 'report', gaps: 'report' });
+        if (!r || !r.ok) return { asked: null, unmeasured: (r && r.why) || null };
+        const v = r.value || {};
+        return { counts: v.counts, asked: v.asked, truncated: !!v.truncated };
+      };
+      const stats = {
+        matched: matched, a: A.length, b: B.length,
+        /* ⚠ 述べられていない時点は「述べられていない」と載る。片方の日付をもう片方に代入しない。 */
+        time: { a: timeA, b: timeB },
+        apportioned: field ? apportionable : null,
+        apportionWhy: (field && !apportionable && agg) ? (agg.why || null) : null,
+        partition: { a: partition(A), b: partition(B) },
+      };
+      const res = withGeoStats({ ok: true, features: out }, led, stats);
+      if (res.ok) res.resolved = { compareZones: { time: stats.time, apportioned: stats.apportioned, column: outName } };
+      return res;
     }
 
     /* ── (#R783) どの面なら、述べられた要求を満たせるのか ─────────────────────────────────────
@@ -4003,9 +5337,20 @@ export function makeGisOps() {
       }
       for (const d of ds) {
         for (const f of (d && d.fields) || []) {
-          if (!f || !f.name || f.unit == null) continue;
+          if (!f || !f.name) continue;
+          const q = (f.quantity && typeof f.quantity === 'object') ? f.quantity : null;
+          if (f.unit == null && q == null) continue;
           if (Object.prototype.hasOwnProperty.call(out, f.name)) continue;
-          out[f.name] = { unit: String(f.unit), unitStated: f.unitStated || null, unitFrom: d.id };
+          const e = { unit: f.unit == null ? null : String(f.unit), unitStated: f.unitStated || null, unitFrom: d.id };
+          /* ⚠ (#R819) 量も、名前が残る限り残る。Every word of the note above is true of the
+             quantity: 「12」 is twelve of something, and 「それは総量か密度か」 can be measured even
+             less than the something can. A filter that kept 40 of 1,000 rows was handing back a column
+             whose quantity had to be retyped — on a record that REFUSES to be declared on at all
+             (openFor: `edit-would-contradict-recipe`), so it could not be.
+             ⚠ A COLUMN MAY HAVE ONE WITHOUT THE OTHER, so the guard asks for either: a land-cover
+             class is a quantity with no unit at all (js/gis-units.js refuses a unit on `category`). */
+          if (q != null) { e.quantity = q; e.quantityStated = f.quantityStated || null; e.quantityFrom = d.id; }
+          out[f.name] = e;
         }
       }
       /* ⚠ (#R763) THE OUTPUT'S NAME FOR A COLUMN THE RUN RENAMED. `renamed` comes from the runner
@@ -4026,7 +5371,13 @@ export function makeGisOps() {
              that is still in the answer. js/gis-datasets.js applies statements by looking up the
              output's own column names, so an entry for a column the output does not have is never
              read, and inventing one is what ⑥ of tests/r759 measures. */
-          if (!Object.prototype.hasOwnProperty.call(out, to)) out[to] = { unit: src.unit, unitStated: src.unitStated, unitFrom: src.unitFrom, unitRenamedFrom: r.name };
+          if (!Object.prototype.hasOwnProperty.call(out, to)) {
+            const e = { unit: src.unit, unitStated: src.unitStated, unitFrom: src.unitFrom, unitRenamedFrom: r.name };
+            /* (#R819) 接頭辞は改名であり、改名された列は同じ量である——単位について上の註が述べて
+               いるのと同じ理由で、結合が運ぶのは両方でなければならない。 */
+            if (src.quantity != null) { e.quantity = src.quantity; e.quantityStated = src.quantityStated || null; e.quantityFrom = src.quantityFrom || null; }
+            out[to] = e;
+          }
         }
       }
       return Object.keys(out).length ? out : null;
@@ -4080,7 +5431,12 @@ export function makeGisOps() {
         const kinds = Array.isArray(decl.kinds) ? decl.kinds : null;
         const want = kinds ? String(kinds.length === 1 ? kinds[0] : (kinds[i] == null ? 'vector' : kinds[i])) : 'vector';
         const got = String(ds[i].kind || 'vector');
-        if (got !== want) return fail('input-kind', { input: i, expected: want, kind: got });
+        /* ⚠ (#R819) 'any' は「この枠は payload の種別を問わない」であって、宣言の抜けではない。
+           `profile` / `reach` が出す問い——「この区域について、その量はいくらか」——は格子にも
+           地物にも同じだけ意味があり、どちらで答えたかは行と記録に載る。枠ごとに種別を 1 つしか
+           述べられなかった間、同じ問いを 2 つの op に割るしか道が無かった（＝同じ判断を 2 か所に
+           持つこと）。⚠ 述べていない枠の既定は 'vector' のままで、既存の op は 1 つも変わらない。 */
+        if (want !== 'any' && got !== want) return fail('input-kind', { input: i, expected: want, kind: got });
       }
 
       /* ⚠ A STALE INPUT IS REFUSED BY NAME (#R732). js/gis-datasets.js marks a dataset stale when a
@@ -4160,7 +5516,9 @@ export function makeGisOps() {
         /* (#R752) the grid family the review of #R749 named as missing, and the two geometry-quality
            ops. Each is one line here for the reason the table exists at all: DECL and RUN are keyed
            by the same ids, so tests/r732 ① catches a declared op with no runner. */
-        resample: () => runResample(ds[0], ds[1], params, ctx),
+        /* (#R819) `step` も渡る。窓ごとの結果を結果キャッシュの鍵で置くには、その段が何であるか
+           ——op・入力・parameter——が要る（js/gis-project.js cache.keyFor の 5 軸）。 */
+        resample: () => runResample(ds[0], ds[1], params, ctx, step),
         rasterCalc: () => runRasterCalc(ds[0], ds[1], params, R, ctx),
         mosaic: () => runMosaic(ds[0], ds[1], params, ctx),
         rasterize: () => runRasterize(ds[0], params, R, ctx),
@@ -4178,6 +5536,12 @@ export function makeGisOps() {
         compute: () => runCompute(ds[0], params, R, ctx),
         /* (#R783) 単位換算——同じ §9 の「手作業の倍率計算ではなく」。 */
         convert: () => runConvert(ds[0], params, R, ctx),
+        /* (#R819) 集合についての問いと、その上に組んだ 3 つの用途。どれも既存の runner の合成で、
+           新しい幾何も新しい算術も持たない。 */
+        coverage: () => runCoverage(ds[0], params, ctx),
+        profile: () => runProfile(ds[0], ds[1], params, R, ctx),
+        compareZones: () => runCompareZones(ds[0], ds[1], params, R, ctx),
+        reach: () => runReach(ds[0], ds[1], params, R, ctx),
       };
       const runner = RUN[decl.id];
       if (!runner) return fail('op-not-wired', { op: decl.id });
@@ -4329,7 +5693,15 @@ export function makeGisOps() {
        one that states `surface: 'ellipsoid'` measures on WGS 84 where ops-7 answered `bad-param`.
        「拒否が答えになった」 and its mirror are exactly the changes a saved project must be able to
        see. The keeper is scripts/gis-kernel-versions.mjs. */
-    const KERNEL_VERSION = 'ops-8';
+    /* (#R819) ops-8 -> ops-9: A REPLAYED STEP CAN NOW BE JUDGED BY SOMETHING THE STEP DOES NOT NAME.
+       `aggregate` and `zonal` read the quantity off the COLUMN when the params carry none, so a saved
+       recipe over a dataset whose column declares a density is asked the js/gis-units.js question
+       nobody was asking before — and the honest answers include a refusal (`aggregation-refused` over
+       a category, `aggregation-needs-weight` over a density's `mean`). A step that ran last week can
+       refuse today, which is the one thing this version exists to announce. The arithmetic itself is
+       untouched: `weightBy` defaults to 'memberArea', the weight this op has always used, so every
+       recipe that does not name the new parameter produces the numbers it produced before. */
+    const KERNEL_VERSION = 'ops-9';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,

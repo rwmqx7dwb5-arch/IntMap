@@ -93,6 +93,11 @@ export function makeGisLayers() {
     function GE() { try { return (typeof window !== 'undefined' && window.IntMapGeoEngine) || null; } catch (_) { return null; } }
     function REG() { try { return (typeof window !== 'undefined' && window.IntMapLayers) || null; } catch (_) { return null; } }
     function DATA() { try { return (typeof window !== 'undefined' && window.IntMapData) || null; } catch (_) { return null; } }
+    /* (#R819) 後段の条件を実行するのは、この app の 1 つだけの filter である。⚠ IT IS REACHED THE WAY
+       EVERY OTHER KERNEL IS — through window at call time — because a second comparison implemented
+       here would be the drift .agents/rules/no-ad-hoc-hardcoding.md forbids, and an import would make
+       this file decide which instance runs where js/gis-core.js already decides it. */
+    function OPS() { try { return (typeof window !== 'undefined' && window.IntMapGisOps) || null; } catch (_) { return null; } }
 
     /* 「everything」, said in the only vocabulary the layer contract has. */
     const WHOLE_WORLD = { w: -180, s: -90, e: 180, n: 90 };
@@ -693,6 +698,13 @@ export function makeGisLayers() {
       return {
         bbox: (o.bounds == null ? null : o.bounds), limit: o.limit, fields: o.fields, time: o.time,
         where: (o.where == null ? null : o.where), cursor: (o.cursor === undefined ? null : o.cursor),
+        /* ⚠ (#R819) 「画面に依存しない母集団で答えてほしい」 は、呼び手にしか言えない。js/gis-sources.js
+           refuses `renderer-view-dependent` when a measurement would be assembled out of whatever the
+           camera is holding — and it can only refuse a request that SAID it is a measurement. Passing
+           `false` here rather than dropping the key keeps the request one shape for both doors; the
+           synchronous door below reaches features(), which does not judge it, which is why the field
+           is offered to a planner only on the road that does (ACQUIRE.vector). */
+        analysis: (o.analysis === true),
       };
     }
 
@@ -709,13 +721,123 @@ export function makeGisLayers() {
        works. This is the second door, and js/gis-atlas.js — which already awaits toRaster — takes it.
        ⚠ AND IT IS NOT A COPY: both doors hand the same request to js/gis-sources.js and the same
        answer to the same registration. */
+    /* ══ ⚠⚠⚠ (#R819) 「窓は取れた。条件はまだ走っていない」 は、読者に出してよい答えではない ═══════
+       js/gis-sources.js plan() states WHERE EACH CONDITION RUNS — what the upstream executes and what
+       a later stage must — and acquirePlanned() names the second half instead of pretending it ran:
+       the result comes back as `kind:'staged'`, never as `kind:'features'`, with the pending
+       conditions in `coverage.wherePlan`. That refusal to pretend is the whole value of it, and it is
+       only half an answer until somebody RUNS the later stage. This door is where that happens,
+       because this door is the one that hands a record to a reader and to Atlas.
+       ⚠ THE EXECUTOR IS THE APP'S ONE FILTER, NOT A COMPARISON WRITTEN HERE. js/gis-ops.js owns what
+       「>=」 means over a column (the plan itself names it, and this file asks the plan rather than
+       spelling the module a second time) — a set of comparisons implemented in this file would be the
+       drift .agents/rules/no-ad-hoc-hardcoding.md §1 forbids, and #R783 measured what a second,
+       disagreeing implementation of one judgement costs.
+       ⚠ AND THE ANSWER'S RECIPE IS THE ACQUISITION, NOT A TWO-STEP CHAIN. The op needs registered
+       inputs, so the window is registered and the filtered output is registered; both are working
+       records and both are removed, because what a reader can replay is 「この範囲の・この条件の・
+       このレイヤーを取り直す」 — a chain ending in an intermediate nobody asked for and nothing can
+       reach again is a recipe that cannot be re-run.
+       ⚠ NOTHING IS QUIETLY DROPPED ON THE WAY: `plan-unsatisfiable` (a plan that cannot answer the
+       question asked) and `renderer-view-dependent` (a measurement the camera would decide) travel
+       up as themselves, and the resolved `where-pending-post-stage` is carried in the record rather
+       than erased — see resolvedCoverage. */
     async function acquireDataset(id, opts) {
       const o = opts || {};
-      const got = speak(await SRC().acquire(id, acquireReq(o)));
+      /* ⚠ acquirePlanned(), NOT acquire(). The two agree exactly when there is no later stage — the
+         same fetch, the same rows, the same cursor — and differ only in that the plan is stated in
+         the record even when every condition ran upstream. 「後段は無い」 と 「計画を通っていない」
+         must not reach a reader as the same absence (js/gis-sources.js says so at the same seam). */
+      const got = speak(await SRC().acquirePlanned(id, acquireReq(o)));
       /* acquire() dispatches on what the source IS, so a caller that asked for features and reached a
          field gets told which door it wanted rather than a grid where it expected rows. */
       if (got && got.ok && got.kind === 'grid') return { ok: false, why: 'layer-is-a-field', detail: { id: String(id), use: 'toRaster' } };
+      if (got && got.ok && got.kind === 'staged') return stagedDataset(id, o, got);
       return registerFeatures(id, o, got);
+    }
+
+    /* The later stage, run. ⚠ ITS INPUT IS THE WHOLE WINDOW — js/gis-sources.js refuses to hand over a
+       staged answer that did not reach the end of it (`plan-unsatisfiable`), which is the one thing
+       that makes filtering afterwards an answer rather than 「取れた分のうち条件に合うもの」. */
+    async function stagedDataset(id, o, got) {
+      const wp = (got.coverage && got.coverage.wherePlan) || {};
+      const pending = Array.isArray(wp.pending) ? wp.pending : [];
+      /* A staged answer with nothing pending is not staged. Registering a stage that does not exist
+         would put a claim in the record that nobody made. */
+      if (!pending.length) return registerFeatures(id, o, Object.assign({}, got, { kind: 'features' }));
+      const O = OPS();
+      /* ⚠ AN EXISTING CODE, CARRIED. js/gis-panel.js already prints 「処理モジュールが読み込まれて
+         いないため…」 for exactly this absence (js/gis-project.js raises it for its replay), and an
+         answer with the conditions silently unexecuted is the one thing this path exists to stop. */
+      if (!O || typeof O.run !== 'function') {
+        return { ok: false, why: 'ops-unavailable', detail: { needs: 'IntMapGisOps', stage: 'post', pending: pending } };
+      }
+      const D = DATA();
+      if (!D || typeof D.add !== 'function') return { ok: false, why: 'registry-missing' };
+      /* ⚠ THE WINDOW IS REGISTERED WITHOUT THE CALLER'S OWN id: that name belongs to the ANSWER, and
+         taking it here would refuse the answer as `id-in-use` against a record of its own. */
+      const win = registerFeatures(id, Object.assign({}, o, { id: null }), got);
+      if (!win.ok) return win;
+      const drop = (recId) => { try { if (recId != null && typeof D.remove === 'function') D.remove(recId); } catch (_) { } };
+      let out = null;
+      try {
+        out = await O.run(
+          { op: 'filter', inputs: [win.dataset.id], params: { where: pending } },
+          { signal: o.signal || null, onProgress: o.onProgress || null });
+      } catch (e) {
+        out = { ok: false, why: 'op-failed', detail: { op: 'filter', message: e && e.message } };
+      }
+      /* ⚠ THE FILTER'S OWN REFUSAL TRAVELS BACK AS ITSELF — 「その列は無い」 is the sentence that tells
+         a reader what to change, and js/gis-ops.js is the one that can say it. */
+      if (!out || out.ok !== true) { drop(win.dataset.id); return out || { ok: false, why: 'op-failed', detail: { op: 'filter' } }; }
+      let kept = null;
+      try { kept = out.dataset.features(); } catch (_) { kept = null; }
+      if (!Array.isArray(kept)) { drop(out.dataset.id); drop(win.dataset.id); return { ok: false, why: 'op-failed', detail: { op: 'filter', id: out.dataset.id } }; }
+      drop(out.dataset.id); drop(win.dataset.id);
+      return registerFeatures(id, o, {
+        ok: true, kind: 'features', features: kept,
+        next: (got.next == null) ? null : got.next,
+        coverage: resolvedCoverage(got.coverage, got.plan, kept.length),
+      });
+    }
+
+    /* ⚠⚠⚠ 解消した理由は、消すのではなく 「解消した」 と述べる。`where-pending-post-stage` is the word
+       js/gis-sources.js writes over a whole window whose conditions have not run; deleting it once
+       they have would leave a record that cannot be told apart from one that never had a later stage
+       — the distinction a reader comparing two answers depends on ([[intmap-two-readers-one-field-list]]
+       is the same shape one seam over). So the plan's halves stay, `pending` empties, what ran is
+       named, and WHO ran it is read off the plan rather than spelt a second time here. */
+    function resolvedCoverage(cov, plan, count) {
+      const wp = (cov && cov.wherePlan) || {};
+      const ran = Array.isArray(wp.pending) ? wp.pending.slice() : [];
+      /* The later stage's own row in the plan: `at` is the role that executed, `by` is the module it
+         names. Both are js/gis-sources.js's words, carried. */
+      const st = (plan && Array.isArray(plan.stages)) ? plan.stages.find((s) => s && s.does === 'filter') : null;
+      const role = (st && st.at != null) ? String(st.at) : 'post';
+      const out = Object.assign({}, cov, { count: count });
+      const executedBy = (Array.isArray(wp.executedBy) ? wp.executedBy.slice() : []).concat(ran.map(() => role));
+      out.wherePlan = {
+        upstream: Array.isArray(wp.upstream) ? wp.upstream.slice() : [],
+        pending: [],
+        executed: ran,
+        executedBy: executedBy,
+        /* 解消したのは、この理由である（黙って消さない） */
+        resolved: (cov && cov.reason === 'where-pending-post-stage') ? cov.reason : null,
+        resolvedBy: (st && st.by != null) ? String(st.by) : null,
+      };
+      /* ⚠ RESTORED, NOT RE-JUDGED. js/gis-sources.js demotes a window that was `all` to `partial` for
+         this ONE reason and for no other, so a record still carrying it was complete before the later
+         stage was named — and is complete again now that the stage has run. Any other reason is a
+         statement about the WINDOW and survives untouched. */
+      if (cov && cov.reason === 'where-pending-post-stage' && cov.completeness === 'partial') {
+        out.completeness = 'all';
+        out.reason = null;
+      }
+      /* 誰が条件を実行したか——実行した者の記録から導く。Today the plan puts every condition in ONE
+         stage, so this is one word; if it ever splits, both are named rather than the flattering one. */
+      const who = executedBy.filter((x, i, a) => x != null && a.indexOf(x) === i);
+      out.filteredBy = who.length ? (who.length === 1 ? who[0] : who.join('+')) : null;
+      return out;
     }
 
     function registerFeatures(id, o, got) {
@@ -864,8 +986,19 @@ export function makeGisLayers() {
        this whole layer exists to remove. ⚠ AND toRaster DID NOT FORWARD THEM EITHER — the capability
        was reachable from nowhere, which is [[intmap-prompt-that-hid-the-tools-in-hand]] with the
        vocabulary instead of the tools. */
+    /* ⚠⚠⚠ (#R819) `analysis` IS ON THE VECTOR ROAD AND ON NO OTHER, AND THAT IS A STATEMENT. It says
+       「この取得は測定である」, and js/gis-sources.js is what acts on it: an answer assembled out of
+       whatever the renderer holds for the current camera is REFUSED (`renderer-view-dependent`)
+       instead of being handed over as a population. A planner that cannot say it has no way to ask
+       for a number that does not change when a reader pans — the capability existed below and was
+       unnameable from here, which is [[intmap-prompt-that-hid-the-tools-in-hand]].
+       ⚠ IT IS NOT OFFERED FOR A GRID, because nothing would act on it there: toRaster() goes through
+       region(), which burns the caller's own window at the caller's own resolution and says so
+       (`grid-is-a-sample`). A field a door accepts and nothing reads is the silent drop
+       [[intmap-two-readers-one-field-list]] measured in production, and offering it here would be
+       this file inventing a promise js/gis-sources.js has not made. */
     const ACQUIRE = {
-      vector: ['bounds', 'where', 'fields', 'limit', 'cursor', 'time'],
+      vector: ['bounds', 'where', 'fields', 'limit', 'cursor', 'time', 'analysis'],
       raster: ['bounds', 'width', 'height', 'where', 'unit', 'time', 'band'],
     };
     function acquireFields(kind) { const k = String(kind == null ? 'vector' : kind); return (ACQUIRE[k] || []).slice(); }

@@ -18,7 +18,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -214,47 +214,96 @@ test('R729 ③ the ops refuse by name instead of drawing something plausible', a
 
 /* ══ ④ 返しうるコードは全部、文を持つ ══════════════════════════════════════════════════════ */
 
+/* ⚠⚠⚠ (#R819) THE POPULATION OF THIS GATE IS NOW DISCOVERED, AND THAT IS THE WHOLE REPAIR.
+   Until this round the modules were a list written here — eight names — and the gate was GREEN while
+   five codes reachable from this panel had no sentence at all (`coverage-nothing-asked`,
+   `coverage-unknown-condition`, `coverage-bad-extent`, `bad-tolerance`, `warp-sink-failed`). Not one
+   of them was hidden: js/gis-geometry.js and js/gis-warp.js simply were not being read, and
+   「a gate's population is the thing that decides what it cannot see」
+   ([[intmap-gate-universe-is-declared-gates]]) is the sentence this repository keeps paying for.
+   ⇒ EVERY js/gis-*.js MUST BE IN EXACTLY ONE OF TWO SETS, the shape scripts/gis-kernel-versions.mjs
+   settled on in #R752:
+     · it is READ — its refusals travel to this panel, so each code it can return needs a sentence;
+     · it is named in NOT_READ_BY_THIS_PANEL WITH A STATED REASON — its refusals reach some other
+       reader, and that reader's own check measures them there.
+   ⚠ THE DEFAULT IS «READ», so there is no third state to forget: adding js/gis-something.js tomorrow
+   puts it in the gate that day, and taking it out is a line below with a reason on it. That is the
+   difference between an omission and a decision — an absence excuses nothing, and a reason is
+   reviewable. ⚠ 「まだ文を書いていない」 is not a reason. If its refusal can reach this panel, it is
+   read. */
+const NOT_READ_BY_THIS_PANEL = {
+  'js/gis-panel.js': 'this IS the wording side — its own codes are the sentences being measured',
+  'js/gis-crs.js': 'its codes surface through js/geo-import.js; tests/r576-checks ⑩ measures them against js/map-ui.js',
+  'js/gis-geotiff.js': 'a reader of bytes on the IMPORT path; tests/r749-gis-raster-pipeline-checks ⑪ measures its codes against js/map-ui.js',
+  'js/gis-shapefile.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes',
+  'js/gis-geopackage.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes',
+  'js/gis-atlas.js': 'the Atlas-facing surface — its refusals answer the MODEL in the turn result, not this panel, which never calls it',
+  /* ⚠ MEASURED, not assumed (#R819): js/gis-warp.js and js/gis-raster.js treat a refusal from the
+     other thread as 「あちらが駄目だった」 and run the same rows here instead (gis-warp.js's
+     `retry: { used:false, reason: why }`), so a worker code is a note about the machinery rather
+     than an answer to the reader. A cancellation travels as the caller's own `cancelled`. */
+  'js/gis-worker.js': 'its refusals are read by the kernel that offered the work, which falls back to this thread and records them as a note — they are not handed to a reader',
+  'js/gis-runtime.js': 'it assembles a runtime for a PROGRAM (and for the worker bootstrap); the browser door throws instead of refusing to this panel. ⚠ js/gis-panel.js words `scope-*`, `dependency-missing` and `kernel-not-reachable` anyway (#R783) — a sentence that is never shown costs a line, a missing one costs the answer',
+  'js/gis-index.js': 'a prefilter that answers with candidates; it raises no refusal of its own, and a prefilter that cannot narrow simply returns everything',
+};
+
+/* The refusal-raising helper of a module, FOUND IN THE MODULE rather than spelled here. #R729 taught
+   this scan three spellings (`why:`, `fail(`, `mismatchWhy:`) and #R819 measured what that cost: the
+   grid kernel raises through `refuse(` and five of its codes had been invisible since #R735, while
+   js/gis-geometry.js raises through `NO(` and none of its fourteen were ever seen. A gate that reads
+   the spellings it was taught has its reach decided by a list somewhere. A refusal maker is a
+   function whose first parameter is `why` and whose body answers `ok: false`. */
+function refusalMakers(src) {
+  const names = new Set();
+  const re = /(?:function\s+([A-Za-z_$][\w$]*)\s*\(\s*why\b|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\s*)?\(\s*why\b)/g;
+  let m;
+  while ((m = re.exec(src))) {
+    const name = m[1] || m[2];
+    if (/ok:\s*false/.test(src.slice(m.index, m.index + 400))) names.add(name);
+  }
+  return names;
+}
+/* ⚠ A MODULE THAT DECLARES ITS CODES IS BELIEVED OVER THE SCAN (#R738), AND #R819 MADE THAT REAL:
+   the declaration REPLACES the scan instead of being added to it. js/gis-units.js is why. Its
+   `quantity()` and `aggregation()` answer a caller with `ok:false` codes that js/gis-ops.js reads as
+   VERDICTS and reports in its own words — they never arrive here — and the kernel says so where it
+   declares `const REFUSALS = ['unit-mismatch']`. Under a union the gate would demand sentences for
+   twelve refusals that cannot reach a reader, and 「a sentence for a code that can never arrive can
+   never be found wrong」 is the dead spelling js/gis-panel.js warns about. */
+function refusalCodes(src) {
+  const declared = /const REFUSALS = (?:Object\.freeze\()?\[([^\]]*)\]/.exec(src);
+  if (declared) return new Set(Array.from(declared[1].matchAll(/'([a-z0-9-]+)'/g), (m) => m[1]));
+  const s = new Set();
+  for (const m of src.matchAll(/\bwhy:\s*'([a-z0-9-]+)'/g)) s.add(m[1]);
+  for (const m of src.matchAll(/\bmismatchWhy:\s*'([a-z0-9-]+)'/g)) s.add(m[1]);
+  for (const name of refusalMakers(src)) {
+    for (const m of src.matchAll(new RegExp('\\b' + name + '\\(\\s*\'([a-z0-9-]+)\'', 'g'))) s.add(m[1]);
+  }
+  return s;
+}
+
 test('R729 ④ every refusal code that can reach a reader has a sentence', () => {
   /* ⚠ BOTH SIDES ARE PARSED, neither is written down here. A list in this file would be a second
      copy of the truth, and the first op to learn a new refusal would leave it stale and green —
      the shape tests/r576-checks ⑩ exists to prevent for js/geo-import.js. */
+  const modules = readdirSync(join(ROOT, 'js')).filter((f) => /^gis-.*\.js$/.test(f)).map((f) => 'js/' + f).sort();
+  assert.ok(modules.length >= 15, 'the GIS modules were not found at all — the population is measuring nothing (' + modules.length + ')');
+
+  /* An excuse for a file that is not there any more is an excuse nobody reviewed. */
+  const stale = Object.keys(NOT_READ_BY_THIS_PANEL).filter((rel) => modules.indexOf(rel) < 0).sort();
+  assert.deepEqual(stale, [], 'NOT_READ_BY_THIS_PANEL names files that do not exist: ' + stale.join(', '));
+
+  const read_ = modules.filter((rel) => !Object.prototype.hasOwnProperty.call(NOT_READ_BY_THIS_PANEL, rel));
   const returned = new Set();
-  /* ⚠ THE MODULE LIST GREW WITH THE CORE (#R732). js/gis-layers.js can refuse to the same panel,
-     and a code it invents would otherwise reach a reader with no sentence — which is the entire
-     defect this check exists for. js/gis-crs.js is deliberately NOT here: its codes surface through
-     js/geo-import.js, and tests/r576-checks ⑩ is the check that measures those against
-     js/map-ui.js. Adding it here would be a second guard over one fact, aimed at the wrong file. */
-  /* ⚠ js/gis-raster.js JOINED THE LIST IN #R735, and for the reason the note above gives: js/gis-ops.js
-     hands the grid kernel's refusal back VERBATIM — the reason a grid could not be read is the only
-     sentence that tells the reader what to change — so those codes reach this panel exactly as the
-     ops' own do. A kernel whose codes were not scanned would be 25 refusals that arrive with no
-     sentence, which is the whole defect this check exists for. */
-  /* ⚠ js/gis-expr.js JOINED IN #R738, for the same reason js/gis-raster.js did: `compute` hands the
-     expression kernel's refusal back VERBATIM, because 「式のどこが読めなかったか」 is the only
-     sentence that tells the reader what to retype. A kernel whose codes were not scanned is a
-     refusal that reaches a reader with no sentence — and the population of a gate is the thing that
-     decides what it cannot see. */
-  /* ⚠ js/gis-sources.js JOINED IN #R749. It is the layer js/gis-layers.js now acquires THROUGH, so
-     its refusals travel the same road the bridge's own do — and a gate's population is the thing
-     that decides what it cannot see ([[intmap-gate-universe-is-declared-gates]]). ⚠ js/gis-warp.js
-     and js/gis-geotiff.js are deliberately NOT here, for the reason js/gis-crs.js is not: their codes
-     surface through the IMPORT path, and tests/r749-gis-raster-pipeline-checks ⑪ measures them
-     against js/map-ui.js. Two guards over one fact, one of them aimed at the wrong file, is worse
-     than one aimed at the right one. */
-  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js', 'js/gis-raster.js', 'js/gis-expr.js', 'js/gis-datasets.js', 'js/gis-sources.js']) {
-    const src = read(rel);
-    for (const m of src.matchAll(/\bwhy:\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
-    for (const m of src.matchAll(/\bfail\(\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
-    for (const m of src.matchAll(/\bmismatchWhy:\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
-    /* ⚠ A MODULE THAT DECLARES ITS CODES IS BELIEVED OVER THE SCAN (#R738). js/gis-expr.js raises its
-       refusals through a constructor, so none of the three spellings above appear in it and this scan
-       — which is the whole of the gate — found ZERO of its nine codes. A scan measures the spellings
-       it was taught; a declaration measures the fact. The kernel's own mk() refuses an undeclared
-       code, so the two cannot drift apart. */
-    const decl = /const REFUSALS = \[([^\]]*)\]/.exec(src);
-    if (decl) for (const m of decl[1].matchAll(/'([a-z0-9-]+)'/g)) returned.add(m[1]);
-  }
+  for (const rel of read_) for (const c of refusalCodes(read(rel))) returned.add(c);
   assert.ok(returned.size >= 20, 'the codes were not found at all — the scan is measuring nothing (' + returned.size + ')');
+  /* ⚠ THE TWO THIS ROUND ADDED ARE ASSERTED BY NAME — not as a second list of members, but because
+     they are the two whose absence the gate could not report while it was green. js/gis-ops.js hands
+     both kernels' refusals back VERBATIM (`coverage` returns js/gis-geometry.js's answer unchanged,
+     `resample` and `mosaic` return js/gis-warp.js's), which is why their vocabulary arrives here. */
+  for (const c of ['coverage-nothing-asked', 'warp-sink-failed']) {
+    assert.ok(returned.has(c), c + ' is not in the population — the discovery stopped reading the kernel that returns it');
+  }
 
   const panel = read('js/gis-panel.js');
   const worded = new Set();

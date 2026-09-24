@@ -56,6 +56,27 @@
  *  `makeGisRuntime` (to re-export it, and to build the browser door out of it), and
  *  js/gis-runtime.js reads `mountGis`. The cycle is evaluation-safe because neither half CALLS the
  *  other while the modules evaluate; js/gis-runtime.js's header says the same thing from its side.
+ *
+ *  ══ #R819 — 組み立てに「どの実行コンテキストのものか」を持たせる ═══════════════════════════════
+ *  #R783 left one sentence true and unsaid: an assembly had no NAME for the world it lives in. Every
+ *  kernel resolves its neighbours by bare global name (`window.IntMapData` inside a try, fifteen
+ *  times), so 「which assembly is this」 was answerable only as 「the one this realm's window carries」
+ *  — and js/gis-runtime.js held exactly ONE slot for that answer. mount() now takes a third argument,
+ *  the EXECUTION CONTEXT, and the assembly states it in two places a later reader can ask:
+ *
+ *      API.context            — anybody holding the assembled face can say which context it is in
+ *      scope.IntMapGisContext — the SCOPE states its own identity, asked the way the kernels ask for
+ *                               everything else, and verified below like every other publish
+ *
+ *  ⚠ WHAT THIS IS NOT: A SECOND LOOKUP PATH. No kernel reads it, and none is asked to — a kernel
+ *  still finds its neighbours by global name, so TWO contexts in ONE realm would still be two sets of
+ *  kernels answering under one name. That is why js/gis-runtime.js still refuses `scope-conflict`
+ *  unchanged, and why a second context needs a second REALM (its serve()/attach()/workerSource()
+ *  half). What the context adds is an identity an assembly can be HELD BY: the runtime keeps a table
+ *  of them rather than one slot, a context can be released — its globals taken off the scope it
+ *  published them on, using the very list verified below — and a kernel that one day stops reading a
+ *  bare global has a stated place to read instead. ⚠ THE DEFAULT IS THE IMPLICIT AMBIENT SCOPE this
+ *  file has always mounted on: mount() with no context names one, so the browser path is unmoved.
  * ==========================================================================*/
 
 import { makeGisDatasets } from './gis-datasets.js';
@@ -92,7 +113,18 @@ export { makeGisRuntime };
    it a move is the shape [[intmap-my-own-fix-had-the-shape-i-was-fixing]] records. */
 export const mountGis = (function () {
 
-function mount(scope, HOST) {
+function mount(scope, HOST, CONTEXT) {
+  /* ⚠ (#R819) WHICH EXECUTION CONTEXT THIS ASSEMBLY BELONGS TO, stated before anything is built.
+     A caller that names one (js/gis-runtime.js does) gets that name back on the face and on the
+     scope; a caller that names none is mounting the implicit ambient scope this file has always
+     mounted on, and that is what it is CALLED — 「unstated」 rather than a scopeSource invented here,
+     because the assembler is the half that knows whether the scope was the realm's own or installed
+     into it. Frozen: an assembly that could be renamed after the fact would be an identity that two
+     holders disagree about. */
+  const ctx = Object.freeze({
+    id: (CONTEXT && CONTEXT.id != null) ? String(CONTEXT.id) : 'gis:ambient',
+    scopeSource: (CONTEXT && CONTEXT.scopeSource != null) ? String(CONTEXT.scopeSource) : 'unstated',
+  });
   /* ⚠ ORDER IS NOT DECORATION HERE. The registry comes up first because the other eight read it,
      and the geometry kernel before the ops because every op but filter asks it a question. Nothing
      awaits: each publishes a synchronous face and fetches what it borrows on demand, so this is a
@@ -230,8 +262,13 @@ function mount(scope, HOST) {
   });
 
   const API = { data, geometry, crs, raster, warp, index, expr, units, worker, sources, layers, ops, project, panel, draw, atlas, flow,
+    context: ctx,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { scope.IntMapGis = API; } catch (_) { }
+  /* (#R819) The scope says which assembly it is carrying. ⚠ It is published HERE and verified with
+     the kernels below for the same reason they are: a context nobody can read off the scope would be
+     an identity this function believes and no one else can check. */
+  try { scope.IntMapGisContext = ctx; } catch (_) { }
 
   /* ⚠ THE KERNELS ARE ASKED WHETHER THEY ARE REACHABLE, NOT ASSUMED TO BE. Each module publishes
      ITSELF onto the scope (its own `try { window.X = API }`), which is the right owner of its name —
@@ -239,11 +276,18 @@ function mount(scope, HOST) {
      whole assembly rests on: that the object the kernels publish into is the object they read out of.
      A headless scope where this failed would give a registry nobody else can find, and every op
      would answer `registry-missing` with no reason a reader could act on. */
-  const unreachable = [];
-  for (const [g, inst] of [['IntMapData', data], ['IntMapGisGeometry', geometry], ['IntMapGisCrs', crs],
+  /* ⚠ (#R819) THE TABLE HAS A NAME NOW BECAUSE IT HAS A SECOND READER, and that reader must not
+     write the list again: js/gis-runtime.js takes an assembly back OFF a scope when its context is
+     released, and a hand-copied list there would leave behind whichever kernel was added last —
+     under a name the next assembly is about to publish. One list, verified here, handed back below
+     (.agents/rules/no-ad-hoc-hardcoding.md §2-4: 「一覧が要るなら、一覧を発見する」). */
+  const verified = [['IntMapData', data], ['IntMapGisGeometry', geometry], ['IntMapGisCrs', crs],
     ['IntMapGisRaster', raster], ['IntMapGisWarp', warp], ['IntMapGisIndex', index], ['IntMapGisExpr', expr],
     ['IntMapGisUnits', units], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
-    ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapGis', API]]) {
+    ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapGis', API],
+    ['IntMapGisContext', ctx]];
+  const unreachable = [];
+  for (const [g, inst] of verified) {
     let seen = null; try { seen = scope[g] || null; } catch (_) { seen = null; }
     if (seen !== inst) unreachable.push(g);
   }
@@ -252,7 +296,17 @@ function mount(scope, HOST) {
   /* The shell's own door, on whatever scope this assembly lives in — so the one below (which runs at
      import time, and only where a window already exists) is not the only way in. */
   try { scope.IntMapModules = scope.IntMapModules || {}; scope.IntMapModules.gisCore = shellEntry; } catch (_) { }
-  return { ok: true, gis: API };
+  /* ⚠ (#R819) WHAT WAS PUBLISHED IS ONE NAME WIDER THAN WHAT IS VERIFIED, and the difference is not
+     an oversight in either direction. js/gis-panel.js publishes ITSELF as IntMapGisPanel (its own
+     line 2221), like every kernel above — but it is the one that has never been in the reachability
+     check, and putting it there now would be a NEW way for a mount that works today to fail. It does
+     belong in what a released context takes back off the scope, though: a name left behind is a name
+     the NEXT assembly is about to publish, and #R819's first run of the check found exactly this one
+     still sitting on a scope after release. ⚠ IntMapModules.gisCore is deliberately absent from both:
+     it is the door to the ASSEMBLER, not part of this assembly, and it mounts a fresh one when it is
+     next called. */
+  const published = verified.concat([['IntMapGisPanel', panel]]);
+  return { ok: true, gis: API, context: ctx, verified: verified, published: published };
 }
 
 /* ⚠ (#R783) THE BROWSER ENTRY IS UNCHANGED IN WHAT IT DOES AND WHAT IT RETURNS. It hands over no

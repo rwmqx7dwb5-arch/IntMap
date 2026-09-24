@@ -392,7 +392,12 @@ test('⑧ js/gis-atlas.js は待つほうの扉を使う — 実装済みで呼�
 test('⑧ 両方の扉が同じ要求を組み立てる（2 つ目の綴りを作らない）', () => {
   const src = read('js/gis-layers.js');
   assert.ok(/function acquireReq\(o\)/.test(src), '要求の組み立てが 1 か所になっていない');
-  const calls = src.match(/SRC\(\)\.(features|acquire)\(id, acquireReq\(o\)\)/g) || [];
+  /* ⚠ (#R819) 測るのは**綴りではなく不変条件**である。ここは長く `(features|acquire)` という
+     2 語を固定していて、非同期の扉が `acquirePlanned` になった瞬間に落ちた——保たれていたのは
+     「要求の組み立ては acquireReq 1 か所」という不変条件のほうで、落ちたのは検査が知っていた
+     名前のほう。⇒ どの method 名であれ、SRC() の扉へ渡る要求が acquireReq から来ていることを数える
+     （.agents/rules/no-ad-hoc-hardcoding.md: 規則は関数ではなく事実に付ける）。 */
+  const calls = src.match(/SRC\(\)\.\w+\(id, acquireReq\(o\)\)/g) || [];
   assert.equal(calls.length, 2, '片方の扉が自前で要求を組み立てている: ' + calls.length);
 });
 

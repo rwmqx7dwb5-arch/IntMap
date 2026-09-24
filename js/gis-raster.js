@@ -75,6 +75,12 @@
  *  ⚠ The areal weights are ground area, with the same closed form as `rowAreaKm2` — and because a
  *  row's latitude is not always the row's coordinate (js/gis-warp.js reads every source through a
  *  pixel-space proxy), a grid may declare what its rows stand for: see `latGround`.
+ *  ⚠⚠⚠ (#R819) AND THE FOOTPRINT ITSELF HAS TWO FORMS, `box` AND `ring` (`sampleCellForms()`). A box
+ *  is four numbers and is exactly the footprint when the transform above it is an affine; when it is
+ *  not — a rotation, a projection — the box that HOLDS the true footprint is bigger than it, and an
+ *  aggregate weighted by the box is weighted by ground the output pixel does not cover. The ring is
+ *  the footprint as given, cut against one pixel at a time. ⚠ ONE aggregation, one void rule, one
+ *  apportionment: the form decides HOW MUCH of a source pixel is covered and nothing else.
  *
  *  ══ A PIXEL BELONGS TO A ZONE WHEN ITS CENTRE IS INSIDE IT ════════════════════════════════════
  *  That is a JUDGEMENT, stated here rather than omitted. The alternative — splitting each boundary
@@ -470,6 +476,70 @@ export function makeGisRaster() {
     };
     const SAMPLE_METHODS = Object.keys(SAMPLE_METHOD_FACTS);
 
+    /* ⚠⚠⚠ (#R819) A FOOTPRINT HAS TWO FORMS, AND THE SECOND ONE EXISTS BECAUSE THE FIRST IS AN
+       APPROXIMATION THAT NOBODY COULD SEE. `box` is what every caller has handed over since this
+       method existed: four numbers, an axis-aligned rectangle. js/gis-warp.js builds it by taking an
+       output pixel's four corners back through a projection and keeping the box that HOLDS them —
+       which errs outward, which is the only direction a footprint may err for a PREFILTER, and which
+       is NOT the same thing as the area the aggregate should be weighted by. A rotated or curved
+       footprint's box includes ground the output pixel does not cover, and an `average` weighted by
+       that box is an average over ground nobody asked about.
+       ⚠ So the second form is the footprint ITSELF — a ring of positions in this grid's own
+       coordinates, implicitly closed. It is not a repair of the first: the box is still what a
+       caller should hand over when the transform is an affine (there the box IS the footprint and
+       the arithmetic is cheaper by an order), and both forms go through the SAME aggregation, the
+       SAME void rule, the SAME ground weighting and the SAME apportionment for `sum`. What changes
+       is how much of a source pixel a footprint is said to cover.
+       ⚠ IT IS DECLARED AS DATA for the reason `kind` is: a caller that wants to know whether this
+       build can take a polygon footprint reads `sampleCellForms()` rather than testing the version
+       of the file it happens to be loaded beside. */
+    const SAMPLE_CELL_FORMS = {
+      box: {
+        shape: 'rectangle', members: 4,
+        /* what it is: [west, south, east, north] in this grid's coordinates */
+        errs: 'outward-when-the-true-footprint-is-not-a-rectangle',
+      },
+      ring: {
+        shape: 'polygon', members: null,
+        /* positions [[x, y], …], implicitly closed, in this grid's coordinates. Self-intersecting
+           rings are not detected — the shoelace of one is not an area and this file does not police
+           the caller's geometry — so the ring a caller builds is the ring it is weighted by. */
+        errs: 'none-beyond-the-ring-it-was-given',
+      },
+    };
+    const SAMPLE_CELL_FORM_IDS = Object.keys(SAMPLE_CELL_FORMS);
+
+    /* Which of the two forms arrived, checked once per call. ⚠ A RING OF FEWER THAN THREE POSITIONS
+       HAS NO AREA and a ring whose bounding box is degenerate covers nothing — both are refused by
+       the same code the malformed box is, because from here they are one fact: 「その footprint では
+       面積を測れない」. */
+    function readCell(c, method) {
+      if (Array.isArray(c)) {
+        if (c.length !== 4 || !c.every(isNum) || !(c[2] > c[0]) || !(c[3] > c[1])) {
+          return refuse('sample-cell-invalid', { method: method, form: 'box', cell: c.slice() });
+        }
+        return { ok: true, cell: { form: 'box', box: c } };
+      }
+      if (c && typeof c === 'object' && Array.isArray(c.ring)) {
+        const ring = c.ring;
+        if (ring.length < 3) return refuse('sample-cell-invalid', { method: method, form: 'ring', positions: ring.length });
+        let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+        for (let i = 0; i < ring.length; i++) {
+          const p = ring[i];
+          if (!Array.isArray(p) || p.length < 2 || !isNum(p[0]) || !isNum(p[1])) {
+            return refuse('sample-cell-invalid', { method: method, form: 'ring', at: i });
+          }
+          if (p[0] < w) w = p[0];
+          if (p[0] > e) e = p[0];
+          if (p[1] < s) s = p[1];
+          if (p[1] > n) n = p[1];
+        }
+        if (!(e > w) || !(n > s)) return refuse('sample-cell-invalid', { method: method, form: 'ring', bbox: [w, s, e, n] });
+        return { ok: true, cell: { form: 'ring', ring: ring, box: [w, s, e, n] } };
+      }
+      return refuse('sample-cell-invalid', { method: method, forms: SAMPLE_CELL_FORM_IDS.slice(), cell: (typeof c === 'object') ? null : c });
+    }
+
     function sample(raster, bandIndex, lng, lat, opts) {
       const v = validate(raster);
       if (!v.ok) return v;
@@ -485,11 +555,10 @@ export function makeGisRaster() {
            carries the kind, so a caller that reached here with a point-shaped call knows what is
            missing rather than only that something was. */
         const c = opts && opts.cell;
-        if (c == null) return refuse('sample-cell-not-stated', { method: method, kind: facts.kind });
-        if (!Array.isArray(c) || c.length !== 4 || !c.every(isNum) || !(c[2] > c[0]) || !(c[3] > c[1])) {
-          return refuse('sample-cell-invalid', { method: method, cell: Array.isArray(c) ? c.slice() : c });
-        }
-        cell = c;
+        if (c == null) return refuse('sample-cell-not-stated', { method: method, kind: facts.kind, forms: SAMPLE_CELL_FORM_IDS.slice() });
+        const cv = readCell(c, method);
+        if (!cv.ok) return cv;
+        cell = cv.cell;
       }
       const V = values(raster, bandIndex);
       if (!V.ok) return V;
@@ -619,9 +688,49 @@ export function makeGisRaster() {
       return d > 0 ? d : 0;
     }
 
+    /* ── (#R819) a footprint that is a polygon, cut against one pixel at a time ────────────────
+       Sutherland–Hodgman against ONE axis-aligned half-plane, which is all the clipping a grid
+       needs: a pixel is the intersection of four of them, and a row band of two. ⚠ The vertex on
+       the cut is written with the limit ITSELF rather than with the interpolated coordinate, so two
+       pixels sharing an edge see the same number there and a footprint that spans them is neither
+       counted twice nor lost in a rounding. `a[axis] === b[axis]` cannot reach the interpolation —
+       two equal coordinates are on the same side of the cut — so there is no division by zero. */
+    function clipAxis(poly, axis, limit, keepGreater) {
+      const out = [];
+      const n = poly.length;
+      if (!n) return out;
+      for (let i = 0; i < n; i++) {
+        const a = poly[i], b = poly[(i + 1) % n];
+        const ia = keepGreater ? (a[axis] >= limit) : (a[axis] <= limit);
+        const ib = keepGreater ? (b[axis] >= limit) : (b[axis] <= limit);
+        if (ia) out.push(a);
+        if (ia !== ib) {
+          const t = (limit - a[axis]) / (b[axis] - a[axis]);
+          const p = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+          p[axis] = limit;
+          out.push(p);
+        }
+      }
+      return out;
+    }
+
+    /* The shoelace, unsigned — a footprint's winding is the caller's business and its AREA is not. */
+    function ringArea(poly) {
+      const n = poly.length;
+      if (n < 3) return 0;
+      let s = 0;
+      for (let i = 0; i < n; i++) {
+        const a = poly[i], b = poly[(i + 1) % n];
+        s += a[0] * b[1] - b[0] * a[1];
+      }
+      return Math.abs(s) / 2;
+    }
+
     function arealWith(raster, V, at, cell, method) {
       const g = raster.grid;
-      const fW = cell[0], fS = cell[1], fE = cell[2], fN = cell[3];
+      const ring = (cell && cell.form === 'ring') ? cell.ring : null;
+      const box = (cell && cell.box) ? cell.box : cell;
+      const fW = box[0], fS = box[1], fE = box[2], fN = box[3];
       /* Every pixel the footprint touches, clipped to the grid. ⚠ The part of a footprint that hangs
          off the grid is not counted as a void: it is not this grid's to answer, and `coverage` below
          is measured over the part that IS on it — the caller already learns about the other part
@@ -635,7 +744,16 @@ export function makeGisRaster() {
 
       let wsum = 0, vsum = 0, voidW = 0, used = 0, voids = 0, apportioned = 0;
       const classW = (method === 'mode') ? new Map() : null;
+      /* The same 「a millionth of a pixel is noise」 the column overlap uses, in the unit a ring's
+         weight comes out in: a whole pixel's ground weight rather than a whole pixel's coordinates.
+         It is re-derived per row because the ground of a row is not the ground of the next one. */
+      let areaEps = 0;
       for (let row = r0; row <= r1; row++) {
+        if (ring) {
+          const rg = latGround(raster, row, rowNorth(raster, row), rowNorth(raster, row + 1));
+          if (rg == null) return refuse('raster-invalid', { field: 'grid.latAxis', row: row });
+          areaEps = g.pixelLng * rg * GRID_EPS_FRAC;
+        }
         const rTop = rowNorth(raster, row), rBot = rowNorth(raster, row + 1);
         const top = Math.min(rTop, fN), bot = Math.max(rBot, fS);
         /* ⚠ An overlap under a millionth of a pixel is the decimal noise GRID_EPS_FRAC is derived
@@ -643,17 +761,51 @@ export function makeGisRaster() {
            identity resample read a neighbouring column at weight 1e-16 and answer 「ほぼ同じ値」
            where the answer is the value. */
         if (!(top - bot > g.pixelLat * GRID_EPS_FRAC)) continue;
-        const gh = latGround(raster, row, top, bot);
-        if (gh == null) return refuse('raster-invalid', { field: 'grid.latAxis', row: row });
-        if (!(gh > 0)) continue;
-        /* For `sum` only: the whole row-pixel's weight, which is what each overlap is a FRACTION of. */
+        const gh = ring ? null : latGround(raster, row, top, bot);
+        if (!ring && gh == null) return refuse('raster-invalid', { field: 'grid.latAxis', row: row });
+        if (!ring && !(gh > 0)) continue;
+        /* For `sum`: the whole row-pixel's weight, which is what each overlap is a FRACTION of. */
         const whole = (method === 'sum') ? (g.pixelLng * latGround(raster, row, rTop, rBot)) : 0;
+        /* ⚠⚠⚠ (#R819) THE RING IS WEIGHED IN THE SAME UNIT THE BOX IS, AND IT IS NOT AN AVERAGE OF
+           IT. A box's ground weight is Δλ·(sin φ_n − sin φ_s) — an area in (λ, sin φ) — and that is
+           exactly what an area is in that plane, so the polygon is MAPPED INTO IT and its shoelace
+           is the same quantity. ⚠ NOT 「row 全体の ground を面積で按分する」, which is what a first
+           draft of this did: it is the mean of a quantity that varies across the row, and it made a
+           ring around exactly one box disagree with that box by 1.5e-4 — two answers to one
+           question, which is the thing this file refuses to have.
+           The map is monotone within a row (φ is linear in the row's coordinate and sin is monotone
+           over ±90°), so the row band's cut is unaffected by it and the column cuts below are
+           vertical lines in both planes. What IS approximated is that a straight edge stays straight
+           under it — second order across ONE pixel row, which is the same interval latGround already
+           declares a projection does not curve measurably across. */
+        let rowPoly = null;
+        if (ring) {
+          const cut = clipAxis(clipAxis(ring, 1, rTop, false), 1, rBot, true);
+          if (cut.length < 3) continue;
+          rowPoly = [];
+          for (let i = 0; i < cut.length; i++) {
+            /* latGround measures a BAND, so the height of [coord, rBot] is the coordinate's own
+               position in the plane the weights live in, taken from the same function. */
+            const gy = latGround(raster, row, cut[i][1], rBot);
+            if (gy == null) return refuse('raster-invalid', { field: 'grid.latAxis', row: row });
+            rowPoly.push([cut[i][0], gy]);
+          }
+        }
         const base = row * raster.width;
         for (let col = c0; col <= c1; col++) {
           const cW = g.west + g.pixelLng * col;
-          const ov = Math.min(cW + g.pixelLng, fE) - Math.max(cW, fW);
-          if (!(ov > g.pixelLng * GRID_EPS_FRAC)) continue;
-          const wgt = ov * gh;
+          let wgt;
+          if (ring) {
+            const cut = clipAxis(clipAxis(rowPoly, 0, cW, true), 0, cW + g.pixelLng, false);
+            /* Already the ground weight: an area in (λ, sin φ) IS Δλ·Δ(sin φ) summed over the shape,
+               which is the quantity the box path computes in closed form for a rectangle. */
+            wgt = (cut.length < 3) ? 0 : ringArea(cut);
+            if (!(wgt > areaEps)) continue;
+          } else {
+            const ov = Math.min(cW + g.pixelLng, fE) - Math.max(cW, fW);
+            if (!(ov > g.pixelLng * GRID_EPS_FRAC)) continue;
+            wgt = ov * gh;
+          }
           const val = V.values[base + col];
           /* ⚠ A VOID IS EXCLUDED FROM THE AGGREGATE, NOT READ AS 0 — the header's rule in aggregate
              form. It is counted instead, and `coverage` says how much of the footprint had an
@@ -2260,6 +2412,11 @@ export function makeGisRaster() {
          therefore cannot offer the areal ones) reads `kind` instead of keeping its own list of which
          names are which. Both come off ONE table, so neither can fall behind the other. */
       sampleMethodFacts: () => SAMPLE_METHODS.map((id) => Object.assign({ id: id }, SAMPLE_METHOD_FACTS[id])),
+      /* ⚠ (#R819) THE FORMS A FOOTPRINT MAY ARRIVE IN, for the same reason the methods are
+         published: js/gis-warp.js decides whether it can offer an EXACT footprint by reading this,
+         not by assuming that the kernel it is loaded beside is the one that grew the polygon path.
+         A build whose raster kernel is older answers without `ring` and the warp says so by name. */
+      sampleCellForms: () => SAMPLE_CELL_FORM_IDS.map((id) => Object.assign({ id: id }, SAMPLE_CELL_FORMS[id])),
     };
     try { window.IntMapGisRaster = API; } catch (_) { }
     return API;

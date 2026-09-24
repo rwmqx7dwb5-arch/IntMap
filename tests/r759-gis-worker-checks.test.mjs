@@ -409,13 +409,39 @@ test('R759 ④ every registered job and every caller, discovered from the source
   const files = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).sort();
   const called = new Map();       /* job name → the files that run it */
   const literal = /^'([^']*)'$/;
+  /* ⚠ (#R819) A JOB NAME ALSO ARRIVES THROUGH THE DOOR THAT PUBLISHES IT. This scan resolved a
+     literal and a same-file string const, and js/gis-ops.js reaches the geometry job the way the
+     module offers it — `W.run(W.geometryJob, …)` — so the caller existed, ran in a real thread and
+     was measured by tests/r819-gis-geometry-dispatch-checks, and was invisible HERE. That is the
+     shape this repository keeps finding: the gate had learned the SPELLINGS of a caller rather
+     than the fact that one exists (tests/r763 ⑧ was the same week).
+     ⇒ a field any js/ module publishes with a string value (`geometryJob: GEOM_JOB`) resolves too,
+     through the same constant table.
+     ⚠ THE INVARIANT IS UNCHANGED AND NO WEAKER: the name still has to resolve to a REGISTERED job.
+     A field that resolves to nothing, or to a name nobody registered, is still no caller — which is
+     why `grid.binary` below stays an orphan and this edit cannot hide the next one. */
+  const published = new Map();   /* published field name → the job name it carries */
   for (const f of files) {
     const src = read(join('js', f));
     const consts = new Map();
     for (const m of src.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*'([^']*)'\s*;/g)) consts.set(m[1], m[2]);
-    for (const m of src.matchAll(/\brun\(\s*('[^']*'|[A-Za-z_$][\w$]*)\s*,/g)) {
-      const lit = literal.exec(m[1]);
-      const name = lit ? lit[1] : (consts.has(m[1]) ? consts.get(m[1]) : null);
+    for (const m of src.matchAll(/\b([A-Za-z_$][\w$]*)\s*:\s*('[^']*'|[A-Za-z_$][\w$]*)\s*[,}]/g)) {
+      const lit = literal.exec(m[2]);
+      const name = lit ? lit[1] : (consts.has(m[2]) ? consts.get(m[2]) : null);
+      if (name) published.set(m[1], name);
+    }
+  }
+  for (const f of files) {
+    const src = read(join('js', f));
+    const consts = new Map();
+    for (const m of src.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*'([^']*)'\s*;/g)) consts.set(m[1], m[2]);
+    for (const m of src.matchAll(/\brun\(\s*('[^']*'|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\s*,/g)) {
+      const tok = m[1];
+      const lit = literal.exec(tok);
+      let name = null;
+      if (lit) name = lit[1];
+      else if (consts.has(tok)) name = consts.get(tok);
+      else if (tok.indexOf('.') > 0) name = published.get(tok.slice(tok.indexOf('.') + 1)) || null;
       if (!name || registered.indexOf(name) < 0) continue;
       if (!called.has(name)) called.set(name, new Set());
       called.get(name).add(f);

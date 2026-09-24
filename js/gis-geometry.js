@@ -80,24 +80,47 @@
  *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
  *  module loads in Node with no DOM: ready() resolves false and every entry point answers
  *  `null` / `clipper-unavailable` instead of throwing.
+ *
+ *  ══ ⚠⚠⚠ (#R819) THE ARITHMETIC IS ONE FUNCTION, AND IT CLOSES OVER NOTHING ════════════════════
+ *  js/gis-worker.js grew a geometry intake — `provideGeometry(op, fn)` puts a KERNEL'S OWN FUNCTION
+ *  TEXT in the other thread and `geometry.op` applies JSON arguments to it — and MEASURED against
+ *  this file, not one operation here could go through it: every door closed over the module scope
+ *  around it (`PC`, `geodesy()`, `SAME_EPS`, every helper), and a function rebuilt from its own
+ *  source text arrives in a scope that holds none of those. The protocol says so by name
+ *  (`job-not-self-contained`). The receiving end was finished and there was nothing to carry.
+ *  So the arithmetic is wrapped — not rewritten — in ONE self-contained factory, `geomKernel(deps)`,
+ *  exactly as js/gis-expr.js `exprKernel()` did for the evaluator in the same round. Everything the
+ *  arithmetic needs is inside it; the two things it BORROWS FROM THE ENVIRONMENT stay outside and
+ *  arrive as arguments:
+ *    · `deps.clipper` — the sweep-line, which `ready()` still imports on this thread;
+ *    · `deps.geodesy` — window.IntMapGeodesy, still read at CALL time (see K() below).
+ *  ⚠ THERE IS STILL ONE IMPLEMENTATION. This thread calls the kernel BUILT here; the worker calls
+ *  the same function rebuilt from the same bytes. 「両方が同じだけ間違っていれば緑」 is not available.
+ *  ⚠ NOT ONE RULE OF MEANING MOVED, so KERNEL_VERSION stays `geom-2` (see the note above it).
+ *
+ *  ══ ⚠⚠⚠ AND WHAT CANNOT TRAVEL IS NOT PRETENDED AWAY ══════════════════════════════════════════
+ *  MEASURED, in node, on the very object this file imports: `polygon-clipping`'s union is
+ *  «function (geom) { … return operation.run("union", geom, moreGeoms); }» — `operation` is a free
+ *  name in ITS module, so the sweep-line cannot be `provide`d, and a classic worker built from a
+ *  Blob (js/gis-worker.js, §WHY THE SOURCE IS A BLOB) can neither `import` a bare specifier nor
+ *  `importScripts` a chunk whose URL this module does not have. js/geodesy.js is the same shape.
+ *  ⇒ THE OTHER THREAD BUILDS THE KERNEL WITH NO DEPS, and every operation that consults one answers
+ *  the refusal it already has on this thread — `clipper-unavailable` / `geodesy-unavailable`.
+ *  ⚠ THAT VERDICT IS ASKED BEFORE A POLYGON IS COPIED, and it is not a hand-written list: `worker`
+ *  below asks A KERNEL BUILT THE WAY THE WORKER BUILDS ONE (`PORTABLE = geomKernel(null)`) which of
+ *  its own operations it could complete. An operation added inside the kernel is therefore
+ *  classified by the same code that runs it, not by a list beside it
+ *  (.agents/rules/no-ad-hoc-hardcoding.md §2-4).
  * ==========================================================================*/
 
 export function makeGisGeometry() {
   return (function () {
 
+    /* ── what is borrowed, and why it is NOT inside the kernel (#R819) ─────────────────────────
+       「どこから規則を借りるか」 is a fact about the environment and not about arithmetic, so the
+       two lookups below stay on this side of the factory — resolved per call, because this module
+       may be built before js/geodesy.js publishes and a captured `undefined` would be permanent. */
     function geodesy() { try { return (typeof window !== 'undefined' && window.IntMapGeodesy) || null; } catch (_) { return null; } }
-    function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
-
-    const D2R = Math.PI / 180;
-
-    /* An adjacent-vertex longitude step larger than this is the antimeridian rather than a real
-       edge. Expires if this app ever reads a dataset whose single edges are half a world long —
-       none of the importers can produce one, because GeoJSON writers emit the seam as a jump. */
-    const SEAM_STEP = 180;
-    /* Two positions are the same position below this. 1e-12° ≈ 0.1 µm at the equator, far below the
-       float64 resolution of a degree near ±180. Shared with js/gis-ops.js by measurement, not by
-       import: both are answering 「is this the same vertex」 about the same coordinates. */
-    const SAME_EPS = 1e-12;
 
     /* ── the clipper, loaded once, on demand ──────────────────────────────────────────────────── */
 
@@ -112,7 +135,36 @@ export function makeGisGeometry() {
       return loading;
     }
 
+    /* ══ THE KERNEL (#R819) ═══════════════════════════════════════════════════════════════════════
+       ⚠ THE BODY BELOW IS NOT RE-INDENTED, AND THAT IS DELIBERATE: the diff of this round is then
+       exactly the wrapper, and a reader comparing two revisions can see that no rule of meaning
+       moved. Same choice, same reason, as js/gis-expr.js `exprKernel()`.
+       ⚠ `call` IS THE OTHER THREAD'S DOOR AND NOTHING ELSE. js/gis-worker.js's `geometry.op` applies
+       JSON arguments to the library it resolved, so a worker cannot receive an API object of
+       functions (it would not survive structured clone) — it has to name an operation and get that
+       operation's ANSWER. Omitted, which is what this thread does, the factory returns the API. */
+    function geomKernel(deps, call) {
+
+    /* The two borrowed things, as VALUES. A kernel built with none — which is the kernel the other
+       thread builds — is not broken: `available()` is false and every door that needs the sweep
+       line answers `clipper-unavailable`, which is the same refusal this thread gets before
+       ready() has resolved. */
+    const PC = (deps && deps.clipper) || null;
+    const GEODESY = (deps && deps.geodesy) || null;
+    function geodesy() { return GEODESY || null; }
+    function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
     function available() { return !!(PC && PC.union && PC.intersection && PC.difference); }
+
+    const D2R = Math.PI / 180;
+
+    /* An adjacent-vertex longitude step larger than this is the antimeridian rather than a real
+       edge. Expires if this app ever reads a dataset whose single edges are half a world long —
+       none of the importers can produce one, because GeoJSON writers emit the seam as a jump. */
+    const SEAM_STEP = 180;
+    /* Two positions are the same position below this. 1e-12° ≈ 0.1 µm at the equator, far below the
+       float64 resolution of a degree near ±180. Shared with js/gis-ops.js by measurement, not by
+       import: both are answering 「is this the same vertex」 about the same coordinates. */
+    const SAME_EPS = 1e-12;
 
     /* ── positions, rings ─────────────────────────────────────────────────────────────────────── */
 
@@ -955,13 +1007,16 @@ export function makeGisGeometry() {
      *      features are a statement about a DATASET, not about a geometry — see the note on the
      *      dataset-wide topology this stage deliberately does not attempt.
      *
-     *  ⚠ THE DATASET-WIDE QUESTION IS A DIFFERENT SUBJECT AND IS NOT ANSWERED HERE. 「地物同士が
-     *  重ならない」 and 「区域の間に隙間が無い」 (an administrative or land-cover coverage) are
-     *  properties of a FEATURE COLLECTION: they need every feature of a layer at once, a shared
-     *  precision model, and a gap tolerance somebody states — a sliver of 1 µm between two municipal
-     *  boundaries is the float64 the file was written with, not a hole in the world. This kernel's
-     *  doors take ONE geometry and this file has no tolerance to state, so answering it here would
-     *  mean inventing one. It belongs beside js/gis-datasets.js, where the layer is. */
+     *  ⚠ THE DATASET-WIDE QUESTION IS A DIFFERENT SUBJECT, AND UNTIL #R819 THIS PARAGRAPH SAID IT
+     *  WAS NOT ANSWERED HERE. 「地物同士が重ならない」 and 「区域の間に隙間が無い」 (an
+     *  administrative or land-cover coverage) are properties of a FEATURE COLLECTION: they need
+     *  every feature of a layer at once, a shared precision model, and a gap tolerance somebody
+     *  states — a sliver of 1 µm between two municipal boundaries is the float64 the file was
+     *  written with, not a hole in the world. All three were right; the conclusion drawn from them
+     *  ("it belongs beside js/gis-datasets.js") was not, because THE TOLERANCE IS THE CALLER'S and
+     *  so nothing had to be invented here, while the sweep, the boolean and the geodesic distance
+     *  the answer is built from are all in this file and in no other. It is now coverage(), below,
+     *  and it stays a SEPARATE DOOR: what this stage answers about one geometry does not change. */
 
     /* All rings of one part in one bounding box. ⚠ Every ring, not the shell alone: a hole drawn
        outside its shell is already reported by partTopology, and a box that does not contain it
@@ -1585,6 +1640,662 @@ export function makeGisGeometry() {
       return { ok: true, geometry: out, value: null, changes: changes, remaining: after && after.ok ? after.value.problems : [] };
     }
 
+    /* ── the dataset: what is true BETWEEN features (#R819) ───────────────────────────────────── */
+
+    /* ══ VALIDITY IS ABOUT ONE GEOMETRY. A COVERAGE IS A CLAIM ABOUT A SET ════════════════════════
+     *  validate() answers three stages — positions, the rings of one part, the parts of one
+     *  MultiPolygon — and the block above it says, in as many words, that the fourth is a different
+     *  subject and is not attempted: 「地物同士が重ならない」 and 「区域の間に隙間が無い」 are
+     *  properties of a FEATURE COLLECTION, they need every feature of a layer at once, and they need
+     *  A TOLERANCE SOMEBODY STATES. That paragraph was right about all three and wrong only about
+     *  where the answer goes: the tolerance is stated BY THE CALLER, so the kernel does not have to
+     *  invent one, and the predicates the answer is built from (the sweep, the boolean, the geodesic
+     *  distance) all live here. So this stage is here, and it takes the statement as an argument.
+     *
+     *  ⚠ WHAT IT COSTS A READER TO NOT HAVE THIS, WHICH IS THE REASON IT EXISTS: two municipal
+     *  polygons that are each perfectly valid ON THEIR OWN can overlap by a hectare, and a
+     *  population joined to both counts that hectare's people TWICE; a hectare that falls between
+     *  them belongs to nobody and its people are in no total at all. Neither is visible on a map and
+     *  neither is a defect of either geometry — the defect exists only in the pair, and until now
+     *  nothing in this app could be asked about it.
+     *
+     *  ⚠⚠⚠ AN OVERLAP IS NOT AUTOMATICALLY AN ERROR, AND THIS DOOR REFUSES TO ASSUME IT IS.
+     *  IntMap deliberately draws sets that overlap: two claimants to the same ground in a historical
+     *  layer are a DISPUTE, two records of the same place from two sources are a DUPLICATE, and the
+     *  join between two surveys is a SEAM — three different things that no measurement can tell
+     *  apart (.agents/rules/historical-verification.md §2-5). So the caller says which conditions
+     *  are being asserted, in the same three words for each:
+     *    · 'forbid' — a violation is a FINDING and the set does not conform;
+     *    · 'report' — measure it and return the geometry, but the set still conforms (this is the
+     *      historical-dispute case: 「重なりを見たいが、誤りではない」);
+     *    · 'allow'  — do not compute it at all (the default for every condition).
+     *  A call that asserts nothing is refused (`coverage-nothing-asked`) rather than answered with a
+     *  vacuous 「conforms: true」 — a green verdict nobody asked for is the shape
+     *  [[intmap-restate-the-defect-not-the-fix]] warns about.
+     *
+     *  ⚠ THE OUTPUT IS GEOMETRY, NOT A COUNT. 「重複が3件」 sends a reader nowhere. Every finding
+     *  carries the overlapping polygon, the gap polygon or the unmatched linework, in [-180,180] and
+     *  in the same GeoJSON this kernel's ops take — so `coverage` → `area`, `coverage` → draw, or
+     *  `coverage` → `difference` are one step each, and the op layer can register the findings as a
+     *  dataset without recomputing anything.
+     *
+     *  ⚠ WHAT IS MEASURED, AND WITH WHAT:
+     *    · overlaps — the pairwise INTERSECTION through boolOpR, the same sweep-line every other op
+     *      asks. Features that merely touch intersect in nothing and are not reported, which is the
+     *      same 「interiors」 rule the between-parts stage states above.
+     *    · gaps — the HOLES of the union of the whole set. A hole in the union is ground the set
+     *      encloses and does not cover. ⚠ The space BETWEEN two disconnected groups is not a hole
+     *      and is not reported as a gap; that is what `cover` is for. ⚠⚠ NEITHER IS A SLIVER
+     *      PINCHED AT BOTH ENDS, and that residual is measured rather than assumed — the note at
+     *      stage ② says what was built, what it returned, and which check does find it.
+     *    · uncovered — `cover` minus the union, when the caller states the extent the set is
+     *      supposed to fill.
+     *    · edge mismatches — the analogue of PostGIS ST_CoverageInvalidEdges: an edge of one feature
+     *      that lies ALONG an edge of another (collinear, sharing more than a point) without being
+     *      the same edge. That is the defect a reader cannot see and cannot fix by hand — one
+     *      polygon split its side at a vertex the neighbour does not have, so the two boundaries
+     *      agree as lines and disagree as edges, and every re-noding of that set moves the border.
+     *      An edge with no collinear neighbour at all is the OUTSIDE of the coverage and is not a
+     *      defect.
+     *
+     *  ⚠ BOTH TOLERANCES ARE DISTANCES IN KILOMETRES AND BOTH ARE THE CALLER'S. A 1 µm sliver
+     *  between two municipal boundaries is the float64 the file was written with, not a hole in the
+     *  world — but WHICH width stops being float64 and starts being a hole is a statement about the
+     *  survey that produced the data, and this file has no basis for it. Default 0 = measure exactly
+     *  as written.
+     *    · a gap is TOLERATED when eroding it by half the tolerance leaves nothing — i.e. when no
+     *      circle of that diameter fits inside it, which is what 「細い」 means for a shape that may
+     *      be 10 km long and 1 mm wide. The erosion is bufferKm's own negative buffer, so there is
+     *      one offset rule in this file and not two; it is an inscribed approximation (see the
+     *      header) and errs by r·(1−cos(π/steps)), 3 m on a 5 km radius, in the direction of eroding
+     *      slightly LESS than asked.
+     *    · `edgeToleranceKm` is THE DISTANCE WITHIN WHICH TWO BOUNDARIES ARE TAKEN TO BE DESCRIBING
+     *      THE SAME BORDER, which is the same thing PostGIS's tolerance is and is NOT only a
+     *      forgiveness. It forgives in one direction — two edges whose ends match within it ARE the
+     *      same edge, so the metre of rounding between two surveys of one border stops being a
+     *      finding — and it widens in the other: two boundaries that run along each other within it
+     *      without matching are a disagreement, which is how a sliver pinched at both ends (above)
+     *      is found at all. At 0 it means what it says: only an exactly shared line is compared.
+     *      ⚠ Measured as GEODESIC distances (haversineKm, pointToSegmentKm), never as degrees: a
+     *      tolerance in degrees is a different distance at 60°N than at the equator, and the
+     *      boundary files this reads are written at both.
+     *
+     *  ⚠ NO REPAIR, AND THAT IS A DECISION RATHER THAN AN OMISSION. Every fix for these defects is a
+     *  CLAIM ABOUT THE DATA that geometry cannot supply: which of a gap's two neighbours should
+     *  swallow it, which of two overlapping claimants owns the disputed hectare, which of two
+     *  vertices is the surveyed one and which is the slip. repair() above may only do things that
+     *  move no position, and none of these qualify — snapping a coverage moves vertices somebody
+     *  measured. So the findings come back AS GEOMETRY and the caller applies its own stated rule
+     *  with the ops that already exist (difference to cut an overlap out of one side, union to give
+     *  a gap to a neighbour). ⚠ If a repair is ever added it must enumerate what it moved and which
+     *  feature the ground came from, exactly as repair()'s `changes` does.
+     *
+     *  ⚠ THE SEAM IS HANDLED PER PAIR, NOT IN ONE GLOBAL PLANE. Aligning every feature to the first
+     *  one breaks down for a worldwide set — two neighbours either side of the rounding boundary of
+     *  alignTo's `k` land a whole turn apart — so the bounding-box prune canonicalises each box into
+     *  [-180,180] AND KEEPS A SECOND COPY of any box that straddles the cut (the cylinder has two
+     *  ends and a shape on the seam is at both), and every pair test then aligns its own two
+     *  operands. A missed alignment can only cost a finding, never invent one. */
+
+    /* SAME_EPS is a WIDTH IN DEGREES and everything below is a width in KILOMETRES, so it is
+       converted ONCE, here, from the same radius every distance in this file uses — 1e-12° is
+       1.1e-10 km ≈ 0.1 µm along a meridian. It is the FLOOR under a caller's tolerance and never a
+       policy: at tolerance 0 it is what keeps float64 noise on an exactly shared edge from being
+       read as a disagreement. */
+    function epsKm() { const R = earthKm(); return (R == null) ? null : SAME_EPS * D2R * R; }
+
+    const COVERAGE_MODES = ['forbid', 'report', 'allow'];
+
+    function coverageGeometry(item) {
+      if (!item || typeof item !== 'object') return null;
+      /* A Feature is accepted because that is what a layer holds, and its properties are NOT read:
+         which column names a unit is the dataset layer's question, and a geometry kernel that
+         started reading attributes would be answering it in a second place. */
+      if (item.type === 'Feature') return (item.geometry && typeof item.geometry === 'object') ? item.geometry : null;
+      return item;
+    }
+
+    /* One box per part of a multi, in the plane toMulti left it in (rings unwrapped, so a
+       seam-crossing part reads 179 → 181). */
+    function multiBoxes(multi) {
+      const out = [];
+      for (const part of (multi || [])) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const ring of part) for (const p of ring) {
+          if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0];
+          if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1];
+        }
+        if (x0 !== Infinity) out.push([x0, y0, x1, y1]);
+      }
+      return out;
+    }
+
+    /* A box moved by whole turns until its centre is inside [-180,180], plus the copy at the other
+       end of the cut when it straddles ±180. ⚠ Two entries for one shape is not a duplicate
+       finding: every caller below keys what it has already reported on the PAYLOAD, not on the box. */
+    function canonBoxes(box, of, out) {
+      const k = Math.round(((box[0] + box[2]) / 2) / 360);
+      const x0 = box[0] - k * 360, x1 = box[2] - k * 360;
+      out.push({ x0: x0, y0: box[1], x1: x1, y1: box[3], of: of });
+      if (x0 < -180) out.push({ x0: x0 + 360, y0: box[1], x1: x1 + 360, y1: box[3], of: of });
+      else if (x1 > 180) out.push({ x0: x0 - 360, y0: box[1], x1: x1 - 360, y1: box[3], of: of });
+    }
+
+    function boxesTouch(a, b) {
+      for (const s of a) for (const t of b) {
+        if (s.x1 < t.x0 - SAME_EPS || t.x1 < s.x0 - SAME_EPS) continue;
+        if (s.y1 < t.y0 - SAME_EPS || t.y1 < s.y0 - SAME_EPS) continue;
+        return true;
+      }
+      return false;
+    }
+
+    /* Every pair of DIFFERENT features whose boxes meet, once each, through the one sweep. */
+    function coveragePairs(feats, onPair) {
+      const boxes = [];
+      for (const f of feats) for (const b of multiBoxes(f.multi)) canonBoxes(b, f, boxes);
+      const seen = new Set();
+      sweepBoxes(boxes, (s, t) => {
+        if (s.of === t.of) return true;
+        const a = (s.of.i <= t.of.i) ? s.of : t.of;
+        const b = (a === s.of) ? t.of : s.of;
+        const key = a.i + ':' + b.i;
+        if (seen.has(key)) return true;
+        seen.add(key);
+        return onPair(a, b) !== false;
+      });
+    }
+
+    /* ── edges: the shared boundary, vertex for vertex ────────────────────────────────────────── */
+
+    function coverageSegments(feats) {
+      const segs = [];
+      for (const f of feats) for (const part of f.multi) for (let r = 0; r < part.length; r++) {
+        const pts = part[r], n = pts.length;
+        /* Holes too: the inner boundary of a doughnut is shared with whatever sits in the hole, and
+           an enclave whose edges do not match its host is the same defect as any other. */
+        for (let e = 0; e < n; e++) segs.push({ f: f, r: r, e: e, a: pts[e], b: pts[(e + 1) % n], bad: false });
+      }
+      return segs;
+    }
+
+    /* `t` written in the 360° window nearest to `s`. Two edges that really lie along each other have
+       midpoints less than a degree apart once the right turn is chosen, so the rounding is not
+       close; two that do not are left where they are and fail the tests below anyway. */
+    function shiftSeg(t, s) {
+      const dx = 360 * Math.round((((s.a[0] + s.b[0]) / 2) - ((t.a[0] + t.b[0]) / 2)) / 360);
+      return dx ? { a: [t.a[0] + dx, t.a[1]], b: [t.b[0] + dx, t.b[1]] } : t;
+    }
+
+    /* Do these two edges lie along each other WITHOUT being the same edge — the coverage defect
+       ST_CoverageInvalidEdges names. Returns the overlapping stretch (as it runs on `s`) or null.
+       ⚠ The parameter along `s` is computed in the lon/lat plane and CHOOSES points only; every
+       distance compared against the tolerance is geodesic, which is the same division of labour
+       pointToSegmentKm's own note describes. */
+    function edgesDisagree(s, t0, tol) {
+      const t = shiftSeg(t0, s);
+      if ((haversineKm(s.a, t.a) <= tol && haversineKm(s.b, t.b) <= tol)
+        || (haversineKm(s.a, t.b) <= tol && haversineKm(s.b, t.a) <= tol)) return null;   /* the same edge */
+      const dx = s.b[0] - s.a[0], dy = s.b[1] - s.a[1];
+      const len2 = dx * dx + dy * dy;
+      if (!(len2 > 0)) return null;
+      const par = (p) => ((p[0] - s.a[0]) * dx + (p[1] - s.a[1]) * dy) / len2;
+      let u0 = par(t.a), u1 = par(t.b);
+      if (u0 > u1) { const z = u0; u0 = u1; u1 = z; }
+      const lo = Math.max(0, u0), hi = Math.min(1, u1);
+      if (!(hi > lo)) return null;
+      const at = (u) => [s.a[0] + dx * u, s.a[1] + dy * u];
+      const p0 = at(lo), p1 = at(hi);
+      /* Meeting in at most a point — two boundaries that cross or touch at a corner share no
+         stretch, and a stretch shorter than the tolerance is not a stretch the caller can see. */
+      if (haversineKm(p0, p1) <= tol) return null;
+      /* Both ends of the common stretch lie ON the other edge: asked of the stretch rather than of
+         the endpoints, because a short edge lying inside a long one has endpoints nowhere near it
+         and a test on those would answer about the wrong pair. */
+      if (pointToSegmentKm(p0, t.a, t.b) > tol) return null;
+      if (pointToSegmentKm(p1, t.a, t.b) > tol) return null;
+      return [p0, p1];
+    }
+
+    /* A 2-position line put back inside [-180,180]: shifted by whole turns, and cut at the meridian
+       when it straddles it — the same rule splitBack applies to a ring, for the one case a ring
+       splitter cannot be handed (a single edge). The latitude at the cut is the planar interpolation
+       _splitPolyToWindows also uses, so an edge and the ring it came from are cut at the same
+       latitude. */
+    function lineIntoWindow(seg) {
+      const k = Math.round(((seg[0][0] + seg[1][0]) / 2) / 360);
+      const a = [seg[0][0] - k * 360, seg[0][1]], b = [seg[1][0] - k * 360, seg[1][1]];
+      const side = (a[0] > 180) ? 1 : (a[0] < -180) ? -1 : (b[0] > 180) ? 1 : (b[0] < -180) ? -1 : 0;
+      if (!side) return [[a, b]];
+      const cut = side * 180;
+      const span = b[0] - a[0];
+      if (!span) return [[a, b]];
+      const u = (cut - a[0]) / span;
+      if (!(u > 0 && u < 1)) return [[a, b]];
+      const lat = a[1] + (b[1] - a[1]) * u;
+      const far = (p) => ((p[0] * side > 180) ? [p[0] - side * 360, p[1]] : p);
+      return [[far(a), (a[0] * side > 180) ? [-cut, lat] : [cut, lat]],
+      [(a[0] * side > 180) ? [cut, lat] : [-cut, lat], far(b)]];
+    }
+
+    function linesGeometry(segs) {
+      const out = [];
+      for (const s of segs) for (const piece of lineIntoWindow(s)) out.push([[piece[0][0], piece[0][1]], [piece[1][0], piece[1][1]]]);
+      if (!out.length) return null;
+      return (out.length === 1) ? { type: 'LineString', coordinates: out[0] } : { type: 'MultiLineString', coordinates: out };
+    }
+
+    /* ── gaps ─────────────────────────────────────────────────────────────────────────────────── */
+
+    /* Which features touch this ring. A gap's vertices come from the union of the set, so each of
+       them lies on the boundary of at least one feature — asked that way rather than by distance,
+       because 「近い」 needs a threshold and 「この地物の境界の上にある」 does not. */
+    function ringNeighbours(ring, feats) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const p of ring) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+      if (x0 === Infinity) return [];
+      const rb = [];
+      canonBoxes([x0, y0, x1, y1], null, rb);
+      const out = [];
+      for (const f of feats) {
+        if (!boxesTouch(rb, f.boxes)) continue;
+        const pts = alignTo([ring], f.multi)[0];
+        let hit = false;
+        for (const part of f.multi) { for (const r of part) { for (const p of pts) if (onBoundary(p, r)) { hit = true; break; } if (hit) break; } if (hit) break; }
+        if (hit) out.push(f.i);
+      }
+      return out;
+    }
+
+    /* Is this piece of ground narrower, everywhere, than the caller's tolerance: eroding it by half
+       the tolerance leaves nothing. ⚠ The three answers are three answers — tolerated, not
+       tolerated, and NOT MEASURABLE — and the third is reported as itself rather than folded into
+       either (.agents/rules/one-pass-or-a-reason.md §5: 「確認できなかった」 is not 「失敗した」). */
+    function narrowerThan(geom, tolKm) {
+      if (!(tolKm > 0)) return { tolerated: false, erosion: 'not-asked' };
+      const r = bufferKmR(geom, -tolKm / 2);
+      if (!r.ok) return { tolerated: false, erosion: 'unmeasured', why: r.why };
+      return { tolerated: r.geometry == null, erosion: (r.geometry == null) ? 'empty' : 'survives' };
+    }
+
+    /* Each part of a geometry on its own, so a finding is one piece of ground rather than a bag. */
+    function partsAsPolygons(g) {
+      if (!g) return [];
+      if (g.type === 'Polygon') return [g];
+      if (g.type === 'MultiPolygon') return (g.coordinates || []).map((rings) => ({ type: 'Polygon', coordinates: rings }));
+      return [];
+    }
+
+    /* ── coverage ─────────────────────────────────────────────────────────────────────────────── */
+
+    /* coverage(features, opts) →
+         { ok:true, value: {
+             conforms,                       ← nothing the caller FORBADE was found
+             asked:     { overlaps, gaps, edges, cover, gapToleranceKm, edgeToleranceKm },
+             counts:    { features, areal, overlap, gap, uncovered, edge, tolerated },
+             findings:  [{ kind, features:[i…], geometry, detail }],   ← forbidden, and found
+             tolerated: [{ … same shape … }],                          ← 'report', or within tolerance
+             truncated } }
+         { ok:false, why }
+       `kind` is one of 'overlap' | 'gap' | 'uncovered' | 'edge-mismatch'; `features` holds INDEXES
+       INTO THE ARRAY THE CALLER PASSED (a gap's are its neighbours, an uncovered piece's is empty),
+       and `geometry` is GeoJSON in [-180,180] — a Polygon for the first three, a LineString or
+       MultiLineString for the fourth. */
+    function coverage(items, opts) {
+      const list = Array.isArray(items) ? items : null;
+      if (!list || !list.length) return NO('missing-geometry');
+      const o = opts || {};
+      const mode = (v) => ((v == null) ? 'allow' : String(v));
+      const wantOverlaps = mode(o.overlaps), wantGaps = mode(o.gaps), wantEdges = mode(o.edges);
+      const asked = [['overlaps', wantOverlaps], ['gaps', wantGaps], ['edges', wantEdges]];
+      for (const pair of asked) {
+        if (COVERAGE_MODES.indexOf(pair[1]) < 0) return NO('coverage-unknown-condition', { condition: pair[0], got: pair[1], expected: COVERAGE_MODES.slice() });
+      }
+      const cover = (o.cover && typeof o.cover === 'object') ? o.cover : null;
+      if (o.cover != null && !cover) return NO('coverage-bad-extent', { got: (o.cover === null) ? 'null' : typeof o.cover });
+      if (wantOverlaps === 'allow' && wantGaps === 'allow' && wantEdges === 'allow' && !cover) return NO('coverage-nothing-asked', { expected: ['overlaps', 'gaps', 'edges', 'cover'] });
+      const gapTol = (o.gapToleranceKm == null) ? 0 : +o.gapToleranceKm;
+      const edgeTol = (o.edgeToleranceKm == null) ? 0 : +o.edgeToleranceKm;
+      if (!(isFinite(gapTol) && gapTol >= 0)) return NO('bad-tolerance', { which: 'gapToleranceKm', got: o.gapToleranceKm });
+      if (!(isFinite(edgeTol) && edgeTol >= 0)) return NO('bad-tolerance', { which: 'edgeToleranceKm', got: o.edgeToleranceKm });
+      if (!available()) return NO('clipper-unavailable');
+      const eps = epsKm();
+      if (eps == null) return NO('geodesy-unavailable');
+
+      const limit = (o.limit != null) ? Math.max(0, o.limit | 0) : 200;
+      const findings = [], tolerated = [];
+      let truncated = false;
+      /* `keep` is the caller's word for this condition, so one adder serves all four kinds and
+         'report' cannot accidentally make a set non-conforming. */
+      function add(keep, kind, feats, geometry, detail) {
+        if (limit && (findings.length + tolerated.length) >= limit) { truncated = true; return false; }
+        const where = (keep === 'forbid') ? findings : tolerated;
+        where.push({ kind: kind, features: feats || [], geometry: geometry || null, detail: detail || null });
+        return true;
+      }
+
+      /* Every input converted ONCE, through the same door the ops use. A feature with no interior
+         (a point layer, a null geometry) is not a coverage defect and is not an error either — it is
+         counted and skipped, and `counts.areal` is what the rest of the answer is about. */
+      const feats = [];
+      for (let i = 0; i < list.length; i++) {
+        const g = coverageGeometry(list[i]);
+        if (!g) continue;
+        const m = toMulti(g);
+        if (m === null) return NO('geometry-wraps-world', { feature: i });
+        if (!m.length) continue;
+        const boxes = [];
+        for (const b of multiBoxes(m)) canonBoxes(b, null, boxes);
+        feats.push({ i: i, geom: g, multi: m, boxes: boxes });
+      }
+
+      /* ① overlaps — the pairwise intersection, through the same sweep-line every op asks. */
+      if (wantOverlaps !== 'allow' && feats.length > 1) {
+        let refusal = null;
+        coveragePairs(feats, (a, b) => {
+          const r = boolOpR('intersection', a.geom, b.geom);
+          if (!r.ok) { refusal = r; return false; }
+          if (!r.geometry) return true;                    /* disjoint, or touching: no common interior */
+          for (const piece of partsAsPolygons(r.geometry)) if (!add(wantOverlaps, 'overlap', [a.i, b.i], piece, null)) return false;
+          return true;
+        });
+        if (refusal) return refusal;
+      }
+
+      /* ② and ③ — both need the union of the whole set, so it is computed once. */
+      let united = null;
+      if (wantGaps !== 'allow' || cover) {
+        const u = unionR(feats.map((f) => f.geom));
+        if (!u.ok) return u;
+        united = u.geometry;
+      }
+
+      /* ② gaps — the HOLES of that union: ground the set encloses and does not cover.
+         ⚠⚠⚠ AND A PINCHED SLIVER IS NOT A HOLE, WHICH IS MEASURED HERE RATHER THAN ASSUMED. A
+         square whose neighbour draws the shared side 5.6 cm into its own ground leaves a lens of
+         nobody’s land between them — and because the two boundaries MEET at the two ends of that
+         lens, the sweep-line returns the union as two parts touching at two points, with no inner
+         ring anywhere. A complement taken against an enclosing frame does not find it either, and
+         that was built and measured before this comment was written: `difference(frame, set)`
+         comes back as ONE part carrying the two features as holes, because the lens is connected
+         to the outside THROUGH those two points. Any construction that asks a boolean engine
+         「which components are enclosed」 gets the same answer, so that machinery was removed
+         rather than kept for the shape of it.
+         ⇒ THE PINCHED CASE IS FOUND BY THE EDGE CHECK, at a matching distance the caller states:
+         the two boundaries run along each other within that distance and are not the same edge.
+         A reader who wants slivers asks `edges` with `edgeToleranceKm`, and this note is here so
+         that 「gaps: forbid が 0 件」 is not read as 「隙間は無い」.
+         ⚠ The space BETWEEN two disconnected groups is not a hole either, and that one is what
+         `cover` is for. */
+      if (wantGaps !== 'allow' && united) {
+        let stop = false;
+        for (const part of partsAsPolygons(united)) {
+          if (stop) break;
+          const rings = part.coordinates || [];
+          for (let r = 1; r < rings.length && !stop; r++) {
+            const ring = ringPositions(rings[r]);
+            if (ring.length < 3) continue;
+            const hole = { type: 'Polygon', coordinates: [closeRing(ring)] };
+            const narrow = narrowerThan(hole, gapTol);
+            const detail = { toleranceKm: gapTol, erosion: narrow.erosion };
+            if (narrow.why) detail.why = narrow.why;
+            if (!add(narrow.tolerated ? 'report' : wantGaps, 'gap', ringNeighbours(ring, feats), hole, detail)) stop = true;
+          }
+        }
+      }
+
+      /* ③ uncovered — the extent the caller says the set fills, minus what it fills. */
+      if (cover) {
+        const d = united ? boolOpR('difference', cover, united) : OK(cover);
+        if (!d.ok) return d;
+        if (d.geometry) {
+          for (const piece of partsAsPolygons(d.geometry)) {
+            const narrow = narrowerThan(piece, gapTol);
+            const detail = { toleranceKm: gapTol, erosion: narrow.erosion };
+            if (narrow.why) detail.why = narrow.why;
+            if (!add(narrow.tolerated ? 'report' : 'forbid', 'uncovered', [], piece, detail)) break;
+          }
+        }
+      }
+
+      /* ④ edge mismatches — collected per feature, because the linework a reader has to go and fix
+         belongs to one polygon's boundary even though the defect is in the pair. */
+      if (wantEdges !== 'allow' && feats.length > 1) {
+        const tol = Math.max(edgeTol, eps);
+        const segs = coverageSegments(feats);
+        const boxes = [];
+        for (const s of segs) canonBoxes([Math.min(s.a[0], s.b[0]), Math.min(s.a[1], s.b[1]), Math.max(s.a[0], s.b[0]), Math.max(s.a[1], s.b[1])], s, boxes);
+        const perFeature = new Map();
+        sweepBoxes(boxes, (p, q) => {
+          const s = p.of, t = q.of;
+          if (s.f === t.f) return true;                     /* one feature's own edges are validate()'s subject */
+          if (!edgesDisagree(s, t, tol)) return true;
+          for (const seg of [s, t]) {
+            if (seg.bad) continue;
+            seg.bad = true;
+            if (!perFeature.has(seg.f.i)) perFeature.set(seg.f.i, []);
+            perFeature.get(seg.f.i).push([seg.a, seg.b]);
+          }
+          return true;
+        });
+        const order = Array.from(perFeature.keys()).sort((x, y) => x - y);
+        for (const fi of order) {
+          const lines = perFeature.get(fi);
+          if (!add(wantEdges, 'edge-mismatch', [fi], linesGeometry(lines), { edges: lines.length, toleranceKm: edgeTol })) break;
+        }
+      }
+
+      const counts = { features: list.length, areal: feats.length, overlap: 0, gap: 0, uncovered: 0, edge: 0, tolerated: tolerated.length };
+      const bucket = { 'overlap': 'overlap', 'gap': 'gap', 'uncovered': 'uncovered', 'edge-mismatch': 'edge' };
+      for (const f of findings) counts[bucket[f.kind]]++;
+      return {
+        ok: true,
+        value: {
+          conforms: findings.length === 0,
+          asked: { overlaps: wantOverlaps, gaps: wantGaps, edges: wantEdges, cover: !!cover, gapToleranceKm: gapTol, edgeToleranceKm: edgeTol },
+          counts: counts,
+          findings: findings,
+          tolerated: tolerated,
+          truncated: truncated,
+        },
+      };
+    }
+
+    /* ── what this kernel can be ASKED FOR BY NAME, and what each asking needs (#R819) ──────────
+       ⚠ ONE ENTRY DISPATCHES AND DECLARES. The function in `fn` is THE function the door above
+       exposes — the same object, not a second spelling of it — and `needs` names the borrowed
+       things that call may consult. Splitting the two apart is the shape
+       .agents/rules/no-ad-hoc-hardcoding.md forbids: a list beside the dispatcher goes out of step
+       the first time an operation is added, and the one that goes stale is always the list.
+       ⚠ `needs` IS CONSERVATIVE AND SAYS SO. `intersects` reaches the sweep line only when BOTH
+       operands are areal, and `repair` only when parts have to be re-noded — but whether this call
+       is that call is a property of the DATA, and a door that answered 「運べる」 and then refused
+       in the other thread would have spent a thread to say it. What is verified rather than
+       asserted is the other direction: tests/r819-gis-geometry-portable-checks drives every entry
+       through a kernel built with the dep withheld and requires the refusal this table predicts,
+       so a wrong `needs` is a red test and not a silent claim.
+       ⚠ THE READABLE DOORS ARE THE ONES DISPATCHED. A refusal has to survive the trip — the loose
+       twins answer `null` for 「答えは空だった」 and 「答えられなかった」 alike (#R743), and a null
+       arriving through postMessage is exactly the 「該当なし」 that defect was about. */
+    const OPS = {
+      union: { fn: unionR, needs: ['clipper'] },
+      intersection: { fn: (a, b) => boolOpR('intersection', a, b), needs: ['clipper'] },
+      difference: { fn: (a, b) => boolOpR('difference', a, b), needs: ['clipper'] },
+      dissolve: { fn: unionR, needs: ['clipper'] },
+      bufferKm: { fn: bufferKmR, needs: ['clipper', 'geodesy'] },
+      intersects: { fn: intersectsR, needs: ['clipper'] },
+      contains: { fn: containsR, needs: ['clipper'] },
+      within: { fn: withinR, needs: ['clipper'] },
+      disjoint: { fn: disjointR, needs: ['clipper'] },
+      distanceKm: { fn: distanceKmR, needs: ['clipper', 'geodesy'] },
+      areal: { fn: arealR, needs: [] },
+      /* Ray casting and the topology walks, which are arithmetic over the positions themselves —
+         these are the ones that travel today, and `validate` is the expensive one (the header's own
+         「6 million edges」 is this walk). */
+      pointInGeometry: { fn: pointInGeometry, needs: [] },
+      validate: { fn: validate, needs: [] },
+      repair: { fn: repair, needs: ['clipper'] },
+      coverage: { fn: coverage, needs: ['clipper', 'geodesy'] },
+    };
+
+    function opNames() { return Object.keys(OPS); }
+    function hasDep(dep) { return (dep === 'clipper') ? available() : !!geodesy(); }
+    /* The borrowed things THIS kernel was not given, for one operation. Asked of the kernel the
+       other thread builds (`PORTABLE` below), it is the answer to 「その演算はあちらで走るのか」 —
+       derived by the code that would run it rather than predicted by a list. */
+    function unmet(op) {
+      const rec = Object.prototype.hasOwnProperty.call(OPS, String(op)) ? OPS[String(op)] : null;
+      return rec ? rec.needs.filter((d) => !hasDep(d)) : null;
+    }
+
+    /* ⚠ THE VOCABULARY OF THE REFUSALS IS js/gis-worker.js's OWN, not a second one: that file
+       answers `geometry-op-unavailable` (with the set that WAS there) and `geometry-args-invalid`
+       for the same two facts about the same call, and two spellings of one fact is the drift this
+       repository keeps paying for. Nothing here adds a code a reader has no sentence for. */
+    function callOp(spec) {
+      const op = (spec && spec.op != null) ? String(spec.op) : '';
+      const rec = (op && Object.prototype.hasOwnProperty.call(OPS, op)) ? OPS[op] : null;
+      if (!rec) return { ok: false, why: 'geometry-op-unavailable', detail: { op: op || null, have: opNames() } };
+      const args = (spec && Array.isArray(spec.args)) ? spec.args : null;
+      if (!args) return { ok: false, why: 'geometry-args-invalid', detail: { op: op, got: (spec && spec.args === undefined) ? 'undefined' : typeof (spec && spec.args) } };
+      const out = rec.fn.apply(null, args);
+      /* A refusal the operation wrote travels as that refusal. Everything else — a geometry, a
+         boolean, a report, `repair`'s {geometry, changes, remaining} — travels WHOLE: reading one
+         field out of it here would be this door deciding which half of somebody else's answer the
+         other thread is allowed to see. */
+      if (out && typeof out === 'object' && out.ok === false) return out;
+      return { ok: true, value: out };
+    }
+
+    const KERNEL = {
+      available,
+      union, intersection, difference, dissolve, bufferKm,
+      intersects, contains, within, disjoint, distanceKm,
+      pointInGeometry,
+      /* ⚠ VALIDITY IS A FACT ABOUT A GEOMETRY, SO IT LIVES BESIDE THE OPERATIONS AND NOT INSIDE ONE
+         (#R752). Both doors already return the readable shape, so neither has a loose twin above and
+         neither is repeated inside `attempt` — one name, one place. See the block above for what is
+         reported, what is refused by name, and why a ring's winding is a note and not a defect. */
+      validate, repair,
+      /* ⚠ AND THE FOURTH STAGE IS ABOUT A SET, SO IT TAKES A SET AND THE CONDITIONS SOMEBODY
+         ASSERTS ABOUT IT (#R819). validate() answers 「この幾何は幾何か」 and cannot answer
+         「この区域群は区分か」 — see the block above coverage() for what is measured, why an
+         overlap is not automatically an error, and why no repair is offered. Readable shape
+         only, for the same reason validate and repair have no loose twin. */
+      coverage,
+      /* ⚠ (#R819) 条件の語は、それを受理する側が publish する。A caller — js/gis-ops.js's
+         `coverage` op, and the panel that draws its parameters — has to offer 'forbid' / 'report' /
+         'allow' to a reader, and a set retyped there is the copy that refuses the fourth word the
+         day this kernel grows one (.agents/rules/no-ad-hoc-hardcoding.md §1). ⚠ AND IT IS THE SET
+         coverage() ITSELF TESTS AGAINST, not a second spelling of it: the same array the refusal
+         `coverage-unknown-condition` hands back as `expected`, copied only so a caller cannot edit
+         the kernel's own. */
+      coverageModes: () => COVERAGE_MODES.slice(),
+      /* ⚠ THE SAME OPERATIONS, ASKED SO THAT A REFUSAL CAN BE READ (#R743). Not a second engine and
+         not a second rule: the plain names above are one line each over these. A caller that must
+         not report success over a computation that did not happen — which is every runner in
+         js/gis-ops.js — asks here and gets `{ ok:false, why }` instead of a null it would have read
+         as 「該当なし」. docs/GIS-CORE.md §1.2 holds the vocabulary. */
+      attempt: {
+        union: unionR, intersection: (a, b) => boolOpR('intersection', a, b), difference: (a, b) => boolOpR('difference', a, b),
+        dissolve: unionR, bufferKm: bufferKmR,
+        intersects: intersectsR, contains: containsR, within: withinR, disjoint: disjointR,
+        distanceKm: distanceKmR, areal: arealR,
+      },
+      /* exposed because js/gis-ops.js converts the same way and the checks measure the same
+         conversion — two readers of one rule, not two rules */
+      toMulti, fromMulti, unwrapRing, ringsOf, linesOf, pointsOf, hasArea,
+      /* (#R819) what can be asked by name, what that asking borrows, and what THIS kernel is
+         missing for it — the three questions the worker door asks of a dep-less kernel. */
+      ops: opNames, requires: (op) => { const r = Object.prototype.hasOwnProperty.call(OPS, String(op)) ? OPS[String(op)] : null; return r ? r.needs.slice() : null; }, unmet: unmet,
+      call: callOp,
+    };
+
+    /* The other thread arrives here and nowhere else (see the note on `call` above the factory). */
+    if (call != null) return callOp(call);
+    return KERNEL;
+    }
+
+    /* ── one kernel per (clipper, geodesy) pair ─────────────────────────────────────────────────
+       ⚠ REBUILT ONLY WHEN THE BORROWED THINGS THEMSELVES CHANGE, which happens at most twice in a
+       session (the sweep line resolves; js/geodesy.js publishes). Rebuilding per call would throw
+       away the toMulti memo on every question — the header's 150-million-walk note — and reading
+       window once at construction would freeze a `null` that arrived early. */
+    let INST = null, INST_PC = null, INST_G = null;
+    function K() {
+      const g = geodesy();
+      if (!INST || INST_PC !== PC || INST_G !== g) { INST = geomKernel({ clipper: PC, geodesy: g }); INST_PC = PC; INST_G = g; }
+      return INST;
+    }
+
+    /* ⚠ THE KERNEL AS THE OTHER THREAD BUILDS IT: no clipper, no geodesy. It is what `worker.ops()`
+       and `worker.ready()` ask, so 「あちらで走るか」 is answered by the same code that would run it
+       — and it is also the object the public door's shape is READ from, so an operation added
+       inside the kernel cannot be missing outside it. */
+    const PORTABLE = geomKernel(null);
+
+    /* Every name the kernel publishes, delegating to the CURRENT kernel. Derived, never listed:
+       a hand-written façade is the list that silently drops whatever is added next. */
+    function bindTo(path) {
+      return function () {
+        let t = K();
+        for (let i = 0; i < path.length - 1; i++) t = t[path[i]];
+        return t[path[path.length - 1]].apply(t, arguments);
+      };
+    }
+    function delegated(node, path) {
+      const out = {};
+      for (const name of Object.keys(node)) {
+        const v = node[name];
+        if (typeof v === 'function') out[name] = bindTo(path.concat([name]));
+        else if (v && typeof v === 'object') out[name] = delegated(v, path.concat([name]));
+      }
+      return out;
+    }
+
+    /* ══ (#R819) THE SAME KERNEL, IN THE OTHER THREAD ═════════════════════════════════════════════
+       What is handed over is `geomKernel` ITSELF — js/gis-worker.js `provide()` evaluates its own
+       source text there, so the bytes that answer in the worker are the bytes that answer here.
+       ⚠ THE ARGUMENTS ARE THE FACTORY'S OWN: `[deps, call]`, with `deps` null because nothing this
+       kernel borrows survives postMessage (see the header). `request()` is the only place that
+       shape is written, so no caller writes it twice. */
+    const WORKER_OP = 'kernel';
+
+    function workerOps() { return PORTABLE.ops().filter((op) => !PORTABLE.unmet(op).length); }
+
+    function workerReady(w, op) {
+      const name = (typeof op === 'string') ? op : '';
+      const provided = (w && typeof w.geometryReady === 'function') ? w.geometryReady(WORKER_OP) : null;
+      if (!provided || !provided.ok) return provided || { ok: false, why: 'geometry-op-unavailable', detail: { op: WORKER_OP, have: [] } };
+      const need = PORTABLE.unmet(name);
+      if (need === null) return { ok: false, why: 'geometry-op-unavailable', detail: { op: name || null, have: workerOps() } };
+      /* ⚠ NAMED BEFORE A POLYGON IS COPIED, in the kernel's own vocabulary — the refusal a caller
+         would otherwise have received after a spawn, a clone and a sweep that never started
+         (.agents/rules/one-pass-or-a-reason.md §4). */
+      if (need.length) return { ok: false, why: (need[0] === 'clipper') ? 'clipper-unavailable' : 'geodesy-unavailable', detail: { op: name, needs: PORTABLE.requires(name), missing: need } };
+      return { ok: true, op: name };
+    }
+
+    function workerRequest(op, args) { return { op: WORKER_OP, args: [null, { op: (typeof op === 'string') ? op : '', args: args }] }; }
+
+    /* Provided ONCE, and ASKED rather than remembered: js/gis-worker.js counts a registry change as
+       a revision and retires idle workers built from an older one, so providing on every call would
+       spawn a fresh thread per call. */
+    function workerInstall(w) {
+      for (const k of ['provideGeometry', 'geometryOps', 'geometryReady']) {
+        if (!w || typeof w[k] !== 'function') return { ok: false, reason: 'worker-door-invalid', detail: { missing: k } };
+      }
+      try {
+        if (w.geometryOps().indexOf(WORKER_OP) < 0) {
+          const r = w.provideGeometry(WORKER_OP, geomKernel);
+          if (!r || !r.ok) return { ok: false, reason: (r && r.why) || 'library-not-provided', detail: (r && r.detail) || null };
+        }
+        return { ok: true, op: WORKER_OP, ops: workerOps() };
+      } catch (e) {
+        return { ok: false, reason: 'worker-door-invalid', detail: { message: String((e && e.message) || e) } };
+      }
+    }
+
     /* ⚠ (#R749) THE VERSION OF THIS KERNEL. Same reason and same keeper as js/gis-ops.js
        KERNEL_VERSION — the boolean engine is where #R743's union defect actually lived, so a saved
        recipe that replays through a different geometry kernel can land on different numbers.
@@ -1605,34 +2316,30 @@ export function makeGisGeometry() {
        km² came back EMPTY, a union of 362,769 km² came back 435,331 km², and a 5 km buffer came back
        437,364 km² where the shape's own perimeter caps it at 348,513. Every saved step that ever
        crossed that case replays to a different — correct — answer. */
+    /* ⚠ (#R819) NOT RAISED, AND THE CHOICE IS THE ONE THIS GATE EXISTS TO FORCE. The round wrapped
+       the arithmetic in a factory and added a door to the other thread; it did not change one rule
+       of meaning — same precedence of the seam, same refusals, same tolerances, same sweep — so a
+       recipe saved last week replays to the same numbers. New capability is not a changed answer.
+       (The hash in scripts/gis-kernel-versions.mjs does change, and is re-recorded there.) */
     const KERNEL_VERSION = 'geom-2';
-    const API = {
+    const API = Object.assign(delegated(PORTABLE, []), {
       /* (#R749) see KERNEL_VERSION above — js/gis-project.js records which engine answered. */
       version: () => KERNEL_VERSION,
-      ready, available,
-      union, intersection, difference, dissolve, bufferKm,
-      intersects, contains, within, disjoint, distanceKm,
-      pointInGeometry,
-      /* ⚠ VALIDITY IS A FACT ABOUT A GEOMETRY, SO IT LIVES BESIDE THE OPERATIONS AND NOT INSIDE ONE
-         (#R752). Both doors already return the readable shape, so neither has a loose twin above and
-         neither is repeated inside `attempt` — one name, one place. See the block above for what is
-         reported, what is refused by name, and why a ring's winding is a note and not a defect. */
-      validate, repair,
-      /* ⚠ THE SAME OPERATIONS, ASKED SO THAT A REFUSAL CAN BE READ (#R743). Not a second engine and
-         not a second rule: the plain names above are one line each over these. A caller that must
-         not report success over a computation that did not happen — which is every runner in
-         js/gis-ops.js — asks here and gets `{ ok:false, why }` instead of a null it would have read
-         as 「該当なし」. docs/GIS-CORE.md §1.2 holds the vocabulary. */
-      attempt: {
-        union: unionR, intersection: (a, b) => boolOpR('intersection', a, b), difference: (a, b) => boolOpR('difference', a, b),
-        dissolve: unionR, bufferKm: bufferKmR,
-        intersects: intersectsR, contains: containsR, within: withinR, disjoint: disjointR,
-        distanceKm: distanceKmR, areal: arealR,
+      /* The dynamic import of the sweep line, which is this side's business and not the kernel's. */
+      ready,
+      /* (#R819) the other thread. `install` provides the kernel itself; `ops` is what a dep-less
+         kernel can complete, `ready` refuses by name before a shape is copied, and `request` is the
+         one place the payload shape is written. */
+      worker: {
+        install: workerInstall,
+        op: WORKER_OP,
+        ops: workerOps,
+        ready: workerReady,
+        request: workerRequest,
+        /* The function itself, so a caller that assembles its own door ships the same bytes. */
+        kernelFunction: () => geomKernel,
       },
-      /* exposed because js/gis-ops.js converts the same way and the checks measure the same
-         conversion — two readers of one rule, not two rules */
-      toMulti, fromMulti, unwrapRing, ringsOf, linesOf, pointsOf, hasArea,
-    };
+    });
     try { window.IntMapGisGeometry = API; } catch (_) { }
     return API;
   })();

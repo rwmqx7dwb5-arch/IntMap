@@ -486,6 +486,17 @@ export function makeGisUnits() {
       if (!per.ok) return { ok: false, why: per.why, detail: per.detail };
       if (time != null && TIMES[time].needsPeriod && per.value == null) return { ok: false, why: 'quantity-period-missing', detail: { time: time } };
       const unit = stated(spec.unit);
+      /* ⚠ (#R819) 割合の分母は「別の列の名前」であって、この核が読める量ではない。A ratio's rule here
+         is already 「分母で重み付けろ」 (`weight:'denominator'`, and `aggregation` hands that word
+         back as the remedy) — and the word was the whole of it: NOTHING could say WHICH column the
+         denominator is, so a caller receiving the remedy had no way to act on it without inventing a
+         second place to keep the association. It is carried as a NAME and never resolved here: this
+         file knows nothing about datasets or columns, and resolving it would be this kernel growing
+         a reader of somebody else's record.
+         ⚠ IT CHANGES NO VERDICT. A quantity that states one and a quantity that does not are judged
+         identically by `aggregation` and by `comparableQuantity`; the name travels so that the
+         layer holding the columns can act on the remedy this file already gave. */
+      const denominator = stated(spec.denominator);
       /* Two contradictions that can be MEASURED rather than trusted. Both are 「宣言が自分と矛盾して
          いる」, not 「読めない」: a share cannot be in metres and a category cannot be in anything. */
       if (kind === 'ratio' && unit != null) { const pu = parse(unit); if (pu && !dimZero(pu.d)) return { ok: false, why: 'quantity-unit-contradicts-kind', detail: { kind: kind, unit: unit } }; }
@@ -498,6 +509,7 @@ export function makeGisUnits() {
           spaceFrom: spaceStated != null ? 'stated' : (K.impliesSpace ? 'kind' : null),
           time: time, period: per.value, unit: unit,
           weight: K.weight || null,
+          denominator: denominator,
         },
       };
     }
@@ -609,6 +621,12 @@ export function makeGisUnits() {
        operand's spelling, and an expression that cancels exactly (`[m] / [m]`, `len(…)`, `log(…)`)
        is labelled '1'. A recipe replayed after this round registers a record stating a unit where
        the same recipe registered silence before, which is the difference this number announces. */
+    /* (#R819) units-2 IS DELIBERATELY NOT RAISED, and the choice is the one that gate exists to
+       force. `quantity()` now CARRIES a declared `denominator` — the name of the column a ratio is a
+       share of — and nothing reads it here: every verdict `aggregation`, `aggregations` and
+       `comparableQuantity` return for a spec that states one is the verdict they returned for the
+       same spec without it, and no conversion factor moves. A saved recipe replays to the same
+       numbers and the same refusals. */
     const KERNEL_VERSION = 'units-2';
     /* ⚠ ONLY THE CODES THAT LEAVE HERE AS `ok:false`. The `quantity-*` and `summing-*` codes below
        are VERDICTS a caller reads and reports in its own words — they are not this kernel refusing an
@@ -629,6 +647,11 @@ export function makeGisUnits() {
         times: Object.keys(TIMES).map((t) => ({ time: t, needsPeriod: TIMES[t].needsPeriod })),
         calendarPeriods: CALENDAR_UNITS.slice(),
         methods: METHODS.slice(),
+        /* ⚠ (#R819) 宣言の欄そのもの。A supplier writing a declaration and a panel drawing one both
+           need to know WHICH KEYS make one up, and the only alternative to publishing it is each of
+           them keeping a list of its own — the shape .agents/rules/no-ad-hoc-hardcoding.md §1 names.
+           `denominator` is here because it is declarable, not because this file interprets it. */
+        specFields: ['kind', 'space', 'time', 'period', 'unit', 'denominator'],
       }),
       version: () => KERNEL_VERSION,
       refusals: () => REFUSALS.slice(),

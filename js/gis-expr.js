@@ -99,6 +99,25 @@ export function makeGisExpr() {
       return { ok: true, R };
     }
 
+    /* ══ (#R819) THE KERNEL IS ONE FUNCTION, AND IT CLOSES OVER NOTHING ═══════════════════════════
+       docs/GIS-CORE.md §3.6 stated the defect in its own words: 「まだ運べないもの: combine と
+       rasterCalc。`fn` はクロージャ（js/gis-expr.js の compile 済みで AST と数値規則を閉じ込めて
+       いる）で、Worker は fn.toString() を評価するので job-not-self-contained になる」 — and the road
+       out, in the same sentence: 「AST は JSON なので、評価器そのものをジョブの本文にして {ast, rule}
+       を渡す。provide() ＋ uses がその扉」.
+       ⚠ THE POINT OF THE WRAPPER IS NOT TIDINESS. js/gis-worker.js `provide()` ships a function by
+       evaluating its own source text in the other thread, so a kernel that borrowed ONE name from the
+       module around it would arrive with that name unbound. Everything the arithmetic needs —
+       the function table, the number coercions, the tokenizer, the parser, the evaluator — is inside
+       this one function, which therefore travels; `registry()` and `numberRule()` stay OUTSIDE it,
+       because 「どこから規則を借りるか」 is a fact about the environment and not about arithmetic.
+       ⚠ AND THERE IS STILL ONE IMPLEMENTATION. This thread calls `K.…`, where `K` is this function
+       CALLED here; the worker calls the same function rebuilt from the same bytes. 「両方が同じだけ
+       間違っていれば緑」 is not available, because there is no second copy to be wrong in.
+       ⚠ NOT ONE RULE OF MEANING MOVED. The body below is the #R738/#R783 kernel unchanged — same
+       precedence, same propagation of missing, same refusals — so a recipe saved last week replays
+       to the same numbers and KERNEL_VERSION stays `expr-1`. */
+    function exprKernel() {
     /* ── errors: one shape, thrown internally, never escaping ─────────────────────────────────── */
 
     /* ⚠ THE CODES THIS KERNEL CAN ANSWER WITH, DECLARED (#R738). js/gis-ops.js hands these back to the
@@ -664,11 +683,12 @@ export function makeGisExpr() {
       }
     }
 
-    function evaluate(ast, row, env) {
-      const rule = numberRule(env);
-      if (!rule.ok) return { value: null, error: { why: rule.why, detail: rule.detail } };
+    /* (#R819) ONE ROW, WITH THE RULE ALREADY RESOLVED. Both threads enter the arithmetic here:
+       `evaluate` and `compile` below resolve the rule from the environment first, and the worker job
+       resolves it from the library it was handed. Neither of them re-implements the walk. */
+    function evalWithRule(ast, row, R) {
       try {
-        const v = evalNode(ast, row, rule.R);
+        const v = evalNode(ast, row, R);
         return { value: v === undefined ? null : v };
       } catch (e) {
         const s = shape(e);
@@ -676,24 +696,91 @@ export function makeGisExpr() {
       }
     }
 
-    function compile(src, env) {
-      const p = parse(src);
-      if (!p.ok) return p;
-      const rule = numberRule(env);
-      if (!rule.ok) return { ok: false, why: rule.why, detail: rule.detail };
-      const R = rule.R;
-      return {
-        ok: true,
-        ast: p.ast,
-        fields: p.fields,
-        returns: p.returns,
-        /* One row in, one answer out — and the answer carries its own failure, because a single bad
-           cell must not stop the 39,999 rows around it. */
-        fn: (row) => {
-          try { const v = evalNode(p.ast, row, R); return { value: v === undefined ? null : v }; }
-          catch (e) { const s = shape(e); return { value: null, error: { why: s.why, detail: s.detail } }; }
-        },
-      };
+    /* ══ (#R819) CAN THIS EXPRESSION BE CARRIED — ASKED BEFORE ANYTHING IS QUEUED ═════════════════
+       Two different questions, answered together because a caller about to spend a thread needs both:
+         ① IS IT DATA. A tree that reached here from parse() holds numbers, strings, booleans and
+            names. A tree assembled by something else can hold anything, and a function inside one is
+            a DataCloneError at postMessage — i.e. a failure AFTER the transfer was attempted, which
+            is what .agents/rules/one-pass-or-a-reason.md calls a repeat with no observed failure.
+         ② IS IT THIS KERNEL'S. An unknown function name or a wrong argument count is a refusal the
+            worker would have raised on the first row of forty thousand; raised here it costs nothing.
+       ⚠ THE CODES ARE THE NINE THIS KERNEL ALREADY DECLARES. A tenth would be a refusal with no
+       sentence beside it (tests/r729-gis-core-checks ④ measures exactly that), and the facts already
+       have names: a tree this kernel cannot read is `expr-bad-ast`, whatever made it unreadable.
+       ⚠ NODE_SLOTS IS THE ONE PLACE THE SHAPE OF A NODE IS WRITTEN DOWN, and an EXTRA property is
+       refused rather than ignored: structured clone carries every own property, so a tree with
+       something else hanging off it is a tree whose extra baggage would either travel or throw. A
+       node kind the evaluator gains and this table does not would be refused as unreadable — a
+       safe answer, and tests/r819-gis-worker-checks measures the two against each other so the
+       refusal cannot become the normal state without somebody being told. */
+    const NODE_SLOTS = {
+      num: ['v'], str: ['v'], bool: ['v'], null: [],
+      field: ['name'], un: ['op', 'a'], bin: ['op', 'a', 'b'], call: ['name', 'args'],
+    };
+    const LITERAL_TYPE = { num: 'number', str: 'string', bool: 'boolean' };
+    const UNARY_OPS = ['-', 'not'];
+
+    function carriable(v) {
+      const t = typeof v;
+      if (t === 'string' || t === 'boolean') return true;
+      /* A number that is not finite does not survive JSON and is not something this parser produces;
+         refusing it here is refusing a tree nobody wrote rather than carrying a null quietly. */
+      if (t === 'number') return isFinite(v);
+      return false;
+    }
+
+    function checkNode(node, path) {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: String(node) } };
+      const kind = node.t;
+      const slots = Object.prototype.hasOwnProperty.call(NODE_SLOTS, kind) ? NODE_SLOTS[kind] : null;
+      if (!slots) return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: String(kind), expected: Object.keys(NODE_SLOTS) } };
+      for (const k of Object.keys(node)) {
+        if (k === 't') continue;
+        if (slots.indexOf(k) < 0) return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: kind, extra: k } };
+      }
+      for (const k of slots) {
+        if (!Object.prototype.hasOwnProperty.call(node, k)) return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: kind, missing: k } };
+      }
+      if (LITERAL_TYPE[kind]) {
+        if (typeof node.v !== LITERAL_TYPE[kind] || !carriable(node.v)) return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: kind, got: typeof node.v } };
+        return { ok: true };
+      }
+      if (kind === 'null') return { ok: true };
+      if (kind === 'field') {
+        if (typeof node.name !== 'string') return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: kind, got: typeof node.name } };
+        return { ok: true };
+      }
+      if (kind === 'un') {
+        if (UNARY_OPS.indexOf(node.op) < 0) return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: kind, op: String(node.op), expected: UNARY_OPS.slice() } };
+        return checkNode(node.a, path + '.a');
+      }
+      if (kind === 'bin') {
+        /* The same three sets the evaluator switches on — not a fourth list of operators. */
+        if (!(ARITH.has(node.op) || LOGIC.has(node.op) || COMPARISON.has(node.op))) {
+          return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: kind, op: String(node.op) } };
+        }
+        const a = checkNode(node.a, path + '.a');
+        if (!a.ok) return a;
+        return checkNode(node.b, path + '.b');
+      }
+      /* call — the name and the arity are FUNCS's, asked exactly as evalNode asks them. */
+      const decl = (typeof node.name === 'string' && Object.prototype.hasOwnProperty.call(FUNCS, node.name)) ? FUNCS[node.name] : null;
+      if (!decl) return { ok: false, why: 'expr-unknown-function', detail: { at: path, token: String(node.name), expected: 'a function in functions()' } };
+      if (!Array.isArray(node.args)) return { ok: false, why: 'expr-bad-ast', detail: { at: path, node: kind, got: typeof node.args } };
+      const [min, max] = decl.arity;
+      if (node.args.length < min || (max != null && node.args.length > max)) {
+        return { ok: false, why: 'expr-arity', detail: { at: path, token: node.name, expected: max == null ? (min + '+') : (min === max ? String(min) : (min + '..' + max)), got: node.args.length } };
+      }
+      for (let i = 0; i < node.args.length; i++) {
+        const r = checkNode(node.args[i], path + '.args[' + i + ']');
+        if (!r.ok) return r;
+      }
+      return { ok: true };
+    }
+
+    function portable(ast) {
+      const r = checkNode(ast, '');
+      return r.ok ? { ok: true, ast: ast } : r;
     }
 
     /* The list a UI draws. Derived from FUNCS, with the implementations removed — a panel with its
@@ -710,6 +797,183 @@ export function makeGisExpr() {
       }));
     }
 
+      return {
+        parse: parse,
+        evalWithRule: evalWithRule,
+        portable: portable,
+        functions: functions,
+        refusals: function () { return REFUSALS.slice(); },
+        /* The node kinds this kernel can read, derived from the one table above — published so a
+           check can hold it against the evaluator's own switch instead of a list in a test. */
+        nodeKinds: function () { return Object.keys(NODE_SLOTS); },
+      };
+    }
+
+    /* ⚠ CALLED ONCE, HERE. Everything below asks `K`; the worker asks the same function rebuilt from
+       the same bytes (see installWorker). There is no second construction on this thread. */
+    const K = exprKernel();
+
+    function parse(src) { return K.parse(src); }
+    function functions() { return K.functions(); }
+    function portable(ast) { return K.portable(ast); }
+
+    function evaluate(ast, row, env) {
+      const rule = numberRule(env);
+      if (!rule.ok) return { value: null, error: { why: rule.why, detail: rule.detail } };
+      return K.evalWithRule(ast, row, rule.R);
+    }
+
+    function compile(src, env) {
+      const p = parse(src);
+      if (!p.ok) return p;
+      const rule = numberRule(env);
+      if (!rule.ok) return { ok: false, why: rule.why, detail: rule.detail };
+      const R = rule.R;
+      return {
+        ok: true,
+        ast: p.ast,
+        fields: p.fields,
+        returns: p.returns,
+        /* One row in, one answer out — and the answer carries its own failure, because a single bad
+           cell must not stop the 39,999 rows around it. */
+        fn: (row) => K.evalWithRule(p.ast, row, R),
+      };
+    }
+
+    /* ══ (#R819) THE SAME KERNEL, IN THE OTHER THREAD ═════════════════════════════════════════════
+       ⚠ WHAT WAS MISSING WAS NOT A LOOP. js/gis-ops.js `compute` and `rasterCalc` hold a COMPILED
+       expression — a closure over the AST and the number rule — and js/gis-worker.js rebuilds a job
+       from its own source text, so the closure was the thing that could not travel
+       (docs/GIS-CORE.md §3.6 named it and named the way out). What travels instead is DATA: the tree,
+       which parse() already produces as plain JSON, and two FUNCTIONS shipped by `provide()` —
+       this kernel, and the number rule.
+       ⚠ THE NUMBER RULE IS NOT WRITTEN AGAIN HERE, AND IT IS NOT GUESSED. 「この文字列は数か」 is
+       js/gis-datasets.js's decision (rule ② in the header); a private copy inside the job is exactly
+       the drift .agents/rules/no-ad-hoc-hardcoding.md §2-3 describes — an expression that compares
+       one way on this thread and another way in the worker. So the caller HANDS THE RULE OVER as a
+       self-contained factory, and a door installed without one is refused BEFORE a job exists, with
+       the code this kernel already uses for the same fact on this thread (`expr-no-number-rule`).
+       ⚠ THE CONVERSION TO A BAND IS NOT THIS JOB'S EITHER. js/gis-ops.js rasterCalc decides what a
+       boolean and a null become in an output grid («a mask of 1/0 is the honest answer»), and that
+       rule stays there: a caller that wants numbers back hands its own function over as a library
+       and names it in `convert`. Without one the job answers the VALUES it computed.
+       ⚠ THESE ANSWERS ARE WIRING, SO THEY ARE `reason`, NOT `why`. A reader never assembles a
+       payload; a refusal here is for the caller that offered the door, and it travels the way
+       js/gis-warp.js's does (into the report), not into the panel's sentences. */
+    const KERNEL_LIB = 'expr.kernel';
+    const RULE_LIB = 'expr.rule';
+    const ROWS_JOB = 'expr.rows';
+
+    /* ⚠ SELF-CONTAINED, AS register() REQUIRES: `p`, `ctx` and the worker's own intrinsics, and
+       nothing from the module around it — the library names arrive as `deps` so that this file has
+       one spelling of them rather than two. */
+    function exprRowsJob(p, ctx) {
+      const names = (ctx && ctx.deps) || {};
+      const lib = (ctx && ctx.lib) || {};
+      const mkK = lib[names.kernel], mkR = lib[names.rule];
+      if (typeof mkK !== 'function') return { ok: false, why: 'expr-internal', detail: { field: 'lib', missing: names.kernel } };
+      if (typeof mkR !== 'function') return { ok: false, why: 'expr-no-number-rule', detail: { library: names.rule } };
+      const K2 = mkK();
+      const R = mkR();
+      const port = K2.portable(p ? p.ast : null);
+      if (!port.ok) return { ok: false, why: port.why, detail: port.detail };
+      /* Two input forms, and they are the two the callers have: a list of rows (js/gis-ops.js
+         `compute`) and a set of equal-length planes (rasterCalc, whose "row" is a pixel). */
+      const rows = (p && Array.isArray(p.rows)) ? p.rows : null;
+      const bands = (p && p.bands && typeof p.bands === 'object') ? p.bands : null;
+      if (!rows && !bands) return { ok: false, why: 'expr-internal', detail: { field: 'rows|bands' } };
+      let n = 0;
+      const keys = bands ? Object.keys(bands) : [];
+      if (rows) n = rows.length;
+      else {
+        if (!keys.length) return { ok: false, why: 'expr-internal', detail: { field: 'bands' } };
+        n = (typeof p.length === 'number' && isFinite(p.length)) ? p.length : bands[keys[0]].length;
+        for (const k of keys) {
+          const col = bands[k];
+          if (!col || typeof col.length !== 'number') return { ok: false, why: 'expr-internal', detail: { field: 'bands', band: k } };
+          if (col.length < n) return { ok: false, why: 'expr-internal', detail: { field: 'bands', band: k, length: col.length, expected: n } };
+        }
+      }
+      let convert = null;
+      if (p && p.convert != null) {
+        convert = lib[p.convert];
+        if (typeof convert !== 'function') return { ok: false, why: 'expr-internal', detail: { field: 'convert', missing: String(p.convert) } };
+      }
+      const out = convert ? new Float64Array(n) : new Array(n);
+      const view = bands ? {} : null;
+      let errors = 0, firstError = null;
+      /* At most 64 messages whatever the size — inside a worker nothing is blocking a paint, so the
+         interval is about message traffic, the same reason grid.binary states. */
+      const step = Math.max(1, Math.floor(n / 64));
+      for (let i = 0; i < n; i++) {
+        let row;
+        if (rows) row = rows[i];
+        else { for (let k = 0; k < keys.length; k++) view[keys[k]] = bands[keys[k]][i]; row = view; }
+        const r = K2.evalWithRule(p.ast, row, R);
+        if (r && r.error) { errors++; if (!firstError) firstError = r.error; }
+        const v = (r && r.error) ? null : r.value;
+        if (convert) { const c = convert(v); out[i] = (typeof c === 'number' && isFinite(c)) ? c : NaN; }
+        else out[i] = (v === undefined) ? null : v;
+        if ((i % step) === 0) ctx.progress(i, n);
+      }
+      ctx.progress(n, n);
+      const value = { length: n, errors: errors, error: firstError };
+      if (convert) { value.values = out; return { ok: true, value: value, transfer: [out.buffer] }; }
+      value.list = out;
+      return { ok: true, value: value };
+    }
+
+    /* Registered and provided ONCE PER DOOR, and ASKED rather than remembered — js/gis-worker.js
+       counts a registry change as a revision and retires idle workers built from an older one, so a
+       door installed on every call would spawn a fresh thread per call. */
+    function installWorker(w, opts) {
+      const o = opts || {};
+      for (const k of ['provide', 'register', 'jobNames', 'libraryNames']) {
+        if (!w || typeof w[k] !== 'function') return { ok: false, reason: 'worker-door-invalid', detail: { missing: k } };
+      }
+      try {
+        if (w.libraryNames().indexOf(KERNEL_LIB) < 0) {
+          /* ⚠ THE FUNCTION THIS THREAD CALLS, HANDED OVER AS ITSELF. `K` above is `exprKernel()`;
+             the worker evaluates `exprKernel`'s own text. One implementation, two callers. */
+          const r = w.provide(KERNEL_LIB, exprKernel);
+          if (!r || !r.ok) return { ok: false, reason: (r && r.why) || 'library-not-provided', detail: (r && r.detail) || null };
+        }
+        if (w.libraryNames().indexOf(RULE_LIB) < 0) {
+          const f = o.rule;
+          if (typeof f !== 'function') return { ok: false, reason: 'expr-no-number-rule', detail: { missing: NUMBER_RULE.slice(), library: RULE_LIB } };
+          /* Asked of the factory now, on this thread, where the answer is still cheap: a factory
+             that does not build the three functions would be a ReferenceError-free job that refuses
+             on its first row instead. */
+          let built = null;
+          try { built = f(); } catch (e) { return { ok: false, reason: 'expr-no-number-rule', detail: { message: String((e && e.message) || e) } }; }
+          const absent = NUMBER_RULE.filter((k) => !built || typeof built[k] !== 'function');
+          if (absent.length) return { ok: false, reason: 'expr-no-number-rule', detail: { missing: absent } };
+          const r = w.provide(RULE_LIB, f);
+          if (!r || !r.ok) return { ok: false, reason: (r && r.why) || 'library-not-provided', detail: (r && r.detail) || null };
+        }
+        if (w.jobNames().indexOf(ROWS_JOB) >= 0) return { ok: true, job: ROWS_JOB };
+        const reg = w.register(ROWS_JOB, exprRowsJob, {
+          /* ⚠ `uses` IS THE PRE-FLIGHT. js/gis-worker.js refuses the registration (`job-library-missing`)
+             when a name is not there, so 「規則を渡し忘れた」 is answered before a payload is built. */
+          uses: [KERNEL_LIB, RULE_LIB],
+          deps: { kernel: KERNEL_LIB, rule: RULE_LIB },
+          decl: {
+            id: ROWS_JOB,
+            inputs: [{ name: 'ast', type: 'expression' }, { name: 'rows', type: 'row[]|null' }, { name: 'bands', type: 'plane{}|null' }],
+            params: [
+              { name: 'length', type: 'count' },
+              { name: 'convert', type: 'library', required: false },
+            ],
+            output: { list: 'value[]|null', values: 'band|null', length: 'count', errors: 'count', error: 'refusal|null' },
+          },
+        });
+        if (!reg || !reg.ok) return { ok: false, reason: (reg && reg.why) || 'job-not-registered', detail: (reg && reg.detail) || null };
+        return { ok: true, job: ROWS_JOB };
+      } catch (e) {
+        return { ok: false, reason: 'worker-door-invalid', detail: { message: String((e && e.message) || e) } };
+      }
+    }
+
     /* (#R752) ⚠ WHAT THIS FILE DECIDES IS AN ANSWER, SO IT DECLARES WHICH ONE. `compute` saves its
        expression as a recipe and js/gis-project.js replays it, so a change here — an operator's
        precedence, what a missing cell propagates to, whether a leading zero is arithmetic — silently
@@ -717,7 +981,23 @@ export function makeGisExpr() {
        two kernels and this was not one of them. The keeper is scripts/gis-kernel-versions.mjs. */
     const KERNEL_VERSION = 'expr-1';
 
-    const API = { parse, evaluate, compile, functions, version: () => KERNEL_VERSION, refusals: () => REFUSALS.slice() };
+    const API = {
+      parse, evaluate, compile, functions,
+      version: () => KERNEL_VERSION, refusals: () => K.refusals(),
+      /* (#R819) 「この木は運べるか、そしてこのカーネルに読めるか」 — asked before a thread is spent. */
+      portable,
+      nodeKinds: () => K.nodeKinds(),
+      /* (#R819) the other thread. `install` provides this kernel and the caller's number rule, then
+         registers the job; the names are published so a dispatcher writes none of them twice. */
+      worker: {
+        install: installWorker,
+        job: ROWS_JOB,
+        kernelLibrary: KERNEL_LIB,
+        ruleLibrary: RULE_LIB,
+        /* The function itself, so a caller that assembles its own door ships the same bytes. */
+        kernelFunction: () => exprKernel,
+      },
+    };
     try { window.IntMapGisExpr = API; } catch (_) { }
     return API;
   })();
