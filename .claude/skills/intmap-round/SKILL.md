@@ -124,7 +124,7 @@ PR を作ったら、その **PR 番号**が一意の識別子になる（squash
 | 技術判断を新しくした・覆した | `DECISIONS.md` |
 | 試験を足した・組み替えた | `docs/TESTING.md` |
 | **文書を 1 本足した** | **`docs/README.md` に 1 行**（無いと `check:docs` が落ちる） |
-| 常に | **`dev-notes/<YYYY-MM-DD>-<slug>.md` を 1 本**足し、`node scripts/dev-notes.mjs --write` |
+| 常に | **`dev-notes/<YYYY-MM-DD>-<slug>.md` を 1 本**足す（他のファイルは触らない——一覧は `--list` がその場で作る） |
 | **上に無い主題**（ニュース・企業・航空・火山・DB・警報・運用…） | **[`docs/README.md`](../../../docs/README.md) の表で引く** |
 
 ⚠ **最後の行は「その他」ではなく、この表の残り全部である。** ここに並んでいるのは
@@ -150,7 +150,7 @@ pr: 123            # 分かれば。PR を作ってから足してよい（無�
 ```
 
 - ファイル名の日付は front matter の `date` と同じ。slug は `worktree.mjs new` に渡したもの。
-- 書いたら `node scripts/dev-notes.mjs --write`（索引を作り直す）→ `node scripts/dev-notes.mjs --check`。
+- 書いたら `node scripts/dev-notes.mjs --check`。⚠ **`DEV-NOTES.md` は固定の案内で、一覧を持たない**——一覧を追跡していた間は、1 本 merge されるたびに開いている PR が全部このファイルで衝突した（実測 4 本同時）。一覧は `node scripts/dev-notes.mjs --list`。
 - 詳しさは既存のエントリと同じ程度（**何を・なぜ・実測**）。否定された見立ても残す。
 - `R<N>.md` は番号で呼んでいた頃の記録で、名前は当時のまま（読むだけ・書き換えない）。
 - ⚠ **旧形式で `DEV-NOTES.md` の先頭に `## R<N>` を足した branch を取り込むとき**（移行期の取り残し）は、

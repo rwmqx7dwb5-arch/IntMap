@@ -89,7 +89,7 @@
 | 文書 | 役割 |
 |---|---|
 | [`../dev-notes/`](../dev-notes/) | **開発記録の本体**——**1 エントリ＝1 ファイル**。新しい記録は `<YYYY-MM-DD>-<slug>.md`（front matter に `title`・`date`、分かれば `pr`）。`R<N>.md` は番号で呼んでいた頃の記録、`legacy-index.md` は旧索引の各行（重複を畳んだもの）。書式と手順は `.agents/skills/intmap-round/` §3、生成と検査は `scripts/dev-notes.mjs` |
-| [`../DEV-NOTES.md`](../DEV-NOTES.md) | `dev-notes/` の**生成索引**（新しい順）。**手で編集しない**——`node scripts/dev-notes.mjs --write` が書き、`npm run check:docs` が照合する |
+| [`../DEV-NOTES.md`](../DEV-NOTES.md) | `dev-notes/` への**固定の案内**。**一覧は持たない**（追跡すると並行する PR が全部ここで衝突する）——新しい順の一覧は `node scripts/dev-notes.mjs --list`、形は `npm run check:docs` が照合する |
 | [`../DEV-NOTES-ARCHIVE.md`](../DEV-NOTES-ARCHIVE.md) | それ以前の全記録（古い順・通し）。**読むだけ・追記しない** |
 
 > ⚠ **履歴に書いてあるのは「当時そうだった」であって「今もそうである」ではない。**

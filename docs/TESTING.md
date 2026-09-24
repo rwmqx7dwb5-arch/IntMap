@@ -733,7 +733,7 @@ says which of a run's failures `main` already has.
   is present, a commit that added a spec is seen through the real `git diff` path.
 - **③ the record's index rows are not stacked again.** A synthetic legacy file with the index copied
   three times and the title quoted mid-entry splits into whole entries and one copy of each row;
-  **③b** `DEV-NOTES.md` is exactly the generated index and lists each entry once;
+  **③b** the rendered list (`--list`) names each entry once, and `DEV-NOTES.md` is the fixed pointer that lists none — a tracked list made every open PR conflict on it;
   **③c** whenever the original blob (`dev-notes/legacy-manifest.json` → `sourceBlob`) is in the
   checkout, re-splitting it reproduces every `dev-notes/R<N>.md` **byte for byte** and every line
   of the old preamble/index is in `dev-notes/legacy-index.md` (a shallow CI checkout lacks the blob and
@@ -2114,7 +2114,7 @@ reader here for this list; adding a rule means adding a row.
 | `named-path` | a document tells the reader to open a file that is not in the tree |
 | `gate-lists` | an instruction document enumerating the gates does not name every `check:*` |
 | `preview-port` | a document still states the preview port as a function of the round number, states a range other than `PREVIEW_PORTS` in `scripts/worktree.mjs`, or that range overlaps the per-checkout test servers |
-| `dev-notes` | `DEV-NOTES.md` is not exactly what `scripts/dev-notes.mjs --write` generates from `dev-notes/`, an entry is written the old way (`## R<N>` into `DEV-NOTES.md`), or an entry file is misnamed / lacks its front matter |
+| `dev-notes` | `DEV-NOTES.md` is not the fixed pointer `scripts/dev-notes.mjs --write` writes (it must list no entry), an entry is written the old way (`## R<N>` into `DEV-NOTES.md`), or an entry file is misnamed / lacks its front matter |
 | `backup-shell` | a document launches the USB backup with a shell other than the one `AGENTS.md` §11.2 uses |
 | `relay-guard` | a stated count of the functions sharing `_shared/relay-guard.js` is not the real one |
 | `ci-gates` | `npm test` runs a source-side gate that no `ci.yml` step reaches |

@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
-import { entries, latestEntry } from '../scripts/dev-notes.mjs';
+import { entries, latestEntry, renderIndex } from '../scripts/dev-notes.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -285,7 +285,7 @@ test('R219 ⑪ DEV-NOTES leads with the newest round, and the build stamp agrees
   assert.equal(latestEntry(ROOT).file, all[0].file, 'the newest record must lead');
   const legacy = all.filter((e) => e.kind === 'legacy').map((e) => e.round);
   for (let i = 1; i < legacy.length; i++) assert.ok(legacy[i] < legacy[i - 1], `newest-first: R${legacy[i]} follows R${legacy[i - 1]}`);
-  const firstLink = /\]\(([^)]+)\)/.exec(read('DEV-NOTES.md').split('\n').find((l) => l.startsWith('- ')) || '');
+  const firstLink = /\]\(([^)]+)\)/.exec(renderIndex(ROOT).split('\n').find((l) => l.startsWith('- ')) || '');
   assert.equal(firstLink && firstLink[1], all[0].file, 'the generated index opens with the newest record');
   assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

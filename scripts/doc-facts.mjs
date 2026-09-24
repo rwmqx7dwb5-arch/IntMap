@@ -93,7 +93,7 @@ const walkMd = (rel, out = []) => {
    left out for a written reason, which is the difference between an exclusion and a blind spot. */
 const EXCLUDED = [
   [/^DEV-NOTES/, 'history: it legitimately quotes text that was true once (see the header)'],
-  [/^dev-notes\//, 'the same history, one entry per file (scripts/dev-notes.mjs) — DEV-NOTES.md is now its generated index'],
+  [/^dev-notes\//, 'the same history, one entry per file (scripts/dev-notes.mjs) — DEV-NOTES.md is now a fixed pointer to it'],
   [/^\.agents\//, 'the instruction documents — swept as AGENT_DOCS below, not indexed by docs/README.md'],
   [/^\.(claude|codex)\//, 'rendered from .agents/ by scripts/agent-sync.mjs; check:agents holds the copies to their source'],
   [/^CLAUDE\.local\.md$/, 'machine-local and untracked — the credentials file (.gitignore)'],
@@ -2716,7 +2716,7 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
     if (!p.length) {
       const n = dn.entries(ROOT).length;
       if (n < 1) fail('dev-notes', 'dev-notes/ holds no entry at all — the record was not found');
-      else ok('dev-notes', `${n} entries under dev-notes/, and DEV-NOTES.md is exactly their generated index`);
+      else ok('dev-notes', `${n} entries under dev-notes/, and DEV-NOTES.md is the fixed pointer (the list is --list)`);
     }
   }
 }

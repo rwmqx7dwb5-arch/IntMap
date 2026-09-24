@@ -198,7 +198,7 @@ worktree・subagent・agent 設定の手動管理をユーザーに要求して�
 
 ```
 調査 → 再現 → 実装 → ドキュメント更新 → 触った段のゲート（execution-strategy.md §4）
-     → dev-notes/ に記録を1本（node scripts/dev-notes.mjs --write）
+     → dev-notes/ に記録を1本（node scripts/dev-notes.mjs --check）
      → commit → push → PR（auto-merge を有効化）
 ```
 
@@ -336,8 +336,8 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
   ⚠ `Architecture.md` は**現状仕様書**であって変更履歴ではない。**ラウンド番号・PR 番号を書かない**
   （経緯は開発記録の仕事。同じ検査がこれを見ている）。
 - **作業完了時**には、現在の状態を反映するよう `Architecture.md` および関連ドキュメントを更新し、
-  **`dev-notes/<YYYY-MM-DD>-<slug>.md` を 1 本足して `node scripts/dev-notes.mjs --write` で索引を
-  作り直す**（`DEV-NOTES.md` を手で編集しない。書式は `.agents/skills/intmap-round/` §3）。
+  **`dev-notes/<YYYY-MM-DD>-<slug>.md` を 1 本足す**（一覧は `node scripts/dev-notes.mjs --list`。
+  `DEV-NOTES.md` は固定の案内で触らない。書式は `.agents/skills/intmap-round/` §3）。
 - **文書を1本足したら、同じコミットで [`docs/README.md`](docs/README.md) に1行足す**
   （その行が無ければ `npm run check:docs` が落ちる）。役割が既存の文書と重なるなら、
   **新しい文書を作らずそちらへ足す**——1つの事実に正本が2つある状態を作らない。
