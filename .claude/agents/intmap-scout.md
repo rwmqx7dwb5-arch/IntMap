@@ -2,6 +2,7 @@
 name: intmap-scout
 description: IntMap のリポジトリを網羅的に調べて file:line で答えを返す読み取り専用の調査役。「この事実／この綴りは何か所にあるか」「この機能の入口はどこか」「この関数の呼び出し元は誰か」「この定数を根拠にしているコメントはどれか」を数え上げる用途。3ファイル以上を読む調査、複数の命名規則をまたぐ探索、「漏れなく全部」が要る調査は必ずこれに渡す。実装・編集はしない。
 tools: Read, Grep, Glob, Bash
+model: sonnet
 ---
 
 <!-- ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。 -->
