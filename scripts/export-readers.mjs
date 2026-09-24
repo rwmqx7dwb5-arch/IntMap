@@ -95,7 +95,10 @@ export function reachedNames(src) {
   /* destructured module objects: `const { a, b } = await import(…)` and `.then(({ a }) =>` */
   for (const m of src.matchAll(/\{([^}]*)\}\s*=\s*await\s+import\s*\(/g)) for (const p of m[1].split(',')) { const nm = p.trim().split(/\s*:\s*/)[0].trim(); if (nm) names.add(nm); }
   for (const m of src.matchAll(/\.then\s*\(\s*\(\s*\{([^}]*)\}\s*\)\s*=>/g)) for (const p of m[1].split(',')) { const nm = p.trim().split(/\s*:\s*/)[0].trim(); if (nm) names.add(nm); }
-  for (const v of ns) for (const m of src.matchAll(new RegExp('(?<![\\w$.])' + v.replace(/\$/g, '\\$') + '\\s*\\.\\s*([A-Za-z_$][\\w$]*)', 'g'))) names.add(m[1]);
+  /* every regex metacharacter, not only `$` — an identifier cannot carry most of them, but a partial
+     escape is right until the day it is not (CodeQL js/incomplete-sanitization) */
+  const rx = (t) => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (const v of ns) for (const m of src.matchAll(new RegExp('(?<![\\w$.])' + rx(v) + '\\s*\\.\\s*([A-Za-z_$][\\w$]*)', 'g'))) names.add(m[1]);
   return names;
 }
 
