@@ -778,7 +778,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      parameter, and an entry point that fires before the loader exists is the silent no-op #R205. */
   makeLazyModules(IM_HOST);
   /* (#R234) …and the RUNTIME: one camera subscription, one animation frame, one timer for the whole
-     program (js/runtime.js — its header has the why, Architecture §9.0 the shape). Built beside the
+     program (js/runtime.js — its header has the why, Architecture §9.1 the shape). Built beside the
      lazy loader for the same reason: a caller that registers before it exists is #R205's no-op. */
   makeRuntime(IM_HOST);
   const RT=()=>window.IntMapRuntime;

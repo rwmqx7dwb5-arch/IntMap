@@ -47,8 +47,9 @@
  *  the "機能数が数倍になっても地図操作経路の処理量が増えない" property, held mechanically rather
  *  than by everyone remembering to unsubscribe.
  *
- *  ⚠ ONE EXPORT AND EVERYTHING INSIDE IT — tests/r175-checks ③ forbids an unexported top-level
- *  declaration in js/, because such a name would have been a global before the bundle.
+ *  (#R786 lifted tests/r175 ③'s ban on unexported top-level declarations; the shape below —
+ *  one export wrapping one closure — is kept because the registers ARE one instance, not because
+ *  a rule requires it. The early-timer memo below is an ordinary module-scope Map now.)
  * ==========================================================================*/
 
 export function makeRuntime(HOST) {
@@ -64,6 +65,7 @@ export function makeRuntime(HOST) {
     const ONCE = new Map();      /* key → {fn, cap} — frame(), DRAINED before it runs (see _run) */
     const CAM = new Set();       /* keys in READ/WRITE that are camera-driven */
     const SUSPENDED = new Set(); /* capability names whose entries are skipped */
+    const _own = { unowned: 0 };  /* (#R796) registrations made with no owner — read by stats(); the number to drive to zero */
 
     let _raf = 0, _camWired = false, _dirty = false;
     let _gesture = 0;            /* depth of movestart/moveend nesting; >0 while the camera moves */
@@ -141,7 +143,8 @@ export function makeRuntime(HOST) {
        app's code ran at all. */
     function _wireCamera() {
       if (_camWired) return;
-      const E = window.IntMapGeoEngine;
+      /* (#R796) headless: no window is not an error, it is "no engine yet" (tests, scripts/frame-profile.mjs) */
+      let E = null; try { E = window.IntMapGeoEngine; } catch (_) { E = null; }
       if (!E || !E.events || !E.hasRenderer || !E.hasRenderer()) return;
       _camWired = true;
       const bump = () => { if (CAM.size) schedule(); };
@@ -161,6 +164,7 @@ export function makeRuntime(HOST) {
     function onCamera(key, fn, opts) {
       const o = opts || {};
       const e = { fn, cap: o.capability || null };
+      if (!e.cap) _own.unowned++;
       (o.phase === 'read' ? READ : WRITE).set(key, e);
       CAM.add(key);
       _wireCamera();
@@ -175,7 +179,9 @@ export function makeRuntime(HOST) {
 
     /* ── 2. one-shot frame work ───────────────────────────────────────────────────────────────*/
     function frame(key, fn, opts) {
-      ONCE.set(key, { fn, cap: (opts && opts.capability) || null });
+      const cap = (opts && opts.capability) || null;
+      if (!cap) _own.unowned++;
+      ONCE.set(key, { fn, cap });
       schedule();
     }
 
@@ -208,12 +214,15 @@ export function makeRuntime(HOST) {
       if (_wheel) clearTimeout(_wheel);
       _wheelMs = want;
       _wheel = setTimeout(_wheelTick, want);
+      /* a timer must not keep a headless process alive (Node: tests, scripts/frame-profile.mjs); a browser ignores this */
+      try { if (_wheel && typeof _wheel.unref === 'function') _wheel.unref(); } catch (_) { }
     }
     function _hidden() { try { return !!document.hidden; } catch (_) { return false; } }
 
     function every(key, ms, fn, opts) {
       const o = opts || {};
       const p = Math.max(16, +ms || 1000);
+      if (!o.capability) _own.unowned++;
       TIMERS.set(key, { ms: p, fn, next: Date.now() + p, cap: o.capability || null, hidden: !!o.whenHidden });
       _arm(Math.min(p, _wheelMs || p));
       return () => clearEvery(key);
@@ -291,7 +300,9 @@ export function makeRuntime(HOST) {
     const IDLE = new Map();
     let _idleH = 0;
     function idle(key, fn, opts) {
-      IDLE.set(key, { fn, cap: (opts && opts.capability) || null });
+      const cap = (opts && opts.capability) || null;
+      if (!cap) _own.unowned++;
+      IDLE.set(key, { fn, cap });
       if (_idleH) return;
       const run = () => {
         _idleH = 0;
@@ -310,31 +321,135 @@ export function makeRuntime(HOST) {
 
        ⚠ IT IS A REGISTER, NOT A LOADER. js/lazy-modules.js already owns "fetch this file, mount
        its factory, verify what it published" (#R209) and has for nine modules; duplicating that
-       here would be the two-lists defect (#R220). `load` is where a definition calls it. */
-    const CAPS = new Map();      /* name → {def, state, p} */
+       here would be the two-lists defect (#R220). `load` is where a definition calls it.
+
+       ══ ⚠⚠⚠ (#R796) A GENERATION, AND A SCOPE THAT OWNS WHAT THE CAPABILITY ACQUIRES ═══════════
+       Measured on the tree before this round: nothing here could tell "the load that just finished"
+       from "the load that was started before the user closed the panel". `activate` waited on
+       `load`, then set `active` — so open → (loading…) → close → load completes → ACTIVE AGAIN,
+       with nobody holding the panel. And a failed `load` stayed memoised in `c.p`, so the next
+       open returned the same rejection without trying. Four features (#R708: DEM, Köppen, the
+       legend clock, the playground) had each written their own "reject the stale completion" by
+       hand, which is the shape this file exists to end — one mechanism, held here, for everyone.
+
+       So every capability carries a GENERATION, bumped by `dispose`, and two SCOPES:
+         · the LOADED scope lives from `load` to `dispose` — the catalogue, the worker, the GL
+           objects a feature keeps across toggles for a fast resume;
+         · the ACTIVE scope lives from `activate` to `suspend` — the map listeners, the tick, the
+           panel's DOM handlers, the in-flight fetches.
+       A scope OWNS what is registered through it: `on(target, ev, fn)` (DOM or emitter), `every`,
+       `frame`, `onCamera`, `idle`, `timeout`, `fetch` (its AbortSignal is the scope's), `own(x)`
+       (anything with dispose/abort/terminate/disconnect/close, or a function). `release()` gives
+       all of it back at once, in reverse order; `alive()` answers whether the scope is still the
+       current one; `guard(fn)` wraps an async continuation so a result that arrives after release
+       is dropped rather than applied. The verbs receive the scope: `load(host, loaded)`,
+       `activate(arg, value, active)`. A capability that ignores the argument behaves exactly as
+       before — the scope is a facility, not a contract change — but a registration made through
+       it is tagged with the owner's name without the caller having to spell `capability:`.
+       (Measured: zero registrations in js/ passed `capability:` by hand. Tags that must be typed
+       are tags that are not there.) */
+    const CAPS = new Map();      /* name → {def, state, p, gen, value, loaded, active} */
+
+    function _isEmitter(t) { return t && typeof t.on === 'function' && typeof t.off === 'function' && typeof t.addEventListener !== 'function'; }
+    function makeScope(name, kind, gen) {
+      const undo = [];
+      let live = true;
+      const ac = (typeof AbortController === 'function') ? new AbortController() : null;
+      const keyOf = (k) => (String(k).indexOf(name + ':') === 0 ? String(k) : name + ':' + k);
+      const S = {
+        name, kind, gen,
+        get signal() { return ac ? ac.signal : undefined; },
+        alive: () => live && _capGen(name) === gen,
+        /* register, and remember how to forget */
+        on(target, ev, fn, opts) {
+          if (!target || !live) return () => { };
+          if (_isEmitter(target)) { target.on(ev, fn); const off = () => { try { target.off(ev, fn); } catch (_) { } }; undo.push(off); return off; }
+          if (typeof target.addEventListener !== 'function') return () => { };
+          const o = (opts && typeof opts === 'object') ? Object.assign({}, opts) : (opts ? { capture: true } : {});
+          target.addEventListener(ev, fn, o);
+          const off = () => { try { target.removeEventListener(ev, fn, o); } catch (_) { } };
+          undo.push(off); return off;
+        },
+        every(key, ms, fn, opts) { const k = keyOf(key); const stop = every(k, ms, fn, Object.assign({}, opts || {}, { capability: name })); undo.push(stop); return stop; },
+        frame(key, fn) { const k = keyOf(key); frame(k, fn, { capability: name }); undo.push(() => ONCE.delete(k)); },
+        onCamera(key, fn, opts) { const k = keyOf(key); const off = onCamera(k, fn, Object.assign({}, opts || {}, { capability: name })); undo.push(off); return off; },
+        idle(key, fn, opts) { const k = keyOf(key); idle(k, fn, Object.assign({}, opts || {}, { capability: name })); undo.push(() => IDLE.delete(k)); },
+        timeout(ms, fn) { const h = setTimeout(() => { if (S.alive()) { try { fn(); } catch (err) { _oops(name + ':timeout', err); } } }, ms); try { if (h && typeof h.unref === 'function') h.unref(); } catch (_) { } undo.push(() => clearTimeout(h)); return h; },
+        fetch(url, init) {
+          const o = Object.assign({}, init || {});
+          if (ac) {
+            if (o.signal && typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') o.signal = AbortSignal.any([o.signal, ac.signal]);
+            else if (!o.signal) o.signal = ac.signal;
+          }
+          return fetch(url, o);
+        },
+        own(x) {
+          if (!x) return x;
+          const f = typeof x === 'function' ? x
+            : typeof x.dispose === 'function' ? () => x.dispose()
+            : typeof x.abort === 'function' ? () => x.abort()
+            : typeof x.terminate === 'function' ? () => x.terminate()
+            : typeof x.disconnect === 'function' ? () => x.disconnect()
+            : typeof x.close === 'function' ? () => x.close()
+            : null;
+          if (f) undo.push(() => { try { f(); } catch (err) { _oops(name + ':own', err); } });
+          return x;
+        },
+        /* a continuation that must not apply after the scope is gone: `p.then(S.guard(v => paint(v)))` */
+        guard(fn) { return function (v) { if (!S.alive()) return undefined; return fn.call(this, v); }; },
+        release() {
+          if (!live) return; live = false;
+          try { if (ac) ac.abort(); } catch (_) { }
+          while (undo.length) { const f = undo.pop(); try { f(); } catch (err) { _oops(name + ':release', err); } }
+        },
+        owned: () => undo.length,
+      };
+      return S;
+    }
+    function _capGen(name) { const c = CAPS.get(name); return c ? c.gen : -1; }
 
     function define(name, def) {
-      CAPS.set(name, { def: def || {}, state: 'defined', p: null });
+      const prev = CAPS.get(name);
+      CAPS.set(name, { def: def || {}, state: 'defined', p: null, gen: prev ? prev.gen : 0, value: null, loaded: null, active: null });
       return name;
     }
     function load(name) {
       const c = CAPS.get(name);
       if (!c) return Promise.reject(new Error('no such capability: ' + name));
       if (c.p) return c.p;
+      const gen = c.gen;
       c.state = 'loading';
-      c.p = Promise.resolve().then(() => (c.def.load ? c.def.load(IM_HOST) : null))
-        .then((v) => { c.state = 'loaded'; return v; })
-        .catch((e) => { c.state = 'failed'; _oops('capability:' + name, e); return null; });
+      if (!c.loaded) c.loaded = makeScope(name, 'loaded', gen);
+      const scope = c.loaded;
+      c.p = Promise.resolve().then(() => (c.def.load ? c.def.load(IM_HOST, scope) : null))
+        .then((v) => {
+          /* ⚠ disposed while loading: the result belongs to a generation that no longer exists */
+          if (c.gen !== gen) return null;
+          c.state = 'loaded'; c.value = v; return v;
+        })
+        .catch((e) => {
+          _oops('capability:' + name, e);
+          /* ⚠ a failure is not memoised — the next activate tries again (#R796) */
+          if (c.gen === gen) { c.state = 'failed'; c.p = null; }
+          return null;
+        });
       return c.p;
     }
     function activate(name, arg) {
+      const c0 = CAPS.get(name);
+      const gen = c0 ? c0.gen : -1;
       return load(name).then((v) => {
         const c = CAPS.get(name); if (!c) return null;
-        SUSPENDED.delete(name);
+        /* ⚠ the whole point (#R796): closed — or disposed and reopened — while the load ran.
+           This activation is stale and does nothing; a newer one, if any, is on its own way. */
+        if (c.gen !== gen || c.state === 'disposed') return null;
         if (c.state === 'failed') return null;
+        SUSPENDED.delete(name);
+        if (c.active) c.active.release();
+        c.active = makeScope(name, 'active', gen);
         c.state = 'active';
         schedule();
-        try { return c.def.activate ? c.def.activate(arg, v) : v; } catch (e) { _oops('activate:' + name, e); return null; }
+        try { return c.def.activate ? c.def.activate(arg, v, c.active) : v; } catch (e) { _oops('activate:' + name, e); return null; }
       });
     }
     function suspend(name) {
@@ -344,6 +459,7 @@ export function makeRuntime(HOST) {
       SUSPENDED.add(name);
       if (c.state === 'active') c.state = 'loaded';
       try { if (c.def.suspend) c.def.suspend(); } catch (e) { _oops('suspend:' + name, e); }
+      if (c.active) { c.active.release(); c.active = null; }
       return true;
     }
     /* ══ ⚠⚠⚠ (#R322) DISPOSE MUST NOT MEAN 「TWICE IS IMPOSSIBLE」 ═══════════════════════════════
@@ -360,44 +476,48 @@ export function makeRuntime(HOST) {
        ⚠ AND IDLE IS SWEPT TOO. The old sweep covered READ / WRITE / ONCE / TIMERS and missed IDLE,
        while the last line deleted the capability from SUSPENDED — so a disposed capability's idle
        task was not skipped either (`_skip` needs the name to still be suspended) and ran against
-       resources that had just been released. */
+       resources that had just been released.
+       (#R796) …and the GENERATION moves first, so a load or an activation still in flight finds
+       itself stale when it lands; then both scopes give back everything they own. */
     function dispose(name) {
       const c = CAPS.get(name); if (!c) return false;
+      c.gen++;
       suspend(name);
       try { if (c.def.dispose) c.def.dispose(); } catch (e) { _oops('dispose:' + name, e); }
+      if (c.loaded) { c.loaded.release(); c.loaded = null; }
       for (const m of [READ, WRITE, ONCE, IDLE]) for (const [k, e] of Array.from(m)) if (e.cap === name) { m.delete(k); CAM.delete(k); }
       for (const [k, t] of Array.from(TIMERS)) if (t.cap === name) TIMERS.delete(k);
-      c.state = 'disposed'; c.p = null;
+      c.state = 'disposed'; c.p = null; c.value = null;
       SUSPENDED.delete(name);
       return true;
+    }
+    /* the scopes, for a caller that owns a resource outside the four verbs (a panel built lazily
+       after activate, a worker job) — `RT.scope('sat.live')` is the loaded scope, `RT.scope(name,
+       'active')` the active one; null when that lifetime is not running. */
+    function scopeOf(name, kind) {
+      const c = CAPS.get(name); if (!c) return null;
+      return kind === 'active' ? c.active : c.loaded;
     }
 
     const API = {
       onCamera, offCamera, frame, every, clearEvery, idle, schedule,
       box, remeasure,
-      define, load, activate, suspend, dispose,
+      define, load, activate, suspend, dispose, scope: scopeOf,
       gesturing: () => _gesture > 0,
       capabilities: () => Array.from(CAPS.keys()),
       stateOf: (n) => { const c = CAPS.get(n); return c ? c.state : null; },
+      generationOf: (n) => { const c = CAPS.get(n); return c ? c.gen : null; },
       /* what the instrument reads — js/perf-hud.js and tests/r234. Counts, not opinions. */
       stats: () => ({
         reads: READ.size, writes: WRITE.size, camera: CAM.size, timers: TIMERS.size,
-        capabilities: CAPS.size, suspended: SUSPENDED.size,
+        capabilities: CAPS.size, suspended: SUSPENDED.size, unowned: _own.unowned,
         frames: _stats.frames, tasks: _stats.tasks, lastMs: _stats.lastMs, maxMs: _stats.maxMs,
       }),
     };
     try { window.IntMapRuntime = API; } catch (_) { }
     /* (#R408) …and take over the timers that armed themselves before this line ran. Without this
-       they stay real `setInterval`s for the life of the tab — see the note under everyTick.
-       ⚠ inline rather than a helper: tests/r175 ③ requires every js/ export to be imported by name
-       somewhere, and a function only this file calls would be dead by that rule. */
-    try {
-      for (const [k, r] of Array.from(everyTick.pending)) {
-        try { clearInterval(r.h); } catch (_) { }
-        API.every(k, r.ms, r.fn, r.opts);
-      }
-      everyTick.pending.clear();
-    } catch (_) { }
+       they stay real `setInterval`s for the life of the tab — see the note under everyTick. */
+    adoptEarlyTimers(API);
     return API;
   })();
 }
@@ -441,28 +561,41 @@ export function everyTick(key, ms, fn, opts) {
      it where `makeRuntime` will find it. ⚠ the same key twice means the first one is superseded,
      exactly as the wheel treats it — so clear it rather than leaking a timer nobody can reach. */
   const p = Math.max(16, +ms || 1000);
-  const prev = everyTick.pending.get(key);
+  const prev = PENDING_TICKS.get(key);
   if (prev) { try { clearInterval(prev.h); } catch (_) { } }
-  everyTick.pending.set(key, { ms: p, fn, opts: opts || undefined, h: setInterval(fn, p) });
+  PENDING_TICKS.set(key, { ms: p, fn, opts: opts || undefined, h: setInterval(fn, p) });
   return () => {
-    const rec = everyTick.pending.get(key);
-    if (rec) { try { clearInterval(rec.h); } catch (_) { } everyTick.pending.delete(key); }
+    const rec = PENDING_TICKS.get(key);
+    if (rec) { try { clearInterval(rec.h); } catch (_) { } PENDING_TICKS.delete(key); }
     /* …and if it was adopted between arming and stopping, the wheel is the one holding it now. */
     let R2 = null; try { R2 = window.IntMapRuntime; } catch (_) { R2 = null; }
     if (R2 && typeof R2.clearEvery === 'function') R2.clearEvery(key);
   };
 }
-/* ⚠ a property rather than a top-level `const`: tests/r175 ③ forbids an unexported top-level
-   declaration in js/, because such a name would have been a global before the bundle. */
-everyTick.pending = new Map();
+/* the timers that armed themselves before the register existed — key → {ms, fn, opts, h}. A module-scope
+   Map since #R786 (it hung off the function while tests/r175 ③ forbade a top-level declaration). */
+const PENDING_TICKS = new Map();
+/* give back every timer armed before a register existed — a headless caller (a test, a script) that
+   mounted no runtime is otherwise left with a raw interval holding its process open */
+export function stopEarlyTimers() {
+  let n = 0;
+  for (const r of PENDING_TICKS.values()) { try { clearInterval(r.h); } catch (_) { } n++; }
+  PENDING_TICKS.clear();
+  return n;
+}
+function adoptEarlyTimers(API) {
+  for (const [k, r] of Array.from(PENDING_TICKS)) {
+    try { clearInterval(r.h); } catch (_) { }
+    try { API.every(k, r.ms, r.fn, r.opts); } catch (_) { }
+  }
+  PENDING_TICKS.clear();
+}
 
 /* A serial, for the timers that can be live MORE THAN ONCE AT A TIME — a poll per popup, a retry per
    generation. Keys are global to the wheel and a second `everyTick` under the same key REPLACES the
-   first, so such a timer has to name its call and not only its purpose.
-   ⚠ It lives here, and on the function rather than beside it, because a module-scope `let` in js/ is
-   exactly what tests/r175 ③ forbids: before the bundle that name was a global. */
-export function tickKey(prefix) { tickKey.n = (tickKey.n || 0) + 1; return prefix + '#' + tickKey.n; }
-tickKey.n = 0;
+   first, so such a timer has to name its call and not only its purpose. */
+let tickSerial = 0;
+export function tickKey(prefix) { tickSerial++; return prefix + '#' + tickSerial; }
 
 export function stopTick(stop) {
   if (!stop) return;

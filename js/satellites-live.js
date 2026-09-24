@@ -73,8 +73,9 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
-import { everyTick, stopTick } from './runtime.js';
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own —
+   (#R796) reached through the ACTIVE SCOPE the register hands to start(), so this file imports nothing
+   from it: `S.every('tick', …)` is that wheel, tagged with this capability's name and released on stop. */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satellitesLive=function(HOST){
   /* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
@@ -195,7 +196,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   let fixes=[];                            /* the last computed positions, for picking and the card */
   let tleAt=0, loading=false, lastErr=null;
   let selected=null;                       /* NORAD id of the satellite whose track is drawn */
-  let timer=null, on=false;
+  let on=false;
   let bundled=false, bundledMeta=null;     /* (#R185) true when the elements came from the shipped catalogue */
   let _diverged=0;                         /* (#R185) objects dropped this tick because SGP4 diverged on them */
   /* (#R202) the orbit rendering: whether the engine can do it, whether the layer is in, and the
@@ -206,7 +207,6 @@ window.IntMapModules.satellitesLive=function(HOST){
      the layer can go visible on the shipped copy instead of waiting out the network's timeouts. */
   let _onPrimed=null;
   let opacity=0.95;
-  let _hover=null, _click=null, _moveT=null, _onMove=null;
 
   /* ── data ─────────────────────────────────────────────────────────────────────────────────── */
   /* The IN-FLIGHT request, so two callers COALESCE onto one fetch instead of the second being told
@@ -869,9 +869,18 @@ window.IntMapModules.satellitesLive=function(HOST){
     if(Date.now()-tleAt>2*3600*1000&&!loading) load(group).then(()=>{ paint(); });
     else paint();
   }
-  function wire(){
+  /* ══ (#R796) THE ACTIVE SCOPE OWNS THE LISTENERS, THE TICK AND THE LATE CATALOGUE ══════════════
+     Until this round `wire()` kept three private handles (`_hover`, `_click`, `_onMove`) and
+     `unwire()` remembered to give each one back; `stop()` cleared the tick by hand; and the
+     catalogue's `load(group).then(ok => go())` had no idea whether the layer was still on when the
+     answer arrived — measured shape: open → close → catalogue lands → `go()` paints and ARMS THE
+     TICK on a layer nobody is showing. The runtime hands `activate` a scope now (js/runtime.js
+     §lifecycle): what is registered through it is released by `suspend` in one call, and a
+     continuation wrapped in `S.guard` is dropped if it lands after that. There is no unwire() to
+     forget. */
+  function wire(S){
     const E=GE(); if(!E) return;
-    if(!_hover){ _hover=(e)=>{
+    S.on(E.events,'mousemove',(e)=>{
       if(!on||!e||!e.point) return;
       const id=pickAt(e.point,18);
       const el=window.ensureMapTooltip?window.ensureMapTooltip():null; if(!el) return;
@@ -879,28 +888,26 @@ window.IntMapModules.satellitesLive=function(HOST){
       const f=get(id); if(!f) return;
       el.dataset.owner='sats'; window.showMapTooltip(el); window.setMapTooltipHTML(el,tooltipHTML(f));
       try{ window.positionTooltip&&window.positionTooltip(e.point); }catch(_){}
-    }; try{ E.events.on('mousemove',_hover); }catch(_){} }
-    if(!_click){ _click=(e)=>{
+    });
+    S.on(E.events,'click',(e)=>{
       if(!on||!e||!e.point) return;
       const id=pickAt(e.point,20);
       if(id==null){ if(selected!=null) select(null); return; }
       try{ E.events.claimClick&&E.events.claimClick(e); }catch(_){}   /* (#R210) the satellite owns this tap */
       select(id);
       try{ const P=window.IntMapSatPanel; if(P) P.open(id); }catch(_){}
-    }; try{ E.events.on('click',_click); }catch(_){} }
+    });
     /* the "visible from here" filter and the look angles on the card are both relative to the map
        centre, so a pan has to re-evaluate them */
-    if(!_onMove){ _onMove=()=>{ if(!on) return; clearTimeout(_moveT); _moveT=setTimeout(()=>{ try{ paint(); }catch(_){} },250); };
-      try{ E.events.on('moveend',_onMove); }catch(_){} }
+    let moveT=null;
+    S.on(E.events,'moveend',()=>{ if(!on) return; if(moveT) clearTimeout(moveT); moveT=S.timeout(250,()=>{ try{ paint(); }catch(_){} }); });
   }
-  function unwire(){
-    const E=GE(); if(!E) return;
-    try{ if(_hover) E.events.off('mousemove',_hover); }catch(_){} _hover=null;
-    try{ if(_click) E.events.off('click',_click); }catch(_){} _click=null;
-    try{ if(_onMove) E.events.off('moveend',_onMove); }catch(_){} _onMove=null;
-  }
-  function start(){
-    on=true; wire();
+  function start(_arg,_v,S){
+    /* the register always exists before this lazy module can run (js/app-body.js builds it before
+       the first `need()` can resolve), so the scope is always handed in; the assertion is for a
+       caller that reaches `start` around the register. */
+    if(!S||typeof S.on!=='function') throw new Error('sat.live: start() needs the active scope — go through IntMapRuntime.activate');
+    on=true; wire(S);
     /* (#R185) ONE SECOND IS RIGHT FOR A HUNDRED OBJECTS AND WRONG FOR ELEVEN THOUSAND. Propagation
        is cheap (measured 1.94 us each, so 21 ms for the whole active catalogue), but each tick also
        rebuilds that many GeoJSON features and hands them to the renderer to re-tile. So the period
@@ -908,19 +915,18 @@ window.IntMapModules.satellitesLive=function(HOST){
        under a pixel a second, and a larger catalogue therefore loses nothing visible by stepping at
        two or three seconds while getting the frame budget back. */
     const period=()=>(sats.length>6000?3000:sats.length>2000?2000:1000);
-    const go=()=>{ paint(); try{ ALL_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setVisible(id,true); }); }catch(_){}
-      if(timer) stopTick(timer);
-      timer=everyTick('satellites-live:tick',period(),tick); };
+    const go=()=>{ if(!S.alive()) return; paint(); try{ ALL_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setVisible(id,true); }); }catch(_){}
+      S.every('tick',period(),tick); };
     /* go as soon as ANY source has answered — see _onPrimed */
     _onPrimed=()=>{ if(on) go(); };
-    if(!sats.length) load(group).then(ok=>{ if(ok) go(); else { try{ HOST.imToast(L('Could not load the satellite catalog.','衛星カタログを取得できませんでした。','Satellitenkatalog nicht abrufbar.','Не удалось загрузить каталог спутников.','No se pudo cargar el catálogo de satélites.')); }catch(_){} } });
+    if(!sats.length) load(group).then(S.guard(ok=>{ if(ok) go(); else { try{ HOST.imToast(L('Could not load the satellite catalog.','衛星カタログを取得できませんでした。','Satellitenkatalog nicht abrufbar.','Не удалось загрузить каталог спутников.','No se pudo cargar el catálogo de satélites.')); }catch(_){} } }));
     else go();
     return true;
   }
   function stop(){
     on=false; _onPrimed=null;
-    if(timer){ stopTick(timer); timer=null; }
-    unwire();
+    /* the listeners and the tick are the active scope's — js/runtime.js releases them right after
+       this returns (suspend → def.suspend → scope.release) */
     const E=GE(); if(!E) return true;
     try{ ALL_LAYERS.forEach(id=>{ if(E.layers.has(id)) E.layers.setVisible(id,false); }); }catch(_){}
     try{ if(orbOn) E.layers.setOrbit(ORB,{visible:false}); }catch(_){}
@@ -1001,12 +1007,12 @@ window.IntMapModules.satellitesLive=function(HOST){
   function startPublic(){
     const RT=window.IntMapRuntime;
     if(RT&&RT.stateOf&&RT.stateOf('sat.live')!==null){ RT.activate('sat.live'); return true; }
-    return start();
+    return false;   /* (#R796) no register, no layer — start() needs the scope only activate() hands over */
   }
   function stopPublic(){
     const RT=window.IntMapRuntime;
     if(RT&&RT.stateOf&&RT.stateOf('sat.live')!==null){ RT.suspend('sat.live'); return true; }
-    return stop();
+    return stop();   /* nothing was wired without the register, so this only hides the layers */
   }
   const API={
     start:startPublic, stop:stopPublic, dispose:disposeSats, isOn:()=>on,

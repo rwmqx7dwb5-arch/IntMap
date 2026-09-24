@@ -110,20 +110,34 @@ test('R408 ②c: ホイールは hidden を見ており、取りこぼしをま�
     'hidden の間は tick を飛ばし、飛ばした分をまとめて走らせない');
 });
 
-test('R408 ②d: register より先に鳴った時計を、register ができた瞬間に引き取る', () => {
+test('R408 ②d: register より先に鳴った時計を、register ができた瞬間に引き取る', async () => {
   const rt = rd('js/runtime.js');
   /* ⚠⚠⚠ これが無いと、この回の門は**緑のまま嘘をつく**。`js/theme-sky.js` の `makeThemeSky` は
      `js/app-body.js:500` で走り、`makeRuntime` は同じ関数の :756——つまり everyTick はフォールバック
      の生 interval を張る。ソースに `setInterval` の綴りは残らないので ②a は緑、しかしタイマーは
      hidden なタブで回り続ける。#R394 の「走っていない機構を名乗る列」を、その次のラウンドで
-     自分で作るところだった。 */
-  assert.match(rt, /everyTick\.pending\.set\(key, \{ ms: p, fn, opts: opts \|\| undefined, h: setInterval\(fn, p\) \}\)/,
-    '早すぎた登録は捨てられず、引き取れる形で残る');
-  assert.match(rt, /for \(const \[k, r\] of Array\.from\(everyTick\.pending\)\)[\s\S]{0,200}API\.every\(k, r\.ms, r\.fn, r\.opts\)/,
-    'makeRuntime が、生 interval を止めて同じ鍵・周期・関数をホイールへ載せ直す');
+     自分で作るところだった。
+     (#R786/#R796) 綴りではなく挙動で測る。以前は `everyTick.pending.set(key, { … h: setInterval(fn, p) })`
+     と引き取りループの正規表現を固定していたが、メモは module-scope の Map になり、名前は
+     この検査の主題ではない。主題は 3 つ: 早い呼び出しは黙らず実際に鳴る／register ができた瞬間に
+     同じ鍵でホイールへ載る／生 interval はそのとき止まる（ホイールの外で鳴り続けない）。 */
+  const { makeRuntime, everyTick, stopEarlyTimers } = await import('../js/runtime.js');
+  stopEarlyTimers();
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  let n = 0;
+  everyTick('r408:early', 16, () => { n++; });          /* no register yet (Node has no window.IntMapRuntime) */
+  await wait(80);
+  assert.ok(n > 0, '早すぎた登録は黙って無効にならず、実際に鳴る');
+  const RT = makeRuntime({});
+  assert.equal(RT.stats().timers, 1, 'register ができた瞬間に、同じ鍵でホイールへ載る');
+  RT.clearEvery('r408:early');
+  const n1 = n;
+  await wait(80);
+  assert.equal(n, n1, '引き取られた生 interval は止まっている — ホイールの外で鳴り続けない');
+  assert.equal(stopEarlyTimers(), 0, 'メモは引き取りで空になっている');
   /* 引き取りは window.IntMapRuntime を公開したあとでなければ、載せ直した先が誰にも見えない。 */
   const pub = rt.indexOf('window.IntMapRuntime = API');
-  const adopt = rt.indexOf('of Array.from(everyTick.pending)');
+  const adopt = rt.indexOf('adoptEarlyTimers(API)');
   assert.ok(pub > 0 && adopt > pub, '引き取りは register を公開したあとに走る');
 
   /* ⚠ そして「早い呼び出しが実在する」ことも見る。0件になったら、この機構は次の改修で
