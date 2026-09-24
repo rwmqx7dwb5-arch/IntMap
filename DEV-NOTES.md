@@ -40,6 +40,36 @@ PUBLISHES` は関数の view、`fetchModule(name)` は `R[name].load()`、`mount
 eager に居るものを、**軽い定義**（id・名前・レイヤー行・コマンド・依存）と**重い本体**に分ける。
 Atlas の能力表が既にその形なので、同じ形をアプリの機能登録へ広げる。
 
+### 4. 次のラウンドの材料（この回に実測したもの。設計だけで、実装はしていない）
+
+**段 4 後半——「一覧を出すために本体を読む」を無くす**（read-only 調査の実測）:
+- `src/main.js` の eager import は js/ 125 本。サイズ上位 25 のうち「起動時にやるのは行・コマンド・状態復元の
+  登録だけ」に収まるものは **0 本**——全部が同時に DOM（凡例・パネル）・`window.*`・map イベント購読を持つ。
+  factory 時点で fetch／データ読込を始めるのは 3 本だけ（time-borders・time-admin1 は idle に 5.5 MB 束の先読み、
+  layer-previews は idle にタイル画像）。
+- Layers 一覧の**正本は DOM**（`#layer-dropdown` に行を append する `buildUI()`／`row()`。`docs/MAP-LAYERS.md` §7.2）。
+  `IntMapLayers.register` を呼ぶのは上位 25 本中 map-ui（23）と layer-packs（1）だけ。Atlas の `layerCatalog()` も
+  その DOM を歩く。⇒ 軽い定義から**行を先に作る**仕組みが要る（行を作らない遅延モジュールは Atlas から見えない）。
+- Atlas が遅延モジュールを知る経路は 2 つ: `LAZY_REGISTRY` の `publishes`（`moduleCatalog()`）と、能力表 T の
+  第 10 列 `lazy`（145 行中 26 行）。`availability()` は未着でも `available:true`。
+- 状態復元は「行が DOM に在ること」を待つ（`js/session-tabs.js` が 220 ms × 25 回）。本体ではなく行。
+- `js/world-packs.js`（593 KB）の `_ui` に industry-web・ocean-currents・outbreaks が依存し、`src/main.js` の
+  コメントが起動順を主張している。
+
+**段 5——巨大データの索引と形状の分離**（実測）:
+- 束を読むのは `js/time-admin1.js` 1 ファイル（`<script>` 注入）＋ `js/border-coast.js`（ring 索引）。
+- `data/hist-admin1.js` 41,457,871 B のうち **rings が 96.1%**（39.8 MB）。名前・span・relation id・ring index だけなら
+  **約 1.6 MB**（admin2 は 40.7 MB → 約 5.5 MB）。束に bbox は無い。
+- rings を実際に展開する用途は 3 つ: (b) クリック形状（`geomAt` → `geomOf`）、(d) OHM タイル不在時のフォールバック線
+  （`lineGeom`）、**(a) ラベル**——symbol レイヤーがポリゴン源を `symbol-placement: point` で使い、
+  `symbol-sort-key` に球面面積を要する。⇒ 索引側に**アンカー座標と面積**をビルド時に持たせれば、ラベルと
+  coverage 件数（(c) は既に件数のみ）は形状なしで描ける。
+- Atlas から hist 束への読み手は **0 件**（`:960` の註「Atlas can ask」は実装されていない）。
+- `geomAt`／`idAt` は T3（admin3）の分岐が無く、`imta3-lbl` はクリック一覧にも無い（意図か欠陥か未判定）。
+- 分割は**同梱の束から導出できる**（上流 3.4 GB は要らない）: `scripts/split-hist-admin.mjs` が index（feats・dates・
+  anchor・area・bbox）と rings に分け、`check:histadmin` が「分割 ＝ 元の束」を照合する形。`data/border-coast.js` の
+  `draw[i]` は ring プール位置に対応するので、プールの順序を保てば索引は壊れない。
+
 ## R797 — **1 機能を明示的依存・状態所有へ移した——実測放射線（所有権リファクタの段 3）**
 
 〈#R789 の続き。利用者の 9 段の 3 番目: 「一つの機能を、明示的依存・状態所有へ移行——その機能を地図全体
