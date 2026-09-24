@@ -200,13 +200,26 @@ export function makeAtlasToolSurface(deps) {
     }
 
     /* ── find_capability: a few, relevant, with their real schemas ─────────────────────────── */
-    function find(query) {
-      var r = null;
-      try { r = CAPS.search(String(query || ''), { want: 3, min: 1 }); } catch (_) { r = null; }
+    /* The search is the FUSED one when the registry has it: lexical + meaning (js/atlas-capabilities.js
+       searchFused, which never rejects and says which it used). A Japanese request that shares no word
+       with any capability's English wording reached nothing through the lexical search alone — three
+       production questions ended with zero operations (#R802). When meaning could not be consulted
+       the note says so, because 「語彙だけで探して無かった」 is not 「無い」. */
+    async function find(query) {
+      var r = null, q = String(query || '');
+      try {
+        r = typeof CAPS.searchFused === 'function'
+          ? await CAPS.searchFused(q, { want: 3, min: 1 })
+          : CAPS.search(q, { want: 3, min: 1 });
+      } catch (_) { r = null; }
       var ranked = (r && r.ranked) || [];
+      var lexicalOnly = !r || r.basis !== 'lexical+semantic';
       if (!ranked.length) {
-        return { ok: true, query: query, matches: [],
-          note: 'Nothing matched this wording. The registry is complete and every capability id is in your system prompt: if one of those ids fits the request, call run_capability with it directly (find_capability with the bare id returns its schema). If none fits, IntMap has no such control — say so plainly, answer from what you know and can see, or search the web. Rephrasing this search will not find more.' };
+        return { ok: true, query: query, matches: [], basis: (r && r.basis) || 'lexical',
+          semantic: (r && r.semantic) || undefined,
+          note: lexicalOnly
+            ? 'Nothing matched this wording, and this search compared WORDS ONLY — the meaning search could not be consulted (' + String((r && r.semantic && (r.semantic.reason || r.semantic.state)) || 'unavailable') + '). Every capability id is in your system prompt: if one of those ids fits the request, call run_capability with it directly (find_capability with the bare id returns its schema). A search worded with the capability\'s own English terms may still reach it.'
+            : 'Nothing matched this wording by words or by meaning. The registry is complete and every capability id is in your system prompt: if one of those ids fits the request, call run_capability with it directly (find_capability with the bare id returns its schema). If none fits, IntMap has no such control — say so plainly, answer from what you know and can see, or search the web. Rephrasing this search will not find more.' };
       }
       var out = [], ids = [];
       for (var i = 0; i < ranked.length; i++) {
@@ -230,7 +243,7 @@ export function makeAtlasToolSurface(deps) {
          nothing truncated. The saving is the repetition, not the content. */
       var doc = '';
       try { doc = String(CAPS.catalogText(ids) || '').trim(); } catch (_) { doc = ''; }
-      return { ok: true, query: query, matches: out, documentation: doc || undefined,
+      return { ok: true, query: query, matches: out, documentation: doc || undefined, basis: (r && r.basis) || 'lexical',
         note: out.length ? 'Call run_capability with one of these ids and arguments matching its schema.' : undefined };
     }
 

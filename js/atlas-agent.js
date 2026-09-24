@@ -202,6 +202,206 @@ export function makeAtlasAgent() {
         final_text: { type: 'string' },
       },
     };
+    /* ══ ⚠⚠⚠ (atlas-native-tools) THE CALLS LEFT THE ENVELOPE; THE DECLARATIONS DID NOT ════════════════════════
+       With native function calling the provider carries the calls as `function_call` items, each with
+       its own id, so `tool_calls` / `arguments_json` are no longer the way a call is made. What is
+       left for the message itself is exactly what #R511 / #R663 / #R742 hold a final to — what this
+       reply IS, what KIND of answer it is, and the words — so FINAL_SCHEMA is TURN_SCHEMA without the
+       calls, DERIVED from it so the two cannot drift. TURN_SCHEMA stays: it is the shape of the
+       transitional one-string transport (`legacyPrompt` below) and of what an older proxy returns. */
+    const FINAL_SCHEMA = { type: 'object', required: TURN_SCHEMA.required.slice(), properties: {} };
+    Object.keys(TURN_SCHEMA.properties).forEach(function (k) { if (k !== 'tool_calls') FINAL_SCHEMA.properties[k] = TURN_SCHEMA.properties[k]; });
+
+    /* ══ ⚠⚠⚠ (atlas-native-tools) THE INPUT IS ITEMS, AND NOTHING IS CUT WITHOUT SAYING SO ════════════════════
+       MEASURED before this: js/atlas-console.js built ONE string per step — map state, pinned point,
+       working context, place ledger, the last 48 lines of conversation, [REQUEST], then [THIS TURN SO
+       FAR] with every call and every result as JSON — and supabase/functions/ai-proxy took
+       `.slice(0, 24_000)` of it. The END is what went: this turn's own results, and on a long
+       conversation the request itself. find_capability alone returns 10,441 characters at the median
+       and 39,235 at the largest of 20 ordinary queries (measured with the real registry and the real
+       catalogue text, 2026-09-25), so ONE search could push everything after it off the end, and
+       nothing told the model or the reader. That is one-pass-or-a-reason §2's second cause — «the
+       result was not carried back» — produced by the transport, not by Atlas.
+       NOW: each piece of the input is an ITEM, and the budget is spent per item, in this order of
+       what may be given up:
+         1. the oldest conversation history, whole messages, replaced by ONE item that says how many
+            and how large — never silently;
+         2. this turn's OLDER tool results squeezed to `squeezed` characters each, oldest first, each
+            saying so and how to read the rest;
+         3. nothing else. The request and the latest step's results are never cut or dropped; if they
+            alone exceed `total`, the input goes over and the proxy's own (larger) fence is the last
+            line — and it, too, reports what it did.
+       One result bigger than `item` is cut INSIDE its item, with its full size and the call that
+       reads on (`read_result`) written after the fence, where the model reads it as IntMap speaking.
+       OBSERVED: item 48,000 keeps every one of the 20 measured find_capability results whole (max
+       39,235); total 240,000 is an ESTIMATE — six such results plus a full 48-line history plus the
+       state blocks, inside a 400k-token context at ~1 character per token for CJK text.
+       EXPIRES WHEN: find_capability's documentation grows past `item`, or the model's context window
+       changes. CANONICAL: here; ai-proxy's MAX_INPUT_CHARS / MAX_ITEM_CHARS are set ABOVE these so a
+       conforming client never reaches them (tests/atlas-native-tools-checks.test.mjs holds both). */
+    const INPUT_BUDGET = { total: 240000, item: 48000, squeezed: 4000 };
+    /* The one tool the LOOP owns rather than the app: reading the rest of a result that was cut. It is
+       offered only on a step whose input actually cut something (js/atlas-console.js adds it), so an
+       ordinary turn's tool list — the part of the prompt a provider caches — is unchanged by it. */
+    const READ_RESULT_TOOL = {
+      name: 'read_result',
+      description: 'Read more of a tool result from THIS turn that was cut to fit. Pass the call_id and the offset the cut note gives.',
+      parameters: { type: 'object', required: ['call_id', 'offset'],
+        properties: { call_id: { type: 'string', minLength: 1 }, offset: { type: 'integer', minimum: 0 } } },
+    };
+    /* The text one result is represented by — the SAME function the composer cuts and read_result
+       reads from, so an offset in a cut note means the same character in both. */
+    function resultText(rec) {
+      if (rec && rec.readResult === true) {
+        return 'read_result ' + rec.call_id + ': characters ' + rec.offset + '-' + (rec.offset + String(rec.text || '').length)
+          + ' of ' + rec.total + (rec.next != null ? ' (continue with offset ' + rec.next + ')' : ' (this is the end)') + ':\n' + String(rec.text || '');
+      }
+      try { return JSON.stringify(rec); } catch (_) { return String(rec && rec.message || ''); }
+    }
+    function itemChars(it) {
+      if (!it) return 0;
+      if (it.type === 'function_call') return String(it.arguments || '').length + String(it.name || '').length;
+      if (it.type === 'function_call_output') return String(it.output || '').length;
+      if (it.type === 'message') return String(it.content || '').length;
+      if (it.type === 'reasoning') return String(it.encrypted_content || '').length;
+      return 0;
+    }
+
+    /**
+     * composeInput(o) -> { input, requestIndex, tools, trim }
+     *
+     *   o.history     [{role:'user'|'assistant', content}] — earlier turns, oldest first
+     *   o.request     the request item's text (the state blocks + [REQUEST] …), fixed for the turn
+     *   o.transcript  runTurn's `messages` (its first user message IS the request and is skipped)
+     *   o.tail        what changes step by step (the current state, the frames …) — last, so the
+     *                 prefix a provider caches stays byte-identical from one step to the next
+     *   o.fence       js/atlas-policy.js's turnMechanics.fence — who is speaking
+     *   o.budget      INPUT_BUDGET by default
+     *
+     * PURE: no DOM, no network. tests/r809 evaluates it.
+     */
+    function composeInput(o) {
+      o = o || {};
+      const B = Object.assign({}, INPUT_BUDGET, o.budget || {});
+      const wrap = (o.fence && typeof o.fence.wrap === 'function') ? o.fence.wrap : function (s) { return String(s); };
+      const hist = (Array.isArray(o.history) ? o.history : []).filter(function (h) { return h && String(h.content || '').trim(); })
+        .map(function (h) { return { type: 'message', role: h.role === 'user' ? 'user' : 'assistant', content: String(h.content) }; });
+      const tr = Array.isArray(o.transcript) ? o.transcript : [];
+      const turnMsgs = tr.slice((tr.length && tr[0] && tr[0].role === 'user') ? 1 : 0);
+      const turnItems = [];
+      const outs = [];            /* {item, full, callId, stepNo} — the results, in order, for the budget below */
+      const issued = Object.create(null);
+      let stepNo = 0;
+      turnMsgs.forEach(function (m) {
+        if (!m) return;
+        if (m.role === 'assistant') {
+          stepNo++;
+          if (Array.isArray(m.items) && m.items.length) {
+            /* the provider's own items, replayed as it wrote them (reasoning included) */
+            m.items.forEach(function (it) { if (it && it.type) { turnItems.push(it); if (it.type === 'function_call' && it.call_id) issued[it.call_id] = true; } });
+          } else {
+            if (String(m.content || '').trim()) turnItems.push({ type: 'message', role: 'assistant', content: String(m.content) });
+            (Array.isArray(m.toolCalls) ? m.toolCalls : []).forEach(function (c) {
+              if (!c || !c.id) return;
+              issued[c.id] = true;
+              turnItems.push({ type: 'function_call', call_id: String(c.id), name: String(c.name || ''), arguments: JSON.stringify(c.arguments || {}) });
+            });
+          }
+        } else if (m.role === 'tool') {
+          const orphans = [];
+          (Array.isArray(m.content) ? m.content : []).forEach(function (r) {
+            if (r && r.id && issued[r.id]) {
+              const it = { type: 'function_call_output', call_id: String(r.id), output: '' };
+              outs.push({ item: it, full: resultText(r), callId: String(r.id), stepNo: stepNo });
+              turnItems.push(it);
+            } else if (r) orphans.push(r);
+          });
+          /* a note that answers no call (the output gate's bounce) is IntMap's record of this turn, and
+             travels fenced exactly as it did inside [THIS TURN SO FAR] */
+          if (orphans.length) turnItems.push({ type: 'message', role: 'user', content: 'IntMap observed: ' + wrap(resultText(orphans.length === 1 ? orphans[0] : orphans)) });
+        } else if (String(m.content || '').trim()) {
+          turnItems.push({ type: 'message', role: 'user', content: String(m.content) });
+        }
+      });
+
+      const trim = { droppedHistory: 0, droppedHistoryChars: 0, truncated: [], squeezed: [] };
+      /* ① one result bigger than an item is cut inside it, and says so after the fence */
+      const cut = function (e, keep, list) {
+        const full = e.full;
+        if (full.length <= keep) { e.item.output = wrap(full); return; }
+        e.item.output = wrap(full.slice(0, keep)) + '\n[CUT BY INTMAP TO FIT — this result is ' + full.length
+          + ' characters and characters 0-' + keep + ' are above. Nothing was lost: call read_result with {"call_id":"'
+          + e.callId + '","offset":' + keep + '} to read on.]';
+        list.push({ call_id: e.callId, total: full.length, shown: keep });
+      };
+      outs.forEach(function (e) { cut(e, B.item, trim.truncated); });
+
+      const reqItem = { type: 'message', role: 'user', content: String(o.request || '') };
+      const tailItem = String(o.tail || '').trim() ? { type: 'message', role: 'user', content: String(o.tail) } : null;
+      const sum = function (arr) { return arr.reduce(function (a, it) { return a + itemChars(it); }, 0); };
+      const fixed = itemChars(reqItem) + sum(turnItems) + (tailItem ? itemChars(tailItem) : 0);
+      /* ② the oldest history goes first, whole messages, and ONE item says what went */
+      let kept = hist.slice();
+      while (kept.length && (fixed + sum(kept)) > B.total) {
+        const gone = kept.shift();
+        trim.droppedHistory++; trim.droppedHistoryChars += itemChars(gone);
+      }
+      /* ③ still over: this turn's OLDER results are squeezed — the latest step's never are */
+      if (fixed + sum(kept) > B.total) {
+        let over = fixed + sum(kept) - B.total;
+        for (let i = 0; i < outs.length && over > 0; i++) {
+          const e = outs[i];
+          if (e.stepNo === stepNo || e.full.length <= B.squeezed) continue;
+          const before = itemChars(e.item);
+          trim.truncated = trim.truncated.filter(function (t) { return t.call_id !== e.callId; });
+          cut(e, B.squeezed, trim.squeezed);
+          over -= (before - itemChars(e.item));
+        }
+      }
+      const input = [];
+      if (trim.droppedHistory) {
+        input.push({ type: 'message', role: 'user', content: '[EARLIER CONVERSATION NOT SHOWN — the ' + trim.droppedHistory
+          + ' oldest messages of this conversation (' + trim.droppedHistoryChars + ' characters) were left out to fit. '
+          + 'They are not in front of you: if the request depends on them, say so rather than guess.]' });
+      }
+      kept.forEach(function (it) { input.push(it); });
+      /* the reader's attachments sit at a FIXED place: documents and files before the request (the
+         question is asked about material already handed over), the step's images at the very end.
+         ai-proxy fills each marker with what the request carries, or drops it. */
+      input.push({ type: 'attachments', channels: ['docs', 'files'] });
+      const requestIndex = input.length;
+      input.push(reqItem);
+      turnItems.forEach(function (it) { input.push(it); });
+      if (tailItem) input.push(tailItem);
+      input.push({ type: 'attachments', channels: ['images'] });
+      return { input: input, requestIndex: requestIndex, trim: trim,
+        cut: !!(trim.truncated.length || trim.squeezed.length) };
+    }
+
+    /* (atlas-native-tools) THE SAME ITEMS AS ONE STRING — for a proxy that does not yet speak items (a deploy in
+       which the page reached the reader before the function did). Nothing new is said here: it is the
+       projection the old `_agentPrompt` made, rebuilt from the items so there is ONE composer. ⚠ Remove
+       with `TURN_SCHEMA`'s transport role once no deployed ai-proxy answers without meta.protocol 2. */
+    function legacyPrompt(built) {
+      const input = (built && built.input) || [];
+      const ri = (built && built.requestIndex) || 0;
+      const lines = [];
+      input.slice(0, ri).forEach(function (it) {
+        if (it.type === 'message') lines.push((it.role === 'user' ? 'User: ' : 'Atlas: ') + it.content);
+      });
+      let p = lines.length ? '[RECENT CONVERSATION] (oldest→newest)\n' + lines.join('\n') + '\n\n' : '';
+      p += String((input[ri] && input[ri].content) || '') + '\n\n';
+      const steps = [], after = [];
+      input.slice(ri + 1).forEach(function (it) {
+        if (it.type === 'function_call') steps.push('you called: ' + it.name + ' ' + it.arguments + ' (call ' + it.call_id + ')');
+        else if (it.type === 'function_call_output') steps.push('IntMap observed (call ' + it.call_id + '): ' + it.output);
+        else if (it.type === 'message' && it.role === 'assistant') steps.push('you wrote: ' + it.content);
+        else if (it.type === 'message') after.push(it.content);
+      });
+      if (steps.length) p += '[THIS TURN SO FAR — IntMap\'s mechanical record. It did not correct, substitute or reinterpret anything; those decisions are yours.]\n' + steps.join('\n') + '\n\n';
+      if (after.length) p += after.join('\n\n') + '\n';
+      return p;
+    }
 
     /* ── The mechanical verdict on ONE proposed call. No meaning, only shape. ──────────────────
        Returns null when the call is fine, or {code, message, …} when it is not. The message is
@@ -380,6 +580,8 @@ export function makeAtlasAgent() {
          (more targets resolved, a different surface reached) resets the run, because that is progress. */
       const partialCalls = Object.create(null);
       const permanentFails = Object.create(null);   /* (#R760) refusals the capability declared to be about the KIND of request */
+      const callById = Object.create(null);         /* (atlas-native-tools) every answered call of this turn, by id — what read_result reads */
+      const localTools = Object.assign({}, tools, { read_result: READ_RESULT_TOOL });   /* validated like any tool; offered only when something was cut */
       /* ══ ⚠⚠⚠ (#R801) HAS THIS TURN'S MODEL INPUT CARRIED CONTENT FROM OUTSIDE THE CONVERSATION? ═══
          A fact about the turn, not a judgment about the request. It becomes true on any of three
          events, each a statement by the thing that knows: ① a tool result stamped `ingests:'external'`
@@ -479,7 +681,22 @@ export function makeAtlasAgent() {
 
         /* (#R801) event ② of `turn` above: the provider's own web search put a third party's page in front of the model */
         if (reply && reply.webUsed === true) turn.externalContentSeen = true;
-        const calls = (reply && Array.isArray(reply.toolCalls)) ? reply.toolCalls.slice(0, lim.maxPerStep) : [];
+        /* (atlas-native-tools) what the input to THIS reply gave up to fit, as the composer and the proxy each
+           reported it — a record for the trace, never a reason to act */
+        if (reply && (reply.inputTrim || reply.serverTrim)) {
+          (trace.inputTrims = trace.inputTrims || []).push({ step, client: reply.inputTrim || null, server: reply.serverTrim || null });
+        }
+        /* ⚠ (atlas-native-tools) EVERY CALL THE MODEL MADE GETS AN ANSWER. `.slice(0, maxPerStep)` used to drop the
+           ninth call and beyond without a word — harmless while calls were free text, fatal now: a
+           native `function_call` with no `function_call_output` is a request the provider refuses.
+           The excess is answered below as not run, which is also what the model deserved to be told.
+           Call ids must be unique across the turn (they key the transcript and read_result); a
+           provider's ids are, and a reply without its own items gets ones that are. */
+        const allCalls = (reply && Array.isArray(reply.toolCalls)) ? reply.toolCalls.slice() : [];
+        if (!(reply && Array.isArray(reply.items) && reply.items.length)) {
+          allCalls.forEach(function (c, i) { if (c && (!c.id || callById[c.id])) c.id = 's' + step + 'c' + i; });
+        }
+        const calls = allCalls.slice(0, lim.maxPerStep);
         /* (#R663) what Atlas said THIS reply is — a fact about this step, so unlike `answerMode` it
            does not carry over to the next one. '' when it did not say. */
         const turnState = (reply && TURN_STATES.indexOf(reply.turnState) >= 0) ? reply.turnState : '';
@@ -561,7 +778,7 @@ export function makeAtlasAgent() {
                 + ', so the reader would get words about something that is not there. Either ' + how
                 + ' and then answer; or, if it genuinely cannot carry this answer, reply with answer_mode "text" and say so.';
             trace.steps.push({ step, toolCalls: 0, bounced: code });
-            transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [] });
+            transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [], items: (reply && reply.items) || undefined });
             observe([{ ok: false, error: code, message: msg }]);   /* (#R801) fenced on the next call like every tool message, so the fact tracks the fence */
             continue;
           }
@@ -617,7 +834,7 @@ export function makeAtlasAgent() {
             continue;
           }
           trace.calls++;
-          const bad = reject(call, tools);
+          const bad = reject(call, localTools);
           if (bad) {
             trace.rejected++;
             /* ⚠ THE READER NEVER SEES THIS. It is a typed note to Atlas, which corrects it on the
@@ -640,6 +857,28 @@ export function makeAtlasAgent() {
                `malformedRun` below is about a model emitting calls that go nowhere, which this is
                the opposite of. */
             executedHere++;
+            continue;
+          }
+          /* (atlas-native-tools) the rest of a result the input had to cut. Answered HERE, from this turn's own
+             record, through the same `resultText` the cut was made from — no app call, no network. It
+             is not an app result, so it joins neither `results` nor the reply. */
+          if (call.name === 'read_result') {
+            const a = call.arguments || {};
+            const src = callById[String(a.call_id || '')];
+            let rr;
+            if (!src) {
+              rr = { ok: false, error: 'unknown_call_id', message: 'No result of this turn has call_id "' + String(a.call_id || '')
+                + '". The ids are: ' + Object.keys(callById).join(', ') + '.' };
+            } else {
+              const full = resultText(src), off = Math.max(0, Math.min(full.length, Math.floor(+a.offset || 0)));
+              const piece = full.slice(off, off + INPUT_BUDGET.item - 1000);
+              rr = { ok: true, readResult: true, call_id: String(a.call_id), offset: off, total: full.length, text: piece,
+                next: (off + piece.length < full.length) ? off + piece.length : null };
+            }
+            const rrec = Object.assign({ id: call.id, name: call.name }, rr);
+            if (ckey && rrec.ok) doneCalls[ckey] = rrec;
+            callById[call.id] = rrec;
+            stepResults.push(rrec); executedHere++; trace.executed++;
             continue;
           }
           let out = null;
@@ -705,10 +944,16 @@ export function makeAtlasAgent() {
              (`run_capability`) reports that the capability it reached was a turn-ending one. */
           if (out.ok !== false && ((tools[call.name] && tools[call.name].endsTurn) || out.endsTurn === true)) ended = call.name;
         }
+        /* (atlas-native-tools) the calls past `maxPerStep` — answered as not run, see `allCalls` above */
+        allCalls.slice(lim.maxPerStep).forEach(function (c) {
+          stepResults.push({ id: c && c.id, name: c && c.name, ok: false, error: 'step_call_limit',
+            message: 'This reply made more than ' + lim.maxPerStep + ' calls; this one was not run. Make it in your next reply if you still need it.' });
+        });
+        stepResults.forEach(function (r) { if (r && r.id && !callById[r.id]) callById[r.id] = r; });
 
         malformedRun = executedHere ? 0 : (malformedRun + 1);
         trace.steps.push({ step, toolCalls: calls.length, executed: executedHere });
-        transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: calls });
+        transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: allCalls, items: (reply && reply.items) || undefined });
         observe(stepResults);
 
         if (ended) {
@@ -790,7 +1035,11 @@ export function makeAtlasAgent() {
               : '[WRITE THE ANSWER] This turn has ended with nothing written for the reader, and no tool was run. '
                 + 'Answer their question now, from what you know, in their language, with no further tool calls — '
                 + 'and if it cannot be answered, say that and say why.' }]),
-            tools: [], step: lim.maxSteps, signal: opts.signal, final: true,
+            /* (atlas-native-tools) the SAME tool list, with `final` telling the transport to allow no call
+               (tool_choice "none"): an empty list would change the prefix the provider caches on
+               the one call that re-sends the whole turn, and would leave the transcript naming
+               functions the request no longer declares */
+            tools: Object.keys(tools).map((k) => tools[k]), step: lim.maxSteps, signal: opts.signal, final: true,
           });
           /* ⚠ (#R802) AND A CALL THAT CAME BACK WITH NOTHING DOES NOT ERASE WHAT THE TURN HAD. On the
              empty-`text` path this is the same assignment it always was (「」 over 「」); on the new one
@@ -824,12 +1073,18 @@ export function makeAtlasAgent() {
      * The one place the envelope is turned into a step. Kept here rather than in js/atlas-console.js
      * so tests/r406-agent.test.mjs checks the parsing the browser actually uses.
      */
-    function readReply(data, text, parseJSON, meta) {
+    function readReply(data, text, parseJSON, meta, output) {
       const d = (data && typeof data === 'object') ? data : null;
       /* (#R801) whether the provider's hosted web search ran or was attached on THIS call — ai-proxy's
          meta.webUsed / meta.webAttached, read by the loop as `reply.webUsed` (see `turn` in runTurn) */
       const webUsed = !!(meta && (meta.webUsed || meta.webAttached));
-      const raw = (d && Array.isArray(d.tool_calls)) ? d.tool_calls : [];
+      /* (atlas-native-tools) NATIVE CALLS: ai-proxy (meta.protocol 2) returns the provider's output items, and every
+         `function_call` among them is a call with the provider's own id. They are also kept whole as
+         `items`, so the next step replays exactly what the model produced (its reasoning included). */
+      const native = Array.isArray(output) ? output.filter((it) => it && typeof it === 'object' && it.type) : null;
+      const raw = native ? native.filter((it) => it.type === 'function_call')
+        .map((it) => ({ id: String(it.call_id || ''), name: it.name, arguments_json: typeof it.arguments === 'string' ? it.arguments : undefined, arguments: typeof it.arguments === 'object' ? it.arguments : undefined }))
+        : ((d && Array.isArray(d.tool_calls)) ? d.tool_calls : []);
       const calls = [];
       raw.forEach((c, i) => {
         if (!c || !c.name) return;
@@ -838,7 +1093,7 @@ export function makeAtlasAgent() {
           try { args = typeof parseJSON === 'function' ? parseJSON(c.arguments_json) : JSON.parse(c.arguments_json); } catch (_) { args = null; }
         }
         if (!args || typeof args !== 'object' || Array.isArray(args)) args = {};
-        calls.push({ id: 't' + i, name: String(c.name), arguments: args });
+        calls.push({ id: c.id ? String(c.id) : 't' + i, name: String(c.name), arguments: args });
       });
       /* (#R511) the declared kind of answer; anything outside the vocabulary is simply not a declaration */
       const am = d ? String(d.answer_mode || d.answerMode || '').toLowerCase() : '';
@@ -858,10 +1113,14 @@ export function makeAtlasAgent() {
       const machine = opens && ['"tool_calls"', '"turn"', '"final_text"', '"answer_mode"', '"arguments_json"'].some(function (k) { return prose.indexOf(k) >= 0; });
       return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls,
         answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
-        turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed };
+        turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed,
+        items: native && native.length ? native : undefined,
+        /* (atlas-native-tools) what the proxy's own fence cut from THIS input, reported rather than done in silence */
+        serverTrim: (meta && meta.inputTrimmed) || undefined };
     }
 
-    const API = { LIMITS, TURN_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, runTurn, reject, readReply, validateAgainst };
+    const API = { LIMITS, TURN_SCHEMA, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL,
+      runTurn, reject, readReply, validateAgainst, composeInput, legacyPrompt, resultText };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

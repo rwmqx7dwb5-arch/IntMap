@@ -77,6 +77,10 @@ function modelReply(n) {
    `imgs.length` で分岐して return する）。だから取り寄せが起きうるのは「画像を付けていない
    ターン」だけで、この spec の 1 通目と 2 通目はそもそも別の経路である。両方数える。 */
 let page, diag, visionBodies, turnBodies;
+/* (atlas-native-tools) モデルが読む文字列。一本の `prompt`（視覚の道・古い上流）でも、protocol 2 の `input` item
+   （会話・依頼・道具の結果——function_call_output は `output`）でも、同じ問いで読めるように。 */
+const modelText = (b) => String((b && b.prompt) || '') + '\n'
+  + ((b && Array.isArray(b.input)) ? b.input : []).map((it) => String(it.content || it.output || it.arguments || '')).join('\n');
 
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, storageState: seededStorageState() });
@@ -97,10 +101,22 @@ test.beforeAll(async ({ browser }) => {
        添付の載り方を別の機能の呼び出しについて測ることになる。 */
     const task = String(body.task || '');
     let text = '{}';
-    if (task === 'atlas_turn') { turnBodies.push(body); text = JSON.stringify(modelReply(turnBodies.length)); }
+    /* ⚠ (atlas-native-tools) ai-proxy は protocol 2 を話す——呼び出しは provider の function_call item（id つき）で
+       返り、書いた文だけが text（FINAL_SCHEMA）に載る。この上流の役も同じ形で答える。 */
+    let extra = {};
+    if (task === 'atlas_turn') {
+      turnBodies.push(body);
+      const r = modelReply(turnBodies.length);
+      if (body.protocol === 2) {
+        const n = turnBodies.length;
+        text = JSON.stringify({ turn: r.turn, final_text: r.final_text });
+        extra = { output: (r.tool_calls || []).map((c, i) => ({ type: 'function_call', call_id: 'c' + n + '_' + i, name: c.name, arguments: c.arguments_json })),
+          meta: { protocol: 2 } };
+      } else text = JSON.stringify(r);
+    }
     else if (task === 'vision_read') { visionBodies.push(body); text = JSON.stringify({ contentClass: 'other', answer: '1×1 の PNG と、Catalog だけの PDF です。' }); }
     await route.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ text: text, used: 1, limit: 100, charged: true }) });
+      body: JSON.stringify(Object.assign({ text: text, used: 1, limit: 100, charged: true }, extra)) });
   });
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
@@ -148,7 +164,7 @@ test('R783 ① 落とした画像と PDF は、そのターンのリクエスト
   expect(b.docs[0].mime).toBe('application/pdf');
   expect(Buffer.from(b.docs[0].b64, 'base64').toString('latin1'), '送られた PDF が元のバイトと違う').toBe(PDF_TEXT);
   /* このターンの分は台帳が二度述べない（今まさに目の前に在るものを「前に在った」と言わない） */
-  expect(String(b.prompt || '')).not.toContain('ATTACHED EARLIER IN THIS CONVERSATION');
+  expect(modelText(b)).not.toContain('ATTACHED EARLIER IN THIS CONVERSATION');
 });
 
 test('R783 ② 次のターンでは載らない（費用）が、在ることは述べられる', async () => {
@@ -161,7 +177,7 @@ test('R783 ② 次のターンでは載らない（費用）が、在ること�
   expect(b.docs, '2 ターン目に PDF が再送されている（1 件 8 MB が会話の長さだけ課金される）').toBeUndefined();
   expect(b.images == null || b.images.length === 0, '2 ターン目に画像が再送されている').toBe(true);
   /* ⚠ しかし黙ってもいない。渡さないことと、在ることを黙っていることは別。 */
-  const p = String(b.prompt || '');
+  const p = modelText(b);
   expect(p, '前のターンの添付が述べられていない').toContain('ATTACHED EARLIER IN THIS CONVERSATION');
   expect(p).toContain('paper.pdf (application/pdf)');
   expect(p).toContain('image-1 (image)');
@@ -182,13 +198,13 @@ test('R783 ③④ 取り寄せは中身を次の一手の目の前に置き、�
   /* ④ 同じ引数の二度目は「もう済んでいる」と述べられ、中身は 1 部しか載らない
      （.agents/rules/one-pass-or-a-reason.md §4 の 3 問目。⚠ 拒否ではなく、同じ答えを返す） */
   expect(b.docs.length, '同じ取り寄せが 2 回ぶんの PDF を載せた＝二度目が一度目と違うことをしている').toBe(1);
-  expect(String(b.prompt || ''), '二度目が「もう済んでいる」と述べられていない').toContain('ALREADY made this exact call');
+  expect(modelText(b), '二度目が「もう済んでいる」と述べられていない').toContain('ALREADY made this exact call');
 });
 
 test('R783 ⑤ 無い名前の取り寄せは失敗として届き、在る名前を述べる', async () => {
   /* ③ の返答も continuing だったので、4 本目が来る——その中身が「失敗の受領証」 */
   await expect.poll(() => turnBodies.length, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
-  const p = String(turnBodies[2].prompt || '');
+  const p = modelText(turnBodies[2]);
   /* ⚠ 文はブラウザの言語で書かれる（この dispatch は 5 言語を持つ）。だから測るのは
      「どちらかの言い方で失敗が述べられていること」であって、英語の綴りではない。 */
   const REFUSED = /No attachment called that|その名前の添付はありません/;

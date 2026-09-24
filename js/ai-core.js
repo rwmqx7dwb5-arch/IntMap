@@ -309,6 +309,11 @@ window.IntMapModules.aiCore=function(HOST){
          server-side, the way `system` did in #R285. js/atlas-attach.js decides what a file IS. */
       if(Array.isArray(opts.files)&&opts.files.length) body.files=opts.files;
       if(Array.isArray(opts.docs)&&opts.docs.length) body.docs=opts.docs;
+      /* ══ (atlas-native-tools) PROTOCOL 2 — THE ATLAS TURN AS ITEMS AND NATIVE FUNCTIONS ══════════════════════
+         js/atlas-agent.js composeInput builds `input`; `tools` are the functions Atlas holds. ai-proxy
+         answers with `output` (the provider's items) and meta.protocol 2. Forwarded only when asked for,
+         so every other caller's body is byte-for-byte what it was. */
+      if(opts.protocol===2&&Array.isArray(opts.input)){ body.protocol=2; body.input=opts.input; if(Array.isArray(opts.tools)) body.tools=opts.tools; if(opts.toolChoice) body.toolChoice=String(opts.toolChoice); }
       /* ══ (#R318) THE TURN KEY — ONE USER REQUEST, ONE USE ══════════════════════════════════════
          Atlas finishes one question with up to three calls: the planner, then up to two bounded
          repairs (or, for an image, the read and its self-check re-read). Every one of them used to
@@ -361,7 +366,7 @@ window.IntMapModules.aiCore=function(HOST){
       /* (#R113) a typed PROVIDER error (502/503) is NOT the IntMap daily limit — surface a clear, distinct message
          (and never mislabel a Google-side 429 as "out of free uses"). */
       let ej=null; try{ ej=await r.json(); }catch(_){}
-      if(ej&&ej.error) throw new Error(aiProviderErrMsg(ej.error, ej.message));
+      if(ej&&ej.error){ const _e=new Error(aiProviderErrMsg(ej.error, ej.message)); _e.code=String(ej.error); throw _e; }   /* (atlas-native-tools) the proxy's own code travels with the message — js/atlas-console.js tells an older proxy by `empty` */
       throw new Error('AI '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
     }
     const j=await r.json().catch(()=>null);
@@ -379,7 +384,8 @@ window.IntMapModules.aiCore=function(HOST){
     else if(typeof j.text==='string') text=j.text;
     else if(j.content&&Array.isArray(j.content)) text=j.content.map(b=>b.text||'').join('');
     else if(j.choices&&j.choices[0]) text=(j.choices[0].message&&j.choices[0].message.content)||j.choices[0].text||'';
-    return {text, meta, citations, callId, turnId:String((opts&&opts.turnId)||''), task:String((opts&&opts.task)||'free_text')};
+    return {text, meta, citations, callId, turnId:String((opts&&opts.turnId)||''), task:String((opts&&opts.task)||'free_text'),
+      output:(j&&Array.isArray(j.output))?j.output:null};   /* (atlas-native-tools) a protocol-2 turn's items */
   }
   async function aiCallServer(prompt, system, imgs, opts){ return (await aiCallServerFull(prompt, system, imgs, opts)).text; }
   /* ---- Unified entry point used by every AI feature ---- */
@@ -407,7 +413,7 @@ window.IntMapModules.aiCore=function(HOST){
     const env=await askAIEnvelope(prompt, systemPrompt, imageDatas, opts);
     /* (#R350) …and the CALL IDENTITY travels with it. Without callId the caller cannot tell its own
        provider citations from a concurrent call's, which is what window._aiLastCitations could never do. */
-    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task }; }
+    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task, output:env.output||null }; }
   /* ══ (#R491) askAIGloss — THE ONE ENTRY POINT OF THE SEPARATE LANE ═════════════════════════
      Deliberately NOT built on askAI/askAIEnvelope: those two gate on aiQuotaBlocked(), which asks
      whether the reader has QUESTIONS left — and a lane that stopped working because the reader had

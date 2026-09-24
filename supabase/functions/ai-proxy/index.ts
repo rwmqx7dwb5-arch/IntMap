@@ -14,13 +14,13 @@
 //       → over quota returns 429 {error:"limit", used, limit}.
 //    4. Calls the provider with a SERVER-HELD key (model fixed here — the user
 //       never sees a key or a model picker).
-//    5. Returns { text, used, limit, remaining, charged, meta }. On a provider failure the
+//    5. Returns { text, used, limit, remaining, charged, meta } (+ `output` for a protocol-2 turn, atlas-native-tools). On a provider failure the
 //       consumed slot is refunded so a failed call never costs the user a use.
 //
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
 //  Secrets:  supabase secrets set AI_PROVIDER=openai                  (openai | anthropic | gemini)
-//            supabase secrets set AI_MODEL=gpt-5.6-sol               (#R722. Fixed here for EVERY reader — except the developer account, which may choose one for its own calls: #R722 below.)
+//            supabase secrets set AI_MODEL=gpt-5.6-terra             (#R736; OVERRIDES OPENAI_DEFAULT_MODEL below, so the two are set together. For EVERY reader — except the developer account, which may choose one for its own calls: #R722 below.)
 //            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Terra via /v1/responses)
 //            # other providers stay wired but dormant:
 //            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
@@ -249,6 +249,174 @@ const MAX_DOCS = 4;                              // provider-native documents in
 const MAX_DOC_BYTES = 8 * 1024 * 1024;           // ONE document, decoded
 const MAX_DOCS_BYTES = 12 * 1024 * 1024;         // …and all of them together, decoded
 const DOC_MIME = new Set(["application/pdf"]);   // what all three providers read AS a document
+
+/* ══ ⚠⚠⚠ (atlas-native-tools) PROTOCOL 2 — THE TURN AS ITEMS, THE TOOLS AS THE PROVIDER'S OWN FUNCTIONS ══════════
+   MEASURED before this: Atlas sent ONE string per step and this function kept `.slice(0, MAX_PROMPT)`
+   of it — 24,000 characters. The client stacked map state, context, 48 lines of conversation,
+   [REQUEST], then every call and result of the turn as JSON, so what the slice took was the END: the
+   turn's own results (one find_capability answer measures up to 39,235 characters) and on a long
+   conversation the request itself. Nobody was told — not the model, not the reader. And the calls
+   themselves rode a JSON envelope in that string (`tool_calls[].arguments_json`), so every step
+   re-sent the whole string and re-parsed the model's JSON instead of the provider's function calls.
+   A protocol-2 request carries `input` — items: {type:"message", role, content},
+   {type:"function_call", call_id, name, arguments}, {type:"function_call_output", call_id, output},
+   {type:"reasoning", id, encrypted_content} (OpenAI's own, replayed), {type:"attachments", channels}
+   (where the reader's files / documents / images go) — and `tools`, the functions Atlas holds. Each
+   provider receives them in its own native shape; the answer comes back as `output`, the same items.
+   ⚠ THE ONE-STRING REQUEST IS STILL ACCEPTED, unchanged: GitHub Pages serves a cached bundle for a
+   while after a deploy (the `atlas_plan` argument in TASKS below), so the order of the two deploys
+   must not matter. meta.protocol says which one answered, and that is how a new page recognises an
+   old proxy (js/atlas-console.js `_aiProto`).
+   ⚠ THE FENCE HERE IS THE LAST LINE, NOT THE BUDGET. js/atlas-agent.js composeInput spends the real
+   budget item by item (INPUT_BUDGET: 240,000 in total, 48,000 per item) and says what it gave up; the
+   bounds below are set at twice those, so a conforming client never reaches them. When something does,
+   what was cut is RETURNED (meta.inputTrimmed) and written into the item itself — never done silently.
+   EXPIRES WHEN: the client's INPUT_BUDGET moves (tests/r809 holds these at or above it). */
+const MAX_INPUT_ITEMS = 600;          // 48 history + 8 steps × (reasoning + message + 8 calls + 8 outputs) + the rest, with room
+const MAX_INPUT_CHARS = 480_000;
+const MAX_ITEM_CHARS = 96_000;
+const MAX_FN_TOOLS = 64;
+const MAX_FN_DESC = 8_000;
+const FN_NAME_OK = /^[A-Za-z0-9_-]{1,64}$/;          // the name rule all three providers share
+const CALL_ID_OK = /^[A-Za-z0-9_.:-]{1,120}$/;
+type TurnItem =
+  | { type: "message"; role: "user" | "assistant" | "developer"; content: string }
+  | { type: "function_call"; call_id: string; name: string; arguments: string; signature?: string }
+  | { type: "function_call_output"; call_id: string; output: string }
+  | { type: "reasoning"; id: string; encrypted_content: string }
+  | { type: "attachments"; channels: string[] };
+interface FnTool { name: string; description: string; parameters: Record<string, unknown>; }
+interface TurnReq { items: TurnItem[]; tools: FnTool[]; toolChoice: "none" | ""; trim: Record<string, unknown> | null; }
+const itemLen = (it: TurnItem): number =>
+  it.type === "message" ? it.content.length
+    : it.type === "function_call" ? it.arguments.length
+    : it.type === "function_call_output" ? it.output.length : 0;
+/* The cut is written INTO the item, after its content, so the model reads it where the text stops. */
+const cutText = (s: string, n: number) =>
+  s.slice(0, n) + "\n[CUT BY THE SERVER TO FIT — this item was " + s.length + " characters; the first " + n + " are above.]";
+
+async function sha256Hex(s: string): Promise<string> {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(d)).slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Validate and bound a protocol-2 request. `null` = not protocol 2; `{error}` = refused. */
+function normalizeTurn(payload: Record<string, unknown>): TurnReq | { error: string } | null {
+  if (Number(payload.protocol) !== 2 || !Array.isArray(payload.input)) return null;
+  const trim: Record<string, number> = {};
+  const bump = (k: string, n = 1) => { trim[k] = (trim[k] || 0) + n; };
+  const items: TurnItem[] = [];
+  for (const raw of (payload.input as unknown[]).slice(0, MAX_INPUT_ITEMS)) {
+    if (!raw || typeof raw !== "object") { bump("invalidItems"); continue; }
+    const o = raw as Record<string, unknown>;
+    const t = String(o.type || "");
+    const str = (v: unknown) => (typeof v === "string" ? v : "");
+    const bound = (s: string) => { if (s.length <= MAX_ITEM_CHARS) return s; bump("cutItems"); return cutText(s, MAX_ITEM_CHARS); };
+    if (t === "message") {
+      const role = String(o.role || "");
+      if (role !== "user" && role !== "assistant" && role !== "developer") { bump("invalidItems"); continue; }
+      const content = str(o.content);
+      if (!content) continue;
+      items.push({ type: "message", role: role as "user" | "assistant" | "developer", content: bound(content) });
+    } else if (t === "function_call") {
+      const call_id = str(o.call_id), name = str(o.name);
+      if (!CALL_ID_OK.test(call_id) || !FN_NAME_OK.test(name)) { bump("invalidItems"); continue; }
+      const sig = str(o.signature);
+      items.push({ type: "function_call", call_id, name, arguments: bound(str(o.arguments) || "{}"), ...(sig && sig.length <= MAX_ITEM_CHARS ? { signature: sig } : {}) });
+    } else if (t === "function_call_output") {
+      const call_id = str(o.call_id);
+      if (!CALL_ID_OK.test(call_id)) { bump("invalidItems"); continue; }
+      items.push({ type: "function_call_output", call_id, output: bound(str(o.output)) });
+    } else if (t === "reasoning") {
+      /* opaque, the provider's own; it cannot be shortened, so an oversize one is left out and said */
+      const enc = str(o.encrypted_content), id = str(o.id);
+      if (!enc || !id || enc.length > MAX_ITEM_CHARS || !CALL_ID_OK.test(id)) { bump("droppedReasoning"); continue; }
+      items.push({ type: "reasoning", id, encrypted_content: enc });
+    } else if (t === "attachments") {
+      const ch = (Array.isArray(o.channels) ? o.channels : []).map(String).filter((c) => c === "docs" || c === "files" || c === "images");
+      if (ch.length) items.push({ type: "attachments", channels: ch });
+    } else bump("invalidItems");
+  }
+  if ((payload.input as unknown[]).length > MAX_INPUT_ITEMS) bump("droppedItems", (payload.input as unknown[]).length - MAX_INPUT_ITEMS);
+  /* over the total: the oldest conversation messages go — never a call, never an output, never the
+     request — and one item says so. Where the history ends: js/atlas-agent.js puts the documents
+     marker right before the request, so everything before the FIRST marker is history; a caller
+     that sends no marker has its history end at the first call, and its request is the last user
+     message before that. */
+  let total = items.reduce((a, it) => a + itemLen(it), 0);
+  if (total > MAX_INPUT_CHARS) {
+    const marker = items.findIndex((it) => it.type === "attachments");
+    let firstCall = items.findIndex((it) => it.type === "function_call");
+    if (firstCall < 0) firstCall = items.length;
+    if (marker >= 0 && marker < firstCall) firstCall = marker;
+    let request = -1;
+    if (marker < 0) for (let i = firstCall - 1; i >= 0; i--) { const it = items[i]; if (it.type === "message" && it.role === "user") { request = i; break; } }
+    let n = 0, chars = 0;
+    for (let i = 0; i < firstCall && total > MAX_INPUT_CHARS; i++) {
+      const it = items[i];
+      if (i === request || it.type !== "message") continue;
+      total -= itemLen(it); chars += itemLen(it); n++;
+      (items as (TurnItem | null)[])[i] = null;
+    }
+    if (n) {
+      const kept = (items as (TurnItem | null)[]).filter((x): x is TurnItem => !!x);
+      items.length = 0;
+      items.push({ type: "message", role: "user", content: "[EARLIER CONVERSATION NOT SHOWN — the server left out the " + n + " oldest messages (" + chars + " characters) to fit. They are not in front of you: if the request depends on them, say so rather than guess.]" }, ...kept);
+      bump("droppedMessages", n); bump("droppedChars", chars);
+    }
+    if (total > MAX_INPUT_CHARS) return { error: "too_large" };
+  }
+  const tools: FnTool[] = [];
+  for (const raw of (Array.isArray(payload.tools) ? payload.tools : []).slice(0, MAX_FN_TOOLS)) {
+    const o = (raw && typeof raw === "object") ? raw as Record<string, unknown> : {};
+    const name = String(o.name || "");
+    const params = (o.parameters && typeof o.parameters === "object" && !Array.isArray(o.parameters)) ? o.parameters as Record<string, unknown> : { type: "object", properties: {} };
+    if (!FN_NAME_OK.test(name) || !schemaOk(params) || tools.some((x) => x.name === name)) { bump("droppedTools"); continue; }
+    let description = String(o.description || "");
+    if (description.length > MAX_FN_DESC) { description = description.slice(0, MAX_FN_DESC); bump("cutToolDescriptions"); }
+    tools.push({ name, description, parameters: params });
+  }
+  if (Array.isArray(payload.tools) && payload.tools.length > MAX_FN_TOOLS) bump("droppedTools", payload.tools.length - MAX_FN_TOOLS);
+  if (!items.some((it) => it.type !== "attachments")) return { error: "empty" };
+  return { items, tools, toolChoice: payload.toolChoice === "none" ? "none" : "", trim: Object.keys(trim).length ? trim : null };
+}
+
+/* A tool's parameters, as a provider's function declaration takes them. js/atlas-agent.js validates
+   the ROOT `anyOf` ("a place OR a coordinate pair") itself before anything runs; a root combinator is
+   what the providers' function-schema dialects are least consistent about, so it is not sent — it is
+   SAID, in the description, from the schema's own `required` lists (nothing written by hand here). */
+function fnParameters(t: FnTool): { parameters: Record<string, unknown>; description: string } {
+  const p = { ...t.parameters } as Record<string, unknown>;
+  let description = t.description;
+  for (const k of ["anyOf", "oneOf", "allOf"]) {
+    const alts = p[k];
+    if (!Array.isArray(alts)) continue;
+    delete p[k];
+    const said = alts.map((b) => (b && typeof b === "object" && Array.isArray((b as Record<string, unknown>).required)) ? ((b as Record<string, unknown>).required as unknown[]).join(" + ") : "").filter(Boolean);
+    if (said.length) description += " (Arguments: give " + said.join(k === "allOf" ? ", and " : " or ") + ".)";
+  }
+  if (p.type !== "object") p.type = "object";
+  if (!p.properties || typeof p.properties !== "object") p.properties = {};
+  return { parameters: p, description };
+}
+
+/* The reader's attachments, wherever the client's markers put them; a channel no marker names goes
+   in a user message at the end. `build(channels)` returns the provider's parts for those channels. */
+function placeAttachments<P>(items: TurnItem[], build: (ch: string[]) => P[]): (TurnItem | { attach: P[] })[] {
+  const out: (TurnItem | { attach: P[] })[] = [];
+  const done = new Set<string>();
+  for (const it of items) {
+    if (it.type !== "attachments") { out.push(it); continue; }
+    const ch = it.channels.filter((c) => !done.has(c));
+    ch.forEach((c) => done.add(c));
+    const parts = build(ch);
+    if (parts.length) out.push({ attach: parts });
+  }
+  const rest = ["docs", "files", "images"].filter((c) => !done.has(c));
+  const parts = rest.length ? build(rest) : [];
+  if (parts.length) out.push({ attach: parts });
+  return out;
+}
 /* ⚠ A TASK IS A KEY INTO FOUR CONFIGURATION TABLES, and it arrived as an arbitrary string:
    `String(payload.task || "free_text").toLowerCase()`, then `TASK_MAX_OUTPUT[task] ?? FALLBACK`. So an
    unknown task silently ran on fallback budgets, was echoed back in `meta.task`, and — because a
@@ -756,7 +924,61 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason, served: String(j?.model || "") };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string }> {
+/* ══ (atlas-native-tools) THE TURN, IN ANTHROPIC'S NATIVE SHAPE — tool_use / tool_result ══════════════════════
+   Converted rather than flattened into one string: a dormant provider that answers through the
+   envelope would lose exactly what this round gives the active one (the calls and their results as
+   separate, un-cut items), and switching AI_PROVIDER must not be a step down. The Messages API
+   alternates roles and opens with the user, so consecutive same-role items are merged and a
+   conversation that opens mid-way is said to. No JSON mode here (the instruction states the final
+   shape, and the client reads a prose final as the answer — as it always did on this provider). */
+async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[] }> {
+  const attached = filesBlock(files);
+  const msgs: { role: string; content: unknown[] }[] = [];
+  const add = (role: string, block: unknown) => {
+    const last = msgs[msgs.length - 1];
+    if (last && last.role === role) last.content.push(block); else msgs.push({ role, content: [block] });
+  };
+  for (const it of placeAttachments<unknown>(turn.items, (ch) => {
+    const parts: unknown[] = [];
+    if (ch.includes("docs")) for (const dp of docs) parts.push({ type: "document", source: { type: "base64", media_type: dp.mime, data: dp.b64 } });
+    if (ch.includes("files") && attached) parts.push({ type: "text", text: attached });
+    if (ch.includes("images")) for (const ip of imgs) parts.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
+    return parts;
+  })) {
+    if ("attach" in it) { it.attach.forEach((p) => add("user", p)); continue; }
+    if (it.type === "message") add(it.role === "assistant" ? "assistant" : "user", { type: "text", text: it.content });
+    else if (it.type === "function_call") {
+      let input: unknown = {};
+      try { input = JSON.parse(it.arguments || "{}"); } catch (_) { input = {}; }
+      add("assistant", { type: "tool_use", id: it.call_id.replace(/[^A-Za-z0-9_-]/g, "_"), name: it.name, input: (input && typeof input === "object") ? input : {} });
+    } else if (it.type === "function_call_output") add("user", { type: "tool_result", tool_use_id: it.call_id.replace(/[^A-Za-z0-9_-]/g, "_"), content: it.output });
+  }
+  if (msgs.length && msgs[0].role !== "user") msgs.unshift({ role: "user", content: [{ type: "text", text: "[The conversation so far begins with your reply below.]" }] });
+  const tools: unknown[] = turn.tools.map((t) => { const f = fnParameters(t); return { name: t.name, description: f.description, input_schema: f.parameters }; });
+  if (web) tools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 });
+  const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: msgs };
+  if (system) body.system = system;
+  if (tools.length) body.tools = tools;
+  if (turn.toolChoice === "none" && turn.tools.length) body.tool_choice = { type: "none" };
+  const r = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 400), "", "");
+  const j = await r.json();
+  const output: TurnItem[] = [];
+  let text = "";
+  for (const b of (Array.isArray(j?.content) ? j.content : [])) {
+    if (b?.type === "text" && typeof b.text === "string") { text += b.text; output.push({ type: "message", role: "assistant", content: b.text }); }
+    else if (b?.type === "tool_use" && typeof b.name === "string") output.push({ type: "function_call", call_id: String(b.id || ""), name: b.name, arguments: JSON.stringify(b.input || {}) });
+  }
+  const finishReason = String(j?.stop_reason || "");
+  if (!text && !output.some((it) => it.type === "function_call")) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
+  return { text, finishReason, served: String(j?.model || ""), output };
+}
+
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = ""): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -771,13 +993,37 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   content.push({ type: "input_text", text: prompt });
   const _detail = (imageDetail === "high" || imageDetail === "low") ? imageDetail : "auto";
   for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}`, detail: _detail });
+  /* (atlas-native-tools) A PROTOCOL-2 TURN: the items as Responses input items, the attachments where the client's
+     markers put them, and the tools as functions beside the hosted web search. `replay` = the
+     provider's own reasoning items from earlier steps, sent back encrypted (store:false keeps nothing
+     on OpenAI's side, so this is how the model keeps its thinking between calls) — dropped by the
+     first 400 rung below, together with the cache key, as the extras a model may not accept. */
+  let replay = !!turn;
+  const turnInput = (): unknown[] => {
+    const out: unknown[] = [];
+    for (const it of placeAttachments<unknown>(turn!.items, (ch) => {
+      const parts: unknown[] = [];
+      if (ch.includes("docs")) for (const dp of docs) parts.push({ type: "input_file", filename: dp.name, file_data: "data:" + dp.mime + ";base64," + dp.b64 });
+      if (ch.includes("files") && attached) parts.push({ type: "input_text", text: attached });
+      if (ch.includes("images")) for (const ip of imgs) parts.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}`, detail: _detail });
+      return parts;
+    })) {
+      if ("attach" in it) { out.push({ role: "user", content: it.attach }); continue; }
+      if (it.type === "message") out.push({ role: it.role, content: it.content });
+      else if (it.type === "function_call") out.push({ type: "function_call", call_id: it.call_id, name: it.name, arguments: it.arguments });
+      else if (it.type === "function_call_output") out.push({ type: "function_call_output", call_id: it.call_id, output: it.output });
+      else if (it.type === "reasoning" && replay) out.push({ type: "reasoning", id: it.id, encrypted_content: it.encrypted_content, summary: [] });
+    }
+    return out;
+  };
+  const fns = turn ? turn.tools.map((t) => { const f = fnParameters(t); return { type: "function", name: t.name, description: f.description, parameters: f.parameters, strict: false }; }) : [];
 
   /* jsonMode: "schema" = the caller's shape, enforced; "object" = bare must-be-JSON (what every
      call did before #R397); "off" = prose, the client parser strips fences. */
   const build = (choice: string | null, jsonMode: "schema" | "object" | "off", tools: boolean): Record<string, unknown> => {
     const b: Record<string, unknown> = {
       model,
-      input: [{ role: "user", content }],
+      input: turn ? turnInput() : [{ role: "user", content }],
       max_output_tokens: Math.min(12_000, maxTokens + (effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
       reasoning: { effort: effort === "high" ? "high" : effort === "medium" ? "medium" : "low" },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) */
       store: false,
@@ -789,7 +1035,18 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     else if (jsonMode !== "off") b.text = { format: { type: "json_object" } };
     // Search is paid per tool call, so attach it only when the client explicitly
     // asks for auto/required web mode. Ordinary Atlas work stays tool-free.
-    if (tools) { b.tools = [{ type: "web_search" }]; if (choice) b.tool_choice = choice; }
+    /* (atlas-native-tools) …and a turn's functions ride beside it. They are never dropped by the ladder: the
+       rungs below take away what an answer can do without (the hosted search, the JSON shape), and a
+       turn without its functions could no longer operate IntMap at all. */
+    const all: unknown[] = fns.slice();
+    if (tools) all.push({ type: "web_search" });
+    if (all.length) b.tools = all;
+    if (tools && choice) b.tool_choice = choice;
+    else if (turn && turn.toolChoice === "none" && fns.length) b.tool_choice = "none";
+    if (turn && replay) {
+      b.include = ["reasoning.encrypted_content"];
+      if (cacheKey) b.prompt_cache_key = cacheKey;
+    }
     return b;
   };
   const post = (body: Record<string, unknown>, ms: number) => fetchWithTimeout("https://api.openai.com/v1/responses", {
@@ -824,6 +1081,13 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
       throw e;
     }
   }
+  /* (atlas-native-tools) the first rung for a turn: the replayed reasoning and the cache key are optimisations,
+     and a model that will not take another model's reasoning (the fallback chain) or the key must
+     still answer the turn */
+  if (!r.ok && r.status === 400 && turn && replay) {
+    replay = false;
+    r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+  }
   if (!r.ok && r.status === 400 && usedTools && forceWeb) {
     r = await post(build(null, usedJson, true), WEB_TIMEOUT);
   }
@@ -854,7 +1118,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (nextModel && (r.status === 403 || r.status === 404) &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: nextModel, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat);
+      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat, turn, cacheKey);
     }
     const pe = classifyGemini(r.status, t, "", "");
     /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written
@@ -906,13 +1170,30 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   // it got fresh info, instead of assuming "attached === searched".
   const webCount = outputArr.filter((item: { type?: string }) => typeof item?.type === "string" && item.type.indexOf("web_search") === 0).length;
   const finishReason = String(j?.status || j?.incomplete_details?.reason || "");
-  if (!text) {
+  /* (atlas-native-tools) a turn's answer is the provider's items, in the order it produced them: its encrypted
+     reasoning (to be replayed), what it wrote, and every function call with the provider's own id.
+     A reply that only calls functions is a complete reply — it is not "empty". */
+  let output: TurnItem[] | undefined;
+  if (turn) {
+    output = [];
+    for (const it of outputArr) {
+      if (it?.type === "reasoning" && typeof it.encrypted_content === "string" && it.encrypted_content && typeof it.id === "string") {
+        output.push({ type: "reasoning", id: it.id, encrypted_content: it.encrypted_content });
+      } else if (it?.type === "function_call" && typeof it.name === "string" && typeof it.call_id === "string") {
+        output.push({ type: "function_call", call_id: it.call_id, name: it.name, arguments: typeof it.arguments === "string" ? it.arguments : "{}" });
+      } else if (it?.type === "message" && Array.isArray(it.content)) {
+        const said = it.content.filter((p: { type?: string; text?: string }) => p?.type === "output_text" && typeof p.text === "string").map((p: { text: string }) => p.text).join("");
+        if (said) output.push({ type: "message", role: "assistant", content: said });
+      }
+    }
+  }
+  if (!text && !(output && output.some((it) => it.type === "function_call"))) {
     const refused = outputArr.some((item: { content?: unknown[] }) =>
       Array.isArray(item?.content) && item.content.some((part: { type?: string }) => part?.type === "refusal"));
     if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
     throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
   }
-  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations, schemaAttached: usedJson === "schema", served: String(j?.model || "") };
+  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations, schemaAttached: usedJson === "schema", served: String(j?.model || ""), output };
 }
 
 interface GeminiOpts {
@@ -990,10 +1271,14 @@ async function callGemini(model: string, key: string, prompt: string, system: st
 // model and usually clear on a retry (Gemini's own guidance is to retry with backoff). Retry those up to twice with a
 // short backoff. Timeouts and MALFORMED are handled elsewhere (retrying a timeout would just burn another 45s).
 async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string }> {
+  return await geminiRetry(() => callGemini(model, key, prompt, system, imgs, files, docs, opts));
+}
+/* (atlas-native-tools) the retry policy above, as a wrapper, so the turn path gets the SAME policy rather than a copy */
+async function geminiRetry<T>(call: () => Promise<T>): Promise<T> {
   const MAX = 3;   // 1 attempt + up to 2 retries
   for (let attempt = 1; ; attempt++) {
     try {
-      return await callGemini(model, key, prompt, system, imgs, files, docs, opts);
+      return await call();
     } catch (e) {
       const ps = (e instanceof ProviderError && e.meta && typeof e.meta.providerStatus === "number") ? e.meta.providerStatus as number : 0;
       // (#R113e) Retry ONLY a 5xx overload — NOT a 429. Retrying a rate/quota 429 immediately just consumes another
@@ -1006,6 +1291,70 @@ async function callGeminiRetry(model: string, key: string, prompt: string, syste
       throw e;
     }
   }
+}
+
+/* ══ (atlas-native-tools) THE TURN, IN GEMINI'S NATIVE SHAPE — functionCall / functionResponse ═════════════════
+   Same argument as callAnthropicTurn. Three facts of this API decide the shape:
+     · a functionResponse is matched by NAME, not id, so the name is looked up from the call it answers;
+     · Gemini 3 hands back a `thoughtSignature` on each functionCall part and requires it on the replay
+       — carried through the item as `signature` (the client stores items verbatim);
+     · function declarations cannot be combined with JSON mode or with Google Search grounding on this
+       endpoint, so a turn carries neither: the final shape is stated by the instruction, and the
+       client reads a prose final as the answer (as it always did when JSON mode was dropped). */
+async function callGeminiTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], maxTokens: number): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string; output: TurnItem[] }> {
+  const attached = filesBlock(files);
+  const nameOf: Record<string, string> = {};
+  const contents: { role: string; parts: unknown[] }[] = [];
+  const add = (role: string, part: unknown) => {
+    const last = contents[contents.length - 1];
+    if (last && last.role === role) last.parts.push(part); else contents.push({ role, parts: [part] });
+  };
+  for (const it of placeAttachments<unknown>(turn.items, (ch) => {
+    const parts: unknown[] = [];
+    if (ch.includes("docs")) for (const dp of docs) parts.push({ inline_data: { mime_type: dp.mime, data: dp.b64 } });
+    if (ch.includes("files") && attached) parts.push({ text: attached });
+    if (ch.includes("images")) for (const ip of imgs) parts.push({ inline_data: { mime_type: ip.mime, data: ip.b64 } });
+    return parts;
+  })) {
+    if ("attach" in it) { it.attach.forEach((p) => add("user", p)); continue; }
+    if (it.type === "message") add(it.role === "assistant" ? "model" : "user", { text: it.content });
+    else if (it.type === "function_call") {
+      let args: unknown = {};
+      try { args = JSON.parse(it.arguments || "{}"); } catch (_) { args = {}; }
+      nameOf[it.call_id] = it.name;
+      add("model", { functionCall: { name: it.name, args: (args && typeof args === "object") ? args : {} }, ...(it.signature ? { thoughtSignature: it.signature } : {}) });
+    } else if (it.type === "function_call_output") add("user", { functionResponse: { name: nameOf[it.call_id] || "unknown", response: { content: it.output } } });
+  }
+  const body: Record<string, unknown> = { contents, generationConfig: { maxOutputTokens: maxTokens, thinkingConfig: { thinkingLevel: "low" } } };
+  if (system) body.systemInstruction = { parts: [{ text: system }] };
+  if (turn.tools.length) {
+    body.tools = [{ functionDeclarations: turn.tools.map((t) => { const f = fnParameters(t); return { name: t.name, description: f.description, parametersJsonSchema: f.parameters }; }) }];
+    if (turn.toolChoice === "none") body.toolConfig = { functionCallingConfig: { mode: "NONE" } };
+  }
+  const r = await fetchWithTimeout(
+    "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+    { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
+  );
+  if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 1500), "", "");
+  const j = await r.json();
+  const c = j?.candidates?.[0];
+  const finishReason = String(c?.finishReason || "NO_CANDIDATE");
+  const blockReason = String(j?.promptFeedback?.blockReason || "");
+  if (finishReason === "MALFORMED_FUNCTION_CALL" || finishReason === "SAFETY" || blockReason) throw classifyGemini(200, "", finishReason, blockReason);
+  const output: TurnItem[] = [];
+  let text = "";
+  (Array.isArray(c?.content?.parts) ? c.content.parts : []).forEach((p: Record<string, unknown>, i: number) => {
+    if (p?.thought === true) return;
+    const fc = p?.functionCall as { name?: string; args?: unknown } | undefined;
+    if (fc && typeof fc.name === "string") {
+      output.push({ type: "function_call", call_id: "g" + Date.now().toString(36) + "_" + i, name: fc.name, arguments: JSON.stringify(fc.args || {}),
+        ...(typeof p.thoughtSignature === "string" ? { signature: p.thoughtSignature as string } : {}) });
+    } else if (typeof p?.text === "string" && p.text) { text += p.text as string; output.push({ type: "message", role: "assistant", content: p.text as string }); }
+  });
+  if (!text.trim() && !output.some((it) => it.type === "function_call")) {
+    throw new ProviderError("provider_empty", "gemini: empty response (finishReason=" + finishReason + ")", 502, finishReason === "MAX_TOKENS", { finishReason });
+  }
+  return { text: text.trim(), finishReason, webAttached: false, served: String(j?.modelVersion || ""), output };
 }
 
 /* == (#R722) THE MODEL CATALOGUE - ASKED, NOT WRITTEN DOWN ====================================
@@ -1194,6 +1543,8 @@ Deno.serve(async (req) => {
     effortHint?: string; turnId?: string;
     /* (#R722) developer-only, ignored for everyone else - see the block after the parse. */
     op?: string; provider?: string; model?: string;
+    /* (atlas-native-tools) protocol 2 — see normalizeTurn */
+    protocol?: number; input?: unknown[]; tools?: unknown[]; toolChoice?: string;
   } = {};
   /* ⚠ REFUSED BEFORE IT IS READ, when the caller declares a size — and CUT OFF WHILE IT IS READ when
      the caller does not. (#R801) This used to be `req.arrayBuffer()` followed by a length check,
@@ -1271,6 +1622,22 @@ Deno.serve(async (req) => {
   const requestedCount = typeof payload.requestedCount === "number" ? payload.requestedCount : undefined;
   const prompt = String(payload.prompt || "").slice(0, isGloss ? MAX_GLOSS_PROMPT : MAX_PROMPT);   /* (#R491) the cheap lane gets a cheap ceiling - a gloss is a phrase and the paragraph around it */
   const system = String(payload.system || "").slice(0, MAX_SYSTEM);   // (#R285) its own bound — see MAX_SYSTEM
+  /* ⚠ (atlas-native-tools) …AND WHAT THOSE TWO SLICES CUT IS RETURNED, not only done. The prompt's cut is the one
+     that took this turn's results off the end of every Atlas step; it still exists for a one-string
+     caller, and the caller is now told how much of what it sent was read. */
+  const promptSent = String(payload.prompt || "").length, systemSent = String(payload.system || "").length;
+  const legacyTrim = (promptSent > prompt.length || systemSent > system.length)
+    ? { ...(promptSent > prompt.length ? { promptChars: promptSent, promptKept: prompt.length } : {}), ...(systemSent > system.length ? { systemChars: systemSent, systemKept: system.length } : {}) }
+    : null;
+  /* (atlas-native-tools) protocol 2: the turn as items and functions — the Atlas turn only */
+  const turnParsed = task === "atlas_turn" ? normalizeTurn(payload as Record<string, unknown>) : null;
+  if (turnParsed && "error" in turnParsed) {
+    await refund();
+    return turnParsed.error === "too_large"
+      ? json({ error: "too_large", message: "The turn is larger than the server accepts, even without the earlier conversation.", meta: { protocol: 2 } }, 413)
+      : json({ error: "empty_turn", meta: { protocol: 2 } }, 400);   /* NOT "empty": that code is how a page recognises a proxy that predates protocol 2 (js/atlas-console.js _aiProto) */
+  }
+  const turnReq: TurnReq | null = turnParsed;
   /* ⚠ THE PER-IMAGE CEILING IS IN parseDataUrl; THIS IS THE ONE FOR ALL OF THEM TOGETHER. Four
      images each just under the single-image limit is four times the single-image limit, and the
      provider request carries every one of them. */
@@ -1328,7 +1695,7 @@ Deno.serve(async (req) => {
   }
   /* ⚠ (#R540) A REQUEST CAN NOW BE ALL ATTACHMENT. "Read this PDF" with the question in the file,
      or a dropped file with no typed text, is a real request — not an empty one. */
-  if (!prompt && !imgs.length && !files.length && !docs.length) {
+  if (!prompt && !imgs.length && !files.length && !docs.length && !turnReq) {
     await refund();
     return json({ error: "empty" }, 400);
   }
@@ -1355,8 +1722,13 @@ Deno.serve(async (req) => {
     : task === "gloss" ? GLOSS_SCHEMA   // (#R491) server-owned, mirrored by js/atlas-gloss.js
     : (wantJson && payload.schema && typeof payload.schema === "object" && schemaOk(payload.schema) ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
-  /* (#R722) OpenAI default = GPT-5.6 Sol (AI_MODEL secret = gpt-5.6-sol). Terra stays the
-     FALLBACK_MODEL only on 403/404 model_not_found so a model outage can never blanket-kill Atlas.
+  /* (atlas-native-tools) WHICH MODEL ANSWERS, AS THE CODE DECIDES IT — this comment used to say «GPT-5.6 Sol
+     (AI_MODEL secret = gpt-5.6-sol), Terra the FALLBACK_MODEL», which stopped being true at #R736:
+     ① a developer's pick (devPick, below) → ② the AI_MODEL secret, when it is an id for the provider
+     that is answering → ③ PROVIDER_DEFAULT_MODEL (OPENAI_DEFAULT_MODEL = gpt-5.6-terra). A 403/404
+     model_not_found then walks FALLBACK_CHAIN (sol → luna) unless the developer chose the model.
+     ⚠ The SECRET wins over the constant, so the constant names the model only while the secret is
+     unset or agrees; meta.model / meta.modelServed report what was asked and what answered.
      /!\ (#R722) AI_MODEL IS AN ID FOR **ITS OWN** PROVIDER. It holds an OpenAI id, so a developer who
      switches the provider to gemini or anthropic must not inherit it - that would send
      "gpt-5.6-terra" to Google. A pick that names only the provider therefore falls to THAT
@@ -1370,9 +1742,14 @@ Deno.serve(async (req) => {
      in particular, substituting another one silently answers a different question than the one being
      tested, and the panel would then report a model that never ran. The 403 is the answer. */
   const noFallbackForPick = !!devPick?.model;
+  /* (atlas-native-tools) THE PROMPT-CACHE KEY: the same instructions and the same functions produce the same key,
+     whoever is asking — it is derived from the prefix OpenAI caches, and names no account (nothing
+     about the reader leaves in it; the privacy notice is unchanged). Requests that share a prefix are
+     routed together, which is what makes the cache hit. */
+  const cacheKey = turnReq ? "atlas_turn:" + await sha256Hex(system + "\n" + JSON.stringify(turnReq.tools)) : "";
 
   try {
-    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean; served?: string };
+    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; output?: TurnItem[] };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
@@ -1383,13 +1760,13 @@ Deno.serve(async (req) => {
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat);
+        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat, turnReq, cacheKey);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
+          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey);
         } else {
           throw e;
         }
@@ -1397,7 +1774,15 @@ Deno.serve(async (req) => {
     } else if (provider === "gemini") {
       const key = Deno.env.get("GEMINI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "GEMINI_API_KEY not set", 502, false, {});
-      try {
+      if (turnReq) {
+        /* (atlas-native-tools) the same MALFORMED rule as below, in the turn's terms: once more with calling turned
+           off (the declarations stay — the conversation names them), so the model answers in words */
+        try { out = await geminiRetry(() => callGeminiTurn(model, key, turnReq, system, imgs, files, docs, maxTokens)); }
+        catch (e) {
+          if (!(e instanceof ProviderError && e.code === "provider_malformed")) throw e;
+          out = await callGeminiTurn(model, key, { ...turnReq, toolChoice: "none" }, system, imgs, files, docs, maxTokens);
+        }
+      } else try {
         out = await callGeminiRetry(model, key, prompt, system, imgs, files, docs, { maxTokens, web, searchEnabled, wantJson, responseSchema });
       } catch (e) {
         // (#R113) MALFORMED_FUNCTION_CALL → retry ONCE with tools stripped, a hardened
@@ -1420,7 +1805,8 @@ Deno.serve(async (req) => {
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "ANTHROPIC_API_KEY not set", 502, false, {});
-      out = await callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens);
+      out = turnReq ? await callAnthropicTurn(model, key, turnReq, system, imgs, files, docs, web, maxTokens)
+        : await callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens);
     }
     // (#R350) 5a) A structured answer that will not parse is a TYPED failure, refunded like any
     // other provider failure — the client must never be handed prose it cannot audit.
@@ -1452,7 +1838,12 @@ Deno.serve(async (req) => {
          visible instead of being believed. */
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
-      meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason },
+      meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
+        /* (atlas-native-tools) which protocol answered (a page reads this to recognise an older proxy), and what
+           this function's own fence cut from the request — null when nothing was */
+        protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined },
+      /* (atlas-native-tools) the provider's items — reasoning to replay, what it wrote, the calls with their ids */
+      ...(turnReq ? { output: Array.isArray(out.output) ? out.output : [] } : {}),
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows
       // these as the primary, web-verified sources — separate from the client-gathered headlines.
       citations: Array.isArray(out.citations) ? out.citations : [],

@@ -231,9 +231,12 @@ test('R493 ②e: the console binds it — frames to the vision argument, reset t
      画像を同じチャネルに載せるので、**フレームと取り寄せを 1 か所で束ねる**（そしてそこが
      `urls()` の「空なら null」を受け止める。直接 `.concat` して本番が死んだのが #R779）。
      束ねる側が `urls()` を読んでいることは、ここで綴りを 2 つとも読んで結び直す。 */
-  assert.match(CONSOLE_SRC, /askAIJSONEnvelope\(_agentPrompt\(req,q\),_sys,_atlTurnImgs\(VFRAMES\.urls\(\),/,
-    'the atlas_turn call carries the frames as IMAGES');
-  assert.match(CONSOLE_SRC, /p\+=VFRAMES\.promptBlock\(\)/, 'and the prompt names them');
+  /* (atlas-native-tools) the step now has TWO transports (items + native functions, and the one-string envelope
+     an older proxy speaks); the frames are bundled once and BOTH calls carry them as the images. */
+  assert.match(CONSOLE_SRC, /_tImgs=_atlTurnImgs\(VFRAMES\.urls\(\),/, 'the frames are bundled for the step');
+  assert.match(CONSOLE_SRC, /askAIJSONEnvelope\('',_sys,_tImgs,/, 'the atlas_turn call carries the frames as IMAGES');
+  assert.match(CONSOLE_SRC, /askAIJSONEnvelope\(AGENT\.legacyPrompt\(built\),_sys,_tImgs,/, '…on the envelope transport too');
+  assert.match(CONSOLE_SRC, /tail\+=VFRAMES\.promptBlock\(\)/, 'and the prompt names them');
   assert.match(CONSOLE_SRC, /VFRAMES\.reset\(\)/, 'and a new turn starts with none');
   assert.match(CONSOLE_SRC, /VFRAMES\.captureFrame\(a\)[\s\S]{0,200}exec:_vf\.facts/,
     'the dispatch hands back the RECORD; the pixels never enter the switch\'s return value');

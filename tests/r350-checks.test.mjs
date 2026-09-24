@@ -499,8 +499,12 @@ test('R350 ⑨c: the exported envelope carries the identity of the call it came 
      window._aiLastCitations could never do. */
   const core = read('js/ai-core.js');
   assert.ok(core.includes('return {text, meta, citations, callId,'), 'the transport envelope does not carry its callId');
-  assert.ok(core.includes('citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task }; }'),
-    'the exported envelope drops the call identity on the way out');
+  /* (#R809) read the fields of the exported envelope, not the spelling of its closing brace — the
+     protocol-2 `output` joined it after `task`, and that must not read as the identity being dropped */
+  const exported = (/async function askAIJSONEnvelope\([\s\S]*?return \{([^}]*)\}; \}/.exec(core) || [])[1] || '';
+  for (const f of ['citations:env.citations', 'callId:env.callId', 'turnId:env.turnId', 'task:env.task']) {
+    assert.ok(exported.includes(f), 'the exported envelope drops the call identity on the way out (' + f + ')');
+  }
   assert.ok(read('js/app-body.js').includes('get askAIJSONEnvelope()'), 'the host does not forward the envelope at all');
   /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
 });
