@@ -8,6 +8,7 @@
  *       would break the whole app at build time rather than at review time
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -153,15 +154,17 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
      them. What is NOT asserted any more is that it happens at boot, which this round made false on
      purpose: 30 kB of detail card for a session that never clicks an aircraft. */
   const loader = readFileSync(join(ROOT, 'js/lazy-modules.js'), 'utf8');
-  assert.ok(loader.includes('window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);'),
-    'the factory is instantiated');
+  /* (#R798) the mount is an entry of the registry; its spelling is the static gate's business */
+  assert.ok(LAZY_REGISTRY.aircraftDetail && typeof LAZY_REGISTRY.aircraftDetail.mount === 'function' && LAZY_REGISTRY.aircraftDetail.publishes === 'IntMapAircraftPanel',
+    'the factory is instantiated by the registry and publishes the panel');
+  assert.ok(loader.includes('window.IntMapModules.aircraftDetail(IM_HOST)'), 'the factory is instantiated');
   assert.ok(!body.includes('window.IntMapModules.aircraftDetail('),
     'js/app-body.js instantiates it at boot as well — the module is then in the boot bundle regardless');
   assert.match(dl, /IntMapLazy\.need\('aircraftDetail'\)/,
     'the aircraft click does not fetch the card module first — it would reach a global that has not been downloaded');
   const inList = (name, list) => new RegExp(`const ${list} = \\[[^\\]]*'${name}'`).test(entry);
   assert.ok(inList('droneNav', 'MODULE_FACTORIES'), 'droneNav is covered by the boot-time required-module guard');
-  assert.ok(inList('aircraftDetail', 'LAZY_FACTORIES'),
+  assert.ok(LAZY_NAMES.includes('aircraftDetail'),
     'aircraftDetail is covered by the deferred half of that guard — one list still knows every factory');
 });
 

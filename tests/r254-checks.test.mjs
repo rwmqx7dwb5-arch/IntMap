@@ -27,6 +27,7 @@
  *  `toDataURL` and `layers.hasImage` in prose.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -326,8 +327,8 @@ test('#R254 ⑩ the data-center layer is its own module, sourced, and invents no
      stop existing, which is what this test is for. Hence: the loader fetches it, the loader mounts
      it, and the ROW awaits it before delegating. */
   const loader = code(read('js/lazy-modules.js'));
-  assert.match(loader, /case 'dataCenters': return import\('\.\/datacenters\.js'\);/,
-    'js/datacenters.js is not fetched by the on-demand loader — nothing imports it at all');
+  assert.equal((String(LAZY_REGISTRY["dataCenters"] && LAZY_REGISTRY["dataCenters"].load).match(/import\('([^']+)'\)/) || [])[1], './datacenters.js',
+    'js/datacenters.js is not fetched by the on-demand loader — nothing imports it at all');   /* (#R798) the registry entry */
   assert.match(loader, /window\.IntMapModules\.dataCenters\(IM_HOST\)/, 'the module is never instantiated');
   assert.doesNotMatch(code(read('src/main.js')), /datacenters\.js/, 'the shell imports it again — that is what tripped the line budget');
   assert.doesNotMatch(code(read('js/layer-packs.js')), /^import '\.\/datacenters\.js';/m,

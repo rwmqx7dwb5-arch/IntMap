@@ -25,6 +25,7 @@
  *  else's feed is exactly the kind of code that gets believed instead of tested.
  * ==========================================================================*/
 import test from 'node:test';
+import { LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
@@ -282,7 +283,7 @@ test('⑨ volcanoIntel and volcanoLayers are lazy, with a file, a factory and a 
   const imports = main.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.equal(/import\s+'\.\.\/js\/volcano-intel\.js'/.test(imports), false, 'volcano-intel is imported eagerly');
   assert.equal(/import\s+'\.\.\/js\/volcano-layers\.js'/.test(imports), false, 'volcano-layers is imported eagerly');
-  assert.ok(/'volcanoIntel'/.test(main) && /'volcanoLayers'/.test(main), 'the boot guard does not know them');
+  assert.ok(LAZY_NAMES.includes('volcanoIntel') && LAZY_NAMES.includes('volcanoLayers'), 'the boot guard does not know them (its list is the registry\'s — #R798)');
 });
 
 /* ── ⑩ the relay is declared, bounded, and reads only the two feeds that need relaying ── */

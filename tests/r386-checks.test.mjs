@@ -20,6 +20,7 @@
  * ========================================================================== */
 
 import test from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -211,8 +212,8 @@ test('⑦ news.category が名指す lazy module は loader に実在する', ()
   const lazy = quoted.length ? quoted[quoted.length - 1].replace(/'/g, '') : '';
   assert.equal(lazy, 'newsEvents');
   const loader = rd('js/lazy-modules.js');
-  assert.ok(loader.includes("newsEvents: 'IntMapNewsEvents'"), 'PUBLISHES must name it');
-  assert.ok(loader.includes("case 'newsEvents': return import('./news-events.js');"), 'fetchModule must have a LITERAL import');
+  assert.equal(LAZY_REGISTRY["newsEvents"].publishes, 'IntMapNewsEvents', 'the registry must name what it publishes');   /* (#R798) */
+  assert.ok(loader.includes("import('./news-events.js')"), 'the registry entry must have a LITERAL import');
   assert.ok(loader.includes('window.IntMapModules.newsEvents(IM_HOST)'), 'mount must run the factory');
   /* research.events も同じ module に依存するようになった（サーバーの Event を読むため）。 */
   const ev = cap.split('\n').find((l) => l.includes("'research.events'"));

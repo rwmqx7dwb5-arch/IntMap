@@ -18,6 +18,7 @@
  *       precip warmValues) — a silent removal of either is a silently empty column
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_NAMES, LAZY_REGISTRY } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -163,15 +164,16 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
   const atlas = read('js/atlas-console.js');
   assert.match(atlas, /case 'query': case 'crossQuery': case 'dataQuery':/, 'the dispatch door');
   assert.match(atlas, /IntMapLazy\.need\('atlasQuery'\)/, '…which fetches the engine');
-  const lazy = read('js/lazy-modules.js');
-  assert.match(lazy, /atlasQuery: 'IntMapQuery'/, 'the lazy registry knows what it publishes');
-  assert.match(lazy, /case 'atlasQuery': return import\('\.\/atlas-query\.js'\);/, '…and how to fetch it');
-  assert.match(lazy, /case 'atlasQuery': window\.IntMapQuery=window\.IntMapModules\.atlasQuery\(IM_HOST\); return true;/, '…and how to mount it');
+  /* (#R798) one registry entry holds what it publishes, how to fetch it and how to mount it */
+  const e = LAZY_REGISTRY.atlasQuery;
+  assert.ok(e && e.publishes === 'IntMapQuery', 'the lazy registry knows what it publishes');
+  assert.match(read('js/lazy-modules.js'), /atlasQuery: \{[^\n]*import\('\.\/atlas-query\.js'\)/, '…and how to fetch it');
+  assert.ok(typeof e.mount === 'function' && /window\.IntMapQuery=window\.IntMapModules\.atlasQuery\(IM_HOST\)/.test(String(e.mount)), '…and how to mount it');
   /* ⚠ MEMBERSHIP, NOT POSITION. This read /'atlasQuery'\]/ — true only because atlasQuery
      happened to be the LAST entry the day it was written, so #R527 broke it merely by appending a
      new lazy factory after it. The property this line exists for is that «the one list of every
      factory the program has» knows about atlasQuery; that is what it asserts now. */
-  assert.match(read('src/main.js'), /const LAZY_FACTORIES = \[[^\]]*'atlasQuery'/, 'the one list of every factory the program has');
+  assert.ok(LAZY_NAMES.includes('atlasQuery'), 'the one list of every factory the program has (js/lazy-modules.js LAZY_REGISTRY, #R798)');
 });
 
 test('R495 ③: the catalogue sends multi-condition questions HERE instead of to the essay writers', () => {

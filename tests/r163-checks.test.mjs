@@ -12,6 +12,7 @@
 // silently reading a dead value — no error anywhere. tests/r163.spec.js proves the live behaviour in
 // a real browser; this file fixes the structure that makes it true.
 import { test } from 'node:test';
+import { bootGuardKnows } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { appShell, lazyFiles } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
@@ -176,7 +177,7 @@ test('R163 #6 the boot guard names every factory, so one missing file cannot hid
   // window.IntMapModules is created by whichever module file loads first, so checking the namespace
   // alone cannot detect a later file that failed to load — check each factory by name.
   for (const [, key] of MOVED) {
-    assert.ok(new RegExp(`'${key}'`).test(html), `the boot guard lists the ${key} factory`);
+    assert.ok(bootGuardKnows(root, key), `the boot guard lists the ${key} factory`);   /* (#R798) eager list or the lazy registry */
   }
   assert.match(html, /module factories missing/, 'index.html reports missing factories loudly');
   assert.match(html, /window\.__imModuleCheck\s*=/, 'the boot guard exposes its result for the browser test');

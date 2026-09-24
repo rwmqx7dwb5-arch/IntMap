@@ -5,6 +5,7 @@
  *  the seventh language · the sky's quadrature · the service worker can heal · Atlas on demand.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -203,9 +204,11 @@ test('R224 ⑥ the second ocean-current layer is gone and saved sessions migrate
 test('R224 ⑥b Atlas is on demand, and every entry point fetches it', () => {
   assert.ok(!/import '\.\.\/js\/atlas-console\.js';/.test(read('src/main.js')), 'not in the boot bundle');
   const lz = read('js/lazy-modules.js');
-  assert.match(lz, /atlasConsole: 'IntMapConsole',/);
-  assert.match(lz, /case 'atlasConsole': return import\('\.\/atlas-console\.js'\);/);
-  assert.match(lz, /case 'atlasConsole': window\.IntMapConsole=window\.IntMapModules\.atlasConsole\(IM_HOST\); return true;/);
+  /* (#R798) one registry entry: what it publishes, how it is fetched, how it is mounted */
+  assert.equal(LAZY_REGISTRY["atlasConsole"].publishes, 'IntMapConsole');
+  assert.equal((String(LAZY_REGISTRY["atlasConsole"] && LAZY_REGISTRY["atlasConsole"].load).match(/import\('([^']+)'\)/) || [])[1], './atlas-console.js');
+  assert.match(String(LAZY_REGISTRY["atlasConsole"].mount), /window\.IntMapConsole=window\.IntMapModules\.atlasConsole\(IM_HOST\)/);
+  assert.ok(lz.length > 0);
   const ld = read('js/atlas-loader.js');
   for (const k of ['ensure', 'hint', 'call', 'wire', 'loaded']) assert.ok(ld.includes(k + ':'), `the loader offers ${k}`);
   /* every caller that OPENS Atlas goes through it… */

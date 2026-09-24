@@ -12,6 +12,7 @@
  *  the checksum and the seventeen sample entries are what was measured, written down.
  * ========================================================================== */
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -138,9 +139,10 @@ test('⑦ the renderer is registered everywhere a lazy module has to be register
   /* ⚠ a lazy module has more than one ledger, and the ones it is missing from fail silently at
      runtime rather than at build. Count them from the files rather than from memory. */
   const lazy = read('js/lazy-modules.js');
-  assert.match(lazy, /waves\s*:\s*'IntMapWaves'/, 'PUBLISHES');
-  assert.match(lazy, /case\s*'waves'/, 'fetchModule');
-  assert.match(read('src/main.js'), /'waves'/, 'LAZY_FACTORIES');
+  assert.equal(LAZY_REGISTRY["waves"].publishes, 'IntMapWaves', 'the registry names what it publishes');   /* (#R798) */
+  assert.equal((String(LAZY_REGISTRY["waves"] && LAZY_REGISTRY["waves"].load).match(/import\('([^']+)'\)/) || [])[1], './waves.js', 'and how to fetch it');
+  assert.ok(LAZY_NAMES.includes('waves'), 'the boot guard list (derived from the registry)');
+  assert.ok(lazy.length > 0);
   assert.match(read('tests/r209.spec.js'), /waves\s*:\s*\[\s*'IntMapWaves'/, 'the spec’s MEMBER table');
 });
 

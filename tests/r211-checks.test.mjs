@@ -5,6 +5,7 @@
 // "the width is a square root of a ratio". A literal pinned here is a literal the next instruction
 // breaks.
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -276,7 +277,7 @@ test('R211 share: the simulators register by their lazy-module name, and a pendi
   for (const key of ['terrainWater', 'seismic']) {
     assert.ok(new RegExp(`register\\('${key}'`).test(read(key === 'seismic' ? 'js/seismic.js' : 'js/terrain-water.js')),
       `${key} registers its inputs`);
-    assert.ok(new RegExp(`case '${key}':`).test(lazy), `…under the name IntMapLazy fetches it by`);
+    assert.ok(!!LAZY_REGISTRY[key], `…under the name IntMapLazy fetches it by`);   /* (#R798) the registry */
   }
   /* the new layer rows travel in the link like every other data layer */
   assert.match(ui, /input\[id\^="wp-dl-"\]:checked/, 'the world-data rows are part of the shared layer set');

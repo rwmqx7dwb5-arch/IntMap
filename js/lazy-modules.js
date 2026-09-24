@@ -21,22 +21,23 @@
  *   1. `scripts/static-checks.mjs` (reachability) only sees a LITERAL, single-quoted, `./`-relative
  *      dynamic import written inside a js/ file. A loader table, a computed specifier, double quotes
  *      or a `../js/` path are invisible to it and the target is then reported as "exists but nothing
- *      imports it". Hence the switch of literals in `fetchModule` — it is not styling.
+ *      imports it". Hence the literal specifier inside each registry entry's `load` — it is not styling.
  *      ⚠ AND THE SCAN READS COMMENTS TOO. Spelling the pattern out here with a placeholder file name
  *      made the gate report a dynamic import of a file that does not exist — the same way #R208's
  *      negative regex matched its own comment. Describe the shape; do not write a specimen of it.
  *   2. `scripts/static-checks.mjs` (factory calls) requires the literal string
  *      `window.IntMapModules.<name>(` to appear in index.html, js/app-body.js, js/geo-engine.js or a
  *      file js/app-body.js imports with a line-anchored `import … from './y.js';`. That is why this
- *      file is a NAMED sibling of app-body.js rather than something app-body import()s: the mount
- *      calls below are the ones the gate reads.
- *   3. `tests/r175-checks.test.mjs` forbids top-level declarations in js/*.js, and requires every
- *      named export to be `import { name } from './…'`-ed somewhere. `export function` + the sibling
- *      import in app-body.js satisfies both; everything else lives inside the returned IIFE.
- *   4. `src/main.js`'s boot guard cannot check a factory that has not been fetched yet — so the keys
- *      below move from MODULE_FACTORIES to LAZY_FACTORIES there, and the check is not DROPPED, it is
- *      MOVED to load time: `mount()` verifies the factory and the global it publishes actually
- *      arrived, and records a failure in `window.__imLazyCheck` if either did not.
+ *      file is a NAMED sibling of app-body.js rather than something app-body import()s: the `mount`
+ *      calls in the registry entries are the ones the gate reads.
+ *   3. `tests/r175-checks.test.mjs` requires every named export to be reached by name from somewhere
+ *      (js/, src/, scripts/ or tests/ — scripts/export-readers.mjs). `makeLazyModules` is imported by
+ *      app-body.js; LAZY_NAMES / CARRIED_NAMES by src/main.js; LAZY_REGISTRY by the tests that used
+ *      to regex two files for the same facts. (The ban on top-level declarations went with #R795.)
+ *   4. `src/main.js`'s boot guard cannot check a factory that has not been fetched yet — so it
+ *      imports LAZY_NAMES from the registry as the deferred half of its list, and the check is not
+ *      DROPPED, it is MOVED to load time: `mount()` verifies the factory and the global it publishes
+ *      actually arrived, and records a failure in `window.__imLazyCheck` if either did not.
  *
  *  ⚠ AND THAT LAST POINT IS THE WHOLE RISK OF THIS ROUND. This project's most expensive recurring
  *  defect is a feature that silently stops existing (#R162, #R200, #R205, #R208) — and "the module
@@ -50,6 +51,74 @@
  *  call — and the passive readers keep the `&&` guard they already had, which now answers "not
  *  loaded" the same way it always answered "not flying".
  * ==========================================================================*/
+
+/* ══ (#R798) ONE DEFINITION PER DEFERRED MODULE ═══════════════════════════════════════════════
+ *  Until this round a deferred module was FIVE rows in five tables — `PUBLISHES` (the global it
+ *  owns), `fetchModule` (a `case` with its literal import), `mount` (a `case` with its factory
+ *  call), `ALSO` (what must arrive with it), `SELF_PUBLISHING` (no factory) — plus a sixth row in
+ *  src/main.js's LAZY_FACTORIES for the boot guard. Adding a module meant editing four to six places
+ *  that had to agree, and tests/r209 ③ / r304 ② existed to catch the day they did not. Now each
+ *  module is ONE entry and every list is derived from it: the loader reads it here, the boot guard
+ *  imports LAZY_NAMES, and the tests read the same object rather than a regex over two files.
+ *
+ *  · `publishes` — the window global that must exist once the module has arrived (checked, not assumed)
+ *  · `load`      — the literal dynamic import (⚠ literal: scripts/static-checks.mjs and
+ *                  scripts/js-reachability.mjs read the specifier as text; a computed one is invisible)
+ *  · `mount`     — runs the factory with the shared host, spelled `window.IntMapModules.x(IM_HOST)`
+ *                  because scripts/static-checks.mjs's "every factory is called" rule and three
+ *                  older suites read that spelling; the parameter is NAMED IM_HOST for the same reason
+ *  · `self`      — the module publishes at import time and registers no factory (four of them)
+ *  · `also`      — modules that cannot be asked for alone (the seismic panel calls the tsunami
+ *                  module directly; the satellite layer calls its detail card)
+ *  ⚠ Order is the order the boot guard reports in; it carries no other meaning. */
+export const LAZY_REGISTRY = Object.freeze({
+  flightSim: { publishes: 'IntMapFlightSim', load: () => import('./flight-sim.js'), mount: (IM_HOST) => { window.IntMapFlightSim=window.IntMapModules.flightSim(IM_HOST); } },
+  playground: { publishes: '_openPlayground', load: () => import('./playground.js'), mount: (IM_HOST) => { window.IntMapModules.playground(IM_HOST); } },
+  pandemicSim: { publishes: 'IntMapPandemicAtlas', load: () => import('./pandemic-atlas.js'), self: true },
+  seismic: { publishes: 'IntMapSeismic', load: () => import('./seismic.js'), mount: (IM_HOST) => { window.IntMapModules.seismic(IM_HOST); }, also: ['tsunami'] },
+  tsunami: { publishes: 'IntMapTsunami', load: () => import('./tsunami.js'), mount: (IM_HOST) => { window.IntMapModules.tsunami(IM_HOST); } },
+  terrainWater: { publishes: 'IntMapTerrainWater', load: () => import('./terrain-water.js'), mount: (IM_HOST) => { window.IntMapModules.terrainWater(IM_HOST); } },
+  los: { publishes: 'IntMapLOS', load: () => import('./viewshed.js'), mount: (IM_HOST) => { window.IntMapModules.los(IM_HOST); } },
+  streetView: { publishes: 'IntMapStreetView', load: () => import('./street-view.js'), mount: (IM_HOST) => { window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); } },
+  nightSky: { publishes: 'IntMapNightSky', load: () => import('./night-sky.js'), self: true },
+  atlasConsole: { publishes: 'IntMapConsole', load: () => import('./atlas-console.js'), mount: (IM_HOST) => { window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); } },
+  atlasQuery: { publishes: 'IntMapQuery', load: () => import('./atlas-query.js'), mount: (IM_HOST) => { window.IntMapQuery=window.IntMapModules.atlasQuery(IM_HOST); } },
+  atlasChart: { publishes: 'IntMapAtlasChart', load: () => import('./atlas-chart.js'), mount: (IM_HOST) => { window.IntMapAtlasChart=window.IntMapModules.atlasChart(IM_HOST); } },
+  atlasAnswerView: { publishes: 'IntMapAnswerView', load: () => import('./atlas-answer-view.js'), mount: (IM_HOST) => { window.IntMapAnswerView=window.IntMapModules.atlasAnswerView(IM_HOST); } },
+  routeUi: { publishes: 'IntMapRouteUI', load: () => import('./routing-ui.js'), mount: (IM_HOST) => { window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); } },
+  gisCore: { publishes: 'IntMapGis', load: () => import('./gis-core.js'), mount: (IM_HOST) => { window.IntMapGis=window.IntMapModules.gisCore(IM_HOST); } },
+  dataCenters: { publishes: 'IntMapDataCenters', load: () => import('./datacenters.js'), mount: (IM_HOST) => { window.IntMapModules.dataCenters(IM_HOST); } },
+  railways: { publishes: 'IntMapRailways', load: () => import('./railways.js'), mount: (IM_HOST) => { window.IntMapModules.railways(IM_HOST); } },
+  aircraftDetail: { publishes: 'IntMapAircraftPanel', load: () => import('./aircraft-detail.js'), mount: (IM_HOST) => { window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST); } },
+  volume3d: { publishes: 'IntMapVolume3D', load: () => import('./volume3d.js'), mount: (IM_HOST) => { window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST); } },
+  statsCompare: { publishes: 'IntMapStatsCompare', load: () => import('./stats-compare.js'), mount: (IM_HOST) => { window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST); } },
+  aviationLive: { publishes: 'IntMapAviation', load: () => import('./aviation-live.js'), mount: (IM_HOST) => { window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); } },
+  satellitesLive: { publishes: 'IntMapSatellites', load: () => import('./satellites-live.js'), mount: (IM_HOST) => { window.IntMapModules.satellitesLive(IM_HOST); }, also: ['satelliteDetail'] },
+  satelliteDetail: { publishes: 'IntMapSatPanel', load: () => import('./satellite-detail.js'), mount: (IM_HOST) => { window.IntMapModules.satelliteDetail(IM_HOST); } },
+  volcanoIntel: { publishes: 'IntMapVolcano', load: () => import('./volcano-intel.js'), mount: (IM_HOST) => { window.IntMapModules.volcanoIntel(IM_HOST); } },
+  volcanoLayers: { publishes: 'IntMapVolcanoLayers', load: () => import('./volcano-layers.js'), mount: (IM_HOST) => { window.IntMapModules.volcanoLayers(IM_HOST); } },
+  companyData: { publishes: 'IntMapCompanyData', load: () => import('./company-data.js'), mount: (IM_HOST) => { window.IntMapCompanyData=window.IntMapModules.companyData(IM_HOST); } },
+  companyPanel: { publishes: 'IntMapCompanyPanel', load: () => import('./company-panel.js'), mount: (IM_HOST) => { window.IntMapCompanyPanel=window.IntMapModules.companyPanel(IM_HOST); }, also: ['companyData', 'companyFacilities'] },
+  companyFacilities: { publishes: 'IntMapCompanyFacilities', load: () => import('./company-facilities.js'), mount: (IM_HOST) => { window.IntMapCompanyFacilities=window.IntMapModules.companyFacilities(IM_HOST); }, also: ['companyData'] },
+  analysisTimeSeries: { publishes: '__imAnalysisTimeSeries', load: () => import('./analysis-timeseries.js'), mount: (IM_HOST) => { window.IntMapModules.analysisTimeSeries(IM_HOST); } },
+  analysisResearch: { publishes: '__imAnalysisResearch', load: () => import('./analysis-research.js'), mount: (IM_HOST) => { window.IntMapModules.analysisResearch(IM_HOST); } },
+  analysisCorrelate: { publishes: '__imAnalysisCorrelate', load: () => import('./analysis-correlate.js'), mount: (IM_HOST) => { window.IntMapModules.analysisCorrelate(IM_HOST); } },
+  analysisEvents: { publishes: '__imAnalysisEvents', load: () => import('./analysis-world-events.js'), mount: (IM_HOST) => { window.IntMapModules.analysisEvents(IM_HOST); } },
+  analysisEdu: { publishes: '__imAnalysisEdu', load: () => import('./analysis-edu.js'), mount: (IM_HOST) => { window.IntMapModules.analysisEdu(IM_HOST); } },
+  warLayer: { publishes: '__imWarFronts', load: () => import('./war-layer.js'), mount: (IM_HOST) => { window.IntMapModules.warLayer(IM_HOST); } },
+  waves: { publishes: 'IntMapWaves', load: () => import('./waves.js'), mount: (IM_HOST) => { window.IntMapWaves=window.IntMapModules.waves(IM_HOST); } },
+  navigation: { publishes: 'IntMapNavigation', load: () => import('./navigation.js'), self: true },
+  routingTraffic: { publishes: 'IntMapRouteTraffic', load: () => import('./routing-traffic.js'), self: true },
+  newsEvents: { publishes: 'IntMapNewsEvents', load: () => import('./news-events.js'), mount: (IM_HOST) => { window.IntMapNewsEvents=window.IntMapModules.newsEvents(IM_HOST); } },
+  photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST) => { window.IntMapPhotoGeo=window.IntMapModules.photoGeo(IM_HOST); } },
+  shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST) => { window.IntMapShakeMap=window.IntMapModules.shakeMap(IM_HOST); } },
+  radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST) => { window.IntMapRadiationObs=window.IntMapModules.radiationLayer(IM_HOST); } },
+  netHealthLive: { publishes: '__imNetHealth', load: () => import('./net-health-live.js'), mount: (IM_HOST) => { window.IntMapModules.netHealthLive(IM_HOST); } },
+});
+/* the boot guard's two lists, derived: the factory-backed names, and the one registered by a file
+   nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically — #R408) */
+export const LAZY_NAMES = Object.freeze(Object.keys(LAZY_REGISTRY).filter((n) => !LAZY_REGISTRY[n].self));
+export const CARRIED_NAMES = Object.freeze(['aircraftPoints']);
 
 export function makeLazyModules(HOST) {
   return (function () {
@@ -65,63 +134,11 @@ export function makeLazyModules(HOST) {
     /* name → the promise of its arrival. One entry per module, created on first demand. */
     const P = Object.create(null);
 
-    /* Modules that cannot be asked for alone. The seismic panel offers the tsunami run and calls
-       window.IntMapTsunami directly (js/seismic.js), so asking for one means asking for both.
-       (#R311) …and the satellite DETAIL CARD is the same shape — js/satellites-live.js calls
-       window.IntMapSatPanel from its own click handler, and this keeps the panel first. */
-    const ALSO = { seismic: ['tsunami'], satellitesLive: ['satelliteDetail'], companyPanel: ['companyData', 'companyFacilities'], companyFacilities: ['companyData'] };   /* (#R354) the atlas is three files that are useless apart — docs/COMPANIES.md §3 */
-
-    /* Modules with NO factory — they publish at import. ⚠ (#R347) was `name !== 'nightSky'`, and a rule written as one name recorded the second such module as a failure. */
-    const SELF_PUBLISHING = { nightSky: true, navigation: true, routingTraffic: true, pandemicSim: true };
-
-    /* The global each module must have published by the time its promise resolves. Checked, not
-       assumed — see the header. `playground` publishes a bare function, so it is named too. */
-    const PUBLISHES = {
-      flightSim: 'IntMapFlightSim', playground: '_openPlayground', pandemicSim: 'IntMapPandemicAtlas', seismic: 'IntMapSeismic',
-      tsunami: 'IntMapTsunami', terrainWater: 'IntMapTerrainWater', los: 'IntMapLOS',
-      streetView: 'IntMapStreetView', nightSky: 'IntMapNightSky',
-      /* ══ (#R224) THE BIGGEST FILE IN THE BOOT BUNDLE ═══════════════════════════════════════════
-         「モバイル版がまだ劇的に遅い…ブラウザが落ちることもある。」 js/atlas-console.js is 658 kB of the
-         3.67 MB main chunk (#R218's measurement) and it is parsed on every session, including the
-         many that never open Atlas. It is the LAST of the big eight to move, and it moved last for a
-         reason: Atlas is this app's control plane, so a dozen features reach for `window.IntMapConsole`.
-         Every one of them now goes through `window.IntMapAtlas` (js/app-body.js), which fetches the
-         kernel first — so «Atlas can drive everything» is unchanged and only the MOMENT it arrives is. */
-      atlasConsole: 'IntMapConsole', atlasQuery: 'IntMapQuery', atlasChart: 'IntMapAtlasChart', atlasAnswerView: 'IntMapAnswerView',   /* (#R543) the chart renderer rides on this line for the same reason the query engine does: a chart is drawn only by an answer that decided to draw one, and js/atlas-console.js's chunk has 4,901 bytes of budget left (tests/perf-baseline.json), which is less than the renderer. (#R495) the cross-dataset query engine and, through its static import, the coastline it measures 「海から200km」 with — behind its OWN door rather than inside the Atlas chunk, so a session that opens Atlas to ask about one place never pays for a 249 kB coastline and a 2 MB index it does not query. ⚠ ON THIS LINE because tests/r168 #8 — a line ceiling retired in #R795 budgets this file as part of the shell, and five separate lines put it over. */
-      /* (#R291) the directions PANEL. The router (js/routing.js) is eager — Atlas must be able to
-         route with no panel — and this is the ~30 kB of UI a session that never opens Layers →
-         Tools → Directions never downloads (§2.3). */
-      routeUi: 'IntMapRouteUI',   gisCore: 'IntMapGis',   /* (#R729) the dataset registry, the ops, the project store and the panel — ONE entry because there is no session that wants one of the four (js/gis-core.js) */
-      /* ══ (#R311) SIX MORE, PICKED BY A TEST RATHER THAN BY SIZE ═══════════════════════════════
-         The ten above are reached from a menu item. These six are the rest of what the entry pulled in
-         that registers NOTHING at boot — no layer row, no DOM, no IntMapOS command, no listener — so
-         there is a "before it is reached" to defer to, and every door awaits. */
-      dataCenters: 'IntMapDataCenters', railways: 'IntMapRailways', aircraftDetail: 'IntMapAircraftPanel', volume3d: 'IntMapVolume3D', statsCompare: 'IntMapStatsCompare',
-      /* (#R341) the live-aircraft platform: the controller, the GPU primitive it imports, and
-         (through src/aviation-worker-client.js) the worker that owns the fleet. Nothing of it is
-         downloaded until the aircraft layer, aircraft search, or an Atlas aviation command asks. */
-      aviationLive: 'IntMapAviation',
-      satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel', volcanoIntel: 'IntMapVolcano', volcanoLayers: 'IntMapVolcanoLayers',   /* (#R353) the volcano ROW is eager (js/beta-overlays.js); the bundled eruption history, the four status feeds and the card are not, and the three overlays are a second module so a card cannot drag them in — docs/VOLCANO-INTELLIGENCE.md */ companyData: 'IntMapCompanyData', companyPanel: 'IntMapCompanyPanel', companyFacilities: 'IntMapCompanyFacilities',   /* (#R354) ~500 companies of profile and every facility they publish; nothing is fetched until one is opened, and js/companies.js keeps the curated table and its live market caps eager — docs/COMPANIES.md §3 */
-      /* ══ (#R322) …AND THE FILE #R311 HAD TO LEAVE BEHIND, SPLIT INSTEAD OF DEFERRED ════════════
-         js/analysis-panels.js was the biggest thing left in the entry (909 lines, 122 kB) and #R311
-         measured why it could not join the six above: counting the statements each factory EXECUTES
-         showed `correlate` appends #btn-correlate to the Layers panel at boot and `edu` mounts
-         #edu-mount / #btn-edu and a map-click listener. Deferring the file would have deleted two
-         Layers buttons until somebody asked for a panel they could no longer see.
-         ⚠ SO IT IS SPLIT BY WHAT RUNS AT BOOT, NOT BY FEATURE. js/analysis-panels.js stays eager and
-         keeps the five factories, that boot-time DOM, and a thin async facade on each public global
-         (window.IntMapTimeSeries / IntMapAIResearch / IntMapCorrelate / IntMapEdu / _setDashView /
-         _renderEventsArchive); the five files below hold the bodies and arrive when a facade is
-         called. The globals they publish are deliberately `__imAnalysis…` and not `IntMap…` —
-         js/atlas-controls.js's moduleCatalog() discovers `window.IntMap*` BY ENUMERATION, so a second
-         IntMap-named object per panel would offer the planner five capabilities nothing dispatches. */
-      analysisTimeSeries: '__imAnalysisTimeSeries', analysisResearch: '__imAnalysisResearch',
-      analysisCorrelate: '__imAnalysisCorrelate', analysisEvents: '__imAnalysisEvents',
-      analysisEdu: '__imAnalysisEdu', warLayer: '__imWarFronts',   waves: 'IntMapWaves',   /* (#R577) the wave layer's BODY — its Layers row (js/data-layers.js) is eager, and this is the renderer, the palette and the forecast plumbing, which a session that never ticks 波 does not download */   /* (#R349) the war layer's BODY — its Layers row (js/war-fronts.js) is eager, this is not */
-      /* (#R347) navigation's eight files ride in ONE chunk (all are needed within the same tick of starting); routingTraffic is first called by js/routing.js's `_kickProbe()`. DEV-NOTES #R347. */
-      navigation: 'IntMapNavigation',
-      routingTraffic: 'IntMapRouteTraffic', newsEvents: 'IntMapNewsEvents',   /* (#R386) 出来事単位の News — News タブを開くまで 1 バイトも降ってこない（docs/NEWS-EVENTS.md §12） */   photoGeo: 'IntMapPhotoGeo',   shakeMap: 'IntMapShakeMap', radiationLayer: 'IntMapRadiationObs',   netHealthLive: '__imNetHealth',   /* (#R565) the internet-health BODY — its two Layers rows (js/net-health.js) are eager, this is not */   /* (#R527) 写真の撮影地点探索パネルと、その静的 import が連れて来る計算 5 本＋worker client。パネルを開くまで 1 バイトも降らず、worker 本体は最初の検索が始まって初めて届く（docs/PHOTO-GEOLOCATION.md）。⚠ ON THIS LINE for the shell budget — tests/r168 #8 — a line ceiling retired in #R795 */
-    };
+    /* (#R798) the tables the loader used to carry are views over LAZY_REGISTRY — see the header */
+    const R = LAZY_REGISTRY;
+    const ALSO = (name) => (R[name] && R[name].also) || [];
+    const SELF_PUBLISHING = (name) => !!(R[name] && R[name].self);
+    const PUBLISHES = (name) => (R[name] && R[name].publishes) || '';
 
     function record(name, why) {
       try {
@@ -137,83 +154,14 @@ export function makeLazyModules(HOST) {
       } catch (_) { }
     }
 
-    /* ⚠ EVERY SPECIFIER HERE IS A LITERAL — see gate 1 in the header. Rewriting this as a table keyed by
-       name would pass `node --check`, pass the browser, and fail static-checks with "exists but nothing
-       imports it" for every one of these files at once. */
     function fetchModule(name) {
-      switch (name) {
-        case 'flightSim': return import('./flight-sim.js');
-        case 'playground': return import('./playground.js');
-        case 'pandemicSim': return import('./pandemic-atlas.js');   /* (#R754) the engine-facing door. */
-        case 'seismic': return import('./seismic.js');
-        case 'tsunami': return import('./tsunami.js');
-        case 'terrainWater': return import('./terrain-water.js');
-        case 'los': return import('./viewshed.js');
-        case 'streetView': return import('./street-view.js');
-        case 'nightSky': return import('./night-sky.js');
-        case 'atlasConsole': return import('./atlas-console.js');
-        case 'atlasQuery': return import('./atlas-query.js');
-        case 'atlasChart': return import('./atlas-chart.js');
-        case 'atlasAnswerView': return import('./atlas-answer-view.js');   /* (#R495) — same reason as the PUBLISHES line above */
-        case 'routeUi': return import('./routing-ui.js');
-        case 'gisCore': return import('./gis-core.js');   /* (#R729) */   case 'photoGeo': return import('./photo-geo.js');   case 'shakeMap': return import('./shakemap.js');   case 'radiationLayer': return import('./radiation-layer.js');   /* (#R585) same line, same reason */   case 'netHealthLive': return import('./net-health-live.js');   /* (#R565) same line, same reason */   /* (#R527) same line, same reason */
-        case 'dataCenters': return import('./datacenters.js');
-        case 'railways': return import('./railways.js');
-        case 'aircraftDetail': return import('./aircraft-detail.js');
-        case 'volume3d': return import('./volume3d.js');
-        case 'statsCompare': return import('./stats-compare.js');
-        case 'satellitesLive': return import('./satellites-live.js');
-        case 'satelliteDetail': return import('./satellite-detail.js');
-        case 'analysisTimeSeries': return import('./analysis-timeseries.js');
-        case 'analysisResearch': return import('./analysis-research.js');
-        case 'analysisCorrelate': return import('./analysis-correlate.js');
-        case 'analysisEvents': return import('./analysis-world-events.js');
-        case 'analysisEdu': return import('./analysis-edu.js');
-        case 'aviationLive': return import('./aviation-live.js');
-        case 'navigation': return import('./navigation.js');
-        case 'waves': return import('./waves.js');   /* (#R577) — waves pulls js/waves-palette.js and js/waves-gl.js through its own static imports. Raising the ceiling to fit one's own change is the move that check exists to catch. */
-        case 'newsEvents': return import('./news-events.js');
-        case 'routingTraffic': return import('./routing-traffic.js');
-        case 'warLayer': return import('./war-layer.js');
-        case 'volcanoIntel': return import('./volcano-intel.js');
-        case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */ case 'companyData': return import('./company-data.js'); case 'companyPanel': return import('./company-panel.js'); case 'companyFacilities': return import('./company-facilities.js');   /* (#R354) */
-        default: return Promise.reject(new Error('no such lazy module: ' + name));
-      }
+      return R[name] ? R[name].load() : Promise.reject(new Error('no such lazy module: ' + name));
     }
-
-    /* Run the factory at the point js/app-body.js used to run it, with the same host object. The
-       two assignments mirror what app-body did with the return value; the modules that publish
-       themselves from inside their own factory (or, for night-sky, at import) need no assignment.
-       ⚠ These literal `window.IntMapModules.x(` strings are what gate 2 reads. */
+    /* Run the factory at the point js/app-body.js used to run it, with the same host object. */
     function mount(name) {
-      const M = window.IntMapModules;
-        /* ⚠ (#R347) from the TABLE, not a case each — a case per module is the same two-lists shape SELF_PUBLISHING exists to remove. */
-        if (SELF_PUBLISHING[name]) return typeof window[PUBLISHES[name]] !== 'undefined';
-      switch (name) {
-        case 'flightSim': window.IntMapFlightSim=window.IntMapModules.flightSim(IM_HOST); return true;
-        case 'playground': window.IntMapModules.playground(IM_HOST); return true;
-        case 'seismic': window.IntMapModules.seismic(IM_HOST); return true;
-        case 'tsunami': window.IntMapModules.tsunami(IM_HOST); return true;
-        case 'terrainWater': window.IntMapModules.terrainWater(IM_HOST); return true;
-        case 'los': window.IntMapModules.los(IM_HOST); return true;
-        case 'streetView': window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); return true;
-        case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;   case 'atlasQuery': window.IntMapQuery=window.IntMapModules.atlasQuery(IM_HOST); return true;   case 'atlasChart': window.IntMapAtlasChart=window.IntMapModules.atlasChart(IM_HOST); return true;   case 'atlasAnswerView': window.IntMapAnswerView=window.IntMapModules.atlasAnswerView(IM_HOST); return true;   /* (#R495) */
-        case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;   case 'gisCore': window.IntMapGis=window.IntMapModules.gisCore(IM_HOST); return true;   /* (#R729) same line, same reason */   case 'photoGeo': window.IntMapPhotoGeo=window.IntMapModules.photoGeo(IM_HOST); return true;   case 'shakeMap': window.IntMapShakeMap=window.IntMapModules.shakeMap(IM_HOST); return true;   case 'radiationLayer': window.IntMapRadiationObs=window.IntMapModules.radiationLayer(IM_HOST); return true;   /* (#R585) */   case 'netHealthLive': window.IntMapModules.netHealthLive(IM_HOST); return true;   /* (#R565) publishes window.__imNetHealth from inside its own factory, like warLayer */   /* (#R527) */
-        case 'dataCenters': window.IntMapModules.dataCenters(IM_HOST); return true;   case 'railways': window.IntMapModules.railways(IM_HOST); return true;
-        case 'aircraftDetail': window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST); return true;
-        case 'volume3d': window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST); return true;
-        case 'statsCompare': window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST); return true;
-        case 'satellitesLive': window.IntMapModules.satellitesLive(IM_HOST); return true;
-        case 'satelliteDetail': window.IntMapModules.satelliteDetail(IM_HOST); return true;
-        case 'analysisTimeSeries': window.IntMapModules.analysisTimeSeries(IM_HOST); return true;
-        case 'analysisResearch': window.IntMapModules.analysisResearch(IM_HOST); return true;
-        case 'analysisCorrelate': window.IntMapModules.analysisCorrelate(IM_HOST); return true;
-        case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
-        case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true; case 'warLayer': window.IntMapModules.warLayer(IM_HOST); return true;   /* (#R349) */ case 'waves': window.IntMapWaves=window.IntMapModules.waves(IM_HOST); return true;   /* (#R577) */
-        case 'newsEvents': window.IntMapNewsEvents=window.IntMapModules.newsEvents(IM_HOST); return true;   /* (#R386) */ case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true; case 'volcanoIntel': window.IntMapModules.volcanoIntel(IM_HOST); return true; case 'volcanoLayers': window.IntMapModules.volcanoLayers(IM_HOST); return true;   /* (#R353) */
-        /* publishes itself at import time, like nightSky */ case 'companyData': window.IntMapCompanyData=window.IntMapModules.companyData(IM_HOST); return true; case 'companyPanel': window.IntMapCompanyPanel=window.IntMapModules.companyPanel(IM_HOST); return true; case 'companyFacilities': window.IntMapCompanyFacilities=window.IntMapModules.companyFacilities(IM_HOST); return true;   /* (#R354) */
-        default: return !!M;
-      }
+      const e = R[name]; if (!e) return !!window.IntMapModules;
+      if (e.self) return typeof window[e.publishes] !== 'undefined';
+      e.mount(IM_HOST); return true;
     }
 
     /* ⚠ (#R372) A DOWNLOAD FAILURE IS NOT A PERMANENT ANSWER, AND A PRELOAD MUST NOT DECIDE ONE — but a
@@ -223,18 +171,18 @@ export function makeLazyModules(HOST) {
     function demand(name, hinted) {
       if (P[name]) return P[name];
       const f = FAILED[name]; if (f && Date.now() - f.at < RETRY_MS && (hinted || !f.hinted)) return Promise.resolve(false); delete FAILED[name];
-      const p = Promise.all((ALSO[name] || []).map((d) => demand(d, hinted)))   /* ⚠ not `.map(demand)` — map passes the INDEX second, which would mark every dependency as a preload */
+      const p = Promise.all(ALSO(name).map((d) => demand(d, hinted)))   /* ⚠ not `.map(demand)` — map passes the INDEX second, which would mark every dependency as a preload */
         .then(() => fetchModule(name))
         .then(() => {
           /* The factory must have arrived with the file. If it did not, the file loaded but did not
              register — say so rather than throwing an undefined-is-not-a-function further down. */
-          if (!SELF_PUBLISHING[name] && !(window.IntMapModules && typeof window.IntMapModules[name] === 'function')) {
+          if (!SELF_PUBLISHING(name) && !(window.IntMapModules && typeof window.IntMapModules[name] === 'function')) {
             record(name, 'the file loaded but registered no IntMapModules.' + name + ' factory');
             return false;
           }
           let mounted = false;
           try { mounted = mount(name); } catch (e) { record(name, 'its factory threw: ' + (e && e.message)); return false; }
-          const g = PUBLISHES[name];
+          const g = PUBLISHES(name);
           if (mounted && g && typeof window[g] === 'undefined') { record(name, 'nothing was published on window.' + g); return false; }
           if (mounted) ok(name);
           return mounted;
@@ -245,7 +193,7 @@ export function makeLazyModules(HOST) {
 
     /* Was it already asked for? Lets a caller that only READS state skip the fetch — an Atlas
        "close everything" sweep should not download a simulator in order to close it. */
-    function ready(name) { return !!P[name] && typeof window[PUBLISHES[name]] !== 'undefined'; }
+    function ready(name) { return !!P[name] && typeof window[PUBLISHES(name)] !== 'undefined'; }
 
     /* The user is hovering the item / has opened the panel that leads here. Same promise as need(),
        started early; nothing waits on it. */
@@ -253,7 +201,7 @@ export function makeLazyModules(HOST) {
 
     const API = {
       need, ready, hint,
-      names: () => Object.keys(PUBLISHES), publishes: (n) => PUBLISHES[n] || '',   /* (#R320) …and WHAT each one will be called once it arrives. js/atlas-controls.js walked Object.keys(window) to tell the planner which subsystems exist, so a module not yet fetched was a subsystem IntMap did not have — eight of them. This manifest exists from boot, so the name can be offered before the code is. */
+      names: () => Object.keys(R), publishes: (n) => PUBLISHES(n),   /* (#R320) …and WHAT each one will be called once it arrives. js/atlas-controls.js walked Object.keys(window) to tell the planner which subsystems exist, so a module not yet fetched was a subsystem IntMap did not have — eight of them. This manifest exists from boot, so the name can be offered before the code is. */
       pending: () => Object.keys(P),
       /* what the boot guard would have said, for the modules it can no longer see at boot */
       check: () => window.__imLazyCheck || { loaded: [], failed: [] },
