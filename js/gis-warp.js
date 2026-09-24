@@ -80,6 +80,41 @@
  *  also let the two files disagree about the shape of a cancellation. One loop, one ctx reader, one
  *  `cancelled(done,total)` — all three from the kernel this file already depends on.
  *
+ *  ══ ⚠⚠⚠ (#R819) THE BUDGET COVERS THE OUTPUT TOO, AND A WINDOW IS HOW IT CAN ══════════════════
+ *  #R783 bounded the geometry that crosses the thread boundary and nothing else, so the OUTPUT —
+ *  W·H·bands float64, alive for the whole run — was still allocated whole before the first block was
+ *  planned. 4096² is 128 MiB per band and 512 MiB for four, beside a decoded source of the same
+ *  order: the budget was being spent on the smaller half of the residency.
+ *  So `runWarp` MEASURES what it will hold and separates two kinds of it. FIXED is what the caller
+ *  settled before the warp began — the decoded source this file caches, the measured latitude axis,
+ *  the corner rows an areal walk reuses — and it is reported, never used to shrink anything else.
+ *  CHOOSABLE is the geometry block and, when a caller offered a SINK, the output WINDOW; both cost
+ *  bytes per output ROW, so one row count sizes both and the plan spends the budget across them.
+ *  ⚠ THE BUDGET IS NOT A CAP ON WORK (CONSTITUTION.md §5). An output too large for the whole budget
+ *  with nowhere to stream it is not refused and does not shrink the blocks to one row — it is
+ *  reported (`report.memory.overBudget`, with the reason), and the road out is `opts.sink`.
+ *  ⚠ THE NUMBER ITSELF IS NOT WRITTEN HERE: js/gis-worker.js owns it (`budgetBytes()`), and this
+ *  file reads the caller's figure or that canon — see `budgetOf`.
+ *
+ *  ══ ⚠⚠⚠ (#R819) AN OUTWARD-ERRING BOX IS A PREFILTER, NOT AN AREA ═══════════════════════════════
+ *  The note above says the footprint box 「errs outward, which is the only direction a footprint may
+ *  err」. That is true of a box used to FIND candidate pixels and false of one used to WEIGH them:
+ *  under a rotation or a projection the true footprint is not a rectangle, and the box that holds it
+ *  covers ground the output pixel does not — so an `average` weighted by the box averages over
+ *  ground nobody asked about and a `sum` apportions a total across it. Nothing measured how much.
+ *  Now two things do. ① In `box` mode every areal pixel's four corners give a quadrilateral whose
+ *  area is compared with the box's, and the WORST excess over the grid is reported with the pixel
+ *  that produced it (0 everywhere for a north-up resample, by construction). ② `opts.footprint:
+ *  'exact'` with `opts.footprintTolerance` (in SOURCE PIXELS) builds the footprint as a RING —
+ *  edges subdivided until the true image of a midpoint is within the tolerance of the chord, shared
+ *  between the pixels either side so the footprints TILE — and hands it to js/gis-raster.js, which
+ *  cuts it against one source pixel at a time (`sampleCellForms`). ⚠ The default is `box` and it is
+ *  bit-for-bit the warp this file has always run; `exact` is a decision, with its cost and its
+ *  promise stated, and a promise that cannot be kept is a refusal rather than a quiet approximation.
+ *  ⚠ AND THE ROW LATITUDES ARE AN APPROXIMATION TOO — one measurement per row at the middle column.
+ *  Its error is measured against the two outer columns and reported as a bound on the WEIGHTS
+ *  (`report.footprint.latAxis`); `opts.areaTolerance` turns that measurement into a promise.
+ *
  *  ⚠ REFUSALS ARE CODES, NOT SENTENCES (docs/GIS-CORE.md §2.2) — `{ ok:false, why, detail }`, and the
  *  nine languages live at the call site. ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③), and
  *  window.* is read at CALL time, so this module loads in Node with no DOM and answers
@@ -359,9 +394,29 @@ export function makeGisWarp() {
       const kind = kindOf(method);
       if (kind !== 'point' && kind !== 'areal') return refuse('resample-method-unknown', { method: method, methods: R.sampleMethods(), reason: 'kind-not-stated' });
 
+      /* ⚠ (#R819) THE FOOTPRINT'S SHAPE IS THE CALLER'S AND IT IS CHECKED BEFORE ANYTHING IS READ,
+         so a warp that cannot keep the promise it was given costs no decode. */
+      const fp = footprintPlan(R, opts, kind, method);
+      if (!fp.ok) return fp;
+      let areaTolerance = null;
+      if (opts && opts.areaTolerance != null) {
+        if (!isNum(opts.areaTolerance) || !(opts.areaTolerance > 0)) return refuse('warp-area-tolerance-invalid', { areaTolerance: (typeof opts.areaTolerance === 'number') ? opts.areaTolerance : null });
+        areaTolerance = opts.areaTolerance;
+      }
+
       const cache = [];
+      /* ⚠ (#R819) AND WHAT THE CACHE COSTS IS MEASURED HERE, where the arrays are in hand. It is the
+         largest FIXED term in the residency `runWarp` reports — a decoded 4096² float64 band is
+         128 MiB and it is held for the whole warp — and a number nobody measured is why the budget
+         was being spent on the geometry alone. ⚠ A band that is a plain Array has no byteLength; 8
+         bytes per member is what a Float64Array of the same values would cost, which is the number
+         the reader is comparing against a budget. */
+      let sourceBytes = 0;
       for (let i = 0; i < g.bands.length; i++) {
         try { cache[i] = g.read(i); } catch (e) { return refuse('read-failed', { bandIndex: i, error: String((e && e.message) || e) }); }
+        const v = cache[i];
+        if (v && typeof v.byteLength === 'number') sourceBytes += v.byteLength;
+        else if (v && typeof v.length === 'number') sourceBytes += v.length * 8;
       }
       const proxy = {
         width: g.width, height: g.height,
@@ -380,7 +435,38 @@ export function makeGisWarp() {
            singular means. */
         affine: aff.affine, det: aff.det, inverse: makeInverse(aff.affine, aff.det),
         bandCount: g.bands.length,
+        sourceBytes: sourceBytes, footprint: fp.plan, areaTolerance: areaTolerance,
       };
+    }
+
+    /* ── (#R819) which footprint the caller asked for ─────────────────────────────────────────── */
+
+    /* ⚠ `box` IS THE DEFAULT AND IT IS NOT A GUESS — it is what every warp has done since #R749 and
+       what an affine transform makes exact. `exact` is a DECISION with a cost (a ring per output
+       pixel, refined per edge) and a promise attached (the tolerance), so it is stated or it is not
+       in play. The list is published as `footprintModes()`. */
+    const FOOTPRINT_MODES = ['box', 'exact'];
+
+    function footprintPlan(R, opts, kind, method) {
+      const mode = (opts && opts.footprint != null) ? String(opts.footprint) : 'box';
+      if (FOOTPRINT_MODES.indexOf(mode) < 0) return refuse('warp-footprint-unknown', { footprint: mode, modes: FOOTPRINT_MODES.slice() });
+      if (mode === 'box') return { ok: true, plan: { mode: 'box', tolerance: null } };
+      /* ⚠ A POINT METHOD HAS NO FOOTPRINT AT ALL (js/gis-raster.js `kind`), so asking for an exact
+         one is a call that cannot be answered as asked — refused rather than silently ignored, which
+         would leave a reader believing they had bought an accuracy nothing delivered. */
+      if (kind !== 'areal') return refuse('warp-footprint-not-areal', { footprint: mode, method: method, kind: kind });
+      /* ⚠ ASKED OF THE KERNEL, NOT ASSUMED OF IT. Whether a ring can be weighted at all is
+         js/gis-raster.js's statement (`sampleCellForms`), and a build whose raster kernel predates
+         it says so by name instead of handing over a cell it cannot read. */
+      const forms = (R && typeof R.sampleCellForms === 'function') ? R.sampleCellForms().map((f) => f.id) : [];
+      if (forms.indexOf('ring') < 0) return refuse('warp-footprint-unsupported', { footprint: mode, needs: 'ring', forms: forms });
+      const tol = opts ? opts.footprintTolerance : null;
+      /* ⚠ NO DEFAULT TOLERANCE, for the reason `method` has no default: how close is close enough is
+         a property of the question being asked, and a number chosen here would be an accuracy nobody
+         stated attached to an answer somebody will quote. */
+      if (tol == null) return refuse('warp-footprint-tolerance-not-stated', { footprint: mode, unit: 'source-pixels' });
+      if (!isNum(tol) || !(tol > 0)) return refuse('warp-footprint-tolerance-invalid', { footprintTolerance: (typeof tol === 'number') ? tol : null });
+      return { ok: true, plan: { mode: 'exact', tolerance: tol } };
     }
 
     /* ── the coordinate doors ─────────────────────────────────────────────────────────────────── */
@@ -613,6 +699,69 @@ export function makeGisWarp() {
       return { worker: w };
     }
 
+    /* ══ (#R819) THE THIRD DOOR: WHERE THE OUTPUT GOES ═══════════════════════════════════════════
+       A warp's output is the one thing that grows with W·H·bands and lives for the whole run, and
+       until this round it was ALWAYS an array of Float64Array this file allocated before it planned
+       anything. A caller who could stream the result somewhere had no way to say so, so a 4096²
+       four-band warp staked 512 MiB whatever the budget said.
+       THE CONTRACT, deliberately small enough that a receiver can be anything:
+           begin(decl) → void | {ok:false,…}        — optional. decl: {attempt, width, height,
+                                                      rowsPerWindow, bands, crs, grid}.
+                                                      ⚠ attempt > 1 MEANS START OVER: a fallback
+                                                      re-walks every pixel, so anything taken for an
+                                                      earlier attempt must be discarded.
+           write(window) → void | {ok:false,…}      — REQUIRED. window: {row0, rows, width, bands:
+                                                      [Float64Array(rows·width), …]}.
+                                                      ⚠ THE ARRAYS ARE THE SINK'S: they are allocated
+                                                      per window and never reused, so an asynchronous
+                                                      receiver may hold one.
+           end(summary) → void | {ok:false,…} | {ok:true, value}  — optional; `value` reaches the
+                                                      caller as report.sink.value.
+       Every one of them may be async. ⚠ A REFUSAL FROM ANY OF THEM ENDS THE WARP (`warp-sink-failed`)
+       rather than being logged: a window that did not land is a hole in the answer, and a report
+       counting pixels nobody kept is the ハリボテ CONSTITUTION.md forbids.
+       ⚠ PERSISTENCE IS NOT IMPLEMENTED HERE. js/gis-project.js owns what a saved grid IS; this is the
+       door it can arrive through, and the default remains an output held whole in memory. */
+    function readSink(opts) {
+      const s = opts && opts.sink;
+      if (s == null) return null;
+      if (typeof s !== 'object') return { bad: refuse('warp-sink-invalid', { field: 'sink' }) };
+      if (typeof s.write !== 'function') return { bad: refuse('warp-sink-invalid', { missing: 'write' }) };
+      for (const k of ['begin', 'end']) {
+        if (s[k] != null && typeof s[k] !== 'function') return { bad: refuse('warp-sink-invalid', { field: k }) };
+      }
+      return { sink: s };
+    }
+
+    /* ⚠⚠⚠ (#R819) THE BUDGET HAS ONE CANON AND IT IS NOT IN THIS FILE. js/gis-worker.js's
+       `BLOCK_BUDGET_BYTES` is the number, with the observation that produced it, published as
+       `budgetBytes()` precisely so no second caller writes 64 MiB down (.agents/rules/
+       no-ad-hoc-hardcoding.md §4-3). So this reads the caller's own figure first and the door's
+       canon second — and when there is neither, there is NO BUDGET, which is stated as null rather
+       than invented. A sink cannot be sized without one, and that is the one case refused by name:
+       every other path behaves exactly as it did before this round.
+       ⚠ It is NOT read off `window.IntMapGisWorker`: this module never reaches for a runner the
+       caller did not hand it (see `workerDoor`), and a budget taken from a thread pool nobody
+       offered would be a decision made for every caller at once. */
+    function budgetOf(opts) {
+      const b = opts && opts.budgetBytes;
+      if (b != null) {
+        if (!isNum(b) || !(b > 0)) return refuse('warp-budget-invalid', { budgetBytes: (typeof b === 'number') ? b : null });
+        return { ok: true, bytes: b, from: 'stated' };
+      }
+      /* ⚠ THE DOOR IS ASKED EVEN WHEN IT CANNOT RUN ANYTHING. `budgetBytes()` is a DECLARATION about
+         how much this machine may hold, not a capability of the pool — a worker that reports itself
+         unavailable still knows the number, and refusing to read it would make 「別スレッドは使え
+         ない」 also mean 「予算が無い」, which is two facts under one silence. */
+      const w = opts && opts.worker;
+      if (w && typeof w.budgetBytes === 'function') {
+        let v = null;
+        try { v = w.budgetBytes(); } catch (_) { v = null; }
+        if (isNum(v) && v > 0) return { ok: true, bytes: v, from: 'worker' };
+      }
+      return { ok: true, bytes: null, from: null };
+    }
+
     /* Registered and provided ONCE PER DOOR, and ASKED rather than remembered: js/gis-worker.js
        counts a registry change as a revision and retires idle workers built from an older one, so
        providing on every call would spawn a fresh thread for every block. The registry is the record
@@ -657,16 +806,94 @@ export function makeGisWarp() {
        against an elapsed-time one), and the reader could not see that from either file. */
     async function runWarp(S, P, out, fromCode) {
       const W = out.width, H = out.height, N = W * H;
-      const bands = [];
-      for (let i = 0; i < S.bandCount; i++) {
-        /* ⚠ NO CEILING IS INVENTED — the allocation is the limit, and it fails with the number of
-           cells in hand. The same rule js/gis-raster.js `fromSampler` states. */
-        try { bands.push(new Float64Array(N)); } catch (e) { return refuse('raster-too-large', { cells: N, bands: S.bandCount }); }
-      }
       const ctx = S.R.useCtx(S.opts);
       const sw = S.raster.width, sh = S.raster.height;
       const opt = { method: S.method };
       const areal = (S.kind === 'areal');
+      const FP = S.footprint;
+      const exact = areal && FP.mode === 'exact';
+
+      /* ⚠ (#R819) THE DOOR IS READ HERE, BEFORE ANYTHING IS ALLOCATED, because it carries the one
+         number this file may not write down: the memory budget (see `budgetOf`). */
+      const door = workerDoor(S.opts);
+      const bud = budgetOf(S.opts);
+      if (!bud.ok) return bud;
+
+      /* ══ (#R819) WHAT THIS WARP WILL HOLD, AND WHICH PART OF IT IS STILL A CHOICE ═════════════
+         #R783 bounded the geometry a worker sends back and nothing else, so the OUTPUT — the one
+         thing that grows with W·H·bands and lives for the whole run — was allocated whole before the
+         first block was planned: 4096² float64 is 128 MiB per band, 512 MiB for four, beside a
+         decoded source of the same order. The budget was being spent on the smaller half.
+         THE ACCOUNTING IS THEREFORE OVER THE SUM, and it separates two kinds of residency:
+           · FIXED — what the caller settled before the warp began: the decoded source bands this
+             file caches (prepareSource), the measured latitude axis, the corner rows an areal walk
+             reuses. It is MEASURED and REPORTED, never used to shrink anything else.
+           · CHOOSABLE — the geometry block a worker computes, and (when a sink was offered) the
+             OUTPUT WINDOW. Both cost a number of bytes PER OUTPUT ROW, so one row count sizes both
+             and the budget is spent across them together rather than by the geometry alone.
+         ⚠ AND THE BUDGET IS NOT A CAP ON WORK (CONSTITUTION.md §5). A resident output larger than
+         the whole budget is not refused and does not shrink the blocks to one row each — it is
+         reported as `memory.overBudget` with the reason, and the road out is a sink, which is the
+         only thing that can make an output's residency a choice at all. */
+      const sinkDoor = readSink(S.opts);
+      if (sinkDoor && sinkDoor.bad) return sinkDoor.bad;
+      const sink = sinkDoor ? sinkDoor.sink : null;
+      if (sink && bud.bytes == null) return refuse('warp-budget-not-stated', { reason: 'sink-offered', from: ['opts.budgetBytes', 'opts.worker.budgetBytes()'] });
+
+      const outRowBytes = W * S.bandCount * 8;
+      const geomRowBytes = W * (areal ? 6 : 2) * 8;
+      /* two corner rows — this row's top edge and the next one's — held by every areal walk that
+         computes its own geometry, and by the blocked one too (the worker holds its own pair). */
+      const cornerRowBytes = areal ? (W + 1) * 2 * 8 * 2 : 0;
+      const latAxisBytes = areal ? (sh + 1) * 8 : 0;
+      const fixedBytes = S.sourceBytes + latAxisBytes + cornerRowBytes;
+      const residentOutBytes = sink ? 0 : N * S.bandCount * 8;
+      /* The rows a window may hold: what is left of the budget after the fixed residency, divided by
+         what one row of window costs. ⚠ ONE ROW IS THE FLOOR and it is not a silent overrun — a
+         window smaller than a row cannot exist, and `memory.overBudget` says the budget was not met
+         rather than the warp refusing an output the caller asked for. */
+      let windowRows = 0;
+      if (sink) {
+        const spare = bud.bytes - fixedBytes;
+        windowRows = Math.max(1, Math.floor(spare / outRowBytes));
+        if (windowRows > H) windowRows = H;
+      }
+
+      /* ── the output, held as one grid or as one window at a time ─────────────────────────────
+         ⚠ A WINDOW IS ALLOCATED FRESH AND HANDED OVER, NEVER REUSED. A sink that writes to storage
+         is asynchronous, and a buffer this file reused under it would be rewritten while it was
+         being written out — the ownership contract js/gis-worker.js states for a transfer, for the
+         same reason and in the same direction. */
+      let bands = null, winRow0 = 0, winRows = 0, winOff = 0, windows = 0, attempt = 0;
+      const openWindow = (row0, rows) => {
+        const cells = rows * W;
+        const arr = [];
+        for (let i = 0; i < S.bandCount; i++) {
+          /* ⚠ NO CEILING IS INVENTED — the allocation is the limit, and it fails with the number of
+             cells in hand. The same rule js/gis-raster.js `fromSampler` states. */
+          try { arr.push(new Float64Array(cells)); } catch (e) { return refuse('raster-too-large', { cells: cells, bands: S.bandCount }); }
+        }
+        bands = arr; winRow0 = row0; winRows = rows; winOff = row0 * W;
+        return null;
+      };
+      const flushWindow = async () => {
+        if (!sink || !bands) return undefined;
+        const w = { row0: winRow0, rows: winRows, width: W, bands: bands };
+        bands = null;
+        windows++;
+        let r;
+        try { r = await sink.write(w); } catch (e) { return refuse('warp-sink-failed', { at: 'write', row0: w.row0, error: String((e && e.message) || e) }); }
+        /* ⚠ A SINK THAT SAYS NOTHING IS TAKEN AT ITS WORD, and one that refuses ENDS THE WARP: a
+           window that did not land is a hole in the answer, and carrying on would produce a report
+           whose `filled` counts pixels nobody kept. */
+        if (r && r.ok === false) return refuse('warp-sink-failed', { at: 'write', row0: w.row0, why: r.why == null ? null : r.why, detail: r.detail == null ? null : r.detail });
+        return undefined;
+      };
+
+      /* ⚠ THE WHOLE OUTPUT IS ALLOCATED HERE, ONCE, WHEN THERE IS NOWHERE TO STREAM IT — before the
+         door is tried, because both paths write into it and a run that failed to allocate has
+         nothing to say about threads. It is the same array a re-walk overwrites (see `reset`). */
+      if (!sink) { const whole = openWindow(0, H); if (whole) return whole; }
 
       /* ⚠ (#R783) THE COUNTERS AND THE ROW CURSOR ARE RESETTABLE, BECAUSE A PASS CAN BE RE-RUN. A
          door that fails at the third block has already written rows into `bands`, and the answer to
@@ -678,6 +905,11 @@ export function makeGisWarp() {
       /* The block of geometry a worker computed, or null when this thread is computing it per pixel
          (which is the cheaper arrangement HERE: nothing is materialised at all). */
       let geom = null, geomBase = 0, offThread = false, walked = 0;
+      /* (#R819) what the run can say afterwards about the two approximations under an areal warp:
+         the one latitude a row was represented by, and the shape a footprint was taken to have. */
+      let latAxisNote = null;
+      let boxExcess = 0, boxExcessAt = null, boxExcessSeen = false;
+      let segMax = 0, segTotal = 0, devMax = 0, depthLimited = 0, edgePointsPeak = 0;
 
       if (areal) {
         /* ⚠⚠⚠ AN AREAL AGGREGATE WEIGHS BY GROUND AREA, AND THE PIXEL-SPACE PROXY HAS NO LATITUDE.
@@ -701,6 +933,52 @@ export function makeGisWarp() {
           edges[r] = ll[1];
         }
         S.proxy.grid.latAxis = { edges: edges };
+
+        /* ⚠⚠⚠ (#R819) AND 「代表させた」 IS A CLAIM, SO IT IS MEASURED. One latitude per row is exact
+           for a north-up degree grid and an APPROXIMATION for every other one — a row of a UTM grid
+           bows, and its ends stand at a different latitude from its middle. Nothing said how much,
+           so nothing could tell a reader whether the weights under their `average` were good to a
+           part in ten thousand or to a part in ten.
+           WHAT IS MEASURED: the same row edges at the grid's two OUTER columns, and the weight a row
+           would have had there against the weight it was given. The weight is ∝ sin φ_n − sin φ_s
+           (js/gis-raster.js `latGround`), so the bound is the largest relative difference of that
+           quantity over the rows — an error in the WEIGHTS, which is what an areal aggregate is
+           sensitive to, rather than a difference in degrees that means nothing on its own.
+           Cost: 2·(sh+1) transforms, against the W·H this warp already makes.
+           ⚠ IT IS A BOUND OVER THE GRID, NOT THE ERROR AT A PIXEL: a footprint that covers rows near
+           the middle sees less than this. Stating the worst is the honest direction. */
+        let spreadDeg = 0, weightErr = 0, worstRow = null, measured = true;
+        const sinOf = (a, b) => Math.abs(Math.sin(a * Math.PI / 180) - Math.sin(b * Math.PI / 180));
+        for (let r = 0; r < sh && measured; r++) {
+          const mid = sinOf(edges[r], edges[r + 1]);
+          for (const px of [0, sw]) {
+            const n = P.back.apply(null, fwd(S.affine, px, r));
+            const s = P.back.apply(null, fwd(S.affine, px, r + 1));
+            /* A column whose edge does not transform is not a failure of the warp — the middle
+               column answered, and the walk below uses that. It is the MEASUREMENT that cannot be
+               made, and 「測れなかった」 is reported as null rather than as zero error. */
+            if (!n || !s) { measured = false; break; }
+            const d = Math.abs(n[1] - edges[r]);
+            if (d > spreadDeg) spreadDeg = d;
+            const e = sinOf(n[1], s[1]);
+            const rel = mid > 0 ? Math.abs(e - mid) / mid : (e > 0 ? Infinity : 0);
+            if (rel > weightErr) { weightErr = rel; worstRow = r; }
+          }
+        }
+        latAxisNote = measured
+          ? { at: 'middle-column', columns: [0, sw], maxSpreadDeg: spreadDeg, maxWeightError: weightErr, worstRow: worstRow }
+          : { at: 'middle-column', columns: [0, sw], maxSpreadDeg: null, maxWeightError: null, worstRow: null, reason: 'edge-column-did-not-transform' };
+        /* ⚠ A TOLERANCE IS A PROMISE SOMEBODY ASKED FOR, so it is checked against the measurement
+           and refused by name when it cannot be met — the road js/gis-crs.js takes for the same
+           question (`crs-accuracy-outside-tolerance`): state a tolerance the measurement meets, or
+           resample onto a grid whose rows do not bow. Nothing is checked when nothing was promised,
+           which is why a warp that states no tolerance is the warp it was before this round. */
+        if (S.areaTolerance != null) {
+          if (!measured) return refuse('warp-accuracy-unmeasured', { of: 'latAxis', reason: 'edge-column-did-not-transform' });
+          if (weightErr > S.areaTolerance) {
+            return refuse('warp-accuracy-outside-tolerance', { of: 'latAxis', tolerance: S.areaTolerance, measured: weightErr, row: worstRow, spreadDeg: spreadDeg });
+          }
+        }
       }
 
       /* THE FOOTPRINT OF AN OUTPUT PIXEL, in source pixel coordinates: its four corners taken back
@@ -711,18 +989,98 @@ export function makeGisWarp() {
          drops observations that were asked for.
          ⚠ A row of corners is computed ONCE and becomes the next row's top edge, so the whole warp
          costs (W+1)·(H+1) extra transforms rather than 4·W·H. */
+      const toSrc = (lng, lat) => {
+        const xy = P.wgs84 ? [lng, lat] : P.forward(lng, lat);
+        if (!xy) return null;
+        return S.inverse(xy[0], xy[1]);
+      };
       const cornerRow = (r) => {
         const lat = out.north - out.pixelLat * r;
         const arr = new Float64Array((W + 1) * 2);
         for (let c = 0; c <= W; c++) {
           const lng = out.west + out.pixelLng * c;
-          const xy = P.wgs84 ? [lng, lat] : P.forward(lng, lat);
-          if (!xy) { arr[c * 2] = NaN; arr[c * 2 + 1] = NaN; continue; }
-          const pp = S.inverse(xy[0], xy[1]);
+          const pp = toSrc(lng, lat);
+          if (!pp) { arr[c * 2] = NaN; arr[c * 2 + 1] = NaN; continue; }
           arr[c * 2] = pp[0]; arr[c * 2 + 1] = pp[1];
         }
         return arr;
       };
+
+      /* ══ (#R819) THE FOOTPRINT AS A SHAPE, WHEN THE CALLER ASKED FOR ONE ══════════════════════
+         The box above is built from FOUR corners, and four corners describe a projected pixel's
+         outline only where the transform is affine. Two things follow, and they are separate:
+           ① the outline between two corners is a CURVE, so an edge is subdivided until the true
+              image of its midpoint is within `footprintTolerance` SOURCE PIXELS of the chord —
+              measured, not assumed, and the largest deviation seen is reported;
+           ② the outline is not a rectangle, so it is handed to js/gis-raster.js AS A RING
+              (`sampleCellForms()`), which cuts it against one source pixel at a time. The box stays
+              for what it is good at: it errs OUTWARD, which is what a prefilter must do, and for an
+              affine transform it IS the footprint and costs an order less.
+         ⚠ AN EDGE IS SUBDIVIDED ONCE AND USED BY BOTH PIXELS THAT SHARE IT. Two neighbours that
+         refined the same edge independently would agree to within the tolerance and no further —
+         which is a gap or an overlap between their footprints, and for `sum` that is a total which
+         is not conserved. Sharing makes the footprints TILE, exactly, whatever the tolerance. */
+
+      /* Each level halves the chord, so the deviation falls by ~4 and the points double: 8 levels
+         is up to 255 intermediate points on one edge, i.e. an edge described by 256 segments and a
+         deviation ~65,000× smaller than one segment's. OBSERVATION: the transforms to build such a
+         ring already cost more than the sampling it feeds, so a tolerance that is not met by then is
+         being asked of the wrong grid. ⚠ IT IS NOT A SILENT CAP — every edge that reaches it is
+         COUNTED (`footprint.depthLimited`) and the worst deviation is reported beside the tolerance
+         that was asked for, so a reader can see that the promise was not kept. */
+      const MAX_REFINE_DEPTH = 8;
+
+      /* The points strictly between a and b, in order, or null when a position on the edge would
+         not transform — 「この footprint は分からない」, which is not 「この footprint は小さい」. */
+      const refineEdge = (a, pa, b, pb, depth, into) => {
+        const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        const pm = toSrc(m[0], m[1]);
+        if (!pm) return false;
+        const dev = Math.hypot(pm[0] - (pa[0] + pb[0]) / 2, pm[1] - (pa[1] + pb[1]) / 2);
+        if (dev > devMax) devMax = dev;
+        if (dev <= S.footprint.tolerance) return true;
+        if (depth >= MAX_REFINE_DEPTH) { depthLimited++; into.push([pm[0], -pm[1]]); return true; }
+        if (!refineEdge(a, pa, m, pm, depth + 1, into)) return false;
+        into.push([pm[0], -pm[1]]);
+        return refineEdge(m, pm, b, pb, depth + 1, into);
+      };
+
+      /* ⚠ PROXY COORDINATES (header): 「lng」 is the fractional column and 「lat」 is the NEGATED
+         fractional row, which is why every point pushed above and below carries −py. */
+      const edgeNum = (v) => typeof v === 'number' && isFinite(v);
+      const countPoints = (lists) => { let n = 0; for (const l of lists) n += l.length; return n; };
+
+      /* The intermediate points of the W horizontal edges along output row boundary r. */
+      const hEdgeRow = (r, corners) => {
+        const lat = out.north - out.pixelLat * r;
+        const rows = [];
+        for (let c = 0; c < W; c++) {
+          const into = [];
+          const pa = [corners[c * 2], corners[c * 2 + 1]], pb = [corners[c * 2 + 2], corners[c * 2 + 3]];
+          if (edgeNum(pa[0]) && edgeNum(pb[0])) {
+            if (!refineEdge([out.west + out.pixelLng * c, lat], pa, [out.west + out.pixelLng * (c + 1), lat], pb, 1, into)) into.push(null);
+          }
+          rows.push(into);
+        }
+        return rows;
+      };
+      /* …and of the W+1 vertical edges down output row r. */
+      const vEdgeRow = (r, top, bot) => {
+        const latT = out.north - out.pixelLat * r, latB = out.north - out.pixelLat * (r + 1);
+        const cols = [];
+        for (let c = 0; c <= W; c++) {
+          const into = [];
+          const pa = [top[c * 2], top[c * 2 + 1]], pb = [bot[c * 2], bot[c * 2 + 1]];
+          if (edgeNum(pa[0]) && edgeNum(pb[0])) {
+            const lng = out.west + out.pixelLng * c;
+            if (!refineEdge([lng, latT], pa, [lng, latB], pb, 1, into)) into.push(null);
+          }
+          cols.push(into);
+        }
+        return cols;
+      };
+      let hTop = null, hBot = null, vCur = null;
+
       const reset = (off) => {
         offThread = !!off;
         perBand = [];
@@ -730,10 +1088,14 @@ export function makeGisWarp() {
         clipped = 0; failed = 0; walked = 0;
         curRow = -1; lat = 0; base = 0;
         geom = null; geomBase = 0;
+        boxExcess = 0; boxExcessAt = null; boxExcessSeen = false;
+        segMax = 0; segTotal = 0; devMax = 0; depthLimited = 0; edgePointsPeak = 0;
         /* The first row's top edge, for the walk that computes its own corners. A blocked run gets
            its corner rows from the worker, so nothing is computed here for it. */
         topCorners = (areal && !offThread) ? cornerRow(0) : null;
         botCorners = null;
+        hTop = (exact && topCorners) ? hEdgeRow(0, topCorners) : null;
+        hBot = null; vCur = null;
       };
 
       /* ⚠ (#R783) THE VALUE IS ASKED IN ONE PLACE, WHICHEVER THREAD FOUND THE POSITION. `step`
@@ -742,9 +1104,14 @@ export function makeGisWarp() {
          two answers to 「この画素は何か」: the bounds test, `outside`, `partial`, `incomplete` and
          the void write are all decisions, and a second copy of them is how the two threads would
          come to disagree about the same grid (.agents/rules/no-ad-hoc-hardcoding.md §2-3). */
-      const voidAt = (at) => { for (let i = 0; i < S.bandCount; i++) bands[i][at] = NaN; };
+      /* ⚠ (#R819) THE OUTPUT INDEX IS THE WHOLE GRID'S AND THE ARRAY IS THE WINDOW'S. `winOff` is 0
+         for a run that holds the output whole, so a resident warp writes exactly where it did; a
+         windowed one subtracts the window's first pixel and nothing else in the walk changes —
+         which is what keeps the two from becoming two walks. */
+      const voidAt = (at) => { const k = at - winOff; for (let i = 0; i < S.bandCount; i++) bands[i][k] = NaN; };
       const valueAt = (px, py, at) => {
         if (!(px >= 0 && px < sw && py >= 0 && py < sh)) { clipped++; voidAt(at); return; }
+        const k = at - winOff;
         for (let i = 0; i < S.bandCount; i++) {
           /* The pixel-space proxy: column as 「lng」, negated row as 「lat」 (header). */
           const s = S.R.sample(S.proxy, i, px, -py, opt);
@@ -753,7 +1120,7 @@ export function makeGisWarp() {
                raster kernel (a short band, a read that threw) is the caller's answer, not a NaN
                pixel — a warp that quietly produced a grid of voids from an unreadable band would
                be the ハリボテ CONSTITUTION.md forbids. */
-            if (s.why === 'outside') { clipped++; bands[i][at] = NaN; continue; }
+            if (s.why === 'outside') { clipped++; bands[i][k] = NaN; continue; }
             return s;
           }
           if (s.partial) perBand[i].partial++;
@@ -764,8 +1131,8 @@ export function makeGisWarp() {
              over. Writing both into one counter would tell a reader that 「補間が汚れた」 where
              what happened is 「観測が足りない」. */
           if (s.value != null && s.coverage != null && s.coverage < 1) perBand[i].incomplete++;
-          if (s.value == null) { bands[i][at] = NaN; perBand[i].missing++; }
-          else { bands[i][at] = s.value; perBand[i].filled++; }
+          if (s.value == null) { bands[i][k] = NaN; perBand[i].missing++; }
+          else { bands[i][k] = s.value; perBand[i].filled++; }
         }
       };
 
@@ -785,11 +1152,21 @@ export function makeGisWarp() {
           /* the previous row's bottom edge IS this row's top edge — the saving the corner row exists
              for, kept exactly as the nested loop had it. ⚠ A BLOCKED RUN HAS NO CORNER ROWS HERE:
              the worker computed the boxes themselves, and it reused the same edge the same way. */
-          if (curRow >= 0 && areal && !geom) topCorners = botCorners;
+          if (curRow >= 0 && areal && !geom) { topCorners = botCorners; if (exact) hTop = hBot; }
           curRow = row;
           lat = out.north - out.pixelLat * (row + 0.5);
           base = row * W;
           if (areal && !geom) botCorners = cornerRow(row + 1);
+          if (exact) {
+            /* ⚠ THE SAME TWO EDGE SETS THE NEIGHBOURING PIXELS WILL USE: the bottom edges of this
+               row become the top edges of the next (as the corners do), and the vertical edges are
+               shared by the two pixels either side of them. That sharing is what makes the
+               footprints tile. */
+            hBot = hEdgeRow(row + 1, botCorners);
+            vCur = vEdgeRow(row, topCorners, botCorners);
+            const held = countPoints(hTop) + countPoints(hBot) + countPoints(vCur);
+            if (held > edgePointsPeak) edgePointsPeak = held;
+          }
         }
         const col = k % W;
         /* ⚠ (#R783) THE OTHER THREAD FOUND THIS PIXEL'S POSITION, AND WITH THE SAME ARITHMETIC: the
@@ -827,7 +1204,46 @@ export function makeGisWarp() {
             /* Proxy coordinates: 「lng」 is the fractional column, 「lat」 is the NEGATED fractional
                row (header), so the box's north/south are the negated minimum/maximum row. ⚠ ONE
                IMPLEMENTATION OF THAT BOX (`boxOf`), because the worker computes the same one. */
-            opt.cell = boxOf(ax, ay, bx, by, cx2, cy2, dx, dy);
+            const bx4 = boxOf(ax, ay, bx, by, cx2, cy2, dx, dy);
+            if (exact) {
+              /* ⚠ THE RING IS WALKED ONCE ROUND: top-left → along the top → down the right → back
+                 along the bottom → up the left. Every intermediate list is used in the direction the
+                 walk is going, which is why the bottom and left ones are read backwards. A `null` in
+                 a list is an edge position that would not transform, and it makes the whole
+                 footprint unknown for exactly the reason a NaN corner does. */
+              const hT = hTop[col], hB = hBot[col], vL = vCur[col], vR = vCur[col + 1];
+              if (hT.indexOf(null) >= 0 || hB.indexOf(null) >= 0 || vL.indexOf(null) >= 0 || vR.indexOf(null) >= 0) {
+                failed++; voidAt(base + col); return;
+              }
+              const ring = [[ax, -ay]];
+              for (let i = 0; i < hT.length; i++) ring.push(hT[i]);
+              ring.push([bx, -by]);
+              for (let i = 0; i < vR.length; i++) ring.push(vR[i]);
+              ring.push([dx, -dy]);
+              for (let i = hB.length - 1; i >= 0; i--) ring.push(hB[i]);
+              ring.push([cx2, -cy2]);
+              for (let i = vL.length - 1; i >= 0; i--) ring.push(vL[i]);
+              segTotal += ring.length;
+              if (ring.length > segMax) segMax = ring.length;
+              opt.cell = { ring: ring };
+            } else {
+              opt.cell = bx4;
+              /* ⚠⚠⚠ (#R819) AND HOW MUCH MORE GROUND THAT BOX HOLDS THAN THE FOOTPRINT DOES IS
+                 MEASURED HERE, on the four corners that are already in hand. The quadrilateral's own
+                 area (the shoelace of the four corners, which is the footprint to first order) against
+                 the box's: the ratio is the ground an areal aggregate was weighted over and did not
+                 cover. For a north-up resample it is 0 at every pixel and the report says so; for a
+                 rotated or projected one it is the number that says whether the fast path can carry
+                 the question being asked. ⚠ It is the WORST over the grid, with the pixel that did
+                 it, because a mean would hide exactly the pixels a reader is asking about. */
+              const qa = Math.abs((ax * by - bx * ay) + (bx * dy - dx * by) + (dx * cy2 - cx2 * dy) + (cx2 * ay - ax * cy2)) / 2;
+              const ba = (bx4[2] - bx4[0]) * (bx4[3] - bx4[1]);
+              if (qa > 0 && ba > 0) {
+                boxExcessSeen = true;
+                const ex = ba / qa - 1;
+                if (ex > boxExcess) { boxExcess = ex; boxExcessAt = { row: row, col: col }; }
+              }
+            }
           }
           const xy = P.wgs84 ? [lng, lat] : P.forward(lng, lat);
           if (!xy) {
@@ -863,12 +1279,46 @@ export function makeGisWarp() {
         });
       };
 
-      /* THIS THREAD, COMPLETELY — the walk this file has had since #R756, unchanged. ⚠ NOTHING IS
-         BLOCKED HERE ON PURPOSE: the geometry is computed per pixel and never materialised, so the
-         only thing resident is the output itself and there is no residency for a budget to govern.
-         A block structure here would be a split that saves nothing and changes the order in which
-         floats are produced. */
-      const here = () => { reset(false); return walk(0, N); };
+      /* ⚠ (#R819) THE SINK IS TOLD THE WARP IS STARTING, AND TOLD AGAIN WHEN IT STARTS OVER. A door
+         that fails at the third block makes this file re-walk every output pixel (see `reset`), and
+         a sink that had already taken two windows would otherwise be holding two attempts' worth of
+         one grid. `attempt` counts them and a sink that cannot discard what it took answers a
+         refusal, which ends the warp rather than producing a grid nobody can read back. */
+      const beginSink = async () => {
+        if (!sink || typeof sink.begin !== 'function') { attempt++; windows = 0; return undefined; }
+        attempt++; windows = 0;
+        let r;
+        try {
+          r = await sink.begin({
+            attempt: attempt, width: W, height: H, rowsPerWindow: windowRows,
+            bands: S.bandCount, crs: WGS84, grid: { west: out.west, north: out.north, pixelLng: out.pixelLng, pixelLat: out.pixelLat },
+          });
+        } catch (e) { return refuse('warp-sink-failed', { at: 'begin', attempt: attempt, error: String((e && e.message) || e) }); }
+        if (r && r.ok === false) return refuse('warp-sink-failed', { at: 'begin', attempt: attempt, why: r.why == null ? null : r.why, detail: r.detail == null ? null : r.detail });
+        return undefined;
+      };
+
+      /* THIS THREAD, COMPLETELY — the walk this file has had since #R756. ⚠ THE GEOMETRY IS COMPUTED
+         PER PIXEL AND NEVER MATERIALISED, so the only thing resident is the output — which is why
+         this path is blocked ONLY when there is a sink to hand a window to. Without one there is
+         nothing a split could release, and it would change the order in which floats are produced
+         for no gain. */
+      const here = async () => {
+        reset(false);
+        const b = await beginSink();
+        if (b !== undefined) return b;
+        if (!sink) return walk(0, N);
+        for (let r0 = 0; r0 < H; r0 += windowRows) {
+          const rows = Math.min(windowRows, H - r0);
+          const bad = openWindow(r0, rows);
+          if (bad) return bad;
+          const v = await walk(r0 * W, rows * W);
+          if (v !== undefined) return v;
+          const f = await flushWindow();
+          if (f !== undefined) return f;
+        }
+        return undefined;
+      };
 
       /* ── the other thread, in blocks that fit the budget (#R783) ────────────────────────────
          Returns { ended } — the walk's answer, which is `undefined` when it finished — or
@@ -877,14 +1327,27 @@ export function makeGisWarp() {
         /* ⚠ A PROJECTED SOURCE NEEDS proj4 PER PIXEL AND THE WORKER HAS NONE (see the section above
            the job). This is a capability of the environment, not a failure of the door. */
         if (!P.wgs84) return { retry: { used: false, reason: 'crs-not-in-worker', detail: { crs: fromCode } } };
+        /* ⚠ (#R819) AN EXACT FOOTPRINT IS A RING, AND THE JOB ANSWERS WITH BOXES. Shipping a ring
+           would mean shipping the refinement — which calls the projection per edge position, which is
+           the same proj4 the note above says is not there — and a job that returned boxes for a run
+           that asked for rings would be the silent wrong answer this layer refuses. So it is stated
+           and the warp runs here, completely, exactly as a projected source does. */
+        if (exact) return { retry: { used: false, reason: 'exact-footprint-not-in-worker', detail: { footprint: FP.mode } } };
         const reg = ensureGeomJob(w);
         if (!reg.ok) return { retry: { used: false, reason: reg.reason, detail: reg.detail } };
         /* ⚠ THE UNIT IS AN OUTPUT ROW AND ITS COST IS WHAT COMES BACK FOR IT: two float64 for every
            pixel's centre, four more for an areal footprint. That is the biggest thing in flight —
-           the payload going the other way is nine numbers — so it is what the budget is spent on. */
-        const bytesPerRow = W * (areal ? 6 : 2) * 8;
-        const plan = w.planBlocks({ units: H, bytesPerUnit: bytesPerRow, budgetBytes: (S.opts && S.opts.budgetBytes != null) ? S.opts.budgetBytes : null, inFlight: 1 });
+           the payload going the other way is nine numbers — so it is what the budget is spent on.
+           ⚠⚠⚠ (#R819) AND WHEN A SINK WAS OFFERED, AN OUTPUT ROW IS HELD FOR THE SAME BLOCK: the
+           window is written when the block is done, so the two are resident together and ONE row
+           count sizes both. That is the whole of 「予算を合計に対して効かせる」 here — a plan made for
+           the geometry alone was a budget spent on the smaller half. A run with no sink holds the
+           output whole whatever this says, and `memory.overBudget` is where that is stated. */
+        const bytesPerRow = geomRowBytes + (sink ? outRowBytes : 0);
+        const plan = w.planBlocks({ units: H, bytesPerUnit: bytesPerRow, budgetBytes: bud.bytes, inFlight: 1 });
         if (!plan.ok) return { retry: { used: false, reason: plan.why, detail: plan.detail } };
+        /* The window and the block are the same rows, so nothing has to reconcile two row counts. */
+        if (sink && plan.plan && plan.plan.unitsPerBlock) windowRows = plan.plan.unitsPerBlock;
 
         /* ⚠ A RUN THAT COULD NOT BE STOPPED IS NOT STARTED OFF-THREAD. js/gis-raster.js says the
            same sentence about the same shape: a reader who handed over a ctx handed over a stop
@@ -901,6 +1364,8 @@ export function makeGisWarp() {
         }
 
         reset(true);
+        const b = await beginSink();
+        if (b !== undefined) return { ended: b };
         let ended;
         const res = await w.runBlocks(WARP_GEOM_JOB, plan, {
           signal: stop ? stop.signal : null,
@@ -918,6 +1383,14 @@ export function makeGisWarp() {
             const ok = value && value.centres && value.centres.length === cells * 2
               && (!areal || (value.boxes && value.boxes.length === cells * 4));
             if (!ok) return { ok: false, why: 'worker-answer-malformed', detail: { row0: from, rows: count } };
+            /* ⚠ (#R819) THE WINDOW IS THE BLOCK'S ROWS. It is opened before the block is sampled and
+               handed to the sink the moment it is done, which is what makes the OUTPUT's peak the
+               window's and not the grid's — the same sentence #R783 wrote about the geometry, about
+               the half of the residency it did not cover. */
+            if (sink) {
+              const bad = openWindow(from, count);
+              if (bad) { ended = bad; return { ok: false, why: 'walk-ended' }; }
+            }
             geom = value; geomBase = from * W;
             const r = await walk(from * W, cells);
             geom = null;
@@ -925,6 +1398,10 @@ export function makeGisWarp() {
                carried out past the scheduler (which only knows about blocks) and the remaining
                threads are stopped rather than left computing geometry nobody will read. */
             if (r !== undefined) { ended = r; return { ok: false, why: 'walk-ended' }; }
+            if (sink) {
+              const f = await flushWindow();
+              if (f !== undefined) { ended = f; return { ok: false, why: 'walk-ended' }; }
+            }
             return undefined;
           },
         });
@@ -949,7 +1426,6 @@ export function makeGisWarp() {
         };
       };
 
-      const door = workerDoor(S.opts);
       let note = door ? (door.note || null) : null;
       let ended;
       if (door && door.worker) {
@@ -964,7 +1440,7 @@ export function makeGisWarp() {
       if (ended !== undefined) return ended;
       return finishWarp(note);
 
-      function finishWarp(workerNote) {
+      async function finishWarp(workerNote) {
 
       const outBands = S.raster.bands.map((b) => ({
         name: (b && b.name != null) ? b.name : null,
@@ -991,27 +1467,94 @@ export function makeGisWarp() {
       const rep = {};
       if (workerNote) rep.worker = workerNote;
 
+      /* ⚠ (#R819) WHAT THE RUN HELD, MEASURED RATHER THAN PLANNED. Every term is a number this
+         function is in a position to know: the decoded bands it cached, the axis it measured, the
+         corner rows it reuses, the geometry block the plan actually used, and the output — whole, or
+         one window of it. ⚠ `overBudget` IS A STATEMENT, NOT A FAILURE: the budget governs what was
+         still a choice, and a caller who asked for an output larger than the whole budget and
+         offered nothing to write it to gets their grid and the reason (CONSTITUTION.md §5). */
+      const geomBlockBytes = (workerNote && workerNote.used === true && workerNote.rowsPerBlock) ? workerNote.rowsPerBlock * geomRowBytes : 0;
+      const windowBytes = sink ? Math.min(windowRows, H) * outRowBytes : 0;
+      const edgeBytes = edgePointsPeak * 2 * 8;
+      const peakBytes = fixedBytes + residentOutBytes + geomBlockBytes + windowBytes + edgeBytes;
+      rep.memory = {
+        budgetBytes: bud.bytes, budgetFrom: bud.from,
+        sourceBytes: S.sourceBytes, latAxisBytes: latAxisBytes, cornerRowBytes: cornerRowBytes,
+        footprintEdgeBytes: edgeBytes,
+        geometryBlockBytes: geomBlockBytes,
+        outputBytes: residentOutBytes || windowBytes,
+        outputHeld: sink ? 'window' : 'whole',
+        peakBytes: peakBytes,
+        overBudget: bud.bytes == null ? null : (peakBytes > bud.bytes),
+        reason: (bud.bytes != null && peakBytes > bud.bytes)
+          ? (sink ? 'window-minimum-is-one-row' : 'output-resident-no-sink')
+          : null,
+      };
+      if (sink) {
+        rep.sink = { windows: windows, rowsPerWindow: Math.min(windowRows, H), attempts: attempt, bytesPerWindow: windowBytes };
+      }
+
+      /* ⚠ (#R819) AND WHAT WAS APPROXIMATED, ALWAYS — 「どの条件で走ったか」 belongs beside the answer
+         and not in the head of whoever chose the options. `boxExcess` is null when nothing measured
+         it (a point method, or geometry computed in the other thread where the corners are not in
+         this file's hands), which is not the same as zero. */
+      rep.footprint = {
+        mode: areal ? FP.mode : null,
+        tolerance: FP.tolerance,
+        toleranceUnit: FP.tolerance == null ? null : 'source-pixels',
+        areaTolerance: S.areaTolerance == null ? null : S.areaTolerance,
+        latAxis: latAxisNote,
+        boxExcess: (areal && FP.mode === 'box')
+          ? (boxExcessSeen ? { max: boxExcess, at: boxExcessAt } : { max: null, at: null, reason: offThread ? 'geometry-off-thread' : 'not-measured' })
+          : null,
+        ring: exact
+          ? { maxPositions: segMax, meanPositions: N > 0 ? segTotal / N : 0, maxDeviation: devMax, depthLimited: depthLimited, maxDepth: MAX_REFINE_DEPTH }
+          : null,
+      };
+
+      const written = {
+        width: W, height: H,
+        bands: outBands,
+        crs: WGS84,
+        /* ⚠ CARRIED, so the result says where it came from rather than looking native. It is the
+           same field docs/GIS-CORE.md §1 defines for a vector dataset, meaning the same thing. */
+        sourceCrs: fromCode,
+        grid: { west: out.west, north: out.north, pixelLng: out.pixelLng, pixelLat: out.pixelLat },
+        affine: [out.west, out.pixelLng, 0, out.north, 0, -out.pixelLat],
+      };
+
+      const report = Object.assign(rep, {
+        from: fromCode, to: WGS84, method: S.method, kind: S.kind,
+        width: W, height: H, pixelLng: out.pixelLng, pixelLat: out.pixelLat,
+        west: out.west, north: out.north,
+        filled: filled, missing: missingCount, partial: partial, incomplete: incomplete,
+        clipped: clipped, failed: failed,
+        cells: N, bands: perBand,
+      });
+
+      /* ⚠⚠⚠ A WINDOWED RUN HAS NO GRID TO HAND BACK, AND SAYS SO BY CARRYING NULL. The alternative
+         — a grid object whose `read` answers null for every band — is a raster contract that is not
+         one, and a caller would find that out at the first `validate`. `written` describes the grid
+         the SINK now holds, in the same fields, so a caller can register what it wrote. */
+      if (sink) {
+        let value = null;
+        if (typeof sink.end === 'function') {
+          let r;
+          try { r = await sink.end({ windows: windows, width: W, height: H, bands: S.bandCount, report: report }); } catch (e) { return refuse('warp-sink-failed', { at: 'end', error: String((e && e.message) || e) }); }
+          if (r && r.ok === false) return refuse('warp-sink-failed', { at: 'end', why: r.why == null ? null : r.why, detail: r.detail == null ? null : r.detail });
+          value = (r && r.value !== undefined) ? r.value : null;
+        }
+        rep.sink.value = value;
+        return { ok: true, windowed: true, grid: null, written: written, report: report };
+      }
+
+      const held = bands;
       return {
         ok: true,
-        grid: {
-          width: W, height: H,
-          bands: outBands,
-          crs: WGS84,
-          /* ⚠ CARRIED, so the result says where it came from rather than looking native. It is the
-             same field docs/GIS-CORE.md §1 defines for a vector dataset, meaning the same thing. */
-          sourceCrs: fromCode,
-          grid: { west: out.west, north: out.north, pixelLng: out.pixelLng, pixelLat: out.pixelLat },
-          affine: [out.west, out.pixelLng, 0, out.north, 0, -out.pixelLat],
-          read: (i) => { const k = (i == null) ? 0 : i; return (k >= 0 && k < bands.length) ? bands[k] : null; },
-        },
-        report: Object.assign(rep, {
-          from: fromCode, to: WGS84, method: S.method, kind: S.kind,
-          width: W, height: H, pixelLng: out.pixelLng, pixelLat: out.pixelLat,
-          west: out.west, north: out.north,
-          filled: filled, missing: missingCount, partial: partial, incomplete: incomplete,
-          clipped: clipped, failed: failed,
-          cells: N, bands: perBand,
+        grid: Object.assign({}, written, {
+          read: (i) => { const k = (i == null) ? 0 : i; return (k >= 0 && k < held.length) ? held[k] : null; },
         }),
+        report: report,
       };
       }
     }
@@ -1193,6 +1736,10 @@ export function makeGisWarp() {
       /* the vocabularies, published for the same reason js/gis-raster.js publishes its condition
          ops: a UI reads the declaration rather than keeping a hand-written copy of it */
       alignRules: () => ALIGN_RULES.slice(),
+      /* (#R819) the same reason again: a panel offering 「正確な footprint」 reads the list rather
+         than keeping a copy of it, and `exact` is only offerable where the raster kernel takes a
+         ring — which `footprintPlan` asks it, not this list. */
+      footprintModes: () => FOOTPRINT_MODES.slice(),
       /* exposed because js/gis-geotiff.js and the panel describe the same grid, and a second copy of
          「a north-up grid IS an affine」 is how the two would disagree */
       affineOf,

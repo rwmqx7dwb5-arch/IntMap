@@ -109,9 +109,12 @@
  *  nobody else holds a view of it — there is no owner to surprise.
  *
  *  ══ WHAT IS ACTUALLY ON IT TODAY ══════════════════════════════════════════════════════════════
- *  One job registered HERE, `grid.binary`: two bands (or a band and a scalar) and an operator,
+ *  Two jobs registered HERE. `grid.binary`: two bands (or a band and a scalar) and an operator,
  *  missing values propagated. It runs in the worker for real — the arithmetic is in the text the Blob
- *  is built from and nowhere else.
+ *  is built from and nowhere else. And (#R819) `geometry.op`, which owns NO arithmetic at all: it is
+ *  the intake for a shape and an operation name, and the operation itself is a function
+ *  js/gis-geometry.js provided. See the long note above the job for why transport may live here
+ *  while arithmetic may not.
  *  ⚠ THE OTHERS ARE REGISTERED BY THEIR OWN KERNELS, WHICH IS THE WHOLE POINT: js/gis-raster.js
  *  registers `raster.diff` (#R759) and js/gis-warp.js registers `warp.geometry` with the two
  *  functions it provides (#R783). A registry this file filled itself would be a list of jobs whose
@@ -660,7 +663,7 @@ export function makeGisWorker() {
       const sig = mine ? mine.signal : (o.signal || null);
       const giveUp = () => { if (mine) { try { mine.abort(); } catch (_) { } } };
 
-      let peak = 0, live = 0, transferred = 0, units = 0, next = 0, bad = null;
+      let peak = 0, live = 0, transferred = 0, units = 0, next = 0, bad = null, taken = 0;
       const running = new Set();
 
       const one = async (index) => {
@@ -693,6 +696,7 @@ export function makeGisWorker() {
             try { t = await o.take(res.value, from, count, index); }
             catch (e) { return fail('block-take-threw', { index: index, message: String((e && e.message) || e) }); }
             if (t && t.ok === false) return t;
+            taken++;
           }
           units += count;
           return { ok: true };
@@ -715,7 +719,13 @@ export function makeGisWorker() {
         if (!running.size) break;
         await Promise.race(running);
       }
-      if (bad) return bad;
+      /* ⚠ (#R819) A STOPPED RUN SAYS HOW MUCH OF THE CALLER'S OUTPUT IT ALREADY WROTE INTO. `take`
+         consumes a block by writing it somewhere the CALLER owns, so when a run is cancelled or a
+         block refuses, that destination is already part-written — and a refusal that does not say so
+         is a refusal a caller can mistake for 「何も起きなかった」. This is not permission to use the
+         half: `ok` is false, and `partial` is the measurement of what has to be thrown away or
+         redone. It is measured, never planned. */
+      if (bad) return Object.assign({}, bad, { partial: { units: units, blocks: taken, of: P.blocks } });
       return {
         ok: true, job: job, units: units, blocks: P.blocks,
         unitsPerBlock: P.unitsPerBlock, bytesPerBlock: P.bytesPerBlock,
@@ -747,6 +757,12 @@ export function makeGisWorker() {
         workers: pool.length, ready: ready, busy: busy, queued: queue.length,
         revision: revision, maxConcurrency: MAX_WORKERS, cores: CORES,
         jobs: REG.size, libraries: LIB.size, budgetBytes: BLOCK_BUDGET_BYTES,
+        /* ⚠ (#R819) 「中止は本当に効くか」 IS A DIFFERENT QUESTION FROM 「並列に走るか」, and a caller
+           choosing a runner needs it answered. A stop only reaches arithmetic ALREADY RUNNING where
+           there is a thread to end; on the main-thread path the same call holds the CPU until it
+           returns whatever a signal says, so a caller that must be able to stop a single enormous
+           operation is being told here whether that is available at all. Derived, not stored. */
+        stopReachesRunningWork: available(),
       };
     }
 
@@ -822,6 +838,112 @@ export function makeGisWorker() {
       },
     });
 
+    /* ══ (#R819) THE INTAKE FOR A GEOMETRY OPERATION ══════════════════════════════════════════════
+       ⚠ THIS FILE STILL OWNS NO GEOMETRY. The arithmetic of a union, a buffer or a distance is
+       js/gis-geometry.js's, and a second copy of any of it here is the defect
+       .agents/rules/no-ad-hoc-hardcoding.md §2-3 names. What was missing was not arithmetic — it was
+       A PLACE TO SEND SHAPES TO. `grid.binary`, `raster.diff` and `warp.geometry` all take numbers
+       in typed arrays; a caller holding two polygons had no door at all, so every vector operation
+       ran on the thread that paints however long it took.
+       ⚠ SO THE JOB IS TRANSPORT, AND THE OPERATION IS A LIBRARY. `provideGeometry(op, fn)` puts the
+       kernel's OWN function text in the worker (js/gis-worker.js `provide()`, header), and this job
+       resolves it by the operation's name. There is no table of operation names in this file: the
+       vocabulary IS what has been provided, `geometryOps()` reads it back out of the registry, and
+       an operation nobody provided is refused BY NAME with that vocabulary attached — before a
+       payload is built, if the caller asks `geometryReady(op)` first.
+       ⚠ WHAT TRAVELS IS WHAT THE KERNEL'S FUNCTION TAKES AND RETURNS. Geometries are GeoJSON —
+       plain objects and arrays of numbers, which structured clone carries and which nothing here
+       has to know the shape of. `args` is applied positionally, so the door does not invent a
+       calling convention for somebody else's function; a kernel function that reports its progress
+       takes a callback as its LAST argument and the caller says so with `withProgress`, because
+       appending one unasked would change the arity of every function that counts its own.
+       ⚠ AND THE ANSWER IS READ THE WAY THE KERNEL WRITES IT. js/gis-geometry.js has two spellings —
+       a plain value, and `attempt.*`'s `{ok,why}` — so a refusal from the kernel is carried through
+       as a refusal rather than arriving as a successful `undefined`.
+       ⚠ NOTHING IS TRANSFERRED BACK. A GeoJSON answer holds no ArrayBuffer, so there is no buffer to
+       hand over and nothing is detached from anybody.
+       ⚠ WHO PROVIDES, AND WHAT THEY MEASURED. js/gis-geometry.js `worker.install()` provides ITS OWN
+       kernel factory here, and that kernel — built in the other thread with no environment to borrow
+       from — answers `clipper-unavailable` / `geodesy-unavailable` for every operation that reaches
+       the sweep line or js/geodesy.js. Neither can be provided: measured, polygon-clipping's `union`
+       is «return operation.run(…)» over a free module name, and a classic worker assembled from a
+       Blob can neither import a bare specifier nor importScripts a fingerprinted chunk. So the
+       vocabulary the kernel offers is the operations that consult NEITHER, that file derives it by
+       asking a dep-less kernel rather than by listing it, and none of that is this file's business:
+       the intake dispatches whatever was provided and the refusals are the kernel's own.
+
+       ══ ⚠⚠⚠ AND THE STOP FOR A SINGLE ENORMOUS SHAPE IS terminate(), NOT A YIELD ═══════════════
+       Handing the thread back between FEATURES does not shorten the time spent inside ONE feature,
+       and a sweep line over a 200,000-vertex polygon is one indivisible call: there is no point
+       inside it that this file is entitled to interrupt, and a worker cannot read a message while a
+       synchronous call is running anyway. So the stop is the one the header already describes —
+       a slot holds at most one job, and `abortTask` ENDS THE THREAD. That is why the geometry door
+       is here rather than beside the paced walks in js/gis-ops.js: those can be asked to stop and
+       this can be MADE to.
+       ⚠ A STOPPED RUN HAS NO ANSWER, AND NEITHER HALF OF ONE. `progress` carries counts and never
+       values, the protocol's `done` is the only message that carries a result, and an aborted task
+       settles as `aborted` — there is no path by which a partial walk is read as a finished one. */
+    const GEOM_LIB_PREFIX = 'geometry.';
+    const GEOM_JOB = 'geometry.op';
+
+    function geometryOpJob(p, ctx) {
+      const prefix = (ctx && ctx.deps && ctx.deps.prefix) || '';
+      const lib = (ctx && ctx.lib) || {};
+      const op = (p && p.op != null) ? String(p.op) : '';
+      /* The vocabulary is the registry's, read here rather than listed — a caller that misspelled a
+         name needs the set it missed, and this is the only place that has it. */
+      const have = [];
+      for (const k in lib) { if (k.indexOf(prefix) === 0) have.push(k.slice(prefix.length)); }
+      const fn = op ? lib[prefix + op] : null;
+      if (typeof fn !== 'function') return { ok: false, why: 'geometry-op-unavailable', detail: { op: op || null, have: have } };
+      const args = (p && Array.isArray(p.args)) ? p.args.slice() : null;
+      if (!args) return { ok: false, why: 'geometry-args-invalid', detail: { op: op, got: (p && p.args === undefined) ? 'undefined' : typeof (p && p.args) } };
+      if (p && p.withProgress === true) {
+        args.push(function (done, total) { ctx.progress(done, total); });
+      }
+      let out;
+      try { out = fn.apply(null, args); }
+      catch (e) { return { ok: false, why: 'geometry-op-threw', detail: { op: op, name: (e && e.name) || null, message: String((e && e.message) || e) } }; }
+      /* Three shapes, and they are the kernel's own, not a convention invented here. */
+      if (out && typeof out === 'object' && out.ok === false) return { ok: false, why: out.why || 'geometry-op-refused', detail: out.detail || { op: op } };
+      const value = (out && typeof out === 'object' && out.ok === true && ('value' in out)) ? out.value : out;
+      ctx.progress(1, 1);
+      return { ok: true, value: { op: op, value: (value === undefined ? null : value) } };
+    }
+
+    register(GEOM_JOB, geometryOpJob, {
+      deps: { prefix: GEOM_LIB_PREFIX },
+      decl: {
+        id: GEOM_JOB,
+        inputs: [{ name: 'args', type: 'value[]' }],
+        params: [
+          { name: 'op', type: 'name', required: true, vocabularyFrom: 'geometry-op-unavailable' },
+          { name: 'withProgress', type: 'boolean', required: false },
+        ],
+        output: { op: 'name', value: 'value' },
+      },
+    });
+
+    /* The three doors a caller needs beside the job, and none of them holds a list: the prefix is
+       written once, above. */
+    function provideGeometry(op, fn) {
+      if (typeof op !== 'string' || !op) return fail('geometry-op-invalid', { op: (typeof op === 'string') ? op : null });
+      return provide(GEOM_LIB_PREFIX + op, fn);
+    }
+    function geometryOps() {
+      const out = [];
+      LIB.forEach(function (_rec, name) { if (name.indexOf(GEOM_LIB_PREFIX) === 0) out.push(name.slice(GEOM_LIB_PREFIX.length)); });
+      return out;
+    }
+    /* ⚠ ASKED BEFORE THE SHAPES ARE COPIED. The same verdict the job reaches, reached on this thread
+       where it costs nothing — so a caller learns 「その演算は渡されていない」 without having cloned
+       a polygon into a thread first (.agents/rules/one-pass-or-a-reason.md §4). */
+    function geometryReady(op) {
+      const name = (typeof op === 'string') ? op : '';
+      if (name && LIB.has(GEOM_LIB_PREFIX + name)) return { ok: true, op: name };
+      return fail('geometry-op-unavailable', { op: name || null, have: geometryOps() });
+    }
+
     const API = {
       /* capability (sync) and measurement (async) — see the note on canConstruct() */
       available: available,
@@ -836,6 +958,11 @@ export function makeGisWorker() {
       libraries: libraries,
       libraryNames: libraryNames,
       librarySourceOf: librarySourceOf,
+      /* (#R819) the geometry intake — one job, and the vocabulary is whatever has been provided */
+      geometryJob: GEOM_JOB,
+      provideGeometry: provideGeometry,
+      geometryOps: geometryOps,
+      geometryReady: geometryReady,
       /* (#R783) the memory budget and the split that fits in it. `budgetBytes()` is the one number
          (see BLOCK_BUDGET_BYTES) so no caller writes a second one. */
       budgetBytes: function () { return BLOCK_BUDGET_BYTES; },

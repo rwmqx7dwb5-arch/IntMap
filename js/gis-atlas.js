@@ -218,6 +218,9 @@ export function makeGisAtlas(core) {
       'resolution.declared', 'resolution.chosen',
       /* どの条件で検索できるか */
       'query.accepts', 'query.conditions', 'query.supplier', 'query.needsVisible',
+      /* (#R819) 取得する前に分かる能力（申告）。See the block in prefetch() for why the MEASURED pair
+         is not taken here. */
+      'query.capabilities',
     ];
     /* ⚠ THE SUBJECTS ARE THE SLOTS' OWN PREFIXES, NOT A SECOND LIST. Writing them out would be a
        list that can lose a subject the slots gained — the drift tests/r759 ① measures for the
@@ -426,6 +429,26 @@ export function makeGisAtlas(core) {
          behind the reader's back (js/gis-sources.js needsVisible), which is not 「表示は要らない」. */
       if (ent && ent.needsVisible != null) put('query.needsVisible', !!ent.needsVisible);
       else none('query.needsVisible', mute || 'visibility-requirement-unmeasured');
+      /* ⚠⚠⚠ (#R819) 「この供給元は画面と独立に取れるか・期間を扱えるか・全件の終わりを確認できるか」 は、
+         取得したあとに分かっても遅い。A planner choosing between two sources for a measurement was
+         being shown the supplier's four fetch booleans (`query.supplier`) and nothing about the three
+         questions that decide whether an acquisition can be a measurement at all — so 「表示していない
+         行から取れるか」 could only be learnt by asking and seeing what came back.
+         ⚠ NOTHING IS ENUMERATED HERE. js/gis-sources.js capabilitiesOf() DERIVES the claim from the
+         registration and the declaration that already exist for that id, so a source registered
+         tomorrow is described the same day and this file holds no table of capabilities — and the
+         object travels whole, the way `declared`, `fields` and `coverage` do, so a capability added
+         there arrives here without a list being widened.
+         ⚠ EACH VALUE INSIDE IS THREE-VALUED AND STAYS SO: null is 「申告が無い」, never false.
+         ⚠ AND IT IS THE CLAIM, NOT THE MEASUREMENT. measureCapabilities/auditCapabilities ASK through
+         the doors a caller uses — they cost one or more acquisitions — and a description is what is
+         known BEFORE anybody fetches. The measured pair is reached through capabilities() below. */
+      if (idx.sources && typeof idx.sources.capabilitiesOf === 'function') {
+        let caps = null;
+        try { caps = idx.sources.capabilitiesOf(id); } catch (_) { caps = null; }
+        if (caps && typeof caps === 'object') put('query.capabilities', caps);
+        else none('query.capabilities', mute || 'capabilities-undeclared');
+      } else none('query.capabilities', idx.why || 'capabilities-unavailable');
 
       return out;
     }
@@ -576,6 +599,24 @@ export function makeGisAtlas(core) {
       return { ok: true, opts: opts };
     }
 
+    /* ⚠ (#R819) WHICH DOOR OF THE MAP IS ASKED IS ONE RULE, IN ONE PLACE. js/gis-layers.js has two
+       — features (toDataset) and a field baked over a window (toRaster) — and the request itself
+       says which: `kind` when the caller stated it, and otherwise the presence of a resolution,
+       because width and height are meaningless to a feature copy. This was written inside
+       acquireOnly() and nowhere else, so a slot declared `'any'` (`profile` / `reach`) handed a
+       LAYER could only ever be fetched as features — the grid door was unreachable from Atlas for
+       ops that accept both. A second copy of the test would be [[intmap-two-readers-one-field-list]]
+       measured again, so the judgement is asked for here by both readers rather than repeated.
+       ⚠ A `kind` this door cannot read is refused by name with the set, which is one corrected call
+       instead of a silent choice of door. */
+    function doorAsked(action) {
+      const a = action || {};
+      const word = (a.kind == null || a.kind === '') ? null : String(a.kind);
+      if (word && word !== 'vector' && word !== 'raster') return fail('bad-param', { param: 'kind', kinds: ['vector', 'raster'] });
+      const win = (a.acquire && typeof a.acquire === 'object') ? a.acquire : {};
+      return { ok: true, raster: word ? (word === 'raster') : (win.width != null || win.height != null || !!a.sample) };
+    }
+
     async function resolveRef(ref, slot, decl, cache, action) {
       const raw = (ref == null) ? '' : String(ref).trim();
       if (!raw) return fail('missing-input', { slot: slot });
@@ -586,7 +627,16 @@ export function makeGisAtlas(core) {
       if (direct) { cache.set(raw, direct.id); return { ok: true, id: direct.id }; }
 
       /* 2. a layer of the map, named as one. */
-      const wantsRaster = Array.isArray(decl.kinds) && decl.kinds[slot] === 'raster';
+      /* ⚠ 枠が種別を決めているのは、決めている枠だけである。`'raster'` の枠は格子、それ以外の
+         綴りは今日までどおり地物で、`'any'` の枠——同じ問いを格子にも地物にも出せる `profile` /
+         `reach` ——だけが**要求そのもの**に訊く（doorAsked、acquireOnly と同じ 1 つの規則）。 */
+      const slotKind = Array.isArray(decl.kinds) ? decl.kinds[slot] : null;
+      let wantsRaster = (slotKind === 'raster');
+      if (slotKind === 'any') {
+        const asked = doorAsked(action);
+        if (!asked.ok) return asked;
+        wantsRaster = asked.raster;
+      }
       if (raw.slice(0, LAYER_PREFIX.length) === LAYER_PREFIX) {
         const made = await fromLayer(raw.slice(LAYER_PREFIX.length), wantsRaster, action, cache);
         if (!made.ok) return made;
@@ -662,11 +712,9 @@ export function makeGisAtlas(core) {
 
     /* ── acquiring, which is a step of its own ───────────────────────────────────────────────── */
 
-    /* ⚠ WHICH DOOR OF THE MAP IS ASKED IS STATED, NOT GUESSED FROM THE LAYER. js/gis-layers.js has
-       two — features (toDataset) and a field baked over a window (toRaster) — and they answer
-       different questions about the same id where a row has both. `kind` says which; when it is not
-       said, a request carrying a resolution is a request for a grid, because width and height are
-       meaningless to a feature copy. ⚠ The map is what knows which rows can be sampled at all
+    /* ⚠ WHICH DOOR OF THE MAP IS ASKED IS STATED, NOT GUESSED FROM THE LAYER — and the statement is
+       read by doorAsked() above, which is also what an `'any'` slot asks. ⚠ The map is what knows
+       which rows can be sampled at all
        (`samplable` in mapRows), so a wrong choice is refused BY js/gis-layers.js with the layer's own
        vocabulary rather than pre-judged here out of a list of layer ids. */
     async function acquireOnly(action) {
@@ -675,10 +723,9 @@ export function makeGisAtlas(core) {
       if (!given.length) {
         return fail('missing-input', { needs: 'inputs', layers: mapRefs().map((r) => r.ref), datasets: data.list().map((d) => d.id) });
       }
-      const word = (a.kind == null || a.kind === '') ? null : String(a.kind);
-      if (word && word !== 'vector' && word !== 'raster') return fail('bad-param', { param: 'kind', kinds: ['vector', 'raster'] });
-      const win = (a.acquire && typeof a.acquire === 'object') ? a.acquire : {};
-      const wantsRaster = word ? (word === 'raster') : (win.width != null || win.height != null || !!a.sample);
+      const asked = doorAsked(a);
+      if (!asked.ok) return asked;
+      const wantsRaster = asked.raster;
       const decl = { kinds: given.map(() => (wantsRaster ? 'raster' : 'vector')) };
       const cache = makeCache();
       const ids = [];
@@ -796,8 +843,26 @@ export function makeGisAtlas(core) {
       };
     }
 
+    /* ⚠ (#R819) 申告と実測を並べる扉。describe() carries the CLAIM — capabilitiesOf(), read off the
+       registration, free — and this one MEASURES it through the same doors a caller uses and names
+       every place the two disagree. They are separate because they cost differently: an audit
+       ACQUIRES, so making a catalogue would make a catalogue fetch from every source on the map.
+       ⚠ NOTHING IS JUDGED HERE. js/gis-sources.js auditCapabilities() is the one implementation and
+       its refusals (`layer-unknown`, `bad-param`, a supplier's own failure) travel back by name. */
+    async function capabilities(ref, opts) {
+      const S = SOURCES();
+      if (!S || typeof S.auditCapabilities !== 'function') return fail('map-unavailable', { needs: 'IntMapGisSources' });
+      const raw = (ref == null) ? '' : String(ref).trim();
+      const id = (raw.slice(0, LAYER_PREFIX.length) === LAYER_PREFIX) ? raw.slice(LAYER_PREFIX.length) : raw;
+      const r = await S.auditCapabilities(id, opts || {});
+      if (!r || r.ok !== true) return fail((r && r.why) || 'map-unavailable', (r && r.detail) || { id: id });
+      return r;
+    }
+
     const API = {
       catalogue, run, draw, acquire: acquireOnly,
+      /* (#R819) 供給元の能力——申告は describe() の `query.capabilities`、実測はこの扉。 */
+      capabilities,
       /* (#R783) 取得する前に供給元が述べていること。One surface for the panel, Atlas and an external
          reader; `describe(ref)` is one source, `catalogue().layers` is all of them. */
       describe,

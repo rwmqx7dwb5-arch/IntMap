@@ -102,6 +102,26 @@
  *  reachable only from a caller that asked for one. ⚠ WIRING A CONTROL FOR EITHER MEANS GIVING THEM
  *  NINE LANGUAGES IN js/gis-panel.js FIRST — the sentence is what a reader is owed, not the code.
  *
+ *  ══ ⚠⚠⚠ (#R819) AND A PARAMETER IS NOT A CAPABILITY ══════════════════════════════════════════
+ *  The contract above says a request MAY name a window, a time, conditions, columns, a count and a
+ *  position. Whether the party at the other end can honour any of it was decided in one place
+ *  (`where` is refused when nobody claims it) and nowhere else. Two doors close that gap, and the
+ *  argument for both is written at 「引数が在る」 と 「その条件で取れる」 は別の主張である below:
+ *    · plan() / acquirePlanned() — WHERE EACH CONDITION RUNS. A supplier that serves the window but
+ *      cannot filter is not the end of the road; the conditions run in a later stage over what it
+ *      served. ⚠ ONLY IF THE EARLIER STAGE WAS EXHAUSTIVE — a filter over a capped page answers
+ *      「取れた分だけ」, so the planned road pages by the supplier's own cursor, divides the window
+ *      when the cap has no cursor, and REFUSES (`plan-unsatisfiable`) when neither reaches the end.
+ *      ⚠ The filter itself is js/gis-ops.js's and is not written here: a staged answer comes back
+ *      as `kind:'staged'` with the pending conditions named, never as `kind:'features'`.
+ *    · capabilitiesOf() / measureCapabilities() / auditCapabilities() — the registration's CLAIM,
+ *      the same doors' MEASUREMENT, and every place the two disagree. Nothing is listed: an id has
+ *      capabilities by being registered.
+ *  ⚠ AND EVERY ANSWER NOW SAYS WHICH ROAD ANSWERED (`coverage.answeredBy`). The delegated road is
+ *  not removed and not deprecated — it is the road most rows travel — but a caller that says
+ *  `analysis:true` is refused a population the camera decides (`renderer-view-dependent`), which is
+ *  judged from coverage.reason and not from a list of ids.
+ *
  *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
  *  module imports in Node with no DOM and refuses by name instead of throwing.
  * ==========================================================================*/
@@ -153,6 +173,13 @@ export function makeGisSources() {
       'supplier-is-async',         /* the synchronous door was used on a supplier that awaits */
       'supplier-failed',           /* the registered implementation threw */
       'supplier-answer-invalid',   /* it answered in a shape the contract does not have */
+      /* ── (#R819) the two a PLANNED acquisition can produce ────────────────────────────────────
+         ⚠ NEITHER IS REACHABLE FROM ANY SHIPPED CONTROL, exactly as `where-not-supported` is not:
+         they answer a request that named `plan`/`acquirePlanned` or `analysis:true`, and nothing in
+         js/gis-panel.js names either. ⚠ WIRING A CONTROL FOR THEM MEANS GIVING THEM SENTENCES IN
+         js/gis-panel.js FIRST — the header says why, and that has not changed. */
+      'plan-unsatisfiable',        /* the split cannot answer the question that was asked, and says why */
+      'renderer-view-dependent',   /* an analysis asked for, answerable only out of what is on screen */
     ];
 
     function refuse(why, detail) {
@@ -217,6 +244,11 @@ export function makeGisSources() {
          the vocabulary of 「なぜ all ではないのか」 is one vocabulary; a second list in js/gis-ops.js
          would be the shape both files spend their headers refusing. */
       'op-rows-not-computed',         /* the run itself lost rows: computed out of its inputs, not all of them */
+      /* ── (#R819) the one that is about a condition nobody has executed YET ─────────────────────
+         An acquisition that covered the whole window is still not an answer to 「M6 以上を」 while
+         the attribute conditions are sitting in a later stage. `all` would be a claim about the
+         QUESTION, made by the half of the plan that only answered the window. */
+      'where-pending-post-stage',     /* the window is whole; the conditions have not run yet */
     ];
 
     /* ── declarations: the only route to `all` ────────────────────────────────────────────────── */
@@ -582,6 +614,16 @@ export function makeGisSources() {
            silence from a supplier that was handed conditions is still reported as 'supplier'
            (the door refused every other kind), which is the one thing here that is inferred. */
         filteredBy: (Array.isArray(m.where) && m.where.length) ? (m.filteredBy || 'supplier') : null,
+        /* ⚠⚠⚠ (#R819) WHICH ROAD ANSWERED, IN THE RECORD, ALWAYS. The two roads are not two
+           implementations of one thing: a supplier answers out of its own store, and the delegated
+           road answers out of what the RENDERER is holding — a population a reader changes by
+           panning. That distinction was computed on every acquisition (`m.supplied`) and then
+           thrown away, so 「この平均は何の平均か」 could not be answered even in principle by a
+           record that had the fact in its hands. It is the same argument `coverage` itself is
+           written for, one field along. ⚠ IT IS NOT A VERDICT: a renderer answer over a row that
+           declared a complete, non-live holding is as good as any, and coverage.reason is where
+           that is judged (see VIEW_DEPENDENT below, which is the judgement). */
+        answeredBy: (m.supplied === true) ? 'supplier' : 'renderer',
       };
       const say = (completeness, reason, extra) => {
         const out = Object.assign({ completeness: completeness, reason: reason }, base);
@@ -681,9 +723,9 @@ export function makeGisSources() {
         let ans;
         try { ans = askSupplier(rec, prep, o); } catch (e) { return refuse('supplier-failed', { id: key, message: e && e.message }); }
         if (ans && typeof ans.then === 'function') return refuse('supplier-answer-invalid', { id: key, expected: 'synchronous' });
-        return fromSupplier(key, rec, prep, o, ans);
+        return analysed(key, o, fromSupplier(key, rec, prep, o, ans));
       }
-      return delegated(key, prep, o);
+      return analysed(key, o, delegated(key, prep, o));
     }
 
     /* ⚠ (#R752) THE ASYNC TWIN, AND IT IS NOT A COPY. Everything either door does other than waiting
@@ -697,9 +739,9 @@ export function makeGisSources() {
       if (rec && rec.fetch) {
         let ans;
         try { ans = await askSupplier(rec, prep, o); } catch (e) { return refuse('supplier-failed', { id: key, message: e && e.message }); }
-        return fromSupplier(key, rec, prep, o, ans);
+        return analysed(key, o, fromSupplier(key, rec, prep, o, ans));
       }
-      return delegated(key, prep, o);
+      return analysed(key, o, delegated(key, prep, o));
     }
 
     /* What both doors have to establish before anybody is asked anything. ⚠ THE TWO CAPABILITY GATES
@@ -1172,6 +1214,506 @@ export function makeGisSources() {
       return { ok: true, kind: 'grid', grid: baked.raster, filled: filled, empty: empty, failed: 0, coverage: coverage };
     }
 
+    /* ══ ⚠⚠⚠ (#R819) 「引数が在る」 と 「その条件で取れる」 は別の主張である ═══════════════════════
+       Everything above is a contract: a request may name a window, a time, attribute conditions,
+       columns, a count, a position. What the contract cannot say is whether the party at the other
+       end can HONOUR any of it — and until this round the two were told apart in exactly one place
+       (`where` is refused when nobody claims it) and nowhere else. The gap has two halves:
+
+       ① A SUPPLIER THAT CANNOT FILTER IS NOT A SUPPLIER THAT CANNOT ANSWER. Refusing
+          `where-not-supported` is right and stays right (a condition handed to something that drops
+          it comes back as a complete-looking answer to a different question), but it is not the end
+          of the road: a supplier that CAN serve the window can serve the window, and the conditions
+          can run in a later stage over what it served. What was missing is the thing that says
+          WHERE EACH CONDITION RUNS — plan() below — and the fact that this is only an answer when
+          the earlier stage was EXHAUSTIVE. ⚠⚠⚠ 上流に件数制限があって全件取得できないなら、それは
+          「条件を満たした検索」ではない: filtering a capped page is 「取れた分だけ」 wearing the
+          clothes of an answer, and this file exists to stop precisely that. So the planned road
+          pages by the supplier's own cursor, splits the window when the cap has no cursor, and when
+          neither can reach the whole window it REFUSES (`plan-unsatisfiable`) instead of handing
+          back a plausible number.
+       ⚠ THE FILTER ITSELF IS NOT WRITTEN HERE. js/gis-ops.js's `filter` owns the comparison rules
+          (this file already asks it for the operator vocabulary, and a second spelling of 「>= とは
+          何か」 is the drift .agents/rules/no-ad-hoc-hardcoding.md forbids). What is written here is
+          the PLAN — which conditions run upstream, which run after, over what input — and the
+          acquisition that makes the later stage meaningful. The staged answer therefore comes back
+          as `kind:'staged'` and never as `kind:'features'`: a reader that does not run the pending
+          stage must not be able to mistake it for the answer.
+
+       ② CAPABILITIES ARE MEASURED, NOT COLLECTED. supply()'s four booleans are the supplier's own
+          statement, and a statement is a claimant rather than a proof — the argument `all` is built
+          on, and the one #R783 measured a lie against (`where:true` over an unfiltered answer). So
+          capabilitiesOf() DERIVES what the registration claims (nothing is listed here; an id has
+          capabilities by being registered, not by being named) and measureCapabilities() ASKS,
+          through the same doors a caller uses. auditCapabilities() puts the two side by side and
+          names every place they disagree — which is what a check can fail on. */
+
+    /* ⚠ THE NAMES, IN ONE PLACE, because three parties ask about them (the plan above, the
+       measurement below, and any caller deciding whether a question can be answered at all).
+       Each is a QUESTION about acquisition, and each is three-valued: true / false / null, where
+       null is 「まだ測っていない・測れなかった」 and is never flattened into false. */
+    const CAPABILITIES = [
+      'offscreen',   /* 表示しなくても取得できるか */
+      'window',      /* 利用者が指定した区域で取得できるか（求めた窓の外を返さないか） */
+      'time',        /* 指定期間を扱えるか */
+      'conditions',  /* 属性条件を上流で実行できるか */
+      'boundedEnd',  /* 全件取得の終わりを確認できるか */
+      'stableId',    /* 同じ地物を安定した ID で追えるか */
+    ];
+
+    /* ⚠ THE REASONS THAT MEAN 「母集団が画面に依存している（かもしれない）」. This is a judgement about
+       THIS FILE'S OWN vocabulary, not a list of ids or of layers — every reason here is one the
+       renderer road can produce, and each says the holding was, or may have been, assembled for the
+       camera. A renderer answer with no reason (a row that declared a complete, non-live holding
+       covering the window) is not in it, because there is nothing camera-shaped left about it. */
+    const VIEW_DEPENDENT = [
+      'supplier-view-bound',              /* it said so itself */
+      'indistinguishable-from-view',      /* measured: everything it holds is on screen */
+      'declaration-unconfirmed-by-view',  /* a completeness claim this camera cannot tell apart */
+      'extent-undeclared',                /* nobody said what it holds, so 「画面の中身」 is not excluded */
+    ];
+
+    /* ⚠ 由来 (#R819): 窓の分割は四分木なので、深さ d はたかだか 4+16+…+4^d 回の上流問い合わせになる。
+       64 は「深さ 3 まで」（4+16+64 = 84 を切る側）。⚠⚠ これは上限ではなく、呼び出し元が
+       `maxRequests` を述べるまでの既定である（CONSTITUTION §5 / one-pass-or-a-reason §3）——
+       使い切ったときに黙って切るのではなく `plan-unsatisfiable` として述べるので、予算は答えを
+       縮めるのではなく「答えられなかった」を生む。失効条件: 呼び出し元が数を述べたらこの値は
+       使われない。正本はこの 1 行。 */
+    const DEFAULT_REQUEST_BUDGET = 64;
+
+    /* GeoJSON's own identity member, and nothing else. A property that happens to be spelt `id` is
+       a column; reading one as the feature's identity would be this file deciding which column
+       names identity, which is the upstream's statement to make and not this one's. */
+    function identityOf(f) { return (f && f.id != null) ? String(f.id) : null; }
+
+    function quadrants(b) {
+      const mx = (b.w + b.e) / 2, my = (b.s + b.n) / 2;
+      return [
+        { w: b.w, s: b.s, e: mx, n: my }, { w: mx, s: b.s, e: b.e, n: my },
+        { w: b.w, s: my, e: mx, n: b.n }, { w: mx, s: my, e: b.e, n: b.n },
+      ];
+    }
+    /* A window that can no longer be halved is not a window a split can help. ⚠ MEASURED AGAINST
+       THE DOUBLE'S OWN PRECISION rather than against a chosen epsilon: the midpoint landing on an
+       edge means the two halves are not two windows. */
+    const splittable = (b) => (b.e - b.w) > 0 && (b.n - b.s) > 0 && (b.w + b.e) / 2 > b.w && (b.s + b.n) / 2 > b.s;
+
+    /* ── plan(): where each condition runs, said before anything is fetched ───────────────────── */
+
+    function plan(id, req) {
+      const o = req || {};
+      const key = String(id == null ? '' : id);
+      const ent = entryFor(key);
+      if (!ent) {
+        if (!LAYERS() && !REG()) return refuse('map-unavailable', { needs: 'IntMapGisLayers' });
+        return refuse('layer-unknown', { id: key });
+      }
+      const w = readWhere(o.where);
+      if (!w.ok) return w;
+      const asked = w.where || [];
+      const rec = sup(key);
+      const road = (rec && (rec.fetch || rec.region)) ? 'supplier' : 'renderer';
+      /* ⚠ THE SPLIT IS THE SUPPLIER'S CLAIM, READ ONCE. A road that cannot execute conditions puts
+         every one of them in the later stage; it does not execute some of them badly. */
+      const canWhere = !!(rec && rec.fetch && rec.can.where);
+      const upstream = canWhere ? asked.slice() : [];
+      const post = canWhere ? [] : asked.slice();
+
+      const requestedBox = (o.bbox == null) ? null : asBox(o.bbox);
+      if (o.bbox != null && !finiteBox(requestedBox)) return refuse('bad-param', { param: 'bbox', value: o.bbox });
+
+      const stages = [{
+        at: road, does: 'fetch',
+        bbox: requestedBox ? copyBox(requestedBox) : null,
+        time: o.time == null ? null : o.time,
+        where: upstream,
+        fields: (Array.isArray(o.fields) && o.fields.length) ? o.fields.map(String) : null,
+        limit: (rec && rec.can.limit && isPosInt(o.limit)) ? o.limit : null,
+        cursor: (o.cursor === undefined || o.cursor === null) ? null : o.cursor,
+      }];
+      if (post.length) {
+        stages.push({
+          at: 'post', does: 'filter', where: post, input: 0,
+          /* ⚠ NAMED, NOT IMPLEMENTED. The executor is the app's one filter; this says whose it is so
+             the caller wires the same kernel a recipe replays through. */
+          by: 'IntMapGisOps.run({op:"filter", params:{where}})',
+        });
+      }
+
+      /* ⚠⚠⚠ WHEN THE PLAN CANNOT BE AN ANSWER, AND IT IS DECIDED HERE — BEFORE ANY DATA EXISTS TO
+         BE PERSUASIVE. Cutting a list to N and THEN filtering answers 「上位 N 件のうち条件に合うもの」,
+         which is not what was asked; resuming from a position in an unfiltered list and then
+         filtering makes a page that is nobody's page. Both are 「取れた分だけ」 with extra steps. */
+      let why = null;
+      if (post.length && ent.kind !== 'features') why = 'grid-has-no-post-stage';
+      else if (post.length && isPosInt(o.limit)) why = 'limit-precedes-filter';
+      else if (post.length && o.cursor != null) why = 'cursor-precedes-filter';
+
+      return {
+        ok: true, id: key, kind: ent.kind, road: road,
+        stages: stages,
+        where: { asked: asked, upstream: upstream, post: post },
+        /* 後段が在るなら、前段は窓を漏らさず取り切っていなければならない */
+        exhaustive: post.length > 0 || o.exhaustive === true,
+        satisfiable: !why,
+        why: why,
+      };
+    }
+
+    /* ── acquirePlanned(): the plan, executed, with what actually happened in the record ──────── */
+
+    /* ⚠ THE UNION'S COVERAGE IS ITS WEAKEST PART. Sub-windows are acquired independently and a
+       reader is given ONE answer, so a verdict composed by taking the best of them would be a
+       claim about the parts that are not there. `sample` outranks `partial` for the same reason it
+       does in coverageOf: it is a different kind of incompleteness, not a milder one. */
+    function mergeCoverage(parts, m) {
+      const worst = parts.find((c) => c.completeness === 'sample') || parts.find((c) => c.completeness !== 'all') || null;
+      const continues = parts.every((c) => c.continues === false) ? false
+        : (parts.some((c) => c.continues === true) ? true : null);
+      const first = parts[0] || {};
+      return Object.assign({}, first, {
+        completeness: worst ? worst.completeness : 'all',
+        reason: worst ? worst.reason : null,
+        served: m.servedBox ? copyBox(m.servedBox) : (first.served || null),
+        count: m.count,
+        available: parts.reduce((a, c) => (typeof c.available === 'number' && a != null ? a + c.available : null), 0),
+        continues: continues,
+      });
+    }
+
+    /* The whole window, taken to the end — by the supplier's own continuation when it has one, and
+       by dividing the window when the cap has no cursor. ⚠ EVERY REPEAT HERE FOLLOWS AN OBSERVED
+       FACT (.agents/rules/one-pass-or-a-reason.md §5): a cursor the supplier handed over, or a
+       count it stated that is larger than the rows it gave. Nothing is retried because it "might"
+       have failed, each repeat asks a DIFFERENT question (the next page, a smaller window), and the
+       number of requests is in the record. */
+    async function exhaust(key, o, budget) {
+      const rec = sup(key);
+      const first = prepare(key, o);
+      if (!first.ok) return first;
+      const root = first.win;
+      const seen = new Map();
+      const windows = [], parts = [];
+      let requests = 0, duplicates = 0, idless = 0;
+      let done = true, why = null;
+
+      const take = (fs) => {
+        for (const f of fs) {
+          const key2 = identityOf(f);
+          if (key2 == null) idless++;
+          /* ⚠ WITHOUT AN IDENTITY MEMBER THE ONLY HONEST KEY IS THE FEATURE ITSELF. Two windows
+             overlap on their shared edge, so a boundary feature really does arrive twice; dropping
+             by structure keeps the count right, and `dedupBy` says which rule was used so a reader
+             is never told 「同じ地物」 was decided by something it did not agree to. */
+          const k = (key2 != null) ? ('#' + key2) : ('~' + JSON.stringify([f && f.geometry, f && f.properties]));
+          if (seen.has(k)) { duplicates++; continue; }
+          seen.set(k, f);
+        }
+      };
+
+      const ask = async (box, cursor) => {
+        requests++;
+        const sub = Object.assign({}, o, { bbox: [box.w, box.s, box.e, box.n], cursor: cursor || null, limit: null, fields: null });
+        return fetchFeatures(key, sub);
+      };
+
+      const queue = [{ box: copyBox(root), depth: 0 }];
+      while (queue.length) {
+        if (requests >= budget) { done = false; why = 'request-budget-spent'; break; }
+        const node = queue.shift();
+        let r = await ask(node.box, null);
+        if (!r.ok) return r;
+        take(r.features);
+        parts.push(r.coverage);
+        let cov = r.coverage, pages = 1;
+        /* ⚠ THE TWO NUMBERS THAT DECIDE WHETHER THIS WINDOW IS FINISHED, AND THEY ARE BOTH THE
+           SUPPLIER'S. `took` is what it actually handed over for this window across every page;
+           `stated` is what it said was there. A page that is short of the whole window is not a
+           window that is short of itself — reading one page's `supplier-page-incomplete` as the
+           verdict for the window would divide a window that paging had already finished. */
+        let took = cov.count || 0;
+        let stated = (typeof cov.available === 'number') ? cov.available : null;
+        /* ⑴ the supplier's own continuation, when it both stated one and can resume from it */
+        while (cov.continues === true && r.next != null) {
+          if (!(rec && rec.can.cursor)) { done = false; why = 'continuation-without-cursor'; break; }
+          if (requests >= budget) { done = false; why = 'request-budget-spent'; break; }
+          r = await ask(node.box, r.next);
+          if (!r.ok) return r;
+          take(r.features); parts.push(r.coverage); cov = r.coverage; pages++;
+          took += cov.count || 0;
+          if (typeof cov.available === 'number' && (stated == null || cov.available > stated)) stated = cov.available;
+        }
+        /* 「上流が持っていると述べた件数に、渡ってきた件数が届いていない」——続きも渡されないなら、
+           この窓はこの上流には大きすぎる。それが分割の唯一の理由である。 */
+        const capped = (stated != null && took < stated) || (cov.continues === true && r.next != null);
+        windows.push({ bbox: copyBox(node.box), depth: node.depth, pages: pages, count: took, stated: stated, complete: !capped, reason: cov.reason });
+        if (!capped) {
+          /* ⚠ 「続きについて何も述べていない」 は 「これで終わり」 ではない. A window whose end nobody
+             stated cannot be split into windows whose ends nobody states either — dividing it would
+             manufacture confidence out of arithmetic. */
+          if (cov.continues == null && cov.completeness !== 'all') { done = false; why = why || 'continuation-unstated'; }
+          continue;
+        }
+        if (!splittable(node.box)) { done = false; why = why || 'window-indivisible'; continue; }
+        for (const q of quadrants(node.box)) queue.push({ box: q, depth: node.depth + 1 });
+      }
+      if (queue.length && !why) { done = false; why = 'request-budget-spent'; }
+
+      const features = Array.from(seen.values());
+      return {
+        ok: true, features: features, parts: parts,
+        run: {
+          windows: windows, requests: requests, duplicates: duplicates,
+          dedupBy: idless ? (idless === (features.length + duplicates) ? 'structure' : 'mixed') : 'id',
+          idless: idless, complete: done, why: why,
+        },
+        root: root,
+      };
+    }
+
+    async function acquirePlanned(id, req) {
+      const o = req || {};
+      const key = String(id == null ? '' : id);
+      const p = plan(key, o);
+      if (!p.ok) return p;
+      /* ⚠ A PLAN THAT CANNOT ANSWER IS REFUSED BEFORE IT IS RUN, and the grid road keeps the refusal
+         it has always had — `where-not-supported` means the same thing today as yesterday. */
+      if (!p.satisfiable) {
+        if (p.why === 'grid-has-no-post-stage') return refuse('where-not-supported', { id: key, needs: 'supply().where' });
+        return refuse('plan-unsatisfiable', { id: key, why: p.why, plan: p });
+      }
+      const budget = isPosInt(o.maxRequests) ? o.maxRequests : DEFAULT_REQUEST_BUDGET;
+      const upstreamReq = Object.assign({}, o, { where: p.where.upstream.length ? p.where.upstream : null });
+      delete upstreamReq.analysis;      /* judged once, below, on the assembled answer */
+
+      if (p.kind !== 'features') {
+        const g = await acquire(key, upstreamReq);
+        if (!g.ok) return g;
+        return Object.assign({}, g, { plan: Object.assign({}, p, { run: { windows: [], requests: 1, duplicates: 0, dedupBy: null, idless: 0, complete: true, why: null } }) });
+      }
+
+      if (!p.exhaustive) {
+        const one = await fetchFeatures(key, upstreamReq);
+        if (!one.ok) return one;
+        /* ⚠ THE RECORD SAYS WHERE THE CONDITIONS RAN EVEN WHEN THEY ALL RAN UPSTREAM. A plan whose
+           `pending` is empty is a statement, not an absence — a reader comparing two answers must
+           not have to tell 「後段は無い」 from 「計画を通っていない」 by the field being missing. */
+        const cov1 = Object.assign({}, one.coverage, {
+          wherePlan: { upstream: p.where.upstream, pending: [], executedBy: p.where.upstream.map(() => p.road) },
+        });
+        const out1 = Object.assign({}, one, {
+          coverage: cov1,
+          plan: Object.assign({}, p, { run: { windows: [{ bbox: cov1.requested.bbox, depth: 0, pages: 1, count: cov1.count, stated: (typeof cov1.available === 'number') ? cov1.available : null, complete: cov1.completeness === 'all', reason: cov1.reason }], requests: 1, duplicates: 0, dedupBy: null, idless: 0, complete: cov1.completeness === 'all', why: null } }),
+        });
+        return analysed(key, o, out1);
+      }
+
+      const got = await exhaust(key, upstreamReq, budget);
+      if (!got.ok) return got;
+      /* ⚠⚠⚠ THE WHOLE POINT, AND IT IS A REFUSAL. A later filter over a window that was not taken
+         to the end answers 「取れた分のうち条件に合うもの」. That is a real number over real data and
+         it is not the answer to the question, so it is not returned as one. */
+      if (!got.run.complete && p.where.post.length) {
+        return refuse('plan-unsatisfiable', { id: key, why: got.run.why, plan: Object.assign({}, p, { run: got.run }) });
+      }
+      let features = got.features;
+      if (Array.isArray(o.fields) && o.fields.length) features = project(features, o.fields);
+
+      const coverage = mergeCoverage(got.parts, { servedBox: got.root, count: features.length });
+      /* the record states the WHOLE question — both halves of the plan — and who has executed which */
+      coverage.requested = Object.assign({}, coverage.requested, {
+        bbox: (o.bbox == null) ? null : copyBox(got.root),
+        where: p.where.asked.length ? p.where.asked.map((c) => ({ field: c.field, op: c.op, value: c.value })) : null,
+        limit: isPosInt(o.limit) ? o.limit : null,
+        fields: Array.isArray(o.fields) ? o.fields.slice() : null,
+      });
+      coverage.filteredBy = p.where.upstream.length ? (coverage.filteredBy || 'supplier') : null;
+      coverage.wherePlan = { upstream: p.where.upstream, pending: p.where.post, executedBy: p.where.upstream.length ? p.where.upstream.map(() => p.road) : [] };
+      if (p.where.post.length && coverage.completeness === 'all') {
+        coverage.completeness = 'partial';
+        coverage.reason = 'where-pending-post-stage';
+      }
+      const out = {
+        ok: true,
+        /* ⚠ NOT `features`. A reader that stops here has the window, not the answer. */
+        kind: p.where.post.length ? 'staged' : 'features',
+        features: features, coverage: coverage, next: null,
+        plan: Object.assign({}, p, { run: got.run }),
+      };
+      return analysed(key, o, out);
+    }
+
+    /* ── analysis: the camera is not allowed to be the population, when it was said so ─────────── */
+
+    /* ⚠ THE FALLBACK IS NOT REMOVED — it is the road most rows in this app travel and removing it
+       would be removing the feature. What `analysis:true` does is refuse to let it be the STANDARD
+       road for a question whose answer is a measurement: an answer assembled out of what the
+       renderer holds, over a row nothing says is complete, changes when a reader pans. A caller
+       that did not ask for this gets exactly what it always got, with `coverage.answeredBy` now
+       saying which road answered either way. */
+    function analysed(key, o, res) {
+      if (!o || o.analysis !== true) return res;
+      if (!res || res.ok !== true || !res.coverage) return res;
+      const c = res.coverage;
+      if (c.answeredBy !== 'renderer') return res;
+      if (VIEW_DEPENDENT.indexOf(c.reason) < 0) return res;
+      return refuse('renderer-view-dependent', { id: key, reason: c.reason, coverage: c });
+    }
+
+    /* ── capabilities: claimed (derived) and measured (asked) ─────────────────────────────────── */
+
+    /* ⚠ NOTHING IS LISTED. Every value is read off the registration and the declaration that already
+       exist for that id, so a source registered tomorrow answers by being registered. */
+    function capabilitiesOf(id) {
+      const key = String(id == null ? '' : id);
+      const ent = entryFor(key);
+      if (!ent) return null;
+      const rec = sup(key);
+      const d = declarationOf(key);
+      const road = (rec && (rec.fetch || rec.region)) ? 'supplier' : 'renderer';
+      return {
+        id: key, kind: ent.kind, road: road,
+        claimed: {
+          /* already three-valued above, and flattening it here would undo that distinction */
+          offscreen: (ent.needsVisible === true) ? false : ((ent.needsVisible === false) ? true : null),
+          /* both roads are HANDED the window (supply()'s fetch takes a bbox; read() takes bounds).
+             Whether it is honoured is not a thing a registration can say — it is measured. */
+          window: true,
+          /* ⚠ false, NOT null, FOR THE DELEGATED ROAD: read() has one parameter and it is `bounds`,
+             so a time handed to it narrows nothing. A supplier is asked and says nothing in advance. */
+          time: (road === 'supplier') ? null : false,
+          conditions: !!(rec && rec.fetch && rec.can.where),
+          /* 「終わりを確認できるか」: a view-bound holding has no end of its own to confirm; a row that
+             declared it holds everything within an extent is claiming there is one. */
+          boundedEnd: (d && d.viewBound === true) ? false : ((d && d.complete === true) ? true : null),
+          /* nothing declares identity anywhere in this app — so the claim is silence, and silence
+             is null rather than false */
+          stableId: null,
+        },
+      };
+    }
+
+    /* ⚠ MEASURED THROUGH THE SAME DOORS A CALLER USES, so what is reported is what a caller would
+       actually get. Every observation says what it observed; a question that could not discriminate
+       answers null and says why, because 「測れなかった」 と 「できない」 is the distinction this whole
+       file is written around. */
+    async function measureCapabilities(id, opts) {
+      const o = opts || {};
+      const key = String(id == null ? '' : id);
+      const base = capabilitiesOf(key);
+      if (!base) {
+        if (!LAYERS() && !REG()) return refuse('map-unavailable', { needs: 'IntMapGisLayers' });
+        return refuse('layer-unknown', { id: key });
+      }
+      const win = (o.bbox == null) ? copyBox(WHOLE_WORLD) : asBox(o.bbox);
+      if (!finiteBox(win)) return refuse('bad-param', { param: 'bbox', value: o.bbox });
+      const notes = [];
+      const m = { offscreen: null, window: null, time: null, conditions: null, boundedEnd: null, stableId: null };
+      if (base.kind !== 'features') {
+        notes.push({ capability: null, saw: 'kind-is-grid' });
+        return { ok: true, id: key, road: base.road, claimed: base.claimed, measured: m, notes: notes };
+      }
+
+      const whole = await fetchFeatures(key, { bbox: [win.w, win.s, win.e, win.n], time: o.time == null ? null : o.time });
+      /* ⚠ 訊けなかったことを「能力が無い」と述べない: a refusal is handed back as itself. */
+      if (!whole.ok) return whole;
+      const cov = whole.coverage;
+
+      /* ① 表示しなくても取得できるか */
+      if (cov.answeredBy === 'supplier') { m.offscreen = true; notes.push({ capability: 'offscreen', saw: 'answered-by-supplier' }); }
+      else if (isOff(key) && whole.features.length > 0) { m.offscreen = true; notes.push({ capability: 'offscreen', saw: 'renderer-answered-while-off' }); }
+      else notes.push({ capability: 'offscreen', saw: 'layer-is-on' });
+
+      /* ② 求めた窓の外を返さないか — asked of the app's ONE box predicate (js/map-ui.js narrow),
+         not of a second containment rule written here. */
+      const R = REG();
+      const quarter = quadrants(win)[0];
+      if (!R || typeof R.narrow !== 'function') notes.push({ capability: 'window', saw: 'narrow-unavailable' });
+      else {
+        const part = await fetchFeatures(key, { bbox: [quarter.w, quarter.s, quarter.e, quarter.n], time: o.time == null ? null : o.time });
+        if (!part.ok) notes.push({ capability: 'window', saw: part.why });
+        else if (!part.features.length) notes.push({ capability: 'window', saw: 'nothing-in-probe-window' });
+        else {
+          let inside = null;
+          try { inside = R.narrow(part.features, [[quarter.w, quarter.s], [quarter.e, quarter.n]]); } catch (_) { inside = null; }
+          if (!Array.isArray(inside)) notes.push({ capability: 'window', saw: 'narrow-declined' });
+          else {
+            m.window = inside.length === part.features.length;
+            notes.push({ capability: 'window', saw: 'returned', got: part.features.length, inside: inside.length });
+          }
+        }
+      }
+
+      /* ③ 指定期間を扱えるか — the acquisition's own verdict, not a second reading of it */
+      if (o.time == null) notes.push({ capability: 'time', saw: 'no-time-asked' });
+      else { m.time = cov.reason !== 'time-not-established'; notes.push({ capability: 'time', saw: cov.reason }); }
+
+      /* ④ 全件取得の終わりを確認できるか */
+      if (cov.continues === false) { m.boundedEnd = true; notes.push({ capability: 'boundedEnd', saw: 'stated-end' }); }
+      else if (cov.continues === null) { m.boundedEnd = false; notes.push({ capability: 'boundedEnd', saw: 'continuation-unstated' }); }
+      else notes.push({ capability: 'boundedEnd', saw: 'more-remains' });
+
+      /* ⑤ 同じ地物を安定した ID で追えるか */
+      const ids = whole.features.map(identityOf);
+      if (!ids.length) notes.push({ capability: 'stableId', saw: 'no-features' });
+      else if (ids.some((x) => x == null)) { m.stableId = false; notes.push({ capability: 'stableId', saw: 'no-id-member', without: ids.filter((x) => x == null).length }); }
+      else {
+        const again = await fetchFeatures(key, { bbox: [win.w, win.s, win.e, win.n], time: o.time == null ? null : o.time });
+        if (!again.ok) notes.push({ capability: 'stableId', saw: again.why });
+        else {
+          const a = ids.slice().sort(), b = again.features.map(identityOf).map(String).sort();
+          m.stableId = a.length === b.length && a.every((x, i) => x === b[i]);
+          notes.push({ capability: 'stableId', saw: m.stableId ? 'same-ids-twice' : 'ids-moved', first: a.length, second: b.length });
+        }
+      }
+
+      /* ⑥ 属性条件を上流で実行できるか. ⚠ THE CONDITION IS THE CALLER'S, because a condition this
+         file invented would be a claim about what the data contains. What is measured is what a
+         supplier's answer must satisfy WHATEVER the condition means: the filtered rows are a subset
+         of the unfiltered ones, and 「narrowed nothing」 is reported as indistinguishable rather than
+         as a pass — every row may genuinely match. */
+      const probe = readWhere(o.where);
+      if (!probe.ok) return probe;
+      if (!probe.where) notes.push({ capability: 'conditions', saw: 'no-condition-asked' });
+      else {
+        const filtered = await fetchFeatures(key, { bbox: [win.w, win.s, win.e, win.n], time: o.time == null ? null : o.time, where: probe.where });
+        if (!filtered.ok) { m.conditions = false; notes.push({ capability: 'conditions', saw: filtered.why }); }
+        else {
+          const before = whole.features.length, after = filtered.features.length;
+          let subset = true;
+          if (m.stableId === true) {
+            const have = new Set(ids.map(String));
+            subset = filtered.features.every((f) => { const k = identityOf(f); return k != null && have.has(k); });
+          }
+          if (!subset || after > before) { m.conditions = false; notes.push({ capability: 'conditions', saw: 'not-a-subset', before: before, after: after }); }
+          else if (after < before) { m.conditions = true; notes.push({ capability: 'conditions', saw: 'narrowed', before: before, after: after }); }
+          else notes.push({ capability: 'conditions', saw: 'indistinguishable', before: before, after: after });
+        }
+      }
+
+      return { ok: true, id: key, road: base.road, claimed: base.claimed, measured: m, notes: notes };
+    }
+
+    /* ⚠⚠⚠ THE TWO SIDE BY SIDE, AND EVERY DISAGREEMENT NAMED. A declaration is a claimant, so the
+       thing a check can fail on is not 「申告が在るか」 but 「申告と実体が一致するか」 — #R783 measured
+       a `where:true` over an answer nothing had filtered, and nothing anywhere could report it.
+       ⚠ null NEVER CONFLICTS WITH ANYTHING: an unmeasured question is not a disagreement. */
+    async function auditCapabilities(id, opts) {
+      const r = await measureCapabilities(id, opts);
+      if (!r.ok) return r;
+      const conflicts = [];
+      for (const cap of CAPABILITIES) {
+        const claimed = r.claimed[cap], measured = r.measured[cap];
+        if (claimed == null || measured == null || claimed === measured) continue;
+        conflicts.push({
+          capability: cap, claimed: claimed, measured: measured,
+          /* 「言ったのにできない」 と 「できるのに言っていない」 は別の直し方をする */
+          kind: (claimed === true) ? 'claimed-not-observed' : 'observed-not-claimed',
+        });
+      }
+      return Object.assign({}, r, { conflicts: conflicts, agrees: conflicts.length === 0 });
+    }
+
     /* ── acquire(): one door, dispatching on what the supplier is ─────────────────────────────── */
 
     /* ⚠ IT DECIDES NOTHING THE TWO DOORS ABOVE DO NOT. This exists so a caller that does not know
@@ -1202,6 +1744,17 @@ export function makeGisSources() {
       list, acquire, features, region, declare, declarationOf,
       /* (#R752) the supply contract: register an implementation, or ask what one can do */
       supply, supplierOf,
+      /* (#R819) 取得の実行計画: どの条件が上流で効き、どれが後段で効くか。plan() は何も取らずに
+         述べ、acquirePlanned() はそれを実行して「実際に何回・どの窓を訊いたか」を結果に残す。
+         ⚠ 後段のフィルタは走らせない（js/gis-ops.js の filter が正本）——`kind:'staged'` は
+         「窓は取れた。条件はまだ実行されていない」であって答えではない。 */
+      plan, acquirePlanned,
+      /* (#R819) 能力: 登録から導いた申告と、同じ扉を通した実測と、その食い違い */
+      capabilitiesOf, measureCapabilities, auditCapabilities,
+      capabilityNames: () => CAPABILITIES.slice(),
+      /* the reasons that mean 「母集団が画面に依存している（かもしれない）」 — read from here by the
+         caller that asked for an analysis, so there is one judgement and not two */
+      viewDependentReasons: () => VIEW_DEPENDENT.slice(),
       /* the vocabularies, so a UI or a check reads them from the file that decides them rather than
          keeping a second copy (docs/GIS-CORE.md §2.1) */
       completenessValues: () => COMPLETENESS.slice(),

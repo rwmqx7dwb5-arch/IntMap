@@ -268,5 +268,13 @@ test('R783 ⑥ the surface vocabulary is the crs kernel names unioned with this 
 
   /* ⚠ 答えが変わるなら版が上がる（scripts/gis-kernel-versions.mjs が読み手）: a recipe that states a
      tolerance replays to a refusal where ops-7 produced a number. */
-  assert.equal(ops.version(), 'ops-8');
+  /* ⚠ (#R819) THE VERSION IS READ FROM THE LEDGER, NOT WRITTEN HERE. This line held the literal
+     'ops-8' and failed the first time a later round raised the kernel for its own honest reason —
+     a test that copies a number becomes a second owner of it, and the copy is always the one that
+     is wrong. scripts/gis-kernel-versions.mjs is the READER of these versions and the keeper of the
+     hash beside them, so it is what this asks. The fact being measured is unchanged: the kernel and
+     the ledger agree about which engine computed an answer. */
+  const { KERNELS } = await import(new URL('../scripts/gis-kernel-versions.mjs', import.meta.url));
+  assert.equal(ops.version(), KERNELS['js/gis-ops.js'].version,
+    'the ops kernel and scripts/gis-kernel-versions.mjs disagree about which version computed an answer');
 });

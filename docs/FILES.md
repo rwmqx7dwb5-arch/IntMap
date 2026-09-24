@@ -168,7 +168,14 @@ gis-runtime.js                    **GIS の組み立て**（#R783）— `makeGis
                                   **同じ `mount()`** で 15 のカーネルを載せる。`externals` を渡せば閉じた集合
                                   （渡していないものは scope に在っても使わない）、渡さなければ生きた scope。
                                   ⚠ **Atlas 用 GIS と外部 AI 用 GIS を別に作らないための 1 か所**。
-                                  `js/gis-core.js` がこれを名前で読んで再公開する
+                                  `js/gis-core.js` がこれを名前で読んで再公開する。
+                                  #R819 で 1 枠ではなく**名前を持った実行コンテキストの表**になった——
+                                  `mount(scope, HOST, CONTEXT)` / `contexts()`（`ambient` は測って答える） /
+                                  `release(ctx)`（**この組が置いたものだけ**を同一性で確かめて外す。一覧は
+                                  `mount()` が照合したものそのもの）。⚠ **`scope-conflict` は緩めていない**
+                                  ——カーネルが裸の global で互いを解決する以上、1 realm に 2 組は今も拒む
+                                  （変わったのは拒否が終身でなくなったことと、持ち主を言うこと）。
+                                  2 つ目は**2 つ目の realm**に住む: `workerSource` / `serve` / `attach`
 gis-datasets.js                   **データセットのレジストリ** `window.IntMapData` — 取り込み・内蔵・
                                   **処理の出力**を同じ 1 つの形で持つ。列の型は**値を測って**決める
                                   （列名で決めない。⚠ #R735 以降**先頭ゼロのセルは符号**＝`text`）。
@@ -181,7 +188,14 @@ gis-datasets.js                   **データセットのレジストリ** `wind
                                   取り消しは snapshot ではなく**逆操作**で、処理の出力・格子・`stale` な
                                   記録は編集できない）・読者による**列の型と単位の宣言** `declareField`
                                   （⚠ 型は実データで検証する）・**幾何を持つ地物の件数** `withGeometry`
-                                  （宣言ではなく測定。`count` との差が、描くもののない行の数）
+                                  （宣言ではなく測定。`count` との差が、描くもののない行の数）。
+                                  #R819 で列が**何の量か**も宣言できるようになった（`quantity`＝kind / space /
+                                  time / period / unit / denominator と、その**著者**）——格子の列はそのバンドなので、
+                                  バンドの宣言は `fields[]` にも同じ値・同じ著者で載る。⚠ 読めない宣言は入口で
+                                  拒まず `quantityRefused` として列に付く（判定できないビルドで「読めない」と
+                                  答えないため）。⚠ **「この文字列は数か」は 1 つの factory**
+                                  （`numberRuleFactory()`）で、別スレッドへは組み上がった object ではなく
+                                  **factory を**渡す（自由名を呼び出しフレームに残さない）
 gis-geometry.js                   **幾何カーネル** `window.IntMapGisGeometry`（#R732）— boolean 演算
                                   （union / intersection / difference / dissolve）・**任意形状の buffer**
                                   （測地円盤との Minkowski 和）・述語（intersects / contains / within /
@@ -191,6 +205,17 @@ gis-geometry.js                   **幾何カーネル** `window.IntMapGisGeomet
                                   **バイトは起動時に届いている**（#R734 本番・#R745 再測。Architecture.md）。
                                   経度は継ぎ目でほどいて揃え、結果を [-180,180] に戻す——拒むのは
                                   **世界を巻く環だけ**
+                                  #R819 で算術が**自己完結した 1 つの factory**（`geomKernel(deps, call)`）に
+                                  包まれ、借りているもの（sweep line・測地）は外に残って引数で入る
+                                  ——**同じバイトが別スレッドでも答える**。運べない演算はそう答え
+                                  （`clipper-unavailable` / `geodesy-unavailable`）、運べる一覧は
+                                  **deps 無しで建てたカーネル自身**に訊く。そして 4 段目が入った——
+                                  `coverage()` が**データセット全体の位相**（重なり・隙間・未被覆・合っていない
+                                  共有境界）を**幾何として**返す。⚠ **条件は呼び出し元が述べる**
+                                  （`forbid` / `report` / `allow`）——重なりは自動的に誤りではない。
+                                  ⚠ **修復は提供しない**（隙間をどちらの隣に飲ませるかはデータについての主張）。
+                                  ⚠ 両端がつままれた薄片は `gaps` では出ず `edges` で出るので、
+                                  「`gaps: 0` ＝隙間なし」ではない。
 gis-crs.js                        **座標変換** `window.IntMapGisCrs`（#R732）— `proj4` を**動的 import で
                                   遅延**。⚠ **EPSG の一覧を持たない**——定義は ① proj4 自身が知るもの
                                   ② UTM の算術（326NN／327NN）③ 読者が `define()` で渡した WKT・proj
@@ -203,7 +228,10 @@ gis-raster.js                     **数値ラスターのカーネル** `window.
                                   条件による抽出・**同じ格子同士の差分**（格子が違えば
                                   `grid-mismatch` で拒み、黙って再標本化しない）。
                                   `fromSampler()` が既存の数値レイヤーを同じ契約に焼き込む。
-                                  依存ゼロ（地球半径は `IntMapGeodesy`、内外判定は `IntMapGisGeometry`）
+                                  依存ゼロ（地球半径は `IntMapGeodesy`、内外判定は `IntMapGisGeometry`）。
+                                  #R819 で footprint に**2 つの形**が入った（`sampleCellForms()`）——`box` は矩形で、
+                                  その上の変換がアフィンのときだけ厳密。`ring` は footprint そのもので、入力画素
+                                  1 枚ずつに切る。⚠ 集約・void の規則・地面の重み・`sum` の按分は**どちらも同じ 1 本**
 gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapGisGeotiff`（#R749）—
                                   依存を足さずに TIFF 6.0 を読む（`geotiff` npm を使わない。
                                   前例は `js/gis-geopackage.js`）。II/MM 両バイト順・strip と tile・
@@ -236,7 +264,15 @@ gis-warp.js                       **格子の座標変換と再標本化** `wind
                                   `IntMapGisRaster.sample` が出す）。⚠ **分類の格子を bilinear で
                                   補間しない**（宣言されていれば `bilinear-on-categorical` で拒み、
                                   宣言が無ければ推測しない）。逆写像で走り、出力範囲は**周を歩いて**
-                                  求める（投影された辺は度では曲線）
+                                  求める（投影された辺は度では曲線）。
+                                  #R819 で**出力を丸ごと抱えない道**ができた——`opts.sink`（`begin`/`write`/`end`）へ
+                                  **窓ごとに**書き出し、窓と幾何ブロックは同じ行数で予算を分け合う。予算の数はここに
+                                  書かず `opts.budgetBytes` か扉の `budgetBytes()` に訊く。⚠ **予算は作業の上限では
+                                  ない**——収まらない出力は拒まず `report.memory.overBudget` として述べる。
+                                  ⚠ **外へ誤る箱はふるいであって面積ではない**ので `box` の超過を測って報告し、
+                                  `footprint:'exact'` は**述べられた許容幅**つきの決定として輪郭を環で組む
+                                  （辺は両隣で共有＝footprint が敷き詰まる）。行の緯度も近似なので重みの相対誤差の
+                                  上界を報告し、`areaTolerance` を述べればそれが約束になる
 gis-sources.js                    **供給元** `window.IntMapGisSources`（#R749）— 描画器から
                                   取り出すのではなく、**描画と分析が同じ供給元を読む**ための層。
                                   `list` / `features` / `region` / `acquire` / `declare`。
@@ -245,12 +281,29 @@ gis-sources.js                    **供給元** `window.IntMapGisSources`（#R74
                                   答えた範囲・件数・時点・解像度）。⚠ **`all` は推測から届かない**
                                   ——測れないものは `partial` と理由を述べる（「知らない」を
                                   「全部だ」の代わりにしない）。宣言できるのは供給元自身だけで、
-                                  今日それを述べているのは**取り込んだファイル**（`js/map-ui.js`）
+                                  今日それを述べているのは**取り込んだファイル**（`js/map-ui.js`）。
+                                  #R819 で**取得の実行計画**が入った——`plan(id,req)` が何も取らずに「どの条件が
+                                  上流で効き、どれが後段に回るか」を述べ、`acquirePlanned()` が実行する。後段が
+                                  在るなら前段は**窓を取り切る**（cursor で送り、無ければ窓を四分木で割り、端に
+                                  届かなければ `plan-unsatisfiable`）。⚠ **上限で切れた頁を濾したものは答えでは
+                                  ない**。後段のフィルタは走らせず `kind:'staged'` で返す（比較の正本は
+                                  `js/gis-ops.js`）。⚠ **どちらの道が答えたかを必ず述べる**(`coverage.answeredBy`)。
+                                  ⚠ `analysis:true` は「この取得は測定である」という陳述で、母集団がカメラで
+                                  決まる答えを `renderer-view-dependent` で断る。⚠ **能力は申告と実測の両方**
+                                  （`capabilitiesOf` / `measureCapabilities` / `auditCapabilities`。申告は登録と
+                                  宣言から導き、一覧を持たない。3 値のままで `null` を `false` に畳まない）
 gis-index.js                      **空間索引** `window.IntMapGisIndex`（#R735）— 一様格子。
                                   **セルの大きさをデータから導く**（定数で決め打ちしない）。
                                   ⚠ 不変条件は**偽陰性ゼロ**——子午線をまたぐ箱・世界を覆う箱・
                                   箱を持たないものは `always` に入れ、その件数は `stats().oversize`
-                                  で外から見える。実測 40,000×1,000 で 756 ms → 82 ms
+                                  で外から見える。実測 40,000×1,000 で 756 ms → 82 ms。
+                                  #R819 で**種別が 2 つ**になった（`grid` ＝一様格子・`tiered` ＝セルを倍々にした
+                                  階層）。⚠ **既定は今も `grid`** で候補の集合も順序も動いていない。`kind:'auto'` は
+                                  建てる前に「一様格子なら `always` に入る割合」を数えて選ぶ（手で「大きい図形が
+                                  多い」と書かない）。⚠ **「索引が在る」は「どの計算を省けたか」ではない**ので
+                                  `stats()` が仕事を述べる（build/query の時間・候補・**実際に幾何を見た数**・
+                                  索引無しなら見たはずの数・その比・抱えている構造）。⚠ **数える場所は 1 つ**
+                                  ——呼び出し元の厳密な判定は `queryEach(…,{test})` として渡され、写されない
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
@@ -261,7 +314,14 @@ gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorke
                                   効かない、という実測への答え）。並列度の上限は core ではなく**メモリ**
                                   から決めた数で、根拠は定数の隣にある。⚠ `available()`（能力）と
                                   `probe()`（実測）は別の問い——CSP が `blob:` を拒むことは throw では
-                                  なく error イベントで出るので、同期では答えられない
+                                  なく error イベントで出るので、同期では答えられない。
+                                  #R819 で**幾何の運び口**が入った（`geometry.op` / `provideGeometry` /
+                                  `geometryOps` / `geometryReady`）——この file は幾何を 1 つも持たず、演算は
+                                  置かれたものを名前で引き、**語彙は登録そのもの**。⚠ **単一の巨大な図形の中止は
+                                  `terminate`**（分割できない 1 回の呼びの中に中断してよい点は無い）で、それが
+                                  届くかは `status().stopReachesRunningWork` が述べる。⚠ **途中まで書いた消費者は
+                                  そう述べる**（`runBlocks` の `partial` は「使ってよい半分」ではなく、捨てるか
+                                  作り直す量の測定）
 gis-units.js                      **量の単位** `window.IntMapGisUnits`（#R774）— 「この 2 つは
                                   足し引きできるか。できるなら換算は何か」1 問だけに答える。
                                   `parse` / `compare` / `convert` / `unitOfExpr`。表は **SI の定義値の原子**
@@ -277,7 +337,12 @@ gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#
                                   伝播**し（0 として数えたい読者は `coalesce` と自分で書く）、**先頭ゼロの
                                   セルは数にならない**——その判定は持たずに `IntMapData.asNumber` に訊く
                                   （2 つ目の型づけを作らない。渡されなければ `expr-no-number-rule` で拒む）。
-                                  関数の一覧は `FUNCS` 1 つで、`functions()` は写しではなく同じ表
+                                  関数の一覧は `FUNCS` 1 つで、`functions()` は写しではなく同じ表。
+                                  #R819 で評価器が**自己完結した factory**（`exprKernel()`）になり、`window` も
+                                  module scope も掴まない——**同じバイトが別スレッドでも答える**（ジョブ
+                                  `expr.rows` は行の配列でも等長の面の組でも受ける）。⚠ **数値規則は写さずに
+                                  渡す**（規則の無い扉はジョブが作られる前に `expr-no-number-rule`）。
+                                  ⚠ **運べるかは木を queue する前に訊く**（`portable(ast)`）
 gis-atlas.js                      **GIS 層が自分で持つ Atlas の扉** `window.IntMapGis.atlas`
                                   （#R743）— `catalogue()` は `ops.ops()` **そのもの**で、op を
                                   1 本足せばその日のうちに Atlas にも出る（手書きの一覧を作らない）。
@@ -305,7 +370,15 @@ gis-ops.js                        **処理** `window.IntMapGisOps` — filter / 
                                   `vector`＝**既存の 9 つは格子を名前で拒む**。重い処理は
                                   `run(step,{signal,onProgress})` で**中止でき**、対の数え上げは
                                   `js/gis-index.js` に任せる。
-                                  拒否は文ではなくコードで返す（文面は `js/gis-panel.js`）
+                                  拒否は文ではなくコードで返す（文面は `js/gis-panel.js`）。
+                                  ⚠ #R819: **「面積で重み付ける」には面積が 2 つある**ので `aggregate` の
+                                  `weightBy` で選ぶ（`memberArea` ＝既定・地物自身の地面／`intersectionArea` ＝
+                                  区域との交差の地面）。既定は動かさず、重みを持たない stat に付ければ
+                                  **無視せず拒む**。⚠ **量は列も述べる**ので毎段打ち直さなくてよく、
+                                  **誰が述べたか**が残る（`caller` / `column` / `band`）。
+                                  ⚠ `rasterCalc` の式は**別スレッドで走る**（格子を組むのは今も `combine` で、
+                                  置き換わるのは中の算術だけ。1 画素ごとに元の対を照合し、合わない画素は同じ式で
+                                  ここで計算して、その件数を `stats.worker` が述べる）
 gis-project.js                    **プロジェクトの保存** `window.IntMapGisProject` — IndexedDB。取り込みは
                                   本体ごと、処理は**段（レシピ）だけ**。`setParams(id, params, opts)` と
                                   `load(id, opts)` は `{signal, onProgress}` を取り、走者へそのまま渡す
@@ -313,7 +386,14 @@ gis-project.js                    **プロジェクトの保存** `window.IntMap
                                   `setParams()` が引数を変えて
                                   下流まで再計算する——**commit-or-restore** で、失敗した段は元へ戻して
                                   `stale` を立て下流へ伝える。⚠ 基図・カメラ・有効レイヤーは持たない
-                                  （`js/session-tabs.js` の持ち物）
+                                  （`js/session-tabs.js` の持ち物）。
+                                  #R819 で**結果の記憶**が入った（`cache`）。⚠ **ディスクに書かれるのは今も
+                                  レシピだけ**で、これは**このタブの記憶の中に置く 1 回の実行の記憶**——鍵は
+                                  **それを生んだ条件 5 軸**（入力の中身のバイト・`describe()` 丸ごと＋読者の宣言・
+                                  op でない祖先の出自・パラメーター・カーネルの版）の sha256 で、**時刻は入らない**。
+                                  版を述べない部分があれば**鍵を作らない**。⚠ **引いた記録は信じずに突き合わせる**
+                                  ——記述が 1 つでも違えば捨てて op を走らせる。予算はバイトで溢れは LRU。
+                                  使い回した段は `reused` として名指す（計算し直したとは報告しない）
 gis-panel.js                      その操作卓（一覧・属性表・由来の連鎖・処理の実行・保存と読み込み）
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
                                   アウトライン・図形移動・到達圏（車・徒歩・自転車・公共交通）・3-D 弧）

@@ -100,6 +100,27 @@ export function makeGisDatasets() {
 
     /* ── field typing ───────────────────────────────────────────────────────────────────────── */
 
+    /* ══ (#R819) THE RULE IS ONE FUNCTION, AND IT CLOSES OVER NOTHING ════════════════════════════
+       「この文字列は数か」 is this file's decision, and since #R819 it is asked from TWO threads: the
+       app's, and a Worker's, because js/gis-expr.js evaluates an expression over rows off the main
+       thread and every comparison in it goes through this verdict. js/gis-worker.js ships a function
+       by evaluating ITS OWN SOURCE TEXT in the other thread, so a rule that reached for a name in the
+       module around it (`asNumber` reached for `leadingZero`, which is not in its own text) arrived
+       there unbound — refused by name as `job-not-self-contained`, and the only way past that refusal
+       would have been a SECOND spelling of the rule inside the job. That is the drift
+       .agents/rules/no-ad-hoc-hardcoding.md §2-3 describes in full: a column that compares one way in
+       the panel and another way in a worker, with both implementations green.
+       ⚠ SO THE RULE MOVED INSIDE ONE FACTORY, AND NOTHING ABOUT IT CHANGED. Every regex, every
+       branch and every verdict below is the #R735/#R774 rule verbatim; what changed is that the
+       helpers it needs (`leadingZero`, `paddedNumeral`) are now in the same text as the functions
+       that use them. The module calls `RULE.*` below — this is still ONE implementation, with two
+       callers, which is why 「両方が同じだけ間違っていれば緑」 is not available here.
+       ⚠ AND IT IS HANDED OVER AS THE FACTORY ITSELF (see the API's `numberRuleFactory`), never as
+       the built object: js/gis-worker.js can carry a function's source and cannot carry a closure's
+       captured state, so a caller that passed `RULE` would be passing three functions whose free
+       names are inside a call frame that does not exist in the other thread. */
+    function numberRuleFactory() {
+
     /* A value is "empty" when there is nothing to type: null, undefined, or a string of spaces.
        Empty cells never decide a type — a column of 900 numbers and 3 blanks is a number column
        with 3 blanks, and saying text there would take arithmetic away from the whole column. */
@@ -200,6 +221,26 @@ export function makeGisDatasets() {
       if (padded > 0) col.padded = padded;
       return col;
     }
+
+      /* ⚠ THE THREE NAMES js/gis-expr.js ASKS FOR ARE THE FIRST THREE, and `asDate` travels with them
+         because `typeColumn` asks it — a factory that returned only what the expression kernel names
+         would be a factory whose `typeColumn` is a ReferenceError the moment it is rebuilt elsewhere.
+         `paddedNumeral` is returned for the same reason it is counted: it is the EVIDENCE beside the
+         verdict, and a second reader of it must ask this one rather than spell the notation again. */
+      return {
+        asNumber: asNumber, asDate: asDate, isEmpty: isEmpty,
+        typeColumn: typeColumn, paddedNumeral: paddedNumeral,
+      };
+    }
+
+    /* ⚠ BUILT ONCE, HERE, AND THE MODULE CALLS NOTHING ELSE. The worker rebuilds the same factory
+       from the same bytes; this thread holds the object it returns. Two constructions of the rule
+       would be two rules the day one of them is edited. */
+    const RULE = numberRuleFactory();
+    const isEmpty = RULE.isEmpty;
+    const asNumber = RULE.asNumber;
+    const asDate = RULE.asDate;
+    const typeColumn = RULE.typeColumn;
 
     /* The column set is the UNION over features, not the keys of the first one — a GeoJSON file may
        carry different properties per feature, and reading only feature 0 drops every column that
@@ -553,7 +594,21 @@ export function makeGisDatasets() {
       if (!statements || typeof statements !== 'object') return;
       for (const col of rec.fields || []) {
         const s = statements[col.name];
-        if (!s || s.unit == null) continue;
+        if (!s) continue;
+        /* ⚠ (#R819) 量は単位とは別に運ばれる。A column may state what it MEASURES without
+           stating a spelling for it (a land-cover class has a kind and no unit at all), so a guard
+           that read `s.unit == null` as 「何も述べていない」 dropped exactly those — and the drop was
+           silent one op downstream, which is the shape the note above this function was written
+           against. The author is 'inherited' for the same reason the unit's is. */
+        if (s.quantity != null) {
+          col.quantity = copy(s.quantity);
+          col.quantityStated = 'inherited';
+          if (s.quantityStated != null) col.quantityStatedAt = String(s.quantityStated);
+          if (s.quantityFrom != null) col.quantityFrom = String(s.quantityFrom);
+          const bad = quantityVerdict(col.quantity);
+          if (bad) col.quantityRefused = bad;
+        }
+        if (s.unit == null) continue;
         col.unit = String(s.unit);
         /* ⚠ 'inherited' IS ITS OWN AUTHOR, NOT A COPY OF THE INPUT'S. 'reader' on this record would
            say the reader typed it here — on a record they are refused from declaring on at all — and
@@ -644,6 +699,15 @@ export function makeGisDatasets() {
              record can honestly carry is the author; leaving both in one `unit` field with no author
              would let a panel present a reader's guess as the source's statement. */
           unitStated: (b && b.unit != null) ? 'source' : null,
+          /* ⚠⚠ (#R819) 「バンドの列」 IS THE COLUMN, AND IT HAD THE UNIT WITHOUT THE QUANTITY.
+             The note above this map says a raster's columns ARE its bands so that 「どのバンドで」 and
+             「どの列で」 are ONE picker — and the quantity was reaching `bands` and stopping there, so
+             every reader that asks a COLUMN what it measures (js/gis-ops.js quantityOfField) saw
+             silence over a grid that had declared one. Same value, same author, same reason the unit
+             carries one: nothing here can verify a declaration, so what it can honestly carry is WHO
+             made it. */
+          quantity: (b && b.quantity && typeof b.quantity === 'object') ? b.quantity : null,
+          quantityStated: (b && b.quantity && typeof b.quantity === 'object') ? 'source' : null,
         })),
         /* `geometryType` is stated as the empty answer rather than left undefined: the panel and
            js/gis-project.js read it on every record, and «a grid has no geometry type» is a different
@@ -794,6 +858,33 @@ export function makeGisDatasets() {
     /* undo of an add is a remove and vice versa; a rename and a value edit invert to themselves. */
     const OPPOSITE = { values: 'values', 'add-field': 'remove-field', 'remove-field': 'add-field', 'rename-field': 'rename-field' };
 
+    /* ⚠ (#R819) 量の語彙はこのファイルのものではない。js/gis-units.js decides what a quantity
+       declaration means — kind / space / time / period / unit / denominator — and addRaster's note
+       already states why a band's is carried VERBATIM here: a second normaliser in this file would
+       be a second answer to the same question. The one thing this file can honestly do is ASK, so
+       that a reader who typed a declaration is told the kernel cannot read it INSTEAD of finding
+       out three ops later, when `aggregate` answers 'undeclared' over a column they thought they
+       had described.
+       ⚠ IT IS NOT A REFUSAL AT THE DOOR. The statement is stored as given and the kernel's own
+       words are put ON THE COLUMN (`quantityRefused`), the way `typeRefused` carries a type the
+       data did not bear out — because a build with no unit kernel cannot judge at all, and a door
+       that refused whatever it could not ask about would answer 「読めない」 for a declaration
+       nobody examined. */
+    function unitsKernel() {
+      try { return (typeof window !== 'undefined' && window.IntMapGisUnits) || null; } catch (_) { return null; }
+    }
+    function quantityVerdict(spec) {
+      if (spec == null) return null;
+      const UQ = unitsKernel();
+      if (!UQ || typeof UQ.quantity !== 'function') return null;
+      let r = null;
+      try { r = UQ.quantity(spec); } catch (_) { r = null; }
+      if (!r || r.ok) return null;
+      /* The kernel's vocabulary, carried and not re-worded — this file has no sentence of its own
+         for 「kind が読めない」 and inventing one would put two answers on one question. */
+      return { why: String(r.why || ''), detail: r.detail ? copy(r.detail) : null };
+    }
+
     function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
     function editState(id) {
       let s = EDITS.get(id);
@@ -816,7 +907,16 @@ export function makeGisDatasets() {
       'unit-not-a-string', 'no-edits', 'index-not-a-number', 'index-out-of-range', 'value-undefined',
       'field-exists', 'field-in-time-axis', 'field-has-dependents', 'nothing-to-undo', 'nothing-to-redo',
       'edit-not-reversible', 'time-field-not-named', 'time-field-missing', 'time-kind-unknown',
-      'time-unreadable', 'time-constant-empty', 'time-constant-reversed'];
+      'time-unreadable', 'time-constant-empty', 'time-constant-reversed',
+      /* ⚠ (#R819) THE LAST FOUR DO NOT GO THROUGH no() — they are returned as `refused.why` beside a
+         null axis, because the caller gets an axis-or-a-reason rather than a refusal. They are
+         DECLARED HERE ANYWAY: the declaration is what the gate reads as this module's set, so a word
+         left out of it is a word the gate cannot see. That is the same failure one level up — the
+         scan that was taught three spellings — and declaring a narrower set than the module answers
+         with would rebuild it inside the fix for it. All four have had a sentence for a reader since
+         they were written; what was missing was the gate's ability to check that they still do. */
+      'time-declaration-not-an-object', 'time-track-not-an-array', 'time-track-misaligned',
+      'time-kind-not-for-raster'];
     function no(why, detail) {
       if (REFUSALS.indexOf(why) < 0) throw new Error('gis-datasets: undeclared refusal code ' + why);
       return detail ? { ok: false, why, detail } : { ok: false, why };
@@ -873,6 +973,15 @@ export function makeGisDatasets() {
         const d = s.get(col.name);
         if (!d) continue;
         if (d.unit != null) { col.unit = d.unit; col.unitStated = 'reader'; }
+        /* (#R819) 読者が述べた量。The refusal is re-asked on every re-measure for the reason the
+           type's is: `fields` is rebuilt from scratch, so a mark written only onto the column would
+           vanish on the next edit and the declaration would look as though it had been accepted. */
+        if (d.quantity != null) {
+          col.quantity = copy(d.quantity);
+          col.quantityStated = 'reader';
+          const bad = quantityVerdict(col.quantity);
+          if (bad) col.quantityRefused = bad;
+        }
         /* ⚠ A REFUSAL STICKS UNTIL THE READER DECLARES AGAIN. It is held in the declaration state,
            not only written onto the field — `fields` is rebuilt from scratch on every re-measure, so
            a mark that lived only there would vanish on the NEXT edit and the column would quietly
@@ -884,7 +993,7 @@ export function makeGisDatasets() {
         else {
           const r = { type: d.type, bad: v.bad, checked: v.checked, example: v.example };
           col.typeRefused = r;
-          s.set(col.name, { type: null, unit: d.unit, refused: r, at: d.at == null ? null : d.at });
+          s.set(col.name, { type: null, unit: d.unit, quantity: d.quantity || null, refused: r, at: d.at == null ? null : d.at });
         }
       }
     }
@@ -1038,7 +1147,15 @@ export function makeGisDatasets() {
       if (!hasField(rec, name)) return no('unknown-field', { field: name, fields: fieldNames(rec) });
       const want = (spec && typeof spec === 'object') ? spec : {};
       const hasType = want.type != null, hasUnit = want.unit != null;
-      if (!hasType && !hasUnit) return no('nothing-declared', { field: name });
+      /* ⚠ (#R819) 量の宣言は「物」であって綴りではない。A number or a string handed in here is
+         not a declaration at all — there is no kind in it — and storing it would put something on
+         the column that the unit kernel can only ever refuse. Told with the code a declaration with
+         nothing in it gets, because it is the same fact. */
+      const hasQuantity = want.quantity != null;
+      if (hasQuantity && (typeof want.quantity !== 'object' || Array.isArray(want.quantity))) {
+        return no('nothing-declared', { field: name });
+      }
+      if (!hasType && !hasUnit && !hasQuantity) return no('nothing-declared', { field: name });
 
       let type = null;
       if (hasType) {
@@ -1059,10 +1176,14 @@ export function makeGisDatasets() {
       }
 
       const s = declState(id);
-      const prev = s.get(name) || { type: null, unit: null, refused: null, at: null };
+      const prev = s.get(name) || { type: null, unit: null, quantity: null, refused: null, at: null };
       s.set(name, {
         type: hasType ? type : prev.type,
         unit: hasUnit ? unit : prev.unit,
+        /* Carried as the reader wrote it. Which keys make up a declaration is js/gis-units.js's to
+           say (`quantityVocabulary().specFields`), so a copy is taken rather than a rebuild from a
+           list of keys this file would have to keep in step with that one. */
+        quantity: hasQuantity ? copy(want.quantity) : (prev.quantity || null),
         /* A type that has just been verified answers the earlier refusal; a unit-only declaration
            says nothing about it and leaves it standing. */
         refused: hasType ? null : (prev.refused || null),
@@ -1103,6 +1224,8 @@ export function makeGisDatasets() {
         const e = {
           type: d.type == null ? null : String(d.type),
           unit: d.unit == null ? null : String(d.unit),
+          /* (#R819) 量も読者の陳述なので、保存されるものの中に在る。 */
+          quantity: d.quantity == null ? null : copy(d.quantity),
           at: (typeof d.at === 'number' && isFinite(d.at)) ? d.at : null,
         };
         if (d.refused) e.refused = copy(d.refused);
@@ -1135,7 +1258,8 @@ export function makeGisDatasets() {
         const spec = {};
         if (d.type != null) spec.type = d.type;
         if (d.unit != null) spec.unit = d.unit;
-        if (spec.type == null && spec.unit == null) { refused.push({ field: name, why: 'nothing-declared', detail: { field: name } }); continue; }
+        if (d.quantity != null) spec.quantity = d.quantity;
+        if (spec.type == null && spec.unit == null && spec.quantity == null) { refused.push({ field: name, why: 'nothing-declared', detail: { field: name } }); continue; }
         const r = declareField(id, name, spec);
         if (!r.ok) { refused.push(r.detail ? { field: name, why: r.why, detail: r.detail } : { field: name, why: r.why }); continue; }
         applied++;
@@ -1323,6 +1447,13 @@ export function makeGisDatasets() {
          is typed — two typing rules would drift, and the drift would show up as a column that can be
          compared in one panel and not in the other */
       typeColumn, describeFields, geometryKind, countWithGeometry, asNumber, asDate, isEmpty,
+      /* ⚠ (#R819) THE SAME RULE, AS SOMETHING THAT CAN CROSS A THREAD. Handed to
+         js/gis-expr.js's `worker.install(w, { rule })`, which calls it once on THIS thread to check
+         that the three functions it needs are built, and then hands its SOURCE to js/gis-worker.js.
+         ⚠ It is the factory, not `RULE`: see the note at numberRuleFactory. A caller wanting the
+         verdict on this thread asks `asNumber` / `isEmpty` / `typeColumn` above — the very objects
+         this factory built — so there is no thread on which a second rule exists. */
+      numberRuleFactory,
       /* (#R738) 属性の編集。⚠ `editable` is the gate the five mutating doors already ask; it is
          exposed so a panel can DISABLE the control instead of offering an edit that will be refused,
          and so that the reason (an op's output, a grid, a stale record) is the same sentence in both
