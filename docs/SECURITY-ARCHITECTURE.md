@@ -163,8 +163,8 @@ flag that lives in a comment is not configuration. All seventeen are declared th
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
-`relay-guard.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`) that the CLI bundles into the functions that import it.
+`relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
+`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -213,10 +213,17 @@ list, and our own token is set afterwards.
 storing Navigation API results, so every response — including the failures — carries
 `Cache-Control: no-store` where the other four set `s-maxage`. `js/routing-traffic.js` honours the
 same rule on the client by reading `IntMapRouteProviders.noStore('mapbox')` rather than hardcoding it.
-(3) It is the only relay with its own **rate limit** (60 requests per minute per `x-forwarded-for`),
-because Mapbox has no hard spend cap — this is the only ceiling. ⚠ It is **per-isolate and
-best-effort**, and the function says so in its own header rather than implying an accounting
-boundary; the real ceiling remains the provider account's usage alerts.
+(3) It is the only relay with its own **rate limit**, and since the September 2026 audit the limit is
+an accounting boundary rather than a per-isolate courtesy. Two layers: an in-memory bucket per
+`x-forwarded-for` (60 per minute, bounded to `RATE_MAX_KEYS` entries by evicting the least recently
+seen — it used to grow without bound when every entry was fresh) answers the cheap first refusal; then,
+immediately before the paid upstream call, three **shared** buckets in `public.relay_rate_buckets`
+(`_shared/rate-limit.js` → `relay_take`, one row lock per take) — the same caller address, the whole
+project per minute, and the whole project per day. The project-wide buckets **fail closed** (no answer
+from the database → no paid call, `503 limiter_unavailable`), the per-address one falls back to the
+in-memory bucket. The daily ceiling defaults to 3,000 (inside Mapbox's free Directions tier) and is
+raised deliberately through `ROUTING_RELAY_GLOBAL_PER_DAY` / `_PER_MIN`, never by editing code; a
+refusal is `429 spend_ceiling`, which the client already classifies by status alone.
 ⚠ **With no key set the function is inert**: `?probe=1` answers `{"mapbox":false}` and every route
 request returns `provider_unavailable`, so the app falls back to the open routers and says so.
 
@@ -382,7 +389,13 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
 
 1. **`'unsafe-inline'`/`'unsafe-eval'` in `script-src`** — the boot code is inline (five
    `<script>` blocks in the built `index.html`) and Cesium/KaTeX compile at runtime. Removing
-   either is a rewrite of how the app loads, not a policy edit. Mitigated by output-encoding
+   either is a rewrite of how the app loads, not a policy edit. ⚠ **Measured 2026-09-18 (#R801)**
+   with a `securitypolicyviolation` listener installed from the first byte of the built page:
+   the MapLibre engine raises **zero** violations without `'unsafe-eval'`; Cesium raises one at
+   load — its bundled knockout evaluates `(0,eval)("this")` — and `'wasm-unsafe-eval'` alone
+   leaves the 3-D engine on the splash screen. So the directive stays exactly as long as Cesium
+   needs it, and `tests/r801-security-audit-checks.test.mjs` ⑦ reads `node_modules/cesium` for
+   that need and turns red the day it is gone. Mitigated by output-encoding
    (§4). ⚠ **Not removable by moving the remaining inline event attributes**, which is why they
    were only moved where a *value* was being interpolated into one (see §11.4).
 2. **JWT in `localStorage`** — Supabase JS default; mitigated by the XSS fixes. An httpOnly
@@ -409,6 +422,13 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    an explicit grant, so tightening it would not affect IntMap; it would affect anything else
    that creates tables here. Left untouched **by decision**. To close:
    `alter default privileges in schema public revoke all on tables from anon, authenticated;`
+   ⚠ **Narrowed by #R801**: an explicit *grant* is not a *revoke* — three tables created after
+   #R155 (`ai_turns`, `ai_gloss_usage`, `news_event_admin_actions`) had kept the default ALL.
+   The migration `20260918090000` revokes the default from those three and revokes
+   `TRUNCATE`/`REFERENCES`/`TRIGGER` from **every** table in `public` in a loop over the
+   catalogue, and `supabase/tests/09_r801_security_audit_test.sql` asserts zero such grants.
+   The default privileges themselves are still in place (this item), so a table created without
+   a revoke keeps INSERT/UPDATE/DELETE until RLS refuses the rows.
 7. ~~**`public.profiles_public` is not `security_invoker`**~~ — **CLOSED by #R507.** It was a
    view without `security_invoker`, so it read `profiles` with the view owner's rights and
    bypassed that table's RLS; the projection was only `id, display_name, bio, avatar_url`, so
@@ -460,9 +480,19 @@ put a real secret value in the repo, a PR, or a log.**
 - **Code security**: enable **Secret scanning** + **Push protection**; enable **Private
   vulnerability reporting**; confirm **Dependabot alerts** (config already in
   `.github/dependabot.yml`); **CodeQL** runs from `security.yml` (free for this public repo).
-- **Branch protection / ruleset on `main`**: require PRs; require status checks **CI** (static
-  + browser) and **Database checks** (and optionally **Security / CodeQL**) to pass; no direct
-  pushes; keep **Actions default permissions = read** (workflows already set least privilege).
+- **Branch protection / ruleset on `main`** — applied (ruleset «Protect main», re-read 2026-09-18):
+  PRs required, force-push and deletion blocked, no bypass actors, and the required checks are the
+  three CI jobs (**Static checks**, **Browser smoke + internal QA**, **Regression suite**) plus, since
+  #R801, **Migrations rebuild + RLS/permission tests** (db.yml, which now runs on every PR and
+  reports green in seconds when no database file changed) and a **code scanning** rule: CodeQL
+  alerts of severity high or above, or of level error, introduced by a PR block its merge. Keep
+  **Actions default permissions = read** (workflows already set least privilege).
+  ⚠ The 44 CodeQL alerts open on `main` at that date were triaged (#R801): the three
+  `js/xss-through-dom` are `innerHTML` of values that are already escaped or numeric; the six
+  `incomplete-html-attribute-sanitization` interpolate palette/colour strings from the code itself;
+  the seventeen `prototype-polluting-assignment` were one real path (an AIS frame's MMSI used as a
+  property name — now held to nine digits before it may name one) reported once per property; the
+  rest are in tests and data scripts. None was a reachable exploit; the real one is fixed.
 
 ### Supabase (project `vpekfwdpurzejrrmacac`)
 - **`refresh-news` — REQUIRED (this PR makes it fail-closed):**

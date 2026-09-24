@@ -61,7 +61,7 @@ export function makeAtlasReply(HOST, CTX) {
        stops it matching the tail of a token an earlier branch already declined. (5) a decimal or
        thousands-separated number. ⚠ An ABBREVIATION is deliberately NOT here: "U.S." and "e.g." are prose,
        the guesswork about them is exactly what this design refuses, and they split today as they always did. */
-    /* ⚠⚠⚠ (#R801) …AND AN ABBREVIATION IS NOT A SENTENCE END EITHER. #R463 held dotted hosts and decimals here for
+    /* ⚠⚠⚠ (#R802) …AND AN ABBREVIATION IS NOT A SENTENCE END EITHER. #R463 held dotted hosts and decimals here for
        exactly this reason; three more SHAPES lead the pattern now, and none of them is a list of words
        (.agents/rules/no-ad-hoc-hardcoding.md §1). Measured on production 2026-09-18, in the reader's own bubble:
        「It identifies Dujuan (JMA Typhoon No. / 25 / 2625) in the western North Pacific」 and 「to simplify U. / S. Antarctic

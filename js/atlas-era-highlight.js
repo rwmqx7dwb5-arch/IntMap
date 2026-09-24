@@ -108,7 +108,7 @@ export function makeEraHighlight(deps) {
        no count in `paintNow()` moves when the SAME place is outlined again; measured on production
        2026-09-16, 「Compute the total area of the Amazon basin and show it on the map」 ran
        `map.outline` four times, two of them `not_rendered`, with the basin on the map throughout. */
-    /* ⚠⚠⚠ (#R801) THE PINS WERE THE ONE PAINTED SURFACE WITH NO READING HERE. Five capabilities put
+    /* ⚠⚠⚠ (#R802) THE PINS WERE THE ONE PAINTED SURFACE WITH NO READING HERE. Five capabilities put
        markers on the map — every row whose expectation is `map.poi`: `map.poi`, `research.mapReport`,
        `research.situationMap`, `research.impact`, `research.events` — and none of them could be judged
        by anything but the CARDINAL in `paintNow()` (`nlq-poi-src`'s feature count), which is exactly the

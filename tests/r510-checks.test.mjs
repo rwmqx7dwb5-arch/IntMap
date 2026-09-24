@@ -18,7 +18,7 @@
  *       #R504 は正直な `application/json` を octet-stream しか許さない bucket へ送り、
  *       **415 で拒否されて書き込みだけが毎回黙って失敗した**（#R505）。事実が別ファイルに住む限り、
  *       それを結ぶ検査以外にこれを止めるものは無い。
- *    ③ **鍵はブラウザへ行かず、応答にも出ない。** 出るのは長さと形だけ。
+ *    ③ **鍵はブラウザへ行かず、応答にも出ない。** 長さと形は関数のログにだけ出る（#R801）。
  *    ④ **BYOK が残っている**——鍵があるときの経路は消えていない（§3.1）。
  *    ⑤ **リレー経路にはズームの下限もパン時の再購読も無い**。後者の `else` 枝は `shipsData` を
  *       空にするので、リレーで走ると**ドラッグのたびに世界が消える**。
@@ -29,7 +29,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -164,7 +164,7 @@ async function runRelay(t, opts) {
       constructor(u) { this.readyState = 1; globalThis.__calls.push("WS " + u);
         setTimeout(() => { this.onopen && this.onopen();
           for (const m of ${JSON.stringify(wsMsgs)}) this.onmessage && this.onmessage({ data: JSON.stringify(m) });
-          this.onclose && this.onclose({ code: 1000, reason: "" }); }, 5); }
+          this.onclose && this.onclose({ code: 1000, reason: "upstream said: bye" }); }, 5); }
       send() {} close() {}
     };
     await import(${JSON.stringify(url)});
@@ -177,9 +177,12 @@ async function runRelay(t, opts) {
     }
     process.stdout.write(JSON.stringify({ out, calls: globalThis.__calls }));
   `;
-  const raw = execFileSync(process.execPath, ['--no-warnings', '--input-type=module', '-e', src],
+  /* (#R801) the function's LOG is part of what is measured: the credential diagnostics moved there
+     out of the public answers, so the child's stderr comes back alongside its stdout */
+  const child = spawnSync(process.execPath, ['--no-warnings', '--input-type=module', '-e', src],
     { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 });
-  return JSON.parse(raw);
+  if (child.status !== 0) throw new Error('relay child failed: ' + (child.stderr || child.error));
+  return { ...JSON.parse(child.stdout), stderr: child.stderr || '' };
 }
 const POS = (mmsi, lat, lon) => ({ MessageType: 'PositionReport', MetaData: { MMSI: mmsi, time_utc: new Date().toISOString() },
   Message: { PositionReport: { Latitude: lat, Longitude: lon, Sog: 10, Cog: 90, TrueHeading: 91 } } });
@@ -221,16 +224,28 @@ test('R510 ⑩ coverage names what ANSWERED, by count — a refused key contribu
   assert.equal(world.headers['x-intmap-coverage'], 'digitraffic:2', 'aisstream answered nothing, so it is not claimed');
   assert.equal(world.headers['x-intmap-provider'], 'digitraffic+aisstream', 'the provider header still says what is configured');
   const note = world.headers['x-intmap-note'];
-  /* ⚠ (#R556) the FACTS, not the spelling: the note names the candidate's length and shape, records
-     that the socket opened, was written to and then closed, and says how many frames arrived. */
+  /* ⚠ (#R556) the FACTS, not the spelling: the note records that the socket opened, was written to
+     and then closed, and says how many frames arrived. (#R801) The candidate's length and shape are
+     the two facts that diagnosed a rejected key, and they describe a SECRET — so they are in the
+     function log, which the project reads, and not in a header every caller receives. */
   assert.match(note, /aisstream=0\[/, 'aisstream contributed nothing and the note says so');
-  assert.match(note, /len16/, 'the length of the credential that was tried');
-  assert.match(note, /:(hex|alnum|uuid|other)/, '…and its shape');
+  assert.match(note, /try:stored/, 'the note says which FORM was tried');
   assert.match(note, /open:rs1/, 'the socket opened');
   assert.match(note, /sent/, 'the subscription was sent');
   assert.match(note, /frames0/, 'and not one frame arrived — the rejected-key picture');
-  assert.match(note, /close:1000:/, 'the close is recorded with its code');
-  assert.ok(!world.headers['x-intmap-note'].includes('abcdef0123456789'), 'the key is not in any header');
+  assert.match(note, /close:1000(?!:)/, 'the close is recorded with its code, and only its code');
+  const pub = JSON.stringify(world.headers) + world.body + JSON.stringify(meta);
+  assert.ok(!pub.includes('abcdef0123456789'), 'the key is not in any header, body or meta');
+  assert.ok(!/len\d+/.test(pub), 'the public answers do not say how long the credential is');
+  assert.ok(!/:(hex|alnum|uuid|other)\b/.test(pub), '…nor what characters it is made of');
+  assert.ok(!pub.includes('upstream said'), 'nor what the upstream wrote in its close frame');
+  assert.ok(!('aisstreamCredential' in meta), '?meta=1 no longer carries the credential shape');
+  /* …and the same two facts are still written somewhere the project can read them */
+  assert.match(r.stderr, /aisstream try:stored:len16:hex/, 'the log names the length and shape of the candidate tried');
+  const shape = /aisstream credential shape: (\{.*\})/.exec(r.stderr);
+  assert.ok(shape, 'a configured key that delivered nothing is diagnosed in the log');
+  assert.equal(JSON.parse(shape[1]).len, 16, 'with the length of the stored value');
+  assert.ok(!r.stderr.includes('abcdef0123456789'), 'the log carries the shape, never the key');
   assert.deepEqual(meta.world.byProvider, { digitraffic: 2, aisstream: 0 });
   assert.equal(meta.world.coverage, 'digitraffic:2');
   /* the snapshot written to Storage carries the per-provider counts, so a cold isolate that only

@@ -5363,6 +5363,7 @@ window.IntMapLang.define('zh-hans', {
   'It stopped with an error.': '因发生错误而停止。',   /* atlas-results.js (#R318) atlas.code.threw */
   'That one needs your confirmation first.': '这一项需要你先确认。',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
   'Tap the point on the map you mean.': '请在地图上点击你所指的地点。',   /* atlas-results.js (#R318) atlas.input.point */
+  'Reply yes to go ahead, or say what to do instead.': '若要继续，请回答「是」；若想改用别的做法，请直接说明。',   /* atlas-results.js (#R801) atlas.input.confirm */
   'Draw the line on the map.': '请在地图上画出线条。',   /* atlas-results.js (#R318) atlas.input.polyline */
   'Draw the area on the map.': '请在地图上画出范围。',   /* atlas-results.js (#R318) atlas.input.polygon */
   'Choose one:': '请选择一项：',   /* atlas-results.js (#R318) atlas.input.choice */

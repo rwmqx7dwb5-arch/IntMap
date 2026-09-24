@@ -5132,6 +5132,7 @@ window.IntMapLang.define('ko', { ui: {
   'It stopped with an error.': '오류로 중단되었습니다.',   /* atlas-results.js (#R318) atlas.code.threw */
   'That one needs your confirmation first.': '이 작업은 먼저 확인이 필요합니다.',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
   'Tap the point on the map you mean.': '지도에서 말씀하신 지점을 탭하세요.',   /* atlas-results.js (#R318) atlas.input.point */
+  'Reply yes to go ahead, or say what to do instead.': '진행해도 되면 예라고 답해 주세요. 다른 방법이 좋으면 그렇게 말씀해 주세요.',   /* atlas-results.js (#R801) atlas.input.confirm */
   'Draw the line on the map.': '지도 위에 선을 그려 주세요.',   /* atlas-results.js (#R318) atlas.input.polyline */
   'Draw the area on the map.': '지도 위에 범위를 그려 주세요.',   /* atlas-results.js (#R318) atlas.input.polygon */
   'Choose one:': '하나를 선택하세요:',   /* atlas-results.js (#R318) atlas.input.choice */

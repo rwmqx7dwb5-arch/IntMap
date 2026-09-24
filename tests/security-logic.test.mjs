@@ -134,10 +134,14 @@ test('ai-proxy bounds the REQUEST, not just the parsed fields', () => {
   /* the old order was `await req.json()` first and MAX_* afterwards, i.e. the whole body was read and
      parsed before anything limited it */
   assert.match(aiProxy, /MAX_BODY_BYTES\s*=/, 'no ceiling on the request body');
-  assert.match(aiProxy, /content-length[\s\S]{0,200}MAX_BODY_BYTES/, 'a declared length is not refused up front');
-  assert.match(aiProxy, /byteLength > MAX_BODY_BYTES/, 'an undeclared length is not refused after reading');
-  const bodyRead = aiProxy.indexOf('req.arrayBuffer()');
-  assert.ok(bodyRead > 0, 'the body is not read as bytes, so it cannot be measured before parsing');
+  /* (#R801) ...and the ceiling now holds WHILE the body streams: readCapped (the relays' reader)
+     refuses a declared content-length up front and cancels an undeclared one at the ceiling. The
+     old req.arrayBuffer() + byteLength > MAX was a check on what had already been buffered. */
+  assert.match(aiProxy, /readCapped\(req, MAX_BODY_BYTES\)/, 'the request body is not read through the capped reader');
+  assert.doesNotMatch(aiProxy.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''), /req\.(arrayBuffer|json|text)\(\)/, 'the body is read unbounded somewhere');
+  const guard = readFileSync(join(ROOT, 'supabase/functions/_shared/relay-guard.js'), 'utf8');
+  assert.match(guard, /export async function readCapped/, 'readCapped is not exported for the functions that need it');
+  assert.match(guard, /content-length[\s\S]{0,200}maxBytes[\s\S]{0,900}reader\.cancel\(\)/, 'readCapped does not refuse up front and cancel mid-stream');
 });
 
 test('ai-proxy validates images: MIME allow-list, base64 alphabet, decoded size', () => {

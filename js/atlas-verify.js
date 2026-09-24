@@ -43,7 +43,7 @@ export function makeAtlasVerify(HOST, CTX) {
          · _atlMappingVerdict      — pure: turn per-spot resolution outcomes into mapped / unplaced / ambiguous.
        Everything is exposed on IntMapAtlasDebug for the hermetic node tests (model-omitted list, partial placement,
        same-name ambiguity, one-domain sources, text/pins mismatch). No per-place hardcoding anywhere. */
-    /* ⚠ (#R801) …AND RECOMPOSED AFTERWARDS, because the decomposition is a Latin device and this
+    /* ⚠ (#R802) …AND RECOMPOSED AFTERWARDS, because the decomposition is a Latin device and this
        function is asked about Japanese every day. NFD splits 「ブ」 into 「フ」+ U+3099 (the combining
        voiced mark); the Latin sweep below only removes U+0300–U+036F, so the mark survived to the
        `[^\p{L}\p{N} ]` pass — where it is a Mark, not a Letter, and became a SPACE. Measured on this
@@ -129,7 +129,7 @@ export function makeAtlasVerify(HOST, CTX) {
         'Eine unabhängige Nachrechnung stimmte NICHT überein ('+v.failed.map(f=>f.label).join('; ')+') — Transkription/Schritt evtl. falsch.',
         'Независимый пересчёт НЕ совпал ('+v.failed.map(f=>f.label).join('; ')+') — возможна ошибка в распознавании или вычислении.',
         'Un recálculo independiente NO coincidió ('+v.failed.map(f=>f.label).join('; ')+') — la transcripción o un paso puede ser erróneo.'))+'</span></div>'; }
-    /* ⚠⚠⚠ (#R801) A NAME IS NOT ITS POSSESSIVE, AND A PERIOD IS NOT ALWAYS A SENTENCE END.
+    /* ⚠⚠⚠ (#R802) A NAME IS NOT ITS POSSESSIVE, AND A PERIOD IS NOT ALWAYS A SENTENCE END.
        Measured on production 2026-09-18 (build 2026-09-18-R783), both printed under 「本文に登場したが
        未配置（正確に特定できませんでした）」 — the line that tells the reader IntMap could not locate a place:
          · 「Lake Baikal's water surface area is 31,722 km²…」 → «Lake Baikal's». The possessive travelled
@@ -164,14 +164,14 @@ export function makeAtlasVerify(HOST, CTX) {
       return !/\.$/.test(last) && !/['’]s$/.test(last); }   /* …and neither an abbreviation nor a possessive can END one */
     function _atlExtractPlaces(text){ let t=String(text||'').replace(/`[^`]*`/g,' ').replace(/https?:\/\/\S+/g,' ').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1');
       /* a phrase never bridges a sentence boundary ("Italy. The Colosseum") — #R726 got that by keeping
-         '.' out of the class entirely, and #R801 keeps the SAME property while letting an abbreviation's
+         '.' out of the class entirely, and #R802 keeps the SAME property while letting an abbreviation's
          period through: a period that does not belong to a contraction cuts the phrase below, and the
          scan is rewound to it, so what the reader's text yields either side of a full stop is unchanged.
          Only SPACES join the words (not \s) → a phrase never bridges a LINE either. The answer's
          plain text joins a heading and its first paragraph with a newline, and `\s+` walked straight
          across it: «## Nominal GDP» + «The latest…» became the candidate «Nominal GDP The», which was
          then sent to a geocoder and printed under «not placed» (measured on production, 2026-09-15). */
-      /* (#R801) `\.?` before each join is the abbreviation period of ① above; a period that is NOT one
+      /* (#R802) `\.?` before each join is the abbreviation period of ① above; a period that is NOT one
          is cut out of the match below and the scan is rewound to it, so the sentence rule is unchanged. */
       const re=/[A-ZÀ-Þ][\p{L}'’\-]*(?:\.?[ \t]+(?:of|de|del|della|di|du|des|da|do|dos|van|von|la|le|los|las|el|al|the|and|upon|on)[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*|\.?[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*){0,3}/gu;
       const seen=new Set(), out=[]; let m;
@@ -218,7 +218,7 @@ export function makeAtlasVerify(HOST, CTX) {
          name): JST, Available, Providing» — sentence-initial words of an ISS answer that Nominatim
          happens to know as a shop somewhere (measured on production, 2026-09-15). A structured
          place, which the model named on purpose, is still surfaced whatever its length. */
-      /* ⚠ (#R801) …AND THE SAME IS TRUE OF 「IS THIS SHAPED LIKE A NAME AT ALL」. 「not placed (couldn't
+      /* ⚠ (#R802) …AND THE SAME IS TRUE OF 「IS THIS SHAPED LIKE A NAME AT ALL」. 「not placed (couldn't
          locate precisely)」 is a claim about the WORLD — that IntMap does not know this place — and it
          was made about 「Lake Baikal's」 and 「JMA Typhoon No」, which are not places at all. A prose
          candidate that never looked like a name is dropped in silence; a prose candidate that DID and
@@ -274,7 +274,7 @@ export function makeAtlasVerify(HOST, CTX) {
       const cells=new Set(); matches.forEach(j=>cells.add(Math.round(+j.lat*10)+','+Math.round(+j.lon*10)));
       if(!country && cells.size>=2) return {ok:false,reason:'ambiguous',ambiguous:true};
       const b=matches[0]; return { ok:true, lng:+b.lon, lat:+b.lat, name:(b.display_name||'').split(',')[0] }; }
-    /* ══ ⚠⚠⚠ (#R801) THE STORE THAT ALREADY HOLDS EVERY COUNTRY'S NAME IN THE READER'S LANGUAGE ══════
+    /* ══ ⚠⚠⚠ (#R802) THE STORE THAT ALREADY HOLDS EVERY COUNTRY'S NAME IN THE READER'S LANGUAGE ══════
        Measured on production 2026-09-18: 「アフリカで最も長い河川の流路を地図に描いて、流域国を列挙して。」
        was answered in Japanese and the audit printed 「本文に登場したが未配置（正確に特定できませんでした）:
        ブルンジ, コンゴ民主共和国, エリトリア, エチオピア, ルワンダ, 南スーダン…」 — eleven countries whose
@@ -416,12 +416,12 @@ export function makeAtlasVerify(HOST, CTX) {
              must not be able to end the ladder, so each one asks `!g` and the ladder ends only at the bottom. */
           if(GEOBJ.pointLike(it)) g={lng:it.lng,lat:it.lat,name:it.name};
           if(!g&&ledger){ try{ const k=ledger.resolve(it.name,{kind:it.kind,countryName:it.country}); if(k&&k.lng!=null) g={lng:k.lng,lat:k.lat,name:k.canonicalName||k.name}; }catch(_){} }   /* (#R489) a place THIS conversation already resolved is not sent to a geocoder again. ⚠ (#R545) THE HINT IS BUILT FROM WHAT THIS MAPPER HOLDS — it used to pass `countryCode: it.countryCode`, and the mapper above copies no country code at all, so the narrowing was undefined at every call and 「モスクワ」 could come back as whichever one was recorded last */
-          /* (#R801) the app's own country store, in all nine languages, before any request goes out. ⚠ It
+          /* (#R802) the app's own country store, in all nine languages, before any request goes out. ⚠ It
              carries WHAT IT IS: a country's LABEL point represents an area, so the ledger is told
              `resolved_place_centroid` — the word this app already has for that, and deliberately not one
              of the point-like classes, so a later turn cannot mistake it for a spot someone chose. */
           if(!g){ const c=_atlCountryPoint(it.name); if(c) g={lng:c.lng,lat:c.lat,name:c.name,prov:'resolved_place_centroid'}; }
-          /* ⚠ (#R801) A COUNTRY DOES NOT NARROW ITSELF. The model fills `country` with the country's own
+          /* ⚠ (#R802) A COUNTRY DOES NOT NARROW ITSELF. The model fills `country` with the country's own
              name when the place IS that country, and the geocoder is asked for 「X, X」 — measured live:
              'ブルンジ' → 1 hit, 'ブルンジ, ブルンジ' → 0. Zero hits is reported as `not_found`, i.e. as a fact
              about the place. This matters even with the rung above it, because `countryStats` is filled

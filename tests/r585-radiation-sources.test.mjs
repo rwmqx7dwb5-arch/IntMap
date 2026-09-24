@@ -22,6 +22,9 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { join, dirname } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   PROVIDERS,
@@ -32,6 +35,8 @@ import {
   validLatLon,
   isPeriodMean,
 } from "../supabase/functions/_shared/radiation-sources.js";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const FIXTURES = {
   "de-bfs": "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"id\":\"odlinfo_odl_1h_latest.fid--43cb481b_1a086484727_-158c\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[7.36,51.67]},\"geometry_name\":\"geom\",\"properties\":{\"id\":\"DEZ0654\",\"kenn\":\"055620080\",\"plz\":\"45711\",\"name\":\"Datteln\",\"site_status\":1,\"site_status_text\":\"in Betrieb\",\"kid\":4,\"height_above_sea\":50,\"start_measure\":\"2026-09-09T11:00:00Z\",\"end_measure\":\"2026-09-09T12:00:00Z\",\"value\":0.073,\"value_cosmic\":0.043,\"value_terrestrial\":0.03,\"unit\":\"µSv/h\",\"validated\":1,\"nuclide\":\"Gamma-ODL-Brutto\",\"duration\":\"1h\"}},{\"type\":\"Feature\",\"id\":\"odlinfo_odl_1h_latest.fid--43cb481b_1a086484727_-158b\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[9.58,53.92]},\"geometry_name\":\"geom\",\"properties\":{\"id\":\"DEZ0140\",\"kenn\":\"010610791\",\"plz\":\"25524\",\"name\":\"Oelixdorf\",\"site_status\":1,\"site_status_text\":\"in Betrieb\",\"kid\":6,\"height_above_sea\":15,\"start_measure\":\"2026-09-09T11:00:00Z\",\"end_measure\":\"2026-09-09T12:00:00Z\",\"value\":0.081,\"value_cosmic\":0.042,\"value_terrestrial\":0.039,\"unit\":\"µSv/h\",\"validated\":1,\"nuclide\":\"Gamma-ODL-Brutto\",\"duration\":\"1h\"}}],\"totalFeatures\":1676,\"numberMatched\":1676,\"numberReturned\":1676,\"timeStamp\":\"2026-09-09T13:08:12.757Z\",\"crs\":{\"type\":\"name\",\"properties\":{\"name\":\"urn:ogc:def:crs:EPSG::4326\"}}}",
@@ -86,24 +91,92 @@ test("R585 ① every provider declares the full contract", () => {
    ⚠ NOT AN OPEN PROXY is a property of THIS file, not of the transport: the transport only fetches
    what a provider hands it, so a provider that can be talked into building an arbitrary URL is the
    whole hole. The station code goes through the URL builders here as a hostile string. */
+/* A station code the register does not know. `latest` is what the map draws, and every code it
+   carries came out of a URL this provider itself built — so the register is read back from there
+   rather than written down here a second time. */
+function registeredCodeOf(p, now) {
+  const first = p.latest.urls({ now, chunk: 0, chunked: true })[0];
+  const tail = new URL(first).pathname.split("/fixed/")[1];
+  assert.ok(tail, p.id + ": a station path could not be read back from " + first);
+  return tail.split("/").map((x) => decodeURIComponent(x)).join("/");
+}
+
 test("R585 ② no provider can be steered off its own host", () => {
   const hostile = "x'/../..\\@evil.example.com/?a=b#/../";
   const now = Date.UTC(2026, 8, 9, 12, 0, 0);
+  const q = { now, chunk: 0, chunked: true, from: "2026-09-01T00:00:00Z", to: "2026-09-09T00:00:00Z", iso: "2026-09-08" };
+  const onHost = (p, urls) => {
+    for (const u of urls) {
+      const parsed = new URL(u);
+      assert.equal(parsed.protocol, "https:", p.id + ": " + u);
+      assert.ok(!/evil\.example\.com/.test(parsed.host), p.id + ": host steered to " + parsed.host);
+    }
+  };
   for (const p of PROVIDERS) {
     for (const mode of ["latest", "series", "day"]) {
       if (p[mode] == null) continue;
-      const urls = p[mode].urls({
-        now, chunk: 0, chunked: true, code: hostile,
-        from: "2026-09-01T00:00:00Z", to: "2026-09-09T00:00:00Z", iso: "2026-09-08",
-      });
-      assert.ok(Array.isArray(urls) && urls.length > 0, p.id + "." + mode + ": no urls");
-      for (const u of urls) {
-        const parsed = new URL(u);
-        assert.equal(parsed.protocol, "https:", p.id + ": " + u);
-        assert.ok(!/evil\.example\.com/.test(parsed.host), p.id + ": host steered to " + parsed.host);
+      const urls = p[mode].urls({ ...q, code: hostile });
+      assert.ok(Array.isArray(urls), p.id + "." + mode + ": urls() must answer an array");
+      if (urls.length > 0) { onHost(p, urls); continue; }
+      /* ⚠ (#R801) THE OTHER WAY TO STAY ON ONE'S OWN HOST: a series that only has a URL for a code
+         its register contains hands back NOTHING for a hostile one. That is only a defence if the
+         same builder still answers for a code it does know — an empty array for every code would be
+         a dead chart, not a closed hole. */
+      assert.equal(mode, "series", p.id + "." + mode + ": no urls — only a series keyed by station may refuse a code");
+      const known = p[mode].urls({ ...q, code: registeredCodeOf(p, now) });
+      assert.ok(known.length > 0, p.id + ".series: a registered station must still have a URL");
+      onHost(p, known);
+      /* every hostile string is refused whole, never partly encoded into a path */
+      for (const code of ["..", "../" + registeredCodeOf(p, now), registeredCodeOf(p, now) + "/..", ""]) {
+        assert.deepEqual(p[mode].urls({ ...q, code }), [], p.id + ".series: " + JSON.stringify(code) + " must build no url");
       }
     }
   }
+});
+
+/* ── ②b the function, RUN — an unregistered station is the CALLER's mistake, not the upstream's ──
+   (#R801) runProvider used to report «no url» as `upstream_unreachable`, so a `..` probe against
+   us-epa answered 502 and looked exactly like RadNet being down. The same fact that «unknown
+   provider» already carries — 400, `unknown station` — is what a code the register lacks gets, and
+   nothing is fetched on the way to saying so. */
+function runFeed(requests) {
+  const url = pathToFileURL(join(ROOT, "supabase/functions/radiation-feed/index.ts")).href;
+  const src = `
+    globalThis.__calls = [];
+    globalThis.Deno = { env: { get: () => "" }, serve: (h) => { globalThis.__h = h; } };
+    globalThis.fetch = async (u) => { globalThis.__calls.push(String(u)); return new Response("nope", { status: 404, headers: { "content-type": "text/plain" } }); };
+    await import(${JSON.stringify(url)});
+    const out = [];
+    for (const q of ${JSON.stringify(requests)}) {
+      const r = await globalThis.__h(new Request("http://relay.test/" + q));
+      out.push({ status: r.status, body: await r.text() });
+    }
+    process.stdout.write(JSON.stringify({ out, calls: globalThis.__calls }));
+  `;
+  const raw = execFileSync(process.execPath, ["--no-warnings", "--input-type=module", "-e", src],
+    { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60000 });
+  return JSON.parse(raw);
+}
+
+test("R585 ②b a station the register does not know is a 400, and nothing is asked upstream for it", () => {
+  const epa = providerById("us-epa");
+  const known = registeredCodeOf(epa, Date.UTC(2026, 8, 9, 12, 0, 0));
+  const r = runFeed([
+    "?mode=series&station=us-epa:../../../etc/passwd",
+    "?mode=series&station=us-epa:" + encodeURIComponent(known + "/.."),
+    "?mode=series&station=us-epa:" + encodeURIComponent(known),
+  ]);
+  const [probe, walk, real] = r.out;
+  for (const o of [probe, walk]) {
+    assert.equal(o.status, 400, "an unregistered code is the caller's error: " + o.body);
+    assert.deepEqual(JSON.parse(o.body), { error: "unknown station" }, "the same answer an unknown provider gets");
+  }
+  assert.equal(r.calls.length, 1, "the two refusals fetched nothing; only the registered station went upstream");
+  assert.match(r.calls[0], /^https:\/\/radnet\.epa\.gov\//, "and it went to RadNet");
+  /* the registered station DID reach the network, and this stub answered 404 — that, and only
+     that, is `upstream_unreachable` */
+  assert.equal(real.status, 502);
+  assert.deepEqual(JSON.parse(real.body), { error: "upstream_unreachable" });
 });
 
 /* ── ③ the one conversion, including the one it must refuse ─────────────────────────────────────

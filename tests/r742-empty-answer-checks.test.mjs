@@ -68,10 +68,10 @@ const REVERSIONS = [
   ['if (calls.length) midText = reply.text; else text = reply.text;', 'text = reply.text;'],
   ["'no_calls_issued'\n              : (!String(answerHere || '').trim() ? 'no_answer_written' : ''));", "'no_calls_issued' : '');"],
   ["if (!String(text || '').trim() && stopped !== 'aborted'", "if (!String(text || '').trim() && results.length && stopped !== 'aborted'"],
-  /* (#R801) …and the closing call this round gave a CUT turn. #R742's pre-fix module is the agent WITHOUT
+  /* (#R802) …and the closing call this round gave a CUT turn. #R742's pre-fix module is the agent WITHOUT
      that round's four changes, so this round's one line has to come out with them — otherwise the
      reconstructed pre-fix agent still writes the answer and ⑤ can no longer observe the defect it names. */
-  ['      if (cutShort) writeAnswer = true;   /* (#R801) the turn ran out — see above */\n', ''],
+  ['      if (cutShort) writeAnswer = true;   /* (#R802) the turn ran out — see above */\n', ''],
   ["if (!String(text || '').trim() && stopped === 'answered') stopped = 'no_answer';", ''],
 ];
 async function preFixAgent() {

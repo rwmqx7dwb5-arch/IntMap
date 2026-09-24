@@ -124,7 +124,7 @@ test('R760 ⑥ the painters that hold a named surface declare what they painted'
   /* and the removers declare what is now EMPTY, which is the same contract pointed the other way
      (#R747). `reset` had it; `clearAll` did not, and clearing an already-clear map was
      `not_rendered` — measured on production 2026-09-16 in 「Actually, go back to the previous view」. */
-  /* ⚠⚠⚠ (#R801) THE DEFECT THIS LINE IS ABOUT IS 「a remover did not declare what it removed」, and the
+  /* ⚠⚠⚠ (#R802) THE DEFECT THIS LINE IS ABOUT IS 「a remover did not declare what it removed」, and the
      line used to hold the SPELLING of one argument list. Measured this round: adding the `poi` surface
      turned it red although `clearAll` had been made MORE truthful, and the next surface would do the
      same — [[intmap-restate-the-defect-not-the-fix]]. So the expectation is DERIVED: the supplier

@@ -129,10 +129,10 @@ const failing = (checks, id) => (checks.find((c) => c.id === id) || { failures: 
 
 test('R318 ②a: the audit is green on the tree as it stands, except where it is honestly red', () => {
   const checks = auditOn({});
-  /* ⚠ (#R801) THE SAME NUMBER LIVES IN tests/r320-checks.test.mjs ④, and this round moved only that
+  /* ⚠ (#R802) THE SAME NUMBER LIVES IN tests/r320-checks.test.mjs ④, and this round moved only that
      copy first — CI found this one. It is a guard, not a policy ([[intmap-ceiling-guards-are-not-policies]]):
      it exists so a check that quietly stops running is noticed, and it moves when one is deliberately added.
-     #R406 added argument-schemas and required-arguments; #R801 added catalogue-subject, which asks of every
+     #R406 added argument-schemas and required-arguments; #R802 added catalogue-subject, which asks of every
      capability whether its own catalogue block says what it is ABOUT — measured on production that round,
      「天気予報」 reached nothing because js/atlas-catalog-text.js carried the word 「天気」 zero times. */
   assert.equal(checks.length, 23, 'a capability check was added or lost');

@@ -18,8 +18,9 @@
 //  and #R216 (news-relay) already gave. Canada is fetched DIRECTLY by the page, because
 //  it can be: a relay that is not needed is just another thing to be down.
 //
-//  ⚠ NOT AN OPEN PROXY. Two hosts, three path shapes, GET only, and the response must
-//  parse as JSON. Anything else is a 400. Keyless & public — no user data reaches it.
+//  ⚠ NOT AN OPEN PROXY. Three hosts, each with its own scheme, path shapes AND query keys
+//  (see UPSTREAMS), GET only, and the response must parse as JSON. Anything else is a 400.
+//  Keyless & public — no user data reaches it.
 //
 //  ⚠ SIXTY SECONDS OF EDGE CACHE, NOT FIVE MINUTES. 「全然現実の発令に追い付いていない。
 //  リアルタイムで反映しろ。」 A warning is a safety claim with a clock on it; the cache is
@@ -62,29 +63,137 @@ const MA_TIMEOUT_MS = 45000;
 const U_MAX_BYTES = 8 * 1024 * 1024;
 const U_TIMEOUT_MS = 45000;
 
+/* ══ ⚠⚠ (#R801, external audit) THE CAP READERS FETCHED WHATEVER THE INDEX POINTED AT, UNBOUNDED ═══
+   summariseCAP took every href in an upstream index that began with http(s) and fetched up to
+   ninety of them IN PARALLEL with a plain `fetch` — no byte ceiling, no content-type rule, any host
+   the index cared to name. summarisePAGASA and both index reads were the same shape. An aggregator
+   that is compromised, or merely one that starts linking elsewhere, would have had this function
+   pull arbitrary bytes from arbitrary hosts on its behalf. Three bounds, all MEASURED 2026-09-18:
+     · CAP_INDEX_MAX_BYTES — alerts.ncdr.nat.gov.tw/RssAtomFeed.ashx is 595,536 B with 921 links;
+       PAGASA's index is 18,763 B; MetService's (empty that day) 478 B. 8 MB is the same ceiling the
+       ?u= path already carries and thirteen times the largest index seen.
+     · CAP_FILE_MAX_BYTES — the CAP files behind them were 4,978–6,742 B (Taiwan, earthquake and
+       rain) and 6,775–8,412 B (PAGASA). One megabyte is over a hundred times that and still a
+       bound; PAGASA polygons are cut at 20,000 characters further down in any case.
+     · content-type — every CAP index and file measured answers an XML type (application/xml,
+       text/xml, application/rss+xml, application/atom+xml), so the rule is /xml/ and a text/html
+       login page is refused before it is read, not after (`text/` would have admitted it).
+     · CAP_PARALLEL — six, the number this file already lets one request fan to (MA_MAX_COUNTRIES,
+       SWIC_MAX_MEMBERS), and 6 × CAP_FILE_MAX_BYTES = 6 MB in flight where the swic path refused
+       6 × 24 MB. Each file answered in 0.28–0.35 s, so 90 files take ~5 s six abreast against
+       ~27 s one at a time — which on the upstream's bad days would eat the whole 45 s budget.
+   AND ONE RULE: a link is followed only on the ORIGIN THE INDEX ITSELF CAME FROM (scheme, host,
+   port), or on a host the CAPSRC entry names explicitly. Measured: all 921 Taiwanese links and all
+   52 PAGASA entries are on their own index's host; links dropped by this rule are COUNTED in the
+   summary (`offHost`) so a service that starts linking elsewhere is visible, not silent. */
+const CAP_INDEX_MAX_BYTES = 8 * 1024 * 1024;
+const CAP_FILE_MAX_BYTES = 1024 * 1024;
+const CAP_PARALLEL = 6;
+const CAP_TIMEOUT_MS = 45000;        /* (#R269) the budget every upstream fetch in this file gets */
+/* ?ma= (#R801): six countries were fetched with Promise.all, each up to MA_MAX_BYTES — 144 MB in one
+   isolate at the worst. Two at a time: the bound is bytes in flight, not sockets, and 2 × 24 MB is
+   less than what summarising ONE Germany-sized feed already costs once its 10 MB is decoded to a
+   string and parsed, so the pool never holds more than the summariser itself needs for one feed. */
+const MA_PARALLEL = 2;
+
+/* run `fn` over `items` with at most `width` in flight; results in item order, like Promise.all */
+async function mapPool(items, width, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const lane = async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  };
+  const lanes = [];
+  for (let k = 0; k < Math.max(1, Math.min(width, items.length)); k++) lanes.push(lane());
+  await Promise.all(lanes);
+  return out;
+}
+
+/* ⚠ (#R801) A LINK IN AN UPSTREAM INDEX IS AN INPUT. It may be followed only on the origin the index
+   itself was fetched from (same scheme, host and port), or on a host the source entry names. */
+function linkAllowed(href, indexUrl, hosts) {
+  let u, idx;
+  try { u = new URL(String(href)); idx = new URL(String(indexUrl)); } catch (_) { return false; }
+  if (u.protocol !== "https:" || u.username || u.password || u.port !== "") return false;
+  if (u.hostname === idx.hostname && u.protocol === idx.protocol) return true;
+  return Array.isArray(hosts) && hosts.indexOf(u.hostname) >= 0;
+}
+
 /* The allow-list, checked structurally rather than with a `startsWith` so a crafted
    string cannot smuggle a different host past it. */
 /* ⚠ NO TYPE ANNOTATIONS IN THIS FILE. The repo's static gate runs `node --check` over every .ts,
    and Node checks a .ts as CommonJS unless it is told otherwise — so the existing Edge Functions
    (news-relay, cable-geo, sv-cov) are plain JS in a .ts file, and this one is too. */
+/* ══ ⚠⚠ (#R801, external audit) THE HOST AND THE PATH WERE CHECKED; THE QUERY WAS RELAYED VERBATIM ══
+   `?u=https://severeweather.wmo.int/f/wfs?typeName=<anything>&cql_filter=<anything>` went upstream
+   as written: this function was an open GeoServer client for any layer that server holds, and
+   `outputFormat` chose the shape of the bytes it would then cache for everyone. So the rule is now
+   per host, and it names WHAT THIS FUNCTION'S OWN CALLERS SEND and nothing else:
+     · scheme — `http:` is permitted for www.nmc.cn ONLY, because that is the fact about it (measured
+       at the top of this file: «http only»); everything else is https.
+     · path   — the same shapes as before.
+     · query  — every key must be one the caller actually uses, with the value shape it uses:
+         www.nmc.cn/rest/findAlarm      js/world-packs.js builds pageNo, pageSize, signaltype,
+                                        signallevel, province — five keys, no others.
+         feeds.meteoalarm.org           the page asks through ?ma=; the ?u= form takes no query.
+         severeweather.wmo.int/f/wfs    exactly what swicUrl / swicGeoUrl below compose — the one
+                                        typeName (SWIC_TYPE), GeoJSON out, a mem-scoped cql_filter.
+         severeweather.wmo.int/json/*   no query.
+     · origin — no port, no userinfo. `https://feeds.meteoalarm.org:8443/` is not feeds.meteoalarm.org.
+   A URL with a key not in the table is refused, which is the property #R515's rule asks for: the
+   code does not decide what a query means, it refuses what nobody it serves has asked for. */
+const UPSTREAMS = {
+  // MeteoAlarm — the EUMETNET aggregation: 37 European services, incl. DWD, Météo-France,
+  // the Met Office and the Servizio Meteorologico. One feed per country.
+  meteoalarm: [
+    { scheme: "https:", path: /^\/api\/v1\/warnings\/feeds-[a-z-]{3,40}$/, query: {} },
+  ],
+  // CMA — the China Meteorological Administration's public warning list.
+  cma: [
+    { scheme: "http:", path: /^\/rest\/findAlarm$/, query: {
+      pageNo: /^[0-9]{1,4}$/, pageSize: /^[0-9]{1,4}$/,
+      signaltype: /^[A-Za-z0-9_-]{0,40}$/, signallevel: /^[A-Za-z0-9_-]{0,40}$/,
+      province: /^[^\s/?#&=]{0,40}$/,
+    } },
+  ],
+  // WMO Severe Weather Information Centre — see the `?swic=` block below.
+  swic: [
+    { scheme: "https:", path: /^\/json\/[a-z_-]{3,30}\.json$/, query: {} },
+    { scheme: "https:", path: /^\/f\/wfs$/, query: {
+      service: /^WFS$/i, version: /^1\.1\.0$/, request: /^GetFeature$/i,
+      typeName: /^local_postgis:postgis_geojsons$/, outputFormat: /^application\/json$/,
+      propertyName: /^[A-Za-z0-9_,]{1,200}$/,
+      cql_filter: /^row_type='POLYGON'( AND mem='[0-9A-Za-z]{2,4}')?$/,
+    } },
+  ],
+};
+
+/* the URL against one host's rules: scheme, path shape, and every query key it carries */
+function matchRules(u, rules) {
+  for (const rule of rules) {
+    if (u.protocol !== rule.scheme || !rule.path.test(u.pathname)) continue;
+    let ok = true;
+    for (const [k, v] of u.searchParams) {
+      const re = Object.prototype.hasOwnProperty.call(rule.query, k) ? rule.query[k] : null;
+      if (!re || !re.test(v)) { ok = false; break; }
+    }
+    if (ok) return u;
+  }
+  return null;
+}
+
 function allowed(raw) {
   let u;
   try { u = new URL(raw); } catch (_) { return null; }
-  if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+  if (u.username || u.password || u.port !== "") return null;
   const h = u.hostname.toLowerCase();
-  // MeteoAlarm — the EUMETNET aggregation: 37 European services, incl. DWD, Météo-France,
-  // the Met Office and the Servizio Meteorologico. One feed per country.
-  if (h === "feeds.meteoalarm.org") {
-    return /^\/api\/v1\/warnings\/feeds-[a-z-]{3,40}$/.test(u.pathname) ? u : null;
-  }
-  // CMA — the China Meteorological Administration's public warning list.
-  if (h === "www.nmc.cn") {
-    return u.pathname === "/rest/findAlarm" ? u : null;
-  }
-  // WMO Severe Weather Information Centre — see the `?swic=` block below.
-  if (h === "severeweather.wmo.int") {
-    return (u.pathname === "/f/wfs" || /^\/json\/[a-z_-]{3,30}\.json$/.test(u.pathname)) ? u : null;
-  }
+  if (h === "feeds.meteoalarm.org") return matchRules(u, UPSTREAMS.meteoalarm);
+  if (h === "www.nmc.cn") return matchRules(u, UPSTREAMS.cma);
+  if (h === "severeweather.wmo.int") return matchRules(u, UPSTREAMS.swic);
   return null;
 }
 
@@ -316,20 +425,23 @@ const unesc = (s) => String(s).replace(/&lt;/g, "<").replace(/&gt;/g, ">").repla
   .replace(/&amp;/g, "&");
 
 async function summarisePAGASA() {
-  const r = await fetch(PH_FEED, {
+  /* (#R801) bounded like every other upstream read here — see CAP_INDEX_MAX_BYTES */
+  const r = await fetchGuarded(PH_FEED, {
+    timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_INDEX_MAX_BYTES, contentTypeRe: /xml/i,
     headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
-    signal: AbortSignal.timeout(45000),
   });
-  if (!r.ok) throw new Error("pagasa " + r.status);
-  const feed = await r.text();
+  if (!r.ok) throw new Error("upstream_error");
+  const feed = r.text();
   /* newest bulletin per REGION: the title is 「GFA #7 - Region 3 (Central Luzon)」, so the region is
      what follows the first « - » and the number is what changes between generations. */
   const newest = new Map();
+  let offHost = 0;
   for (const e of xmlAll(feed, "entry")) {
     const title = unesc(xmlOne(e, "title"));
     const updated = xmlOne(e, "updated");
     const href = (/<link[^>]*href="([^"]+)"/.exec(e) || [])[1];
-    if (!href || !/^https:\/\/publicalert\.pagasa\.dost\.gov\.ph\//.test(href)) continue;
+    if (!href) continue;
+    if (!linkAllowed(href, PH_FEED)) { offHost++; continue; }   /* (#R801) the index's own origin only */
     const region = title.replace(/^[^-]*-\s*/, "").trim() || title;
     const prev = newest.get(region);
     if (!prev || String(updated) > String(prev.updated)) newest.set(region, { updated, href, title });
@@ -340,16 +452,16 @@ async function summarisePAGASA() {
   const areas = new Map();
   const rows = [];
   /* (#R383) the same three numbers every summariser in this file now reports — see `forceState` */
-  const drop = { expired: 0, upcoming: 0 };
+  const drop = { expired: 0, upcoming: 0, unread: 0 };
   let newestSent = "";
-  await Promise.all(picks.slice(0, PH_MAX).map(async (pk) => {
+  await mapPool(picks.slice(0, PH_MAX), CAP_PARALLEL, async (pk) => {
     try {
-      const rr = await fetch(pk.href, {
+      const rr = await fetchGuarded(pk.href, {
+        timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_FILE_MAX_BYTES, contentTypeRe: /xml/i,
         headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
-        signal: AbortSignal.timeout(45000),
       });
-      if (!rr.ok) return;
-      const cap = await rr.text();
+      if (!rr.ok) { drop.unread++; return; }
+      const cap = rr.text();
       if (/<status>\s*Exercise|Test\s*<\/status>/i.test(cap)) return;
       const event = unesc(xmlOne(cap, "event"));
       const severity = unesc(xmlOne(cap, "severity"));
@@ -373,13 +485,13 @@ async function summarisePAGASA() {
         rows.push({ area: name, event, headline: unesc(xmlOne(cap, "headline")).slice(0, 160),
           tier, severity, onset: sent, expires });
       }
-    } catch (_e) { /* one unreachable bulletin is not the whole country */ }
-  }));
+    } catch (_e) { drop.unread++; /* one unreachable bulletin is not the whole country */ }
+  });
   return { source: "PAGASA-DOST (Philippines)", fetchedAt: new Date().toISOString(),
     count: rows.length, warnings: rows.slice(0, 400),
     areas: [...areas.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP),
     areaTotal: areas.size, capTotal, capRead: Math.min(PH_MAX, capTotal),
-    expired: drop.expired, upcoming: drop.upcoming, newest: newestSent };
+    expired: drop.expired, upcoming: drop.upcoming, unread: drop.unread, offHost, newest: newestSent };
 }
 
 /* == (#R273) ONE READER FOR EVERY "CAP INDEX + CAP FILES" SERVICE =============================
@@ -439,18 +551,22 @@ const CAP_HAZARD = /^(Met|Geo|Fire|Env|Health)$/i;
 /* an <area> that is the whole area of responsibility is not an issuing unit (#R271 tsuiki2) */
 const AREA_SKIP = /area of responsibility|whole country|nationwide/i;
 
-function capLinks(feed, kind) {
+/* (#R801) `indexUrl` is the origin every link is held to; `hosts` is the source entry's explicit
+   extra allow-list, if it has one. Links refused by that rule are counted in `offHost`, not lost. */
+function capLinks(feed, kind, indexUrl, hosts) {
   const out = [];
+  let offHost = 0;
   const blocks = xmlAll(feed, kind === "rss" ? "item" : "entry");
   for (const e of blocks) {
     let href = "";
     if (kind === "rss") href = unesc(xmlOne(e, "link"));
     else href = (/<link[^>]*href="([^"]+)"/.exec(e) || [])[1] || "";
-    if (!/^https?:/.test(href)) continue;
+    if (!href) continue;
+    if (!linkAllowed(href, indexUrl, hosts)) { offHost++; continue; }
     const updated = xmlOne(e, kind === "rss" ? "pubDate" : "updated");
     out.push({ href, updated, block: e, title: unesc(xmlOne(e, "title")) });
   }
-  return out;
+  return { links: out, offHost };
 }
 
 /* ══ ⚠⚠⚠ (#R383) ONE CAP FILE IS NOT ONE WARNING — IT IS ONE PER `<info>` ═══════════════════════
@@ -476,13 +592,15 @@ function capInfos(cap) {
 
 async function summariseCAP(key) {
   const cfg = CAPSRC[key];
-  const r = await fetch(cfg.url, {
+  /* (#R801) bounded like every other upstream read here — see CAP_INDEX_MAX_BYTES */
+  const r = await fetchGuarded(cfg.url, {
+    timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_INDEX_MAX_BYTES, contentTypeRe: /xml/i,
     headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
-    signal: AbortSignal.timeout(45000),
   });
-  if (!r.ok) throw new Error(key + " " + r.status);
-  const feed = await r.text();
-  let picks = capLinks(feed, cfg.kind);
+  if (!r.ok) throw new Error("upstream_error");
+  const feed = r.text();
+  const linked = capLinks(feed, cfg.kind, cfg.url, cfg.hosts);
+  let picks = linked.links;
   const indexTotal = picks.length;
   if (cfg.only) picks = picks.filter((p) => cfg.only.test(p.block));
   const capTotal = picks.length;
@@ -491,18 +609,18 @@ async function summariseCAP(key) {
   const now = Date.now();
   const areas = new Map();
   const rows = [];
-  const drop = { expired: 0, upcoming: 0, sender: 0, category: 0, ungraded: 0 };
+  const drop = { expired: 0, upcoming: 0, sender: 0, category: 0, ungraded: 0, unread: 0 };
   const senders = new Map();
   const cats = new Map();
   let newestSent = "";
-  await Promise.all(picks.slice(0, cfg.max).map(async (pk) => {
+  await mapPool(picks.slice(0, cfg.max), CAP_PARALLEL, async (pk) => {
     try {
-      const rr = await fetch(pk.href, {
+      const rr = await fetchGuarded(pk.href, {
+        timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_FILE_MAX_BYTES, contentTypeRe: /xml/i,
         headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
-        signal: AbortSignal.timeout(45000),
       });
-      if (!rr.ok) return;
-      const cap = await rr.text();
+      if (!rr.ok) { drop.unread++; return; }
+      const cap = rr.text();
       if (!/<alert/i.test(cap)) return;                    /* an error page is not a bulletin */
       const status = unesc(xmlOne(cap, "status"));
       const msgType = unesc(xmlOne(cap, "msgType"));
@@ -557,14 +675,15 @@ async function summariseCAP(key) {
             tier, severity, acol, by: sender, onset: sent, expires });
         }
       }
-    } catch (_e) { /* one unreachable bulletin is not the whole country */ }
-  }));
+    } catch (_e) { drop.unread++; /* one unreachable bulletin is not the whole country */ }
+  });
   return { source: cfg.source, fetchedAt: new Date().toISOString(),
     count: rows.length, warnings: rows.slice(0, 400),
     areas: [...areas.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP),
     areaTotal: areas.size, capTotal, capRead: Math.min(cfg.max, capTotal),
     expired: drop.expired, upcoming: drop.upcoming, notSender: drop.sender,
     notHazard: drop.category, ungraded: drop.ungraded, indexTotal,
+    unread: drop.unread, offHost: linked.offHost,
     senders: [...senders.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map((e) => e[0] + " ×" + e[1]),
     cats: [...cats.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16).map((e) => e[0] + " ×" + e[1]),
     newest: newestSent };
@@ -976,7 +1095,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "no country named" }), { status: 400, headers: { ...CORS, "content-type": "application/json" } });
     }
     const out = {};
-    await Promise.all(names.map(async (n) => {
+    /* (#R801) MA_PARALLEL at a time, not all six at once — see the note by that constant */
+    await mapPool(names, MA_PARALLEL, async (n) => {
       try {
         const r = await fetchGuarded("https://feeds.meteoalarm.org/api/v1/warnings/feeds-" + n, {
           timeoutMs: MA_TIMEOUT_MS,
@@ -988,7 +1108,7 @@ Deno.serve(async (req) => {
         out[n] = summariseMeteoAlarm(r.text(), lang);
       } catch (_e) { out[n] = { error: "unreachable" }; }   /* ⚠ the upstream exception is NOT echoed:
            it can carry a stack, and this response is public (CodeQL js/stack-trace-exposure) */
-    }));
+    });
     return new Response(JSON.stringify({ countries: out }), {
       headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
     });

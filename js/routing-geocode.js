@@ -148,7 +148,7 @@ window.IntMapRouteGeocode = (function () {
     return fetch(url, { signal: signal }).then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); });
   }
 
-  /* ══ ⚠⚠⚠ (#R801) THIS FIELD NEVER ASKED WHETHER A ROW WAS WHAT THE READER TYPED ══════════════
+  /* ══ ⚠⚠⚠ (#R802) THIS FIELD NEVER ASKED WHETHER A ROW WAS WHAT THE READER TYPED ══════════════
      Measured on the deployed build, 2026-09-18: `suggest('Sahara')` offered **New York** as its
      first candidate — a row that shares no letter with the query. Free-text Nominatim drops the
      terms it cannot match and answers 200 OK with whatever is left, and the ranking below then
@@ -199,7 +199,7 @@ window.IntMapRouteGeocode = (function () {
     if (hold < 0) throw new Error('rate_floor');                /* one is already queued — see nominatimSlot */
     if (hold) await wait(hold);                                 /* the policy floor is a RATE: wait for it */
     if (signal && signal.aborted) throw abortError();           /* the reader typed on while we waited */
-    /* ⚠ (#R801) `namedetails=1` costs nothing and is what lets an English query agree with a feature
+    /* ⚠ (#R802) `namedetails=1` costs nothing and is what lets an English query agree with a feature
        named in Japanese (「Mount Fuji」→ 富士山 through `name:en`). Without it the rule below could only
        see the one localised label, which is how a correct row gets refused for the wrong reason. */
     var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=8&accept-language='
@@ -237,7 +237,7 @@ window.IntMapRouteGeocode = (function () {
     var ll = parseLatLng(q);
     if (ll) return { items: [ll], error: '' };
 
-    var Rp = placeRules();   /* (#R801) started here, awaited beside the network below */
+    var Rp = placeRules();   /* (#R802) started here, awaited beside the network below */
 
     /* ⚠ (#R298) THE SEPARATOR IS WRITTEN AS AN ESCAPE. It used to be a LITERAL NUL byte in the
        source — 0x00, not the two characters that spell the escape — which makes every byte-oriented
@@ -272,7 +272,7 @@ window.IntMapRouteGeocode = (function () {
     var got = await Promise.all(jobs);
     got.forEach(function (arr) { items = items.concat(arr); });
 
-    /* (#R801) the macro-region store, on the same terms as the station registry above: local, free,
+    /* (#R802) the macro-region store, on the same terms as the station registry above: local, free,
        and the row a reader typing 「the Alps」 is looking for. `exact` pins it to the top of the
        ranking without hiding anything — #R291's rule is that nothing here CONFIRMS a place. */
     try {

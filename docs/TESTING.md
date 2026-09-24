@@ -1217,6 +1217,48 @@ Natural Earth の単位は出典自身の代替コード（末尾が `~`）で�
 ——「その年に存在した単位」であることは上流が述べているが、「その年もこの形だった」とは誰も
 述べていない。だから線は導出線として描かれ、レイヤー行の説明がそう言う（`docs/MAP-LAYERS.md` §7.7）。
 
+### The September 2026 security audit — `tests/r801-*-checks.test.mjs` (#R801)
+
+Seven files, one per subject, all `node --test`; what each measures is measured by **running** the
+code where that is possible (a stubbed `fetch`, a real `DecompressionStream`, the real capability
+table), and by reading it only where the fact is a spelling.
+
+- **`tests/r801-security-audit-checks.test.mjs`** — `_shared/relay-guard.js` evaluated: `fetchBounded`
+  times out on a body that arrives after the headers, cuts a streamed body at the byte ceiling, and
+  refuses a redirected POST; `followRedirects` follows same-origin https hops, refuses a different
+  host / scheme / port and a loop past `MAX_REDIRECTS`, and hands the hop to the caller's
+  `allowRedirect`. ai-proxy: `settle()` runs immediately before the success return, `refund()` returns
+  early for a call that did not charge, the body goes through `readCapped`; monitor-run reads its
+  body only after `auth.getUser()` and returns no database error text; the two functions cap the
+  provider answer at one equal number; no Edge Function carries the Gemini key in a query string; the
+  ledger migration refunds with one `DELETE … RETURNING` guarded by `succeeded`; and ⑦ reads
+  `node_modules/cesium` for the evaluation that still requires `'unsafe-eval'` — the day it is gone
+  the test demands the directive be removed.
+- **`tests/r801-relay-spend-checks.test.mjs`** — routing-relay's in-memory limiter is evaluated with
+  10,000 identities at one instant and must hold `RATE_MAX_KEYS` (it used to hold all 10,000); the
+  handler is run with a stubbed RPC and a stubbed upstream: the three `relay_take` calls happen
+  **before** the Mapbox fetch, a refused project bucket answers `429 spend_ceiling` without calling
+  Mapbox, an unreachable limiter answers `503` without calling Mapbox, `probe` and invalid requests
+  never reach the RPC. The migration's `relay_take` is SECURITY DEFINER, `search_path=''`,
+  service_role only.
+- **`tests/r801-attach-bounds-checks.test.mjs`** — `ATL_FILE` evaluated with real streams: a gzip whose
+  inflated size exceeds `inflatedPerEntry` is cut at the ceiling (the tap on `DecompressionStream`
+  shows one chunk past it, not 256 MB); a ZIP whose central directory under-declares `usize` is
+  still refused by the measured output; a cell reference of `ZZZZZZ1` does not walk a sparse array
+  (19 ms where the old parser threw `Invalid array length` after 10.6 s); the equalities the
+  `LIMITS` object cannot state about itself (`inflatedPerEntry = readBytes`,
+  `sheetCells = textPerFile`) are held here.
+- **`tests/r801-edge-config-checks.test.mjs`** — every `[functions.*]` block in `supabase/config.toml`
+  states `verify_jwt` (counted over the blocks, and the blocks over `supabase/functions/*/index.ts`);
+  `db.yml` carries no `|| true` on the drift step and propagates the exit code; the database path
+  list exists once, in the scope step, and no trigger filters on paths, so the job is present on
+  every PR and can be a required check (#R793 landed the trigger change first, in the same shape).
+- **`tests/r801-atlas-confirm-checks.test.mjs`** / **`tests/r801-atlas-boundary-checks.test.mjs`** /
+  **`tests/r801-relay-input-checks.test.mjs`** — see their own headers: the confirm column of the
+  capability table as a property (external risk and model-input reads are never `none`), the data
+  boundary around observed content in the model prompt and the kernel's confirm step, and the input
+  rules of the public relays (bbox range, same-host links, closed query keys, a malformed `%`).
+
 ### `tests/r731-atlas-repeat-checks.test.mjs` (#R731)
 
 3 本。本物の surface とレジストリの上で `runTurn` を走らせ、同じ呼び出しを返し続けるモデルに対してターンが
@@ -2813,6 +2855,16 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   a new signup, an account deletion). ⚠ **The older files could not have caught this**: they
   assert the projection (four columns, no `email`) and both roles can read it — all true of the
   defective view. This file asserts the mechanism.
+- **`supabase/tests/08_relay_rate_limit_test.sql`** (pgTAP, #R801) — `relay_take` allows up to the
+  capacity, refuses past it, refills after time passes (the row's `at` is moved into the past and the
+  take repeated), and cannot be executed by anon or authenticated.
+- **`supabase/tests/09_r801_security_audit_test.sql`** (pgTAP, #R801) — charge → settle → refund
+  leaves the count and the row; two refunds of one unanswered turn decrement once; `settle_ai_turn`
+  is service_role only; **no table in `public`** grants TRUNCATE / REFERENCES / TRIGGER to anon or
+  authenticated (counted over `pg_class`, not over names); every SECURITY DEFINER function in
+  `public` pins a `search_path` without `public` in it (counted over `pg_proc`); anon cannot file
+  feedback or a bug report as an existing user and A cannot file as B; an author may update a post's
+  body and `edited_at` but not `created_at`, `author_name` or `user_id`.
 - **`tests/r507-checks.test.mjs`** (`node --test`, #R507) — the source-side pair: the migrations
   end with `profiles_public` as a table, the drop of the old view is guarded on `relkind` so the
   migration stays re-runnable, only `SELECT` is ever granted, the PostgREST schema reload sits

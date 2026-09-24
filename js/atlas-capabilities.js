@@ -101,10 +101,18 @@ export function makeAtlasCapabilities(HOST) {
          9 target      required input kind: '' | 'place' | 'point' | 'area' | 'points' | 'country'
                        | 'layer' | 'metric' | 'text'.  A trailing '?' means optional.
         10 lazy        IntMapLazy module ids this needs AT EXECUTION (never at planning).
+        11 ingests     OPTIONAL (#R801). '' | 'external'. 'external' = the RESULT this row hands back
+                       to the model carries sentences a THIRD PARTY wrote — a fetched page, a
+                       headline, a reader's file, a gloss built from web text — as opposed to
+                       IntMap's own observation of what it did (a camera moved, a layer is on).
+                       js/atlas-toolsurface.js stamps it on the tool result and js/atlas-agent.js
+                       reads it for ONE fact: whether outside content has now been in front of the
+                       model this turn (`turn.externalContentSeen`), which is what column 8's
+                       'explicit' asks. A row that omits the cell ingests nothing external.
        ⚠ COLUMN 9 IS THE #R302 REGRESSION CONDITION. A capability whose target is required and whose
        arguments do not carry one answers `needs_input` — it does NOT quietly take the map centre. */
     var T = [
-      /* id                          legacy            aliases                                                        cat        obs        writes                    produces               risk       confirm   target      lazy */
+      /* id                          legacy            aliases                                                        cat        obs        writes                    produces               risk       confirm   target      lazy        [ingests] */
       ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight',          'map',                 'session', 'none',   '',         ''],
       ['layers.toggle',              'layer',          '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
       ['layers.opacity',             'opacity',        '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
@@ -113,16 +121,16 @@ export function makeAtlasCapabilities(HOST) {
       ['panel.compare',              'compare',        '',                                                            'panel',   'panel',   'panel.compare',          'panel',               'session', 'none',   '',         ''],
       ['view.flyTo',                 'flyTo',          '',                                                            'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   'place',    ''],
       ['data.weather',               'weather',        '',                                                            'data',    'panel',   'panel.weather',          'panel,explanation',   'read',    'none',   'place',    ''],
-      ['research.brief',             'brief',          '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'place?',   ''],
+      ['research.brief',             'brief',          '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'place?',   '', 'external'],
       /* (#R491) the term gloss. It writes nothing and paints nothing — it opens a card beside the
          text and produces an explanation, which is why its observer is 'none' and its risk 'read'. */
-      ['reader.gloss',               'gloss',          'explainTerm,defineTerm',                                      'research','none',    '',                       'explanation',         'read',    'none',   'text',     ''],
+      ['reader.gloss',               'gloss',          'explainTerm,defineTerm',                                      'research','none',    '',                       'explanation',         'read',    'none',   'text',     '', 'external'],
       ['research.askHere',           'askHere',        '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
       /* ⚠⚠ (#R495) THE JOIN. Every row above answers about ONE dataset — rank a metric, read a point,
          sum an area, score countries — and 「人口100万人以上で、年間降水量500mm未満、海から200km以上、
          過去30日でM5以上の地震があった都市」 is a question about four at once. `read` and `none`: it
          measures and pins, it changes no setting the reader has to undo. */
-      ['data.query',                 'query',          'crossQuery,dataQuery',                                        'data',    'queryRows','map.object',           'map,explanation',     'session','none',   '',         'atlasQuery'],
+      ['data.query',                 'query',          'crossQuery,dataQuery',                                        'data',    'queryRows','map.object',           'map,explanation',     'session','none',   '',         'atlasQuery', 'external'],
       /* ⚠⚠ (#R743) THE OTHER HALF OF THE LINE ABOVE. `data.query` READS the datasets a reader has
          imported; nothing could ask for one to be MADE. So every spatial analysis Atlas could
          perform was one somebody had already built as a feature of the app, and a request like
@@ -220,8 +228,12 @@ export function makeAtlasCapabilities(HOST) {
          asking how long is left is a pure READ; stopping is neither.
          ⚠ `navigation.start` IS THE ONLY 'external' RISK IN THE ROUTING CATEGORY. It turns on a sensor
          and sends one position to a router. Atlas may do it on a plain instruction, but the risk column
-         is what makes that visible in the plan rather than buried in an executor. */
-      ['navigation.start',           'startNavigation','startNav,beginNavigation,guideMe,driveThere',           'routing', 'route',   'map.route,navigation',   'route,map,panel',     'external','none',   '',         'navigation'],
+         is what makes that visible in the plan rather than buried in an executor.
+         ⚠ (#R801) WHAT LEAVES, TO WHOM: the device's position, to the routing relay — so column 8 is
+         'explicit': on a plain instruction it still runs; on the model's say-so after outside content
+         (a page, an article, an attachment) has been in the turn, the reader is asked first
+         (js/atlas-executor.js 4b). */
+      ['navigation.start',           'startNavigation','startNav,beginNavigation,guideMe,driveThere',           'routing', 'route',   'map.route,navigation',   'route,map,panel',     'external','explicit','',        'navigation'],
       ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'none',    'navigation',             'panel',               'session', 'none',   '',         ''],
       ['navigation.status',          'navStatus',      'howLongLeft,etaNow,remaining,nextTurn,arrivalTime',           'routing', 'none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['navigation.camera',          'navCamera',      'recenter,overview,followMe,northUp',                          'routing', 'camera',  'camera',                 'map,camera',          'session', 'none',   '',         ''],
@@ -279,13 +291,18 @@ export function makeAtlasCapabilities(HOST) {
       ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
       ['map.clear',                  'clear',          '',                                                            'map',     'clear',   'map.all',                'map',                 'session', 'none',   '',         ''],
       ['view.fullscreen',            'fullscreen',     '',                                                            'view',    'none',    'view.fullscreen',        'view',                'session', 'none',   '',         ''],
-      ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   '',         ''],
+      /* ⚠ (#R801) WHAT LEAVES, TO WHOM: the device's position, read from the sensor and returned to
+         the MODEL as a fact ({lat,lng,accuracyM}, #R413) — column 8 'explicit', same rule as
+         navigation.start above. */
+      ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera',                 'camera,map',          'session', 'explicit','',        ''],
       /* ⚠ (#R493) THE ONLY CAPABILITY WHOSE RESULT IS A PICTURE. Every other row hands Atlas facts
          it can already read off the state ledger; this one hands it the PIXELS — the frame the
          reader is looking at, attached to the next model call as a real image. It writes nothing
          and moves nothing (observer `none`, empty `writes`), so it holds no conflict key and can
-         run beside anything. risk='read' for the same reason. */
-      ['view.inspect',               'inspect',        'lookAtMap,seeMap,viewInspect,readScreen',                     'view',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+         run beside anything. risk='read' for the same reason.
+         ⚠ (#R801) WHAT LEAVES, TO WHOM: the pixels on the reader's screen, to the MODEL as an image
+         — column 8 'explicit' (js/atlas-executor.js 4b). */
+      ['view.inspect',               'inspect',        'lookAtMap,seeMap,viewInspect,readScreen',                     'view',    'none',    '',                       'explanation',         'read',    'explicit','',        ''],
       ['map.poi',                    'poi',            'mapPois,facilities',                                          'map',     'paint',   'map.poi',                'map',                 'session', 'none',   'place?',   ''],
       ['research.mapReport',         'mapReport',      'newsMap,reportMap',                                           'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
       ['research.situationMap',      'researchMap',    'research_map,situationMap',                                   'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
@@ -311,8 +328,10 @@ export function makeAtlasCapabilities(HOST) {
          js/atlas-schemas.js, enforced on what Atlas sends by js/atlas-toolsurface.js, exactly as for
          data.coverage above (#R760). tests/r783-capability-reachable-checks.test.mjs ①/② measure
          both halves of that for all 145 rows rather than for these two. */
-      ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
-      ['research.analyze',           'analyze',        'research,synthesize',                                         'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
+      /* ⚠ (#R801) WHAT LEAVES, TO WHOM: a file the reader attached in an EARLIER turn, back into
+         the MODEL's next input — column 8 'explicit' (js/atlas-executor.js 4b). */
+      ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'explicit','',        '', 'external'],
+      ['research.analyze',           'analyze',        'research,synthesize',                                         'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
       ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'explicit','',        ''],
       ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
       ['settings.eyeAltitude',       'eyeAltitude',    '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
@@ -335,8 +354,8 @@ export function makeAtlasCapabilities(HOST) {
       ['data.compareStats',          'compareStats',   'compareCountries,statsCompare',                               'data',    'panel',   'panel.compare',          'panel',               'session', 'none',   'country',  ''],
       ['map.scoreMap',               'scoreMap',       'customLayer,evaluate',                                        'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   '',         ''],
       ['data.exploreRelated',        'explore',        'findRelated,relatedMetrics',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   'metric',   ''],
-      ['research.impact',            'impact',         'impactAnalysis,nearbyCritical',                               'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   ''],
-      ['research.events',            'events',         'newsEvents,groupNews',                                        'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   'newsEvents'],
+      ['research.impact',            'impact',         'impactAnalysis,nearbyCritical',                               'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   '', 'external'],
+      ['research.events',            'events',         'newsEvents,groupNews',                                        'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   'newsEvents', 'external'],
       /* (#R386) 出来事のカテゴリで News の一覧と地図を同時に絞る。docs/NEWS-EVENTS.md §9/§10。
          ⚠ observer は `paint`、produces は `map,explanation` ——research.events と同じ形である。
             最初は `panel` / `panel,map` と書いたが、capability audit の `map-verified` が
@@ -344,7 +363,7 @@ export function makeAtlasCapabilities(HOST) {
             この操作が実際に変えるのは `news-points` のピンと、返す件数の説明である。
          ⚠ `lazy` は js/lazy-modules.js に実在する id でなければならない（#R347 が 4 件の
             「存在しない lazy を名指しした行」を測っている）。`newsEvents` はそこに在る。 */
-      ['news.category',              'newsCategory',   'newsFilter,eventCategory',                                    'data',    'paint',   'panel.news',             'map,explanation',     'session', 'none',   'text',     'newsEvents'],
+      ['news.category',              'newsCategory',   'newsFilter,eventCategory',                                    'data',    'paint',   'panel.news',             'map,explanation',     'session', 'none',   'text',     'newsEvents', 'external'],
       ['system.module',              'module',         '',                                                            'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
       ['system.monitor',             'monitor',        '',                                                            'system',  'none',    '',                       '',                    'read',    'none',   '',         ''],
       ['system.control',             'control',        '',                                                            'system',  'control', 'ui.any',                 'panel',               'session', 'none',   '',         ''],
@@ -1340,6 +1359,7 @@ export function makeAtlasCapabilities(HOST) {
       var produces = row[6] ? row[6].split(',') : [];
       var target = targetPolicyOf(row[9]);
       var lazy = row[10] ? row[10].split(',') : [];
+      var ingests = row[11] === 'external' ? 'external' : '';   /* (#R801) column 11, optional — see the column notes */
       var withdrawn = WITHDRAWN[id] || null;
       var cap = {
         id: id, version: 1, legacy: legacy,
@@ -1352,6 +1372,7 @@ export function makeAtlasCapabilities(HOST) {
         produces: produces,
         risk: { read: 'read-only', session: 'reversible-session', persist: 'persistent-setting', external: 'external' }[row[7]] || 'reversible-session',
         confirmation: row[8],
+        ingests: ingests,
         withdrawn: withdrawn, isFallback: !!FALLBACKS[id],
         forbiddenSubstitutes: FORBIDDEN_SUBSTITUTES[id] || [],
         equivalents: EQUIVALENTS[id] || [],
@@ -1440,7 +1461,7 @@ export function makeAtlasCapabilities(HOST) {
       if (byId[d.id]) return false;
       var cap = Object.assign({ version: 1, aliases: [], category: 'other', lazyModules: [],
         effects: { reads: [], writes: [], conflictKeys: [] }, produces: [], risk: 'reversible-session',
-        confirmation: 'none', targetPolicy: targetPolicyOf(''), forbiddenSubstitutes: [], equivalents: [],
+        confirmation: 'none', ingests: '', targetPolicy: targetPolicyOf(''), forbiddenSubstitutes: [], equivalents: [],
         availability: function () { return { available: true, reason: null }; },
         observe: function () { return null; }, verify: OBSERVERS.none.verify,
         examples: [], negativeExamples: [], limitations: [] }, d);
@@ -1507,7 +1528,7 @@ export function makeAtlasCapabilities(HOST) {
       });
       return _docNorm;
     }
-    /* ══ (#R801) A BLOCK IS NOT A CAPABILITY ═════════════════════════════════════════════════════
+    /* ══ (#R802) A BLOCK IS NOT A CAPABILITY ═════════════════════════════════════════════════════
        js/atlas-catalog-text.js documents the 145 capabilities in 60 SHARED blocks, and the biggest of
        them documents THIRTY-THREE at once — data.weather, map.pin, routing.route, layers.aircraftTrack
        and twenty-nine others. Two things follow, and both were wrong here.
@@ -1748,7 +1769,7 @@ export function makeAtlasCapabilities(HOST) {
     })();
     API.VERB_HINTS = VERB_HINTS;
 
-    /* ⚠⚠⚠ (#R801) THE RULE #R727 ③ GAVE THE DOCUMENTATION, GIVEN ALSO TO THE ALIASES. `hasTerm` above
+    /* ⚠⚠⚠ (#R802) THE RULE #R727 ③ GAVE THE DOCUMENTATION, GIVEN ALSO TO THE ALIASES. `hasTerm` above
        knows that «iss» is not inside «missile» — and the alias match forty lines below it was a bare
        `indexOf`, so «ratio» was inside «duration». MEASURED on the production request «plan a rail
        route from Tokyo to Osaka with duration and distance»: data.ratio scored 65 (40 for its alias
@@ -1765,7 +1786,7 @@ export function makeAtlasCapabilities(HOST) {
       var re = _spellRe[na] || (_spellRe[na] = new RegExp('(^|[^a-z0-9])' + na.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       return re.test(nq);
     }
-    /* ⚠⚠⚠ (#R801) A CATEGORY HINT CANNOT TELL TWO CAPABILITIES APART, SO IT MUST NOT DECIDE WHICH OF
+    /* ⚠⚠⚠ (#R802) A CATEGORY HINT CANNOT TELL TWO CAPABILITIES APART, SO IT MUST NOT DECIDE WHICH OF
        THEM COMES FIRST. Every row of VERB_TERMS is keyed by CATEGORY, so a hit awards the same +8 to
        every capability in that category: 「経路」 gives routing.route and navigation.voice eight points
        each, and eleven routing capabilities came back on EXACTLY EIGHT — at which point the tie-break
@@ -1800,7 +1821,7 @@ export function makeAtlasCapabilities(HOST) {
          → matches: [], and Atlas, told IntMap had no such control, went researching a position the
          satellite layer was propagating. Each distinct term of the request that the block carries
          adds a little; the cap keeps a long block from outranking an exact alias. It is SELF evidence
-         because #R801 made it evidence about this capability rather than about the thirty others its
+         because #R802 made it evidence about this capability rather than about the thirty others its
          block also documents. */
       self += docTermScore(cap, nq);
       if (ctx) {
@@ -1817,7 +1838,7 @@ export function makeAtlasCapabilities(HOST) {
     /* search(q, opts) — the ranking. `opts.min` is the score below which a capability is not
        CONFIDENTLY relevant; when too few clear that bar the caller widens, and the widest setting
        is the whole registry. Nothing is ever dropped for being 141st in the DOM.
-       ⚠ (#R801) `self` IS THE FIRST KEY AND THE ALPHABET IS THE LAST.
+       ⚠ (#R802) `self` IS THE FIRST KEY AND THE ALPHABET IS THE LAST.
        ⚠⚠⚠ AND A CATEGORY HINT STOPS NAMING ITS WHOLE CATEGORY THE MOMENT SOMETHING IN THAT CATEGORY IS
        NAMED. This is the second half of the production failure, and it was worse than an empty answer.
        MEASURED (2026-09-18, build R783) on 「世界の原子力発電所を地図に表示して、日本のものだけ強調して。」:
@@ -1947,7 +1968,7 @@ export function makeAtlasCapabilities(HOST) {
           return {
             id: c.id, legacy: c.legacy, aliases: c.aliases.slice(), category: c.category,
             observerKind: c.observerKind, effects: c.effects, produces: c.produces,
-            risk: c.risk, confirmation: c.confirmation, targetPolicy: c.targetPolicy,
+            risk: c.risk, confirmation: c.confirmation, ingests: c.ingests || '', targetPolicy: c.targetPolicy,
             lazyModules: c.lazyModules, withdrawn: c.withdrawn ? c.withdrawn.why : null,
             isFallback: c.isFallback, forbiddenSubstitutes: c.forbiddenSubstitutes,
             equivalents: c.equivalents,

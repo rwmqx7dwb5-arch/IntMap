@@ -227,12 +227,17 @@ export function makeAtlasMarkdown(CTX) {
     /* (#R494) escaped markdown: `\*not italic\*` is text the author asked for literally */
     s = s.replace(/\\([\\`*_{}[\]()#+\-.!|>~$])/g, (m, ch) => put(esc(ch)));
     /* (#R74) markdown links → real (safe) anchors. ⚠ `href` STAYS THE FIRST ATTRIBUTE — the URL
-       audit in tests/r463-checks.test.mjs reads anchors with a regex that assumes it. */
-    s = s.replace(/\[([^\]\n]{1,160})\]\((https?:[^)\s]{4,400})\)/g,
-      (m, t, u) => put('<a href="' + u + '" class="atl-a" target="_blank" rel="noopener">' + esc(t) + '</a>'));
+       audit in tests/r463-checks.test.mjs reads anchors with a regex that assumes it.
+       ⚠ (#R801) THE URL IS ESCAPED, AND ITS CLASS EXCLUDES THE FOUR CHARACTERS THAT END AN ATTRIBUTE.
+       `[^)\s]` admitted `"`, so `[here](https://x/a"onmouseover="alert(1)"x="y)` closed the href and
+       wrote its own attribute — the model's prose, which quotes what it fetched, is exactly where such
+       a string arrives. The bare-URL rule below already excluded the quote; this one now does too, and
+       both go through `esc()` so a URL can never write past its own attribute (tests/r801-atlas-boundary-checks). */
+    s = s.replace(/\[([^\]\n]{1,160})\]\((https?:[^)\s"'<>]{4,400})\)/g,
+      (m, t, u) => put('<a href="' + esc(u) + '" class="atl-a" target="_blank" rel="noopener">' + esc(t) + '</a>'));
     /* (#R79g) bare urls too — the leading-char guard skips one already inside an href="…" */
-    s = s.replace(/(^|[^"'=>/])(https?:\/\/[^\s<)"'）】]{4,400})/g,
-      (m, pre, u) => pre + put('<a href="' + u + '" class="atl-a atl-a-url" target="_blank" rel="noopener">' + esc(u) + '</a>'));
+    s = s.replace(/(^|[^"'=>/])(https?:\/\/[^\s<>)"'）】]{4,400})/g,
+      (m, pre, u) => pre + put('<a href="' + esc(u) + '" class="atl-a atl-a-url" target="_blank" rel="noopener">' + esc(u) + '</a>'));
     /* (#R159) inline **bold** → plain: an Atlas reply body carries no bold */
     s = s.replace(/\*\*([^*\n]+?)\*\*/g, '$1');
     /* (#R156) *italic* — guarded so `**`, a bullet and `2 * 3` cannot misfire */
