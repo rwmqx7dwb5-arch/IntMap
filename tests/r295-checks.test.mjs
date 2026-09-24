@@ -205,30 +205,52 @@ test('#R295 ⑥ the always-on instruction set stays under its ceiling', () => {
   }
 });
 
-/* ── ⑦ THE FREE ROUND NUMBER LOOKS AT THE BRANCHES, NOT ONLY AT THE NOTES ──────────────────────
+/* ── ⑦ THE IDENTIFIER A SESSION IS GIVEN IS ONE NOBODY ELSE HOLDS ─────────────────────────────
    The round number was taken three times (#R288, #R289 and once before), each costing a rebase and
-   30+ renumbered references, and every one of those collisions had the same cause: the number was
-   chosen by reading DEV-NOTES.md — which says what has MERGED — while another session already held
-   `feat/r<N>-…`. So the property under test is not «it prints a number», it is «the number it
-   prints is larger than everything anyone has claimed anywhere». */
-test('#R295 ⑦ scripts/worktree.mjs offers a round number nobody has claimed', () => {
-  const out = execFileSync(process.execPath, [resolve(ROOT, 'scripts/worktree.mjs'), 'status'],
-    { cwd: ROOT, encoding: 'utf8' });
-  const offered = +(out.match(/空きラウンド番号\s+R(\d+)/) || [])[1];
-  assert.ok(Number.isFinite(offered), 'status did not print a free round number');
-
-  const claimed = new Set();
-  for (const m of read('DEV-NOTES.md').matchAll(/#R(\d{2,4})\b/g)) claimed.add(+m[1]);
-  assert.ok(claimed.size, 'DEV-NOTES.md yielded no round numbers — the sweep is not reaching it');
+   30+ renumbered references: the number was chosen by a SCAN (DEV-NOTES, then also the branches),
+   and a scan hands every session that runs it before the others push the SAME answer — #R671 was
+   renumbered seven times. (2026-09-25) There is no number any more. A piece of work is named by
+   its slug, and the claim is `git worktree add -b feat/<slug>`, which git refuses when the branch
+   exists — and every worktree on a machine shares one ref namespace. So the property under test is
+   the defect itself: TWO SESSIONS CANNOT BE HANDED THE SAME IDENTIFIER. Run in a throwaway
+   repository, because `new` creates branches and worktrees. */
+test('#R295 ⑦ scripts/worktree.mjs never hands two sessions the same identifier', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'im-r295-new-'));
+  const g = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   try {
-    const branches = execFileSync('git', ['branch', '-a', '--format=%(refname:short)'],
-      { cwd: ROOT, encoding: 'utf8' });
-    for (const m of branches.matchAll(/\br(\d{2,4})-/gi) ) claimed.add(+m[1]);
-  } catch { /* a checkout without refs still has the notes to answer from */ }
+    const origin = join(tmp, 'origin');
+    mkdirSync(origin);
+    g(['init', '-q', '-b', 'main'], origin);
+    g(['config', 'user.email', 'r295@test'], origin);
+    g(['config', 'user.name', 'r295'], origin);
+    seedScripts(origin);
+    mkdirSync(join(origin, 'tests'), { recursive: true });
+    writeFileSync(join(origin, 'tests', 'held-by-a-test-checks.test.mjs'), 'export {};\n');
+    g(['add', '-A'], origin);
+    g(['commit', '-qm', 'seed'], origin);
+    g(['branch', 'feat/held-by-a-branch'], origin);
 
-  const highest = Math.max(...claimed);
-  assert.ok(offered > highest,
-    `worktree.mjs offers R${offered} but R${highest} is already claimed somewhere`);
+    /* the test must not create worktrees where real sessions keep theirs, nor touch ~/.codex */
+    const env = { ...process.env, INTMAP_WORKTREE_BASE: join(tmp, 'wts'), CODEX_HOME: join(tmp, 'codex') };
+    const run = (...a) => {
+      try { return { code: 0, out: execFileSync(process.execPath, [join(origin, 'scripts/worktree.mjs'), ...a], { cwd: origin, encoding: 'utf8', env, stdio: ['ignore', 'pipe', 'pipe'] }) }; }
+      catch (e) { return { code: e.status, out: String(e.stdout || '') + String(e.stderr || '') }; }
+    };
+
+    const first = run('new', 'same-subject');
+    assert.equal(first.code, 0, 'the first session could not take a free slug:\n' + first.out);
+    assert.match(g(['branch', '--list', 'feat/same-subject'], origin), /feat\/same-subject/, 'the branch is the claim');
+    const second = run('new', 'same-subject');
+    assert.notEqual(second.code, 0, 'a SECOND session was handed an identifier the first one already holds');
+
+    for (const [slug, why] of [['held-by-a-branch', 'a branch'], ['held-by-a-test', 'a test file'], ['r900-numbered', 'a round number']]) {
+      const r = run('new', slug);
+      assert.notEqual(r.code, 0, `a slug held by ${why} was handed out: ${slug}`);
+    }
+    /* …and nothing offers a number to take */
+    const st = run('status');
+    assert.doesNotMatch(st.out, /空きラウンド|free round/i, 'status still offers a round number');
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
 
 /* ── ⑨ THE STANDING INSTRUCTIONS POINT AT THE CONFIGURATION ────────────────────────────────────

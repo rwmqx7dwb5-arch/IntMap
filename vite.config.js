@@ -27,6 +27,9 @@ import { defineConfig } from 'vite';
 import { cpSync, createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { buildReportPlugin } from './scripts/build-report.mjs';
+/* the build stamp in index.html is DERIVED from the commit being built (scripts/build-stamp.mjs) —
+   it used to be typed by hand every round, and a forgotten bump left stale caches looking current */
+import { buildStampPlugin } from './scripts/build-stamp.mjs';
 
 const ROOT = resolve(import.meta.dirname);
 
@@ -390,5 +393,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildReportPlugin(), copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [buildStampPlugin(ROOT), buildReportPlugin(), copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
 });

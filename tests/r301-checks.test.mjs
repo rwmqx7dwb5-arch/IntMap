@@ -14,6 +14,8 @@
 // check that asks 「is the call written?」 is green while the call returns early on every device.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
+import { entries, latestEntry } from '../scripts/dev-notes.mjs';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,19 +62,12 @@ test('#R301 ⑥ the crop cell read checks its status, so an outage cannot read a
 });
 
 /* ── ⑦ the round is written down where the next session will look ─────────────────────────────── */
-test('#R301 ⑦ the round is in DEV-NOTES, and the two build stamps name it', () => {
-  const dn = read('DEV-NOTES.md');
-  assert.match(dn, /R301/, 'DEV-NOTES has this round');
-  /* ⚠ (#R302) BOTH STAMPS NAME **THIS** ROUND, AND 「THIS」 IS NOT A LITERAL. These two lines read
-     `='R301'` and `-R301'`, which every subsequent round breaks by doing the one thing #R174 requires
-     of it — bumping them. The relation is what #R174 actually wrote down: the two stamps name the
-     SAME round, and it is the newest round DEV-NOTES has. */
-  const idx = read('index.html');
-  const a = /window\.__imBuild='R(\d+)';/.exec(idx);
-  const b = /window\.INTMAP_BUILD='[0-9-]+-R(\d+)';/.exec(idx);
-  assert.ok(a, 'the first build stamp names a round');
-  assert.ok(b, '…and so does the second');
-  assert.equal(a[1], b[1], 'and they name the SAME round — the pair #R174 found three rounds apart');
-  const newest = Math.max(...[...dn.matchAll(/^## R(\d+)/gm)].map((x) => Number(x[1])));
-  assert.equal(Number(a[1]), newest, 'and it is the round DEV-NOTES leads with');
+test('#R301 ⑦ the round is in DEV-NOTES, and the two build stamps name it', async () => {
+  /* (2026-09-25) the record is one file per entry now; DEV-NOTES.md is their generated index */
+  assert.ok(entries(ROOT).some((e) => e.round === 301), 'the record has this round');
+  assert.match(read('DEV-NOTES.md'), /\bR301\b/, 'and the index lists it');
+  /* ⚠ (#R302) BOTH STAMPS NAME **THIS** ROUND, AND 「THIS」 IS NOT A LITERAL. The relation #R174 wrote
+     down — the two stamps name the SAME build, and it is the one being shipped — is kept by the build
+     now: it fills both from the commit being built (scripts/build-stamp.mjs). */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

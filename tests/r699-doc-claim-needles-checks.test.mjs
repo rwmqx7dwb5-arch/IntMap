@@ -220,8 +220,8 @@ const DEFECTS = [
      come from scripts/tiers.mjs, which is where deep-tier-size itself gets them; only the WRONGNESS
      is written down (memory: 「数を持つ変異テストの種は数が動くと全部落ちる」). */
   ['deep-tier-size', 'docs/FILES.md',
-    `core ${tierSpecs('core').length} 本 / deep ${tierSpecs('deep').length} 本`,
-    `core ${tierSpecs('core').length - 1} 本 / deep ${tierSpecs('deep').length - 46} 本`,
+    `core ${tierSpecs('core', { fixed: true }).length} 本 / deep ${tierSpecs('deep').length} 本`,
+    `core ${tierSpecs('core', { fixed: true }).length - 1} 本 / deep ${tierSpecs('deep').length - 46} 本`,
     'the same fact in Japanese'],
   /* ⚠ (#R743) THE THIRD NUMBER IN THE SENTENCE ⑫ MUTATES. 「N のうち撤去済み 1 を除く M」 had its
      withdrawn count and its reachable half compared and its REGISTRY TOTAL read by nothing — so

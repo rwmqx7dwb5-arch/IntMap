@@ -39,22 +39,21 @@
   ——`node scripts/worktree.mjs new <slug>` が外に作る。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`AGENTS.md` §6）。
-- ラウンド番号は `worktree.mjs status` の**空き番号**を使い、**push の直前に取り直す**（#R671 は 7 回）。
-  ⚠ **番号は名前にならない**——tests・memory を番号だけで名づけない（§6 の skill §4）。
+- 識別子は**主題（slug）**。番号を名前にしない——tests・記録・memory も slug で（§6 の skill §4）。
 
 ## 4. 検証は段で上げる——作業中は対象だけ、広い網は 1 回だけ
 
 | 段 | いつ | コマンド |
 |---|---|---|
-| 0 | 編集の直後 | 触った検査だけ `node --test tests/r<N>-checks.test.mjs` |
+| 0 | 編集の直後 | 触った検査だけ `node --test tests/<slug>-checks.test.mjs` |
 | 1 | 主題のゲート | 下の表から**触った主題のものだけ** |
-| 2 | 該当 spec だけ | `npx playwright test tests/r<N>.spec.js` |
+| 2 | 該当 spec だけ | `npx playwright test tests/<slug>.spec.js` |
 | 3 | **push の直前に 1 回** | `npm test` |
 | 4 | 3-D・Cesium・物理・シミュレータを触ったとき | `npm run test:deep` |
 
 ⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、
 `gate-lists` 規則が両者を突き合わせる）。**ゲートを足したらこの表と
-`.agents/roles/intmap-verifier.md` の両方に書く**（経緯は `DEV-NOTES.md` #R403 §6）。
+`.agents/roles/intmap-verifier.md` の両方に書く**（経緯は開発記録の R403、第 6 節）。
 
 | 触った主題 | ゲート |
 |---|---|
@@ -99,6 +98,6 @@
 
 ## 6. 手順の正本
 
-ラウンド 1 本の**具体的な手順**と**この回のファイル名**は
+作業 1 本の**具体的な手順**と**ファイル名**は
 `.agents/skills/intmap-round/`（Claude `/intmap-round` ／ Codex `$intmap-round`）。
 状態・worktree・片付けは `node scripts/worktree.mjs`。

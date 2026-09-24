@@ -27,6 +27,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { entryText } from '../scripts/dev-notes.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -157,10 +158,10 @@ test('R376 ④ the legend’s picker peeks; it does not instantiate every offere
    that the repository was self-consistent and green the whole time. If a later round wonders
    whether production verification earns its cost, this is the answer. */
 test('R376 ⑤ the round records that every repository gate was green while all four were live', () => {
-  const d = read('DEV-NOTES.md');
-  const at = d.indexOf('## R376');
-  assert.ok(at > 0, 'the round is written down');
-  const body = d.slice(at, at + 9000);
+  /* (2026-09-25) one file per entry now (scripts/dev-notes.mjs) — the round's own file is the record */
+  const d = entryText(376, ROOT);
+  assert.ok(d, 'the round is written down');
+  const body = d.slice(0, 9000);
   for (const n of ['not_rendered', 'not_painted_yet', 'engineFor', 'peek'])
     assert.ok(body.includes(n), 'the record names the mechanism: ' + n);
   assert.ok(/2,?236/.test(body), 'and the number of node checks that passed anyway');

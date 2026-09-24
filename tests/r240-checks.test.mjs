@@ -6,6 +6,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -181,10 +182,7 @@ test('R240 ⑤ a country is named in the reader’s language, from CLDR rather t
 });
 
 /* ══ ⑥ THE BUILD STAMPS ════════════════════════════════════════════════════════════════════════ */
-test('R240 ⑥ both build stamps name this round', () => {
-  const h = R('index.html');
-  const a = /__imBuild='R(\d+)'/.exec(h), b = /INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/.exec(h);
-  assert.ok(a && b, 'both stamps must be present');
-  assert.equal(a[1], b[1], 'and name the same round');
-  assert.ok(+a[1] >= 240, `the stamps name R${a[1]}`);
+test('R240 ⑥ both build stamps name this round', async () => {
+  /* (2026-09-25) both are written by the build from the commit being built (scripts/build-stamp.mjs) */
+  assert.deepEqual(await generatedStampProblems(R('index.html')), [], 'the build stamp can go stale again');
 });

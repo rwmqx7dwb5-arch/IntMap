@@ -20,7 +20,7 @@
 | [`../.agents/rules/no-ad-hoc-hardcoding.md`](../.agents/rules/no-ad-hoc-hardcoding.md) | 作業する AI | **場当たりのハードコーディングの禁止** — 報告された 1 件のための分岐・特例・埋め込み一覧を足さず、その事例を生んだ構造を直す。着手前の 3 問、定数に必ず書く 3 点、実測された失敗の形（`AGENTS.md` §3 の 9 の正本） | 新しい「場当たりの形」を実測したとき（表に 1 行足す） |
 | [`../.agents/rules/one-pass-or-a-reason.md`](../.agents/rules/one-pass-or-a-reason.md) | 作業する AI | **一発で決める。繰り返しは失敗が実在したときだけ** — 同じ操作を同じ引数で二度発行しない。繰り返しは観測器の誤報／結果が次の手に届いていない／冪等でない、の症状であって Atlas の判断ではない。⚠ 手数の上限を下げて塞がない（`AGENTS.md` §3 の 11 の正本） | 新しい「繰り返しの形」を実測したとき（表に 1 行足す） |
 | [`../.agents/rules/historical-verification.md`](../.agents/rules/historical-verification.md) | 作業する AI | **歴史地図を機械的検証だけで済ませない** — 門が測るのは形式で、読者に差し出しているのは主張である。年と場所を名指して列挙する、制度の成立・廃止と突き合わせる、上流が述べていない日付を代入しない、被覆は面積で測る、同じ土地の二重主張を係争／重複／継ぎ目に分ける（`AGENTS.md` §3 の 10 の正本） | 歴史地図で「門は緑なのに主張が誤っていた」形を新しく実測したとき |
-| [`../.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) | 同上 | **ラウンド 1 本を通す具体的な手順**（Claude `/intmap-round`／Codex `$intmap-round`）— 着手前・作業場・実装・文書・検証・PR・merge・deployment・終了処理の実行順。規則ではなく**順番とコマンド** | 工程の順やコマンドが変わったとき |
+| [`../.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) | 同上 | **作業 1 本を通す具体的な手順**（Claude `/intmap-round`／Codex `$intmap-round`）— 着手前・作業場（slug）・実装・文書・記録・検証・PR・merge・deployment・終了処理の実行順と、**名前の規約（番号を名前にしない）の正本**。規則ではなく**順番とコマンド** | 工程の順やコマンドが変わったとき |
 | `../.agents/roles/*.md` | 同上 | **専用 subagent の定義**（scout / verifier / i18n / implementer / prod-verifier）。本文は起動されたときだけ読まれるので、詳しい手順はここに置く。⚠ **`.claude/agents/` と `.codex/agents/` はここからの生成物**（`npm run check:agents`） | 役割を足す・変えるとき |
 | `../CLAUDE.local.md` | このマシンだけ | 資格情報とローカル固有の情報（**追跡対象外**。リポジトリは public） | 資格情報が変わったとき |
 
@@ -88,7 +88,8 @@
 
 | 文書 | 役割 |
 |---|---|
-| [`../DEV-NOTES.md`](../DEV-NOTES.md) | **直近ラウンドの記録**（新しい順）。新ラウンドは先頭に足す |
+| [`../dev-notes/`](../dev-notes/) | **開発記録の本体**——**1 エントリ＝1 ファイル**。新しい記録は `<YYYY-MM-DD>-<slug>.md`（front matter に `title`・`date`、分かれば `pr`）。`R<N>.md` は番号で呼んでいた頃の記録、`legacy-index.md` は旧索引の各行（重複を畳んだもの）。書式と手順は `.agents/skills/intmap-round/` §3、生成と検査は `scripts/dev-notes.mjs` |
+| [`../DEV-NOTES.md`](../DEV-NOTES.md) | `dev-notes/` の**生成索引**（新しい順）。**手で編集しない**——`node scripts/dev-notes.mjs --write` が書き、`npm run check:docs` が照合する |
 | [`../DEV-NOTES-ARCHIVE.md`](../DEV-NOTES-ARCHIVE.md) | それ以前の全記録（古い順・通し）。**読むだけ・追記しない** |
 
 > ⚠ **履歴に書いてあるのは「当時そうだった」であって「今もそうである」ではない。**

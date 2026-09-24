@@ -93,6 +93,7 @@ const walkMd = (rel, out = []) => {
    left out for a written reason, which is the difference between an exclusion and a blind spot. */
 const EXCLUDED = [
   [/^DEV-NOTES/, 'history: it legitimately quotes text that was true once (see the header)'],
+  [/^dev-notes\//, 'the same history, one entry per file (scripts/dev-notes.mjs) — DEV-NOTES.md is now its generated index'],
   [/^\.agents\//, 'the instruction documents — swept as AGENT_DOCS below, not indexed by docs/README.md'],
   [/^\.(claude|codex)\//, 'rendered from .agents/ by scripts/agent-sync.mjs; check:agents holds the copies to their source'],
   [/^CLAUDE\.local\.md$/, 'machine-local and untracked — the credentials file (.gitignore)'],
@@ -717,11 +718,16 @@ const FILES = BODY.get('docs/FILES.md') || '';
   const hits = [];
   const archLines = ARCH.split('\n');
   archLines.forEach((l, i) => {
-    /* a round citation, not a file name: `tests/r271-checks.test.mjs` is lower-case and is a path */
-    const m = l.match(/(?:#R\d{1,3}|(?:^|[^A-Za-z0-9_/])R\d{1,3}(?![\d)A-Za-z]))/);
+    /* a round citation, not a file name: `tests/r271-checks.test.mjs` is lower-case and is a path.
+       ⚠ ANY NUMBER OF DIGITS. This read `R\d{1,3}` followed by «not a digit», so `R1000` — the
+       first four-digit round — matched nothing at all: `R100` is followed by `0`. The history-only
+       rule would have gone quiet the day the numbers reached four digits.
+       …and a PULL-REQUEST citation is the same kind of thing (history, with a number that names
+       an event): «(#726)», «PR #726», «…/pull/726». */
+    const m = l.match(/(?:#R\d+|(?:^|[^A-Za-z0-9_/])R\d+(?![\d)A-Za-z])|\(#\d+\)|\bPR\s*#\d+|\/pull\/\d+)/);
     if (m) hits.push(`line ${i + 1}: ${l.trim().slice(0, 80)}`);
   });
-  if (hits.length) fail('arch-rounds', `Architecture.md carries ${hits.length} round reference(s) — the history belongs in DEV-NOTES.md\n      ` + hits.slice(0, 5).join('\n      '));
+  if (hits.length) fail('arch-rounds', `Architecture.md carries ${hits.length} round or PR reference(s) — the history belongs in dev-notes/ (DEV-NOTES.md is its index)\n      ` + hits.slice(0, 5).join('\n      '));
   /* ⚠ zero hits IS the healthy state here, so the number that proves the sweep ran is the
      number of lines it read, not the number of findings. */
   else if (!ARCH.trim()) fail('arch-rounds', 'Architecture.md is empty — this rule read nothing');
@@ -1204,7 +1210,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
       } catch (e) {
         if (e.status !== 1) fail('deep-tier-when', 'the tree could not be swept for the claim (' + (e.status != null ? 'git grep exit ' + e.status : e.message) + ')');
       }
-      files = files.filter((f) => !/^DEV-NOTES/.test(f));
+      files = files.filter((f) => !/^DEV-NOTES/.test(f) && !/^dev-notes\//.test(f));
       /* an empty sweep passes everything — the same guard the document scan at the top carries */
       if (files.length < 5) fail('deep-tier-when', `only ${files.length} tracked file(s) mention the nightly — the sweep is not reaching the tree`);
 
@@ -1334,26 +1340,38 @@ if (RULE && RULE !== 'i18n-open-gap') {
  *  (#R403) Two documents stated the convention as `42<N>`, which is only the right answer while
  *  the round number has three digits starting with 2 — the example they both carried (R257 →
  *  4257) is `4000 + 257` read a second way, so the wording and the tool agreed for exactly one
- *  hundred rounds and then quietly stopped. */
+ *  hundred rounds and then quietly stopped.
+ *  ⚠ (2026-09-25) THE PORT IS NO LONGER A FUNCTION OF ANYTHING A SESSION IS HANDED. It was
+ *  `4000 + N`, and two sessions holding the same round number got the same port. It is now the
+ *  lowest free port in a RANGE (`PREVIEW_PORTS` in scripts/worktree.mjs) — so the checkable fact is
+ *  the range, and the arithmetic form is what must not come back into a document. */
 {
-  const m = rd('scripts/worktree.mjs').match(/const\s+port\s*=\s*(\d+)\s*\+\s*n\b/);
-  if (!m) fail('preview-port', 'scripts/worktree.mjs no longer computes the port as a base plus the round number — this rule needs rewriting');
+  const m = rd('scripts/worktree.mjs').match(/export const PREVIEW_PORTS\s*=\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]/);
+  if (!m) fail('preview-port', 'scripts/worktree.mjs no longer declares PREVIEW_PORTS = [lo, hi] — this rule needs rewriting');
   else {
-    const base = Number(m[1]);
+    const [lo, hi] = [Number(m[1]), Number(m[2])];
+    let stated = 0;
     eachDoc((f, body) => {
-      if (!body.includes('intmap-preview-r')) return;
-      const stated = [...body.matchAll(/(\d{3,4})\s*\+\s*N\b/g)].map((x) => Number(x[1]));
-      if (!stated.length) {
-        fail('preview-port', `${f} states the preview-port convention but not as «${base} + N» — a shape nothing can check is a shape that rots`);
+      if (!body.includes('intmap-preview-')) return;
+      /* the old convention, in either of its two spellings */
+      for (const x of body.matchAll(/(\d{3,4})\s*\+\s*N\b|intmap-preview-r<N>/g)) {
+        fail('preview-port', `${f} still states the preview port as a function of the round number («${x[0]}») — it is the lowest free port in ${lo}〜${hi}`);
       }
-      for (const s of stated) if (s !== base) fail('preview-port', `${f} says the port is ${s} + N; scripts/worktree.mjs uses ${base} + N`);
-      /* …and any worked example is arithmetic, so check it */
-      for (const ex of body.matchAll(/R(\d{2,4})\s*なら[^\n]{0,40}?(\d{4})/g)) {
-        const want = base + Number(ex[1]);
-        if (Number(ex[2]) !== want) fail('preview-port', `${f} says R${ex[1]} is port ${ex[2]}; ${base} + ${ex[1]} is ${want}`);
+      for (const x of body.matchAll(/(\d{4})\s*[〜~–-]\s*(\d{4})/g)) {
+        const [a, b] = [Number(x[1]), Number(x[2])];
+        if (a < 4000 || a >= 5000) continue;           /* a range of something else (years, etc.) */
+        if (!/preview|プレビュー/i.test(body.slice(Math.max(0, x.index - 120), x.index + 40))) continue;
+        stated++;
+        if (a !== lo || b !== hi) fail('preview-port', `${f} says the preview ports are ${a}〜${b}; scripts/worktree.mjs uses ${lo}〜${hi}`);
       }
     });
-    if (!problems.some((p) => p.startsWith('preview-port'))) ok('preview-port', `the preview port is ${base} + N everywhere it is stated`);
+    /* ⚠ the test servers own 4174–4373 (tests/helpers/session-seed.js); a preview range reaching
+       into it would hand a preview a port a test run is about to bind */
+    const seed = rd('tests/helpers/session-seed.js').match(/return\s+(\d+)\s*\+\s*\(h\s*%\s*(\d+)\)/);
+    if (seed && lo <= Number(seed[1]) + Number(seed[2]) - 1 && hi >= Number(seed[1])) {
+      fail('preview-port', `PREVIEW_PORTS ${lo}〜${hi} overlaps the per-checkout test servers ${seed[1]}〜${Number(seed[1]) + Number(seed[2]) - 1}`);
+    }
+    if (!problems.some((p) => p.startsWith('preview-port'))) ok('preview-port', `the preview ports are ${lo}〜${hi} (${stated} statement(s) in the documents agree)`);
   }
 }
 
@@ -1914,7 +1932,7 @@ const plannedGates = (() => {
   if (!tiers) {
     fail('deep-tier-size', 'scripts/tiers.mjs would not load — it derives the split and is the 正本 for these numbers');
   } else {
-    const SIZE = { deep: tiers.tierSpecs('deep').length, core: tiers.tierSpecs('core').length, all: tiers.tierSpecs('all').length };
+    const SIZE = { deep: tiers.tierSpecs('deep').length, core: tiers.tierSpecs('core', { fixed: true }).length, all: tiers.tierSpecs('all').length };
     const SOURCES = [...DOCS.map((d) => [d, BODY.get(d)]), ['package.json', rd('package.json')], ['scripts/worktree.mjs', rd('scripts/worktree.mjs')]];
 
     let checked = 0, skipped = 0;
@@ -2681,6 +2699,26 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
   else if (orphan.length) fail('gate-callers', `package.json declares ${orphan.map((g) => 'npm run ' + g).join(', ')}, and nothing runs ${orphan.length > 1 ? 'them' : 'it'}`
     + ' — a gate nobody calls is a script, and it goes on passing by never running');
   else ok('gate-callers', `all ${gates.length} declared check:* gates have a caller in ci.yml or npm test`);
+}
+
+/* ═══ 36. the development record: one file per entry, and DEV-NOTES.md is ITS INDEX ═══════════
+ *  The single DEV-NOTES.md had its preamble and index re-inserted by every prepend that anchored
+ *  on the title (1,868 index rows, 381 distinct, measured 2026-09-25) and cut #R494's entry in half.
+ *  Entries are files under dev-notes/ now and the index is generated; this is the gate that says
+ *  so when the index and the files disagree, or when an entry is written the old way. The rules
+ *  themselves live in scripts/dev-notes.mjs (checkNotes) — this only reports them. */
+{
+  let dn = null;
+  try { dn = await import('./dev-notes.mjs'); } catch (e) { fail('dev-notes', 'scripts/dev-notes.mjs would not load: ' + e.message); }
+  if (dn) {
+    const p = dn.checkNotes(ROOT);
+    for (const x of p) fail('dev-notes', x);
+    if (!p.length) {
+      const n = dn.entries(ROOT).length;
+      if (n < 1) fail('dev-notes', 'dev-notes/ holds no entry at all — the record was not found');
+      else ok('dev-notes', `${n} entries under dev-notes/, and DEV-NOTES.md is exactly their generated index`);
+    }
+  }
 }
 
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */

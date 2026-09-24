@@ -14,6 +14,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -253,15 +254,16 @@ test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice
   assert.doesNotMatch(th, /'sky-color':_SKY_SPACE/, 'the constant deep-space sky is gone');
 });
 
-test('R202 ③j the build stamps name THIS round', () => {
+test('R202 ③j the build stamps name THIS round', async () => {
   /* #R174: both stamps sat at R171 through two rounds, so a reload could not be told apart from a
      stale cache. The exact pin lives in the CURRENT round's file and becomes the negative form in
      the next one (tests/r201-checks ⑥ is now that negative form).
      ⚠ AND THIS IS WHY THE WHOLE NODE SUITE RUNS AFTER EVERY CHANGE, NOT ONCE. This round bumped the
      stamp late, re-ran only the two check files it thought were involved, and shipped a red CI: the
      assertion that broke was the PREVIOUS round's pin, in a file nobody had reason to look at. */
-  const idx = rd('index.html');
-  /* (#R203) …and this is now the NEGATIVE form, which is what the paragraph above says happens to it. */
-  assert.doesNotMatch(idx, /window\.__imBuild='R202';/, 'the build marker must move every round');
-  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='2026-08-08-R202';/, 'and so must the dated stamp');
+  /* (#R203) …and this became the NEGATIVE form, which is what the paragraph above says happens to it.
+     (2026-09-25) The stamp is now written by the build from the commit being built
+     (scripts/build-stamp.mjs) — «this round» is whatever is being built — so what is asked is that
+     nobody types it back in and the build keeps filling it. */
+  assert.deepEqual(await generatedStampProblems(rd('index.html')), [], 'the build stamp can go stale again');
 });

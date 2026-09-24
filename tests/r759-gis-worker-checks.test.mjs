@@ -412,7 +412,7 @@ test('R759 ④ every registered job and every caller, discovered from the source
   /* ⚠ (#R819) A JOB NAME ALSO ARRIVES THROUGH THE DOOR THAT PUBLISHES IT. This scan resolved a
      literal and a same-file string const, and js/gis-ops.js reaches the geometry job the way the
      module offers it — `W.run(W.geometryJob, …)` — so the caller existed, ran in a real thread and
-     was measured by tests/r819-gis-geometry-dispatch-checks, and was invisible HERE. That is the
+     was measured by tests/gis-geometry-dispatch-checks, and was invisible HERE. That is the
      shape this repository keeps finding: the gate had learned the SPELLINGS of a caller rather
      than the fact that one exists (tests/r763 ⑧ was the same week).
      ⇒ a field any js/ module publishes with a string value (`geometryJob: GEOM_JOB`) resolves too,

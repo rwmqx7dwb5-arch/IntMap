@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -215,16 +216,12 @@ test('R207 ⑪ the space-approach caption is centred on the visible map and has 
    So it is derived from something that cannot be forgotten: DEV-NOTES.md's newest `## R<n>` heading
    is written by the round itself (standing instruction 9 — prepend). If a round documents itself, it
    cannot ship someone else's stamp. */
-test('R207 ⑬ the build stamp names the newest round in DEV-NOTES', () => {
-  const html = read('index.html');
-  const notes = read('DEV-NOTES.md');
-  const newest = Math.max(...[...notes.matchAll(/^## R(\d+) —/gm)].map((m) => +m[1]));
-  assert.ok(isFinite(newest) && newest > 0, 'DEV-NOTES.md has round headings to derive from');
-  const ib = /window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)';/.exec(html);
-  const mb = /window\.__imBuild='R(\d+)';/.exec(html);
-  assert.ok(ib && mb, 'both stamps are present and well-formed');
-  assert.equal(+ib[2], newest, `INTMAP_BUILD says R${ib[2]} but the newest documented round is R${newest}`);
-  assert.equal(+mb[1], newest, `__imBuild says R${mb[1]} but the newest documented round is R${newest}`);
+/* (2026-09-25) «derived from something that cannot be forgotten» is now literal: the build derives the
+   stamp from the COMMIT being built (scripts/build-stamp.mjs), which is more exact than «the newest
+   round DEV-NOTES documents» — two builds of one round used to carry one stamp. What this asks is
+   that the stamp is not typed back in and that the build still fills it with this checkout's stamp. */
+test('R207 ⑬ the build stamp names the newest round in DEV-NOTES', async () => {
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });
 
 /* ── ⑫ the test bill itself ────────────────────────────────────────────────────────────────────── */

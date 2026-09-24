@@ -80,7 +80,10 @@ test('#R257 ② AGENTS.md still carries each standing rule', () => {
        追い、道具の名前のほうは下の ⑦ が製品固有ファイルに残っていることを確かめる。 */
     ['質問は質問機能で',      '質問は必ず質問用の機能で行う'],
     ['ドキュメント最新化',    '古い情報を放置しない'],
-    ['DEV-NOTES に R### 追加','R###'],
+    /* (2026-09-25) the rule «write the record» is unchanged; its form is one file per entry now
+       (dev-notes/), and the index is generated — so what AGENTS.md must still carry is the command
+       that makes the record reach DEV-NOTES.md, not a heading spelled with a round number */
+    ['記録を 1 本足す',       'node scripts/dev-notes.mjs --write'],
     ['日本語で報告',          '日本語'],
     ['最終報告の項目',        'CI 状態'],
     ['追加作業不要の明示',    '追加作業が不要'],

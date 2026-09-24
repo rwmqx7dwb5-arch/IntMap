@@ -74,14 +74,44 @@ export const memoryDir = (dir = master()) =>
 export const INDEX_CEILING_KB = 24.4;
 export const INDEX_CEILING = Math.floor(INDEX_CEILING_KB * 1024);
 
+/* ── …and a SECOND ceiling, on LINES, which the first one never saw ─────────────────────────
+   OBSERVED 2026-09-25: a Claude Code session opened with a MEMORY.md of 203 lines and about
+   17,000 characters — well UNDER the character ceiling above — and was told
+   «MEMORY.md is 203 lines (limit: 200). Only part of it was loaded: 3 of 203 lines were cut off,
+   starting at line 201». `--check` said the index was fine, because it counted characters only.
+   The host stops at whichever of the two it reaches first, so both are measured, and «over» means
+   either. The number is the host's own (it states it in the warning).
+   EXPIRES IF: the host changes that limit (its warning states it — if the warning ever disagrees
+   with this constant, the warning is right and this is stale).
+   CANONICAL: here, beside the character ceiling. Nothing else may carry the number (#R500). */
+export const INDEX_CEILING_LINES = 200;
+
+/* Lines as the host counts them: the warning numbered «line 201» of a 203-line file, i.e. a
+   trailing newline does not open a 204th line. */
+export const lineCount = (text) => {
+  const s = String(text);
+  if (!s) return 0;
+  return s.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n').length;
+};
+
 /* ⚠ Reports the measurement whether or not it is over (#R699: a needle that matches nothing
-   prints green, and «no overflow» must not be the same output as «never looked»). */
-export const indexVerdict = (chars) => ({
-  chars,
-  ceiling: INDEX_CEILING,
-  over: chars > INDEX_CEILING,
-  margin: INDEX_CEILING - chars,
-});
+   prints green, and «no overflow» must not be the same output as «never looked»).
+   `lines` is optional so a caller that only has a length still gets the character verdict. */
+export const indexVerdict = (chars, lines = null) => {
+  const overChars = chars > INDEX_CEILING;
+  const overLines = lines != null && lines > INDEX_CEILING_LINES;
+  return {
+    chars,
+    ceiling: INDEX_CEILING,
+    margin: INDEX_CEILING - chars,
+    lines,
+    lineCeiling: INDEX_CEILING_LINES,
+    lineMargin: lines == null ? null : INDEX_CEILING_LINES - lines,
+    overChars,
+    overLines,
+    over: overChars || overLines,
+  };
+};
 
 /* ⚠ Importable: the rules above are what the gate measures, so the CLI must not run on import. */
 const isCLI = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -106,16 +136,19 @@ if (isCLI) {
   if (has('--check')) {
     /* 正規化しない——ホストが読み込むのはファイルそのもので、実測 25,710 文字が 25.1KB と
        報告された（1KB = 1024 文字）。ここで改行を畳むと、報告された数と別のものを測る。 */
-    const v = indexVerdict(readFileSync(INDEX, 'utf8').length);
+    const text = readFileSync(INDEX, 'utf8');
+    const v = indexVerdict(text.length, lineCount(text));
     const n = (x) => x.toLocaleString('en-US');
+    const lines = `${n(v.lines)} / ${n(v.lineCeiling)} 行`;
     if (v.over) {
-      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字  ⚠ ${n(-v.margin)} 文字の超過`);
+      const what = [v.overChars ? `${n(-v.margin)} 文字` : null, v.overLines ? `${n(-v.lineMargin)} 行` : null].filter(Boolean).join('・');
+      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字・${lines}  ⚠ ${what}の超過`);
       console.log(`  この超過ぶんは読み込まれない——索引の末尾から無言で落ちる（実体の .md は 1 本も消えていない）。`);
-      console.log(`  直し方: 古い側の行を「思い出す鍵」だけに詰める。実体は消さない。  ${INDEX}`);
-    } else if (v.margin < 1000) {
-      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字（余白 ${n(v.margin)}）  ⚠ まもなく末尾が落ち始める`);
+      console.log(`  直し方: 古い側の行を「思い出す鍵」だけに詰める（${v.overLines ? '行数が天井なので、行を束ねる／古い鍵を 1 行にまとめる' : '1 行を短く'}）。実体は消さない。  ${INDEX}`);
+    } else if (v.margin < 1000 || v.lineMargin < 10) {
+      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字（余白 ${n(v.margin)}）・${lines}（余白 ${n(v.lineMargin)}）  ⚠ まもなく末尾が落ち始める`);
     } else {
-      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字（余白 ${n(v.margin)}）`);
+      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字（余白 ${n(v.margin)}）・${lines}（余白 ${n(v.lineMargin)}）`);
     }
     /* ⚠ 0 で終える。これは門ではなく、セッションが起動時に受け取る観測であって、
        ここで非 0 を返すと「起動に失敗した」という別の意味になる（npm test 側が門を持つ）。 */

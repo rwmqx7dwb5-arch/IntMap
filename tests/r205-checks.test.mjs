@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { allSpecs, coreNames, tierSpecs, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
+import { allSpecs, coreNames, fixedCoreNames, tierSpecs, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -235,27 +235,30 @@ test('R205 ⑧ the gate is cheaper than the round before it, and nothing was del
   const times = Object.values(dur).filter((v) => typeof v === 'number').sort((a, b) => a - b);
   const p75 = times[Math.floor(times.length * 0.75)];
   const cost = (f) => (typeof dur[f] === 'number' ? dur[f] : p75);
-  const core = tierSpecs('core').reduce((a, f) => a + cost(f), 0);
+  const fixedCore = tierSpecs('core', { fixed: true });
+  const core = fixedCore.reduce((a, f) => a + cost(f), 0);
   /* ⚠ MEASURED files only for the comparison. An unmeasured spec is charged p75 by the budget, which
      is the right direction for a CEILING and the wrong quantity for "did the gate get cheaper" — a
      brand-new file would otherwise make any round look like a regression until CI has timed it. */
-  const coreMeasured = tierSpecs('core').filter((f) => typeof dur[f] === 'number').reduce((a, f) => a + dur[f], 0);
+  const coreMeasured = fixedCore.filter((f) => typeof dur[f] === 'number').reduce((a, f) => a + dur[f], 0);
   assert.ok(CORE_MAX_S < 10, `the price was 10 s in #R204 and is ${CORE_MAX_S}`);
   assert.ok(coreMeasured < 173, `the gate's measured files come to ${coreMeasured}s and #R204 shipped 173 s`);
-  assert.ok(tierSpecs('core').length < 17, `${tierSpecs('core').length} files in the gate; #R204 had 17`);
-  /* ⚠ AND THE ROUND EXCEPTION IS BOUNDED TO EXACTLY ONE FILE. It is the reason the gate does not grow
-     a spec per round, and it is derived (currentRoundSpec), so the previous round's spec demotes
-     itself the moment a higher number appears — which is where 49 of #R204's 173 s went. */
+  assert.ok(fixedCore.length < 17, `${fixedCore.length} files in the gate; #R204 had 17`);
+  /* ⚠ AND THE CHANGE'S OWN SPECS DO NOT STAY. It is the reason the gate does not grow a spec per
+     round: what joins the gate for a PR is read from THAT PR's diff (scripts/tiers.mjs
+     changedSpecs), so once it merges the next change's diff no longer holds it — the same
+     self-demotion #R205 relied on, which is where 49 of #R204's 173 s went. With no diff the gate
+     is the fixed set and nothing else. */
   const t = rd('scripts/tiers.mjs');
-  const fn = /export function coreNames\(\)\s*\{[\s\S]{0,900}?\n\}/.exec(t);
+  const fn = /export function coreNames\([^)]*\)\s*\{[\s\S]{0,900}?\n\}/.exec(t);
   assert.ok(fn, 'coreNames was not found');
-  assert.match(fn[0], /n === cur/);
-  assert.match(t, /export function currentRoundSpec\(\)/);
-  const roundSpecsInCore = coreNames().filter((n) => /^r\d+$/.test(n) && !CORE_ALWAYS.includes(n));
+  assert.match(fn[0], /changedSpecs\(/, 'the gate no longer reads the diff');
+  assert.deepEqual(coreNames({ IM_CHANGED_SPECS: '' }), fixedCoreNames(), 'with no diff the gate is exactly the fixed set');
+  const roundSpecsInCore = fixedCoreNames().filter((n) => /^r\d+/.test(n) && !CORE_ALWAYS.includes(n));
   assert.ok(roundSpecsInCore.length <= 7, `${roundSpecsInCore.length} per-round specs are in the gate`);
   /* nothing removed, and both tiers still partition the suite */
   assert.ok(allSpecs().length >= 58, `${allSpecs().length} spec files — nothing may be deleted for speed`);
-  assert.equal(tierSpecs('core').length + tierSpecs('deep').length, allSpecs().length);
+  assert.equal(fixedCore.length + tierSpecs('deep').length, allSpecs().length);
   for (const n of CORE_ALWAYS) assert.ok(coreNames().includes(n), `${n} must gate`);
   /* the ceilings still bind, and the TOTAL did not gain headroom */
   const b = rd('scripts/test-budget.mjs');

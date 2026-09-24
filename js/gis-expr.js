@@ -711,7 +711,7 @@ export function makeGisExpr() {
        refused rather than ignored: structured clone carries every own property, so a tree with
        something else hanging off it is a tree whose extra baggage would either travel or throw. A
        node kind the evaluator gains and this table does not would be refused as unreadable — a
-       safe answer, and tests/r819-gis-worker-checks measures the two against each other so the
+       safe answer, and tests/gis-worker-checks measures the two against each other so the
        refusal cannot become the normal state without somebody being told. */
     const NODE_SLOTS = {
       num: ['v'], str: ['v'], bool: ['v'], null: [],

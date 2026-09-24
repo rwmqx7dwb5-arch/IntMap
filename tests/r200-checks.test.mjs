@@ -22,6 +22,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -296,11 +297,10 @@ test('R200 ⑥b: every window.IntMapTime.<method> a module calls is one the cloc
    the last stop is a literal 0, anything data-driven rides on the stop OUTPUT — is asserted in
    r201-checks ①c against the mechanism that exists. Deleted rather than duplicated. */
 
-test('R200 ⑧: the build stamps have moved on from this round', () => {
-  /* (#R201) the negative form, the way #R199's became one: the exact pin belongs to the CURRENT
-     round's file (tests/r201-checks ⑥), and a stamp still naming R200 means a round shipped
-     without bumping it — which is the failure #R174 recorded. */
-  const idx = read('index.html');
-  assert.doesNotMatch(idx, /window\.__imBuild='R200';/);
-  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='[0-9-]+-R200';/);
+test('R200 ⑧: the build stamps have moved on from this round', async () => {
+  /* (#R201) the negative form, the way #R199's became one: a stamp still naming R200 means a round
+     shipped without bumping it — which is the failure #R174 recorded. (2026-09-25) The build now
+     writes the stamp from the commit (scripts/build-stamp.mjs), so that failure needs a stamp typed
+     back in or a build that stops filling it, which is what is asked. */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

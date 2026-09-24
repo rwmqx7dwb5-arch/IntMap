@@ -20,7 +20,7 @@
 #  Writes to $GITHUB_OUTPUT (when set):
 #    missing=<space-separated names>   (empty when all are present)
 #  and prints one ::error:: per missing name. Never prints a value.
-#  The fact is measured by tests/r822-backup-and-deploy-as-code-checks.test.mjs, which RUNS the gate
+#  The fact is measured by tests/backup-and-deploy-as-code-checks.test.mjs, which RUNS the gate
 #  step of every workflow that reads a secret, with the secrets empty and with them present.
 # ============================================================================
 set -uo pipefail

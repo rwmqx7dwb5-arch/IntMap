@@ -44,7 +44,7 @@ Until 2026-09 this workflow skipped and reported success instead. MEASURED 2026-
 35975392869: it printed that it was not running, the run was green — as every night had been — and
 no backup had ever been taken, while [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md) sent a reader in a
 data-loss incident to 「the newest backup」. The rule now covers every workflow, not just this one:
-`tests/r822-backup-and-deploy-as-code-checks.test.mjs` finds every job in `.github/workflows/` that
+`tests/backup-and-deploy-as-code-checks.test.mjs` finds every job in `.github/workflows/` that
 reads a secret and **executes** its gate with the secret empty; a gate that exits 0 fails the test.
 
 ## 一度だけの登録（secret）— **ここが正本**

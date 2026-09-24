@@ -32,6 +32,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { entryText } from '../scripts/dev-notes.mjs';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -100,8 +101,9 @@ test('R505 ② SWEEP_TILES_MAX is declared after the constant it reads', () => {
    ① が何かの理由で走らなくなったときに残る二本目にすぎない——**一度も落ちない検査は何も守らない**
    （#R317 の裏返し）ので、① が本物を走らせていることが要点である。 */
 test('R505 ③ the round is written down where the next reader will look', () => {
-  const dn = rd('DEV-NOTES.md');
-  assert.match(dn, /^## R505/m, 'DEV-NOTES leads with this round');
+  /* (2026-09-25) one file per entry now (scripts/dev-notes.mjs) */
+  const dn = entryText(505) || '';
+  assert.match(dn, /^## R505/m, 'the record has this round');
   assert.match(dn, /WORKER_ERROR/, '…and names what production actually answered');
   assert.match(rd('docs/AVIATION-ARCHITECTURE.md'), /R505/, 'and the aviation document carries it too');
   assert.match(rd('docs/TESTING.md'), /R505/, 'and TESTING.md says this kind of check now exists');

@@ -9,7 +9,7 @@
 # 「DB backup is DORMANT」 and was green — as it had been every night since the file existed — while
 # docs/INCIDENT-RESPONSE.md sent a reader in a data-loss incident to 「the newest backup」. There was
 # no backup. A run that could not do its job is a failed run; the gate is
-# scripts/ci-require-secrets.sh and tests/r822-backup-and-deploy-as-code-checks.test.mjs runs it.
+# scripts/ci-require-secrets.sh and tests/backup-and-deploy-as-code-checks.test.mjs runs it.
 #
 # The two secrets, and the one-time registration, are in docs/BACKUP-RESTORE.md (the 正本):
 #   SUPABASE_DB_URL         Postgres session-pooler connection string (the password is in it).

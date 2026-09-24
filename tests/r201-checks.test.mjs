@@ -16,6 +16,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -256,11 +257,9 @@ test('r201 ⑤ the two multi-megabyte prefetches take the phone into account', (
 
 /* ══ ⑥ THE BUILD STAMPS NAME THIS ROUND ═══════════════════════════════════════════════════════ */
 
-test('r201 ⑥ the build stamps have moved on from this round', () => {
-  /* (#R202) the negative form, on the schedule this test itself set out: the exact pin belongs to
-     the CURRENT round's file (tests/r202-checks ③j), and a stamp still naming R201 means a round
-     shipped without bumping it — which is the failure #R174 recorded. */
-  const idx = read('index.html');
-  assert.doesNotMatch(idx, /window\.__imBuild='R201';/);
-  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='[0-9-]+-R201';/);
+test('r201 ⑥ the build stamps have moved on from this round', async () => {
+  /* (#R202) the negative form: a stamp still naming R201 means a round shipped without bumping it —
+     the failure #R174 recorded. (2026-09-25) The build now writes the stamp from the commit
+     (scripts/build-stamp.mjs); what can still bring that failure back is asked instead. */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

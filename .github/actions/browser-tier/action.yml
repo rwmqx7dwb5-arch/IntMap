@@ -25,6 +25,13 @@ inputs:
   of:
     description: how many groups the pool is packed into
     required: true
+  allow-empty:
+    description: >-
+      'true' lets this shard plan NOTHING and skip the run, instead of failing. Only for the core
+      tier's cesium pool: it holds a spec only when the change touched one (scripts/tiers.mjs
+      changedSpecs — every -cesium spec is over the price), so most PRs give it nothing to do.
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -87,10 +94,14 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        FILES=$(node scripts/shard-plan.mjs --tier ${{ inputs.tier }} --pool ${{ inputs.suite }} --group ${{ inputs.shard }} --of ${{ inputs.of }})
+        EMPTY=""; if [ "${{ inputs.allow-empty }}" = "true" ]; then EMPTY="--allow-empty"; fi
+        FILES=$(node scripts/shard-plan.mjs --tier ${{ inputs.tier }} --pool ${{ inputs.suite }} --group ${{ inputs.shard }} --of ${{ inputs.of }} $EMPTY)
         echo "files=$FILES" >> "$GITHUB_OUTPUT"
-        echo "this machine runs:" && printf '%s\n' $FILES
+        if [ -z "$FILES" ]; then echo "this machine runs nothing: the change touched no spec in this pool"; else echo "this machine runs:" && printf '%s\n' $FILES; fi
+    # ⚠ `playwright test` with NO paths runs the whole suite, so an empty plan must skip the step,
+    # never reach it (the planner only returns empty under --allow-empty).
     - name: Run Playwright tests (smoke + internal QA)
+      if: ${{ steps.plan.outputs.files != '' }}
       shell: bash
       env:
         IM_SUITE: ${{ inputs.suite }}

@@ -39,8 +39,10 @@ and one subscription across legend rebuilds;
 and unchanged resolution and image fallback. These count released resources; they do not claim device RSS savings.
 
 
-**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
-gates a push is **7 spec files / 0.5 min** against a ceiling of 0.6 min; the **whole** suite is
+**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-09-25): the **core** tier that
+gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
+also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
+`changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
 **115 measured spec files / 81.4 min** of serial browser time against a ceiling of 81.4 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -62,7 +64,7 @@ gates a push is **7 spec files / 0.5 min** against a ceiling of 0.6 min; the **w
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **108 spec files** — is the whole suite minus core
+**deep** tier — **109 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -624,7 +626,8 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **108 spec files** against core's 7, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **109 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.
@@ -668,6 +671,37 @@ npx playwright test tests/r209.spec.js --workers=1
 more failures were `Target crashed` from a second Playwright process on the same machine. Run the
 file by itself at one worker first; `node scripts/baseline.mjs --classify test-results/junit.xml`
 says which of a run's failures `main` already has.
+## The process without round numbers — `tests/process-without-round-numbers-checks.test.mjs`
+
+利用者承認済み（2026-09-25）: 「ラウンド番号を名前として使うのをやめる」「DEV-NOTES の 1 本ファイルをやめる」
+「テストの段を触った範囲で選ぶ」. Nine tests, each written against the **defect**, not the fix:
+
+- **① two sessions, one identifier.** A throwaway repository, `worktree.mjs new` run twice with the
+  same slug: the second is refused (git's own `-b` refusal is the claim), two different slugs get two
+  branches and two different preview ports, and `status` offers no number. The old scan gave every
+  session that ran it before the others pushed the same «next free number».
+- **② the change's own spec runs in front of its PR.** An expensive (deep) spec named as touched is in
+  the core tier, is scheduled by `scripts/shard-plan.mjs --tier core`, is not hidden by
+  `playwright.config.js`'s `testIgnore`, and `ci.yml`'s core job hands `IM_DIFF_BASE=HEAD^1` with the
+  parent checked out. `currentRoundSpec()` — the rule this replaced — matched nothing newer than r668.
+  **②b** a diff that cannot be computed THROWS (it is not «no spec changed»), and where the history
+  is present, a commit that added a spec is seen through the real `git diff` path.
+- **③ the record's index rows are not stacked again.** A synthetic legacy file with the index copied
+  three times and the title quoted mid-entry splits into whole entries and one copy of each row;
+  **③b** `DEV-NOTES.md` is exactly the generated index and lists each entry once;
+  **③c** whenever the original blob (`dev-notes/legacy-manifest.json` → `sourceBlob`) is in the
+  checkout, re-splitting it reproduces every `dev-notes/R<N>.md` **byte for byte** and every line
+  of the old preamble/index is in `dev-notes/legacy-index.md` (a shallow CI checkout lacks the blob and
+  the test says so as a skip rather than passing).
+- **④ the memory index over the host's LINE limit** is reported as over even under the character
+  ceiling (measured: 203 lines against 200 — the host dropped 3 — while `--check` said green).
+  `tests/r703-memory-index-ceiling-checks.test.mjs` ⑦⑧ run the CLI on it.
+- **⑤ a stamp nobody moved.** The anti-stale guard in `index.html` is evaluated in a `vm`: a device
+  that saw a newer build and is served an older one reloads; a newer build replaces an older or a
+  legacy `YYYY-MM-DD-R<n>` value; a page with the unfilled token purges nothing; and the page's ES5
+  parser agrees with `stampTime` in `scripts/build-stamp.mjs`. **⑤b** the stamp is written by the
+  build (`tests/helpers/build-stamp.mjs`, which the 21 older «the stamp was bumped» tests now call).
+
 ## When a test fails
 
 Playwright captures artefacts on failure:
@@ -719,26 +753,29 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   **disk** — not a list — that none appears again. Fixtures, corpora and the shared helpers import
   nothing of the kind and are not demanded.
 
-- **Round-artefact names** (#R674, `round-name`) — a per-round file under `tests/` must be named
-  `r<N>-<subject>-checks.test.mjs` / `r<N>-<subject>.spec.js`. The **round number is not a name**:
-  every parallel session takes «the next free number» from the same scan and takes it again
-  whenever `origin/main` moves, so two sessions routinely hold the same one. Measured in #R671 —
-  which was renumbered **seven** times while a second session in the same window was renumbered
-  four — two sessions both created `tests/r568-checks.test.mjs`, git raised an **add/add** conflict,
-  the landing automation swallowed it (a pipe took `$?` from `tail`, #R420 again) and committed the
-  markers; the file then failed to parse and **every test in it stopped running**. Nothing in one
-  checkout can prove the other branch chose a different number — the other branch is not here — so
-  what is checked is the half that can be: whether the name carries what the number does not.
-  The **418** files already named the bare way are legacy and stay; they are pinned by two numbers
-  rather than by a list of 418 spellings, because a list would have to be edited to admit the next
-  and that edit is the one being prevented. `LEGACY_BARE_COUNT` only goes **down** (and says so if
-  it is left too high after a rename), and `LEGACY_BARE_MAX_ROUND` (**673**, measured 2026-09-10;
-  the 36 subject-bearing files run to r674) fails any bare name above it, since round numbers are
-  handed out monotonically. Either number alone is evadable — add a bare name *and* rename a legacy
-  one and the count holds; reuse an unused low number and the round holds — together they are not.
+- **Test file names carry no round number** (`round-name`; #R674, then 2026-09-25) — a new file
+  under `tests/` is named for its **subject**: `<slug>-checks.test.mjs` / `<slug>.spec.js`, the slug
+  being the one `node scripts/worktree.mjs new <slug>` was given. The **round number is not a name**:
+  every parallel session took «the next free number» from the same scan, so the scan handed the
+  same one to everybody who ran it before the others pushed. Measured in #R671 — renumbered
+  **seven** times while a second session in the same window was renumbered four — two sessions both
+  created `tests/r568-checks.test.mjs`, git raised an **add/add** conflict, the landing automation
+  swallowed it (a pipe took `$?` from `tail`, #R420 again) and committed the markers; the file then
+  failed to parse and **every test in it stopped running**. #R674 required «number + subject»; the
+  number still moved and still had to be re-taken before every push, so it was removed as a name
+  altogether. The slug is claimed where it is chosen: `new` refuses a slug held by a branch, a
+  worktree, a test file or a record, and `git worktree add -b feat/<slug>` refuses the second
+  session outright (`tests/process-without-round-numbers-checks.test.mjs` ①).
+  The **631** existing `r<N>…` files (bare and subject-bearing alike) are history and stay; they
+  are pinned by two numbers rather than by a list of 631 spellings, because a list would have to be
+  edited to admit the next and that edit is the one being prevented. `LEGACY_NUMBERED_COUNT` only
+  goes **down** (and says so if it is left too high after a rename), and
+  `LEGACY_NUMBERED_MAX_ROUND` (**808**, measured 2026-09-25) fails any numbered name above it — with
+  or without a subject. Either number alone is evadable — add one *and* rename a legacy one and the
+  count holds; reuse an unused low number and the maximum holds — together they are not.
   The rule itself, including the memory files outside this repository that no gate can reach, is
   [`.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) §4;
-  `node scripts/worktree.mjs new <slug>` prints the two names when it takes the number.
+  `node scripts/worktree.mjs new <slug>` prints the names when it takes the slug.
 
 It deliberately does **not** reformat or style-lint existing code.
 
@@ -1627,7 +1664,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 観測があり、門が `package.json` と `ci.yml` に宣言されていること／
 `.agents/rules/historical-verification.md` が恒久の文脈として読み込まれること。
 
-### `tests/r819-gis-*.test.mjs` — GIS 基盤の 11 本（#R819）
+### `tests/gis-*.test.mjs` — GIS 基盤の 11 本（#R819）
 
 **どれも「直した姿」ではなく「元の欠陥」に対して書いてある**（[[intmap-restate-the-defect-not-the-fix]]）。
 「キャッシュが効く」「複数の runtime を作れる」「扉が増えた」は**実装についての文**で、
@@ -1636,17 +1673,17 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 
 | ファイル | 本数 | 何を測るか |
 |---|---:|---|
-| `r819-gis-aggregation-checks` | 9 | `areaWeightedMean` が**区域内の地面**で重み付けられること（実測の 10.89 と 55）／**既定は動いていない**こと／「交差するか」と「どれだけ寄与するか」が別々に訊かれ、地面を持たない member と値が読めない member が**別の欄**に数えられること／量が**列から**読まれ、著者が記録されること。⚠ 返り値の形ではなく**答え**を、実物の registry と実物の op を通して測る |
-| `r819-gis-index-checks` | 18 | 偽陰性ゼロを**種別ごとに、索引を外した走査に対して**（索引どうしを比べると両方が同じだけ間違っていれば緑になる）／継ぎ目が特例でないこと／**既定の候補集合が動いていない**こと。⚠ ③ は**この回の前のファイルを実際に走らせて採った digest** との照合で、今日のソースから期待値を組み直さない（[[intmap-co-designed-reader-cannot-falsify]]）／仕事の計器が本当に仕事を数えていること／`auto` が名前ではなく測定で選ぶこと |
-| `r819-gis-sources-checks` | 16 | 窓は出せるが絞り込めない供給元で、**どの条件がどこで効くか**が計画され記録されること／**上限で切れた頁を濾したものを答えにしない**こと（`plan-unsatisfiable`）／`coverage.answeredBy`／申告と実測を並べて食い違いを名指すこと |
-| `r819-gis-staged-acquire-checks` | 13 | **`kind:'staged'` が読者にも Atlas にも出ない**こと——後段が `js/gis-ops.js` の filter で走り、橋の中に書いた比較で走らないこと／解消した理由が**消されずに「解消した」と述べられる**こと／`analysis` が取得条件の語彙に在ること |
-| `r819-gis-topology-checks` | 16 | 単体では完全に妥当な 2 つの区域の**重なり・隙間・合っていない共有境界**が、件数ではなく**幾何として**返ること／許容幅が呼び出し元のもので、許容した隙間も**測って返す**こと／⚠ **両端がつままれた薄片が `gaps` では出ない**ことを含む |
-| `r819-gis-warp-checks` | 10 | 抱えた常駐量が**読者が検算できる形で報告**され、書き出す先が在れば**実際に上限が効く**こと／同じ warp を別の割り方で走らせて**同じバイト**になること／**総量が再標本化を生き延びる**こと——⚠ 箱では原理的に保存できない**回転した格子**の上で測る。⚠ areal の参照値はこの検査の中で `js/gis-raster.js` の閉じた式から組み、測る対象の外に置く |
-| `r819-gis-worker-checks` | 9 | 式のカーネルと幾何演算が**本物のスレッド**で答えること／止めが**1 回の巨大な演算**に届き、半端な答えを残さないこと |
-| `r819-gis-geometry-portable-checks` | 6 | factory が**自分のバイトから組み直されて**答えること／同じ演算が両スレッドで**同じ JSON** を返すこと／運べないものが**形を複製する前に**名指されること／⚠ **その分類が主張ではないこと**——宣言された全演算を、dep を抜いたカーネルに通して、事前判定どおりの拒否が出るか確かめる／公開の答えが動いていないこと（`geom-2` 据え置き） |
-| `r819-gis-worker-dispatch-checks` | 7 | **受け口はあったが呼び手がいなかった**——`expr.rows` は登録済みで、`js/` にペイロードを組む者が 1 人もいなかった。同じ式が両経路で**画素単位で同じ格子**を出すこと／運べない式が実行前に判定され、主スレッドが同じ答えを出すこと／数値規則が**2 つ目にならない**こと（U+00A0 を含めてセル単位で一致）／中止が途中結果を答えにしないこと |
-| `r819-gis-cache-checks` | 7 | 条件が 1 つも動いていない問いが**二度計算されない**こと／**5 つの条件を 1 つずつ動かす**と別の答えになること（⚠ 対照つき——同じ鎖 2 本は**同じ鍵**になるので「常に違う」では通らない）／切れば #R783 の経路と答えに戻ること／**引いた記録が食い違えば捨てて op が走る**こと |
-| `r819-gis-runtime-checks` | 12 | 同じ id を使う 2 つのジョブが互いの数を答えないこと——⚠ **2 つの本物の realm**（worker thread）で測る。プロセス内の「別 runtime のつもり」は、この検査自身の帳簿を測ることになる／片方を終えてももう片方が動くこと／解放時に飛んでいた呼びが**必ず決着する**こと／単一 runtime の経路が #R783 のままであること／**`scope-conflict` が守っているものを守り続ける**こと |
+| `gis-aggregation-checks` | 9 | `areaWeightedMean` が**区域内の地面**で重み付けられること（実測の 10.89 と 55）／**既定は動いていない**こと／「交差するか」と「どれだけ寄与するか」が別々に訊かれ、地面を持たない member と値が読めない member が**別の欄**に数えられること／量が**列から**読まれ、著者が記録されること。⚠ 返り値の形ではなく**答え**を、実物の registry と実物の op を通して測る |
+| `gis-index-checks` | 18 | 偽陰性ゼロを**種別ごとに、索引を外した走査に対して**（索引どうしを比べると両方が同じだけ間違っていれば緑になる）／継ぎ目が特例でないこと／**既定の候補集合が動いていない**こと。⚠ ③ は**この回の前のファイルを実際に走らせて採った digest** との照合で、今日のソースから期待値を組み直さない（[[intmap-co-designed-reader-cannot-falsify]]）／仕事の計器が本当に仕事を数えていること／`auto` が名前ではなく測定で選ぶこと |
+| `gis-sources-checks` | 16 | 窓は出せるが絞り込めない供給元で、**どの条件がどこで効くか**が計画され記録されること／**上限で切れた頁を濾したものを答えにしない**こと（`plan-unsatisfiable`）／`coverage.answeredBy`／申告と実測を並べて食い違いを名指すこと |
+| `gis-staged-acquire-checks` | 13 | **`kind:'staged'` が読者にも Atlas にも出ない**こと——後段が `js/gis-ops.js` の filter で走り、橋の中に書いた比較で走らないこと／解消した理由が**消されずに「解消した」と述べられる**こと／`analysis` が取得条件の語彙に在ること |
+| `gis-topology-checks` | 16 | 単体では完全に妥当な 2 つの区域の**重なり・隙間・合っていない共有境界**が、件数ではなく**幾何として**返ること／許容幅が呼び出し元のもので、許容した隙間も**測って返す**こと／⚠ **両端がつままれた薄片が `gaps` では出ない**ことを含む |
+| `gis-warp-checks` | 10 | 抱えた常駐量が**読者が検算できる形で報告**され、書き出す先が在れば**実際に上限が効く**こと／同じ warp を別の割り方で走らせて**同じバイト**になること／**総量が再標本化を生き延びる**こと——⚠ 箱では原理的に保存できない**回転した格子**の上で測る。⚠ areal の参照値はこの検査の中で `js/gis-raster.js` の閉じた式から組み、測る対象の外に置く |
+| `gis-worker-checks` | 9 | 式のカーネルと幾何演算が**本物のスレッド**で答えること／止めが**1 回の巨大な演算**に届き、半端な答えを残さないこと |
+| `gis-geometry-portable-checks` | 6 | factory が**自分のバイトから組み直されて**答えること／同じ演算が両スレッドで**同じ JSON** を返すこと／運べないものが**形を複製する前に**名指されること／⚠ **その分類が主張ではないこと**——宣言された全演算を、dep を抜いたカーネルに通して、事前判定どおりの拒否が出るか確かめる／公開の答えが動いていないこと（`geom-2` 据え置き） |
+| `gis-worker-dispatch-checks` | 7 | **受け口はあったが呼び手がいなかった**——`expr.rows` は登録済みで、`js/` にペイロードを組む者が 1 人もいなかった。同じ式が両経路で**画素単位で同じ格子**を出すこと／運べない式が実行前に判定され、主スレッドが同じ答えを出すこと／数値規則が**2 つ目にならない**こと（U+00A0 を含めてセル単位で一致）／中止が途中結果を答えにしないこと |
+| `gis-cache-checks` | 7 | 条件が 1 つも動いていない問いが**二度計算されない**こと／**5 つの条件を 1 つずつ動かす**と別の答えになること（⚠ 対照つき——同じ鎖 2 本は**同じ鍵**になるので「常に違う」では通らない）／切れば #R783 の経路と答えに戻ること／**引いた記録が食い違えば捨てて op が走る**こと |
+| `gis-runtime-checks` | 12 | 同じ id を使う 2 つのジョブが互いの数を答えないこと——⚠ **2 つの本物の realm**（worker thread）で測る。プロセス内の「別 runtime のつもり」は、この検査自身の帳簿を測ることになる／片方を終えてももう片方が動くこと／解放時に飛んでいた呼びが**必ず決着する**こと／単一 runtime の経路が #R783 のままであること／**`scope-conflict` が守っているものを守り続ける**こと |
 
 ### `tests/r782-draw-slider-coarsens-checks.test.mjs` (#R782)
 
@@ -1929,7 +1966,7 @@ reader here for this list; adding a rule means adding a row.
 | `alerts` | the warning-feed counts in `docs/MAP-LAYERS.md` / README disagree with `js/world-packs.js` |
 | `app-shape` | a document still describes the app as one hand-written file with no build step |
 | `anon-key` | a document puts the browser-side Supabase key in the entry page instead of `src/vendor.js` |
-| `arch-rounds` | `Architecture.md` carries a round reference — the history belongs in `DEV-NOTES.md` |
+| `arch-rounds` | `Architecture.md` carries a round or pull-request reference, of any number of digits (`R1000` used to slip past a `R\d{1,3}` needle) — the history belongs in `dev-notes/` |
 | `cesium` | a document describes the second engine as withdrawn while it ships |
 | `monitors` | a document presents the withdrawn Area Monitors entry point as still clickable |
 | `news-path` | the privacy policy describes a news path the switches in `js/app-body.js` do not take |
@@ -1940,7 +1977,8 @@ reader here for this list; adding a rule means adding a row.
 | `i18n-open-gap` | `Architecture.md` §10.1's open-gap numbers disagree with `scripts/i18n-pair-audit.mjs` |
 | `named-path` | a document tells the reader to open a file that is not in the tree |
 | `gate-lists` | an instruction document enumerating the gates does not name every `check:*` |
-| `preview-port` | a document's preview-port convention disagrees with `scripts/worktree.mjs` |
+| `preview-port` | a document still states the preview port as a function of the round number, states a range other than `PREVIEW_PORTS` in `scripts/worktree.mjs`, or that range overlaps the per-checkout test servers |
+| `dev-notes` | `DEV-NOTES.md` is not exactly what `scripts/dev-notes.mjs --write` generates from `dev-notes/`, an entry is written the old way (`## R<N>` into `DEV-NOTES.md`), or an entry file is misnamed / lacks its front matter |
 | `backup-shell` | a document launches the USB backup with a shell other than the one `AGENTS.md` §11.2 uses |
 | `relay-guard` | a stated count of the functions sharing `_shared/relay-guard.js` is not the real one |
 | `ci-gates` | `npm test` runs a source-side gate that no `ci.yml` step reaches |

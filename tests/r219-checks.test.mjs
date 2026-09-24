@@ -7,6 +7,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
+import { entries, latestEntry } from '../scripts/dev-notes.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -273,12 +275,17 @@ test('R219 ⑩ the locate pin eases between fixes and never runs ahead of one', 
 /* ── ⑪ THE ROUND IS DOCUMENTED ────────────────────────────────────────────────────────────────────
    ⚠ (#R218 ③) NOT PINNED TO 219: what this protects is «the newest entry is at the top», so it asks
    for the maximum rather than for a literal that the next round makes false. */
-test('R219 ⑪ DEV-NOTES leads with the newest round, and the build stamp agrees', () => {
-  const notes = read('DEV-NOTES.md');
-  const rounds = [...notes.matchAll(/^## R(\d+)\b/gm)].map((m) => +m[1]);
-  assert.ok(rounds.length > 3);
-  assert.equal(rounds[0], Math.max(...rounds), 'the newest round must be the first ## R### heading');
-  const build = /INTMAP_BUILD\s*=\s*'([^']+)'/.exec(read('index.html'));
-  assert.ok(build, 'INTMAP_BUILD not found');
-  assert.ok(build[1].includes('R' + Math.max(...rounds)), 'the build stamp says ' + build[1]);
+/* (2026-09-25) DEV-NOTES.md is the GENERATED index of dev-notes/ now (scripts/dev-notes.mjs), and «the
+   newest entry leads» is a property of that generator: it is asked here through the one function every
+   reader of «the newest record» uses. The stamp is written by the build from the commit
+   (scripts/build-stamp.mjs), so «it agrees» means: not typed back in, and still filled by the build. */
+test('R219 ⑪ DEV-NOTES leads with the newest round, and the build stamp agrees', async () => {
+  const all = entries(ROOT);
+  assert.ok(all.length > 3);
+  assert.equal(latestEntry(ROOT).file, all[0].file, 'the newest record must lead');
+  const legacy = all.filter((e) => e.kind === 'legacy').map((e) => e.round);
+  for (let i = 1; i < legacy.length; i++) assert.ok(legacy[i] < legacy[i - 1], `newest-first: R${legacy[i]} follows R${legacy[i - 1]}`);
+  const firstLink = /\]\(([^)]+)\)/.exec(read('DEV-NOTES.md').split('\n').find((l) => l.startsWith('- ')) || '');
+  assert.equal(firstLink && firstLink[1], all[0].file, 'the generated index opens with the newest record');
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

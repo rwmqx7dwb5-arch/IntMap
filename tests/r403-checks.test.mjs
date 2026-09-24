@@ -235,7 +235,9 @@ const NEW_RULES = [
 
   /* preview-port — 式が worktree.mjs と食い違う */
   { rule: 'preview-port', file: 'AGENTS.md', why: 'the port convention drifting from the tool that assigns it',
-    from: 'ポート `4000 + N`**（R403 なら', to: 'ポート `4200 + N`**（R403 なら' },
+    /* (2026-09-25) the port is the lowest free one in a RANGE now, not `4000 + N` — so the drift a
+       document can have is a range that is not the tool's */
+    from: 'ポートは 4400〜4999 の空き', to: 'ポートは 4200〜4999 の空き' },
 
   /* backup-shell — このマシンに無い shell を指示する */
   { rule: 'backup-shell', file: '.agents/skills/intmap-round/SKILL.md', why: 'the round procedure naming a shell that is not installed',

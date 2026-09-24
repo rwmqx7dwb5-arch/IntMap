@@ -7,6 +7,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -244,16 +245,13 @@ test('④ every string the HUD prints is held to what the language policy says o
 });
 
 /* ══ ⑤ THE BUILD STAMPS (#R234/#R236 — they only ever fail after the notes are written) ══════════ */
-test('⑤ both build stamps name this round', () => {
+test('⑤ both build stamps name this round', async () => {
   /* ⚠ (#R240) NOT OLDER THAN R239, rather than exactly R239 — the shape #R203 ⑦ and #R204 ⑦b already
      use. A hard pin here is a test that fails on the FOLLOWING round for doing the right thing, and
      the assertion it was making («the stamps were bumped») is kept by the floor. The two must still
      agree with each other, and tests/r207 ⑬ separately requires them to name the newest round in
      DEV-NOTES, so nothing is lost by loosening this one. */
-  const h = R('index.html');
-  const a = /__imBuild='R(\d+)'/.exec(h), b = /INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/.exec(h);
-  assert.ok(a, 'the short stamp');
-  assert.ok(b, 'and the dated one');
-  assert.equal(a[1], b[1], 'the two stamps must name the same round');
-  assert.ok(+a[1] >= 239, `the stamps name R${a[1]} — older than the round that wrote this test`);
+  /* (2026-09-25) «the stamps were bumped» is kept by the build now — it writes both from the commit
+     being built (scripts/build-stamp.mjs) — so what is asked is what could still break that. */
+  assert.deepEqual(await generatedStampProblems(R('index.html')), [], 'the build stamp can go stale again');
 });

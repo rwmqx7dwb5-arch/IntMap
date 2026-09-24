@@ -246,12 +246,17 @@ test('R208 ④b: no converted spec uses test.use — a worker-scoped page cannot
   }
 });
 
-test('R208 ④c: the stale-build guard compares round numbers, not the stamp as text', () => {
+test('R208 ④c: the stale-build guard compares build times, not the stamp as text', () => {
   const html = read('index.html');
-  assert.ok(/roundOf=function\(s\)\{[\s\S]{0,120}-R\(\\d\+\)\$/.test(html),
-    'the round number is parsed out of the stamp');
-  assert.ok(/rSeen>rNow/.test(html) && /rNow>rSeen/.test(html),
-    'both directions compare numerically');
+  /* The stamp is written by the build now (<committer time>Z-<sha>). The guard must still compare it
+     as a NUMBER: evaluate the page's own parser rather than reading its spelling. */
+  const src = /var timeOf=(function\(s\)\{[^\n]*?\});/.exec(html);
+  assert.ok(src, 'the page parses a time out of the stamp (timeOf)');
+  const timeOf = new Function('return ' + src[1])();
+  const older = '2026-08-09T10:00:00Z-aaaaaaa', newer = '2026-08-11T09:00:00Z-bbbbbbb';
+  assert.ok(timeOf(newer) > timeOf(older), 'a later build compares greater');
+  assert.ok(Number.isNaN(timeOf('2026-08-09-R208')), 'a legacy round stamp is not mistaken for a time');
+  assert.ok(/tSeen>tNow/.test(html) && /tNow>tSeen/.test(html), 'both directions compare numerically');
   /* the hazard this closes: `'2026-08-09-R208' > '2026-08-11-R207'` is FALSE as text, because the
      date sorts first — so a build dated by the day the work was done, rather than the day the last
      build shipped, would make every device purge its caches and then claim the newest build is

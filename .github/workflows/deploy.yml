@@ -15,7 +15,7 @@
 #   Measured 2026-09-25 with `gh variable list`: ENABLE_PAGES_DEPLOY=true, set 2026-07-18. Turning it
 #   off is a deliberate act by someone with admin rights, and while it is off «did not publish» IS
 #   the job done — a red run on every push would make the switch unusable. Everywhere else in
-#   .github/workflows a missing secret or variable is RED (tests/r822-backup-and-deploy-as-code-checks
+#   .github/workflows a missing secret or variable is RED (tests/backup-and-deploy-as-code-checks
 #   reads this line; delete it and the skip below becomes a failure of that test). rollback.yml
 #   reads the same variable and is red when it is off: there a person asked for a publish.
 #

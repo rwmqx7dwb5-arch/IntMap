@@ -55,7 +55,8 @@ CLAUDE.local.md                 同じ機構のローカル上書き。**追跡�
                                 公開できない資格情報だけを置く
 CONSTITUTION.md                 標準指示（最優先のルール集）
 Architecture.md                 本ファイル（現状仕様書）
-DEV-NOTES.md                    直近ラウンドの開発記録（新しい順）
+DEV-NOTES.md                    開発記録の**生成索引**（新しい順・手で編集しない。`scripts/dev-notes.mjs --write`）
+dev-notes/                      開発記録の本体——**1 エントリ＝1 ファイル**（`<日付>-<slug>.md`・旧 `R<N>.md`・旧索引 `legacy-index.md`）
 DEV-NOTES-ARCHIVE.md            それ以前の全記録（古い順・追記しない）
 PRODUCT.md                 Atlas の到達目標と実装状況の対応表
 README.md                       公開向けの紹介（英語）
@@ -1325,12 +1326,14 @@ scripts/
                                   ⚠ `npm test` には入れない（本番と資格情報が要る）。CI が証明できることは
                                   `tests/r745-arch-review-followup-checks.test.mjs`。
   worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`AGENTS.md` §6 が
-                                  手作業で求めていた 6 工程——空きラウンド番号・branch・OneDrive 外の
-                                  worktree・`node_modules` の junction・preview 設定——を 1 コマンドにする。
-                                  原本の場所は `master-sync.mjs` と同じく `--git-common-dir` から導出。
-                                  ⚠ **空き番号は 5 つの出典から取る**（`DEV-NOTES.md`・branch・worktree・
-                                  `launch.json`・`tests/`）。索引だけを見ると **merge 済み**しか見えず、
-                                  いま走っている `feat/r<N>-…` と衝突する（過去 3 回）。
+                                  手作業で求めていた工程——branch・OneDrive 外の worktree・`node_modules` の
+                                  junction・preview 設定——を 1 コマンドにする。原本の場所は `master-sync.mjs` と
+                                  同じく `--git-common-dir` から導出。⚠ **番号を配らない**——識別子は slug で、
+                                  `git worktree add -b feat/<slug>` が原子的な取得（同じ slug の 2 つ目は git が拒む）。
+                                  branch・worktree・tests・記録が既に持つ slug と、番号で始まる slug は拒む。
+                                  プレビューのポートは 4400〜4999 のうち、どの `launch.json` も使っておらず
+                                  listen もされていない最小の番号（`PREVIEW_PORTS`）。`verified` は sha と件名の
+                                  `(#PR)` を記録し、`status` は未了を PR 番号で述べる。
                                   ⚠ `done` は **`git worktree remove` のエラーを判定にしない**——原本の
                                   `.git/worktrees/` は OneDrive が掴んでいて消せないので、`prune` してから
                                   一覧に訊く。branch は `-d`、断られたら `origin/main` と**木を比べて**
@@ -1416,7 +1419,14 @@ scripts/
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 7 本 / deep 108 本。
+  dev-notes.mjs                   **開発記録**: `dev-notes/` の各エントリから `DEV-NOTES.md`（索引）を生成・照合し
+                                  （`--write` / `--check`、`check:docs` の `dev-notes` 規則）、旧 1 本ファイルを
+                                  エントリごとに分割する（`--split`・再実行可・本文を 1 バイトも変えない）。
+                                  「最新の記録」を訊く読み手は全部ここの `latestEntry()` を使う。
+  build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
+                                  `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
+                                  上げ忘れられ、古いキャッシュを現行に見せていた。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 109 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

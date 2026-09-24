@@ -14,6 +14,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
@@ -343,11 +344,7 @@ test('R261 ⑫: the data-centre layer is filterable, through a single expression
    backwards past the round that wrote them; tests/r169-checks already owns the format and the
    monotonicity, so this keeps only the part that is about #R261: the two markers name one round,
    and it is not older than #R261. */
-test('R261 ⑬: both build markers name one round, and it is not older than R261', () => {
-  const s = read('index.html');
-  const a = s.match(/window\.__imBuild='R(\d+)'/);
-  const b = s.match(/window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/);
-  assert.ok(a && b, 'both build markers are present');
-  assert.equal(a[1], b[1], 'the two markers name the same round');
-  assert.ok(Number(a[1]) >= 261, `the build stamp went back to R${a[1]}`);
+test('R261 ⑬: both build markers name one round, and it is not older than R261', async () => {
+  /* (2026-09-25) both markers are filled by the build from the commit (scripts/build-stamp.mjs) */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

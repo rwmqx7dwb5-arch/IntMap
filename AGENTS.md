@@ -6,7 +6,7 @@
 > 定例の前置きは貼られない——**貼られていないことは「省略された」であって「不要になった」ではない。**
 > ここに書いてあるルールは、毎回明示されなくても**常に有効**。
 >
-> 優先順位: **`AGENTS.md`（本ファイル） ＝ `CONSTITUTION.md` ＞ `Architecture.md` ＞ `DEV-NOTES.md`**
+> 優先順位: **`AGENTS.md`（本ファイル） ＝ `CONSTITUTION.md` ＞ `Architecture.md` ＞ `DEV-NOTES.md`（`dev-notes/` の索引）**
 > 本ファイルは「どう働くか」、`CONSTITUTION.md` は「何を守るか（製品の不文律）」。**両方を読むこと。**
 
 ---
@@ -36,11 +36,9 @@
 - **メモリ**（**正本は 1 か所**で、場所は `node scripts/agent-memory.mjs --path` が出す。
   Claude Code は自動で読み、**Codex は hook が読む。届いていなければ `node scripts/agent-memory.mjs`
   を自分で走らせる**——写しを作らず同じ場所へ書く）
-  ⚠ **memory は主題で名づける。ラウンド番号だけの名前は使わない**——番号は並行セッションで
-  衝突し、改番のたびの rename が**他セッションの記憶を潰した**（#R565・#R671 で 2 回）。
-  正本 `.agents/skills/intmap-round/` §4。
+  ⚠ **memory は主題で名づける。番号を名前にしない**（正本 `.agents/skills/intmap-round/` §4）。
 - **`.agents/rules/` の全ファイル**（⚠ Claude Code は import で自動・**Codex は自分で開く**）
-- `DEV-NOTES.md` の**最新ラウンド**
+- **最新の記録**（`DEV-NOTES.md` は `dev-notes/` の生成索引で、先頭が最新）
 - `CONSTITUTION.md`（製品の不文律）
 - **[`docs/README.md`](docs/README.md) — 文書の索引。**「どれが何の正本か・いつ更新するか」がここに
   1枚の表であるので、今回触る主題の**正本**をここで特定してから、その文書を読む
@@ -49,14 +47,14 @@
 - **現在の Git 状態**（ブランチ、未コミット変更、他セッションの worktree）
 - **既存の PR** と **CI 状態**
 
-Git 側の確認は 1 コマンドで済む——**手で `git status` / `worktree list` / ラウンド番号を数えない**:
+Git 側の確認は 1 コマンドで済む——**手で `git status` / `worktree list` を数えない**:
 
 ```bash
 node scripts/worktree.mjs status
 ```
 
-これが、branch・未コミット変更・全 worktree・`origin/main` との差・`DEV-NOTES.md` の最新ラウンド・
-**空いているラウンド番号**をまとめて出す。ここに出ないものだけ個別に見る。
+これが、branch・未コミット変更・全 worktree・`origin/main` との差・最新の記録・前回までの未了を
+まとめて出す。ここに出ないものだけ個別に見る。
 
 報告されたバグについては、**実際に観測される挙動として再現したうえで**、表面的な対処ではなく
 **根本原因のレベルで**修正すること。
@@ -74,13 +72,13 @@ node scripts/worktree.mjs status
 | Supabase project ref | `vpekfwdpurzejrrmacac` |
 | **文書の索引** | **`docs/README.md`** — どれが何の正本か・対象読者・更新条件（**まずここ**） |
 | **実行戦略** | **`.agents/rules/execution-strategy.md`** — 並列化・委譲・隔離・検証の段（§5.0） |
-| **ラウンドの手順** | **`.agents/skills/intmap-round/`**（Claude `/intmap-round`／Codex `$intmap-round`）・作業場は `node scripts/worktree.mjs` |
+| **作業の手順** | **`.agents/skills/intmap-round/`**（Claude `/intmap-round`／Codex `$intmap-round`）・作業場は `node scripts/worktree.mjs` |
 | 専用 subagent | **`.agents/roles/`**（正本）— scout（全数調査）／verifier（テストとログ）／i18n（9言語）／implementer（隔離実装）／prod-verifier（本番検証） |
 | **製品別の設定** | **`docs/AGENT-SETUP.md`** — Claude Code と Codex で何が同じ・何が違う・何が手作業か |
 | 現状仕様書 | `Architecture.md`（＋ `docs/FILES.md` ファイル台帳・`docs/MAP-LAYERS.md` レイヤー実装） |
 | 製品 | `PRODUCT.md`（目的・機能一覧・Atlas の到達点） |
 | 技術判断 | `DECISIONS.md`（今も有効な判断とその理由だけ） |
-| 開発記録 | `DEV-NOTES.md`（**最新 `R###` エントリを先頭に足す**） |
+| 開発記録 | **`dev-notes/`**（**1 エントリ 1 ファイル**）。`DEV-NOTES.md` はその**生成索引**（手で編集しない） |
 | 過去記録 | `DEV-NOTES-ARCHIVE.md`（読むだけ・追記しない） |
 | 統治原則 | `CONSTITUTION.md` |
 | 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE}.md` |
@@ -92,12 +90,15 @@ node scripts/worktree.mjs status
 その他の追跡対象ファイルに書いてはならない（`CLAUDE.local.md` は `.gitignore` 済み）。
 ⚠ **Claude Code は自動で読み、Codex は読まない**——要るときに自分で開く。
 
-### ローカルプレビュー
+### 識別子とローカルプレビュー
 
-ラウンド別のプレビューは **`intmap-preview-r<N>` / ポート `4000 + N`**（R403 なら
-`http://127.0.0.1:4403`）。`node scripts/worktree.mjs new` が用意するので手で書かない。
-⚠ **dev サーバをシェルから直に起動しない。** 製品ごとの起動手段と、設定を持つ
-`.claude/launch.json` が**追跡対象ではない**理由（#R338）は `docs/AGENT-SETUP.md` §4。
+⚠ **ラウンド番号は名前にしない**（利用者承認済み）。作業の識別子は**主題（slug）**で、
+branch `feat/<slug>`・worktree `wt-<slug>`・`tests/<slug>-checks.test.mjs`・記録
+`dev-notes/<日付>-<slug>.md`。PR を作ったら**PR 番号**が一意の識別子になる。
+プレビューは `intmap-preview-<slug>`、ポートは 4400〜4999 の空き。
+**どれも `node scripts/worktree.mjs new <slug>` が用意する——手で組み立てない。**
+⚠ **dev サーバをシェルから直に起動しない。** 起動手段と、`.claude/launch.json` が
+**追跡対象ではない**理由（#R338）は `docs/AGENT-SETUP.md` §4。
 
 ---
 
@@ -166,6 +167,8 @@ node scripts/worktree.mjs status
 - 環境が許す場合は **`supabase db reset`** および **`supabase test db`** も実行すること。
 - 1 ターンを数時間にしない。全件テストは**完成後に 1 回**。長い待ちは並列化し、
   push 前に CI と同じ門をローカルで通す。待っている間はポーリングせず別の独立作業を進める。
+- **テストの段は触った範囲で選ばれる**——固定の core に加え、**その変更が足した・変えた spec は
+  PR の core で走る**（差分から。`scripts/tiers.mjs`）。
 
 ---
 
@@ -184,23 +187,22 @@ worktree・subagent・agent 設定の手動管理をユーザーに要求して�
 - **速度のために IntMap の品質を落とさない**
 
 ⚠ **正本は [`.agents/rules/execution-strategy.md`](.agents/rules/execution-strategy.md)**
-（判断基準・委譲先の agent・検証の段の表）。ラウンド 1 本を通す**具体的な手順**は
+（判断基準・委譲先の agent・検証の段の表）。1 本の作業を通す**具体的な手順**は
 **`.agents/skills/intmap-round/`**（Claude `/intmap-round`／Codex `$intmap-round`）。書き写さない。
 
 ### 5.1 工程 — **待たない鎖**（#R771）
 
-⚠ **工程は1つも減っていない。やる「時刻」だけが動いた。** 実測: 従来は1ラウンドの純粋な待ちが
-45〜60分あり、しかも**赤い CI は 11.9分・12.2分**——1回引っかかるたびに12分、直してまた12分。
-「数時間」の正体は工程の数ではなく、**直列に並んだ待ちと、その往復**だった。
+⚠ **工程は1つも減っていない。やる「時刻」だけが動いた**（実測と理由は `.agents/skills/intmap-round/` §5〜§7）。
 
-**そのラウンドの中でやること（待ちがほぼ無い）:**
+**その作業の中でやること（待ちがほぼ無い）:**
 
 ```
 調査 → 再現 → 実装 → ドキュメント更新 → 触った段のゲート（execution-strategy.md §4）
-     → commit → push → PR（auto-merge を有効化）→ DEV-NOTES.md に R### を1本
+     → dev-notes/ に記録を1本（node scripts/dev-notes.mjs --write）
+     → commit → push → PR（auto-merge を有効化）
 ```
 
-**次のラウンドの着手時に、前回分をまとめてやること:**
+**次の作業の着手時に、前回分をまとめてやること:**
 
 ```
 production verification → 原本 (OneDrive) の最新化 → USB（§11）
@@ -208,7 +210,7 @@ production verification → 原本 (OneDrive) の最新化 → USB（§11）
 
 - **PR は auto-merge on green にし、CI を座って見ない。** 緑なら勝手に squash merge され branch も消える。
   **赤いときだけ戻る。** CI のゲートは3台に分かれ `fail-fast: false` なので**1回の run で落ちたゲートが
-  全部出る**——直す往復が1回で済む（`scripts/ci-gates.mjs`）。
+  全部出る**（`scripts/ci-gates.mjs`）。
 
   ```bash
   gh pr merge --squash --auto --delete-branch
@@ -216,8 +218,7 @@ production verification → 原本 (OneDrive) の最新化 → USB（§11）
 
 - ⚠ **merge 後に main で走る CI を待たない。** PR の CI が緑なら同じ木が同じ結果を出す。
 - ⚠ **後ろへ倒した工程には読み手がある。** `node scripts/worktree.mjs status` が「本番に届いて
-  いないラウンド」「本番検証の記録が無いラウンド」「原本の遅れ」を述べ、`--brief` は**未了が
-  あるときだけ**1行足す（§1 が全セッションをここに通す）。検証を終えたら
+  いない commit」「本番検証の記録が無い commit」「原本の遅れ」を PR 番号で述べる。検証を終えたら
   `node scripts/worktree.mjs verified` で受領証を残す。
   ⚠ **読み手の無い先送りは「やらなかった」と区別がつかない。** 受領証を書かずに次へ行かない。
 
@@ -259,47 +260,31 @@ GitHub は共有と CI のための remote、USB は §11 のバックアップ�
 
 **原本は「作業場」ではなく「`main` の置き場」である。**
 原本は常に `main` にあり、`origin/main` と一致し、作業ツリーは clean。
-**原本で branch を切って作業してはならない。**
+**原本で branch を切って作業してはならない。**（理由と実測: `docs/AGENT-SETUP.md` §11）
 
 - **作業は必ず、専用 branch と独立した worktree で行う。**
   worktree は OneDrive の外（`%LOCALAPPDATA%\Temp` 以下）に置く。
   そこで完結した作業は**原本に 1 バイトも書き込まない**——だから次の工程が要る。
-  **手で組み立てない**——`node scripts/worktree.mjs new <slug>` が、空きラウンド番号の決定・
-  branch・OneDrive 外の worktree・`node_modules` の junction・preview 設定までを 1 回で行う。
+  **手で組み立てない**——`node scripts/worktree.mjs new <slug>` が branch・OneDrive 外の worktree・
+  `node_modules` の junction・preview 設定までを 1 回で行う（§2）。
   終わったら `node scripts/worktree.mjs done`（**自分のものだけ**片付ける）。
-
 - **§5 の最終工程で原本を merge 後の状態にする。** `node scripts/master-sync.mjs --sync`。
   これを行わない限り、その作業は原本に存在しない。
 - **この工程はロックを必要としない。** `--sync` は `main` を `origin/main` へ早送りするだけで、
-  **branch を切り替えず、未コミットの変更を上書きしない**＝**冪等**。何セッションが同時に走っても
-  結果は同じで、**1 回の実行がその時点で merge 済みの全セッション分を運ぶ**。
-  拒否されても失うものは無い——次のセッションの実行が同じ commit を運ぶ。
+  **branch を切り替えず、未コミットの変更を上書きしない**＝**冪等**。拒否されても失うものは無い。
 - **未コミットの変更が「邪魔かどうか」を判定するのは git であって、このツールではない。**
-  早送りが触らないファイル（**他セッションのマシン固有ファイルなど**）は素通りする。
-  実際に上書きになる場合だけ `git merge --ff-only` 自身の理由を出して止まる。
-  `--check` も「遅れている」と「汚れている」を分け、**汚れは警告として印字するが exit 0 を妨げない**
-  （USB ミラーは作業ディレクトリをそのまま写すので、汚れたまま写すのが §11.3 の要求）。
-  ⚠ 以前は「汚れていれば何であれ拒否」だった。**正しい作業がゲートを迂回した実例がある**
-  ——用心深く見える拒否は、安全を足さずに**ツールを迂回する習慣を教える**。
-
-> ⚠ **なぜ原本を作業場にしないのか（#R282 実測）** 原本を作業場にすると排他ロックと
-> 回復手順が要り、ロックは**失効ロック**という壊れ方を作る。実測: 初版の `--sync` が
-> **原本で `feat/session-a` を使っているセッションの作業ディレクトリを、別セッションの終了処理が
-> 黙って `main` に切り替えた**（成功メッセージまで出た）。**`main` 専用なら切り替える branch が無い。**
+  `--check` は「遅れている」と「汚れている」を分け、**汚れは警告として印字するが exit 0 を妨げない**
+  （経緯と実測は `docs/AGENT-SETUP.md` §11）。
 
 > ⚠ **この規則が効かない範囲がある。** 製品のハーネスがリポジトリの**中**に作る worktree には
-> 効かない（実測 611 MB・11,615 ファイルが OneDrive に載っていた。対処は `docs/AGENT-SETUP.md` §5）。
+> 効かない（実測と対処は `docs/AGENT-SETUP.md` §5）。
 
 複数のエージェントセッションが同時に実行されている場合:
 
 - **各セッションは必ず独立した worktree および専用 branch を使用する。**
   セッション間で同一の working directory を共有してはならない。同一 branch も共有してはならない。
-- **テストの dev サーバもセッションごとに分かれる**（`tests/helpers/session-seed.js`）。
-  ポートはチェックアウトから導出され、**原本と CI は 4173 のまま**・各 worktree は 4174〜4373。
-  ⚠ 以前は全チェックアウトが 4173 を共有し `reuseExistingServer` が効いていたため、
-  **2 つ目のセッションは自分のビルドを作らず相手の `dist/` を試験する**か、相手がサーバを
-  落とした瞬間に `ERR_CONNECTION_REFUSED` で死んでいた（実測 **2 failed / 25 did not run**。
-  私有ポートなら同じ木で **52 passed**）。
+- **テストの dev サーバもセッションごとに分かれる**（`tests/helpers/session-seed.js`。
+  原本と CI は 4173・各 worktree は 4174〜4373。共有していた頃の実測は `docs/AGENT-SETUP.md` §11）。
 - **別セッションの未コミット変更・branch・worktree・stash その他の作業状態を、
   変更・削除・reset・clean・force-push・上書きしてはならない。**
 - 編集前・push 前・merge 前には**最新の Git 状態を確認**し、必要に応じて `main` の最新更新を取り込む。
@@ -311,11 +296,6 @@ GitHub は共有と CI のための remote、USB は §11 のバックアップ�
 
 > 実務上の注意: 原本（`C:\Users\gyuuk\OneDrive\IntMap`）が他セッションの作業中である場合がある。
 > 着手時に `git status` と `git worktree list` を必ず見ること。
->
-> ⚠ #R282 の実測: この規程が worktree を既定にしていた間に、原本は origin/main より
-> **15 コミット・159 ファイル**遅れていた（R272〜R279 が丸ごと欠落）。OneDrive の同期エンジンは
-> 正常に動いていた——**原本に何も書き込まれていなかった**だけ。GitHub と USB は各ラウンドで
-> 更新され、原本だけが「どの工程も責任を持たない写し」になっていた。
 
 ---
 
@@ -347,23 +327,24 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
 
 ## 9. ドキュメントの更新
 
-- Markdown 系の記録、メモリ／記憶用途のファイル、`Architecture.md`、`DEV-NOTES.md`、`README.md`、
+- Markdown 系の記録、メモリ／記憶用途のファイル、`Architecture.md`、開発記録、`README.md`、
   出典ページ、ロジック解説ページその他**プロジェクトの状態を記録または説明する文書**については、
   **実装の現状を正確に反映するよう常に更新し、古い情報を放置しない。**
 - **複数の文書に書いてある同じ事実**（配信方法・Edge Function の一覧・対応言語・
   USB バックアップの頻度など）は **`npm run check:docs`（`npm test` に内包）が実体と照合する**。
   事実を書き写して二重にしないこと——**正本を 1 つに決め、他はそこへリンクする**。
-  ⚠ `Architecture.md` は**現状仕様書**であって変更履歴ではない。**ラウンド番号を書かない**
-  （経緯は `DEV-NOTES.md` の仕事。同じ検査がこれを見ている）。
+  ⚠ `Architecture.md` は**現状仕様書**であって変更履歴ではない。**ラウンド番号・PR 番号を書かない**
+  （経緯は開発記録の仕事。同じ検査がこれを見ている）。
 - **作業完了時**には、現在の状態を反映するよう `Architecture.md` および関連ドキュメントを更新し、
-  **`DEV-NOTES.md` の先頭に新しい `R###` エントリを追加する**（索引行と本文の両方）。
+  **`dev-notes/<YYYY-MM-DD>-<slug>.md` を 1 本足して `node scripts/dev-notes.mjs --write` で索引を
+  作り直す**（`DEV-NOTES.md` を手で編集しない。書式は `.agents/skills/intmap-round/` §3）。
 - **文書を1本足したら、同じコミットで [`docs/README.md`](docs/README.md) に1行足す**
   （その行が無ければ `npm run check:docs` が落ちる）。役割が既存の文書と重なるなら、
   **新しい文書を作らずそちらへ足す**——1つの事実に正本が2つある状態を作らない。
 - ファイルの分担の全体像は [`docs/README.md`](docs/README.md) と `CONSTITUTION.md` §6:
   `PRODUCT.md`＝何のためにあり何ができるか / `DECISIONS.md`＝なぜそうなっているか /
   `Architecture.md`＝今どうなっているか（主題順） /
-  `DEV-NOTES.md`＝直近ラウンドの記録（新しい順） /
+  `dev-notes/`＝記録（1 エントリ 1 ファイル。`DEV-NOTES.md` が新しい順の索引） /
   `DEV-NOTES-ARCHIVE.md`＝それ以前（古い順・追記しない）。
 
 ---
@@ -403,7 +384,7 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
 ### 11.2 USB バックアップ — **作業のたびに毎回**
 
 USB は**依頼された作業が完了するたびに毎回**行う（**1 日 1 回の制限は無い**）。⚠ **行う時刻は
-§5.1 が定める——前回分を次のラウンドの着手時にまとめて行い、そのラウンドの中では待たない。**
+§5.1 が定める——前回分を次の作業の着手時にまとめて行い、その作業の中では待たない。**
 
 **手順は実装されている。読んで真似せず、これを実行する:**
 
@@ -411,9 +392,7 @@ USB は**依頼された作業が完了するたびに毎回**行う（**1 日 1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1
 ```
 
-⚠ **`pwsh` ではない。** このマシンに PowerShell 7 は**無い**（実測 `$PSVersionTable` は
-**5.1.26100.9168**）。#R372 までここは `pwsh -File …` と書いてあり、**その通りにやると
-終了処理の最後の1歩が必ず `CommandNotFoundException` で落ちた**。スクリプトは 5.1 で完動する。
+⚠ **`pwsh` ではない**（このマシンに PowerShell 7 は無い。実測は `docs/AGENT-SETUP.md` §10）。
 
 最後の1行が `RESULT <status> <detail>` で、`ok` / `skipped` / `failed` のいずれかを返す。
 `skipped` は**エラーではない**（USB 未接続、または候補が複数あって一意に特定できない）。

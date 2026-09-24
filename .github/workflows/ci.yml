@@ -373,23 +373,38 @@ jobs:
   #     longer stands behind the merge either.
   # Two machines cover the core tier at ~4 minutes of wall clock including npm ci and the browser
   # download, against the twelve machines and ~12 minutes this job used to take.
+  #
+  # ══ …AND EVERY SPEC THE CHANGE ADDED OR EDITED (2026-09-25) ═══════════════════════════════════
+  # The core tier used to carry «the current round's spec», derived from the highest-numbered
+  # `rNNN.spec.js` — which matched nothing newer than r668 once names carried a subject, so no later
+  # round's spec ran in front of its PR. It is read from the DIFF now (scripts/tiers.mjs
+  # changedSpecs), and this job is what hands it the diff: IM_DIFF_BASE=HEAD^1. A pull_request run
+  # checks out the MERGE commit, whose first parent is the base branch, so HEAD^1..HEAD is exactly the
+  # PR; on main each squash merge is one commit, so it is that merge. fetch-depth 2 is what puts the
+  # parent in the checkout — with depth 1 tiers.mjs cannot diff and THROWS rather than calling that
+  # «no spec changed».
   browser:
     name: Browser ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
     env:
       IM_TIER: core
+      IM_DIFF_BASE: HEAD^1
     strategy:
       fail-fast: false            # one slow shard must not hide the results of the others
       matrix:
         include:
-          # the core tier has no `solo` spec in it — every `-cesium` file is deep — so the cesium
-          # pool would plan an empty group, and an empty group is a job that runs nothing.
           - { suite: rest, shard: 1, of: 2 }
           - { suite: rest, shard: 2, of: 2 }
+          # the FIXED core has no `solo` spec — every `-cesium` file is over the price — so this pool
+          # holds something only when the change touched a -cesium spec. It runs at one worker like
+          # the deep tier's cesium pool (#R186); on every other PR it plans nothing and skips.
+          - { suite: cesium, shard: 1, of: 1, allow-empty: 'true' }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          fetch-depth: 2
       - uses: ./.github/actions/browser-tier
-        with: { tier: core, suite: "${{ matrix.suite }}", shard: "${{ matrix.shard }}", of: "${{ matrix.of }}" }
+        with: { tier: core, suite: "${{ matrix.suite }}", shard: "${{ matrix.shard }}", of: "${{ matrix.of }}", allow-empty: "${{ matrix.allow-empty || 'false' }}" }
 
   # ══ (#R203) THE OTHER 78 MINUTES — NIGHTLY AND ON DEMAND ══════════════════════════════════════
   # ⚠ (#R304, RE-MEASURED #R372) 「27 spec files」 was true when this was written and is not now:

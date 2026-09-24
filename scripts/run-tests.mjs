@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 /* (#R203) …and it runs ONE TIER. `npm test` is the core tier — 29 files, ~7 minutes of serial time
    against the 85 the whole suite costs — and `npm run test:deep` is the other half. The list lives
    in tests/durations.json; scripts/tiers.mjs is the only thing that reads it. */
-import { tierSpecs, wantedTier } from './tiers.mjs';
+import { tierSpecs, wantedTier, changedSpecs } from './tiers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const win = process.platform === 'win32';
@@ -75,6 +75,9 @@ function run(files, workers, label) {
    has the measurement and scripts/doc-facts.mjs (`deep-tier-when`) enforces it. */
 console.log(`run-tests: ${TIER} tier — ${allSpecs().length} spec file(s)`
   + (TIER === 'core' ? ' (the deep tier is NOT in this run, and the merge will NOT run it either — it runs on the nightly schedule, on the CI dispatch button, or here via `npm run test:deep`)' : ''));
+/* the specs this branch added or edited join the core run whatever they cost (scripts/tiers.mjs) —
+   say which, so a slow `npm test` on a branch that touched an expensive spec explains itself */
+if (TIER === 'core') { const ch = changedSpecs(); if (ch.length) console.log(`run-tests: + ${ch.length} spec(s) this change added or edited: ${ch.join(', ')}`); }
 const rest = poolFiles('rest');
 const solo = poolFiles('cesium');
 

@@ -24,9 +24,18 @@
  *
  *      node scripts/worktree.mjs status        # everything AGENTS.md §1 asks for, in one read
  *      node scripts/worktree.mjs status --brief # the same, three lines (used by the SessionStart hook)
- *      node scripts/worktree.mjs new <slug>    # free round number + branch + worktree + node_modules + preview
+ *      node scripts/worktree.mjs new <slug>    # branch feat/<slug> + worktree + node_modules + preview port
  *      node scripts/worktree.mjs done          # remove THIS worktree and its branch, after the merge
- *      node scripts/worktree.mjs verified [--round R770]   # record that origin/main was verified in production
+ *      node scripts/worktree.mjs verified      # record that origin/main was verified in production
+ *
+ *  ⚠ NO ROUND NUMBERS (利用者承認済み: 「ラウンド番号を名前として使うのをやめる」). This used to pick
+ *  «the next free round number» = max+1 over DEV-NOTES, branches, worktrees, launch.json and tests/,
+ *  and every session that ran the scan before the others pushed was handed THE SAME number — that is
+ *  what the renumbering treadmill was (#R671: seven times in one round). A piece of work is now named
+ *  by its SLUG (feat/<slug>, wt-<slug>, tests/<slug>-checks.test.mjs, intmap-preview-<slug>), and
+ *  once its PR exists by the PR NUMBER, which the squash merge writes into the subject as «(#N)».
+ *  The slug is claimed ATOMICALLY: `git worktree add -b feat/<slug>` fails if the branch exists, and
+ *  every worktree on this machine shares one ref namespace.
  *
  *  ⚠ `status` NEVER EXITS NON-ZERO. It is wired to a SessionStart hook, and a hook that fails is a
  *  session that starts with an error instead of its bearings. Anything it cannot determine is
@@ -40,7 +49,9 @@ import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSy
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { roundArtefactNames } from './round-names.mjs';
+import { createServer } from 'node:net';
+import { artefactNames, slugProblem } from './round-names.mjs';
+import { latestEntry, NOTES_DIR } from './dev-notes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -60,39 +71,73 @@ function masterDir() {
   return dirname(resolve(REPO, common));
 }
 
-/* ── EVERY ROUND NUMBER ANYBODY HAS CLAIMED ────────────────────────────────────────────────────
-   A number is taken if ANY of these has it, and the only one of them the old by-hand method read
-   was the first: the notes say what has MERGED, the branches say what is being worked on RIGHT NOW.
-   That gap is exactly where the three collisions happened. */
-function claimedRounds(master) {
-  const seen = new Set();
-  const add = (s, re) => { for (const m of String(s).matchAll(re)) seen.add(+m[1]); };
-
-  for (const f of ['DEV-NOTES.md', 'DEV-NOTES-ARCHIVE.md']) {
-    const p = join(master, f);
-    if (existsSync(p)) add(readFileSync(p, 'utf8'), /#R(\d{2,4})\b/g);
-  }
-  add(q(['branch', '-a', '--format=%(refname:short)']), /\br(\d{2,4})-/gi);
-  add(q(['worktree', 'list', '--porcelain']), /\bwt-r(\d{2,4})\b/gi);
-
-  const lj = join(master, '.claude', 'launch.json');
-  if (existsSync(lj)) add(readFileSync(lj, 'utf8'), /intmap-preview-r(\d{2,4})/g);
-
-  const tests = join(master, 'tests');
-  if (existsSync(tests)) {
-    try { add(readdirSync(tests).join('\n'), /\br(\d{2,4})[-.]/g); }
-    catch { /* readdir is a convenience here; the branches are the load-bearing source */ }
-  }
-  return seen;
+/* ── WHO ALREADY HOLDS A SLUG ─────────────────────────────────────────────────────────────────
+   The branch is the claim (git refuses a second `-b feat/<slug>`), but a slug can also be held by
+   something that is not a branch here yet: a remote branch another machine pushed, a worktree whose
+   branch was renamed, a test file or a record already on main. Each of those would make the SECOND
+   holder's files collide with the first's (the add/add conflict of #R671), so all of them are asked. */
+function slugTaken(master, slug) {
+  const branches = q(['branch', '-a', '--format=%(refname:short)']).split('\n').map((b) => b.trim());
+  const b = branches.find((x) => x === `feat/${slug}` || x.endsWith(`/feat/${slug}`));
+  if (b) return `branch ${b} が既にある`;
+  const wts = q(['worktree', 'list', '--porcelain']).split('\n').filter((l) => l.startsWith('worktree '));
+  const w = wts.find((l) => basename(l.slice(9).trim()) === `wt-${slug}`);
+  if (w) return `worktree ${w.slice(9).trim()} が既にある`;
+  const names = artefactNames(slug);
+  for (const rel of [names.checks, names.spec]) if (existsSync(join(master, rel))) return `${rel} が既にある`;
+  const notes = join(master, NOTES_DIR);
+  if (existsSync(notes) && readdirSync(notes).some((f) => f.endsWith(`-${slug}.md`))) return `${NOTES_DIR}/ に *-${slug}.md が既にある`;
+  return null;
 }
 
-const nextRound = (master) => {
-  const seen = claimedRounds(master);
-  return seen.size ? Math.max(...seen) + 1 : 200;
+/* ── THE PREVIEW PORT ───────────────────────────────────────────────────────────────────────────
+   It used to be `4000 + N`, i.e. a function of the round number — and two sessions holding the same
+   number got the same port. Now it is the lowest port in PREVIEW_PORTS that NO launch.json on this
+   machine names (the master's and every worktree's) AND that nothing is listening on right now.
+   The range sits above the per-checkout test servers (tests/helpers/session-seed.js, 4174–4373) and
+   the canonical 4173, so a preview never takes a port a test run is about to bind.
+   ⚠ Two `new` runs in the same instant could still both see a port as free; the second preview
+   then fails to bind and says so. That is recoverable (edit launch.json), unlike a shared name. */
+export const PREVIEW_PORTS = [4400, 4999];
+
+function portsNamedInLaunchJson(master) {
+  const dirs = [master, ...q(['worktree', 'list', '--porcelain']).split('\n')
+    .filter((l) => l.startsWith('worktree ')).map((l) => l.slice(9).trim())];
+  const used = new Set();
+  for (const d of dirs) {
+    const p = join(d, '.claude', 'launch.json');
+    if (!existsSync(p)) continue;
+    try { for (const c of JSON.parse(readFileSync(p, 'utf8')).configurations || []) if (c && c.port) used.add(+c.port); }
+    catch { /* an unreadable launch.json names no port we can avoid; the listen probe still runs */ }
+  }
+  return used;
+}
+
+const listening = (port) => new Promise((res) => {
+  const srv = createServer();
+  srv.once('error', () => res(true));
+  srv.once('listening', () => srv.close(() => res(false)));
+  srv.listen(port, '127.0.0.1');
+});
+
+async function freePreviewPort(master) {
+  const used = portsNamedInLaunchJson(master);
+  for (let p = PREVIEW_PORTS[0]; p <= PREVIEW_PORTS[1]; p++) {
+    if (used.has(p)) continue;
+    if (!(await listening(p))) return p;
+  }
+  return null;
+}
+
+/* The label a commit is known by in a report: its PR number when the squash merge wrote one
+   («… (#726)»), otherwise its short sha. Never a round number — that is not an identifier. */
+const labelOf = (sha, subject) => {
+  const m = /\(#(\d+)\)\s*$/.exec(String(subject || ''));
+  return m ? '#' + m[1] : String(sha).slice(0, 7);
 };
 
 /* ══ (#R304) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
-   The deep tier (108 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
+   The deep tier (109 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
    the number went stale three times before anybody re-measured it, and it moved 81 → 82 DURING that
    round. `node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`
    is the answer; scripts/deep-alarm.mjs derives it rather than restating it) has run every night since
@@ -159,7 +204,9 @@ function nightly() {
    these counts can only UNDERSTATE how far behind the world is, never overstate it. `new` fetches,
    and so does `verified`, because the sha IT writes down is a claim about one specific commit. */
 
-/* How many commits, and which rounds, lie between a commit and origin/main.
+/* How many commits, and which PRs, lie between a commit and origin/main — each commit named by
+   the PR its squash subject carries («… (#726)») or else by its sha (labelOf above). It used to
+   read `R<N>` out of the subject, i.e. a number the commit's author had typed.
    ⚠ `q` answers '' both for «no commits» and for «git could not say», and those are the two
    answers this whole block is about keeping apart — so an empty log is cross-examined: if the
    starting commit is not an object this checkout holds, nothing was measured. */
@@ -168,19 +215,19 @@ function commitsAfter(from, to) {
   const log = q(['log', '--format=%H %s', `${from}..${to}`]);
   if (!log) {
     if (q(['cat-file', '-t', from]) !== 'commit') return { known: false };
-    return { known: true, n: 0, rounds: [] };
+    return { known: true, n: 0, labels: [] };
   }
   const lines = log.split('\n').filter(Boolean);
-  const rounds = [...new Set(lines.map((l) => (l.match(/\bR(\d{2,4})\b/) || [])[1]).filter(Boolean))].map((n) => 'R' + n);
-  return { known: true, n: lines.length, rounds };
+  const labels = [...new Set(lines.map((l) => labelOf(l.slice(0, 40), l.slice(41))))];
+  return { known: true, n: lines.length, labels };
 }
 
-/* At most this many round labels are spelled out before the rest become «ほか N件». Purely a
-   display width — the count beside it is always the whole truth, so nothing is hidden by it. */
-const ROUNDS_SHOWN = 6;
-const roundList = (rounds) => (rounds.length > ROUNDS_SHOWN
-  ? rounds.slice(0, ROUNDS_SHOWN).join(' ') + ` ほか${rounds.length - ROUNDS_SHOWN}件`
-  : rounds.join(' '));
+/* At most this many labels are spelled out before the rest become «ほか N件». Purely a display
+   width — the count beside it is always the whole truth, so nothing is hidden by it. */
+const LABELS_SHOWN = 6;
+const labelList = (labels) => (labels.length > LABELS_SHOWN
+  ? labels.slice(0, LABELS_SHOWN).join(' ') + ` ほか${labels.length - LABELS_SHOWN}件`
+  : labels.join(' '));
 
 /* (a) WHAT IS ON PRODUCTION. The deploy workflow is the only thing that puts bytes on the Pages
    site, so the sha of its last SUCCESSFUL run is what the public is looking at. A newer run that
@@ -235,7 +282,8 @@ function verifiedState(master) {
      of the two it is — «unreadable receipt» and «a commit this checkout does not hold» have
      different next moves (fix the file / fetch). */
   if (!gap.known) return { known: false, why: `受領証の ${String(v.sha).slice(0, 7)} をこの checkout が持っていない`, sha: v.sha };
-  return { ...gap, at: v.at || null, round: v.round || null, sha: v.sha };
+  /* `round` is what receipts written before the numbers went away carry — shown, never computed */
+  return { ...gap, at: v.at || null, pr: v.pr || null, round: v.round || null, sha: v.sha };
 }
 
 /* (c) IS THE MASTER THE MERGED STATE. ⚠ THE VERDICT IS NOT RE-DERIVED HERE. scripts/master-sync.mjs
@@ -272,10 +320,10 @@ function pendingWork(master) {
   const verified = verifiedState(master);
   const copy = masterState();
   const items = [];
-  if (deploy.known && deploy.n > 0) items.push(`本番未到達 ${deploy.rounds.length ? roundList(deploy.rounds) : `${deploy.n} commit`}`);
+  if (deploy.known && deploy.n > 0) items.push(`本番未到達 ${deploy.labels.length ? labelList(deploy.labels) : `${deploy.n} commit`}`);
   if (deploy.broken) items.push(`deploy ${deploy.broken.what} (run ${deploy.broken.id})`);
   if (verified.known && !verified.none && verified.n > 0) {
-    items.push(`本番検証 ${verified.rounds.length ? roundList(verified.rounds) : `${verified.n} commit 分`}`);
+    items.push(`本番検証 ${verified.labels.length ? labelList(verified.labels) : `${verified.n} commit 分`}`);
   }
   if (copy.known && !copy.ok) items.push(`原本: ${copy.reasons[0] || 'merge 後の状態ではない'}`);
   return { deploy, verified, copy, items };
@@ -287,14 +335,16 @@ function status(brief) {
   const here = q(['rev-parse', '--show-toplevel']) || REPO;
   const branch = q(['rev-parse', '--abbrev-ref', 'HEAD']) || '(detached)';
   const dirty = q(['status', '--porcelain']).split('\n').filter(Boolean);
-  const round = nextRound(master);
   const isMaster = resolve(here) === resolve(master);
 
-  const onRound = (branch.match(/\br(\d{2,4})-/i) || [])[1];
+  /* This session's identifier is its SLUG — the branch it is on — never a number it was handed.
+     There is no «next free number» to offer any more: a slug is chosen from the work, and `new`
+     refuses one that is already held. */
+  const mine = (branch.match(/^feat\/(.+)$/) || [])[1] || null;
 
   if (brief) {
     console.log(`IntMap · branch ${branch}${isMaster ? ' (原本＝main の置き場)' : ''} · 未コミット ${dirty.length}件`
-      + (onRound ? ` · このセッションは R${onRound}` : ` · 空きラウンド R${round}`));
+      + (mine ? ` · このセッション ${mine}` : ''));
     console.log(`原本: ${master}`);
     if (isMaster) console.log('⚠ 原本では作業しない。node scripts/worktree.mjs new <slug> で worktree を作る（AGENTS.md §6）。');
     const nb = nightly();
@@ -309,18 +359,14 @@ function status(brief) {
 
   const ahead = q(['rev-list', '--count', 'origin/main..HEAD']);
   const behind = q(['rev-list', '--count', 'HEAD..origin/main']);
-  /* ⚠ THE NEWEST ROUND IS THE LARGEST NUMBER, NOT THE FIRST ONE ON THE PAGE. The first `#R…` in
-     DEV-NOTES.md is «(#R217 で整理)» in the explanatory header — read as «latest», it reported a
-     round from 76 rounds ago on the very first run of this script. */
-  const notes = join(master, 'DEV-NOTES.md');
+  /* The newest record, from the ONE function that answers it (scripts/dev-notes.mjs latestEntry).
+     This used to be a sixth spelling of «the largest #R in DEV-NOTES.md» — and its first run
+     reported a round from 76 rounds ago, because the first `#R…` on the page was in the header. */
   let latest = '(unknown)';
-  if (existsSync(notes)) {
-    const ns = [...readFileSync(notes, 'utf8').matchAll(/#R(\d{2,4})/g)].map((m) => +m[1]);
-    if (ns.length) latest = 'R' + Math.max(...ns);
-  }
-  /* If this checkout is already on a round branch, THAT is this session's number — «next free» is
-     the number for the NEXT piece of work and saying only that mid-round is misleading. */
-  const mine = onRound;
+  try {
+    const e = latestEntry(master);
+    if (e) latest = `${e.kind === 'dated' ? e.date : 'R' + e.round} ${e.title.replace(/\*\*/g, '').slice(0, 60)}`;
+  } catch { /* a master that predates dev-notes/ has no answer here — «unknown» is the honest one */ }
 
   console.log('IntMap · セッションの現在地\n');
   console.log(`  原本 (master)      ${master}${isMaster ? '   ← いまここ' : ''}`);
@@ -329,9 +375,8 @@ function status(brief) {
   console.log(`  origin/main との差  ahead ${ahead || '?'} / behind ${behind || '?'}`);
   console.log(`  未コミット変更      ${dirty.length}件${dirty.length ? '\n' + dirty.slice(0, 12).map((l) => '                       ' + l).join('\n') : ''}`);
   if (dirty.length > 12) console.log(`                       … ほか ${dirty.length - 12}件`);
-  console.log(`  DEV-NOTES の最新    ${latest}`);
-  if (mine) console.log(`  このセッションの番号 R${mine}`);
-  console.log(`  空きラウンド番号    R${round}   ⚠ push の直前にもう一度取り直すこと`);
+  console.log(`  最新の記録          ${latest}`);
+  if (mine) console.log(`  このセッション      ${mine}（branch feat/${mine}。PR を作ったらその番号が識別子）`);
   const nf = nightly();
   console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
 
@@ -347,7 +392,7 @@ function status(brief) {
   } else if (d.n === 0) {
     console.log(`    本番への到達    origin/main が本番に出ている (${String(d.sha).slice(0, 7)}${d.day ? `・${d.day}` : ''})`);
   } else {
-    console.log(`    本番への到達    ⚠ ${d.n} commit が本番に届いていない${d.rounds.length ? `: ${roundList(d.rounds)}` : ''}`);
+    console.log(`    本番への到達    ⚠ ${d.n} commit が本番に届いていない${d.labels.length ? `: ${labelList(d.labels)}` : ''}`);
     console.log(`                    本番 ${String(d.sha).slice(0, 7)}${d.day ? `・${d.day}` : ''}  → gh run list --workflow=deploy.yml`);
   }
   if (d.broken) console.log(`                    ⚠ 最新の deploy が ${d.broken.what}  → gh run view ${d.broken.id} --log-failed`);
@@ -355,9 +400,9 @@ function status(brief) {
   const v = pw.verified;
   if (!v.known) console.log(`    本番検証        不明（${v.why || '受領証を読めなかった'}）`);
   else if (v.none) console.log('    本番検証        記録が無い  → 検証したら node scripts/worktree.mjs verified');
-  else if (v.n === 0) console.log(`    本番検証        origin/main まで済み${v.round ? ` (${v.round})` : ''}${v.at ? `・${String(v.at).slice(0, 10)}` : ''}`);
+  else if (v.n === 0) console.log(`    本番検証        origin/main まで済み${v.pr ? ` (#${v.pr})` : (v.round ? ` (${v.round})` : '')}${v.at ? `・${String(v.at).slice(0, 10)}` : ''}`);
   else {
-    console.log(`    本番検証        ⚠ ${v.n} commit 分が未検証${v.rounds.length ? `: ${roundList(v.rounds)}` : ''}`);
+    console.log(`    本番検証        ⚠ ${v.n} commit 分が未検証${v.labels.length ? `: ${labelList(v.labels)}` : ''}`);
     console.log(`                    最後の検証 ${String(v.sha).slice(0, 7)}${v.at ? `・${String(v.at).slice(0, 10)}` : ''}  → 本番を見てから node scripts/worktree.mjs verified`);
   }
 
@@ -393,30 +438,38 @@ function status(brief) {
 }
 
 /* ── NEW ────────────────────────────────────────────────────────────────────────────────────── */
-function makeNew(slug) {
-  if (!slug || !/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
-    console.error('usage: node scripts/worktree.mjs new <slug>   (小文字・数字・ハイフンのみ)');
-    process.exit(1);
-  }
+async function makeNew(slug) {
   const master = masterDir();
 
-  /* Fetch first: the free-number scan reads `git branch -a`, and a stale remote-tracking set is
-     precisely how another session's claim becomes invisible. */
+  /* Fetch first: the slug check reads `git branch -a`, and a stale remote-tracking set is
+     precisely how another machine's claim becomes invisible. */
   q(['fetch', 'origin', '--quiet']);
 
-  const n = nextRound(master);
-  const branch = `feat/r${n}-${slug}`;
-  const port = 4000 + n;
+  const why = slugProblem(slug, (s) => slugTaken(master, s));
+  if (why) {
+    console.error(`✖ ${why}\nusage: node scripts/worktree.mjs new <slug>   （作業の主題。例: dem-tile-budget）`);
+    process.exit(1);
+  }
+  const branch = `feat/${slug}`;
 
   /* OUTSIDE ONEDRIVE, and said out loud: os.tmpdir() is %LOCALAPPDATA%\Temp on Windows, which is
-     what AGENTS.md §6 names. The master must stay a clean `main`. */
-  const base = join(tmpdir(), 'intmap-worktrees');
+     what AGENTS.md §6 names. The master must stay a clean `main`. INTMAP_WORKTREE_BASE exists for
+     the tests, which must not create worktrees in the real place. */
+  const base = process.env.INTMAP_WORKTREE_BASE || join(tmpdir(), 'intmap-worktrees');
   if (!existsSync(base)) mkdirSync(base, { recursive: true });
-  const dir = join(base, `wt-r${n}-${slug}`);
+  const dir = join(base, `wt-${slug}`);
   if (existsSync(dir)) { console.error(`✖ ${dir} は既に存在する`); process.exit(1); }
 
-  console.log(`IntMap · R${n} の作業場を用意する\n`);
-  git(['worktree', 'add', '-b', branch, dir, 'origin/main']);
+  console.log(`IntMap · ${slug} の作業場を用意する\n`);
+  /* ⚠ THIS LINE IS THE CLAIM. Every worktree on this machine shares one ref namespace, and
+     `-b` refuses a branch that exists — so of two sessions racing for one slug, exactly one gets
+     it, and the other is told so by git rather than by a scan that could be a moment stale. */
+  const base0 = q(['rev-parse', '--verify', 'origin/main']) ? 'origin/main' : 'HEAD';
+  try { git(['worktree', 'add', '-b', branch, dir, base0]); }
+  catch (e) {
+    console.error(`✖ ${branch} を作れなかった（同じ slug を別のセッションが今取ったかもしれない）: ${String(e.message || e).split('\n').find((l) => /fatal|error/i.test(l)) || e.message}`);
+    process.exit(1);
+  }
   console.log(`  ✓ branch    ${branch}  (origin/main から)`);
   console.log(`  ✓ worktree  ${dir}`);
 
@@ -439,10 +492,13 @@ function makeNew(slug) {
      so a preview wanted before the merge still needs an absolute entry over there. */
   const ljPath = join(dir, '.claude', 'launch.json');
   try {
+    const port = await freePreviewPort(master);
+    if (port == null) throw new Error(`${PREVIEW_PORTS[0]}〜${PREVIEW_PORTS[1]} に空きポートが無い`);
     /* a fresh clone has no copy at all now that it is ignored — start one rather than warn */
+    mkdirSync(dirname(ljPath), { recursive: true });
     if (!existsSync(ljPath)) writeFileSync(ljPath, JSON.stringify({ version: '0.0.1', configurations: [] }, null, 2) + '\n');
     const lj = JSON.parse(readFileSync(ljPath, 'utf8'));
-    const name = `intmap-preview-r${n}`;
+    const name = `intmap-preview-${slug}`;
     if (!lj.configurations.some((c) => c.name === name)) {
       lj.configurations.unshift({
         name,
@@ -460,22 +516,18 @@ function makeNew(slug) {
 
   console.log('\n  作業ディレクトリ（以降の編集は全部この中で）:');
   console.log('    ' + dir);
-  /* (#R674) …AND THE NAMES THIS ROUND'S FILES MUST CARRY. The round number is the one part of the
-     name that is NOT this session's to keep: every parallel session takes «the next free number»
-     from the same scan, so two of them routinely hold the same one and the renumbering treadmill
-     moves it again before the push (#R671 was renumbered seven times). MEASURED there: two sessions
-     both created tests/r568-checks.test.mjs, git raised an add/add conflict, and the automation
-     committed the markers — the file stopped parsing and a whole file of regressions was gone.
-     The slug is the half that IS this session's, so the name is handed out here rather than left
-     to be improvised at test-writing time. `check:static` (round-name) refuses the bare form.
-     ⚠ The number printed here is the one taken a moment ago; the SUBJECT is what survives a
-       renumbering, and only that part has to stay put. */
-  const names = roundArtefactNames(n, slug);
-  console.log('\n  この回の検査ファイルの名前（番号だけの名前は他セッションと衝突する）:');
+  /* (#R674, then without numbers) …AND THE NAMES THIS WORK'S FILES MUST CARRY. MEASURED in #R671:
+     two sessions both created tests/r568-checks.test.mjs from the same «next free number», git
+     raised an add/add conflict, and the automation committed the markers — the file stopped parsing
+     and a whole file of regressions was gone. The slug was just refused if anything holds it, so
+     these names are this session's alone. `check:static` (round-name) refuses a new numbered one. */
+  const names = artefactNames(slug);
+  const d0 = new Date().toLocaleDateString('sv-SE');
+  console.log('\n  この作業のファイルの名前（slug で一意。番号は付けない）:');
   console.log(`    ${names.checks}        node --test で走る回帰`);
-  console.log(`    ${names.spec}                Playwright の spec（要るなら）`);
-  console.log('  ⚠ 主題を落とした tests/r<N>-checks.test.mjs は check:static が拒む');
-  console.log('    （.agents/skills/intmap-round/ §4。memory も同じ規約）');
+  console.log(`    ${names.spec}                Playwright の spec（要るなら。変更した spec は PR で core に入る）`);
+  console.log(`    ${NOTES_DIR}/${d0}-${slug}.md        記録（front matter に title / date）→ node scripts/dev-notes.mjs --write`);
+  console.log('  ⚠ 新しい tests/r<N>… は check:static が拒む（.agents/skills/intmap-round/ §4。memory も同じ規約）');
 
   console.log('\n  並列実装をするなら、この絶対パスと「触ってよいファイルの一覧」を');
   console.log('  intmap-implementer に渡す。同じファイルを2体に書かせない。');
@@ -491,7 +543,7 @@ function makeNew(slug) {
    ⚠ IT MERGES INTO THE FILE. Other receipts may be added beside this one later; a writer that
    re-emits only its own key deletes them. And an UNREADABLE file is not overwritten — that is a
    thing to look at, not a thing to flatten. */
-function markVerified(round) {
+function markVerified() {
   const master = masterDir();
   let fetched = true;
   try { git(['fetch', 'origin', '--quiet']); } catch { fetched = false; }
@@ -502,17 +554,11 @@ function markVerified(round) {
     process.exit(1);
   }
 
-  let r = round == null ? null : String(round).replace(/^[Rr]?/, 'R');
-  if (r !== null && !/^R\d{2,4}$/.test(r)) {
-    console.error(`✖ --round は R770 の形で渡す（受け取った: ${round}）`);
-    process.exit(1);
-  }
-  /* No --round: take it from the commit itself. AGENTS.md §9 puts «R‹N›: …» at the head of every
-     merge subject, so the round is a property OF THE COMMIT rather than of whoever runs this. */
-  if (!r) {
-    const m = q(['log', '-1', '--format=%s', sha]).match(/\bR(\d{2,4})\b/);
-    r = m ? 'R' + m[1] : null;
-  }
+  /* The receipt is about ONE COMMIT, and the sha is that commit's identity. The PR number beside
+     it is read off the commit's own squash subject («… (#726)») — a property of the commit, not of
+     whoever runs this. (It used to take a round number from the subject, or from --round.) */
+  const label = labelOf(sha, q(['log', '-1', '--format=%s', sha]));
+  const pr = label.startsWith('#') ? label.slice(1) : null;
 
   const p = receiptsPath(master);
   const prev = readReceipts(master);
@@ -521,10 +567,10 @@ function markVerified(round) {
     process.exit(1);
   }
   const data = prev.state === 'ok' ? (prev.data || {}) : {};
-  data.prodVerified = { sha, at: new Date().toISOString(), round: r };
+  data.prodVerified = { sha, at: new Date().toISOString(), pr };
   mkdirSync(dirname(p), { recursive: true });
   writeFileSync(p, JSON.stringify(data, null, 2) + '\n');
-  console.log(`✓ 本番検証を記録: ${r || '(ラウンド番号なし)'} @ ${sha.slice(0, 7)}  → ${p}`
+  console.log(`✓ 本番検証を記録: ${sha.slice(0, 7)}${pr ? ` (#${pr})` : ''}  → ${p}`
     + (fetched ? '' : '\n  ⚠ fetch できなかった。この sha はこの checkout が最後に取った origin/main。'));
 }
 
@@ -636,15 +682,18 @@ const argv = process.argv.slice(2);
 const cmd = argv[0] || 'status';
 try {
   if (cmd === 'status') status(argv.includes('--brief'));
-  else if (cmd === 'new') makeNew(argv[1]);
+  else if (cmd === 'new') await makeNew(argv[1]);
   else if (cmd === 'done') done();
   else if (cmd === 'verified') {
-    const i = argv.indexOf('--round');
-    /* `?? ''` so that a bare `--round` with nothing after it is REFUSED rather than silently
-       falling back to the commit subject — the caller asked for a specific round and did not
-       give one, and guessing is the one thing that must not happen here. */
-    markVerified(i >= 0 ? (argv[i + 1] ?? '') : null);
-  } else { console.error(`unknown command: ${cmd}\nusage: node scripts/worktree.mjs [status [--brief] | new <slug> | done | verified [--round R770]]`); process.exit(1); }
+    /* ⚠ a leftover `--round R770` is REFUSED rather than ignored: the caller meant to say which
+       work was verified, and silently recording something else is the one thing that must not
+       happen here. The commit's sha (and its PR) is what is recorded now. */
+    if (argv.includes('--round')) {
+      console.error('✖ --round はもう無い。受領証は origin/main の commit（sha と、件名の (#PR)）を記録する。');
+      process.exit(1);
+    }
+    markVerified();
+  } else { console.error(`unknown command: ${cmd}\nusage: node scripts/worktree.mjs [status [--brief] | new <slug> | done | verified]`); process.exit(1); }
 } catch (e) {
   /* status is wired to a hook — it reports and leaves, it does not take the session down with it */
   if (cmd === 'status') { console.log('IntMap · 現在地を読めなかった: ' + e.message); process.exit(0); }

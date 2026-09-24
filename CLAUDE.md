@@ -32,8 +32,8 @@
 - **不明点は `AskUserQuestion` で訊く**（`AGENTS.md` §8）。通常の説明文・進捗報告・
   最終報告の文章中に質問を混ぜない。
 - 起動時に `.claude/settings.json` の `SessionStart` hook が
-  `node scripts/worktree.mjs status --brief` を走らせ、branch・未コミット変更・空きラウンド
-  番号・deep tier の夜間結果を出す。**その出力に出ている事実を、手で数え直さない。**
+  `node scripts/worktree.mjs status --brief` を走らせ、branch・未コミット変更・このセッションの
+  slug・deep tier の夜間結果・前回までの未了を出す。**その出力に出ている事実を、手で数え直さない。**
 
 ## A-2. 委譲（subagent）
 
@@ -59,7 +59,7 @@ Claude Code では **Agent tool** に `subagent_type` を渡して起動する:
 ## A-3. プレビューと dev サーバ
 
 **dev サーバは必ず preview ツール（`mcp__Claude_Browser__preview_start`）で起動し、
-Bash から直接起動しない。** ラウンド別の設定は `.claude/launch.json`（追跡対象外）にあり、
+Bash から直接起動しない。** 作業（slug）別の設定は `.claude/launch.json`（追跡対象外）にあり、
 `node scripts/worktree.mjs new` が 1 件足す。**慣例と、追跡から外した理由は
 [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §4。**
 
