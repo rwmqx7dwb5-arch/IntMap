@@ -7,6 +7,7 @@
  *  every catalogue) or a CLAIM the code makes about itself in prose.
  * ==========================================================================*/
 import test from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import { asClassicScript } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -209,7 +210,7 @@ test('R214 ⑥: every simulator #R211 left out now registers with the share regi
     const src = read(file);
     const re = new RegExp("IntMapShareState[\\s\\S]{0,80}register\\('" + key + "'");
     assert.ok(re.test(src), `${file} does not register '${key}' with IntMapShareState`);
-    if (isLazy) assert.ok(new RegExp("case '" + key + "':").test(lazy),
+    if (isLazy) assert.ok(!!LAZY_REGISTRY[key],   /* (#R798) the registry */
       `'${key}' is registered as if it were a lazy module, but js/lazy-modules.js cannot fetch it`);
   }
   /* ⚠⚠ AND LOAD ORDER MUST NOT DECIDE WHETHER A SIMULATOR IS SHAREABLE. Every call site is guarded

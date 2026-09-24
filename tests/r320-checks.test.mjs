@@ -15,6 +15,7 @@
  *  the request and it SAYS what it left out, which is the difference between a budget and a hole.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -88,7 +89,7 @@ test('R320 ③a: the module catalogue names the modules that load on demand', ()
   const code = codeOnly(CONTROLS);
   assert.match(code, /IntMapLazy/, 'moduleCatalog still walks only Object.keys(window)');
   assert.match(code, /loads on demand/, 'and does not mark which ones have not arrived yet');
-  assert.match(read('js/lazy-modules.js'), /publishes: \(n\) => PUBLISHES\[n\]/,
+  assert.match(read('js/lazy-modules.js'), /publishes: \(n\) => PUBLISHES\(n\)/,   /* (#R798) a view over the registry */
     'js/lazy-modules.js no longer exposes the manifest the catalogue reads');
 });
 
@@ -102,10 +103,8 @@ test('R320 ③b: doModule fetches the module instead of answering "not found"', 
 });
 
 test('R320 ③c: every lazy module the loader publishes is a name the catalogue can offer', () => {
-  const lazy = read('js/lazy-modules.js');
-  const block = (lazy.match(/const PUBLISHES = \{[\s\S]*?\n    \};/) || [''])[0];
-  assert.ok(block, 'the PUBLISHES manifest moved');
-  const names = [...block.matchAll(/'(IntMap[A-Za-z0-9]+)'/g)].map((m) => m[1]);
+  /* (#R798) the manifest is the registry's `publishes` column */
+  const names = Object.values(LAZY_REGISTRY).map((e) => e.publishes).filter((n) => /^IntMap[A-Za-z0-9]+$/.test(n));
   assert.ok(names.length >= 8, `only ${names.length} publishable module names — the manifest shrank`);
   /* MOD_RE is what decides whether a name may be offered at all */
   const re = /const MOD_RE=(\/[^\/]+\/)/.exec(CONTROLS);

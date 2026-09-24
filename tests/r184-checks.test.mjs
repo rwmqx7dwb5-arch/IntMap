@@ -7,6 +7,8 @@
 // dependency bump makes it needed again — none of those show up as a failing behaviour test,
 // they show up as a feature that silently is not there (#R162's lesson exactly).
 import { test } from 'node:test';
+import { bootGuardKnows } from './app-source.mjs';
+import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
@@ -45,18 +47,18 @@ test('R184 #1: every new module is in the import graph, the factory guard and ap
   for (const [file, factory, lazy] of MODULES) {
     assert.ok(rd(file).length > 500, `${file} exists and has content`);
     const where = lazy ? loader : main, how = lazy ? `import('./${file.slice(3)}')` : `import '../${file}'`;
-    assert.ok(where.includes(how), `${file} is ${lazy ? 'fetched by js/lazy-modules.js' : 'imported by src/main.js'}`);
+    assert.ok(where.includes(how), `${file} is ${lazy ? 'fetched by js/lazy-modules.js' : 'imported by src/main.js'}`);   /* the registry entry's load() carries the literal */
     if (lazy) assert.ok(!main.includes(`import '../${file}'`), `${file} is ALSO in src/main.js — it would be downloaded at boot regardless`);
     assert.match(rd(file), new RegExp(`IntMapModules\\.${factory}\\s*=`),
       `${file} declares exactly the factory the guard looks for`);
     /* the guard list — a file that fails to deploy must say so loudly (#R162/#R163) */
-    assert.match(main, new RegExp(`const ${lazy ? 'LAZY' : 'MODULE'}_FACTORIES = \\[[^\\]]*'${factory}'`),
+    assert.ok(bootGuardKnows(root, factory),   /* (#R794) the deferred list is the registry's, imported by the entry */
       `${factory} is in ${lazy ? 'LAZY' : 'MODULE'}_FACTORIES`);
     assert.match(lazy ? loader : body, new RegExp(`IntMapModules\\.${factory}\\(IM_HOST\\)`),
       `${factory} is instantiated once in ${lazy ? 'js/lazy-modules.js' : 'js/app-body.js'}`);
   }
   /* the pair travels together: the card must exist before the layer's click handler can find it */
-  assert.match(loader, /satellitesLive: \['satelliteDetail'\]/,
+  assert.ok(LAZY_REGISTRY.satellitesLive && (LAZY_REGISTRY.satellitesLive.also || []).includes('satelliteDetail'),   /* (#R798) the registry's `also` */
     'asking for the satellite layer must also bring its detail card — js/satellites-live.js calls it by name');
 });
 

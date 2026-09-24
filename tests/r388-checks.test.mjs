@@ -17,6 +17,7 @@
  *  project has paid for eleven times.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
@@ -391,9 +392,11 @@ test('R388 ⑫ the module calls the facade by its real names', () => {
 /* ── ⑪ the module is lazy, and registered in all three tables ─────────────── */
 test('R388 ⑪ railways is a lazy module and is not on the startup path', () => {
   const lz = code('js/lazy-modules.js');
-  assert.match(lz, /railways: 'IntMapRailways'/);
-  assert.match(lz, /case 'railways': return import\('\.\/railways\.js'\)/);
-  assert.match(lz, /case 'railways': window\.IntMapModules\.railways\(IM_HOST\); return true;/);
+  /* (#R798) the registry entry */
+  assert.equal(LAZY_REGISTRY["railways"].publishes, 'IntMapRailways');
+  assert.equal((String(LAZY_REGISTRY["railways"] && LAZY_REGISTRY["railways"].load).match(/import\('([^']+)'\)/) || [])[1], './railways.js');
+  assert.match(String(LAZY_REGISTRY["railways"].mount), /window\.IntMapModules\.railways\(IM_HOST\)/);
+  assert.ok(lz.length > 0);
   /* #R340: assert the absence directly rather than trusting that js/*.js is all eager */
   const main = code('src/main.js');
   assert.equal(/railways\.js/.test(main), false, 'src/main.js imports the railway module — it would be in the startup bundle');

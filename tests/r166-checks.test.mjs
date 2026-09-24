@@ -17,6 +17,7 @@
 // members declared in tests/r165-checks.test.mjs (js/playground.js is the second — and only other —
 // module allowed to write, for mode + satPanelDismissed).
 import { test } from 'node:test';
+import { bootGuardKnows } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { appShell, lazyFiles, publishedGlobals } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
@@ -193,7 +194,7 @@ test('R166 #5 the parser-backed split-scope check passes (and covers the seven n
 
 test('R166 #6 the boot guard names every new factory, so one missing file cannot hide', () => {
   for (const f of ALL_FACS) {
-    assert.ok(html.includes(`'${f}'`), `the boot guard lists the ${f} factory`);
+    assert.ok(bootGuardKnows(root, f), `the boot guard lists the ${f} factory`);   /* (#R794) eager list or the lazy registry */
   }
 });
 

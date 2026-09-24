@@ -11,6 +11,7 @@
  *  on this Windows working copy. Three rounds have paid for that lesson; this file does not.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -422,9 +423,9 @@ test('R347 ㉒ every capability’s lazyModules names a module IntMapLazy actual
      this file's own header warns about, met from the other side. */
   const noComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ')
     .split('\n').map((l) => l.replace(/(^|[^:'"\\`])\/\/.*$/, '$1')).join('\n');
-  const pubBlock = noComments(lazy.slice(lazy.indexOf('const PUBLISHES'), lazy.indexOf('function record(')));
-  /* …and several names share a line, so the scan must be over the whole block, not per line */
-  const known = new Set([...pubBlock.matchAll(/([A-Za-z0-9_]+)\s*:\s*'/g)].map((m) => m[1]));
+  /* (#R798) the ids IntMapLazy knows are the registry's keys — read from the object, not a scan */
+  const known = new Set(Object.keys(LAZY_REGISTRY));
+  assert.ok(lazy.length > 0 && typeof noComments === 'function');
   assert.ok(known.size >= 20, `expected the lazy registry, found ${known.size}: ${[...known].join(',')}`);
   assert.ok(known.has('routeUi') && known.has('navigation'), 'the routing and navigation modules are in it');
 

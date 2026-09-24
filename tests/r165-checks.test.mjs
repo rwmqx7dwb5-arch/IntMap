@@ -15,6 +15,7 @@
 //   · every closure value the module reads or writes that is reassigned at runtime goes through
 //     IM_HOST — never a bare identifier (the #R162 silent-loss shape).
 import { test } from 'node:test';
+import { bootGuardKnows, lazyModules } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { appShell } from './app-source.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -177,8 +178,8 @@ test('R165 #1 the Atlas kernel was moved out, loaded, and instantiated at its or
   assert.ok(html.includes("import '../js/atlas-loader.js';"),
     '…it imports the loader every caller goes through instead');
   const lazy = rd('js/lazy-modules.js');
-  assert.ok(lazy.includes("case 'atlasConsole': return import('./atlas-console.js');"),
-    'js/lazy-modules.js fetches the kernel on demand');
+  assert.ok(lazyModules(root).some((m) => m.name === 'atlasConsole' && m.file === 'js/atlas-console.js'),
+    'js/lazy-modules.js fetches the kernel on demand');   /* (#R794) from the registry */
   assert.ok(lazy.includes("window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);"),
     '…and mounts it with the shared host, exactly as app-body did');
   assert.ok(mod.includes('window.IntMapModules=window.IntMapModules||{};'),
@@ -294,7 +295,7 @@ test('R165 #5 the parser-backed split-scope check passes (and covers the kernel)
 });
 
 test('R165 #6 the boot guard names the atlasConsole factory, so a missing file cannot hide', () => {
-  assert.match(html, /'atlasConsole'/, 'the boot guard lists the atlasConsole factory');
+  assert.ok(bootGuardKnows(root, 'atlasConsole'), 'the boot guard lists the atlasConsole factory');   /* (#R794) */
 });
 
 test('R165 #7 index.html actually shrank and no module body came back inline', () => {

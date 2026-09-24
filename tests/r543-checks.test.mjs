@@ -13,6 +13,7 @@
  *  RETURNS and what its HTML CONTAINS, never how either is spelled in the source.
  * ==========================================================================*/
 import test from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -242,9 +243,10 @@ test('R543 ⑩: chart.compose is reachable by every route Atlas actually has', (
   /* the renderer must NOT be in the boot graph: tests/perf-baseline.json pins eager.modules exactly */
   assert.ok(!/^import .*atlas-chart\.js/m.test(con), 'no static import of the renderer');
   const lazy = R('js/lazy-modules.js');
-  assert.match(lazy, /atlasChart: 'IntMapAtlasChart'/, 'the published global is declared');
-  assert.match(lazy, /case 'atlasChart': return import\('\.\/atlas-chart\.js'\)/, 'the loader knows the file');
-  assert.match(lazy, /case 'atlasChart': window\.IntMapAtlasChart=/, 'and the mounter publishes it');
+  assert.equal(LAZY_REGISTRY["atlasChart"].publishes, 'IntMapAtlasChart', 'the published global is declared');   /* (#R798) */
+  assert.equal((String(LAZY_REGISTRY["atlasChart"] && LAZY_REGISTRY["atlasChart"].load).match(/import\('([^']+)'\)/) || [])[1], './atlas-chart.js', 'the loader knows the file');
+  assert.match(String(LAZY_REGISTRY["atlasChart"].mount), /window\.IntMapAtlasChart=/, 'and the mounter publishes it');
+  assert.ok(lazy.length > 0);
 });
 
 /* ══ ⑪ THE CATALOGUE ARRAY HAS NO HOLES ══════════════════════════════════════════════════════
@@ -322,9 +324,9 @@ test('R543 ⑬: what it could not do is reported, never claimed — and an empty
 
   /* the module is reachable the same way the renderer is */
   const lazy = R('js/lazy-modules.js');
-  assert.match(lazy, /atlasAnswerView: 'IntMapAnswerView'/);
-  assert.match(lazy, /case 'atlasAnswerView': return import\('\.\/atlas-answer-view\.js'\)/);
-  assert.match(lazy, /case 'atlasAnswerView': window\.IntMapAnswerView=/);
+  assert.equal(LAZY_REGISTRY["atlasAnswerView"].publishes, 'IntMapAnswerView');   /* (#R798) */
+  assert.equal((String(LAZY_REGISTRY["atlasAnswerView"] && LAZY_REGISTRY["atlasAnswerView"].load).match(/import\('([^']+)'\)/) || [])[1], './atlas-answer-view.js');
+  assert.match(String(LAZY_REGISTRY["atlasAnswerView"].mount), /window\.IntMapAnswerView=/);
   /* the capture rides on the snapshot the bubble already carried, not a second mechanism */
   assert.match(R('js/atlas-console.js'), /ai\.__viewSnap=ASTATE\.snapshot\(\{only:\['camera','time','activeLayers'\]\}\)/);
   /* and the button is a SIBLING of the bubble, because _atlCompose rebuilds the bubble (#R492) */

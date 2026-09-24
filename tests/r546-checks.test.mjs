@@ -13,6 +13,7 @@
  *  PGA contour file and the PGA coverage's parameter block. Public domain (USGS).
  * ==========================================================================*/
 import test from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -335,7 +336,7 @@ test('R546 ⑩ ShakeMap is lazy: the shell does not carry it', () => {
      registration a defect. */
   const main = fs.readFileSync(path.join(ROOT, 'src/main.js'), 'utf8');
   const listOf = n => { const m = new RegExp('const ' + n + '\\s*=\\s*\\[([^\\]]*)\\]').exec(main); return m ? m[1].split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')) : null; };
-  const eager = listOf('MODULE_FACTORIES'), lazy = listOf('LAZY_FACTORIES');
+  const eager = listOf('MODULE_FACTORIES'), lazy = LAZY_NAMES.slice();   /* (#R798) the deferred list is the registry's */
   assert.ok(eager && eager.length > 10 && lazy && lazy.length > 10, 'both lists must be readable');
   assert.ok(!eager.includes('shakeMap'), 'js/shakemap.js must not join the eager module list (check:perf counts it)');
   assert.ok(lazy.includes('shakeMap'), 'and it must be in the lazy ledger the loader is checked against');

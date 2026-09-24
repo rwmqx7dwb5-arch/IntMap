@@ -73,6 +73,19 @@ export function appShell(root) {
  * a module in or out — the shape #R198 removed from the label sizes for the same reason.
  * @returns {string[]} e.g. ['js/flight-sim.js', …]
  */
+/* (#R794) "does the boot guard know this factory?" — the eager half is the MODULE_FACTORIES literal in
+   src/main.js; the deferred half and the carried one are the registry's (src/main.js imports them).
+   One question, so a test does not have to know which half a key moved to. */
+export function bootGuardKnows(root, key) {
+  const main = readFileSync(new URL('src/main.js', root), 'utf8');
+  const m = /const MODULE_FACTORIES = \[([\s\S]*?)\];/.exec(main);
+  const eager = m ? [...m[1].matchAll(/'([A-Za-z0-9_$]+)'/g)].map((x) => x[1]) : [];
+  if (eager.includes(key)) return true;
+  if (lazyModules(root).some((x) => x.name === key && x.factory)) return true;
+  const c = /const CARRIED_NAMES = Object\.freeze\(\[([^\]]*)\]\)/.exec(readFileSync(new URL('js/lazy-modules.js', root), 'utf8'));
+  return !!c && [...c[1].matchAll(/'([A-Za-z0-9_$]+)'/g)].some((x) => x[1] === key);
+}
+
 export function lazyFiles(root) {
   return lazyModules(root).map((m) => m.file).filter(Boolean);
 }

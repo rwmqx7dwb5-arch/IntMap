@@ -14,6 +14,7 @@
  *  never allowed to become an answer.
  * ==========================================================================*/
 import test from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -309,13 +310,13 @@ test('R527 ⑨: EXIF is read for orientation and lens — and its coordinate nev
 
 test('R527 ⑩: the feature is registered everywhere one has to be, and nothing of it is eager', () => {
   const loader = src('js/lazy-modules.js');
-  assert.match(loader, /photoGeo: 'IntMapPhotoGeo'/, 'the loader knows which global it publishes');
-  assert.ok(loader.includes("case 'photoGeo': return import('./photo-geo.js');"),
-    'the fetch case is a single-quoted literal, which is what scripts/static-checks.mjs reads');
+  assert.equal(LAZY_REGISTRY["photoGeo"].publishes, 'IntMapPhotoGeo', 'the loader knows which global it publishes');   /* (#R798) */
+  assert.ok(loader.includes("import('./photo-geo.js')"),
+    'the fetch is a single-quoted literal, which is what scripts/static-checks.mjs reads');
   assert.ok(loader.includes("window.IntMapPhotoGeo=window.IntMapModules.photoGeo(IM_HOST);"),
     'and the mount instantiates the factory');
   const entry = src('src/main.js');
-  assert.match(entry, /const LAZY_FACTORIES = \[[^\]]*'photoGeo'/, 'the boot guard knows it is deferred…');
+  assert.ok(LAZY_NAMES.includes('photoGeo'), 'the boot guard knows it is deferred…');   /* (#R798) derived from the registry */
   assert.ok(!/const MODULE_FACTORIES = \[[^\]]*'photoGeo'/.test(entry), '…and does not expect it at boot');
   /* nothing may pull the computation into the shell */
   for (const f of ['photo-geo.js', 'photo-geo-terrain.js', 'photo-geo-match.js', 'photo-geo-search.js',
