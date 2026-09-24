@@ -139,7 +139,10 @@ test('R760 ⑥ the painters that hold a named surface declare what they painted'
   assert.ok(Object.keys(surfaceVar).length >= 5, 'the bundle names the painted surfaces');
   const clearerOf = {};
   for (const [surface, v] of Object.entries(surfaceVar)) {
-    const fn = new RegExp('function\s+([A-Za-z0-9_]+)\s*\([^)]*\)\s*\{[^\n]*?' + v + '\s*=\s*(?:\[\]|\{\}|new Set\(\))').exec(src);
+    /* ⚠ String.raw, NOT a quoted string: in a plain JS string '\s' is the letter s, so the pattern
+       would have matched nothing, `clearerOf` would have stayed empty, and the loop below would have
+       asserted nothing while reporting green. CodeQL caught exactly that on the first push. */
+    const fn = new RegExp(String.raw`function\s+([A-Za-z0-9_]+)\s*\([^)]*\)\s*\{[^\n]*?` + v + String.raw`\s*=\s*(?:\[\]|\{\}|new Set\(\))`).exec(src);
     if (fn) clearerOf[surface] = fn[1];
   }
   const caseLine = src.split('\n').find((l) => l.indexOf("case 'clearAll':") >= 0) || '';
