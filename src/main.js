@@ -35,18 +35,21 @@ import '../js/geo-engine.js';
    chunk and a MapLibre session transfers none of it. */
 import '../js/engine-select.js';
 
-import '../js/newsgeo.js'; import '../js/mem-budget.js';   /* (#R669) …and, before anything that decodes an elevation tile, the ONE owner of how many of them this device may hold. Five stores kept five hand-written ceilings for the same 262,144-byte tile and four of them never asked what device they were on (about 600 MB authorised on a phone), and it is also where 「携帯か」 is answered for the thirty-nine cost decisions that used to ask the viewport width. No DOM and no `window`, so the photo-search worker imports the same file and the two cannot disagree. ⚠ NOT in the first three slots: tests/r175 ③ pins the renderer contract, the engine choice and newsgeo to positions 0-2. ON THIS LINE because the app shell has a line budget (tests/r168 #8). */
+import '../js/newsgeo.js';
+import '../js/mem-budget.js';   /* (#R669) …and, before anything that decodes an elevation tile, the ONE owner of how many of them this device may hold. Five stores kept five hand-written ceilings for the same 262,144-byte tile and four of them never asked what device they were on (about 600 MB authorised on a phone), and it is also where 「携帯か」 is answered for the thirty-nine cost decisions that used to ask the viewport width. No DOM and no `window`, so the photo-search worker imports the same file and the two cannot disagree. */
 /* (#R479) CARTO's key, the two tile-URL builders and the basemap credit. Anywhere before
    js/app-body.js works (it builds tile URLs at map setup); the first three slots and the last one
    are pinned by tests/r175-checks, so it sits here among the feature modules. */
-import '../js/carto-basemap.js'; import '../js/historical-basemap.js';
+import '../js/carto-basemap.js';
+import '../js/historical-basemap.js';
 /* (#R183) The one guarded weather/UV client, imported before anything that could ask it for a
    number. js/wx-source.js publishes window.IntMapWx synchronously (no factory), so it costs nothing
    here and guarantees the widget board, the point-weather popup and every other reader share one
    circuit breaker rather than each re-hammering a dead quota.
    It sits AFTER newsgeo deliberately: tests/r175-checks pins newsgeo as the first feature module,
    and nothing about this file needs to precede it — its consumers all call it lazily. */
-import '../js/wx-source.js'; import '../js/nominatim-gate.js';   /* (#R489) …and, for the same reason one guarded weather client exists, ONE queue in front of Nominatim. Seven files call that host; two kept private floors and five kept none, so «one request per second» was one per second EACH and fourteen Atlas oblast outlines left as fast as the network took them. EAGER and BEFORE the window-global callers (js/routing.js, js/river-course.js, js/search-geocode.js, js/routing-geocode.js): those may contain no top-level declarations (tests/r175-checks #4) and so reach it as window.IntMapNominatimGate rather than by name. */
+import '../js/wx-source.js';
+import '../js/nominatim-gate.js';   /* (#R489) …and, for the same reason one guarded weather client exists, ONE queue in front of Nominatim. Seven files call that host; two kept private floors and five kept none, so «one request per second» was one per second EACH and fourteen Atlas oblast outlines left as fast as the network took them. EAGER and BEFORE the window-global callers (js/routing.js, js/river-course.js, js/search-geocode.js, js/routing-geocode.js): those reach it as window.IntMapNominatimGate rather than by name (they predate named imports in js/). */
 /* (#R183) …and the pure "how close should the camera go for THIS kind of place" decision, which
    js/search-geocode.js consults from gotoPlace. Its own file because that factory's body may
    contain only declarations (tests/r169-checks #4) and because being map-free is what lets the
@@ -74,7 +77,9 @@ import '../js/map-typography.js';
 import '../js/compass.js';
 /* (#R289) CHRONOS — the one master clock, window.IntMapTime. Published at IMPORT time now, which
    is strictly earlier than the closure it used to live in. See js/chronos.js. */
-import '../js/chronos.js'; import '../js/hist-scale.js'; import '../js/ohm-rings.js';   /* (#R604) …and the deep-time ARITHMETIC the clock and the Chronos panel both read: decimal years, the OpenHistoricalMap date filter, the year rail. No DOM, no map, no clock, so tests/r604-checks can evaluate it — which is the whole reason it is not three helpers inside its two readers (#R570). ON THIS LINE because the app shell has a line budget (tests/r168 #8) and it is full. (#R669) js/ohm-rings.js rides it for the same reason: it is the ONE owner of «an OpenHistoricalMap relation, as a polygon» — the click highlight assembles upstream geometry with it and scripts/build-hist-admin1.mjs evaluates the same file rather than carrying a second copy. */
+import '../js/chronos.js';
+import '../js/hist-scale.js';
+import '../js/ohm-rings.js';   /* (#R604) …and the deep-time ARITHMETIC the clock and the Chronos panel both read: decimal years, the OpenHistoricalMap date filter, the year rail. No DOM, no map, no clock, so tests/r604-checks can evaluate it — which is the whole reason it is not three helpers inside its two readers (#R570). (#R669) js/ohm-rings.js rides it for the same reason: it is the ONE owner of «an OpenHistoricalMap relation, as a polygon» — the click highlight assembles upstream geometry with it and scripts/build-hist-admin1.mjs evaluates the same file rather than carrying a second copy. */
 import '../js/layer-home.js';   /* (#R313) the SET of layers allowed to move the camera on a toggle — CONSTITUTION §3's one exception, and the one table that holds it */
 /* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
    「今後IntMapの設定言語を追加するのが、1発で終わるように。」
@@ -99,24 +104,33 @@ import '../js/lang-switch.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
 import '../js/layer-previews.js';
-import '../js/history.js'; import '../js/hist-cities.js'; import '../js/hist-places.js';   /* (#R427) the country's era name, then the CITY's — see js/hist-cities.js. ⚠ ONE LINE: the shell is under tests/r168 #8's ceiling with nothing to spare (#R408 landed at 8,019/8,020), and the rule is that a feature moves out rather than the ceiling moving up. Eager and tiny — only the clock subscriber and the expression builder; the 6,474-city record is fetched the first time the reader leaves «now». */
+import '../js/history.js';
+import '../js/hist-cities.js';
+import '../js/hist-places.js';   /* (#R427) the country's era name, then the CITY's — see js/hist-cities.js. Eager and tiny — only the clock subscriber and the expression builder; the 6,474-city record is fetched the first time the reader leaves «now». */
 import '../js/monitors.js';
 import '../js/companies.js';
 /* (#R311) js/stats-compare.js is on-demand now (js/lazy-modules.js); js/compare.js below is the MAP-compare window, a different feature, and stays. */
 import '../js/compare.js';
 /* (#R291) the routing subsystem — five pure modules then the router; the PANEL is lazy. Architecture.md §8.4. */
-import '../js/routing-store.js'; import '../js/routing-providers.js'; import '../js/routing-geocode.js'; import '../js/routing-cards.js'; import '../js/routing-export.js';
+import '../js/routing-store.js';
+import '../js/routing-providers.js';
+import '../js/routing-geocode.js';
+import '../js/routing-cards.js';
+import '../js/routing-export.js';
 /* (#R347) two more, eager because both are read before the panel exists (the failure taxonomy and
    the planning/navigation clock split, §33). ⚠ js/routing-traffic.js is deliberately NOT here —
    check:perf priced «eager for provider selection» at 22 kB of boot JS. DEV-NOTES #R347. */
-import '../js/routing-errors.js'; import '../js/routing-time.js';
+import '../js/routing-errors.js';
+import '../js/routing-time.js';
 import '../js/routing.js';
 /* (#R184) the six route ANALYSES (elevation, borders, conditions along the way, the schedule,
    alternative differences, and routing on OSM's record of a historical network). The three
    capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
    built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
 import '../js/routing-ops.js';
-import '../js/border-coast.js'; import '../js/time-borders.js'; import '../js/time-admin1.js';   /* (#R564) js/border-coast.js first: it is the ONE reader of data/border-coast.js (which edges of a historical outline are boundary rather than the record own copy of the coastline), and BOTH time modules call it — copying it into the second caller is what AGENTS.md 3.9 forbids. It rides this line because the shell has no spare one. (#R530) …and the subdivisions of that same year — a factory on window.IntMapModules instantiated once from js/app-body.js, exactly like its twin, and the owner of window._applyAdmin1. The 41.5 MB bundle it reads (data/hist-admin1.js) is NOT here: fetched at idle, and not at all on a phone or Data Saver, for the reasons #R192/#R201 measured for data/cshapes.js. ONE line because the app shell has a line budget (tests/r168 #8). */
+import '../js/border-coast.js';
+import '../js/time-borders.js';
+import '../js/time-admin1.js';   /* (#R564) js/border-coast.js first: it is the ONE reader of data/border-coast.js (which edges of a historical outline are boundary rather than the record own copy of the coastline), and BOTH time modules call it — copying it into the second caller is what AGENTS.md 3.9 forbids. (#R530) …and the subdivisions of that same year — a factory on window.IntMapModules instantiated once from js/app-body.js, exactly like its twin, and the owner of window._applyAdmin1. The 41.5 MB bundle it reads (data/hist-admin1.js) is NOT here: fetched at idle, and not at all on a phone or Data Saver, for the reasons #R192/#R201 measured for data/cshapes.js. */
 /* (#R192) the main-thread side of the satellite tile worker (src/sat-worker.js) — it publishes
    window.IntMapSatWorker and starts nothing until js/app-body.js asks for a tile. */
 import './sat-worker-client.js';
@@ -125,12 +139,16 @@ import './sat-worker-client.js';
 import './tsunami-worker-client.js';
 /* (#R341) …and the aviation worker's, which publishes window.IntMapAviationWorker and starts
    nothing until the aircraft layer asks for a poll (src/aviation-worker.js). */
-import './aviation-worker-client.js'; import './radiation-worker-client.js';   /* (#R568) …and the radioactive-plume solver's, which publishes window.IntMapRadiationWorker and starts nothing until the dispersion panel (js/sims.js) asks for a run. The physics is js/radiation-model.js, imported by js/sims.js AND by src/radiation-worker.js — one copy, on whichever thread ends up running it. ⚠ ON THIS LINE rather than its own: the app shell (index.html + this + vendor + app-body + geo-engine) is budgeted to 8,050 lines by tests/r168 #8, and it had five to spare. */
+import './aviation-worker-client.js';
+import './radiation-worker-client.js';   /* (#R568) …and the radioactive-plume solver's, which publishes window.IntMapRadiationWorker and starts nothing until the dispersion panel (js/sims.js) asks for a run. The physics is js/radiation-model.js, imported by js/sims.js AND by src/radiation-worker.js — one copy, on whichever thread ends up running it. */
 import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */
 import '../js/wb-layers.js';
-import '../js/us-elections.js'; import '../js/elections.js'; import '../js/war-fronts.js'; import '../js/net-health.js';   /* (#R588) …and the national-elections layer beside the presidential one: a different question (parliaments, by district) on a different data contract, sharing this line for the shell budget. (#R349) …and the two world wars' Layers ROW, on this line for the same reason — the layer itself (js/war-layer.js) is lazy */
+import '../js/us-elections.js';
+import '../js/elections.js';
+import '../js/war-fronts.js';
+import '../js/net-health.js';   /* (#R588) …and the national-elections layer beside the presidential one: a different question (parliaments, by district) on a different data contract. (#R349) …and the two world wars' Layers ROW — the layer itself (js/war-layer.js) is lazy */
 import '../js/beta-overlays.js';
 import '../js/cameras.js';
 /* (#R224) js/atlas-console.js is NOT imported here any more — it is the ninth on-demand module
@@ -218,7 +236,8 @@ import '../js/industry-web.js';
    nothing here depends on load order beyond "defined before first use". Both ocean-current layers
    (the World-data plate and the older data-layers row) read the same grid through it. */
 import '../js/ocean-currents-field.js';
-import '../js/ocean-currents.js'; import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R650) …and the WHO Disease Outbreak News layer, ON THIS LINE for the shell budget (tests/r168 #8) and after world-packs for the same toolkit reason. */
+import '../js/ocean-currents.js';
+import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R650) …and the WHO Disease Outbreak News layer. */
 import '../js/precip-annual.js';   /* (#R266) 年降水量 — CHELSA 1 km normal + GPCC per-year, both bundled rasters */
 /* (#R322) the SHELL only. #R311 measured that two of this file's five factories build Layers-panel
    buttons at boot, so it cannot be deferred whole; the five bodies live in
@@ -287,7 +306,7 @@ import '../js/news-sources.js';
 import '../js/article-reader.js';
 import '../js/community-board.js';
 /* (#R311) the map hover tooltip — one surface used by every hover handler in the app, moved out of
-   js/app-body.js so the shell budget (tests/r168 #8) is paid rather than raised. See that file. */
+   js/app-body.js because one surface has one owner. See that file. */
 import '../js/map-tooltip.js';
 /* (#R498) the mobile touch-input surface — the long-press, the crosshair, the centre readout and the
    "Add point" pill. Registers a factory only; js/app-body.js mounts its two halves at the two
@@ -369,7 +388,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
   'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'outbreaks', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
+  'oceanCurrents', 'outbreaks', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule; the line ceiling was retired in #R795); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These files are not in the import list above: they are fetched by js/lazy-modules.js the
@@ -388,7 +407,7 @@ const MODULE_FACTORIES = [
    (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
    GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
    the aircraft layer, aircraft search or an Atlas aviation command asks for it. (#R353) …and the two volcano modules — see js/lazy-modules.js and docs/VOLCANO-INTELLIGENCE.md. (#R354) …and the three company-atlas modules — docs/COMPANIES.md §3. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers', 'companyData', 'companyPanel', 'companyFacilities', 'newsEvents', 'railways', 'atlasQuery', 'atlasChart', 'atlasAnswerView', 'photoGeo', 'shakeMap', 'netHealthLive', 'waves', 'radiationLayer', 'gisCore']; const CARRIED_FACTORIES = ['aircraftPoints'];   /* (#R408) the third kind: registered by a file nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically, so it rides that chunk). It fits neither list above — absent at boot, and not a key js/lazy-modules.js can be asked for — so it had nowhere to be, which is how it stayed invisible. ON THIS LINE for the shell budget; the reasoning is in DEV-NOTES #R408. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers', 'companyData', 'companyPanel', 'companyFacilities', 'newsEvents', 'railways', 'atlasQuery', 'atlasChart', 'atlasAnswerView', 'photoGeo', 'shakeMap', 'netHealthLive', 'waves', 'radiationLayer', 'gisCore']; const CARRIED_FACTORIES = ['aircraftPoints'];   /* (#R408) the third kind: registered by a file nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically, so it rides that chunk). It fits neither list above — absent at boot, and not a key js/lazy-modules.js can be asked for — so it had nowhere to be, which is how it stayed invisible. */
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};

@@ -1264,6 +1264,12 @@ scripts/
                                   async chunk と dist の合計は**天井だけ**（縮むのは自由）。
                                   ⚠ `requests` と `modules` は**バイトではなく個数**なので完全一致で見る。
                                   基準は `tests/perf-baseline.json`（追跡対象）。`--update` で更新。
+  global-surface.mjs              **共有窓口の広さのゲート**（`npm run check:surface`）。`IM_HOST` の項目と
+                                  `js/`・`src/` が `window.*` に代入する公開名を**名前で**
+                                  `tests/global-surface-baseline.json` と両方向に照合する。行数の天井の代わり。
+  export-readers.mjs              **export に読み手が居るか**の導出（`tests/r175-checks` ③ が読む）。読み手は
+                                  `js/`・`src/`・`scripts/`・`tests/` の名前付き import・namespace・
+                                  dynamic import の 3 形。
   mobile-trace.mjs                **2つのエンジンで1本のトレースを取る計器**（ゲートではない）。
                                   起動→最初のpan→最初のzoom→暖機→気象ON→警報ON を 1 本で走らせ、
                                   Chromium と **WebKit**（＝iOS Safari と同じ JavaScriptCore＋WebCore）

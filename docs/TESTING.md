@@ -198,6 +198,42 @@ npm run preview          # serve an existing dist/ without rebuilding it
 Use `npm run dev` while editing and `npm run serve` when you want to see exactly what ships.
 `file://` is still unsupported, and now doubly so: the entry is an ES module.
 
+### Gating: the global surface — `npm run check:surface` (#R795)
+
+**What it replaced.** From #R168 to #R795 `tests/r168-checks` #8 held `lines < N` over the app shell
+(index.html + src/main.js + src/vendor.js + js/app-body.js + js/geo-engine.js + js/lazy-modules.js),
+and twenty more tests held one — copies for the shell (r350, r479), for js/atlas-console.js (4,908 /
+4,910 / 5,300 in nine files), js/app-body.js (4,400 in two), js/widgets.js (130) and the seven
+index.html stages of #R162–#R169 (33,500 down to 6,200). Measured on the day they were retired: shell 8,049 / 8,050, atlas-console
+4,906 / 4,908 — one and two lines of headroom, and eleven `import` lines in src/main.js carrying two
+to five modules each "for the shell budget". A count of lines could not tell a feature that moved out
+from a line joined to its neighbour, so it had stopped measuring what it was for.
+
+**What it measures instead.** How much of the program reaches through one shared object:
+
+- the members of `IM_HOST` in js/app-body.js (getter, setter, and any later `IM_HOST.x =`), and
+  which of them are writable;
+- every `window.NAME =` a js/ or src/ file performs (comments and strings blanked first).
+
+Both are held as **names** in `tests/global-surface-baseline.json` and ratcheted both ways, like
+`check:perf`: a name that appears fails until it is accepted with `--update` (and named in
+DEV-NOTES — that is the review of a new coupling); a name that is gone fails too, so the baseline
+keeps asserting what it says (#R194). The diff it prints is the member, not the count.
+
+```bash
+npm run check:surface                       # compare with the baseline
+node scripts/global-surface.mjs             # report
+node scripts/global-surface.mjs --update    # accept the tree as the new baseline
+```
+
+**Companions retired to properties in the same round.** `tests/r175-checks` ③ no longer forbids an
+unexported top-level declaration in js/ — `scripts/check-split-scope.mjs` measures the hazard that
+rule stood for (a free identifier that resolves to nothing), and `scripts/export-readers.mjs` measures
+"every export has a reader" with readers in js/, src/, scripts/ and tests/. `tests/r168-checks` #1–#3
+read the shell with a parser: each factory instantiated once after the map exists, each shim a hoisted
+declaration that forwards `this` and every argument, and nothing evaluated before a factory touching a
+name it provides.
+
 ### Gating: the startup budget — `npm run check:perf` (#R311)
 
 Until this existed, **the only thing CI weighed was test TIME.** Not one byte of the deploy was

@@ -446,8 +446,8 @@ test('R318 ⑨b: the kernel shrank by moving, and the ceiling came down with it'
   const atlas = n('js/atlas-console.js');
   /* #R199's rule: a ceiling raised once and never lowered stops asserting anything, so it follows
      the floor DOWN. #R311 shipped 5,299 lines against a ceiling of 5,300. */
-  assert.ok(atlas < 4_908, `js/atlas-console.js is ${atlas} lines; #R406 removed the request profile, the intent gates and localPlan, and #R723 took the one-word indicator out to js/atlas-progress.js — it must stay below 4,908`);   /* (#R416) the SENTENCE said 4,900 while the assertion said 4,910 — #R407's shape, and the sentence is the half a reader acts on */
-  assert.ok(n('js/app-body.js') < 4_400, 'js/app-body.js keeps #R200\'s ceiling');
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  assert.ok(atlas > 0);
   const moved = ['js/atlas-agent.js', 'js/atlas-capabilities.js', 'js/atlas-catalog-text.js',
     'js/atlas-executor.js', 'js/atlas-results.js', 'js/atlas-state.js', 'js/atlas-toolsurface.js'].reduce((a, p) => a + n(p), 0);
   assert.ok(moved > 1_200, `the seven modules hold ${moved} lines — the kernel shrank by moving, not by losing`);

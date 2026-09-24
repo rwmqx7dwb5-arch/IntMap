@@ -87,11 +87,11 @@ export function makeLazyModules(HOST) {
          reason: Atlas is this app's control plane, so a dozen features reach for `window.IntMapConsole`.
          Every one of them now goes through `window.IntMapAtlas` (js/app-body.js), which fetches the
          kernel first — so «Atlas can drive everything» is unchanged and only the MOMENT it arrives is. */
-      atlasConsole: 'IntMapConsole', atlasQuery: 'IntMapQuery', atlasChart: 'IntMapAtlasChart', atlasAnswerView: 'IntMapAnswerView',   /* (#R543) the chart renderer rides on this line for the same reason the query engine does: a chart is drawn only by an answer that decided to draw one, and js/atlas-console.js's chunk has 4,901 bytes of budget left (tests/perf-baseline.json), which is less than the renderer. (#R495) the cross-dataset query engine and, through its static import, the coastline it measures 「海から200km」 with — behind its OWN door rather than inside the Atlas chunk, so a session that opens Atlas to ask about one place never pays for a 249 kB coastline and a 2 MB index it does not query. ⚠ ON THIS LINE because tests/r168 #8 budgets this file as part of the shell, and five separate lines put it over. */
+      atlasConsole: 'IntMapConsole', atlasQuery: 'IntMapQuery', atlasChart: 'IntMapAtlasChart', atlasAnswerView: 'IntMapAnswerView',   /* (#R543) the chart renderer rides on this line for the same reason the query engine does: a chart is drawn only by an answer that decided to draw one, and js/atlas-console.js's chunk has 4,901 bytes of budget left (tests/perf-baseline.json), which is less than the renderer. (#R495) the cross-dataset query engine and, through its static import, the coastline it measures 「海から200km」 with — behind its OWN door rather than inside the Atlas chunk, so a session that opens Atlas to ask about one place never pays for a 249 kB coastline and a 2 MB index it does not query. ⚠ ON THIS LINE because tests/r168 #8 — a line ceiling retired in #R795 budgets this file as part of the shell, and five separate lines put it over. */
       /* (#R291) the directions PANEL. The router (js/routing.js) is eager — Atlas must be able to
          route with no panel — and this is the ~30 kB of UI a session that never opens Layers →
          Tools → Directions never downloads (§2.3). */
-      routeUi: 'IntMapRouteUI',   gisCore: 'IntMapGis',   /* (#R729) the dataset registry, the ops, the project store and the panel — ONE entry because there is no session that wants one of the four (js/gis-core.js), and because this file is shell and the shell has a line budget */
+      routeUi: 'IntMapRouteUI',   gisCore: 'IntMapGis',   /* (#R729) the dataset registry, the ops, the project store and the panel — ONE entry because there is no session that wants one of the four (js/gis-core.js) */
       /* ══ (#R311) SIX MORE, PICKED BY A TEST RATHER THAN BY SIZE ═══════════════════════════════
          The ten above are reached from a menu item. These six are the rest of what the entry pulled in
          that registers NOTHING at boot — no layer row, no DOM, no IntMapOS command, no listener — so
@@ -120,7 +120,7 @@ export function makeLazyModules(HOST) {
       analysisEdu: '__imAnalysisEdu', warLayer: '__imWarFronts',   waves: 'IntMapWaves',   /* (#R577) the wave layer's BODY — its Layers row (js/data-layers.js) is eager, and this is the renderer, the palette and the forecast plumbing, which a session that never ticks 波 does not download */   /* (#R349) the war layer's BODY — its Layers row (js/war-fronts.js) is eager, this is not */
       /* (#R347) navigation's eight files ride in ONE chunk (all are needed within the same tick of starting); routingTraffic is first called by js/routing.js's `_kickProbe()`. DEV-NOTES #R347. */
       navigation: 'IntMapNavigation',
-      routingTraffic: 'IntMapRouteTraffic', newsEvents: 'IntMapNewsEvents',   /* (#R386) 出来事単位の News — News タブを開くまで 1 バイトも降ってこない（docs/NEWS-EVENTS.md §12） */   photoGeo: 'IntMapPhotoGeo',   shakeMap: 'IntMapShakeMap', radiationLayer: 'IntMapRadiationObs',   netHealthLive: '__imNetHealth',   /* (#R565) the internet-health BODY — its two Layers rows (js/net-health.js) are eager, this is not */   /* (#R527) 写真の撮影地点探索パネルと、その静的 import が連れて来る計算 5 本＋worker client。パネルを開くまで 1 バイトも降らず、worker 本体は最初の検索が始まって初めて届く（docs/PHOTO-GEOLOCATION.md）。⚠ ON THIS LINE for the shell budget — tests/r168 #8 */
+      routingTraffic: 'IntMapRouteTraffic', newsEvents: 'IntMapNewsEvents',   /* (#R386) 出来事単位の News — News タブを開くまで 1 バイトも降ってこない（docs/NEWS-EVENTS.md §12） */   photoGeo: 'IntMapPhotoGeo',   shakeMap: 'IntMapShakeMap', radiationLayer: 'IntMapRadiationObs',   netHealthLive: '__imNetHealth',   /* (#R565) the internet-health BODY — its two Layers rows (js/net-health.js) are eager, this is not */   /* (#R527) 写真の撮影地点探索パネルと、その静的 import が連れて来る計算 5 本＋worker client。パネルを開くまで 1 バイトも降らず、worker 本体は最初の検索が始まって初めて届く（docs/PHOTO-GEOLOCATION.md）。⚠ ON THIS LINE for the shell budget — tests/r168 #8 — a line ceiling retired in #R795 */
     };
 
     function record(name, why) {
@@ -143,16 +143,22 @@ export function makeLazyModules(HOST) {
     function fetchModule(name) {
       switch (name) {
         case 'flightSim': return import('./flight-sim.js');
-        case 'playground': return import('./playground.js');   case 'pandemicSim': return import('./pandemic-atlas.js');   /* (#R754) the engine-facing door, folded onto this line rather than given its own: the shell has a LINE budget (tests/r168-checks ⑧) and raising a ceiling to fit one's own change is the move that check exists to catch. */
+        case 'playground': return import('./playground.js');
+        case 'pandemicSim': return import('./pandemic-atlas.js');   /* (#R754) the engine-facing door. */
         case 'seismic': return import('./seismic.js');
         case 'tsunami': return import('./tsunami.js');
         case 'terrainWater': return import('./terrain-water.js');
         case 'los': return import('./viewshed.js');
         case 'streetView': return import('./street-view.js');
         case 'nightSky': return import('./night-sky.js');
-        case 'atlasConsole': return import('./atlas-console.js');   case 'atlasQuery': return import('./atlas-query.js');   case 'atlasChart': return import('./atlas-chart.js');   case 'atlasAnswerView': return import('./atlas-answer-view.js');   /* (#R495) — same reason as the PUBLISHES line above */
-        case 'routeUi': return import('./routing-ui.js');   case 'gisCore': return import('./gis-core.js');   /* (#R729) FOLDED ONTO THIS LINE, not given its own: tests/r168-checks 8 budgets the shell by LINE and this round measured 8,049 of 8,050 before folding. Raising the ceiling to fit one's own change is the move that check exists to catch. */   case 'photoGeo': return import('./photo-geo.js');   case 'shakeMap': return import('./shakemap.js');   case 'radiationLayer': return import('./radiation-layer.js');   /* (#R585) same line, same reason */   case 'netHealthLive': return import('./net-health-live.js');   /* (#R565) same line, same reason */   /* (#R527) same line, same reason */
-        case 'dataCenters': return import('./datacenters.js');   case 'railways': return import('./railways.js');
+        case 'atlasConsole': return import('./atlas-console.js');
+        case 'atlasQuery': return import('./atlas-query.js');
+        case 'atlasChart': return import('./atlas-chart.js');
+        case 'atlasAnswerView': return import('./atlas-answer-view.js');   /* (#R495) — same reason as the PUBLISHES line above */
+        case 'routeUi': return import('./routing-ui.js');
+        case 'gisCore': return import('./gis-core.js');   /* (#R729) */   case 'photoGeo': return import('./photo-geo.js');   case 'shakeMap': return import('./shakemap.js');   case 'radiationLayer': return import('./radiation-layer.js');   /* (#R585) same line, same reason */   case 'netHealthLive': return import('./net-health-live.js');   /* (#R565) same line, same reason */   /* (#R527) same line, same reason */
+        case 'dataCenters': return import('./datacenters.js');
+        case 'railways': return import('./railways.js');
         case 'aircraftDetail': return import('./aircraft-detail.js');
         case 'volume3d': return import('./volume3d.js');
         case 'statsCompare': return import('./stats-compare.js');
@@ -164,8 +170,13 @@ export function makeLazyModules(HOST) {
         case 'analysisEvents': return import('./analysis-world-events.js');
         case 'analysisEdu': return import('./analysis-edu.js');
         case 'aviationLive': return import('./aviation-live.js');
-        case 'navigation': return import('./navigation.js'); case 'waves': return import('./waves.js');   /* (#R577) — waves pulls js/waves-palette.js and js/waves-gl.js through its own static imports. ⚠ FOLDED ONTO THE ROW ABOVE, not given a line of its own: the app shell has a line budget (tests/r168-checks ⑧) and this round measured 8049 of 8050 before it. Raising the ceiling to fit one's own change is the move that check exists to catch. */
-        case 'newsEvents': return import('./news-events.js'); case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js'); case 'volcanoIntel': return import('./volcano-intel.js'); case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */ case 'companyData': return import('./company-data.js'); case 'companyPanel': return import('./company-panel.js'); case 'companyFacilities': return import('./company-facilities.js');   /* (#R354) */
+        case 'navigation': return import('./navigation.js');
+        case 'waves': return import('./waves.js');   /* (#R577) — waves pulls js/waves-palette.js and js/waves-gl.js through its own static imports. Raising the ceiling to fit one's own change is the move that check exists to catch. */
+        case 'newsEvents': return import('./news-events.js');
+        case 'routingTraffic': return import('./routing-traffic.js');
+        case 'warLayer': return import('./war-layer.js');
+        case 'volcanoIntel': return import('./volcano-intel.js');
+        case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */ case 'companyData': return import('./company-data.js'); case 'companyPanel': return import('./company-panel.js'); case 'companyFacilities': return import('./company-facilities.js');   /* (#R354) */
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }

@@ -186,5 +186,5 @@ test('R663 ⑦: SYS() carries the new wire shape, and js/atlas-console.js stayed
   assert.match(con, /"turn":"final"\|"continuing"/, 'the REPLY FORMAT names the field and its vocabulary');
   assert.match(con, /"answer_mode":"text"\|"map"\|"chart"\|"mixed"/, '…and #R511\'s field is still named');
   assert.match(con, /a reply that says what you are about to do is "continuing"/, 'and what to do with it');
-  assert.ok(con.split(String.fromCharCode(10)).length < 4_910, 'the shrink-only ceiling held — the sentences went onto existing lines');
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
 });

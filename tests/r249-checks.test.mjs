@@ -79,8 +79,7 @@ test('#R249 ② a reader-facing document localises its own <title> and <meta des
   assert.match(reg, /syncDocument\(null\)/, 'syncChrome no longer syncs the document at boot');
   assert.match(code(read('js/app-body.js')), /IntMapLang\.syncDocument\(currentLang\)/,
     'a language SWITCH no longer updates the document');
-  /* the shell must not have grown to hold it */
-  assert.ok(read('js/app-body.js').split('\n').length < 4_400, 'js/app-body.js grew past its ceiling');
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
 
   /* every language declares the keys — this is what makes it a keyed surface rather than a literal */
   for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
