@@ -18,6 +18,7 @@
  *  own failure record is empty.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -58,9 +59,12 @@ test('R209 ①: the loader fetches a real, non-empty set, and none of them is st
 
 test('R209 ②: the loader is a single top-level export, and every specifier is a literal', () => {
   const ast = acorn.parse(loader, { ecmaVersion: 'latest', sourceType: 'module' });
+  /* (#R794) the file is the factory PLUS its registry (LAZY_REGISTRY, LAZY_NAMES, CARRIED_NAMES): every
+     top-level statement is exported, and exactly one of them is the function the shell calls. */
   const kinds = ast.body.map((n) => n.type);
-  assert.deepEqual(kinds, ['ExportNamedDeclaration'],
-    'js/lazy-modules.js must be exactly one exported factory — a top-level const/function would be a module-private binding the app cannot reach (tests/r175-checks)');
+  assert.ok(kinds.every((k) => k === 'ExportNamedDeclaration'), 'every top-level statement of js/lazy-modules.js is exported — nothing is a private binding the app cannot reach');
+  const fns = ast.body.filter((n) => n.declaration && n.declaration.type === 'FunctionDeclaration').map((n) => n.declaration.id.name);
+  assert.deepEqual(fns, ['makeLazyModules'], 'exactly one exported factory');
   /* The reachability gate reads LITERALS. A table keyed by name passes node --check, passes the
      browser and fails scripts/static-checks.mjs with "exists but nothing imports it" for every
      target at once — so pin the form here, where the message can say why. */
@@ -72,13 +76,16 @@ test('R209 ②: the loader is a single top-level export, and every specifier is 
 });
 
 test('R209 ③: every lazy factory is named in LAZY_FACTORIES, and in no other list', () => {
-  const m = /const LAZY_FACTORIES = \[([^\]]*)\]/.exec(entry);
-  assert.ok(m, 'src/main.js declares LAZY_FACTORIES');
-  const lazyKeys = m[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  /* (#R794) the boot guard's list is DERIVED from js/lazy-modules.js's registry (src/main.js imports
+     LAZY_NAMES), so "named in LAZY_FACTORIES" is "backed by a factory in the registry" — read from the
+     same object the entry reads, not from a regex over a second list. */
+  assert.match(entry, /import \{ LAZY_NAMES, CARRIED_NAMES \} from '\.\.\/js\/lazy-modules\.js'/, 'src/main.js derives its deferred list from the registry');
+  const lazyKeys = LAZY_NAMES.slice();
   const eager = /const MODULE_FACTORIES = \[([\s\S]*?)\]/.exec(entry)[1];
 
   /* Derived from the loader, not written down again: the factory keys it mounts. */
-  const mounted = [...code(loader).matchAll(/window\.IntMapModules\.(\w+)\(/g)].map((x) => x[1]);
+  const mounted = Object.keys(LAZY_REGISTRY).filter((k) => typeof LAZY_REGISTRY[k].mount === 'function');
+  for (const k of mounted) assert.ok(new RegExp('window\\.IntMapModules\\.' + k + '\\(IM_HOST\\)').test(code(loader)), k + "'s mount spells the factory call the static gate reads");
   assert.ok(mounted.length >= 7, 'the loader mounts the factories it fetches');
   for (const k of mounted) {
     assert.ok(lazyKeys.includes(k), `${k} is mounted by the loader, so src/main.js must list it in LAZY_FACTORIES`);
@@ -90,7 +97,7 @@ test('R209 ③: every lazy factory is named in LAZY_FACTORIES, and in no other l
       `${k} is fetched on demand — it must not be in MODULE_FACTORIES, where the boot guard would report it missing on every load`);
   }
   for (const k of lazyKeys) {
-    assert.ok(mounted.includes(k) || k === 'nightSky',
+    assert.ok(mounted.includes(k),
       `LAZY_FACTORIES names ${k}, but js/lazy-modules.js never mounts it — the list has drifted from the loader`);
   }
 });

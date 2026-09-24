@@ -21,6 +21,7 @@
  *  creates it.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_NAMES, LAZY_REGISTRY } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
@@ -65,9 +66,10 @@ test('R304 ① every deferred module names a file and a global, both read out of
 test('R304 ② the boot guard names every deferred factory, and only those', () => {
   const L = lazyModules(rootURL);
   const want = L.filter((m) => m.factory).map((m) => m.name).sort();
-  const m = /const LAZY_FACTORIES = \[([^\]]*)\]/.exec(read('src/main.js'));
-  assert.ok(m, 'src/main.js declares LAZY_FACTORIES');
-  const got = [...m[1].matchAll(/'([A-Za-z0-9_]+)'/g)].map((x) => x[1]).sort();
+  /* (#R794) the entry imports the list from the registry; what is asserted is that the registry's
+     factory-backed names — as lazyModules() derives them from the source — are what the entry ships */
+  assert.match(read('src/main.js'), /const LAZY_FACTORIES = LAZY_NAMES\.slice\(\)/, 'src/main.js derives LAZY_FACTORIES from the registry');
+  const got = LAZY_NAMES.slice().sort();
   assert.deepEqual(got, want, 'src/main.js\'s LAZY_FACTORIES equals the loader\'s factory-backed modules');
   /* ⚠ (#R347) THE EXCEPTION IS A TABLE NOW, NOT A NAME. This asserted `['nightSky']`, which was a
      copy of a rule js/lazy-modules.js wrote as `name !== 'nightSky'` — and the second module that
@@ -77,9 +79,8 @@ test('R304 ② the boot guard names every deferred factory, and only those', () 
      naming the members: the fact under test is «the two lists agree», not «there is exactly one».
      ⚠ Derived from the loader, not typed here — a count is a copy (this file's own ① says so). */
   const noFactory = L.filter((x) => !x.factory).map((x) => x.name).sort();
-  const sp = /const SELF_PUBLISHING\s*=\s*\{([^}]*)\}/.exec(read('js/lazy-modules.js'));
-  assert.ok(sp, 'js/lazy-modules.js declares SELF_PUBLISHING');
-  const declared = [...sp[1].matchAll(/([A-Za-z0-9_]+)\s*:\s*true/g)].map((x) => x[1]).sort();
+  /* (#R794) the exemption is the `self: true` flag of the registry entry, read from the same object */
+  const declared = Object.keys(LAZY_REGISTRY).filter((n) => LAZY_REGISTRY[n].self === true).sort();
   assert.deepEqual(noFactory, declared,
     'the modules with no factory are exactly the ones the loader exempts from having one');
   assert.ok(declared.includes('nightSky'), 'and the original one is still among them');

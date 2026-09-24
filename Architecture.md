@@ -140,6 +140,12 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   いまは `scripts/check-split-scope.mjs`（自由識別子が何にも解決しないことを捕まえる）と
   `scripts/export-readers.mjs`（export に読み手が居ること。読み手は `js/`・`src/`・`scripts/`・
   `tests/` の全部）が、その規則が守っていた**性質**のほうを測る。
+- **遅延モジュールは 1 モジュール 1 定義。** `js/lazy-modules.js` の `LAZY_REGISTRY` が正本で、
+  1 項目が「公開する global・literal な `import('./x.js')`・factory を回す `mount`・factory を持たない
+  `self`・一緒に取る `also`」を持つ。loader の取得・mount・検証はこの表を読み、`src/main.js` の
+  boot guard は `LAZY_NAMES` / `CARRIED_NAMES` を import して自分の一覧を導く。以前は 5 つの表
+  （`PUBLISHES`・`fetchModule`・`mount`・`ALSO`・`SELF_PUBLISHING`）と `src/main.js` の
+  `LAZY_FACTORIES` を手で揃えていた（1 モジュール足すのに 4〜6 か所）。
 - **配られるファイルは1つ残らず「誰が読むか」を持つ。** `npm run check:assets`
   （`scripts/asset-report.mjs`）が `dist/` の全ファイルを、**ソースが実際に含んでいる文字列**と
   突き合わせて分類する——`exact`（`js/` `src/` `css/` `*.html` `sw.js` が名指し）／`prefix`

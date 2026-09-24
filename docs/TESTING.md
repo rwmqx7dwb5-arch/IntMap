@@ -595,7 +595,7 @@ deferred only when nothing a reader can see depends on it having run.)
   is the loader's own verdict — it checks that the factory registered and that the module's global
   appeared — not the test's.
 
-If you add a module to the loader, add it to `LAZY_FACTORIES` in `src/main.js` (not to
+If you add a module to the loader, add ONE entry to `LAZY_REGISTRY` in `js/lazy-modules.js` — the boot guard's `LAZY_FACTORIES` in `src/main.js` is derived from it (not to
 `MODULE_FACTORIES`, where the boot guard would report it missing on every clean load).
 
 ### Non-AI news locator (`js/newsgeo.js`)

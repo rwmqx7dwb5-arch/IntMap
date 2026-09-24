@@ -93,36 +93,31 @@ export function lazyModules(root) {
   const u = new URL('js/lazy-modules.js', root);
   if (!existsSync(u)) return [];
   const ast = parse(readFileSync(u, 'utf8'));
-
-  /* Two literal switches, read in one pass over the cases:
-       · `fetchModule` — `case 'name': return import('./x.js');`   → which FILE the module is
-       · `mount`       — `case 'name': …window.IntMapModules.name(IM_HOST)…` → whether it has a
-         FACTORY at all. `nightSky` is the one that does not: it publishes itself at import time,
-         which is why src/main.js's LAZY_FACTORIES is the loader's names minus that one. Reading it
-         from the mount switch means the exception stays a fact about the loader rather than a
-         second place to remember it. */
-  const files = new Map(), factory = new Set();
-  walk(ast, (n) => {
-    if (n.type !== 'SwitchCase' || !n.test || n.test.type !== 'Literal') return;
-    walk(n, (m) => {
-      if (m.type === 'ImportExpression' && m.source.type === 'Literal' && typeof m.source.value === 'string') {
-        files.set(n.test.value, m.source.value.replace(/^\.\//, 'js/'));
-      }
-      if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && !m.callee.computed
-        && m.callee.property.type === 'Identifier' && m.callee.property.name === n.test.value
-        && isWindowProp(m.callee.object, 'IntMapModules')) factory.add(n.test.value);
-    });
-  });
-
-  /* name → the global it publishes, from the PUBLISHES object literal */
+  /* (#R794) ONE object, LAZY_REGISTRY: name → { publishes, load: () => import('./x.js'), mount?, self?, also? }.
+     The two switches and the PUBLISHES map this used to read were views of the same facts, kept by
+     hand in five places; the registry is the one place now, and this reads it the way the loader does. */
   const out = [];
   walk(ast, (n) => {
-    if (n.type !== 'VariableDeclarator' || n.id.type !== 'Identifier' || n.id.name !== 'PUBLISHES') return;
-    if (!n.init || n.init.type !== 'ObjectExpression') return;
-    for (const p of n.init.properties) {
-      if (p.type !== 'Property' || p.computed || p.value.type !== 'Literal') continue;
+    if (n.type !== 'VariableDeclarator' || n.id.type !== 'Identifier' || n.id.name !== 'LAZY_REGISTRY') return;
+    let obj = n.init;
+    if (obj && obj.type === 'CallExpression' && obj.arguments[0] && obj.arguments[0].type === 'ObjectExpression') obj = obj.arguments[0];   /* Object.freeze({…}) */
+    if (!obj || obj.type !== 'ObjectExpression') return;
+    for (const p of obj.properties) {
+      if (p.type !== 'Property' || p.computed || p.value.type !== 'ObjectExpression') continue;
       const name = p.key.type === 'Identifier' ? p.key.name : p.key.value;
-      out.push({ name, file: files.get(name) || null, global: String(p.value.value), factory: factory.has(name) });
+      let file = null, global = '', factory = false, self = false;
+      for (const q of p.value.properties) {
+        const k = q.key.type === 'Identifier' ? q.key.name : q.key.value;
+        if (k === 'publishes' && q.value.type === 'Literal') global = String(q.value.value);
+        if (k === 'self' && q.value.type === 'Literal') self = !!q.value.value;
+        if (k === 'load') walk(q.value, (m) => { if (m.type === 'ImportExpression' && m.source.type === 'Literal' && typeof m.source.value === 'string') file = m.source.value.replace(/^\.\//, 'js/'); });
+        if (k === 'mount') walk(q.value, (m) => {
+          if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && !m.callee.computed
+            && m.callee.property.type === 'Identifier' && m.callee.property.name === name
+            && isWindowProp(m.callee.object, 'IntMapModules')) factory = true;
+        });
+      }
+      out.push({ name, file, global, factory: factory && !self });
     }
   });
   return out;

@@ -1,3 +1,45 @@
+## R798 — **遅延モジュールの登録表を 1 モジュール 1 定義にした（所有権リファクタの段 4 の前半）**
+
+〈#R792 の続き。利用者の 9 段の 4 番目「軽い機能定義と重い本体の分離——メニュー・状態復元・Atlas の
+認識を維持したまま初期読み込みが減る」の、**登録表の一本化**の部分〉
+
+### 0. 実測（着手前）
+
+| 何 | 実測 |
+|---|---|
+| 遅延モジュール 1 つの登録 | `js/lazy-modules.js` に 5 表（`PUBLISHES` 42・`fetchModule` の case 42・`mount` の case 38・`ALSO` 4・`SELF_PUBLISHING` 4）＋ `src/main.js` の `LAZY_FACTORIES` 38 → **最低 4 か所、依存があれば 5〜6 か所** |
+| 揃っているかを見る検査 | r209 ③・r304 ②（`const LAZY_FACTORIES = [` を regex）、app-source の `lazyModules()`（2 つの switch を AST で読む）、r175 ②・r353 ⑨・r354・r408 ④・r495 ③（綴りの一致） |
+| 1 行に畳まれた case | 5 行（#R786 が展開したのは import 行で、case は「shell budget」の註だけ消していた） |
+
+### 1. 正本を 1 つにし、5 表を view にした
+
+`export const LAZY_REGISTRY = { name: { publishes, load: () => import('./x.js'), mount: (IM_HOST) => {…}, self?, also? } }`。
+42 件は**既存の 5 表から acorn で導出**して生成した（手で写した項目は 0）。loader の `ALSO / SELF_PUBLISHING /
+PUBLISHES` は関数の view、`fetchModule(name)` は `R[name].load()`、`mount(name)` は `self` なら global の
+存在、それ以外は `R[name].mount(IM_HOST)`。`src/main.js` は `import { LAZY_NAMES, CARRIED_NAMES }` で
+自分の 2 一覧を導く。
+
+⚠ **gate 2 の綴りは残す。** `scripts/static-checks.mjs` は「js/ の全 factory が `window.IntMapModules.x(` で
+呼ばれている」を文字列で読み、3 つの古い suite が `…x(IM_HOST)` を 1 回ずつ数える。`mount` の引数名を
+`IM_HOST` にして、同じ綴りを entry の中に置いた（gate は満足し、定義は 1 か所）。
+
+### 2. 検査は「2 ファイルへの regex」から「同じ object を読む」へ
+
+| 検査 | 前 | 後 |
+|---|---|---|
+| app-source `lazyModules()` | 2 つの switch と `PUBLISHES` を AST で | `LAZY_REGISTRY` の ObjectExpression を AST で（r209.spec・r304・r353・r400 が使う） |
+| r209 ② | 「top-level は export 1 つだけ」 | 「全部 export で、関数の export は `makeLazyModules` 1 つ」 |
+| r209 ③・r304 ② | `const LAZY_FACTORIES = […]` を regex | `LAZY_NAMES` を import |
+| r304 ② の例外 | `const SELF_PUBLISHING = {…}` を regex | `self: true` の項目 |
+| r175 ②・r495 ③ | mount 行の綴り | entry の `publishes` / `load` / `mount` |
+| r353 ⑨・r354・r408 ④ | `'name'` が main.js に在る | `LAZY_NAMES.includes` |
+
+### 3. 後半（次のラウンド）
+
+「機能を一覧に出すために本体を読む」を無くす——`world-packs` のように Layers 一覧と状態復元のために
+eager に居るものを、**軽い定義**（id・名前・レイヤー行・コマンド・依存）と**重い本体**に分ける。
+Atlas の能力表が既にその形なので、同じ形をアプリの機能登録へ広げる。
+
 ## R797 — **1 機能を明示的依存・状態所有へ移した——実測放射線（所有権リファクタの段 3）**
 
 〈#R789 の続き。利用者の 9 段の 3 番目: 「一つの機能を、明示的依存・状態所有へ移行——その機能を地図全体
@@ -681,6 +723,8 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 > 4,240 行へ切り、60 ラウンドで 14,704 行に戻った——**境界は固定値ではなく、動かすもの**である。
 
 ## 索引 — このファイルのラウンド（新しい順）
+
+- **#R798** — **遅延モジュールの登録表を 1 モジュール 1 定義にした（所有権リファクタの段 4 の前半）**〈段 3 の続き。「メニュー・状態復元・Atlas の認識を維持したまま、登録表の手動同期を減らす」〉／⚠⚠⚠ **1 つの遅延モジュールが 5 つの表（`PUBLISHES`・`fetchModule` の case・`mount` の case・`ALSO`・`SELF_PUBLISHING`）と `src/main.js` の `LAZY_FACTORIES` の 6 か所に手で書かれていた**。r209 ③・r304 ② はその 6 か所が揃っているかを regex で測る検査だった⇒ `LAZY_REGISTRY`（42 件・既存の 5 表から**機械的に導出**、手打ち 0）を正本にし、loader の 5 表はその view、`src/main.js` は `LAZY_NAMES` / `CARRIED_NAMES` を import／⚠ 検査 9 本（r175 ②・r209 ②③・r304 ②・r353 ⑨・r354・r408 ④・r495 ③・app-source の `lazyModules()`）が「2 ファイルへの regex」から「同じ object を読む」に。gate 2（`window.IntMapModules.x(IM_HOST)` の綴り）は `mount` の中でそのまま／後半（軽い機能定義と重い本体の分離——world-packs 等の eager なメニュー）は次のラウンド
 
 - **#R797** — **1 機能を明示的依存・状態所有へ移した——実測放射線（所有権リファクタの段 3）**〈段 2 の続き。「その機能を地図全体なしでテストでき、旧入口からも同じ実装を使える」が完了条件。候補は IM_HOST 参照 2・Atlas dispatch 1 本・時計連動・遅延読込の `js/radiation-layer.js`〉／⚠⚠⚠ **データ（feed の 2 つの主張・日付モード・chunk 追従・near()・時系列）が描画・凡例・時計購読と同じ閉包にあり、`fetch`・`window.SUPABASE_URL`・`window.IntMapTime` を global で読んでいた**——ブラウザ無しに 1 行も試験できず、simulator も Atlas もレイヤー経由でしか観測を持てなかった⇒ `js/radiation-obs-core.js`: `makeRadiationObs({ fetch, feedBase })`。window を知らず、世代番号で dispose 後・新しい load 後の返答を捨てる／⚠⚠ **chunk の 1 本が失敗したあと同時に飛んでいた兄弟が成功すると `read` が true に戻り、`reason:'unreachable'` と矛盾した**（届く順で凡例が変わる）⇒ 死んだ観測網は `read=false` のまま、届いた局は数える／`js/radiation-layer.js` は**ブラウザ入口**: 3 レイヤー・ポップアップ・凡例・時計購読・5 分 tick・styledata／lang リスナーを capability `layer.radiation` の active scope が所有（OFF で一括返却、飛んでいる fetch は abort）。Layers 行・Atlas（`map.radiation`／`data.radiationNear`）・simulator は同じ 1 実装／回帰 7 件は **Node の偽 feed** で走る（reference 行はその年だけ・dispose 後の返答は捨てる・新しい load が古いのを退ける・near は km で近い順）／r621 は本物の `makeRuntime` を mount する形に
 

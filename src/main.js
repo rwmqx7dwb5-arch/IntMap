@@ -362,6 +362,7 @@ import '../js/sat-proto.js';
    DOMContentLoaded listener only after every module above has published its globals — exactly the order
    the classic tag block had. */
 import '../js/app-body.js';
+import { LAZY_NAMES, CARRIED_NAMES } from '../js/lazy-modules.js';
 
 /* ── (#R162/#R163) THE REQUIRED-MODULE GUARD, moved here verbatim from the inline <script> that used to
       sit right after the tag block. It has to run after every import above and before the app's
@@ -407,7 +408,9 @@ const MODULE_FACTORIES = [
    (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
    GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
    the aircraft layer, aircraft search or an Atlas aviation command asks for it. (#R353) …and the two volcano modules — see js/lazy-modules.js and docs/VOLCANO-INTELLIGENCE.md. (#R354) …and the three company-atlas modules — docs/COMPANIES.md §3. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers', 'companyData', 'companyPanel', 'companyFacilities', 'newsEvents', 'railways', 'atlasQuery', 'atlasChart', 'atlasAnswerView', 'photoGeo', 'shakeMap', 'netHealthLive', 'waves', 'radiationLayer', 'gisCore']; const CARRIED_FACTORIES = ['aircraftPoints'];   /* (#R408) the third kind: registered by a file nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically, so it rides that chunk). It fits neither list above — absent at boot, and not a key js/lazy-modules.js can be asked for — so it had nowhere to be, which is how it stayed invisible. */
+/* (#R794) the deferred half and the carried one are DERIVED from js/lazy-modules.js's registry —
+   one definition per module, and this guard reads it rather than keeping a second list. */
+const LAZY_FACTORIES = LAZY_NAMES.slice(); const CARRIED_FACTORIES = CARRIED_NAMES.slice();
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};

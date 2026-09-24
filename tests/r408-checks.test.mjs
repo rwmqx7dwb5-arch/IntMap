@@ -36,6 +36,7 @@
  *    ⑤ 斜線カットの鍵が視野の矩形ではなく「視野に入っている tier 0 の国の集合」である
  * ==========================================================================*/
 import { test } from 'node:test';
+import { LAZY_NAMES, CARRIED_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -311,8 +312,9 @@ test('R408 ④: js/ が登録する全ファクトリが、3つの一覧のち�
   const main = stripComments(rd('src/main.js'));
   const where = new Map();
   for (const k of listFrom(main, 'MODULE_FACTORIES')) where.set(k, 'MODULE');
-  for (const k of listFrom(main, 'LAZY_FACTORIES')) where.set(k, 'LAZY');
-  for (const k of listFrom(main, 'CARRIED_FACTORIES')) where.set(k, 'CARRIED');
+  /* (#R794) the two deferred lists are the registry's, imported by the entry */
+  for (const k of LAZY_NAMES) where.set(k, 'LAZY');
+  for (const k of CARRIED_NAMES) where.set(k, 'CARRIED');
 
   const reg = new Map();
   for (const f of JS) {
