@@ -67,6 +67,28 @@ export function dispatchGroups(src) {
   return out;
 }
 
+/* ⚠ (#R799) THE CAPABILITIES WHOSE CATALOGUE ENTRY STILL SAYS NOTHING ABOUT THEM — check ㉓'s floor.
+   OBSERVATION: measured 2026-09-18 by ㉓ itself against js/atlas-catalog-text.js, after #R799 filled
+   the weather, facility, radiation and locate entries: 62 of the 143 documented capabilities carry no
+   word of their own subject in English, in Japanese, or in either. EXPIRES ENTRY BY ENTRY: the moment
+   one describes itself, ㉓ says so by name and the line is deleted — the list may only shrink, and a
+   capability NOT on it that goes silent fails the gate. IT IS NOT REMEMBERED, IT IS RE-DERIVED:
+   `node scripts/atlas-capability-audit.mjs` prints the current set. */
+export const CATALOGUE_SILENT = [
+  'map.clearHighlights', 'layers.toggle', 'layers.opacity', 'view.projection', 'view.basemap',
+  'panel.compare', 'view.flyTo', 'research.askHere', 'settings.theme', 'settings.accent',
+  'settings.language', 'view.terrain3d', 'view.grid', 'view.resetNorth', 'view.zoom', 'view.bearing',
+  'view.pitch', 'view.pan', 'panel.tab', 'layers.countryInfo', 'data.countryCard', 'data.timeSeries',
+  'map.isolateCountry', 'routing.setEndpoints', 'data.runways', 'panel.education', 'panel.ecmwf',
+  'panel.widgets', 'panel.screenshot', 'panel.share', 'panel.search', 'settings.units', 'map.tool',
+  'navigation.stop', 'map.measure', 'panel.correlate', 'panel.settings', 'panel.shortcuts',
+  'sim.rfCoverage', 'sim.sunPosition', 'sim.nightSky', 'map.clearAll', 'map.outline',
+  'sim.pandemicRun', 'map.pandemicDay', 'panel.playground', 'panel.news', 'panel.account',
+  'panel.donate', 'panel.feedback', 'panel.bugReport', 'map.shakemap', 'layers.allOff', 'map.clear',
+  'view.fullscreen', 'sim.flyAnimate', 'map.drawLine', 'ui.inlineControls', 'attach.recall',
+  'panel.ticker', 'system.module', 'photo.locate',
+];
+
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
 export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas }) {
   const J = caps.toJSON();
@@ -483,6 +505,104 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
     });
     add('required-arguments', 'a capability that needs a target demands it in its schema', bad,
       `${n} capabilities require a target`);
+  }
+
+  /* ㉓ (#R799) A CAPABILITY IS FINDABLE BY THE WORDS OF ITS OWN SUBJECT, IN ENGLISH AND IN JAPANESE.
+        ⑤ asks whether SOME block names a capability at all. It said yes about `data.weather`, whose
+        entire entry in the catalogue was `{"type":"weather","place":str};` — the call syntax and not
+        one word about weather. MEASURED on production (2026-09-18, build R783): the whole catalogue
+        carried 「天気」 zero times and 「原子力」 zero times, find_capability('天気予報') answered `[]`,
+        and a turn asked for 「東京の今日の天気と、今後3日間の予報」 painted two weather layers, spent all
+        nine model calls, and told the reader the figures 「数値を確認できませんでした」. The search cannot
+        rank a subject nobody wrote down ([[intmap-catalogue-silence-is-a-denial]]).
+
+        HOW IT IS MEASURED, AND WHY IT CANNOT PASS SOMETHING BROKEN. This file proposes the candidate
+        words and js/atlas-capabilities.js decides whether they are evidence ABOUT THIS CAPABILITY:
+          · the proposal — the stretch of the block written about this capability, from its own entry
+            opening (`{"type":"<spelling>"`) to the next capability's, which is how the registry
+            sections a shared block. A block that opens no entry at all is prose about everyone in it.
+            The heading is deliberately NOT proposed: 'TOOLS/PANELS' is the opening of the block that
+            documents thirty-three capabilities, and it says nothing about any of them.
+          · the confirmation — `scoreParts(cap, term).self`, which with no context is exactly the
+            alias/id match plus the documentation score. Candidate terms that contain (or are
+            contained in) one of the capability's own spellings are dropped first, so what is left of
+            `self` is the documentation and nothing else. ⚠ A DISAGREEMENT BETWEEN THE TWO READINGS
+            CAN ONLY MAKE THIS CHECK STRICTER: a term this file mis-attributes is refused by the
+            registry and stops counting. It cannot manufacture a pass.
+        A word the registry scores at zero for being in five blocks or more is not a subject word
+        either — that ceiling is the registry's, and a capability whose only vocabulary is 「表示」 is
+        as unfindable as one with no vocabulary at all.
+
+        ⚠ THE LEDGER BELOW IS A FLOOR, NOT AN ALLOWANCE. Observation: on 2026-09-18, with #R799's
+        fills in place, 143 capabilities carry a catalogue block and SIXTY of them still say nothing
+        about themselves in one of the two languages IntMap writes (CONSTITUTION.md §7). Naming them
+        one by one rather than counting them is what stops a filled hole from hiding a new one. It
+        expires the moment a line is fixed: a recorded id that now passes is REPORTED so the line goes
+        (the run prints the current set, so the ledger is re-derived rather than remembered —
+        [[intmap-discovered-list-is-a-photograph]]). The gate is `npm run check:capabilities`. */
+  {
+    const bad = [], docsOk = docs && typeof docs.blocks === 'function' && typeof docs.text === 'function';
+    let silent = [], pop = 0;
+    if (!docsOk) bad.push('no catalogue was supplied — this check reads nothing');
+    else {
+      /* the registry's own normalisation (js/atlas-capabilities.js norm()): it is what the entry
+         openings are matched in, and it is private there. See the note above on why a drift here
+         costs candidates rather than buying a pass. */
+      const nrm = (s) => String(s == null ? '' : s).replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .toLowerCase().replace(/[\s·・･_\-]+/g, ' ').trim();
+      if (!caps.docsReady()) caps.bindRuntime({ docs });
+      /* THE BLOCKS ARE REBUILT, NOT RE-LISTED: text(null) is the blocks joined in source order and
+         blocks() states each one's length, so the two together say where each block starts. */
+      const full = String(docs.text(null) || '');
+      let at = 0;
+      const blocks = docs.blocks().map((b) => { const t = full.slice(at, at + b.bytes); at += b.bytes; return { ids: b.ids, text: nrm(t) }; });
+      if (at !== full.length) bad.push(`the blocks account for ${at} of ${full.length} catalogue characters — text(null) is no longer blocks() in order`);
+      const spellingsOf = (c) => c.aliases.concat([c.legacy, c.id.split('.').pop()]).map(nrm).filter(Boolean);
+      const marksOf = (b, c) => {
+        /* an entry opens with `{"type":"<spelling>"`; only where the block never writes that form is
+           the bare quoted spelling read as the opening — the registry's own fallback */
+        for (let form = 0; form < 2; form++) {
+          const found = [];
+          spellingsOf(c).forEach((na) => {
+            const needle = form ? `"${na}"` : `"type":"${na}"`;
+            for (let i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) found.push(i);
+          });
+          if (found.length) return found;
+        }
+        return [];
+      };
+      const covered = new Set(docs.idsCovered());
+      J.capabilities.filter((c) => !c.withdrawn && covered.has(c.id)).forEach((c) => {
+        pop++;
+        const cap = caps.resolve(c.id), own = spellingsOf(c), stretches = [];
+        blocks.filter((b) => b.ids.includes(c.id)).forEach((b) => {
+          const all = [];
+          b.ids.forEach((id) => { const c2 = caps.resolve(id); if (c2) marksOf(b, c2).forEach((p) => all.push([p, id])); });
+          if (!all.length) { stretches.push(b.text); return; }        /* names nobody: about everybody */
+          const mine = marksOf(b, cap);
+          if (!mine.length) return;                                   /* names others, not this one */
+          all.sort((x, y) => x[0] - y[0]);
+          mine.forEach((p) => {
+            const next = all.find((m) => m[0] > p && m[1] !== c.id);
+            stretches.push(b.text.slice(p, next ? next[0] : b.text.length));
+          });
+        });
+        const d = stretches.join(' ');
+        const mine2 = (t) => own.some((s) => t.includes(s) || s.includes(t));
+        const subject = (list) => list.some((t) => !mine2(t) && caps.scoreParts(cap, t).self > 0);
+        const en = subject([...new Set(d.match(/[a-z0-9]{3,}/g) || [])]);
+        const jp = subject([...new Set(d.match(/[぀-ヿ㐀-鿿]+/g) || [])]);
+        if (!en || !jp) silent.push({ id: c.id, miss: !en && !jp ? 'en and jp' : (en ? 'jp' : 'en') });
+      });
+      const known = new Set(CATALOGUE_SILENT);
+      silent.forEach((r) => {
+        if (!known.has(r.id)) bad.push(`${r.id}: its own catalogue entry says nothing about what it is, in ${r.miss} — the search cannot rank a subject nobody wrote down`);
+      });
+      const fixed = CATALOGUE_SILENT.filter((id) => !silent.some((r) => r.id === id));
+      if (fixed.length) bad.push(`${fixed.length} recorded id(s) now describe themselves — delete them from CATALOGUE_SILENT: ${fixed.join(', ')}`);
+    }
+    add('subject-findable', 'a capability is findable by the words of its own subject, en and jp', bad,
+      `${silent.length} of ${pop} documented capabilities are silent about themselves`);
   }
 
   return checks;

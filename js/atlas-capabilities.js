@@ -1474,20 +1474,19 @@ export function makeAtlasCapabilities(HOST) {
         .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
         .toLowerCase().replace(/[\s·・･_\-]+/g, ' ').trim();
     }
-    /* the terms of a request: Latin/digit words of 3+ characters, and 2-character windows of each
-       CJK run (Japanese and Chinese carry no spaces, so 「次回可視通過予測」 yields 通過 and 予測). */
+    /* the terms of a request: Latin/digit words of 3+ characters, and the CJK runs themselves
+       (Japanese and Chinese carry no spaces, so a run is cut into evidence against the block it is
+       being compared with — see runWindows below — rather than into windows here). */
     function termsOf(nq) {
       var latin = (nq.match(/[a-z0-9]{3,}/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
-      var runs = (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).map(function (run) {
-        var w = [];
-        for (var i = 0; i + 2 <= run.length; i++) w.push(run.slice(i, i + 2));
-        return w.length ? w : [run];
-      });
+      var runs = (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
       return { latin: latin, runs: runs };
     }
     var _docNorm = null;   /* id → normalised catalogue block, filled once (a block is up to ~24 kB) */
-    var _docDf = {};       /* term → how many capabilities' blocks carry it */
+    var _docBlk = null;    /* the DISTINCT blocks: text, the capabilities each documents, and where */
+    var _docDf = {};       /* term → how many BLOCKS carry it */
     var DOC_TERM_POINTS = 6, DOC_TERM_CAP = 30, DOC_TERM_MAX_DF = 4;   /* one alias match is 40, an exact alias 100 — the documentation may lift a capability into view, never over the one that is named */
+    var DOC_RUN_MIN = 4;   /* the shortest FRAGMENT of a spaceless run that is not an accident (#R745, said as a length) */
     /* a Latin term is a WORD («iss» is not inside «missile» or «emission»); a CJK window is a substring */
     var _termRe = {};
     function hasTerm(d, t) {
@@ -1495,49 +1494,223 @@ export function makeAtlasCapabilities(HOST) {
       var re = _termRe[t] || (_termRe[t] = new RegExp('(^|[^a-z0-9])' + t + '(?=$|[^a-z0-9])'));
       return re.test(d);
     }
+    /* the blocks that document one capability, normalised one by one. ⚠ SPLIT BEFORE NORMALISING:
+       norm() collapses every run of whitespace, newlines included, so a record normalised whole no
+       longer states where one block ends and the next begins. */
     function docNorms() {
       if (_docNorm) return _docNorm;
       _docNorm = {};
-      API.all().forEach(function (c) { var d = ''; try { d = norm(runtime.docs.text([c.id])); } catch (_) { d = ''; } _docNorm[c.id] = d; });
+      API.all().forEach(function (c) {
+        var d = '';
+        try { d = String(runtime.docs.text([c.id]) || ''); } catch (_) { d = ''; }
+        _docNorm[c.id] = d.split('\n').map(norm).filter(Boolean);
+      });
       return _docNorm;
+    }
+    /* ══ (#R799) A BLOCK IS NOT A CAPABILITY ═════════════════════════════════════════════════════
+       js/atlas-catalog-text.js documents the 145 capabilities in 60 SHARED blocks, and the biggest of
+       them documents THIRTY-THREE at once — data.weather, map.pin, routing.route, layers.aircraftTrack
+       and twenty-nine others. Two things follow, and both were wrong here.
+
+       ⚠⚠⚠ ① `df` WAS COUNTING CAPABILITIES, SO THE BIGGEST BLOCK COULD NOT SCORE AT ALL. The gate
+       below says, in its own words, «a term carried by more than four BLOCKS is not a match» — but
+       it counted the ids of `docNorms()`, and thirty-three of those ids carry the same block. So every
+       term inside it — including 「東京から大阪への経路」, the sentence the block writes out as the
+       example of `routing.route` — had df ≥ 33 and scored NOTHING.
+       MEASURED (production 2026-09-18, build R783): find_capability('東京から大阪までの鉄道ルート')
+       → 0 matches; the turn that asked for a Tokyo–Osaka rail route called find_capability EIGHT
+       times, executed nothing, and stopped on `step_budget` after 45 s with `operations: []`.
+       The number the gate names is the number it now counts: blocks.
+
+       ⚠⚠⚠ ② AND A TERM IN A SHARED BLOCK IS NOT EVIDENCE ABOUT ALL THIRTY-THREE. Counting blocks lets
+       the routing sentence score — and it would score identically for map.pin, map.clear and
+       layers.aircraftTrack, which is the flood the capability-count was accidentally holding back:
+       thirty-three equal scores are decided by `a.id.localeCompare(b.id)`, so the answer to a request
+       about trains would be read off the alphabet.
+       A catalogue block is written as a run of ENTRIES, each opening with the action it documents —
+       `{"type":"directions"…` then `{"type":"route"…` — so the stretch from one opening to the next
+       IS the text about that capability. Evidence is credited to the capability whose stretch it
+       falls in, and the heading before the first entry belongs to all of them (it is what the block is
+       about). A block that opens no entry at all is prose about everyone in it and is read whole; a
+       block that opens entries for others and none for this capability is about the others.
+       ⚠ DERIVED, NOT LISTED. The openings are found from each capability's OWN spellings — the same
+       `norm()` that #R413 taught to split camelCase — so a capability added to the table is
+       sectioned on the next boot and no hand-kept list can go stale
+       (.agents/rules/no-ad-hoc-hardcoding.md §2.4). */
+    function docBlocks() {
+      if (_docBlk) return _docBlk;
+      var all = docNorms(), byText = Object.create(null), list = [];
+      _docBlk = { of: Object.create(null), list: list };
+      /* ⚠ THE BLOCKS ARE FOUND, NOT DECLARED. `docs.text([id])` hands back every block that documents
+         that id, concatenated — and js/atlas-catalog-text.js ends its blocks with a newline, so the
+         concatenation states its own seams (three blocks end without one and are read together with
+         what follows them, which is how the prompt reads them too). Twenty-five of the 145
+         capabilities are documented in two blocks, and a record read as ONE text hands them the other
+         block's sentences as well: that is how sim.lineOfSight came back for a request about trains. */
+      Object.keys(all).forEach(function (id) {
+        var mine = _docBlk.of[id] = [];
+        all[id].forEach(function (d) {
+          var k = byText[d];
+          if (k == null) { k = byText[d] = list.length; list.push({ text: d, ids: [], own: Object.create(null), whole: Object.create(null), unnamed: [], heading: 0 }); }
+          if (list[k].ids.indexOf(id) < 0) list[k].ids.push(id);
+          if (mine.indexOf(list[k]) < 0) mine.push(list[k]);
+        });
+      });
+      list.forEach(function (b) {
+        var marks = [];
+        b.ids.forEach(function (id) {
+          var cap = byId[id], spellings = (cap ? cap.aliases : []).concat([id.split('.').pop()]), found = [];
+          /* an entry opens with `{"type":"<spelling>"`; only if the block never writes that form do we
+             fall back to the bare quoted spelling, which is how a capability named in prose is found */
+          for (var form = 0; form < 2 && !found.length; form++) {
+            spellings.forEach(function (a) {
+              var na = norm(a);
+              if (!na) return;
+              var needle = form ? '"' + na + '"' : '"type":"' + na + '"';
+              for (var i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) found.push(i);
+            });
+          }
+          if (!found.length) { b.unnamed.push(id); return; }
+          found.forEach(function (p) { if (!marks.some(function (m) { return m[0] === p && m[1] === id; })) marks.push([p, id]); });
+        });
+        /* ⚠ A BLOCK THAT NAMES NOBODY IS ABOUT EVERYBODY IN IT — a few blocks are prose with no
+           {"type":…} entry at all, and there the whole text is the only thing anyone has. But where
+           the block DOES write entries and simply never writes one for this capability, the text is
+           about the others: handing it over is how routing.isochrone came to own a block of panel
+           descriptions, and answered 「現在地」 from it. */
+        if (!marks.length) b.unnamed.forEach(function (id) { b.whole[id] = 1; });
+        marks.sort(function (x, y) { return x[0] - y[0]; });
+        b.heading = marks.length ? marks[0][0] : b.text.length;
+        for (var i = 0; i < marks.length; i++) {
+          var j = i;
+          while (j + 1 < marks.length && marks[j + 1][0] === marks[i][0]) j++;   /* two capabilities may open at the same words */
+          var to = j + 1 < marks.length ? marks[j + 1][0] : b.text.length;
+          for (var k = i; k <= j; k++) (b.own[marks[k][1]] || (b.own[marks[k][1]] = [])).push([marks[k][0], to]);
+          i = j;
+        }
+      });
+      return _docBlk;
+    }
+    function docOwns(b, id, at) {
+      if (b.whole[id]) return true;
+      if (at < b.heading) return true;
+      var sp = b.own[id];
+      if (!sp) return false;
+      for (var i = 0; i < sp.length; i++) if (at >= sp[i][0] && at < sp[i][1]) return true;
+      return false;
+    }
+    /* where a block carries a term. The first 32 occurrences are enough to decide whose stretch it
+       falls in: a term that appears more often than that in ONE block is a term the block is built
+       around, and every stretch of it is a hit. */
+    var _termReG = {};
+    function docAt(d, t) {
+      var out = [], i;
+      if (/^[a-z0-9]+$/.test(t)) {
+        var re = _termReG[t] || (_termReG[t] = new RegExp('(^|[^a-z0-9])' + t + '(?=$|[^a-z0-9])', 'g')), m;
+        re.lastIndex = 0;
+        while ((m = re.exec(d)) && out.length < 32) out.push(m.index + m[1].length);
+        return out;
+      }
+      for (i = d.indexOf(t); i >= 0 && out.length < 32; i = d.indexOf(t, i + 1)) out.push(i);
+      return out;
+    }
+    /* ⚠⚠⚠ (#R745, AND WHY IT SURVIVES THIS CHANGE) ONE WINDOW OUT OF A LONGER RUN IS NOT EVIDENCE
+       ABOUT THE RUN. Japanese and Chinese carry no spaces, so a request has to be cut — and the cuts
+       of a word straddle its boundaries. 「ありがとう」 yields あり・りが・がと・とう, and あり sits in
+       ONE catalogue block, inside the example 「…地震があり、半径100km以内に…」: df=1 is the rarest a
+       term can be, so the fragment scored a full 6 points and find_capability('ありがとう') answered
+       with `data.query` — a thank-you routed to a spatial query (measured in the nightly deep tier,
+       2026-09-15). #R745 answered it by demanding that a run be recognised by MORE THAN ONE of its
+       own windows.
+       ⚠ THAT RULE IS KEPT AND SAID AS A LENGTH INSTEAD — the same argument from the side that also
+       works. A window counts when it lies inside a CONTIGUOUS stretch that this block also carries,
+       and a stretch qualifies when it is EITHER the whole run (the request wrote that word: 「衛星」,
+       「地震」, 「現在地」) OR a fragment of at least DOC_RUN_MIN characters. 「ありがとう」 still scores
+       nothing — the block carries あり but not ありが — while 「東京から大阪までの鉄道ルート」, which the
+       old rule cut into 東京・京か・から…, every one of them either absent or in too many blocks, total
+       0, now matches the six-character stretch 「東京から大阪」 that block 04 writes as the example of
+       routing.route, and scores the windows inside it, each still worth what its own df says.
+       ⚠ WHY THE FRAGMENT FLOOR IS FOUR AND NOT THREE. Three characters is one noun and one particle:
+       「東京の」. MEASURED (production 2026-09-18) — 「東京の天気」 and 「東京の今日の天気と3日間の予報」
+       reached sim.earthquake, whose block writes 東京 in an example, because 東京+の was three
+       contiguous characters; the reader was answered about earthquakes, and no weather capability was
+       ever called. A fragment of four carries two content characters, and a run of three or fewer is
+       still matched whole, so nothing that is a word in its own right is lost.
+       ⚠ THE SAME RULE IN EVERY SCRIPT: a piece of the request long enough not to be an accident. In a
+       script that writes spaces the pieces are its words (the 3+ character terms above, matched at
+       word boundaries); in a script that does not, they are the whole run or four of its characters. */
+    function runWindows(run, d) {
+      var keep = [], n = run.length, seen = Object.create(null);
+      var take = function (from, len) {
+        if (len < 2) { if (!seen[run]) { seen[run] = 1; keep.push(run); } return; }
+        for (var k = from; k + 2 <= from + len; k++) {
+          var w = run.slice(k, k + 2);
+          if (!seen[w]) { seen[w] = 1; keep.push(w); }
+        }
+      };
+      if (d.indexOf(run) >= 0) { take(0, n); return keep; }   /* the whole run: the request's own word */
+      if (n <= DOC_RUN_MIN) return keep;
+      for (var i = 0; i + DOC_RUN_MIN <= n; i++) {
+        var len = 0;
+        while (i + len + 1 <= n && d.indexOf(run.slice(i, i + len + 1)) >= 0) len++;
+        if (len >= DOC_RUN_MIN) take(i, len);
+      }
+      return keep;
     }
     /* ⚠ A TERM IS WORTH WHAT IT DISTINGUISHES. 「位置」 and 「現在」 sit in thirty blocks and say nothing
        about which one is meant; «iss» sits in one. So each term's points are divided by the number of
        blocks that carry it beyond the first two — the same idea as inverse document frequency, kept
        to one line. Without it the LONGEST block won every search (measured: map.clear and
-       sim.lineOfSight outranked layers.satellites on the ISS request). */
+       sim.lineOfSight outranked layers.satellites on the ISS request).
+       ⚠ A TERM CARRIED BY MORE THAN FOUR BLOCKS IS NOT A MATCH AT ALL. Half a point apiece still
+       summed to «score > 0» for nearly every capability, and find_capability — which returns EVERY
+       scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
+       request; the next model call took 94 s (measured on production, 2026-09-15). */
+    var _evQ = null, _evBy = null;
     function docTermScore(cap, nq) {
       if (!runtime.docs) return 0;
-      var all = docNorms(), d = all[cap.id];
-      if (!d) return 0;
-      var pts = 0, terms = termsOf(nq);
-      /* ⚠ A TERM CARRIED BY MORE THAN FOUR BLOCKS IS NOT A MATCH AT ALL. Half a point apiece still
-         summed to «score > 0» for nearly every capability, and find_capability — which returns EVERY
-         scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
-         request; the next model call took 94 s (measured on production, 2026-09-15). */
-      var seen = {};                       /* the same window twice is still one piece of evidence */
+      /* what a term is worth: nothing at all past DOC_TERM_MAX_DF blocks, and less the more blocks
+         carry it. The number is memoised across the whole session — a term's df cannot change. */
       var award = function (t) {
-        if (seen[t]) return 0;
-        seen[t] = 1;
         var df = _docDf[t];
-        if (df == null) { df = 0; for (var id in all) if (hasTerm(all[id], t)) df++; _docDf[t] = df; }
+        if (df == null) {
+          df = 0;
+          var L = docBlocks().list;
+          for (var i = 0; i < L.length; i++) if (hasTerm(L[i].text, t)) df++;
+          _docDf[t] = df;
+        }
         return df > DOC_TERM_MAX_DF ? 0 : DOC_TERM_POINTS * Math.min(1, 2 / Math.max(1, df));
       };
-      terms.latin.forEach(function (t) { if (hasTerm(d, t)) pts += award(t); });
-      /* ⚠⚠⚠ (#R745) ONE WINDOW OUT OF A LONGER RUN IS NOT EVIDENCE ABOUT THE RUN. Japanese and
-         Chinese carry no spaces, so a request is cut into 2-character windows — and the windows of a
-         word straddle its boundaries. 「ありがとう」 yields あり・りが・がと・とう, and あり sits in ONE
-         catalogue block, inside the example sentence 「…地震があり、半径100km以内に…」. df=1 is the
-         rarest a term can be, so the fragment scored a full 6 points and `find_capability('ありがとう')`
-         answered with `data.query` — a thank-you routed to a spatial query. Measured in the nightly
-         deep tier from 2026-09-15, the night after the search path was rewritten.
-         So a run must be recognised by MORE THAN ONE of its own windows (a run short enough to make
-         only one window is that one term, and still counts). 「ひまわり」 keeps matching — a block that
-         holds the word holds all three of its windows — while a fragment shared by accident does not. */
-      terms.runs.forEach(function (windows) {
-        var hits = windows.filter(function (t) { return hasTerm(d, t); });
-        if (hits.length < Math.min(2, windows.length)) return;
-        hits.forEach(function (t) { pts += award(t); });
+      /* the evidence ONE BLOCK holds about ONE request — the terms it carries, what each is worth,
+         and WHERE it carries them. Computed once per block per request: thirty-three capabilities
+         share the largest block and would otherwise re-derive all of this thirty-three times. */
+      var evidence = function (b) {
+        if (_evQ !== nq) { _evQ = nq; _evBy = new Map(); }
+        var hit = _evBy.get(b);
+        if (hit) return hit;
+        var ev = [], terms = termsOf(nq), d = b.text, seen = Object.create(null);
+        var add = function (t) {
+          if (seen[t] || !hasTerm(d, t)) return;     /* the same term twice is still one piece of evidence */
+          seen[t] = 1;
+          var pts = award(t);
+          if (pts > 0) ev.push({ t: t, pts: pts, at: docAt(d, t) });
+        };
+        terms.latin.forEach(add);
+        terms.runs.forEach(function (run) { runWindows(run, d).forEach(add); });
+        _evBy.set(b, ev);
+        return ev;
+      };
+      var mine = docBlocks().of[cap.id] || [], pts = 0, counted = Object.create(null);
+      mine.forEach(function (b) {
+        var ev = evidence(b);
+        for (var i = 0; i < ev.length; i++) {
+          if (counted[ev[i].t]) continue;            /* a term in both of its blocks is still one term */
+          var owned = false;
+          for (var j = 0; j < ev[i].at.length && !owned; j++) owned = docOwns(b, cap.id, ev[i].at[j]);
+          if (!owned) continue;                      /* carried by this block, but written about another capability */
+          counted[ev[i].t] = 1;
+          pts += ev[i].pts;
+        }
       });
       return Math.min(DOC_TERM_CAP, pts);
     }
@@ -1575,48 +1748,112 @@ export function makeAtlasCapabilities(HOST) {
     })();
     API.VERB_HINTS = VERB_HINTS;
 
-    API.score = function (cap, q, ctx) {
-      var s = 0, nq = norm(q);
-      if (!nq) return 0;
+    /* ⚠⚠⚠ (#R799) THE RULE #R727 ③ GAVE THE DOCUMENTATION, GIVEN ALSO TO THE ALIASES. `hasTerm` above
+       knows that «iss» is not inside «missile» — and the alias match forty lines below it was a bare
+       `indexOf`, so «ratio» was inside «duration». MEASURED on the production request «plan a rail
+       route from Tokyo to Osaka with duration and distance»: data.ratio scored 65 (40 for its alias
+       and 25 for its id, both taken off the word «duration») and came FIRST, ahead of both routing
+       capabilities the sentence actually names.
+       ⚠ THE BOUNDARY IS DEMANDED AT THE START AND NOT AT THE END, and the difference is inflection: a
+       request says «earthquakes» while the alias is `earthquake`, so a word may be matched by its
+       stem — but a word may not be matched by something buried inside it. A spelling that does not
+       begin with a Latin letter is contained as before. */
+    var _spellRe = {};
+    function spelledIn(nq, na) {
+      if (!na) return false;
+      if (!/^[a-z0-9]/.test(na)) return nq.indexOf(na) >= 0;
+      var re = _spellRe[na] || (_spellRe[na] = new RegExp('(^|[^a-z0-9])' + na.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      return re.test(nq);
+    }
+    /* ⚠⚠⚠ (#R799) A CATEGORY HINT CANNOT TELL TWO CAPABILITIES APART, SO IT MUST NOT DECIDE WHICH OF
+       THEM COMES FIRST. Every row of VERB_TERMS is keyed by CATEGORY, so a hit awards the same +8 to
+       every capability in that category: 「経路」 gives routing.route and navigation.voice eight points
+       each, and eleven routing capabilities came back on EXACTLY EIGHT — at which point the tie-break
+       was `a.id.localeCompare(b.id)`, which is the alphabet, which is nothing about the request.
+       MEASURED on production (2026-09-18, build R783): find('経路'), find('ルート案内') and find('鉄道 経路')
+       all answered navigation.camera, navigation.start, navigation.status … with routing.route — the
+       capability those words name — out of sight below, and the turn that wanted a rail route called
+       find_capability eight times and ran nothing at all.
+       ⚠ THE HINT STILL SCORES. It is the only home this file has for the Korean, Russian, Spanish and
+       French spellings of «route» (tests/r318 ⑦d asks for all nine), and removing it would make those
+       requests match nothing — CONSTITUTION.md §5: the defect is the ORDERING, so the ordering is what
+       changes. The parts are reported separately and `search` sorts by SELF first: what the request
+       said about THIS capability — its own aliases, its own id, the stretch of the catalogue written
+       about it — decides the order, and a category hint breaks ties among equals. `score()` still
+       returns one number, and it is the same number it always was. */
+    API.scoreParts = function (cap, q, ctx) {
+      var self = 0, hint = 0, nq = norm(q);
+      if (!nq) return { self: 0, hint: 0, total: 0 };
+      if (cap.withdrawn) return { self: -1, hint: 0, total: -1 };
       cap.aliases.forEach(function (a) {
         var na = norm(a);
         if (!na) return;
-        if (nq === na) s += 100;
-        else if (nq.indexOf(na) >= 0 && na.length >= 4) s += 40;
+        if (nq === na) self += 100;
+        else if (na.length >= 4 && spelledIn(nq, na)) self += 40;
       });
-      if (nq.indexOf(norm(cap.id.split('.').pop())) >= 0) s += 25;
-      (VERB_HINTS[cap.category] || []).forEach(function (h) { if (h && nq.indexOf(norm(h)) >= 0) s += 8; });
+      if (spelledIn(nq, norm(cap.id.split('.').pop()))) self += 25;
+      (VERB_HINTS[cap.category] || []).forEach(function (h) { if (h && nq.indexOf(norm(h)) >= 0) hint += 8; });
       /* ⚠ THE DOCUMENTATION IS PART OF THE SEARCH. Aliases and hints are the words a request may use in
          nine languages, but the catalogue block is where a capability's SUBJECT lives — «ISS», 「衛星」,
          「通過」 — and a request that names the subject in its own words matched nothing here.
          Measured on production (2026-09-15): find_capability('ISS（NORAD 25544）のリアルタイム位置と…')
          → matches: [], and Atlas, told IntMap had no such control, went researching a position the
          satellite layer was propagating. Each distinct term of the request that the block carries
-         adds a little; the cap keeps a long block from outranking an exact alias. */
-      s += docTermScore(cap, nq);
+         adds a little; the cap keeps a long block from outranking an exact alias. It is SELF evidence
+         because #R799 made it evidence about this capability rather than about the thirty others its
+         block also documents. */
+      self += docTermScore(cap, nq);
       if (ctx) {
-        if (ctx.recent && ctx.recent.indexOf(cap.id) >= 0) s += 12;
+        if (ctx.recent && ctx.recent.indexOf(cap.id) >= 0) self += 12;
         if (ctx.requiredOutputs && ctx.requiredOutputs.length) {
           var hit = cap.produces.some(function (p) { return ctx.requiredOutputs.indexOf(p) >= 0; });
-          if (hit) s += 10;
+          if (hit) self += 10;
         }
       }
-      if (cap.withdrawn) s = -1;
-      if (cap.isFallback) s -= 5;
-      return s;
+      if (cap.isFallback) self -= 5;
+      return { self: self, hint: hint, total: self + hint };
     };
+    API.score = function (cap, q, ctx) { return API.scoreParts(cap, q, ctx).total; };
     /* search(q, opts) — the ranking. `opts.min` is the score below which a capability is not
        CONFIDENTLY relevant; when too few clear that bar the caller widens, and the widest setting
-       is the whole registry. Nothing is ever dropped for being 141st in the DOM. */
+       is the whole registry. Nothing is ever dropped for being 141st in the DOM.
+       ⚠ (#R799) `self` IS THE FIRST KEY AND THE ALPHABET IS THE LAST.
+       ⚠⚠⚠ AND A CATEGORY HINT STOPS NAMING ITS WHOLE CATEGORY THE MOMENT SOMETHING IN THAT CATEGORY IS
+       NAMED. This is the second half of the production failure, and it was worse than an empty answer.
+       MEASURED (2026-09-18, build R783) on 「世界の原子力発電所を地図に表示して、日本のものだけ強調して。」:
+       every phrasing Atlas tried came back with
+       `layers.aircraftTrack, layers.allOff, layers.baseDisplay, layers.countryInfo, layers.isobars,
+       layers.nightSide, layers.opacity, layers.planeAltitude` — which is not a result, it is the first
+       eight ids of `layers.*` in alphabetical order. 「表示」 is a `layers` hint, so it gave +8 to every
+       capability in the category at once, and with nothing to break the tie the list was the registry's
+       own order. Atlas believed it, rephrased eight times, executed ONE operation (`time.travel`) and
+       stopped on `step_budget` with an empty map. The reader was told the plants would be shown.
+       ⚠ THE RULE IS NOT A CAP ON HOW MANY ROWS COME BACK (#R413 forbids that, and this file's header
+       says why). It is about WHAT A HINT IS EVIDENCE OF: the category. While nothing in that category
+       has been named by the request, «the whole category» is the honest answer and it is returned in
+       full — that is what carries 「오사카 경로」, «itinéraire vers Osaka», «маршрут до Осаки», whose
+       scripts VERB_TERMS is the only home for, and tests/r318 ⑦d and tests/r413 ⑦ hold it there. The
+       moment one capability in the category IS named, the others are saying nothing about this request
+       and they are not candidates. When that leaves nothing at all, find_capability falls to its
+       「Nothing matched this wording … Rephrasing this search will not find more.」 — which is what
+       stops the rephrasing. */
     API.search = function (q, opts) {
       opts = opts || {};
       var ctx = opts.context || null;
+      var named = Object.create(null);
       var rows = API.all().filter(function (c) { return !c.withdrawn; })
-        .map(function (c) { return { id: c.id, score: API.score(c, q, ctx) }; })
-        .filter(function (r) { return r.score > 0; })
-        .sort(function (a, b) { return b.score - a.score || a.id.localeCompare(b.id); });
+        .map(function (c) {
+          var p = API.scoreParts(c, q, ctx);
+          if (p.self > 0 && p.total > 0) named[c.category] = 1;
+          return { id: c.id, score: p.total, self: p.self, category: c.category };
+        })
+        .filter(function (r) { return r.score > 0 && (r.self > 0 || !named[r.category]); })
+        .sort(function (a, b) { return b.self - a.self || b.score - a.score || a.id.localeCompare(b.id); });
       var min = opts.min == null ? 8 : opts.min;
-      var strong = rows.filter(function (r) { return r.score >= min; });
+      /* ⚠ CONFIDENCE IS ABOUT THE CAPABILITY, NOT ABOUT THE CATEGORY. Rows that share one category hint
+         are copies of one weak observation, and answering «confident» to that is how a caller stops
+         widening while holding nothing. A row is strong when the request named IT. */
+      var strong = rows.filter(function (r) { return r.score >= min && r.self > 0; });
       return { ranked: rows, strong: strong, confident: strong.length >= (opts.want || 3) };
     };
 

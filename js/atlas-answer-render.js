@@ -41,6 +41,69 @@ export function makeAtlasAnswerRender() {
   }
   function hostOf(u) { try { return new URL(String(u)).hostname.replace(/^www\./, ''); } catch (_) { return ''; } }
 
+  /* ── (#R799) A HEADING IS A FIELD, AND A FIELD IS ITS OWN ONLY SOURCE OF TRUTH ─────────────────
+     Observed in production (build 2026-09-18-R783, 「南極大陸の1人あたりGDP」): every heading of the
+     answer was drawn TWICE — 「条約上の位置 / 条約上の位置」, in all three sections — because the
+     section's heading reached the reader by two routes at once. `section.heading` is a field of the
+     answer contract, and the prose FORMAT rules the same call carries (js/atlas-console.js) tell the
+     model «EACH section started by a "## " heading on its OWN line»; so the model wrote the heading
+     into the field AND as the first line of the section's first block, and this renderer drew both.
+
+     ⚠ THE DE-DUPLICATION IS HERE, NOT IN THE PROMPT. Softening the instruction would fix this one
+     answer and nothing else: the next model that restates its heading anyway — or the same one on a
+     turn where the prose rules matter more — would put the reader back in front of two identical
+     lines. The side that does not depend on the model having obeyed is this one.
+
+     ⚠ IT DROPS AN EXACT RESTATEMENT AND NOTHING ELSE. The block's first line must itself BE a
+     heading (an ATX `## ` run, or a whole line of bold, which the markdown pass also draws as a
+     heading — js/atlas-markdown.js RE_LEAD), and its text must EQUAL the field's once the heading
+     marks, the surrounding space and a trailing colon are off. A DIFFERENT heading in that position
+     is a sub-heading of the section, not a duplicate, and both survive. A field-less section whose
+     block carries the only heading keeps it, because there is nothing there to be a duplicate OF. */
+  const RE_ATX_LINE  = /^[ \t]{0,3}#{1,6}[ \t]+\S/;
+  const RE_BOLD_LINE = /^[ \t]{0,3}\*\*[^*\n]+\*\*[ \t]*[:：]?[ \t]*$/;
+
+  /** A heading reduced to the words in it: heading marks, space (`.trim()` covers U+3000) and a
+      trailing colon are typography, not identity. Two headings are the same heading when these match. */
+  function headingKey(text) {
+    let s = String(text == null ? '' : text).trim();
+    s = s.replace(/^#{1,6}[ \t]+/, '').replace(/[ \t]*#+$/, '');
+    const b = /^\*\*([\s\S]*?)\*\*$/.exec(s);
+    if (b && b[1].indexOf('**') < 0) s = b[1];
+    return s.replace(/\s*[:：]+$/, '').trim();
+  }
+
+  /** `body` with its opening line removed iff that line is a heading restating `heading`. */
+  function dropRestatedHeading(body, heading) {
+    const key = headingKey(heading);
+    if (!key) return body;
+    const lines = String(body == null ? '' : body).split(/\r?\n/);
+    let i = 0;
+    while (i < lines.length && !lines[i].trim()) i++;
+    if (i >= lines.length) return body;
+    const line = lines[i];
+    if (!RE_ATX_LINE.test(line) && !RE_BOLD_LINE.test(line)) return body;
+    if (headingKey(line) !== key) return body;
+    lines.splice(i, 1);
+    return lines.join('\n');
+  }
+
+  /* ⚠ (#R799) EMPHASIS OVER THE WHOLE OF A FIELD EMPHASISES NOTHING, AND IS READ AS A HEADING.
+     Same production answer: the direct answer — a 50-character declarative sentence — was drawn as
+     `<h4 class="atl-h atl-h4 atl-hb">`. `atl-hb` is only reachable through js/atlas-markdown.js's
+     RE_LEAD, which reads a line that is nothing but a bold run as an author-written section lead;
+     the model had wrapped the entire sentence in `**…**` because the format rules ask it to bold
+     «the pivotal term or figure». Bold marks one part of a text against the rest, so a wrapper
+     around ALL of a single-statement field marks nothing — and `directAnswer.text` is a statement by
+     contract, never a label. Unwrapping it restores the sentence; every other emphasis, including a
+     bold line inside a multi-line block, is untouched and still becomes a lead where it belongs. */
+  function unwrapWholeEmphasis(text) {
+    const t = String(text == null ? '' : text).trim();
+    const m = /^\*\*([\s\S]+?)\*\*[ \t]*[:：]?$/.exec(t);
+    if (!m || m[1].indexOf('**') >= 0) return text;
+    return m[1];
+  }
+
   /** The whole answer as plain text — what the prose↔map reconciliation and the tests read. */
   function answerPlainText(env) {
     return renderedTexts(env).map((t) => t.text).join('\n\n');
@@ -95,13 +158,17 @@ export function makeAtlasAnswerRender() {
 
     const da = env.answer.directAnswer || { text: '', claimIds: [] };
     if (String(da.text || '').trim()) {
-      html += '<div class="atl-lead">' + mdMini(stripModelUrls(da.text)) + cite(da.claimIds) + '</div>';
+      html += '<div class="atl-lead">' + mdMini(stripModelUrls(unwrapWholeEmphasis(da.text))) + cite(da.claimIds) + '</div>';
     }
 
     (env.answer.sections || []).forEach((s) => {
-      if (s.heading) html += mdMini('## ' + stripModelUrls(s.heading));
+      const headText = s.heading ? stripModelUrls(s.heading) : '';
+      if (s.heading) html += mdMini('## ' + headText);
+      let firstBlock = true;
       (s.blocks || []).forEach((b) => {
-        const body = stripModelUrls(b.text || '');
+        let body = stripModelUrls(b.text || '');
+        if (!body.trim()) return;
+        if (firstBlock) { body = dropRestatedHeading(body, headText); firstBlock = false; }
         if (!body.trim()) return;
         const md = (b.type === 'bullet_list')
           ? body.split(/\r?\n/).map((l) => l.replace(/^\s*[-・*]\s*/, '')).filter(Boolean).map((l) => '- ' + l).join('\n')

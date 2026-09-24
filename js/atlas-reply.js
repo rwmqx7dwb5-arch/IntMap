@@ -61,7 +61,18 @@ export function makeAtlasReply(HOST, CTX) {
        stops it matching the tail of a token an earlier branch already declined. (5) a decimal or
        thousands-separated number. ⚠ An ABBREVIATION is deliberately NOT here: "U.S." and "e.g." are prose,
        the guesswork about them is exactly what this design refuses, and they split today as they always did. */
-    const _ATL_ATOM=/!?\[[^\]\n]{0,200}\]\([^)\s]{1,400}\)|(?:https?:\/\/|www\.)[^\s<)"']+|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+|(?<![A-Za-z0-9@.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9][A-Za-z0-9-]*)*\.[a-z]{2,24}(?![A-Za-z0-9])|\d+(?:[.,]\d+)+/g;
+    /* ⚠⚠⚠ (#R799) …AND AN ABBREVIATION IS NOT A SENTENCE END EITHER. #R463 held dotted hosts and decimals here for
+       exactly this reason; three more SHAPES lead the pattern now, and none of them is a list of words
+       (.agents/rules/no-ad-hoc-hardcoding.md §1). Measured on production 2026-09-18, in the reader's own bubble:
+       「It identifies Dujuan (JMA Typhoon No. / 25 / 2625) in the western North Pacific」 and 「to simplify U. / S. Antarctic
+       Program flights」 — the reflow put a paragraph break in the middle of 「No. 25」 and of 「U.S.」.
+       ① a dotted initialism (two or more single letters each stopped) — U.S., U.K., A.D.
+       ② a capitalised contraction: an initial capital and up to three letters NONE OF WHICH IS A VOWEL, stopped, then a
+       word — St. Petersburg, Mt. Fuji, Dr. Smith. ⚠ THE VOWEL CONDITION IS LOAD-BEARING: without it 「…the Red Sea. The
+       Nile…」 becomes one sentence, which is the very defect this is removing, one line down.
+       ③ a short word stopped before a DIGIT — No. 25, Fig. 3, p. 42; a thing that carries a number is not a sentence end.
+       js/atlas-verify.js reaches the same three shapes for its place-name candidates, from the same measurement. */
+    const _ATL_ATOM=/(?:[A-Za-z]\.){2,}|\b[A-Z][b-df-hj-np-tv-xzB-DF-HJ-NP-TV-XZ]{0,3}\.(?=[ \t ]+[A-Za-zÀ-￿])|\b[A-Za-z]{1,4}\.(?=[ \t ]*\d)|!?\[[^\]\n]{0,200}\]\([^)\s]{1,400}\)|(?:https?:\/\/|www\.)[^\s<)"']+|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+|(?<![A-Za-z0-9@.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9][A-Za-z0-9-]*)*\.[a-z]{2,24}(?![A-Za-z0-9])|\d+(?:[.,]\d+)+/g;
     function _atlHold(s){ const A=[]; const t=String(s==null?'':s).replace(_ATL_ATOM,m=>{ A.push(m); return '\uE010'+(A.length-1)+'\uE011'; }); return { t, A }; }
     function _atlFree(s,A){ return A.length?String(s).replace(/\uE010(\d+)\uE011/g,(m,i)=>A[+i]!==undefined?A[+i]:m):String(s); }
     /* (#R62) minimal safe markdown for AI text rendered in the chat (briefs / analyses). */

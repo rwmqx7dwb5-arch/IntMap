@@ -89,6 +89,25 @@ window.IntMapModules.searchGeocode=function(HOST){
     return out.sort((a,b)=>b.score-a.score).filter(x=>{ const k=x.name+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,7);
   }
 
+  /* ══ ⚠⚠⚠ (#R799) THE SEARCH CARD LISTED ROWS THAT WERE NOT WHAT WAS TYPED ═══════════════════════
+     Three geocoders answer this box in parallel and NONE of them was asked whether its row is the
+     thing the reader typed. Measured on the deployed build 2026-09-18, through the sibling field in
+     js/routing-geocode.js which merges the same two sources: 「Sahara」 → **New York**. Free-text
+     search drops the terms it cannot match and returns what is left, 200 OK.
+     js/atlas-geo-resolve.js has written that rule down, measured it against a captured gazetteer and
+     tested it since #R515 / #R737, and it also holds `regionBox` — IntMap's reviewed extents for the
+     names that have no single OSM boundary. Both are BORROWED here through the module's own
+     `placeRules` surface; neither is restated. See the long note in js/routing-geocode.js for why the
+     module is reached by a lazy `import()` rather than statically or off `window` alone.
+     ⚠ AGREEMENT ONLY — NO IMPORTANCE FLOOR. #R19 made this box deliberately typo-tolerant
+     (「あいまいな単語を入れても検索できるように」: 「osakaa」 must still find Osaka), and Photon's rows
+     carry no `importance` at all. A fuzzy match scores 0.89 here and survives; a stranger scores 0. */
+  async function _placeRules(){
+    if(window.IntMapPlaceRules) return window.IntMapPlaceRules;
+    try{ return (await import('./atlas-geo-resolve.js')).makeAtlasGeoResolve.placeRules; }catch(_){ return null; }
+  }
+  function _agrees(R,asked,row){ try{ return !R || R.agreement(R.queryCore(asked),row)>=R.NAME_AGREE_MIN; }catch(_){ return true; } }
+
   async function doGeocode(){
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q)return;
     res.style.display='block';
@@ -100,6 +119,7 @@ window.IntMapModules.searchGeocode=function(HOST){
        — this search runs against whatever is loaded now, the next one against more. */
     try{ if(window.IntMapGazetteer&&window.IntMapGazetteer.warm) window.IntMapGazetteer.warm(); }catch(_){}
     const pq=preprocessNLQuery(q);
+    const rulesP=_placeRules();   /* (#R799) started here, awaited beside the three geocoders below */
     const local=localFuzzyPlaces(q);
     const seen=new Set();
     /* (#R183) `kind` rides along so a local (gazetteer / country / capital) match — which has no
@@ -130,7 +150,7 @@ window.IntMapModules.searchGeocode=function(HOST){
     const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${window.IntMapLang.locale(HOST.lang,"en")}&format=json`,{signal:ctrl.signal})
       /* (#R183) `feature_code` is carried under its own name as well as `type`: it is a GeoNames code
          (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
-      .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country}}); }); }).catch(()=>{});
+      .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; if(!_agrees(R,q,{name:p.name}))return;   /* (#R799) */ const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country}}); }); }).catch(()=>{});
     /* (#R489) …behind the app's ONE one-a-second Nominatim floor (js/nominatim-gate.js), reached
        through `window` because this file may contain no top-level declarations (tests/r175 #4).
        ⚠ IT QUEUES RATHER THAN DROPPING. #R298 measured what dropping does to a typed search — every
@@ -139,16 +159,23 @@ window.IntMapModules.searchGeocode=function(HOST){
        above is still the ceiling, and a search the reader has moved on from is checked for here. */
     const nomP=(window.IntMapNominatimGate?window.IntMapNominatimGate.nominatimSlot():Promise.resolve(true))
       .then(()=>ctrl.signal.aborted?null:fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${window.IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}))
-      .then(r=>(r&&r.ok)?r.json():[]).then(a=>{ (a||[]).forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl)); }).catch(()=>{});
+      .then(r=>(r&&r.ok)?r.json():[]).then(async a=>{ const R=await rulesP; (a||[]).forEach(pl=>{ if(!_agrees(R,pq,pl))return;   /* (#R799) measured against what was SENT — preprocessNLQuery may have turned 「capital of France」 into 「Paris, France」 */ addItem(pl.display_name,+pl.lon,+pl.lat,pl); }); }).catch(()=>{});
     /* (#R19) Third parallel geocoder: Photon (komoot) — TYPO-TOLERANT like a search engine
        ("あいまいな単語を入れても検索できるように"; curl-verified CORS* and that "osakaa" → Osaka). */
     const phP=fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=${HOST.lang==='jp'?'en':'en'}`,{signal:ctrl.signal})
       /* (#R183) Photon publishes `extent` [minLon, maxLat, maxLon, minLat] on most results — a real
          footprint, which beats any class guess — plus osm_key/osm_value as the class fallback. All
          three were being discarded here, so every Photon hit landed on the flat zoom-9 default. */
-      .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.features||[]).forEach(f=>{ try{ const p=f.properties||{}, g=f.geometry; if(!g||!g.coordinates) return;
+      .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.features||[]).forEach(f=>{ try{ const p=f.properties||{}, g=f.geometry; if(!g||!g.coordinates) return;
+        if(!_agrees(R,q,{name:p.name}))return;   /* (#R799) */
         const label=[p.name,p.city,p.state,p.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
         if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,osm_key:p.osm_key,osm_value:p.osm_value,extent:p.extent,address:{country:p.country}}); }catch(_){} }); }).catch(()=>{});
+    /* (#R799) …and IntMap's own reviewed extents for the ninety names that have NO single OSM
+       boundary (「the Alps」, 「Scandinavia」, 「Middle East」, 「アルプス」). It rides in with the rules
+       above rather than being a second table here, and it carries a REAL box, so js/place-framing.js
+       frames the Alps like the Alps instead of giving a mountain range the default town zoom. */
+    try{ const _R=await rulesP; const _reg=(_R&&_R.regionBox)?_R.regionBox(q):null;
+      if(_reg) addItem(_reg.name,_reg.lng,_reg.lat,{boundingbox:[_reg.box[0][1],_reg.box[1][1],_reg.box[0][0],_reg.box[1][0]],lat:_reg.lat,lon:_reg.lng,homeExtent:true},'region'); }catch(_){}
     await Promise.allSettled([omP,nomP,phP]); clearTimeout(to);
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
     if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind)); }   /* weak local fallback */
