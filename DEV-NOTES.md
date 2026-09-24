@@ -40,7 +40,7 @@ Layers 行も Atlas も simulator も、同じ 1 実装に届く。
 
 ### 4. 検査
 
-- `tests/r792-radiation-explicit-deps-checks.test.mjs`: Node の偽 feed で core を走らせる。fetch と base 以外を
+- `tests/r797-radiation-explicit-deps-checks.test.mjs`: Node の偽 feed で core を走らせる。fetch と base 以外を
   要らないこと（コード中に `window` が無い）／reference 行はその年だけ／chunk の失敗は観測網を終える／
   dispose 後の返答は捨てる／新しい load が古いのを退ける／`near` は km で近い順／レイヤーが core の
   上の入口であること（データ関数が 1 か所・fetch は core へ渡す 1 つだけ・capability 定義）。

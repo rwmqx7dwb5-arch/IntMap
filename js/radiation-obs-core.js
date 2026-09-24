@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · radiation observations — the part that needs no window  (#R792)
+ *  IntMap · radiation observations — the part that needs no window  (#R797)
  * ----------------------------------------------------------------------------
  *  Everything js/radiation-layer.js knew about the DATA — the feed's two claims (`stations` versus
  *  `reference`), the day-mode reload, the chunked follow-up for the network that cannot answer in

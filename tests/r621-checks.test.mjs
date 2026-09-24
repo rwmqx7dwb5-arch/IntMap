@@ -135,7 +135,7 @@ test('the legend actually writes its cautions, run with the REAL language regist
     }),
   });
 
-  /* (#R792) the layer is a capability of the runtime now — the test mounts the real register, the
+  /* (#R797) the layer is a capability of the runtime now — the test mounts the real register, the
      same object the browser builds, and a clock stub for the subscription the active scope owns */
   const { makeRuntime } = await import('../js/runtime.js');
   g.window.IntMapRuntime = makeRuntime({});

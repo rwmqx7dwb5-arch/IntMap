@@ -1,7 +1,7 @@
 /* ============================================================================
- *  R792 — the radiation observations are a module with explicit dependencies
+ *  R797 — the radiation observations are a module with explicit dependencies
  * ----------------------------------------------------------------------------
- *  Stage 3 of the ownership refactor (DEV-NOTES #R792). js/radiation-obs-core.js takes `fetch`
+ *  Stage 3 of the ownership refactor (DEV-NOTES #R797). js/radiation-obs-core.js takes `fetch`
  *  and the feed's base as ARGUMENTS and knows no window; this file runs it in Node with a fake
  *  feed and proves the properties the browser layer used to hold implicitly:
  *    · the two claims (stations / reference) are kept apart by the clock's year

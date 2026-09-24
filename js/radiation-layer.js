@@ -46,7 +46,7 @@
  *  · Load-on-demand (js/lazy-modules.js → `radiationLayer`); the Layers row is eager in
  *    js/beta-overlays.js, so the row exists before this file does.
  *
- *  ── (#R792) THIS FILE IS THE BROWSER ENTRY; THE DATA IS js/radiation-obs-core.js ─────────────
+ *  ── (#R797) THIS FILE IS THE BROWSER ENTRY; THE DATA IS js/radiation-obs-core.js ─────────────
  *  The feed, the two claims, the chunked follow-up, near() and the series live in the core with
  *  `fetch` and the feed's base as arguments — no window — so a test, a worker or Atlas can hold the
  *  same observations without this layer. What is HERE is what needs the page: the three renderer
