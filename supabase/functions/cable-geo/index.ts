@@ -32,6 +32,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 
 const CORS = corsFor();
 /* Upstream is ~0.7 MB (cables) + ~0.34 MB (landing points). Four megabytes is four times the larger
@@ -54,11 +55,21 @@ const CACHE = "public, max-age=21600, s-maxage=86400, stale-while-revalidate=604
 
 // NOTE: written WITHOUT TypeScript annotations, like sv-cov — scripts/static-checks.mjs parses every
 // committed .ts with acorn, so a type annotation here fails the build gate rather than the type check.
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/data-layers.js asks for the two TeleGeography files once a session (the bundled routes come
+   first) and js/layer-previews.js for one of them once; 6 leaves room for a retry of each.
+   ESTIMATED from the callers. */
+const READER_PER_MIN = 6;
+
 Deno.serve(async (req) => {
   /* GET only. The old code answered a POST exactly like a GET, which is not what the CORS header
      above advertises and is one more verb an upstream never needed to see. */
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "cable-geo", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const u = new URL(req.url).searchParams.get("u") || "";
   if (u.length > MAX_QUERY_URL || !ALLOWED.has(u)) {

@@ -109,9 +109,17 @@ test('R185 Cesium: the satellite imagery is chosen for the display, not for the 
 
 test('R185 satellites: the layer is not empty when the live feed is unreachable', async ({ page }) => {
   test.setTimeout(240_000);
-  /* the exact failure of 2026-08-01, made deterministic: celestrak.org unreachable, and the public
-     relays with it. Everything else — including the catalogue this site ships — is untouched. */
-  await page.route(/celestrak\.org|allorigins\.win|codetabs\.com/, (route) => route.abort());
+  /* the exact failure of 2026-08-01, made deterministic: celestrak.org unreachable, and the second
+     way to it with it — which since own-fetch-relay is OUR fetch-relay (the public relays it replaced are gone).
+     Everything else — including the catalogue this site ships — is untouched. The relay attempt is
+     recorded, so the test also proves the second way is still TRIED before the shipped copy is. */
+  const relayAsked = [];
+  await page.route(/celestrak\.org/, (route) => route.abort());
+  await page.route(/\/functions\/v1\/fetch-relay\?/, (route) => {
+    const u = new URL(route.request().url()).searchParams.get('u') || '';
+    if (/^https:\/\/celestrak\.org\//.test(u)) { relayAsked.push(u); return route.abort(); }
+    return route.continue();
+  });
   await boot(page, 'maplibre');
   await page.evaluate(() => {
     const cb = document.getElementById('dl-sats');
@@ -135,6 +143,7 @@ test('R185 satellites: the layer is not empty when the live feed is unreachable'
   expect(s.drawn).toBeGreaterThan(100);
   expect(s.bundled, 'and it must SAY it is the shipped copy').toBe(true);
   expect(String(s.err || '')).toMatch(/shipped with the app/);
+  expect(relayAsked.length, 'our relay was asked for the element sets before the shipped copy was used').toBeGreaterThan(0);
   /* every drawn object is a real propagated position, not a placeholder at 0,0 */
   const pos = await page.evaluate(() => {
     const l = window.IntMapSatellites.list();

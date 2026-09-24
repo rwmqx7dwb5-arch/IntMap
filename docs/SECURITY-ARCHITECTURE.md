@@ -165,14 +165,15 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are nineteen Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All eighteen are declared there now
+flag that lives in a comment is not configuration. All twenty are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
-`quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search).
+`quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
+`fetch-relay` own-fetch-relay).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`) that the CLI bundles into the functions that import it.
+`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `fetch-relay-policy.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -188,6 +189,7 @@ flag that lives in a comment is not configuration. All eighteen are declared the
 | `routing-relay` | false | none — public, but **keyed upstream**: it is the only relay that holds a provider token | — | `MAPBOX_TOKEN`, server env only, never returned |
 | `sv-cov` | false | none — keyless public relay of Google Street-View coverage tiles | — | — |
 | `quotes-relay` | false | none — keyless public relay of two Yahoo Finance v8 endpoints (share prices) | — | — (those endpoints need no key) |
+| `fetch-relay` | false | none — keyless public relay of the upstreams in `_shared/fetch-relay-policy.js` (the ones that send no ACAO and have no relay of their own) | — | — |
 | `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 | `ais-feed` | false | none — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
 | `client-errors` | false | none — a reader who is not signed in hits errors too. POST only, a body ceiling, an **Origin allow-list** (production + local preview), two shared token buckets and a row ceiling on the table | `record_client_error` RPC + the two `relay_take` buckets | — |
@@ -242,7 +244,8 @@ list, and our own token is set afterwards.
 storing Navigation API results, so every response — including the failures — carries
 `Cache-Control: no-store` where the other four set `s-maxage`. `js/routing-traffic.js` honours the
 same rule on the client by reading `IntMapRouteProviders.noStore('mapbox')` rather than hardcoding it.
-(3) It is the only relay with its own **rate limit**, and since the September 2026 audit the limit is
+(3) It is the only relay with a **project-wide spend ceiling** (every public relay has a per-caller
+bucket since own-fetch-relay — see below), and since the September 2026 audit the limit is
 an accounting boundary rather than a per-isolate courtesy. Two layers: an in-memory bucket per
 `x-forwarded-for` (60 per minute, bounded to `RATE_MAX_KEYS` entries by evicting the least recently
 seen — it used to grow without bound when every entry was fresh) answers the cheap first refusal; then,
@@ -256,8 +259,43 @@ refusal is `429 spend_ceiling`, which the client already classifies by status al
 ⚠ **With no key set the function is inert**: `?probe=1` answers `{"mapbox":false}` and every route
 request returns `provider_unavailable`, so the app falls back to the open routers and says so.
 
-**The five keyless relays are not protected by a login and must not be** — they serve map
-layers, and now share prices, to signed-out readers. What stands in front of them is
+**The keyless relays are not protected by a login and must not be** — they serve map
+layers, and now share prices, to signed-out readers.
+⚠ **(own-fetch-relay) `fetch-relay` is the general one, and its list is a file, not a pattern.**
+`_shared/fetch-relay-policy.js` holds one rule per upstream — exact host names, an anchored path,
+the exact set of query keys with the shape of each value (own keys only: `constructor` in a query
+cannot reach `Object.prototype`), the content type an answer must declare, and a byte ceiling, a
+deadline and a cache lifetime. No port, no userinfo, no fragment, https only, and no host that
+`publicHostname()` (`_shared/relay-guard.js`) refuses — an address literal in any spelling, a
+single-label name, `localhost` / `.local` / `.internal` / `home.arpa`. A redirect hop is admitted
+only by **the same rule** as the first request (a rule may name `redirectHosts` it admits only as
+a hop — measured: `drivenc.gov` → `www.drivenc.gov`). An upstream's non-2xx body is never relayed.
+⚠ What a name check cannot see is a public name whose DNS answer is private (rebinding); every
+name on the list is operated by the organisation named beside it.
+⚠ **The one rule with no host list is the article rule** (`ARTICLE_RULE`, `?as=article`): the
+reader's second strategy reads any publisher. It is narrowed instead of listed — asked for only when
+the caller parses an article (`as:'html'`); https on the default port, no userinfo, a name
+`publicHostname()` accepts, **and every A/AAAA answer a public unicast address** (`resolvesPublic()` /
+`publicAddress()` in `relay-guard.js`: loopback, private, CGN, link-local, documentation,
+benchmarking, multicast, reserved and their IPv4-mapped/NAT64 forms are refused; no resolver in the
+runtime → refused, fail-closed); each redirect hop re-resolved; the answer must declare `text/html`,
+be under 3 MB and pass `looksLikeArticle()` — the same predicate the page applies — so the relay
+hands back article pages, not arbitrary bytes; its own smaller bucket (`fetch-relay-article:ip`,
+10 per reader per minute). What stays open: an address checked at resolution may not be the one
+the connection uses (zero-TTL rebinding), and whether Supabase's runtime exposes `Deno.resolveDns`
+is measured in production, not here — if it does not, the rule refuses everything.
+⚠ **(own-fetch-relay) Every public relay takes a token before it reaches an upstream.** Until own-fetch-relay only
+`routing-relay` did. Now each of `alerts-relay`, `ais-feed`, `aviation-feed`, `cable-geo`,
+`fetch-relay`, `gdelt-relay`, `news-relay`, `quotes-relay`, `radiation-feed`, `sv-cov`,
+`volcano-feed` and `who-don` (its public GET) takes one from `<name>:ip` in
+`public.relay_rate_buckets` through `callerGate()` (`_shared/rate-limit.js`), keyed by the caller's
+address: capacity = the most a single reader's page asks of that relay in a minute (declared in
+the relay, read from its client's timers — an estimate) × `READERS_PER_ADDRESS` (10, an estimate
+of readers behind one NAT). It **fails open**: these relays carry no per-call invoice, and a
+database outage must not become an outage of every live layer. A refusal is `429 rate_limit` with
+`Retry-After`. `<NAME>_PER_IP_PER_MIN` moves one relay's capacity without a deploy.
+`tests/own-fetch-relay-checks.test.mjs` ③ runs every `verify_jwt = false` function with the
+bucket refusing and fails if any reaches an upstream. What stands in front of them is
 `_shared/relay-guard.js`, shared
 so the five cannot drift apart: a URL **allow-list** (exact strings for cable-geo, an
 endpoint-shaped rule for news-relay, host+path for alerts-relay, host+path+`lyrs`+a z/x/y that
@@ -368,17 +406,23 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
 **full, user-facing list with exactly what is sent** is in the in-app Privacy Policy
 (`index.html`, "第三者 / Third parties"). Security-relevant notes:
 
-- Some camera-list endpoints and the Google News RSS feeds are fetched via **public CORS relays**
-  (`corsproxy.io`, `allorigins.win`, `proxy.corsfix.com`, `codetabs.com`) — the relay sees the
-  request; no personal data is sent. (#R214) `corsfix` was added because a relay that works is not
-  a relay that works for every target: Google served the `en-US` news edition through `corsproxy.io`
-  and answered the same proxy with its bot-block page for `ja-JP`.
-  ⚠ **(#R533) No feature depends on that ladder alone any more.** Share prices used to reach Yahoo
-  through a private three-rung ladder inside `js/companies.js`; measured 2026-09-07, the direct
-  call returned 200 with no `Access-Control-Allow-Origin`, `corsproxy.io` returned 403 and
-  `api.allorigins.win` returned 522 — three rungs, no answer. Our own function goes first now and
-  the shared public ladder (`js/proxy-fetch.js`) stands behind it, which is the same arrangement
-  news and GDELT already had. See `../DECISIONS.md`.
+- **(own-fetch-relay) No public CORS relay is used.** Upstreams that send no `Access-Control-Allow-Origin`
+  (Google News RSS, GDELT, Yahoo share prices, the TeleGeography cable files, Street-View coverage
+  tiles, the IMF DataMapper, the thirteen "511" camera lists, the GEBCO depth service, CelesTrak
+  when the page cannot reach it) are fetched by **this project's own Edge Functions**, each an
+  allow-list, and nothing else. Until own-fetch-relay four public relays (`corsproxy.io`,
+  `api.allorigins.win`, `proxy.corsfix.com`, `api.codetabs.com`) stood behind ours in
+  `js/proxy-fetch.js` and were copied by hand into seventeen more files: each one saw which URL a
+  reader requested and could have altered the answer — including articles and the evidence Atlas
+  cites — and measured on the live site they answered 401/403/503/522 or nothing. A URL no relay
+  of ours admits is now read by the browser from the host itself (when the caller allows that) or
+  not at all. The page's router and `fetch-relay` read the same list
+  (`_shared/fetch-relay-policy.js`), and `tests/own-fetch-relay-checks.test.mjs` discovers every
+  URL the page hands to a relay and **runs** that relay's handler on it (the #R803 failure — a relay
+  refusing its own client's URL in production — is what it is written against).
+  Still third-party by design: `r.jina.ai` (the article reader's first strategy, which receives the
+  article URL) — it is a reader service, not a CORS relay. The second strategy is the publisher
+  itself, then our own `fetch-relay` article rule (§5).
 - **(#R533) Company logos are shipped, not asked for.** The Companies tab used to name a
   third-party logo API (`logo.clearbit.com`) once per company, which both told that host which
   companies a reader was looking at and, after the service was shut down on 2025-12-08, produced
@@ -435,7 +479,9 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    `X-Frame-Options`, no `Referrer-Policy`, no `Permissions-Policy`, no CSP header. A host that
    can set headers (Cloudflare — see `RELEASE.md`, where it is described only as an **optional
    PR-preview** target and is **not** in front of production) would close all five.
-4. **Public CORS relays** for some camera lists (§7) — third-party sees the request.
+4. ~~**Public CORS relays** for some camera lists (§7) — third-party sees the request.~~ Closed in
+   own-fetch-relay: every such path goes through this project's own relays (§5, §7). The number is kept so
+   that references to the items below stay valid.
 5. **Nine `mgmt_*` tables exist in production and in no migration in this repo**
    (`mgmt_cases`, `mgmt_passkeys`, `mgmt_incidents`, `mgmt_approvals`, `mgmt_changes`,
    `mgmt_documents`, `mgmt_improvements`, `mgmt_notices`, `mgmt_ai_suggestions`). RLS is on and

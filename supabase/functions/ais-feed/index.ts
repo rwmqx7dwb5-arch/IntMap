@@ -38,6 +38,7 @@
  *    Pacific is empty" reads as coverage rather than as fact about the sea.
  * ==========================================================================*/
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 import { parseBbox } from "../_shared/bbox.js";
 import { makeReadBudget } from "../_shared/read-budget.js";
 
@@ -752,9 +753,18 @@ function hdr(v: unknown): string {
 }
 
 // ── request ─────────────────────────────────────────────────────────────────
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/data-layers.js polls ships every 30 s (AIS_POLL_MS), plus one read per settled pan.
+   ESTIMATED from that timer. */
+const READER_PER_MIN = 12;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "ais-feed", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
   const url = new URL(req.url);
   const now = Date.now();
 

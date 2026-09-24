@@ -1029,7 +1029,9 @@ window.IntMapModules.isochrone=function(HOST){
       const url='https://valhalla1.openstreetmap.de/isochrone?json='+encodeURIComponent(JSON.stringify(body));
       const withT=(u)=>{ const ac=new AbortController(),t=setTimeout(()=>{try{ac.abort();}catch(_){}} ,25000); return fetch(u,{signal:ac.signal}).finally(()=>clearTimeout(t)); };
       try{ const r=await withT(url); if(r&&r.ok){ const j=await r.json(); if(j&&j.features&&j.features.length) return j; } }catch(_){}
-      try{ const r=await withT('https://corsproxy.io/?url='+encodeURIComponent(url)); if(r&&r.ok){ const j=await r.json(); if(j&&j.features&&j.features.length) return j; } }catch(_){}
+      /* (own-fetch-relay) no second rung. valhalla1.openstreetmap.de answers the page itself (200 + Access-Control-Allow-Origin:*,
+         measured 2026-09-25 on /isochrone), and the rung that used to follow sent the reader's starting point to
+         corsproxy.io. */
       return null; }
     async function run(lngLat,opts){ opts=opts||{}; if(lngLat&&lngLat.lng!=null) center={lng:+lngLat.lng,lat:+lngLat.lat}; if(!center) return {ok:false,reason:'no-point'};
       const cost=COST[String(opts.mode||mode).toLowerCase()]||'auto'; mode=cost;

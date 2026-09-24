@@ -13,6 +13,7 @@
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
+import { fetchViaProxy } from './proxy-fetch.js';   /* (own-fetch-relay) the app's ONE relay ladder — the 511 lists ride fetch-relay */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.cameras=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -152,7 +153,7 @@ window.IntMapModules.cameras=function(HOST){
        header so it is fetched ONCE per site through the app's proxy ladder, but every camera IMAGE hotlinks DIRECTLY
        and auto-refreshing at /map/Cctv/{itemId} (verified: list-access AND image-display both tested per site — no
        facades). ~17,000 cameras across 13 regions (FL/GA/NY/PA/NC/NV/WI/ID/LA + New England + Ontario/Alberta/Yukon)
-       that previously showed nothing. Staggered so the shared proxy isn't hit by 13 simultaneous requests. */
+       that previously showed nothing. Staggered so our relay (own-fetch-relay; a shared public proxy before it) isn't hit by 13 simultaneous requests. */
     const ONESTOP=[
       ['fl511.com','© Florida DOT · FL511'],['511ga.org','© Georgia DOT · 511GA'],['511ny.org','© New York State DOT · 511NY'],
       ['www.511pa.com','© PennDOT · 511PA'],['drivenc.gov','© NCDOT · DriveNC'],['511on.ca','© Ontario MTO · 511 Ontario'],
@@ -160,10 +161,11 @@ window.IntMapModules.cameras=function(HOST){
       ['newengland511.org','© New England 511 (ME/NH/VT)'],['511.alberta.ca','© Alberta Transportation · 511'],
       ['511la.org','© Louisiana DOTD · 511LA'],['511yukon.ca','© Yukon · 511']
     ];
-    const _osPX=[x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x), x=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(x)];
-    function _osFetchJSON(url){ return new Promise(resolve=>{ let i=0; (function attempt(){ if(i>=_osPX.length){ resolve(null); return; } const mk=_osPX[i++]; let done=false; const to=setTimeout(()=>{ if(!done){ done=true; attempt(); } },13000);
-      fetch(mk(url)).then(r=>r.ok?r.text():Promise.reject(new Error('s'+r.status))).then(t=>{ if(done) return; done=true; clearTimeout(to); let j=null; try{ j=JSON.parse(t); }catch(_){}
-        if(j) resolve(j); else attempt(); }).catch(()=>{ if(done) return; done=true; clearTimeout(to); attempt(); }); })(); }); }
+    /* (own-fetch-relay) OUR RELAY, NOT THREE STRANGERS. None of the thirteen 511 sites sends Access-Control-Allow-Origin
+       (measured 2026-09-25), so these lists were only ever read through public CORS relays. They now go through
+       supabase/functions/fetch-relay, whose policy (_shared/fetch-relay-policy.js) admits exactly these hosts at
+       /map/mapIcons/Cameras; js/proxy-fetch.js keeps the deadline and says null when nothing answered. */
+    function _osFetchJSON(url){ return fetchViaProxy(url,{as:'json'}).then(t=>{ try{ return t?JSON.parse(t):null; }catch(_){ return null; } }).catch(()=>null); }
     /* throttle the source rebuild — with 13 sites & ~25k features we must not re-serialize the whole FeatureCollection on every camera add */
     function _osSchedule(){ if(_osDataT) return; _osDataT=setTimeout(()=>{ _osDataT=null; try{ GE().layers.setSourceData('webcams-src',fc()); }catch(_){} try{ if(on) updateLegend(); }catch(_){} },600); }
     function loadOneStop(){ if(oneStopDone) return; oneStopDone=true;

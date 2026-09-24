@@ -139,16 +139,15 @@ window.IntMapModules.satellitesLive=function(HOST){
      the layer drew nothing at all — no satellites, one honest error line, an empty sky. A single
      free host IS a single point of failure, so there are three ways to the same element sets:
        1. CelesTrak directly (authoritative, ≤2 h old);
-       2. the same CORS proxies js/data-layers.js already uses for the submarine-cable feed, which
-          cover the case where the host is up but this browser cannot reach it;
+       2. (own-fetch-relay) OUR OWN relay, supabase/functions/fetch-relay, for the case where the host is up but
+          this browser cannot reach it — until own-fetch-relay this rung was two public CORS proxies, i.e. a
+          stranger between the reader and the element sets;
        3. a catalogue SHIPPED WITH THE APP (data/tle/catalogue.tle, rebuilt by CI —
           scripts/build-tle-snapshot.mjs). Same-origin, so it cannot be blocked or rate-limited,
           and real elements with a real epoch — the card already reports how old they are.
      Nothing here fabricates an orbit. A snapshot propagated by SGP4 gives a real position whose
      accuracy decays from its epoch; that is a different thing from an invented one, and the
      difference is what makes it acceptable under standing instruction 4. */
-  const PROXIES=[ (u)=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-                  (u)=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u) ];
   const BUNDLED='data/tle/catalogue.tle', BUNDLED_META='data/tle/catalogue.json';
   /* (#R207) which NORAD ids belong to which CelesTrak group, built beside the snapshot — see
      scripts/build-tle-snapshot.mjs. Fetched once, lazily, and only when a group other than `active`
@@ -381,12 +380,10 @@ window.IntMapModules.satellitesLive=function(HOST){
         try{ if(_onPrimed) _onPrimed(); }catch(_){} return true; };
       try{ const t=await grab(GP(want)); if(live(t)) return true; tried.push('celestrak: parsed nothing'); }
       catch(e){ tried.push('celestrak: '+String(e&&e.message||e)); }
-      for(let i=0;i<PROXIES.length;i++){
-        try{ const t=await grab(PROXIES[i](GP(want)),FETCH_MS);
-          if(live(t)){ lastErr='CelesTrak was unreachable; elements came through a public mirror'; return true; }
-          tried.push('proxy'+i+': parsed nothing');
-        }catch(e){ tried.push('proxy'+i+': '+String(e&&e.message||e)); }
-      }
+      try{ const note={}; const t=await HOST.fetchViaProxy(GP(want),{as:'text',note});   /* (own-fetch-relay) the app's ONE relay ladder, through IM_HOST */
+        if(t&&live(t)){ lastErr='CelesTrak was unreachable from this browser; elements came through the IntMap relay'; return true; }
+        tried.push('relay: '+(t?'parsed nothing':(note.reason||'no answer')));
+      }catch(e){ tried.push('relay: '+String(e&&e.message||e)); }
       if(primedFromBundle){
         lastErr='live feed unreachable — showing the catalog shipped with the app'
           +(bundledMeta&&bundledMeta.newestEpoch?(' ('+String(bundledMeta.newestEpoch).slice(0,10)+')'):'');

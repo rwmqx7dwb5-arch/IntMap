@@ -67,14 +67,20 @@ const orHang = (p, ms) => Promise.race([p, new Promise((res) => setTimeout(() =>
 /* ── ① a body that never finishes is still bounded ─────────────────────────────────────────────── */
 test('R452 ①: fetchViaProxy keeps the clock armed until the body is READ, not until the headers land', async () => {
   const real = globalThis.fetch;
-  globalThis.fetch = stallingFetch();
+  const realWindow = globalThis.window;
+  const stub = stallingFetch();
+  globalThis.fetch = stub;
+  /* (own-fetch-relay) a configured Supabase URL, so the rung that stalls is our own relay — without one the
+     ladder has no rung at all and this would pass without testing anything */
+  globalThis.window = { SUPABASE_URL: 'https://sb.test' };
   try {
     const t0 = Date.now();
     const out = await orHang(fetchViaProxy('https://news.google.com/rss/search?q=x', { budgetMs: 1500 }), 12000);
+    assert.ok(stub.calls.length > 0, 'a rung was actually attempted');
     assert.notEqual(out, 'HUNG', 'a proxy that answers 200 and then stalls mid-body must not hold the call open');
     assert.equal(out, null, 'nothing was fetched, so nothing is what the caller is told');
     assert.ok(Date.now() - t0 < 9000, 'the whole ladder must finish inside the budget it was given, not per-attempt');
-  } finally { globalThis.fetch = real; }
+  } finally { globalThis.fetch = real; globalThis.window = realWindow; }
 });
 
 test('R452 ①b: jsonWithin rejects on its deadline rather than waiting out a stalled body', async () => {
@@ -168,8 +174,12 @@ test('R452 ④: Atlas fetches evidence through the app’s ONE relay ladder', ()
   assert.ok(rows.length, 'the table has entries');
   const news = rows.find((r) => r.re.test('https://news.google.com/rss/search?q=x'));
   assert.ok(news, 'a Google News RSS URL is still routed through one of our own Edge Functions');
-  assert.match(pf, /return \[\.\.\.mine\.map\([\s\S]*?\), \.\.\.PUBLIC_PROXIES\];/,
-    'and our own relays are tried BEFORE the public ones, not after');
+  /* (own-fetch-relay) …and there is no public one left to be tried after it: the list is built from our own
+     relays alone, so the defect #R216 bought its way out of — a reader's request walking a ladder of
+     strangers — cannot come back as a tail either. */
+  assert.match(pf, /return mine\.map\(/, 'the list is built from our own relays alone');
+  assert.ok(!/PUBLIC_PROXIES|corsproxy\.io|allorigins\.win|corsfix\.com|codetabs\.com/.test(code('js/proxy-fetch.js')),
+    'and no public relay stands behind them');
 });
 
 /* ── ⑤ every await between the tool call and the drawing has a deadline ────────────────────────── */
@@ -186,11 +196,15 @@ test('R452 ⑤: no Atlas path awaits Nominatim without a clock', () => {
 /* ── ⑥ Stop reaches the network, and a superseding turn does not stack on top of the old one ───── */
 test('R452 ⑥: an aborted turn stops fetching, instead of running its relay ladder out', async () => {
   const real = globalThis.fetch;
+  const realWindow = globalThis.window;
   const stub = stallingFetch();
   globalThis.fetch = stub;
+  /* (own-fetch-relay) the ladder's rungs are our own relays, which exist only when a Supabase URL is configured
+     — as it is on the live site. Without one there is nothing to start, and nothing to stop. */
+  globalThis.window = { SUPABASE_URL: 'https://sb.test' };
   const ctl = new AbortController();
   try {
-    const p = fetchViaProxy('https://news.google.com/rss/search?q=x', { budgetMs: 60000, signal: ctl.signal });
+    const p = fetchViaProxy('https://news.google.com/rss/search?q=x', { budgetMs: 60000, signal: ctl.signal, direct: true });
     await new Promise((r) => setTimeout(r, 80));
     const opened = stub.calls.length;
     assert.ok(opened > 0, 'the racer never started, so this proves nothing');
@@ -200,7 +214,7 @@ test('R452 ⑥: an aborted turn stops fetching, instead of running its relay lad
     assert.equal(out, null);
     await new Promise((r) => setTimeout(r, 120));
     assert.equal(stub.calls.length, opened, 'a cancelled call must not open further relay attempts');
-  } finally { globalThis.fetch = real; ctl.abort(); }
+  } finally { globalThis.fetch = real; globalThis.window = realWindow; ctl.abort(); }
 });
 
 test('R452 ⑥c: asking a second question ABORTS the first turn instead of joining it', () => {

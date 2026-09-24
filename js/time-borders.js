@@ -136,7 +136,10 @@ window.IntMapModules.timeBorders=function(HOST){
        decimal years, and the bundle is what upstream published. */
     const YEARS=[100,200,300,400,500,600,700,800,900,1000,1100,1200,1279,1300,1400,1492,1500,1530,
                  1600,1650,1700,1715,1783,1800,1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
-    const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
+    /* (own-fetch-relay) raw.githubusercontent.com answers the page itself (200 + Access-Control-Allow-Origin:*, measured
+       2026-09-25 for world_1900.geojson), so the public CORS relays that stood behind it are gone — they only ever
+       added a third party between the reader and the file. */
+    const PROX=[x=>x];
     const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the Tibet display-year merge state (see _eraCorrect) */
     /* (#R410) the YEAR the reader is on (shownY is the SNAPSHOT key, and one aourednik snapshot answers many
        years), and the collection currently on the source — the two things a re-tag of the labels needs. */
@@ -544,7 +547,7 @@ window.IntMapModules.timeBorders=function(HOST){
          CORS PROXY. 1850-2019 has had bundled polygons since #R518/#R117 (1689-2019 since #R690);
          the deep past — the part
          with no other answer at all — was the one part that went out over `raw.githubusercontent`
-         and, failing that, corsproxy.io or allorigins. A century that only exists while three
+         and, failing that, (until own-fetch-relay) corsproxy.io or allorigins. A century that only exists while three
          third parties are up is not coverage.
        ⇒ data/hist-eras.js: all 53, ring-pooled, 10.6 MB, built by scripts/build-hist-eras.mjs and
          held to its invariants by `npm run check:histeras`. Same lazy <script> shape as the two

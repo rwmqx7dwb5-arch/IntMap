@@ -409,7 +409,9 @@ window.IntMapRefData=(function(){
     {n:'USGS ShakeMap station lists',u:'https://earthquake.usgs.gov/data/shakemap/'},
     {n:'OpenRailwayMap / OpenSeaMap',u:'https://www.openrailwaymap.org/'},
     {n:'Wikipedia / Wikimedia',u:'https://www.wikipedia.org/'},
-    {n:'Public CORS relays (allorigins.win, corsproxy.io, corsfix.com, codetabs.com)',u:'https://corsproxy.io/'},
+    /* (own-fetch-relay) kept as a row so the page can say they are NO LONGER used, and what replaced them — the link is now the
+       list our own fetch-relay forwards, not the public relay's homepage */
+    {n:'Public CORS relays (allorigins.win, corsproxy.io, corsfix.com, codetabs.com)',u:'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/supabase/functions/_shared/fetch-relay-policy.js'},
     {n:'Google News',u:'https://news.google.com/'},
     {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/'},
     {n:'Google Fonts (Noto Sans JP / SC / TC)',u:'https://fonts.google.com/noto'},

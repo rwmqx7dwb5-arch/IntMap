@@ -125,3 +125,82 @@ export function makeLimiter({ db }) {
     },
   };
 }
+
+/* ══ (own-fetch-relay) THE PER-CALLER BUCKET EVERY KEYLESS RELAY TAKES FROM ═══════════════════════════════
+   #R801 built the shared bucket for the one relay with a bill on it and left the other public
+   relays with nothing at all: of the fifteen functions deployed with verify_jwt = false, only
+   routing-relay took a token. The rest hold no key, but every one of them is an AMPLIFIER — one
+   caller-sized GET becomes an upstream-sized transfer, paid for in this project's invocations and
+   egress and in the goodwill of the upstream (several of which rate-limit by source address, and
+   ours is the source address). A loop against any of them was bounded by nothing.
+
+   So every public relay now takes one token per request from `<scope>:ip`, keyed by the caller's
+   address, before it asks its upstream. ⚠ IT FAILS OPEN. These relays carry no invoice per call, a
+   database outage must not become an outage of every live layer, and the thing this bounds is a
+   single address's loop — which the database being down does not make more likely. The relay that
+   DOES carry an invoice (routing-relay) keeps its own fail-closed project-wide buckets.
+
+   THE NUMBER (no-ad-hoc-hardcoding §4):
+     capacity per address per minute = readerPerMin × READERS_PER_ADDRESS
+     · readerPerMin is declared by EACH relay beside the code that knows its client — the most
+       requests one reader's page can make of it in a minute, read from that client's timers.
+       That is the observation, and it is per relay because the clients differ by two orders of
+       magnitude (cable-geo is asked twice a session, alerts-relay every ten seconds per feed).
+     · READERS_PER_ADDRESS = 10 is an ESTIMATE, not a measurement: how many readers may share one
+       public address (an office, a school, a carrier-grade NAT). It is here so that a household
+       behind one address is never throttled for being two people, while a script still meets
+       its ceiling within a minute. It expires the first time production shows a 429 from this
+       gate for traffic that was readers — `rate_limit` in a relay's responses with nothing else
+       wrong — and then this one number goes up, for every relay at once.
+     · The environment may override one relay's capacity without a deploy:
+       `<SCOPE>_PER_IP_PER_MIN` (e.g. ALERTS_RELAY_PER_IP_PER_MIN), a positive integer — the
+       same rule routing-relay's GLOBAL_PER_* follow. The canonical place is still this file and
+       the relay's own readerPerMin; the environment only moves it. */
+export const READERS_PER_ADDRESS = 10;
+
+/* The caller, as routing-relay has always identified it: the first address in x-forwarded-for.
+   ⚠ A REQUEST WITH NONE SHARES ONE BUCKET — an unidentifiable caller is throttled with everyone
+   else rather than exempt. */
+export function callerKey(req) {
+  const xff = (req && req.headers && req.headers.get("x-forwarded-for")) || "";
+  return xff.split(",")[0].trim() || "unknown";
+}
+
+function envPositive(env, name, fallback) {
+  let v = NaN;
+  try { v = Number((typeof env === "function" ? env(name) : "") || ""); } catch (_) { v = NaN; }
+  return (Number.isFinite(v) && v >= 1) ? Math.floor(v) : fallback;
+}
+
+/* The capacity one relay's scope has — exported so a test can read the number the gate enforces
+   rather than recompute it. */
+export function callerCapacity(scope, readerPerMin, env) {
+  const name = String(scope || "").toUpperCase().replace(/[^A-Z0-9]+/g, "_") + "_PER_IP_PER_MIN";
+  return envPositive(env, name, Math.max(1, Math.ceil(+readerPerMin || 1)) * READERS_PER_ADDRESS);
+}
+
+/* callerGate(req, cors, { scope, readerPerMin, env }) → a 429 Response to send, or null to carry on.
+   `env` is `(name) => string` (Deno.env.get in a relay), so this file stays free of Deno globals and
+   can be evaluated by the node tests. The client is built per request, like routing-relay's, so a
+   missing env answers «limiter unavailable» (→ allow) rather than throwing at module load (#R505). */
+export async function callerGate(req, cors, o) {
+  const opts = o || {};
+  const env = typeof opts.env === "function" ? opts.env : () => "";
+  const scope = String(opts.scope || "");
+  const perMin = callerCapacity(scope, opts.readerPerMin, env);
+  const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
+  if (!db.configured) return null;
+  const r = await makeLimiter({ db }).take(scope + ":ip", callerKey(req), {
+    capacity: perMin, refillPerSec: perMin / 60, cost: 1, onUnavailable: "allow",
+  });
+  if (r.allowed) return null;
+  return new Response(JSON.stringify({ error: "rate_limit" }), {
+    status: 429,
+    headers: {
+      ...(cors || {}),
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "retry-after": String(Math.max(1, Math.ceil(60 / perMin))),
+    },
+  });
+}

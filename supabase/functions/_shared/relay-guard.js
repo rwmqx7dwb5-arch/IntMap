@@ -141,7 +141,8 @@ export async function followRedirects(url, init, opts) {
     const loc = res.headers.get("location");
     let next = null;
     try { next = loc ? new URL(loc, current) : null; } catch (_) { next = null; }
-    if (!next || hop >= limit || !allow(next, current)) throw new RelayError("upstream_redirect", 502);
+    /* (own-fetch-relay) awaited: a caller may need a network answer (a DNS lookup) to judge a hop */
+    if (!next || hop >= limit || !(await allow(next, current))) throw new RelayError("upstream_redirect", 502);
     /* A 303, and a 301/302 answered to a POST, turn the request into a GET — the browser rule. */
     if (res.status === 303 || ((res.status === 301 || res.status === 302) && init && init.method && init.method !== "GET" && init.method !== "HEAD")) {
       init = { ...init, method: "GET", body: undefined };
@@ -212,3 +213,86 @@ export function methodGate(req, cors) {
 /* A query string is an input too. `?u=` is the only parameter any of these read, and a URL long
    enough to matter is not a tile, a feed or a GeoJSON path — it is somebody probing. */
 export const MAX_QUERY_URL = 2048;
+
+/* ══ A HOST NAME THAT CANNOT BE THIS PROJECT'S OWN NETWORK ════════════════════════════════════
+   (own-fetch-relay) Every relay here forwards only to host NAMES it lists, so the private-address question
+   has so far been answered by the lists alone. fetch-relay is the first relay whose list is long
+   and whose redirect hops are judged by a rule rather than by «same host», so the rule has to be
+   able to say what no list entry may ever be: an address literal (v4 in any of its spellings,
+   v6 in brackets), a single-label name that only a local resolver can answer, or one of the
+   suffixes reserved for private naming (RFC 6761 `localhost`, RFC 6762 `.local`, RFC 8375
+   `home.arpa`, and `.internal`, which ICANN reserved for private use in 2024).
+   ⚠ WHAT THIS DOES NOT DO: resolve the name. A public name whose DNS answer is a private address
+   (rebinding) is outside what a name check can see; the relays that use this also forward only
+   to names they list, and those names are operated by the organisations named beside them. */
+const PRIVATE_SUFFIXES = ["localhost", "local", "internal", "home.arpa", "localdomain"];
+export function publicHostname(hostname) {
+  const h = String(hostname || "").toLowerCase().replace(/\.$/, "");
+  if (!h || h.length > 253) return false;
+  if (h.startsWith("[") || h.includes(":")) return false;              /* IPv6 literal */
+  if (/^[0-9.]+$/.test(h) || /^0x/i.test(h)) return false;             /* IPv4, dotted or not */
+  if (!h.includes(".")) return false;                                   /* single label */
+  for (const s of PRIVATE_SUFFIXES) if (h === s || h.endsWith("." + s)) return false;
+  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(h);
+}
+
+/* ══ (own-fetch-relay) AN ADDRESS THAT CANNOT BE THIS PROJECT'S OWN NETWORK — for the one rule whose host is
+   not on any list ══════════════════════════════════════════════════════════════════════════════
+   fetch-relay's article rule (the reader's second strategy: any publisher's article page) admits a
+   host nobody wrote down, so the name check above is not enough — a public NAME can resolve to a
+   private ADDRESS. That rule therefore resolves the name and refuses unless EVERY answer is a
+   public unicast address. The ranges are the special-purpose registries (RFC 6890 and the IANA
+   IPv4/IPv6 special-purpose tables): unspecified, loopback, private, shared (CGN), link-local,
+   documentation, benchmarking, multicast, reserved, IPv4-mapped/NAT64 forms of those. */
+function v4Parts(ip) {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
+  if (!m) return null;
+  const p = m.slice(1).map(Number);
+  return p.every((n) => n <= 255) ? p : null;
+}
+function publicV4(p) {
+  const [a, b, c] = p;
+  if (a === 0 || a === 10 || a === 127 || a >= 224) return false;
+  if (a === 100 && b >= 64 && b <= 127) return false;
+  if (a === 169 && b === 254) return false;
+  if (a === 172 && b >= 16 && b <= 31) return false;
+  if (a === 192 && b === 168) return false;
+  if (a === 192 && b === 0 && (c === 0 || c === 2)) return false;
+  if (a === 198 && (b === 18 || b === 19)) return false;
+  if (a === 198 && b === 51 && c === 100) return false;
+  if (a === 203 && b === 0 && c === 113) return false;
+  return true;
+}
+export function publicAddress(ip) {
+  const s = String(ip || "").trim().toLowerCase().replace(/^\[|\]$/g, "");
+  const v4 = v4Parts(s);
+  if (v4) return publicV4(v4);
+  if (!s.includes(":")) return false;
+  /* an embedded IPv4 (::ffff:a.b.c.d, 64:ff9b::a.b.c.d) is judged as that IPv4 */
+  const tail = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(s);
+  if (tail) { const p = v4Parts(tail[1]); return !!p && publicV4(p); }
+  if (s === "::" || s === "::1") return false;
+  const first = parseInt(s.split(":")[0] || "0", 16);
+  if (!Number.isFinite(first)) return false;
+  if ((first & 0xfe00) === 0xfc00) return false;          /* fc00::/7 unique local */
+  if ((first & 0xffc0) === 0xfe80) return false;          /* fe80::/10 link-local */
+  if ((first & 0xff00) === 0xff00) return false;          /* ff00::/8 multicast */
+  if (s.startsWith("2001:db8:") || s.startsWith("2001:0db8:")) return false;   /* documentation */
+  if (s.startsWith("64:ff9b:")) return false;             /* NAT64 without a readable tail */
+  if (first === 0) return false;                          /* ::/8 reserved (incl. v4-compatible) */
+  return true;
+}
+
+/* resolvesPublic(hostname) → true only when the name resolves and every A/AAAA answer is public.
+   ⚠ FAILS CLOSED: a runtime with no resolver (`Deno.resolveDns` absent) answers false, so the rule
+   that depends on this is refused rather than taken on trust. ⚠ What it cannot close: the answer
+   the connection later uses may differ from the one checked here (DNS rebinding with a zero TTL). */
+export async function resolvesPublic(hostname) {
+  const D = globalThis.Deno;
+  if (!D || typeof D.resolveDns !== "function") return false;
+  const addrs = [];
+  for (const type of ["A", "AAAA"]) {
+    try { addrs.push(...(await D.resolveDns(hostname, type))); } catch (_) { /* no record of that type */ }
+  }
+  return addrs.length > 0 && addrs.every(publicAddress);
+}

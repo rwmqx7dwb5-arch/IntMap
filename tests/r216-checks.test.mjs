@@ -45,13 +45,18 @@ test('① proxy-fetch offers the Supabase relay FIRST, and reads SUPABASE_URL at
 
   /* (a) the list is built INSIDE a function — a base captured when the module is evaluated would
      be '' for the whole session, because src/vendor.js may not have run yet */
-  assert.match(s, /const\s+proxiesFor\s*=\s*\(\s*u\s*\)\s*=>/, 'the proxy list is not computed per call');
+  /* (own-fetch-relay) the function also takes the caller's `as` now (only an article caller is offered the
+     article rule); what matters is that the list is a function of the call, not a module constant */
+  assert.match(s, /const\s+proxiesFor\s*=\s*\(\s*u\s*(?:,\s*as\s*)?\)\s*=>/, 'the proxy list is not computed per call');
   assert.match(s, /const\s+supaBase\s*=\s*\(\)\s*=>[\s\S]{0,120}window\.SUPABASE_URL/,
     'SUPABASE_URL must be read at call time, not at module evaluation');
 
-  /* (b) our own Edge Functions are offered BEFORE the public relays */
-  assert.match(s, /return \[\.\.\.mine\.map\([\s\S]{0,160}?\), \.\.\.PUBLIC_PROXIES\];/,
-    'our own relays must be the head of the list, not a tail behind the public ones');
+  /* (b) our own Edge Functions are what is offered — the defect was a Japanese reader waiting out a
+     ladder of PUBLIC relays that could not read that edition. #R216 put ours at the head; (own-fetch-relay)
+     there is now nothing behind it, so the list the router builds is ours and only ours. */
+  assert.match(s, /return mine\.map\(/, 'the list is built from our own relays alone');
+  assert.doesNotMatch(code('js/proxy-fetch.js'), /PUBLIC_PROXIES|corsproxy\.io|allorigins\.win|corsfix\.com|codetabs\.com/,
+    'no public relay stands behind ours (own-fetch-relay)');
   assert.match(s, /\$\{base\}\/functions\/v1\/\$\{r\.fn\}\?u=/,
     'the relay URL is built from the table entry against the runtime base');
 

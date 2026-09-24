@@ -70,6 +70,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 
 /* ⚠⚠⚠ (#R468) THE DIAGNOSTIC HEADERS HAVE TO BE EXPOSED, OR THEY DO NOT EXIST WHERE THEY ARE READ.
    #R464 added `x-intmap-gdelt-cache` / `-age-ms` / `-store` for one stated reason: a cache that
@@ -422,9 +423,18 @@ function answer(body, ageMs, note, warmNote) {
 // NOTE: written WITHOUT TypeScript annotations, like news-relay, sv-cov and cable-geo —
 // scripts/static-checks.mjs parses every committed .ts with acorn, so a type annotation here fails
 // the build gate.
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   Atlas asks GDELT once per evidence search (js/atlas-sources.js, js/atlas-deadlines.js) and the
+   health probe once per five minutes. ESTIMATED from the callers. */
+const READER_PER_MIN = 20;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "gdelt-relay", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const raw = new URL(req.url).searchParams.get("u") || "";
   if (raw.length > MAX_QUERY_URL || !allowed(raw)) {

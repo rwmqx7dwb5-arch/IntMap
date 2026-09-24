@@ -40,6 +40,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 
 const CORS = corsFor();
 /* A Google News RSS document is tens of kilobytes; 4 MB is two orders of magnitude of headroom and
@@ -97,9 +98,19 @@ function allowed(raw) {
 
 // NOTE: written WITHOUT TypeScript annotations, like sv-cov and cable-geo — scripts/static-checks.mjs
 // parses every committed .ts with acorn, so a type annotation here fails the build gate.
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/news-feed.js asks for its feed list (two topics plus one per extra edition and per selected
+   country) per refresh, and Atlas asks for up to two editions per evidence search. ESTIMATED from
+   the callers; a reader does not refresh the feed or ask Atlas more than a few times a minute. */
+const READER_PER_MIN = 30;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "news-relay", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const u = new URL(req.url).searchParams.get("u") || "";
   if (u.length > MAX_QUERY_URL || !allowed(u)) {

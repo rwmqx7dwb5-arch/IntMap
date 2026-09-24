@@ -143,13 +143,14 @@ window.IntMapModules.statsCompare=function(HOST){
           try{ if(window.IntMapCache&&window.IntMapCache.get){ const c=await window.IntMapCache.get('imfraw_v1_'+imfCode);
             if(c&&c.t&&(Date.now()-c.t)<5*864e5&&c.vals) return c.vals; } }catch(_){}
           const url='https://www.imf.org/external/datamapper/api/v1/'+encodeURIComponent(imfCode);
-          const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x), x=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(x)];
-          for(const p of PROX){ try{
-            const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,12000):null;
-            const r=await fetch(p(url),ctrl?{signal:ctrl.signal}:undefined); if(to) clearTimeout(to);
-            if(!r.ok) continue; const j=await r.json();
+          /* (own-fetch-relay) ONE RUNG, AND IT IS OURS. www.imf.org sends no Access-Control-Allow-Origin (measured 2026-09-25:
+             200 application/json, NGDPD 157,531 B in 9.98 s), so the direct rung could never succeed and the three
+             after it were public CORS relays. supabase/functions/fetch-relay admits the DataMapper series
+             (_shared/fetch-relay-policy.js), and js/proxy-fetch.js gives that attempt the rule's own clock — the
+             upstream routinely takes ten seconds, which the 12 s per-rung timeout above was already sized for. */
+          try{ const txt=await HOST.fetchViaProxy(url,{as:'json'}); const j=txt?JSON.parse(txt):null;
             const vals=j&&j.values&&j.values[imfCode];
-            if(vals){ try{ window.IntMapCache&&window.IntMapCache.set&&window.IntMapCache.set('imfraw_v1_'+imfCode,{t:Date.now(),vals}); }catch(_){} return vals; } }catch(_){} }
+            if(vals){ try{ window.IntMapCache&&window.IntMapCache.set&&window.IntMapCache.set('imfraw_v1_'+imfCode,{t:Date.now(),vals}); }catch(_){} return vals; } }catch(_){}
           throw 0;   /* whole ladder failed → retryable, not negative-cached */
         })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return null; });
         cache[key]=wrapped;

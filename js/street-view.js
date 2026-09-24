@@ -13,6 +13,7 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the coverage tile's second way in */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.streetView=function(HOST){
   /* (#R173) 脱MapLibre 第7段階 — this module is written against the engine facade, never the raw renderer.
@@ -173,7 +174,7 @@ window.IntMapModules.streetView=function(HOST){
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
        COVERED lng/lat — {covered:true,lng,lat}, or {covered:false} when none is within the search radius, or null when
        the tiles couldn't be read at all. (#R145) Google's svv tiles do NOT reliably send Access-Control-Allow-Origin, so
-       the canvas read is loaded through the _COV_PROX ladder below (direct → our sv-cov ACAO proxy → CORS proxy) to keep
+       the canvas read is loaded through the ladder in _loadTile below (direct → our sv-cov ACAO relay; own-fetch-relay) to keep
        getImageData un-tainted. Sampled at the CURRENT map zoom (clamped) so the ~R-pixel radius matches the user's
        on-screen click precision at any scale. */
     const _COV_TS=256, _COV_R=115;   /* (#R142) widened search radius so "nearest coverage" actually reaches a nearby road instead of giving up (was 40px → off-road clicks returned no-coverage) */
@@ -185,18 +186,21 @@ window.IntMapModules.streetView=function(HOST){
        is blocked → every tile fails → sampler returns null → caller falls back to the RAW CLICK. The visible raster
        overlay still renders (no CORS needed) so coverage looked present but never snapped — the re-reported bug that
        R140/R142 both built on top of. Ladder: direct first (fast where ACAO IS present), then OUR OWN sv-cov edge
-       function which fetches the tile server-side and re-adds ACAO:* (works everywhere, incl. Private Relay), then a
-       public CORS proxy as a last resort. If all fail the caller still degrades HONESTLY (no silent raw marker). */
-    const _COV_PROX=(function(){ const b=(window.SUPABASE_URL||'').replace(/\/$/,''); return ['', ...(b?[b+'/functions/v1/sv-cov?u=']:[]), 'https://corsproxy.io/?url=']; })();
+       function which fetches the tile server-side and re-adds ACAO:* (works everywhere, incl. Private Relay). If both
+       fail the caller still degrades HONESTLY (no silent raw marker).
+       (own-fetch-relay) The third rung — corsproxy.io — is gone, and the second is asked of js/proxy-fetch.js per tile rather than
+       built here once: the prefix used to be computed when this module was evaluated, which is the #R216 shape (a
+       base read before src/vendor.js ran is '' for the whole session, and the relay silently disappears). */
     /* (#R145b) per-attempt TIMEOUT: an <img> load that neither loads nor errors (a stalled connection / hung proxy)
        would otherwise leave this promise — and thus _nearestCoverage's Promise.all — pending FOREVER, so the Street-View
        marker would never appear (worse than the honest raw-click fallback). Each proxy attempt is capped; on timeout we
        advance to the next proxy, and when the ladder is exhausted we resolve(false) so the sampler always completes. */
     function _loadTile(url,ctx,dx,dy){ return new Promise(res=>{ let tried=0, done=false, tid=null; const im=new Image(); im.crossOrigin='anonymous';
+      const srcs=[url, ownRelayUrl(url)].filter(Boolean);   /* the tile itself, then our relay for it */
       const fin=v=>{ if(done) return; done=true; try{ clearTimeout(tid); }catch(_){} res(v); };
-      const go=()=>{ if(done) return; if(tried>=_COV_PROX.length){ fin(false); return; } const pfx=_COV_PROX[tried++];
-        try{ clearTimeout(tid); }catch(_){} tid=setTimeout(()=>{ if(!done) go(); }, 3500);   /* this attempt hung → try the next proxy */
-        try{ im.src=pfx?(pfx+encodeURIComponent(url)):url; }catch(_){ go(); } };
+      const go=()=>{ if(done) return; if(tried>=srcs.length){ fin(false); return; } const src=srcs[tried++];
+        try{ clearTimeout(tid); }catch(_){} tid=setTimeout(()=>{ if(!done) go(); }, 3500);   /* this attempt hung → try the next rung */
+        try{ im.src=src; }catch(_){ go(); } };
       im.onload=()=>{ try{ ctx.drawImage(im,dx,dy); }catch(_){} fin(true); };
       im.onerror=()=>{ if(!done) go(); };
       go(); }); }

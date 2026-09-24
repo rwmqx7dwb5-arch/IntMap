@@ -53,6 +53,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { corsFor, fetchGuarded, relayFail } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 import {
   plainText, parseExtract, sourceHash, truncateForModel, EXTRACT_PROMPT, DEFAULT_MODEL_CHARS,
 } from "../_shared/who-don-extract.js";
@@ -268,7 +269,16 @@ async function donsByUrlName(ids) {
     "not extracted" rather than draw nothing and let the reader infer "no cases". A row that IS
     present with cases:null is the third state — the prose was read and states no cumulative
     total, which is a fact about the report and not about the pipeline. */
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket for the public GET (_shared/rate-limit.js
+   multiplies it by the readers one address may hold, and says when the estimate expires). The POST
+   is the scheduler's and is gated by its secret, not by this. js/outbreaks.js asks for the extracted
+   counts in batches of ids when the layer opens and when the reader opens an outbreak. ESTIMATED
+   from that caller. */
+const READER_PER_MIN = 12;
+
 async function handleGet(req) {
+  const limited = await callerGate(req, CORS, { scope: "who-don", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
   const url = new URL(req.url);
   const raw = (url.searchParams.get("ids") || "").split(",").map((s) => s.trim()).filter(Boolean);
   const ids = [];

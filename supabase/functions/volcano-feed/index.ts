@@ -42,6 +42,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 import { parseWeekly, parseAsh } from "../_shared/volcano-parse.js";
 
 const CORS = corsFor();
@@ -61,9 +62,18 @@ const TIMEOUT_MS = 20000;
 const CACHE_WEEKLY = "public, max-age=900, s-maxage=3600, stale-while-revalidate=86400";
 const CACHE_ASH = "public, max-age=15, s-maxage=15, stale-while-revalidate=300";
 
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/volcano-layers.js and js/volcano-intel.js read each feed once and keep it for FRESH_MS
+   (5 min). ESTIMATED from those callers. */
+const READER_PER_MIN = 12;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "volcano-feed", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const feed = new URL(req.url).searchParams.get("feed") || "";
   if (feed !== "weekly" && feed !== "ash") {

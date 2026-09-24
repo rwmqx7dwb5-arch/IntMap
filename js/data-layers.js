@@ -13,6 +13,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the TeleGeography fallback's second rung */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
@@ -5768,15 +5769,11 @@ window.IntMapModules.dataLayers=function(HOST){
 
        ⚠ the bare URL stays FIRST even though it is measured to fail from a browser: the app is also
        opened from origins that are allowed to read it (a local file server, an extension host), and
-       the data should not travel through anyone — including us — when it need not. The volunteer
-       proxies stay LAST, as the fallback for a build with no Supabase URL configured. */
-    const _cableProxies=(function(){ const b=(window.SUPABASE_URL||'').replace(/\/$/,'');
-      return [ x=>x,
-        ...(b?[ x=>`${b}/functions/v1/cable-geo?u=${encodeURIComponent(x)}` ]:[]),
-        x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`,
-        x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`,
-        x=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(x)}` ]; })();
-    async function _cableNet(u){ for(const mk of _cableProxies){ try{ const r=await fetch(mk(u)); if(!r.ok) continue; const j=await r.json(); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
+       the data should not travel through anyone — including us — when it need not.
+       (own-fetch-relay) The volunteer proxies that stood LAST are gone: a build with no Supabase URL has the bundled routes
+       (step 1 below) and the Cache API, and the relay URL is asked of js/proxy-fetch.js at call time instead of being
+       built here once when this module was evaluated (the #R216 shape — a base read too early is '' for good). */
+    async function _cableNet(u){ for(const src of [u, ownRelayUrl(u)]){ if(!src) continue; try{ const r=await fetch(src); if(!r.ok) continue; const j=await r.json(); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
     /* ══ (#R355) THE ROUTES COME FROM THIS APP'S OWN ORIGIN NOW ═══════════════════════════════════
        「世界中の全海底ケーブルが…実際に海底を通っていると考えられる場所に描画され」
 
@@ -5797,7 +5794,7 @@ window.IntMapModules.dataLayers=function(HOST){
             keeps `intmap-subcables-*` across deploys; see sw.js.)
          3. the Cache API copy of the TeleGeography answer — what #R188 put there. Every browser that
             has ever shown this layer still has one.
-         4. the TeleGeography relay chain — #R190's Edge Function, then the volunteer proxies.
+         4. the TeleGeography relay chain — #R190's Edge Function (the volunteer proxies behind it went in own-fetch-relay).
 
        Steps 3 and 4 are the MIGRATION path the brief's §3 asks to be kept: a build that somehow
        shipped without the dataset still draws cables, exactly as it did before this round. Nothing

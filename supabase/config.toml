@@ -163,9 +163,16 @@ verify_jwt = false
 # answer a browser with 200 and no Access-Control-Allow-Origin, so the page cannot read them
 # directly; this fetches them server-side and hands them back with the header. Keyless and
 # world-readable like the other relays, and an allow-list of two endpoints rather than an open
-# proxy — only ticker symbols pass through it. The public CORS relays stay behind it in
-# js/proxy-fetch.js, so an outage here falls back to what the app did before.
+# proxy — only ticker symbols pass through it. (own-fetch-relay) Nothing public stands behind it any more:
+# js/proxy-fetch.js offers the page's own relays and, where the caller allows it, the host itself.
 [functions.quotes-relay]
+verify_jwt = false
+
+# fetch-relay (own-fetch-relay) is the page's own relay for the upstreams that send no ACAO and have no
+# relay of their own — it replaced the public CORS proxies. Keyless, no user data, and an
+# allow-list rather than an open proxy: supabase/functions/_shared/fetch-relay-policy.js, which
+# js/proxy-fetch.js imports too. Every caller address takes a token from the shared bucket.
+[functions.fetch-relay]
 verify_jwt = false
 
 # aviation-feed (#R341) is the single upstream reader for live air traffic: it polls the configured

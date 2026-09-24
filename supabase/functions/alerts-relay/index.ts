@@ -31,6 +31,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 
 const CORS = corsFor();
 /* (#R297) 「更新が遅すぎる。リアルタイムにと言っている。」 — this is the floor the app's rotation
@@ -904,9 +905,21 @@ function summariseSWIC(raw, mid) {
     areas: out, areaTotal: areas.size, geomDropped, newest: newestSent };
 }
 
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/world-packs.js ticks every 10 s (TICK_MS) and each tick asks this relay for CMA (up to
+   CN_PAGES=2 pages), the three CAP indices and the rotating MeteoAlarm / WMO batches, the rotations
+   running up to COLD_CALLS=10 batches at once until every country has been read once. About a
+   hundred a minute steady, more in the first minute; 240 is that cold minute, ESTIMATED from those
+   timers rather than measured. */
+const READER_PER_MIN = 240;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "alerts-relay", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const q = new URL(req.url).searchParams;
   /* `?swicmeta=1` — the WMO's own two tables: which member is which country, which service issues
