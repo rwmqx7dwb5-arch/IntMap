@@ -126,7 +126,9 @@ test('R320 ④: the capability audit is still green, and still asks twenty-three
     toolsSrc: read('js/atlas-toolsurface.js'),
     schemas: SCHEMAS,
   });
-  /* ⚠ THIS NUMBER IS A GUARD, NOT A POLICY ([[intmap-ceiling-guards-are-not-policies]]): it is here so a
+  /* ⚠⚠ THE SAME NUMBER LIVES IN tests/r318-checks.test.mjs ②a — move both or CI finds the other one
+     (#R801 moved this copy first and was caught by that one).
+     ⚠ THIS NUMBER IS A GUARD, NOT A POLICY ([[intmap-ceiling-guards-are-not-policies]]): it is here so a
      check that quietly stops running is noticed, and it moves the day one is deliberately added. #R406
      added argument-schemas and required-arguments; #R801 added catalogue-subject, which asks of every
      capability whether its own catalogue block says what it is ABOUT — measured on production that round,
