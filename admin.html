@@ -100,6 +100,7 @@
       <button class="tab" data-tab="comm">Community</button>
       <button class="tab" data-tab="fb">Feedback</button>
       <button class="tab" data-tab="nev">News Events</button>
+      <button class="tab" data-tab="err">Errors</button>
     </div>
 
     <!-- GEO PINS -->
@@ -189,6 +190,28 @@
           <span class="muted" id="nev-sel" style="align-self:center;font-size:12px;"></span>
         </div>
         <div id="nev-list"></div>
+      </div>
+    </section>
+
+    <!-- ERRORS (client-error-log · docs/MONITORING.md §2)
+         IntMap's own record of the exceptions readers' browsers hit — public.client_errors, one row per
+         distinct defect (fingerprint), written by the client-errors Edge Function. READ-ONLY here: the
+         table grants an admin SELECT and nothing else, so the record cannot be edited from this console.
+         Rows go 30 days after they were last seen. -->
+    <section id="tab-err" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>Client errors <span class="count" id="err-count"></span></h2>
+          <button class="btn sec sm" id="err-refresh">Refresh</button>
+        </div>
+        <p class="muted" style="margin:0 0 10px;">
+          One row per distinct defect, newest first. Count is every occurrence reported since it was first seen;
+          release, page and browser are from the latest one. Nothing here identifies a reader: no IP, user, query
+          string or typed text is stored. Rows are deleted 30 days after they were last seen.
+        </p>
+        <div style="overflow:auto;"><table id="err-table"><thead><tr>
+          <th>Last seen</th><th>Count</th><th>Message</th><th>Release</th><th>Page</th><th>Browser</th><th>First seen</th>
+        </tr></thead><tbody></tbody></table></div>
       </div>
     </section>
   </div>
@@ -294,10 +317,40 @@
     $('tab-comm').classList.toggle('hide',b.dataset.tab!=='comm');
     $('tab-fb').classList.toggle('hide',b.dataset.tab!=='fb');
     $('tab-nev').classList.toggle('hide',b.dataset.tab!=='nev');
+    $('tab-err').classList.toggle('hide',b.dataset.tab!=='err');
     if(b.dataset.tab==='comm') loadComm();
     if(b.dataset.tab==='fb') loadFb();
     if(b.dataset.tab==='nev') loadNev();
+    if(b.dataset.tab==='err') loadErr();
   });
+
+  /* ---------------- ERRORS (client-error-log) ----------------
+     Read-only. Every value is a string a reader's browser sent (scrubbed on both sides of the wire, but
+     still untrusted), so every one goes through esc() — the stack included, inside <pre>. The stack is
+     behind a <details> so a table of a few hundred defects stays readable. */
+  $('err-refresh').onclick=()=>loadErr();
+  async function loadErr(){
+    const tb=$('err-table').querySelector('tbody');
+    tb.innerHTML='<tr><td colspan="7" class="muted">Loading…</td></tr>';
+    try{
+      const {data,error}=await sb.from('client_errors')
+        .select('fingerprint,kind,message,stack,path,release,browser,count,first_seen,last_seen')
+        .order('last_seen',{ascending:false}).limit(500);
+      if(error){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(error.message)+' — is the client-error-log migration applied?</td></tr>'; return; }
+      $('err-count').textContent=(data||[]).length;
+      if(!data||!data.length){ tb.innerHTML='<tr><td colspan="7" class="muted">No errors recorded in the last 30 days.</td></tr>'; return; }
+      tb.innerHTML=data.map(r=>'<tr>'+
+        '<td style="white-space:nowrap;">'+esc(fmtTime(r.last_seen))+'</td>'+
+        '<td style="text-align:right;font-variant-numeric:tabular-nums;">'+esc(r.count)+'</td>'+
+        '<td style="max-width:560px;">'+(r.kind==='rejection'?'<span class="muted">[rejection]</span> ':'')+esc(r.message)+
+          (r.stack?'<details style="margin-top:4px;"><summary class="muted" style="cursor:pointer;">Stack</summary><pre style="white-space:pre-wrap;word-break:break-all;font-size:11px;margin:6px 0 0;">'+esc(r.stack)+'</pre></details>':'')+
+          '<div class="muted" style="font-family:monospace;font-size:10.5px;">'+esc(r.fingerprint)+'</div></td>'+
+        '<td style="white-space:nowrap;">'+esc(r.release||'—')+'</td>'+
+        '<td>'+esc(r.path||'—')+'</td>'+
+        '<td style="white-space:nowrap;">'+esc(r.browser||'—')+'</td>'+
+        '<td style="white-space:nowrap;">'+esc(fmtTime(r.first_seen))+'</td></tr>').join('');
+    }catch(e){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
+  }
 
   /* ---------------- NEWS EVENTS (#R386 · docs/NEWS-EVENTS.md §11) ----------------
      運用者の Merge / Split / Reassign / 上書き / undo。

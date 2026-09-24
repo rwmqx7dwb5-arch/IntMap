@@ -65,7 +65,8 @@ fix, and the **test/check added** so it cannot recur silently.
 
 - Open the production URL yourself.
 - Check **Actions → Uptime (production)** — is there an open `status:prod-down` issue?
-- Check Sentry (if enabled) for an error spike.
+- Check **admin.html → Errors** for a spike: a defect whose `Count` is climbing, or one first seen
+  on the release you just shipped ([`docs/MONITORING.md`](MONITORING.md) §2).
 - Note the symptom (blank screen, JS error, 404, slow) and the current
   `window.INTMAP_BUILD`.
 
@@ -114,7 +115,7 @@ Do not debug on production. Restore the last known-good build:
   `window.__imErrors`.
 - Reproduce in a test: add a failing case to `tests/` that captures the breakage, so CI
   catches it next time.
-- Use the Sentry stack trace / the Playwright trace from the failed run if available.
+- Use the stack trace in **admin.html → Errors** / the Playwright trace from the failed run if available.
 
 ## 6. Fix and verify before it merges
 

@@ -36,7 +36,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tierSpecs } from '../scripts/tiers.mjs';
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
@@ -166,15 +166,21 @@ test('⑥ the heading is a subject, but only for a quantity standing at the head
 /* ── ⑦ the gate itself goes red on the real defect ───────────────────────────────────────── */
 /* ⚠ A gate is worth nothing until it has been seen to fail on the thing it exists to catch.
    This puts `docs/README.md` back to what #R696 found and runs the real rule over the real tree. */
-test('⑦ check:docs fails when docs/README.md says 16 again', async () => {
+/* (#client-error-log) THE DEFECT IS «ONE SHORT», AND WHAT IS ONE SHORT IS DISCOVERED. The needle
+   said 17 and the mutation 16 by hand, so the eighteenth function made the anchor miss before the
+   rule was exercised — the same shape tests/r399 and tests/r403 had. The count comes from the
+   directory the rule itself counts; the mutation is still exactly #R696's: one short. */
+test('⑦ check:docs fails when docs/README.md is one short again', async () => {
+  const N = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('_') && existsSync(join(ROOT, 'supabase/functions', d.name, 'index.ts'))).length;
   await withTreeLock(() => {
     const rel = 'docs/README.md';
     const original = readFileSync(join(ROOT, rel));
     const text = original.toString('utf8');
-    const NEEDLE = 'Edge Function の名簿（17 本';
+    const NEEDLE = `Edge Function の名簿（${N} 本`;
     assert.ok(text.includes(NEEDLE), `${rel} no longer carries the sentence this test mutates`);
     try {
-      writeFileSync(join(ROOT, rel), text.replace(NEEDLE, 'Edge Function の名簿（16 本'));
+      writeFileSync(join(ROOT, rel), text.replace(NEEDLE, `Edge Function の名簿（${N - 1} 本`));
       let code = 0, out = '';
       try {
         out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=edge-count'],

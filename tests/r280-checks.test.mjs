@@ -86,7 +86,7 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
       from: 'headlines are fetched <b>by your browser</b>',
       to: 'news is fetched and geolocated server-side and stored' },
     { rule: 'csp', file: 'Architecture.md',
-      from: '- ⚠ **`index.html` の `script-src` には現在 `\'unsafe-eval\'` と 8 つの CDN ホストが入っている**',
+      from: '- ⚠ **`index.html` の `script-src` には現在 `\'unsafe-eval\'` と 7 つの CDN ホストが入っている**',
       to: '- ⚠ `\'unsafe-eval\'` と CDN ホスト（どちらも現在は入っていない）' },
     { rule: 'db-tables', file: 'supabase/tests/00_structure_test.sql',
       /* (#R351) news_ingest_runs joined both lists and the count moved 29 → 30, so the anchor moved
@@ -95,9 +95,10 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
          (#R491) ai_gloss_usage joined them, 31 → 32, and the anchor moved once more.
          (#R507) profiles_public stopped being a VIEW and became a table, so it joined both lists
          too, 32 → 33 — and it is now the last name in list #1, so the anchor is on it.
-         (#R650) who_don_extracts joined them, 33 → 34, and the anchor moved onto it. */
-      from: "  'who_don_extracts'\n]) as t;                                                    -- 34 assertions\n\n-- 2)",
-      to: "]) as t;                                                    -- 34 assertions\n\n-- 2)" },
+         (#R650) who_don_extracts joined them, 33 → 34, and the anchor moved onto it.
+         (client-error-log) client_errors joined them, 34 → 35, and the anchor moved onto it. */
+      from: "  'client_errors'\n]) as t;                                                    -- 35 assertions\n\n-- 2)",
+      to: "]) as t;                                                    -- 35 assertions\n\n-- 2)" },
     { rule: 'legal', file: 'privacy.html',
       from: '<script src="./js/legal-text.js"></script>\n', to: '' },
     { rule: 'doc-index', file: 'docs/README.md',

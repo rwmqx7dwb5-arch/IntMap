@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（319本・14.9 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（960行・93 KB）＋ `css/`（3本）＋ `js/`（320本・14.9 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1569,20 +1569,21 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **35 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **36 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
 ＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
 `news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`
 ＋取り込みの計測 `news_ingest_runs` ＋運用者の監査証跡 `news_event_admin_actions`
-＋ WHO Disease Outbreak News の症例数・死亡数 `who_don_extracts`）。
+＋ WHO Disease Outbreak News の症例数・死亡数 `who_don_extracts`
+＋ 利用者のブラウザで起きたエラーの記録 `client_errors`）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **17本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **18本**（`_shared/` は関数ではない）
 
-> ⚠ **17本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **18本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
@@ -1778,10 +1779,25 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   （chart・spark・ティッカーを直接キーにした平坦形）のどれでもなければ通さない。
   キャッシュは 60 秒（`s-maxage`）で、同時に開いた読者の集中を 1 回の上流要求に畳む。
 
-⚠ **`_shared/relay-guard.js` を共有するのは15本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+- **`client-errors`** … **利用者のブラウザで起きたエラーの記録先**（`--no-verify-jwt`・秘密なし）。
+  `js/client-error-report.js` が `error` / `unhandledrejection` を拾い、`navigator.sendBeacon` で POST する
+  （本番のオリジンからだけ。ローカル preview は送らない）。貯める先は `client_errors`（§6.1）で、
+  **欠陥 1 つにつき 1 行**（fingerprint＝メッセージの数字を畳んだもの＋先頭フレーム の SHA-256）に回数を足す。
+  読むのは `admin.html` の **Errors** タブ（admin の SELECT だけ。編集はできない）。
+  ⚠ **何を記録し何を記録しないかの正本は `_shared/client-error-shape.js`**——ブラウザが送る前と、
+  この関数が貯める前の**両方**で同じ関数が洗う（サーバーはクライアントの洗浄を信用しない）。
+  残すのはメッセージ・スタック（URL はパスまで）・ページのパス・ビルド・ブラウザ名とメジャー版・回数と日時だけで、
+  **IP・利用者・クエリ文字列・入力文字は持たない**（表に列が無い）。fingerprint は**サーバーが計算する**。
+  守りは POST 限定・本文上限・Origin（本番と 127.0.0.1 / localhost）・共有 token bucket 2 つ
+  （呼び手ごと＝**アドレスではなくその HMAC** を鍵にする／プロジェクト全体の 1 日）・表の行数上限。
+  1 日の上限は `CLIENT_ERRORS_GLOBAL_PER_DAY` で意図して上げる。保持は**最後の発生から 30 日**
+  （pg_cron `client-errors-purge` が毎日 `purge_client_errors` を呼ぶ）。
+  詳細は [`docs/MONITORING.md`](docs/MONITORING.md) §2。
+
+⚠ **`_shared/relay-guard.js` を共有するのは16本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` / `client-errors` /
 `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
-`ai-proxy`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、**残り12本は無認証**。
-`ai-proxy` と `monitor-run` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
+`ai-proxy`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、**残り13本は無認証**。
+`ai-proxy`・`monitor-run`・`client-errors` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
 POST をヘッダではなく**本文の最後のバイトまで**同じ期限と上限で読む）で、URL allowlist の側ではない。
 ⚠ **リダイレクトは手で辿る**（`followRedirects`）。`redirect:"follow"` は最初の 1 ホップにしか allowlist を訊いていなかったので、
 各ホップを同じ https オリジンか、呼び出し側が渡した `allowRedirect(next, from)` で検査し、上限は 3 ホップ（`MAX_REDIRECTS`）。
@@ -4663,10 +4679,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を17本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を18本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don; do
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```
@@ -4740,10 +4756,13 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
   ⚠ **`index.html` にビルド印は2つある**（`window.__imBuild` と `window.INTMAP_BUILD`）。
   `tests/r169-checks.test.mjs` が同じラウンドを名乗ることを検査し、`tests/r207-checks.test.mjs` が
   **`DEV-NOTES.md` の最新ラウンド見出しと一致すること**を検査する。**毎ラウンド両方上げる。**
-- **Sentry フォワーダ**は休眠（`window.INTMAP_SENTRY_DSN` / `<meta name="intmap-sentry-dsn">` が
-  未設定なら完全無動作・0コスト）。設定時のみ SDK を遅延ロードし、`beforeSend`/`beforeBreadcrumb` で
-  PII・トークン・cookie・localStorage・Atlas 入力・検索語・精密位置を送らずクエリを除去する。
-  常時稼働の土台は `window.__imErrors`（error / rejection のリングバッファ）。
+- **エラーの記録**は自前（外部アカウント不要）。`js/client-error-report.js` が `error` / `unhandledrejection` を
+  拾い、洗ってから Edge Function `client-errors` へ送り、`client_errors` 表に**欠陥ごとに回数を足して**貯める。
+  同じ fingerprint は 1 ページ読み込みにつき 1 回・1 ページ読み込みあたり最大 10 件・**本番のオリジンからだけ**送る。
+  読むのは `admin.html` の **Errors** タブ（§6.2・`docs/MONITORING.md` §2）。
+  利用者ごとの無効化の設定は無い（IntMap に計測の同意設定が無く、`INTMAP_ANALYTICS` はサイト全体の
+  第三者アナリティクスのスイッチ）。送るものに利用者を識別するものは無く、何を送るかはプライバシーポリシー §1。
+  それとは別に `window.__imErrors`（error / rejection のリングバッファ）が常に動き、Bug Report が添付する。
 - **STAGING リボン**（`*.pages.dev` / `?staging=1` / meta フラグのときだけ表示）。
 
 ### 15.4 リリース（現行）
@@ -4813,10 +4832,10 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（24本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（25本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
-- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列）。
+- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持）。
 
 ### 16.2 RLS の3大保証（テストで実証）
 
@@ -4921,9 +4940,9 @@ supabase db diff --schema public             # driftゼロ確認
   `tests/r502-checks.test.mjs` が**フラグと本文を結んでおり**、`js/legal-text.js` に
   `Google Analytics` と `Clarity` を書かないまま `true` に戻すとゲートが赤くなる。
   auth 復帰 URL に対する防御は 1 行も消していない（`docs/SECURITY-ARCHITECTURE.md` §7）。
-- ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 8 つの CDN ホストが入っている**
+- ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN ホストが入っている**
   （`unpkg.com` / `maps.googleapis.com` / `www.googletagmanager.com` / `www.google-analytics.com` /
-  `ssl.google-analytics.com` / `browser.sentry-cdn.com` / `www.clarity.ms` / `*.clarity.ms`）。
+  `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。
   これは**受け入れて追跡している残存リスク**で、理由・影響・軽減策は
   `docs/SECURITY-ARCHITECTURE.md §8` の 1 番に測定日つきで書いてある。
   ⚠ **`'unsafe-eval'` を外せるかは実測済み**（2026-09-18・`securitypolicyviolation` を最初のバイトから記録）:
@@ -4934,7 +4953,7 @@ supabase db diff --schema public             # driftゼロ確認
   ⚠ **`admin.html` はそのどちらも持たない**（SDK 同梱＋データリテラル・パーサ）。
   `tests/security-logic.test.mjs` が admin 側に `'unsafe-eval'` が戻らないことを毎回検査する。
   ⚠ **新しい CDN ホストを CSP に足さない。** 実行時依存は npm から取り `src/vendor.js` が再公開する
-  （§1.1）。現在残っている 8 つは、その方針より前からある計測・地図・タイル系のタグである。
+  （§1.1）。現在残っている 7 つは、その方針より前からある計測・地図・タイル系のタグである。
   ⚠ 不在の directive は「許可」ではなく「**不在**」であり、それが意図かどうかを policy が言えない。
 - **ヘッダ形式でしか設定できないもの**（`X-Frame-Options` / `Referrer-Policy` / `Permissions-Policy` /
   `X-Content-Type-Options`）は **GitHub Pages では設定できない**ので未設定のままである。
