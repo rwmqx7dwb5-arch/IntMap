@@ -1,3 +1,4 @@
+// @ts-check
 /* ============================================================================
  *  IntMap · RUNTIME — the one frame loop, the one timer, the one box, the one lifecycle  (#R234)
  * ----------------------------------------------------------------------------
@@ -52,7 +53,7 @@
  *  a rule requires it. The early-timer memo below is an ordinary module-scope Map now.)
  * ==========================================================================*/
 
-export function makeRuntime(HOST) {
+/** @param {import('../types/im-host').IMHost} HOST */ export function makeRuntime(HOST) {
   return (function () {
     const IM_HOST = HOST;
 
@@ -221,7 +222,7 @@ export function makeRuntime(HOST) {
       _wheelMs = want;
       _wheel = setTimeout(_wheelTick, want);
       /* a timer must not keep a headless process alive (Node: tests, scripts/frame-profile.mjs); a browser ignores this */
-      try { if (_wheel && typeof _wheel.unref === 'function') _wheel.unref(); } catch (_) { }
+      try { const u = /** @type {any} */ (_wheel); if (u && typeof u.unref === 'function') u.unref(); } catch (_) { }
     }
     function _hidden() { try { return !!document.hidden; } catch (_) { return false; } }
 
@@ -380,7 +381,7 @@ export function makeRuntime(HOST) {
         frame(key, fn) { const k = keyOf(key); frame(k, fn, { capability: name }); undo.push(() => ONCE.delete(k)); },
         onCamera(key, fn, opts) { const k = keyOf(key); const off = onCamera(k, fn, Object.assign({}, opts || {}, { capability: name })); undo.push(off); return off; },
         idle(key, fn, opts) { const k = keyOf(key); idle(k, fn, Object.assign({}, opts || {}, { capability: name })); undo.push(() => IDLE.delete(k)); },
-        timeout(ms, fn) { const h = setTimeout(() => { if (S.alive()) { try { fn(); } catch (err) { _oops(name + ':timeout', err); } } }, ms); try { if (h && typeof h.unref === 'function') h.unref(); } catch (_) { } undo.push(() => clearTimeout(h)); return h; },
+        timeout(ms, fn) { const h = setTimeout(() => { if (S.alive()) { try { fn(); } catch (err) { _oops(name + ':timeout', err); } } }, ms); try { const u = /** @type {any} */ (h); if (u && typeof u.unref === 'function') u.unref(); } catch (_) { } undo.push(() => clearTimeout(h)); return h; },
         fetch(url, init) {
           const o = Object.assign({}, init || {});
           if (ac) {

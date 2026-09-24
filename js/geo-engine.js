@@ -1,3 +1,4 @@
+// @ts-check
 /* ============================================================================
  *  IntMap · THE GEO ENGINE — the renderer seam itself  (#R178)
  * ----------------------------------------------------------------------------
@@ -68,7 +69,7 @@ function _m(){ return window.__imap||null; }
   let _claimedOE=null;
   function _claimClick(e){ try{ _claimedOE=(e&&e.originalEvent)||e||null; }catch(_){ _claimedOE=null; } }
   function _clickClaimed(e){ try{ const oe=(e&&e.originalEvent)||e||null; return !!(oe&&_claimedOE===oe); }catch(_){ return false; } }
-  const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
+  /** @type {import('../types/geo-engine').GeoEngineCapabilities} */ const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
     rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
     /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
     extrusion3d:true,
@@ -209,7 +210,7 @@ function _m(){ return window.__imap||null; }
      js/geo-command-log.js. They moved there because the shell has a line ceiling and this file is
      part of it (tests/r168-checks.test.mjs); nothing in that module names the renderer, so the
      coupling gate is untouched. See its header for what is measured and what ships switched on. */
-  function makeMapLibreAdapter(_m){
+  /** @returns {import('../types/geo-engine').MapLibreAdapter} */ function makeMapLibreAdapter(_m){
   /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
   const _solids={};
   /* (#R322) this view's renderer-command tally and its per-source memory — both PER ADAPTER, for the
@@ -1757,7 +1758,7 @@ function _m(){ return window.__imap||null; }
      .orbit3d read `undefined`, which a caller cannot tell apart from «this engine cannot».
      tests/r323-checks parses all three capability tables and compares them as key sets and as
      values; a whole-file regex cannot, because two of the three live in THIS file. */
-  const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
+  /** @type {import('../types/geo-engine').DeclaredContract} */ const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
     /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its
        own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for.
        (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
@@ -1778,7 +1779,7 @@ function _m(){ return window.__imap||null; }
      contract simply had no way to describe anything but the primary map.
      `A` is a GETTER rather than the adapter itself: `use()` may swap the engine's adapter at
      runtime — that is how a Cesium adapter arrives — and every method must follow it. */
-  function engineFacade(A){
+  /** @param {() => import('../types/geo-engine').GeoEngineAdapter} A @returns {import('../types/geo-engine').GeoEngineFacade} */ function engineFacade(A){
    return {
     /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
     id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },

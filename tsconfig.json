@@ -1,0 +1,17 @@
+{
+  "//": "npm run check:types. checkJs is OFF: a js/ file enters the checked population by carrying `// @ts-check` at the top, and nothing else lists it. include only makes every js/ file VISIBLE to the checker (imports resolve, types flow); an unchecked file reports nothing. strict is off because the first population was chosen by where the contract lives, not by how clean it already was — see DECISIONS.md «型検査は段階的に». types/ holds the declared contracts.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": [],
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "include": ["types/**/*.d.ts", "js/**/*.js"]
+}
