@@ -301,8 +301,10 @@ export function makeAtlasSchemas() {
          FOR — carried into the frame's caption so the reader can see why their view was captured. */
       'view.inspect': { type: 'object', properties: { include: { type: 'string', enum: ['screen', 'map'] }, reason: str() } },
       /* (#R773) 取り寄せるものは名前で指す。名前は [ATTACHED EARLIER…] が述べたもので、無ければ
-         その一覧が返る（存在しない名前に対して黙って別のものを返さない）。 */
-      'attach.recall': { type: 'object', properties: { name: str() }, required: ['name'] },
+         その一覧が返る（存在しない名前に対して黙って別のものを返さない）。
+         (#R790) `offset` は任意——長いテキストの続きを読むときだけ、前回の応答が返した
+         `next` をそのまま渡す。省略すれば先頭の窓（画像・PDF は無関係、この欄は無視される）。 */
+      'attach.recall': { type: 'object', properties: { name: str(), offset: int(0) }, required: ['name'] },
       /* the place is optional (no place = the current view) but the KIND is not: without it the
          case asks «what kind of facilities?» */
       'map.poi': { type: 'object', properties: { kind: str(), query: str(), what: str(), name: str(), place: str(), color: str() }, anyOf: [{ required: ['kind'] }, { required: ['query'] }, { required: ['what'] }, { required: ['name'] }] },

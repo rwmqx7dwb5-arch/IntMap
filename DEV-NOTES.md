@@ -1,3 +1,61 @@
+## R790 — 添付ファイルは、読み取った瞬間に末尾を捨てていた——取り寄せても戻らない理由
+
+〈利用者の指摘「Atlasに添付したファイルは、長すぎると先頭部分しか読み込んでくれない問題をどうにかして」〉
+
+### 1. 原因
+
+`js/atlas-attach.js` の `textDesc()` が、ファイルを読み取った**その場**で `LIMITS.textPerFile`
+（120,000 字）を超える分を `slice` して捨てていた。#R773 が作った `attach.recall`（一度手放した
+添付を取り戻す道具）で同じファイルを取り寄せても、台帳（`js/atlas-attach-log.js`）に載っていたのは
+既に切り詰められた同じ先頭だけ——**取り寄せが「もう捨てたものを取り寄せる」という、届きようのない
+依頼になっていた**。カタログの説明文（`js/atlas-catalog-text.js`）も「テキスト添付は常に全部届く」と
+Atlas に誤って伝えていた。
+
+xlsx の複数シート・名前を持たない ZIP（epub 等）は、抽出そのものの予算にも同じ `textPerFile` を
+流用しており、2 件目以降のシート／エントリが丸ごと抽出されないことがあった（docx/pptx/odf/kmz は
+元から抽出時にこの予算を見ていなかったので無傷だった）。
+
+### 2. 直したこと
+
+- `textDesc()`: 読み取り時には切らない。全文を保つ。`truncated` は「自動で送る量より長い」という
+  情報フラグに意味を変えた（消えたことの印ではない）。
+- 抽出予算（xlsx・汎用 ZIP）: `LIMITS.textPerFile` ではなく、読み取り自体の ceiling
+  `LIMITS.readBytes` を流用——docx/pptx/odf/kmz と同じ「全量抽出」に揃えた。
+- `js/atlas-attach-log.js`: `page(rec, offset, limit)` を新設し、`carry()`（毎ターン自動掲載）が
+  これで先頭 1 窓だけを切り出すようにした。台帳自身は全文を持ち続ける。
+- `attach.recall`（能力・`js/atlas-console.js` の dispatch）: `offset` を受け取れるようにし、
+  応答の `exec` に `offset`/`next`/`total`/`more` を積んだ。`more` が真の間 `offset:next` で
+  呼び直せば、長いファイルの残りを窓ごとに読み進められる（画像・PDF は無関係、丸ごと戻る）。
+- `js/atlas-schemas.js`: `attach.recall` のスキーマに任意の `offset` を追加。
+- `js/atlas-catalog-text.js`: 「テキストは常に全部届く」という誤った前提を消し、窓と `offset` の
+  使い方を説明する文に差し替えた。
+- `js/atlas-file-view.js`: 「先頭部分のみ送信」という、直った今では誤りになる文言を
+  「自動で送るのは先頭部分のみ。続きは尋ねれば読み込みます」に改めた（5 言語）。
+
+### 3. 検査
+
+`tests/r790-atlas-attach-full-text-checks.test.mjs`（新規・7件）。既存の `tests/r540-checks.test.mjs`・
+`tests/r773-atlas-attach-preview-checks.test.mjs`・`tests/r783-attach-recall-checks.test.mjs`
+（計31件）は無改造のまま全て緑——枠の値（`textPerFile`=120,000／`textTotal`=400,000）自体は
+変えていない。
+
+### 4. ⚠⚠⚠ 同梱: `Migrations rebuild + RLS/permission tests` が必須チェックなのに一度も報告しない
+
+この PR を merge しようとして発見（この回の主題とは無関係）。`.github/workflows/db.yml` は
+`paths: ['supabase/**', …]` で絞られており、`Protect main` ruleset は 2026-09-18 03:14 にこの
+job 名を**必須ステータスチェック**として追加していた——`supabase/` を触らない PR では job が
+一度も起動せず、GitHub はその不在を「不要だった」ではなく「まだ終わっていない」と読むので、
+**全チェックが緑でも merge が永久に `BLOCKED`** になる。同じ症状の PR が他に 3 本（#709・#710・
+#655）。
+
+診断と修正は別セッションの **PR #712（R793）「必須チェックが『走らない』と『まだ終わっていない』は、
+外から同じに見える」が先に行っていた**——`paths:` を撤去して job 自体は常に起動・報告させ、重い
+工程（Docker・Supabase CLI・rebuild・pgTAP・backup/restore）だけを `git diff` ベースの内部ガード
+（`steps.scope.outputs.run`、答えられない経路は fail-open で全実行）の後ろへ回す形。この PR (#713)
+の merge を待たせないため、**その修正をそのまま**（`.github/workflows/db.yml` と
+`tests/r793-db-gate-never-reports-checks.test.mjs`）取り込んだ。⚠ #712 は本 PR とは独立に進行中
+——先に merge された側が正本になり、後発は diff が空になるだけで衝突しない。
+
 ### R771 — **1 ラウンドの待ち時間は工程の数ではなく、直列に並んだ待ちと、その往復だった**
 
 〈利用者の指摘「Claude Code の実装が遅すぎる。官僚的手続き主義？」「ワークフローが長すぎる！！！
