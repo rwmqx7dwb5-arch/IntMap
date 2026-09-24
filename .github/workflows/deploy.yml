@@ -11,6 +11,14 @@
 # Unsetting the variable is the stop switch: every job below then skips (green, no-op) and
 # Pages falls back to the branch publish.
 #
+# green-skip-by-design vars.ENABLE_PAGES_DEPLOY: an operator's stop switch, not a missing setting.
+#   Measured 2026-09-25 with `gh variable list`: ENABLE_PAGES_DEPLOY=true, set 2026-07-18. Turning it
+#   off is a deliberate act by someone with admin rights, and while it is off «did not publish» IS
+#   the job done — a red run on every push would make the switch unusable. Everywhere else in
+#   .github/workflows a missing secret or variable is RED (tests/r822-backup-and-deploy-as-code-checks
+#   reads this line; delete it and the skip below becomes a failure of that test). rollback.yml
+#   reads the same variable and is red when it is off: there a person asked for a publish.
+#
 # The flow is: build → static checks → hermetic browser tests → publish the BUILT TREE
 # (`dist/`, from `npm run build`) → post-deploy smoke test against the live URL.
 # ⚠ (#R628) This line said 「publish the EXACT committed tree」, which stopped being true at #R175:

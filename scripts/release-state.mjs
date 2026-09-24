@@ -35,6 +35,8 @@
  *  ⚠ これは **CI のゲートではない**（`npm test` に入れない）。3 面とも資格情報とネットワークを
  *  必要とし、CI のチェックアウトは detached な PR ref なので「main と一致しない」が正常な状態
  *  になる。CI が証明できることは `tests/r745-arch-review-followup-checks.test.mjs` が別に測る。
+ *  ⚠ ただし **nightly の読み手はある**: `.github/workflows/supabase-deploy.yml` の drift job が
+ *  main のチェックアウトで `--edge --db --check` を走らせ、exit 1（食い違い）も exit 2（測れない）も赤にする。
  *  ⚠ **「測れなかった」を「一致している」の代わりにしない。** 取得に失敗した面は `unknown` と
  *  して報告し、`--check` は exit 2 で終わる（`intmap-one-store-was-asked` の教訓）。
  *  ⚠ **名前を 1 つも手で書かない。** 関数の名簿は `supabase/functions/` の実体、Supabase の
@@ -206,7 +208,11 @@ const measureEdge = () => {
   if (!REF) return { state: 'unknown', why: 'src/vendor.js から Supabase の project ref を読めなかった', roster };
   let listed;
   try {
-    const raw = run('supabase', ['functions', 'list', '--project-ref', REF], { cwd: ROOT });
+    /* ⚠ `-o json` を明示する。実測 2026-09-25（CLI 2.106.0）: 旗が無いときの形式は CLI が
+       「エージェントの中から呼ばれたか」を環境変数で推測して決める——Claude Code の中では JSON、
+       `--agent no`（＝GitHub Actions の nightly）では表を出す。表からは配列が取れないので、
+       nightly は毎晩「測れなかった」になるところだった。 */
+    const raw = run('supabase', ['functions', 'list', '--project-ref', REF, '-o', 'json'], { cwd: ROOT });
     /* CLI は版によって更新案内を混ぜるので、配列そのものだけを取り出す。 */
     listed = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1));
   } catch (e) { return { state: 'unknown', why: `supabase functions list が失敗した: ${String(e.message).split('\n')[0]}`, roster }; }

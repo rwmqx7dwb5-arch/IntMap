@@ -1,18 +1,19 @@
-# IntMap — scheduled encrypted database backup (DORMANT until secrets are set).
+# IntMap — scheduled encrypted database backup.
 # ----------------------------------------------------------------------------
 # A free, self-hosted fallback to Supabase's managed backups. It runs pg_dump,
 # encrypts with GPG (AES-256), checksums, and uploads the ENCRYPTED file as a
-# short-retention artifact. It stays DORMANT (each run skips) until BOTH secrets
-# exist, exactly like the gated Pages deploy — so it never fails an empty repo.
+# short-retention artifact.
 #
-# TO ACTIVATE, add two repository secrets (Settings → Secrets and variables →
-# Actions → New repository secret) — see docs/BACKUP-RESTORE.md:
-#   SUPABASE_DB_URL         Postgres session-pooler connection string (the password
-#                           is in it → SECRET). Dashboard → Settings → Database →
-#                           Connection string → URI (session pooler).
-#   BACKUP_GPG_PASSPHRASE   A strong passphrase you generate and keep in a password
-#                           manager. It is the ONLY key to the backups — losing it
-#                           makes them unrecoverable; leaking it defeats encryption.
+# ⚠ WITHOUT ITS TWO SECRETS THIS RUN IS RED, AND IT OPENS AN ISSUE NAMING THE MISSING ONE.
+# It used to skip and report success. MEASURED 2026-09-24, run 35975392869: it printed
+# 「DB backup is DORMANT」 and was green — as it had been every night since the file existed — while
+# docs/INCIDENT-RESPONSE.md sent a reader in a data-loss incident to 「the newest backup」. There was
+# no backup. A run that could not do its job is a failed run; the gate is
+# scripts/ci-require-secrets.sh and tests/r822-backup-and-deploy-as-code-checks.test.mjs runs it.
+#
+# The two secrets, and the one-time registration, are in docs/BACKUP-RESTORE.md (the 正本):
+#   SUPABASE_DB_URL         Postgres session-pooler connection string (the password is in it).
+#   BACKUP_GPG_PASSPHRASE   The ONLY key to the backups — losing it makes them unrecoverable.
 #
 # NOTE: even encrypted, these artifacts are held on GitHub. Retention is short
 # (7 days). Managed Supabase backups / PITR remain the primary line of defense —
@@ -26,7 +27,7 @@ on:
 
 permissions:
   contents: read
-  issues: write               # open/close the single "backup failing" incident issue
+  issues: write               # open/rewrite/close the single "backup failing" incident issue
 
 concurrency:
   group: db-backup
@@ -40,27 +41,20 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
-      # DORMANT GATE — succeed-and-skip unless both secrets are present. Secrets
-      # can't be read in `if:` conditions, so gate via a step output.
-      - name: Check backup secrets
+      # Secrets can't be read in `if:` conditions, so the gate is a step — and a missing secret
+      # FAILS it (exit 1, one ::error:: per missing name). Every step below then skips, except the
+      # incident step, which runs on always() and says which secret is missing.
+      - name: Require backup secrets
         id: gate
         env:
-          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          PASS: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
-        run: |
-          if [ -n "$DB_URL" ] && [ -n "$PASS" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::DB backup is DORMANT — set SUPABASE_DB_URL and BACKUP_GPG_PASSPHRASE to activate."
-          fi
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+        run: bash scripts/ci-require-secrets.sh SUPABASE_DB_URL BACKUP_GPG_PASSPHRASE
 
       - name: Install tools
-        if: steps.gate.outputs.present == 'true'
         run: sudo apt-get update && sudo apt-get install -y postgresql-client gnupg
 
       - name: Dump + encrypt + checksum
-        if: steps.gate.outputs.present == 'true'
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
@@ -68,7 +62,6 @@ jobs:
         run: bash scripts/backup-db.sh
 
       - name: Upload encrypted backup (short retention)
-        if: steps.gate.outputs.present == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: db-backup-${{ github.run_id }}
@@ -79,43 +72,24 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-      # On failure of an ACTIVE (non-dormant) backup, open one deduplicated issue.
-      - name: Open / close backup incident issue
-        if: ${{ always() && steps.gate.outputs.present == 'true' }}
+      # One deduplicated issue: opened on red (a missing secret included), rewritten while red, closed on green.
+      - name: Open / rewrite / close backup incident issue
+        if: ${{ always() }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
         env:
           JOB_OK: ${{ job.status }}
+          MISSING: ${{ steps.gate.outputs.missing }}
         with:
           script: |
-            const ok = process.env.JOB_OK === 'success';
-            const label = 'status:backup-failing';
-            const title = 'Scheduled database backup failing';
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const now = new Date().toISOString();
-            async function ensureLabel() {
-              try { await github.rest.issues.getLabel({ ...context.repo, name: label }); }
-              catch (e) { if (e.status === 404) {
-                await github.rest.issues.createLabel({ ...context.repo, name: label, color: 'b60205',
-                  description: 'Automated: scheduled DB backup is failing' });
-              } else { throw e; } }
-            }
-            const open = (await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: label })).data;
-            if (!ok) {
-              if (open.length === 0) {
-                await ensureLabel();
-                await github.rest.issues.create({ ...context.repo, title, labels: [label],
-                  body: [
-                    'The scheduled encrypted database backup failed.', '',
-                    `- Detected (UTC): ${now}`,
-                    `- Run: ${runUrl}`, '',
-                    'Runbook: `docs/BACKUP-RESTORE.md` and `docs/INCIDENT-RESPONSE.md` → "backup失敗".',
-                    'This issue auto-closes on the next successful backup.',
-                  ].join('\n') });
-              }
-            } else {
-              for (const iss of open) {
-                await github.rest.issues.createComment({ ...context.repo, issue_number: iss.number,
-                  body: `Backup succeeded at ${now}. Auto-closing.` });
-                await github.rest.issues.update({ ...context.repo, issue_number: iss.number, state: 'closed' });
-              }
-            }
+            const incident = require('./scripts/ci-incident-issue.cjs');
+            const missing = (process.env.MISSING || '').trim();
+            await incident({ github, context }, {
+              label: 'status:backup-failing',
+              title: 'Scheduled database backup failing',
+              labelDescription: 'Automated: scheduled DB backup is failing',
+              ok: process.env.JOB_OK === 'success',
+              cause: missing
+                ? `NO BACKUP WAS TAKEN — repository secret(s) not set: ${missing.split(/\s+/).map((n) => '`' + n + '`').join(', ')}. Register them once (docs/BACKUP-RESTORE.md → 「一度だけの登録」).`
+                : 'a backup step failed — read the run log',
+              runbook: '`docs/BACKUP-RESTORE.md` and `docs/INCIDENT-RESPONSE.md` → "Backup failing".',
+            });

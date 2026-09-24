@@ -4652,7 +4652,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    ```
    ⚠ `REFRESH_SECRET` は**必須**（未設定だと `refresh-news` は全リクエストを拒否する）。
    `NEWS_INGEST_SECRET` も同じく必須（未設定だと `news-ingest` が全リクエストを拒否する）。
-6. **cron を設定する**（pg_cron ＋ `net.http_post`。秘密は**ヘッダ**で送る）：
+6. **cron**（pg_cron ＋ `net.http_post`。秘密は**ヘッダ**で送る）——job 定義は migration
+   `20260925090000_cron_jobs_as_code.sql` が作る（URL は本番の project ref。別プロジェクトでは書き換える）。
+   秘密は vault に `refresh_news_secret`・`monitor_run_secret`・`news_ingest_secret` として置く
+   （`select vault.create_secret('<値>', '<名前>');`。無い job は何も POST しない）：
    - `refresh-news` を約20分ごと（`x-refresh-secret`）。初回は手動で1回叩いて `current_news` を埋める。
    - `monitor-run` を定期実行（`x-monitor-secret`）。SQL は `docs/AREA-MONITORS.md`。
    - `news-ingest` を約20分ごと（`x-news-ingest-secret`）。手順は
@@ -4736,8 +4739,19 @@ DB（migration）。`main` が緑であることは、その 3 つが同じ組�
 `node scripts/release-state.mjs`（`npm run release:state` / `release:check`）が 3 面をまとめて測る。
 **判定は時刻ではなく、配備されたソースを取り寄せた中身**（`supabase functions download`）で出す
 ——merge の前に worktree から deploy すると、正しく配備されていても時刻は必ず「ソースのほうが
-新しい」と言うので、時刻は同一性を答えられない。⚠ **CI のゲートではない**（本番・資格情報・
-ネットワークが要る）。
+新しい」と言うので、時刻は同一性を答えられない。⚠ **PR のゲートではない**（本番・資格情報・
+ネットワークが要る）。読み手は nightly の `.github/workflows/supabase-deploy.yml` の drift job で、
+`--edge --db --check` の食い違い（exit 1）も測れなかったこと（exit 2）も赤にし、Issue を 1 本開く。
+
+**Edge Functions と migration は `.github/workflows/supabase-deploy.yml` が出す。** `main` への push で
+`supabase/functions/**`・`supabase/migrations/**`・`supabase/config.toml` が変わったとき、
+`scripts/supabase-deploy.mjs` が差分から**変わった関数だけ**を `supabase functions deploy <name> --use-api` で出す
+（`_shared/` か `config.toml` が変わったら全関数。名簿は `config.toml` の `[functions.*]`）。その push が
+**足した** migration は `supabase db push` で出すが、`--dry-run` が流すものが**足したものと完全に一致する
+ときだけ**——本番の履歴は baseline を記録していないので、無防備な `db push` は live DB に baseline を
+流し直す。一致しなければ何も流さず赤、関数も出さない。必要な secret は `SUPABASE_ACCESS_TOKEN` 1 本
+（登録手順の正本は [`docs/BACKUP-RESTORE.md`](docs/BACKUP-RESTORE.md)）。無ければ赤＋Issue。
+手での `supabase functions deploy` は緊急時の手段として残る（`docs/AGENT-SETUP.md` §9）。
 
 ### 15.5 文書間の固定事実の照合 — `npm run check:docs`
 
@@ -4762,7 +4776,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（23本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（24本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列）。
@@ -4790,8 +4804,18 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
   変更があればローカル Supabase で `db reset` → **drift gate**（`db diff` が空であること。⚠ `db diff` 自身が
   失敗したら失敗——「測れなかった」と「0 を測った」は別の答え）→ pgTAP → **backup/restore ラウンドトリップ**
   （合成データ）。**本番非接続・秘密不要・fail-closed。**
-- `.github/workflows/db-backup.yml` — `SUPABASE_DB_URL` ＋ `BACKUP_GPG_PASSPHRASE` の両 Secret が
-  登録されるまで各 run は skip される。方針 ＝ **Managed backups 優先**＋その pg_dump を予備とする。
+- `.github/workflows/db-backup.yml` — 毎日 `pg_dump` → GPG → 7 日保持の artifact。`SUPABASE_DB_URL` ＋
+  `BACKUP_GPG_PASSPHRASE` のどちらかが無ければ **run は赤**で、`status:backup-failing` の Issue が
+  「どの secret が無いか」を述べる（揃えば次の緑で閉じる）。⚠ **secret が無いのに緑で skip する形を、
+  全ワークフローについて禁じている**——`tests/r822-backup-and-deploy-as-code-checks.test.mjs` が
+  `.github/workflows/` を発見し、secret を読む job の関門を **secret 空で実行して**非ゼロ終了を確かめ、
+  `if:` で secret / 変数を読む skip は理由を宣言したもの（Pages の停止スイッチ `ENABLE_PAGES_DEPLOY`）だけを通す。
+  方針 ＝ **Managed backups 優先**＋その pg_dump を予備とする。
+- `.github/workflows/supabase-deploy.yml` — Edge Functions と migration の配備、および nightly のドリフト検査（§15.4）。
+- **pg_cron の job 定義**は migration `20260925090000_cron_jobs_as_code.sql` にある（4 本・名前で
+  `cron.schedule` するので冪等）。秘密は vault（`refresh_news_secret`・`monitor_run_secret`・`news_ingest_secret`）
+  から読み、**secret が vault に無い DB では何も POST しない**（URL は本番のもの）。pg_cron の無い
+  ローカル／CI の再構築では何もしない。
 
 ### 16.4 実行
 
@@ -4802,9 +4826,10 @@ supabase test db                             # RLS/権限 pgTAP
 supabase db diff --schema public             # driftゼロ確認
 ```
 
-⚠ **本番はマイグレーションファイルと乖離しうる。** ベースライン（最初の1本）は本番へ「適用済み」として
-記録されていないので `supabase db push` は使えない。**本番適用は
-`supabase db query --file … --linked` ＋ `supabase migration repair --status applied <version>`** で行う
+⚠ **本番はマイグレーションファイルと乖離しうる。** ベースライン（最初の1本）ほか数本が本番へ「適用済み」として
+記録されておらず、逆に本番にしか無い履歴もある。だから CI の `db push` は `--dry-run` の結果が
+「その push が足したものと一致する」ときだけ走り、履歴が揃うまでは赤で止まる。手での適用は
+`supabase db query --file … --linked` ＋ `supabase migration repair --status applied <version>`
 （正本は `docs/MIGRATIONS.md`）。監査は `supabase db query --linked` で `pg_policies` /
 `role_table_grants` / `pg_proc` を**本番から読んで**行う。
 

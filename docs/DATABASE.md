@@ -8,7 +8,7 @@ is the human explanation.
 > **Reconstruction note.** The project had no migrations — the schema lived only in the
 > live database. The baseline migration was rebuilt from the application + Edge Function
 > code. To confirm it matches production and bring prod under migration control, run the
-> read-only reconcile in [`MIGRATIONS.md`](MIGRATIONS.md#why-not-db-push--the-baseline-is-not-recorded-in-production).
+> read-only reconcile in [`MIGRATIONS.md`](MIGRATIONS.md#why-db-push-is-guarded--the-history-is-not-reconciled).
 
 ## At a glance
 
@@ -222,8 +222,10 @@ edit `geo_pins`/`dashboard_cards`.
 
 `supabase db pull` and this baseline capture schema, RLS, functions, triggers, grants. They do
 **not** capture: OAuth provider config + secrets, auth redirect URLs, email templates, project
-API keys, or the `pg_cron` schedule that triggers `refresh-news`. (The three Storage buckets ARE
-created by migrations.) Record those changes in [`MIGRATIONS.md`](MIGRATIONS.md) manually.
+API keys, or the **vault secrets** the cron jobs send (`refresh_news_secret`, `monitor_run_secret`,
+`news_ingest_secret`). (The three Storage buckets ARE created by migrations, and so are the four
+`pg_cron` jobs — `20260925090000_cron_jobs_as_code.sql`; a job whose vault secret is absent posts
+nothing.) Record those changes in [`MIGRATIONS.md`](MIGRATIONS.md) manually.
 
 ---
 

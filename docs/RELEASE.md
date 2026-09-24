@@ -3,10 +3,16 @@
 ## The pipeline
 
 ```
-work branch → Pull Request → CI (green) → staging check → merge to main → deploy → post-deploy smoke
-                                                                                        ↓ (if broken)
-                                                                                     rollback
+work branch → Pull Request (auto-merge on green) → CI (green) → squash merge to main
+   → deploy.yml:          build → publish dist/ → post-deploy smoke        ↓ (if broken) rollback
+   → supabase-deploy.yml: changed Edge Functions + added migrations        (only if supabase/ changed)
 ```
+
+**There is no staging gate.** A PR is opened with auto-merge (`AGENTS.md` §5.1), so the moment CI
+turns green is the moment the change reaches production — site, Edge Functions and migrations alike.
+Everything that must be verified is verified **before** that: in the PR's CI, locally on the built
+site, and (optionally) on a PR preview. What is checked **after** is production itself — the
+post-deploy smoke, and the round's production verification.
 
 **Current state: production publishes via the CI-gated GitHub Actions workflow**
 (`.github/workflows/deploy.yml`). Pages **Source = “GitHub Actions”** and the repo variable
@@ -20,30 +26,34 @@ against the live URL. Confirm a deploy landed with
 
 ## Normal change flow
 
-1. **Branch**: `git checkout -b feature/xyz`.
-2. **Commit** your change.
-3. **Open a Pull Request** to `main`. This triggers **CI** (`ci.yml`): static checks +
-   the hermetic browser smoke + internal QA. The PR cannot be considered ready until CI is
-   green.
-4. **Staging check** (see below).
-5. **Merge to `main`** once CI is green and you have eyeballed staging.
-6. **Deploy** runs — `deploy.yml` on every push to `main` — and the **post-deploy smoke**
-   verifies the live site.
+1. **Work in a worktree** on its own branch (`node scripts/worktree.mjs new <slug>` — `AGENTS.md` §6).
+2. **Verify before the PR**: the gates for what you touched, then `npm test` once; look at the
+   built site locally (below).
+3. **Commit, push, open the PR with auto-merge**: `gh pr merge --squash --auto --delete-branch`.
+   **CI** (`ci.yml`, plus `db.yml` which the ruleset requires) runs static checks, the hermetic
+   browser tiers and the database rebuild. Nothing merges red.
+4. **Green = merged = released.** `deploy.yml` publishes the site and runs the **post-deploy
+   smoke** against the live URL; if the change touched `supabase/`, `supabase-deploy.yml`
+   deploys it (below). Only a red run needs you back.
+5. **Production verification** of the round happens at the start of the next round
+   (`AGENTS.md` §5.1; `node scripts/worktree.mjs verified` records it).
 
-## Staging check
+## Looking at a change before it merges
 
-You have two options; use whichever fits the change.
-
-**A. Built preview from CI (zero setup, always available).**
-Every PR’s exact bytes are smoke-tested in CI. To eyeball the UI, check out the branch and
-serve it locally — identical to what CI serves:
+**A. The built site, locally (zero setup, always available).**
+Every PR’s exact bytes are smoke-tested in CI. To look at the UI yourself, serve the build from
+the worktree — identical to what Pages serves:
 
 ```bash
-git checkout feature/xyz
-npm run serve       # http://127.0.0.1:4173/
+npm run serve       # http://127.0.0.1:4173/ (a worktree gets its own port)
 ```
 
-**B. Live staging URL (recommended for UI-heavy changes) — Cloudflare Pages.**
+If a change needs a human to look before it lands, open the PR **without** `--auto` and merge by
+hand after CI and the look. That is the exception, not the flow.
+
+### Optional: PR preview
+
+**B. Live preview URL (recommended for UI-heavy changes) — Cloudflare Pages.**
 > ⚠ **This is a PR-preview option, not production.** Production is served by **GitHub Pages**;
 > nothing sits in front of it. That matters for security because the response headers GitHub
 > Pages cannot set (`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`,
@@ -105,6 +115,34 @@ Until both are set, `deploy.yml` / `rollback.yml` skip every job (green no-op) a
 branch publish keeps working. See [`docs/MONITORING.md`](MONITORING.md) for what to check
 after enabling.
 
+## Supabase: Edge Functions and migrations
+
+[`.github/workflows/supabase-deploy.yml`](../.github/workflows/supabase-deploy.yml) is to
+Supabase what `deploy.yml` is to Pages. On a push to `main` that changes
+`supabase/functions/**`, `supabase/migrations/**` or `supabase/config.toml`,
+[`scripts/supabase-deploy.mjs`](../scripts/supabase-deploy.mjs):
+
+1. reads the push's diff;
+2. applies the migrations the push **added** with `supabase db push` — **only if** `db push
+   --dry-run` would apply exactly those. Production's history does not record the baseline
+   (`MIGRATIONS.md`), so an unguarded `db push` would re-run it against the live database; any
+   other pending version makes the run red with nothing applied and no function deployed;
+3. deploys the functions whose directory changed — **all of them** when `_shared/` or
+   `config.toml` changed (`verify_jwt` lives in `config.toml`; #R806's fix was a config-only
+   change) — with `supabase functions deploy <name> --project-ref … --use-api`. The roster is
+   `config.toml`'s `[functions.*]`; a changed directory without a header is refused, not deployed
+   with default settings.
+
+**Nightly**, the same workflow's `drift` job runs `node scripts/release-state.mjs --edge --db --check`:
+deployed function source vs `main`, byte for byte, and the remote migration history vs
+`supabase/migrations`. Drift **or an unmeasurable plane** is red. Each job keeps one issue
+(`status:supabase-deploy-failing`, `status:supabase-drift`) that names the cause and closes on green.
+
+It needs one repository secret, `SUPABASE_ACCESS_TOKEN` — registered once, see
+[`BACKUP-RESTORE.md`](BACKUP-RESTORE.md#一度だけの登録secret-ここが正本). Without it both jobs are red
+and say so. **Manual** `supabase functions deploy` stays available for emergencies
+([`AGENT-SETUP.md`](AGENT-SETUP.md) §9).
+
 ## Post-deploy verification
 
 `deploy.yml`’s final job runs `playwright.prod.config.js` against the live URL:
@@ -158,8 +196,9 @@ node scripts/release-state.mjs --diff <function>   # その関数の実際の差
 > ソースで走っていた。うち `monitor-run` / `news-ingest` / `refresh-news` は Atlas persona の
 > `workspace` 段落を持たない版＝**挙動が違う**（`ai-proxy` だけが新しい版だった）。7 本を
 > deploy して 17/17 一致にした。静的サイトは一致。**DB は local 7 本が remote に無く、
-> remote 2 本が local に無い**（`docs/DATABASE.md` のベースライン再構築の経緯を読むこと。
-> 自動では適用しない——migration の適用は手で判断する）。
+> remote 2 本が local に無い**（`docs/DATABASE.md` のベースライン再構築の経緯を読むこと）。
+> ⚠ この履歴の食い違いが解消されるまで、`supabase-deploy.yml` は新しい migration を**流さずに赤で止まる**
+> （`db push --dry-run` が「その push が足したもの」以外も流すと言うため）。nightly の drift job も赤のまま。
 
 ## Which build is live?
 
@@ -189,8 +228,8 @@ Optionally create a GitHub Release from the tag (**Releases → Draft a new rele
 
 1. Branch from `main`: `git checkout -b hotfix/<thing>`.
 2. Make the minimal fix; `npm test` locally.
-3. PR → CI green → merge → deploy → post-deploy smoke.
-   If it cannot wait for review, still let CI run — it is fast.
+3. PR with auto-merge → CI green → merged → `deploy.yml` (and `supabase-deploy.yml` if
+   `supabase/` changed) → post-deploy smoke. Never skip CI — it is the only gate before production.
 
 ## Rollback
 
@@ -232,7 +271,8 @@ only ever be an existing commit — so rollback cannot publish arbitrary/injecte
 | Turn on CI-gated deploy | Settings → Pages | Source = GitHub Actions |
 | Turn on CI-gated deploy | Settings → Secrets and variables → Actions → Variables | `ENABLE_PAGES_DEPLOY=true` |
 | Require CI before merge | Settings → Branches → Branch protection | see [`docs/RELEASE.md` GitHub settings](#branch-protection-optional-but-recommended) |
-| Roll back | Actions → Rollback | Run workflow, enter tag/SHA |
+| Roll back | Actions → Rollback | Run workflow, enter tag/SHA (red if `ENABLE_PAGES_DEPLOY` is off) |
+| Supabase deploy + backup | Settings → Secrets and variables → Actions → Secrets | the three secrets in [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md#一度だけの登録secret-ここが正本) |
 
 ### Branch protection (optional but recommended)
 
