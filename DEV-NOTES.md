@@ -1,3 +1,61 @@
+## R822 — **DB バックアップは一度も取られていなかった——secret が無いと緑で skip していた。Supabase の配備と pg_cron をコードにした**
+
+〈監査の 3 指摘: ① `db-backup.yml` は secret が無いと skip して success ② Edge Function 17 本と migration の
+deploy が手動で CI に無く、pg_cron の定義はダッシュボードにしか無い ③ INCIDENT-RESPONSE / RELEASE は
+「staging で見てから merge」だが実運用は auto-merge on green〉
+
+### 0. 実測
+
+| 何 | 実測（2026-09-24〜25、本番へは SELECT と `--dry-run` だけ） |
+|---|---|
+| run 35975392869 | 「DB backup is DORMANT」を `::notice::` で出して **緑**。`gh secret list` は **0 件**——バックアップは一度も取られていない |
+| 他の workflow | secret を読むのは db-backup だけ。`if: vars.ENABLE_PAGES_DEPLOY` の緑 skip が deploy.yml と rollback.yml（変数は `true`、2026-07-18 から） |
+| `supabase migration list --linked` | local のみ 7 本（20260718090000・20260721140000・20260722100000・20260823130000・20260824210000・20260825120000・20260831120000）、remote のみ 2 本（20260722000000 mgmt・20260722120000 passkeys＝同居する別アプリの表） |
+| `db push --linked --dry-run` | 「Remote migration versions not found in local migrations directory」で**拒否**。DB パスワード無しで通る（CLI の一時 login role） |
+| 未記録の中身は本番にあるか | 20260721140000・20260722100000・20260824210000 は**全部ある**。bucket 3 本（aviation・gdelt・ais）は **bucket はあるが select policy が 0 件**（storage に policy が 1 つも無い） |
+| `cron.job` | 4 本。refresh-news・monitor-run は vault から秘密を読み、**news-ingest の 2 本は秘密を command の literal で持つ**（2 本とも同じ値。vault に対応する名前は無い） |
+| `functions list`（CLI 2.106.0） | 旗が無いときの出力形式を**エージェント検出**で変える——Claude Code の中では JSON、`--agent no` では表 |
+
+### 1. 直したもの
+
+- **形そのもの**: `scripts/ci-require-secrets.sh`——名指した secret が空なら 1 つずつ `::error::` で名前を述べて
+  exit 1。db-backup はこれを先頭に置き、Issue（`scripts/ci-incident-issue.cjs`、db-backup の inline を移したもの）は
+  **赤の間は本文を書き直す**ので「どの secret が無いか」が常に今の答えになる。
+- **検査** `tests/r822-backup-and-deploy-as-code-checks.test.mjs`: ① `.github/workflows/` を**発見**し、secret を読む
+  job ごとに関門の `run` を **secret 空で実際に bash で実行**——exit 0 なら赤、各 secret 名を `::error::` が述べなければ赤、
+  揃っていれば exit 0。② `if:` が `vars.*` / `secrets.*` を読む（＝未設定なら job が skip して緑）なら、ファイルに
+  `# green-skip-by-design <名前>: <理由>` の宣言が要る。修正前の workflow（`git show HEAD:` の一時コピー）で ①② が
+  赤になることを確かめた。
+- **ENABLE_PAGES_DEPLOY**: deploy.yml は宣言つきで残した（管理者が意図して切る停止スイッチで、切っている間は
+  「出さない」が仕事）。**rollback.yml は赤にした**——障害の最中に人が押したロールバックが、スイッチが切れていると
+  緑で何もしなかった。
+- **Supabase の配備**: `.github/workflows/supabase-deploy.yml` ＋ `scripts/supabase-deploy.mjs`。名簿は config.toml の
+  `[functions.*]`、ref は release-state の `supabaseRefFrom`（写さない）。config.toml の変更で全関数——**#R806 の直しは
+  config.toml だけの変更で、関数ディレクトリだけを見る deploy では出なかった**。`db push` は dry-run が
+  「その push が足したもの」と完全一致するときだけ、失敗したら関数も出さない。secret は `SUPABASE_ACCESS_TOKEN` 1 本。
+- **nightly drift**: 同じ workflow の drift job が `release-state.mjs --edge --db --check`。⚠ release-state の
+  `functions list` に `-o json` を足した——旗無しでは CI で表が出て、毎晩「測れない」(exit 2) になるところだった。
+  足したあと手元で `--edge` は **17/17 一致**。
+- **pg_cron**: `20260925090000_cron_jobs_as_code.sql`。4 本を名前で `cron.schedule`（冪等・jobid 維持）。
+  news-ingest の秘密は、vault に無ければ**今の job の command から DB の中で** `vault.create_secret` する（ファイル・
+  ログ・人を通らない）。各 command は `from vault.decrypted_secrets where name=…` の形で、秘密の無い DB からは何も
+  POST しない（URL は本番）。pg_cron の無いローカル／CI では notice だけ。
+- **文書**: RELEASE・INCIDENT-RESPONSE・MONITORING から staging 前提を外し「CI 緑＝出荷」に。BACKUP-RESTORE に
+  「休眠は赤」と「一度だけの登録（secret 3 本）」を正本として置いた。MIGRATIONS・DATABASE・AGENT-SETUP §9・
+  Architecture §15.4/§16・FILES を現状に。⚠ `AGENTS.md` §5.1 は手での deploy を書いたまま（天井まで 255 B）。
+
+### 2. 直さず残したもの
+
+- **本番の migration 履歴の整合**（実行は本番書き込みなので、この回はコマンドを用意しただけ）。remote のみの 2 本は
+  別アプリの表の記録で、`repair --status reverted` はその記録を消す——利用者の判断が要る。それまで新しい migration の
+  自動適用と nightly drift は赤。
+- bucket 3 本の select policy が本番に無い（public bucket なので CDN 経由の読みは動く）。migration を適用すれば付く。
+- `uptime.yml` は自前の Issue 処理を持ったまま（`ci-incident-issue.cjs` へ寄せる余地）。
+
+⚠ **形**: 「測れなかった」「やれなかった」を緑で返す。#R801 の `db diff … || true` と同じ形が、secret ゲートにも
+あった。GitHub は skip を success と呼ぶので、**skip は見た目の上で成功と区別がつかない**。
+
+
 ## R819 — 集計の意味・解析の規模・画面に依存しない取得を、同時に固めた
 
 > 改番: 当初 R801 として書いた（PR #727）。main では R801 が外部監査の回に使われていたので R809、さらに R819 に取り直した（内容は変えていない）。⚠ 改番は註の中の番号も書き換えるので、GIS カーネル 7 本（ops・geometry・raster・units・warp・expr・index）のハッシュが変わり R749 ⑨ が正しく赤くなった。元の PR の各ファイルが台帳のハッシュと一致し、差が番号の置換だけであることを 1 本ずつ確かめてから、版は動かさずハッシュだけ記録し直した（答えは変わらない）。
@@ -1502,6 +1560,7 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R822** — **DB バックアップは一度も取られていなかった——secret が無いと緑で skip していた。Supabase の配備と pg_cron をコードにした**〈監査の 3 指摘〉／⚠⚠⚠ run 35975392869 は「DORMANT」を印字して緑、INCIDENT-RESPONSE は存在しないバックアップを前提にしていた ⇒ 形そのものを禁じた: `scripts/ci-require-secrets.sh` が無い secret を `::error::` で名指して exit 1、`tests/r822-…` が全 workflow を発見して secret を読む job の関門を**空の secret で実行**する。`if: vars.*` の緑 skip は理由の宣言つきだけ（Pages の停止スイッチ）。rollback は赤に／`supabase-deploy.yml`: 変わった関数だけ（`_shared/`・config.toml なら全部）、`db push` は dry-run が「足したもの」と一致するときだけ（履歴は baseline を記録していない）。nightly drift は release-state `--check`（`functions list` に `-o json` が無いと CI では表が出て毎晩「測れない」になるところだった）／cron 4 本を migration に（news-ingest の秘密は command の中の literal だったので DB 内で vault へ移す）／「未記録の 3 本」は実測で 7 本＋本番だけの 2 本、うち bucket 3 本は policy が本番に無い
 - **#R819** — **集計の意味・解析の規模・画面に依存しない取得の 3 方面を、GIS 基盤の上で同時に固めた（P0〜P2 の 10 項目・11 並列実装）**〈利用者「全部」。外部評価が「GIS 機能を増やすより、集計対象の意味を正しく保つ／大容量の解析を最後まで実行する／必要なデータを画面表示とは独立して取得する」を最優先に挙げた〉／⚠⚠⚠ **区域内統計の重みが、区域内の面積ではなかった**——`areaWeightedMean` は交差ではなく**地物自身の全体の面積**で重み付けていた（実測: 値10・全体100km²・区域内1km² と 値100・全体1km²・全部区域内 で **10.89**。この区域の地面の上での平均は **55**）。⇒ 訂正ではなく**基準**として `weightBy`（`memberArea` 既定＝従来／`intersectionArea`）。「重なるか」と「どれだけ寄与するか」を別々に訊く（線も点も member で重みは 0、辺だけ共有する隣は member ではない）／⚠⚠⚠ **量の意味は列が持っていなかった**——バンドだけが `quantity` を持ち、ベクタの列は単位しか持たないと宣言自身が書いていた。⇒ 列が述べ、`aggregate`/`zonal`/join が呼び手不在なら列から拾い、**誰が述べたか**（`caller`/`column`/`band`）が残る／⚠⚠⚠ **門の母集合が実体より狭く、読者に届かない文が 53 語あった**——`r729 ④` は拒否を**3 つの綴りを教え込んだ走査**で集めており、`js/gis-geometry.js` と `js/gis-warp.js` は母集合に入っていなかった。⇒ 母集合を `js/gis-*.js` 全部にして**除外には理由の文**を要求。うち **5 語は #R735 から母集合内だったのに `refuse(` という綴りのせいで見えていなかった**／⚠⚠ 同じ形が 2 本（`r763 ⑧` は method 名の綴り、`r759 ④` は `run(定数)` だけを解決）。どちらも**正しい実装を落第**させていたので、測る事実のほうへ付け替えた／⚠⚠ **出力格子は予算に入っていなかった**（4096×4096 の Float64 が 1 バンド 128 MiB・4 バンド 512 MiB を、ブロック処理に入る前から常駐）⇒ 窓ごとに書き出す `sink` と、固定分／選べる分に分けた会計。**予算は作業の上限ではない**ので超過は拒まず述べる／⚠⚠ **NaN で欠損を運んだら `coalesce` と `isnull` が数と読んだ**（16×16 の画素 37 が主スレッド `-1` ／運んだ側 `void` に割れた。`a - b` だけの corpus なら緑のまま）⇒ 面は `null` を持てる配列で運ぶ（転送ではなく複製になるのは正しさの対価）／⚠ 幾何で Worker へ運べるのは今日 **3 演算だけ**（`polygon-clipping` と `js/geodesy.js` が自由名を閉じ込めている）。**運べるふりをせず**、一覧は dep 無しカーネルに訊いて導出する／⚠ 文書が実装より 1 ラウンド古かった（`docs/GIS-CORE.md` が #R783 で撤去済みの「4 隅と中心」の近道を現状仕様として述べていた）
 - **#R818** — **必須チェックが「走らない」と「まだ終わっていない」は、外から同じに見える**〈利用者「まだ？」——#R787 の PR が緑のまま動いていなかったので調べた〉／⚠⚠⚠ **開いている PR 3 本（#709・#710・#655）が、走れた検査すべてに緑を出したまま全部 `BLOCKED`**。PR にも ruleset にも「何が足りないか」は出ない。原因は **2026-09-18 03:14 に `Protect main` の必須チェックへ加わった 4 本目** `Migrations rebuild + RLS/permission tests`——その job（`.github/workflows/db.yml`）は **`paths: [supabase/**, …]` で絞られていた**。⇒ **path フィルタが抑えた必須チェックは「報告されない」のであって、GitHub はそれを「走らせる必要が無かった」ではなく「まだ終わっていない」と読む**／⚠ **どちらの設定も単独では正しい。** 直前に merge した 3 ラウンド（#702・#704・#707）もデータベースを触っていないので、変わったのは ruleset だけ。**2 つが揃ってはじめて、`supabase/` を触らない全ラウンドを止める門になった**／⚠ 直し方は「必須を外す」ではなく**引き金を広げる**——要求（migration を未検証で main に入れない）が残すべき側で、**path の判定は job の中へ移した**。⇒ ① `pull_request:` からフィルタを撤去し、**どの PR でも job が起動して報告する** ② 重い工程（Docker・Supabase CLI・rebuild・pgTAP・backup/restore、実測 8 分級）は `steps.scope.outputs.run` の後ろへ＝**飛ばしたことが「外の不在」ではなく「ログの中の可視な skip」になる**（DB を触らない PR は数秒）③ **判定は git で行い、行動する action を増やさない**（#R138 SEC の SHA 固定を 1 つ増やさない）／⚠⚠ **見張りは走らせる側に倒す**——push・manual dispatch・base commit が手元に無い・diff が計算できない、のどれでも**全部走らせる**（`run_full`）。`fetch-depth: 0` はそのためで、無いと全 PR が「base が無い」経路に落ちて毎回 8 分払う／⇒ `tests/r793-db-gate-never-reports-checks.test.mjs`（4 本）: ①`pull_request` に `paths`/`paths-ignore`/`branches` のどれも無い（**綴りではなく到達可能性として述べる**）②job 名が必須チェックの綴りのまま ③**データベースに触る工程が 1 つ残らず見張りの後ろ**——⚠ 手で並べた step 名の一覧ではなく「`supabase` / `psql` / `backup-db.sh` / `restore-test.sh` に触れているか」で母集合を作る ④見張りが `supabase/` を見ており、答えられない 3 経路が `run=true` に倒れる（**①だけを見る検査は「報告するが何もしない job」を緑にする**＝[[intmap-records-with-no-reader]] の裏返し）／⚠ 変異 3 通り（フィルタ復活・見張りの脱落・fail-closed 化）で**それぞれ 1 本ずつ**赤くなることを確かめた／⚠ **残っている穴**: どの context が必須かは GitHub の設定にあってチェックアウトからは読めないので、この検査が測れるのは**リポジトリが持っている側の半分**（job は常に到達できる）だけ。ruleset との対照は夜間の網でしか持てない（[[intmap-discovered-list-is-a-photograph]] と同じ形）
 - **#R808** — **読むだけの役に、決める役の値段を払っていた**〈利用者「Claude Code って、サブエージェントは別モデル使うとかできないの？」「工数がそこまで要らない作業まで全部 Opus や Fable に投げてたら効率悪いと思うので、品質は劣化させない範囲でコストを抑えたい。」〉／5 役とも `model:` を書いておらず、**親（Opus）を継承**していた。成果物が `file:line` の数え上げでしかない `intmap-scout` が、実装を決める役と同じ単価で走っていた⇒ `scout` / `i18n` / `verifier` を `claude: model: sonnet` に、`implementer` / `prod-verifier` は継承のまま／⚠⚠⚠ **安くしてよい役と、安くすると高くつく役の線は「機械的か」ではなく「観測器か」で引く**——`one-pass-or-a-reason.md` §2 が数える繰り返しの原因の 1 番は「**観測器が嘘をついた**」で、実測は #R736（21 手・10分29秒が全部再試行）・#R742（207 操作中 52 件＝25%）・#R768。**誤判定 1 回の再試行は、その役の全ラウンドぶんの節約より高い**⇒ 割り当ての表と昇格条件を **`.agents/skills/intmap-round/`** に置き、`intmap-verifier` に「環境要因か本物の退行か」「緑だが実は死んでいないか」「失敗が観測された事実か、観測できなかっただけか」を訊くときは**呼び出し側が `model: "opus"` で上書きする**条件を恒久で書いた（**安い既定はこの昇格が在って初めて成立する**）／⚠⚠ **`model:` の綴りは Claude Code が黙って無視して継承に戻る**——宣言だけがファイルに残り、下流の読み手はそれを信じる（[[intmap-declared-capability-never-executed]] と同じ形で、**欠陥が無言**）⇒ `scripts/agent-sync.mjs` に `CLAUDE_MODELS` を置き、**書き出す当人が綴りを拒む**（検査は一覧を写さず、その Set をソースから読む）／⚠ **`model:` は `claude:` ブロック固有で Codex には届かない**（`.codex/agents/*.toml` は設定レイヤーとして読まれ、モデルはアカウントが決める）。写せば**読み手の居ないキー**になるので写さず、差は `docs/AGENT-SETUP.md` §6 に明記した——⚠ ただし**判断そのもの（どの役に何をさせるか）は両方が読む `.agents/skills/intmap-round/` にある**ので、`AGENTS.md` §0-5 の「片方だけが知っている状態」にはならない／⇒ `tests/r808-subagent-model-tiers-checks.test.mjs`（5 本）: ①宣言された名前が**書き出す当人の語彙**に在る ②Codex 側の生成物に `model` が漏れていない ③生成された frontmatter が正本と同じことを述べている ④**散文の割り当て表と役ファイルが両方向で一致**（[[intmap-comment-contradicted-the-table-below-it]]——表が実体から離れると**両方の読み手が自信を持つ**）⑤**昇格条件の段落がまだ在る**（後のラウンドがこれだけ消すと、条件つきの節約が無条件の節約になる）／⚠ 3 通りの変異（綴りの誤り・表の食い違い・昇格条件の削除）で**実際に赤くなることを確かめた**

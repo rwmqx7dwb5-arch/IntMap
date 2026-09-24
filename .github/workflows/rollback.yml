@@ -5,7 +5,8 @@
 #   • The input is a git ref that MUST already exist in this repo's history; the job
 #     refuses anything it cannot resolve. It can therefore only re-deploy code that was
 #     already reviewed and committed — never arbitrary/injected code.
-#   • Gated by the same ENABLE_PAGES_DEPLOY variable as deploy.yml.
+#   • Gated by the same ENABLE_PAGES_DEPLOY variable as deploy.yml — but here an unset switch is a
+#     RED run, not a green skip (see the first step).
 #
 # ⚠ AND SINCE #R175 IT HAS TO BUILD. What GitHub Pages serves is `dist/` — a Vite build — and this
 # workflow published `git archive <sha>` , i.e. the SOURCE TREE. On any commit from #R175 onward that
@@ -40,9 +41,21 @@ concurrency:
 jobs:
   rollback:
     name: Redeploy ${{ inputs.ref }}
-    if: ${{ vars.ENABLE_PAGES_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      # ⚠ A ROLLBACK THAT DID NOTHING MUST NOT BE GREEN. This job used to carry
+      # `if: vars.ENABLE_PAGES_DEPLOY == 'true'`, so with the switch off a person who pressed
+      # 「Run workflow」 in the worst ten minutes of an incident got a green run and the broken site
+      # stayed up. deploy.yml keeps its green skip (there the variable IS the stop switch, declared
+      # below its header); a rollback is a human asking for a publish, and «not published» is red.
+      - name: Require the Pages deploy switch
+        env:
+          ENABLE_PAGES_DEPLOY: ${{ vars.ENABLE_PAGES_DEPLOY }}
+        run: |
+          if [ "$ENABLE_PAGES_DEPLOY" != "true" ]; then
+            echo "::error::repository variable ENABLE_PAGES_DEPLOY is '${ENABLE_PAGES_DEPLOY}', not 'true' — the gated Pages deploy is switched off, so NOTHING was rolled back (docs/RELEASE.md)"
+            exit 1
+          fi
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0          # need full history + tags to resolve an old ref

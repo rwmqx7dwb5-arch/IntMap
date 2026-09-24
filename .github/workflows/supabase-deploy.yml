@@ -1,0 +1,167 @@
+# IntMap — Supabase deploy as code (Edge Functions + migrations), and a nightly drift check.
+# ----------------------------------------------------------------------------
+# deploy.yml publishes the static site on every push to main. Until this file, the other two
+# deployable units — 17 Edge Functions and the migrations — went out only when somebody remembered.
+# MEASURED: 2026-09-16, 7 of 17 functions ran a different source from the repository; #R806's
+# one-line config.toml fix (verify_jwt) had never reached production, so a public feed answered 401
+# to every reader; the production migration history is missing local versions. None of those was a
+# wrong decision. Each was a step nobody was assigned.
+#
+#   deploy  — push to main touching supabase/functions/**, supabase/migrations/** or
+#             supabase/config.toml: deploys exactly the functions that changed (all of them when
+#             _shared/ or config.toml changed — the roster is config.toml's [functions.*]), and
+#             applies the migrations that push ADDED with `supabase db push`, but only when a dry
+#             run shows db push would apply exactly those (scripts/supabase-deploy.mjs says why).
+#   drift   — nightly: scripts/release-state.mjs --edge --db --check (deployed function SOURCE vs
+#             the repository, byte for byte; remote migration history vs supabase/migrations).
+#             Any difference, or anything it could not measure, is red.
+#
+# ⚠ A MISSING SECRET IS RED, NOT A GREEN SKIP (scripts/ci-require-secrets.sh). Both jobs open one
+# incident issue each — rewritten while red, closed on green — naming what is wrong.
+# The one secret, and the one-time registration, are in docs/BACKUP-RESTORE.md (the 正本):
+#   SUPABASE_ACCESS_TOKEN   a Supabase personal access token. MEASURED 2026-09-25: it is all the
+#                           CLI needs — link, db push, migration list and functions deploy all ran
+#                           without the database password (the CLI mints a temporary login role).
+#
+# Manual deploy (`supabase functions deploy <name> --project-ref … --use-api`) remains the emergency
+# path — docs/AGENT-SETUP.md §9.
+name: Supabase deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+  schedule:
+    - cron: '41 4 * * *'      # nightly drift check, 04:41 UTC (after the 03:17 backup)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'deploy = every function (migrations are never chosen by hand); drift = the nightly check'
+        type: choice
+        options: [drift, deploy]
+        default: drift
+
+permissions:
+  contents: read
+  issues: write               # the two incident issues (deploy failing / production drifted)
+
+# Never two deploys at once, never cancel one half way.
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy changed Edge Functions + added migrations
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          fetch-depth: 0      # both ends of the push's diff must exist here
+
+      - name: Require Supabase secret
+        id: gate
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: bash scripts/ci-require-secrets.sh SUPABASE_ACCESS_TOKEN
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install Supabase CLI
+        # same pinned action and version as db.yml (#R138 SEC: full commit SHA)
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1  # v1.7.1
+        with:
+          version: 2.106.0
+
+      - name: Deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          MODE: ${{ github.event_name == 'workflow_dispatch' && 'all' || 'diff' }}
+        run: |
+          if [ "$MODE" = "all" ]; then
+            node scripts/supabase-deploy.mjs --all
+          else
+            node scripts/supabase-deploy.mjs --before "$BEFORE" --after "$AFTER"
+          fi
+
+      - name: Open / rewrite / close the deploy incident issue
+        if: ${{ always() }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
+        env:
+          JOB_OK: ${{ job.status }}
+          MISSING: ${{ steps.gate.outputs.missing }}
+        with:
+          script: |
+            const incident = require('./scripts/ci-incident-issue.cjs');
+            const missing = (process.env.MISSING || '').trim();
+            await incident({ github, context }, {
+              label: 'status:supabase-deploy-failing',
+              title: 'Supabase deploy failing',
+              labelDescription: 'Automated: Edge Function / migration deploy from main is failing',
+              ok: process.env.JOB_OK === 'success',
+              cause: missing
+                ? `NOTHING WAS DEPLOYED — repository secret not set: ${missing.split(/\s+/).map((n) => '`' + n + '`').join(', ')}. Register it once (docs/BACKUP-RESTORE.md → 「一度だけの登録」).`
+                : 'a deploy step failed — the run log names the function or migration (::error:: lines)',
+              runbook: '`docs/RELEASE.md` → "Supabase" and `docs/MIGRATIONS.md`.',
+            });
+
+  drift:
+    name: Production drift (Edge source + migration history)
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'drift') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Require Supabase secret
+        id: gate
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: bash scripts/ci-require-secrets.sh SUPABASE_ACCESS_TOKEN
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1  # v1.7.1
+        with:
+          version: 2.106.0
+
+      # exit 1 = drift, exit 2 = could not measure. Both are red: 「測れなかった」 is not 「一致」.
+      - name: Measure production against main
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          node scripts/supabase-deploy.mjs --link
+          node scripts/release-state.mjs --edge --db --check
+
+      - name: Open / rewrite / close the drift incident issue
+        if: ${{ always() }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
+        env:
+          JOB_OK: ${{ job.status }}
+          MISSING: ${{ steps.gate.outputs.missing }}
+        with:
+          script: |
+            const incident = require('./scripts/ci-incident-issue.cjs');
+            const missing = (process.env.MISSING || '').trim();
+            await incident({ github, context }, {
+              label: 'status:supabase-drift',
+              title: 'Production Supabase differs from main',
+              labelDescription: 'Automated: deployed Edge Functions or migration history differ from main',
+              ok: process.env.JOB_OK === 'success',
+              cause: missing
+                ? `NOTHING WAS MEASURED — repository secret not set: ${missing.split(/\s+/).map((n) => '`' + n + '`').join(', ')}. Register it once (docs/BACKUP-RESTORE.md → 「一度だけの登録」).`
+                : 'production differs from main (or could not be measured) — the run log prints the table from scripts/release-state.mjs',
+              runbook: '`docs/RELEASE.md` → 「本番はいま、どの組み合わせで走っているか」 and `docs/MIGRATIONS.md`.',
+            });

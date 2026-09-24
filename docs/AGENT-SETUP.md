@@ -294,7 +294,16 @@ node --test tests/r503-checks.test.mjs
 
 ## 9. Edge Function の deploy に `--use-api` が要る理由（実測）
 
+⚠ **通常の deploy は CI に移った。** `main` への push で `supabase/functions/**`・`supabase/config.toml`・
+`supabase/migrations/**` が変わると `.github/workflows/supabase-deploy.yml` が変わった関数（`_shared/` か
+`config.toml` なら全関数）と足された migration を出す（正本は [`RELEASE.md`](RELEASE.md) の
+「Supabase: Edge Functions and migrations」）。secret `SUPABASE_ACCESS_TOKEN` が未登録なら run は赤で
+Issue が名前を述べる（登録は [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md) 「一度だけの登録」）。
+**以下の手での deploy は緊急時の手段**——CI が赤で直すより早く出す必要があるとき・未登録の間だけ使う。
+`AGENTS.md` §5.1 は手での deploy を書いたままである（天井のため、別のラウンドで直す）。
+
 `AGENTS.md` §5.1 のコマンドが `--use-api` を持っているのは、このマシンの状態を測った結果である。
+CI も同じ旗で出す（runner の Docker に依存しない）。
 
 - 既定のバンドルは **Docker** を使う。`docker --version` は **29.6.1** を返す（＝CLI は入っている）が、
   止まっているのは**デーモン**で、`docker info` は `failed to connect to the docker API at npipe:…`

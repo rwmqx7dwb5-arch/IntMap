@@ -1,8 +1,11 @@
 # Database migrations
 
 Every database change is a migration file in [`supabase/migrations/`](../supabase/migrations),
-reviewed in a PR, tested locally + in CI, and applied to production **manually** (never
-auto-applied on merge). This page is the procedure.
+reviewed in a PR, tested locally + in CI, and applied to production **by
+[`.github/workflows/supabase-deploy.yml`](../.github/workflows/supabase-deploy.yml) when the PR
+merges** — `supabase db push`, but only when its dry run would apply exactly the migrations that
+push added (see [Why `db push` is guarded](#why-db-push-is-guarded--the-history-is-not-reconciled)).
+This page is the procedure.
 
 ## Prerequisites (one time)
 
@@ -13,11 +16,13 @@ auto-applied on merge). This page is the procedure.
 ## The everyday flow
 
 ```
-work branch → migration → local rebuild → RLS/permission tests → PR → CI green
-           → review the change → back up prod → manual apply → prod smoke test
+work branch → migration → local rebuild → RLS/permission tests → PR (auto-merge) → CI green
+           → merged → supabase-deploy.yml: guarded db push → changed functions → prod smoke test
 ```
 
-`main` merges do **not** apply migrations to production. Applying is a separate, deliberate step.
+⚠ **A merge to `main` applies the migrations that merge added.** Review and back up **before**
+you open the PR with auto-merge — for a destructive migration (below), open it without `--auto`,
+take the backup, then merge by hand.
 
 ### 1. Create a migration
 
@@ -55,9 +60,12 @@ Open a PR from your work branch. **CI → "Database checks"** rebuilds the DB, r
 gate, the RLS/permission tests, and a backup→restore roundtrip — all on a throwaway local
 database, no secrets, no production access. It must be green.
 
-### 5. Apply to production (manual, gated)
+### 5. Apply to production
 
-Only after review + a fresh backup:
+**Normally nothing to do: the merge applies it** (`supabase-deploy.yml`; the run log prints the
+dry run and what was pushed). If that run is red it applied nothing — read its `::error::` line.
+
+**By hand** (emergency, or while the history is being reconciled) — only after review + a fresh backup:
 
 ```bash
 # a) BACK UP FIRST (see BACKUP-RESTORE.md) — managed backup or:
@@ -71,21 +79,28 @@ supabase migration repair --status applied <version>                   # record 
 # d) Prod smoke test: load the site, log in, post a community item, submit feedback.
 ```
 
-`supabase link` / `db push` need the **database password** (Dashboard → Settings → Database).
-It is a secret — type it into the CLI prompt; never paste it into chat, a file, or a commit.
+`supabase link` / `db push` do **not** need the database password when a Supabase access token is
+logged in (MEASURED 2026-09-25, CLI 2.106.0: the CLI mints a temporary login role). If it ever
+prompts for one, type it into the prompt; never paste it into chat, a file, or a commit.
 
-## Why not `db push` — the baseline is not recorded in production
+## Why `db push` is guarded — the history is not reconciled
 
 `supabase db push` applies **every** migration the remote has not recorded, and the remote has
 never recorded the baseline (`20260718090000`), because production already had that schema before
-the file existed. So `db push` would try to re-run the whole baseline against a live database.
-**Apply one file at a time instead** — `supabase db query --file … --linked` runs it through the
-Management API in a single begin/commit and needs no database password — then record it with
+the file existed. So an unguarded `db push` would try to re-run the whole baseline against a live
+database. That is why `scripts/supabase-deploy.mjs` runs `db push --dry-run` first and pushes only
+when the pending set **equals** the migrations the merge added; anything else is red with nothing
+applied. **By hand, apply one file at a time** — `supabase db query --file … --linked` runs it
+through the Management API in a single begin/commit — then record it with
 `supabase migration repair --status applied <version>`. Verify first by temporarily swapping the
 file's `commit;` for `rollback;`.
 
-This is a standing condition, not a to-do: nothing below has been run against production.
-If you ever do want `db push` back, the reconciliation is this, read-only:
+MEASURED 2026-09-25 (read-only, `supabase migration list --linked` and `db push --dry-run`): the
+dry run refuses outright, because production records two versions that are not in this repository
+(`20260722000000` mgmt, `20260722120000` passkeys — another application's tables sharing the
+project), and seven local versions are unrecorded. Until that is reconciled, the automated push is
+red for every new migration and the nightly drift job is red. The reconciliation for the baseline is
+this, read-only:
 
 ```bash
 supabase link --project-ref vpekfwdpurzejrrmacac
@@ -135,7 +150,7 @@ Not every migration needs a reverse migration. Classify:
   extract the good rows, and re-import. See [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md) and
   [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md#database-incidents).
 
-## When a production `db push` fails midway
+## When a production `db push` fails midway (by hand or from `supabase-deploy.yml`)
 
 1. Read the error — Postgres names the failing statement.
 2. `supabase migration list --linked` shows which migrations are marked applied.

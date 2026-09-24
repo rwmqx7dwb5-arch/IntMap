@@ -116,14 +116,24 @@ Do not debug on production. Restore the last known-good build:
   catches it next time.
 - Use the Sentry stack trace / the Playwright trace from the failed run if available.
 
-## 6. Fix and verify on staging
+## 6. Fix and verify before it merges
 
-- Branch, fix, `npm test` locally.
-- Open a PR → CI green → eyeball on staging ([`docs/RELEASE.md`](RELEASE.md#staging-check)).
+There is no staging gate between a green PR and production: PRs are opened with **auto-merge on
+green** (`AGENTS.md` §5.1), so **CI green is the moment it ships**. Verify *before* that moment:
+
+- Branch, fix, add the regression test from §5, `npm test` locally.
+- Reproduce the fix on the built site locally (`npm run serve`, the same `dist/` Pages serves) —
+  or on a PR preview if one is configured ([`docs/RELEASE.md`](RELEASE.md#optional-pr-preview)).
+- Open the PR. If you want to look at it once more before it lands, open it **without** auto-merge
+  and merge by hand after CI; otherwise `gh pr merge --squash --auto --delete-branch`.
 
 ## 7. Re-release
 
-- Merge to `main` → deploy → post-deploy smoke green.
+- The merge to `main` releases everything the change touched, with no further step:
+  `deploy.yml` publishes the site and runs the post-deploy smoke; if the fix touched
+  `supabase/functions/**`, `supabase/config.toml` or added a migration, `supabase-deploy.yml`
+  deploys exactly those ([`docs/RELEASE.md`](RELEASE.md#supabase-edge-functions-and-migrations)).
+  Confirm both runs are green.
 - Tag the new known-good build (`git tag -a v… -m …; git push origin v…`).
 
 ## 8. Record cause + prevention
@@ -166,6 +176,10 @@ Database** (password, connection), **Settings → API** (keys). Backups: see
    before the delete → restore into a new project/branch, **not** over prod.
 4. **No PITR:** take the newest backup (`BACKUP-RESTORE.md`), restore it into a local isolated
    DB (`scripts/restore-test.sh`), confirm the rows are there.
+   ⚠ **First check that one exists**: **Actions → "DB backup (encrypted)"** must show a green run
+   with a `db-backup-*` artifact within the last 7 days. A red run with an open
+   `status:backup-failing` issue that names a missing secret means **no backup was ever taken**
+   — then the only copies are Supabase's managed ones (Dashboard → Database → Backups).
 5. Export only the missing rows and re-insert them into prod via SQL Editor. Verify counts.
 6. Prod smoke test. Write up the cause.
 
@@ -201,6 +215,13 @@ Database** (password, connection), **Settings → API** (keys). Backups: see
 5. Add/adjust a pgTAP test so this exact leak can never regress.
 
 ### 5. Migration failed (during `db push`)
+Since `supabase-deploy.yml`, a migration reaches production when its PR merges — the
+`status:supabase-deploy-failing` issue opens and links the run. Two different reds:
+- **It refused before applying anything** (`db push --dry-run` would also apply migrations the push
+  did not add, or the history does not match): nothing changed in production and no function was
+  deployed. Reconcile the history ([`MIGRATIONS.md`](MIGRATIONS.md)) and re-run the failed job.
+- **`db push` itself failed:** continue below.
+
 1. Read the Postgres error — it names the failing statement.
 2. `supabase migration list --linked` — see which migrations are marked applied.
 3. If prod is now half-changed and broken, **restore from the backup you took before pushing**
@@ -217,6 +238,8 @@ Database** (password, connection), **Settings → API** (keys). Backups: see
 
 ### 7. Backup failing (the `status:backup-failing` issue opened)
 1. **Actions → "DB backup (encrypted)"** → open the failed run → read the failing step.
+   **If the issue names a missing secret, no backup has been taken at all** — register it once
+   ([`BACKUP-RESTORE.md`](BACKUP-RESTORE.md#一度だけの登録secret-ここが正本)); this is not a transient failure.
 2. Common causes: rotated DB password (update `SUPABASE_DB_URL`), project paused (resume it),
    `pg_dump` version skew (the runner installs `postgresql-client` fresh — rarely an issue).
 3. Re-run the workflow. A green run auto-closes the issue.

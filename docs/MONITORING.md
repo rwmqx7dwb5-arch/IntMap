@@ -252,4 +252,4 @@ so they do not appear as crashes; the uptime probe and `prod-smoke` apply the sa
    the last deploy.
 3. Is it IntMap's code or an upstream provider? (check the stack / classification)
 4. If it is a bad deploy → **roll back** ([`docs/INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md)).
-5. Reproduce on staging, fix, re-release.
+5. Reproduce locally, fix, re-release ([`docs/INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md) §5–7 — there is no staging gate; CI green is the release).

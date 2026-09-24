@@ -1164,7 +1164,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全17本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（23本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（24本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正。10本）
   functions/<name>/index.ts       Edge Functions（17本。一覧と各本の役割は Architecture.md §6.2）
@@ -1425,6 +1425,14 @@ scripts/
                                   ⚠ 実測: 2026-08-08〜08-21 の nightly は**14回連続で赤**、集約ジョブは
                                   毎回正直に報告していた——誰も見ていなかっただけ（#R304）。
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
+  supabase-deploy.mjs             `supabase-deploy.yml` の中身。push の差分から出す関数（名簿は config.toml の
+                                  `[functions.*]`・`_shared/` か config.toml なら全関数）と足された migration を決める。
+                                  ⚠ `db push` は `--dry-run` が流すものが**足したものと完全に一致するときだけ**
+                                  （本番の履歴は baseline を記録していない）。`--link` は link だけ（ドリフト検査の前段）
+  ci-require-secrets.sh           workflow の関門。名指した secret が空なら `::error::` で名前を述べて exit 1
+                                  ——「secret が無いので緑で skip」を作らない（全 workflow を r822 の検査が実行して測る）
+  ci-incident-issue.cjs           定期 job の Issue を 1 本だけ持つ（赤で開く・赤の間は本文を書き直す・緑で閉じる）。
+                                  db-backup.yml と supabase-deploy.yml が github-script から require する
 tests/
   tests/smoke.spec.js                   hermetic なスモーク
   tests/internal-qa.spec.js             内部 QA（IntMapAtlasQA / IntMapRegionResolverTest / IntMapUIAudit）
@@ -1446,7 +1454,8 @@ tests/
   deploy.yml                      本番公開（**有効**。§15.4）
   rollback.yml                    手動ロールバック（履歴に実在する ref のみ）
   db.yml                          DB 検査（本番非接続）。PR では常に走り、supabase/** に変更が無ければ軽く緑で終える
-  db-backup.yml                   休眠（Secret 2本が登録されるまで各 run skip）
+  db-backup.yml                   毎日の暗号化 pg_dump。Secret 2本が無ければ run は赤＋Issue（どれが無いかを述べる）
+  supabase-deploy.yml             main の push で変わった Edge Function と足された migration を配備／nightly のドリフト検査
   security.yml                    CodeQL ほかセキュリティ検査
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新

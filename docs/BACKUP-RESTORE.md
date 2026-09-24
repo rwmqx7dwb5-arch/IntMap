@@ -31,22 +31,43 @@ fully reproduce. Prefer them for a real recovery.
 
 [`.github/workflows/db-backup.yml`](../.github/workflows/db-backup.yml) runs
 [`scripts/backup-db.sh`](../scripts/backup-db.sh) daily: `pg_dump` → **GPG AES-256** →
-SHA-256 checksum → metadata → uploaded as a **7-day, encrypted** artifact. It is **DORMANT**
-(each run skips) until you add two secrets, so it never fails an empty repo.
+SHA-256 checksum → metadata → uploaded as a **7-day, encrypted** artifact.
 
-### Activate it (your manual steps)
+### ⚠ Without its secrets the run is RED — not a green skip
 
-1. **Get the DB connection string.** Dashboard → **Settings → Database → Connection string →
-   URI**, choose the **Session pooler**. It looks like
-   `postgresql://postgres.<ref>:PASSWORD@aws-...pooler.supabase.com:5432/postgres`.
-   The `PASSWORD` in it makes the **whole string a secret**.
-2. **Add it as a GitHub secret.** Repo → **Settings → Secrets and variables → Actions → New
-   repository secret** → name `SUPABASE_DB_URL`, value = the URI. (You type it here yourself —
-   do not paste it into chat or a file.)
-3. **Generate an encryption passphrase** (e.g. `openssl rand -base64 32`) and store it in your
-   password manager. Add a second secret `BACKUP_GPG_PASSPHRASE` = that passphrase.
-4. Done. Confirm: **Actions → "DB backup (encrypted)" → Run workflow**. A green run with a
-   `db-backup-*` artifact means it's live. A failure opens a `status:backup-failing` issue.
+**A run that took no backup is a failed run.** If `SUPABASE_DB_URL` or `BACKUP_GPG_PASSPHRASE` is
+missing, the first step ([`scripts/ci-require-secrets.sh`](../scripts/ci-require-secrets.sh)) fails
+with one `::error::` per missing name, and the `status:backup-failing` issue opens and **says which
+secret is missing** (its body is rewritten by every red run and it closes itself on the next green one).
+
+Until 2026-09 this workflow skipped and reported success instead. MEASURED 2026-09-24, run
+35975392869: it printed that it was not running, the run was green — as every night had been — and
+no backup had ever been taken, while [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md) sent a reader in a
+data-loss incident to 「the newest backup」. The rule now covers every workflow, not just this one:
+`tests/r822-backup-and-deploy-as-code-checks.test.mjs` finds every job in `.github/workflows/` that
+reads a secret and **executes** its gate with the secret empty; a gate that exits 0 fails the test.
+
+## 一度だけの登録（secret）— **ここが正本**
+
+Everything below is typed by the repository owner into GitHub once; no agent can do it for you,
+because the values are secrets. **Where:** Repo → **Settings → Secrets and variables → Actions →
+New repository secret**. Type the value there yourself — never into chat, a file, or a commit.
+
+| Secret | Used by | What it is | Where to get it |
+|---|---|---|---|
+| `SUPABASE_DB_URL` | `db-backup.yml` | Postgres **session-pooler** URI. The password inside makes the whole string a secret. | Supabase Dashboard → **Connect** (or Settings → Database) → Connection string → URI → **Session pooler**: `postgresql://postgres.<ref>:PASSWORD@aws-…pooler.supabase.com:5432/postgres` |
+| `BACKUP_GPG_PASSPHRASE` | `db-backup.yml` | The **only** key to the backups. Lose it → they are unrecoverable. Leak it → encryption is defeated. | Generate one (`openssl rand -base64 32`), store it in your password manager **first**, then here. |
+| `SUPABASE_ACCESS_TOKEN` | `supabase-deploy.yml` (deploy + nightly drift) | A Supabase personal access token. MEASURED 2026-09-25 (CLI 2.106.0): `link`, `db push`, `migration list` and `functions deploy` all ran with it alone — no database password needed. | <https://supabase.com/dashboard/account/tokens> → **Generate new token** (name it e.g. `intmap-github-actions`). |
+
+Confirm each once it is set:
+
+1. **Actions → "DB backup (encrypted)" → Run workflow** → green, with a `db-backup-*` artifact.
+2. **Actions → "Supabase deploy" → Run workflow → mode `drift`** → the log prints the table from
+   `scripts/release-state.mjs`. Green means production matches `main`; red with a table means it
+   does not (that is information, not a setup error — see [`MIGRATIONS.md`](MIGRATIONS.md)).
+
+Until they are set, each of those runs is red and an issue names the missing secret. That is the
+intended state of an unconfigured repository, not a fault to silence.
 
 ### Encryption & integrity
 
@@ -59,9 +80,12 @@ SHA-256 checksum → metadata → uploaded as a **7-day, encrypted** artifact. I
 
 ### What `pg_dump` does NOT fully capture
 
-Auth provider config/secrets, redirect URLs, email templates, project API keys, the `pg_cron`
-schedule, and (server-side) Storage bucket configuration. For a full auth/storage recovery,
+Auth provider config/secrets, redirect URLs, email templates, project API keys, the vault secrets
+the cron jobs read, and (server-side) Storage bucket configuration. For a full auth/storage recovery,
 use a **managed** backup. Record dashboard-only settings in [`MIGRATIONS.md`](MIGRATIONS.md).
+(The `pg_cron` **job definitions** are no longer dashboard-only: migration
+`20260925090000_cron_jobs_as_code.sql` creates them. Their secrets live in vault — `refresh_news_secret`,
+`monitor_run_secret`, `news_ingest_secret` — and a job whose secret is absent posts nothing.)
 
 ## Verify a backup restores (drill) — §10
 
