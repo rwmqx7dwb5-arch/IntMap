@@ -1,3 +1,18 @@
+## R803 — 本番検証で見つけた #R801 の退行: alerts-relay が自分のクライアントの https://www.nmc.cn/… を拒んでいた
+
+#R801 は alerts-relay の `?u=` 許可規則をホストごとの表（scheme・path・クエリ鍵）にし、CMA（中国気象局）を
+「http only」と書いた。根拠はファイル自身の註だった。**呼び手 `js/world-packs.js:3422` は #R590 から https で
+送っており、上流も https に答える。** 本番実測（deploy から 1 時間以内・intmap-prod-verifier）: `alerts-relay?u=
+https%3A%2F%2Fwww.nmc.cn%2Frest%2FfindAlarm…` が 10 秒ごとに 400 `{"error":"not an allowed feed"}`、1 セッションで
+39 回、パネルに「1 unavailable」、中国が「Not covered」の斜線。ais-feed・aviation-feed・routing-relay・news-relay・
+Atlas のゲート・地図描画・CSP は正常だった。
+
+直し: 規則の `scheme` を正規表現にして CMA は `/^https?:$/`。`tests/r801-relay-input-checks.test.mjs` ④ は
+「https は 400」を固定していたので「https は relay される（それが呼び手の送るもの）」に付け替えた。
+
+⚠ **形**: 上流が何を受けるかを**註から**書いた。規則は上流（実測）と呼び手（grep）から読む。#R801 の独自監査で
+「呼び手が実際に送る鍵だけ許す」と鍵については呼び手を読んでいたのに、scheme だけ読まなかった。
+
 ## R802 — 本番の Atlas に 46 問投げた。**23 ターンが「作業の上限」を読者に告げ、日本語で頼んだ 3 問は操作ゼロで終わった**
 
 〈利用者「Atlasに複雑で多種多様な様々な指示や質問を最低50おこない、その結果を実際に回答文や地図の表示を
@@ -1154,6 +1169,7 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 
 - **#R802** — **本番の Atlas に 46 問投げた。23 ターンが「作業の上限」を読者に告げ、日本語で頼んだ 3 問は操作ゼロで終わった**〈利用者「Atlasに複雑で多種多様な様々な指示や質問を最低50おこない…回答文や地図の表示を見ることで…多角的に評価し、改善・解決するために実装を行って」。build 2026-09-18-R783・ログイン済み・`IntMapAtlasTools.makeExecute` を包んでモデルが出した tool 呼び出しと返り値まで採取〉／⚠⚠⚠ **日本語の問いは扉そのものに届いていなかった**——「東京から大阪までの鉄道ルート」「世界の原子力発電所を…」「東京の今日の天気と…」が `find_capability` 8 回・**operations 0 件**・`step_budget`。得点が実質ゼロのとき **`find_capability` は登録順の先頭 N 件を「一致」として返していた**（実測: `layers.*` の辞書順先頭 8 件／`map.*` の先頭）。原因 5 つ: ⑴ **df がブロックでなく能力を数えていた**（最大ブロックが 33 能力＝その中の語は常に 0 点。`routing.route` の用例「東京から大阪への経路」が一度も得点できない）⑵ ブロック内の語が 33 能力全員の証拠になっていた ⑶ **語境界規則が片方の照合にしか付いていない**（`nuclear` の中の `clear` で `map.clear` が 73 点で 1 位・`duration` の中の `ratio` で `data.ratio` が 65 点）⑷ 固定 2 文字窓では日本語の自然文が当たらない（共有部分文字列へ。床を 4 にしたのは「東京の」が天気の問いを `sim.earthquake` に送っていた実測）⑸ カテゴリ hint が順序を決めていた／⚠⚠⚠ **それでも天気には届かなかった**——カタログ本文に **「天気」0 件・「原子力」0 件**、`data.weather` の項目は説明文ゼロの 1 行。**「その能力は自分の主題の言葉で見つかるか」を全能力について測る検査**を `check:capabilities` へ／⚠⚠⚠ **ピンは数えて判定されていた**ので `research.situationMap` が同じ主題に ok と `not_rendered` を交互に返し、令制国 1750 年で **7 回・9 分 16 秒**、1914 年の欧州で 6 回・6 分 55 秒⇒ `PAINTED_IDS` に `poi` の面を足し、ピンを置く 5 つが 1 つの宣言を通る（**名前が無ければ申告しない**——空配列は「空であるべき」という主張）／⚠⚠⚠ **地図に描いたデータは読めるデータではなかった**——`data.layerValues` が **17 回呼ばれ 17 回 failed**、エラーは「レイヤーをオンにしてください」（**既にオンだった**）。**表示側と読み取り側で名簿が 2 つ**あり同じレイヤーを別の名前・別の on/off で述べていた（`Live aircraft traffic` / `aircraft` / `dl-planes`）⇒ 照合器を 1 本にし、名簿を突き合わせる関数を 1 つだけ置き、**失敗の理由を 5 つに言い分ける**／⚠⚠ **名指した場所が見つからないと「地図の中心」について答えていた**／⚠⚠⚠ **広域地名の解決が名前の一致すら測っていなかった**（`the Alps`→ノルウェーの集落・`Korean Peninsula`→オークランドのフライドチキン店・`Sahara`→**New York**）／⚠⚠ **ハイライトの名前がハイライトより長生き**し、5 ターン連続で「前の Syria を消す」に 1 手ずつ消えていた／⚠⚠⚠ **打ち切られたターンが答えを言わなかった**——最後の 1 呼び出しが `text` が空のときだけ走るので、第 1 ステップの「これからやります」があると走らない（表も choropleth も描けているのに散文は 1 文だけ）⇒ 打ち切りも答えを書く理由にした。**上限は 1 つも動かしていない**／⚠ 読者の画面: **見出しが全部 2 回**・1 文の平叙文が `<h4>`・**略語で段落が割れる**（`No.⏎⏎25`・`U.⏎⏎S.`）・「未配置」が地名でないものを挙げ**日本語の国名を 1 つも解決できていなかった**（⇒ 製品が持つ呼び方から索引を導いて **12/12 を要求 0 件**で解決）・**既定で地図の 36.3%（Atlas がレイヤーに触ると 80.7%）がパネルに覆われる**／⚠ 残したもの 8 件は §10 に明記（パネルの被覆は承認が要る提案・「使用データ」の行・`Pacific`→`Pacifica`・ローマ帝国の解決・**残り 12 問**）
 
+- **#R803** — **本番検証で見つけた #R801 の退行: alerts-relay の規則が自分のクライアントの https://www.nmc.cn/… を拒んでいた**〈本番実測: 10 秒ごとに 400「not an allowed feed」× 39、パネルに「1 unavailable」、中国が空白〉／⚠ 「nmc.cn は http only」はファイルの註から書いた規則で、上流にも呼び手にも訊いていなかった（js/world-packs.js は #R590 から https を送る）⇒ scheme を正規表現にし CMA は http/https 両方。上流が何を受けるかは上流と呼び手から読む
 - **#R801** — **外部監査（2026-09）を全項目実装し、自分でも監査して見つけた穴を同じ回で塞いだ**〈利用者「必要そうなものはすべて。あなた自身もセキュリティの監査を行い、必要項目を修正してください」〉／⚠⚠⚠ **AI 利用枠の返金は監査の指摘より深刻だった**——台帳が「初回に課金したか」しか持たず、継続呼び出しの失敗が**初回の成功した課金**を返していた⇒ 台帳に `succeeded`（settle_ai_turn）、返金は `DELETE…RETURNING` の 1 文、戻す先は課金した日／⚠⚠⚠ **Atlas の confirm 列に読み手が無かった**（executor の 11 段に confirm の文字が 0・needs_confirm の発行元 0）⇒ 確認の段（4b）＋由来の信号（`ingests` 列・webUsed・添付）＋観測データの区切り `[OBSERVED DATA]` と SYS／⚠⚠ Atlas 返答の markdown リンク href が無エスケープ（PoC で属性注入）／routing-relay の支出上限を Postgres の共有バケツへ（Map は 10,000 識別子で 10,000 保持していた）／添付の展開量上限（小さな gzip がタブを落とせた）／本文と提供者応答を `readCapped`・`fetchBounded` で最後のバイトまで期限内に／リダイレクトは各ホップを検査／**独自監査で追加**: aviation-feed の bbox 無検査（1e9 で配列長超過）・alerts-relay の任意ホスト fetch とクエリ素通し・ais-feed の誰でも refresh・Gemini 鍵の URL 載せ 4 か所・monitor-run の認証前 body 読みと DB エラー文・AIS の MMSI で prototype 汚染・全表の TRUNCATE/REFERENCES/TRIGGER・search_path 11 関数・feedback の帰属偽装・著者が編集できる列／xlsx 0.20.3（SheetJS CDN）／db.yml の `|| true` と常時実行化／config.toml の radiation-feed／GitHub Ruleset に DB 検査と CodeQL しきい値を必須化／⚠ **`'unsafe-eval'` は実測して残した**（Cesium の knockout が読み込み時に eval。検査が外せる日を告げる）
 - **#R799** — **`stats().unowned` を「いま生きている数」にし、衛星の凡例タイマーに所有者を付けた**〈#R796 の本番検証（R796 が本番に出た直後）で、`unowned` が衛星のトグルごとに 1 増えて戻らないことが実測された〉／⚠ 計器が**累積**だった——一度も減らない数は 0 に向けられない⇒ 5 つの登録簿の `cap===null` を数える `_unownedLive()`、累積は `unownedEver` に／増やしていたのは `js/data-layers.js` の `data-layers:sat-legend`（所有者なし）⇒ `{ capability:'sat.live' }`（OFF で skip・dispose で掃く）／本番実測（R796）: ビルド印 R796・`__imLazyCheck.failed=[]`・衛星 5 回開閉で timers 12⇄10 を往復し増えない・`stateOf('sat.live')` が loaded⇄active
 

@@ -207,7 +207,7 @@ test('R801 ④ ?u= refuses query keys nobody sends, ports, userinfo and the wron
   const [cnOk, cnKey, cnScheme, maPort, maKey, cnUser, wfsType, wfsFmt, wfsCql, swic] = r.out;
   assert.equal(cnOk.status, 200, 'what js/world-packs.js sends for the CMA list is relayed: ' + cnOk.body);
   assert.equal(cnKey.status, 400, 'an unknown query key is refused');
-  assert.equal(cnScheme.status, 400, 'www.nmc.cn is http only — https is not the host this function knows');
+  assert.equal(cnScheme.status, 200, '(#R803) https is what js/world-packs.js actually sends for the CMA list, and the upstream answers it — refusing it blanked China on production');
   assert.equal(maPort.status, 400, 'a port is another origin');
   assert.equal(maKey.status, 400, 'the MeteoAlarm feed takes no query');
   assert.equal(cnUser.status, 400, 'userinfo is refused');

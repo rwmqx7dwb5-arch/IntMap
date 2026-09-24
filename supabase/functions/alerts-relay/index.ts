@@ -150,11 +150,15 @@ const UPSTREAMS = {
   // MeteoAlarm — the EUMETNET aggregation: 37 European services, incl. DWD, Météo-France,
   // the Met Office and the Servizio Meteorologico. One feed per country.
   meteoalarm: [
-    { scheme: "https:", path: /^\/api\/v1\/warnings\/feeds-[a-z-]{3,40}$/, query: {} },
+    { scheme: /^https:$/, path: /^\/api\/v1\/warnings\/feeds-[a-z-]{3,40}$/, query: {} },
   ],
   // CMA — the China Meteorological Administration's public warning list.
+  // (#R803) BOTH schemes. #R801 wrote «http only» off this file's own header, but the client
+  // (js/world-packs.js) has sent https since #R590 and the upstream answers it — MEASURED on
+  // production within the hour: 39 refusals in one session, «1 unavailable» on the panel, China
+  // blank. What an upstream accepts is read off the upstream and the caller, not off a comment.
   cma: [
-    { scheme: "http:", path: /^\/rest\/findAlarm$/, query: {
+    { scheme: /^https?:$/, path: /^\/rest\/findAlarm$/, query: {
       pageNo: /^[0-9]{1,4}$/, pageSize: /^[0-9]{1,4}$/,
       signaltype: /^[A-Za-z0-9_-]{0,40}$/, signallevel: /^[A-Za-z0-9_-]{0,40}$/,
       province: /^[^\s/?#&=]{0,40}$/,
@@ -162,8 +166,8 @@ const UPSTREAMS = {
   ],
   // WMO Severe Weather Information Centre — see the `?swic=` block below.
   swic: [
-    { scheme: "https:", path: /^\/json\/[a-z_-]{3,30}\.json$/, query: {} },
-    { scheme: "https:", path: /^\/f\/wfs$/, query: {
+    { scheme: /^https:$/, path: /^\/json\/[a-z_-]{3,30}\.json$/, query: {} },
+    { scheme: /^https:$/, path: /^\/f\/wfs$/, query: {
       service: /^WFS$/i, version: /^1\.1\.0$/, request: /^GetFeature$/i,
       typeName: /^local_postgis:postgis_geojsons$/, outputFormat: /^application\/json$/,
       propertyName: /^[A-Za-z0-9_,]{1,200}$/,
@@ -175,7 +179,7 @@ const UPSTREAMS = {
 /* the URL against one host's rules: scheme, path shape, and every query key it carries */
 function matchRules(u, rules) {
   for (const rule of rules) {
-    if (u.protocol !== rule.scheme || !rule.path.test(u.pathname)) continue;
+    if (!rule.scheme.test(u.protocol) || !rule.path.test(u.pathname)) continue;
     let ok = true;
     for (const [k, v] of u.searchParams) {
       const re = Object.prototype.hasOwnProperty.call(rule.query, k) ? rule.query[k] : null;
