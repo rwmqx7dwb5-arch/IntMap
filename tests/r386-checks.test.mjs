@@ -207,9 +207,9 @@ test('⑦ news.category が名指す lazy module は loader に実在する', ()
   const cap = rd('js/atlas-capabilities.js');
   const row = cap.split('\n').find((l) => l.includes("'news.category'"));
   assert.ok(row, 'the capability row must exist');
-  /* 行の最後の引用符付きの語が lazy 列（末尾に `],` が付くので、引用符で取り出す）。 */
+  /* 11 番目の引用符付きの語が lazy 列。(#R801) 最後の語ではない——任意の 12 番目 `ingests` が続く。 */
   const quoted = row.match(/'[^']*'/g) || [];
-  const lazy = quoted.length ? quoted[quoted.length - 1].replace(/'/g, '') : '';
+  const lazy = quoted.length > 10 ? quoted[10].replace(/'/g, '') : '';
   assert.equal(lazy, 'newsEvents');
   const loader = rd('js/lazy-modules.js');
   assert.equal(LAZY_REGISTRY["newsEvents"].publishes, 'IntMapNewsEvents', 'the registry must name what it publishes');   /* (#R798) */

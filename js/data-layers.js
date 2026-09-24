@@ -4882,6 +4882,11 @@ window.IntMapModules.dataLayers=function(HOST){
     function scheduleShipRefresh(){ if(aisRefreshT) return; aisRefreshT=setTimeout(()=>{ aisRefreshT=null; shipMaterialize(); },1200); }
     function handleAIS(m){
       const md=m.MetaData||m.metadata||{}; const mmsi=md.MMSI||md.mmsi; if(mmsi==null) return;
+      /* (#R801) The MMSI is the KEY of shipsByMMSI and it arrives from the upstream feed, so it is held to
+         what an MMSI is (ITU-R M.585: up to nine decimal digits) before it may name a property — a frame
+         whose identity reads "__proto__" or "constructor" would otherwise write into Object.prototype
+         (CodeQL js/prototype-polluting-assignment). A non-MMSI identity is not a ship; the frame is dropped. */
+      if(!/^d{1,9}$/.test(String(mmsi))) return;
       const s=shipsByMMSI[mmsi]||(shipsByMMSI[mmsi]={mmsi});
       if(md.latitude!=null) s.lat=md.latitude; if(md.longitude!=null) s.lng=md.longitude;
       if(md.ShipName) s.name=String(md.ShipName).trim();

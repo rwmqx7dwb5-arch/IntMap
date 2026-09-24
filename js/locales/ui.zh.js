@@ -5359,6 +5359,7 @@ window.IntMapLang.define('zh', {
   'It stopped with an error.': '因發生錯誤而停止。',   /* atlas-results.js (#R318) atlas.code.threw */
   'That one needs your confirmation first.': '這一項需要你先確認。',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
   'Tap the point on the map you mean.': '請在地圖上點選你所指的地點。',   /* atlas-results.js (#R318) atlas.input.point */
+  'Reply yes to go ahead, or say what to do instead.': '若要繼續，請回答「是」；若想改用別的做法，請直接說明。',   /* atlas-results.js (#R801) atlas.input.confirm */
   'Draw the line on the map.': '請在地圖上畫出線條。',   /* atlas-results.js (#R318) atlas.input.polyline */
   'Draw the area on the map.': '請在地圖上畫出範圍。',   /* atlas-results.js (#R318) atlas.input.polygon */
   'Choose one:': '請選擇一項：',   /* atlas-results.js (#R318) atlas.input.choice */

@@ -112,7 +112,7 @@
     "opentype.js": "^2.0.0",
     "pdfjs-dist": "4.10.38",
     "vite": "6.4.3",
-    "xlsx": "0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "dependencies": {
     "@mapbox/vector-tile": "^2.0.3",

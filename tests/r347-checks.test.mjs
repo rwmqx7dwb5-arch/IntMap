@@ -429,10 +429,13 @@ test('R347 ㉒ every capability’s lazyModules names a module IntMapLazy actual
   assert.ok(known.size >= 20, `expected the lazy registry, found ${known.size}: ${[...known].join(',')}`);
   assert.ok(known.has('routeUi') && known.has('navigation'), 'the routing and navigation modules are in it');
 
-  /* every capability row's last column is its lazy module (or '') */
-  const rows = [...caps.matchAll(/^\s*\['[a-zA-Z0-9_.]+',[^\n]*?'([a-zA-Z0-9_]*)'\],\s*$/gm)];
+  /* every capability row's ELEVENTH cell is its lazy module (or ''). (#R801) It is no longer the
+     last cell: an optional twelfth, `ingests`, follows it — so the cells are counted, not the end. */
+  const rows = [...caps.matchAll(/^\s*\['[a-zA-Z0-9_.]+',[^\n]*\],\s*$/gm)]
+    .map((m) => (m[0].match(/'(?:[^'\\]|\\.)*'/g) || []).map((c) => c.slice(1, -1)))
+    .filter((cells) => cells.length >= 10);
   assert.ok(rows.length > 100, `expected the capability table, matched ${rows.length} rows`);
-  const bad = rows.map((m) => m[1]).filter((n) => n && !known.has(n));
+  const bad = rows.map((cells) => cells[10] || '').filter((n) => n && !known.has(n));
   assert.deepEqual(bad, [],
     `these capabilities name a lazy module that does not exist — IntMapLazy.need() would record a ` +
     `failure and the capability would never load: ${bad.join(', ')}`);

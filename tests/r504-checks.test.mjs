@@ -21,8 +21,9 @@
  *  だからここで守るのは「今の定数が正しいこと」ではなく、**構造**である:
  *
  *    ① 上流を読む道は `takeTokens()` を通ったものしか無い（新しい呼び出し元が予算を迂回できない）。
- *    ② その bucket の算術が実際に平均 READ_RATE_PER_S を超えない——**出荷される関数そのもの**を
- *       vm に切り出して回す（#R498 の手口。写した式は写した瞬間から別物になる）。
+ *    ② その bucket の算術が実際に平均 READ_RATE_PER_S を超えない——**出荷される桶そのもの**
+ *       （#R801 から `_shared/read-budget.js`）を import し、この関数の takeTokens を vm に切り出して
+ *       回す（#R498 の手口。写した式は写した瞬間から別物になる）。
  *    ③ isolate を越えて残るべき4つ（cursor・last・miss・台帳）が全部 `sweep.json` に載り、
  *       **格子の長さが変わったら捨てる**。番号を新しい空へ写すのは「探査済み」の嘘になる。
  *    ④ 45 秒の「間隔」は**消えている**。⚠ 消えたのは間隔だけで、「その空は訊く価値があるか」の
@@ -53,7 +54,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -101,42 +102,47 @@ test('R504 ① every upstream read is granted by the one budget', () => {
 });
 
 /* ── ② 出荷される bucket の算術そのものを回す ───────────────────────────────────────────── */
-test('R504 ② the shipped bucket never averages more than READ_RATE_PER_S', () => {
+test('R504 ② the shipped bucket never averages more than READ_RATE_PER_S', async () => {
   const src = rd(FEED);
   const RATE = Number(/const READ_RATE_PER_S = ([\d.]+);/.exec(src)[1]);
   const BURST = Number(/const READ_BURST = (\d+);/.exec(src)[1]);
 
   /* ⚠ 写さずに切り出す。ここで式を書き写したら、明日この定数が動いたときに検査は古い式を
-     守りつづける——#R498 が「シップ済みの塊を vm に出す」を選んだのと同じ理由。 */
+     守りつづける——#R498 が「シップ済みの塊を vm に出す」を選んだのと同じ理由。
+     (#R801) 桶の算術は `_shared/read-budget.js` へ移った（ais-feed が同じ桶を引くため）ので、
+     出荷される桶は import して回し、この関数に残った takeTokens（backoff の門）だけを切り出す。
+     ⚠ 桶はこの関数が宣言した定数で作る——test が別の数で作った桶は、この関数の桶ではない。 */
+  const { makeReadBudget } = await import(pathToFileURL(join(ROOT, 'supabase/functions/_shared/read-budget.js')).href);
   const grab = (name) => {
     const re = new RegExp('\\nfunction ' + name + '\\([\\s\\S]*?\\n\\}');
     const m = re.exec(src);
     assert.ok(m, `${name}() must be a top-level function so this test can run the shipped one`);
     return m[0];
   };
-  const ctx = {
-    STATE: { readTokens: BURST, readTokensAt: 0, backoffUntil: 0 },
-    READ_BURST: BURST, READ_RATE_PER_S: RATE, Math,
-  };
+  assert.match(codeOnly(src), /const BUDGET = makeReadBudget\(\{ ratePerSec: READ_RATE_PER_S, burst: READ_BURST \}\);/,
+    'the bucket is built from the two named constants, not from numbers written a second time');
+  const ctx = { STATE: { backoffUntil: 0 }, BUDGET: makeReadBudget({ ratePerSec: RATE, burst: BURST }) };
   vm.createContext(ctx);
-  vm.runInContext(grab('refillTokens') + '\n' + grab('takeTokens'), ctx);
+  vm.runInContext(grab('takeTokens'), ctx);
 
   /* 空のバケツは、経過時間ぶんしか出さない */
-  ctx.STATE.readTokens = 0; ctx.STATE.readTokensAt = 1000;
+  ctx.BUDGET.seed(1000);
   assert.equal(ctx.takeTokens(6, 1000 + 10000), Math.floor(10 * RATE),
     '10 s of refill grants floor(10 · rate) tiles');
 
   /* どれだけ待っても BURST を超えない */
-  ctx.STATE.readTokens = 0; ctx.STATE.readTokensAt = 1000;
+  ctx.BUDGET.seed(1000);
   assert.equal(ctx.takeTokens(9999, 1000 + 86400_000), BURST, 'a day of quiet still only fills the burst');
 
-  /* backoff 中は 0 */
-  ctx.STATE.readTokens = BURST; ctx.STATE.readTokensAt = 0; ctx.STATE.backoffUntil = 5000;
+  /* backoff 中は 0——そして桶は止まらずに満ちる（休みが明けたとき最初の読みが待たされない） */
+  ctx.BUDGET.seed(1000); ctx.STATE.backoffUntil = 5000;
   assert.equal(ctx.takeTokens(4, 4000), 0, 'nothing is granted while the function is backing off');
+  assert.ok(Math.abs(ctx.BUDGET.tokens() - Math.min(BURST, 3 * RATE)) < 1e-9,
+    'the bucket kept refilling through the backoff: ' + ctx.BUDGET.tokens());
   ctx.STATE.backoffUntil = 0;
 
   /* そして長い目で見た平均が ceiling を超えない。1 秒ごとに 4 枚ねだり続ける利用者を1時間。 */
-  ctx.STATE.readTokens = BURST; ctx.STATE.readTokensAt = 0;
+  ctx.BUDGET.seed(0); ctx.BUDGET.refund(BURST);
   let got = 0;
   for (let t = 0; t <= 3600_000; t += 1000) got += ctx.takeTokens(4, t);
   const perSecond = got / 3600;
@@ -163,7 +169,8 @@ test('R504 ③ the sweep ledger carries everything that used to die with the iso
   assert.match(apply[0], /j\.n === L\.length/,
     'a lattice of a different length must be discarded, not renumbered onto new sky');
   assert.match(apply[0], /STATE\.cursor = /, 'the cursor is restored');
-  assert.match(apply[0], /STATE\.readTokensAt = /,
+  /* (#R801) the clock now lives in the shared bucket, and `seed()` is how the ledger's readAt reaches it */
+  assert.match(apply[0], /BUDGET\.seed\(/,
     'and so is the bucket clock — otherwise a cold isolate grants itself a free burst');
 
   /* hydrate が実際に呼ぶ（作ったが誰も呼ばない、が #R493 の形） */

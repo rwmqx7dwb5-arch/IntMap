@@ -310,12 +310,15 @@ export function makeAtlasAgent() {
      * opts:
      *   model(req)      -> {text, toolCalls:[{id,name,arguments}], raw}   — injected transport
      *   tools           { name: {name, description, parameters} }         — the surface for THIS turn
-     *   execute(call)   -> {ok, …}                                        — the mechanical executor
+     *   execute(call, turn) -> {ok, …}                                    — the mechanical executor;
+     *                   `turn` is this turn's own record of facts (below), never an argument
      *   system          the core instruction (short — js/atlas-policy.js)
      *   messages        [{role:'user'|'assistant', content}]              — the conversation so far
      *   limits          partial override of LIMITS (technical only)
      *   signal          AbortSignal for the Stop button
      *   onStep(info)    optional progress callback (stage dots); never decides anything
+     *   externalContent true when the FIRST model input already carries content from outside the
+     *                   conversation (an attachment's text, a document) — see `turn` below
      */
     async function runTurn(opts) {
       opts = opts || {};
@@ -370,6 +373,29 @@ export function makeAtlasAgent() {
          (more targets resolved, a different surface reached) resets the run, because that is progress. */
       const partialCalls = Object.create(null);
       const permanentFails = Object.create(null);   /* (#R760) refusals the capability declared to be about the KIND of request */
+      /* ══ ⚠⚠⚠ (#R801) HAS THIS TURN'S MODEL INPUT CARRIED CONTENT FROM OUTSIDE THE CONVERSATION? ═══
+         A fact about the turn, not a judgment about the request. It becomes true on any of three
+         events, each a statement by the thing that knows: ① a tool result stamped `ingests:'external'`
+         is put in the transcript — the registry's column 11 (js/atlas-capabilities.js), which says
+         the result carries sentences a third party wrote, stamped on the result by
+         js/atlas-toolsurface.js the way `endsTurn` is; ② the model's reply reports that the provider's
+         hosted web search ran or was attached (`reply.webUsed`, from ai-proxy's meta.webUsed /
+         webAttached — a page the reader never saw was in front of the model); ③ the request itself
+         arrived with an attachment's text or a document (`opts.externalContent`). It travels to the
+         executor as execution context (`execute(call, turn)`), never as an argument the model could
+         write, and js/atlas-executor.js reads it for ONE thing: a capability whose registry row says
+         confirmation 'explicit' is not run on the model's say-so alone once outside content has been
+         in front of it — the reader is asked (`needs_confirm`). It decides nothing else.
+         ⚠ NOT «any tool result». The first draft set it on every tool message, which made the second
+         step of 「東京へ飛んで、見えるものを教えて」 (flyTo → inspect) a confirmation every time — a
+         camera's completion is IntMap's own observation, not a third party's words, and gating on it
+         would have bound Atlas (.agents/rules/one-pass-or-a-reason.md). The fence in the prompt still
+         wraps EVERY tool message: a mark that says «this is data» is harmless on IntMap's own data. */
+      const turn = { externalContentSeen: !!opts.externalContent };
+      const observe = (content) => {
+        transcript.push({ role: 'tool', content });
+        if ((Array.isArray(content) ? content : []).some((r) => r && r.ingests === 'external')) turn.externalContentSeen = true;
+      };
       const results = [];
       let text = '';
       /* ⚠⚠⚠ (#R742) A SENTENCE WRITTEN ON A STEP THAT THEN ISSUED CALLS IS NOT THE ANSWER EITHER.
@@ -402,7 +428,7 @@ export function makeAtlasAgent() {
          mechanical record every other outcome gets, so the next step is chosen by Atlas knowing what
          happened rather than by this loop deciding on its behalf. */
       const runTool = (call) => {
-        const p = Promise.resolve().then(() => execute(call));
+        const p = Promise.resolve().then(() => execute(call, turn));   /* (#R801) the turn's facts ride beside the call — see `turn` above */
         if (!(lim.toolTimeoutMs > 0)) return p;
         let tm = null;
         const clock = new Promise((res) => { tm = setTimeout(() => res({ ok: false, error: 'tool_timeout',
@@ -444,6 +470,8 @@ export function makeAtlasAgent() {
           break;
         }
 
+        /* (#R801) event ② of `turn` above: the provider's own web search put a third party's page in front of the model */
+        if (reply && reply.webUsed === true) turn.externalContentSeen = true;
         const calls = (reply && Array.isArray(reply.toolCalls)) ? reply.toolCalls.slice(0, lim.maxPerStep) : [];
         /* (#R663) what Atlas said THIS reply is — a fact about this step, so unlike `answerMode` it
            does not carry over to the next one. '' when it did not say. */
@@ -527,7 +555,7 @@ export function makeAtlasAgent() {
                 + ' and then answer; or, if it genuinely cannot carry this answer, reply with answer_mode "text" and say so.';
             trace.steps.push({ step, toolCalls: 0, bounced: code });
             transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [] });
-            transcript.push({ role: 'tool', content: [{ ok: false, error: code, message: msg }] });
+            observe([{ ok: false, error: code, message: msg }]);   /* (#R801) fenced on the next call like every tool message, so the fact tracks the fence */
             continue;
           }
           /* (#R663) accepted as the end of the turn — so whatever it says IS the answer, including
@@ -674,7 +702,7 @@ export function makeAtlasAgent() {
         malformedRun = executedHere ? 0 : (malformedRun + 1);
         trace.steps.push({ step, toolCalls: calls.length, executed: executedHere });
         transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: calls });
-        transcript.push({ role: 'tool', content: stepResults });
+        observe(stepResults);
 
         if (ended) {
           stopped = 'awaiting_user';
@@ -747,7 +775,7 @@ export function makeAtlasAgent() {
       const produced = [];
       results.forEach((r) => producedBy(r).forEach((m) => { if (produced.indexOf(m) < 0) produced.push(m); }));
       return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
-        produced, mapDrawn: produced.indexOf('map') >= 0 };
+        produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen };
     }
 
     /**
@@ -755,8 +783,11 @@ export function makeAtlasAgent() {
      * The one place the envelope is turned into a step. Kept here rather than in js/atlas-console.js
      * so tests/r406-agent.test.mjs checks the parsing the browser actually uses.
      */
-    function readReply(data, text, parseJSON) {
+    function readReply(data, text, parseJSON, meta) {
       const d = (data && typeof data === 'object') ? data : null;
+      /* (#R801) whether the provider's hosted web search ran or was attached on THIS call — ai-proxy's
+         meta.webUsed / meta.webAttached, read by the loop as `reply.webUsed` (see `turn` in runTurn) */
+      const webUsed = !!(meta && (meta.webUsed || meta.webAttached));
       const raw = (d && Array.isArray(d.tool_calls)) ? d.tool_calls : [];
       const calls = [];
       raw.forEach((c, i) => {
@@ -786,7 +817,7 @@ export function makeAtlasAgent() {
       const machine = opens && ['"tool_calls"', '"turn"', '"final_text"', '"answer_mode"', '"arguments_json"'].some(function (k) { return prose.indexOf(k) >= 0; });
       return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls,
         answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
-        turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '' };
+        turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed };
     }
 
     const API = { LIMITS, TURN_SCHEMA, ANSWER_MODES, TURN_STATES, runTurn, reject, readReply, validateAgainst };

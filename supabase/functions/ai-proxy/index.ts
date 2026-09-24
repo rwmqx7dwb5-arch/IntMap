@@ -80,6 +80,10 @@
 // ============================================================================
 
 import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
+/* (#R801) The bounded reader and the bounded fetch every keyless relay already uses. The request
+   body and the provider's answer are read through them so a byte ceiling and a deadline hold WHILE
+   the bytes arrive, not after they have all been buffered. */
+import { readCapped, fetchBounded, RelayError } from "../_shared/relay-guard.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -628,19 +632,27 @@ function filesBlock(files: FilePart[]): string {
 // terminates it with an opaque 546 the client can't parse). Abort each provider call well before that so it fails
 // as a clean, classified 503 instead. 45s is generous for Gemini "low" yet safe for a MALFORMED retry (2×45<limit).
 const PROVIDER_TIMEOUT_MS = 55_000;
+/* (#R801) THE CEILING ON WHAT A PROVIDER MAY SEND BACK. The largest answer this function asks for is
+   MAX_TOKENS of text (a few hundred KB as JSON) plus hosted web-search citations; 16 MiB is two
+   orders of magnitude above that and one order below the isolate's memory, so a provider that
+   streams an endless body costs this function the cap, not the isolate. It expires if a task starts
+   asking for binary output (images, audio), which none does today. */
+const PROVIDER_MAX_BYTES = 16 * 1024 * 1024;
+/* (#R801) The deadline used to be cleared the moment `fetch` resolved — i.e. when the HEADERS had
+   arrived — and the body was then read by the caller with no leash at all. fetchBounded keeps the
+   signal armed until the last byte is in and caps the bytes, then hands back a Response built from
+   what it read, so `r.ok` / `r.status` / `r.json()` / `r.text()` at the call sites are unchanged. */
 async function fetchWithTimeout(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS): Promise<Response> {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), ms);
   try {
-    return await fetch(url, { ...init, signal: ctl.signal });
+    return await fetchBounded(url, init, { timeoutMs: ms, maxBytes: PROVIDER_MAX_BYTES });
   } catch (e) {
-    const aborted = (e as Error)?.name === "AbortError";
+    const code = e instanceof RelayError ? e.code : "";
+    const aborted = code === "upstream_timeout";
     /* ⚠ NOT `+ e.message`. A transport failure's message names the host it was resolving, the TLS
        state it got to and this file's own internals; the caller can act on «timed out» and «could not
        be reached», and nothing more specific is theirs. */
-    throw new ProviderError("provider_unavailable", aborted ? "The AI provider timed out." : "Could not reach the AI provider.", 503, true, { timeout: aborted });
-  } finally {
-    clearTimeout(t);
+    const why = aborted ? "The AI provider timed out." : code === "upstream_too_large" ? "The AI provider's answer was too large." : "Could not reach the AI provider.";
+    throw new ProviderError("provider_unavailable", why, 503, true, { timeout: aborted, tooLarge: code === "upstream_too_large" });
   }
 }
 
@@ -1028,7 +1040,9 @@ async function listModels(): Promise<{ provider: string; models: string[]; avail
   if (!gk) out.push({ provider: "gemini", models: [], available: false, note: "no key" });
   else {
     try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(gk)}&pageSize=200`);
+      /* (#R801) The key travels in the header the generateContent call already uses, not in the
+         query string, where upstream access logs and any intermediary would keep it. */
+      const r = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } }, 15_000);
       const j = await r.json();
       const ids = (Array.isArray(j?.models) ? j.models : [])
         .filter((m: { supportedGenerationMethods?: string[] }) => (m?.supportedGenerationMethods || []).includes("generateContent"))
@@ -1146,8 +1160,27 @@ Deno.serve(async (req) => {
   }
   /* ⚠ (#R318) A REFUND RELEASES THE CHARGE **AND** THE TURN. Refunding the use while leaving the
      turn row behind would make the user's retry look like a free continuation of a turn nobody
-     paid for — the failure would end up costing less than nothing. */
-  const refund = async () => { if (!isDev) try { if (isGloss) await db.rpc("refund_ai_gloss", { p_user: user.id }); else await db.rpc("refund_ai_turn", { p_user: user.id, p_turn: turnId }); charged = false; } catch (_) { /* best-effort */ } };
+     paid for — the failure would end up costing less than nothing.
+     ⚠ (#R801) …AND ONLY THE CALL THAT CHARGED MAY ASK FOR ONE. A continuation of a paid turn
+     (`charged` false) has nothing to give back; asking anyway used to hand the FIRST call's charge
+     back after its answer had been served — the audited «answer, then send a bad task under the
+     same turn» sequence. The ledger refuses that on its own now (refund_ai_turn will not touch a
+     turn that has settled), and this is the proxy not asking in the first place. The gloss lane has
+     no turns: every gloss call charges, so every gloss failure refunds, as before. */
+  const refund = async () => {
+    if (isDev || !charged) return;
+    try {
+      if (isGloss) await db.rpc("refund_ai_gloss", { p_user: user.id });
+      else await db.rpc("refund_ai_turn", { p_user: user.id, p_turn: turnId });
+      charged = false;
+    } catch (_) { /* best-effort */ }
+  };
+  /* (#R801) THE OTHER HALF: the moment an answer exists, the turn is marked as having one, so no
+     later failure under this turn key — from this call or another — can refund it. */
+  const settle = async () => {
+    if (isDev || isGloss || !turnId) return;
+    try { await db.rpc("settle_ai_turn", { p_user: user.id, p_turn: turnId }); } catch (_) { /* best-effort: the refund guard in the proxy still holds */ }
+  };
 
   // Parse the request body.
   // (#R113) `task` + `webMode` let the proxy configure output budget, JSON mode and
@@ -1162,21 +1195,22 @@ Deno.serve(async (req) => {
     /* (#R722) developer-only, ignored for everyone else - see the block after the parse. */
     op?: string; provider?: string; model?: string;
   } = {};
-  /* ⚠ REFUSED BEFORE IT IS READ, when the caller declares a size. A body without content-length is
-     still bounded, because the read below is capped and a longer one is discarded rather than parsed. */
+  /* ⚠ REFUSED BEFORE IT IS READ, when the caller declares a size — and CUT OFF WHILE IT IS READ when
+     the caller does not. (#R801) This used to be `req.arrayBuffer()` followed by a length check,
+     which is a check on what had already been buffered; readCapped cancels the stream at the ceiling. */
   {
-    const declared = Number(req.headers.get("content-length"));
-    if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-      await refund();
-      return json({ error: "too_large", message: "Request body is too large." }, 413);
-    }
+    let raw: Uint8Array | null = null;
     try {
-      const raw = await req.arrayBuffer();
-      if (raw.byteLength > MAX_BODY_BYTES) {
+      raw = await readCapped(req, MAX_BODY_BYTES);
+    } catch (e) {
+      if (e instanceof RelayError && e.code === "upstream_too_large") {
         await refund();
         return json({ error: "too_large", message: "Request body is too large." }, 413);
       }
-      payload = JSON.parse(new TextDecoder("utf-8").decode(raw));
+      raw = null;
+    }
+    try {
+      payload = raw ? JSON.parse(new TextDecoder("utf-8").decode(raw)) : {};
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) payload = {};
     } catch (_) { payload = {}; }
   }
@@ -1393,7 +1427,8 @@ Deno.serve(async (req) => {
     if (task === "analysis_structured" && !structuredAnswerOk(out.text)) {
       throw new ProviderError("invalid_structured_output", "The answer did not arrive in the required shape.", 502, true, {});
     }
-    // 5) Success.
+    // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
+    await settle();
     return json({
       text: out.text,
       /* /!\ (#R491) A GLOSS RETURNS NO `used`/`limit`, ON PURPOSE. js/ai-core.js mirrors those two

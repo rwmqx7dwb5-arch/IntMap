@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(88);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
+select plan(92);   -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
                    -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
                    -- list cannot fail the list (#R280) — that is why the count moves with the table.
                    -- (#R386) +6: news_event_admin_actions joins BOTH lists (+2), and the four operator
@@ -30,7 +30,7 @@ from unnest(array[
   'ai_turns',
   -- (#R491) the TERM-GLOSS lane's counter. Its own table rather than a column on ai_usage, so the
   -- two budgets cannot block each other in either direction (Architecture.md §5).
-  'ai_gloss_usage',
+  'ai_gloss_usage','relay_rate_buckets',
   -- (#R141) area-monitoring feature. (#R280) monitor_seen_items was created by the #R144
   -- hardening migration and never reached this list, so the ONE assertion that says "RLS is on
   -- for every table we have" was measuring 19 of the 20 that exist. A table missing from the
@@ -64,7 +64,7 @@ from unnest(array[
   'profiles','ai_usage','user_prefs','favorites','donations','feedback',
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
-  'current_news','ai_turns','ai_gloss_usage',
+  'current_news','ai_turns','ai_gloss_usage','relay_rate_buckets',
   'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items',
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
   -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
@@ -100,6 +100,8 @@ select has_function('public','is_admin', 'is_admin() exists');
 select has_function('public','increment_ai_usage', array['uuid','integer'], 'increment_ai_usage(uuid,int) exists');
 select has_function('public','consume_ai_turn', array['uuid','integer','text','integer','integer'], 'consume_ai_turn(...) exists');   -- (#R318)
 select has_function('public','refund_ai_turn', array['uuid','text'], 'refund_ai_turn(uuid,text) exists');
+select has_function('public','settle_ai_turn', array['uuid','text'], 'settle_ai_turn(uuid,text) exists');   -- (#R801)
+select has_function('public','relay_take', array['text','text','integer','numeric','integer'], 'relay_take(...) exists');   -- (#R801)
 
 -- 6) (#R141) Area-monitoring keys, relationships and functions.
 select col_is_pk('public','area_monitors', array['id'], 'area_monitors PK is (id)');

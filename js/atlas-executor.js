@@ -330,6 +330,37 @@ function makeAtlasExecutor(HOST, CTX) {
           }));
         }
 
+        /* ══ 4b — THE READER'S CONFIRMATION (#R801) ══════════════════════════════════════════════
+           Column 8 of js/atlas-capabilities.js ('none' | 'explicit' | 'always') had been STORED since
+           #R318 and read by nothing that runs: `needsConfirmation` reached the model as a hint through
+           find_capability, and the one message key for it ('atlas.code.needs_confirm', nine languages)
+           had no issuer. This is the issuer, and the rule is about PROVENANCE, not about the request:
+             'always'   — never on anyone's say-so without the reader's token (`opts.confirmed`);
+             'explicit' — on the model's say-so (source 'atlas') only while nothing from outside the
+                          conversation has been in front of it this turn (`opts.externalContent`,
+                          js/atlas-agent.js `turn.externalContentSeen`). A UI button (source 'ui'),
+                          a map click that resumes an operation ('atlas-resume') and a plain request
+                          with no outside content in the turn run exactly as before.
+           ⚠ IT RIDES THE `needs_input` PATH, NOT `failed`: runActions renders it as a question, keeps
+           it out of the repair pass, and holds it in `_pendingInput`; the model reads error
+           'needs_confirm' and the policy tells it to put the question and end the turn. The reader's
+           approval arrives as their next message; the same call made again in that turn carries no
+           outside content (source 'atlas', nothing observed yet) and runs, and js/atlas-console.js
+           hands `confirmed:true` to the call whose identity matches the question that was asked —
+           which is what an 'always' row needs. ⚠ NOT A REPEAT UNDER .agents/rules/one-pass-or-a-reason.md:
+           the second call follows an answer from the reader, not a failure; js/atlas-agent.js never
+           freezes a `needs_input` in `doneCalls`, so it is not «already done» either. */
+        var conf = String(cap.confirmation || 'none');
+        if (!opts.confirmed && (conf === 'always' || (conf === 'explicit' && op.source === 'atlas' && !!opts.externalContent))) {
+          phase(op, 'waiting-input');
+          return settle(Results.needsInput({
+            operationId: operationId, capabilityId: cap.id, code: 'needs_confirm',
+            /* `promptKey` names the prompt the renderer draws for this request — the text lives in
+               js/atlas-results.js ('atlas.input.confirm', nine languages), not here. */
+            inputRequest: { kind: 'choice', promptKey: 'atlas.input.confirm', pendingArgs: args, capabilityId: cap.id, confirm: conf }
+          }));
+        }
+
         /* 5 — the lock, then the BEFORE observation. In that order: a snapshot taken before the
                lock describes a world another operation is still allowed to change. */
         var releaseLock = await acquire((cap.effects && cap.effects.conflictKeys) || [], op);

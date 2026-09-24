@@ -122,6 +122,11 @@ async function runProvider(provider, modeName, query) {
     return { provider, read: false, records: [], reason: "chunked" };
   }
   const urls = mode.urls(query || {});
+  /* ⚠ (#R801) NO URL IS A FACT ABOUT THE QUESTION, NOT ABOUT THE NETWORK. A provider that hands
+     back nothing to ask for (us-epa's series for a code that is not a registered station) was not
+     stopped by an unreachable upstream, and reporting it as one would turn a caller's typo — or a
+     `..` probe — into a 502 that looks like RadNet being down. */
+  if (!urls.length) return { provider, read: false, records: [], reason: "nothing_to_ask" };
   if (urls.length > MAX_UPSTREAM_REQUESTS) {
     return { provider, read: false, records: [], reason: "chunked" };
   }
@@ -243,6 +248,8 @@ async function handleSeries(params) {
   }
 
   const r = await runProvider(p, "series", { code, from, to });
+  /* the provider knows no such station — the same answer as an unknown provider id above */
+  if (r.reason === "nothing_to_ask") return bad("unknown station");
   if (!r.read) return json({ error: r.reason || "upstream_unreachable" }, 502, null);
 
   return json({

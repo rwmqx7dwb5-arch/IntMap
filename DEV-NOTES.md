@@ -1,3 +1,96 @@
+## R801 — 外部監査（2026-09）を全項目実装し、自分でも監査して見つけた穴を同じ回で塞いだ
+
+〈利用者が外部監査の報告（10 項目）を貼り、「必要そうなものはすべて。これだけにとどまらず、あなた自身も
+セキュリティの監査を行い、必要項目を修正してください」「承認が要る変更も必要な奴は全部」〉
+
+## 0. 監査の主張をまず検証した——10 項目中 9 項目はコードどおり、1 項目は監査より深刻
+
+scout に file:line で照合させた。誤認は 2 点だけ（`admin.html` の CSP に `unsafe-eval` と `https:` は無い／
+`db.yml` は非空 diff なら失敗する。欠陥は「`db diff` 自身が失敗して何も出さなければ緑」のほう）。
+
+⚠⚠⚠ **項目 1（AI 利用枠の返金）は監査より深刻だった。** `ai_turns` の `charged` は初回に true で挿入され
+更新されない。`refund_ai_turn` はそれを読んで行を消し `refund_ai_usage` する。ai-proxy の `refund()` は
+`charged` を見ずに呼ぶ。⇒ 答えを受け取った後、同じ `x-intmap-turn` で `task:"x"` を送ると 400 と共に
+**初回の成功した課金が戻る**（bad_task / bad_lane / empty / too_large の全経路）。直したのは分岐ではなく台帳:
+`succeeded`（`settle_ai_turn`、答えが出た瞬間・応答が出る前）、返金は `DELETE … RETURNING` の 1 文で
+settled は消さない、戻す先は `usage_date`（23:59 課金→00:01 返金が翌日から戻っていた）。ai-proxy は
+課金しなかった呼び出しから返金を求めない（belt）。残る窓（初回失敗中に継続が成功）は migration の頭に書いた。
+
+## 1. 監査の 10 項目で実装したこと
+
+| # | 直したもの | どこ |
+|---|---|---|
+| 1 | 上記 | `20260918090000_r801_quota_ledger_and_grants.sql`・ai-proxy |
+| 2 | routing-relay の支出上限を Postgres の共有 token bucket へ（IP・全体/分・全体/日。全体は fail-closed）。Map は LRU で宣言件数を守る（実測: 10,000 識別子で 10,000 保持していた） | `_shared/rate-limit.js`・`20260918100000_r801_relay_rate_limit.sql`・pgTAP 08 |
+| 3 | 添付の展開量上限（部品 64 MB・コンテナ 128 MB・XFD・120,000 セル）。ストリームを逐次読み上限で `cancel()`。usize は片方向にしか信じない。XLSX の列参照は打ち切り | `js/atlas-attach.js` |
+| 4 | ai-proxy の本文を `readCapped` で読みながら切る。提供者応答は `fetchBounded` で本文の最後まで期限内・16 MiB。monitor-run も同じ器、本文は認証後、DB エラー文は返さない | `_shared/relay-guard.js`（export）・ai-proxy・monitor-run |
+| 5 | `xlsx` 0.18.5 → 0.20.3（SheetJS CDN の tarball・integrity 付き。npm レジストリに修正版は無い） | package.json / lock |
+| 6 | `db.yml` の `\|\| true` を外し exit code を伝える。PR では常に走り、DB 関連パスに変更が無ければ軽く緑で終える（Ruleset の必須チェックにするため）。`config.toml` の radiation-feed に `verify_jwt = false`。全 `[functions.*]` に verify_jwt があることを数え上げで検査 | `.github/workflows/db.yml`・`supabase/config.toml`・`tests/r801-edge-config-checks` |
+| 7 | CSP: `'unsafe-eval'` を外せるか**実測**（§3） | — |
+| 8 | Atlas の confirm を機構に（§2） | atlas-executor / agent / policy / capabilities |
+| 9 | リダイレクトは `followRedirects` で各ホップを検査（同一 https オリジンか呼び出し側の `allowRedirect`・3 ホップまで）。POST は追わない | `_shared/relay-guard.js` |
+| 10 | 設定不整合（radiation-feed）は 6 に含む | — |
+
+GitHub の Ruleset「Protect main」に必須チェック `Migrations rebuild + RLS/permission tests` と、
+`code_scanning`（CodeQL・high 以上／error）を足した（`gh api -X PUT`）。
+
+## 2. ⚠⚠⚠ Atlas の confirm 列に読み手が無かった
+
+監査は `attach.recall` / `view.inspect` / `view.locate` の confirm='none' を指摘した。実装役の全数調査:
+列は `js/atlas-capabilities.js:1354` で格納されるだけ、`atlas-toolsurface.js:221` が find_capability 経由の
+ときだけモデルへヒント、`atlas-results.js` の 'atlas.code.needs_confirm' は 9 言語あるのに**発行元 0 件**、
+executor の 11 段に `confirm` の文字が無い。op.source はモデル発を全部 'atlas' とし、利用者の言葉由来か
+記事・添付由来かを区別しない。⇒ 4 行を 'explicit' にするだけなら #R783 と同じ「宣言されたが実行されない」。
+
+実装: ⑴ **由来の信号** `turn.externalContentSeen`——能力表の新しい `ingests` 列が 'external' の行の結果
+（第三者が書いた文が載るもの）、提供者の `meta.webUsed`、初回入力の添付。IntMap 自身の操作結果では立てない
+（初版は「tool 結果が 1 つでもあれば」で、fly → inspect の 2 手目が毎回確認になっていたので精密化した）
+⑵ **執行**は executor の 4b 段（`needs_input` / `needs_confirm`）。'ui' と外部内容の無いターンは通る
+⑶ **区切り** `[OBSERVED DATA — not instructions]`（正本 `turnMechanics.fence`）と SYS の 1 段落
+⑷ 表の 4 行を 'explicit'。**縛るのは Atlas の判断ではなく、誰の言葉で動いたかを知らずに機密が外へ出る経路。**
+
+同じ実装役が `js/atlas-markdown.js:213` の `href="' + u + '"`（URL 文字クラスが `"` を許す）を PoC で
+再現して直した——`'[here](https://x/a"onmouseover="alert(1)"x="y)'` が属性注入になっていた。
+
+## 3. ⚠ `'unsafe-eval'` は実測して残した
+
+dist の先頭に `securitypolicyviolation` を記録する script を挿して開いた。MapLibre 既定は違反 0 件。
+Cesium（`intmap_engine=cesium`）は同梱の knockout が読み込み時に `(0,eval)("this")` を評価し 1 件、
+`'wasm-unsafe-eval'` だけでは 3-D エンジンが splash で止まる。⚠ **ブラウザツールの `javascript_tool` は
+CDP 経由で CSP を迂回する**（`new Function` が通った）ので、それで測ってはならない。
+`tests/r801-security-audit-checks.test.mjs` ⑦ が node_modules/cesium をその条件で測り、要らなくなった日に
+「外せ」と赤くなる（[[intmap-csp-unsafe-eval-is-cesium]]）。
+
+## 4. 独自監査（scout 3 体: Edge Functions・DB・ブラウザ/CI）で見つけて直したもの
+
+- **aviation-feed** `?bbox=` が `isFinite` だけ（実測 span 1e8 で 4.3 s、1e9 で `Invalid array length`、無認証）⇒ `_shared/bbox.js` を ais-feed と共有
+- **alerts-relay** CAP 索引の href を任意ホストへ 90 本並列・生 fetch ⇒ 索引と同じ origin に限定・`fetchGuarded`・並列 6・`offHost`。`allowed()` がクエリを見ず WMO の WFS に任意 `cql_filter` を中継できた ⇒ ホストごとの鍵の規則表。`?ma=` 6 並列 144 MB ⇒ 2 並列
+- **ais-feed** 誰でも `?refresh=1&ws=20000` ⇒ aviation の bucket を `_shared/read-budget.js` に出して共有。公開 meta から鍵の長さ・文字種・上流の生文を撤去（log へ）
+- **quotes-relay** 不正 `%` で未捕捉 500 ⇒ 400。alerts/quotes にポート・userinfo の拒否
+- **radiation-sources** us-epa の `q.code` で `..` が同一ホスト内パス走査 ⇒ 登録局に一致しない code は拒む
+- **Gemini 鍵が URL クエリ**（ai-proxy listModels・news-ingest・refresh-news・who-don）⇒ `x-goog-api-key`
+- **monitor-run** 認証前に `req.json()`・`claimErr.message` を返却・`e.message` を所有者が読む `error_detail` へ ⇒ 認証後に `readCapped`・コードのみ・log へ
+- **DB**: `ai_turns`・`ai_gloss_usage`・`news_event_admin_actions` が既定の ALL を保っていた ⇒ 3 表を revoke し、**全表**から TRUNCATE/REFERENCES/TRIGGER を革る（カタログのループ）／SECURITY DEFINER 11 本の search_path が `public` を含んでいた ⇒ 8 本を ''、pgvector の 3 本は `extensions`／`feedback`・`bug_reports` が任意の user_id を受けた ⇒ 自分か null／`community_posts`・`community_comments` の UPDATE が全列 ⇒ 編集者が送る列だけ。pgTAP 09 が全部を**カタログで**測る
+- **ブラウザ**: AIS frame の MMSI が `shipsByMMSI` の鍵（CodeQL prototype-polluting）⇒ 9 桁に限る／`scripts/serve.mjs` の `//host` Location／atlas-console の Wikidata URL と answer-render の finalUrl に `IntMapSafe.url`
+- **CodeQL の open alerts 44 件を triage**（15 high は tests/scripts と、esc 済みの innerHTML。実害は MMSI の 1 経路）
+
+## 5. 直さず残したもの（提案）
+
+- `js/proxy-fetch.js` が RSS・記事・企業データ・Atlas 証拠を**第三者の公開 CORS proxy**（allorigins 等）経由で取る。proxy 側で改竄・閲覧の観測が可能。自前の中継（news-relay の形）へ寄せる価値がある
+- `news-ui.js:683` の iframe `src` は `escForReader` だけでスキーム検査が無い（今は呼び出し元 0 の死んだ配線）
+- `.github/workflows/tle-refresh.yml` が外部上流から組んだ差分を自分で approve して merge する（データのみ）
+- news-relay / gdelt-relay / sv-cov のホスト比較がポートを見ない（同一ホストの別ポートへ向くだけ・低）
+- Supabase の default privileges（新表に ALL）は据え置き（`docs/SECURITY-ARCHITECTURE.md` §8 の 6）
+- `atlas-state.js` の `[CURRENT MAP STATE]` に載る選択記事の title/body、`atlas-attach-log.js` の添付名は fence 外
+- 本番の migration 履歴に `20260824210000`・`20260825120000`・`20260831120000` が記録されていない（`supabase migration list --linked`）
+
+## 6. 検査
+
+`tests/r801-*-checks.test.mjs` 7 本（security-audit・relay-spend・relay-input・attach-bounds・edge-config・
+atlas-confirm・atlas-boundary）、pgTAP 08・09、`00_structure` に表と関数を追加。旧仕様を固定していた
+r504 ②③・r510 ⑩・r556 ②・r585 ② と security-logic の「REQUEST を bound する」は**事実**へ付け替えた
+（綴りを写したのではない）。⚠ 実装役が走らせた変異検査が `js/locales/pages.fr.js` を一時 0 バイトにしていた
+（`check:docs` が histb-count で赤くなって気づいた。完了後に復元された）——[[intmap-mutation-tests-poison-git-add]]。
 ## R799 — **`stats().unowned` を「いま生きている数」にし、衛星の凡例タイマーに所有者を付けた**
 
 〈#R796 の本番検証で見つけた 1 件。段 2 の計器の修正〉
@@ -787,6 +880,7 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R801** — **外部監査（2026-09）を全項目実装し、自分でも監査して見つけた穴を同じ回で塞いだ**〈利用者「必要そうなものはすべて。あなた自身もセキュリティの監査を行い、必要項目を修正してください」〉／⚠⚠⚠ **AI 利用枠の返金は監査の指摘より深刻だった**——台帳が「初回に課金したか」しか持たず、継続呼び出しの失敗が**初回の成功した課金**を返していた⇒ 台帳に `succeeded`（settle_ai_turn）、返金は `DELETE…RETURNING` の 1 文、戻す先は課金した日／⚠⚠⚠ **Atlas の confirm 列に読み手が無かった**（executor の 11 段に confirm の文字が 0・needs_confirm の発行元 0）⇒ 確認の段（4b）＋由来の信号（`ingests` 列・webUsed・添付）＋観測データの区切り `[OBSERVED DATA]` と SYS／⚠⚠ Atlas 返答の markdown リンク href が無エスケープ（PoC で属性注入）／routing-relay の支出上限を Postgres の共有バケツへ（Map は 10,000 識別子で 10,000 保持していた）／添付の展開量上限（小さな gzip がタブを落とせた）／本文と提供者応答を `readCapped`・`fetchBounded` で最後のバイトまで期限内に／リダイレクトは各ホップを検査／**独自監査で追加**: aviation-feed の bbox 無検査（1e9 で配列長超過）・alerts-relay の任意ホスト fetch とクエリ素通し・ais-feed の誰でも refresh・Gemini 鍵の URL 載せ 4 か所・monitor-run の認証前 body 読みと DB エラー文・AIS の MMSI で prototype 汚染・全表の TRUNCATE/REFERENCES/TRIGGER・search_path 11 関数・feedback の帰属偽装・著者が編集できる列／xlsx 0.20.3（SheetJS CDN）／db.yml の `|| true` と常時実行化／config.toml の radiation-feed／GitHub Ruleset に DB 検査と CodeQL しきい値を必須化／⚠ **`'unsafe-eval'` は実測して残した**（Cesium の knockout が読み込み時に eval。検査が外せる日を告げる）
 - **#R799** — **`stats().unowned` を「いま生きている数」にし、衛星の凡例タイマーに所有者を付けた**〈#R796 の本番検証（R796 が本番に出た直後）で、`unowned` が衛星のトグルごとに 1 増えて戻らないことが実測された〉／⚠ 計器が**累積**だった——一度も減らない数は 0 に向けられない⇒ 5 つの登録簿の `cap===null` を数える `_unownedLive()`、累積は `unownedEver` に／増やしていたのは `js/data-layers.js` の `data-layers:sat-legend`（所有者なし）⇒ `{ capability:'sat.live' }`（OFF で skip・dispose で掃く）／本番実測（R796）: ビルド印 R796・`__imLazyCheck.failed=[]`・衛星 5 回開閉で timers 12⇄10 を往復し増えない・`stateOf('sat.live')` が loaded⇄active
 
 - **#R798** — **遅延モジュールの登録表を 1 モジュール 1 定義にした（所有権リファクタの段 4 の前半）**〈段 3 の続き。「メニュー・状態復元・Atlas の認識を維持したまま、登録表の手動同期を減らす」〉／⚠⚠⚠ **1 つの遅延モジュールが 5 つの表（`PUBLISHES`・`fetchModule` の case・`mount` の case・`ALSO`・`SELF_PUBLISHING`）と `src/main.js` の `LAZY_FACTORIES` の 6 か所に手で書かれていた**。r209 ③・r304 ② はその 6 か所が揃っているかを regex で測る検査だった⇒ `LAZY_REGISTRY`（42 件・既存の 5 表から**機械的に導出**、手打ち 0）を正本にし、loader の 5 表はその view、`src/main.js` は `LAZY_NAMES` / `CARRIED_NAMES` を import／⚠ 検査 9 本（r175 ②・r209 ②③・r304 ②・r353 ⑨・r354・r408 ④・r495 ③・app-source の `lazyModules()`）が「2 ファイルへの regex」から「同じ object を読む」に。gate 2（`window.IntMapModules.x(IM_HOST)` の綴り）は `mount` の中でそのまま／後半（軽い機能定義と重い本体の分離——world-packs 等の eager なメニュー）は次のラウンド

@@ -249,6 +249,30 @@ export const ATL_FILE = (function () {
        before anything could say no. Eight times the largest thing that can actually be sent. */
     readBytes: 64 * 1024 * 1024,
     sniff: 4096, zipEntries: 4096,
+    /* ⚠ readBytes BOUNDS WHAT A FILE IS, NOT WHAT IT BECOMES. Deflate stores a run of zeros at up
+       to 1032:1 (RFC 1951: a 258-byte match costs two bits), so a 64 MB container that passed
+       readBytes could inflate to ~66 GB, and `new Response(stream).arrayBuffer()` would try to hold
+       all of it (external audit, #R801). These are the ceilings on the OUTPUT of a decompression:
+       · inflatedPerEntry — one part (or the gzip member) may become no more than an uncompressed
+         drop is already allowed to be. An entry larger than this would have been refused had it
+         arrived as a plain file, so the container gets no wider door than the file did. Equal to
+         readBytes — tests/r801 holds the two equal rather than trusting the copy (#R504); ⚠ NOT
+         derived from textPerFile, because zipOpen/gunzip are shared with js/geo-import.js (#R576),
+         whose shapefile sets and rasters are read whole.
+       · inflatedTotal — one container's parts, summed. Estimate, not observation: the attach path
+         reads parts one after another and releases each, but the shapefile importer holds a set
+         (.shp/.dbf/.shx/.prj) at once, so twice the single-part ceiling. Expires if a reader
+         appears that must hold more than two full-size parts together. */
+    inflatedPerEntry: 64 * 1024 * 1024, inflatedTotal: 2 * 64 * 1024 * 1024,
+    /* ⚠ A CELL REFERENCE IS A NUMBER THE READER MULTIPLIES BY. `r="ZZZZZZ1"` decodes to column
+       308,915,776, and a sparse array indexed by it is walked to that length (external audit,
+       #R801). sheetCols is the largest column the format itself can write: XFD = 16384 (ECMA-376
+       Part 1 §18.3.1.4 `r`; Excel's own limit is the same 16,384). Expires only if the format
+       grows. sheetCells bounds the WORK per sheet: every cell after the first in a row costs at
+       least one character of output (its tab), and the sheet's text is cut at textPerFile
+       characters — so cells past that many can never be shown, and reading them is work whose
+       product is discarded. Equal to textPerFile, and tests/r801 holds it so. */
+    sheetCols: 16384, sheetCells: 120000,
   });
   const DOC_MIME = 'application/pdf';
 
@@ -335,20 +359,39 @@ export const ATL_FILE = (function () {
   function tidy(s) { return String(s || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); }
 
   /* ── ZIP: central directory + DecompressionStream, enough to read a container's parts ────── */
-  async function inflate(bytes, method) {
-    if (method === 0) return bytes;
+  /* ⚠ THE OUTPUT IS PULLED A CHUNK AT A TIME AND THE PULL STOPS AT THE BUDGET. This used to be
+     `new Response(stream).arrayBuffer()`, which collects the whole output before anyone can look at
+     its size — so the only bound on memory was the ratio deflate happens to reach (see LIMITS).
+     Now the reader counts what has actually come out and cancels the stream the moment the count
+     passes `budget`; nothing past that point is ever produced. Over budget is "could not read"
+     (null), the same answer a corrupt stream gives — the caller already knows that path. */
+  async function drain(stream, budget) {
+    const reader = stream.getReader(); const parts = []; let n = 0;
+    try {
+      for (;;) {
+        const r = await reader.read();
+        if (r.done) break;
+        n += r.value.length;
+        if (n > budget) { try { await reader.cancel(); } catch (_) { /* already closed */ } return null; }
+        parts.push(r.value);
+      }
+    } catch (_) { return null; } finally { try { reader.releaseLock(); } catch (_) { /* cancelled */ } }
+    const out = new Uint8Array(n); let o = 0;
+    for (const p of parts) { out.set(p, o); o += p.length; }
+    return out;
+  }
+  async function inflate(bytes, method, budget) {
+    if (method === 0) return bytes.length > budget ? null : bytes;
     if (method !== 8) return null;
     if (typeof DecompressionStream === 'undefined') return null;
     try {
-      const st = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-      return new Uint8Array(await new Response(st).arrayBuffer());
+      return await drain(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')), budget);
     } catch (_) { return null; }
   }
   async function gunzip(bytes) {
     if (typeof DecompressionStream === 'undefined') return null;
     try {
-      const st = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-      return new Uint8Array(await new Response(st).arrayBuffer());
+      return await drain(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')), LIMITS.inflatedPerEntry);
     } catch (_) { return null; }
   }
   function zipOpen(b) {
@@ -389,17 +432,28 @@ export const ATL_FILE = (function () {
       }
       p += 46 + nlen + elen + clen;
       if (!name || name.charAt(name.length - 1) === '/' || !usize) continue;
-      dir.set(name, { method: method, csize: csize, lho: lho });
+      dir.set(name, { method: method, csize: csize, usize: usize, lho: lho });
     }
+    /* What this container has already been allowed to become, summed over every read. A part read
+       twice counts twice — no caller reads twice, and counting less would be trusting the caller. */
+    let inflated = 0;
     return {
       names: [...dir.keys()],
       async read(nm) {
         const e = dir.get(nm); if (!e) return null;
+        /* ⚠ `usize` IS THE ARCHIVE'S OWN CLAIM, so it is read in one direction only: a part that
+           declares itself larger than the ceiling is refused without inflating a byte, and a part
+           that declares itself small is allowed to become AT MOST what it declared — drain() measures
+           the real output, so a claim of 100 bytes in front of 60 MB of zeros is refused at the
+           first chunk, not at the ceiling. */
+        if (e.usize > LIMITS.inflatedPerEntry || inflated + e.usize > LIMITS.inflatedTotal) return null;
         if (e.lho + 30 > b.length || dv.getUint32(e.lho, true) !== 0x04034B50) return null;
         const lnl = dv.getUint16(e.lho + 26, true), lel = dv.getUint16(e.lho + 28, true);
         const at = e.lho + 30 + lnl + lel;
         if (at + e.csize > b.length) return null;
-        return inflate(b.subarray(at, at + e.csize), e.method);
+        const out = await inflate(b.subarray(at, at + e.csize), e.method, e.usize);
+        if (out) inflated += out.length;
+        return out;
       },
     };
   }
@@ -415,38 +469,60 @@ export const ATL_FILE = (function () {
     return 'zip';
   }
   function colNum(ref) { let n = 0; for (let i = 0; i < ref.length; i++) n = n * 26 + (ref.charCodeAt(i) - 64); return n; }
-  async function sheetRows(xml, shared) {
-    const out = [];
+  /* → {rows, truncated}. ⚠ THREE THINGS STOP A SHEET, AND ALL THREE ARE "the file was longer":
+       · a column past LIMITS.sheetCols — a reference the format cannot write. The sheet is
+         stopped THERE rather than the cell dropped or the row skipped: once one reference is
+         impossible, the positions of everything after it are that writer's word too, and a row
+         silently missing from the middle of a table is a worse answer than a table that says
+         it was cut. Rows before it are kept.
+       · LIMITS.sheetCells cells read — work whose product the text budget would discard anyway.
+       · `budget` characters emitted — the same cut textDesc makes, applied before the string
+         is built rather than after (a row of one cell at XFD is 16 KB of tabs; times the rows
+         a sheet may hold, that string was the second way this function could grow without bound).
+     The line is built from the cells that exist, widest column last, never by walking an array
+     to the largest index seen. */
+  async function sheetRows(xml, shared, budget) {
+    const out = []; let cells = 0, chars = 0, cut = false;
     for (const rm of String(xml).matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
-      const cells = []; let auto = 0;
+      const row = new Map(); let auto = 0;
       for (const cm of rm[1].matchAll(/<c\b([^>]*?)\/>|<c\b([^>]*?)>([\s\S]*?)<\/c>/g)) {
+        if (++cells > LIMITS.sheetCells) { cut = true; break; }
         const at = cm[1] || cm[2] || '', inner = cm[3] || '';
         const ty = (/\bt="([^"]+)"/.exec(at) || [])[1] || '';
         const ref = (/\br="([A-Z]+)\d+"/.exec(at) || [])[1] || '';
+        auto = ref ? colNum(ref) : auto + 1;
+        if (auto > LIMITS.sheetCols) { cut = true; break; }
         let v = '';
         if (ty === 's') { const vm = /<v>([\s\S]*?)<\/v>/.exec(inner); const i = vm ? +vm[1] : -1; v = (i >= 0 && i < shared.length) ? shared[i] : ''; }
         else if (ty === 'inlineStr' || ty === 'str') { v = xmlText(inner, []); }
         else { const vm = /<v>([\s\S]*?)<\/v>/.exec(inner); v = vm ? ents(vm[1]) : ''; }
-        auto = ref ? colNum(ref) : auto + 1;
-        cells.push({ c: auto, v: String(v).replace(/[\t\r\n]+/g, ' ') });
+        row.set(auto, String(v).replace(/[\t\r\n]+/g, ' '));   /* a repeated reference: the later cell wins, as before */
       }
-      if (!cells.length) continue;
-      const row = []; cells.forEach(function (x) { row[x.c - 1] = x.v; });
-      const line = [];
-      for (let i = 0; i < row.length; i++) line.push(row[i] == null ? '' : row[i]);
-      if (line.join('').trim()) out.push(line.join('\t'));
+      if (cut) break;
+      if (!row.size) continue;
+      let line = '', last = 0;
+      for (const c of [...row.keys()].sort(function (a, b2) { return a - b2; })) { line += '\t'.repeat(last ? c - last : c - 1) + row.get(c); last = c; }
+      if (!line.trim()) continue;
+      out.push(line); chars += line.length + 1;
+      if (chars > budget) { cut = true; break; }
     }
-    return out;
+    return { rows: out, truncated: cut };
   }
+  /* → {kind, text, truncated}. `truncated` is true when a part this container names could not be
+     read whole — over the inflated ceiling, corrupt, or a sheet stopped by sheetRows — so the
+     reader is told the file was longer instead of being shown a shorter file as if it were all. */
   async function containerText(z, budget) {
     const kind = zipKind(z.names);
+    let cut = false;
     const td = function (b) { const r = b ? decodeText(b) : null; return r ? r.text : ''; };
+    /* A named part that yields null was refused or broken — a part that is not there is not. */
+    const part = async function (n) { if (z.names.indexOf(n) < 0) return null; const b = await z.read(n); if (!b) cut = true; return b; };
     if (kind === 'docx') {
       const parts = ['word/document.xml', 'word/footnotes.xml', 'word/endnotes.xml'].filter(function (n) { return z.names.indexOf(n) >= 0; });
       const br = [[/<w:tab\b[^>]*\/?>/g, '\t'], [/<w:br\b[^>]*\/?>/g, '\n'], [/<\/w:p>/g, '\n'], [/<\/w:tc>/g, '\t'], [/<\/w:tr>/g, '\n']];
       let out = '';
-      for (const p of parts) out += xmlText(td(await z.read(p)), br) + '\n';
-      return { kind: kind, text: tidy(out) };
+      for (const p of parts) out += xmlText(td(await part(p)), br) + '\n';
+      return { kind: kind, text: tidy(out), truncated: cut };
     }
     if (kind === 'pptx') {
       const slides = z.names.filter(function (n) { return /^ppt\/slides\/slide\d+\.xml$/.test(n); })
@@ -454,41 +530,42 @@ export const ATL_FILE = (function () {
       const notes = z.names.filter(function (n) { return /^ppt\/notesSlides\/notesSlide\d+\.xml$/.test(n); });
       const br = [[/<a:br\b[^>]*\/?>/g, '\n'], [/<\/a:p>/g, '\n']];
       let out = '';
-      for (let i = 0; i < slides.length; i++) out += '--- slide ' + (i + 1) + ' ---\n' + tidy(xmlText(td(await z.read(slides[i])), br)) + '\n\n';
-      for (let i = 0; i < notes.length; i++) { const t = tidy(xmlText(td(await z.read(notes[i])), br)); if (t) out += '--- notes ' + (i + 1) + ' ---\n' + t + '\n\n'; }
-      return { kind: kind, text: tidy(out) };
+      for (let i = 0; i < slides.length; i++) out += '--- slide ' + (i + 1) + ' ---\n' + tidy(xmlText(td(await part(slides[i])), br)) + '\n\n';
+      for (let i = 0; i < notes.length; i++) { const t = tidy(xmlText(td(await part(notes[i])), br)); if (t) out += '--- notes ' + (i + 1) + ' ---\n' + t + '\n\n'; }
+      return { kind: kind, text: tidy(out), truncated: cut };
     }
     if (kind === 'xlsx') {
-      const sst = td(await z.read('xl/sharedStrings.xml'));
+      const sst = td(await part('xl/sharedStrings.xml'));
       const shared = [];
       for (const m of sst.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>|<si\b[^>]*\/>/g)) shared.push(xmlText(m[1] || '', []));
-      const rels = td(await z.read('xl/_rels/workbook.xml.rels'));
+      const rels = td(await part('xl/_rels/workbook.xml.rels'));
       const target = new Map();
       for (const m of rels.matchAll(/<Relationship\b[^>]*>/g)) {
         const id = (/\bId="([^"]+)"/.exec(m[0]) || [])[1], tg = (/\bTarget="([^"]+)"/.exec(m[0]) || [])[1];
         if (id && tg) target.set(id, 'xl/' + String(tg).replace(/^\.?\//, ''));
       }
-      const wb = td(await z.read('xl/workbook.xml'));
+      const wb = td(await part('xl/workbook.xml'));
       let out = '';
       for (const m of wb.matchAll(/<sheet\b[^>]*>/g)) {
         const nm = ents((/\bname="([^"]*)"/.exec(m[0]) || [])[1] || 'Sheet');
         const rid = (/\br:id="([^"]+)"/.exec(m[0]) || [])[1] || '';
         const path = target.get(rid);
         if (!path || z.names.indexOf(path) < 0) continue;
-        const rows = await sheetRows(td(await z.read(path)), shared);
-        if (!rows.length) continue;
-        out += '--- ' + nm + ' ---\n' + rows.join('\n') + '\n\n';
+        const sr = await sheetRows(td(await part(path)), shared, budget);
+        if (sr.truncated) cut = true;
+        if (!sr.rows.length) continue;
+        out += '--- ' + nm + ' ---\n' + sr.rows.join('\n') + '\n\n';
         if (out.length > budget) break;
       }
-      return { kind: kind, text: tidy(out) };
+      return { kind: kind, text: tidy(out), truncated: cut };
     }
     if (kind === 'odf' || kind === 'kmz') {
-      const part = kind === 'odf' ? 'content.xml' : z.names.filter(function (n) { return /\.kml$/i.test(n); })[0];
-      const raw = td(await z.read(part));
-      if (kind === 'kmz') return { kind: kind, text: tidy(raw) };
+      const p = kind === 'odf' ? 'content.xml' : z.names.filter(function (n) { return /\.kml$/i.test(n); })[0];
+      const raw = td(await part(p));
+      if (kind === 'kmz') return { kind: kind, text: tidy(raw), truncated: cut };
       const br = [[/<text:tab\b[^>]*\/?>/g, '\t'], [/<text:line-break\b[^>]*\/?>/g, '\n'],
         [/<\/text:p>|<\/text:h>/g, '\n'], [/<\/table:table-cell>/g, '\t'], [/<\/table:table-row>/g, '\n']];
-      return { kind: kind, text: tidy(xmlText(raw, br)) };
+      return { kind: kind, text: tidy(xmlText(raw, br)), truncated: cut };
     }
     /* ANY OTHER ARCHIVE: every part that decodes as text, named, until the budget runs out. That
        covers .epub, a zip of sources, a zipped export — without naming any of them. */
@@ -496,12 +573,12 @@ export const ATL_FILE = (function () {
     for (const nm of z.names.slice().sort()) {
       if (/^__MACOSX\//.test(nm) || /(^|\/)\.DS_Store$/.test(nm)) continue;
       if (used > budget) break;
-      const r = decodeText(await z.read(nm));
+      const r = decodeText(await part(nm));
       if (!r || !r.text.trim()) continue;
       const body = r.text.slice(0, Math.max(0, budget - used));
       out += '----- ' + nm + ' -----\n' + body + '\n\n'; used += body.length;
     }
-    return { kind: 'zip', text: tidy(out) };
+    return { kind: 'zip', text: tidy(out), truncated: cut };
   }
 
   function b64of(bytes) {
@@ -519,10 +596,12 @@ export const ATL_FILE = (function () {
      PDFs are already held back and recalled on demand, rather than at the one point that can never
      be revisited. `truncated` keeps its old meaning for the viewer: "longer than what is sent by
      default", not "the rest is gone". */
-  function textDesc(name, size, t, from) {
+    /* (#R801) `cut` — the container dropped a part at an inflation ceiling (containerText.truncated); to the
+     reader that is the same fact as "longer than what is sent by default": the file was longer. */
+  function textDesc(name, size, t, from, cut) {
     const text = t.text;
     if (!text.trim()) return { kind: 'unsupported', name: name, size: size, why: 'empty' };
-    return { kind: 'text', name: name, size: size, text: text, truncated: text.length > LIMITS.textPerFile, encoding: t.encoding, from: from };
+    return { kind: 'text', name: name, size: size, text: text, truncated: text.length > LIMITS.textPerFile || !!cut, encoding: t.encoding, from: from };
   }
 
   /* ── THE ONE QUESTION THE UI ASKS ────────────────────────────────────────────────────────── */
@@ -559,7 +638,7 @@ export const ATL_FILE = (function () {
          raw bytes this function will read into memory at all (LIMITS.readBytes, above), so decompressed
          text is capped at the same order of magnitude a legitimate document could ever need. */
       const r = z ? await containerText(z, LIMITS.readBytes) : null;
-      if (r && r.text) return textDesc(name, size, { text: r.text, encoding: 'utf-8' }, r.kind);
+      if (r && r.text) return textDesc(name, size, { text: r.text, encoding: 'utf-8' }, r.kind, r.truncated);
       return { kind: 'unsupported', name: name, size: size, why: z ? 'archive' : 'binary' };
     }
     if (sig === 'gzip') {

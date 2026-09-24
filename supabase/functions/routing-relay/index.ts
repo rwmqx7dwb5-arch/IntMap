@@ -23,8 +23,10 @@
 //      in the query is DISCARDED rather than forwarded, so no caller can bill a different account
 //      (or probe ours) through this endpoint.
 //    · ⚠ MAPBOX HAS NO HARD SPEND CAP. There is no dashboard switch that stops the meter, so the
-//      rate limit below is the only thing between an unauthenticated GET loop and an invoice. It
-//      is best-effort by construction — see the note on `rateOk`.
+//      limits below are the only thing between an unauthenticated GET loop and an invoice. Two
+//      stages: a per-isolate Map that answers without a round trip, and — the accounting boundary
+//      the Map cannot be (#R801) — shared buckets in Postgres, per caller AND for the whole
+//      project, taken from right before the paid call. See «THE SPEND CEILING».
 //
 //  ENDPOINTS (GET only):
 //    ?probe=1
@@ -37,13 +39,15 @@
 //        → the Mapbox Directions-Refresh JSON, unaltered (§16 route refresh).
 //
 //  Deploy: supabase functions deploy routing-relay --no-verify-jwt --project-ref vpekfwdpurzejrrmacac
-//  Secrets: MAPBOX_TOKEN
+//  Secrets: MAPBOX_TOKEN  (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected by the platform;
+//           ROUTING_RELAY_GLOBAL_PER_MIN / ROUTING_RELAY_GLOBAL_PER_DAY are optional overrides)
 //
 //  ⚠ NO TYPE ANNOTATIONS IN THIS FILE, like news-relay, cable-geo and sv-cov — the repo's static
 //  gate parses every committed .ts as plain JavaScript, so a `: string` here fails the build.
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { makeLimiter, restRpcClient } from "../_shared/rate-limit.js";
 
 const CORS = corsFor();
 /* ⚠ THE LICENCE HEADER. Not tuning — see §2.10.1 in the note above. */
@@ -97,39 +101,132 @@ const ROUTE_ID_RE = /^[A-Za-z0-9_.-]{1,128}$/;
 const INDEX_RE = /^\d{1,2}$/;
 
 /* ══ THE SPEND CEILING ═════════════════════════════════════════════════════════════════════════
-   ⚠ BEST-EFFORT, AND SAID SO RATHER THAN IMPLIED. An Edge Function is not one long-lived process:
+   Two stages, because they answer two different questions.
+
+   STAGE 1 — THE MAP (per isolate, no round trip). An Edge Function is not one long-lived process:
    Supabase may run several isolates and recycles them, so this Map is per-isolate and a caller
    spread across isolates gets more than 60 a minute, while a cold start forgets everyone. It is
-   still worth having — it is what turns a single machine's GET loop from an invoice into a 429 —
-   but it is NOT an accounting boundary, and the real ceiling remains the Mapbox account's own
-   usage alerts. A distributed caller is out of its reach by construction.
-   ⚠ AND A REQUEST WITH NO `x-forwarded-for` SHARES ONE BUCKET. That is deliberate: the failure
-   direction of an unidentifiable caller should be «throttled with everyone else», not «exempt». */
+   still worth having — it answers a single machine's GET loop with a 429 before a byte goes to the
+   database — but it is NOT an accounting boundary, and until #R801 nothing else was either.
+   ⚠ A REQUEST WITH NO `x-forwarded-for` SHARES ONE BUCKET. That is deliberate: the failure
+   direction of an unidentifiable caller should be «throttled with everyone else», not «exempt».
+
+   STAGE 2 — THE SHARED BUCKETS (Postgres, `public.relay_take`, _shared/rate-limit.js), taken from
+   right before the paid call and only there — a probe or a malformed request never reaches them.
+   Three buckets, in this order:
+     · routing-relay:ip           — the same 60/min as the Map, but counted across every isolate.
+                                    Fails OPEN when the database does not answer: the Map above has
+                                    already throttled this caller as well as one isolate can, and
+                                    the two buckets below are still in front of the paid call.
+     · routing-relay:global:minute
+     · routing-relay:global:day   — THE PROJECT-WIDE CEILING. Both fail CLOSED: a limiter that
+                                    cannot be consulted cannot say the invoice is bounded, so the
+                                    paid call is not made (503 `limiter_unavailable`). A refusal by
+                                    either is 429 `spend_ceiling`, which is a different fact from
+                                    `rate_limit` (that caller is fast) even though the page treats
+                                    both as PROVIDER_RATE_LIMIT.
+
+   THE NUMBERS (no-ad-hoc-hardcoding §4 — observation, expiry, canonical place):
+     · GLOBAL_PER_DAY = 3000. Observation: the Mapbox Directions API price list read 2026-09-18
+       grants 100,000 requests a month before the meter starts; 3,000 a day is 90,000–93,000 a
+       month, i.e. the whole free allowance with a few days' margin, and the per-IP rate of 60/min
+       means one honest user cannot spend more than 2% of a day. Expires when the price list
+       changes, or when the product has more routing than that — then the number goes up ON
+       PURPOSE (via ROUTING_RELAY_GLOBAL_PER_DAY, without a deploy), because the ceiling is a
+       statement of what the project has agreed to pay, not a guess at demand.
+     · GLOBAL_PER_MIN = 300. The day bucket is the accounting; this one is the brake that keeps a
+       distributed loop from spending the whole day in the first minutes (300/min would still
+       drain 3,000 in ten). 300 = five callers at the full per-IP rate at once, which is more
+       concurrency than the routing panel has ever been observed to have. Expires with the per-IP
+       rate or the day ceiling, both of which it is derived from.
+     · RATE_PER_MIN = 60 is unchanged from #R347: one route request per second is faster than any
+       drag of a waypoint can be issued, and js/routing-traffic.js debounces its refreshes.
+     The canonical place for all three is THIS FILE; the environment may raise or lower the two
+     global ones (a positive integer; anything else is ignored) but never define them. */
 const RATE_PER_MIN = 60;
 const RATE_WINDOW_MS = 60000;
 const RATE_IDLE_MS = 5 * 60000;
 const RATE_MAX_KEYS = 4096;
 const buckets = new Map();
 
+/* A positive integer from the environment, or the default. Read once, at module evaluation, like
+   every other constant here — a limit that could change between two requests of one isolate would
+   not be a limit anyone could reason about. */
+function envCeiling(name, fallback) {
+  const v = Number(Deno.env.get(name) || "");
+  return (Number.isFinite(v) && v >= 1) ? Math.floor(v) : fallback;
+}
+const GLOBAL_PER_MIN = envCeiling("ROUTING_RELAY_GLOBAL_PER_MIN", 300);
+const GLOBAL_PER_DAY = envCeiling("ROUTING_RELAY_GLOBAL_PER_DAY", 3000);
+const SCOPE_IP = "routing-relay:ip";
+const SCOPE_GLOBAL_MINUTE = "routing-relay:global:minute";
+const SCOPE_GLOBAL_DAY = "routing-relay:global:day";
+
 function callerKey(req) {
   const xff = req.headers.get("x-forwarded-for") || "";
   return xff.split(",")[0].trim() || "unknown";
 }
 
+/* ⚠ THE MAP KEEPS ITS DECLARED SIZE. Before #R801 the only pressure valve was a sweep of IDLE
+   entries when the Map grew past RATE_MAX_KEYS — and a burst of distinct addresses inside one idle
+   window is exactly the case where nothing is idle, so nothing was deleted (reproduced: 10,000
+   identifiers at one instant, 10,000 retained). Now, when the sweep does not make room, the
+   least-recently-seen entries go. The Map is kept in recency order — every touch re-inserts its
+   key, so iteration order IS «oldest first» — and the entry that goes is one that has not been
+   seen for longer than anyone else's, which is the entry the sweep would have taken next anyway.
+   An evicted caller is a caller who starts a fresh bucket, i.e. is treated as new; the shared
+   buckets in stage 2 are what stop that from being a way around the limit. */
 function rateOk(key, now) {
-  /* the Map is bounded: a sweep of the idle entries whenever it grows past the ceiling, so a burst
-     of distinct addresses cannot walk the isolate into its memory limit through the limiter. */
-  if (buckets.size > RATE_MAX_KEYS) {
-    for (const [k, b] of buckets) if (now - b.at > RATE_IDLE_MS) buckets.delete(k);
-  }
   let b = buckets.get(key);
-  if (!b) { b = { tokens: RATE_PER_MIN, at: now }; buckets.set(key, b); }
+  if (b) {
+    buckets.delete(key);                        /* re-inserted below, at the recent end */
+  } else {
+    if (buckets.size >= RATE_MAX_KEYS) {
+      for (const [k, e] of buckets) if (now - e.at > RATE_IDLE_MS) buckets.delete(k);
+      while (buckets.size >= RATE_MAX_KEYS) buckets.delete(buckets.keys().next().value);
+    }
+    b = { tokens: RATE_PER_MIN, at: now };
+  }
+  buckets.set(key, b);
   b.tokens = Math.min(RATE_PER_MIN, b.tokens + ((now - b.at) / RATE_WINDOW_MS) * RATE_PER_MIN);
   b.at = now;
   if (b.tokens < 1) return false;
   b.tokens -= 1;
   return true;
 }
+
+/* Stage 2, in the order the header states. Returns null to carry on, or the Response to send.
+   ⚠ CALLED IN EXACTLY ONE PLACE — immediately before fetchGuarded — so that «a token was taken»
+   and «Mapbox was asked» cannot drift apart: a request refused for its shape costs nothing, and a
+   request that costs something has passed every bucket. The client is built per request from the
+   platform-injected env, the way ai-proxy does, and not at module level, because a module that
+   throws on a missing env answers 500 to everyone (#R505). */
+async function spendOk(key) {
+  const db = restRpcClient({
+    url: Deno.env.get("SUPABASE_URL") || "",
+    serviceKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+  });
+  const limiter = makeLimiter({ db });
+  const ip = await limiter.take(SCOPE_IP, key, {
+    capacity: RATE_PER_MIN, refillPerSec: RATE_PER_MIN / 60, cost: 1, onUnavailable: "allow",
+  });
+  if (!ip.allowed) return fail("rate_limit", 429);
+  const minute = await limiter.take(SCOPE_GLOBAL_MINUTE, "*", {
+    capacity: GLOBAL_PER_MIN, refillPerSec: GLOBAL_PER_MIN / 60, cost: 1, onUnavailable: "deny",
+  });
+  if (minute.source !== "db") return fail("limiter_unavailable", 503);
+  if (!minute.allowed) return fail("spend_ceiling", 429);
+  const day = await limiter.take(SCOPE_GLOBAL_DAY, "*", {
+    capacity: GLOBAL_PER_DAY, refillPerSec: GLOBAL_PER_DAY / 86400, cost: 1, onUnavailable: "deny",
+  });
+  if (day.source !== "db") return fail("limiter_unavailable", 503);
+  if (!day.allowed) return fail("spend_ceiling", 429);
+  return null;
+}
+
+/* Exported for tests/r801-relay-spend-checks.test.mjs, which evaluates this module (with
+   Deno.serve stubbed) rather than reading it — the Map's bound is a property of running code. */
+export { rateOk, buckets, RATE_MAX_KEYS, RATE_PER_MIN, GLOBAL_PER_MIN, GLOBAL_PER_DAY };
 
 /* ══ VALIDATION ════════════════════════════════════════════════════════════════════════════════ */
 
@@ -246,6 +343,10 @@ Deno.serve(async (req) => {
     }
   }
   upstream.searchParams.set("access_token", token);
+
+  /* the shared buckets, and nothing paid before them (see «THE SPEND CEILING») */
+  const refused = await spendOk(callerKey(req));
+  if (refused) return refused;
 
   try {
     const r = await fetchGuarded(upstream.toString(), {

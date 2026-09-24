@@ -42,6 +42,10 @@ import {
    surfaces use. Editing it here is a build failure; edit js/atlas-persona.js and run
    `node scripts/sync-atlas-persona.mjs`. */
 import { personaPrompt } from "../_shared/atlas-persona.js";
+/* (#R801) The bounded reader/fetch the relays use: the request body is read under a ceiling and
+   only AFTER the caller is known, and the provider's answer is read under the same deadline as its
+   headers (the timer here used to be cleared when the headers arrived). */
+import { readCapped, fetchBounded, RelayError } from "../_shared/relay-guard.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -101,12 +105,17 @@ function aiProviderConfig(): { provider: string; key: string; model: string } | 
   return null;
 }
 
+/* (#R801) One deadline over headers AND body, one byte ceiling. The ceiling is the same
+   PROVIDER_MAX_BYTES as ai-proxy's (a report is a few KB of JSON; 16 MiB is two orders above any
+   answer and one below the isolate) — held equal by tests/r801-security-audit-checks.test.mjs. */
+const PROVIDER_MAX_BYTES = 16 * 1024 * 1024;
 async function fetchWithTimeout(url: string, init: RequestInit, ms = 55_000): Promise<Response> {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), ms);
-  try { return await fetch(url, { ...init, signal: ctl.signal }); }
-  finally { clearTimeout(t); }
+  try { return await fetchBounded(url, init, { timeoutMs: ms, maxBytes: PROVIDER_MAX_BYTES }); }
+  catch (e) { throw new Error("provider " + (e instanceof RelayError ? e.code : "unreachable")); }
 }
+/* (#R801) A caller-supplied body has one field and no business being larger than a few hundred
+   bytes; 64 KiB leaves room for any client that wraps it and refuses the rest before parsing. */
+const MAX_BODY_BYTES = 64 * 1024;
 
 /* (#R285) The area-monitor report is Atlas speaking — the user reads its headline and summary in the
    monitors panel — so it opens with the same persona every other Atlas surface uses. */
@@ -480,7 +489,11 @@ async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: {
     await prune(db, monId);
     return baseStatus + "+report";
   } catch (e) {
-    const ok = await finalize({ status: "internal_error", error_category: "internal_error", error_detail: String((e as Error)?.message || e).slice(0, 200), retryable: true },
+    /* (#R801) error_detail is readable by the monitor's owner (monruns_select_own); an exception's
+       message can carry the database's or the provider's own wording. The owner gets the class of
+       failure, the log gets the wording. */
+    try { console.error("monitor-run internal_error", String((e as Error)?.message || e).slice(0, 300)); } catch (_) { /* ignore */ }
+    const ok = await finalize({ status: "internal_error", error_category: "internal_error", error_detail: "internal_error", retryable: true },
                               { ...monMeta(), last_status: "internal_error" });
     if (!ok) await releaseLock(db, monId, monitor, intervalMin, nowISO, "internal_error");
     return "internal_error";
@@ -525,8 +538,16 @@ Deno.serve(async (req) => {
   const aiCfg = aiProviderConfig();
   const nowMs = Date.now();
 
-  let payload: { monitorId?: string } = {};
-  try { payload = await req.json(); } catch (_) { payload = {}; }
+  /* (#R801) READ AFTER THE CALLER IS KNOWN, AND UNDER A CEILING. The body used to be parsed before
+     either credential was looked at, so anybody could make this function buffer and parse whatever
+     they sent. The cron path never needs the body; the user path reads it once the JWT is verified. */
+  const readPayload = async (): Promise<{ monitorId?: string }> => {
+    try {
+      const raw = await readCapped(req, MAX_BODY_BYTES);
+      const p = JSON.parse(new TextDecoder("utf-8").decode(raw));
+      return (p && typeof p === "object" && !Array.isArray(p)) ? p : {};
+    } catch (_) { return {}; }
+  };
 
   const secret = Deno.env.get("MONITOR_SECRET") || "";
   const gotSecret = req.headers.get("x-monitor-secret") || "";
@@ -538,7 +559,8 @@ Deno.serve(async (req) => {
     if (!timingSafeEqual(gotSecret, secret)) return json({ error: "unauthorized" }, 401);
 
     const { data: claimed, error: claimErr } = await db.rpc("monitor_claim_due", { p_limit: CLAIM_LIMIT, p_stale_minutes: 15 });
-    if (claimErr) return json({ error: "claim_failed", message: claimErr.message }, 500);
+    /* (#R801) The database's own message names the schema and the function; the caller gets the code. */
+    if (claimErr) { console.error("monitor-run claim_due failed", String(claimErr.message || "").slice(0, 300)); return json({ error: "claim_failed" }, 500); }
     const monitors: Record<string, unknown>[] = claimed || [];
     const results: Record<string, string> = {};
     for (const m of monitors) {
@@ -563,6 +585,7 @@ Deno.serve(async (req) => {
   const { data: userData } = await userClient.auth.getUser();
   const user = userData?.user;
   if (!user) return json({ error: "auth", message: "Login required." }, 401);
+  const payload = await readPayload();
   const monitorId = String(payload.monitorId || "");
   if (!monitorId) return json({ error: "bad_request", message: "monitorId required." }, 400);
 
@@ -570,7 +593,7 @@ Deno.serve(async (req) => {
     p_monitor_id: monitorId, p_user_id: user.id,
     p_cooldown_seconds: Math.round(MANUAL_COOLDOWN_MS / 1000), p_stale_minutes: 15,
   });
-  if (claimErr) return json({ error: "claim_failed", message: claimErr.message }, 500);
+  if (claimErr) { console.error("monitor-run claim_one failed", String(claimErr.message || "").slice(0, 300)); return json({ error: "claim_failed" }, 500); }
   const claim = (Array.isArray(claimRows) ? claimRows[0] : claimRows) as { claimed?: boolean; reason?: string; monitor?: Record<string, unknown> } | undefined;
   if (!claim || !claim.claimed || !claim.monitor) {
     const reason = claim?.reason || "unavailable";

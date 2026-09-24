@@ -268,7 +268,10 @@ export function makeAtlasToolSurface(deps) {
      * through which the argument-less `analyze` this round removed walks straight back in.
      */
     function makeExecute(tools, agent) {
-      return async function execute(call) {
+      /* (#R801) `turn` is js/atlas-agent.js's record of facts about the running turn (whether outside
+         content has been in front of the model). It is handed on to the action runner beside the
+         action, never merged into it — an argument the model could write is not a fact. */
+      return async function execute(call, turn) {
         var name = String((call && call.name) || '');
         var args = (call && call.arguments) || {};
 
@@ -295,7 +298,7 @@ export function makeAtlasToolSurface(deps) {
           return { ok: false, error: 'no_executor', message: 'IntMap cannot run actions in this context.' };
         }
         var res = null;
-        try { res = await runAction(built.action); } catch (e) {
+        try { res = await runAction(built.action, turn); } catch (e) {
           return { ok: false, error: 'execution_failed', message: (e && e.message) || 'the action threw' };
         }
         return mechanical(res, built);
@@ -356,6 +359,9 @@ export function makeAtlasToolSurface(deps) {
            tool alone would have left the one path that names the capability instead of the tool free
            to ask and keep going — the defect this fixes, arriving through the other door. */
         endsTurn: (ok && built.cap && ENDS_TURN(built.cap.id)) ? true : undefined,
+        /* (#R801) the registry's column 11, stamped on the result the way `endsTurn` is: the loop
+           reads a flag on the result, never a capability's name (tests/r511 ⑩, r663 ⑥) */
+        ingests: (built.cap && built.cap.ingests === 'external') ? 'external' : undefined,
       };
       /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
          a capability whose registry row PRODUCES the map, and whose run the observer marked

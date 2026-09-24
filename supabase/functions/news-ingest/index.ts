@@ -1077,8 +1077,8 @@ async function callProvider(cfg, sys, user, signal, _isFallback) {
     return { text, usage, model: cfg.model };
   }
   if (cfg.provider === "gemini") {
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent?key=" + encodeURIComponent(cfg.key), {
-      method: "POST", signal, headers: { "Content-Type": "application/json" },
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
+      method: "POST", signal, headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: user }] }], systemInstruction: { parts: [{ text: sys }] }, generationConfig: { temperature: 0, maxOutputTokens: 3000 } }),
     });
     if (!r.ok) throw new Error("gemini " + r.status);

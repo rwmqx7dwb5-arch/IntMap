@@ -460,8 +460,8 @@ async function callProvider(cfg: { provider: string; key: string; model: string 
       .map((p: { text?: string }) => p.text || "").join("");
   }
   if (cfg.provider === "gemini") {
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent?key=" + encodeURIComponent(cfg.key), {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: user }] }], systemInstruction: { parts: [{ text: sys }] }, generationConfig: { temperature: 0, maxOutputTokens: 1500 } }),
     });
     if (!r.ok) throw new Error("gemini " + r.status);

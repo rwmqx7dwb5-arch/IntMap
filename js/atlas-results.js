@@ -98,6 +98,7 @@ export function makeAtlasResults(HOST) {
       'atlas.input.choice':          LA('Choose one:', '1つ選んでください:', 'Wähle eines:', 'Выберите одно:', 'Elige uno:'),
       'atlas.input.text':            LA('Tell me the value to use.', '使用する値を教えてください。', 'Nenne mir den zu verwendenden Wert.', 'Укажите значение.', 'Dime el valor a usar.'),
       'atlas.input.number':          LA('Tell me the number to use.', '使用する数値を教えてください。', 'Nenne mir die Zahl.', 'Укажите число.', 'Dime el número a usar.'),
+      'atlas.input.confirm':         LA('Reply yes to go ahead, or say what to do instead.', '進めてよければそう答えてください。別のやり方がよければそう言ってください。', 'Antworte mit Ja, um fortzufahren, oder sag, was stattdessen zu tun ist.', 'Ответьте «да», чтобы продолжить, или скажите, что сделать вместо этого.', 'Responde sí para continuar, o di qué hacer en su lugar.'),
 
       /* goal validation — the sentence a turn ends on when the goal was not met */
       'atlas.goal.map_missing':      LA('You asked for this on the map, and it is not on the map yet.', '地図上でのご要望ですが、まだ地図に出ていません。', 'Auf der Karte gewünscht — dort ist es noch nicht.', 'Вы просили на карте — там этого ещё нет.', 'Lo pediste en el mapa y aún no está en el mapa.'),
