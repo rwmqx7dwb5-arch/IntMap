@@ -40,6 +40,13 @@ import { claims, CHECKED } from '../scripts/doc-claims.mjs';
 const WORDS = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
   sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
 import { sharedRoster, inventories } from '../scripts/shared-roster.mjs';
+/* (client-error-log) THE COUNT THE ANCHORS BELOW NAME IS DISCOVERED, NOT WRITTEN. They said 17 by hand, so the
+   18th function (client-errors) made every anchor miss before a single rule was exercised — a test
+   of «the rule goes red when the count is wrong» that is itself pinned to last round's count
+   measures the count, not the rule (the #R694 shape this file already names for the _shared roster). */
+const N_FN = readdirSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase/functions'), { withFileTypes: true })
+  .filter((d) => d.isDirectory() && !d.name.startsWith('_')).length;
+const WORD_OF = Object.fromEntries(Object.entries(WORDS).map(([w, n]) => [n, w]));
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -80,16 +87,16 @@ const dropOneName = (body) => {
 const CASES = [
   /* ① 手書き一覧に一度も入っていなかった文書。これがこの回の報告そのもの。 */
   { rule: 'edge-count', file: 'docs/FILES.md', why: 'the ledger that drifted was never in the list',
-    from: 'Edge Function は全17本をここに宣言する', to: 'Edge Function は全11本をここに宣言する' },
+    from: `Edge Function は全${N_FN}本をここに宣言する`, to: 'Edge Function は全11本をここに宣言する' },
 
   /* ① 同じ文書の**2つ目**の出現。§6.2 の見出しは正しいまま残す——`.match()` が最初の1件で
      満足していた穴は、まさにこの形でしか再現しない。 */
   { rule: 'edge-count', file: 'Architecture.md', why: 'the second claim in a file whose first claim is right',
-    from: '**Edge Functions を17本デプロイする**', to: '**Edge Functions を10本デプロイする**' },
+    from: `**Edge Functions を${N_FN}本デプロイする**`, to: '**Edge Functions を10本デプロイする**' },
 
   /* ① 英単語で書かれた数。`SECURITY.md` は外部の報告者向けで、日本語の needle では読めない。 */
   { rule: 'edge-count', file: 'SECURITY.md', why: 'a count spelled as an English word',
-    from: '**seventeen** Edge Functions', to: '**eight** Edge Functions' },
+    from: `**${WORD_OF[N_FN]}** Edge Functions`, to: '**eight** Edge Functions' },
 
   /* ② `_shared/` の一覧から1本抜く。`_shared` は関数ではないので①の分母には入らない。
      ⚠ (#R694) ここは長く**綴りを錨にしていた**——`'news-cluster.js / news-geo-prompt.js / …'`

@@ -157,14 +157,14 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are seventeen Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are eighteen Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All seventeen are declared there now
+flag that lives in a comment is not configuration. All eighteen are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
-`quotes-relay` #R533).
+`quotes-relay` #R533, `client-errors` client-error-log).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`) that the CLI bundles into the functions that import it.
+`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -181,6 +181,7 @@ flag that lives in a comment is not configuration. All seventeen are declared th
 | `quotes-relay` | false | none — keyless public relay of two Yahoo Finance v8 endpoints (share prices) | — | — (those endpoints need no key) |
 | `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 | `ais-feed` | false | none — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
+| `client-errors` | false | none — a reader who is not signed in hits errors too. POST only, a body ceiling, an **Origin allow-list** (production + local preview), two shared token buckets and a row ceiling on the table | `record_client_error` RPC + the two `relay_take` buckets | — |
 
 **`aviation-feed` is keyless but is NOT one of the relays**, and the distinction is a security
 property rather than a naming one. A relay forwards a URL **the caller named**, which is why the
@@ -192,6 +193,25 @@ exception. Its `?meta=1` channel reports the PRESENCE of its credentials as bool
 their values.
 
 `ais-feed` is the same shape: a channel and a viewport box, never a URL.
+
+⚠ **(client-error-log) `client-errors` is the only function a browser WRITES to without a login**, which is why
+it carries four bounds where a relay carries one allow-list. It stores readers' uncaught exceptions in
+`public.client_errors` (read by admins only). ① **The report is scrubbed twice with one function** —
+`_shared/client-error-shape.js` runs in the browser before sending and again here before storing,
+because a server that trusts a client's scrubbing stores whatever anyone POSTs: web addresses lose
+their query and fragment, e-mail addresses / credential-shaped tokens / long quoted strings / long
+digit runs are masked, message and stack are cut to fixed lengths. ② **The fingerprint (the row a
+report lands on) is computed here**, never taken from the body. ③ **Nothing identifying is stored,
+by construction** — the table has no column for an IP, a user, a session, a query or a raw
+User-Agent (`supabase/tests/10_client_errors_test.sql` measures that over the catalogue), and the
+per-caller rate-limit bucket is keyed by an **HMAC of the address under the service key**, not the
+address, because `relay_rate_buckets.key` is stored in the clear and is not swept on a schedule.
+④ **Bounded**: POST only, a 64 KiB body read with `readCapped`, at most ten reports per body, an
+`Origin` allow-list (production and `127.0.0.1` / `localhost` — it keeps other sites' pages
+out, and is not what bounds a scripted caller), a per-caller bucket (30 an hour) and a project bucket
+(5,000 a day, `CLIENT_ERRORS_GLOBAL_PER_DAY`), both **fail closed**, and a ceiling of 10,000 rows
+enforced inside `record_client_error` (a new defect is refused when full; a known one still counts).
+Rows are purged 30 days after they were last seen (pg_cron `client-errors-purge`).
 
 ⚠ **(#R533) `quotes-relay` IS a relay — it forwards a caller-named URL — and its allow-list is
 therefore the whole of its security.** It is written structurally rather than as a prefix test,
@@ -361,8 +381,9 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   where before it made one per row; only the 98 Wikidata has no P154 for still reach a stranger,
   and what they send is a domain name.
   The reasoning is in `../DECISIONS.md`; the data path is in `COMPANIES.md` §4.3.
-- **No PII in URL query strings**; error monitoring (Sentry, dormant) strips PII / tokens /
-  query strings and only reports IntMap's own exceptions.
+- **No PII in URL query strings**; the error record (client-error-log, `client-errors` above — no third
+  party) strips query strings and fragments, masks e-mail addresses and tokens, and stores no
+  IP, account or typed text.
 - Analytics: **paused.** Google Analytics (gtag) and Microsoft Clarity are still in `index.html`
   and still allowlisted in the CSP, but both loaders sit behind one switch — `window.INTMAP_ANALYTICS`,
   declared `false` — so no request reaches `www.googletagmanager.com` or `www.clarity.ms`, no GA

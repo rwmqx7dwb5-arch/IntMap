@@ -16,4 +16,4 @@
 
 ## Notes for the reviewer
 
-<!-- Anything external-API-dependent, anything that needs manual GitHub/Sentry/Cloudflare steps. -->
+<!-- Anything external-API-dependent, anything that needs manual GitHub/Supabase/Cloudflare steps. -->

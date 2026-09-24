@@ -318,13 +318,13 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 
 ### Edge Function の名簿（**ここが正本**）
 
-**Edge Functions は 17 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
-`delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
-`radiation-feed` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）。17 本すべてが
+**Edge Functions は 18 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+`client-errors` / `delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
+`radiation-feed` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）。18 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 ⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・
-`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
+`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 ⚠ この節は `AGENTS.md` から移してきたものである（deploy の実測は #R515、名簿は #R628）。
 **`AGENTS.md` には 32,768 バイトの天井があり、超えた分は無言で落ちる**ので、測定の詳細も名簿も

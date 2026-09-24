@@ -245,3 +245,12 @@ verify_jwt = false
 # fail-closed (an unset secret answers 401, never "open").
 [functions.who-don]
 verify_jwt = false
+
+# client-errors (client-error-log) is where a reader's browser reports an uncaught exception — IntMap's own error
+# record, replacing a Sentry loader that never had a DSN. verify_jwt is OFF because a reader who is
+# not signed in hits errors too. What stands in front of it instead: POST only, a body ceiling, an
+# Origin allow-list (production + local preview), two shared token buckets (per caller — keyed by an
+# HMAC of the address, never the address — and project-wide per day), and a row ceiling on the table.
+# It stores no IP, user id, query string or typed text (see the function's own header).
+[functions.client-errors]
+verify_jwt = false

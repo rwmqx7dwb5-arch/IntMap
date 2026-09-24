@@ -5,7 +5,7 @@
        ⚠ (#R272) it used to name FIVE directives with no `default-src` — a directive that is absent with nothing to fall back on is not "permissive",
        it is ABSENT. Fourteen now, each explained with its measurement in docs/SECURITY-ARCHITECTURE.md §6. ⚠ `frame-ancestors` is IGNORED in a
        <meta> policy, so it is deliberately absent rather than written and silently inert (§6/§8). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; manifest-src 'self'; frame-src 'self' https: blob:; child-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https: wss: data: blob:; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://browser.sentry-cdn.com https://www.clarity.ms https://*.clarity.ms">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; manifest-src 'self'; frame-src 'self' https: blob:; child-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https: wss: data: blob:; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.clarity.ms https://*.clarity.ms">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <!-- ⚠⚠⚠ (#R502) GA と Microsoft Clarity は「一旦停止」であって削除ではない ─────────────────
        このフラグ 1 つが両方を止める。`false` の間、www.googletagmanager.com にも www.clarity.ms にも
@@ -92,39 +92,11 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     }
     window.IntMapSafe={ html:html, esc:html, url:url };
   })();
-  /* (#R133) OPTIONAL error monitoring → Sentry. DORMANT unless a DSN is configured via
-     window.INTMAP_SENTRY_DSN or <meta name="intmap-sentry-dsn" content="…">. Zero weight and
-     zero network when off; IntMap runs identically. See docs/MONITORING.md for setup.
-     Privacy (§8.4): no PII/tokens/cookies/localStorage, no Atlas input or search terms, no
-     precise geolocation, query strings stripped. Benign external/network failures are NOT
-     reported as crashes (§8.5) — only IntMap's own exceptions are. */
-  (function(){ try{
-    var meta=document.querySelector('meta[name="intmap-sentry-dsn"]');
-    var dsn=window.INTMAP_SENTRY_DSN||(meta&&meta.content)||'';
-    if(!dsn) return;   /* dormant — nothing loaded */
-    var BENIGN=/Failed to fetch|NetworkError|Load failed|ERR_[A-Z_]+|Could not load image|supported image type|AbortError|The operation was aborted|blockedbyclient|ResizeObserver loop|Non-Error promise rejection/i;
-    var s=document.createElement('script');
-    s.src=window.INTMAP_SENTRY_SDK||'https://browser.sentry-cdn.com/7.120.3/bundle.min.js';
-    s.crossOrigin='anonymous';
-    s.onload=function(){ try{ if(!window.Sentry||!window.Sentry.init) return;
-      window.Sentry.init({ dsn:dsn, release:window.INTMAP_BUILD, sendDefaultPii:false,
-        autoSessionTracking:false, tracesSampleRate:0, maxBreadcrumbs:20,
-        initialScope:{ tags:{ build:window.INTMAP_BUILD } },
-        beforeBreadcrumb:function(bc){ try{ if(!bc) return bc;
-          if(bc.category==='console'||bc.category==='ui.input') return null;   /* may carry user text */
-          if(bc.data){ if('body' in bc.data) delete bc.data.body; if(bc.data.url) bc.data.url=String(bc.data.url).split('?')[0]; }
-        }catch(e){} return bc; },
-        beforeSend:function(ev){ try{
-          if(ev.request){ delete ev.request.cookies; delete ev.request.headers; delete ev.request.data; delete ev.request.query_string; if(ev.request.url) ev.request.url=String(ev.request.url).split('?')[0].split('#')[0]; }
-          delete ev.user; if(ev.contexts){ delete ev.contexts.geolocation; }
-          var vs=ev.exception&&ev.exception.values&&ev.exception.values[0];
-          var msg=(vs&&vs.value)||ev.message||'';
-          if(BENIGN.test(String(msg))) return null;   /* external/network noise — not a product crash */
-        }catch(e){} return ev; } });
-    }catch(e){} };
-    s.onerror=function(){};   /* SDK CDN unreachable → silently stay dormant, app unaffected */
-    (document.head||document.documentElement).appendChild(s);
-  }catch(e){} })();
+  /* (client-error-log) The Sentry loader that stood here is gone: no DSN was ever configured, so it returned on
+     its first line for every visit and nothing any reader's browser threw was recorded anywhere.
+     Uncaught exceptions now go to IntMap's own record — js/client-error-report.js (imported by
+     src/main.js) → the client-errors Edge Function → public.client_errors → admin.html «Errors».
+     The ring buffer above is unchanged and still feeds the Bug Report tool. docs/MONITORING.md §2. */
   /* (#R133) STAGING marker (§5.4): a clear "TEST BUILD" ribbon on non-production origins so a
      preview build can never be mistaken for production. Shown ONLY when explicitly a staging
      context — a *.pages.dev preview host, ?staging=1, or a meta flag — NEVER on production or

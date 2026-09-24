@@ -4,8 +4,10 @@ Two independent layers:
 
 1. **Uptime (external / black-box)** — is the live site up? Runs in GitHub Actions, no
    third-party account required.
-2. **Errors (in-browser / white-box)** — what broke in a real user's browser? A built-in
-   ring buffer always; optional forwarding to **Sentry** when you enable it.
+2. **Errors (in-browser / white-box)** — what broke in a real user's browser? IntMap's **own**
+   error record (no external account): uncaught exceptions are sent to the `client-errors` Edge
+   Function and kept, one row per distinct defect, for the **Errors** tab of `admin.html`. A
+   ring buffer in the page keeps the last errors for the Bug Report tool as well.
 
 ## 1. Uptime monitoring
 
@@ -175,82 +177,109 @@ and the one-time secret setup are in [`docs/TESTING.md`](TESTING.md) 「Atlas ev
 
 ## 2. Error monitoring
 
-### Always on (no setup)
+### Why it is our own record, not Sentry (client-error-log)
 
-`index.html` keeps the **last ~25 runtime errors** in `window.__imErrors`
-(`error` + `unhandledrejection`). The Bug Report tool attaches them automatically, so a
-silent failure is never invisible. This needs nothing and sends nothing anywhere.
+Error monitoring used to be a Sentry loader in `index.html`, dormant until a DSN was configured.
+**No DSN was ever configured**, so for its whole life the loader returned on its first line: nothing
+any reader's browser threw was recorded anywhere, and the only production signal was the six-hourly
+probe above, which asks whether the page is *served*, not whether it *works*. The loader, its CSP
+host (`browser.sentry-cdn.com`) and its setup instructions are gone. What replaced it needs no
+account with anyone: the errors go to our own Supabase project.
 
-### Optional: forward to Sentry
+### The path
 
-Dormant until you configure a DSN. When enabled, IntMap loads the Sentry browser SDK and
-forwards **only its own uncaught exceptions**, with strict privacy scrubbing.
+```
+window 'error' / 'unhandledrejection'
+  → js/client-error-report.js          scrub, fingerprint, once per defect per page load, ≤ 10 per load,
+                                        production origin only, navigator.sendBeacon (fetch keepalive fallback)
+  → supabase/functions/client-errors   POST only, Origin allow-list, 64 KiB body, ≤ 10 reports per body,
+                                        scrub AGAIN, fingerprint computed HERE, two shared token buckets
+  → public.record_client_error         insert a new defect or add one to its count (row ceiling 10,000)
+  → public.client_errors               one row per fingerprint: count, first_seen, last_seen,
+                                        latest release / page path / browser, message, stack
+  → admin.html → Errors                read-only table, newest first, stack behind a disclosure
+```
 
-#### Why Sentry
+- **One definition of a report, used on both sides:**
+  `supabase/functions/_shared/client-error-shape.js`. The browser imports it to scrub *before*
+  sending; the function imports the same file to scrub *again before storing* — a server that trusts
+  a client's scrubbing stores whatever anyone POSTs. There is no copy to drift.
+- **Fingerprint** = SHA-256 (first 32 hex digits) of the kind, the message with every number
+  collapsed to `0`, and the top stack frame (file name + line:column). The same defect on the same
+  build lands on one row however often it fires; a new build's bundle names give it a new row, which
+  is how "first seen on this release" becomes readable.
+- **Local previews never send** (the reporter is on only at `https://rwmqx7dwb5-arch.github.io`), so
+  development and the test suite write nothing. The function still accepts `127.0.0.1` /
+  `localhost` origins, so it can be exercised by hand against a local page.
+- **No per-reader switch.** IntMap has no telemetry-consent setting to follow — the only switch of
+  that kind, `window.INTMAP_ANALYTICS`, governs third-party analytics (off). What is sent carries no
+  identity, and the privacy policy (§1, §6) states exactly what it is.
 
-- Purpose-built JS error monitoring with grouping, release tracking, and alerting.
-- Free tier (~5k errors/month) is ample for this project.
-- Works without source maps (you still get message + stack + release).
-- The **DSN is publishable** (safe in client code) — distinct from the Sentry *auth token*
-  used for uploading source maps, which is a secret and is **not** used here.
-- IntMap already carries Google Analytics + Microsoft Clarity for usage analytics; those are
-  not error monitors, so Sentry is complementary, not redundant.
+### What is recorded
 
-#### Setup (about 5 minutes)
+The error **message** and **stack** (every web address cut to its path — no query, no fragment;
+e-mail addresses, credential-shaped tokens, long quoted strings and long digit runs masked; cut to
+500 / 4,000 characters), the **page path**, the **build** (`INTMAP_BUILD`), the **browser's name and
+major version** (derived on the server from the User-Agent; the string itself is not kept), whether
+it was an `error` or a `rejection`, and **how many times, first and last seen**.
 
-1. Create a free account at <https://sentry.io/> → **Create project** → platform
-   **Browser JavaScript**. Copy the **DSN** (looks like
-   `https://<publicKey>@o<org>.ingest.sentry.io/<projectId>`).
-2. Enable it by adding **one line before** the app's scripts in `index.html` `<head>`,
-   or a meta tag anywhere in `<head>`:
+### What is never recorded
 
-   ```html
-   <script>window.INTMAP_SENTRY_DSN='https://<publicKey>@o<org>.ingest.sentry.io/<projectId>';</script>
-   <!-- or -->
-   <meta name="intmap-sentry-dsn" content="https://<publicKey>@o<org>.ingest.sentry.io/<projectId>">
-   ```
+- **No IP address.** The table has no column for one. The per-caller rate-limit bucket is keyed by an
+  HMAC of the address under the service key, never the address.
+- **No account, user id, session, cookie or token.**
+- **No query string or fragment** — stripped from the page path and from every URL in the message
+  and stack, on both sides of the wire.
+- **Nothing typed** — Atlas input, search terms and form fields are never read; words that can slip
+  into an exception message (e-mail addresses, long quoted strings) are masked.
 
-   The DSN is **not a secret** — it is safe to commit. (If you prefer not to commit it, set
-   it from a tiny untracked snippet; it must be present in the served HTML to take effect.)
-3. Deploy. Trigger a test error from the browser console to confirm it arrives:
+`supabase/tests/10_client_errors_test.sql` measures the "no column for it" half over the catalogue,
+so a later migration that adds such a column turns CI red.
 
-   ```js
-   setTimeout(() => { throw new Error('IntMap Sentry test'); }, 0);
-   ```
+### Retention
 
-That's it. If the DSN is absent or the SDK CDN is unreachable, IntMap runs exactly as
-before — the integration fails **open**.
+**30 days after a defect was last seen.** `public.purge_client_errors(30)` runs daily at 03:17 UTC
+as the pg_cron job `client-errors-purge`, which the migration schedules itself (idempotently, and
+only where pg_cron exists — it does in production). A defect that is still occurring keeps its row.
 
-### What is captured
+### Reading it
 
-Uncaught exceptions and unhandled rejections, plus: build/release (`INTMAP_BUILD`), the URL
-**path** (no query string), coarse browser info, and the stack trace.
+`admin.html` → **Errors** (admins only; the table grants an admin `SELECT` and nothing else).
+Newest first; `Count` is every occurrence since first seen; release / page / browser are from the
+latest occurrence; the stack is behind **Stack**.
 
-### What is NEVER sent (privacy — §8.4)
+### Always on in the page (no network)
 
-Enforced by `beforeSend` / `beforeBreadcrumb` in `index.html`:
+`index.html` also keeps the **last ~25 runtime errors** in `window.__imErrors`
+(`error` + `unhandledrejection`). The Bug Report tool attaches them automatically. This is
+independent of the record above and sends nothing by itself.
 
-- No Atlas input text, no news/search terms (console + UI-input breadcrumbs are dropped).
-- No email, access tokens, Supabase session, API keys, or cookies.
-- No `localStorage` contents.
-- No precise geolocation (the geolocation context is deleted).
-- No query strings or URL fragments (stripped from every event and breadcrumb URL).
-- `sendDefaultPii: false`, and the `user` object is deleted from every event.
+### Bounds on the endpoint
+
+`client-errors` takes writes from signed-out browsers, so it is bounded four ways (the numbers and
+why each is where it is are in the function's own header, the canonical place):
+the body ceiling and report count; the `Origin` allow-list (keeps other sites' pages out; not what
+bounds a scripted caller); two shared token buckets in `public.relay_rate_buckets` — per caller
+(30/hour) and project-wide (5,000/day, raised on purpose via `CLIENT_ERRORS_GLOBAL_PER_DAY`), both
+**fail closed**; and a 10,000-row ceiling enforced inside `record_client_error`.
 
 ## Error classification (§8.5)
 
-Not every failure is a product bug. The Sentry `beforeSend` filter drops the classes below
-so they do not appear as crashes; the uptime probe and `prod-smoke` apply the same idea:
+Not every failure is a product bug. `shapeReport()` in `_shared/client-error-shape.js` drops the
+classes below before anything is sent or stored (the same list the Sentry filter used, moved there);
+the uptime probe and `prod-smoke` apply the same idea:
 
 | Class | Example | Treated as |
 |-------|---------|-----------|
-| IntMap code exception | `TypeError` in a handler | **Real** — reported |
+| IntMap code exception | `TypeError` in a handler | **Real** — recorded |
 | External API transient | GDELT 503, Overpass 504 | Not a product bug — filtered |
 | Rate limit | Open-Meteo 429 | Not a product bug — filtered |
 | Network / offline | `Failed to fetch`, `ERR_*` | Not a product bug — filtered |
 | User cancel / abort | `AbortError` | Filtered |
 | Missing data / fallback | resolver "not found", handled fallback | Filtered |
 | Blocked resource (tests) | `Could not load image` (hermetic block) | Filtered |
+| Cross-origin / no information | `Script error.`, a non-Error rejection | Filtered |
+| Browser extension | top frame in `chrome-extension://` etc. | Filtered |
 
 ## False positives
 
@@ -259,11 +288,11 @@ so they do not appear as crashes; the uptime probe and `prod-smoke` apply the sa
   the issue self-resolves. If you see flapping, widen the probe or lower the cadence.
 - **Errors**: browser-extension noise (`ResizeObserver loop`, extension-injected scripts) and
   the transient classes above are filtered. If real crashes are being hidden, tighten the
-  `BENIGN` list in `index.html`.
+  `BENIGN` list in `supabase/functions/_shared/client-error-shape.js` (one list, both sides).
 
 ## When something fires — order of checks
 
-1. Is the **uptime issue** open, or is this a Sentry error spike? (outage vs. bug)
+1. Is the **uptime issue** open, or is this an error spike in **admin.html → Errors**? (outage vs. bug)
 2. Did it start right after a deploy? Compare `INTMAP_BUILD` / `build-info.json` `sha` with
    the last deploy.
 3. Is it IntMap's code or an upstream provider? (check the stack / classification)

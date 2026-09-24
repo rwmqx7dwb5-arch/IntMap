@@ -36,6 +36,10 @@ import '../js/geo-engine.js';
 import '../js/engine-select.js';
 
 import '../js/newsgeo.js';
+/* (client-error-log) …and, as early as the pinned first three allow, the error reporter: an exception thrown by
+   any module evaluated after this line, or by the app at any later time, reaches IntMap's own record
+   (public.client_errors) instead of nowhere — the Sentry loader it replaces never had a DSN. */
+import '../js/client-error-report.js';
 import '../js/mem-budget.js';   /* (#R669) …and, before anything that decodes an elevation tile, the ONE owner of how many of them this device may hold. Five stores kept five hand-written ceilings for the same 262,144-byte tile and four of them never asked what device they were on (about 600 MB authorised on a phone), and it is also where 「携帯か」 is answered for the thirty-nine cost decisions that used to ask the viewport width. No DOM and no `window`, so the photo-search worker imports the same file and the two cannot disagree. */
 /* (#R479) CARTO's key, the two tile-URL builders and the basemap credit. Anywhere before
    js/app-body.js works (it builds tile URLs at map setup); the first three slots and the last one

@@ -52,6 +52,7 @@ is the human explanation.
 | `donations` | Donation intent (**PII: email**). | **Admin only.** | Owner inserts own. |
 | `feedback` | 5-star + free text (**PII: email + text**). | **Admin only.** | Anyone (incl. anon) inserts. |
 | `bug_reports` | Bug reports (**PII: email + diagnostics**). | **Admin only.** | Anyone inserts. |
+| `client_errors` *(client-error-log)* | Uncaught exceptions / unhandled rejections from readers' browsers, **one row per distinct defect** (`fingerprint`, 32 hex = SHA-256 of kind + message with numbers collapsed + top frame, computed by the Edge Function) with `count`, `first_seen`, `last_seen` and the latest `release` / `path` / `browser` (name + major version). **No PII by construction** — there is no column for an IP, a user, a session, a query string or a raw User-Agent, and message/stack are scrubbed before storage (`supabase/functions/_shared/client-error-shape.js`). Purged 30 days after `last_seen` (pg_cron `client-errors-purge` → `purge_client_errors`). | **Admin only** (`SELECT` policy on `is_admin()`; admins cannot edit it). | **Nobody directly** — only `record_client_error` (service_role, the `client-errors` Edge Function). |
 
 ### Public reference data
 | Table | Purpose | Read | Write |
@@ -143,6 +144,8 @@ itself; `grant execute` means "may call", never "may do".
 | `public.refund_ai_turn(uuid, text)` | SECURITY DEFINER, `search_path=''` | Releases the charge **and** the turn together, so a retry after a provider failure is not treated as a free continuation — **unless the turn has succeeded**, in which case it releases nothing. One `DELETE … RETURNING`, so two concurrent refunds decrement once; the use goes back to the day the turn was charged on (`usage_date`), not to today. EXECUTE = service_role only. |
 | `public.relay_take(text, text, integer, numeric, integer)` | SECURITY DEFINER, `search_path=''` | Atomic token-bucket take on `relay_rate_buckets` (row lock, refill by `clock_timestamp()`); returns `(allowed, remaining)`. Capacity and refill are arguments, so the caller owns the numbers. EXECUTE = service_role only. |
 | `public.sweep_relay_rate_buckets(integer)` | SECURITY DEFINER, `search_path=''` | Deletes buckets idle longer than the argument (default two days). EXECUTE = service_role only. |
+| `public.record_client_error(text, text, text, text, text, text, text, integer)` | SECURITY DEFINER, `search_path=''` | *(client-error-log)* Inserts a new defect or adds one to a known fingerprint's `count` (one `insert … on conflict do update`, so concurrent reports add up). Refuses a NEW fingerprint once the table holds `p_max_rows` rows (a known one still counts). Returns `inserted` / `counted` / `full`. EXECUTE = service_role only. |
+| `public.purge_client_errors(integer)` | SECURITY DEFINER, `search_path=''` | *(client-error-log)* Deletes defects last seen more than the argument's days ago (default 30 — the retention the privacy policy states). Scheduled daily as pg_cron job `client-errors-purge` (the migration schedules it idempotently when pg_cron exists). EXECUTE = service_role only. |
 | `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
 | `public.monitor_limit(uuid)` / `monitor_limit_self()` *(#R144)* | SECURITY DEFINER, `search_path=''` | Per-plan monitor cap. `(uuid)` is **service_role-only** (users can't probe another user's plan); the UI reads its own via `monitor_limit_self()`. Enforced by a BEFORE INSERT trigger. |
 | `public.monitor_claim_due(int,int)` / `monitor_claim_one(uuid,uuid,int,int)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Atomic claims (cron `FOR UPDATE SKIP LOCKED`; manual `UPDATE…WHERE…RETURNING`). service_role only. |
@@ -193,8 +196,8 @@ grant it (Supabase Dashboard → SQL Editor, which runs as a privileged role):
 update public.profiles set is_admin = true where email = 'you@example.com';
 ```
 
-`admin.html` then lets that account read feedback/bug reports, moderate community posts, and
-edit `geo_pins`/`dashboard_cards`.
+`admin.html` then lets that account read feedback/bug reports and the client error record
+(read-only), moderate community posts, and edit `geo_pins`/`dashboard_cards`.
 
 ## Auth relationship
 
@@ -211,7 +214,8 @@ edit `geo_pins`/`dashboard_cards`.
   ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
   belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
   an operator merged or split, why the clusterer chose what it chose, or what a reader saved.
-- **B — regenerable:** `current_news` and `news_articles` (both re-fetched from the feeds),
+- **B — regenerable:** `client_errors` (a 30-day operational record; losing it loses a history, and
+  the next occurrence of a live defect recreates its row), `current_news` and `news_articles` (both re-fetched from the feeds),
   `news_event_i18n` (re-translatable, at the cost of translating again), `news_sources` /
   `news_source_feeds` (curated, but reproduced by the Source Registry seed migration), and
   largely `geo_pins` / `dashboard_cards` (curated, but reproducible from `admin.html` seeds).
@@ -248,7 +252,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **35**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **36**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
@@ -269,6 +273,12 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   disturb the card, a new signup, and an account deletion that takes the card with it. ⚠ The
   older files assert the **projection** (four columns, no `email`); every one of those assertions
   was also true of the SECURITY DEFINER view, which is why this file asserts the **mechanism**.
+- **`10_client_errors_test.sql`** *(client-error-log)* — the error record: RLS on; anon and a non-admin
+  reader can neither read nor write it and cannot call `record_client_error`; an admin reads every
+  row and cannot update one; the table has no column that could hold an IP, a user, a session, a
+  query or a raw User-Agent (measured over `information_schema`, so a later column turns it red);
+  a repeated fingerprint **adds to `count`** instead of adding a row; a full table refuses a new
+  defect and still counts a known one; the purge removes exactly what was last seen 31 days ago.
 
 ### How the checks work (so a failure is readable)
 
