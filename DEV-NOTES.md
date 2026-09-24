@@ -1,3 +1,27 @@
+## R806 — **本番の実測放射線 feed は全読者に 401 だった——`config.toml` の `verify_jwt = false` が隣の関数へ移っていた**
+
+> 改番: 当初 R800 として書いた（PR #726）。main に着地する前に #R801 が同じ `verify_jwt = false` を独立に足していたので、config.toml は main 側を採り、この回の差分は「header の直後の最初の設定が verify_jwt であること」を測る検査だけになった。本番の radiation-feed は既に verify_jwt=false で 200 を返す（2026-09-25 実測）。
+
+〈#R797 の本番検証で見つけた。R797（core と入口の分離）の退行ではなく、#R590 以来の本番の状態〉
+
+### 0. 実測
+
+| 何 | 実測 |
+|---|---|
+| `…/functions/v1/radiation-feed?mode=latest` | **401** `UNAUTHORIZED_NO_AUTH_HEADER`（curl でも同じ） |
+| `supabase functions list` | `radiation-feed verify_jwt=true` v12（2026-09-15）。volcano-feed／who-don は false |
+| `supabase/config.toml` | `[functions.radiation-feed]`（:224）の直下に `verify_jwt = false` が**無い**。#R585 `55e4acba` にはあった |
+| 経緯 | #R590 `d28d4ce6` が who-don の註ブロックと `[functions.who-don]` を、`[functions.radiation-feed]` と元の `verify_jwt = false` の**間**に挿入した |
+| 本番の見え方 | R797 のレイヤーは ON/OFF・scope・timers まで正しく動き、`state().err='HTTP 401'`・`stations=0`・`near()` 0 件 |
+
+### 1. 直したもの
+
+- `[functions.radiation-feed]` の直下に `verify_jwt = false` を戻し、`supabase functions deploy radiation-feed --use-api --no-verify-jwt`。
+- **門**: `tests/r806-radiation-feed-jwt-checks.test.mjs` — 全 `[functions.*]` header の**最初の設定行**が
+  `verify_jwt` であること（空行・註は飛ばす）。header と設定の間に註を挟むと、その設定は次の関数のものになる——
+  それが起きた瞬間に赤くなる形。`check:docs` の edge-roster は header の数しか見ていなかった。
+- radiation-feed が公開である根拠を同じ検査が測る: `js/radiation-obs-core.js` は Authorization を送らない。
+
 ## R803 — 本番検証で見つけた #R801 の退行: alerts-relay が自分のクライアントの https://www.nmc.cn/… を拒んでいた
 
 #R801 は alerts-relay の `?u=` 許可規則をホストごとの表（scheme・path・クエリ鍵）にし、CMA（中国気象局）を
@@ -1167,6 +1191,7 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R806** — **本番の実測放射線 feed は全読者に 401 だった——`config.toml` の `verify_jwt = false` が隣の関数へ移っていた**〈#R797 の本番検証で発見。R797 の退行ではなく #R590 から〉／⚠⚠⚠ **`[functions.radiation-feed]` と `verify_jwt = false` の間に who-don の註ブロックが挿入され（#R590）、その行は who-don のものになり、radiation-feed は既定の `verify_jwt = true` で配備されていた**（`supabase functions list`: v12・2026-09-15）。クライアントは Authorization を送らないので、観測局は 1 件も届かず、地図は空・凡例は「到達できず」／⇒ 行を戻して再配備（`--no-verify-jwt`）。**構造の門**: `tests/r806-radiation-feed-jwt-checks` が「全 17 の `[functions.*]` は header の直後（空行・註を除く最初の設定）に自分の `verify_jwt` を持つ」を測る——註を上に挟んだ瞬間に赤
 - **#R802** — **本番の Atlas に 46 問投げた。23 ターンが「作業の上限」を読者に告げ、日本語で頼んだ 3 問は操作ゼロで終わった**〈利用者「Atlasに複雑で多種多様な様々な指示や質問を最低50おこない…回答文や地図の表示を見ることで…多角的に評価し、改善・解決するために実装を行って」。build 2026-09-18-R783・ログイン済み・`IntMapAtlasTools.makeExecute` を包んでモデルが出した tool 呼び出しと返り値まで採取〉／⚠⚠⚠ **日本語の問いは扉そのものに届いていなかった**——「東京から大阪までの鉄道ルート」「世界の原子力発電所を…」「東京の今日の天気と…」が `find_capability` 8 回・**operations 0 件**・`step_budget`。得点が実質ゼロのとき **`find_capability` は登録順の先頭 N 件を「一致」として返していた**（実測: `layers.*` の辞書順先頭 8 件／`map.*` の先頭）。原因 5 つ: ⑴ **df がブロックでなく能力を数えていた**（最大ブロックが 33 能力＝その中の語は常に 0 点。`routing.route` の用例「東京から大阪への経路」が一度も得点できない）⑵ ブロック内の語が 33 能力全員の証拠になっていた ⑶ **語境界規則が片方の照合にしか付いていない**（`nuclear` の中の `clear` で `map.clear` が 73 点で 1 位・`duration` の中の `ratio` で `data.ratio` が 65 点）⑷ 固定 2 文字窓では日本語の自然文が当たらない（共有部分文字列へ。床を 4 にしたのは「東京の」が天気の問いを `sim.earthquake` に送っていた実測）⑸ カテゴリ hint が順序を決めていた／⚠⚠⚠ **それでも天気には届かなかった**——カタログ本文に **「天気」0 件・「原子力」0 件**、`data.weather` の項目は説明文ゼロの 1 行。**「その能力は自分の主題の言葉で見つかるか」を全能力について測る検査**を `check:capabilities` へ／⚠⚠⚠ **ピンは数えて判定されていた**ので `research.situationMap` が同じ主題に ok と `not_rendered` を交互に返し、令制国 1750 年で **7 回・9 分 16 秒**、1914 年の欧州で 6 回・6 分 55 秒⇒ `PAINTED_IDS` に `poi` の面を足し、ピンを置く 5 つが 1 つの宣言を通る（**名前が無ければ申告しない**——空配列は「空であるべき」という主張）／⚠⚠⚠ **地図に描いたデータは読めるデータではなかった**——`data.layerValues` が **17 回呼ばれ 17 回 failed**、エラーは「レイヤーをオンにしてください」（**既にオンだった**）。**表示側と読み取り側で名簿が 2 つ**あり同じレイヤーを別の名前・別の on/off で述べていた（`Live aircraft traffic` / `aircraft` / `dl-planes`）⇒ 照合器を 1 本にし、名簿を突き合わせる関数を 1 つだけ置き、**失敗の理由を 5 つに言い分ける**／⚠⚠ **名指した場所が見つからないと「地図の中心」について答えていた**／⚠⚠⚠ **広域地名の解決が名前の一致すら測っていなかった**（`the Alps`→ノルウェーの集落・`Korean Peninsula`→オークランドのフライドチキン店・`Sahara`→**New York**）／⚠⚠ **ハイライトの名前がハイライトより長生き**し、5 ターン連続で「前の Syria を消す」に 1 手ずつ消えていた／⚠⚠⚠ **打ち切られたターンが答えを言わなかった**——最後の 1 呼び出しが `text` が空のときだけ走るので、第 1 ステップの「これからやります」があると走らない（表も choropleth も描けているのに散文は 1 文だけ）⇒ 打ち切りも答えを書く理由にした。**上限は 1 つも動かしていない**／⚠ 読者の画面: **見出しが全部 2 回**・1 文の平叙文が `<h4>`・**略語で段落が割れる**（`No.⏎⏎25`・`U.⏎⏎S.`）・「未配置」が地名でないものを挙げ**日本語の国名を 1 つも解決できていなかった**（⇒ 製品が持つ呼び方から索引を導いて **12/12 を要求 0 件**で解決）・**既定で地図の 36.3%（Atlas がレイヤーに触ると 80.7%）がパネルに覆われる**／⚠ 残したもの 8 件は §10 に明記（パネルの被覆は承認が要る提案・「使用データ」の行・`Pacific`→`Pacifica`・ローマ帝国の解決・**残り 12 問**）
 
 - **#R803** — **本番検証で見つけた #R801 の退行: alerts-relay の規則が自分のクライアントの https://www.nmc.cn/… を拒んでいた**〈本番実測: 10 秒ごとに 400「not an allowed feed」× 39、パネルに「1 unavailable」、中国が空白〉／⚠ 「nmc.cn は http only」はファイルの註から書いた規則で、上流にも呼び手にも訊いていなかった（js/world-packs.js は #R590 から https を送る）⇒ scheme を正規表現にし CMA は http/https 両方。上流が何を受けるかは上流と呼び手から読む
