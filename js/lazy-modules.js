@@ -52,7 +52,7 @@
  *  loaded" the same way it always answered "not flying".
  * ==========================================================================*/
 
-/* ══ (#R794) ONE DEFINITION PER DEFERRED MODULE ═══════════════════════════════════════════════
+/* ══ (#R798) ONE DEFINITION PER DEFERRED MODULE ═══════════════════════════════════════════════
  *  Until this round a deferred module was FIVE rows in five tables — `PUBLISHES` (the global it
  *  owns), `fetchModule` (a `case` with its literal import), `mount` (a `case` with its factory
  *  call), `ALSO` (what must arrive with it), `SELF_PUBLISHING` (no factory) — plus a sixth row in
@@ -134,7 +134,7 @@ export function makeLazyModules(HOST) {
     /* name → the promise of its arrival. One entry per module, created on first demand. */
     const P = Object.create(null);
 
-    /* (#R794) the tables the loader used to carry are views over LAZY_REGISTRY — see the header */
+    /* (#R798) the tables the loader used to carry are views over LAZY_REGISTRY — see the header */
     const R = LAZY_REGISTRY;
     const ALSO = (name) => (R[name] && R[name].also) || [];
     const SELF_PUBLISHING = (name) => !!(R[name] && R[name].self);

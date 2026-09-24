@@ -59,7 +59,7 @@ test('R209 ①: the loader fetches a real, non-empty set, and none of them is st
 
 test('R209 ②: the loader is a single top-level export, and every specifier is a literal', () => {
   const ast = acorn.parse(loader, { ecmaVersion: 'latest', sourceType: 'module' });
-  /* (#R794) the file is the factory PLUS its registry (LAZY_REGISTRY, LAZY_NAMES, CARRIED_NAMES): every
+  /* (#R798) the file is the factory PLUS its registry (LAZY_REGISTRY, LAZY_NAMES, CARRIED_NAMES): every
      top-level statement is exported, and exactly one of them is the function the shell calls. */
   const kinds = ast.body.map((n) => n.type);
   assert.ok(kinds.every((k) => k === 'ExportNamedDeclaration'), 'every top-level statement of js/lazy-modules.js is exported — nothing is a private binding the app cannot reach');
@@ -76,7 +76,7 @@ test('R209 ②: the loader is a single top-level export, and every specifier is 
 });
 
 test('R209 ③: every lazy factory is named in LAZY_FACTORIES, and in no other list', () => {
-  /* (#R794) the boot guard's list is DERIVED from js/lazy-modules.js's registry (src/main.js imports
+  /* (#R798) the boot guard's list is DERIVED from js/lazy-modules.js's registry (src/main.js imports
      LAZY_NAMES), so "named in LAZY_FACTORIES" is "backed by a factory in the registry" — read from the
      same object the entry reads, not from a regex over a second list. */
   assert.match(entry, /import \{ LAZY_NAMES, CARRIED_NAMES \} from '\.\.\/js\/lazy-modules\.js'/, 'src/main.js derives its deferred list from the registry');

@@ -164,7 +164,7 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
   const atlas = read('js/atlas-console.js');
   assert.match(atlas, /case 'query': case 'crossQuery': case 'dataQuery':/, 'the dispatch door');
   assert.match(atlas, /IntMapLazy\.need\('atlasQuery'\)/, '…which fetches the engine');
-  /* (#R794) one registry entry holds what it publishes, how to fetch it and how to mount it */
+  /* (#R798) one registry entry holds what it publishes, how to fetch it and how to mount it */
   const e = LAZY_REGISTRY.atlasQuery;
   assert.ok(e && e.publishes === 'IntMapQuery', 'the lazy registry knows what it publishes');
   assert.match(read('js/lazy-modules.js'), /atlasQuery: \{[^\n]*import\('\.\/atlas-query\.js'\)/, '…and how to fetch it');
@@ -173,7 +173,7 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
      happened to be the LAST entry the day it was written, so #R527 broke it merely by appending a
      new lazy factory after it. The property this line exists for is that «the one list of every
      factory the program has» knows about atlasQuery; that is what it asserts now. */
-  assert.ok(LAZY_NAMES.includes('atlasQuery'), 'the one list of every factory the program has (js/lazy-modules.js LAZY_REGISTRY, #R794)');
+  assert.ok(LAZY_NAMES.includes('atlasQuery'), 'the one list of every factory the program has (js/lazy-modules.js LAZY_REGISTRY, #R798)');
 });
 
 test('R495 ③: the catalogue sends multi-condition questions HERE instead of to the essay writers', () => {

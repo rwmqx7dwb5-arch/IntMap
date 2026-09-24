@@ -408,7 +408,7 @@ const MODULE_FACTORIES = [
    (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
    GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
    the aircraft layer, aircraft search or an Atlas aviation command asks for it. (#R353) …and the two volcano modules — see js/lazy-modules.js and docs/VOLCANO-INTELLIGENCE.md. (#R354) …and the three company-atlas modules — docs/COMPANIES.md §3. */
-/* (#R794) the deferred half and the carried one are DERIVED from js/lazy-modules.js's registry —
+/* (#R798) the deferred half and the carried one are DERIVED from js/lazy-modules.js's registry —
    one definition per module, and this guard reads it rather than keeping a second list. */
 const LAZY_FACTORIES = LAZY_NAMES.slice(); const CARRIED_FACTORIES = CARRIED_NAMES.slice();
 (function () {

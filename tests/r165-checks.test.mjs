@@ -179,7 +179,7 @@ test('R165 #1 the Atlas kernel was moved out, loaded, and instantiated at its or
     '…it imports the loader every caller goes through instead');
   const lazy = rd('js/lazy-modules.js');
   assert.ok(lazyModules(root).some((m) => m.name === 'atlasConsole' && m.file === 'js/atlas-console.js'),
-    'js/lazy-modules.js fetches the kernel on demand');   /* (#R794) from the registry */
+    'js/lazy-modules.js fetches the kernel on demand');   /* (#R798) from the registry */
   assert.ok(lazy.includes("window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);"),
     '…and mounts it with the shared host, exactly as app-body did');
   assert.ok(mod.includes('window.IntMapModules=window.IntMapModules||{};'),
@@ -295,7 +295,7 @@ test('R165 #5 the parser-backed split-scope check passes (and covers the kernel)
 });
 
 test('R165 #6 the boot guard names the atlasConsole factory, so a missing file cannot hide', () => {
-  assert.ok(bootGuardKnows(root, 'atlasConsole'), 'the boot guard lists the atlasConsole factory');   /* (#R794) */
+  assert.ok(bootGuardKnows(root, 'atlasConsole'), 'the boot guard lists the atlasConsole factory');   /* (#R798) */
 });
 
 test('R165 #7 index.html actually shrank and no module body came back inline', () => {

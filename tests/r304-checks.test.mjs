@@ -66,7 +66,7 @@ test('R304 ① every deferred module names a file and a global, both read out of
 test('R304 ② the boot guard names every deferred factory, and only those', () => {
   const L = lazyModules(rootURL);
   const want = L.filter((m) => m.factory).map((m) => m.name).sort();
-  /* (#R794) the entry imports the list from the registry; what is asserted is that the registry's
+  /* (#R798) the entry imports the list from the registry; what is asserted is that the registry's
      factory-backed names — as lazyModules() derives them from the source — are what the entry ships */
   assert.match(read('src/main.js'), /const LAZY_FACTORIES = LAZY_NAMES\.slice\(\)/, 'src/main.js derives LAZY_FACTORIES from the registry');
   const got = LAZY_NAMES.slice().sort();
@@ -79,7 +79,7 @@ test('R304 ② the boot guard names every deferred factory, and only those', () 
      naming the members: the fact under test is «the two lists agree», not «there is exactly one».
      ⚠ Derived from the loader, not typed here — a count is a copy (this file's own ① says so). */
   const noFactory = L.filter((x) => !x.factory).map((x) => x.name).sort();
-  /* (#R794) the exemption is the `self: true` flag of the registry entry, read from the same object */
+  /* (#R798) the exemption is the `self: true` flag of the registry entry, read from the same object */
   const declared = Object.keys(LAZY_REGISTRY).filter((n) => LAZY_REGISTRY[n].self === true).sort();
   assert.deepEqual(noFactory, declared,
     'the modules with no factory are exactly the ones the loader exempts from having one');

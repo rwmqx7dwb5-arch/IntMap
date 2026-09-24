@@ -177,7 +177,7 @@ test('R163 #6 the boot guard names every factory, so one missing file cannot hid
   // window.IntMapModules is created by whichever module file loads first, so checking the namespace
   // alone cannot detect a later file that failed to load — check each factory by name.
   for (const [, key] of MOVED) {
-    assert.ok(bootGuardKnows(root, key), `the boot guard lists the ${key} factory`);   /* (#R794) eager list or the lazy registry */
+    assert.ok(bootGuardKnows(root, key), `the boot guard lists the ${key} factory`);   /* (#R798) eager list or the lazy registry */
   }
   assert.match(html, /module factories missing/, 'index.html reports missing factories loudly');
   assert.match(html, /window\.__imModuleCheck\s*=/, 'the boot guard exposes its result for the browser test');

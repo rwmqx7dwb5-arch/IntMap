@@ -73,7 +73,7 @@ export function appShell(root) {
  * a module in or out — the shape #R198 removed from the label sizes for the same reason.
  * @returns {string[]} e.g. ['js/flight-sim.js', …]
  */
-/* (#R794) "does the boot guard know this factory?" — the eager half is the MODULE_FACTORIES literal in
+/* (#R798) "does the boot guard know this factory?" — the eager half is the MODULE_FACTORIES literal in
    src/main.js; the deferred half and the carried one are the registry's (src/main.js imports them).
    One question, so a test does not have to know which half a key moved to. */
 export function bootGuardKnows(root, key) {
@@ -106,7 +106,7 @@ export function lazyModules(root) {
   const u = new URL('js/lazy-modules.js', root);
   if (!existsSync(u)) return [];
   const ast = parse(readFileSync(u, 'utf8'));
-  /* (#R794) ONE object, LAZY_REGISTRY: name → { publishes, load: () => import('./x.js'), mount?, self?, also? }.
+  /* (#R798) ONE object, LAZY_REGISTRY: name → { publishes, load: () => import('./x.js'), mount?, self?, also? }.
      The two switches and the PUBLISHES map this used to read were views of the same facts, kept by
      hand in five places; the registry is the one place now, and this reads it the way the loader does. */
   const out = [];

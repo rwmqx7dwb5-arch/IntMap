@@ -52,7 +52,7 @@ test('R184 #1: every new module is in the import graph, the factory guard and ap
     assert.match(rd(file), new RegExp(`IntMapModules\\.${factory}\\s*=`),
       `${file} declares exactly the factory the guard looks for`);
     /* the guard list — a file that fails to deploy must say so loudly (#R162/#R163) */
-    assert.ok(bootGuardKnows(root, factory),   /* (#R794) the deferred list is the registry's, imported by the entry */
+    assert.ok(bootGuardKnows(root, factory),   /* (#R798) the deferred list is the registry's, imported by the entry */
       `${factory} is in ${lazy ? 'LAZY' : 'MODULE'}_FACTORIES`);
     assert.match(lazy ? loader : body, new RegExp(`IntMapModules\\.${factory}\\(IM_HOST\\)`),
       `${factory} is instantiated once in ${lazy ? 'js/lazy-modules.js' : 'js/app-body.js'}`);

@@ -47,7 +47,7 @@
  *  the "機能数が数倍になっても地図操作経路の処理量が増えない" property, held mechanically rather
  *  than by everyone remembering to unsubscribe.
  *
- *  (#R786 lifted tests/r175 ③'s ban on unexported top-level declarations; the shape below —
+ *  (#R795 lifted tests/r175 ③'s ban on unexported top-level declarations; the shape below —
  *  one export wrapping one closure — is kept because the registers ARE one instance, not because
  *  a rule requires it. The early-timer memo below is an ordinary module-scope Map now.)
  * ==========================================================================*/
@@ -573,7 +573,7 @@ export function everyTick(key, ms, fn, opts) {
   };
 }
 /* the timers that armed themselves before the register existed — key → {ms, fn, opts, h}. A module-scope
-   Map since #R786 (it hung off the function while tests/r175 ③ forbade a top-level declaration). */
+   Map since #R795 (it hung off the function while tests/r175 ③ forbade a top-level declaration). */
 const PENDING_TICKS = new Map();
 /* give back every timer armed before a register existed — a headless caller (a test, a script) that
    mounted no runtime is otherwise left with a raw interval holding its process open */

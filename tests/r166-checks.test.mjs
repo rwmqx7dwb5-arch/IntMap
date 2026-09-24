@@ -194,7 +194,7 @@ test('R166 #5 the parser-backed split-scope check passes (and covers the seven n
 
 test('R166 #6 the boot guard names every new factory, so one missing file cannot hide', () => {
   for (const f of ALL_FACS) {
-    assert.ok(bootGuardKnows(root, f), `the boot guard lists the ${f} factory`);   /* (#R794) eager list or the lazy registry */
+    assert.ok(bootGuardKnows(root, f), `the boot guard lists the ${f} factory`);   /* (#R798) eager list or the lazy registry */
   }
 });
 

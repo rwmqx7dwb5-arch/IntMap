@@ -69,7 +69,7 @@ test('① the company atlas is not in the boot path', async () => {
     assert.ok(!new RegExp("import\\s+'[^']*" + f.replace('.', '\\.') + "'").test(main),
       'src/main.js imports ' + f + ' — that makes it eager');
   }
-  /* 門2の残り: 登録表（js/lazy-modules.js の LAZY_REGISTRY・#R794）に名前が載っていること */
+  /* 門2の残り: 登録表（js/lazy-modules.js の LAZY_REGISTRY・#R798）に名前が載っていること */
   for (const n of ['companyData', 'companyPanel', 'companyFacilities']) {
     assert.ok(LAZY_NAMES.includes(n), 'the lazy registry is missing ' + n);
   }

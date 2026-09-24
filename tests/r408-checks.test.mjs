@@ -118,7 +118,7 @@ test('R408 ②d: register より先に鳴った時計を、register ができた
      の生 interval を張る。ソースに `setInterval` の綴りは残らないので ②a は緑、しかしタイマーは
      hidden なタブで回り続ける。#R394 の「走っていない機構を名乗る列」を、その次のラウンドで
      自分で作るところだった。
-     (#R786/#R796) 綴りではなく挙動で測る。以前は `everyTick.pending.set(key, { … h: setInterval(fn, p) })`
+     (#R795/#R796) 綴りではなく挙動で測る。以前は `everyTick.pending.set(key, { … h: setInterval(fn, p) })`
      と引き取りループの正規表現を固定していたが、メモは module-scope の Map になり、名前は
      この検査の主題ではない。主題は 3 つ: 早い呼び出しは黙らず実際に鳴る／register ができた瞬間に
      同じ鍵でホイールへ載る／生 interval はそのとき止まる（ホイールの外で鳴り続けない）。 */
@@ -312,7 +312,7 @@ test('R408 ④: js/ が登録する全ファクトリが、3つの一覧のち�
   const main = stripComments(rd('src/main.js'));
   const where = new Map();
   for (const k of listFrom(main, 'MODULE_FACTORIES')) where.set(k, 'MODULE');
-  /* (#R794) the two deferred lists are the registry's, imported by the entry */
+  /* (#R798) the two deferred lists are the registry's, imported by the entry */
   for (const k of LAZY_NAMES) where.set(k, 'LAZY');
   for (const k of CARRIED_NAMES) where.set(k, 'CARRIED');
 

@@ -154,7 +154,7 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
      them. What is NOT asserted any more is that it happens at boot, which this round made false on
      purpose: 30 kB of detail card for a session that never clicks an aircraft. */
   const loader = readFileSync(join(ROOT, 'js/lazy-modules.js'), 'utf8');
-  /* (#R794) the mount is an entry of the registry; its spelling is the static gate's business */
+  /* (#R798) the mount is an entry of the registry; its spelling is the static gate's business */
   assert.ok(LAZY_REGISTRY.aircraftDetail && typeof LAZY_REGISTRY.aircraftDetail.mount === 'function' && LAZY_REGISTRY.aircraftDetail.publishes === 'IntMapAircraftPanel',
     'the factory is instantiated by the registry and publishes the panel');
   assert.ok(loader.includes('window.IntMapModules.aircraftDetail(IM_HOST)'), 'the factory is instantiated');

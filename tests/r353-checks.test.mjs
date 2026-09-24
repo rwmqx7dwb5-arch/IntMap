@@ -283,7 +283,7 @@ test('⑨ volcanoIntel and volcanoLayers are lazy, with a file, a factory and a 
   const imports = main.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.equal(/import\s+'\.\.\/js\/volcano-intel\.js'/.test(imports), false, 'volcano-intel is imported eagerly');
   assert.equal(/import\s+'\.\.\/js\/volcano-layers\.js'/.test(imports), false, 'volcano-layers is imported eagerly');
-  assert.ok(LAZY_NAMES.includes('volcanoIntel') && LAZY_NAMES.includes('volcanoLayers'), 'the boot guard does not know them (its list is the registry\'s — #R794)');
+  assert.ok(LAZY_NAMES.includes('volcanoIntel') && LAZY_NAMES.includes('volcanoLayers'), 'the boot guard does not know them (its list is the registry\'s — #R798)');
 });
 
 /* ── ⑩ the relay is declared, bounded, and reads only the two feeds that need relaying ── */
