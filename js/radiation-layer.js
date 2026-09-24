@@ -45,42 +45,46 @@
  *  · Five languages inline; the rest in js/locales/ui.*.js.
  *  · Load-on-demand (js/lazy-modules.js → `radiationLayer`); the Layers row is eager in
  *    js/beta-overlays.js, so the row exists before this file does.
+ *
+ *  ── (#R797) THIS FILE IS THE BROWSER ENTRY; THE DATA IS js/radiation-obs-core.js ─────────────
+ *  The feed, the two claims, the chunked follow-up, near() and the series live in the core with
+ *  `fetch` and the feed's base as arguments — no window — so a test, a worker or Atlas can hold the
+ *  same observations without this layer. What is HERE is what needs the page: the three renderer
+ *  layers, the popup, the legend, the clock subscription and the refresh tick — and those are owned
+ *  by the runtime's ACTIVE SCOPE for the capability `layer.radiation` (js/runtime.js): switching the
+ *  layer off releases every one of them in one call, and a reply that lands after that is dropped by
+ *  the core's generation rather than painted onto a hidden layer. The Layers row, Atlas
+ *  (`map.radiation`, `data.radiationNear`) and the simulators all reach ONE implementation.
  * ==========================================================================*/
-import { everyTick, stopTick } from './runtime.js';
+import { makeRadiationObs } from './radiation-obs-core.js';
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.radiationLayer = function (HOST) {
-  const L = window.IntMapLang.pick(() => HOST.lang);
+  /* what this layer needs from the host — stated, so a reader (or a test) can hand exactly these */
+  const need = { lang: () => HOST.lang, canDraw: () => HOST.canDraw() };
+  const L = window.IntMapLang.pick(need.lang);
   const LA = window.IntMapLang.pickArgs();
   const GE = () => window.IntMapGeoEngine;
+  const RT = () => window.IntMapRuntime;
   const S = (v) => { try { return window.IntMapSafe.html(v == null ? '' : String(v)); } catch (_) { return ''; } };
-  function canDraw() { try { return !!HOST.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } }
+  function canDraw() { try { return !!need.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } }
   const setVis = (ids, on) => ids.forEach(id => { try { if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', on ? 'visible' : 'none'); } catch (_) { } });
   const before = () => { try { return GE().layers.has('tool-poly') ? 'tool-poly' : undefined; } catch (_) { return undefined; } };
 
   const SRC = 'imrad-obs-src', IDS = ['imrad-obs-halo', 'imrad-obs-pt', 'imrad-obs-lbl'];
-  const state = { on: false, iso: null, loading: false, err: null };
-  let feed = null;              /* the last successful {v,at,unit,sources,stations} */
-  const subs = new Set();
-  const notify = () => { for (const fn of subs) { try { fn(); } catch (_) { } } };
+  const CAP = 'layer.radiation';
 
-  /* ══ THE RAMP ═══════════════════════════════════════════════════════════════════════════════
-     Absolute nSv/h, fixed, and anchored on numbers the PROVIDERS publish as their own action
-     thresholds — not on the spread of whatever happens to have been fetched today, which would
-     recolour the world every hour and make two screenshots incomparable.
-       · 50 / 100  — the natural terrestrial band. Observation (2026-09-09): the 151 Dutch annual
-         means in the CC0 RIVM set span 56.0–116.0 nSv/h, and RIVM states the national range as
-         55–100 nSv/h, the spread being soil composition.
-       · 200       — RIVM's published threshold for an automatic alert to RIVM.
-       · 1000      — the alarm threshold the Swiss NADAM network publishes for its own probes.
-         (Cited as a published public fact; NADAM's DATA is not carried — no open licence.)
-       · 2000      — RIVM's published threshold for also notifying the safety region.
-     EXPIRY: if a provider republishes a different action threshold, this ramp is wrong and the
-     step it came from must move with it. CANONICAL: docs/RADIATION.md holds the same table in
-     prose, and tests/r585-checks.test.mjs measures that the two agree.
-     ⚠ The colours run cool→hot but 50–200 is NOT a warning: almost every healthy station on earth
-     sits inside it. The legend says so in words, because a red-ish dot with no sentence beside it
-     is how a normal Tuesday gets read as an accident. */
-  const RAMP = [[0, '#4c8dff'], [50, '#39c07c'], [100, '#8fbf3f'], [200, '#d8c53a'], [1000, '#f0912d'], [2000, '#e02f2f']];
+  /* ── the data: one implementation, handed its two dependencies ──────────────────────────────
+     fetch goes through the capability's ACTIVE scope while the layer is on (so switching it off
+     aborts the request in flight) and through the page's fetch otherwise — Atlas and the simulators
+     ask `load()` / `near()` with the layer off, and those requests are theirs, not the layer's. */
+  const scopeFetch = (url, init) => {
+    try { const A = RT() && RT().scope(CAP, 'active'); if (A && A.alive()) return A.fetch(url, init); } catch (_) { }
+    return fetch(url, init);
+  };
+  const obs = makeRadiationObs({ fetch: scopeFetch, feedBase: () => window.SUPABASE_URL });
+
+  /* the paint expressions read the ramp from the core — the colours are a fact about the data */
+  const RAMP = obs.ramp();
   const radColor = () => { const e = ['step', ['coalesce', ['get', 'v'], -1], '#6b7280']; for (const t of RAMP) { e.push(t[0], t[1]); } return e; };
   /* the dot grows a little with the reading so a hot station is findable at world zoom, but the
      COLOUR carries the value — radius alone is not readable against a basemap. */
@@ -88,105 +92,13 @@ window.IntMapModules.radiationLayer = function (HOST) {
   const radRadius = ['interpolate', ['linear'], ['zoom'], 1, ['*', 1.7, SIZE], 5, ['*', 3.4, SIZE], 9, ['*', 6.2, SIZE]];
   const radHalo = ['interpolate', ['linear'], ['zoom'], 1, ['*', 4.6, SIZE], 5, ['*', 9.2, SIZE], 9, ['*', 16.8, SIZE]];
 
-  const feedUrl = (qs) => { try { const b = (window.SUPABASE_URL || '').replace(/\/$/, ''); return b ? (b + '/functions/v1/radiation-feed?' + qs) : ''; } catch (_) { return ''; } };
-
-  /* ── the data ─────────────────────────────────────────────────────────────────────────────── */
-  /* ⚠ `stations` AND `reference` ARE NOT THE SAME CLAIM, and the feed keeps them apart for that
-     reason: `stations` is "somebody measured this recently", `reference` is "a published mean for a
-     period" (today, the 151 Dutch annual means for 2011 — RIVM's live display is down and its own
-     page sends readers to EURDEP). Painting a 2011 average in the same ramp as an hourly reading
-     would make the map say something nobody measured. So reference points are drawn only when the
-     CLOCK IS IN THEIR PERIOD, which is the same rule every other source follows, and the legend
-     says they exist the rest of the time. */
-  function refRows(f) {
-    if (!f || !Array.isArray(f.reference) || !f.reference.length) return [];
-    const yr = state.iso ? state.iso.slice(0, 4) : null;
-    if (!yr) return [];
-    const per = {};
-    for (const s of (f.sources || [])) if (s.asOf) per[s.id] = String(s.asOf).slice(0, 4);
-    return f.reference.filter(r => per[r.s] === yr);
-  }
-  function toFC(f) {
-    const out = [];
-    if (!f) return { type: 'FeatureCollection', features: out };
-    const rows = (Array.isArray(f.stations) ? f.stations : []).concat(refRows(f));
-    for (const s of rows) {
-      /* a station whose coordinate could not be resolved is KEPT by the feed and dropped HERE:
-         the feed's job is to say what exists, this file's job is to draw what can be drawn. */
-      if (typeof s.y !== 'number' || typeof s.x !== 'number') continue;
-      if (!(s.y >= -90 && s.y <= 90 && s.x >= -180 && s.x <= 180)) continue;
-      out.push({
-        type: 'Feature', geometry: { type: 'Point', coordinates: [s.x, s.y] },
-        properties: { c: s.c, s: s.s, n: s.n || '', v: (typeof s.v === 'number' ? s.v : null), t: s.t || '', q: s.q || '', k: s.k || '', b: s.b ? 1 : 0 }
-      });
-    }
-    return { type: 'FeatureCollection', features: out };
-  }
-
-  function paint() { if (!feed) return; try { GE().layers.setSourceData(SRC, toFC(feed)); } catch (_) { } }
-
-  function load(iso) {
-    if (state.loading) return Promise.resolve(false);
-    state.loading = true; state.err = null; notify();
-    const url = iso ? feedUrl('mode=day&iso=' + encodeURIComponent(iso)) : feedUrl('mode=latest');
-    if (!url) { state.loading = false; state.err = 'no-backend'; notify(); return Promise.resolve(false); }
-    return fetch(url, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(j => {
-        if (!j || j.v !== 1) throw new Error('bad payload');
-        feed = j; state.iso = iso || null; state.loading = false; notify(); paint(); legend();
-        if (!iso) chunked();
-        return true;
-      })
-      .catch(e => { state.loading = false; state.err = (e && e.message) || 'fetch failed'; notify(); legend(); return false; });
-  }
-
-  /* ── the networks that cannot answer in one request ──────────────────────────────────────────
-     ⚠ RadNet's only keyless route is one CSV per station per year: 140 requests, 67 MB and 102 s
-     measured upstream, so the feed leaves it out of `mode=latest` on a request budget rather than
-     by name, and offers it in chunks. Leaving it there would put an empty United States on a world
-     radiation map, and an empty country reads as a safe one. So the chunks are followed HERE, in
-     the background, after the map already has everything else — the reader sees the world at once
-     and the thin source fills in. It runs once per session; the legend says while it is running. */
-  const chunkState = { running: 0, done: 0, total: 0 };
-  const dead = new Set();
-  let chunkedOnce = false;
-  function chunked() {
-    if (chunkedOnce || !feed) return; chunkedOnce = true;
-    const thin = (feed.sources || []).filter(s => (s.chunks > 1) && !s.n);
-    if (!thin.length) return;
-    chunkState.total = thin.reduce((a, s) => a + s.chunks, 0); chunkState.done = 0; legend();
-    const jobs = [];
-    for (const s of thin) for (let i = 0; i < s.chunks; i++) jobs.push([s.id, i]);
-    let at = 0;
-    const step = () => {
-      if (at >= jobs.length) { chunkState.running--; if (!chunkState.running) legend(); return; }
-      const [id, i] = jobs[at++];
-      if (dead.has(id)) { chunkState.done++; step(); return; }
-      const u = feedUrl('mode=latest&provider=' + encodeURIComponent(id) + '&chunk=' + i);
-      fetch(u).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))).then(j => {
-        if (j && j.v === 1 && Array.isArray(j.stations) && j.stations.length) {
-          feed.stations = feed.stations.concat(j.stations);
-          const src = (feed.sources || []).find(x => x.id === id);
-          if (src) { src.n = (src.n || 0) + j.stations.length; src.read = true; }
-          paint();
-        }
-      }).catch(() => {
-        /* ⚠ (#R621) ONE FAILURE ENDS THE SWEEP FOR THAT SOURCE, AND SAYS SO. Measured in production:
-           all twenty-eight RadNet chunks answered 502 `upstream_unreachable` — the relay's own
-           network cannot reach radnet.epa.gov, though the host answers fine from a desktop. The
-           first version caught and ignored each one, so the reader got twenty-eight silent failures,
-           an empty United States, and a legend that said nothing at all about why. An empty country
-           on a radiation map reads as a safe one; «取得できず» is the only honest thing to print. */
-        dead.add(id);
-        const src = (feed.sources || []).find(x => x.id === id);
-        if (src) { src.read = false; src.reason = 'unreachable'; }
-        legend();
-      }).then(() => { chunkState.done++; if (chunkState.done % 6 === 0) legend(); step(); });
-    };
-    /* four at a time: enough to finish in a few seconds, few enough that the reader's own panning
-       is not competing with twenty-eight of our requests. */
-    for (let k = 0; k < 4; k++) { chunkState.running++; step(); }
-  }
+  function paint() { if (!obs.feed()) return; try { GE().layers.setSourceData(SRC, obs.toFC()); } catch (_) { } }
+  /* the core says what changed; the page decides what that means on screen */
+  obs.subscribe((ev) => {
+    if (!obs.state().on) { if (ev.type === 'state') legend(); return; }
+    if (ev.type === 'feed') { paint(); legend(); }
+    else legend();
+  });
 
   /* ── the map ──────────────────────────────────────────────────────────────────────────────── */
   function ensure() {
@@ -197,7 +109,7 @@ window.IntMapModules.radiationLayer = function (HOST) {
          source makes it vanish silently. The string below is a fallback — the real, per-provider
          attribution is printed by the legend from `feed.sources[]`, because which networks
          answered is not knowable until they have. */
-      GE().layers.addSource(SRC, { type: 'geojson', data: toFC(feed), attribution: 'National radiation monitoring networks' });
+      GE().layers.addSource(SRC, { type: 'geojson', data: obs.toFC(), attribution: 'National radiation monitoring networks' });
       const b = before();
       GE().layers.add({
         id: 'imrad-obs-halo', type: 'circle', source: SRC, layout: { visibility: 'none' },
@@ -225,9 +137,8 @@ window.IntMapModules.radiationLayer = function (HOST) {
   }
 
   /* ── the popup: what was measured, by whom, under what licence, and its history ───────────── */
-  function srcOf(id) { try { return (feed && feed.sources || []).find(s => s.id === id) || null; } catch (_) { return null; } }
   function popup(f) {
-    const p = f.properties || {}, src = srcOf(p.s);
+    const p = f.properties || {}, src = obs.srcOf(p.s);
     const q = p.q ? (' · ' + S(p.q)) : '';
     const head = '<div class="rad-pop-h">' + S(p.n || p.c) + '</div>';
     /* ⚠ "BELOW THE DETECTOR'S FLOOR" IS NOT "ZERO". Seven Japanese stations report 0 with a declared
@@ -256,18 +167,13 @@ window.IntMapModules.radiationLayer = function (HOST) {
         .setLngLat(f.geometry.coordinates)
         .setHTML('<div class="rad-pop">' + head + val + when + who + hist + '</div>'));
     } catch (_) { }
-    if (hist) series(p.c).then(rows => {
+    if (hist) obs.series(p.c).then(rows => {
       try {
         const host = document.querySelector('[data-rad-series="' + CSS.escape(p.c) + '"]'); if (!host) return;
         host.innerHTML = rows && rows.length ? spark(rows) : S(L('No history published for this station.', 'この観測局の履歴は公開されていません。', 'Für diese Station wird kein Verlauf veröffentlicht.', 'Для этой станции история не публикуется.', 'No se publica historial para esta estación.'));
       } catch (_) { }
     });
     return el;
-  }
-  function series(code) {
-    const url = feedUrl('mode=series&station=' + encodeURIComponent(code));
-    if (!url) return Promise.resolve([]);
-    return fetch(url).then(r => r.ok ? r.json() : null).then(j => (j && Array.isArray(j.series)) ? j.series : []).catch(() => []);
   }
   /* an inline sparkline, drawn as an SVG path rather than a canvas so it survives being written
      into a popup that the renderer may re-create. */
@@ -291,6 +197,7 @@ window.IntMapModules.radiationLayer = function (HOST) {
 
   /* ── the legend ───────────────────────────────────────────────────────────────────────────── */
   function legend() {
+    const state = obs.state(), feed = obs.feed(), chunkState = state.chunks, RAMP = obs.ramp();
     if (!state.on) { try { window._hideGenericLegend && window._hideGenericLegend('imrad-obs'); } catch (_) { } return; }
     try {
       if (!window._registerLayerOpacity) return;
@@ -326,7 +233,7 @@ window.IntMapModules.radiationLayer = function (HOST) {
          clock is not on. */
       const busy = (chunkState.total && chunkState.done < chunkState.total)
         ? ('<div class="rad-src">' + S(L('still loading one network…', 'ある観測網を読み込み中…', 'ein Netz wird noch geladen…', 'одна сеть ещё загружается…', 'aún cargando una red…')) + ' ' + chunkState.done + '/' + chunkState.total + '</div>') : '';
-      const nRef = (feed && feed.reference || []).length, nShown = refRows(feed).length;
+      const nRef = (feed && feed.reference || []).length, nShown = obs.refRows(feed).length;
       const ref = (nRef && !nShown) ? ('<div class="rad-src">' + S(L(
         '{n} more stations publish a period average, not a current reading — set the clock to their year to see them.',
         'ほかに {n} 局が、現在値ではなく期間平均を公表しています。時計をその年に合わせると表示されます。',
@@ -338,72 +245,62 @@ window.IntMapModules.radiationLayer = function (HOST) {
     } catch (_) { }
   }
 
-  /* ── the clock ────────────────────────────────────────────────────────────────────────────── */
-  /* ⚠ THE DEPTH IS THE PROVIDER'S, NOT A NUMBER OF OURS. Each source declares `historyDays`; the
+
+  /* ── the lifecycle: the runtime owns what the layer acquires while it is on ────────────────
+     ⚠ THE DEPTH IS THE PROVIDER'S, NOT A NUMBER OF OURS. Each source declares `historyDays`; the
      feed answers `mode=day` with whichever of them can reach that date and says so in `sources[]`.
      So travelling to 2015 does not blank the layer — it shows the networks that go back that far
      and prints, in the legend, that the others do not. */
-  let clockOff = null;
-  function watchClock() {
-    if (clockOff) return;
+  function activate(_arg, _v, A) {
+    obs.setOn(true);
+    setVis(IDS, true);
+    /* the clock's decision belongs to the clock; the layer only carries it to load(iso) */
     try {
-      clockOff = window.IntMapTime.on(e => {
-        if (!state.on) return;
+      A.own(window.IntMapTime.on(e => {
         const want = e && e.isLive ? null : ((e && e.iso) || null);
-        if (want === state.iso) return;
-        load(want);
-      });
+        if (want === obs.state().iso) return;
+        obs.load(want);
+      }));
     } catch (_) { }
+    if (!obs.feed()) obs.load(obs.state().iso);
+    else { paint(); legend(); }
+    /* the networks publish hourly or every ten minutes; re-reading every five minutes while the
+       layer is VISIBLE and the clock is live keeps it current without polling a closed tab. */
+    A.every('refresh', 300000, () => { if (!obs.state().iso) obs.load(null); });
+    try { A.on(GE().events, 'styledata', () => { A.timeout(80, () => { if (ensure()) { setVis(IDS, true); paint(); } }); }); } catch (_) { }
+    A.on(window, 'intmap-lang', () => { A.timeout(20, legend); });
+    return true;
   }
+  function suspend() {
+    obs.setOn(false);
+    setVis(IDS, false);
+    legend();
+  }
+  function disposeLayer() {
+    obs.dispose();
+    const E = GE(); if (!E) return;
+    try { IDS.forEach(id => { if (E.layers.has(id)) E.layers.remove(id); }); } catch (_) { }
+    try { if (E.layers.hasSource(SRC)) E.layers.removeSource(SRC); } catch (_) { }
+  }
+  try { RT().define(CAP, { activate, suspend, dispose: disposeLayer }); } catch (_) { }
 
   /* ── public ───────────────────────────────────────────────────────────────────────────────── */
   function toggle(on) {
-    state.on = !!on;
-    if (state.on) {
-      if (!ensure()) return false;
-      setVis(IDS, true); watchClock();
-      if (!feed) load(state.iso);
-      else { paint(); legend(); }
-      /* the networks publish hourly or every ten minutes; re-reading every five minutes while the
-         layer is VISIBLE and the clock is live keeps it current without polling a closed tab. */
-      everyTick('rad-obs:refresh', 300000, () => { if (state.on && !state.iso) load(null); });
-    } else {
-      setVis(IDS, false); stopTick('rad-obs:refresh'); legend();
-    }
-    notify(); return true;
+    const R = RT(); if (!R || R.stateOf(CAP) === null) return false;
+    if (on) { if (!ensure()) return false; R.activate(CAP); }
+    else R.suspend(CAP);
+    return true;
   }
-
-  /* the join that makes the chain work: given a point, the measuring stations around it.
-     js/sims.js uses this to put the real readings beside a modelled plume. */
-  function near(lat, lon, km) {
-    const R = (typeof km === 'number' && km > 0) ? km : 150, out = [];
-    if (!feed || !Array.isArray(feed.stations)) return out;
-    const rad = Math.PI / 180, cos = Math.cos(lat * rad);
-    for (const s of feed.stations) {
-      if (typeof s.y !== 'number' || typeof s.x !== 'number') continue;
-      const dy = (s.y - lat) * 111.32, dx = (s.x - lon) * 111.32 * cos;
-      const d = Math.sqrt(dy * dy + dx * dx);
-      if (d <= R) out.push({ code: s.c, name: s.n, src: s.s, nsvh: s.v, at: s.t, km: d, lat: s.y, lon: s.x });
-    }
-    out.sort((a, b) => a.km - b.km);
-    return out;
-  }
-
-  GE().events.on('styledata', () => { if (state.on) { setTimeout(() => { if (ensure()) { setVis(IDS, true); paint(); } }, 80); } });
-  window.addEventListener('intmap-lang', () => setTimeout(legend, 20));
 
   window.IntMapRadiationObs = {
-    toggle, load, near, legend,
-    state: () => ({
-      on: state.on, iso: state.iso, loading: state.loading, err: state.err,
-      stations: (feed && feed.stations || []).length,
-      sources: (feed && feed.sources || []).map(s => ({ id: s.id, read: !!s.read, n: s.n, licence: s.licence, historyDays: s.historyDays }))
-    }),
-    stations: () => ((feed && feed.stations) || []).slice(),
-    sources: () => ((feed && feed.sources) || []).slice(),
-    ramp: () => RAMP.map(r => r.slice()),
-    series,
-    subscribe: (fn) => { subs.add(fn); return () => subs.delete(fn); }
+    toggle, legend,
+    load: (iso) => obs.load(iso), near: (lat, lon, km) => obs.near(lat, lon, km), series: (code) => obs.series(code),
+    state: () => obs.state(),
+    stations: () => obs.stations(),
+    sources: () => obs.sources(),
+    ramp: () => obs.ramp(),
+    subscribe: (fn) => obs.subscribe(fn),
+    dispose: () => { try { RT().dispose(CAP); } catch (_) { } },
   };
   return window.IntMapRadiationObs;
 };

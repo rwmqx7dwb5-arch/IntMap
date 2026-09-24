@@ -135,12 +135,18 @@ test('the legend actually writes its cautions, run with the REAL language regist
     }),
   });
 
+  /* (#R797) the layer is a capability of the runtime now — the test mounts the real register, the
+     same object the browser builds, and a clock stub for the subscription the active scope owns */
+  const { makeRuntime } = await import('../js/runtime.js');
+  g.window.IntMapRuntime = makeRuntime({});
+  g.window.IntMapTime = { on: () => () => { } };
   await import('../js/radiation-layer.js');
   const api = g.window.IntMapModules.radiationLayer({ lang: 'en', canDraw: () => true });
   api.toggle(true);
   await new Promise((r) => setTimeout(r, 40));   /* let load() settle; it paints and re-legends */
   api.legend();
   api.toggle(false);                             /* stop the refresh tick so the runner can exit */
+  g.window.IntMapRuntime.dispose('layer.radiation');   /* …and give the capability's scopes back */
   /* ⚠ …and clear the fallback timer too. With no runtime HOST mounted, js/runtime.js's everyTick
      degrades to a raw setInterval kept in a module-private memo; that handle holds the event loop
      open and the test FILE times out even though every assertion passed. Cleaning up what this

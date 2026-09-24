@@ -422,10 +422,15 @@ border-coast.js                   歴史的な輪郭のどの辺が「国境／�
                                   拡大時のOHM詳細境界も読み込み、形状の一致を確認して同じ境界経路へ渡す。
                                   ⚠ 印は環の索引でも**環そのものの同一性**でも引ける——時代帯は
                                   collection を丸ごと渡してくるので、束の名前を知らずに印へ辿り着く
-radiation-layer.js                実測放射線 window.IntMapRadiationObs（遅延）——各国の観測網が公開する周辺γ線量率を
-                                  nSv/h に正規化した1つの尺度で描く。凡例・観測局ポップアップと時系列・時計連動・
-                                  near() による「この地点の周りの観測局」。⚠ js/sims.js の拡散simulationとは別物
-                                  （あちらは模型、これは観測）。正本 docs/RADIATION.md
+radiation-obs-core.js             実測放射線の**データ**——feed の 2 つの主張（stations／reference）・日付モードの
+                                  再読込・薄い観測網の chunk 追従・near()・時系列を、`fetch` と feed の base を
+                                  **引数**として受け取り、window を知らずに持つ。世代番号で dispose 後・新しい
+                                  load 後の返答を捨てる。Node のテスト・worker・Atlas が同じ観測を持てる
+radiation-layer.js                実測放射線 window.IntMapRadiationObs（遅延）——上の core の**ブラウザ入口**。
+                                  3 つの描画レイヤー・凡例・観測局ポップアップと時系列・時計連動を、runtime の
+                                  capability `layer.radiation` の active scope が所有する（OFF で一括返却）。
+                                  Layers 行・Atlas・simulator は同じ 1 実装に届く。⚠ js/sims.js の拡散simulationとは
+                                  別物（あちらは模型、これは観測）。正本 docs/RADIATION.md
 time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
 time-admin1.js                    時間軸の上の歴史的**地方区分**（第1級行政区分）IntMapTimeAdmin1。上の双子——
                                   同じ時計・同じ 45ms・同じ日単位エポック索引・同じ「旅行中か」の判定で、

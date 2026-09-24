@@ -1,3 +1,54 @@
+## R797 — **1 機能を明示的依存・状態所有へ移した——実測放射線（所有権リファクタの段 3）**
+
+〈#R789 の続き。利用者の 9 段の 3 番目: 「一つの機能を、明示的依存・状態所有へ移行——その機能を地図全体
+なしでテストでき、旧入口からも同じ実装を使える」。対象は任せるとのことなので、IM_HOST 参照が 2・Atlas の
+dispatch が 1 本・時計連動あり・遅延読込の `js/radiation-layer.js`（410 行）を選んだ〉
+
+### 0. 実測（着手前）
+
+| 何 | 実測 |
+|---|---|
+| `js/radiation-layer.js` の依存 | `HOST.lang`・`HOST.canDraw` の 2 つ、`window.*` 17 か所（`IntMapTime.on`・`SUPABASE_URL`・`GeoEngine`・`Safe`・`LabelScale`・`_registerLayerOpacity`・`_hideGenericLegend`）、global `fetch` 3 か所 |
+| データと画面 | `refRows / toFC / load / chunked / near / series` と `ensure / paint / popup / legend / watchClock / toggle` が**同じ閉包** |
+| 生死 | `load()` の完了は `state.loading` しか見ない。閉じた後に届いた返答は `paint()`・`legend()` する |
+| 読み手 | Layers 行（beta-overlays）・`js/sims.js`（`near`）・Atlas `data.radiationNear`／`map.radiation`——**全部 `window.IntMapRadiationObs` 経由**で、レイヤーが無ければ観測も無い |
+| 試験 | r585（RAMP と文書の一致）・r621（凡例。`globalThis.window` に 6 個の stub を立てて mount）・r672 |
+
+### 1. 分けたもの
+
+| ファイル | 何 | 依存 |
+|---|---|---|
+| `js/radiation-obs-core.js`（新） | feed の 2 つの主張・日付モードの再読込・薄い観測網の chunk 追従・`near()`・時系列・RAMP・購読 | **`fetch` と `feedBase` を引数で**。window・DOM・engine・時計を知らない |
+| `js/radiation-layer.js`（書き直し） | 3 描画レイヤー・ポップアップ・凡例・時計購読・5 分 tick・styledata／lang リスナー | core ＋ runtime の capability `layer.radiation`。必要な HOST は `need = { lang, canDraw }` と**書いてある** |
+
+core は世代番号を持つ（`load` ごと・`dispose` で進む）。`dispose()` 後や新しい `load` 後に届いた
+返答は捨てる。飛んでいる要求は core の AbortController が止め、レイヤーが ON の間はさらに
+active scope の `fetch`（#R789）を通るので OFF で abort される。
+
+### 2. ⚠⚠ 届く順で凡例が変わっていた
+
+chunk は 4 本同時に飛ぶ。1 本が 502 で `dead` に入り `read=false, reason:'unreachable'` になった**あと**、
+先に飛んでいた兄弟が成功して `read=true` に戻していた——`reason` は残るので「読めた・到達不能」の
+両方を言う凡例になる。core では死んだ観測網は `read=false` のまま、届いた局は数える（部分的に
+読めた、と言える形）。
+
+### 3. 旧入口はそのまま、実装は 1 つ
+
+`window.IntMapRadiationObs` の API（`toggle / load / near / series / legend / state / stations / sources /
+ramp / subscribe`）は変えていない。中身は core への委譲で、`toggle` は runtime の `activate / suspend`。
+Layers 行も Atlas も simulator も、同じ 1 実装に届く。
+
+### 4. 検査
+
+- `tests/r797-radiation-explicit-deps-checks.test.mjs`: Node の偽 feed で core を走らせる。fetch と base 以外を
+  要らないこと（コード中に `window` が無い）／reference 行はその年だけ／chunk の失敗は観測網を終える／
+  dispose 後の返答は捨てる／新しい load が古いのを退ける／`near` は km で近い順／レイヤーが core の
+  上の入口であること（データ関数が 1 か所・fetch は core へ渡す 1 つだけ・capability 定義）。
+- `tests/r621-checks` は本物の `makeRuntime` を mount して凡例を試験する形に。
+- 段 3 の受領証は `check:surface` の diff が言うはずだったが、この機能は `IM_HOST` を **2 項目しか**
+  読んでおらず、公開名は同じ `IntMapRadiationObs` なので、基準に差は出ない（差が出るのは shell 側の
+  機能を移すとき）。
+
 ## R796 — **Runtime のライフサイクルに世代番号と scope を足した（所有権リファクタの段 2）**
 
 〈#R786 の続き。利用者の 9 段の 2 番目: 「Runtime の世代管理・停止・破棄の強化——閉じた後の
@@ -630,6 +681,8 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 > 4,240 行へ切り、60 ラウンドで 14,704 行に戻った——**境界は固定値ではなく、動かすもの**である。
 
 ## 索引 — このファイルのラウンド（新しい順）
+
+- **#R797** — **1 機能を明示的依存・状態所有へ移した——実測放射線（所有権リファクタの段 3）**〈段 2 の続き。「その機能を地図全体なしでテストでき、旧入口からも同じ実装を使える」が完了条件。候補は IM_HOST 参照 2・Atlas dispatch 1 本・時計連動・遅延読込の `js/radiation-layer.js`〉／⚠⚠⚠ **データ（feed の 2 つの主張・日付モード・chunk 追従・near()・時系列）が描画・凡例・時計購読と同じ閉包にあり、`fetch`・`window.SUPABASE_URL`・`window.IntMapTime` を global で読んでいた**——ブラウザ無しに 1 行も試験できず、simulator も Atlas もレイヤー経由でしか観測を持てなかった⇒ `js/radiation-obs-core.js`: `makeRadiationObs({ fetch, feedBase })`。window を知らず、世代番号で dispose 後・新しい load 後の返答を捨てる／⚠⚠ **chunk の 1 本が失敗したあと同時に飛んでいた兄弟が成功すると `read` が true に戻り、`reason:'unreachable'` と矛盾した**（届く順で凡例が変わる）⇒ 死んだ観測網は `read=false` のまま、届いた局は数える／`js/radiation-layer.js` は**ブラウザ入口**: 3 レイヤー・ポップアップ・凡例・時計購読・5 分 tick・styledata／lang リスナーを capability `layer.radiation` の active scope が所有（OFF で一括返却、飛んでいる fetch は abort）。Layers 行・Atlas（`map.radiation`／`data.radiationNear`）・simulator は同じ 1 実装／回帰 7 件は **Node の偽 feed** で走る（reference 行はその年だけ・dispose 後の返答は捨てる・新しい load が古いのを退ける・near は km で近い順）／r621 は本物の `makeRuntime` を mount する形に
 
 - **#R796** — **Runtime のライフサイクルに世代番号と scope を足した（所有権リファクタの段 2）**〈段 1 の続き。「閉じた後の結果反映がなく、開閉を繰り返しても資源が増え続けない」が完了条件〉／⚠⚠⚠ **`activate` は `load` の完了を待って `active` にしていたので、開く → 読み込み中 → 閉じる → 古い読み込みが完了 → 誰も見ていないのに active、が許されていた**。失敗した `load` も `c.p` にメモされ次の open は同じ拒否を返した⇒ capability に**世代番号**（`dispose` だけが進める）。`load`／`activate` は着手時の世代を照合し、古い完了は捨てる。失敗はメモしない／⚠⚠⚠ **`capability:` を手で渡していた登録は js/ に 0 件**——札が手書きなら札は付いていない⇒ 動詞が **scope** を受け取る（`load(host, loaded)`・`activate(arg, value, active)`）。scope は `on`（DOM／emitter）・`every`・`frame`・`onCamera`・`idle`・`timeout`・`fetch`・`own` で登録したものを所有し `release()` で一括返却、`guard(fn)` は release 後の結果を捨てる。R708 が 4 機能で手書きした「古い完了を拒む」の機構側／⚠⚠ **sat.live は閉じた後に届いたカタログで `go()` を走らせ tick を張っていた**（`load(group).then(ok => go())` が生死を知らない）⇒ 3 リスナー・tick・遅延タイマーを active scope が所有、カタログの続きは `S.guard`。手書きの `unwire()` は撤去／⚠ `stats().unowned`＝所有者の無い登録の数（0 へ向ける計器）／⚠ `everyTick.pending` は module-scope の `PENDING_TICKS` に（#R786 で禁止が解けた）、r408 ②d は綴りでなく挙動で測る／回帰: 開閉 ×50 で登録簿が増えない・古い load は activate しない・失敗は再試行
 
