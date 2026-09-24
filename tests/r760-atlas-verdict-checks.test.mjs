@@ -124,8 +124,37 @@ test('R760 ⑥ the painters that hold a named surface declare what they painted'
   /* and the removers declare what is now EMPTY, which is the same contract pointed the other way
      (#R747). `reset` had it; `clearAll` did not, and clearing an already-clear map was
      `not_rendered` — measured on production 2026-09-16 in 「Actually, go back to the previous view」. */
-  assert.ok(src.includes("_CLEARED('countries','polys','lines','choro','outline')"),
-    'map.clearAll states every surface it empties');
+  /* ⚠⚠⚠ (#R802) THE DEFECT THIS LINE IS ABOUT IS 「a remover did not declare what it removed」, and the
+     line used to hold the SPELLING of one argument list. Measured this round: adding the `poi` surface
+     turned it red although `clearAll` had been made MORE truthful, and the next surface would do the
+     same — [[intmap-restate-the-defect-not-the-fix]]. So the expectation is DERIVED: the supplier
+     bundle at `_ERA.paintState({...})` says which surface each painted variable answers for, the
+     clearer of that variable is the function that assigns it an empty value, and every such clearer
+     the `clearAll` case actually calls must have its surface named in the declaration. A surface added
+     tomorrow is covered by existing; one removed stops being demanded. */
+  const bundle = /_ERA\.paintState\(\{([\s\S]{0,600}?)\}\)/.exec(src);
+  assert.ok(bundle, 'the supplier bundle is where the surfaces are named');
+  const surfaceVar = {};
+  for (const m of bundle[1].matchAll(/([A-Za-z0-9_]+)\s*:\s*\(\)\s*=>\s*(_[A-Za-z0-9_]+)/g)) surfaceVar[m[1]] = m[2];
+  assert.ok(Object.keys(surfaceVar).length >= 5, 'the bundle names the painted surfaces');
+  const clearerOf = {};
+  for (const [surface, v] of Object.entries(surfaceVar)) {
+    /* ⚠ String.raw, NOT a quoted string: in a plain JS string '\s' is the letter s, so the pattern
+       would have matched nothing, `clearerOf` would have stayed empty, and the loop below would have
+       asserted nothing while reporting green. CodeQL caught exactly that on the first push. */
+    const fn = new RegExp(String.raw`function\s+([A-Za-z0-9_]+)\s*\([^)]*\)\s*\{[^\n]*?` + v + String.raw`\s*=\s*(?:\[\]|\{\}|new Set\(\))`).exec(src);
+    if (fn) clearerOf[surface] = fn[1];
+  }
+  const caseLine = src.split('\n').find((l) => l.indexOf("case 'clearAll':") >= 0) || '';
+  assert.ok(caseLine, 'the clearAll case is one line');
+  const declared = /_CLEARED\(([^)]*)\)/.exec(caseLine);
+  assert.ok(declared, 'map.clearAll declares the surfaces it empties');
+  const named = declared[1].split(',').map((s2) => s2.trim().replace(/^'|'$/g, ''));
+  for (const [surface, fn] of Object.entries(clearerOf)) {
+    if (caseLine.indexOf(fn + '()') < 0) continue;              /* this case does not empty that surface */
+    assert.ok(named.indexOf(surface) >= 0,
+      'map.clearAll calls ' + fn + '() and must declare the «' + surface + '» surface empty');
+  }
   assert.ok(src.includes("_CLEARED('outline')"), 'clearing the outline says the outline is now empty');
 });
 

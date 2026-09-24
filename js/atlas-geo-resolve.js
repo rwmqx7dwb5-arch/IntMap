@@ -74,69 +74,33 @@ makeAtlasGeoResolve.looksLikeCountryIdentifier = function looksLikeCountryIdenti
   return /^[A-Za-z]{2,3}$/.test(s) || /^[0-9]{1,3}$/.test(s);
 };
 
-export function makeAtlasGeoResolve(HOST, CTX) {
-  const GE=CTX.GE, L=CTX.L, cName=CTX.cName, countryStats=CTX.countryStats, esc=CTX.esc, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup;
-    /* (#R452) `geocode()` and `_nomExtent()` both went to Nominatim with no signal and no deadline,
-       and `placeExtent()` calls the second up to THREE times in a file — so a host that had stopped
-       answering stopped the turn. 8 s is well above Nominatim's own answer time for every query this
-       file builds; past it, the caller's existing 「no extent / no coordinate」 branch is the truth.
-       ⚠ It sits BELOW the CTX rebinds because tests/r199 ② requires those to be the first statement. */
-    const NOMINATIM_TIMEOUT_MS = 8000;
-    /* (#R44) deictic references → the place Atlas last touched, else the current map centre. */
-    const DEIXIS_RE=/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|この場所|同じ場所)$/i;
-    /* (#R85) "現在地" means the DEVICE'S real GPS location, NOT deixis. The old code lumped 現在地 into DEIXIS_RE, so
-       "現在地の天気 / 現在地のストリートビュー / 現在地から東京への経路" all resolved to wherever Atlas last touched (or the
-       map centre) — "Atlasが現在地というワードをユーザーの現在地だと認識できない". Now these phrases actually read the
-       browser geolocation (cached 5 min), and only fall back to deixis/centre if permission is denied/unavailable. */
-    /* ══ (#R413) 「現在地」 IN ALL NINE LANGUAGES INTMAP SHIPS, NOT FIVE OF THEM ══════════════════
-       The regular expression this replaces carried ja / en / ru / es / de. A French, Korean or
-       Chinese reader had NO WAY TO SAY IT: 「ma position」「내 위치」「我的位置」 fell through to the
-       deixis branch below and came back as the map centre, silently. AGENTS.md §3.5 has required nine
-       languages for every reader-facing string for dozens of rounds; a phrase the reader TYPES is one.
-       ⚠ IT IS A TABLE, NOT A PATTERN, so the coverage can be MEASURED, and it is KEYED BY INTMAP'S
-       OWN LANGUAGE CODES — the ones js/locales/ui.<code>.js is named for — so tests/r413-checks
-       reads the shipped set off the directory and requires a key for each. A hand-written list of
-       "the languages we support" is the exact shape #R399 found lying. Every spelling the old
-       expression accepted is still here. */
-    const SELFLOC_WORDS=Object.freeze({
-      en:['my location','my current location','my position','my current position','current location','current position','where am i','where i am','where iam'],
-      jp:['現在地','現在の位置','今いる場所','今いる位置','今の場所','今の位置','自分の位置','自分の居場所','自分の現在地','マイロケーション','マイ ロケーション'],
-      de:['mein standort','mein aktueller standort','aktueller standort','meine position','wo bin ich'],
-      ru:['где я','где я нахожусь','моё местоположение','моёместоположение','мое местоположение','текущее местоположение','моя позиция'],
-      es:['mi ubicación','mi ubicacion','ubicación actual','ubicacion actual','mi posición','mi posicion','dónde estoy','donde estoy'],
-      fr:['ma position','ma position actuelle','position actuelle','ma localisation','où je suis','ou je suis','où suis-je','ou suis-je'],
-      ko:['내 위치','내위치','현재 위치','현재위치','지금 위치','지금위치','내 현재 위치'],
-      zh:['我的位置','目前位置','現在位置','目前所在位置','我在哪','我在哪裡'],
-      'zh-hans':['我的位置','当前位置','现在位置','当前所在位置','我在哪','我在哪里'] });
-    const SELFLOC_RE=new RegExp('^\\s*(?:'+Object.keys(SELFLOC_WORDS)
-      .reduce((a,k)=>a.concat(SELFLOC_WORDS[k]),[])
-      .map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))
-      .sort((a,b)=>b.length-a.length).join('|')+')\\s*$','i');
-    let _selfLocCache=null,_selfLocT=0;
-    function _selfLoc(){ return new Promise(res=>{ try{
-        if(_selfLocCache && Date.now()-_selfLocT<300000) return res(_selfLocCache);
-        if(!navigator.geolocation) return res(null);
-        navigator.geolocation.getCurrentPosition(
-          p=>{ res(_selfLocSeed({lng:+p.coords.longitude,lat:+p.coords.latitude,acc:+p.coords.accuracy||0})); },
-          ()=>res(null), {enableHighAccuracy:true,timeout:20000,maximumAge:0});   /* (#R170) GPS-grade fix, never a cached one — the 5-min _selfLocCache above still avoids re-prompting */
-      }catch(_){ res(null); } }); }
-    /* (#R413) a fix obtained ELSEWHERE (the my_location capability) becomes this cache, so the very
-       next 「現在地から…」 resolves from memory instead of putting a second permission prompt in front
-       of the reader for a position IntMap already has. */
-    function _selfLocSeed(f){ try{ const lng=+f.lng, lat=+f.lat; if(!isFinite(lng)||!isFinite(lat)) return null;
-      _selfLocCache={lng,lat,acc:+f.acc||0,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; _selfLocT=Date.now();
-      return _selfLocCache; }catch(_){ return null; } }
-    window._imSelfLoc=_selfLoc;
-    /* (#R413) an explicit coordinate, written the way every map app writes one ("34.7016, 135.4959").
-       Atlas obtains the reader's position as two numbers and must be able to HAND THEM BACK to any
-       capability that takes a place — otherwise the fact it just obtained is only usable through a
-       magic word, and every origin-taking case would need its own lng/lat pair bolted on. Latitude
-       first, because that is the order the whole world writes and the order IntMap's own readouts
-       print. Two bare numbers are never a place name, so nothing that used to resolve stops. */
-    const COORD_RE=/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/;
-    function _coordPlace(place){ const m=COORD_RE.exec(place); if(!m) return null;
-      const lat=+m[1], lng=+m[2]; if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
-      return {lng,lat,name:lat.toFixed(4)+', '+lng.toFixed(4)}; }
+
+/* ══ ⚠⚠⚠ (#R802) THREE DOORS ASK 「IS THIS WHAT WAS ASKED FOR?」 AND ONLY THIS ONE KNEW HOW ═══════
+   Measured on the deployed build (2026-09-18, build R783), through the calls the product actually
+   makes. `IntMapRouteGeocode.suggest('Sahara')` answered **New York** — not a resemblance, a row
+   whose name shares no letter with the query: free-text Nominatim drops the terms it cannot match,
+   returns whatever is left at 200 OK, and `suggest()` then ranked it by `importance`. Nothing on
+   that path had ever asked the question #R515 wrote the answer to, one file away.
+   And the other half: `geocode('the Alps')` answered a flowerbed in Tromsø and
+   `geocode('Scandinavia')` a village in Wisconsin, while THE EXTENT RESOLVER IN THIS SAME FILE
+   answers both correctly — `placeExtent` opens by asking `regionBox`, and `geocode` never asked it.
+   A macro-region gazetteer that only one of two sibling resolvers consults is the #R429 / #R488 /
+   #R736 shape for the third time in this file.
+   ⇒ The rule and the store are stated ONCE, HERE, at module level beside `featureNames` (the
+   property js/atlas-verify.js already reads for exactly this reason), and every door asks them:
+   `geocode` and `_nomExtent` below reach them lexically, js/routing-geocode.js and
+   js/search-geocode.js through `makeAtlasGeoResolve.placeRules` / `window.IntMapPlaceRules`.
+   Nothing is copied.
+   ⚠ THE TEXT BELOW IS THE #R515 / #R737 / #R53 / #R136 / #R64 CODE UNCHANGED — it moved out of the
+   factory, it was not rewritten. The one edit is `_rnorm`'s normaliser: the region store used to
+   borrow the kernel's `_lnorm` through CTX, which is precisely what pinned a table of ninety region
+   keys inside a closure only the Atlas kernel can build. The store now owns how its own keys are
+   spelled, and the expression is the one `_lnorm` has always evaluated.
+   ⚠ AN IIFE, NOT A RUN OF TOP-LEVEL `const`s: no js/ module may hold an unexported top-level
+   declaration (tests/r175 ③ — it is the property that made the sixty <script> tags into modules
+   without changing one name resolution), so the rules live in a closure and the factory below
+   rebinds the six it uses under their ORIGINAL names, the way every other #R199 hand-off does. */
+makeAtlasGeoResolve.placeRules = (function(){
     /* ⚠ (#R515) A NAME NOMINATIM CANNOT FIND COMES BACK AS SOMETHING ELSE, AND IT COMES BACK 200 OK.
        Measured on the live gazetteer, with the query the map explanation actually sends:
          「宇部港, 日本」      → 日本郵便 — a POST BOX in 浜松市 (importance 0.00007)
@@ -203,10 +167,162 @@ export function makeAtlasGeoResolve(HOST, CTX) {
     /* the query as the caller means it: 「宇部港, 日本」 asks for 宇部港 — the country only narrows it
        (#R489), and letting 日本 count as agreement is how 日本郵便 scored in the first place. */
     function _queryCore(place){ const t=String(place||'').trim(); const i=t.indexOf(','); return (i>0?t.slice(0,i):t).trim(); }
+    /* (#R64) BUG: Nominatim jsonv2 returns `category`, NOT `class` — so the POI penalty/admin bonus NEVER fired
+       (junk shops outranked real boundaries; 畿内's real historic boundary lost to random POIs). Read both. */
+    function _classBonus(o){ const c=(o.class||o.category||'').toLowerCase(), at=(o.addresstype||'').toLowerCase();
+      if(/^(amenity|shop|tourism|leisure|office|building|man_made|highway|railway|historic|craft|healthcare|barrier|power|aeroway)$/.test(c)) return -0.6;
+      if(/^(country|state|region|province|county|city|town|district|municipality|island|continent|borough|department)$/.test(at)) return 0.3;
+      if(c==='place'||c==='boundary'||c==='natural') return 0.22; return 0; }
+    /* ⚠⚠⚠ (#R802) A STREET NAMED AFTER A REGION IS NOT THE REGION, AND THE TILT ABOVE LOSES WHEN IT IS
+       THE ONLY ENTRANT. `_classBonus` subtracts 0.6 from the classes that are things you stand in front
+       of (a shop, a building, a road…). That is a RANKING tilt, and measured on 2026-09-18
+       `geocode('Amazon Basin')` returned **Amazon Basin Bend, Lutz, Florida** — a residential street —
+       because Nominatim holds exactly two rows for that query, a street and a restaurant, and −0.6
+       applied to both decides nothing. The reader was then shown that street's Köppen class as the
+       climate of the Amazon.
+       So, for a candidate the product itself classes as a doorway, mere AGREEMENT is not enough: its own
+       name must BE the query. Containment is what «Amazon Basin» has with «Amazon Basin Bend» — and it
+       is also what a half-typed 「Shinj」 has with 「Shinjuku Station」, which is why this clause is NOT
+       part of `_rankableFor` and why js/routing-geocode.js's `suggest()` deliberately does not ask it:
+       that door OFFERS a list a reader picks from (#R291), this one CONFIRMS an answer nobody reviews.
+       ⚠ A QUERY CARRYING A HOUSE NUMBER IS EXEMPT, for the reason #R515 states above: 「1600 Pennsylvania
+       Avenue NW」 lives in the address and in no feature's name, and its OSM class is `office`. */
+    function _namesakeOk(core,o){ if(_classBonus(o)>=0) return true;
+      const q=_nkey(core); if(!q) return false; if(/\d/.test(q)) return true;
+      for(const n of _candNames(o)) if(_nkey(n)===q) return true;
+      return false; }
+
+    /* the region store's own key normaliser — the expression js/atlas-console.js's `_lnorm` evaluates,
+       stated here because the KEYS below are written in this form and nothing else needs it. */
+    const _rkey=s=>{ try{ return String(s==null?'':s).replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase().replace(/\s+/g,' ').trim(); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim(); } };
+    /* (#R53) The user reported real OFF-TARGET zooms: a REGION name jumped to a random tiny POI in the wrong country
+       (verified live: "Central Europe"→a quarter in Minsk; "Southern Italy"→a military office in Vicenza; "City Center
+       of Chongqing"→a tourist centre 100 km away). Root cause = blindly trusting Nominatim's highest-importance
+       free-text hit. Fix WITHOUT any per-type zoom constant: a macro-REGION gazetteer (Nominatim has no polygon for
+       these), DIRECTIONAL names sliced from the base country's REAL polygon, "city centre of X" → the city core, and
+       POI-vs-admin result filtering. All 5 languages. */
+    const _rnorm=s=>_rkey(String(s||'')).replace(/^(the|la|el|las|los|le|les|der|die|das)\s+/,'').replace(/\s+(region|area)$/,'').trim();
+    const REGION_BBOX={
+      'central europe':[4,45,24,55],'western europe':[-10,42,13,55],'eastern europe':[16,43,42,58],'northern europe':[3,53,32,71],'southern europe':[-10,35,28,47],
+      'europe':[-12,34,42,71],'scandinavia':[4,54,32,71],'nordics':[4,54,32,71],'baltics':[20,53,29,60],'baltic states':[20,53,29,60],'benelux':[2,49,7,54],
+      'british isles':[-11,49,2,61],'iberia':[-10,36,4,44],'iberian peninsula':[-10,36,4,44],'balkans':[13,38,30,49],'caucasus':[40,38,50,45],'mediterranean':[-6,30,37,47],
+      'middle east':[25,12,63,42],'near east':[25,12,50,42],'levant':[34,29,42,38],'arabian peninsula':[34,12,60,32],'gulf':[47,23,57,31],'persian gulf':[47,23,57,31],'mesopotamia':[38,30,49,37],
+      'central asia':[46,35,88,56],'south asia':[60,5,98,38],'southeast asia':[92,-11,141,29],'south-east asia':[92,-11,141,29],'east asia':[100,18,146,54],'far east':[100,18,146,54],
+      'indochina':[92,9,110,29],'indian subcontinent':[60,5,98,38],'asia':[26,-11,180,78],
+      'north africa':[-17,19,37,38],'west africa':[-18,4,16,28],'east africa':[28,-12,52,18],'central africa':[8,-13,31,8],'southern africa':[11,-35,41,-15],
+      'horn of africa':[40,-2,51,18],'sahel':[-18,11,40,18],'maghreb':[-13,27,12,38],'sub-saharan africa':[-18,-35,52,18],'africa':[-18,-35,52,38],'sahara':[-17,16,37,31],
+      'north america':[-168,7,-52,72],'central america':[-92,7,-77,19],'latin america':[-118,-56,-34,33],'south america':[-82,-56,-34,13],'caribbean':[-85,9,-59,27],
+      'midwest':[-104,36,-80,49],'new england':[-74,41,-66,48],'pacific northwest':[-125,42,-111,49],'great plains':[-105,31,-95,49],'deep south':[-95,29,-75,37],'american south':[-95,29,-75,37],
+      'patagonia':[-76,-56,-62,-39],'amazon':[-79,-16,-44,5],'amazonia':[-79,-16,-44,5],'andes':[-79,-56,-62,11],
+      'himalayas':[73,26,96,36],'alps':[5,43,17,48],'siberia':[60,50,180,78],'oceania':[110,-50,180,0],'gulf of mexico':[-98,18,-81,31],
+      /* (#R136) famous geographic/historical regions with NO single OSM boundary (Nominatim otherwise returns a
+         same-named village → wrong-place highlight); reviewed extents so they highlight honestly. */
+      'manchuria':[119,39,135,53],'anatolia':[26,36,45,42],'asia minor':[26,36,45,42],'the levant':[34,29,42,38],'indochina peninsula':[92,9,110,29],'scandinavian peninsula':[4,55,32,71],
+      /* (#R62) informal / economic regions so they highlight WITHOUT an AI round-trip (the AI-traced polygon
+         still takes over for names not listed here) */
+      'blue banana':[-1.5,45,12.5,54.5],'rhine-ruhr':[6.2,50.7,7.9,51.9],'ruhr':[6.5,51.2,7.9,51.7],'rust belt':[-93,38,-74,45],
+      'sun belt':[-120,25,-75,37],'corn belt':[-98,38,-82,44],'bible belt':[-100,30,-77,38],'silicon valley':[-122.5,36.9,-121.2,37.8] };
+    const REGION_ALIASES={
+      '中央ヨーロッパ':'central europe','中欧':'central europe','西ヨーロッパ':'western europe','西欧':'western europe','東ヨーロッパ':'eastern europe','東欧':'eastern europe','北欧':'northern europe','南欧':'southern europe','ヨーロッパ':'europe','欧州':'europe','中東':'middle east','東南アジア':'southeast asia','東アジア':'east asia','中央アジア':'central asia','南アジア':'south asia','北アフリカ':'north africa','サハラ以南アフリカ':'sub-saharan africa','カリブ':'caribbean','カリブ海':'caribbean','バルカン':'balkans','バルカン半島':'balkans','スカンジナビア':'scandinavia','北米':'north america','中米':'central america','南米':'south america','ラテンアメリカ':'latin america','サハラ':'sahara','アマゾン':'amazon','ヒマラヤ':'himalayas','アルプス':'alps','シベリア':'siberia','中南米':'latin america',
+      'mitteleuropa':'central europe','westeuropa':'western europe','osteuropa':'eastern europe','nordeuropa':'northern europe','südeuropa':'southern europe','naher osten':'middle east','südostasien':'southeast asia','ostasien':'east asia','zentralasien':'central asia','nordafrika':'north africa','der balkan':'balkans','skandinavien':'scandinavia',
+      'центральная европа':'central europe','западная европа':'western europe','восточная европа':'eastern europe','северная европа':'northern europe','южная европа':'southern europe','европа':'europe','ближний восток':'middle east','юго-восточная азия':'southeast asia','восточная азия':'east asia','центральная азия':'central asia','северная африка':'north africa','балканы':'balkans','скандинавия':'scandinavia','сибирь':'siberia','карибы':'caribbean','латинская америка':'latin america',
+      'europa central':'central europe','europa occidental':'western europe','europa oriental':'eastern europe','oriente medio':'middle east','medio oriente':'middle east','sudeste asiático':'southeast asia','asia oriental':'east asia','asia central':'central asia','el caribe':'caribbean','escandinavia':'scandinavia','los balcanes':'balkans','américa latina':'latin america','el sahara':'sahara','los andes':'andes','el amazonas':'amazon',
+      /* (#R62) informal regions, 5 languages */
+      'グレートプレーンズ':'great plains','大平原':'great plains','グレート・プレーンズ':'great plains','青いバナナ':'blue banana','ブルーバナナ':'blue banana','ブルー・バナナ':'blue banana','ライン・ルール':'rhine-ruhr','ラインルール':'rhine-ruhr','ライン＝ルール':'rhine-ruhr','ルール地方':'ruhr','ラストベルト':'rust belt','サンベルト':'sun belt','コーンベルト':'corn belt','シリコンバレー':'silicon valley','シリコン・バレー':'silicon valley',
+      'blaue banane':'blue banana','rhein-ruhr':'rhine-ruhr','ruhrgebiet':'ruhr','great plains region':'great plains',
+      'голубой банан':'blue banana','рейн-рур':'rhine-ruhr','ржавый пояс':'rust belt','великие равнины':'great plains','кремниевая долина':'silicon valley','силиконовая долина':'silicon valley',
+      'banana azul':'blue banana','plátano azul':'blue banana','cinturón del óxido':'rust belt','grandes llanuras':'great plains','valle del silicio':'silicon valley',
+      /* (#R136) famous regions, 5 languages */
+      '満州':'manchuria','満洲':'manchuria','マンチュリア':'manchuria','mandschurei':'manchuria','маньчжурия':'manchuria',
+      'アナトリア':'anatolia','小アジア':'asia minor','anatolien':'anatolia','kleinasien':'asia minor','анатолия':'anatolia','малая азия':'asia minor','anatolia':'anatolia','asia menor':'asia minor',
+      'パタゴニア':'patagonia','patagonien':'patagonia','патагония':'patagonia' };
+    function regionBox(place){ const raw=_rkey(place); const k=REGION_ALIASES[raw]||REGION_ALIASES[_rnorm(place)]||_rnorm(place); const b=REGION_BBOX[k]; if(!b) return null; return {box:[[b[0],b[1]],[b[2],b[3]]], lng:(b[0]+b[2])/2, lat:(b[1]+b[3])/2, name:place.trim(), region:true}; }
+
+    /* ⚠ THE SURFACE THE OTHER TWO DOORS READ. A property of the factory rather than a second
+       `export` (tests/r199 ①), and published on `window` just below at MODULE EVALUATION so that a
+       reader which reaches it by name and a reader which reaches it off the global get the same
+       object — js/nominatim-gate.js's shape, for js/nominatim-gate.js's reason. `namesakeOk` is
+       offered but belongs to the confirming door; see its own note above. */
+    return { featureNames: makeAtlasGeoResolve.featureNames,
+      nkey: _nkey, agreement: _nameAgreement, rankable: _rankableFor, namesakeOk: _namesakeOk,
+      classBonus: _classBonus, queryCore: _queryCore, regionBox: regionBox, REGION_ALIASES: REGION_ALIASES,
+      NAME_AGREE_MIN: NAME_AGREE_MIN, IMPORTANCE_FLOOR: IMPORTANCE_FLOOR };
+})();
+try{ window.IntMapPlaceRules = makeAtlasGeoResolve.placeRules; }catch(_){}
+
+export function makeAtlasGeoResolve(HOST, CTX) {
+  const GE=CTX.GE, L=CTX.L, cName=CTX.cName, countryStats=CTX.countryStats, esc=CTX.esc, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup;
+    /* (#R802) the module-level rules above, under their ORIGINAL names, so every line of the body
+       below is the line that was there before they moved out of this closure. Six names, which is
+       exactly the set this factory reads: two the two resolvers ask, one the region resolver and
+       `placeExtent` ask, and three js/atlas-console.js takes back out of the returned surface. */
+    const _PR=makeAtlasGeoResolve.placeRules, _rankableFor=_PR.rankable, _namesakeOk=_PR.namesakeOk, _classBonus=_PR.classBonus, _queryCore=_PR.queryCore, regionBox=_PR.regionBox, REGION_ALIASES=_PR.REGION_ALIASES;
+    /* (#R452) `geocode()` and `_nomExtent()` both went to Nominatim with no signal and no deadline,
+       and `placeExtent()` calls the second up to THREE times in a file — so a host that had stopped
+       answering stopped the turn. 8 s is well above Nominatim's own answer time for every query this
+       file builds; past it, the caller's existing 「no extent / no coordinate」 branch is the truth.
+       ⚠ It sits BELOW the CTX rebinds because tests/r199 ② requires those to be the first statement. */
+    const NOMINATIM_TIMEOUT_MS = 8000;
+    /* (#R44) deictic references → the place Atlas last touched, else the current map centre. */
+    const DEIXIS_RE=/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|この場所|同じ場所)$/i;
+    /* (#R85) "現在地" means the DEVICE'S real GPS location, NOT deixis. The old code lumped 現在地 into DEIXIS_RE, so
+       "現在地の天気 / 現在地のストリートビュー / 現在地から東京への経路" all resolved to wherever Atlas last touched (or the
+       map centre) — "Atlasが現在地というワードをユーザーの現在地だと認識できない". Now these phrases actually read the
+       browser geolocation (cached 5 min), and only fall back to deixis/centre if permission is denied/unavailable. */
+    /* ══ (#R413) 「現在地」 IN ALL NINE LANGUAGES INTMAP SHIPS, NOT FIVE OF THEM ══════════════════
+       The regular expression this replaces carried ja / en / ru / es / de. A French, Korean or
+       Chinese reader had NO WAY TO SAY IT: 「ma position」「내 위치」「我的位置」 fell through to the
+       deixis branch below and came back as the map centre, silently. AGENTS.md §3.5 has required nine
+       languages for every reader-facing string for dozens of rounds; a phrase the reader TYPES is one.
+       ⚠ IT IS A TABLE, NOT A PATTERN, so the coverage can be MEASURED, and it is KEYED BY INTMAP'S
+       OWN LANGUAGE CODES — the ones js/locales/ui.<code>.js is named for — so tests/r413-checks
+       reads the shipped set off the directory and requires a key for each. A hand-written list of
+       "the languages we support" is the exact shape #R399 found lying. Every spelling the old
+       expression accepted is still here. */
+    const SELFLOC_WORDS=Object.freeze({
+      en:['my location','my current location','my position','my current position','current location','current position','where am i','where i am','where iam'],
+      jp:['現在地','現在の位置','今いる場所','今いる位置','今の場所','今の位置','自分の位置','自分の居場所','自分の現在地','マイロケーション','マイ ロケーション'],
+      de:['mein standort','mein aktueller standort','aktueller standort','meine position','wo bin ich'],
+      ru:['где я','где я нахожусь','моё местоположение','моёместоположение','мое местоположение','текущее местоположение','моя позиция'],
+      es:['mi ubicación','mi ubicacion','ubicación actual','ubicacion actual','mi posición','mi posicion','dónde estoy','donde estoy'],
+      fr:['ma position','ma position actuelle','position actuelle','ma localisation','où je suis','ou je suis','où suis-je','ou suis-je'],
+      ko:['내 위치','내위치','현재 위치','현재위치','지금 위치','지금위치','내 현재 위치'],
+      zh:['我的位置','目前位置','現在位置','目前所在位置','我在哪','我在哪裡'],
+      'zh-hans':['我的位置','当前位置','现在位置','当前所在位置','我在哪','我在哪里'] });
+    const SELFLOC_RE=new RegExp('^\\s*(?:'+Object.keys(SELFLOC_WORDS)
+      .reduce((a,k)=>a.concat(SELFLOC_WORDS[k]),[])
+      .map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))
+      .sort((a,b)=>b.length-a.length).join('|')+')\\s*$','i');
+    let _selfLocCache=null,_selfLocT=0;
+    function _selfLoc(){ return new Promise(res=>{ try{
+        if(_selfLocCache && Date.now()-_selfLocT<300000) return res(_selfLocCache);
+        if(!navigator.geolocation) return res(null);
+        navigator.geolocation.getCurrentPosition(
+          p=>{ res(_selfLocSeed({lng:+p.coords.longitude,lat:+p.coords.latitude,acc:+p.coords.accuracy||0})); },
+          ()=>res(null), {enableHighAccuracy:true,timeout:20000,maximumAge:0});   /* (#R170) GPS-grade fix, never a cached one — the 5-min _selfLocCache above still avoids re-prompting */
+      }catch(_){ res(null); } }); }
+    /* (#R413) a fix obtained ELSEWHERE (the my_location capability) becomes this cache, so the very
+       next 「現在地から…」 resolves from memory instead of putting a second permission prompt in front
+       of the reader for a position IntMap already has. */
+    function _selfLocSeed(f){ try{ const lng=+f.lng, lat=+f.lat; if(!isFinite(lng)||!isFinite(lat)) return null;
+      _selfLocCache={lng,lat,acc:+f.acc||0,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; _selfLocT=Date.now();
+      return _selfLocCache; }catch(_){ return null; } }
+    window._imSelfLoc=_selfLoc;
+    /* (#R413) an explicit coordinate, written the way every map app writes one ("34.7016, 135.4959").
+       Atlas obtains the reader's position as two numbers and must be able to HAND THEM BACK to any
+       capability that takes a place — otherwise the fact it just obtained is only usable through a
+       magic word, and every origin-taking case would need its own lng/lat pair bolted on. Latitude
+       first, because that is the order the whole world writes and the order IntMap's own readouts
+       print. Two bare numbers are never a place name, so nothing that used to resolve stops. */
+    const COORD_RE=/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/;
+    function _coordPlace(place){ const m=COORD_RE.exec(place); if(!m) return null;
+      const lat=+m[1], lng=+m[2]; if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
+      return {lng,lat,name:lat.toFixed(4)+', '+lng.toFixed(4)}; }
     function _pickNominatim(place,j){ if(!Array.isArray(j)||!j.length) return null; const core=_queryCore(place);
       let best=null,bs=-Infinity;
       for(const o of j){ if(!o||!isFinite(+o.lat)||!isFinite(+o.lon)) continue;
         const ag=_rankableFor(core,o); if(!ag) continue;   /* the honest miss lives here (#R737: agreement AND the gazetteer's own floor) */
+        if(!_namesakeOk(core,o)) continue;   /* (#R802) …and a doorway only answers to its own whole name */
         const sc=(+o.importance||0)+_classBonus(o)+0.5*ag; if(sc>bs){ bs=sc; best=o; } }
       return best; }
     async function geocode(place){ place=String(place||'').trim();
@@ -220,6 +336,17 @@ export function makeAtlasGeoResolve(HOST, CTX) {
          place ATLAS last touched and is no more the reader than the map centre is. */
       if(SELFLOC_RE.test(place)){ const sl=await _selfLoc(); return sl?_setLast({lng:sl.lng,lat:sl.lat,name:sl.name}):null; }
       { const c=_coordPlace(place); if(c) return _setLast(c); }
+      /* ⚠⚠⚠ (#R802) THE STORE THAT ANSWERS THIS CORRECTLY IS FORTY LINES AWAY AND WAS NEVER ASKED.
+         `placeExtent` opens with exactly this line and has since #R53; `geocode` — the door 39 dispatch
+         cases call, and the one `layerData` resolves a place with — went straight to free-text
+         Nominatim. Measured on the deployed build 2026-09-18: 「the Alps」 came back as a landuse
+         flowerbed in Tromsø (69.7N) and IntMap reported its Köppen class, Dfb, as the climate of the
+         Alps; 「Scandinavia」 came back as a village in Waupaca County, Wisconsin. OSM holds no feature
+         for either name — `regionBox` holds a reviewed extent for both, and for eighty-eight more.
+         ⚠ FIRST, ABOVE THE GAZETTEERS, for the reason placeExtent puts it there: these are names with
+         NO single OSM boundary, so whatever a free-text search returns for them is a namesake by
+         construction. A name the store does not hold falls through unchanged. */
+      { const reg=regionBox(place); if(reg) return _setLast({lng:reg.lng, lat:reg.lat, name:reg.name, bbox:reg.box, kind:'region', region:true}); }
       if(!place||DEIXIS_RE.test(place)){
         const _lastPlace=CTX.lastPlace(); if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=GE().camera.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
       /* (#R93d) A 'capital' fuzzy match carries the COUNTRY's centroid, NOT the city — up to ~80 km off (searching
@@ -261,48 +388,6 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       const a=build(false), b=build(true); const pick=(a&&b)?((b.span<a.span-1e-6)?b:a):(a||b);
       if(!pick||!isFinite(pick.W)||pick.E<=pick.W||pick.N<=pick.S) return null;
       return [[pick.W,pick.S],[pick.E,pick.N]]; }
-    /* (#R53) The user reported real OFF-TARGET zooms: a REGION name jumped to a random tiny POI in the wrong country
-       (verified live: "Central Europe"→a quarter in Minsk; "Southern Italy"→a military office in Vicenza; "City Center
-       of Chongqing"→a tourist centre 100 km away). Root cause = blindly trusting Nominatim's highest-importance
-       free-text hit. Fix WITHOUT any per-type zoom constant: a macro-REGION gazetteer (Nominatim has no polygon for
-       these), DIRECTIONAL names sliced from the base country's REAL polygon, "city centre of X" → the city core, and
-       POI-vs-admin result filtering. All 5 languages. */
-    const _rnorm=s=>_lnorm(String(s||'')).replace(/^(the|la|el|las|los|le|les|der|die|das)\s+/,'').replace(/\s+(region|area)$/,'').trim();
-    const REGION_BBOX={
-      'central europe':[4,45,24,55],'western europe':[-10,42,13,55],'eastern europe':[16,43,42,58],'northern europe':[3,53,32,71],'southern europe':[-10,35,28,47],
-      'europe':[-12,34,42,71],'scandinavia':[4,54,32,71],'nordics':[4,54,32,71],'baltics':[20,53,29,60],'baltic states':[20,53,29,60],'benelux':[2,49,7,54],
-      'british isles':[-11,49,2,61],'iberia':[-10,36,4,44],'iberian peninsula':[-10,36,4,44],'balkans':[13,38,30,49],'caucasus':[40,38,50,45],'mediterranean':[-6,30,37,47],
-      'middle east':[25,12,63,42],'near east':[25,12,50,42],'levant':[34,29,42,38],'arabian peninsula':[34,12,60,32],'gulf':[47,23,57,31],'persian gulf':[47,23,57,31],'mesopotamia':[38,30,49,37],
-      'central asia':[46,35,88,56],'south asia':[60,5,98,38],'southeast asia':[92,-11,141,29],'south-east asia':[92,-11,141,29],'east asia':[100,18,146,54],'far east':[100,18,146,54],
-      'indochina':[92,9,110,29],'indian subcontinent':[60,5,98,38],'asia':[26,-11,180,78],
-      'north africa':[-17,19,37,38],'west africa':[-18,4,16,28],'east africa':[28,-12,52,18],'central africa':[8,-13,31,8],'southern africa':[11,-35,41,-15],
-      'horn of africa':[40,-2,51,18],'sahel':[-18,11,40,18],'maghreb':[-13,27,12,38],'sub-saharan africa':[-18,-35,52,18],'africa':[-18,-35,52,38],'sahara':[-17,16,37,31],
-      'north america':[-168,7,-52,72],'central america':[-92,7,-77,19],'latin america':[-118,-56,-34,33],'south america':[-82,-56,-34,13],'caribbean':[-85,9,-59,27],
-      'midwest':[-104,36,-80,49],'new england':[-74,41,-66,48],'pacific northwest':[-125,42,-111,49],'great plains':[-105,31,-95,49],'deep south':[-95,29,-75,37],'american south':[-95,29,-75,37],
-      'patagonia':[-76,-56,-62,-39],'amazon':[-79,-16,-44,5],'amazonia':[-79,-16,-44,5],'andes':[-79,-56,-62,11],
-      'himalayas':[73,26,96,36],'alps':[5,43,17,48],'siberia':[60,50,180,78],'oceania':[110,-50,180,0],'gulf of mexico':[-98,18,-81,31],
-      /* (#R136) famous geographic/historical regions with NO single OSM boundary (Nominatim otherwise returns a
-         same-named village → wrong-place highlight); reviewed extents so they highlight honestly. */
-      'manchuria':[119,39,135,53],'anatolia':[26,36,45,42],'asia minor':[26,36,45,42],'the levant':[34,29,42,38],'indochina peninsula':[92,9,110,29],'scandinavian peninsula':[4,55,32,71],
-      /* (#R62) informal / economic regions so they highlight WITHOUT an AI round-trip (the AI-traced polygon
-         still takes over for names not listed here) */
-      'blue banana':[-1.5,45,12.5,54.5],'rhine-ruhr':[6.2,50.7,7.9,51.9],'ruhr':[6.5,51.2,7.9,51.7],'rust belt':[-93,38,-74,45],
-      'sun belt':[-120,25,-75,37],'corn belt':[-98,38,-82,44],'bible belt':[-100,30,-77,38],'silicon valley':[-122.5,36.9,-121.2,37.8] };
-    const REGION_ALIASES={
-      '中央ヨーロッパ':'central europe','中欧':'central europe','西ヨーロッパ':'western europe','西欧':'western europe','東ヨーロッパ':'eastern europe','東欧':'eastern europe','北欧':'northern europe','南欧':'southern europe','ヨーロッパ':'europe','欧州':'europe','中東':'middle east','東南アジア':'southeast asia','東アジア':'east asia','中央アジア':'central asia','南アジア':'south asia','北アフリカ':'north africa','サハラ以南アフリカ':'sub-saharan africa','カリブ':'caribbean','カリブ海':'caribbean','バルカン':'balkans','バルカン半島':'balkans','スカンジナビア':'scandinavia','北米':'north america','中米':'central america','南米':'south america','ラテンアメリカ':'latin america','サハラ':'sahara','アマゾン':'amazon','ヒマラヤ':'himalayas','アルプス':'alps','シベリア':'siberia','中南米':'latin america',
-      'mitteleuropa':'central europe','westeuropa':'western europe','osteuropa':'eastern europe','nordeuropa':'northern europe','südeuropa':'southern europe','naher osten':'middle east','südostasien':'southeast asia','ostasien':'east asia','zentralasien':'central asia','nordafrika':'north africa','der balkan':'balkans','skandinavien':'scandinavia',
-      'центральная европа':'central europe','западная европа':'western europe','восточная европа':'eastern europe','северная европа':'northern europe','южная европа':'southern europe','европа':'europe','ближний восток':'middle east','юго-восточная азия':'southeast asia','восточная азия':'east asia','центральная азия':'central asia','северная африка':'north africa','балканы':'balkans','скандинавия':'scandinavia','сибирь':'siberia','карибы':'caribbean','латинская америка':'latin america',
-      'europa central':'central europe','europa occidental':'western europe','europa oriental':'eastern europe','oriente medio':'middle east','medio oriente':'middle east','sudeste asiático':'southeast asia','asia oriental':'east asia','asia central':'central asia','el caribe':'caribbean','escandinavia':'scandinavia','los balcanes':'balkans','américa latina':'latin america','el sahara':'sahara','los andes':'andes','el amazonas':'amazon',
-      /* (#R62) informal regions, 5 languages */
-      'グレートプレーンズ':'great plains','大平原':'great plains','グレート・プレーンズ':'great plains','青いバナナ':'blue banana','ブルーバナナ':'blue banana','ブルー・バナナ':'blue banana','ライン・ルール':'rhine-ruhr','ラインルール':'rhine-ruhr','ライン＝ルール':'rhine-ruhr','ルール地方':'ruhr','ラストベルト':'rust belt','サンベルト':'sun belt','コーンベルト':'corn belt','シリコンバレー':'silicon valley','シリコン・バレー':'silicon valley',
-      'blaue banane':'blue banana','rhein-ruhr':'rhine-ruhr','ruhrgebiet':'ruhr','great plains region':'great plains',
-      'голубой банан':'blue banana','рейн-рур':'rhine-ruhr','ржавый пояс':'rust belt','великие равнины':'great plains','кремниевая долина':'silicon valley','силиконовая долина':'silicon valley',
-      'banana azul':'blue banana','plátano azul':'blue banana','cinturón del óxido':'rust belt','grandes llanuras':'great plains','valle del silicio':'silicon valley',
-      /* (#R136) famous regions, 5 languages */
-      '満州':'manchuria','満洲':'manchuria','マンチュリア':'manchuria','mandschurei':'manchuria','маньчжурия':'manchuria',
-      'アナトリア':'anatolia','小アジア':'asia minor','anatolien':'anatolia','kleinasien':'asia minor','анатолия':'anatolia','малая азия':'asia minor','anatolia':'anatolia','asia menor':'asia minor',
-      'パタゴニア':'patagonia','patagonien':'patagonia','патагония':'patagonia' };
-    function regionBox(place){ const raw=_lnorm(place); const k=REGION_ALIASES[raw]||REGION_ALIASES[_rnorm(place)]||_rnorm(place); const b=REGION_BBOX[k]; if(!b) return null; return {box:[[b[0],b[1]],[b[2],b[3]]], lng:(b[0]+b[2])/2, lat:(b[1]+b[3])/2, name:place.trim(), region:true}; }
     const DIR_VEC={north:'N',northern:'N',south:'S',southern:'S',east:'E',eastern:'E',west:'W',western:'W',central:'C',northeast:'NE',northeastern:'NE',northwest:'NW',northwestern:'NW',southeast:'SE',southeastern:'SE',southwest:'SW',southwestern:'SW',upper:'N',lower:'S'};
     function parseDirectional(place){ const s=String(place||'').trim(); let m;
       m=s.match(/^(northern|southern|eastern|western|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|upper|lower|north|south|east|west)\s+(.{2,})$/i);
@@ -322,12 +407,6 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       return [[w,s],[e,n]]; }
     const CENTER_RE=/^(?:the\s+)?(?:downtown|city\s+cent(?:er|re)|cent(?:er|re)|inner\s+city)\s+(?:of\s+)?(.{2,})$|^(.{2,}?)\s+(?:city\s+cent(?:er|re)|downtown|inner\s+city)$|^(.{2,}?)(?:の)?(?:中心部|中心街|都心|繁華街)$|^(?:centro|el\s+centro)\s+de\s+(.{2,})$|^(?:zentrum|innenstadt|stadtzentrum)\s+(?:von\s+)?(.{2,})$|^центр\s+(.{2,})$/i;
     function parseCenter(place){ const m=String(place||'').trim().match(CENTER_RE); if(!m) return null; const base=m[1]||m[2]||m[3]||m[4]||m[5]||m[6]; return base?base.trim():null; }
-    /* (#R64) BUG: Nominatim jsonv2 returns `category`, NOT `class` — so the POI penalty/admin bonus NEVER fired
-       (junk shops outranked real boundaries; 畿内's real historic boundary lost to random POIs). Read both. */
-    function _classBonus(o){ const c=(o.class||o.category||'').toLowerCase(), at=(o.addresstype||'').toLowerCase();
-      if(/^(amenity|shop|tourism|leisure|office|building|man_made|highway|railway|historic|craft|healthcare|barrier|power|aeroway)$/.test(c)) return -0.6;
-      if(/^(country|state|region|province|county|city|town|district|municipality|island|continent|borough|department)$/.test(at)) return 0.3;
-      if(c==='place'||c==='boundary'||c==='natural') return 0.22; return 0; }
     /* (#R130) WEB-SEARCH-GROUNDED location verification for the highlight / outline resolver. The old ladder trusted
        whatever geometry a Nominatim importance score or a web-BLIND AI trace returned, and reported "✦ highlighted"
        on any paint — so an ambiguous/homonym name (大阪湾→a bay in China) or a hallucinated blob got painted AND
@@ -410,7 +489,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
            ⚠ AND IT STANDS DOWN WHEN SOMETHING ELSE VOUCHES. With a web-verified `anchor` the location has
            independent evidence, so the spelling is no longer the only thing that can speak — the same
            condition the honest-miss guard below already uses. */
-        if(!anchor){ const _core=_queryCore(place); const _agree=j.filter(x=>_rankableFor(_core,x)>0);
+        if(!anchor){ const _core=_queryCore(place); const _agree=j.filter(x=>_rankableFor(_core,x)>0&&_namesakeOk(_core,x));   /* (#R802) the same two clauses this file's other resolver applies — one rule, both doors */
           if(!_agree.length) return null;   /* nothing here is called what was asked for → an honest miss, never a stranger */
           j=_agree; }
         const _q=String(place).trim().toLowerCase();

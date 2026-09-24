@@ -148,11 +148,44 @@ window.IntMapRouteGeocode = (function () {
     return fetch(url, { signal: signal }).then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); });
   }
 
-  async function openMeteo(q, signal) {
+  /* ══ ⚠⚠⚠ (#R802) THIS FIELD NEVER ASKED WHETHER A ROW WAS WHAT THE READER TYPED ══════════════
+     Measured on the deployed build, 2026-09-18: `suggest('Sahara')` offered **New York** as its
+     first candidate — a row that shares no letter with the query. Free-text Nominatim drops the
+     terms it cannot match and answers 200 OK with whatever is left, and the ranking below then
+     preferred it because `pop` for a Nominatim row IS `importance × 10⁶` and New York's importance
+     is 0.88. `suggest('Korean Peninsula')` offered a fried-chicken shop in Auckland.
+     js/atlas-geo-resolve.js has measured, written down and tested the answer to exactly this
+     question twice (#R515, #R737). It was never asked here — so the answer is BORROWED, not
+     restated: `makeAtlasGeoResolve.placeRules` is that file's module-level surface, and the same
+     object is on `window` the moment that module is evaluated.
+     ⚠ IT IS LOADED LAZILY AND ONCE. A static import would put the Atlas geo resolver in the startup
+     bundle (it is reached today only through js/atlas-console.js, the on-demand ninth module), and a
+     `window`-only read would be silent until the reader happens to open Atlas — 「配線は描けたが通電
+     していない」. The import is started at the top of `suggest()` and awaited beside the network, so
+     it costs the first search nothing it was not already waiting for.
+     ⚠ AND THE REGION STORE COMES WITH IT. The same file holds `regionBox`, IntMap's reviewed extents
+     for the ninety names that have no single OSM boundary — 「the Alps」, 「Scandinavia」, 「Middle
+     East」, 「アルプス」 — every one of which this field used to answer with a namesake hamlet. */
+  var RULES = null, RULESP = null;
+  function placeRules() {
+    if (RULES) return Promise.resolve(RULES);
+    if (window.IntMapPlaceRules) { RULES = window.IntMapPlaceRules; return Promise.resolve(RULES); }
+    if (!RULESP) RULESP = import('./atlas-geo-resolve.js')
+      .then(function (m) { return (RULES = m.makeAtlasGeoResolve.placeRules); })
+      .catch(function () { return null; });   /* the chunk did not arrive — the field still works, exactly as it did before this round */
+    return RULESP;
+  }
+
+  async function openMeteo(q, signal, Rp) {
     var url = 'https://geocoding-api.open-meteo.com/v1/search?count=8&name=' + encodeURIComponent(q)
       + '&language=' + encodeURIComponent(window.IntMapLang.locale(_lang, 'en').slice(0, 2));
     var j = await jsonFetch(url, signal);
-    return ((j && j.results) || []).map(function (g) {
+    /* ⚠ AGREEMENT ONLY, NO IMPORTANCE FLOOR. #R737's floor is a fact about NOMINATIM — it is that
+       store's own noise level, published as `importance`, and Open-Meteo publishes no such number. */
+    var R = await Rp, core = R ? R.queryCore(q) : '';
+    return ((j && j.results) || []).filter(function (g) {
+      return !R || R.agreement(core, { name: g.name }) >= R.NAME_AGREE_MIN;
+    }).map(function (g) {
       return {
         lng: +g.longitude, lat: +g.latitude, name: g.name, pop: +g.population || 0,
         admin: [g.admin1, g.country].filter(Boolean).join(', '),
@@ -161,15 +194,23 @@ window.IntMapRouteGeocode = (function () {
       };
     });
   }
-  async function nominatim(q, signal) {
+  async function nominatim(q, signal, Rp) {
     var hold = nominatimSlot();
     if (hold < 0) throw new Error('rate_floor');                /* one is already queued — see nominatimSlot */
     if (hold) await wait(hold);                                 /* the policy floor is a RATE: wait for it */
     if (signal && signal.aborted) throw abortError();           /* the reader typed on while we waited */
-    var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&accept-language='
+    /* ⚠ (#R802) `namedetails=1` costs nothing and is what lets an English query agree with a feature
+       named in Japanese (「Mount Fuji」→ 富士山 through `name:en`). Without it the rule below could only
+       see the one localised label, which is how a correct row gets refused for the wrong reason. */
+    var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=8&accept-language='
       + encodeURIComponent(window.IntMapLang.locale(_lang, 'en')) + '&q=' + encodeURIComponent(q);
     var j = await jsonFetch(url, signal);
-    return (j || []).map(function (x) {
+    /* the #R515 agreement AND the #R737 noise floor, from the one place they are written down.
+       ⚠ NOT `namesakeOk` — that clause belongs to a door that CONFIRMS (see its note in
+       js/atlas-geo-resolve.js); this one offers a list, and a half-typed 「Shinj」 must still reach
+       「Shinjuku Station」. Containment scores 1, so every prefix a reader types is exempt anyway. */
+    var R = await Rp, core = R ? R.queryCore(q) : '';
+    return (j || []).filter(function (x) { return !R || R.rankable(core, x) > 0; }).map(function (x) {
       var a = x.address || {};
       var parts = String(x.display_name || '').split(',').map(function (s) { return s.trim(); });
       return {
@@ -195,6 +236,8 @@ window.IntMapRouteGeocode = (function () {
 
     var ll = parseLatLng(q);
     if (ll) return { items: [ll], error: '' };
+
+    var Rp = placeRules();   /* (#R802) started here, awaited beside the network below */
 
     /* ⚠ (#R298) THE SEPARATOR IS WRITTEN AS AN ESCAPE. It used to be a LITERAL NUL byte in the
        source — 0x00, not the two characters that spell the escape — which makes every byte-oriented
@@ -223,11 +266,23 @@ window.IntMapRouteGeocode = (function () {
       if (e && e.message === 'rate_floor') return [];  /* not asked, so it neither ran nor failed */
       ran++; errs++; return [];
     };
-    var jobs = [openMeteo(q, o.signal).then(settle, fail)];
-    if (longEnough(q)) jobs.push(nominatim(q, o.signal).then(settle, fail));
+    var jobs = [openMeteo(q, o.signal, Rp).then(settle, fail)];
+    if (longEnough(q)) jobs.push(nominatim(q, o.signal, Rp).then(settle, fail));
 
     var got = await Promise.all(jobs);
     got.forEach(function (arr) { items = items.concat(arr); });
+
+    /* (#R802) the macro-region store, on the same terms as the station registry above: local, free,
+       and the row a reader typing 「the Alps」 is looking for. `exact` pins it to the top of the
+       ranking without hiding anything — #R291's rule is that nothing here CONFIRMS a place. */
+    try {
+      var R = await Rp;
+      var reg = R && R.regionBox ? R.regionBox(q) : null;
+      if (reg) items.unshift({
+        lng: reg.lng, lat: reg.lat, name: reg.name, admin: '', kind: 'region',
+        box: reg.box, source: 'intmap-regions', exact: true, id: 'region:' + R.nkey(reg.name),
+      });
+    } catch (e) { /* the region store is optional, exactly like the registry above */ }
     items = dedupe(items.filter(function (c) { return isFinite(+c.lng) && isFinite(+c.lat); }));
     if (items.length) cacheSet(key, items.slice());
     /* nothing found AND nothing that ran succeeded — the caller must say 「could not be reached」

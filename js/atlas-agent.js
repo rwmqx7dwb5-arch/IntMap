@@ -138,6 +138,13 @@ export function makeAtlasAgent() {
     /* the typed note each unmet declaration comes back as. "map_not_drawn" is #R511's spelling and
        stays exactly that, because it is the one a reader of the transcript already knows. */
     const GATE_CODE = { map: 'map_not_drawn', chart: 'chart_not_drawn', mixed: 'output_not_produced' };
+    /* ── (#R802) THE STOPS THAT MEAN «THE TURN RAN OUT», AS OPPOSED TO «ATLAS FINISHED». Every value
+          here is one this loop sets when a ceiling closed the turn; 'answered' is Atlas deciding it
+          is done, and 'aborted' / 'transport' / 'awaiting_user' each already carry their own meaning
+          to the reader. ⚠ THIS IS THE SET js/atlas-console.js KEEPS ITS OWN COPY OF (`__atlCut`,
+          which decides whether the working-limit note goes under the reply): it is exported below so
+          that copy can be retired into a read of this one rather than drifting from it. */
+    const CUT_STOPS = { step_budget: 1, call_budget: 1, time_budget: 1, repeated_calls: 1, malformed_limit: 1 };
     /* ── WHAT ONE RESULT ACTUALLY PRODUCED. js/atlas-toolsurface.js stamps `producedModes` on a call
           whose capability completed, from its registry `produces` column — so the loop reads a fact,
           never a tool's name. ⚠ `changedMap` is #R511's name for the map member of exactly this set
@@ -741,12 +748,43 @@ export function makeAtlasAgent() {
          one thing that asks for an answer was skipped. What the condition is about is the reader
          having nothing — that is `text`, and it is already in the line. The prompt names what the
          transcript actually contains, so nothing invites a claim about work that did not happen. */
+      /* ⚠⚠⚠ (#R802) …AND A TURN THAT RAN OUT HAD ALREADY FILLED THE SLOT THIS ASKS ABOUT.
+         MEASURED on production 2026-09-18 (build 2026-09-18-R783), ten questions: SIX turns showed
+         the reader the working-limit note, and several of those had SUCCEEDED at the work. The two
+         worst — 「…top 10 countries by GDP per capita … which of them are NOT in the top 10 by total
+         GDP」, `repeated_calls`, 8 calls, both rankings fetched and the choropleth painted, and the
+         whole reply was 「I'm comparing the two rankings now.」; and 「1914年のヨーロッパの国境…」,
+         `step_budget`, 9 calls, 415 s, on 「…整理します。」 — ended with the answer in the transcript
+         and a plan in the bubble. A sentence written on a step the output gate then BOUNCED lands in
+         `text` (that reply issued no calls, so #R742's holding place does not take it), which is
+         not an answer but is not empty either, so this hand-back — which asks only when NOTHING was
+         written — was skipped for exactly the turns with the most to report.
+         The `text` clause below is unchanged and still means what it meant. What joins it is the
+         other way a turn ends with the reader holding nothing: it ran out of room, which the loop
+         already records by name. ⚠ NO BUDGET MOVES (CONSTITUTION.md §5, one-pass-or-a-reason §3):
+         the same single call, off the same turn key, at the same `lim.maxSteps` index the empty
+         case uses — the ceilings above are untouched. */
+      const cutShort = CUT_STOPS[stopped] === 1;
+      let writeAnswer = false;
       if (!String(text || '').trim() && stopped !== 'aborted' && stopped !== 'transport'
-          && stopped !== 'awaiting_user') {
+          && stopped !== 'awaiting_user') writeAnswer = true;
+      if (cutShort) writeAnswer = true;   /* (#R802) the turn ran out — see above */
+      if (writeAnswer) {
         try {
           const last = await model({
             system: opts.system || '',
-            messages: transcript.concat([{ role: 'user', content: results.length
+            /* (#R802) the third prompt is for the turn that ran out with prose already in `text`;
+               the two below are #R742's and are reached on exactly the turns they were written for.
+               Like them it names what the transcript CONTAINS, so nothing invites a claim about work
+               that did not happen, and it tells Atlas to say which part is left rather than to
+               pretend the question was finished. */
+            messages: transcript.concat([{ role: 'user', content: (cutShort && String(text || '').trim())
+              ? '[WRITE THE ANSWER] This turn has run out of working room and ends with your next reply — there are '
+                + 'no more steps and no more tool calls. Whatever you wrote earlier was written before the results '
+                + 'above, so it is not the answer. Write the reader\'s answer now, in their language, from this '
+                + 'transcript: say what the results above actually establish, and name plainly the part of the '
+                + 'question they do not settle. Claim nothing that is not in this transcript.'
+              : results.length
               ? '[WRITE THE ANSWER] The tool results above are what actually happened. Reply to the reader now, '
                 + 'in their language, with no further tool calls.'
               : '[WRITE THE ANSWER] This turn has ended with nothing written for the reader, and no tool was run. '
@@ -754,7 +792,10 @@ export function makeAtlasAgent() {
                 + 'and if it cannot be answered, say that and say why.' }]),
             tools: [], step: lim.maxSteps, signal: opts.signal, final: true,
           });
-          if (last && typeof last.text === 'string') text = last.text;
+          /* ⚠ (#R802) AND A CALL THAT CAME BACK WITH NOTHING DOES NOT ERASE WHAT THE TURN HAD. On the
+             empty-`text` path this is the same assignment it always was (「」 over 「」); on the new one
+             there is something to lose, and losing it would trade a partial answer for silence. */
+          if (last && typeof last.text === 'string' && last.text.trim()) text = last.text;
           trace.steps.push({ step: lim.maxSteps, final: true, forced: true });
         } catch (_) { /* keep whatever we have; the caller degrades */ }
       }
@@ -820,7 +861,7 @@ export function makeAtlasAgent() {
         turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed };
     }
 
-    const API = { LIMITS, TURN_SCHEMA, ANSWER_MODES, TURN_STATES, runTurn, reject, readReply, validateAgainst };
+    const API = { LIMITS, TURN_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, runTurn, reject, readReply, validateAgainst };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

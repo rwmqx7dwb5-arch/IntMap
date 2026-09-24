@@ -89,7 +89,7 @@ test('R320 ③a: the module catalogue names the modules that load on demand', ()
   const code = codeOnly(CONTROLS);
   assert.match(code, /IntMapLazy/, 'moduleCatalog still walks only Object.keys(window)');
   assert.match(code, /loads on demand/, 'and does not mark which ones have not arrived yet');
-  assert.match(read('js/lazy-modules.js'), /publishes: \(n\) => PUBLISHES\(n\)/,   /* (#R798) a view over the registry */
+  assert.match(read('js/lazy-modules.js'), /publishes: \(n\) => PUBLISHES\(n\)/,   /* (#R802) a view over the registry */
     'js/lazy-modules.js no longer exposes the manifest the catalogue reads');
 });
 
@@ -103,7 +103,7 @@ test('R320 ③b: doModule fetches the module instead of answering "not found"', 
 });
 
 test('R320 ③c: every lazy module the loader publishes is a name the catalogue can offer', () => {
-  /* (#R798) the manifest is the registry's `publishes` column */
+  /* (#R802) the manifest is the registry's `publishes` column */
   const names = Object.values(LAZY_REGISTRY).map((e) => e.publishes).filter((n) => /^IntMap[A-Za-z0-9]+$/.test(n));
   assert.ok(names.length >= 8, `only ${names.length} publishable module names — the manifest shrank`);
   /* MOD_RE is what decides whether a name may be offered at all */
@@ -116,7 +116,7 @@ test('R320 ③c: every lazy module the loader publishes is a name the catalogue 
 
 /* ── ④ nothing regressed in the kernel this builds on ───────────────────────────────────────── */
 
-test('R320 ④: the capability audit is still green, and still asks twenty-two questions', () => {
+test('R320 ④: the capability audit is still green, and still asks twenty-three questions', () => {
   const checks = auditWith({
     caps: makeAtlasCapabilities({}), docs: makeAtlasCatalogText({}, {}),
     atlas: read('js/atlas-console.js').split(/\r?\n/), controls: CONTROLS,
@@ -126,6 +126,13 @@ test('R320 ④: the capability audit is still green, and still asks twenty-two q
     toolsSrc: read('js/atlas-toolsurface.js'),
     schemas: SCHEMAS,
   });
-  assert.equal(checks.length, 22, 'a capability check was added or lost — #R406 added argument-schemas and required-arguments');
+  /* ⚠⚠ THE SAME NUMBER LIVES IN tests/r318-checks.test.mjs ②a — move both or CI finds the other one
+     (#R802 moved this copy first and was caught by that one).
+     ⚠ THIS NUMBER IS A GUARD, NOT A POLICY ([[intmap-ceiling-guards-are-not-policies]]): it is here so a
+     check that quietly stops running is noticed, and it moves the day one is deliberately added. #R406
+     added argument-schemas and required-arguments; #R802 added catalogue-subject, which asks of every
+     capability whether its own catalogue block says what it is ABOUT — measured on production that round,
+     「天気予報」 reached nothing because `js/atlas-catalog-text.js` carried the word 「天気」 zero times. */
+  assert.equal(checks.length, 23, 'a capability check was added or lost');
   assert.deepEqual(checks.filter((c) => c.failures.length).map((c) => c.id), []);
 });

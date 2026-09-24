@@ -108,6 +108,22 @@ export function makeEraHighlight(deps) {
        no count in `paintNow()` moves when the SAME place is outlined again; measured on production
        2026-09-16, 「Compute the total area of the Amazon basin and show it on the map」 ran
        `map.outline` four times, two of them `not_rendered`, with the basin on the map throughout. */
+    /* ⚠⚠⚠ (#R802) THE PINS WERE THE ONE PAINTED SURFACE WITH NO READING HERE. Five capabilities put
+       markers on the map — every row whose expectation is `map.poi`: `map.poi`, `research.mapReport`,
+       `research.situationMap`, `research.impact`, `research.events` — and none of them could be judged
+       by anything but the CARDINAL in `paintNow()` (`nlq-poi-src`'s feature count), which is exactly the
+       reading #R742 showed cannot tell a repaint of the same places from a repaint of different ones.
+       Measured on production 2026-09-17:「1914年のヨーロッパの国境…」ran `research.situationMap` SIX
+       times, alternating `ok` and `not_rendered` over pins that had been correct since the first call;
+       「日本の令制国を1750年の地図に…」ran it SEVEN times in 9m16s; both died at `step_budget`, and the
+       reader was told the turn had hit its working limit.
+       ⚠ THE IDENTITY IS THE NAME, BECAUSE THE FEATURE id IS THE ARRAY INDEX. js/atlas-console.js
+       `paintPois` numbers the features by their position in `_pois`, so a redraw renumbers them and an
+       index states nothing that survives one. The name is the field every pinner fills and the only one
+       a reader can say back. A pin with no name contributes nothing, exactly like an unnamed tributary
+       above — and a painter holding ONLY unnamed pins must declare no `poi` surface at all, or the empty
+       list would claim 「there should be no pins」 (js/atlas-capabilities.js `PAINT_GOAL`, #R747). */
+    poi: (v) => (v || []).map((p) => p && p.name),                /* `_pois` — the markers, by name */
     outline: (v) => (v ? [v] : [])                                /* `IntMapOutline.current().name` */
   };
   /* sorted, de-duplicated, and WITHOUT the nameless: an unnamed tributary has no identity to state,

@@ -43,7 +43,15 @@ export function makeAtlasVerify(HOST, CTX) {
          · _atlMappingVerdict      — pure: turn per-spot resolution outcomes into mapped / unplaced / ambiguous.
        Everything is exposed on IntMapAtlasDebug for the hermetic node tests (model-omitted list, partial placement,
        same-name ambiguity, one-domain sources, text/pins mismatch). No per-place hardcoding anywhere. */
-    function _atlNorm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+    /* ⚠ (#R802) …AND RECOMPOSED AFTERWARDS, because the decomposition is a Latin device and this
+       function is asked about Japanese every day. NFD splits 「ブ」 into 「フ」+ U+3099 (the combining
+       voiced mark); the Latin sweep below only removes U+0300–U+036F, so the mark survived to the
+       `[^\p{L}\p{N} ]` pass — where it is a Mark, not a Letter, and became a SPACE. Measured on this
+       module: 「ブルンジ」 normalised to 「フ ルンシ」, 「プルンシ」 to the same string, so two different
+       names shared one key and every Japanese name carried phantom word breaks into the dedupe and the
+       name gate. NFC puts the Latin diacritics back nowhere (they were already deleted) and the kana
+       back together. */
+    function _atlNorm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').normalize('NFC')
       .replace(/^(the|a|an|la|le|el|los|las|les|der|die|das|il|lo)\s+/,'').replace(/[^\p{L}\p{N} ]+/gu,' ').replace(/\s+/g,' ').trim(); }
     function _atlNameOk(query, got){ const a=_atlNorm(query), b=_atlNorm(got); if(!a||!b) return false;
       if(a===b) return true; if(b.indexOf(a)===0||a.indexOf(b)===0) return true;
@@ -121,17 +129,62 @@ export function makeAtlasVerify(HOST, CTX) {
         'Eine unabhängige Nachrechnung stimmte NICHT überein ('+v.failed.map(f=>f.label).join('; ')+') — Transkription/Schritt evtl. falsch.',
         'Независимый пересчёт НЕ совпал ('+v.failed.map(f=>f.label).join('; ')+') — возможна ошибка в распознавании или вычислении.',
         'Un recálculo independiente NO coincidió ('+v.failed.map(f=>f.label).join('; ')+') — la transcripción o un paso puede ser erróneo.'))+'</span></div>'; }
+    /* ⚠⚠⚠ (#R802) A NAME IS NOT ITS POSSESSIVE, AND A PERIOD IS NOT ALWAYS A SENTENCE END.
+       Measured on production 2026-09-18 (build 2026-09-18-R783), both printed under 「本文に登場したが
+       未配置（正確に特定できませんでした）」 — the line that tells the reader IntMap could not locate a place:
+         · 「Lake Baikal's water surface area is 31,722 km²…」 → «Lake Baikal's». The possessive travelled
+           into the geocoder, which holds no feature spelled that way, while the same answer's two real
+           pins were already on the map.
+         · 「…Dujuan (JMA Typhoon No. 25 / 2625)…」 → «JMA Typhoon No». A storm designation, cut in half at
+           its own abbreviation and then reported to the reader as a place that could not be found.
+       THE JUDGEMENTS ARE FORMS, NOT A LIST OF ABBREVIATIONS (.agents/rules/no-ad-hoc-hardcoding.md §1):
+         ① a period straight after a CONTRACTION — an initial-capital token of at most four letters with
+            no vowel after the first (St. Mt. Ft. Pt. Dr. Mrs. Hwy.) — belongs to the abbreviation, so a
+            phrase CONTINUES across it and 「St. Petersburg」/「Mt. Fuji」 stay whole. ⚠ THE VOWEL CONDITION
+            IS WHAT KEEPS AN ORDINARY SHORT WORD OUT: 「…the Red Sea. The Nile…」 must stay two things, and
+            joining it would manufacture exactly the kind of non-place phrase this round is removing.
+            Every other period still ends the phrase — and the scan RESUMES at it, so the names in the
+            next sentence are read exactly as they were before (the 「Italy. The Colosseum」 rule).
+         ② a period followed by a DIGIT opens a numbered construct (「No. 25」, 「Fig. 3」), and a name cannot
+            hold a number — so a phrase that ENDS at one is a fragment. It is dropped here, before a
+            geocoder is spent on it and before the reader can be told it is a place we failed to locate.
+       ⚠ THE APOSTROPHE STAYS INSIDE THE WORD: Coeur d'Alene, N'Djamena and Xi'an are real names spelled
+       with one. Only a TRAILING 's / ’s is dropped, and `_atlNameOk` accepts the shortened form against
+       the full one in both directions, so 「St John's」 still agrees with itself through 「St John」. */
+    const _ATL_ABBR_SHAPE=/^[A-ZÀ-Þ][\p{L}]{0,3}$/u, _ATL_VOWEL=/[aeiouàáâãäåæèéêëìíîïòóôõöøùúûü]/i;
+    const _atlLastTok=(s)=>(String(s==null?'':s).match(/[^\s]+$/)||[''])[0];
+    function _atlContraction(tok){ return _ATL_ABBR_SHAPE.test(tok) && !_ATL_VOWEL.test(tok.slice(1)); }
+    /* Is this string shaped like a NAME at all? Asked of the name itself, so the two readers that must
+       act on the answer get the same one: the extractor must not spend a lookup on it, and the verdict
+       must not accuse it of being a place IntMap could not find. The consequences differ, which is why
+       both ask rather than one trusting the other. */
+    function _atlPlaceNameLike(name){ const s=String(name==null?'':name).trim(); if(!s) return false;
+      if(/\d/.test(s)) return false;                       /* a figure is part of a construct, not of a name this pass can extract */
+      const last=_atlLastTok(s);
+      return !/\.$/.test(last) && !/['’]s$/.test(last); }   /* …and neither an abbreviation nor a possessive can END one */
     function _atlExtractPlaces(text){ let t=String(text||'').replace(/`[^`]*`/g,' ').replace(/https?:\/\/\S+/g,' ').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1');
-      /* no '.' in the class → a phrase never bridges a sentence boundary ("Italy. The Colosseum");
-         and only SPACES join the words (not \s) → a phrase never bridges a LINE either. The answer's
+      /* a phrase never bridges a sentence boundary ("Italy. The Colosseum") — #R726 got that by keeping
+         '.' out of the class entirely, and #R802 keeps the SAME property while letting an abbreviation's
+         period through: a period that does not belong to a contraction cuts the phrase below, and the
+         scan is rewound to it, so what the reader's text yields either side of a full stop is unchanged.
+         Only SPACES join the words (not \s) → a phrase never bridges a LINE either. The answer's
          plain text joins a heading and its first paragraph with a newline, and `\s+` walked straight
          across it: «## Nominal GDP» + «The latest…» became the candidate «Nominal GDP The», which was
          then sent to a geocoder and printed under «not placed» (measured on production, 2026-09-15). */
-      const re=/[A-ZÀ-Þ][\p{L}'’\-]*(?:[ \t]+(?:of|de|del|della|di|du|des|da|do|dos|van|von|la|le|los|las|el|al|the|and|upon|on)[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*|[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*){0,3}/gu;
+      /* (#R802) `\.?` before each join is the abbreviation period of ① above; a period that is NOT one
+         is cut out of the match below and the scan is rewound to it, so the sentence rule is unchanged. */
+      const re=/[A-ZÀ-Þ][\p{L}'’\-]*(?:\.?[ \t]+(?:of|de|del|della|di|du|des|da|do|dos|van|von|la|le|los|las|el|al|the|and|upon|on)[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*|\.?[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*){0,3}/gu;
       const seen=new Set(), out=[]; let m;
-      while((m=re.exec(t))){ let s=m[0].replace(/[.,;:''’]+$/,'').trim(); if(s.length<3) continue;
+      while((m=re.exec(t))){ let raw=m[0], cut=-1;
+        const dots=/\.(?=[ \t])/g; let d;
+        while((d=dots.exec(raw))){ if(!_atlContraction(_atlLastTok(raw.slice(0,d.index)))){ cut=d.index; break; } }   /* the first period that ends a SENTENCE ends the phrase */
+        if(cut>=0){ raw=raw.slice(0,cut); re.lastIndex=m.index+cut+1; }   /* …and the next sentence is scanned from there, so nothing after the period is skipped */
+        const after=t.slice(m.index+raw.length);
+        if(cut<0 && /^\.[ \t]*\d/.test(after) && _ATL_ABBR_SHAPE.test(_atlLastTok(raw))) continue;   /* 「JMA Typhoon No. 25」 — the construct continues into a number, so this is a fragment (② above) */
+        let s=raw.replace(/[.,;:]+$/,'').replace(/['’]s$/,'').replace(/['’]+$/,'').trim(); if(s.length<3) continue;   /* 「Lake Baikal's」 → 「Lake Baikal」; an apostrophe INSIDE the word is untouched */
         let toks=s.split(/\s+/); while(toks.length>1 && _ATL_LEAD.has(toks[0].toLowerCase())) toks=toks.slice(1); s=toks.join(' ');   /* drop a sentence-initial verb/adverb prefix */
         if(toks.length===1 && _ATL_STOP.has(s.toLowerCase())) continue;
+        if(!_atlPlaceNameLike(s)) continue;
         const key=_atlNorm(s); if(!key||key.length<3||seen.has(key)) continue; seen.add(key); out.push(s); if(out.length>=24) break; }
       return out; }
     function _atlRegDomain(url){ let h=''; try{ h=new URL(String(url)).hostname.toLowerCase(); }catch(_){ h=String(url||'').toLowerCase().replace(/^.*\/\//,'').split('/')[0]; }
@@ -165,8 +218,14 @@ export function makeAtlasVerify(HOST, CTX) {
          name): JST, Available, Providing» — sentence-initial words of an ISS answer that Nominatim
          happens to know as a shop somewhere (measured on production, 2026-09-15). A structured
          place, which the model named on purpose, is still surfaced whatever its length. */
-      else if(s.verdict==='ambiguous'){ if(s.src==='structured' || /\s/.test(s.name)) ambiguous.push(s.name); }
-      else if(s.verdict==='unplaced'){ if(s.src==='structured' || /\s/.test(s.name)){ unplaced.push(s.name);
+      /* ⚠ (#R802) …AND THE SAME IS TRUE OF 「IS THIS SHAPED LIKE A NAME AT ALL」. 「not placed (couldn't
+         locate precisely)」 is a claim about the WORLD — that IntMap does not know this place — and it
+         was made about 「Lake Baikal's」 and 「JMA Typhoon No」, which are not places at all. A prose
+         candidate that never looked like a name is dropped in silence; a prose candidate that DID and
+         could not be resolved is still reported, exactly as before. A structured place, which the model
+         named on purpose, is untouched by this. */
+      else if(s.verdict==='ambiguous'){ if(s.src==='structured' || (/\s/.test(s.name)&&_atlPlaceNameLike(s.name))) ambiguous.push(s.name); }
+      else if(s.verdict==='unplaced'){ if(s.src==='structured' || (/\s/.test(s.name)&&_atlPlaceNameLike(s.name))){ unplaced.push(s.name);
         by[_ATL_UNPLACED_REASONS.indexOf(s.reason)>=0?s.reason:'not_found'].push(s.name); } } });   /* text-source: only multi-word failures are surfaced (a lone capitalized word is likely not a place — don't cry wolf) */
       return { mapped, unplaced, ambiguous, unplacedBy: by }; }
     function _atlMappingNoteHtml(v, src, meta){ meta=meta||{}; let h='';
@@ -215,6 +274,57 @@ export function makeAtlasVerify(HOST, CTX) {
       const cells=new Set(); matches.forEach(j=>cells.add(Math.round(+j.lat*10)+','+Math.round(+j.lon*10)));
       if(!country && cells.size>=2) return {ok:false,reason:'ambiguous',ambiguous:true};
       const b=matches[0]; return { ok:true, lng:+b.lon, lat:+b.lat, name:(b.display_name||'').split(',')[0] }; }
+    /* ══ ⚠⚠⚠ (#R802) THE STORE THAT ALREADY HOLDS EVERY COUNTRY'S NAME IN THE READER'S LANGUAGE ══════
+       Measured on production 2026-09-18: 「アフリカで最も長い河川の流路を地図に描いて、流域国を列挙して。」
+       was answered in Japanese and the audit printed 「本文に登場したが未配置（正確に特定できませんでした）:
+       ブルンジ, コンゴ民主共和国, エリトリア, エチオピア, ルワンダ, 南スーダン…」 — eleven countries whose
+       boundary, label point and Japanese name IntMap ships. The ladder went ledger → region geocoder →
+       strict Nominatim and never asked its OWN store, and both network rungs failed for reasons that say
+       nothing about the country:
+         · `geocode('ブルンジ')` does return the right relation (measured live: 1 hit, `name:ja`=ブルンジ),
+           but the rung then compares the query against the ONE label the geocoder hands back — 'Burundi',
+           in whatever language the request asked for — and `_atlNameOk('ブルンジ','Burundi')` is false, as
+           it must be: those are not the same string.
+         · the strict rung then asks for 「name, country」, and for a COUNTRY the model fills `country` with
+           the country itself. Measured live 2026-09-18: 'ブルンジ' → 1 hit; 'ブルンジ, ブルンジ' → 0 hits. No
+           hits is `not_found`, which is the sentence the reader was shown.
+       ⚠ THE NAMES ARE NOT A TABLE WRITTEN HERE. `countryStats` carries `nameEn`/`nameJp` (Natural Earth's
+       NAME_EN / NAME_JA — measured: NAME_JA answers every one of the eleven, including 「南極大陸」 and
+       「コンゴ民主共和国」) and `a2`, which is the key `window._imCldrRegion` reads CLDR with — the app's ONE
+       rule for naming a country in a language (js/countries-ui.js) — for every language
+       `window.IntMapLang.codes()` declares. A country added to the store tomorrow answers in all nine the
+       day it arrives, and nothing is spelled here. A spelling two countries claim identifies neither, the
+       way js/atlas-country-ids.js drops an ambiguous identifier.
+       ⚠ WHY IT SITS ABOVE THE NETWORK RUNGS: the answer it gives is the app's own label point — the one
+       the Countries panel flies to — it costs no request and no share of the pass budget, and for a bare
+       country name the geocoder was returning that same country anyway.
+       Expires when: `countryStats` stops carrying `a2`/`latlng`, or `_imCldrRegion` stops being how this
+       app names a country. */
+    let _ctryIdx=null, _ctryFor=null, _ctryN=-1;
+    function _atlCountryIndex(){
+      const store=(HOST&&HOST.countryStats)||null; if(!store) return null;
+      const n=Object.keys(store).length; if(!n) return null;
+      if(_ctryIdx&&_ctryFor===store&&_ctryN===n) return _ctryIdx;   /* the store is filled IN PLACE as each scale lands, so the key count is what changes */
+      let langs=[]; try{ langs=(window.IntMapLang&&window.IntMapLang.codes&&window.IntMapLang.codes())||[]; }catch(_){ langs=[]; }
+      const map=new Map(), dup=new Set();
+      const put=(nm,code)=>{ if(typeof nm!=='string') return; const k=_atlNorm(nm); if(!k||k.length<2) return;
+        const prev=map.get(k); if(prev!==undefined&&prev!==code){ dup.add(k); return; } map.set(k,code); };
+      for(const code in store){ const s=store[code]; if(!s||!s.latlng) continue;
+        const names=[s.nameEn,s.nameJp];
+        if(s.a2){ for(const lg of langs){ try{ const cn=window._imCldrRegion&&window._imCldrRegion(s.a2,lg); if(cn) names.push(cn); }catch(_){} } }
+        names.forEach(nm=>{ put(nm,code);
+          /* CLDR disambiguates with a parenthetical — 「コンゴ民主共和国(キンシャサ)」 is the same country the
+             answer calls 「コンゴ民主共和国」 — so the form without it is the same country's name too. */
+          const bare=String(nm==null?'':nm).replace(/[(（][^)）]*[)）]/g,' ').trim(); if(bare&&bare!==nm) put(bare,code); }); }
+      dup.forEach(k=>map.delete(k));
+      _ctryIdx=map; _ctryFor=store; _ctryN=n; return map; }
+    /** name → the country's own label point, or null. EXACT agreement on a whole name only: a prefix
+        rule here would answer 「South」 with South Africa. */
+    function _atlCountryPoint(name){ try{ const idx=_atlCountryIndex(); if(!idx) return null;
+      const code=idx.get(_atlNorm(name)); if(!code) return null; const s=HOST.countryStats[code]; if(!s||!s.latlng) return null;
+      const lng=+s.latlng[1], lat=+s.latlng[0]; if(!isFinite(lng)||!isFinite(lat)) return null;
+      let nm=''; try{ nm=(HOST.cName?HOST.cName(s):'')||''; }catch(_){}   /* the country's name in the reader's language, by the app's own rule */
+      return {lng, lat, name:nm||s.nameEn||code, code}; }catch(_){ return null; } }
     /* ══ (#R397) THE ORCHESTRATOR, MOVED IN FROM js/atlas-console.js ═══════════════════════════════
        It resolves the answer's places, merges with the pins the plan already dropped, pins only the
        confident unique hits, and returns the honest self-audit note. It came here because EIGHT of
@@ -306,11 +416,22 @@ export function makeAtlasVerify(HOST, CTX) {
              must not be able to end the ladder, so each one asks `!g` and the ladder ends only at the bottom. */
           if(GEOBJ.pointLike(it)) g={lng:it.lng,lat:it.lat,name:it.name};
           if(!g&&ledger){ try{ const k=ledger.resolve(it.name,{kind:it.kind,countryName:it.country}); if(k&&k.lng!=null) g={lng:k.lng,lat:k.lat,name:k.canonicalName||k.name}; }catch(_){} }   /* (#R489) a place THIS conversation already resolved is not sent to a geocoder again. ⚠ (#R545) THE HINT IS BUILT FROM WHAT THIS MAPPER HOLDS — it used to pass `countryCode: it.countryCode`, and the mapper above copies no country code at all, so the narrowing was undefined at every call and 「モスクワ」 could come back as whichever one was recorded last */
-          if(!g&&it.src==='structured'){ try{ const r=await geocode([it.name,it.country].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; infra=true; } }
-          if(!g){ const s=await _atlGeocodeStrict(it.name,it.src==='structured'?it.country:''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous) ambiguous=true; else if(s.reason==='network'){ infraFail++; infra=true; } }
+          /* (#R802) the app's own country store, in all nine languages, before any request goes out. ⚠ It
+             carries WHAT IT IS: a country's LABEL point represents an area, so the ledger is told
+             `resolved_place_centroid` — the word this app already has for that, and deliberately not one
+             of the point-like classes, so a later turn cannot mistake it for a spot someone chose. */
+          if(!g){ const c=_atlCountryPoint(it.name); if(c) g={lng:c.lng,lat:c.lat,name:c.name,prov:'resolved_place_centroid'}; }
+          /* ⚠ (#R802) A COUNTRY DOES NOT NARROW ITSELF. The model fills `country` with the country's own
+             name when the place IS that country, and the geocoder is asked for 「X, X」 — measured live:
+             'ブルンジ' → 1 hit, 'ブルンジ, ブルンジ' → 0. Zero hits is reported as `not_found`, i.e. as a fact
+             about the place. This matters even with the rung above it, because `countryStats` is filled
+             asynchronously and an answer can be audited before it has landed. */
+          const _narrow=(it.country&&_atlNorm(it.country)!==_atlNorm(it.name))?it.country:'';
+          if(!g&&it.src==='structured'){ try{ const r=await geocode([it.name,_narrow].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; infra=true; } }
+          if(!g){ const s=await _atlGeocodeStrict(it.name,it.src==='structured'?_narrow:''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous) ambiguous=true; else if(s.reason==='network'){ infraFail++; infra=true; } }
           if(ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; }
           if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; } seenCell.add(cell);
-            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); if(ledger){ try{ ledger.record({kind:String(it.kind||''),name:String(it.name||''),canonicalName:g.name||String(it.name||''),countryName:String(it.country||''),lng:g.lng,lat:g.lat,summary:String(it.summary||''),source:'answer',provenance:(GEOBJ.pointLike(it)?it.provenance:'geocoded_point')}); }catch(_){} }   /* (#R489) …and what it DID resolve is filed, so the next turn is handed an identifier instead of a string */ spots.push({name:it.name,verdict:'mapped',src:it.src}); }
+            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); if(ledger){ try{ ledger.record({kind:String(it.kind||''),name:String(it.name||''),canonicalName:g.name||String(it.name||''),countryName:String(it.country||''),lng:g.lng,lat:g.lat,summary:String(it.summary||''),source:'answer',provenance:(GEOBJ.pointLike(it)?it.provenance:(g.prov||'geocoded_point'))}); }catch(_){} }   /* (#R489) …and what it DID resolve is filed, so the next turn is handed an identifier instead of a string */ spots.push({name:it.name,verdict:'mapped',src:it.src}); }
           else spots.push({name:it.name,verdict:'unplaced',reason:(infra?'infra':'not_found'),src:it.src}); }
         if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
           try{ setPois(merged); let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } }catch(_){}
