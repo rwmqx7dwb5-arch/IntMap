@@ -29,7 +29,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { allSpecs, changedSpecs, coreNames, isDeep } from '../scripts/tiers.mjs';
-import { splitLegacy, parseLegacy, checkNotes, entries, renderIndex, LEGACY_INDEX, LEGACY_MANIFEST } from '../scripts/dev-notes.mjs';
+import { splitLegacy, parseLegacy, checkNotes, entries, renderIndex, renderStub, LEGACY_INDEX, LEGACY_MANIFEST } from '../scripts/dev-notes.mjs';
 import { indexVerdict, INDEX_CEILING } from '../scripts/agent-memory.mjs';
 import { stampTime, buildStamp } from '../scripts/build-stamp.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
@@ -151,13 +151,18 @@ test('③ splitting keeps every entry byte for byte and every index row exactly 
   assert.equal(segs.flatMap((s) => s.lines).map((l) => l + '\n').join(''), LEGACY_FIXTURE);
 });
 
-test('③b the tree: the index is generated, lists each entry once, and the old rows are kept once', () => {
-  assert.deepEqual(checkNotes(ROOT), [], 'DEV-NOTES.md is not the generated index of dev-notes/');
-  const idx = rd('DEV-NOTES.md');
+test('③b the tree: the list is rendered, lists each entry once, and the old rows are kept once', () => {
+  assert.deepEqual(checkNotes(ROOT), [], 'dev-notes/ or the pointer DEV-NOTES.md is malformed');
+  const idx = renderIndex(ROOT);
   const links = [...idx.matchAll(/\]\(([^)]+)\)/g)].map((m) => m[1]).filter((l) => /^dev-notes\/[^/]+\.md$/.test(l) && l !== LEGACY_INDEX);
   assert.equal(new Set(links).size, links.length, 'an entry is listed twice in DEV-NOTES.md');
   assert.equal(links.length, entries(ROOT).length, 'the index does not list every entry');
-  assert.equal(idx, renderIndex(ROOT));
+  /* ⚠ THE DEFECT THIS GUARDS: a TRACKED generated index made every open PR conflict on it the
+     moment another one landed (measured: four PRs at once, the first hour). The tracked file is a
+     pointer whose bytes do not depend on the entries — adding one changes no tracked file but itself. */
+  assert.equal(rd('DEV-NOTES.md'), renderStub(), 'DEV-NOTES.md is not the fixed pointer');
+  assert.ok(!/^- (R\d+|\d{4}-\d{2}-\d{2}) · /m.test(rd('DEV-NOTES.md')), 'DEV-NOTES.md lists entries again — every PR would rewrite it');
+  assert.equal(renderStub.length, 0, 'the pointer is rendered from nothing that an entry can change');
   const kept = rd(LEGACY_INDEX).split('\n').filter((l) => l.trim());
   assert.equal(new Set(kept).size, kept.length, `${LEGACY_INDEX} carries a line twice`);
   /* ⚠ a stale branch that prepends an entry the OLD way is refused by the gate, not absorbed */

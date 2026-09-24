@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · THE DEVELOPMENT RECORD IS ONE FILE PER ENTRY, AND ITS INDEX IS GENERATED
+ *  IntMap · THE DEVELOPMENT RECORD IS ONE FILE PER ENTRY, AND ITS INDEX IS RENDERED ON DEMAND
  * ----------------------------------------------------------------------------
  *  「ラウンド番号を名前として使うのをやめる」「DEV-NOTES の 1 本ファイルをやめる」（利用者承認済み）
  *
@@ -16,17 +16,19 @@
  *    · every parallel round prepended to the SAME first line, so two sessions always conflicted
  *      on it, and the entry was named by a round number both of them might hold.
  *
- *  So an entry is a FILE (dev-notes/), named by its subject, and DEV-NOTES.md is an index
- *  GENERATED from those files. Two sessions writing two entries now touch two different paths;
- *  the index is regenerated, never merged by hand.
+ *  So an entry is a FILE (dev-notes/), named by its subject. The list of entries is RENDERED ON
+ *  DEMAND (--list) and never tracked: a tracked generated index made every open PR conflict on it
+ *  the moment another landed (measured the first hour — see renderStub). DEV-NOTES.md is a fixed
+ *  pointer. Two sessions writing two entries now touch two different paths and nothing else.
  *
  *      node scripts/dev-notes.mjs --split    # legacy DEV-NOTES.md → dev-notes/R<N>.md (re-runnable)
- *      node scripts/dev-notes.mjs --write    # regenerate DEV-NOTES.md from dev-notes/
- *      node scripts/dev-notes.mjs --check    # exit 1 when DEV-NOTES.md is not what --write would write
+ *      node scripts/dev-notes.mjs --list     # the entries, newest first (rendered now, never tracked)
+ *      node scripts/dev-notes.mjs --write    # (re)write the fixed pointer DEV-NOTES.md
+ *      node scripts/dev-notes.mjs --check    # exit 1 when dev-notes/ is malformed or DEV-NOTES.md is not the pointer
  *      node scripts/dev-notes.mjs --latest   # the newest entry (the ONE answer to «what was the last record»)
  *
  *  ⚠ --split IS MEANT TO BE RUN AGAIN. A branch that still prepends `## R<N>` to the old single
- *    file can land after this one; the landing takes that file, runs --split, then --write. It
+ *    file can land after this one; the landing takes that file, runs --split, then --write (the pointer). It
  *    only ever ADDS or REWRITES the files it derives; it never deletes one, and on a file that is
  *    already the generated index it finds nothing to split and says so.
  *  ⚠ NOT ONE BYTE OF AN ENTRY IS LOST. --split refuses to write unless the segments it cut
@@ -308,13 +310,13 @@ const href = (rel) => rel.replace(/ /g, '%20').replace(/\(/g, '%28').replace(/\)
 export function renderIndex(root = ROOT) {
   const list = entries(root);
   const lines = [
-    `${GENERATED_MARK} — 生成物。編集しない。正本は dev-notes/ の各ファイルで、\`node scripts/dev-notes.mjs --write\` が書く（\`npm run check:docs\` が照合する） -->`,
+    `${GENERATED_MARK} — \`node scripts/dev-notes.mjs --list\` がその場で生成した一覧（追跡しない） -->`,
     '# IntMap — 開発記録（索引）',
     '',
     '> **いつ・なぜ・どう直したか**の記録。**1 エントリ＝1 ファイル**で [`dev-notes/`](dev-notes/) にある。',
     '> **今どうなっているか**は `Architecture.md`、製品の不文律は `CONSTITUTION.md`。',
     '> 新しい記録は `dev-notes/<YYYY-MM-DD>-<slug>.md`（front matter に `title` と `date`、分かれば `pr`）として足し、',
-    '> `node scripts/dev-notes.mjs --write` でこの索引を作り直す。手順は `.agents/skills/intmap-round/` §3。',
+    '> 手順は `.agents/skills/intmap-round/` §3。',
     '> `R<N>.md` の名前は番号で呼んでいた頃の記録（名前は当時のまま）。旧索引の各行（回ごとの長い要約）は',
     `> [\`${LEGACY_INDEX}\`](${LEGACY_INDEX})、それより前（Round 1 〜 #R259）は \`DEV-NOTES-ARCHIVE.md\`（古い順・読むだけ）。`,
     '',
@@ -329,7 +331,33 @@ export function renderIndex(root = ROOT) {
   return lines.join('\n') + '\n';
 }
 
-/** Problems with dev-notes/ and the index, as sentences (empty = consistent). */
+/* ══ DEV-NOTES.md IS A FIXED POINTER, NOT THE INDEX ═════════════════════════════════════════
+   MEASURED 2026-09-25, the first hour after the index became generated-and-committed: every open
+   PR carried its own regenerated DEV-NOTES.md, so the moment one landed, FOUR others went
+   CONFLICTING on that one file — the same first-line collision the single file had, moved one
+   directory up. A derived artefact that every change rewrites cannot be tracked by parallel
+   branches. So the tracked file says where the record is and how to list it, and never changes
+   when an entry is added; the list itself is rendered on demand (renderIndex / --list). */
+export const STUB_MARK = '<!-- dev-notes:pointer';
+export function renderStub() {
+  return [
+    `${STUB_MARK} — 固定の案内。記録を足してもこのファイルは変わらない（\`node scripts/dev-notes.mjs --check\` が照合する） -->`,
+    '# IntMap — 開発記録',
+    '',
+    '> **いつ・なぜ・どう直したか**の記録。**1 エントリ＝1 ファイル**で [`dev-notes/`](dev-notes/) にある。',
+    '> **今どうなっているか**は `Architecture.md`、製品の不文律は `CONSTITUTION.md`。',
+    '',
+    '- **新しい順の一覧**: `node scripts/dev-notes.mjs --list`（その場で生成する。このファイルには書かない——',
+    '  書くと、並行する PR が全部このファイルで衝突する）',
+    '- **最新の 1 件**: `node scripts/dev-notes.mjs --latest`',
+    '- **新しい記録**: `dev-notes/<YYYY-MM-DD>-<slug>.md`（front matter に `title` と `date`、分かれば `pr`）。手順は `.agents/skills/intmap-round/` §3',
+    '- `dev-notes/R<N>.md` は番号で呼んでいた頃の記録（名前は当時のまま）。旧索引の各行（回ごとの長い要約）は',
+    `  [\`${LEGACY_INDEX}\`](${LEGACY_INDEX})、それより前（Round 1 〜 #R259）は \`DEV-NOTES-ARCHIVE.md\`（古い順・読むだけ）`,
+    '',
+  ].join('\n');
+}
+
+/** Problems with dev-notes/ and the pointer file, as sentences (empty = consistent). */
 export function checkNotes(root = ROOT) {
   const problems = [];
   const dir = join(root, NOTES_DIR);
@@ -358,8 +386,8 @@ export function checkNotes(root = ROOT) {
   if (ROUND_HEAD.test(idx.split('\n').find((x) => ROUND_HEAD.test(x)) || '')) {
     problems.push(`${INDEX_FILE} carries a «## R<N>» entry — it is generated now. Move the entry into ${NOTES_DIR}/ `
       + '(`node scripts/dev-notes.mjs --split` does it for the old form) and run --write');
-  } else if (idx !== renderIndex(root)) {
-    problems.push(`${INDEX_FILE} is not what \`node scripts/dev-notes.mjs --write\` generates from ${NOTES_DIR}/ — run it`);
+  } else if (idx !== renderStub()) {
+    problems.push(`${INDEX_FILE} is not the fixed pointer \`node scripts/dev-notes.mjs --write\` writes — run it (the list itself is \`--list\`, never tracked)`);
   }
   return problems;
 }
@@ -431,8 +459,12 @@ if (isCLI) {
     process.exit(0);
   }
   if (has('--write')) {
-    writeFileSync(join(root, INDEX_FILE), renderIndex(root));
-    console.log(`dev-notes --write: ${INDEX_FILE} ← ${entries(root).length} entries`);
+    writeFileSync(join(root, INDEX_FILE), renderStub());
+    console.log(`dev-notes --write: ${INDEX_FILE} ← the fixed pointer (the list is --list)`);
+    process.exit(0);
+  }
+  if (has('--list')) {
+    process.stdout.write(renderIndex(root));
     process.exit(0);
   }
   if (has('--latest')) {
@@ -442,6 +474,6 @@ if (isCLI) {
   }
   const p = checkNotes(root);
   if (p.length) { for (const x of p) console.error('✗ ' + x); process.exit(1); }
-  console.log(`dev-notes: ${entries(root).length} entries, ${INDEX_FILE} is the generated index`);
+  console.log(`dev-notes: ${entries(root).length} entries, ${INDEX_FILE} is the fixed pointer (the list is --list)`);
   process.exit(0);
 }

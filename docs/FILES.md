@@ -64,7 +64,7 @@ CLAUDE.local.md                 同じ機構のローカル上書き。**追跡�
                                 公開できない資格情報だけを置く
 CONSTITUTION.md                 標準指示（最優先のルール集）
 Architecture.md                 本ファイル（現状仕様書）
-DEV-NOTES.md                    開発記録の**生成索引**（新しい順・手で編集しない。`scripts/dev-notes.mjs --write`）
+DEV-NOTES.md                    開発記録への**固定の案内**（一覧は持たない。`node scripts/dev-notes.mjs --list` がその場で出す）
 dev-notes/                      開発記録の本体——**1 エントリ＝1 ファイル**（`<日付>-<slug>.md`・旧 `R<N>.md`・旧索引 `legacy-index.md`）
 DEV-NOTES-ARCHIVE.md            それ以前の全記録（古い順・追記しない）
 PRODUCT.md                 Atlas の到達目標と実装状況の対応表

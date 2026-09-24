@@ -21,7 +21,7 @@
 // of machinery, the machinery is RUN rather than grepped for (#R298).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { entryText } from '../scripts/dev-notes.mjs';
+import { entryText, renderIndex } from '../scripts/dev-notes.mjs';
 import { readFileSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,7 +43,7 @@ test('#R390 ⑥ the round is in DEV-NOTES, and docs/TESTING.md still describes t
      generated index, and the old hand-written index rows live in dev-notes/legacy-index.md */
   const own = entryText(round[1], ROOT);
   assert.ok(own && new RegExp('^## R' + round[1] + '\\b').test(own), 'the record has a section for this round');
-  assert.ok(new RegExp('^- R' + round[1] + ' · ', 'm').test(read('DEV-NOTES.md')), '…the generated index lists it');
+  assert.ok(new RegExp('^- R' + round[1] + ' · ', 'm').test(renderIndex(ROOT)), '…the generated index lists it');
   assert.ok(new RegExp('^- \\*\\*#R' + round[1] + '\\*\\*', 'm').test(read('dev-notes/legacy-index.md')), '…and its old index line survived');
   const t = read('docs/TESTING.md');
   assert.ok(/node:test/.test(t), 'docs/TESTING.md still names the framework the node tier runs on');

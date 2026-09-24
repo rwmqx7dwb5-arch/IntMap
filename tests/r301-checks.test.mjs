@@ -15,7 +15,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
-import { entries, latestEntry } from '../scripts/dev-notes.mjs';
+import { entries, latestEntry, renderIndex } from '../scripts/dev-notes.mjs';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,7 +65,7 @@ test('#R301 ⑥ the crop cell read checks its status, so an outage cannot read a
 test('#R301 ⑦ the round is in DEV-NOTES, and the two build stamps name it', async () => {
   /* (2026-09-25) the record is one file per entry now; DEV-NOTES.md is their generated index */
   assert.ok(entries(ROOT).some((e) => e.round === 301), 'the record has this round');
-  assert.match(read('DEV-NOTES.md'), /\bR301\b/, 'and the index lists it');
+  assert.match(renderIndex(ROOT), /\bR301\b/, 'and the index lists it');
   /* ⚠ (#R302) BOTH STAMPS NAME **THIS** ROUND, AND 「THIS」 IS NOT A LITERAL. The relation #R174 wrote
      down — the two stamps name the SAME build, and it is the one being shipped — is kept by the build
      now: it fills both from the commit being built (scripts/build-stamp.mjs). */

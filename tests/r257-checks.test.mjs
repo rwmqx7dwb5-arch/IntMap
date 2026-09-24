@@ -83,7 +83,7 @@ test('#R257 ② AGENTS.md still carries each standing rule', () => {
     /* (2026-09-25) the rule «write the record» is unchanged; its form is one file per entry now
        (dev-notes/), and the index is generated — so what AGENTS.md must still carry is the command
        that makes the record reach DEV-NOTES.md, not a heading spelled with a round number */
-    ['記録を 1 本足す',       'node scripts/dev-notes.mjs --write'],
+    ['記録を 1 本足す',       'node scripts/dev-notes.mjs --list'],
     ['日本語で報告',          '日本語'],
     ['最終報告の項目',        'CI 状態'],
     ['追加作業不要の明示',    '追加作業が不要'],
