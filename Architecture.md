@@ -4773,6 +4773,18 @@ DB（migration）。`main` が緑であることは、その 3 つが同じ組�
 ⚠ **規則を文章で書いたら、その規則を測る検査を同じ変更の中で書く。** ここに並ぶ規則はどれも、
 「書いてはあったが誰も突き合わせていなかった」ものが実際に嘘になってから足されている。
 
+### 15.6 本番 Atlas の夜間評価
+
+`.github/workflows/atlas-eval.yml` が毎晩、`scripts/atlas-eval.mjs` で**本番の Atlas に記録済みの問い**
+（`scripts/atlas-eval/questions.json`）を送り、各ターンを既存の観測口（`IntMapAtlasState.lastTurn()`・
+`IntMapAtlasDebug.lastPlan()`・`snapshot()`・包んだ `IntMapAtlasTools.makeExecute`）から読んで、
+記録した回が使った基準と前回の報告に照らす。判定は `scripts/atlas-eval/judge.mjs`（純粋）で、
+「打ち切り」「ターンの予算」「同じ呼び出し」は `js/atlas-agent.js` と `js/atlas-turn-results.js` から受け取る。
+**測れなかったターンは 0 でも失敗でもなく「測れない」**、全部測れなかった夜は赤。退行と記録済みの欠陥の再発は
+Issue 1 本に書き直される。セッションは Secret のリフレッシュトークンから作り（パスワードは扱わない）、
+回転したトークンを次の晩のために保存する。**正本は [`docs/TESTING.md`](docs/TESTING.md)「Atlas evaluation」、
+読み手は [`docs/MONITORING.md`](docs/MONITORING.md) §1d。**
+
 ---
 
 ## 16. データ保護基盤 (migrations・RLS/権限テスト・バックアップ・復元)

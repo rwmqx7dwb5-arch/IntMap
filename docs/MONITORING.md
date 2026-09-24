@@ -157,6 +157,22 @@ too (#R446 measured what it costs to treat one as the document). A rung is alive
 `Architecture.md` or a source comment — a measurement written in two places is a measurement that
 will disagree with itself.
 
+## 1d. The production Atlas, evaluated nightly
+
+`.github/workflows/atlas-eval.yml` (05:41 UTC, and on demand) asks the production Atlas the questions
+earlier evaluation rounds recorded, judges each turn by the criteria those rounds used, and compares
+the night with the previous report (`scripts/atlas-eval.mjs`; what it measures, the regression rule
+and the one-time secret setup are in [`docs/TESTING.md`](TESTING.md) 「Atlas evaluation」).
+
+- **The reader** is ONE issue titled **「Atlas evaluation (nightly) is red」**, rewritten with the latest
+  report whenever a night is `regressed` (a fact got worse, or a recorded defect is back) or
+  `unmeasured` (nothing could be measured — no session, a spent token, a page that did not boot), and
+  closed by the next clean night. Never a comment a night — the same shape as `scripts/deep-alarm.mjs`.
+- **A missing secret fails the run** and the issue says which one. This workflow is never dormant-and-green.
+- The full report (JSON, Markdown, a screenshot per question) is the run's `atlas-eval-report` artifact
+  (30 days), and it is also the next night's reference.
+- ⚠ It costs real model calls every night, on the evaluation account's allowance.
+
 ## 2. Error monitoring
 
 ### Always on (no setup)
