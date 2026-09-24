@@ -23,7 +23,7 @@
  *  query. That is a judgement, not a shortcut, and stats().oversize is how many items took it, so a
  *  caller or a check can see an index that is 「効いていない」 instead of assuming it is.
  *  ⚠ THE PROMISE IS PER KIND, NOT PER IMPLEMENTATION: both kinds below hand out a superset of the
- *  same set, and tests/r819-gis-index-checks holds each of them against the walk with no index at
+ *  same set, and tests/gis-index-checks holds each of them against the walk with no index at
  *  all — an index compared only against the other index can be wrong in both.
  *
  *  ══ WHY A UNIFORM GRID, AND WHERE ITS CELL SIZE COMES FROM ════════════════════════════════════

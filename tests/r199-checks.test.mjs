@@ -16,6 +16,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -198,12 +199,12 @@ test('R199 ⑤: the two files 「中心部がまだ巨大」 named have ceilings
   assert.ok(moved > 1_500, `the seven modules hold ${moved} lines — the core shrank by moving, not by losing`);
 });
 
-test('R199 ⑥: the build stamps have MOVED ON from this round', () => {
+test('R199 ⑥: the build stamps have MOVED ON from this round', async () => {
   /* #R198 shipped with both stamps still reading R196, because #R196's own checks pinned R196 and
      therefore stopped asking anything the moment that round ended. The pin belongs in the CURRENT
      round's file — tests/r200-checks.test.mjs now — and this, the previous round's copy, becomes the
      negative form: a stamp still reading R199 means a round shipped without bumping it. */
-  const idx = read('index.html');
-  assert.doesNotMatch(idx, /window\.__imBuild='R199';/);
-  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='2026-08-07-R199';/);
+  /* (2026-09-25) and now no round bumps it at all — the build writes it from the commit
+     (scripts/build-stamp.mjs); what is left to measure is that nobody types it back in. */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

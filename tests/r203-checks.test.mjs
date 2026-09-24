@@ -7,12 +7,13 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OpeningView } from '../js/opening-view.js';
 const { subsolarPoint, solarElevation, openingCentre, MIN_ELEV_DEG } = OpeningView;
-import { allSpecs, coreNames, currentRoundSpec, CORE_ALWAYS, isDeep, tierSpecs } from '../scripts/tiers.mjs';
+import { allSpecs, coreNames, fixedCoreNames, CORE_ALWAYS, isDeep, tierSpecs } from '../scripts/tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -73,21 +74,29 @@ test('R203 ①c the map is created at that centre, and js/opening-view.js is its
 test('R203 ② every spec belongs to exactly one tier, and the core list names real files', () => {
   const all = allSpecs();
   assert.ok(all.length > 40, 'the suite still has its specs');
-  const core = tierSpecs('core'), deep = tierSpecs('deep');
+  /* the FIXED gate and the nightly partition the suite; a change's own specs are ADDED to the gate
+     for its PR (below) without being taken away from the nightly */
+  const core = tierSpecs('core', { fixed: true }), deep = tierSpecs('deep');
   assert.equal(core.length + deep.length, all.length, 'core ∪ deep = every spec');
   assert.equal(core.filter((f) => deep.includes(f)).length, 0, 'and the two do not overlap');
-  for (const n of coreNames()) {
+  for (const n of fixedCoreNames()) {
     assert.ok(fs.existsSync(path.join(ROOT, 'tests', n + '.spec.js')), `core names ${n}, which does not exist`);
   }
   /* ⚠ (#R204) THE GATE'S CONTENTS ARE PINNED AS A RELATION, NOT AS FILE NAMES. This test used to
      name `tests/r203.spec.js`, which is exactly the mistake #R203's own notes were written about:
      the round after pushes that file out of the gate on price, and the test asserting the OLD
      round's membership goes red for doing the right thing. What a gate must contain is the four
-     always-on suites and WHICHEVER round is current — both of which scripts/tiers.mjs derives. */
-  for (const must of [...CORE_ALWAYS, currentRoundSpec()].filter(Boolean).map((n) => 'tests/' + n + '.spec.js')) {
+     always-on suites and WHICHEVER spec the change in front of it touched — both derived by
+     scripts/tiers.mjs (the second from the diff since the round numbers went away; the old
+     «highest-numbered rNNN» had matched nothing newer than r668). */
+  for (const must of CORE_ALWAYS.map((n) => 'tests/' + n + '.spec.js')) {
     assert.ok(core.includes(must), `${must} must be in the tier that runs every time`);
     assert.ok(!isDeep(must), `${must} must not be deep`);
   }
+  const touched = deep[0];
+  assert.ok(touched, 'the suite has a deep spec to stand in for a touched one');
+  const withDiff = coreNames({ IM_CHANGED_SPECS: touched });
+  assert.ok(withDiff.includes(path.basename(touched, '.spec.js')), `${touched}, touched by the change, is not in front of its PR`);
 });
 
 test('R203 ②b the core tier is under a tenth of what the whole suite used to cost', () => {
@@ -96,7 +105,7 @@ test('R203 ②b the core tier is under a tenth of what the whole suite used to c
   const sorted = times.map(([, v]) => v).sort((a, b) => a - b);
   const p75 = sorted[Math.floor(sorted.length * 0.75)];
   const cost = (f) => (typeof dur[f] === 'number' ? dur[f] : p75);
-  const core = tierSpecs('core').reduce((a, f) => a + cost(f), 0);
+  const core = tierSpecs('core', { fixed: true }).reduce((a, f) => a + cost(f), 0);
   const whole = allSpecs().reduce((a, f) => a + cost(f), 0);
   /* 「今の時間の1/10以下の時間で全テスト工程を終わらせろ」 — measured whole was 5,123 s */
   assert.ok(core <= whole / 10, `the core tier is ${core}s against a whole suite of ${whole}s`);
@@ -207,11 +216,8 @@ test('R203 ⑥ the shaking mesh is finer than the round before, on both classes 
    broke it by naming R203, so the very next round had to edit it. What an OLD round's file can
    honestly assert is the INVARIANT: there are two stamps, they name the same round, and it is not
    older than the round that wrote this. */
-test('R203 ⑦ both build stamps name the same round, and it is not older than R203', () => {
-  const idx = rd('index.html');
-  const a = /window\.__imBuild='R(\d+)';/.exec(idx);
-  const b = /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)';/.exec(idx);
-  assert.ok(a && b, 'both stamps are present');
-  assert.equal(a[1], b[1], `the two stamps disagree: R${a[1]} vs R${b[1]}`);
-  assert.ok(Number(a[1]) >= 203, `the build stamp is R${a[1]}`);
+test('R203 ⑦ both build stamps name the same round, and it is not older than R203', async () => {
+  /* (2026-09-25) the invariant is unchanged — two stamps, the same value, never behind — and the build
+     now keeps it (scripts/build-stamp.mjs fills both from the commit being built) */
+  assert.deepEqual(await generatedStampProblems(rd('index.html')), [], 'the build stamp can go stale again');
 });

@@ -243,6 +243,13 @@ const pool = arg('--pool', 'rest');
 const group = +arg('--group', 1), of = +arg('--of', 5);
 const g = plan(pool, of)[group - 1];
 if (!g) { console.error(`shard-plan: no group ${group} of ${of}`); process.exit(1); }
-/* an empty group would make `playwright test` run EVERYTHING — say so and fail instead */
-if (!g.files.length) { console.error(`shard-plan: group ${group}/${of} of pool ${pool} is empty`); process.exit(1); }
+/* an empty group would make `playwright test` run EVERYTHING — say so and fail instead.
+   ⚠ --allow-empty is for the ONE pool whose content is the change's diff (the core tier's cesium
+   pool: scripts/tiers.mjs changedSpecs). There an empty plan is the normal answer, it prints
+   nothing, and the caller (.github/actions/browser-tier) skips the run rather than calling
+   `playwright test` with no paths. */
+if (!g.files.length) {
+  if (has('--allow-empty')) { console.error(`shard-plan: group ${group}/${of} of pool ${pool} is empty — nothing to run`); process.exit(0); }
+  console.error(`shard-plan: group ${group}/${of} of pool ${pool} is empty`); process.exit(1);
+}
 process.stdout.write(g.files.join(' '));

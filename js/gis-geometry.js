@@ -2111,7 +2111,7 @@ export function makeGisGeometry() {
        operands are areal, and `repair` only when parts have to be re-noded — but whether this call
        is that call is a property of the DATA, and a door that answered 「運べる」 and then refused
        in the other thread would have spent a thread to say it. What is verified rather than
-       asserted is the other direction: tests/r819-gis-geometry-portable-checks drives every entry
+       asserted is the other direction: tests/gis-geometry-portable-checks drives every entry
        through a kernel built with the dep withheld and requires the refusal this table predicts,
        so a wrong `needs` is a red test and not a silent claim.
        ⚠ THE READABLE DOORS ARE THE ONES DISPATCHED. A refusal has to survive the trip — the loose

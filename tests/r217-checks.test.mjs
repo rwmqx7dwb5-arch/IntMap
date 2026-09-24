@@ -13,6 +13,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { entries, checkNotes, allNotesText } from '../scripts/dev-notes.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -236,10 +237,16 @@ test('R217 ⑥a: Objects sits to the LEFT of Measure, not between Measure and Sh
 
 const ROUND_HEADS = (md) => [...md.matchAll(/^## R(\d+)/gm)].map((m) => +m[1]);
 
+/* (2026-09-25) The recent record is ONE FILE PER ENTRY under dev-notes/ and DEV-NOTES.md is their
+   generated index (scripts/dev-notes.mjs). The order #R217 established is kept — and now it is kept
+   by the generator: the numbered entries are read here as the generator reads them, newest first,
+   and `check:docs` (rule dev-notes) fails when the index is not what the generator writes. */
+const LIVE_ROUNDS = () => entries(ROOT).filter((e) => e.kind === 'legacy').map((e) => e.round);
+
 test('R217 ⑦a: DEV-NOTES.md is the RECENT rounds only, newest first', () => {
-  const md = rd('DEV-NOTES.md');
-  const rounds = ROUND_HEADS(md);
+  const rounds = LIVE_ROUNDS();
   assert.ok(rounds.length > 0, 'it still has round headings');
+  assert.deepEqual(checkNotes(ROOT), [], 'the index is the generated one, and every entry file is well-formed');
   /* ⚠ (#R218) THE ASSERTION IS THE ORDER, NOT THE NUMBER. This line read `rounds[0] === 217`, which is
      a test that pins the value the round that wrote it happened to have — so it fails on the next
      round for doing exactly what standing instruction 9 asks (prepend). It is the same trap the memory
@@ -262,7 +269,7 @@ test('R217 ⑦b: DEV-NOTES-ARCHIVE.md is everything older, oldest first', () => 
      because DEV-NOTES.md had grown back to 14,704 lines. What must hold is the RELATION — the
      two files never overlap — so that is what is asserted, and the boundary can move again
      without this test having to be edited to keep meaning the same thing. */
-  const live = ROUND_HEADS(rd('DEV-NOTES.md'));
+  const live = LIVE_ROUNDS();
   assert.ok(Math.max(...rounds) < Math.min(...live),
     `the archive and DEV-NOTES.md overlap — archive reaches R${Math.max(...rounds)}, DEV-NOTES starts at R${Math.min(...live)}`);
   for (let i = 1; i < rounds.length; i++) {
@@ -280,7 +287,7 @@ test('R217 ⑦c: Architecture.md is the CURRENT spec — no round appendices lef
 test('R217 ⑦d: every §19 appendix landed under its own round, and none was dropped', () => {
   const H = '### 仕様補足（旧 `Architecture.md` §19 より移設・#R217）';
   const n = (md) => md.split(H).length - 1;
-  assert.equal(n(rd('DEV-NOTES.md')) + n(rd('DEV-NOTES-ARCHIVE.md')), 49,
+  assert.equal(n(allNotesText(ROOT)) + n(rd('DEV-NOTES-ARCHIVE.md')), 49,
     'the 51 appendices covered 49 rounds; each of those rounds carries one moved block');
 });
 

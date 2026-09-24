@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -318,17 +319,16 @@ test('R196 ⑥ the propagation model follows the seismic panel, debounced', () =
   assert.match(s, /function touch\(\)\{ draw\(\); warmEpi\(\); markStale\(\); syncTsunamiSource\(\); \}/);
 });
 
-test('R196 ⑧ the build stamps have moved on from this round', () => {
+test('R196 ⑧ the build stamps have moved on from this round', async () => {
   /* ⚠ (#R199) this pinned R196's own two values, and #R174 already wrote down why that is the wrong
      shape: a test that pins the CURRENT round's stamp goes quiet the moment the round ends — it keeps
      passing while the stamp goes stale, which is exactly what happened through #R198 (shipped at
      R196). Same correction #R176 made to #R175's copy: assert the NEGATIVE here, and let the current
      round pin its exact value in its own checks file (tests/r199-checks.test.mjs ⑥). */
-  const idx = rd('index.html');
-  assert.doesNotMatch(idx, /window\.__imBuild='R196';/, 'the build marker must move every round');
-  assert.doesNotMatch(idx, /window\.INTMAP_BUILD='2026-08-06-R196';/, 'and so must the anti-stale-version stamp');
-  assert.match(idx, /window\.__imBuild='R\d+';/, 'both are still round stamps');
-  assert.match(idx, /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R\d+';/);
+  /* (2026-09-25) Neither value is typed any more: the build writes both from the commit being built
+     (scripts/build-stamp.mjs), so «shipped at R196 through #R198» is measured where it can still
+     happen — a stamp typed back in, or a build that stops filling it. */
+  assert.deepEqual(await generatedStampProblems(rd('index.html')), [], 'the build stamp can go stale again');
 });
 
 /* ── ⑦ THE LOCAL RUN IS PLANNED ────────────────────────────────────────────────────────────── */

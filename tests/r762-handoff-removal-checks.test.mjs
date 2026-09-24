@@ -29,8 +29,9 @@ const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8' });
    a workflow an agent is told to run), and this file. Everything else — AGENTS.md, CLAUDE.md,
    .agents/, .claude/, .codex/, scripts/, package.json, docs/README.md, docs/AGENT-SETUP.md — is
    instruction surface and is measured. */
+/* (2026-09-25) the round records are one file per entry under dev-notes/ now (scripts/dev-notes.mjs) */
 const RECORDS_THE_WITHDRAWAL =
-  /^(DEV-NOTES\.md|DEV-NOTES-ARCHIVE\.md|docs\/TESTING\.md|tests\/r762-handoff-removal-checks\.test\.mjs)$/;
+  /^(DEV-NOTES\.md|DEV-NOTES-ARCHIVE\.md|dev-notes\/[^/]+\.md|docs\/TESTING\.md|tests\/r762-handoff-removal-checks\.test\.mjs)$/;
 
 /* The channel had four names. A revival would have to spell at least one of them. Kept as source
    text because git grep (fast, tracked-files-only, binary-skipping) and the JS engine in ③ must be

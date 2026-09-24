@@ -15,7 +15,7 @@
 | 恒久指示（§0〜§12） | **`AGENTS.md`** | `CLAUDE.md` の `@AGENTS.md` import | **そのまま自動**（設定も信頼も要らない） |
 | 実行戦略 | **`.agents/rules/execution-strategy.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
 | 場当たりのハードコーディングの禁止 | **`.agents/rules/no-ad-hoc-hardcoding.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
-| ラウンドの手順 | **`.agents/skills/intmap-round/`** | `.claude/skills/`（生成）→ `/intmap-round` | **そのまま自動**（`$intmap-round`） |
+| 作業の手順 | **`.agents/skills/intmap-round/`** | `.claude/skills/`（生成）→ `/intmap-round` | **そのまま自動**（`$intmap-round`） |
 | 専用 subagent 5 役 | **`.agents/roles/*.md`** | `.claude/agents/*.md`（生成） | `.codex/agents/*.toml`（生成・**要 trust**） |
 | 製品固有の作法 | `CLAUDE.md` §A / `.codex/config.toml` の `developer_instructions` | 自動 | **要 trust** |
 | セッション開始時に何を伝えるか | **`.agents/session-start.json`** | `.claude/settings.json` の `hooks.SessionStart`（生成） | `.codex/hooks.json`（生成・**要 trust ＋ `/hooks` 承認**） |
@@ -88,7 +88,7 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 | ファイル | 中身 | 追跡 | Claude Code | Codex |
 |---|---|---|---|---|
 | `CLAUDE.local.md` | 本番検証用アカウント・このマシンのパス | **されない** | **自動で読む** | **読まない**——要るときに自分で開く |
-| `.claude/launch.json` | ラウンド別プレビュー | されない（§4） | 読む | 使わない |
+| `.claude/launch.json` | 作業（slug）別プレビュー | されない（§4） | 読む | 使わない |
 | `.claude/settings.local.json` | このマシンの許可 | されない | 読む | 使わない |
 | `~/.codex/config.toml` | Codex のモデル・信頼したプロジェクト | リポジトリ外 | — | 読む |
 
@@ -99,8 +99,11 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 
 ## 4. プレビューと dev サーバ
 
-慣例は **`intmap-preview-r<N>` / ポート `4000 + N`**（`AGENTS.md` §2）。
-`node scripts/worktree.mjs new` が `.claude/launch.json` に 1 件足す。
+慣例は **`intmap-preview-<slug>`**、ポートは **4400〜4999 の空き**（`AGENTS.md` §2）。
+`node scripts/worktree.mjs new <slug>` が `.claude/launch.json` に 1 件足す——ポートは、この
+マシンのどの `launch.json`（原本と全 worktree）にも書かれておらず、いま listen もされていない
+最小の番号（`scripts/worktree.mjs` の `PREVIEW_PORTS`。テスト用サーバ `tests/helpers/session-seed.js` の範囲とは重ならない——`check:docs` の `preview-port` が測る）。
+⚠ 以前はラウンド番号に 4000 を足して決めていたので、**同じ番号を持った 2 セッションは同じポートを得た**。
 
 - **Claude Code**: preview ツール（`preview_start`）で起動する。シェルから直に起動しない。
 - **Codex**: browser プラグインで開く。dev サーバが要るなら `npm run preview`
@@ -189,7 +192,7 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 
 1. **プロジェクトを信頼する。** 初回の TUI 起動時に訊かれる。
    `node scripts/worktree.mjs new` は、作った作業場を `~/.codex/config.toml` に
-   `trust_level = "trusted"` として登録するので、**ラウンドごとの作業場については自動**。
+   `trust_level = "trusted"` として登録するので、**作業ごとの作業場については自動**。
    原本（`C:\Users\gyuuk\OneDrive\IntMap`）だけは一度手で信頼する。
 2. **hook を承認する。** `/hooks` を開いて `SessionStart` を trust する。
    Codex は hook の**ハッシュ**に対して信頼を記録するので、`.codex/hooks.json` を編集すると
@@ -332,6 +335,11 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 ## 10. USB バックアップのスクリプトが守っていること（**書き換えるときも壊さないこと**）
 
 **いつ走らせるか**は `AGENTS.md` §11.2（「作業のたびに毎回」と、このマシンにある shell）。
+
+⚠ **起動は `powershell` であって `pwsh` ではない。** このマシンに PowerShell 7 は**無い**
+（実測 `$PSVersionTable` は **5.1.26100.9168**）。#R372 まで `AGENTS.md` はここを `pwsh -File …` と書いて
+いて、**その通りにやると終了処理の最後の1歩が必ず `CommandNotFoundException` で落ちた**。
+スクリプトは 5.1 で完動する（`AGENTS.md` から移した実測・2026-09-25）。
 ここは **`scripts/backup-usb.ps1` が実装している不変条件**——どれも、壊しても
 コピー自体は成功して見えるものばかりなので、スクリプトを書き換えるときはここを読む。
 
@@ -363,3 +371,36 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 - **失敗したら原因を調べ、再同期・再検証する**（既定3回）。それでも駄目なら**無限ループにせず**失敗として終える。
 - **成功したときだけ**、台帳に日時を書く:
   `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`（リポジトリの外・追跡対象外）。
+
+---
+
+## 11. 原本と並行セッション——`AGENTS.md` §6 の規則の理由と実測
+
+`AGENTS.md` §6 は規則だけを持つ（天井のため・§1）。**規則を変えるときに読み直すべき実測**はここにある。
+（2026-09-25 に `AGENTS.md` から移した。規則そのものは 1 つも移していない。）
+
+- ⚠ **なぜ原本を作業場にしないのか（#R282 実測）。** 原本を作業場にすると排他ロックと回復手順が要り、
+  ロックは**失効ロック**という壊れ方を作る。実測: 初版の `--sync` が、**原本で `feat/session-a` を
+  使っているセッションの作業ディレクトリを、別セッションの終了処理が黙って `main` に切り替えた**
+  （成功メッセージまで出た）。**`main` 専用なら切り替える branch が無い。**
+- ⚠ **原本だけが「どの工程も責任を持たない写し」になっていた（#R282 実測）。** worktree を既定にしていた
+  間に、原本は origin/main より **15 コミット・159 ファイル**遅れていた（R272〜R279 が丸ごと欠落）。
+  OneDrive の同期エンジンは正常に動いていた——**原本に何も書き込まれていなかった**だけ。GitHub と USB は
+  各回で更新されていた。⇒ `node scripts/master-sync.mjs --sync` を §5 の最終工程に置いた。
+- **`--sync` は冪等で、1 回の実行がその時点で merge 済みの全セッション分を運ぶ。** 早送りが触らない
+  ファイル（**他セッションのマシン固有ファイルなど**）は素通りし、実際に上書きになる場合だけ
+  `git merge --ff-only` 自身の理由を出して止まる。`--check` は「遅れている」と「汚れている」を分け、
+  汚れは警告として印字するが exit 0 を妨げない——**USB ミラーは作業ディレクトリをそのまま写すので、
+  汚れたまま写すのが §10 の要求**。
+  ⚠ 以前は「汚れていれば何であれ拒否」だった。**正しい作業がゲートを迂回した実例がある**——
+  用心深く見える拒否は、安全を足さずに**ツールを迂回する習慣を教える**。
+- **テストの dev サーバもセッションごとに分かれる理由**（`tests/helpers/session-seed.js`）。以前は全チェック
+  アウトが 4173 を共有し `reuseExistingServer` が効いていたため、**2 つ目のセッションは自分のビルドを作らず
+  相手の `dist/` を試験する**か、相手がサーバを落とした瞬間に `ERR_CONNECTION_REFUSED` で死んでいた
+  （実測 **2 failed / 25 did not run**。私有ポートなら同じ木で **52 passed**）。
+- ⚠ **識別子に番号を使わない理由（2026-09-25・利用者承認済み）。** `worktree.mjs new` は以前
+  「空きラウンド番号」＝全記録・branch・worktree・tests の最大＋1 を配っていた。**走査した全セッションが
+  同じ番号を得る**ので、改番は例外ではなく定常状態だった（#R671 は 7 回、同時期の別セッションは 4 回。
+  add/add 衝突の衝突マーカーが commit されて検査ファイルが 1 本丸ごと走らなくなった）。
+  今は slug を `git worktree add -b feat/<slug>` で**原子的に**取る——同じマシンの worktree は ref の
+  名前空間を共有するので、同じ slug は 2 つ目が git に拒まれる（`tests/process-without-round-numbers-checks.test.mjs` ①）。

@@ -26,6 +26,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { appShell } from './app-source.mjs';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync } from 'node:fs';
 import * as acorn from 'acorn';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
@@ -325,7 +326,7 @@ test('R169 #8 index.html shrank and no module body came back inline', () => {
   }
 });
 
-test('R169 #9 the head defects found while auditing index.html are fixed', () => {
+test('R169 #9 the head defects found while auditing index.html are fixed', async () => {
   // (a) a stray second </script> closed nothing — a leftover from an old edit that the browser
   //     silently tolerates. One open <script> ⇒ one close. Tags INSIDE an HTML comment don't count
   //     (the CSP note spells `<script src=evil-host>` on purpose); the ranges are computed and the
@@ -351,11 +352,8 @@ test('R169 #9 the head defects found while auditing index.html are fixed', () =>
   //     (#R170) This asserted the literal R169 strings, which contradicts the point being made: a stamp
   //     that never advances makes the guard inert, so pinning one VALUE forever guarantees exactly the
   //     defect. Assert the SHAPE and that it has not gone backwards past the round that fixed this.
-  const ib = html.match(/window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)';/);
-  assert.ok(ib, 'INTMAP_BUILD must be a date-ordered `YYYY-MM-DD-R<n>` stamp');
-  assert.ok(ib[1] >= '2026-07-25', `INTMAP_BUILD went backwards (${ib[1]}) — the anti-stale guard compares these`);
-  assert.ok(Number(ib[2]) >= 169, `INTMAP_BUILD round went backwards (R${ib[2]})`);
-  const mb = html.match(/window\.__imBuild='R(\d+)';/);
-  assert.ok(mb, '__imBuild must be an `R<n>` stamp');
-  assert.equal(mb[1], ib[2], 'the two build stamps must name the SAME round');
+  //     (2026-09-25) …and now nothing types it at all: the build derives it from the commit being
+  //     built (scripts/build-stamp.mjs), so «never advances» and «the two disagree» are measured where
+  //     they can still happen — a stamp typed back in, or a build that stops filling it.
+  assert.deepEqual(await generatedStampProblems(html), [], 'the build stamp can go stale again');
 });

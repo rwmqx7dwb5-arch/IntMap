@@ -8,11 +8,12 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { allSpecs, coreNames, currentRoundSpec, tierSpecs, isDeep, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
+import { allSpecs, coreNames, fixedCoreNames, changedSpecs, tierSpecs, isDeep, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -22,15 +23,18 @@ const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 test('R204 ① every spec in the gate is cheap, or is one of the two documented exceptions', () => {
   const dur = JSON.parse(rd('tests/durations.json'));
   const bare = (f) => path.basename(String(f)).replace(/\.spec\.js$/, '');
-  const cur = currentRoundSpec();
+  /* the second exception is the change's own specs — read from the diff, not from a name */
+  const touched = new Set(changedSpecs());
   for (const f of tierSpecs('core')) {
     const n = bare(f), t = dur['tests/' + n + '.spec.js'];
-    if (CORE_ALWAYS.includes(n) || n === cur) continue;
-    assert.ok(!(t > CORE_MAX_S), `${n} costs ${t}s and is neither always-on nor the current round`);
+    if (CORE_ALWAYS.includes(n) || touched.has(n)) continue;
+    assert.ok(!(t > CORE_MAX_S), `${n} costs ${t}s and is neither always-on nor touched by this change`);
   }
   /* …and the exceptions are exactly the two the header names */
   for (const n of CORE_ALWAYS) assert.ok(!isDeep('tests/' + n + '.spec.js'), `${n} must gate`);
-  assert.ok(cur && !isDeep('tests/' + cur + '.spec.js'), 'the current round gates its own spec');
+  /* a spec the change touched gates its PR whatever it costs — stated for an expensive one */
+  const dear = allSpecs().find((f) => isDeep(f));
+  assert.ok(dear && coreNames({ IM_CHANGED_SPECS: dear }).includes(bare(dear)), 'the change does not gate its own spec');
 });
 
 test('R204 ①b the gate got much cheaper and the whole suite did not grow', () => {
@@ -38,7 +42,7 @@ test('R204 ①b the gate got much cheaper and the whole suite did not grow', () 
   const times = Object.entries(dur).filter(([, v]) => typeof v === 'number').map(([, v]) => v).sort((a, b) => a - b);
   const p75 = times[Math.floor(times.length * 0.75)];
   const cost = (f) => (typeof dur[f] === 'number' ? dur[f] : p75);
-  const core = tierSpecs('core').reduce((a, f) => a + cost(f), 0);
+  const core = tierSpecs('core', { fixed: true }).reduce((a, f) => a + cost(f), 0);
   const whole = allSpecs().reduce((a, f) => a + cost(f), 0);
   /* #R203 shipped a 484 s gate; this round is about that number being still too big */
   assert.ok(core < 484, `the gate is ${core}s, and #R203 already had 484s`);
@@ -53,7 +57,7 @@ test('R204 ①b the gate got much cheaper and the whole suite did not grow', () 
   assert.ok(tot <= 5250, `the total ceiling is ${tot}s; #R203's two ceilings came to 5,250`);
   /* and nothing was deleted to get there */
   assert.ok(allSpecs().length >= 57, `${allSpecs().length} spec files — nothing may be deleted for speed`);
-  assert.equal(tierSpecs('core').length + tierSpecs('deep').length, allSpecs().length);
+  assert.equal(tierSpecs('core', { fixed: true }).length + tierSpecs('deep').length, allSpecs().length);
 });
 
 test('R204 ①c the tier split is derived, not written down twice', () => {
@@ -61,10 +65,15 @@ test('R204 ①c the tier split is derived, not written down twice', () => {
   assert.doesNotMatch(t, /raw\.deep/, 'the explicit deep list is gone — the rule is the price');
   const dur = JSON.parse(rd('tests/durations.json'));
   assert.equal(dur.deep, undefined, 'and tests/durations.json no longer carries one');
-  /* the newest rNNN spec is the current round, computed rather than named */
-  const nums = allSpecs().map((f) => /^r(\d+)$/.exec(path.basename(f).replace(/\.spec\.js$/, ''))).filter(Boolean).map((m) => +m[1]);
-  assert.equal(currentRoundSpec(), 'r' + Math.max(...nums));
-  assert.ok(coreNames().includes(currentRoundSpec()));
+  /* the change's own specs are computed, not named — and from the DIFF, not from a file-name
+     pattern. «The newest rNNN spec» stopped matching at r668 once names carried a subject, and not
+     one later round's spec ran in front of its PR; a diff has no spelling to drift from. */
+  assert.doesNotMatch(t, /export function currentRoundSpec\b/, 'the name-derived «current round spec» is back');
+  const some = allSpecs().slice(-2);
+  const env = { IM_CHANGED_SPECS: some.join('\n') };
+  assert.deepEqual(changedSpecs(env), some.map((f) => path.basename(f, '.spec.js')).sort());
+  for (const n of changedSpecs(env)) assert.ok(coreNames(env).includes(n), `${n} was touched and is not in core`);
+  assert.ok(fixedCoreNames().every((n) => coreNames({ IM_CHANGED_SPECS: '' }).includes(n)), 'the fixed gate is always in core');
 });
 
 /* ── ② THE LAUNCH SCREEN IS EXACTLY WHAT #R186 ASKED FOR ─────────────────────────────────────
@@ -278,16 +287,12 @@ test('R204 ⑦ pressing an offset highlights every band on it', () => {
 });
 
 /* ── ⑦b THE BUILD STAMP — the EXACT pin lives in the current round's file (#R202) ─────────────── */
-test('R204 ⑦b both build stamps name the SAME round, and it is not an older one', () => {
+test('R204 ⑦b both build stamps name the SAME round, and it is not an older one', async () => {
   /* (#R205) THIS PIN NAMED 'R204' AND SO IT FAILED THE ROUND AFTER — the third time a stamp has done
      that (#R174 left it at R171, #R203 pinned its own spec's file name). The invariant is that the two
-     stamps agree and that neither goes backwards; the round NUMBER belongs to whoever is bumping it. */
-  const idx = rd('index.html');
-  const a = /window\.__imBuild='R(\d+)';/.exec(idx);
-  const b = /window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)';/.exec(idx);
-  assert.ok(a && b, 'both build stamps must exist');
-  assert.equal(a[1], b[2], 'the two stamps must name the same round');
-  assert.ok(+a[1] >= 204, `the build stamp says R${a[1]}, which is older than the round that wrote this test`);
+     stamps agree and that neither goes backwards. (2026-09-25) Nobody bumps it any more: the build
+     writes both from the commit being built (scripts/build-stamp.mjs). */
+  assert.deepEqual(await generatedStampProblems(rd('index.html')), [], 'the build stamp can go stale again');
 });
 
 /* ── ⑧ THE RIGHT-CLICK MENU ───────────────────────────────────────────────────────────────────── */

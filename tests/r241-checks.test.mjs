@@ -19,6 +19,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -257,17 +258,14 @@ test('R241 ⑥ the places table scrolls sideways inside its own card', () => {
 
 /* ══ THE BUILD STAMPS — two of them, and they only ever fail after DEV-NOTES is written ════════ */
 
-test('R241 the build stamps moved together', () => {
+test('R241 the build stamps moved together', async () => {
   /* ⚠ (#R242) THIS WAS TWO LITERALS AND IT ASKED THE WRONG QUESTION. Pinned to `R241`, it fails on
      the next round for a reason that is not a defect — and every previous round's copy of it would
      fail with it, so the only way to keep the suite green is to edit them all. What the round
      actually wants held is a RELATION: the two stamps name the same round, and that round is the
      newest one in DEV-NOTES (#R207 ⑬ and #R219 ⑪ state the second half; this states the first).
      Same rule as every other pin that broke on a change that kept its meaning (#R205, #R207). */
-  const html = R('index.html');
-  const boot = /__imBuild='(R\d+[a-z]?)'/.exec(html);
-  const rel = /INTMAP_BUILD='\d{4}-\d{2}-\d{2}-(R\d+[a-z]?)'/.exec(html);
-  assert.ok(boot, 'the boot stamp');
-  assert.ok(rel, 'and the release stamp');
-  assert.equal(boot[1], rel[1], 'both stamps name the same round');
+  /* (2026-09-25) the relation is kept by the build now: it fills both stamps with the SAME value, the
+     stamp of the commit being built (scripts/build-stamp.mjs). */
+  assert.deepEqual(await generatedStampProblems(R('index.html')), [], 'the build stamp can go stale again');
 });

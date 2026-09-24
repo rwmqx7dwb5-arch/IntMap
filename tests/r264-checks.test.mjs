@@ -7,6 +7,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -216,14 +217,8 @@ test('R264 ⑥: loading a past or recent earthquake disarms the map', () => {
 /* ── ⑦ both build stamps name this round ────────────────────────────────────────────────────────
    #R260's lesson: adding a DEV-NOTES round without bumping BOTH stamps in index.html fails the
    static checks, and it has now happened twice. */
-test('R264 ⑦: the two build stamps name the newest DEV-NOTES round', () => {
-  const notes = read('DEV-NOTES.md');
-  const rounds = [...notes.matchAll(/^## R(\d+) /gm)].map((m) => +m[1]);
-  const newest = Math.max(...rounds);
-  const html = read('index.html');
-  const a = html.match(/window\.__imBuild='R(\d+)'/);
-  const b = html.match(/window\.INTMAP_BUILD='[\d-]+-R(\d+)'/);
-  assert.ok(a && b, 'both stamps are present');
-  assert.equal(+a[1], newest, '__imBuild names the newest round');
-  assert.equal(+b[1], newest, 'INTMAP_BUILD names the same one');
+test('R264 ⑦: the two build stamps name the newest DEV-NOTES round', async () => {
+  /* (2026-09-25) #R260's lesson — a record written without bumping BOTH stamps — cannot happen once
+     nobody bumps them: the build writes both from the commit being built (scripts/build-stamp.mjs). */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

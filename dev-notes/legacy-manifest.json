@@ -1,0 +1,24 @@
+{
+ "runs": [
+  {
+   "at": "2026-09-25",
+   "entries": 341,
+   "regionLines": 2613,
+   "indexRowsTotal": 1868,
+   "indexRowsDistinct": 381,
+   "sourceSha256": "9f7aa765794335385f45c6e9704be5ff2257bebe6a111aba52194e62588b7c5e",
+   "sourceBlob": "76cca6174f43e1e893ac886eb12f92ef278f1f32",
+   "sourceBytes": 11270893
+  },
+  {
+   "at": "2026-09-25",
+   "entries": 344,
+   "regionLines": 2616,
+   "indexRowsTotal": 1871,
+   "indexRowsDistinct": 384,
+   "sourceSha256": "6e332566074733b4d0b2ea7f6097d1f7fceb88a8c1cc4694930cdefea361eac2",
+   "sourceBlob": "a7bf32bc29ca063e7cb7e29930ea14871a2fc2a2",
+   "sourceBytes": 11302927
+  }
+ ]
+}

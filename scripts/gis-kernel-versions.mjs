@@ -145,7 +145,9 @@ export const KERNELS = {
      Measured before recording: 33 probes — union / intersection / difference / a seam crossing /
      three buffers / distance / five predicates / three validates / two repairs / two refusals —
      run against HEAD and against this file in one process, byte-identical on every one. */
-  'js/gis-geometry.js': { version: 'geom-2', sha256: 'bf564eb5847d38f2940bc9e5f0e58891584adc17cf0d7dbb858a42d05afdabc1' },
+  /* HASH ONLY again: three comments renamed the regression files they cite (tests/r819-gis-* → tests/gis-*) when
+     round numbers stopped being names. Comment text only — no statement changed. */
+  'js/gis-geometry.js': { version: 'geom-2', sha256: 'b0fd785d9f6c98bdaabf30c2f20aa8fd004b354d89b3feac95d7e4a08476f1ec' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
@@ -229,7 +231,7 @@ export const KERNELS = {
      SAME function rather than a copy of the rules, and `portable()` answers before a run whether
      a tree can travel. The parser, the numeric coercion and every function are the same bytes in
      a closure; the tests evaluate one expression on both sides and require identity. */
-  'js/gis-expr.js': { version: 'expr-1', sha256: '29d5f0761d69937c6845e10eeb3bf05b83cf66b007fb16c401fd3210cdb59f0d' },
+  'js/gis-expr.js': { version: 'expr-1', sha256: '34056037d1e3e752e55f27893ffb258ae2741384b88b9c6e2f90594346e03b5d' },
   /* (#R819) HASH ONLY, AND THE CHOICE IS DELIBERATE. The index can now build tiers instead of one
      grid, and it keeps counters (candidates / delivered / retained) so a caller can see what the
      prefilter saved. ⚠ A DIFFERENT CANDIDATE SET IS NOT A DIFFERENT ANSWER: every road hands the
@@ -237,7 +239,7 @@ export const KERNELS = {
      an unindexed sweep of the same data, and the default grid against a digest taken from the
      PREVIOUS version of this file. ⚠ If a tier ever dropped a true pair, this would be a raised
      version and a defect — which is why the falsification is measured rather than argued. */
-  'js/gis-index.js': { version: 'index-1', sha256: 'efadc3a3e83479248fd09c1b9c4365bc184ce49c16b5da0b6e570a3434ae75f8' },
+  'js/gis-index.js': { version: 'index-1', sha256: '2ce629635a75f9fdc10db14e73454f46c845212971a1b7464a55452e211aef4e' },
   /* (#R756) crs-1 -> crs-2: a refusal became an answer. The azimuthal equidistant plane was
      implemented and unreachable (it holds no EPSG code, and `measure` takes its plane as text), so
      `planeSpec()` now reads the spellings out of the PLANES table itself -- 'aeqd:<lon0>,<lat0>'

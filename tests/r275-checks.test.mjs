@@ -19,6 +19,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 /* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
 import { assertUnreadNeverGreys } from './wash-tier.mjs';
 import { readFileSync } from 'node:fs';
@@ -299,15 +300,8 @@ test('R275 ⑪ a country is only painted «nothing in force» once its service h
 });
 
 /* ── ⑫ the build marks name this round ──────────────────────────────────────────────────────── */
-test('R275 ⑫ both build markers name a round no older than R275', () => {
-  /* ⚠ THE TWO STAMPS, NOT EVERY «R###» IN THE FILE — index.html is full of round tags in comments,
-     and a pattern that takes them all is measuring the prose. */
-  const html = read('index.html');
-  const marks = [
-    /window\.__imBuild='R(\d{3})'/.exec(html),
-    /window\.INTMAP_BUILD='[\d-]+-R(\d{3})'/.exec(html),
-  ];
-  assert.ok(marks.every(Boolean), 'index.html must carry both build stamps');
-  for (const m of marks) assert.ok(+m[1] >= 275, `a build stamp still says R${m[1]}`);
-  assert.equal(marks[0][1], marks[1][1], 'and both must name the same round (#R174)');
+test('R275 ⑫ both build markers name a round no older than R275', async () => {
+  /* ⚠ THE TWO STAMPS, NOT EVERY «R###» IN THE FILE — index.html is full of round tags in comments.
+     (2026-09-25) both are filled by the build from the commit being built (scripts/build-stamp.mjs). */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

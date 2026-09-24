@@ -14,6 +14,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { entries } from '../scripts/dev-notes.mjs';
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -265,9 +266,11 @@ test('R280 ⑥ the legal pages are localised where they can be, and honest where
 
 /* ── the history move: nothing was deleted, only relocated ───────────────────────────────── */
 test('R280 ⑦ the archive boundary moved without losing a round', () => {
+  /* (2026-09-25) the recent record is one file per entry (dev-notes/, scripts/dev-notes.mjs) and
+     DEV-NOTES.md is their generated index; the archive is untouched */
   const dn = rd('DEV-NOTES.md'), ar = rd('DEV-NOTES-ARCHIVE.md');
   const nums = (t) => [...t.matchAll(/^## R(\d+)\b/gm)].map((m) => Number(m[1]));
-  const inNotes = nums(dn), inArchive = nums(ar);
+  const inNotes = entries(ROOT).filter((e) => e.kind === 'legacy').map((e) => e.round), inArchive = nums(ar);
   assert.ok(inNotes.length >= 10, 'DEV-NOTES.md kept too few rounds to be useful');
   assert.ok(Math.min(...inNotes) >= 260, 'DEV-NOTES.md still holds a round below the new boundary');
   /* round numbers are not contiguous — some were never used (there is no #R259), so the test is

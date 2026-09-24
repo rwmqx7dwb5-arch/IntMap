@@ -589,9 +589,10 @@ for (const f of ALL) {
 // a name: every parallel session takes «the next free number» from the same scan and takes it
 // again whenever origin/main moves. #R671 measured seven renumberings in one round and an add/add
 // conflict on tests/r568-checks.test.mjs whose markers were committed, leaving a whole file of
-// regressions unparseable. The rule, the two legacy numbers and why they are numbers rather than
-// a list of 416 spellings all live in scripts/round-names.mjs; the walk stays here because this
-// is the file that already has one.
+// regressions unparseable. (2026-09-25) New files carry no round number at all — they are named
+// for their slug — and the existing r<N>… files are history. The rule, the two legacy numbers and
+// why they are numbers rather than a list of spellings all live in scripts/round-names.mjs; the
+// walk stays here because this is the file that already has one.
 try {
   const { roundNameProblems } = await import('./round-names.mjs');
   const testNames = ALL

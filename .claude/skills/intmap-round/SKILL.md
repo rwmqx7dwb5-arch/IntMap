@@ -1,9 +1,9 @@
 ---
 name: intmap-round
-description: IntMap で「これを実装して」「これを直して」「これを追加して」のように、リポジトリのファイルを変更して最後に merge・deployment まで行く作業を始めるときの具体的な手順書。ラウンド番号の取り方、worktree の用意、並列分解、検証の段、PR・CI・squash merge・本番検証・原本同期・USB バックアップまでの実行順を持つ。質問に答えるだけ・調べるだけの依頼では使わない。
+description: IntMap で「これを実装して」「これを直して」「これを追加して」のように、リポジトリのファイルを変更して最後に merge・deployment まで行く作業を始めるときの具体的な手順書。作業名（slug）の決め方、worktree の用意、並列分解、検証の段、PR・CI・squash merge・本番検証・原本同期・USB バックアップまでの実行順を持つ。質問に答えるだけ・調べるだけの依頼では使わない。
 ---
 
-# IntMap · ラウンドを 1 本通す
+# IntMap · 作業を 1 本通す（intmap-round）
 
 `AGENTS.md` §5 のワークフローを**実際のコマンドの順**にしたもの。規則は `AGENTS.md` と
 `CONSTITUTION.md`、戦略は `.agents/rules/execution-strategy.md` にある。ここは**手順**だけ。
@@ -18,8 +18,9 @@ description: IntMap で「これを実装して」「これを直して」「こ
 node scripts/worktree.mjs status
 ```
 
-これが一度に出す: 現在の branch / 未コミット変更 / 全 worktree / **空いているラウンド番号** /
-`origin/main` との差 / 直近のラウンド。ここに出ないものだけ個別に見る。
+これが一度に出す: 現在の branch / 未コミット変更 / 全 worktree / `origin/main` との差 /
+最新の記録 / 前回までの未了（本番到達・本番検証・原本の同期。どれも **PR 番号**で述べる）。
+ここに出ないものだけ個別に見る。⚠ **「空き番号」はもう出ない**——番号は名前にしない（§4）。
 
 同時に（同じメッセージで）:
 
@@ -38,19 +39,24 @@ node scripts/worktree.mjs status
 node scripts/worktree.mjs new <slug>
 ```
 
+`<slug>` は**作業の主題**（小文字・数字・ハイフン、英字で始める。例 `dem-tile-budget`）。
 これがやること（`AGENTS.md` §6 の要求そのもの）:
 
-- 空いているラウンド番号 `N` を決める
-- branch `feat/r<N>-<slug>` を `origin/main` から切る
-- **OneDrive の外**に worktree を作る（原本は `main` の置き場であって作業場ではない）
+- slug を検める——**番号で始まる slug**（`r815-…`）と、**既に誰かが持っている slug**（branch
+  `feat/<slug>`・worktree `wt-<slug>`・`tests/<slug>-checks.test.mjs`・`tests/<slug>.spec.js`・
+  `dev-notes/*-<slug>.md`）を拒む
+- branch `feat/<slug>` を `origin/main` から切る——**これが識別子の取得そのもの**。同じマシンの
+  worktree は ref の名前空間を共有するので、同じ slug を 2 つ目のセッションが取ろうとすると
+  **git 自身が拒む**（走査して「次の空き」を配る方式は、走査した全員に同じ答えを配っていた）
+- **OneDrive の外**に worktree `wt-<slug>` を作る（原本は `main` の置き場であって作業場ではない）
 - `node_modules` を原本から junction で貼る
-- `.claude/launch.json` に `intmap-preview-r<N>` / ポート **`4000 + N`** を足す
-  （R403 なら 4403。⚠ 以前ここは `42<N>` と書いてあり、それが合うのは N が 200 番台のときだけ
-  だった——例に使われていた R257 → 4257 は `4000+257` の別の読み方でしかない）
+- `.claude/launch.json` に `intmap-preview-<slug>` を足す。ポートは 4400〜4999 のうち、
+  このマシンのどの `launch.json` も使っておらず、いま listen もされていない最小の番号
   （⚠ #R338 以降このファイルは**追跡対象外**。commit にも PR にも出てこない）
-- 作業ディレクトリの絶対パスを印字する
+- 作業ディレクトリの絶対パスと、この作業のファイル名（§4）を印字する
 
 **以降の編集は全部その worktree の中で行う。** 原本には 1 バイトも書かない。
+PR を作ったら、その **PR 番号**が一意の識別子になる（squash merge が件名の末尾に `(#N)` を付ける）。
 
 ---
 
@@ -111,14 +117,14 @@ node scripts/worktree.mjs new <slug>
 
 | 触ったもの | 直す文書 |
 |---|---|
-| 実装を変えた | `Architecture.md`（**現状仕様**。ラウンド番号を書かない） |
+| 実装を変えた | `Architecture.md`（**現状仕様**。ラウンド番号・PR 番号を書かない） |
 | `js/` にファイルを足した・消した | `docs/FILES.md` |
 | レイヤーの挙動 | `docs/MAP-LAYERS.md` |
 | 機能を足した・撤去した | `PRODUCT.md` |
 | 技術判断を新しくした・覆した | `DECISIONS.md` |
 | 試験を足した・組み替えた | `docs/TESTING.md` |
 | **文書を 1 本足した** | **`docs/README.md` に 1 行**（無いと `check:docs` が落ちる） |
-| 常に | `DEV-NOTES.md` の**先頭**に `R<N>` エントリ（索引行と本文の両方） |
+| 常に | **`dev-notes/<YYYY-MM-DD>-<slug>.md` を 1 本**足し、`node scripts/dev-notes.mjs --write` |
 | **上に無い主題**（ニュース・企業・航空・火山・DB・警報・運用…） | **[`docs/README.md`](../../../docs/README.md) の表で引く** |
 
 ⚠ **最後の行は「その他」ではなく、この表の残り全部である。** ここに並んでいるのは
@@ -128,6 +134,29 @@ node scripts/worktree.mjs new <slug>
 
 同じ事実を 2 か所に書かない。**正本を 1 つ決めて、他はそこへリンクする。**
 
+### 記録の書き方（`dev-notes/`）
+
+**1 エントリ＝1 ファイル。** `DEV-NOTES.md` は `dev-notes/` から**生成される索引**で、手で編集しない
+（`npm run check:docs` の `dev-notes` 規則が、生成結果と食い違えば落とす）。
+
+```markdown
+---
+title: <一行の題。何が起きていて、何を直したか>
+date: 2026-09-25
+pr: 123            # 分かれば。PR を作ってから足してよい（無くても索引は作れる）
+---
+
+〈依頼〉 … ／ ## 0. 測った ／ ## 1. … ／ ## N. 検査
+```
+
+- ファイル名の日付は front matter の `date` と同じ。slug は `worktree.mjs new` に渡したもの。
+- 書いたら `node scripts/dev-notes.mjs --write`（索引を作り直す）→ `node scripts/dev-notes.mjs --check`。
+- 詳しさは既存のエントリと同じ程度（**何を・なぜ・実測**）。否定された見立ても残す。
+- `R<N>.md` は番号で呼んでいた頃の記録で、名前は当時のまま（読むだけ・書き換えない）。
+- ⚠ **旧形式で `DEV-NOTES.md` の先頭に `## R<N>` を足した branch を取り込むとき**（移行期の取り残し）は、
+  その `DEV-NOTES.md` を材料に `node scripts/dev-notes.mjs --split --from <そのファイル>` →
+  `--write`。`--split` は再実行できて、既存のエントリは同じ名前・同じ中身のまま、新しいものだけ足す。
+
 ---
 
 ## 4. 検証
@@ -135,15 +164,17 @@ node scripts/worktree.mjs new <slug>
 **段とコマンドの表は [`.agents/rules/execution-strategy.md`](../../rules/execution-strategy.md) §4
 が正本。**ここには書き写さない——そこを見て、この工程では段 0 から順に上げる。
 
-このラウンド固有の義務だけ書く: その回の回帰検査は **`tests/r<N>-<主題>-checks.test.mjs`**
-（spec なら `tests/r<N>-<主題>.spec.js`）という名前で置くだけでよい——`test:checks` は
+この作業固有の義務だけ書く: 回帰検査は **`tests/<slug>-checks.test.mjs`**（spec なら
+**`tests/<slug>.spec.js`**）という名前で置くだけでよい——`test:checks` は
 `node --test "tests/**/*.test.mjs"` なので、名前が合っていれば登録なしに走る（#R529）。
+**変更した・足した spec は PR の core で走る**（`scripts/tiers.mjs` の `changedSpecs()` が差分から
+選ぶ。ローカルの `npm test` も `origin/main...HEAD` と未コミット分から同じものを選ぶ）——
+「その回の spec が前に立たない」は起きない。高い spec も PR の前で 1 回走り、nightly にも残る。
 
-### ⚠ ラウンド番号は名前ではない（この節が規約の正本・#R674）
+### ⚠ 番号は名前ではない（この節が規約の正本・利用者承認済み）
 
-番号は**このセッションのものではない**——並列セッションは全員が同じ走査（`worktree.mjs` の
-`nextRound`）から「次の空き番号」を取り、`origin/main` が動くたびに取り直す。
-**改番は例外ではなく定常状態**（#R671 は 7 回、同じ時期の別セッションは 4 回）。実測された被害:
+`worktree.mjs` は以前「次の空きラウンド番号」を配っていた。**走査した全セッションが同じ番号を得る**
+ので、改番は例外ではなく定常状態だった（#R671 は 7 回、同じ時期の別セッションは 4 回）。実測された被害:
 
 - `tests/r568-checks.test.mjs` を **2 セッションが両方新規作成**し、git が add/add を立て、
   着地の自動化がそれを取り込んで**衝突マーカーごと commit**した（`… | tail -4` が `$?` を
@@ -151,25 +182,25 @@ node scripts/worktree.mjs new <slug>
 - memory の `intmap-r<N>-lessons.md` を改番のたびに rename していて、**別セッションのファイルに
   重ねて自分の記憶を失った**（#R565 と #R671 で **2 回**）。
 
-⚠ **直せるのは merge ではなく名前である。** 1 つのチェックアウトの中では「相手が別の番号を
-取ったか」を原理的に証明できない（相手の branch はここに無い）。証明できるのは**名前が番号の
-持たないもの＝主題を持っているか**だけ。⇒ **番号 ＋ 主題**で名づける:
+#R674 は「番号 ＋ 主題」で名づけさせたが、番号は相変わらず動き、DEV-NOTES・ビルド印・プレビューの
+ポートがそれに依存していた。⇒ **番号を名前から外した。** 名前は**主題（slug）だけ**で、PR を作ったら
+PR 番号が識別子:
 
 | 何 | 名前 | 例 |
 |---|---|---|
-| その回の回帰検査 | `tests/r<N>-<主題>-checks.test.mjs` | `tests/r671-dem-store-checks.test.mjs` |
-| その回の spec | `tests/r<N>-<主題>.spec.js` | `tests/r180-cesium.spec.js` |
+| 回帰検査 | `tests/<slug>-checks.test.mjs` | `tests/process-without-round-numbers-checks.test.mjs` |
+| spec | `tests/<slug>.spec.js` | （同じ slug で `.spec.js`） |
+| 記録 | `dev-notes/<YYYY-MM-DD>-<slug>.md` | `dev-notes/2026-09-25-process-without-round-numbers.md` |
 | **memory** | `intmap-<主題>.md`（**番号を書かない**） | `intmap-dem-tile-store-budget.md` |
+| commit / PR の件名 | `<一行の要約>`（番号を付けない。squash が `(#N)` を付ける） | — |
 
-- 名前は `node scripts/worktree.mjs new <slug>` が**番号を取ったその場で印字する**。手で組み立てない。
+- 名前は `node scripts/worktree.mjs new <slug>` が**その場で印字する**。手で組み立てない。
 - リポジトリ側の門は `npm run check:static` の **`round-name`**（機械側の正本は
   `scripts/round-names.mjs`。何を測っているかは [`docs/TESTING.md`](../../../docs/TESTING.md)）。
-  既存の番号だけの名前は**過去のもの**として据え置いてあり、**数と最大ラウンドの 2 つで下向きに
-  だけ動く**。⚠ **memory はリポジトリの外**なので門が無い——番号を書かないことだけが守る
-  （`AGENTS.md` §1）。
-- ⚠ **改番に「全文置換」を使わない。** `R<from>` → `R<to>` の一括置換は**他人のラウンドの文まで
-  書き換える**（実測: `docs/TESTING.md` の見出しと `DEV-NOTES.md` の 1 行）。動かすのは
-  **自分のファイル名だけ**を対象にしたパターン（`rd+-<自分の主題>`）。
+  既存の `r<N>…` の名前は**過去のもの**として据え置き、**数と最大番号の 2 つで下向きにだけ動く**——
+  **新しい `r<N>…` は主題付きでも拒まれる**。⚠ **memory はリポジトリの外**なので門が無い——
+  番号を書かないことだけが守る（`AGENTS.md` §1）。
+- ⚠ 過去の記録・コメント中の `#R<N>` は**当時の名前として**そのまま読む。書き換えない。
 
 ⚠ **`tests/` に置く `.mjs` で `node:test` を import するものは、必ず `*.test.mjs` と名づける。**
 それ以外の名前は runner から見えず、一度も走らないまま永久に緑になる（`check:static` が捕まえる）。
@@ -181,8 +212,8 @@ node scripts/worktree.mjs new <slug>
 ## 5. commit → push → PR → CI → merge
 
 ```bash
-git add -A && git commit -m "R<N>: <一行の要約>"
-git push -u origin feat/r<N>-<slug>
+git add -A && git commit -m "<一行の要約>"
+git push -u origin feat/<slug>
 gh pr create --fill
 gh pr merge --squash --auto --delete-branch   # 緑なら勝手に merge される。座って見ない
 ```
@@ -193,12 +224,15 @@ gh pr merge --squash --auto --delete-branch   # 緑なら勝手に merge され�
 全部出る**——「1 つ直して 12 分待ってまた別のが赤」という往復がそもそも起きない
 （`scripts/ci-gates.mjs`。計画は `node scripts/ci-gates.mjs --plan` が印字する）。
 
+⚠ **これで工程が減ったのではない。やる「時刻」が動いただけ**（`AGENTS.md` §5.1 から移した実測）。
+従来は 1 回の純粋な待ちが 45〜60 分あり、しかも赤い CI は 1 回引っかかるたびに 12 分、直してまた
+12 分——「数時間」の正体は工程の数ではなく、**直列に並んだ待ちとその往復**だった。
+
 ⚠ **merge 後に main で走る CI を待たない。** PR の CI が緑なら同じ木が同じ結果を出す。
 
-- **push の直前にラウンド番号を取り直す**（`node scripts/worktree.mjs status`）。
-  ⚠ **これは稀な事故ではない。** `DEV-NOTES.md` を「改番」「番号を取り直」で引けば実例が並ぶ
-  （ここは長く「過去に 3 回」と書いてあったが、そう書いた時点で既に下限だった）。1 回の改番が
-  30 か所を超えることがあるので、**取り直しは push の直前に、毎回**。
+- ⚠ **push の前に番号を取り直す工程はもう無い**——名前が番号を持たないので、並行セッションに
+  追い越されても改番するものが無い。`origin/main` が動いたら普通に rebase するだけ。
+  `dev-notes/` の記録は別ファイルなので、**記録どうしが衝突することも無い**（索引は `--write` で作り直す）。
 - CI の deploy ログは `mode:'serial'` だと**最初の 1 件しか見せない**。「赤が 1 件」は
   「壊れているのが 1 件」ではない。
 - **非破壊的な migration・設定変更・deployment・commit・push・PR・merge に承認を求めない**
@@ -234,11 +268,11 @@ grep -o '^\[functions\.[a-z0-9-]*\]' supabase/config.toml
 報告しない。**
 
 ⚠ **この回の本番検証を、この回の中で待たない**（#R771・`AGENTS.md` §5.1）。Pages の deploy は
-merge のあと数分かかる。**前回までの分を、次のラウンドの着手時（§1）にまとめて検証する。**
+merge のあと数分かかる。**前回までの分を、次の作業の着手時（§0）にまとめて検証する。**
 終えたら受領証を残す——これを書かない先送りは「やらなかった」と区別がつかない:
 
 ```bash
-node scripts/worktree.mjs verified      # origin/main の HEAD を「本番検証済み」として記録
+node scripts/worktree.mjs verified      # origin/main の HEAD（sha と件名の PR 番号）を「本番検証済み」として記録
 ```
 
 ---
@@ -246,7 +280,7 @@ node scripts/worktree.mjs verified      # origin/main の HEAD を「本番検�
 ## 7. 終了処理（省略できない。ただし**待たない**）
 
 ⚠ **この回でやるのは `done` だけ。** 残りは merge が本番へ届いてからでないと意味がなく、
-届くのを待つと 1 ラウンドが 1 時間になる（#R771）。**次のラウンドの着手時にまとめて走らせる**
+届くのを待つと 1 本が 1 時間になる（#R771）。**次の作業の着手時にまとめて走らせる**
 ——`--sync` は冪等で、**1 回の実行がその時点で merge 済みの全セッション分を運ぶ**。
 
 ```bash
@@ -254,8 +288,8 @@ node scripts/worktree.mjs done          # この回: 自分の worktree と bran
 ```
 
 ```bash
-# 次のラウンドの着手時に、前回までの分をまとめて:
-node scripts/worktree.mjs status        # 何が未了かを述べる（本番検証・原本・deploy）
+# 次の作業の着手時に、前回までの分をまとめて:
+node scripts/worktree.mjs status        # 何が未了かを PR 番号で述べる（本番検証・原本・deploy）
 node scripts/master-sync.mjs --sync     # 原本 (OneDrive) を origin/main へ早送り
 node scripts/master-sync.mjs --check    # 原本が merge 後の状態か（exit 0 を確認）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1   # USB へ完全ミラー（毎回）
@@ -263,7 +297,8 @@ node scripts/worktree.mjs verified      # 本番検証を終えたら受領証
 ```
 
 - `--sync` は**冪等**でロックが要らない。他セッションと同時に走ってよい。
-- ⚠ **`pwsh` ではない**（PowerShell 7 はこのマシンに無い。実測は `AGENTS.md` §11.2）。
+- `status --brief`（SessionStart hook）は、未了が**あるときだけ** 1 行足す——毎回出る行は読まれない。
+- ⚠ **`pwsh` ではない**（PowerShell 7 はこのマシンに無い。実測は `docs/AGENT-SETUP.md` §10）。
   かつてここは `pwsh -File …` と書いてあり、**書いてあるとおりにやると終了処理の最後の 1 歩が
   必ず `CommandNotFoundException` で落ちた**。
 - `backup-usb.ps1` の最後の 1 行は `RESULT ok|skipped|failed`。`skipped` はエラーではない

@@ -8,6 +8,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,11 +68,7 @@ test('R262 ②: «no answer» and «0 objects» are distinguishable', () => {
    bumped the stamp, which is what every round is required to do. The property a round can assert is
    that the two markers AGREE and are not older than itself; the format and the global monotonicity
    belong to tests/r169-checks, which already owns them. */
-test('R262 ③: both build markers name one round, and it is not older than R262', () => {
-  const s = read('index.html');
-  const a = s.match(/window\.__imBuild='R(\d+)'/);
-  const b = s.match(/window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/);
-  assert.ok(a && b, 'both build markers are present');
-  assert.equal(a[1], b[1], 'the two markers name the same round');
-  assert.ok(Number(a[1]) >= 262, `the build stamp went back to R${a[1]}`);
+test('R262 ③: both build markers name one round, and it is not older than R262', async () => {
+  /* (2026-09-25) both markers are filled by the build from the commit (scripts/build-stamp.mjs) */
+  assert.deepEqual(await generatedStampProblems(read('index.html')), [], 'the build stamp can go stale again');
 });

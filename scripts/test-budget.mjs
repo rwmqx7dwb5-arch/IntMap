@@ -206,7 +206,24 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ⚠ A SAVING ELSEWHERE WAS NOT LOOKED FOR, for #R455's reason and #R466's precedent: that round
    measured this table UNDER-charging (smoke 77.2 s against an entry of 8), and a table that
    under-charges is not a table a round may take a saving out of. */
-const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 7 files (#R550) */
+/* ══ THE CORE CEILING NOW GOVERNS THE FIXED GATE ONLY — AND THE DIFF HALF HAS NO CEILING, ON PURPOSE ══
+   The core tier used to be the fixed gate plus ONE spec, `currentRoundSpec()`, and this ceiling was
+   paid for both (38 s over 7 files, #R550 — the seventh was that spec). MEASURED 2026-09-25:
+   `currentRoundSpec()` had matched nothing since r668 (#R674 gave every spec a subject, and it only
+   read bare `rNNN`), so the «round's own spec» in this budget was r668's for a hundred rounds.
+   scripts/tiers.mjs now puts EVERY spec a change added or edited in front of its PR (from the diff),
+   which is a set whose size is the change's, not the gate's. So:
+     · BUDGET_S is the FIXED gate — the always-on suites and every spec under the price — measured
+       with no diff (`isDeep` is the fixed classification): 26 s over 6 files (monitors 10, smoke 8,
+       security 4, internal-qa 2, r157 1, r510 1). The ceiling follows that floor down 38 → 26; it
+       is what every branch pays, and it may still only go down.
+     · THE DIFF HALF HAS NO CEILING HERE, and that is a decision, not an omission. A ceiling on it
+       would be a limit on how many of its own specs a change may run before it merges — a gate
+       that makes the RIGHT work fail first is exactly what .agents/rules/one-pass-or-a-reason.md §3
+       forbids («上限を下げて塞がない»). It is not unbounded: every spec is charged to
+       TOTAL_BUDGET_S below whichever tier runs it, and a touched spec that is expensive runs once
+       in front of its PR and then goes back to the nightly by itself. */
+const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s over 6 files (2026-09-25) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
@@ -506,6 +523,12 @@ const TOTAL_BUDGET_S = 4882;            /* — 4859 (main) + 21 (#R736: tests/r7
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['2026-09-25 process-without-round-numbers', 26, "THE CORE CEILING FOLLOWED THE FIXED GATE DOWN, 38 -> 26, AND THE TOTAL DID NOT MOVE. "
+    + "The seventh core file, r668, was never a price-rule member: it stood in the gate as `currentRoundSpec()`, a rule that "
+    + "had stopped matching anything newer at r668 (it read bare `rNNN` names, and #R674 made every name carry a subject). "
+    + "That rule is gone; scripts/tiers.mjs now puts every spec a change added or edited in front of its PR, read from the "
+    + "diff, and this ceiling measures what is left when there is no diff. The diff half deliberately has no ceiling of its "
+    + "own (see the comment on BUDGET_S). No spec was deleted or re-tiered to make the number."],
   ['#R753', 4882, "THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT (+2 s) AND THE CORE CEILING DID NOT MOVE. "
     + "Saying both plainly, because this file's own message is «never raise it» and #R405 / #R455 / #R588 / #R620 "
     + "are the precedents for saying so. THE FILE IS tests/r753-account-menu.spec.js, and what it buys is the half of the "
@@ -744,7 +767,8 @@ function over(what, got, cap, hint) {
 }
 if (total > BUDGET_S) over('core', total, BUDGET_S,
   'A file over CORE_MAX_S already leaves the gate by itself (scripts/tiers.mjs); if this is over, the'
-  + '\n  always-on suites or this round\'s own spec have grown — make them faster, do not re-tier them.');
+  + '\n  always-on suites (or a spec that just joined at the price) have grown — make them faster, do not re-tier them.'
+  + '\n  (This is the FIXED gate: the specs a change touched are not counted here — see BUDGET_S.)');
 if (total + deepTotal > TOTAL_BUDGET_S) over('whole suite', total + deepTotal, TOTAL_BUDGET_S,
   'Moving a file into `deep` is not a way out of THIS one: it is the same total either way.');
 /* ⚠ a ceiling that is not tracking the floor has stopped asserting anything (#R194) — but the slack

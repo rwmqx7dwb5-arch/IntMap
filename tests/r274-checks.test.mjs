@@ -75,7 +75,7 @@ test('② the sweep reaches the whole tree of current-state documents', () => {
      and was in neither. A test that re-states the old shape would hold the gate to the blind spot
      it was widened out of, so it asks git for the same two halves (tracked, and present-but-not-
      yet-tracked — the document being written this round) and applies the same written exclusions. */
-  const EXCL = [/^DEV-NOTES/, /^\.agents\//, /^\.(claude|codex)\//, /^CLAUDE\.local\.md$/];
+  const EXCL = [/^DEV-NOTES/, /^dev-notes\//, /^\.agents\//, /^\.(claude|codex)\//, /^CLAUDE\.local\.md$/];
   const gitMd = (...a) => execFileSync('git', ['ls-files', '-z', ...a, '*.md'], { cwd: ROOT, encoding: 'utf8' }).split('\0').filter(Boolean);
   const expectedProse = [...new Set([...gitMd(), ...gitMd('--others', '--exclude-standard')])]
     .filter((f) => !EXCL.some((re) => re.test(f)) && existsSync(join(ROOT, f))).length;

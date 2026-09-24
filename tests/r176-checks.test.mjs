@@ -14,6 +14,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -269,14 +270,13 @@ test('R176: the three simulators are in the right places, catalogued, and source
   assert.match(legal, /terrain-sculpting &amp; water-routing/, 'including the DEM the water simulator reads');
 });
 
-test('R176: the build stamp was bumped', () => {
+test('R176: the build stamp was bumped', async () => {
   /* (#R177) #R176's own notes say "do not pin your round's value into a test that checks the stamp
      MOVED — it is meaningless the next round", and then this line pinned '2026-07-29-R176'. What it
      is really guarding is that the stamp did not sit still (it was stuck at R171 through #R172 and
-     #R173), so: it must name a round AT OR AFTER the one that wrote this check, forever. */
-  const m = /window\.INTMAP_BUILD='(\d{4}-\d{2}-\d{2})-R(\d+)'/.exec(index);
-  assert.ok(m, 'the anti-stale-version stamp is present and well-formed');
-  assert.ok(Number(m[2]) >= 176, `the stamp names R${m[2]}, which is older than the round that added this check`);
+     #R173). (2026-09-25) The build now writes it from the commit being built, so it cannot sit
+     still unless it is typed back in or the build stops filling it — which is what is asked. */
+  assert.deepEqual(await generatedStampProblems(index), [], 'the build stamp can go stale again');
 });
 
 /* ── the split invariants every round since #R162 has to keep ─────────────────────────────────── */

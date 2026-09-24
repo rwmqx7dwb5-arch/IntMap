@@ -155,20 +155,28 @@ test('R195 ⑦: the measured shard plan runs every spec exactly once, and is bal
      The tiers and their group counts are read out of the workflow, so this tracks it rather than
      copying it: each `browser*` job states its tier once, in the `with:` line of the composite action. */
   const jobs = [];
-  for (const m of ci.matchAll(/\{ suite: (\w+), shard: \d+, of: (\d+) \}/g)) {
+  for (const m of ci.matchAll(/\{ suite: (\w+), shard: \d+, of: (\d+)(, allow-empty: '(true|false)')? \}/g)) {
     /* which job block is this matrix entry in? the nearest `tier: <x>` BELOW it in the file */
     const tier = (/with: \{ tier: (\w+),/.exec(ci.slice(m.index)) || [, 'core'])[1];
-    if (!jobs.some((j) => j.tier === tier && j.pool === m[1])) jobs.push({ tier, pool: m[1], of: +m[2] });
+    if (!jobs.some((j) => j.tier === tier && j.pool === m[1])) jobs.push({ tier, pool: m[1], of: +m[2], allowEmpty: m[4] === 'true' });
   }
   assert.ok(jobs.some((j) => j.tier === 'core'), 'the core tier appears in the matrix');
   assert.ok(jobs.some((j) => j.tier === 'deep' && j.pool === 'cesium'), 'and the deep tier carries the solo pool');
 
+  /* ⚠ (2026-09-25) THE PARTITION IS PLANNED WITH NO DIFF. The core tier also runs whatever the change
+     touched (scripts/tiers.mjs changedSpecs), and those specs stay in the nightly too — so on a
+     branch that edits a spec, «nothing runs twice» is false by design. IM_CHANGED_SPECS='' asks the
+     planner for the fixed partition, which is what «every spec exactly once» is a claim about. */
   const run = (a) => execFileSync(process.execPath, [join(ROOT, 'scripts/shard-plan.mjs'), ...a],
-    { cwd: ROOT, encoding: 'utf8' });
+    { cwd: ROOT, encoding: 'utf8', env: { ...process.env, IM_CHANGED_SPECS: '' } });
   const seen = [];
   for (const j of jobs) {
     for (let g = 1; g <= j.of; g++) {
-      const files = run(['--tier', j.tier, '--pool', j.pool, '--group', String(g), '--of', String(j.of)]).trim().split(/\s+/);
+      const files = run(['--tier', j.tier, '--pool', j.pool, '--group', String(g), '--of', String(j.of),
+        ...(j.allowEmpty ? ['--allow-empty'] : [])]).trim().split(/\s+/).filter(Boolean);
+      /* a pool that may be empty is one whose content is the diff: with no diff it IS empty, and the
+         action skips it rather than calling playwright with no paths (.github/actions/browser-tier) */
+      if (j.allowEmpty) { assert.deepEqual(files, [], `${j.tier}/${j.pool} plans specs with no diff — it is not a diff-only pool`); continue; }
       assert.ok(files.length && files[0], `${j.tier}/${j.pool} group ${g} is not empty — an empty list makes ` +
         'playwright run the WHOLE suite, which reads as a very slow pass');
       seen.push(...files);

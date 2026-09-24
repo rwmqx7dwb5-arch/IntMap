@@ -9,6 +9,7 @@
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
 import { publishedGlobals, lazyFiles, jsFiles } from './app-source.mjs';
+import { STAMP_RE } from '../scripts/build-stamp.mjs';
 
 /* ══ (#R304) 「THE WHOLE INTMAP SURFACE IS PUBLISHED」, SAID AS THE SURFACE RATHER THAN A COUNT ══
    ④ below asserted `Object.keys(window).filter(/^IntMap/).length > 75`, and the figure went under
@@ -234,8 +235,9 @@ test('the Vite bundle boots the whole app', async ({ page }) => {
   expect(s.missingEager, 'the whole eager IntMap surface is published by the built bundle').toEqual([]);
   // (#R176) What this line is checking is that the bundle carries the stamp at all — pinning the round
   // that happened to be current when it was written makes it fail on every subsequent round instead.
-  // The exact value is pinned once, in that round's own checks file.
-  expect(s.build, 'the bundle carries a dated round stamp').toMatch(/^\d{4}-\d{2}-\d{2}-R\d+$/);
+  // (2026-09-25) The build writes it from the commit being built (scripts/build-stamp.mjs); the shape
+  // is that module's own STAMP_RE, and a page served with the token unfilled fails here.
+  expect(s.build, 'the built bundle carries the generated stamp').toMatch(STAMP_RE);
   expect(errors, 'the built page throws nothing on boot').toEqual([]);
   /* ══ ⚠⚠ (#R304) THEY DO NOT ARRIVE ANY MORE, AND THAT IS THE POINT OF THE ROUND THAT CHANGED IT ══
      This waited 30 s for `window.katex` and `window.html2canvas` to turn up on their own. src/vendor.js

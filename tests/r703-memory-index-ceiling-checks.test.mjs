@@ -15,7 +15,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { INDEX_CEILING, INDEX_CEILING_KB, indexVerdict } from '../scripts/agent-memory.mjs';
+import { INDEX_CEILING, INDEX_CEILING_KB, INDEX_CEILING_LINES, indexVerdict, lineCount } from '../scripts/agent-memory.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = path.join(ROOT, 'scripts', 'agent-memory.mjs');
@@ -104,4 +104,32 @@ test('⑥ 天井の数を持っているのは scripts/agent-memory.mjs だけ',
     return src.includes('INDEX_CEILING') || src.includes('24.4 * 1024');
   });
   assert.deepEqual(carriers, [], `天井の数を写しているファイル: ${carriers.join(', ')}`);
+});
+
+/* ⑦ (2026-09-25) 天井は 2 つある。実測: 203 行・約 17,000 文字の索引が
+      «MEMORY.md is 203 lines (limit: 200). Only part of it was loaded: 3 of 203 lines were cut off»
+      と告げられ、その間 --check は「文字数は天井の下」とだけ言っていた——文字しか数えていなかった。
+      ⚠ 元の欠陥で書く: 「文字の天井の下で、行の天井を越えた索引が、緑と報告される」。 */
+test('⑦ 文字の天井の下でも、行の天井を越えたら超過と判定する（実測 203 行）', () => {
+  assert.equal(INDEX_CEILING_LINES, 200);
+  const observed = indexVerdict(17000, 203);
+  assert.equal(observed.overChars, false, '前提: 文字数は天井の下');
+  assert.equal(observed.over, true, '203 行が超過と判定されない——ホストは 3 行を落としている');
+  assert.equal(indexVerdict(17000, INDEX_CEILING_LINES).over, false, '行の天井ちょうどを超過にしている');
+  /* 行の数え方はホストに合わせる: 末尾の改行は 204 行目を作らない */
+  assert.equal(lineCount('a\nb\nc\n'), 3);
+  assert.equal(lineCount('a\r\nb\r\nc'), 3);
+});
+
+test('⑧ 行で超えた索引に、--check が ⚠ と行数と場所を述べる', () => {
+  const home = mkdtempSync(path.join(tmpdir(), 'intmap-r703-lines-'));
+  const env = { ...process.env, HOME: home, USERPROFILE: home };
+  const dir = execFileSync(process.execPath, [SCRIPT, '--path'], { encoding: 'utf8', cwd: ROOT, env }).trim();
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(dir, 'MEMORY.md'), Array.from({ length: INDEX_CEILING_LINES + 3 }, (_, i) => `- line ${i}`).join('\n') + '\n');
+  const out = check(env);
+  assert.match(out, /⚠/, `行で超えたのに警告しない: ${out}`);
+  assert.match(out, new RegExp(`${INDEX_CEILING_LINES + 3} / ${INDEX_CEILING_LINES} 行`), `行数を言っていない: ${out}`);
+  assert.match(out, /3 行の超過/, `超過量を言っていない: ${out}`);
+  assert.ok(out.includes(path.join(dir, 'MEMORY.md')), `どのファイルかを言っていない: ${out}`);
 });

@@ -78,12 +78,25 @@ const minimalEnv = () => {
 /* ── THE SYNTHETIC WORLD ────────────────────────────────────────────────────────────────────────
    origin.git (bare) ← worka (pushes) ; master (a clone, which the script will treat as the master
    working directory because it is the main worktree of its own repository).
-   Two commits, both carrying a round label in the subject exactly as AGENTS.md §9 requires, so the
-   «which rounds are outstanding» answer has something real to name. */
+   Two commits, both carrying the «(#N)» a squash merge writes at the end of the subject, so the
+   «which work is outstanding» answer has something real to name. (Until 2026-09-25 they carried a
+   round label, which a person typed; the PR number is what the merge itself writes.) */
 const gitIn = (dir, ...args) =>
   execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
-const SCRIPTS = ['worktree.mjs', 'round-names.mjs', 'master-sync.mjs'];
+/* (2026-09-25) the script and EVERYTHING IT IMPORTS, followed rather than listed — worktree.mjs grew
+   an import (scripts/dev-notes.mjs) and a hand-written list here died with ERR_MODULE_NOT_FOUND, the
+   same shape tests/r295 recorded for round-names.mjs (.agents/rules/no-ad-hoc-hardcoding.md §2.4).
+   master-sync.mjs is not imported — worktree.mjs RUNS it — so it is named as the second entry. */
+const SCRIPTS = (() => {
+  const seen = new Set();
+  const take = (f) => {
+    if (seen.has(f)) return; seen.add(f);
+    for (const m of readFileSync(join(ROOT, 'scripts', f), 'utf8').matchAll(/\bfrom\s*['"]\.\/([^'"]+)['"]/g)) take(m[1]);
+  };
+  take('worktree.mjs'); take('master-sync.mjs');
+  return [...seen];
+})();
 
 const scenario = () => {
   const tmp = mkdtempSync(join(tmpdir(), 'im-r771-'));
@@ -95,7 +108,7 @@ const scenario = () => {
   gitIn(worka, 'checkout', '--quiet', '-B', 'main');
   writeFileSync(join(worka, 'a.txt'), 'one\n');
   gitIn(worka, 'add', '-A');
-  gitIn(worka, 'commit', '--quiet', '-m', 'R900: the round that is already on production');
+  gitIn(worka, 'commit', '--quiet', '-m', 'the work that is already on production (#900)');
   gitIn(worka, 'push', '--quiet', '-u', 'origin', 'main');
   gitIn(origin, 'symbolic-ref', 'HEAD', 'refs/heads/main');
   execFileSync('git', ['clone', '--quiet', origin, master]);
@@ -115,7 +128,7 @@ const scenario = () => {
 const landAnotherRound = (s) => {
   writeFileSync(join(s.worka, 'a.txt'), 'two\n');
   gitIn(s.worka, 'add', '-A');
-  gitIn(s.worka, 'commit', '--quiet', '-m', 'R901: the round nobody has verified yet');
+  gitIn(s.worka, 'commit', '--quiet', '-m', 'the work nobody has verified yet (#901)');
   gitIn(s.worka, 'push', '--quiet', 'origin', 'main');
   gitIn(s.master, 'fetch', '--quiet', 'origin');
   return gitIn(s.master, 'rev-parse', 'origin/main');
@@ -186,18 +199,18 @@ test('R771 (2) no receipt, a stale receipt, a current receipt and an unreadable 
 
     /* (b) a receipt for the commit BEFORE the newest round — the outstanding case, and it must
        name the round that is outstanding (the subject the fixture committed). */
-    putReceipt(s, { prodVerified: { sha: s.base, at: RECEIPT_AT, round: 'R900' } });
+    putReceipt(s, { prodVerified: { sha: s.base, at: RECEIPT_AT, pr: '900' } });
     const stale = run(s, ['status']);
     assert.ok(stale.stdout.includes('1999-12-31'), 'the receipt that WAS found must be reported');
-    assert.ok(stale.stdout.includes('R901'), 'the unverified round must be named');
+    assert.ok(stale.stdout.includes('#901'), 'the unverified work must be named by its PR');
     assert.ok(stale.stdout.includes(s.base.slice(0, 7)), 'and so must the commit the receipt covers');
     const staleBrief = run(s, ['status', '--brief']);
     assert.equal(staleBrief.stdout.split('\n').filter((l) => l.trim()).length, clean + 1,
       'the hook form grows by exactly one line — not two, and not zero');
-    assert.ok(staleBrief.stdout.includes('R901'), 'and that line says which round it is about');
+    assert.ok(staleBrief.stdout.includes('#901'), 'and that line says which PR it is about');
 
     /* (c) a receipt for origin/main itself — nothing outstanding. */
-    putReceipt(s, { prodVerified: { sha: head, at: RECEIPT_AT, round: 'R901' } });
+    putReceipt(s, { prodVerified: { sha: head, at: RECEIPT_AT, pr: '901' } });
     const current = run(s, ['status']);
     assert.ok(current.stdout.includes('1999-12-31'), 'the receipt is still read');
     assert.equal(briefLines(s), clean, 'and nothing is outstanding, so the hook line does not appear');
@@ -208,7 +221,7 @@ test('R771 (2) no receipt, a stale receipt, a current receipt and an unreadable 
        — unmeasured. This is the branch that would silently read as «fine» if an empty `git log`
        were taken at face value. */
     const ghost = 'f'.repeat(40);
-    putReceipt(s, { prodVerified: { sha: ghost, at: RECEIPT_AT, round: 'R899' } });
+    putReceipt(s, { prodVerified: { sha: ghost, at: RECEIPT_AT, pr: '899' } });
     const unknown = run(s, ['status']);
     assert.equal(unknown.code, 0);
     assert.ok(unknown.stdout.includes(ghost.slice(0, 7)), 'the commit it could not resolve must be named');
@@ -233,36 +246,39 @@ test('R771 (3) verified records origin/main, and the reader honours it', () => {
   try {
     const head = landAnotherRound(s);
     catchUp(s);                                            /* leave the receipt as the only item */
-    putReceipt(s, { prodVerified: { sha: s.base, at: RECEIPT_AT, round: 'R900' } });
+    putReceipt(s, { prodVerified: { sha: s.base, at: RECEIPT_AT, pr: '900' } });
     const before = run(s, ['status', '--brief']);
-    assert.ok(before.stdout.includes('R901'), 'precondition: R901 is outstanding before the receipt is written');
+    assert.ok(before.stdout.includes('#901'), 'precondition: #901 is outstanding before the receipt is written');
 
     const wrote = run(s, ['verified']);
     assert.equal(wrote.code, 0, `verified must succeed: ${wrote.stderr}`);
     const saved = JSON.parse(readFileSync(join(s.master, '.intmap', 'receipts.json'), 'utf8'));
     assert.equal(saved.prodVerified.sha, head, 'the receipt records origin/main, not the local HEAD');
-    assert.equal(saved.prodVerified.round, 'R901', 'and takes the round from the commit subject');
+    assert.equal(saved.prodVerified.pr, '901', 'and takes the PR number from the commit subject');
     assert.ok(Number.isFinite(Date.parse(saved.prodVerified.at)), 'with a real timestamp');
 
     const after = run(s, ['status', '--brief']);
-    assert.ok(!after.stdout.includes('R901'), 'the round just verified is no longer reported as outstanding');
+    assert.ok(!after.stdout.includes('#901'), 'the work just verified is no longer reported as outstanding');
     assert.ok(after.stdout.split('\n').filter((l) => l.trim()).length
       < before.stdout.split('\n').filter((l) => l.trim()).length, 'and the hook line it caused is gone');
 
-    /* an explicit round wins over the commit subject, and other keys in the file survive */
+    /* other keys in the file survive a second write */
     putReceipt(s, { prodVerified: saved.prodVerified, somethingElse: { kept: true } });
-    assert.equal(run(s, ['verified', '--round', 'R770']).code, 0);
+    assert.equal(run(s, ['verified']).code, 0);
     const merged = JSON.parse(readFileSync(join(s.master, '.intmap', 'receipts.json'), 'utf8'));
-    assert.equal(merged.prodVerified.round, 'R770');
+    assert.equal(merged.prodVerified.pr, '901');
     assert.deepEqual(merged.somethingElse, { kept: true }, 'a writer must not delete what it did not write');
 
-    /* ⚠ AND IT NEVER GUESSES. `--round` with nothing after it is a caller who meant a specific
-       round and did not name one; falling back to the commit subject there would record a claim
-       nobody made (AGENTS.md §8). */
-    const bare = run(s, ['verified', '--round']);
-    assert.equal(bare.code, 1, 'a bare --round must be refused rather than guessed at');
-    assert.equal(JSON.parse(readFileSync(join(s.master, '.intmap', 'receipts.json'), 'utf8')).prodVerified.round,
-      'R770', 'and the refusal must not have written anything');
+    /* ⚠ AND IT NEVER GUESSES. (2026-09-25) `--round` is gone — the receipt is about a COMMIT (its sha,
+       and the PR its subject names). A caller who still passes `--round R770` meant to record
+       something this command no longer records; silently writing something else would be a claim
+       nobody made (AGENTS.md §8), so it is refused and nothing is written. */
+    for (const args of [['verified', '--round', 'R770'], ['verified', '--round']]) {
+      const refused = run(s, args);
+      assert.equal(refused.code, 1, `${args.join(' ')} must be refused rather than recorded as something else`);
+    }
+    assert.deepEqual(JSON.parse(readFileSync(join(s.master, '.intmap', 'receipts.json'), 'utf8')), merged,
+      'and the refusal must not have written anything');
   } finally { drop(s.tmp); }
 });
 

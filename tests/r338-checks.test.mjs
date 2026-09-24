@@ -61,12 +61,14 @@ test('② it is ignored, so `git add -A` cannot put it back by accident', () => 
 });
 
 /* ── ③ 外したことで壊れていないこと ─────────────────────────────────────
- * worktree.mjs は原本のこのファイルから**使用済みラウンド番号**を導いている。
- * 追跡をやめてもファイルは在るので読めるが、その読み取り自体が消えていないかを見る。 */
-test('③ the round-number finder still reads it, and the writer can create it', () => {
+ * worktree.mjs はこのファイル（原本と全 worktree のもの）から**使用中のプレビューポート**を導いている
+ * （2026-09-25 まではラウンド番号を導いていた。番号は名前でなくなった）。
+ * 追跡をやめてもファイルは在るので読めるが、その読み取り自体が消えていないかを見る。
+ * 振る舞いとしての「2 セッションに同じポートを渡さない」は tests/process-without-round-numbers-checks ①。 */
+test('③ the port finder still reads it, and the writer can create it', () => {
   const src = rd('scripts/worktree.mjs');
-  assert.match(src, /intmap-preview-r\(\\d\{2,4\}\)/,
-    'worktree.mjs must still derive used round numbers from the master launch.json');
+  assert.match(src, /join\(d, '\.claude', 'launch\.json'\)/,
+    'worktree.mjs must still read the ports every launch.json on this machine already names');
   assert.match(src, /if \(!existsSync\(ljPath\)\) writeFileSync\(ljPath/,
     'worktree.mjs must create the file when a fresh clone has none — it is ignored now, '
     + 'so a clone does not come with one');

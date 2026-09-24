@@ -55,17 +55,20 @@
  *  ⚠ Plus two exceptions, and neither is a list of favourites:
  *    · CORE_ALWAYS — the four suites that ARE the gate rather than a round's regression file:
  *      smoke, security, internal-qa, monitors. They run whatever they cost.
- *    · THE CURRENT ROUND'S OWN SPEC — derived, not written down: the highest-numbered `rNNN.spec.js`
- *      on disk. #R203's "a new spec is core until somebody says otherwise" is exactly right for the
- *      round being worked on and exactly wrong a round later, and deriving it from the file names
- *      means the demotion happens by itself when the next round lands. A spec that is cheap enough
- *      stays core on merit afterwards; an expensive one steps aside without anyone remembering to.
+ *    · THE SPECS THIS CHANGE ADDED OR EDITED — derived from the DIFF, not written down (see
+ *      `changedSpecs()` below). #R203's "a new spec is core until somebody says otherwise" is exactly
+ *      right for the work in front of the PR and exactly wrong afterwards, and the diff makes the
+ *      demotion happen by itself: once merged, the next change's diff no longer contains it. A spec
+ *      that is cheap enough stays core on merit; an expensive one steps aside without anyone
+ *      remembering to. (Until 2026-09-25 this was «the highest-numbered rNNN.spec.js on disk», which
+ *      stopped matching anything at r668 — see changedSpecs().)
  *
  *  ⚠ AN UNMEASURED SPEC IS CORE. A file with no entry in tests/durations.json has not been shown to
  *  be expensive, and the direction that self-corrects is "gate it until it is measured" — the
  *  opposite default would let a spec dodge the gate by never being timed.
  * ==========================================================================*/
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -159,26 +162,82 @@ function durations() {
   } catch (_) { return {}; }
 }
 
-/** the current round's own spec — the highest-numbered `rNNN.spec.js` on disk, or null */
-export function currentRoundSpec() {
-  let best = null, bestN = -1;
-  for (const f of allSpecs()) {
-    const m = /^r(\d+)$/.exec(bare(f));
-    if (m && +m[1] > bestN) { bestN = +m[1]; best = bare(f); }
+/* ══ THE WORK'S OWN SPECS ARE THE ONES THIS CHANGE ADDED OR EDITED — READ FROM THE DIFF ═════════
+   The exception above used to be `currentRoundSpec()`: «the highest-numbered `rNNN.spec.js` on
+   disk». MEASURED 2026-09-25: it matched /^r(\d+)$/ against the basename, and #R674 made every new
+   spec name carry a subject (`r736-atlas-multiprobe.spec.js`), so from r673 on it could never match
+   again — it answered `r668` for over a hundred rounds, and not one round's own spec ran in front
+   of its own PR. The defect was not the regex; it was deriving «this work's spec» from a NAME at
+   all. Names are chosen by people; the diff is what the change IS.
+
+   So: every spec this change ADDED OR MODIFIED (deleted ones excluded) stands in the core tier on
+   top of the price rule, whatever it costs — the spec most likely to catch what this change broke
+   is the one it touched. The set comes from, in order:
+     · IM_CHANGED_SPECS — an explicit newline/space-separated list (what a caller that already knows
+       it can pass; also how the tests feed it);
+     · IM_DIFF_BASE     — a commit to diff against. CI sets it to HEAD^1: a pull_request run checks
+       out the MERGE commit, whose first parent is the base branch, so `HEAD^1..HEAD` is exactly the
+       PR; on main each squash merge is one commit and HEAD^1 is the previous main (ci.yml checks out
+       with fetch-depth 2 so the parent is there). ⚠ If it is set and git cannot answer, this THROWS:
+       «could not compute the diff» must not read as «the change touched no spec»;
+     · locally, `origin/main...HEAD` plus whatever is uncommitted or untracked under tests/ — so a
+       spec written a minute ago is in `npm test` before it is committed. On main, or with no
+       origin/main, that is empty, which is the truth.
+   CI (with neither variable set: the nightly, the dispatch button) takes no diff at all.
+
+   ⚠ THE DEEP TIER DOES NOT SHRINK FOR IT. `deep` stays the complement of the FIXED gate, so a spec
+   this change touched runs in front of the PR AND tonight; nothing leaves the nightly because a PR
+   happened to edit it. `fixedCoreNames()` is the gate without the diff — what the budget, the
+   documents that state the tier sizes and the nightly alarm count, because a number that moved with
+   whichever branch you ran it on would be a claim about the branch. */
+const SPEC_PATH = /^tests\/[^/]+\.spec\.js$/;
+let changedCache = null;
+
+function gitLines(args) {
+  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+    .split('\n').map((s) => s.trim()).filter(Boolean);
+}
+
+/** the specs (as basenames) this change added or edited — see above for where the answer comes from */
+export function changedSpecs(env = process.env) {
+  const exists = new Set(allSpecs().map(bare));
+  const keep = (paths) => [...new Set(paths.map((p) => p.replace(/\\/g, '/')).filter((p) => SPEC_PATH.test(p)).map(bare))]
+    .filter((n) => exists.has(n)).sort();
+  if (env.IM_CHANGED_SPECS != null) return keep(String(env.IM_CHANGED_SPECS).split(/\s+/).filter(Boolean).map((p) => (p.startsWith('tests/') ? p : 'tests/' + p)));
+  if (env === process.env && changedCache) return changedCache;
+  let out;
+  if (env.IM_DIFF_BASE) {
+    try { out = keep(gitLines(['diff', '--name-only', '--diff-filter=d', env.IM_DIFF_BASE, 'HEAD', '--', 'tests'])); }
+    catch (e) { throw new Error(`scripts/tiers.mjs: IM_DIFF_BASE=${env.IM_DIFF_BASE} could not be diffed (${String(e.message || e).split('\n')[0]}) — refusing to call that «no spec changed»`); }
+  } else if (env.CI) {
+    out = [];
+  } else {
+    const paths = [];
+    try { paths.push(...gitLines(['diff', '--name-only', '--diff-filter=d', 'origin/main...HEAD', '--', 'tests'])); } catch { /* no origin/main here */ }
+    try { paths.push(...gitLines(['diff', '--name-only', '--diff-filter=d', 'HEAD', '--', 'tests'])); } catch { /* not a checkout */ }
+    try { paths.push(...gitLines(['ls-files', '--others', '--exclude-standard', '--', 'tests'])); } catch { /* not a checkout */ }
+    out = keep(paths);
   }
-  return best;
+  if (env === process.env) changedCache = out;
+  return out;
 }
 
-/** the core tier as basenames — the gate, derived rather than listed (see the header) */
-export function coreNames() {
-  const d = durations(), cur = currentRoundSpec();
-  return allSpecs().map(bare).filter((n) =>
-    CORE_ALWAYS.includes(n) || n === cur || !(d[n] > CORE_MAX_S));
+/** the gate WITHOUT the diff: the always-on suites and every spec at or under the price */
+export function fixedCoreNames() {
+  const d = durations();
+  return allSpecs().map(bare).filter((n) => CORE_ALWAYS.includes(n) || !(d[n] > CORE_MAX_S));
 }
 
-/** is this spec (path, basename, or `path:line`) in the deep tier? */
+/** the core tier as basenames — the fixed gate plus this change's own specs (see above) */
+export function coreNames(env = process.env) {
+  const fixed = new Set(fixedCoreNames()), changed = new Set(changedSpecs(env));
+  return allSpecs().map(bare).filter((n) => fixed.has(n) || changed.has(n));
+}
+
+/** is this spec (path, basename, or `path:line`) in the deep tier? — the complement of the FIXED
+ *  gate, so a spec a change touched is not taken away from the nightly by being touched */
 export function isDeep(file) {
-  return !coreNames().includes(bare(file));
+  return !fixedCoreNames().includes(bare(file));
 }
 
 /** the tier this run is for: IM_TIER=core|deep|all, defaulting to core */
@@ -187,15 +246,19 @@ export function wantedTier(env) {
   return (v === 'deep' || v === 'all') ? v : 'core';
 }
 
-/** does a spec belong to the requested tier? */
-export function inTier(file, tier) {
+/** does a spec belong to the requested tier? `core` is the fixed gate plus this change's own specs;
+ *  `deep` is everything outside the fixed gate. The two overlap exactly on the touched specs. */
+export function inTier(file, tier, env = process.env) {
   if (tier === 'all') return true;
-  return tier === 'deep' ? isDeep(file) : !isDeep(file);
+  if (tier === 'deep') return isDeep(file);
+  return coreNames(env).includes(bare(file));
 }
 
-/** the spec paths of one tier */
-export function tierSpecs(tier) {
-  return allSpecs().filter((f) => inTier(f, tier));
+/** the spec paths of one tier. `{ fixed: true }` leaves the diff out — the partition the budget
+ *  and the documents measure, identical on every branch. */
+export function tierSpecs(tier, { fixed = false, env = process.env } = {}) {
+  if (fixed && tier === 'core') return allSpecs().filter((f) => fixedCoreNames().includes(bare(f)));
+  return allSpecs().filter((f) => inTier(f, tier, env));
 }
 
 /** a RegExp matching exactly the named specs, or null when the list is empty (so a caller never

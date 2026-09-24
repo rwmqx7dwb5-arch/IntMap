@@ -8,7 +8,8 @@
 ### この文書の読み方
 
 - **§1–§18 は「今どうなっているか」だけ**を書く。**このファイルには変更履歴を書かない。**
-  「いつ・なぜ・どう直したか」は `DEV-NOTES.md`（直近）と `DEV-NOTES-ARCHIVE.md`（それ以前）の担当。
+  「いつ・なぜ・どう直したか」は開発記録——`dev-notes/`（1 エントリ 1 ファイル、索引は `DEV-NOTES.md`）と
+  `DEV-NOTES-ARCHIVE.md`（それ以前）の担当。
   標準指示（やってはいけないこと等）は `CONSTITUTION.md`、作業の進め方は `AGENTS.md`
   （Claude Code 固有の作法だけが `CLAUDE.md`、2 製品の配線図が [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md)）。
 - **このファイルは構造・データフロー・公開契約・不変条件だけを持つ。** 分量が大きく、かつ
@@ -19,10 +20,10 @@
 - **「何ができるか」は [`PRODUCT.md`](PRODUCT.md)、「なぜそうなっているか」は
   [`DECISIONS.md`](DECISIONS.md)。** どの文書が何の正本かは
   [`docs/README.md`](docs/README.md) が1枚の表で持っている。
-- **ラウンド番号をこのファイルに書かない。** 「いつその事実になったか」を知りたいときは
-  `git log -S'<その記述>' -- Architecture.md` で入った commit を辿り、同じラウンドの `DEV-NOTES.md`
-  を読む。本文にラウンド番号を埋めると、それを手掛かりに履歴の物語がまた増えるので、
-  `npm run check:docs` が本文中のラウンド参照を検査して落とす。
+- **ラウンド番号・PR 番号をこのファイルに書かない。** 「いつその事実になったか」を知りたいときは
+  `git log -S'<その記述>' -- Architecture.md` で入った commit を辿り（件名の末尾が PR 番号）、その回の
+  記録を読む。本文に番号を埋めると、それを手掛かりに履歴の物語がまた増えるので、
+  `npm run check:docs` が本文中のラウンド・PR 参照を（桁数によらず）検査して落とす。
 - 数字（行数・KB・件数など）を書くときは**その場で実測した値**にする。実測できる主要な数字は
   `npm run check:docs` がこのファイルと実体の一致を毎回検査する。
 - 実装を変えたら、この仕様書も同じコミットで更新すること。
@@ -53,6 +54,16 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   ければ `js/lazy-modules.js` が「無い」ことを学べない。⚠ **オフラインのときは出さない**（新版の
   配信ではないから。そこはパネル自身の「接続を確認してください」が正しい）。
   同じ器が、**手元が古い版だと分かったとき**（`window.__INTMAP_STALE`）にも使われる。9言語。
+- **ビルド印はビルドが書く。** `index.html` のソースは `window.INTMAP_BUILD` と `window.__imBuild` に
+  **同じ置換記号**（`__INTMAP_BUILD_STAMP__`）だけを持ち、`scripts/build-stamp.mjs`（vite プラグイン。
+  `vite build` でも `vite` でも走る）が **`<ビルドした commit の committer 時刻, UTC>Z-<短い sha>`** に
+  置き換える。main は merge で進み、各 merge の時刻はそれが着地した時刻なので、**印の順序はサイトの
+  順序**になる（ビルド機の時計は使わない——古い commit を建て直すと古いコードが最新を名乗るから）。
+  起動時の比較（`index.html` のインライン）は**その時刻**で行い、この端末が既に見た印より古い印を
+  配られたら（＝古い写しがキャッシュから出た）キャッシュを捨てて 1 回だけ再読み込みし、それでも古ければ
+  上の案内を出す。印を持たない旧形式の保存値（`YYYY-MM-DD-R<n>`）は**どの生成印よりも古い**と扱い、
+  置換されずに配られた頁（時刻を読めない印）は**何も捨てない**。バグ報告（`js/feedback.js`）と
+  性能 HUD（`js/perf-hud.js`）は同じ値をそのまま載せる——sha でどのコードかが分かる。
 - ⚠⚠ **……そして「エントリそのものが 404」は、その受け手には見えない。**
   `vite:preloadError` を発火させるのは Vite の preload helper＝**`assets/main-<hash>.js` の中身**なので、
   **404 したのがエントリ自身なら、案内を出すはずのコードが届いていない。**
@@ -4807,7 +4818,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `.github/workflows/db-backup.yml` — 毎日 `pg_dump` → GPG → 7 日保持の artifact。`SUPABASE_DB_URL` ＋
   `BACKUP_GPG_PASSPHRASE` のどちらかが無ければ **run は赤**で、`status:backup-failing` の Issue が
   「どの secret が無いか」を述べる（揃えば次の緑で閉じる）。⚠ **secret が無いのに緑で skip する形を、
-  全ワークフローについて禁じている**——`tests/r822-backup-and-deploy-as-code-checks.test.mjs` が
+  全ワークフローについて禁じている**——`tests/backup-and-deploy-as-code-checks.test.mjs` が
   `.github/workflows/` を発見し、secret を読む job の関門を **secret 空で実行して**非ゼロ終了を確かめ、
   `if:` で secret / 変数を読む skip は理由を宣言したもの（Pages の停止スイッチ `ENABLE_PAGES_DEPLOY`）だけを通す。
   方針 ＝ **Managed backups 優先**＋その pg_dump を予備とする。
