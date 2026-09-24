@@ -107,6 +107,17 @@ is a single `SECURITY DEFINER` function that either does all of it or none of it
 | `news_event_link_candidates(k, min_sim, limit)` | Event pairs whose members are semantically close. Proposes candidates; decides nothing. |
 | `news_articles_set_embeddings(jsonb)` | Bulk write-back of embeddings (three columns of existing rows). |
 
+### Atlas capability vectors (atlas-semantic-search)
+| Table | Purpose | Read | Write |
+|---|---|---|---|
+| `atlas_capability_vectors` | One embedding per Atlas capability's documentation — `(catalog_hash, model, capability_id)`, `embedding vector(1536)`, `created_at`. `catalog_hash` is the SHA-256 of the whole catalogue, **recomputed by the `atlas-embed` Edge Function from the text it embeds**, so a changed catalogue is a new key and no caller can file text under a key that is not its hash. The QUERY side is never stored. | **service_role only** (no policy). | **service_role only**, through the functions below. |
+
+| Function | What it does |
+|---|---|
+| `atlas_capability_catalog_size(catalog, model)` | How many capabilities are stored under the key. 0 = unknown — the function then asks the page for the catalogue instead of embedding a query it cannot compare. |
+| `atlas_capability_similarity(catalog, model, query)` | Cosine similarity (`1 - (embedding <=> query)`) of one query vector to **every** capability of that catalogue — not a top-k: the page judges what stands out from the whole distribution. |
+| `atlas_capability_seed(catalog, model, jsonb)` | Stores a whole catalogue in one statement (a malformed vector raises and nothing is written); idempotent; sweeps OTHER catalogues older than 30 days in the same transaction. |
+
 ⚠⚠⚠ **None of them calls `public.is_admin()`.** The repository baseline declares a zero-argument
 `is_admin()`, but **production has only `is_admin(uid uuid)`** (measured 2026-08-24 — the baseline
 was written after production and, as `MIGRATIONS.md` says, was never recorded there). Each function
@@ -154,8 +165,9 @@ itself; `grant execute` means "may call", never "may do".
 
 Every SECURITY DEFINER function pins a `search_path` that does not contain `public` and
 schema-qualifies its objects, so a caller cannot hijack it via their own search path. All but
-three pin the empty string; the three embedding functions (`news_embedding_candidates`,
-`news_articles_set_embeddings`, `news_event_link_candidates`) pin `extensions` alone, because
+six pin the empty string; the six embedding functions (`news_embedding_candidates`,
+`news_articles_set_embeddings`, `news_event_link_candidates`, and the three `atlas_capability_*`
+functions) pin `extensions` alone, because
 pgvector's `<=>` operator lives there and operators are resolved through the search path.
 `supabase/tests/09_r801_security_audit_test.sql` measures this over `pg_proc`, not over a list.
 
@@ -252,7 +264,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **36**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **37**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

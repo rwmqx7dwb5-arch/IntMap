@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
+import { declaredEdgeFunctions, functionsImporting } from './helpers/edge-functions.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -47,6 +48,11 @@ const N_RG = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true
     && readFileSync(join(ROOT, 'supabase/functions', d.name, 'index.ts'), 'utf8').includes('_shared/relay-guard.js')).length;
 const WORD_OF = { 16: 'sixteen', 17: 'seventeen', 18: 'eighteen', 19: 'nineteen', 20: 'twenty', 21: 'twenty-one' };
 const SKILL = '.agents/skills/intmap-round/SKILL.md';
+/* (atlas-semantic-search) the counts the mutations below need, READ FROM THE TREE — this file used to spell them
+   (「17 本」, «seventeen», 「15本」), so every new Edge Function broke it without being about it.
+   Whether a document's number is right is doc-facts' job; here the number only locates a sentence. */
+const EDGE_N = declaredEdgeFunctions(ROOT).length;
+const GUARD_N = functionsImporting(ROOT, 'relay-guard.js').length;
 
 /* ⚠ (#R286/#R283) 錨は LF で書いてあり、このチェックアウトはそうとは限らない。照合は改行を
    緩めた正規表現で、**復元は元のバイト列**で行う（正規化して書き戻すと、テストを走らせた
@@ -169,7 +175,7 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
     });
 
     /* 数だけを間違える（名前は12本のまま） */
-    const num = anchorRe(`**Edge Functions は ${N_FN} 本**`);
+    const num = anchorRe('**Edge Functions は ' + EDGE_N + ' 本**');
     assert.ok(num.test(readLF(join(ROOT, 'docs/AGENT-SETUP.md'))), 'docs/AGENT-SETUP.md §9 no longer states the count next to the roster');
     await breaking('docs/AGENT-SETUP.md', (s) => s.replace(num, () => '**Edge Functions は 9 本**'), (r) => {
       assert.equal(r.code, 1, 'check:docs stayed green with the count wrong beside a correct roster');
@@ -197,7 +203,7 @@ test('R403 ④ a legitimately PARTIAL list of functions is not read as the roste
       'the relay-guard list is gone from Architecture.md — case ④ is no longer proven by the tree');
     assert.ok(/for f in refresh-news monitor-run/.test(arch),
       'the split deploy loop is gone from Architecture.md — case ④ is no longer proven by the tree');
-    assert.ok(new RegExp(`All ${WORD_OF[N_FN]} are declared there now`).test(rd('docs/SECURITY-ARCHITECTURE.md')),
+    assert.ok(/All [a-z-]+ are declared there now/.test(rd('docs/SECURITY-ARCHITECTURE.md')),
       'the "four most recently added" sentence is gone from docs/SECURITY-ARCHITECTURE.md — case ④ is no longer proven by the tree');
 
     /* そのうえで木が緑であること。上の3文はいずれも3本以上の実名を並べている。 */
@@ -255,11 +261,9 @@ const NEW_RULES = [
     /* (#R510) ais-feed made it ten; (#R585) radiation-feed made it twelve. The MUTATION is what
        this row is for — the number itself is Architecture.md's business and doc-facts already checks
        it — but the SEED has to be a string that exists, so it tracks the count by hand on purpose. */
-    /* (#R801) ai-proxy and monitor-run took the bounded reader: fifteen.
-       (client-error-log) client-errors made it sixteen — and the count is DISCOVERED now (the importers of
-       _shared/relay-guard.js), for the reason N_FN above is: a seed that tracks the count by hand
-       fails on every correct addition before the rule it exists for is exercised. */
-    from: '`_shared/relay-guard.js` を共有するのは' + N_RG + '本', to: '`_shared/relay-guard.js` を共有するのは5本' },
+    /* (#R801) ai-proxy and monitor-run took the bounded reader: fifteen. */
+    /* (atlas-semantic-search) the seed is the count the imports state (GUARD_N above), and the mutation is one short of it. */
+    from: '`_shared/relay-guard.js` を共有するのは' + GUARD_N + '本', to: '`_shared/relay-guard.js` を共有するのは' + (GUARD_N - 1) + '本' },
 
   /* backup-shell — ⚠ **文書ではなくコードの側**。#R396 がこのラウンドと並行して着地し、同じ
      古い launcher を3か所で見つけた——うち2か所は `.md` ではない（スクリプト自身の USAGE と、

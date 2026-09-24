@@ -52,6 +52,7 @@ const CAP_LIVE = CAP_TOTAL - (CAPS.withdrawn() || []).length;
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
 import { claims, headNoun, opensLine, CHECKED } from '../scripts/doc-claims.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -166,21 +167,17 @@ test('⑥ the heading is a subject, but only for a quantity standing at the head
 /* ── ⑦ the gate itself goes red on the real defect ───────────────────────────────────────── */
 /* ⚠ A gate is worth nothing until it has been seen to fail on the thing it exists to catch.
    This puts `docs/README.md` back to what #R696 found and runs the real rule over the real tree. */
-/* (#client-error-log) THE DEFECT IS «ONE SHORT», AND WHAT IS ONE SHORT IS DISCOVERED. The needle
-   said 17 and the mutation 16 by hand, so the eighteenth function made the anchor miss before the
-   rule was exercised — the same shape tests/r399 and tests/r403 had. The count comes from the
-   directory the rule itself counts; the mutation is still exactly #R696's: one short. */
 test('⑦ check:docs fails when docs/README.md is one short again', async () => {
-  const N = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith('_') && existsSync(join(ROOT, 'supabase/functions', d.name, 'index.ts'))).length;
   await withTreeLock(() => {
     const rel = 'docs/README.md';
     const original = readFileSync(join(ROOT, rel));
     const text = original.toString('utf8');
-    const NEEDLE = `Edge Function の名簿（${N} 本`;
+    /* (atlas-semantic-search) the count is the declaration's, not a number typed here — see tests/helpers/edge-functions.mjs */
+    const N = declaredEdgeFunctions(ROOT).length;
+    const NEEDLE = 'Edge Function の名簿（' + N + ' 本';
     assert.ok(text.includes(NEEDLE), `${rel} no longer carries the sentence this test mutates`);
     try {
-      writeFileSync(join(ROOT, rel), text.replace(NEEDLE, `Edge Function の名簿（${N - 1} 本`));
+      writeFileSync(join(ROOT, rel), text.replace(NEEDLE, 'Edge Function の名簿（' + (N - 1) + ' 本'));
       let code = 0, out = '';
       try {
         out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=edge-count'],
