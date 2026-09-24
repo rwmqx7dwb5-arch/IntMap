@@ -5142,6 +5142,7 @@ window.IntMapLang.define('fr', { ui: {
   'It stopped with an error.': 'Cela s’est arrêté sur une erreur.',   /* atlas-results.js (#R318) atlas.code.threw */
   'That one needs your confirmation first.': 'Cela nécessite d’abord votre confirmation.',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
   'Tap the point on the map you mean.': 'Touchez sur la carte le point que vous visez.',   /* atlas-results.js (#R318) atlas.input.point */
+  'Reply yes to go ahead, or say what to do instead.': 'Répondez oui pour continuer, ou dites quoi faire à la place.',   /* atlas-results.js (#R801) atlas.input.confirm */
   'Draw the line on the map.': 'Dessinez la ligne sur la carte.',   /* atlas-results.js (#R318) atlas.input.polyline */
   'Draw the area on the map.': 'Dessinez la zone sur la carte.',   /* atlas-results.js (#R318) atlas.input.polygon */
   'Choose one:': 'Choisissez-en un :',   /* atlas-results.js (#R318) atlas.input.choice */

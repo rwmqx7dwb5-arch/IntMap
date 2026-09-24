@@ -1084,14 +1084,15 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全17本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（21本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（23本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表。8本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正。10本）
   functions/<name>/index.ts       Edge Functions（17本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
-                                  relay-guard.js / volcano-parse.js / who-don-extract.js）
+                                  rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
+                                  bbox.js / read-budget.js）
                                   ⚠ news-cluster.js は**サーバー専用**——クライアントの
                                   バンドルに入れない（docs/NEWS-EVENTS.md §5）
 docs/
@@ -1364,7 +1365,7 @@ tests/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
   deploy.yml                      本番公開（**有効**。§15.4）
   rollback.yml                    手動ロールバック（履歴に実在する ref のみ）
-  db.yml                          supabase/** 変更時の DB 検査（本番非接続）
+  db.yml                          DB 検査（本番非接続）。PR では常に走り、supabase/** に変更が無ければ軽く緑で終える
   db-backup.yml                   休眠（Secret 2本が登録されるまで各 run skip）
   security.yml                    CodeQL ほかセキュリティ検査
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ

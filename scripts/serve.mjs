@@ -117,7 +117,9 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (s.isDirectory()) {
-      res.writeHead(301, { location: pathname.replace(/\/?$/, '/') }).end();
+      /* (#R801) A request for `//host/dir` parses to a pathname of `//host/dir`, and a Location of that
+         form is a protocol-relative URL — an open redirect, even on a dev server. Collapse leading slashes. */
+      res.writeHead(301, { location: pathname.replace(/^\/+/, '/').replace(/\/?$/, '/') }).end();
       return;
     }
     const raw = await readFile(filePath);

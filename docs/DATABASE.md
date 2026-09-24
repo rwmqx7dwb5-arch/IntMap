@@ -18,8 +18,10 @@ is the human explanation.
   is true.
 - **Auth:** Supabase Auth (Google OAuth + email). Each auth user gets a `profiles` row via a
   trigger.
-- **Storage:** not used. Avatars are stored inline (data URL in `profiles.avatar_url`), so
-  there are no Storage buckets to protect or back up.
+- **Storage:** three **public** buckets, all written by service_role only and read by everyone:
+  `aviation` (the live-aircraft snapshot, #R341), `gdelt` (the GDELT cache, #R424) and `ais` (the
+  live-ship snapshot, #R510). Avatars are stored inline (data URL in `profiles.avatar_url`). The
+  buckets hold derived public data, so there is nothing to back up.
 
 ## Tables
 
@@ -30,7 +32,8 @@ is the human explanation.
 | `profiles_public` | The public author card: `id`, `display_name`, `bio`, `avatar_url` — and physically nothing else. Kept in step with `profiles` by the `profiles_public_sync` trigger. **A table, not a view** (#R507): as a view it had no `security_invoker`, so it read `profiles` with the owner's rights and bypassed that table's RLS, and any column added to it would have inherited that bypass. | Everyone (`SELECT USING (true)` — this data is public by declaration). | **Nobody.** No role holds a write grant; the trigger is the only writer. |
 | `ai_usage` | Daily AI free-use counter (`user_id`, `usage_date`, `count`). | Owner reads own rows. | **RPCs only** (`increment_ai_usage` / `refund_ai_usage`, service_role). Users cannot write it. |
 | `ai_gloss_usage` | Daily counter for the Atlas **term-gloss** lane (`user_id`, `usage_date`, `count`). Separate from `ai_usage` so looking a word up inside an answer never spends one of the reader's questions — and so spending the questions never stops the lookups. | Owner reads own rows. | **RPCs only** (`consume_ai_gloss` / `refund_ai_gloss`, service_role). |
-| `ai_turns` | One row per (account, AI **turn**) — `(user_id, turn_key)`, `calls`, `charged`, `started_at`. The first call of a turn charges `ai_usage`; the rest are free up to a server-set ceiling. | Owner reads own rows. | **RPCs only** (`consume_ai_turn` / `refund_ai_turn` / `sweep_ai_turns`, service_role). |
+| `ai_turns` | One row per (account, AI **turn**) — `(user_id, turn_key)`, `calls`, `charged`, `succeeded`, `started_at`, `settled_at`. The first call of a turn charges `ai_usage`; the rest are free up to a server-set ceiling. `succeeded` is set the moment any call of the turn returns a provider answer, and a succeeded turn is never refunded — the audited «answer, then send a bad request under the same turn» sequence used to hand the charge back. | Owner reads own rows. | **RPCs only** (`consume_ai_turn` / `settle_ai_turn` / `refund_ai_turn` / `sweep_ai_turns`, service_role). |
+| `relay_rate_buckets` | Token buckets shared by every isolate of a relay — `(scope, key)`, `tokens`, `at`. `routing-relay` keeps one per caller address and two project-wide ones (per minute, per day), so the spend ceiling on the paid Mapbox upstream survives restarts and is the same across isolates. | Nobody (no policy; RLS on). | **RPCs only** (`relay_take` / `sweep_relay_rate_buckets`, service_role). |
 | `user_prefs` | Per-user synced settings blob (`data` jsonb). | Owner. | Owner. |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
 
@@ -136,15 +139,27 @@ itself; `grant execute` means "may call", never "may do".
 | `public.consume_ai_gloss(uuid, integer)` | SECURITY DEFINER, `search_path=''` | Atomically consumes one **term-gloss** lookup if under that lane's own limit. Returns `(used, allowed)`. EXECUTE = service_role only. |
 | `public.refund_ai_gloss(uuid)` | SECURITY DEFINER, `search_path=''` | Refunds one lookup after a failed provider call. EXECUTE = service_role only. |
 | `public.consume_ai_turn(uuid, integer, text, integer, integer)` | SECURITY DEFINER, `search_path=''` | The turn-aware front door to the quota. Charges once per turn key; later calls of the same key are free until `p_max_calls`, and the key expires after `p_ttl_seconds`. Returns `(used, allowed, charged, calls, reason)`. EXECUTE = service_role only. |
-| `public.refund_ai_turn(uuid, text)` | SECURITY DEFINER, `search_path=''` | Releases the charge **and** the turn together, so a retry after a provider failure is not treated as a free continuation. EXECUTE = service_role only. |
+| `public.settle_ai_turn(uuid, text)` | SECURITY DEFINER, `search_path=''` | Marks the turn as having produced an answer (`succeeded`). Idempotent; an empty key is a no-op. EXECUTE = service_role only. |
+| `public.refund_ai_turn(uuid, text)` | SECURITY DEFINER, `search_path=''` | Releases the charge **and** the turn together, so a retry after a provider failure is not treated as a free continuation — **unless the turn has succeeded**, in which case it releases nothing. One `DELETE … RETURNING`, so two concurrent refunds decrement once; the use goes back to the day the turn was charged on (`usage_date`), not to today. EXECUTE = service_role only. |
+| `public.relay_take(text, text, integer, numeric, integer)` | SECURITY DEFINER, `search_path=''` | Atomic token-bucket take on `relay_rate_buckets` (row lock, refill by `clock_timestamp()`); returns `(allowed, remaining)`. Capacity and refill are arguments, so the caller owns the numbers. EXECUTE = service_role only. |
+| `public.sweep_relay_rate_buckets(integer)` | SECURITY DEFINER, `search_path=''` | Deletes buckets idle longer than the argument (default two days). EXECUTE = service_role only. |
 | `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
 | `public.monitor_limit(uuid)` / `monitor_limit_self()` *(#R144)* | SECURITY DEFINER, `search_path=''` | Per-plan monitor cap. `(uuid)` is **service_role-only** (users can't probe another user's plan); the UI reads its own via `monitor_limit_self()`. Enforced by a BEFORE INSERT trigger. |
 | `public.monitor_claim_due(int,int)` / `monitor_claim_one(uuid,uuid,int,int)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Atomic claims (cron `FOR UPDATE SKIP LOCKED`; manual `UPDATE…WHERE…RETURNING`). service_role only. |
 | `public.monitor_finalize(...)` / `monitor_commit_report(...)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Finalize a run + (optionally) insert its report + update the monitor meta in one transaction. service_role only. |
 | `public.tg_monitors_guard_state()` + `trg_monitors_guard` *(#R144)* | SECURITY DEFINER, `search_path=''` | BEFORE UPDATE on `area_monitors`: freezes run-state columns and server-owns `next_run_at` for any non-runner caller (grant-independent). |
 
-Every SECURITY DEFINER function pins an empty `search_path` and schema-qualifies its objects,
-so a caller cannot hijack it via their own search path.
+Every SECURITY DEFINER function pins a `search_path` that does not contain `public` and
+schema-qualifies its objects, so a caller cannot hijack it via their own search path. All but
+three pin the empty string; the three embedding functions (`news_embedding_candidates`,
+`news_articles_set_embeddings`, `news_event_link_candidates`) pin `extensions` alone, because
+pgvector's `<=>` operator lives there and operators are resolved through the search path.
+`supabase/tests/09_r801_security_audit_test.sql` measures this over `pg_proc`, not over a list.
+
+Three privileges never go through RLS — `TRUNCATE`, `REFERENCES`, `TRIGGER` — and Supabase's
+default privileges hand them to `anon`/`authenticated` on every new table. They are revoked from
+**every** table in `public` (a loop over the catalogue, so the next table is covered), and the
+same pgTAP file asserts zero grants.
 
 ## RLS model (the three security guarantees)
 
@@ -207,8 +222,8 @@ edit `geo_pins`/`dashboard_cards`.
 
 `supabase db pull` and this baseline capture schema, RLS, functions, triggers, grants. They do
 **not** capture: OAuth provider config + secrets, auth redirect URLs, email templates, project
-API keys, the `pg_cron` schedule that triggers `refresh-news`, or Storage bucket settings (none
-today). Record those changes in [`MIGRATIONS.md`](MIGRATIONS.md) manually.
+API keys, or the `pg_cron` schedule that triggers `refresh-news`. (The three Storage buckets ARE
+created by migrations.) Record those changes in [`MIGRATIONS.md`](MIGRATIONS.md) manually.
 
 ---
 
@@ -231,7 +246,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **34**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **35**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

@@ -825,9 +825,15 @@ const usEpa = {
     urls(q) {
       let st = null;
       for (const s of EPA_STATIONS) if (s[0].toUpperCase() === String(q.code).toUpperCase()) { st = s; break; }
+      /* ⚠ (#R801, external audit) A CODE THAT IS NOT A REGISTERED STATION IS NOT A PATH. This used
+         to fall back to `q.code` itself, and epaUrl encodes each `/`-separated piece — which leaves
+         `..` exactly as it is, so `../../../anything` walked the same host's tree. EPA_STATIONS is the
+         only source of paths this provider reads (see its note), so a code it does not contain has
+         nothing to ask for: no URL, and runProvider reports the read as not made. */
+      if (!st) return [];
       const asked = String(q.to || "").slice(0, 4);
-      const year = /^\d{4}$/.test(asked) ? asked : (st ? st[3] : "");
-      return [epaUrl(st ? st[0] : q.code, year)];
+      const year = /^\d{4}$/.test(asked) ? asked : st[3];
+      return [epaUrl(st[0], year)];
     },
     parse(bodies) {
       return epaRows(bodies[0]).map((r) => ({ at: r.at, nsvh: r.nsvh }));

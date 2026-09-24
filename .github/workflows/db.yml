@@ -103,10 +103,23 @@ jobs:
       # Reproducibility / drift gate: after a clean rebuild the migrations must
       # FULLY describe the schema, so a public-schema diff is empty. (Run BEFORE
       # installing pgTAP, which is a CI-only extension not present in migrations.)
+      # ⚠ (#R801) This used to be `supabase db diff … || true`: a CLI that exited
+      # non-zero with nothing on stdout left an EMPTY file, and an empty file is
+      # what "no drift" looks like — the gate was green whenever the measurement
+      # failed. "Could not measure" and "measured zero" are different answers, and
+      # only the second one is a pass.
       - name: Schema drift check (migrations ⇄ rebuilt schema, must be empty)
         if: steps.scope.outputs.run == 'true'
         run: |
-          supabase db diff --schema public > /tmp/db_diff.sql || true
+          set +e
+          supabase db diff --schema public > /tmp/db_diff.sql
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            echo "::error::supabase db diff exited $code — drift could NOT be measured (this is not 'no drift'):"
+            cat /tmp/db_diff.sql
+            exit "$code"
+          fi
           if [ -s /tmp/db_diff.sql ]; then
             echo "::error::Schema drift — the live schema is not fully described by migrations:"
             cat /tmp/db_diff.sql
@@ -161,6 +174,8 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -c 'create database intmap_restore_test;'
           bash scripts/restore-test.sh "$ENC" "postgresql://postgres:postgres@127.0.0.1:54322/intmap_restore_test"
 
+      # Cleanup only: the stack may never have started (scope=false, or a failure
+      # before `db start`), so this step's own exit code carries no verdict.
       - name: Stop local Supabase
         # always(), but only if something was ever started — a skipped run has nothing to stop
         if: ${{ always() && steps.scope.outputs.run == 'true' }}

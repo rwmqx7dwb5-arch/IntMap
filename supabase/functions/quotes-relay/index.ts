@@ -57,13 +57,21 @@ function allowed(raw) {
   try { u = new URL(raw); } catch (_) { return false; }
   if (u.protocol !== "https:") return false;
   if (u.hostname !== "query1.finance.yahoo.com" && u.hostname !== "query2.finance.yahoo.com") return false;
+  /* (#R801) the ORIGIN is the allow-listed one, not merely the hostname: no port, no userinfo */
+  if (u.port !== "" || u.username || u.password) return false;
   if (u.hash) return false;
 
   const isSpark = u.pathname === "/v8/finance/spark";
   const chart = CHART_RE.exec(u.pathname);
   if (!isSpark && !chart) return false;
-  /* the symbol in the PATH is an input too */
-  if (chart && !SYMBOL_RE.test(decodeURIComponent(chart[1]))) return false;
+  /* the symbol in the PATH is an input too — and so is its encoding: (#R801) a stray `%` made
+     decodeURIComponent throw URIError from OUTSIDE the handler's try, i.e. a 500 for a bad symbol
+     instead of the 400 every other malformed input gets here. */
+  if (chart) {
+    let sym;
+    try { sym = decodeURIComponent(chart[1]); } catch (_) { return false; }
+    if (!SYMBOL_RE.test(sym)) return false;
+  }
 
   let sawSymbols = false;
   for (const [k, v] of u.searchParams) {

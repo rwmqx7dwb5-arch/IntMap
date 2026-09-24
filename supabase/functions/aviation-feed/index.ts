@@ -53,6 +53,8 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
+import { parseBbox } from "../_shared/bbox.js";
+import { makeReadBudget } from "../_shared/read-budget.js";
 // Both imported for their side effect: they set globalThis.IntMapAviationCodec / …Model.
 import "../_shared/aviation-codec.js";
 import "../_shared/aviation-model.js";
@@ -163,6 +165,10 @@ const READ_BURST = 6;
    (check:static reads syntax, not order), and #R504's own thirteen checks read the source as TEXT.
    The gate that catches it now actually EVALUATES this constant block — tests/r505 ①. */
 const SWEEP_TILES_MAX = READ_BURST;
+/* (#R801) the bucket itself now lives in _shared/read-budget.js, because ais-feed needed the same
+   one and a second copy of the arithmetic is how two feeds drift apart. Its clock is still seeded
+   from the sweep ledger on hydrate (applySweep), for the reason the note above gives. */
+const BUDGET = makeReadBudget({ ratePerSec: READ_RATE_PER_S, burst: READ_BURST });
 
 /* ⚠ (#R504) A 429 IS NO LONGER A MINUTE OF SILENCE ON THE FIRST OFFENCE. At 0.089 reads a second a
    429 meant something had gone badly wrong, so a flat 60 s stop was proportionate. At 0.34 an
@@ -245,10 +251,9 @@ const STATE = {
      viewport picks the stalest cells it can see; see the note in the view channel. */
   asked: new Map(),
   viewReadAt: 0,           // (#R434) when the viewport channel last spent the shared burst budget
-  /* (#R504) the leaky bucket every upstream read is drawn from, and the clock it refills against.
-     Seeded from the shared ledger on hydrate so a cold isolate does not start with a free burst. */
-  readTokens: READ_BURST,
-  readTokensAt: 0,
+  /* (#R504) the leaky bucket every upstream read is drawn from is BUDGET (_shared/read-budget.js);
+     its clock is seeded from the shared ledger on hydrate so a cold isolate does not start with a
+     free burst. */
   readAt: 0,               // last completed read, ANY channel — this is what the ledger carries
   backoffStep: 0,          // (#R504) the current escalating pause; a successful read clears it
   sweepSavedAt: 0,         // when the sweep ledger was last written
@@ -439,8 +444,7 @@ function applySweep(j) {
      snapshot exists to remove, moved from aircraft to permission-to-ask. */
   if (j.readAt) {
     STATE.readAt = secs(j.readAt);
-    STATE.readTokensAt = STATE.readAt;
-    STATE.readTokens = 0;
+    BUDGET.seed(STATE.readAt);
   }
   STATE.sweepLoaded = true;
   return true;
@@ -508,20 +512,11 @@ async function saveSweep(force) {
    Every upstream read in this file passes through takeTokens(). Nothing else may call readTile or
    readSerial without one, which is what makes READ_RATE_PER_S a fact about the function rather
    than about whichever channel happened to be written most carefully. */
-function refillTokens(now) {
-  const at = STATE.readTokensAt || now;
-  if (now > at) {
-    STATE.readTokens = Math.min(READ_BURST, STATE.readTokens + ((now - at) / 1000) * READ_RATE_PER_S);
-  }
-  STATE.readTokensAt = now;
-}
-
 function takeTokens(want, now) {
-  refillTokens(now);
-  if (now < STATE.backoffUntil) return 0;
-  const n = Math.min(want | 0, Math.floor(STATE.readTokens));
-  if (n > 0) STATE.readTokens -= n;
-  return n;
+  /* the provider's 429 backoff is this file's fact, not the bucket's: while it lasts nothing is
+     granted, and the bucket keeps refilling for when it ends (#R504) */
+  if (now < STATE.backoffUntil) { BUDGET.refill(now); return 0; }
+  return BUDGET.take(want, now);
 }
 
 //  Turn a decoded snapshot back into the record shape the world Map holds. The wire is lossy about
@@ -812,7 +807,7 @@ async function readSerial(provider, tiles) {
       STATE.stats.rateLimited++;
       /* An empty bucket is not a reason to keep the tokens we already spent on tiles we will now
          never read; hand them back so the next caller is not charged for this one's refusal. */
-      STATE.readTokens = Math.min(READ_BURST, STATE.readTokens + (tiles.length - i));
+      BUDGET.refund(tiles.length - i);
       break;
     }
     STATE.backoffStep = 0;
@@ -1064,8 +1059,7 @@ Deno.serve(async (req) => {
              deploy: what the ceiling is, how much of it is available right now, when this
              function last actually asked anything, and whether the persisted ledger arrived. */
           readRatePerS: READ_RATE_PER_S, readBurst: READ_BURST,
-          readTokens: Math.round(Math.min(READ_BURST, STATE.readTokens +
-            (STATE.readTokensAt ? ((now - STATE.readTokensAt) / 1000) * READ_RATE_PER_S : 0)) * 100) / 100,
+          readTokens: Math.round(BUDGET.peek(now) * 100) / 100,
           readAgeMs: STATE.readAt ? now - STATE.readAt : null,
           sweepCursor: STATE.cursor,
           sweepLedger: STATE.sweepLoaded ? "loaded" : "absent",
@@ -1075,8 +1069,14 @@ Deno.serve(async (req) => {
 
     // ── viewport channel ────────────────────────────────────────────────────
     if (channel === "view") {
-      const parts = (url.searchParams.get("bbox") || "").split(",").map(Number);
-      if (parts.length !== 4 || parts.some((v) => !isFinite(v))) {
+      /* ⚠ (#R801) A BOX IS FOUR COORDINATES, NOT FOUR FINITE NUMBERS. This read `isFinite` and
+         nothing else, and tilesForBbox's fanOut builds an array proportional to the longitude
+         span: MEASURED, a span of 1e8 cost 4.3 s of CPU per request and 1e9 threw
+         `Invalid array length` — from an unauthenticated URL. The rule (±180 / ±90, south not
+         above north, w > e meaning the antimeridian) is _shared/bbox.js, the same one ais-feed
+         reads its box with. */
+      const parts = parseBbox(url.searchParams.get("bbox"));
+      if (!parts) {
         return new Response(JSON.stringify({ error: "bbox=w,s,e,n required" }),
           { status: 400, headers: { ...CORS, "content-type": "application/json" } });
       }
@@ -1174,7 +1174,7 @@ Deno.serve(async (req) => {
       let viewNote = "cands=" + cands.length + ",ranked=" + ranked.length +
         ",stalestS=" + (stalest ? Math.round((now - stalest) / 1000) : -1) +
         ",worth=" + (worthIt ? 1 : 0) + ",grant=" + grant +
-        ",tokens=" + Math.floor(STATE.readTokens) + ",inBox=" + inBox.length;
+        ",tokens=" + Math.floor(BUDGET.tokens()) + ",inBox=" + inBox.length;
       /* ⚠ THE READ IS NOT BUILT UNLESS IT IS WANTED, AND THAT IS A BUG FIX ON ITS OWN. `once()`
          STARTS what it is handed — it hands back a running promise, not a thunk — so the previous
          `const work = once(key, …)` above the branch spent four upstream reads on EVERY request that

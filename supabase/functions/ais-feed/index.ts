@@ -38,6 +38,8 @@
  *    Pacific is empty" reads as coverage rather than as fact about the sea.
  * ==========================================================================*/
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
+import { parseBbox } from "../_shared/bbox.js";
+import { makeReadBudget } from "../_shared/read-budget.js";
 
 const CORS = {
   ...corsFor(),
@@ -62,6 +64,22 @@ const UPSTREAM_TIMEOUT_MS = 12000;
    cap is what stops a query parameter from holding a function invocation open for a minute. */
 const WS_MS_DEFAULT = 4000;
 const WS_MS_MAX = 20000;
+/* ⚠ (#R801, external audit) THE CAP ABOVE BOUNDED ONE INVOCATION, NOT THE NUMBER OF THEM. Anyone
+   could say `?refresh=1&ws=20000` and every such request opened two Digitraffic reads and a
+   twenty-second aisstream socket — upstream work proportional to the callers, the shape aviation-feed's
+   #R504 bucket exists to remove. So every refresh, forced or not, is drawn from the same bucket
+   (_shared/read-budget.js): a query parameter may ask, the bucket grants, and a caller granted nothing
+   is served what this isolate holds and told its age in x-intmap-age-ms.
+   THE NUMBERS: WORLD_TTL_MS already makes one refresh per 30 s per isolate the natural cadence, so
+   the rate is derived from it — TWICE that, so the TTL-driven refresh never finds its own bucket a
+   rounding error short of one token, and a caller repeating ?refresh=1 gets at most four upstream
+   rounds a minute instead of one per request. The burst is two: the TTL refresh plus one forced one
+   landing in the same window (aisstream permits three sockets per key; refreshOnce serialises them
+   anyway). Expires if WORLD_TTL_MS changes (the rate follows it) or if either upstream publishes a
+   request rate of its own, which neither had on 2026-09-18. */
+const REFRESH_RATE_PER_S = 2 / (WORLD_TTL_MS / 1000);
+const REFRESH_BURST = 2;
+const BUDGET = makeReadBudget({ ratePerSec: REFRESH_RATE_PER_S, burst: REFRESH_BURST });
 
 const BUCKET = "ais";
 const WORLD_OBJECT = "world.json";
@@ -201,7 +219,7 @@ const STATE = {
   credForm: "" as string,
   /* vessels per provider in the last refresh (or from the snapshot's `p`) — coverageLine reads it */
   counts: {} as Record<string, number>,
-  stats: { refreshes: 0, served: 0, hydrated: 0, saved: 0, wsMessages: 0, wsVessels: 0, dtVessels: 0, fails: 0 },
+  stats: { refreshes: 0, refreshDenied: 0, served: 0, hydrated: 0, saved: 0, wsMessages: 0, wsVessels: 0, dtVessels: 0, fails: 0 },
 };
 
 function svcUrl(path: string): string {
@@ -397,7 +415,10 @@ function attemptAisstream(cand: Cand, ms: number, decideMs: number, nowMs: numbe
        the stored secret measured 79 characters and was not alphanumeric, which is not the shape
        aisstream issues — the value had something else in it. A digest of the credential would have
        said nothing, and the credential itself must never reach a response, a log or a header. */
-    STATE.wsTrace.push("try:" + cand.form + ":len" + key.length + ":" + shapeOf(key));
+    /* (#R801) the length and shape of the candidate go to the function LOG — the same two facts,
+       readable by the project — and the public trace keeps only which form was tried */
+    console.warn("aisstream try:" + cand.form + ":len" + key.length + ":" + shapeOf(key));
+    STATE.wsTrace.push("try:" + cand.form);
     /*  WARN (#R556) HOW THE SOCKET ENDED IS THE ANSWER, NOT HOW MANY FRAMES IT CARRIED.
         A REFUSED credential is closed on us within a moment and never sends anything (#R510:
         open | sent | error | close, zero frames). An ACCEPTED one simply stays open -- and may
@@ -443,15 +464,18 @@ function attemptAisstream(cand: Cand, ms: number, decideMs: number, nowMs: numbe
           FilterMessageTypes: ["PositionReport", "ShipStaticData"],
         }));
         STATE.wsTrace.push("sent");
-      } catch (e) { STATE.wsTrace.push("sendfail:" + String((e as any)?.message || "").slice(0, 60)); finish("sendfail"); }
+      } catch (e) { console.warn("aisstream sendfail: " + String((e as any)?.message || "").slice(0, 60)); STATE.wsTrace.push("sendfail"); finish("sendfail"); }
     };
     ws.onmessage = (ev: MessageEvent) => {
       STATE.stats.wsMessages++; frames++;
       let m: any = null;
       const raw = frameText(ev.data);
-      try { m = JSON.parse(raw); } catch (_) { if (frames <= 3) STATE.wsTrace.push("nonjson:" + raw.slice(0, 90)); return; }
+      /* ⚠ (#R801) WHAT THE UPSTREAM SAID IS LOGGED, NOT ANSWERED. These lines used to carry the raw
+         frame, aisstream's error text and the socket's close reason into x-intmap-note and ?meta=1,
+         which any caller can read; the trace now records THAT it happened and the log records what. */
+      try { m = JSON.parse(raw); } catch (_) { if (frames <= 3) { console.warn("aisstream nonjson: " + raw.slice(0, 90)); STATE.wsTrace.push("nonjson"); } return; }
       /* aisstream answers a bad subscription with an error object rather than a close reason */
-      if (m && m.error) { if (frames <= 3) STATE.wsTrace.push("err:" + String(m.error).slice(0, 90)); rejected = true; return; }
+      if (m && m.error) { if (frames <= 3) { console.warn("aisstream err: " + String(m.error).slice(0, 90)); STATE.wsTrace.push("err"); } rejected = true; return; }
       if (frames <= 3) STATE.wsTrace.push("msg:" + String((m && m.MessageType) || "?").slice(0, 30));
       const md = m.MetaData || m.metadata || {};
       const mmsi = Number(md.MMSI || md.mmsi);
@@ -485,8 +509,8 @@ function attemptAisstream(cand: Cand, ms: number, decideMs: number, nowMs: numbe
       }
       if (STATE.ships.size >= AIS_MAX) finish("full");
     };
-    ws.onerror = (e: any) => { STATE.wsTrace.push("error:" + String((e && e.message) || "").slice(0, 90)); finish("error"); };
-    ws.onclose = (e: any) => { STATE.wsTrace.push("close:" + (e && e.code) + ":" + String((e && e.reason) || "").slice(0, 90)); clearTimeout(timer); finish("closed"); };
+    ws.onerror = (e: any) => { console.warn("aisstream error: " + String((e && e.message) || "").slice(0, 90)); STATE.wsTrace.push("error"); finish("error"); };
+    ws.onclose = (e: any) => { if (e && e.reason) console.warn("aisstream close " + e.code + ": " + String(e.reason).slice(0, 90)); STATE.wsTrace.push("close:" + (e && e.code)); clearTimeout(timer); finish("closed"); };
   });
   return { refused, done };
 }
@@ -638,6 +662,11 @@ async function refresh(wsMs: number): Promise<void> {
     const got = await readAisstream(key, wsMs, now);
     counts.aisstream = got;
     notes.push("aisstream=" + got + "[" + STATE.wsTrace.join("|") + "]");
+    /* (#R556) the length and character classes of the stored credential are what told a wrong key
+       from a right one with something wrapped around it. (#R801) They describe a SECRET, so they
+       are written to the function log — readable by the project, not by every caller of ?meta=1 —
+       and only when there is something to diagnose: a configured key that delivered nothing. */
+    if (!got) console.warn("aisstream credential shape: " + JSON.stringify({ ...credentialShape(key), acceptedForm: STATE.credForm || null }));
   } else {
     notes.push("aisstream=nokey");
   }
@@ -660,21 +689,17 @@ async function refresh(wsMs: number): Promise<void> {
 let INFLIGHT: Promise<void> | null = null;
 function refreshOnce(wsMs: number): Promise<void> {
   if (INFLIGHT) return INFLIGHT;
+  /* (#R801) THE ONE DOOR TO UPSTREAM, AND THE BUCKET IS ON IT. Joining a refresh already in flight
+     costs nothing upstream and so no token; a refresh the bucket does not grant is not made, and the
+     caller is served the set this isolate holds, with its true age in x-intmap-age-ms. */
+  if (!BUDGET.take(1, Date.now())) { STATE.stats.refreshDenied++; return Promise.resolve(); }
   INFLIGHT = refresh(wsMs).finally(() => { INFLIGHT = null; });
   return INFLIGHT;
 }
 
-/* `w,s,e,n` in degrees; w > e means the box crosses the antimeridian (the same reading as
-   _shared/aviation-model.js lonInSpan). Anything else is "no box", never an error: a malformed
-   bbox is served the world, which is what the caller would have got before the parameter existed. */
-function parseBbox(s: string | null): number[] | null {
-  if (!s) return null;
-  const v = s.split(",").map(Number);
-  if (v.length !== 4 || v.some((x) => !isFinite(x))) return null;
-  const [w, sLat, e, n] = v;
-  if (sLat > n || sLat < -90 || n > 90 || w < -180 || w > 180 || e < -180 || e > 180) return null;
-  return [w, sLat, e, n];
-}
+/* `w,s,e,n` in degrees is read by _shared/bbox.js (#R801: aviation-feed had a looser copy of this
+   rule and paid for it). Anything that is not a box is "no box", never an error: a malformed bbox is
+   served the world, which is what the caller would have got before the parameter existed. */
 function lonInSpan(lon: number, w: number, e: number): boolean {
   let span = e - w;
   if (!(span > 0)) span += 360;
@@ -740,14 +765,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         providers: providers(),
         attribution: providers().map((p) => (ATTRIBUTION as any)[p]).filter(Boolean),
+        /* (#R556) presence, never the value. (#R801) And no longer the SHAPE either — the length
+           and character classes of a secret were in this public answer; they are in the function
+           log now (see refresh), where the one reader who can act on them is. */
         aisstreamConfigured: !!env("AISSTREAM_API_KEY"),
-        /* (#R556) PRESENCE AND SHAPE, NEVER THE VALUE -- length and character classes only, plus
-           which derived candidates exist. This is what says whether a refused key is the wrong
-           credential or a right one with something wrapped around it. */
-        aisstreamCredential: {
-          ...credentialShape(Deno.env.get("AISSTREAM_API_KEY") || ""),
-          acceptedForm: STATE.credForm || null,
-        },
         world: {
           ships: STATE.ships.size,
           ageMs: STATE.builtAt ? now - STATE.builtAt : null,
@@ -763,7 +784,10 @@ Deno.serve(async (req) => {
           bucket: BUCKET, hasUrl: !!env("SUPABASE_URL"),
           hasKey: !!storageKey(), save: STATE.saveNote,
         },
-        limits: { worldTtlMs: WORLD_TTL_MS, staleDropS: STALE_DROP_S, wsMsDefault: WS_MS_DEFAULT, wsMsMax: WS_MS_MAX, aisMax: AIS_MAX },
+        limits: { worldTtlMs: WORLD_TTL_MS, staleDropS: STALE_DROP_S, wsMsDefault: WS_MS_DEFAULT, wsMsMax: WS_MS_MAX, aisMax: AIS_MAX,
+          /* (#R801) the refresh budget, so «why is the sea not moving» is answerable without a deploy */
+          refreshRatePerS: REFRESH_RATE_PER_S, refreshBurst: REFRESH_BURST,
+          refreshTokens: Math.round(BUDGET.peek(now) * 100) / 100 },
       }), { headers: { ...CORS, "content-type": "application/json", "cache-control": "no-store" } });
     }
 
@@ -782,7 +806,7 @@ Deno.serve(async (req) => {
        served fresh bytes. Serving stale and refreshing "after" is not an option here: nothing runs
        after the response (#R341). */
     if (force || !STATE.built || age > WORLD_TTL_MS) {
-      await refreshOnce(wsMs);
+      await refreshOnce(wsMs);          /* (#R801) …if the bucket grants it — see refreshOnce */
       age = Date.now() - STATE.builtAt;
     }
 

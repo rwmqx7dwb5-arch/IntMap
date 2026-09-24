@@ -84,8 +84,14 @@ export function makeAtlasAnswerRender() {
            a displayed layer's live value, a computed figure) has no page to open, and rendering it as
            nothing would make a figure look unsourced precisely when its source is the most solid one
            available. It gets the same number, as a pill that does not pretend to be a link. */
-        return r.finalUrl
-          ? '<a class="atl-cite" href="' + esc(r.finalUrl) + '" target="_blank" rel="noopener" title="' + label + '">' + n + '</a>'
+        /* ⚠ (#R801) THE SAME SCHEME GUARD EVERY OTHER href IN THE APP GOES THROUGH — window.IntMapSafe.url
+           (index.html), http(s)/mailto/tel only. `finalUrl` is already http(s) at intake
+           (js/atlas-evidence.js canonicalizeUrl refuses any other scheme), so the guard here is the
+           sink's own copy of that fact rather than a new judgment; without a window (the node checks)
+           the intake's guarantee is what stands. */
+        const href = r.finalUrl ? ((typeof window !== 'undefined' && window.IntMapSafe && window.IntMapSafe.url) ? window.IntMapSafe.url(r.finalUrl) : r.finalUrl) : '';
+        return href
+          ? '<a class="atl-cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + label + '">' + n + '</a>'
           : '<span class="atl-cite atl-cite-data" title="' + label + '">' + n + '</span>';
       }).join('');
       return marks.length > 1 ? '<span class="atl-cites">' + pills + '</span>' : pills;

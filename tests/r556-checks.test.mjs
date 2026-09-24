@@ -19,7 +19,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as acorn from 'acorn';
@@ -97,10 +97,16 @@ async function runRelay(opts) {
     '}',
     'process.stdout.write(JSON.stringify({ out: out, calls: globalThis.__calls, peakSockets: globalThis.__peakSockets }));',
   ].join('\n');
-  const raw = execFileSync(process.execPath, ['--no-warnings', '--input-type=module', '-e', src],
+  /* (#R801) the credential diagnostics are in the function's LOG, not in its answers, so the
+     child's stderr is returned next to what it wrote to stdout */
+  const child = spawnSync(process.execPath, ['--no-warnings', '--input-type=module', '-e', src],
     { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 90000 });
-  return JSON.parse(raw);
+  if (child.status !== 0) throw new Error('relay child failed: ' + (child.stderr || child.error));
+  return { ...JSON.parse(child.stdout), stderr: child.stderr || '' };
 }
+/* the forms the log says were tried, in order — `aisstream try:<form>:len<n>:<shape>` */
+const triesOf = (stderr) => [...stderr.matchAll(/aisstream try:([a-z-]+):len(\d+):([a-z]+)/g)]
+  .map((m) => ({ form: m[1], len: Number(m[2]), shape: m[3] }));
 
 /* ── ① a frame that arrives as bytes is a ship, not a discarded string ───────────────────────── */
 test('R556 ① vessels delivered as BINARY frames are kept — the regression that emptied the world', async () => {
@@ -126,16 +132,22 @@ test('R556 ② a credential wrapped in something else is recovered, and the wrap
   });
   const world = JSON.parse(r.out[0].body), meta = JSON.parse(r.out[1].body);
   assert.equal(world.p.aisstream, 1, 'the embedded credential was tried and accepted');
-  assert.equal(meta.aisstreamCredential.acceptedForm, 'after-delimiter', 'and the function says WHICH form worked');
-  /* neither the wrapping nor the credential may appear anywhere in any answer */
+  /* (#R801) WHICH form worked is said in the log, where the project reads it: the accepted candidate
+     is the last one tried (R556 ③), and the public answers say nothing about the credential's shape */
+  const tries = triesOf(r.stderr);
+  assert.ok(tries.length >= 2, 'the stored value was tried before the credential inside it: ' + r.stderr);
+  assert.equal(tries[tries.length - 1].form, 'after-delimiter', 'and the function says WHICH form worked');
+  assert.ok(!('aisstreamCredential' in meta), '?meta=1 carries no credential shape');
+  /* neither the wrapping nor the credential may appear anywhere in any answer — or in the log */
   for (const o of r.out) {
     const all = JSON.stringify(o.headers) + o.body;
     assert.ok(!all.includes(real), 'the credential is not in a header or a body');
     assert.ok(!all.includes(stored), 'nor is the value it was wrapped in');
+    assert.ok(!/len\d+/.test(all), 'nor its length');
   }
-  assert.equal(meta.aisstreamCredential.len, stored.length, 'the shape report gives the length…');
-  assert.ok(meta.aisstreamCredential.candidates.some((c) => c.len === 40 && c.shape === 'hex'),
-    '…and the shape of each candidate');
+  assert.ok(!r.stderr.includes(real) && !r.stderr.includes(stored), 'the log has the shape, never the value');
+  assert.ok(tries.some((c) => c.form === 'stored' && c.len === stored.length), 'the log gives the length of the stored value…');
+  assert.ok(tries.some((c) => c.len === 40 && c.shape === 'hex'), '…and the shape of each candidate');
 });
 
 /* ── ②b a quoted secret is unwrapped ────────────────────────────────────────────────────────── */
@@ -153,16 +165,23 @@ test('R556 ②b quotes a shell did not strip are removed, and the quotes must ma
     });
     const meta = JSON.parse(r.out[1].body);
     assert.equal(JSON.parse(r.out[0].body).p.aisstream, 1, 'a value wrapped in ' + q + ' still connects');
-    assert.equal(meta.aisstreamCredential.acceptedForm, 'dequoted');
+    const tries = triesOf(r.stderr);
+    assert.equal(tries[tries.length - 1].form, 'dequoted', 'the log says the dequoted form is the one that connected');
+    assert.ok(!('aisstreamCredential' in meta), '?meta=1 carries no credential shape');
   }
   /* mismatched quotes are NOT a quoted value — stripping them would invent a credential */
   const odd = await runRelay({
     env: { SUPABASE_URL: 'http://sb.test', AISSTREAM_API_KEY: '"' + real + "'", AIS_STORAGE_KEY: 'svc' },
     locations: DT, wsMsgs: [POS(412000001, 24.2, 121.9)], acceptKey: real,
-    requests: [{ q: '?meta=1' }],
+    requests: [{ q: '?ws=1200' }],
   });
-  const forms = JSON.parse(odd.out[0].body).aisstreamCredential.candidates.map((c) => c.form);
+  const forms = triesOf(odd.stderr).map((c) => c.form);
+  assert.ok(forms.length > 0, 'the mismatched value was tried in some form: ' + odd.stderr);
   assert.ok(!forms.includes('dequoted'), 'an opening quote is only a quote if the same character closes it');
+  /* (the value still connects — through the longest alphanumeric run, which is the credential —
+     so what this pins is that no candidate was MADE by stripping unmatched quotes) */
+  assert.notEqual(forms[forms.length - 1], 'dequoted');
+  assert.ok(!odd.stderr.includes(real), 'the log carries the shape, never the value');
 });
 
 /* ── ③ one socket at a time: the fourth connection dies without a word ───────────────────────── */

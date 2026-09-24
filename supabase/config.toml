@@ -222,6 +222,15 @@ verify_jwt = false
 # ⚠ The registry is _shared/radiation-sources.js, which is a LIBRARY and must never get a
 # [functions.*] block of its own. Keyless & public; no user data reaches it.
 [functions.radiation-feed]
+# ⚠ (#R801) THIS LINE WAS MISSING ON main — the same shape as aviation-feed above (#R351): the
+# block existed but carried no `verify_jwt` key, so the CLI's default (true) applied, and the next
+# `supabase functions deploy radiation-feed` from a clean checkout would have put a login in front
+# of a public map layer. The function's own deploy line names no --no-verify-jwt either, so nothing
+# outside production's current state said otherwise. OFF because the dose-rate layer is offered to
+# signed-out readers exactly as it is to signed-in ones, and no user data reaches it. From here
+# tests/r801-edge-config-checks.test.mjs counts every [functions.*] block and requires the key.
+verify_jwt = false
+
 # who-don (#R650) holds the ONE field WHO does not publish as a field. Pathogen, country, onset and
 # publication date are structured fields in WHO's own OData service and travel with
 # data/who-don.json.gz; case and death totals exist only as English prose inside each report's

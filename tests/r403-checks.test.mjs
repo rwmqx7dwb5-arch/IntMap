@@ -184,7 +184,9 @@ test('R403 ④ a legitimately PARTIAL list of functions is not read as the roste
        ⚠ `assert.match` を巨大ファイルに使わない——落ちるとファイル全体が印字される
        （Architecture.md は 96 KB。#R390 で実測した形）。真偽と短い message で言う。 */
     const arch = rd('Architecture.md');
-    assert.ok(/を共有するのは13本\*\*（`ais-feed`/.test(arch),
+    /* (#R801) the NUMBER is the doc-facts rule's business (it re-counts the importers); this only
+       needs the sentence to still exist in the shape the rule reads. */
+    assert.ok(/を共有するのは\d+本\*\*（`[a-z-]+`/.test(arch),
       'the relay-guard list is gone from Architecture.md — case ④ is no longer proven by the tree');
     assert.ok(/for f in refresh-news monitor-run/.test(arch),
       'the split deploy loop is gone from Architecture.md — case ④ is no longer proven by the tree');
@@ -244,7 +246,8 @@ const NEW_RULES = [
     /* (#R510) ais-feed made it ten; (#R585) radiation-feed made it twelve. The MUTATION is what
        this row is for — the number itself is Architecture.md's business and doc-facts already checks
        it — but the SEED has to be a string that exists, so it tracks the count by hand on purpose. */
-    from: '`_shared/relay-guard.js` を共有するのは13本', to: '`_shared/relay-guard.js` を共有するのは5本' },
+    /* (#R801) ai-proxy and monitor-run took the bounded reader: fifteen. */
+    from: '`_shared/relay-guard.js` を共有するのは15本', to: '`_shared/relay-guard.js` を共有するのは5本' },
 
   /* backup-shell — ⚠ **文書ではなくコードの側**。#R396 がこのラウンドと並行して着地し、同じ
      古い launcher を3か所で見つけた——うち2か所は `.md` ではない（スクリプト自身の USAGE と、
