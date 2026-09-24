@@ -39,6 +39,23 @@ xlsx の複数シート・名前を持たない ZIP（epub 等）は、抽出そ
 （計31件）は無改造のまま全て緑——枠の値（`textPerFile`=120,000／`textTotal`=400,000）自体は
 変えていない。
 
+### 4. ⚠⚠⚠ 同梱: `Migrations rebuild + RLS/permission tests` が必須チェックなのに一度も報告しない
+
+この PR を merge しようとして発見（この回の主題とは無関係）。`.github/workflows/db.yml` は
+`paths: ['supabase/**', …]` で絞られており、`Protect main` ruleset は 2026-09-18 03:14 にこの
+job 名を**必須ステータスチェック**として追加していた——`supabase/` を触らない PR では job が
+一度も起動せず、GitHub はその不在を「不要だった」ではなく「まだ終わっていない」と読むので、
+**全チェックが緑でも merge が永久に `BLOCKED`** になる。同じ症状の PR が他に 3 本（#709・#710・
+#655）。
+
+診断と修正は別セッションの **PR #712（R793）「必須チェックが『走らない』と『まだ終わっていない』は、
+外から同じに見える」が先に行っていた**——`paths:` を撤去して job 自体は常に起動・報告させ、重い
+工程（Docker・Supabase CLI・rebuild・pgTAP・backup/restore）だけを `git diff` ベースの内部ガード
+（`steps.scope.outputs.run`、答えられない経路は fail-open で全実行）の後ろへ回す形。この PR (#713)
+の merge を待たせないため、**その修正をそのまま**（`.github/workflows/db.yml` と
+`tests/r793-db-gate-never-reports-checks.test.mjs`）取り込んだ。⚠ #712 は本 PR とは独立に進行中
+——先に merge された側が正本になり、後発は diff が空になるだけで衝突しない。
+
 ### R771 — **1 ラウンドの待ち時間は工程の数ではなく、直列に並んだ待ちと、その往復だった**
 
 〈利用者の指摘「Claude Code の実装が遅すぎる。官僚的手続き主義？」「ワークフローが長すぎる！！！
