@@ -702,6 +702,97 @@ says which of a run's failures `main` already has.
   parser agrees with `stampTime` in `scripts/build-stamp.mjs`. **⑤b** the stamp is written by the
   build (`tests/helpers/build-stamp.mjs`, which the 21 older «the stamp was bumped» tests now call).
 
+## Atlas evaluation — the production Atlas, asked every night (`scripts/atlas-eval.mjs`)
+
+Every evaluation of the production Atlas used to be a person typing questions into the live page
+and reading `IntMapAtlasState.lastTurn()`. What those sessions found — Japanese requests that
+reached no capability, half the turns ending on 「作業の上限」, one operation fired 7 and 17 times,
+「Sahara」 resolved to New York, a turn of 10 m 34 s — had no instrument that would notice it
+coming back. This section is the 正本 for the instrument.
+
+| | |
+|---|---|
+| `scripts/atlas-eval/questions.json` | **the problem set.** Only questions whose text a round recorded, each with the round and section it came from; only the criteria that round judged by (`expect`), and for every criterion the record does not supply, the reason it is absent (`unset`). An elided text is kept for its finding and marked `sendable:false` — completing it would be asking a question nobody asked. Also the place probes of the macro-region resolution. |
+| `scripts/atlas-eval/judge.mjs` | **the rules, pure** (no browser, no network). What a turn meant, the aggregate metrics, the regression rule, the report. The rules IntMap already keeps are handed in, not copied: `CUT_STOPS` and `LIMITS.turnBudgetMs` from `js/atlas-agent.js`, `callKey` from `js/atlas-turn-results.js`. |
+| `scripts/atlas-eval.mjs` | **the driver.** Playwright opens the site, makes a session, asks each question with `IntMapConsole.run(q)` on a fresh page, and reads the existing observation ports (below). `--alarm` raises or clears the issue. |
+| `.github/workflows/atlas-eval.yml` | **the nightly** (05:41 UTC, and the dispatch button) against production. |
+| `tests/atlas-eval-harness-checks.test.mjs` | feeds the judge records shaped like the ones the manual rounds read off the page and requires each recorded defect to be **detected**. |
+
+```bash
+node scripts/atlas-eval.mjs --dry-run                          # no session, no question sent: the page, the ports, the place probes
+node scripts/atlas-eval.mjs --dry-run --url http://127.0.0.1:4817/
+ATLAS_EVAL_REFRESH_TOKEN=… node scripts/atlas-eval.mjs --only rail-tokyo-osaka --screenshots
+node scripts/atlas-eval.mjs --validate                         # the problem set's schema against the capability registry
+```
+
+**What is read** — nothing is copied out of the product:
+`IntMapAtlasState.lastTurn()` (operations with capability, arguments, status, code, ms; the agent's
+`stopped`; the reply), `IntMapAtlasDebug.lastPlan()` (the names of the tool calls the model issued,
+step by step), `IntMapAtlasState.snapshot({only:['atlas','activeLayers','camera']})` (the final
+map), and `IntMapAtlasTools.makeExecute` **wrapped** — the tap a manual round installed by hand — to see
+each executed call's arguments and the result the model received. The place probes call
+`IntMapRouteGeocode.suggest` directly: no model call, so they run in `--dry-run` too.
+
+**The metrics:** reach rate (the recorded capability was reached), turns with zero operations,
+turns cut short (`CUT_STOPS`, by stop), turns with no answer text, **the same operation a second time**
+(two executed calls with one `callKey` — `.agents/rules/one-pass-or-a-reason.md` §6 measures the
+second time and its cause, never the number of operations — carried with what the earlier call
+returned), duration p50 / p90 / max, turns over the agent's own `turnBudgetMs`, misresolved place
+probes, named places answered about the map centre.
+
+⚠ **「Not measured」 is neither 「0」 nor 「failed」.** A turn the page refused before Atlas ran (no
+session: `not_signed_in`, 未ログインのため測れない; the login gate or the daily allowance:
+`gate_refused`), one the harness stopped waiting for, or one on a page without the ports, carries
+`measured:false` and a reason, and **no aggregate counts it** — without a session the turn record
+stays `running` with nothing done, which reads exactly like 「zero operations」.
+A night on which nothing could be measured is **red** (`unmeasured`), not green.
+
+**Regression rule** (`judge.mjs` `advance`): every measured fact becomes a number where higher is
+worse. The reference is the last value that was **not** a regression, so a fact that got worse stays a
+regression every night until it recovers — comparing only with last night would call a persistent
+breakage fixed on its second night. A recorded defect that is back (a failed expectation outside
+`knownOpen`) is red on its first night, previous report or not.
+
+**Exit codes** 0 ok / dry run · 1 nothing measurable or the page did not boot · 2 no token (not a dry
+run) · 3 regressed.
+
+### The one-time setup (secrets, the account, its allowance)
+
+1. **The account.** A dedicated evaluation account is the least entangled; any account works.
+2. **Its daily allowance.** One turn is one use (`ai-proxy` keys uses by turn), and the set has 16
+   sendable questions — over the free plan's 10. Either
+   * give the account a plan: `update public.profiles set plan = 'plus' where id = '<uuid>';`
+     (50 a day, `PLAN_LIMITS` in `supabase/functions/ai-proxy/index.ts`; run in the Supabase SQL editor
+     — the column is guarded against the account itself), or
+   * add its `auth.users.id` to the developer list:
+     `supabase secrets set DEV_USER_IDS=<existing ids>,<uuid> --project-ref vpekfwdpurzejrrmacac`.
+     ⚠ The value **replaces** the list — include the ids already there. It also grants the developer's
+     model choice and no consumption at all, which is more than the evaluation needs.
+   ⚠ Either way every night spends real model calls (several per turn).
+3. **The refresh token.** Sign in to production in a **private window**, then in its console:
+   `(await sb.auth.getSession()).data.session.refresh_token`. Close the window **without logging out**
+   (logging out revokes the session the token belongs to). Store it:
+   `gh secret set ATLAS_EVAL_REFRESH_TOKEN`.
+4. **The writer.** Supabase **rotates** refresh tokens — the one a run uses is spent, so the run stores
+   the session's new one for the next night, and `GITHUB_TOKEN` cannot write secrets. Create a
+   fine-grained personal access token for this repository with **Secrets: Read and write** only and
+   store it: `gh secret set ATLAS_EVAL_SECRET_WRITER`.
+
+Without both secrets the workflow **fails** and says which one is missing. A token that was refused
+(spent, or revoked by a logout) makes the night `unmeasured` and red; repeat step 3.
+
+### What it does not measure yet
+
+* **Only the recorded questions.** The manual rounds asked 46 and 50+; 11 and 6 of their texts are
+  recorded. The rest exist only as findings, and the 12 questions a round left to ask were never
+  written down. A new evaluation round adds its questions **to the problem set**, with its criteria.
+* **A call the agent answered from its reuse ledger** reaches no executor, so the tap cannot see its
+  arguments; it is counted per tool name (`reusedByAgent`) from the step trace, not keyed.
+* **`gate_refused`** is inferred from the turn record (opened, never ended, nothing done); the page does
+  not publish whether it was the login gate or the allowance.
+* The place probes only know the wrong answers that were recorded — a **new** wrong answer that agrees
+  with the name (「Pacific」 → Pacific County) passes.
+
 ## When a test fails
 
 Playwright captures artefacts on failure:

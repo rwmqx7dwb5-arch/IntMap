@@ -1,0 +1,121 @@
+# IntMap — nightly evaluation of the PRODUCTION Atlas (scripts/atlas-eval.mjs).
+# ----------------------------------------------------------------------------
+# The questions #R775 and #R802 put to Atlas by hand (scripts/atlas-eval/questions.json) are asked
+# again every night, judged against what those rounds judged by, and compared with the previous
+# night's report. A return of a recorded defect, or a fact that got worse, keeps ONE issue open.
+#
+# ⚠ THIS IS NOT DORMANT-AND-GREEN. db-backup.yml succeeds-and-skips until its secrets exist; an
+#   evaluation that skips is the 「nobody measured it」 this workflow exists to end, so a missing
+#   secret FAILS the run and says which one.
+#
+# SECRETS (Settings → Secrets and variables → Actions) — docs/TESTING.md 「Atlas evaluation」 has the
+# one-time setup, including the account and its daily allowance:
+#   ATLAS_EVAL_REFRESH_TOKEN   a Supabase refresh token of the evaluation account. Supabase ROTATES
+#                              refresh tokens: the one used tonight is spent, so the run stores the
+#                              session's new one for tomorrow (next secret).
+#   ATLAS_EVAL_SECRET_WRITER   a fine-grained personal access token for THIS repository with
+#                              「Secrets: Read and write」 only. GITHUB_TOKEN cannot write secrets.
+name: Atlas eval (nightly, production)
+
+on:
+  schedule:
+    - cron: '41 5 * * *'      # daily 05:41 UTC — clear of db-backup (03:17) and the CI nightly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write               # the ONE 「Atlas evaluation (nightly) is red」 issue
+  actions: read               # to download the previous run's report
+
+concurrency:
+  group: atlas-eval
+  cancel-in-progress: false   # a second run would spend the same refresh token
+
+jobs:
+  eval:
+    name: Ask the recorded questions
+    runs-on: ubuntu-latest
+    # Worst case, derived: 16 sendable questions × the harness's patience per turn (js/atlas-agent.js
+    # turnBudgetMs + 2 × toolTimeoutMs = 18 min) = 288 min, plus boot and install. A normal night is
+    # far shorter (R775 measured a median turn of about 2.5 min). GitHub's ceiling for a job is 360.
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Require the secrets (a dormant evaluation must not be green)
+        id: gate
+        env:
+          TOKEN: ${{ secrets.ATLAS_EVAL_REFRESH_TOKEN }}
+          WRITER: ${{ secrets.ATLAS_EVAL_SECRET_WRITER }}
+        run: |
+          missing=""
+          [ -n "$TOKEN" ] || missing="$missing ATLAS_EVAL_REFRESH_TOKEN"
+          [ -n "$WRITER" ] || missing="$missing ATLAS_EVAL_SECRET_WRITER"
+          if [ -n "$missing" ]; then
+            msg="Atlas evaluation cannot run: missing repository secret(s):$missing. Nothing was measured. Setup: docs/TESTING.md, section 'Atlas evaluation'."
+            echo "::error::$msg"
+            echo "$msg" > "$RUNNER_TEMP/atlas-eval-why.txt"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      # The previous night's report is the reference (scripts/atlas-eval/judge.mjs advance). The newest
+      # completed run that uploaded one; a run that died before writing a report is skipped over.
+      - name: Fetch the previous report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p _prev
+          ids=$(gh run list --workflow atlas-eval.yml --repo "$GITHUB_REPOSITORY" --limit 30 --json databaseId,status --jq '.[] | select(.status=="completed") | .databaseId')
+          for id in $ids; do
+            if gh run download "$id" --repo "$GITHUB_REPOSITORY" -n atlas-eval-report -D _prev 2>/dev/null; then echo "previous report: run $id"; break; fi
+          done
+          [ -f _prev/atlas-eval.json ] || echo "no previous report — tonight's facts become the reference"
+
+      - name: Evaluate
+        id: eval
+        env:
+          ATLAS_EVAL_REFRESH_TOKEN: ${{ secrets.ATLAS_EVAL_REFRESH_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: >
+          node scripts/atlas-eval.mjs
+          --out _report
+          --previous _prev/atlas-eval.json
+          --screenshots
+          --run-url "$RUN_URL"
+          --rotated-token-out "$RUNNER_TEMP/atlas-eval-rt"
+
+      # ⚠ ALWAYS, once the gate passed: the token used above is spent whatever the verdict was.
+      - name: Store the rotated refresh token for the next run
+        if: ${{ always() && steps.gate.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ secrets.ATLAS_EVAL_SECRET_WRITER }}
+        run: |
+          if [ -s "$RUNNER_TEMP/atlas-eval-rt" ]; then
+            gh secret set ATLAS_EVAL_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY" < "$RUNNER_TEMP/atlas-eval-rt"
+            rm -f "$RUNNER_TEMP/atlas-eval-rt"
+            echo "stored the session's current refresh token"
+          else
+            echo "::warning::no session at the end of the run — ATLAS_EVAL_REFRESH_TOKEN was not replaced (see the evaluation log)"
+          fi
+
+      - name: Upload the report
+        if: ${{ always() && steps.gate.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: atlas-eval-report
+          path: _report/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Open, rewrite or close the issue
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/atlas-eval.mjs --alarm _report/atlas-eval.json --run-url "$RUN_URL" --why-file "$RUNNER_TEMP/atlas-eval-why.txt"

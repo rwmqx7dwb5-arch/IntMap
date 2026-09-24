@@ -1434,6 +1434,14 @@ scripts/
                                   足すのは同じ沈黙を大きな字で書くだけ。⚠ `cancelled` は合格ではない。
                                   ⚠ 実測: 2026-08-08〜08-21 の nightly は**14回連続で赤**、集約ジョブは
                                   毎回正直に報告していた——誰も見ていなかっただけ（#R304）。
+  atlas-eval.mjs                  **本番の Atlas を毎晩評価する**（`.github/workflows/atlas-eval.yml`）。Playwright で
+                                  問題集の各問を `IntMapConsole.run()` に送り、既存の観測口（`lastTurn()`・
+                                  `lastPlan()`・`snapshot()`・包んだ `makeExecute`）から記録を集めて照合する。
+                                  `--dry-run` は送らず、未ログインを「測れない」と報告する。`--alarm` が Issue 1 本を
+                                  開く／書き直す／閉じる。正本は docs/TESTING.md「Atlas evaluation」
+  atlas-eval/questions.json       その問題集。**記録された問いと、その回が実際に判定に使った基準だけ**。記録に無い
+                                  基準は `unset` に理由つきで空ける
+  atlas-eval/judge.mjs            判定（純粋）。`CUT_STOPS`・`turnBudgetMs`・`callKey` は製品から受け取り、写さない
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
   supabase-deploy.mjs             `supabase-deploy.yml` の中身。push の差分から出す関数（名簿は config.toml の
                                   `[functions.*]`・`_shared/` か config.toml なら全関数）と足された migration を決める。
@@ -1468,6 +1476,7 @@ tests/
   supabase-deploy.yml             main の push で変わった Edge Function と足された migration を配備／nightly のドリフト検査
   security.yml                    CodeQL ほかセキュリティ検査
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
+  atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いを送って評価（Secret 2本が無ければ**赤**。休眠しない）
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新
 ```
 

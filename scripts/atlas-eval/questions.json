@@ -1,0 +1,297 @@
+{
+  "$comment": [
+    "THE PROBLEM SET FOR scripts/atlas-eval.mjs — every question and every expectation here is DERIVED FROM A RECORD, never invented.",
+    "A question is here only if its text was recorded (DEV-NOTES.md or the round's own checks). An expectation is here only if the round",
+    "that asked the question JUDGED by it. A criterion the record does not supply is left out and its absence is explained in `unset` —",
+    "an empty expectation is an honest 'the record does not say', a guessed one is a false alarm or a false pass waiting to happen.",
+    "Field meanings: scripts/atlas-eval/judge.mjs (the only reader). The schema is enforced by tests/atlas-eval-harness-checks.test.mjs."
+  ],
+  "version": 1,
+  "sources": {
+    "R802": {
+      "doc": "DEV-NOTES.md ## R802",
+      "asked": 46,
+      "recorded": "11 of the 46 texts are recorded (10 in full, 1 elided with 「…」). The other 35 exist only as their findings (the Nile turn of 10 m 34 s, the five Syria turns, the typhoon Dujuan / Lake Baikal / U.S. Antarctic Program replies, the 「条約上の位置」 heading, the German reply) — the record carries no question text for them, so they cannot be asked again without inventing one.",
+      "leftOver": "R802 §0 names 12 more questions still to be asked (the request was 'at least 50'); their texts were never written down."
+    },
+    "R775": {
+      "doc": "DEV-NOTES.md ## R775",
+      "asked": "50+",
+      "recorded": "6 texts are recorded (§1, §4 table, §6b, §7). The rest exist only as findings (the volcano turn of 5 m 32 s, the Korean Peninsula geocode miss)."
+    }
+  },
+  "questions": [
+    {
+      "id": "rail-tokyo-osaka",
+      "lang": "jp",
+      "text": "東京から大阪までの鉄道ルートを引いて、所要時間と距離を教えて。",
+      "sendable": true,
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §2 (and tests/r802-atlas-50-eval-checks.test.mjs ①)", "text": "verbatim" },
+      "recordedDefect": { "operations": 0, "findCapability": 8, "ms": 45000, "stopped": "step_budget" },
+      "expect": {
+        "reach": ["routing.route"],
+        "minOperations": 1
+      },
+      "unset": {
+        "replyMustNotMatch": "R802 judged this turn by its zero operations; it did not record what a correct duration or distance is.",
+        "map": "R802 did not record which snapshot field the drawn route appears in, nor judge by it."
+      }
+    },
+    {
+      "id": "nuclear-plants-world-japan",
+      "lang": "jp",
+      "text": "世界の原子力発電所を地図に表示して、日本のものだけ強調して。",
+      "sendable": true,
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §2", "text": "verbatim" },
+      "recordedDefect": { "operations": 0, "ms": 57000, "stopped": "step_budget", "note": "find_capability answered the first eight layers.* ids in registry order" },
+      "expect": {
+        "minOperations": 1
+      },
+      "unset": {
+        "reach": "R802 measured that the SEARCH now ranks map.poi first (§2 table); it did not decide which capability this request must be served by, so no capability is required here.",
+        "map": "R802 did not record what 'only Japan emphasised' looks like in the snapshot."
+      }
+    },
+    {
+      "id": "weather-tokyo-3day",
+      "lang": "jp",
+      "text": "東京の今日の天気と、今後3日間の予報を教えて。地図にも出して。",
+      "sendable": true,
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §2 (and tests/r802-atlas-50-eval-checks.test.mjs ①)", "text": "verbatim" },
+      "recordedDefect": { "operations": 0, "note": "data.weather never reached; temperature and precipitation layers painted, then 「数値を確認できませんでした」" },
+      "expect": {
+        "reach": ["data.weather"],
+        "minOperations": 1,
+        "replyMustNotMatch": [
+          { "pattern": "数値を確認できませんでした", "why": "the sentence the reader received in R802 §2 when data.weather was never called" }
+        ]
+      },
+      "unset": {
+        "map": "R802 recorded that layers WERE painted; it did not record which drawing a correct answer should leave."
+      }
+    },
+    {
+      "id": "population-density-tokyo-delhi-lagos",
+      "lang": "en",
+      "text": "Compare the population density of Tokyo, Delhi and Lagos",
+      "sendable": true,
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §4", "text": "verbatim" },
+      "recordedDefect": { "capability": "data.layerValues", "calls": 17, "failed": 17, "stopped": "step_budget", "reply": "" },
+      "expect": {
+        "requireReply": true,
+        "notAllFailed": ["data.layerValues"],
+        "resultMustNotMatch": [
+          { "capability": "data.layerValues", "pattern": "No readable data on the active layers here", "why": "R802 §4: this refusal was returned while the layer was on and drawn" }
+        ]
+      },
+      "unset": {
+        "replyMustMatch": "R802 did not record the densities a correct answer states."
+      }
+    },
+    {
+      "id": "aircraft-pacific-highest",
+      "lang": "jp",
+      "text": "いま太平洋上を飛んでいる旅客機を…最も高度が高いものを教えて",
+      "sendable": false,
+      "whyNotSendable": "DEV-NOTES.md R802 §4 elides the middle of the question with 「…」. Filling it in would be asking a question nobody asked; it is kept so the finding and its criterion are not lost.",
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §4", "text": "elided" },
+      "recordedDefect": { "note": "the aviation layer was painted, then 「便名：確認不能／現在高度：確認不能」" },
+      "expect": {
+        "replyMustNotMatch": [
+          { "pattern": "確認不能", "why": "R802 §4: the reader was told flight and altitude could not be confirmed while the layer was drawn" }
+        ]
+      },
+      "unset": {}
+    },
+    {
+      "id": "satellites-over-japan-now",
+      "lang": "en",
+      "text": "Which satellites are passing over Japan right now?",
+      "sendable": true,
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §4", "text": "verbatim" },
+      "recordedDefect": { "note": "「Live satellites on — All active satellites · 16,004 objects」 then 「Turn a data layer on first」" },
+      "expect": {
+        "notAllFailed": ["data.layerValues"],
+        "resultMustNotMatch": [
+          { "capability": null, "pattern": "Turn a data layer on first", "why": "R802 §4: the reader was told to turn on a layer the same turn had just turned on" }
+        ]
+      },
+      "unset": {
+        "replyMustMatch": "R802 did not record which satellites were overhead."
+      }
+    },
+    {
+      "id": "earthquakes-m5-7days",
+      "lang": "en",
+      "text": "Show global earthquakes of magnitude 5 or greater in the last 7 days",
+      "sendable": true,
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §4", "text": "verbatim" },
+      "recordedDefect": { "note": "the layer went on with neither the magnitude filter nor a list" },
+      "expect": {},
+      "unset": {
+        "map": "R802 says 'no filter and no list'; it did not record what a filtered layer looks like in the snapshot, or how many events a correct list has.",
+        "reach": "R802 did not name the capability that should have filtered."
+      }
+    },
+    {
+      "id": "gdp-per-capita-top10-not-in-total",
+      "lang": "en",
+      "text": "Show the top 10 countries by GDP per capita as a choropleth, and tell me which of them are NOT in the top 10 by total GDP.",
+      "sendable": true,
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §8 (and tests/r802-atlas-50-eval-checks.test.mjs ⑧)", "text": "verbatim" },
+      "recordedDefect": { "cut": true, "reply": "I'm comparing the two rankings now.", "note": "both tables and the choropleth were drawn; the asked comparison was never stated" },
+      "expect": {
+        "requireReply": true,
+        "replyMustNotMatch": [
+          { "pattern": "^\\s*I'm comparing the two rankings now\\.?\\s*$", "why": "R802 §8: this narration was the whole reply the reader received — the answer was never written" }
+        ]
+      },
+      "unset": {
+        "replyMustMatch": "R802 did not record which countries are the correct answer; deriving them from the bundled data would copy today's ranking rules (isRankableCountry) into this file.",
+        "map": "R802 recorded that the choropleth WAS drawn; it did not record the snapshot field it judged by."
+      }
+    },
+    {
+      "id": "ryoseikoku-1750",
+      "lang": "jp",
+      "text": "日本の令制国を1750年の地図に描いて",
+      "sendable": true,
+      "source": { "round": "R802", "where": "tests/r802-atlas-50-eval-checks.test.mjs ④ (DEV-NOTES.md R802 §3 names the turn as 「令制国 1750 年」)", "text": "quoted in the round's check" },
+      "recordedDefect": { "capability": "research.situationMap", "calls": 7, "ms": 556000, "note": "ok and not_rendered returned ALTERNATELY for the same subject; the last operation cleared every pin" },
+      "expect": {},
+      "unset": {
+        "map": "R802 recorded that the final map held no pins (objects n=0) because Atlas cleared them; it did not record what a correct 1750 map holds."
+      }
+    },
+    {
+      "id": "europe-borders-1914",
+      "lang": "jp",
+      "text": "1914年のヨーロッパの国境",
+      "sendable": true,
+      "source": { "round": "R802", "where": "tests/r802-atlas-50-eval-checks.test.mjs ④ (DEV-NOTES.md R802 §3 names the turn as 「1914 年のヨーロッパ」)", "text": "quoted in the round's check" },
+      "recordedDefect": { "capability": "research.situationMap", "calls": 6, "ms": 415000 },
+      "expect": {},
+      "unset": {
+        "map": "R802 did not record what the 1914 map should hold."
+      }
+    },
+    {
+      "id": "iceland-eez-200nm",
+      "lang": "en",
+      "text": "Draw the 200 nautical mile EEZ around Iceland",
+      "sendable": true,
+      "source": { "round": "R802", "where": "tests/r802-atlas-50-eval-checks.test.mjs ④ (DEV-NOTES.md R802 §3)", "text": "quoted in the round's check" },
+      "recordedDefect": { "capability": "research.analyze", "calls": 5, "ms": 411000 },
+      "expect": {},
+      "unset": {
+        "map": "R802 did not record which drawing a correct EEZ leaves in the snapshot."
+      }
+    },
+    {
+      "id": "gdp-top10-vs-per-capita-ja",
+      "lang": "jp",
+      "text": "GDP上位10か国を地図にコロプレスで描いて、1人あたりGDPと比べたときの順位の違いを述べて",
+      "sendable": true,
+      "source": { "round": "R775", "where": "DEV-NOTES.md R775 §1–§2", "text": "verbatim" },
+      "recordedDefect": { "note": "data.rank gdp_per_capita ranked Antarctica first ($200,000); data.rank {metric:'名目GDP'} refused twice with unknown_metric" },
+      "expect": {
+        "resultMustNotMatch": [
+          { "capability": "data.rank", "pattern": "Antarctica|南極", "why": "R775 §1: data.rank ranked Antarctica as the richest country per head" }
+        ],
+        "codeMustNotOccur": [
+          { "capability": "data.rank", "code": "unknown_metric", "why": "R775 §2: 「名目GDP」 was refused as an unknown metric" }
+        ]
+      },
+      "unset": {}
+    },
+    {
+      "id": "japan-admin-1900",
+      "lang": "jp",
+      "text": "1900 年の日本の行政区分を地図に出して",
+      "sendable": true,
+      "source": { "round": "R775", "where": "DEV-NOTES.md R775 §4 table", "text": "as written in the table (whether the original had a space between 1900 and 年 is not recorded)" },
+      "recordedDefect": { "note": "the 1900 boundaries were drawn, then the last two operations turned off Country borders and State / province borders" },
+      "expect": {},
+      "unset": {
+        "map": "R775 names the layers by their labels; it did not record which snapshot field carries the 1900 boundaries, so a map criterion would be a guess."
+      }
+    },
+    {
+      "id": "market-cap-top10-hq",
+      "lang": "jp",
+      "text": "時価総額上位 10 社の本社をプロット",
+      "sendable": true,
+      "source": { "round": "R775", "where": "DEV-NOTES.md R775 §4 table", "text": "as written in the table" },
+      "recordedDefect": { "operations": 7, "note": "4 of 7 operations tidied an already empty map; no headquarters was placed" },
+      "expect": {
+        "map": [
+          { "path": "atlas.pins.n", "min": 1, "why": "R775 §4: 「本社は 1 つも置かれなかった」. `atlas.pins` is the marker surface every pin-placing dispatch declares through (R802 §3)" }
+        ]
+      },
+      "unset": {}
+    },
+    {
+      "id": "mediterranean-countries-count",
+      "lang": "jp",
+      "text": "地中海に面している国を全部選択して数えて",
+      "sendable": true,
+      "source": { "round": "R775", "where": "DEV-NOTES.md R775 §4 table", "text": "as written in the table" },
+      "recordedDefect": { "note": "22 countries highlighted, cleared and redrawn three times, and the turn ended on an empty map" },
+      "expect": {
+        "map": [
+          { "path": "atlas.highlightCountries", "min": 1, "why": "R775 §4: 「最後は空の地図」 — the selection the reader asked for was not on the final map" }
+        ]
+      },
+      "unset": {
+        "replyMustMatch": "R775 recorded 22 highlighted countries as what Atlas DID, not as the correct count."
+      }
+    },
+    {
+      "id": "pandemic-border-closures",
+      "lang": "en",
+      "text": "Run a pandemic scenario with border closures enabled",
+      "sendable": true,
+      "source": { "round": "R775", "where": "DEV-NOTES.md R775 §6b", "text": "verbatim" },
+      "recordedDefect": { "capability": "sim.pandemicRun", "rejected": 6, "ran": 4, "calls": 13, "stopped": "step_budget" },
+      "expect": {
+        "reach": ["sim.pandemicRun"],
+        "notAllFailed": ["sim.pandemicRun"]
+      },
+      "unset": {}
+    },
+    {
+      "id": "japan-election-latest",
+      "lang": "jp",
+      "text": "直近の日本の国政選挙の結果を地図で見せて",
+      "sendable": true,
+      "source": { "round": "R775", "where": "DEV-NOTES.md R775 §7", "text": "verbatim" },
+      "recordedDefect": { "note": "the reply said the LDP won 316 seats (249 constituencies); the bundled data/elections/jp-hr-2026.res.json says seats 315 / dseats 248" },
+      "knownOpen": "R775 §7 left this open: Atlas has no capability that reads the election results it draws. A failure here is reported, not alarmed on.",
+      "expect": {
+        "replyMustNotMatch": [
+          { "pattern": "316\\s*議席", "why": "R775 §7: contradicts the bundled result (315 seats) the same map is drawing" }
+        ]
+      },
+      "unset": {}
+    }
+  ],
+  "placeProbes": {
+    "$comment": "R802 §6 measured these through IntMapRouteGeocode.suggest — a path with no animation and NO MODEL CALL, so it costs nothing and needs no login. `mustNot` is the wrong answer R802 recorded, on the field that distinguishes it; `agree` asks that the top name agree with the asked one. `mustResolve` is set only where R802 recorded a resolution after its repair (§6: Sahara, the Alps, Siberia, Patagonia; Tokyo, Iceland, Mount Fuji and Lake Baikal unchanged) — elsewhere 「nothing found」 is the refusal R802 wanted instead of a wrong kind of place, not a failure.",
+    "source": { "round": "R802", "where": "DEV-NOTES.md R802 §6" },
+    "lang": "en",
+    "rows": [
+      { "asked": "the Alps", "agree": true, "mustResolve": true, "mustNot": [{ "field": "country", "pattern": "Norway|Norge", "recorded": "The Alps (a settlement near Tromsø, Norway)" }] },
+      { "asked": "Scandinavia", "agree": true, "mustNot": [{ "field": "name", "pattern": "^Town of Scandinavia", "recorded": "Town of Scandinavia (Wisconsin, USA)" }] },
+      { "asked": "Amazon Basin", "agree": true, "mustNot": [{ "field": "name", "pattern": "Amazon Basin Bend", "recorded": "Amazon Basin Bend (a road in Florida, USA)" }] },
+      { "asked": "Korean Peninsula", "agree": true, "mustNot": [{ "field": "name", "pattern": "Chicken", "recorded": "Chicken Story Korean Fried Chicken (Auckland, New Zealand)" }] },
+      { "asked": "Sahara", "agree": true, "mustResolve": true, "mustNot": [{ "field": "name", "pattern": "New York", "recorded": "New York" }] },
+      { "asked": "Patagonia", "agree": true, "mustResolve": true, "mustNot": [{ "field": "country", "pattern": "Colombia", "recorded": "Tolima, Colombia" }] },
+      { "asked": "Pacific", "agree": true, "mustNot": [{ "field": "name", "pattern": "^Pacifica\\b", "recorded": "Pacifica (California, USA)" }], "knownOpen": "R802 §10-4 left this open: the macro-region store has no Pacific, and Pacific ⊂ Pacifica passes the name agreement." },
+      { "asked": "Siberia", "agree": true, "mustResolve": true, "mustNot": [] },
+      { "asked": "Tokyo", "agree": true, "mustResolve": true, "mustNot": [] },
+      { "asked": "Iceland", "agree": true, "mustResolve": true, "mustNot": [] },
+      { "asked": "Mount Fuji", "agree": true, "mustResolve": true, "mustNot": [] },
+      { "asked": "Lake Baikal", "agree": true, "mustResolve": true, "mustNot": [] }
+    ]
+  }
+}

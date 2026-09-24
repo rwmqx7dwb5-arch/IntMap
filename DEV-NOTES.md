@@ -8,9 +8,10 @@
 > `R<N>.md` の名前は番号で呼んでいた頃の記録（名前は当時のまま）。旧索引の各行（回ごとの長い要約）は
 > [`dev-notes/legacy-index.md`](dev-notes/legacy-index.md)、それより前（Round 1 〜 #R259）は `DEV-NOTES-ARCHIVE.md`（古い順・読むだけ）。
 
-## 記録（新しい順・345 件）
+## 記録（新しい順・346 件）
 
 - 2026-09-25 · [ラウンド番号を名前から外した——識別子は slug と PR 番号、記録は 1 エントリ 1 ファイル、段は差分で選び、ビルド印はビルドが書く](dev-notes/2026-09-25-process-without-round-numbers.md)
+- 2026-09-25 · [本番の Atlas の評価は毎回「人」だった。記録された問いを毎晩機械が投げ直す](dev-notes/2026-09-25-atlas-eval-harness.md)
 - R822 · [**DB バックアップは一度も取られていなかった——secret が無いと緑で skip していた。Supabase の配備と pg_cron をコードにした**](dev-notes/R822.md) · #731
 - R819 · [集計の意味・解析の規模・画面に依存しない取得を、同時に固めた](dev-notes/R819.md) · #727
 - R818 · [必須チェックが「走らない」と「まだ終わっていない」は、外から同じに見える](dev-notes/R818.md) · #712
