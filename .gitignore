@@ -89,3 +89,13 @@ __pycache__/
 # .claude/launch.json で実測済み #R338）。書くのは
 # `node scripts/worktree.mjs verified`、読むのは `worktree.mjs status`。
 .intmap/
+
+# ── (data-outside-git) datasets that live OUTSIDE git ────────────────────────────────────
+# data-assets.json (tracked) names each one by the sha256 of its content and the
+# GitHub Release asset that carries it; `npm run data:pull` places it here as a
+# link into a store outside the checkout (a copy for a single file). Neither form
+# is source, so neither is tracked. No trailing slash: a symlink is not a
+# directory to git, and `dir/` would not match it. tests/data-outside-git-
+# checks.test.mjs asks git that every set in the manifest is ignored.
+/data/border-detail
+/data/hist-eras.js

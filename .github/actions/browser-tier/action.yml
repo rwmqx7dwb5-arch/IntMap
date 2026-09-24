@@ -45,6 +45,8 @@ runs:
         cache: npm
     - run: npm ci
       shell: bash
+    # (data-outside-git) the datasets outside git — the build this tier tests copies them into dist/
+    - uses: ./.github/actions/data-assets
     # Cache the Playwright browser binaries between runs (keyed on the lockfile).
     - name: Cache Playwright browsers
       id: pw-cache

@@ -1,0 +1,35 @@
+{
+  "_": "IntMap · the datasets that live OUTSIDE git. Each set is named by the sha256 of its content (the digest is defined in scripts/data-assets.mjs) and carried by a GitHub Release asset of this repository. `npm run data:pull` places them; `npm run data:publish <set>` publishes a regenerated one and rewrites its entry. docs/TESTING.md and DECISIONS.md explain why.",
+  "v": 1,
+  "repo": "rwmqx7dwb5-arch/IntMap",
+  "sets": {
+    "border-detail": {
+      "path": "data/border-detail",
+      "kind": "dir",
+      "sha256": "60aeb464b81e1bb0eda2ec6f9287cc6ddd4f92f68782863e38d7d520bab63ffc",
+      "builder": "scripts/build-border-detail.mjs",
+      "files": 5621,
+      "bytes": 415019194,
+      "release": {
+        "tag": "data-border-detail-60aeb464b81e",
+        "asset": "border-detail-60aeb464b81e.tar.gz",
+        "sha256": "1b917d11e833f5e6d8a716500696242da0950ae3e900e43790449f18b832e62e",
+        "bytes": 91221106
+      }
+    },
+    "hist-eras": {
+      "path": "data/hist-eras.js",
+      "kind": "file",
+      "sha256": "17e521f62f7a668fdac6c198c998c7475ce56fa55f09edc5b967eca7ed06395a",
+      "builder": "scripts/build-hist-eras.mjs",
+      "files": 1,
+      "bytes": 10644502,
+      "release": {
+        "tag": "data-hist-eras-17e521f62f7a",
+        "asset": "hist-eras-17e521f62f7a.tar.gz",
+        "sha256": "70f28c48e20094bb61bbecfa08b69fef8b1f33f8f6c4f70b2a85a0f55d35b65e",
+        "bytes": 3459615
+      }
+    }
+  }
+}

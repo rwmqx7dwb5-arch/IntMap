@@ -22,17 +22,19 @@
  *    orphan     nothing in the repository contains the string at all
  *
  *  `--check` fails on an orphan, on a duplicate payload outside the allowlist, and on a file bigger
- *  than the per-file ceiling that no one has accepted. Everything else prints.
+ *  than the per-file ceiling that no one has accepted — and (data-outside-git) on a dataset data-assets.json
+ *  names that dist/ does not hold as exactly those bytes. Everything else prints.
  *
  *  Usage
  *    node scripts/asset-report.mjs               the table
  *    node scripts/asset-report.mjs --check       the gate (used by npm run check:assets)
  *    node scripts/asset-report.mjs --json <p>    the whole classification, per file
  */
-import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, lstatSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, relative, dirname, extname, basename, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { readManifest, digestOf } from './data-assets.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -168,7 +170,9 @@ const walk = (d, base = d, out = []) => {
   if (!existsSync(d)) return out;
   for (const e of readdirSync(d, { withFileTypes: true })) {
     const f = join(d, e.name);
-    if (e.isDirectory()) walk(f, base, out);
+    /* (data-outside-git) a LINKED directory is walked like a real one: data/border-detail is a link into the
+       data store outside git, and a Dirent says «symlink», not «directory», for it */
+    if (e.isDirectory() || (e.isSymbolicLink() && statSync(f).isDirectory())) walk(f, base, out);
     else out.push(relative(base, f).split(sep).join('/'));
   }
   return out;
@@ -334,6 +338,21 @@ function main() {
     console.log('\n  ⚠ over the per-file ceiling with no reason recorded:');
     for (const r of big) console.log(`    ${kb(r.bytes).padStart(10)}  ${r.path}`);
     errors.push(`${big.length} file(s) over ${kb(ALLOW.sizeCeiling)} that nobody has accepted. Add the reason to ALLOW.bigFile or make it smaller.`);
+  }
+
+  /* ⚠ (data-outside-git) WHAT IS ABSENT CANNOT BE JUDGED, SO IT HAS TO BE ASKED FOR BY NAME. Everything above
+     judges the files dist/ HAS; a build made in a checkout without the outside-git datasets simply
+     has thousands fewer files to judge, and passed. data-assets.json says what must ship, and here
+     each set is required in dist/ as exactly the content it names. */
+  for (const [id, set] of Object.entries(readManifest(ROOT)?.sets || {})) {
+    const at = join(DIST, ...set.path.split('/'));
+    let got = null;
+    try { got = existsSync(at) ? digestOf(at, set.kind) : null; } catch { got = null; }
+    const fix = 'Run `npm run data:pull`, then `npm run build`.';
+    /* a LINK in dist/ would pass the digest (it is followed) and publish a path on the builder's disk */
+    if (got && lstatSync(at).isSymbolicLink()) errors.push(`dist/${set.path} is a link, not the bytes — vite.config.js must copy it with \`dereference\` (data-outside-git).`);
+    else if (!got) errors.push(`dist/${set.path} is missing — «${id}» lives outside git (data-assets.json). ${fix}`);
+    else if (got.sha256 !== set.sha256) errors.push(`dist/${set.path} is not the content data-assets.json names for «${id}» (${got.sha256.slice(0, 12)} ≠ ${set.sha256.slice(0, 12)}). ${fix}`);
   }
 
   const out = val('--json', null);

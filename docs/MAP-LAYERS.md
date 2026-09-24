@@ -944,7 +944,9 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   （`js/time-borders.js` の `erLoad` / `erFC` / `nearest`）。上流 aourednik/historical-basemaps が
   公開する `world_*.geojson` **54 枚**（**紀元前 17 枚**・紀元前 123000 年〜西暦 2010 年）で、
   リングプールは他の束と同じ形。時計がその年を要求した最初の 1 回だけ `<script>` で読む
-  （起動時には読まない）。⚠ **1689 年以降の帯には出ない**——そこは CShapes と OpenHistoricalMap の
+  （起動時には読まない）。⚠ **このファイルは git の外にある**——`data-assets.json` が中身の sha256 と
+  それを運ぶ Release の asset を持ち、`npm run data:pull` が置く（配信物の `dist/` には実体が入る。
+  規約は `docs/TESTING.md`「git の外にあるデータ」）。⚠ **1689 年以降の帯には出ない**——そこは CShapes と OpenHistoricalMap の
   日単位の束が答え、この束はそれらが読めなかったときの予備でもある。
   ⚠ **名前を持たない上流ポリゴン（6,955 件）も描くが、ラベルは出さない。** 深い枚では名前の無い
   幾何のほうが面積が大きく（紀元前 123000 年で 18,345 deg² 対 3,210）、捨てれば地図の大半が消え、
@@ -2541,6 +2543,11 @@ OHMの国・第1級・第2級の境界線は、ズーム8以上で表示範囲�
 `scripts/build-border-detail.mjs` が同じキャッシュ原典を既存形状と照合し、再現できる形だけを
 0.0005°・小数5桁で生成する。島・穴の保持を確認し、海岸線との重複を除いて
 `data/border-detail/` へ空間ごとに分割する。原典の頂点で分割し、線を補間しない。
+⚠ **`data/border-detail/` は git の外にある。** `data-assets.json` が中身の sha256（件数・バイト数も）と
+Release の asset を持ち、`npm run data:pull` がチェックアウトの外の共有ストアから `data/` へリンクする。
+再生成するときは、先に `node scripts/data-assets.mjs materialize border-detail` でリンクを書き込めるコピーに
+替え（ストアは読み取り専用で、生成器はリンクのままでは書かない）、生成後に
+`npm run data:publish border-detail` で新しい Release を作って目録を commit する。
 索引の形状指紋を読み込み時にも照合し、補正済みの形状や別版データを置き換えない。
 行政境界を更新した際は、同生成器の `--sets hist-admin1,hist-admin2` で対応する詳細線と
 索引も再生成する。共通の精度・出典条件が一致する既存索引だけを部分更新し、国境の

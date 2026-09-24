@@ -118,6 +118,7 @@ rather than depend on which is currently the default.
 
 ```bash
 npm ci                                   # reproducible install from package-lock.json
+npm run data:pull                        # the datasets kept outside git (data-assets.json)
 npx playwright install --with-deps chromium   # one-time browser download
 ```
 
@@ -962,7 +963,9 @@ The wiring between the two products, and the four steps that stayed manual, are 
 
 `data/hist-eras.js` は aourednik/historical-basemaps が公開する `world_*.geojson` **54 枚**
 （**紀元前 17 枚**・紀元前 123000 年〜西暦 2010 年）をリングプール形式へ落とした束で、
-**1689 年より前の国境はこれが唯一の答え**である。`.github/workflows/ci.yml` に step があり、
+**1689 年より前の国境はこれが唯一の答え**である。⚠ この束は **git の外**にあり、「コミットされた
+バイト」とは `data-assets.json` が sha256 で名指すバイトのこと（下の「git の外にあるデータ」）。
+`.github/workflows/ci.yml` に step があり、
 `gate-callers`（#R628）が「宣言されて誰も呼ばない門」を許さない。
 
 ⚠ **この門も再導出しない。** 上流は生で 71.5 MB あり、CI では取得できない。測るのは
@@ -1299,7 +1302,7 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 何も測らなければ次の再ビルドが 400 件出荷しても緑になる（#R669 の形）。
 ### `npm run check:borderdetail` — リポジトリ最大の出荷面に、名前のある門を付ける (#R716)
 
-`scripts/build-border-detail.mjs --check` は `data/border-detail/`（**5,622 ファイル・409 MB**。
+`scripts/build-border-detail.mjs --check` は `data/border-detail/`（**リポジトリ最大の出荷面**。件数・バイト数・sha256 の正本は `data-assets.json`——この束は git の外にある（下の「git の外にあるデータ」）。
 拡大したときに `hist-borders`・`hist-admin1`・`hist-admin2` の代わりに実際に描かれる
 精密な輪郭）を測る。
 
@@ -1326,6 +1329,47 @@ index の約束する bbox に収まること／各 source relation が**その�
 CI が持てる量ではない（`check:histborders`・`check:histadmin` と同じ形の残余）。したがって
 **「同梱バイトは整合しているが、上流の形から離れた」はこの門を通る**。そちらを測るのは
 `--check-source`（キャッシュを持つ機械だけ）で、門の条件にはしていない。
+
+### git の外にあるデータ — 目録が正本で、無いものは赤く名指される (data-outside-git)
+
+`data/border-detail/` と `data/hist-eras.js` は **git で追跡していない**。ルートの
+**`data-assets.json`（追跡対象）**が各集合の**パス・中身の sha256・それを運ぶ GitHub Release の asset**
+（tag は `data-<集合>-<sha12>`）を持ち、それが「どのバイトを意図しているか」の唯一の正本である。
+sha256 の定義（単一ファイルはバイト列、ディレクトリは相対パスと各ファイルの sha256 の行）は
+`scripts/data-assets.mjs` の冒頭にある。件数とバイト数も目録が持つ——**文書に書き写さない**。
+
+| コマンド | すること |
+|---|---|
+| `npm run data:pull` | 足りない集合を Release から取り、asset の sha256 と中身の sha256 を**両方**照合し、チェックアウトの外の共有ストア（`INTMAP_DATA_STORE`、既定 `%LOCALAPPDATA%\intmap-data`・`~/.cache/intmap-data`）に置いて `data/` へリンクする（ディレクトリは junction／symlink、単一ファイルはコピー）。同じ sha は取り直さない。**置けない集合があれば名前と理由を出して exit 1**。目録と違う実体があれば上書きを拒み、`-- --force` で置き換える |
+| `node scripts/data-assets.mjs verify` | 置かれているものが目録の中身か（`npm test` の最初の段） |
+| `node scripts/data-assets.mjs materialize <集合>` | リンクを書き込めるコピーに替える。**再生成の前に必ず**（ストアは読み取り専用で、リンク越しの書き込みは EPERM で止まる。`build-border-detail.mjs` はリンクを見つけたら自分で拒む） |
+| `npm run data:publish <集合>` | 再生成した集合を決定的に固め（ustar＋gzip・mtime 0・整列）、Release を作り、**公開 URL から読み戻して一致を確かめてから**目録を書き換える。目録を commit する |
+
+**門が赤くなる場所**（「データが無いのに緑」を作らない）:
+
+- `npm test` の checks 半分の**最初の段**が `data-assets.mjs verify`——無い・違うを名指して止まる。
+- `npm run test:checks` はデータが無ければ**全ファイルが通っても赤**（前後に `npm run data:pull` と言う）。
+- `check:borderdetail`・`check:histeras`（と `--check-upstream`）・`tests/helpers/hist-eras.mjs`・
+  `check:docs` の hist-eras の読み手は、ENOENT の代わりに**集合の名前と `npm run data:pull`** を言う。
+- `check:assets` は目録の各集合が **`dist/` に目録どおりのバイトとして**在ることを要求する（無い・違う・
+  **リンクのまま**は赤。`vite.config.js` の静的コピーは `dereference` でリンクを実体にする）。
+
+**CI**: データを読むジョブ（gates・checks・upstream・browser／deep の共有 action・deploy の build）は
+`.github/actions/data-assets` を**ビルドと検査の前に**使う。キャッシュの key は `data-assets.json` の
+hash なので、集合が変わらない commit はネットワークに触れない。`rollback.yml` は**対象コミットの**目録と
+スクリプトで取り、目録を持たない古いコミットはデータを git に持っているので取らない。
+`scripts/doc-facts.mjs` の `ci-gates` 規則は、ci.yml が `uses:` する**ローカルの composite action の
+中の段**も「CI が届く」に数える（`data-assets.mjs` はそこからしか呼ばれない）。
+
+**ローカル**: `node scripts/worktree.mjs new` が新しい worktree で `data:pull` を走らせ、`done` は削除の前に
+リンクを外す（再帰削除が junction 越しにストアへ届かないように）。`npm run master:sync` は原本を早送りした
+あと原本に `data:pull` を走らせ、置けなければ成功を報告しない。USB は `scripts/backup-usb.ps1` が
+`data-assets.mjs list`（検証つき）の一覧を追跡ファイルに足してミラーし、原本にデータが無ければ
+**ミラーせずに失敗する**（`docs/AGENT-SETUP.md` §10）。
+
+⚠ **残余**: `npm run dev`（Vite の開発サーバ）がリンク先のファイルを配るかは確かめていない
+（プレビューと試験は `dist/` を配る `scripts/serve.mjs` で、そちらは実体のコピー）。
+回帰検査は `tests/data-outside-git-checks.test.mjs`。
 
 ### `npm run check:histplaces` — 選択規則を測ることと、出荷したバイトを測ることは別 (#R716)
 

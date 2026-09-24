@@ -53,6 +53,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # (data-outside-git) the datasets outside git (data-assets.json) — dist/ is built from them
+      - uses: ./.github/actions/data-assets
       - name: Static checks
         run: npm run check:static
       - name: Renderer-decoupling gate (#R178)

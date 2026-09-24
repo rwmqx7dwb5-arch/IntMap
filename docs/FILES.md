@@ -40,6 +40,9 @@ science.html / sources.html     読み物2ページ（手法の説明・出典�
                                 言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
 google….html                    Google Search Console 認証用
 package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
+data-assets.json                **git の外にあるデータ集合の目録**（正本）。集合ごとにパス・中身の sha256・
+                                件数とバイト数・それを運ぶ GitHub Release の asset とその sha256。
+                                取得は `npm run data:pull`、公開は `npm run data:publish <集合>`（scripts/data-assets.mjs）
 .nvmrc                          Node のバージョン（CI・ローカル共通）
 vite.config.js                  ビルド設定（チャンク分割・静的アセットのコピー・prebuild フック）
 tsconfig.json                   `npm run check:types`（tsc --noEmit）の設定。checkJs は off で、
@@ -1097,6 +1100,7 @@ data/hist-eras.js                 全時代の国境スナップショット 54 
                                   aourednik/historical-basemaps・**GPL-3.0**・`window.__HISTERAS`・
                                   `scripts/build-hist-eras.mjs`／`npm run check:histeras`）。
                                   1689 年より前は、これが唯一の国境の答え。
+                                  ⚠ **git の外**（`data-assets.json`・`npm run data:pull` がコピーを置く）
                                   ⚠ **名前は英語 1 つだけ**——訳語は下の `data/histnames.json`
 data/histnames.json               **歴史的な政体名の、記録をまたぐ 1 つの表**（Wikidata・**CC0 1.0**
                                   ＋ 上流の説明文の訳・`scripts/build-histnames.mjs`／
@@ -1113,6 +1117,8 @@ data/border-coast.js              歴史的な輪郭の各辺が「境界」か�
                                   内部を持たないので描かない
 data/border-detail/               OHM原典と同梱形状を照合した拡大表示用の境界線。索引と空間別の断片を
                                   js/border-coast.jsが表示範囲に応じて読み、元の境界線と置き換える。
+                                  ⚠ **git の外**（`data-assets.json`）。`npm run data:pull` が共有ストアへの
+                                  リンクを置く。再生成の前に `node scripts/data-assets.mjs materialize border-detail`
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
                                   4,837件／rings 8,269・41.46 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、既知の日付は日単位・開始日を含み終了日を含まない。
@@ -1330,6 +1336,11 @@ scripts/
                                   ⚠ **早送りだけ＝冪等**なので並行セッションが同時に走らせてよく、
                                   排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
+  data-assets.mjs                 **git の外にあるデータ集合**（`data-assets.json`）の取得・検証・配置・公開。
+                                  `pull`（`npm run data:pull`）／`verify`（`npm test` の最初の段）／`list`
+                                  （USB ミラーが読む）／`unlink`（`worktree.mjs done`）／`materialize`／`publish`
+                                  （`npm run data:publish`）。中身の sha256 の定義と、ストアが OneDrive の外である
+                                  ことの強制はここが正本。⚠ 置けない・目録と違うときは集合と理由を言って exit 1
   release-state.mjs               **本番がどの組み合わせで走っているか**を 3 面（静的サイト・Edge Functions・
                                   DB migration）まとめて測る（`npm run release:state` / `release:check`）。
                                   ⚠ **判定は時刻ではなく配備されたソースの中身**（`supabase functions download`
@@ -1495,6 +1506,10 @@ tests/
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
   atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いを送って評価（Secret 2本が無ければ**赤**。休眠しない）
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新
+.github/actions/
+  browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・実行・報告）。ci.yml の browser／browser-deep が使う
+  data-assets/                    git の外にあるデータ集合を置く（`data-assets.json` の hash を key にしたキャッシュ ＋
+                                  `scripts/data-assets.mjs pull`）。データを読むジョブがビルドと検査の前に使う
 ```
 
 ---

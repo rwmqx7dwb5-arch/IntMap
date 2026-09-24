@@ -1,0 +1,28 @@
+# (data-outside-git) THE DATASETS THAT LIVE OUTSIDE GIT, PLACED BEFORE ANYTHING READS THEM.
+# data-assets.json names each set by the sha256 of its content and the GitHub Release asset that
+# carries it; scripts/data-assets.mjs fetches, verifies and links it into data/. ONE place, used by
+# every job that builds the site or runs a gate — a second copy of these two steps in each job is how
+# one job ends up without them and fails with an ENOENT nobody reads as «the data was not fetched».
+#
+# ⚠ THE CACHE KEY IS THE MANIFEST ITSELF. A commit that changes no dataset hits the cache and never
+#   touches the network; a commit that publishes a new set misses once and saves the new store. The
+#   store lives under runner.temp (outside the checkout), exactly as it lives outside the checkout on
+#   a developer's machine, so the link in data/ has the same shape everywhere.
+# ⚠ A MISS IS NOT AN ERROR AND A FAILED FETCH IS. `pull` exits 1 naming the set and the reason, and
+#   the job goes red there — not twenty gates later.
+name: Data assets
+description: Place the datasets data-assets.json names (GitHub Release assets, verified by sha256), cached by the manifest.
+
+runs:
+  using: composite
+  steps:
+    - name: Restore the data store (keyed by data-assets.json)
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+      with:
+        path: ${{ runner.temp }}/intmap-data
+        key: intmap-data-${{ hashFiles('data-assets.json') }}
+    - name: Place the datasets (npm run data:pull)
+      shell: bash
+      env:
+        INTMAP_DATA_STORE: ${{ runner.temp }}/intmap-data
+      run: node scripts/data-assets.mjs pull

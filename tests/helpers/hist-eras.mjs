@@ -10,6 +10,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evalWithWindow } from './hist-scale.mjs';
+import { requireData } from '../../scripts/data-assets.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 let cached = null;
@@ -17,6 +18,9 @@ let cached = null;
 /** `window.__HISTERAS` from data/hist-eras.js. */
 export function eraBundle() {
   if (cached) return cached;
+  /* (data-outside-git) the file lives outside git: absent or not the manifest's bytes is a red with the fix in
+     it (`npm run data:pull`), never an ENOENT a reader has to decode — and never a skip. */
+  requireData(ROOT, 'data/hist-eras.js');
   const D = evalWithWindow(join(ROOT, 'data', 'hist-eras.js')).__HISTERAS;
   if (!D || !Array.isArray(D.snaps) || !Array.isArray(D.rings)) {
     throw new Error('data/hist-eras.js published no __HISTERAS with snaps and rings');
