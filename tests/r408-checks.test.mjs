@@ -117,7 +117,7 @@ test('R408 ②d: register より先に鳴った時計を、register ができた
      の生 interval を張る。ソースに `setInterval` の綴りは残らないので ②a は緑、しかしタイマーは
      hidden なタブで回り続ける。#R394 の「走っていない機構を名乗る列」を、その次のラウンドで
      自分で作るところだった。
-     (#R786/#R789) 綴りではなく挙動で測る。以前は `everyTick.pending.set(key, { … h: setInterval(fn, p) })`
+     (#R786/#R796) 綴りではなく挙動で測る。以前は `everyTick.pending.set(key, { … h: setInterval(fn, p) })`
      と引き取りループの正規表現を固定していたが、メモは module-scope の Map になり、名前は
      この検査の主題ではない。主題は 3 つ: 早い呼び出しは黙らず実際に鳴る／register ができた瞬間に
      同じ鍵でホイールへ載る／生 interval はそのとき止まる（ホイールの外で鳴り続けない）。 */

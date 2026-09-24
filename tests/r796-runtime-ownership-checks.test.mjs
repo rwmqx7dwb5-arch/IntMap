@@ -1,7 +1,7 @@
 /* ============================================================================
- *  R789 — the runtime's lifecycle has a generation, and a scope owns what a capability acquires
+ *  R796 — the runtime's lifecycle has a generation, and a scope owns what a capability acquires
  * ----------------------------------------------------------------------------
- *  Stage 2 of the ownership refactor (DEV-NOTES #R789). Before this round js/runtime.js could not
+ *  Stage 2 of the ownership refactor (DEV-NOTES #R796). Before this round js/runtime.js could not
  *  tell "the load that just finished" from "the load started before the panel was closed", kept a
  *  failed load memoised, and had no owner for anything a capability registered outside its four
  *  verbs. Each property below is exercised on the real makeRuntime() in Node — the same object the

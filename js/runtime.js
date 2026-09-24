@@ -65,7 +65,7 @@ export function makeRuntime(HOST) {
     const ONCE = new Map();      /* key → {fn, cap} — frame(), DRAINED before it runs (see _run) */
     const CAM = new Set();       /* keys in READ/WRITE that are camera-driven */
     const SUSPENDED = new Set(); /* capability names whose entries are skipped */
-    const _own = { unowned: 0 };  /* (#R789) registrations made with no owner — read by stats(); the number to drive to zero */
+    const _own = { unowned: 0 };  /* (#R796) registrations made with no owner — read by stats(); the number to drive to zero */
 
     let _raf = 0, _camWired = false, _dirty = false;
     let _gesture = 0;            /* depth of movestart/moveend nesting; >0 while the camera moves */
@@ -143,7 +143,7 @@ export function makeRuntime(HOST) {
        app's code ran at all. */
     function _wireCamera() {
       if (_camWired) return;
-      /* (#R789) headless: no window is not an error, it is "no engine yet" (tests, scripts/frame-profile.mjs) */
+      /* (#R796) headless: no window is not an error, it is "no engine yet" (tests, scripts/frame-profile.mjs) */
       let E = null; try { E = window.IntMapGeoEngine; } catch (_) { E = null; }
       if (!E || !E.events || !E.hasRenderer || !E.hasRenderer()) return;
       _camWired = true;
@@ -323,7 +323,7 @@ export function makeRuntime(HOST) {
        its factory, verify what it published" (#R209) and has for nine modules; duplicating that
        here would be the two-lists defect (#R220). `load` is where a definition calls it.
 
-       ══ ⚠⚠⚠ (#R789) A GENERATION, AND A SCOPE THAT OWNS WHAT THE CAPABILITY ACQUIRES ═══════════
+       ══ ⚠⚠⚠ (#R796) A GENERATION, AND A SCOPE THAT OWNS WHAT THE CAPABILITY ACQUIRES ═══════════
        Measured on the tree before this round: nothing here could tell "the load that just finished"
        from "the load that was started before the user closed the panel". `activate` waited on
        `load`, then set `active` — so open → (loading…) → close → load completes → ACTIVE AGAIN,
@@ -429,7 +429,7 @@ export function makeRuntime(HOST) {
         })
         .catch((e) => {
           _oops('capability:' + name, e);
-          /* ⚠ a failure is not memoised — the next activate tries again (#R789) */
+          /* ⚠ a failure is not memoised — the next activate tries again (#R796) */
           if (c.gen === gen) { c.state = 'failed'; c.p = null; }
           return null;
         });
@@ -440,7 +440,7 @@ export function makeRuntime(HOST) {
       const gen = c0 ? c0.gen : -1;
       return load(name).then((v) => {
         const c = CAPS.get(name); if (!c) return null;
-        /* ⚠ the whole point (#R789): closed — or disposed and reopened — while the load ran.
+        /* ⚠ the whole point (#R796): closed — or disposed and reopened — while the load ran.
            This activation is stale and does nothing; a newer one, if any, is on its own way. */
         if (c.gen !== gen || c.state === 'disposed') return null;
         if (c.state === 'failed') return null;
@@ -477,7 +477,7 @@ export function makeRuntime(HOST) {
        while the last line deleted the capability from SUSPENDED — so a disposed capability's idle
        task was not skipped either (`_skip` needs the name to still be suspended) and ran against
        resources that had just been released.
-       (#R789) …and the GENERATION moves first, so a load or an activation still in flight finds
+       (#R796) …and the GENERATION moves first, so a load or an activation still in flight finds
        itself stale when it lands; then both scopes give back everything they own. */
     function dispose(name) {
       const c = CAPS.get(name); if (!c) return false;

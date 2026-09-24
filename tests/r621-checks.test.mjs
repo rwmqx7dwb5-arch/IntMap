@@ -146,7 +146,7 @@ test('the legend actually writes its cautions, run with the REAL language regist
      open and the test FILE times out even though every assertion passed. Cleaning up what this
      test started is the test's own business. */
   const rt = await import('../js/runtime.js');
-  rt.stopEarlyTimers();   /* (#R789) the memo is module-private now; this is the door to it */
+  rt.stopEarlyTimers();   /* (#R796) the memo is module-private now; this is the door to it */
 
   const html = (host._key && host._key.innerHTML) || '';
   assert.ok(html.length > 0,

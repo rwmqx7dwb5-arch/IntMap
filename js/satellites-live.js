@@ -74,7 +74,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own —
-   (#R789) reached through the ACTIVE SCOPE the register hands to start(), so this file imports nothing
+   (#R796) reached through the ACTIVE SCOPE the register hands to start(), so this file imports nothing
    from it: `S.every('tick', …)` is that wheel, tagged with this capability's name and released on stop. */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satellitesLive=function(HOST){
@@ -869,7 +869,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     if(Date.now()-tleAt>2*3600*1000&&!loading) load(group).then(()=>{ paint(); });
     else paint();
   }
-  /* ══ (#R789) THE ACTIVE SCOPE OWNS THE LISTENERS, THE TICK AND THE LATE CATALOGUE ══════════════
+  /* ══ (#R796) THE ACTIVE SCOPE OWNS THE LISTENERS, THE TICK AND THE LATE CATALOGUE ══════════════
      Until this round `wire()` kept three private handles (`_hover`, `_click`, `_onMove`) and
      `unwire()` remembered to give each one back; `stop()` cleared the tick by hand; and the
      catalogue's `load(group).then(ok => go())` had no idea whether the layer was still on when the
@@ -1007,7 +1007,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   function startPublic(){
     const RT=window.IntMapRuntime;
     if(RT&&RT.stateOf&&RT.stateOf('sat.live')!==null){ RT.activate('sat.live'); return true; }
-    return false;   /* (#R789) no register, no layer — start() needs the scope only activate() hands over */
+    return false;   /* (#R796) no register, no layer — start() needs the scope only activate() hands over */
   }
   function stopPublic(){
     const RT=window.IntMapRuntime;

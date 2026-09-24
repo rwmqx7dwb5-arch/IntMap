@@ -52,7 +52,7 @@ scope が無いので**明示的に断る**形に（register は app-body が la
 
 ### 4. 検査
 
-- `tests/r789-runtime-ownership-checks.test.mjs`: 古い load が activate しない／古い load が新しい load を
+- `tests/r796-runtime-ownership-checks.test.mjs`: 古い load が activate しない／古い load が新しい load を
   上書きしない／失敗は再試行／開閉 ×50 で reads・writes・camera・timers が増えない／unowned が数えられる／
   loaded scope は suspend をまたぎ dispose で返す／`guard` と AbortSignal／世代は dispose だけで動く／
   sat.live の start が scope を取る。
