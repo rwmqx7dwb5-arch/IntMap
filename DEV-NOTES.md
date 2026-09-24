@@ -1,3 +1,36 @@
+## R799 — **`stats().unowned` を「いま生きている数」にし、衛星の凡例タイマーに所有者を付けた**
+
+〈#R796 の本番検証で見つけた 1 件。段 2 の計器の修正〉
+
+### 0. 本番で測ったこと（R796 が出た直後・2026-09-25）
+
+| 何 | 実測 |
+|---|---|
+| ビルド印 | `INTMAP_BUILD=2026-09-24-R796`・`__imBuild=R796` |
+| 起動直後 | `[IntMap]` のエラー 0・`__imModuleCheck.missing=[]`・`__imLazyCheck.failed=[]` |
+| `IntMapRuntime.stats()` | `{reads:2, writes:1, camera:3, timers:11, capabilities:1, unowned:21}` |
+| 衛星の開閉 5 回 | `stateOf('sat.live')` が loaded⇄active、timers が 12⇄10 を往復して**増えない**、`generationOf` は 0 のまま（suspend では進まない） |
+| Atlas を開いた後 | `__imLazyCheck.failed=[]` のまま |
+| ⚠ `unowned` | 衛星を ON にするたびに **+1 して戻らない** |
+
+### 1. 計器が累積だった
+
+`_own.unowned++` は登録のたびに増え、どこも減らさない。**一度も減らない数は 0 に向けられない**——段 2 が
+「0 へ向ける計器」と呼んだものは、実際には「これまでに所有者なしで登録した回数」だった。
+⇒ `stats().unowned` は 5 つの登録簿（READ／WRITE／ONCE／IDLE／TIMERS）の `cap===null` をその場で数える
+`_unownedLive()`。累積は `unownedEver` として残す（増えた**回数**を知りたい読み手のため）。
+
+### 2. 増やしていたのは凡例のタイマー
+
+`js/data-layers.js` の `everyTick('data-layers:sat-legend', 1000, …)` が所有者なしで、衛星 ON のたびに登録される。
+timers 自体は OFF で戻る（data-layers が `stopTick` する）ので漏れではないが、所有者が無い。
+⇒ `{ capability:'sat.live' }`。suspend 中は skip、dispose で掃かれる。
+
+### 3. 検査
+
+`tests/r799-unowned-live-count-checks.test.mjs`: 3 つ登録して 2 つ消すと数が下がる／所有付きの
+capability を 50 回開閉しても増えない／凡例タイマーが所有者を名乗っている。
+
 ## R798 — **遅延モジュールの登録表を 1 モジュール 1 定義にした（所有権リファクタの段 4 の前半）**
 
 〈#R792 の続き。利用者の 9 段の 4 番目「軽い機能定義と重い本体の分離——メニュー・状態復元・Atlas の
@@ -753,6 +786,8 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 > 4,240 行へ切り、60 ラウンドで 14,704 行に戻った——**境界は固定値ではなく、動かすもの**である。
 
 ## 索引 — このファイルのラウンド（新しい順）
+
+- **#R799** — **`stats().unowned` を「いま生きている数」にし、衛星の凡例タイマーに所有者を付けた**〈#R796 の本番検証（R796 が本番に出た直後）で、`unowned` が衛星のトグルごとに 1 増えて戻らないことが実測された〉／⚠ 計器が**累積**だった——一度も減らない数は 0 に向けられない⇒ 5 つの登録簿の `cap===null` を数える `_unownedLive()`、累積は `unownedEver` に／増やしていたのは `js/data-layers.js` の `data-layers:sat-legend`（所有者なし）⇒ `{ capability:'sat.live' }`（OFF で skip・dispose で掃く）／本番実測（R796）: ビルド印 R796・`__imLazyCheck.failed=[]`・衛星 5 回開閉で timers 12⇄10 を往復し増えない・`stateOf('sat.live')` が loaded⇄active
 
 - **#R798** — **遅延モジュールの登録表を 1 モジュール 1 定義にした（所有権リファクタの段 4 の前半）**〈段 3 の続き。「メニュー・状態復元・Atlas の認識を維持したまま、登録表の手動同期を減らす」〉／⚠⚠⚠ **1 つの遅延モジュールが 5 つの表（`PUBLISHES`・`fetchModule` の case・`mount` の case・`ALSO`・`SELF_PUBLISHING`）と `src/main.js` の `LAZY_FACTORIES` の 6 か所に手で書かれていた**。r209 ③・r304 ② はその 6 か所が揃っているかを regex で測る検査だった⇒ `LAZY_REGISTRY`（42 件・既存の 5 表から**機械的に導出**、手打ち 0）を正本にし、loader の 5 表はその view、`src/main.js` は `LAZY_NAMES` / `CARRIED_NAMES` を import／⚠ 検査 9 本（r175 ②・r209 ②③・r304 ②・r353 ⑨・r354・r408 ④・r495 ③・app-source の `lazyModules()`）が「2 ファイルへの regex」から「同じ object を読む」に。gate 2（`window.IntMapModules.x(IM_HOST)` の綴り）は `mount` の中でそのまま／後半（軽い機能定義と重い本体の分離——world-packs 等の eager なメニュー）は次のラウンド
 

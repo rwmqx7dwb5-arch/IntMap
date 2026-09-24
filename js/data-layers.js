@@ -5982,7 +5982,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const cb=document.getElementById('dl-sats'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } return; }
       whenStyleReady().then(()=>{ try{ A.setOpacity(opacities.sats); A.start(); }catch(e){ console.warn('sats start fail',e); } });
       if(_satCountT) stopTick(_satCountT);
-      _satCountT=everyTick('data-layers:sat-legend',1000,_satLegendCount); _satLegendCount();
+      _satCountT=everyTick('data-layers:sat-legend',1000,_satLegendCount,{capability:'sat.live'});   /* owned by the satellite capability: skipped while it is suspended, swept if it is disposed */ _satLegendCount();
     }
     function stopSats(){
       try{ window.IntMapSatellites&&window.IntMapSatellites.stop(); }catch(_){}
