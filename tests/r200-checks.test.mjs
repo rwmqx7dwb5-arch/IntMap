@@ -231,7 +231,7 @@ test('R200 ⑤: the core keeps shrinking, and the ceiling follows the floor DOWN
   const n = (p) => read(p).split('\n').length;
   const body = n('js/app-body.js');
   assert.ok(body < 4_400, `js/app-body.js is ${body} lines; it was 5,149 before #R200 and must not grow back`);
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   const moved = MODULES.reduce((a, [rel]) => a + n(rel), 0);
   assert.ok(moved > 900, `the ten modules hold ${moved} lines — the core shrank by moving, not by losing`);
 });

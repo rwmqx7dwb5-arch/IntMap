@@ -85,7 +85,7 @@ r168 #8 は「stylesheet は css/ に」と「本体が shell に戻っていな
 | 20 か所の天井の撤去 | r162〜r167・r169・r199・r200・r249・r292・r298・r318・r350・r419・r479・r511・r663・r667・r775 |
 | 畳んだ行の展開 | src/main.js 11 行・js/lazy-modules.js 4 行。「shell budget のため」の文を削除、残る言及は「撤去済み」と註 |
 | 文書 | `docs/TESTING.md`（新しい節）・`docs/FILES.md`・`Architecture.md` §1.1・実行戦略の表・verifier 役 |
-| 回帰 | `tests/r786-arch-ownership-checks.test.mjs`——合成ツリーで 3 計器が**欠陥を検出する**ことを示す |
+| 回帰 | `tests/r795-arch-ownership-checks.test.mjs`——合成ツリーで 3 計器が**欠陥を検出する**ことを示す |
 
 ### 5. 段 2 以降（次のラウンド）
 

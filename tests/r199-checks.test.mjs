@@ -190,7 +190,7 @@ test('R199 ⑤: the two files 「中心部がまだ巨大」 named have ceilings
   const n = (p) => read(p).split('\n').length;
   const atlas = n('js/atlas-console.js');
   const body = n('js/app-body.js');
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.ok(atlas > 0);
   assert.ok(body < 5_200, `js/app-body.js is ${body} lines; it was 5,375 before #R199 and must not grow back`);
   /* the seven modules together account for what left, so "smaller" cannot mean "deleted" */

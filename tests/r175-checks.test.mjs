@@ -230,7 +230,7 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
 });
 
 test('R175 ③: every export of a js/ module is reached by name from another file', () => {
-  /* (#R786) THIS TEST USED TO ASK TWO THINGS, AND ONE OF THEM WAS A RULE ABOUT SHAPE.
+  /* (#R795) THIS TEST USED TO ASK TWO THINGS, AND ONE OF THEM WAS A RULE ABOUT SHAPE.
      ① "no js/ module has an unexported top-level declaration" was the Vite migration's tripwire:
         a classic script's top-level `const` was a window global, a module's is private, so a
         declaration that appeared during the migration could silently change a name resolution.
@@ -252,7 +252,7 @@ test('R175 ③: every export of a js/ module is reached by name from another fil
 });
 
 test('R175 ③: no js/ module reads a name that resolves to nothing (the property the declaration ban stood for)', () => {
-  /* (#R786) the replacement for the ban is not "nothing"; it is the free-identifier check, run here
+  /* (#R795) the replacement for the ban is not "nothing"; it is the free-identifier check, run here
      as well as in r168 #7 so that a reader of THIS file sees what holds the migration up. */
   const problems = checkSplitScope();
   assert.deepEqual(problems, [], 'split-scope problems:\n' + problems.map((p) => `${p.file}: ${p.msg}`).join('\n'));

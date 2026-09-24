@@ -256,7 +256,7 @@ test('R298 ⑮ a predicate is CALLED, a shape is painted once, and a pan repairs
 /* ── ⑬ the message tools moved out rather than the ceiling moving up ─────────────────────── */
 test('R298 ⑬ the Atlas kernel is under its ceiling because a subject left', () => {
   const n = (p) => read(p).split('\n').length;
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   /* …and the subject is really somewhere, with its CSS, not deleted */
   const m = read('js/atlas-msg-tools.js');
   assert.match(m, /export const MSG_TOOLS_CSS/);

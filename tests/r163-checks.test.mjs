@@ -184,7 +184,7 @@ test('R163 #6 the boot guard names every factory, so one missing file cannot hid
 
 test('R163 #7 index.html actually shrank and no module body came back inline', () => {
   const lines = html.split('\n').length;
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.ok(lines > 0);
   // A module body reappearing inline is the regression that would silently undo the whole round.
   for (const [global] of MOVED) {

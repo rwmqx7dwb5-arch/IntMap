@@ -108,7 +108,7 @@ test('R667 ③: the ambiguous refusals go through the one helper, and it lives b
   const body = geo.slice(geo.indexOf('function whereMiss('), geo.indexOf('\n  }', geo.indexOf('function whereMiss(')));
   assert.ok(!/tsunami|epicent|震源|transmitter/i.test(body), 'no case is named inside the helper');
   /* the console did not grow: it is under a shrink-only ceiling with no headroom */
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
 });
 
 /* ══ ④ THE ACTIVATION RACE: THE RUNTIME'S PROMISE IS HANDED BACK, AND THE CALLER WAITS ════════ */

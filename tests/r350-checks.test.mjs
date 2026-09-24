@@ -502,7 +502,7 @@ test('R350 ⑨c: the exported envelope carries the identity of the call it came 
   assert.ok(core.includes('citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task }; }'),
     'the exported envelope drops the call identity on the way out');
   assert.ok(read('js/app-body.js').includes('get askAIJSONEnvelope()'), 'the host does not forward the envelope at all');
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
 });
 
 test('R350 ⑨d: the proxy knows the task, budgets it, and refuses a shape the client cannot audit', () => {

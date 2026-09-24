@@ -388,7 +388,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
   'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'outbreaks', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule; the line ceiling was retired in #R786); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
+  'oceanCurrents', 'outbreaks', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule; the line ceiling was retired in #R795); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These files are not in the import list above: they are fetched by js/lazy-modules.js the

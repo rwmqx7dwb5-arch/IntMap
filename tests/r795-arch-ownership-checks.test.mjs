@@ -1,7 +1,7 @@
 /* ============================================================================
- *  R786 — tests that pinned an implementation's SHAPE became tests of its PROPERTIES
+ *  R795 — tests that pinned an implementation's SHAPE became tests of its PROPERTIES
  * ----------------------------------------------------------------------------
- *  Stage 1 of the ownership refactor (DEV-NOTES #R786). Three instruments changed hands:
+ *  Stage 1 of the ownership refactor (DEV-NOTES #R795). Three instruments changed hands:
  *    ① "every export is imported by name from js/"  →  scripts/export-readers.mjs: a reader is any
  *       file in js/, src/, scripts/ or tests/ that reaches the name (static, namespace or dynamic)
  *    ② "no unexported top-level declaration in js/" →  gone; scripts/check-split-scope.mjs measures
@@ -115,7 +115,7 @@ test('③ the baseline is names, and the live tree matches it (the gate check:su
 test('no test holds a line ceiling over a source file any more', () => {
   /* the eleven sites retired this round, by the assertion form they all used */
   const hits = [];
-  for (const f of readdirSync(join(ROOT, 'tests')).filter((x) => /\.test\.mjs$/.test(x) && x !== 'r786-arch-ownership-checks.test.mjs')) {
+  for (const f of readdirSync(join(ROOT, 'tests')).filter((x) => /\.test\.mjs$/.test(x) && x !== 'r795-arch-ownership-checks.test.mjs')) {
     const s = readFileSync(join(ROOT, 'tests', f), 'utf8');
     for (const m of s.matchAll(/assert\.ok\(\s*[\w.()'"/\\-]*(?:lines|shell|atlas|n\('js\/[\w-]+\.js'\)|\w+\.split\((?:'\\n'|String\.fromCharCode\(10\)|NL)\)\.length)\s*<\s*\d[\d_]*\s*,/g)) hits.push(f + ': ' + m[0].slice(0, 80));
   }

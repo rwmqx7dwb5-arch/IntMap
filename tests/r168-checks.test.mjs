@@ -86,7 +86,7 @@ const LIVE = {
   communityAddArmed: 'communityAddArmed',
 };
 
-/* ── (#R786) THE SHELL IS READ WITH A PARSER, NOT MATCHED AS TEXT ───────────────────────────────
+/* ── (#R795) THE SHELL IS READ WITH A PARSER, NOT MATCHED AS TEXT ───────────────────────────────
    Until this round #1–#3 pinned the factory call, the shim and their POSITIONS as literal strings
    (`const IM_X=window.IntMapModules.x(IM_HOST);`, `function n(){ return IM_X.n.apply(this,arguments); }`,
    four hand-listed "eager uses" whose spelling had to be refreshed twice). What those strings stood
@@ -105,7 +105,7 @@ function closureBody() {
     const isDCL = c.callee.type === 'MemberExpression' && c.callee.property.name === 'addEventListener'
       && c.arguments[0] && c.arguments[0].value === 'DOMContentLoaded';
     if (isDCL && c.arguments[1] && /Function/.test(c.arguments[1].type)) {
-      /* (#R786) the handler is `() => { const _imAppBoot = () => { …the program… }; … }` since the
+      /* (#R795) the handler is `() => { const _imAppBoot = () => { …the program… }; … }` since the
          boot barrier (#R180): the closure whose statements matter is the LARGEST function body
          declared directly inside it, found rather than named. */
       let best = c.arguments[1].body.body;
@@ -327,7 +327,7 @@ test('R168 #7 the parser-backed split-scope check still passes across all six ne
 });
 
 test('R168 #8 no module body came back inline, and the stylesheet stays in css/', () => {
-  /* (#R786) THE LINE CEILING IS GONE. From #R168 to #R465 this test held `lines < N` over the app
+  /* (#R795) THE LINE CEILING IS GONE. From #R168 to #R465 this test held `lines < N` over the app
      shell, and the paragraph above the number grew by one measurement per round as N moved
      8,200 → 8,600 → 8,300 → 8,200 → 7,950 → 8,000 → 8,020 → 8,050 (the history is in git and in
      DEV-NOTES). What it produced in the end was not a smaller program: eleven `import` lines in

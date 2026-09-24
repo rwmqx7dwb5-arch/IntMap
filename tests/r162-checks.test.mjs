@@ -207,7 +207,7 @@ test('R162 #7 the data survived the move intact (all 5 languages, real row count
 
 test('R162 #8 index.html actually shrank and the CSS really moved', () => {
   const lines = html.split('\n').length;
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.ok(lines > 0);
   const css = rd('css/intmap.css');
   assert.ok(css.length > 200000, 'css/intmap.css holds the real stylesheet');

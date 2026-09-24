@@ -505,7 +505,7 @@ test('R292 ㉑: js/widgets.js is a join, not a program', () => {
   /* ⚠ THE IMPORT BLOCK IS NOT PROGRAM. js/widgets.js declares the platform's own load order (see ①),
      which is seventeen lines of import and comment; what this ceiling is about is whether the FILE
      went back to being a program, so the imports are discounted and the rest must stay tiny. */
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.ok(!/fetch\(/.test(w), 'the join fetches nothing');
   assert.ok(!/createElement/.test(w), 'the join builds no DOM');
   /* and the platform files are each small enough to be read in one sitting */

@@ -198,9 +198,9 @@ npm run preview          # serve an existing dist/ without rebuilding it
 Use `npm run dev` while editing and `npm run serve` when you want to see exactly what ships.
 `file://` is still unsupported, and now doubly so: the entry is an ES module.
 
-### Gating: the global surface — `npm run check:surface` (#R786)
+### Gating: the global surface — `npm run check:surface` (#R795)
 
-**What it replaced.** From #R168 to #R786 `tests/r168-checks` #8 held `lines < N` over the app shell
+**What it replaced.** From #R168 to #R795 `tests/r168-checks` #8 held `lines < N` over the app shell
 (index.html + src/main.js + src/vendor.js + js/app-body.js + js/geo-engine.js + js/lazy-modules.js),
 and twenty more tests held one — copies for the shell (r350, r479), for js/atlas-console.js (4,908 /
 4,910 / 5,300 in nine files), js/app-body.js (4,400 in two), js/widgets.js (130) and the seven

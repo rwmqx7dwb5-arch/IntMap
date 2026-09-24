@@ -303,7 +303,7 @@ test('R419 ⑨d: the kernel did not grow to hold any of this', () => {
   /* tests/r318-checks.test.mjs ⑨b is the ceiling; this says WHY there is a new file at all.
      js/atlas-console.js shipped at 4,909 lines against a ceiling of 4,910 — one line of headroom —
      so #R199's rule applies without interpretation: the kernel shrinks by MOVING. */
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.ok(rd('js/atlas-turn-continuity.js').length > 2_000, 'the module that was supposed to hold it is empty');
 });
 

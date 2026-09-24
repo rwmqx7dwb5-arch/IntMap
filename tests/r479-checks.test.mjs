@@ -213,7 +213,7 @@ test('R479 ⑧ the CARTO module is not part of the app shell', () => {
     assert.ok(!/window\.CARTO_BASEMAP_KEY\s*=/.test(codeOnly(read(f))),
       f + ' is inside the app-shell line budget — the key and the builders live in js/carto-basemap.js');
   }
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.match(read('src/main.js'), /import '\.\.\/js\/carto-basemap\.js';/,
     'and it is imported before js/app-body.js, which builds tile URLs at map setup');
 });

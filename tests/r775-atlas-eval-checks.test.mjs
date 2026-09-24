@@ -254,6 +254,6 @@ test('R775 ⑦ sim.pandemicRun declares which refusals rewording cannot fix', as
 /* ── the kernel may not grow to pay for any of this ────────────────────────────────────────── */
 
 test('R775 js/atlas-console.js stayed under its shrink-only ceiling', () => {
-  /* (#R786) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
+  /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.ok(read('js/atlas-console.js').length > 0);
 });

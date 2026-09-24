@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · which exports of js/ have a reader, derived ONCE  (#R786)
+ *  IntMap · which exports of js/ have a reader, derived ONCE  (#R795)
  * ----------------------------------------------------------------------------
  *  tests/r175-checks ③ used to ask two questions of every js/ module:
  *    (a) "does it have an UNEXPORTED top-level declaration?"  — forbidden

@@ -1,16 +1,16 @@
 /* ============================================================================
- *  IntMap · the global surface, measured  (#R786)
+ *  IntMap · the global surface, measured  (#R795)
  * ----------------------------------------------------------------------------
  *  How much of the program reaches through one shared object. Two registers:
  *    · HOST     — the members of IM_HOST (js/app-body.js), the object every split-out module is
- *                 handed and reads its closure values through (274 getters at #R786, 52 of them
+ *                 handed and reads its closure values through (274 getters at #R795, 52 of them
  *                 writable, plus three attached after the literal);
- *    · WINDOW   — every `window.NAME =` a js/ or src/ file performs (301 IntMap* names at #R786,
+ *    · WINDOW   — every `window.NAME =` a js/ or src/ file performs (301 IntMap* names at #R795,
  *                 683 names in all).
  *  Neither is a line count. A feature that moves out of the shell but keeps every HOST getter it
  *  read and publishes one more window global has not become independent — it has moved. This is
  *  the instrument that says so, and it replaces the line ceilings tests/r168 #8 (and twenty copies)
- *  held from #R168 to #R786: those measured the shell's LENGTH and produced folded import lines;
+ *  held from #R168 to #R795: those measured the shell's LENGTH and produced folded import lines;
  *  this measures the shell's REACH.
  *
  *  THE BASELINE (tests/global-surface-baseline.json) IS RATCHETED BOTH WAYS, like check:perf:
