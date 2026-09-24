@@ -1073,6 +1073,13 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 - **`css/`** — 3 本（アプリ本体・静的ページ・フォント）。
 - **`data/`** — 同梱データ（ビルド時に生成した軌道要素・海流・星表など）。生成元は
   `scripts/build-*.mjs`。詳細は `docs/FILES.md` §3.11。
+  ⚠ **その一部は git の外にある。** ルートの `data-assets.json`（追跡対象）が、各データ集合の
+  パス・**中身の sha256**・それを運ぶ **GitHub Release の asset** を持つ唯一の正本で、
+  `npm run data:pull`（`scripts/data-assets.mjs`）が取得→sha256 検証→チェックアウトの外の共有ストア
+  （既定 `%LOCALAPPDATA%intmap-data`・OneDrive の外）→`data/` へのリンク（ディレクトリは junction／
+  symlink、単一ファイルはコピー）を行う。**無い・目録と違う**ときは門が赤くなりその名前と
+  `npm run data:pull` を言う（黙って飛ばさない）。規約と門は `docs/TESTING.md`
+  「git の外にあるデータ」、判断の理由は `DECISIONS.md`。
 - **`supabase/`** `docs/` `scripts/` `tests/` `.github/` — 運用側。詳細は `docs/FILES.md` §3.12。
 - **`index.html` を分割するときの手順**は `docs/FILES.md` §3.13 が正本（`IM_HOST` の規約と、
   「いつ取りに行くか」という第2の軸を含む）。**分割は必ずその手順に従うこと。**
@@ -4652,6 +4659,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    ```bash
    git clone https://github.com/rwmqx7dwb5-arch/IntMap.git && cd IntMap
    npm ci && npx playwright install --with-deps chromium
+   npm run data:pull     # git の外にあるデータ集合（data-assets.json）を Release から取得・検証して配置
    ```
 2. **Supabase プロジェクト**を用意し、**接続先を2か所**差し替える：
    - `src/vendor.js` の `window.SUPABASE_URL` / `window.SUPABASE_ANON_KEY`
@@ -4723,6 +4731,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 | 障害対応（サイト・DB・鍵） | [`docs/INCIDENT-RESPONSE.md`](docs/INCIDENT-RESPONSE.md) |
 | CI／検査スクリプトのファイル一覧 | [`docs/FILES.md`](docs/FILES.md) §3.12 |
 | **作業終了処理**（commit / push → 原本の最新化 → USB への完全ミラーと検証） | [`AGENTS.md`](AGENTS.md) §11 ＋ `scripts/master-sync.mjs` ＋ `scripts/backup-usb.ps1` |
+| **git の外にあるデータ**（目録・取得・検証・公開・CI のキャッシュ） | `data-assets.json` ＋ `scripts/data-assets.mjs` ＋ [`docs/TESTING.md`](docs/TESTING.md)「git の外にあるデータ」 |
 
 ### 15.2 実行
 
@@ -4755,6 +4764,10 @@ push ごとに `.github/workflows/deploy.yml` が「ビルド(Vite) → 静的�
 `curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` の `sha` が
 `git rev-parse origin/main` と一致すること。ロールバックは `.github/workflows/rollback.yml`
 （履歴に実在する ref のみ・対象 ref を **Vite ビルドして `dist` を配信**）。
+⚠ ビルドする前に、**そのコミット自身の** `data-assets.json` が名指すデータ集合を取得する
+（`.github/actions/data-assets`。ロールバックは対象コミットの目録とスクリプトで取り、目録を持たない
+古いコミットはデータを git に持っているので取得しない）。**データ集合の Release は消さない**——
+それを名指すコミットのロールバックとビルドが再現できなくなる。
 
 ⚠ `deploy.yml` は `concurrency: pages-production` で直列に走る（前の run が固まると次は pending のまま）。
 **手順の正本は [`docs/RELEASE.md`](docs/RELEASE.md)。**

@@ -17,7 +17,8 @@
     2. Finds the IntMap backup USB — by its volume label first, and only by
        "there is exactly one writable removable drive" as a fallback, which then
        stamps the label file so the next run is unambiguous.
-    3. Mirrors the MASTER's tracked tree (HEAD) onto the USB ROOT, one way.
+    3. Mirrors the MASTER's tracked tree (HEAD) onto the USB ROOT, one way — plus the
+       datasets data-assets.json keeps outside git (data-outside-git), verified before they are listed.
     4. Verifies by re-walking both sides and comparing SHA-256, not by trusting
        that the copy loop returned without throwing.
     5. Records the timestamp OUTSIDE the repository, and only on success.
@@ -152,6 +153,33 @@ function Get-SourceFiles {
   } finally { Pop-Location; if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force } }
 }
 
+# ⚠ (data-outside-git) …AND THE DATASETS THAT ARE NOT IN GIT. data-assets.json names them (data/border-detail/,
+# data/hist-eras.js) and `npm run data:pull` places them in the master as a junction into a store
+# outside OneDrive. They are still needed to rebuild the site, so they are still mirrored: the list
+# comes from scripts/data-assets.mjs, which first VERIFIES that what is placed is the manifest's
+# content. If it is absent or altered the backup FAILS — mirroring then would delete the USB's good
+# copy (extras are deleted, below) and report success. Copy-Item reads through the junction.
+# Returns $null on failure (the reason has been printed), an empty array when nothing is declared.
+function Get-DataFiles {
+  $psi = New-Object Diagnostics.ProcessStartInfo
+  $psi.FileName = 'node'
+  $psi.Arguments = '"' + (Join-Path $Repo 'scripts\data-assets.mjs') + '" list -z --root "' + $Repo + '"'
+  $psi.WorkingDirectory = $Repo
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $proc = [Diagnostics.Process]::Start($psi)
+  $errTask = $proc.StandardError.ReadToEndAsync()
+  $bytes = New-Object IO.MemoryStream
+  $proc.StandardOutput.BaseStream.CopyTo($bytes)
+  $proc.WaitForExit()
+  $err = $errTask.Result
+  if ($err) { Say $err.TrimEnd() }
+  if ($proc.ExitCode -ne 0) { return $null }
+  $text = [Text.Encoding]::UTF8.GetString($bytes.ToArray())
+  return , @($text -split "`0" | Where-Object { $_ -ne '' })
+}
+
 function Get-UsbFiles($root) {
   # -Force to see hidden/system entries; SilentlyContinue so a directory Windows will not let us
   # enter (System Volume Information) is skipped rather than aborting the run.
@@ -276,6 +304,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 $files = Get-SourceFiles
 Say ("master: {0} · {1} tracked files at HEAD" -f $Repo, $files.Count)
+$dataFiles = Get-DataFiles
+if ($null -eq $dataFiles) {
+  Say 'The datasets data-assets.json names are not in place in the master. Run `npm run data:pull` there (npm run master:sync does it).'
+  Say 'Not mirroring: the USB copy of those datasets would be deleted as extras.'
+  Result 'failed' 'data-assets-not-placed'
+  exit 1
+}
+Say ("master: + {0} data file(s) outside git (data-assets.json, verified)" -f $dataFiles.Count)
+$files = @($files) + @($dataFiles)
 
 $attempt = 0
 while ($true) {

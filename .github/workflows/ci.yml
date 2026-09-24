@@ -68,6 +68,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
       - name: The declared gates for this shard
         run: node scripts/ci-gates.mjs --shard ${{ matrix.shard }}/${{ matrix.of }} --timings gate-timings.json
       # The measured seconds go back into .github/gate-cost.json by hand (`--update`), not by a bot:
@@ -109,6 +110,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
       - run: node scripts/build-hist-eras.mjs --check-upstream
 
   # ⚠⚠⚠ (#R783) THE ONE CLAIM THIS REPOSITORY COULD NOT MAKE ABOUT ITS OWN EXPORTS. The round-trip
@@ -203,7 +205,7 @@ jobs:
   # as far as Wikidata's stated inception, the era record's own borders and the OHM record's
   # silence all agree they may go. A country enters whole or not at all.
   # (#R716) …AND THE BIGGEST SURFACE OF ALL, bigger than every bundle above put together:
-  # data/border-detail/, 5,622 files and 409 MB of refined outlines for hist-borders, hist-admin1
+  # data/border-detail/ (count and bytes: data-assets.json), the refined outlines for hist-borders, hist-admin1
   # and hist-admin2. ⚠ Unlike the two steps above it, this one was NOT ungated — a node test has
   # run its check() since #R711. What was missing is that no DECLARED gate reached it, so the
   # rules that hunt for uncalled gates could not see it (their universe is package.json's
@@ -302,6 +304,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
       # (#R166) Was `node --test tests/security-logic.mjs tests/monitor-logic.test.mjs`, so the R1xx
       # source-level suites ran only on a developer's machine — including the file-split invariants,
       # which is exactly the kind of guard that must not be optional. The glob is the one `npm test`

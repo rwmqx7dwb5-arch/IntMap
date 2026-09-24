@@ -143,6 +143,12 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 
 **Codex**: 同種のハーネス worktree は作らない。`scripts/worktree.mjs` だけを使う。
 
+**git の外にあるデータ**（data-outside-git）: `node scripts/worktree.mjs new` は `node_modules` と同じ扱いで
+`data-assets.json` の集合も用意する（その worktree の目録で `data:pull`。ディレクトリ集合は
+`%LOCALAPPDATA%intmap-data` の 1 部への junction なので、worktree を何本作っても 1 部）。`done` は
+削除の前にその junction を外す。⚠ **ハーネスの worktree**（上）にはこれが走らないので、そこでは自分で
+`npm run data:pull` を走らせる——走らせなければ門が赤くなってそう言う。
+
 ---
 
 ## 6. subagent・ツール・MCP
@@ -353,6 +359,14 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
   （＝サイトを再現するのに必要なものすべて。`node_modules` / `.git` / `dist` / キャッシュは入らない）。
   新規は作成、更新は上書き、**リポジトリに無いものは USB からも削除**する。
   例外は `.intmap-backup-id.json` ——ドライブを識別するためにスクリプト自身が置く管理情報。
+- ⚠ **git の外にあるデータ集合も USB に入る**（data-outside-git）。`data-assets.json` が名指す集合（`data/border-detail/`・
+  `data/hist-eras.js`）は追跡対象ではないが、サイトの再構築に要るので、スクリプトは
+  `node scripts/data-assets.mjs list` の一覧を追跡ファイルに**足して**ミラーする。`list` は先に
+  「原本に置かれているものが目録の sha256 どおりか」を検証し、**無い・違うなら一覧を 1 行も出さずに失敗する**
+  ——そのときスクリプトは**ミラーせず** `RESULT failed data-assets-not-placed` で終わる（ミラーすると USB の
+  正しい写しが「リポジトリに無いもの」として消されるから）。原本の集合は `npm run master:sync` が
+  早送りのあとに `data:pull` で置く（原本では OneDrive の外の共有ストアへの junction で、OneDrive は
+  reparse point をたどらない。USB へはリンクではなく中身がコピーされる）。
 - ⚠ **マシン固有のファイルは、意図的に USB に入らない**（上の §4）。追跡外なので
   ミラーの対象外であり、**次回同期で USB 上の古い写しは削除される**。これは正しい。
 - ⚠ **早送りを塞いでいた当のファイルが、早送りを通す側にも要る。** 追跡から外すだけでは、

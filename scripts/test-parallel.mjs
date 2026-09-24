@@ -38,6 +38,11 @@ const NPM = win ? 'npm.cmd' : 'npm';
 const HALVES = [
   {
     tag: 'checks', steps: [
+      /* ⚠ (data-outside-git) FIRST, BECAUSE EVERYTHING BELOW READS IT. data/border-detail/ and data/hist-eras.js
+         live outside git (data-assets.json); absent, a dozen gates and tests would each fail with an
+         ENOENT that names neither the cause nor the fix. This names both, and it also refuses a copy
+         that is present but is not the content the manifest names — which nothing below could see. */
+      ['node', ['scripts/data-assets.mjs', 'verify']],
       ['node', ['scripts/static-checks.mjs']],
       ['node', ['scripts/engine-coupling.mjs', '--gate']],
       /* ⚠ (#R239) THE TRANSLATION GATE RUNS HERE, WITH THE OTHER ACORN GATES. 「いつまでたっても
@@ -163,7 +168,7 @@ const HALVES = [
          fail. Offline, ~3 s. .agents/rules/historical-verification.md is the rule it enforces. */
       ['node', ['scripts/hist-fidelity.mjs', '--check']],
       /* ⚠⚠ (#R716) …and the EIGHTH, for the LARGEST SHIPPED SURFACE IN THE REPOSITORY — but for a
-         DIFFERENT reason than the seven above it. data/border-detail/ (5,622 files, 409 MB, the refined
+         DIFFERENT reason than the seven above it. data/border-detail/ (its file count and bytes: data-assets.json; the refined
          outlines drawn when the reader zooms in on all three OHM records) was NOT unguarded: since
          #R711 tests/r711-boundary-quality-data-checks.test.mjs has imported check() and run it, so
          `npm test` already read the bytes. What it lacked was a DECLARED gate, and that is not a

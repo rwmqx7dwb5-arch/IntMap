@@ -58,6 +58,7 @@
  *      node scripts/build-hist-eras.mjs --sweep    # re-measure the tolerance table below
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { requireData } from './data-assets.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -580,8 +581,10 @@ async function checkUpstream() {
    the program half must ask whether it was the thing node was told to run. */
 if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.url))) {
   const arg = process.argv.slice(2);
-  if (arg.includes('--check-upstream')) await checkUpstream();
-  else if (arg.includes('--check')) check();
+  /* (data-outside-git) the shipped file lives outside git (data-assets.json): both gates that read it refuse an
+     absent or altered copy BY NAME, with the command that fixes it, instead of an ENOENT stack. */
+  if (arg.includes('--check-upstream')) { requireData(ROOT, 'data/hist-eras.js'); await checkUpstream(); }
+  else if (arg.includes('--check')) { requireData(ROOT, 'data/hist-eras.js'); check(); }
   else if (arg.includes('--fetch')) await fetchAll();
   else if (arg.includes('--sweep')) sweep();
   else build({ report: true });

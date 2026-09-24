@@ -438,6 +438,17 @@ function status(brief) {
 }
 
 /* ── NEW ────────────────────────────────────────────────────────────────────────────────────── */
+/* (data-outside-git) the datasets that live outside git (data-assets.json), handled like node_modules: one
+   copy in a store outside the checkout, a link in each worktree. `pull` places them in a new worktree
+   (with THAT worktree's own manifest and script); `unlink` removes the links before the worktree is
+   deleted, so no recursive delete can reach through a junction into the shared store. A failure is
+   said, with the command, and does not abort — the gates refuse a checkout without the data by name. */
+function placeData(dir, verb) {
+  if (!existsSync(join(dir, 'data-assets.json'))) return;
+  const r = spawnSync(process.execPath, [join(dir, 'scripts', 'data-assets.mjs'), verb], { cwd: dir, stdio: 'inherit' });
+  if (r.status !== 0) console.log(`  ⚠ data (${verb}) に失敗した → その worktree で npm run data:pull`);
+}
+
 async function makeNew(slug) {
   const master = masterDir();
 
@@ -483,6 +494,8 @@ async function makeNew(slug) {
   } else if (!existsSync(src)) {
     console.log('  ⚠ 原本に node_modules が無い → その worktree で npm ci');
   }
+
+  placeData(dir, 'pull');
 
   /* The preview entry is RELATIVE (`dist`) so it means the same thing from any checkout.
      ⚠ (#R338) this file is NO LONGER TRACKED — it holds absolute paths into this machine's
@@ -625,6 +638,8 @@ function done() {
   try {
     if (existsSync(nm) && lstatSync(nm).isSymbolicLink()) { unlinkSync(nm); console.log('  ✓ node_modules の junction を外した'); }
   } catch { try { rmdirSync(nm); } catch { /* leave it; git worktree remove --force handles it */ } }
+
+  placeData(here, 'unlink');
 
   /* ⚠ `git worktree remove` PARTIALLY SUCCEEDS ON THIS MACHINE, AND THE FIRST VERSION OF THIS
      FUNCTION TREATED THAT AS TOTAL FAILURE. Measured: the checkout is deleted and the entry drops

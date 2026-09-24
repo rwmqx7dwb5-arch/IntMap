@@ -178,7 +178,10 @@ function copyStatic() {
       for (const rel of [...STATIC_ASSETS, ...ROOT_PNG()]) {
         const from = join(ROOT, rel);
         if (!existsSync(from)) { this.warn(`static asset missing, not copied: ${rel}`); continue; }
-        cpSync(from, join(out, rel), { recursive: statSync(from).isDirectory(),
+        /* ⚠ (data-outside-git) `dereference`: data/border-detail is a LINK into the data store outside git
+           (data-assets.json — a junction on Windows, a symlink on the runners). dist/ is what Pages
+           publishes, so it must hold the bytes, never a link to a path on the machine that built it. */
+        cpSync(from, join(out, rel), { recursive: statSync(from).isDirectory(), dereference: true,
           filter: (src) => !STATIC_EXCLUDE.some((ex) => src.replace(/\\/g, '/').endsWith('/' + ex)) });
       }
     },

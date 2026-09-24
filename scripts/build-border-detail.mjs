@@ -14,6 +14,7 @@ import { ringsOf, round } from './build-hist-borders.mjs';
 import { loadGeom } from './histborders/fetch.mjs';
 import { geometryOf } from './histborders/precision.mjs';
 import { markRing, water, closedRing, INLAND_KM } from './build-border-coast.mjs';
+import { requireData, placed, readManifest } from './data-assets.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data/border-detail');
@@ -297,8 +298,16 @@ async function checkSource(repair = false) {
   if(rejected.size){if(repair)retainUnsafe(index,rejected);else throw new Error('source topology differs in '+[...rejected.values()].reduce((n,s)=>n+s.size,0)+' geometries; --repair-source retains their existing coarse outlines');}
 }
 
+/* (data-outside-git) data/border-detail/ lives outside git (data-assets.json). The gate REFUSES an absent or
+   altered copy by name rather than reporting ENOENT — or, worse, judging whatever is there — and the
+   build refuses to write through the link into the shared store: `materialize` first, then publish. */
+const outsideGit = () => {
+  const set = Object.values(readManifest(ROOT)?.sets || {}).find((s) => s.path === 'data/border-detail');
+  if (set && placed(ROOT, set).state === 'link') throw new Error('data/border-detail is a link into the shared data store. Run `node scripts/data-assets.mjs materialize border-detail` first, then `npm run data:publish border-detail` after the build.');
+};
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if(process.argv.includes('--repair-source'))await checkSource(true);else if(process.argv.includes('--check-source'))await checkSource();else if(process.argv.includes('--check'))check();else {
+  if(process.argv.includes('--repair-source')){outsideGit();await checkSource(true);}else if(process.argv.includes('--check-source'))await checkSource();else if(process.argv.includes('--check')){requireData(ROOT,'data/border-detail');check();}else {
+    outsideGit();
     const at = process.argv.indexOf('--sets');
     await build(at < 0 ? null : String(process.argv[at + 1] || '').split(',').map(s => s.trim()));
   }

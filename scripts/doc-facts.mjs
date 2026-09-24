@@ -31,6 +31,7 @@ import { execFileSync } from 'node:child_process';
 import { sharedRoster, auditRoster, inventories } from './shared-roster.mjs';
 import { claims, CHECKED } from './doc-claims.mjs';
 import { authoredLangs, carriedLangs } from './lang-policy.mjs';
+import { requireData } from './data-assets.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
@@ -1488,6 +1489,17 @@ const plannedGates = (() => {
   }
   /* `npm run test:checks` reaches its own file list, which is how the node tier gets in */
   if (/npm run test:checks/.test(ci)) reached.add('test:checks');
+  /* (data-outside-git) …AND WHAT A LOCAL COMPOSITE ACTION RUNS IS A STEP OF THE JOB THAT USES IT. The data
+     step (`scripts/data-assets.mjs`) is written once in .github/actions/ and used by every job that
+     needs the datasets; reading ci.yml's text alone would call it unreached while five jobs run it.
+     Only actions a NON-COMMENT `uses:` line names count, and only their non-comment lines. */
+  const liveCi = ci.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  for (const m of liveCi.matchAll(/uses:\s*\.\/(\.github\/actions\/[A-Za-z0-9_-]+)/g)) {
+    const file = [m[1] + '/action.yml', m[1] + '/action.yaml'].find(has);
+    if (!file) continue;
+    const body = rd(file).split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+    for (const s of body.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)) reached.add(s[1]);
+  }
   /* ⚠ (#R771) …AND THE GATES CI NOW REACHES INDIRECTLY. The 28 declared gates stopped being one
      ci.yml step each when they were split across three machines; scripts/ci-gates.mjs DISCOVERS
      them from package.json and runs the bin it planned. Grepping ci.yml for their names would now
@@ -2385,7 +2397,11 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
 
   /* ── 35a. how many snapshots the era record holds ─────────────────────────────────────── */
   if (!eras || !Array.isArray(eras.d && eras.d.snaps)) {
-    fail('chronos-sheets', 'data/hist-eras.js no longer evaluates to a record with snapshots — the only answer for borders before 1689');
+    /* (data-outside-git) the file lives outside git: when it is simply not here, say THAT and the fix, rather
+       than a sentence about the record that sends the reader to the builder. Never a skip. */
+    let outside = null;
+    try { requireData(ROOT, 'data/hist-eras.js', { verify: false }); } catch (e) { outside = e.message; }
+    fail('chronos-sheets', outside || 'data/hist-eras.js no longer evaluates to a record with snapshots — the only answer for borders before 1689');
   } else {
     const snaps = eras.d.snaps;
     const SHEETS = snaps.length, BC = snaps.filter((s) => s.y <= 0).length, AD = SHEETS - BC;

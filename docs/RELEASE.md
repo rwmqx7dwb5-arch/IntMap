@@ -94,8 +94,13 @@ never be mistaken for production. Production never shows it.
   uploading, so an empty or half-copied build fails the job instead of blanking the site. The
   browser gate that runs just above it tests a build of the same commit, so nothing reaches
   production that the tests did not see.
-- **If a deploy ever needs to be reasoned about offline:** `npm ci && npm run build` from the
-  deployed commit reproduces `dist/` byte-for-byte apart from the content hashes.
+- **If a deploy ever needs to be reasoned about offline:** `npm ci && npm run data:pull && npm run build`
+  from the deployed commit reproduces `dist/` byte-for-byte apart from the content hashes.
+- **Some of `data/` is not in git (data-outside-git).** `data/border-detail/` and `data/hist-eras.js` are named
+  by `data-assets.json` — the sha256 of their content and the GitHub Release asset that carries it —
+  and the build job fetches them first (`.github/actions/data-assets`, cached by the manifest's hash).
+  `vite.config.js` copies them into `dist/` as bytes (`dereference`), and `check:assets` fails a
+  `dist/` that lacks a set, holds different bytes, or holds a link. See "Dataset releases" below.
 - **Fallback (not the current state):** if `ENABLE_PAGES_DEPLOY` is ever unset, `deploy.yml` skips
   green and Pages reverts to “Deploy from a branch”. That is the stop switch, not how it publishes today.
 
@@ -209,6 +214,11 @@ node scripts/release-state.mjs --diff <function>   # その関数の実際の差
 
 ## Tagging known-good releases
 
+> ⚠ **Since data-outside-git the repository DOES have tags — `data-<set>-<sha12>` — and none of them is a
+> release of the site.** They exist only to carry dataset assets (see "Dataset releases" below) and
+> point at whatever `main` was when the dataset was published. Do not roll back to one. What
+> follows about known-good tags is still true: there are no `v…` tags.
+>
 > ⚠ **MEASURED 2026-08-20: this repository has ZERO tags.** `git tag` prints nothing, and no
 > release has ever been tagged, so every example of the form `v2026.07.18-R133` in this file
 > and in `INCIDENT-RESPONSE.md` is a *format illustration*, not something you can roll back to.
@@ -223,6 +233,24 @@ git push origin v2026.07.18-R133
 ```
 
 Optionally create a GitHub Release from the tag (**Releases → Draft a new release**).
+
+## Dataset releases (`data-<set>-<sha12>`)
+
+Datasets too large to keep in git (data-outside-git) are GitHub Release assets of this repository, one Release
+per content: the tag and the asset name carry the first 12 hex of the content's sha256, and
+`data-assets.json` records the full content sha256, the asset's own sha256 and its size. Why a Release
+and not LFS or an external bucket: `DECISIONS.md`.
+
+- **Publishing** a regenerated set: `node scripts/data-assets.mjs materialize <set>` (only for a
+  linked directory set — the store is read-only), run the generator, then `npm run data:publish <set>`.
+  It packs deterministically, creates the Release with `gh`, **reads the asset back from its public
+  URL** and only then rewrites the manifest. Commit the manifest in the round's PR; the CI cache key
+  changes with it, so the first run after it downloads once.
+- ⚠ **Never delete a `data-*` Release or its tag.** Every commit whose manifest names it — including
+  every commit a rollback might target — needs it to build.
+- The Releases are **pre-releases**, so the repository's "latest release" is never a dataset
+  (measured: `--latest=false` alone still made the first one "Latest" — GitHub had no other to pick).
+  A pre-release's asset URL downloads exactly like any other.
 
 ## Emergency fix (hotfix)
 
@@ -254,6 +282,10 @@ site at all. It now:
 - falls back to `git archive` **only** for a pre-#R175 commit, recognised by having an
   `index.html` at the root and no `vite.config.js` — the shape where that was the right answer;
 - **refuses by name** anything that is neither, rather than deploying a tree of unknown shape.
+
+**The datasets come from the ROLLED-BACK commit's own `data-assets.json`, fetched by that commit's
+own `scripts/data-assets.mjs`** — so the rollback publishes the bytes that commit was built and tested
+with. A commit from before data-outside-git has no manifest and carries its data in git; the fetch is skipped for it.
 
 The shape it chose is recorded in `build-info.json` (`"shape": "vite" | "static"`) alongside the
 sha, so "what did the rollback actually publish" is answerable after the fact.

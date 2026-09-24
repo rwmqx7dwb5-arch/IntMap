@@ -280,6 +280,20 @@ if (want('--sync')) {
   const after = survey({ fetch: false });
   const moved = before.head === after.head ? 'already current' : `${String(before.head).slice(0, 7)} → ${String(after.head).slice(0, 7)}`;
   console.log(`master-sync: ${MASTER} is main @ ${String(after.head).slice(0, 7)} (${moved}).`);
+  /* ⚠ (data-outside-git) THE MASTER AT origin/main IS NOT THE WHOLE MASTER ANY MORE. The datasets data-assets.json
+     names are not in git, so the fast-forward that untracked them DELETED them here — and the USB
+     mirror copies this directory (docs/AGENT-SETUP.md §10), so a master without them would take them
+     off the USB too. Place them with the MASTER's own manifest and script, every run (it is idempotent:
+     a verified link is left alone), and do not report success when they could not be placed.
+     The link is a junction into a store outside OneDrive; OneDrive does not follow reparse points. */
+  if (existsSync(path.join(MASTER, 'data-assets.json'))) {
+    try {
+      execFileSync(process.execPath, [path.join(MASTER, 'scripts', 'data-assets.mjs'), 'pull'], { cwd: MASTER, stdio: 'inherit' });
+    } catch {
+      console.error('master-sync: the master is at origin/main, but its datasets are NOT in place (above). Run `npm run data:pull` in the master.');
+      process.exit(1);
+    }
+  }
   process.exit(blocking(after).length ? 1 : 0);
 }
 

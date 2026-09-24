@@ -91,11 +91,25 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      # ⚠ (data-outside-git) FROM data-outside-git ON, A COMMIT'S DATASETS ARE NOT IN ITS TREE. It names them in
+      # data-assets.json (content sha256 + the Release asset) and they are fetched — by THAT commit's
+      # manifest and THAT commit's scripts/data-assets.mjs, never today's, so a rollback publishes the
+      # bytes the rolled-back commit was built and tested with. An older commit has no manifest and
+      # carries its data in git, so both steps below skip on it and the build reads the tree as before.
+      - name: Restore the data store (the rolled-back commit's manifest)
+        if: ${{ steps.shape.outputs.shape == 'vite' && hashFiles('data-assets.json') != '' }}
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ${{ runner.temp }}/intmap-data
+          key: intmap-data-${{ hashFiles('data-assets.json') }}
       - name: Build the site at the rolled-back commit (Vite)
         if: ${{ steps.shape.outputs.shape == 'vite' }}
+        env:
+          INTMAP_DATA_STORE: ${{ runner.temp }}/intmap-data
         run: |
           set -euo pipefail
           npm ci
+          if [ -f data-assets.json ]; then node scripts/data-assets.mjs pull; fi
           npm run build
           test -f dist/index.html || { echo "::error::dist/index.html missing — the build produced no site"; exit 1; }
       - name: Assemble site
