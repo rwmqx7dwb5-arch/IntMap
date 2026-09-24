@@ -60,7 +60,8 @@ test('R409 ②: a share link that still names dl-wars opens dl-ww1 and dl-ww2', 
   assert.ok(/dl-ww1/.test(near) && /dl-ww2/.test(near), 'the migration does not name both replacements');
   assert.ok(/wantSet\.delete\('dl-wars'\)/.test(near), 'the retired id is left in the wanted set, so the close-everything-else pass will still see it');
   /* and it must run BEFORE the pass that switches unwanted layers off */
-  const off = src.indexOf('querySelectorAll(DATASEL)');
+  /* (layer-manifest) that pass walks the manifest's `share` rows (it was `querySelectorAll(DATASEL)`) */
+  const off = src.indexOf('cb.checked && !wantSet.has(k)');
   assert.ok(off > i, 'the migration runs after the pass that closes unwanted layers');
 });
 

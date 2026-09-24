@@ -474,26 +474,12 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
                <div class="layer-fav-chips" id="layer-fav-chips"></div>
                <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
              </div>
-             <label class="layer-option"><input type="checkbox" id="cb-names" checked> <span data-i18n="placeNames">Place names</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-geolabels" checked> <span data-i18n="geoLabels">Water &amp; terrain labels</span></label>
-             <!-- (#R186) 「Base map & labelsに、地点の名前も追加して。（例：地名などではなく、店舗名や施設名など）」 —
-                  the POINTS OF INTEREST in OpenMapTiles' `poi` layer: shops, restaurants, stations, hospitals,
-                  museums, hotels… i.e. the names of PLACES YOU GO TO, which is a different set from the
-                  settlement names above it and from the water/terrain names beside it. Its own toggle, so it
-                  follows the same pattern as its two neighbours and can be switched off; it is dense by nature
-                  and only appears from z14, so it starts OFF like Grid and Countries do. -->
-             <label class="layer-option"><input type="checkbox" id="cb-poi" checked> <span data-i18n="poiLabels">Places, businesses &amp; facilities</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
-             <!-- (#R289) 「海岸線も国境線が全く同じ手法で」 — js/coast-line.js.
-                  (#R476) 「Coastlines & shoresはデフォルトでオンにして」 — ships CHECKED. ⚠ The tick here and the id in
-                  window.IntMapDefaultOn (js/data-layers.js) are ONE edit: a tick without the id makes 基本表示 fall to
-                  「カスタム」 400 ms after boot, and an id without the tick paints nothing (#R34). -->
-             <label class="layer-option"><input type="checkbox" id="cb-coast"> <span data-i18n="coastline">Coastlines &amp; shores</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-admin1" checked> <span data-i18n="adminBounds">State / province borders</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-roads" checked> <span data-i18n="roadsLayer">Roads</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-rail2" checked> <span data-i18n="railLayer">Railways</span></label>
+             <!-- ⚠ (layer-manifest) THE ALWAYS-ON SWITCHES (地名・水域地形・施設・国境・海岸線・州県境・道路・鉄道・グリッド) AND
+                  THE HIDDEN 国境・国情報 BOX ARE NOT MARKUP ANY MORE. They are the `html` entries of js/layer-manifest.js,
+                  written here — byte-for-byte the ten <label> lines that stood in this place — by js/layer-rows.js,
+                  which src/main.js imports before any module that reads this registry. Their default tick is
+                  the manifest's `on`, the same field window.IntMapDefaultOn is derived from (#R476 was «ONE edit
+                  in two files»). The notes that stood above the rows (#R186 poi, #R289/#R476 coast) moved with them. -->
              <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
              <!-- ⚠⚠ (#R225) THE NINE GEOPOLITICS ROWS WERE HERE AND THEY ARE GONE.
                   「大昔に捨てたはずの地政学レイヤーが勝手にオンになる。ふざけるな。」 — confirmed as

@@ -25,6 +25,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join, dirname } from 'node:path';
 import vm from 'node:vm';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) the Layers taxonomy */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -378,9 +379,10 @@ test('⑩ the eager rows build themselves and register control-plane commands', 
 
   /* every row this file declares is claimed by exactly one shelf in the Layers panel, so none of
      them is swept into «Others (beta)» by accident (js/data-layers.js:93) */
-  const groups = read('js/data-layers.js');
+  /* (layer-manifest) the shelves are js/layer-manifest.js (reorganizeLayerPanel reads GROUPS=layerGroups()) */
+  const shelved = LM.layerGroups().flatMap(([, g]) => g);
   for (const id of ids) {
-    const hits = (groups.match(new RegExp("'" + id + "'", 'g')) || []).length;
+    const hits = shelved.filter((k) => k === id).length;
     assert.ok(hits >= 1, `row ${id} is in no group list — it would fall into Others (beta)`);
   }
 });

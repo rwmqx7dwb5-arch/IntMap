@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { publishedList } from './helpers/layer-groups.mjs';   /* (layer-manifest) the lists are views of js/layer-manifest.js */
 
 const ROOT = process.cwd();
 
@@ -196,7 +197,7 @@ test('R186 defaults: Köppen and the submarine cables are named once, and read b
      real ES module. Asked of that file directly rather than of a concatenation: stricter, because a
      third move would have to say so here. */
   const dl = read('js/data-layers.js'), ab = read('js/session-tabs.js');
-  assert.match(dl, /window\.IntMapDefaultLayers\s*=\s*\['dl-climate','dl-subcables'\]/);
+  assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables']);   /* (layer-manifest) one field, \`on\`, in js/layer-manifest.js */
   assert.ok(/IntMapDefaultLayers/.test(ab), 'the session block must read the same list');
   /* …and the session restore must be able to turn one OFF again, or "default on" becomes "stuck on" */
   assert.match(ab, /defOff/, 'the restore has to switch a default-on layer back off when the session says so');

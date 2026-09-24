@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（960行・93 KB）＋ `css/`（3本）＋ `js/`（320本・14.9 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（946行・92 KB）＋ `css/`（3本）＋ `js/`（322本・14.9 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -3368,7 +3368,14 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   Chronos の字は**時計**（文字盤・4方位の目盛り・長短の針・軸受け）で、方位環と同じ作りをしている。
 - **ポップアップ類**：国情報カード（`country-info`）、国詳細（`country-popup`）、ピン／地名ポップアップ、
   凡例（ドラッグ可）。
-- **レイヤーパネル**：`reorganizeLayerPanel()` が DOM を毎回並べ替えて分類する（§7.2）。
+- **レイヤーパネル**：どのレイヤーが在るか・どの棚のどの位置か・既定 ON・共有リンクに載るか・どの遅延モジュールを
+  読むかは **`js/layer-manifest.js`**（純データ）が述べ、`reorganizeLayerPanel()` はその並びで DOM を毎回並べ替えて
+  分類する（`docs/MAP-LAYERS.md` §7.2）。行を作るのは今も各モジュールの `buildUI()`（ハンドラ・凡例を持つ側）で、
+  基本表示の 10 行だけは manifest から `js/layer-rows.js` が書く（`src/main.js` が `js/i18n.js` の直後、
+  レジストリを読む最初のモジュール `js/data-layers.js` より前に import する）。**一覧を知るために行を数えない**——
+  タイル盤・共有リンク・お気に入り・セッション復元は manifest を読み、行からは状態（チェック）と、モジュールが
+  組み立てた名前だけを読む。セッション復元は行の出現を `MutationObserver` で待つ（`whenBoxes`・時計を使わない）。
+  ⚠ Atlas の `layerCatalog()` はまだ `#layer-dropdown` を歩く。manifest 側の入口は `catalog()`。
   **Active layers** は `_refreshActiveLayers()` がオン中のレイヤーをチップで出し、常に**上部 sticky**の
   先頭要素にいる（固定高1行の横スクロール。空でも "(0)" で常時表示＝高さが動かない）。
   ⚠ `reorganizeLayerPanel()` は DOM を大量に並べ替えるので、タップ中に走ると行がずれて誤タップの原因になる。
@@ -4616,6 +4623,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 ## 12. 壊れやすい部分・注意すべき部分
 
 - **`reorganizeLayerPanel()` は DOM を大量に並べ替える。** タップ中に走ると行がずれて誤タップの原因になる。
+- **レイヤーの一覧・棚・既定値は `js/layer-manifest.js` の 1 か所。** 行を足すなら manifest に 1 行足す——
+  足さなくても行はベータへ掃かれて描かれるが、manifest を読む全員（タイル盤・共有リンク・お気に入り・
+  セッション復元）がその行を知らず、`tests/layer-manifest.spec.js` が落ちる。基本表示の行を
+  `index.html` に書き戻さない（既定の tick と `window.IntMapDefaultOn` が再び 2 か所になる）。
 - **ケッペンのメモリ**：携帯は必ず軽量 `*_4k.png` を使い、作業キャンバスは 2048² へ直接デコードする。
 - **ヘッドレスプレビューは `document.hidden`** なので WebGL の `load` が発火せず `requestAnimationFrame` も
   止まる。地図描画は DOM／状態／console で検証する。
@@ -4727,6 +4738,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 **慎重に（壊れやすい中核）**
 
 - `reorganizeLayerPanel()` / `_refreshActiveLayers()` / レイヤーパネルの DOM 順序とスクロール補正。
+- `js/layer-manifest.js` の `SHELVES`（棚・並び・畳み・既定 ON・共有）と、それを読む `js/layer-rows.js`。
 - チェックボックスの決定論的トグル（`#layer-dropdown` の pointerdown/click ハンドラ）。
 - `applyTheme()` / `_reassertBase()` / `styledata` の自己修復まわり。
 - 投影・3D・compare の同期。Isolate のマスク順序。

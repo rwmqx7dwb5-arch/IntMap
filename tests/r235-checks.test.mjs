@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { publishedList } from './helpers/layer-groups.mjs';   /* (layer-manifest) the lists are views of js/layer-manifest.js */
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -225,7 +226,8 @@ test('R235 day/night: not counted, not chipped, not offered as a layer to discov
      hand-written copies, so #R271 and #R273 could move two more rows in without any counter learning.
      The requirement was never the Set literal — it is that day/night is subtracted from the
      Active-layers count. Ask that of the ONE published list, and of the counter that reads it. */
-  assert.match(dl, /window\.IntMapBasicLayers=window\.IntMapBasicLayerRows\.concat\(\[[^\]]*'dl-nightside'[^\]]*\]\)/,
+  /* (layer-manifest) the published section is the manifest's \`base\` shelf (window.IntMapBasicLayers=basicLayers()) */
+  assert.ok(publishedList('IntMapBasicLayers').includes('dl-nightside'),
     'day/night is in the published base-map section');
   assert.match(dl, /const skip=new Set\(window\.IntMapBasicLayers\)/,
     'it is skipped by the Active-layers list, like the other basics');

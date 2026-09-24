@@ -15,6 +15,7 @@
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
+import { LAYERS } from './layer-manifest.js';   /* (layer-manifest) which layers exist */
 export function makeLayerFavs(HOST, CTX) {
   const escapeHtml=CTX.escapeHtml, i18n=CTX.i18n, saveSettings=CTX.saveSettings, t=CTX.t;
   /* ---------- Layer favorites (#16) — star any layer, quick-pick chips on top ---------- */
@@ -39,7 +40,12 @@ export function makeLayerFavs(HOST, CTX) {
     if(row && cb.id){ const sp=row.querySelector('span[data-i18n]')||row.querySelector('span.ec-lbl')||row.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)'); const label=((sp?sp.textContent:cb.id)||'').trim(); if(label) return {key:'data:'+cb.id, label}; }
     return null;
   }
-  function allLayerCbs(){ return Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]')).filter(cb=>cb.id!=='cb-names-x'); }
+  /* (layer-manifest) the manifest's layers whose box exists, then any box of the registry it does not declare (the
+     same safety net the panel's Beta sweep is — tests/layer-manifest.spec.js fails for such a row) */
+  function allLayerCbs(){ const out=[], seen=new Set();
+    LAYERS.forEach(l=>{ const cb=document.getElementById(l.id); if(cb&&cb.closest('#layer-dropdown')){ out.push(cb); seen.add(cb); } });
+    document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(!seen.has(cb)) out.push(cb); });
+    return out.filter(cb=>cb.id!=='cb-names-x'); }
   function cbForKey(key){
     return allLayerCbs().find(cb=>{ const i=layerCbInfo(cb); return i&&i.key===key; })||null;
   }

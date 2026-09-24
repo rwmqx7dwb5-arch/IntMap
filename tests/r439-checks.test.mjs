@@ -38,6 +38,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { byKey, OTHERS_IDS } from './helpers/layer-groups.mjs';   /* (layer-manifest) the taxonomy is js/layer-manifest.js */
+import * as LM from '../js/layer-manifest.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -315,11 +317,13 @@ test('R439 ⑧ the legend’s model picker is contained by the legend', () => {
    A row placed in a GROUP must leave the beta list, because `order.push` MOVES the element and an
    id in two lists renders only in the last one. */
 test('R439 ⑨ the promoted rows are in 気候・気象 and in no other list', () => {
-  const g = DLC.slice(DLC.indexOf("['lyrGrpClimate',["), DLC.indexOf(']]', DLC.indexOf("['lyrGrpClimate',[")));
+  /* (layer-manifest) the shelves and the Beta list are js/layer-manifest.js — read as values, in the shape the
+     old slices of the GROUPS / OTHERS_IDS literals produced */
+  const g = byKey.lyrGrpClimate.map((k) => "'" + k + "'").join(',');
   for (const id of ['ec-slp', 'ec-gust', 'ec-precip', 'ec-dew']) {
     assert.ok(g.includes("'" + id + "'"), id + ' is on the 気候・気象 shelf');
   }
-  const others = DLC.slice(DLC.indexOf('const OTHERS_IDS=['), DLC.indexOf('];', DLC.indexOf('const OTHERS_IDS=[')));
+  const others = OTHERS_IDS.map((k) => "'" + k + "'").join(',');
   for (const id of ['ec-slp', 'ec-gust', 'ec-precip', 'ec-dew', 'ec-isobars']) {
     assert.ok(!others.includes("'" + id + "'"), id + ' is not also in the beta list');
   }
@@ -333,4 +337,5 @@ test('R439 ⑨ the promoted rows are in 気候・気象 and in no other list', (
     'the row nobody asked to promote is untouched — ec-wind was not named, then or now');
   /* and no group anywhere still names the retired id */
   assert.ok(!/'ec-isobars'/.test(DLC), 'the Layers panel knows nothing about the retired row');
+  assert.ok(!LM.layerFor('ec-isobars') && !LM.layerFor('dl-ec-isobars'), '…and neither does the manifest (layer-manifest)');
 });

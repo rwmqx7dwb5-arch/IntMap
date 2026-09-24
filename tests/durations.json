@@ -1,4 +1,5 @@
 {
+ "tests/layer-manifest.spec.js": 20,
  "tests/r783-attach-recall.spec.js": 3,
  "tests/r753-account-menu.spec.js": 2,
  "tests/r650.spec.js": 9,

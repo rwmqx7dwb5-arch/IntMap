@@ -100,6 +100,7 @@ import '../js/lang-registry.js';
 import './locale-boot.js';
 import '../js/locales/ui.en.js';
 import '../js/i18n.js';
+import '../js/layer-rows.js';   /* (layer-manifest) the Layers registry's own rows (地名・国境・道路…) are written from js/layer-manifest.js HERE — after the English table (their text) and before js/data-layers.js, the first module that reads the registry. They were ten lines of index.html. */
 /* (#R233) …and the door #R232 left unguarded: `setLang()` repainted the whole UI from a table whose
    own chunk had not been fetched yet, so switching language at RUNTIME left Settings and the sidebar
    tabs in English while everything carried inline turned Japanese (「基本的なUIですら言語が混在」).

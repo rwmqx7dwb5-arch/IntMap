@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) the Layers taxonomy */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -130,7 +131,8 @@ test('⑤ every registration point the row needs actually exists', () => {
   assert.match(beta, /radiation\.near/, 'the point→stations join must be a kernel command too');
 
   /* the row has to land in a group, or it sits in Others(beta) for ever */
-  assert.match(read('js/data-layers.js'), /lyrGrpHazard'.*radobs/, 'the row is not filed into the hazard group in reorganizeLayerPanel()');
+  /* (layer-manifest) the shelves are js/layer-manifest.js, which reorganizeLayerPanel files by */
+  assert.ok((LM.layerGroups().find(([k]) => k === 'lyrGrpHazard') || [null, []])[1].includes('radobs'), 'the row is not filed into the hazard group in reorganizeLayerPanel()');
 
   /* Atlas must be able to say what is on screen */
   assert.match(read('js/map-ui.js'), /imrad-obs-src/, 'js/map-ui.js does not register the layer with layerData — «what is on screen» would have no answer');

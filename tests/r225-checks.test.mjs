@@ -8,6 +8,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) which layers exist, and their facts */
+import { publishedList } from './helpers/layer-groups.mjs';
 
 const root = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -116,20 +118,24 @@ test('R225 ④ the geopolitics layer family is deleted in every file that held a
    so every reload put them back at their HTML default. */
 test('R225 ⑤ every default-ON id is in ONE list, and the restore turns all of them off', () => {
   const dl = read('js/data-layers.js');
-  assert.match(dl, /window\.IntMapDefaultOn=\[(?:'cb-[a-z0-9]+',)*'cb-[a-z0-9]+'\]\s*\n\s*\.concat\(window\.IntMapDefaultLayers\);/,
-    'the union is declared once, beside the thematic list it extends');
+  /* (layer-manifest) declared once is now ONE FIELD: \`on\` in js/layer-manifest.js, which both ticks the generated
+     box and puts the id in window.IntMapDefaultOn (published FROM the manifest, checked by publishedList) */
+  const union = publishedList('IntMapDefaultOn');
+  assert.deepEqual(union.slice(union.length - publishedList('IntMapDefaultLayers').length), publishedList('IntMapDefaultLayers'),
+    'the union is the markup half, then the thematic list it extends');
   /* every id in it is genuinely shipped checked (or is a thematic default)
      ⚠ (#R476) DERIVED, NOT COPIED. This loop used to carry its own hand-written copy of the seven ids,
      so the eighth (cb-coast) could be added to the list above and be checked by nobody — the shape
      #R309 spent a round removing from the product is not one to keep in the gate. */
-  const html = read('index.html');
-  const declared = /window\.IntMapDefaultOn=\[([^\]]*)\]/.exec(dl)[1].split(',').map((x) => x.trim().replace(/'/g, ''));
+  const declared = LM.LAYERS.filter((l) => l.html && l.on).map((l) => l.id);
   /* ⚠ (#R719) a «the regex matched» guard, not a count of how many toggles ought to be on — the
      same floor in tests/r476-checks ① failed the first lawful request to switch one OFF. */
   assert.ok(declared.length > 0, 'the base half is parsed, not assumed');
   for (const id of declared) {
+    /* shipped = the markup js/layer-rows.js writes for it */
     const m = new RegExp('id="' + id + '"[^>]*checked|checked[^>]*id="' + id + '"');
-    assert.ok(m.test(html), `${id} must actually be shipped checked, or it does not belong in the list`);
+    assert.ok(m.test(LM.rowHTML(LM.LAYERS.find((l) => l.id === id))), `${id} must actually be shipped checked, or it does not belong in the list`);
+    assert.ok(union.includes(id), id + ' is in window.IntMapDefaultOn');
   }
   const st = read('js/session-tabs.js');
   assert.match(st, /const defOff=\(window\.IntMapDefaultOn\|\|window\.IntMapDefaultLayers\|\|\[\]\)\.filter/,
@@ -169,9 +175,8 @@ test('R225 ⑦ the seeded session lives in exactly one place, and it states the 
       `tests/${f} inlines its own session seed — import SESSION_VALUE instead`);
   }
   /* the seed's base half must be exactly the base half of the app's own list */
-  const dl = read('js/data-layers.js');
-  const m = /window\.IntMapDefaultOn=\[([^\]]*)\]/.exec(dl);
-  assert.ok(m, 'IntMapDefaultOn is declared');
-  const appBase = m[1].split(',').map((x) => x.trim().replace(/'/g, ''));
+  /* (layer-manifest) the markup half of window.IntMapDefaultOn — the manifest's \`on\` rows it writes itself */
+  const appBase = LM.LAYERS.filter((l) => l.html && l.on).map((l) => l.id);
+  assert.ok(appBase.length > 0 && appBase.every((id) => publishedList('IntMapDefaultOn').includes(id)), 'IntMapDefaultOn is declared');
   for (const id of appBase) assert.ok(seed.includes('"' + id + '"'), `the seed is missing ${id}`);
 });

@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) which layers exist, and their facts */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -280,7 +281,9 @@ test('R211 share: the simulators register by their lazy-module name, and a pendi
     assert.ok(!!LAZY_REGISTRY[key], `…under the name IntMapLazy fetches it by`);   /* (#R798) the registry */
   }
   /* the new layer rows travel in the link like every other data layer */
-  assert.match(ui, /input\[id\^="wp-dl-"\]:checked/, 'the world-data rows are part of the shared layer set');
+  /* (layer-manifest) the link carries the manifest's \`share\` rows (was a prefix selector in js/map-ui.js) */
+  assert.ok(LM.LAYERS.filter((l) => /^wp-dl-/.test(l.id)).every((l) => l.share), 'the world-data rows are part of the shared layer set');
+  assert.ok(/sharedIds\(\)/.test(ui), '…and the link is built from that set');
   /* a reload restores everything, with a way out of a crash loop */
   assert.match(ui, /intmap_restore_try/, 'the attempt is recorded before it runs');
   assert.match(ui, /firstLoad!==false \|\| !crashed/, 'a reload restores fully unless the last attempt did not survive');
@@ -362,7 +365,7 @@ test('R211 POI: on by default, coloured by tier, industry named, and no all-at-o
     'the tile schema keeps its own spelling');
   /* default on */
   assert.match(read('js/app-body.js'), /poiOn=true;/, 'the shop/facility names are on from the start');
-  assert.match(read('index.html'), /id="cb-poi" checked/, '…and the box shows it');
+  assert.ok(LM.LAYERS.find((l) => l.id === 'cb-poi').on && LM.LAYERS.find((l) => l.id === 'cb-poi').html, '…and the box shows it (js/layer-manifest.js writes it ticked)');
 });
 
 /* ── 10 · the British→US sweep did not touch a contract ───────────────────────────────────────── */

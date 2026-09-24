@@ -17,6 +17,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
 import { readLF } from '../scripts/eol.mjs';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) which layers exist, and their facts */
+import { publishedList } from './helpers/layer-groups.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readLF(resolve(ROOT, p));
@@ -117,12 +119,14 @@ test('R289 ③ the coastline uses the border line’s own source, colour and wid
      「Coastlines & shoresはdefault base map & labelsから除外」. The row, its handler, its legend,
      its place in 基本表示 and the wind's one-shot offer are all untouched — only the DEFAULT moved,
      and the invariant being guarded is still that the two halves of that default agree. */
-  const html = read('index.html');
-  assert.match(html, /<input type="checkbox" id="cb-coast">/, 'the row ships unchecked');
+  /* (layer-manifest) the row, its tick and the two lists are js/layer-manifest.js — the markup is generated from it */
+  const coast = LM.LAYERS.find((l) => l.id === 'cb-coast');
+  assert.match(LM.rowHTML(coast), /<input type="checkbox" id="cb-coast">/, 'the row ships unchecked');
   const dl = read('js/data-layers.js');
-  assert.match(dl, /IntMapBasicLayerRows=\[[^\]]*'cb-borders','cb-coast','cb-admin1'/,
+  const basic = publishedList('IntMapBasicLayerRows');
+  assert.deepEqual(basic.slice(basic.indexOf('cb-borders'), basic.indexOf('cb-borders') + 3), ['cb-borders', 'cb-coast', 'cb-admin1'],
     'it sits with the base displays in the panel order');
-  assert.ok(!/IntMapDefaultOn=\[[^\]]*'cb-coast'/.test(dl), 'and it is NOT in the default-on list');
+  assert.ok(!publishedList('IntMapDefaultOn').includes('cb-coast'), 'and it is NOT in the default-on list');
   /* ⚠ 「風レイヤーオン時はデフォルトでオン」 IS A DEFAULT, NOT A COUPLING. The latch is what makes it
      one: a reader who switches the coast off while the wind is up must not be overruled (#R85). */
   assert.match(dl, /window\._imCoastAuto&&window\._imCoastAuto\(\);/, 'switching the wind on offers the coastline');
@@ -402,5 +406,5 @@ test('R289 ⑪ the UV aerosol index, CO and the IR clouds layer left every surfa
     assert.ok(!/"?lyrClouds"?:/.test(read(`js/locales/ui.${c}.js`)), `ui.${c}.js still declares lyrClouds`);
   }
   /* ⚠ AND THE ECMWF CLOUD LAYER IS A DIFFERENT LAYER AND STAYS */
-  assert.match(read('js/data-layers.js'), /'ec-cloud'/, 'the ECMWF cloud-cover layer was not named and must remain');
+  assert.ok(LM.layerFor('ec-cloud'), 'the ECMWF cloud-cover layer was not named and must remain');   /* (layer-manifest) filed in js/layer-manifest.js */
 });
