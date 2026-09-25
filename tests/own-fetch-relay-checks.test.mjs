@@ -443,13 +443,21 @@ test('own-fetch-relay ② fetch-relay follows a redirect only onto the same rule
   const off = runEdge('fetch-relay', ['?u=' + encodeURIComponent(cam), '?u=' + encodeURIComponent(imf)], {
     routes: [
       ['^https://drivenc\\.gov/', { status: 302, location: 'https://evil.example/map/mapIcons/Cameras', body: '' }],
-      ['^https://www\\.imf\\.org/', { status: 404, body: '{"secret":"upstream says"}', type: 'application/json' }],
+      ['^https://www\\.imf\\.org/', { status: 500, body: '{"secret":"upstream says"}', type: 'application/json' }],
     ],
   });
   assert.equal(off[0].status, 502, 'a redirect off the rule is refused');
   assert.ok(!off[0].calls.some((c) => /evil\.example/.test(c)), 'and the other host is never asked');
   assert.equal(off[1].status, 502);
   assert.doesNotMatch(off[1].body, /secret/, 'a non-2xx upstream body is not relayed');
+  /* (relay-no-data-one-pass) a 404 is the upstream saying «not there» — an answer the page must be able
+     to tell from a failure (relay-guard.js noData) — and its body is not relayed either */
+  const gone = runEdge('fetch-relay', ['?u=' + encodeURIComponent(imf)], {
+    routes: [['^https://www\\.imf\\.org/', { status: 404, body: '{"secret":"upstream says"}', type: 'application/json' }]],
+  });
+  assert.equal(gone[0].status, 200);
+  assert.doesNotMatch(gone[0].body, /secret/, 'a non-2xx upstream body is not relayed');
+  assert.match(gone[0].body, /"noData":true/);
 });
 
 test('own-fetch-relay ② nothing in js/ hands a whole URL to somebody else\'s relay', () => {

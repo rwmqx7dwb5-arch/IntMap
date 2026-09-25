@@ -15,6 +15,8 @@
  *
  *  So: every attempt carries a deadline, the losers are ABORTED the moment one wins, and the
  *  fallback is one bounded pass. WHICH proxies are used is unchanged; they are simply given a clock.
+ *  (relay-no-data-one-pass) The bounded pass is gone: it re-sent the same request to the same relay —
+ *  see race() below.
  *
  *  ⚠ TWO EXPORTS, and everything else is inside the first. tests/r175-checks ③ requires that a js/
  *  module has no unexported top-level declaration AND no export nobody imports — so the constants
@@ -36,6 +38,7 @@
  *  file and fails when a caller that depends on a relay names an upstream no relay admits.
  */
 import { fetchRelayRule, FETCH_RELAY_FUNCTION, ARTICLE_RULE, articleUrlAllowed, looksLikeArticle, ARTICLE_MIN_BYTES } from '../supabase/functions/_shared/fetch-relay-policy.js';
+import { NO_DATA_HEADER } from '../supabase/functions/_shared/relay-guard.js';
 
 export const { fetchViaProxy, ownRelayUrl } = (() => {
   /* ══ (#R214 / #R216 / own-fetch-relay) HOW THE PUBLIC PROXIES FAILED, KEPT BECAUSE IT IS WHY THEY ARE GONE ══
@@ -123,7 +126,6 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
     return (base && gdeltRelayable(u)) ? `${base}/functions/v1/gdelt-relay?u=${encodeURIComponent(u)}` : '';
   };
   const PROXY_TIMEOUT_MS = 8000;      /* one attempt's deadline */
-  const PROXY_FALLBACK_MS = 6000;     /* …and the second, bounded pass */
   const BUDGET_MS = 20000;            /* (#R446) …and what the WHOLE ladder may cost, end to end */
   const DIRECT_TIMEOUT_MS = 6000;     /* (#R452) the host itself, for the callers that may read it */
   /* (#R464) our own relay's, which has to cover ITS upstream deadline (25 s) plus the round trip —
@@ -145,13 +147,24 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
      and its body some time after that; every millisecond of the read was outside the deadline that
      was supposed to bound this call. The read is now INSIDE the clock, which is why this helper
      hands back the TEXT rather than a Response nobody is holding a timer for. */
+  /* (relay-no-data-one-pass) a relay of ours that answers `x-intmap-no-data: 1` is reporting its
+     upstream's explicit «there is nothing for this question» (relay-guard.js noData). That is an
+     ANSWER: it rejects with `noData` so no rung treats it as a document and no rung asks again. */
+  const noDataError = () => Object.assign(new Error('no-data'), { noData: true });
   const fetchDeadline = (u, ms, ctl) => {
     const c = ctl || new AbortController();
     const t = setTimeout(() => { try { c.abort(); } catch (_) { /* already done */ } }, ms);
     return fetch(u, { signal: c.signal })
-      .then((r) => { if (!r.ok) throw new Error('bad status ' + r.status); return r.text(); })
+      .then((r) => {
+        let nd = false;
+        try { nd = !!(r.headers && typeof r.headers.get === 'function' && r.headers.get(NO_DATA_HEADER)); } catch (_) { nd = false; }
+        if (nd) throw noDataError();
+        if (!r.ok) throw new Error('bad status ' + r.status);
+        return r.text();
+      })
       .finally(() => clearTimeout(t));
   };
+  const NO_DATA = Symbol('no-data');
   const isFeed = (txt) => !!txt && (txt.includes('<rss') || txt.includes('<feed'));
 
   /* ══ ⚠⚠⚠ (#R446) THE ONLY ANSWER THIS FILE ACCEPTED WAS A FEED, AND ONE CALLER ASKS FOR A PAGE ══
@@ -240,8 +253,11 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
    *                  arrive as `null`. One of those is a fault in IntMap's plumbing and the other
    *                  is a fact about the world, and a reader is owed the difference (#R763 drew the
    *                  same line on the GIS side).
-   *                  Fields: `reason` — 'ok' | 'aborted' | 'no-budget' | 'refused' — and `via`,
-   *                  the rung that answered.
+   *                  Fields: `reason` — 'ok' | 'aborted' | 'no-budget' | 'refused' | 'no-data' — and
+   *                  `via`, the rung that answered, and `attempts`, how many requests this call made.
+   *                  (relay-no-data-one-pass) 'no-data' is a relay of ours reporting that its upstream
+   *                  said there is nothing for this question — a fact about the world, not a fault;
+   *                  a caller must not retry it or warn about it.
    *
    * ⚠⚠ (#R452) `opts.signal` IS NOT DECORATION. Atlas builds an AbortController for every turn and
    * hands it to the model call and to the executor, but the EVIDENCE fetches never saw it — so
@@ -275,20 +291,21 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
     /* ⚠ DECLARED AFTER WHAT IT READS, not before. It happens to be called only later, so the
        temporal dead zone would not have fired today — and that is exactly the shape #R545 recorded
        (a hoisting question answered by 「when does anyone call it」 rather than by the source). */
+    let attempts = 0;                 /* (relay-no-data-one-pass) every request this call made, recorded */
     const say = (reason, via) => {
-      const r = (reason !== 'ok' && outerAborted()) ? 'aborted' : reason;
-      try { if (o.note && typeof o.note === 'object') { o.note.reason = r; o.note.via = via || ''; } } catch (_) { /* the caller's object is theirs */ }
+      const r = (reason !== 'ok' && reason !== 'no-data' && outerAborted()) ? 'aborted' : reason;
+      try { if (o.note && typeof o.note === 'object') { o.note.reason = r; o.note.via = via || ''; o.note.attempts = attempts; } } catch (_) { /* the caller's object is theirs */ }
       return null;
     };
 
     if (outer && outer.aborted) return say('aborted');
     /* ⚠ (#R452) EVERY attempt this call makes is registered here — the direct one, the racers and
-       the fallback pass alike — so the caller's Stop reaches whichever of them is in flight. A
+       (until relay-no-data-one-pass) the fallback pass alike — so the caller's Stop reaches whichever of them is in flight. A
        signal that only cancels the attempt someone remembered to wire it to is not a Stop. */
     const ctlsAll = [];
     const relayAbort = () => { ctlsAll.forEach((c) => { try { c.abort(); } catch (_) { /* already done */ } }); };
     if (outer) { try { outer.addEventListener('abort', relayAbort); } catch (_) { /* no listener support */ } }
-    const mk = () => { const c = new AbortController(); ctlsAll.push(c); return c; };
+    const mk = () => { const c = new AbortController(); ctlsAll.push(c); attempts++; return c; };
 
     try {
       /* (#R464) our own relay, for the hosts that have one that cannot be raced */
@@ -297,7 +314,11 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
         try {
           const txt = await fetchDeadline(own, Math.min(OWN_RELAY_TIMEOUT_MS, left()), mk());
           if (okDoc(txt)) { say('ok', 'own-relay'); return txt; }
-        } catch (_) { /* ours is cold, refused or down — the reader's own IP is the next chance */ }
+        } catch (e) {
+          /* the upstream said there is nothing: an answer, and nobody else is asked the question again */
+          if (e && e.noData) return say('no-data', 'own-relay');
+          /* ours is cold, refused or down — the reader's own IP is the next chance */
+        }
       }
       /* (#R452) the host itself, when the caller says a browser is allowed to read it */
       if (o.direct && left() > 0) {
@@ -308,6 +329,7 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
       }
       if (left() <= 0) return say('no-budget');
       const won = await race(relays, url, okDoc, left, mk);
+      if (won === NO_DATA) return say('no-data', 'proxy');
       return (won === null) ? say('refused') : (say('ok', 'proxy'), won);
     } finally {
       if (outer) { try { outer.removeEventListener('abort', relayAbort); } catch (_) { /* nothing to remove */ } }
@@ -329,7 +351,7 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
 
   return { fetchViaProxy, ownRelayUrl };
 
-  /* the race, and the one bounded pass behind it */
+  /* the race — each rung asked once */
   async function race(PROXIES, url, okDoc, left, mk) {
     /* (own-fetch-relay) nothing of ours admits this URL, and there is no one else to ask */
     if (!PROXIES.length) return null;
@@ -346,16 +368,17 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
       const won = await Promise.any(attempts);
       ctls.forEach((c) => { try { c.abort(); } catch (_) { /* the losers are of no further use */ } });
       return won;
-    } catch (_) {
-      /* one bounded pass, for the case where all three rejected quickly (a transient blip) —
-         and only for as long as the budget this call was given still has room in it */
-      for (const make of PROXIES) {
-        if (left() <= 0) break;
-        try {
-          const txt = await fetchDeadline(make(url), Math.min(make.ms || PROXY_FALLBACK_MS, left()), mk());
-          if (okDoc(txt)) return txt;
-        } catch (__) { /* try the next one */ }
-      }
+    } catch (agg) {
+      /* ⚠⚠ (relay-no-data-one-pass) NO SECOND PASS. #R212 put a "bounded pass" here for the case
+         where every racer rejected quickly — and it sent THE SAME REQUEST TO THE SAME RELAY again.
+         Measured in production 2026-09-26: every 511 camera list and every pre-listing share-price
+         chart went out twice, the second copy identical to the first. A retry that does nothing
+         different is not a second chance (.agents/rules/one-pass-or-a-reason.md §5): an explicit
+         refusal or «no data» will be the same answer, and a transient 5xx or timeout from the SAME
+         relay a few milliseconds later is the same relay. The rungs that ARE different — the host
+         itself (`direct`), and each relay of ours in this race — have all been asked once already. */
+      const errs = (agg && Array.isArray(agg.errors)) ? agg.errors : [];
+      if (errs.some((e) => e && e.noData)) return NO_DATA;
       return null;
     }
   }

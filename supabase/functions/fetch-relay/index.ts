@@ -32,7 +32,8 @@
 //        → the upstream's bytes, with its own content type, ACAO:* and the rule's cache lifetime
 //        → 400 {"error":"not_allowed"}      no rule admits the URL
 //        → 429 {"error":"rate_limit"}       this address is over its bucket
-//        → 502 {"error":"upstream_status"}  the upstream answered, but not 2xx (its body is not relayed)
+//        → 200 + x-intmap-no-data: 1         the upstream answered 404/410 — «not there» is an answer (relay-guard.js noData)
+//        → 502 {"error":"upstream_status"}  the upstream answered any other non-2xx (its body is not relayed)
 //        → 502/503 {"error":"upstream_*"}   unreachable, too large, wrong type, redirected elsewhere
 //    ?u=<encoded article URL>&as=article
 //        → the article page (the policy file's ARTICLE_RULE: any public https host whose name resolves only
@@ -46,11 +47,12 @@
 //  JavaScript (see the note at the top of alerts-relay).
 // ============================================================================
 
-import { corsFor, fetchGuarded, methodGate, relayFail, resolvesPublic, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, methodGate, relayFail, resolvesPublic, noData, NO_DATA_HEADER, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
 import { fetchRelayRule, ARTICLE_RULE, articleUrlAllowed, looksLikeArticle } from "../_shared/fetch-relay-policy.js";
 
-const CORS = corsFor();
+/* (relay-no-data-one-pass) a 404/410 is answered with relay-guard.js noData(), whose marker the page must read */
+const CORS = { ...corsFor(), "Access-Control-Expose-Headers": NO_DATA_HEADER };
 const env = (k) => Deno.env.get(k) || "";
 
 /* The most requests one reader's page makes of this function in a minute (_shared/rate-limit.js
@@ -67,6 +69,15 @@ const READER_PER_MIN = 60;
    from that caller (js/article-reader.js, one request per opened article) — see rate-limit.js for
    when it expires. It is smaller than the listed rules' because this is the one rule with no host list. */
 const ARTICLE_READER_PER_MIN = 10;
+
+/* (relay-no-data-one-pass) 404 and 410 are the upstream saying the thing asked for does not exist
+   (a page taken down, a list moved away) — an answer, not a failure, so the page is not sent back to
+   ask again (relay-guard.js noData). Every other non-2xx stays upstream_status 502. The status is the
+   only thing relayed; the upstream's body never is. */
+function goneOrFail(status) {
+  if (status === 404 || status === 410) return noData(CORS, { status, code: status === 410 ? "Gone" : "Not Found" });
+  return fail("upstream_status", 502);
+}
 
 function fail(code, status) {
   return new Response(JSON.stringify({ error: code }), {
@@ -101,7 +112,7 @@ Deno.serve(async (req) => {
         accept: "application/json, text/plain;q=0.9, */*;q=0.1",
       },
     });
-    if (!r.ok) return fail("upstream_status", 502);
+    if (!r.ok) return goneOrFail(r.status);
     return new Response(r.bytes, {
       status: 200,
       headers: {
@@ -138,7 +149,7 @@ async function article(req, u) {
         accept: "text/html,application/xhtml+xml;q=0.9",
       },
     });
-    if (!r.ok) return fail("upstream_status", 502);
+    if (!r.ok) return goneOrFail(r.status);
     /* judged on a UTF-8 reading (the markers are ASCII, so any ASCII-compatible charset reads the
        same), handed back as the publisher's own bytes and content type so its charset survives */
     if (!looksLikeArticle(r.text())) return fail("not_an_article", 502);

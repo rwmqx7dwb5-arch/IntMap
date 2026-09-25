@@ -184,10 +184,27 @@ export function articleUrlAllowed(raw) {
    it declares itself HTML, is at least ARTICLE_MIN_BYTES long — measured, relay and interstitial
    bodies were 314 B, 2,041 B and 7,594 B, and real articles ~200 KB — and carries a `<p>` or a
    description meta (a document with neither cannot yield a single block). js/proxy-fetch.js uses it
-   to accept an answer; fetch-relay uses it to decide what it will hand back at all. */
+   to accept an answer; fetch-relay uses it to decide what it will hand back at all.
+   ⚠⚠ (relay-no-data-one-pass) «A DESCRIPTION META» ALONE LET A SITE'S OWN SHELL THROUGH AS AN ARTICLE.
+   Measured in production 2026-09-26: a Google News item link (news.google.com/rss/articles/…) handed
+   to the article rule came back 200, 582,348 B — Google's redirect shell, with ZERO `<p>` and ZERO
+   `<article>`, carrying `<meta name="description" content="Comprehensive up-to-date news coverage,
+   aggregated from sources all over the world by Google News.">` — the SITE's description, which the
+   reader would have printed as the story's. A description meta describes whatever page it is on;
+   it is the article's only when the page SAYS it is an article. So a page with no paragraph at all
+   is accepted only if it declares itself one: `og:type` = article, or schema.org JSON-LD of an
+   Article type. Measured the same day: that Google shell says og:type=website and has no JSON-LD
+   Article; a Guardian article says og:type=article with a NewsArticle; the aljazeera and bbc pages
+   measured had 17 and 33 paragraphs, so they never needed the second branch. */
 export const ARTICLE_MIN_BYTES = 4096;
+function declaresArticle(txt) {
+  return /<meta[^>]+property=["']og:type["'][^>]+content=["']article["']/i.test(txt)
+    || /<meta[^>]+content=["']article["'][^>]+property=["']og:type["']/i.test(txt)
+    || /"@type"\s*:\s*"(?:News|Blog|Report|Scholarly|Tech)?Article"/.test(txt);
+}
 export function looksLikeArticle(txt) {
   if (!txt || txt.length < ARTICLE_MIN_BYTES) return false;
   if (!/<!doctype\s+html|<html[\s>]/i.test(txt)) return false;
-  return /<p[\s>]/i.test(txt) || /<meta[^>]+(?:og:description|name=["']description)/i.test(txt);
+  if (/<p[\s>]/i.test(txt)) return true;
+  return /<meta[^>]+(?:og:description|name=["']description)/i.test(txt) && declaresArticle(txt);
 }

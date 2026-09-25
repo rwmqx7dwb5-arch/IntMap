@@ -24,10 +24,12 @@
 //  .ts with acorn, so the Edge Functions are plain JavaScript in .ts files — see the
 //  note at the top of news-relay.
 // ============================================================================
-import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, methodGate, relayFail, noData, NO_DATA_HEADER, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
 
-const CORS = corsFor();
+/* (relay-no-data-one-pass) this relay answers Yahoo's explicit «no data» with relay-guard.js noData(),
+   whose marker the page must be able to read */
+const CORS = { ...corsFor(), "Access-Control-Expose-Headers": NO_DATA_HEADER };
 /* A 40-symbol spark response is tens of kilobytes and a single chart with ten years of
    monthly closes is smaller still; 4 MB is the same headroom the other relays carry. */
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -166,6 +168,16 @@ Deno.serve(async (req) => {
     });
 
     if (!r.ok) {
+      /* ⚠ A 4xx WITH YAHOO'S OWN ERROR ENVELOPE IS YAHOO ANSWERING THE QUESTION, not failing to.
+         Measured 2026-09-26: a chart for a period before the listing answers 400
+         {"chart":{"result":null,"error":{"code":"Bad Request","description":"Data doesn't exist for
+         startDate = …"}}}; an unknown or delisted symbol answers 404 with code "Not Found". Every
+         request that reaches this line has already passed the allow-list above, so a 400/404 with the
+         envelope is not our malformed request — it is «nothing for this question», and saying 502
+         made the page's ladder ask again (sixteen 502s for eight companies at 1850). Rate limiting
+         (429) and refusals (401/403) are not answers about the data and stay failures. */
+      const env = noDataEnvelope(r);
+      if (env) return noData(CORS, { status: r.status, code: env.code });
       return new Response(JSON.stringify({ error: "upstream_error" }),
         { status: 502, headers: { ...CORS, "content-type": "application/json" } });
     }
@@ -192,3 +204,16 @@ Deno.serve(async (req) => {
     return relayFail(e, CORS);
   }
 });
+
+/* Yahoo's own «nothing here» — a 400 or 404 whose body is the v8 error envelope. Returns
+   { code } or null. Read from the bytes the guard already capped; nothing of it is relayed but the
+   code. Declared below Deno.serve (a hoisted declaration): tests/r533-checks ⑦ evaluates everything
+   ABOVE Deno.serve as the allow-list, and this is not part of it. */
+function noDataEnvelope(r) {
+  if (r.status !== 400 && r.status !== 404) return null;
+  let j = null;
+  try { j = JSON.parse(r.text()); } catch (_) { return null; }
+  const e = j && (j.chart || j.spark);
+  if (!e || e.result != null || !e.error || typeof e.error !== "object") return null;
+  return { code: String(e.error.code || "") };
+}

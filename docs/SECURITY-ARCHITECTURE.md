@@ -269,7 +269,10 @@ deadline and a cache lifetime. No port, no userinfo, no fragment, https only, an
 `publicHostname()` (`_shared/relay-guard.js`) refuses — an address literal in any spelling, a
 single-label name, `localhost` / `.local` / `.internal` / `home.arpa`. A redirect hop is admitted
 only by **the same rule** as the first request (a rule may name `redirectHosts` it admits only as
-a hop — measured: `drivenc.gov` → `www.drivenc.gov`). An upstream's non-2xx body is never relayed.
+a hop — measured: `drivenc.gov` → `www.drivenc.gov`). An upstream's non-2xx body is never relayed. (relay-no-data-one-pass) An upstream's explicit «not there»
+(fetch-relay: 404/410; quotes-relay: Yahoo's 400/404 with its v8 error envelope) is answered 200 with
+`x-intmap-no-data: 1` and a body naming only the upstream's status and code (`noData()` in `relay-guard.js`),
+so the page can tell a true answer from a fault without the upstream's prose crossing the boundary.
 ⚠ What a name check cannot see is a public name whose DNS answer is private (rebinding); every
 name on the list is operated by the organisation named beside it.
 ⚠ **The one rule with no host list is the article rule** (`ARTICLE_RULE`, `?as=article`): the
