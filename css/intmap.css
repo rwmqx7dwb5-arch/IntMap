@@ -2,6 +2,12 @@
    Moved verbatim out of the <style> block in index.html — same rules, same order,
    same cascade. Nothing reads it from JS (no document.styleSheets / cssRules use
    anywhere in the app), so an external stylesheet is behaviourally identical. */
+/* The phone's legend dock (set in the ≤768 px block below, from the chrome it has to clear). They are
+   REGISTERED as lengths so that js/data-layers.js tileLegends() can read them back resolved — an
+   unregistered custom property reads back as its unevaluated calc()/env() text. The placer stacks the
+   legends from these; the stylesheet is the one place that knows where the chrome is. */
+@property --m-legend-top{ syntax:'<length>'; inherits:true; initial-value:0px; }
+@property --m-legend-right{ syntax:'<length>'; inherits:true; initial-value:0px; }
     /* (#R101) --text-muted darkened for legibility ("灰色文字は見えにくい") — was #6c6c70 */
     :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#48484d; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7;
       /* (#R210) 440 → 400. "デフォルトの左サイドバーの幅をもう少し短く". Everything that
@@ -1962,7 +1968,20 @@
          js/mobile-ui.js `detents()` derives peek/half/mini from `sidebar.offsetHeight`. It is ONE
          token now, so the two cannot drift and the detents follow it. 92 → 86 dvh: the sheet still
          clears the tab row and the feed by a wide margin, and 6 % of the screen goes back to the map. */
-      :root{ --sidebar-w:100vw; --sheet-ease:cubic-bezier(0.32,0.72,0,1); --peek-h:196px; --sheet-h:86dvh; }
+      :root{ --sidebar-w:100vw; --sheet-ease:cubic-bezier(0.32,0.72,0,1); --peek-h:196px; --sheet-h:86dvh;
+        /* ══ THE PHONE'S FLOATING CHROME, STATED ONCE ══════════════════════════════════════════════
+           Down the left edge: the place-search FAB and, under it, the map switcher (.bm-square). Down
+           the right edge: the round FAB column (.m-fab-stack). Their positions used to be four copies
+           of the same max(12px, safe-area + 4px) arithmetic, and the legend dock was a fifth number
+           (top:64px, left:6px) that knew about none of them — MEASURED at 375×812: a legend card's
+           top-left sat under the map switcher's canvas and its right end under the FAB column.
+           Every one of those boxes now reads its place from these tokens, and the dock is DERIVED
+           from them: it starts under the left column and stops short of the right one. */
+        --m-edge:14px; --m-fab:46px; --m-bm:54px;
+        --m-chrome-top:max(12px,calc(env(safe-area-inset-top) + 4px));
+        --m-bm-top:calc(var(--m-chrome-top) + var(--m-fab) + 10px);
+        --m-legend-top:calc(var(--m-bm-top) + var(--m-bm) + 8px);
+        --m-legend-right:calc(var(--m-edge) + var(--m-fab) + 8px); }
       html,body{ overscroll-behavior:none; }
       *{ -webkit-tap-highlight-color:transparent; }
       .operation-room{ display:block; position:relative; height:100dvh; }
@@ -2053,8 +2072,8 @@
       .btn-toggle-sidebar{ display:none !important; }
 
       /* ---------- Map place-search → expandable round FAB (top-left) ---------- */
-      .map-search{ box-sizing:border-box; top:max(12px,calc(env(safe-area-inset-top) + 4px)) !important; left:14px !important; right:auto; transform:none !important;
-        width:46px; height:46px; min-width:0; padding:0; border-radius:23px; overflow:hidden; justify-content:center; gap:0;
+      .map-search{ box-sizing:border-box; top:var(--m-chrome-top) !important; left:var(--m-edge) !important; right:auto; transform:none !important;
+        width:var(--m-fab); height:var(--m-fab); min-width:0; padding:0; border-radius:23px; overflow:hidden; justify-content:center; gap:0;
         box-shadow:0 4px 16px rgba(0,0,0,0.18);
         transition:width 0.34s var(--sheet-ease), border-radius 0.34s var(--sheet-ease), opacity 0.25s, transform 0.25s; }
       .map-search input{ width:0; min-width:0; padding:0; opacity:0; font-size:16px; transition:opacity 0.18s; }
@@ -2083,10 +2102,10 @@
       /* (#R18) Back to the ORIGINAL top-right position — the R17 "just above the sheet" move was rejected
          ("レイヤーボタン、Tools、方位磁石のUIの位置がおかしくなってる。前の位置に戻せ"). The bottom-hugging
          treatment now applies only to the always-on readout (see .coord-readout). */
-      .m-fab-stack{ display:flex; flex-direction:column; gap:10px; position:fixed; right:14px;
-        top:max(12px,calc(env(safe-area-inset-top) + 4px)); bottom:auto; z-index:1150;
+      .m-fab-stack{ display:flex; flex-direction:column; gap:10px; position:fixed; right:var(--m-edge);
+        top:var(--m-chrome-top); bottom:auto; z-index:1150;
         transition:opacity 0.3s, transform 0.3s; }
-      .m-fab{ width:46px; height:46px; border-radius:23px; border:0.5px solid rgba(128,128,128,0.16);
+      .m-fab{ width:var(--m-fab); height:var(--m-fab); border-radius:23px; border:0.5px solid rgba(128,128,128,0.16);
         background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px);
         box-shadow:0 4px 16px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center;
         color:var(--text-main); padding:0; transition:transform 0.14s, background 0.2s, color 0.2s; }
@@ -2443,8 +2462,18 @@
       /* Default dock only applies until the user drags a legend — once dragged it carries data-dragged
          and its inline left/top win, so legends are freely movable on phones too (#10). */
       /* (#R15d) Mobile legends dock at the TOP, just below the place-search bar (user request), instead of
-         the bottom-right above the sheet. tileLegends() stacks them downward from here. */
-      .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ bottom:auto !important; top:64px !important; left:6px !important; right:auto !important; }
+         the bottom-right above the sheet. tileLegends() stacks them downward from here.
+         ⚠ THE DOCK IS THE ROOM THE CHROME LEAVES (the tokens in :root above): it starts under the map
+         switcher and ends short of the FAB column, so no card is placed under either. The width bound
+         is border-box, because the old calc(100vw - 20px) bounded only the CONTENT and the 22 px of
+         padding and border carried a card past the screen's right edge.
+         ⚠ `top` and `left` are NOT !important any more. They were, and that silently overruled every
+         position tileLegends() wrote — MEASURED: three legends open, inline tops 64 / 118 / 172 px,
+         all three drawn at 64 px on top of one another. `bottom`/`right` stay forced: they undo the
+         desktop dock's inline `bottom`, which the phone never uses. */
+      .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ bottom:auto !important; top:var(--m-legend-top); left:6px; right:auto !important;
+        box-sizing:border-box; max-width:calc(100vw - 6px - var(--m-legend-right));
+        max-height:min(30dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - var(--m-legend-top) - 14px)); }
       /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centerd so they never collide. */
       .news-timeline{ top:auto !important; bottom:max(calc(var(--sheet-cover, var(--peek-h)) + 12px),var(--ntl-credit-floor,0px)) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
       /* (#R107) mobile: the COLLAPSED "See the past world" pill is SMALLER and tucked closer to the right (display
@@ -2510,9 +2539,9 @@
          literal white border, as asked, on both themes — it is what separates the picture from the
          map behind it. The picture itself is drawn by js/basemap-switch.js from data the app already
          ships (data/world-basemap.jpg for the satellite face, data/land-mask.png for the map face). */
-      .bm-square{ position:fixed; z-index:1150; left:14px;
-        top:calc(max(12px,(env(safe-area-inset-top) + 4px)) + 56px);
-        width:54px; height:54px; padding:0; border-radius:11px; overflow:hidden;
+      .bm-square{ position:fixed; z-index:1150; left:var(--m-edge);
+        top:var(--m-bm-top);
+        width:var(--m-bm); height:var(--m-bm); padding:0; border-radius:11px; overflow:hidden;
         border:2px solid #fff; box-shadow:0 4px 16px rgba(0,0,0,0.3);
         background:var(--sidebar-bg); display:flex; align-items:center; justify-content:center;
         transition:transform 0.14s, opacity 0.3s; }
@@ -2531,8 +2560,8 @@
       body.sheet-full .bm-pop{ display:none; }
 
       /* the popover the square opens: the five controls, in the two groups they belong to */
-      .bm-pop{ position:fixed; z-index:1660; left:14px;
-        top:calc(max(12px,(env(safe-area-inset-top) + 4px)) + 56px);
+      .bm-pop{ position:fixed; z-index:1660; left:var(--m-edge);
+        top:var(--m-bm-top);
         width:min(232px, calc(100vw - 28px)); box-sizing:border-box;
         background:var(--popup-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px);
         border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:16px;

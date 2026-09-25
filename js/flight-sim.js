@@ -1026,7 +1026,7 @@ window.IntMapModules.flightSim=function(HOST){
       const ov=document.createElement('div'); ov.id='fs-setup';
       ov.innerHTML='<div class="fss-card"><div class="fss-h">✈ '+LL('Flight Simulator','フライトシミュレーター','Flugsimulator','Авиасимулятор','Simulador de vuelo')+'</div>'
         +'<div class="fss-lbl">'+LL('Aircraft','機体','Flugzeug','Самолёт','Aeronave')+'</div><div class="fss-grid">'+acRows+'</div>'
-        +'<div class="fss-lbl">'+LL('Start location','開始地点','Startort','Место старта','Ubicación')+'</div><select class="fss-sel">'+apOpts+'</select>'
+        +'<div class="fss-lbl" id="fss-loc-lbl">'+LL('Start location','開始地点','Startort','Место старта','Ubicación')+'</div><select class="fss-sel" aria-labelledby="fss-loc-lbl">'+apOpts+'</select>'
         +'<div class="fss-lbl">'+LL('Start mode','開始状態','Startmodus','Режим старта','Modo')+'</div><div class="fss-mode">'
           /* (#R170) AIRBORNE is the default (「フライトシミュレーターは、空中で開始をデフォルトに」) — the .on class
              moved from the runway button to this one, matching the `mode:'air'` initial state below. */

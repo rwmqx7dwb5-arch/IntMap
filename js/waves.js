@@ -391,8 +391,9 @@ window.IntMapModules.waves = function (HOST) {
       + '</div>';
   }
   function opRow() {
-    return '<div class="dl-op-row">' + esc(L('Opacity', '不透明度', 'Deckkraft', 'Непрозрачность', 'Opacidad'))
-      + '<input type="range" class="wv-op" min="0" max="1" step="0.05" value="' + st.op + '">'
+    /* the word and the slider are one <label>, like every legend's opacity row (js/data-layers.js ensureLegendOpacity) */
+    return '<div class="dl-op-row"><label style="display:contents;">' + esc(L('Opacity', '不透明度', 'Deckkraft', 'Непрозрачность', 'Opacidad'))
+      + '<input type="range" class="wv-op" min="0" max="1" step="0.05" value="' + st.op + '"></label>'
       + '<span class="dl-op-val">' + Math.round(st.op * 100) + '%</span></div>';
   }
   function particleRow() {

@@ -410,10 +410,10 @@ window.IntMapModules.landCover=function(HOST){
         lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">×</button>'+
           /* (#R268) the year is chosen, so it is no longer baked into the title */
           '<h4>'+(window.IntMapLang.t(HOST.lang,"Land cover (ESA)","土地被覆 (ESA)","Landbedeckung (ESA)","Земной покров (ESA)","Cobertura del suelo (ESA)"))+'</h4>'+
-          '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10.5px;color:var(--text-muted);"><span>'
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10.5px;color:var(--text-muted);"><label style="display:contents;"><span>'
             +(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span>'
             +'<select class="wc-year" style="flex:1;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">'
-            +WC_EPOCHS.map(e=>'<option value="'+e[0]+'"'+(e[0]===wcYear?' selected':'')+'>'+e[0]+'</option>').join('')+'</select></div>'+
+            +WC_EPOCHS.map(e=>'<option value="'+e[0]+'"'+(e[0]===wcYear?' selected':'')+'>'+e[0]+'</option>').join('')+'</select></label></div>'+
           '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">'+
           /* ⚠ (#R251) the two name slots are ONE tuple now, resolved through pick() itself, so a
              language past the five arguments reaches the inline table instead of falling to English. */
@@ -905,7 +905,7 @@ window.IntMapModules.betaPack2=function(HOST){
            once and then only re-VALUED, so an open dropdown is not torn out from under the finger */
         if(el&&S&&S.years&&S.years.length){ let yr=el.querySelector('.wb-yearrow');
           if(!yr){ yr=document.createElement('div'); yr.className='wb-yearrow'; yr.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
-            yr.innerHTML='<span class="wb-yearlbl"></span><select class="wb-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select>';
+            yr.innerHTML='<label style="display:contents;"><span class="wb-yearlbl"></span><select class="wb-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select></label>';
             el.appendChild(yr);
             yr.querySelector('.wb-year').addEventListener('change',(e)=>{ wbYr[key]=e.target.value; wbToggle(key,true); }); }
           yr.querySelector('.wb-yearlbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
@@ -1734,9 +1734,9 @@ window.IntMapModules.gibsScience=function(HOST){
           let d=el.querySelector('.gx-daterow');
           if(!d){ d=document.createElement('div'); d.className='gx-daterow';
             d.style.cssText='display:flex;align-items:center;gap:5px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
-            d.innerHTML='<span class="gx-dlbl"></span>'
+            d.innerHTML='<span class="gx-dlbl" id="gx-dlbl-'+L.id+'"></span>'
               +'<button type="button" class="gx-prev" style="border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);border-radius:6px;width:20px;height:20px;line-height:1;cursor:pointer;padding:0;">‹</button>'
-              +'<input type="date" class="gx-date" style="flex:1;min-width:0;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">'
+              +'<input type="date" class="gx-date" aria-labelledby="gx-dlbl-'+L.id+'" style="flex:1;min-width:0;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">'
               +'<button type="button" class="gx-next" style="border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);border-radius:6px;width:20px;height:20px;line-height:1;cursor:pointer;padding:0;">›</button>';
             el.appendChild(d);
             d.querySelector('.gx-prev').onclick=()=>gxStep(L,-1);

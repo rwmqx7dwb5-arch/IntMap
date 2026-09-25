@@ -265,15 +265,15 @@ window.IntMapModules.monitors=function(HOST){
         +'<h3 class="mon-h3">'+S(ML('New monitor','新規監視','Neuer Monitor','Новый монитор','Nuevo monitor'))+'</h3>'
         +areaLine
         +(area?'':'<button class="mon-viewbtn" id="mon-usemapview">'+S(ML('Use current map view','現在の地図表示を使う','Aktuelle Kartenansicht verwenden','Использовать вид карты','Usar vista del mapa'))+'</button>')
-        +'<label class="mon-lbl">'+S(ML('Name','名前','Name','Название','Nombre'))+'</label>'
+        +'<label class="mon-lbl" for="mon-name">'+S(ML('Name','名前','Name','Название','Nombre'))+'</label>'
         +'<input class="mon-inp" id="mon-name" maxlength="120" value="'+S(area?area.label:'')+'">'
         +'<label class="mon-lbl">'+S(ML('Watch for','監視対象','Überwachen','Отслеживать','Vigilar'))+'</label>'
         +'<div class="mon-src-row">'+srcOpts.map(([s,on])=>'<label class="mon-src '+(on?'':'mon-src-off')+'"><input type="checkbox" value="'+s+'" '+(on?'checked':'disabled')+'> '+S(srcLabel(s))+(on?'':' <span class="mon-soon">'+S(ML('soon','近日','bald','скоро','pronto'))+'</span>')+'</label>').join('')+'</div>'
-        +'<label class="mon-lbl">'+S(ML('Compare against','比較対象','Vergleichen mit','Сравнивать с','Comparar con'))+'</label>'
+        +'<label class="mon-lbl" for="mon-cmp">'+S(ML('Compare against','比較対象','Vergleichen mit','Сравнивать с','Comparar con'))+'</label>'
         +'<select class="mon-inp" id="mon-cmp"><option value="previous_run">'+S(ML('The previous run','前回の実行','Vorheriger Lauf','Предыдущий запуск','Ejecución anterior'))+'</option><option value="baseline_window">'+S(ML('The past 30 days','過去30日','Letzte 30 Tage','Последние 30 дней','Últimos 30 días'))+'</option></select>'
-        +'<label class="mon-lbl">'+S(ML('How often','実行頻度','Häufigkeit','Частота','Frecuencia'))+'</label>'
+        +'<label class="mon-lbl" for="mon-int">'+S(ML('How often','実行頻度','Häufigkeit','Частота','Frecuencia'))+'</label>'
         +'<select class="mon-inp" id="mon-int">'+intervals.map(([v,l])=>'<option value="'+v+'"'+(v===360?' selected':'')+'>'+S(l)+'</option>').join('')+'</select>'
-        +'<label class="mon-lbl">'+S(ML('Sensitivity','感度','Empfindlichkeit','Чувствительность','Sensibilidad'))+'</label>'
+        +'<label class="mon-lbl" for="mon-sens">'+S(ML('Sensitivity','感度','Empfindlichkeit','Чувствительность','Sensibilidad'))+'</label>'
         +'<select class="mon-inp" id="mon-sens">'+sens.map(([v,l])=>'<option value="'+v+'"'+(v==='medium'?' selected':'')+'>'+S(l)+'</option>').join('')+'</select>'
         +'<div class="mon-note">'+S(ML('The monitor runs on our servers even when this page is closed. A report is generated only when a meaningful change is detected — every claim links to its source.','このページを閉じてもサーバー側で実行されます。意味のある変化が検出された時だけレポートが生成され、各主張は出典にリンクします。','Läuft serverseitig, auch wenn die Seite geschlossen ist. Ein Bericht entsteht nur bei einer bedeutsamen Änderung.','Работает на сервере, даже если страница закрыта. Отчёт создаётся только при значимом изменении.','Se ejecuta en el servidor aunque cierres la página. El informe solo se genera ante un cambio significativo.'))+'</div>'
         +'<div class="mon-create-err" id="mon-create-err" style="display:none;color:#ff453a;font-size:12px;margin:8px 0 0;line-height:1.45;"></div>'   /* (#R149) inline, unmissable failure feedback right where the user is looking — toast infra is not guaranteed */

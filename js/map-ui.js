@@ -2812,7 +2812,10 @@ window.IntMapModules.geojsonUpload=function(HOST){
        An accept list is a list of extensions, and js/geo-import.js decides what a file is by
        reading it. Filtering the picker by name would hide from the reader exactly the files the
        decoders can now read (a .txt that is a CSV, a .xml that is a GPX, a name with no suffix). */
-    const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.multiple=true; fileInput.style.display='none'; document.body.appendChild(fileInput);
+    const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.multiple=true; fileInput.style.display='none';
+    /* named by the key of the button that opens it (#btn-upload-geojson), and re-titled with it by updateI18n */
+    try{ fileInput.setAttribute('data-i18n-aria','importGeoFile'); fileInput.setAttribute('aria-label',HOST.t('importGeoFile')); }catch(_){}
+    document.body.appendChild(fileInput);
     /* (#R576) the four shapes this function used to normalise now live in js/geo-import.js's
        GeoJSON decoder, alongside the other formats, so every path gets the same coordinate repair. */
     function fit(fc){ try{ if(typeof turf!=='undefined'){ const bb=turf.bbox(fc); if(bb.every(isFinite) && bb[0]>=-180 && bb[2]<=180) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:60,duration:900,maxZoom:12}); } }catch(_){} }

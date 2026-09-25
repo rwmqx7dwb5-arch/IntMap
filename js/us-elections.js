@@ -221,7 +221,7 @@ window.IntMapModules.usElections=function(HOST){
     }).join('');
     box.innerHTML='<div class="usel-yr">'
         +'<button class="usel-step usel-prev" aria-label="'+esc(L('Earlier election','前の選挙','Frühere Wahl','Предыдущие выборы','Elección anterior'))+'"'+(i<=0?' disabled':'')+'>‹</button>'
-        +'<select class="usel-sel">'+data.elections.map(x=>'<option value="'+x.y+'"'+(x.y===year?' selected':'')+'>'+x.y+' · '+esc(String(x.c[x.w||0].n).split(' ').pop())+'</option>').join('')+'</select>'
+        +'<select class="usel-sel" aria-label="'+esc(L('Election','選挙'))+'">'+data.elections.map(x=>'<option value="'+x.y+'"'+(x.y===year?' selected':'')+'>'+x.y+' · '+esc(String(x.c[x.w||0].n).split(' ').pop())+'</option>').join('')+'</select>'
         +'<button class="usel-step usel-next" aria-label="'+esc(L('Later election','次の選挙','Spätere Wahl','Следующие выборы','Elección siguiente'))+'"'+(i>=years.length-1?' disabled':'')+'>›</button>'
       +'</div>'
       +'<div class="usel-win">'+L('Electoral votes','選挙人票','Wahlmännerstimmen','Голоса выборщиков','Votos electorales')

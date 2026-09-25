@@ -325,7 +325,7 @@ window.IntMapModules.wbLayers=function(HOST){
               repaint would close the dropdown under the finger that just opened it. ── */
         if(S){ let yr=el.querySelector('.bx-yearrow');
           if(!yr){ yr=document.createElement('div'); yr.className='bx-yearrow'; yr.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
-            yr.innerHTML='<span class="bx-yearlbl"></span><select class="bx-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select>';
+            yr.innerHTML='<label style="display:contents;"><span class="bx-yearlbl"></span><select class="bx-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select></label>';
             el.appendChild(yr);
             yr.querySelector('.bx-year').addEventListener('change',(e)=>{ wbYear[L.id]=e.target.value; choroOn(L); }); }
           yr.querySelector('.bx-yearlbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');

@@ -368,7 +368,7 @@ window.IntMapModules.elections = function (HOST) {
         + '<select class="elec-pol" aria-label="' + esc(L('Country or territory', '国・地域', 'Land oder Gebiet', 'Страна или территория', 'País o territorio')) + '">' + polOpts + '</select>'
         + '<div class="elec-yr">'
           + '<button class="elec-step elec-prev" aria-label="' + esc(L('Earlier election', '前の選挙', 'Frühere Wahl', 'Предыдущие выборы', 'Elección anterior')) + '"' + (i <= 0 ? ' disabled' : '') + '>&lsaquo;</button>'
-          + '<select class="elec-sel">' + eOpts + '</select>'
+          + '<select class="elec-sel" aria-label="' + esc(L('Election', '選挙')) + '">' + eOpts + '</select>'
           + '<button class="elec-step elec-next" aria-label="' + esc(L('Later election', '次の選挙', 'Spätere Wahl', 'Следующие выборы', 'Elección siguiente')) + '"' + (i >= mine.length - 1 ? ' disabled' : '') + '>&rsaquo;</button>'
         + '</div>'
       + '</div>'
