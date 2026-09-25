@@ -162,6 +162,14 @@ test('③b the tree: the list is rendered, lists each entry once, and the old ro
      pointer whose bytes do not depend on the entries — adding one changes no tracked file but itself. */
   assert.equal(rd('DEV-NOTES.md'), renderStub(), 'DEV-NOTES.md is not the fixed pointer');
   assert.ok(!/^- (R\d+|\d{4}-\d{2}-\d{2}) · /m.test(rd('DEV-NOTES.md')), 'DEV-NOTES.md lists entries again — every PR would rewrite it');
+  /* ⚠ and the instructions say so too. MEASURED 2026-09-26: after the pointer landed, AGENTS.md (3 places),
+     CONSTITUTION.md §6 and the skill still told every session that DEV-NOTES.md is «the generated index» —
+     the prose kept the structure the code had left. Swept over every tracked instruction/doc, not a list. */
+  const docs = git(['ls-files', '*.md']).split('\n').filter((f) => f && !f.startsWith('dev-notes/') && f !== 'DEV-NOTES-ARCHIVE.md');
+  for (const f of docs) {
+    const hit = /DEV-NOTES\.md[^\n]{0,60}(生成(される)?索引|generated index)/.exec(rd(f));
+    assert.ok(!hit, `${f} still calls DEV-NOTES.md a generated index: «${hit && hit[0]}»`);
+  }
   assert.equal(renderStub.length, 0, 'the pointer is rendered from nothing that an entry can change');
   const kept = rd(LEGACY_INDEX).split('\n').filter((l) => l.trim());
   assert.equal(new Set(kept).size, kept.length, `${LEGACY_INDEX} carries a line twice`);

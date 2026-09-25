@@ -136,8 +136,8 @@ PR を作ったら、その **PR 番号**が一意の識別子になる（squash
 
 ### 記録の書き方（`dev-notes/`）
 
-**1 エントリ＝1 ファイル。** `DEV-NOTES.md` は `dev-notes/` から**生成される索引**で、手で編集しない
-（`npm run check:docs` の `dev-notes` 規則が、生成結果と食い違えば落とす）。
+**1 エントリ＝1 ファイル。** `DEV-NOTES.md` は `dev-notes/` への**固定の案内**（一覧を持たない。`--list` がその場で出す）で、手で編集しない
+（`npm run check:docs` の `dev-notes` 規則が、案内でなくなれば落とす）。
 
 ```markdown
 ---
