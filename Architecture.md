@@ -1367,7 +1367,14 @@ Atlas は**読んでいたものの上に**開く——見出し・媒体と日�
 
 **`fetchViaProxy(url, opts)`（`js/proxy-fetch.js`）** は、その URL を受け付ける**自前の relay だけ**を段にする——
 `gdelt-relay`（単独で先に）、`news-relay`・`quotes-relay`・`cable-geo`・`sv-cov`・`fetch-relay`（表 `OWN_RELAYS`）。
-複数あれば**競争させ**、勝者以外を abort し、全滅時に 1 周だけ再試行する。**第三者の公開 CORS プロキシは段に無い**。
+複数あれば**競争させ**、勝者以外を abort する。**各段は 1 回だけ訊く**——全滅しても同じ relay に同じ要求を送り直さない
+（違うことをする段＝ホストそのもの〈`direct`〉と、競争の各 relay は既に 1 回ずつ訊いてある）。`note.attempts` が要求の数を記録する。
+**第三者の公開 CORS プロキシは段に無い**。
+**上流の「無い」は答えである**: 自前の relay は、上流が明示的に「この問いには何も無い」と答えたとき
+（quotes-relay＝Yahoo の 400/404 と v8 のエラー封筒、fetch-relay＝404/410）を 502 ではなく
+**200＋`x-intmap-no-data: 1`**（`_shared/relay-guard.js` の `noData()`。本文は上流のコードだけで、上流の文は中継しない。
+共有キャッシュ可）で返し、梯子は `reason:'no-data'` を述べて `null` を返す——再試行せず、失敗として扱わない。
+Companies の時間旅行は、`range=max` の履歴が始まる年より前と、一度「無い」と答えられた銘柄×年を訊かない。
 どの relay も受け付けない URL は、呼び手が `direct` を許したときだけ**ホストそのもの**へ行き、それ以外は
 `null`（`reason:'refused'`）。`fetch-relay` の段は規則ごとの時計（`timeoutMs`＋往復 3 秒）を持ち、`budgetMs` を
 指定しない呼び手には、その時計が収まる予算が与えられる。

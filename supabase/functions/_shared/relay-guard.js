@@ -35,6 +35,38 @@ export function corsFor(extraAllowHeaders) {
   };
 }
 
+/* ══ THE UPSTREAM SAID «THERE IS NOTHING», AND THAT IS AN ANSWER, NOT A FAILURE ══════════════════
+   Measured in production 2026-09-26: with the Companies tab open and Chronos moved to 1850, the
+   time machine asked quotes-relay for a monthly chart of 1850, and Yahoo answered 400
+   `{"chart":{"result":null,"error":{"code":"Bad Request","description":"Data doesn't exist for
+   startDate = -3786825600, …"}}}` — a precise statement that the period has no data. The relay
+   turned it into 502 `upstream_error`, the page's ladder treated 502 as «the relay failed» and sent
+   the same request again: sixteen 502s in the console for eight companies, every one of them a true
+   answer reported as a fault.
+   So a relay that recognises its upstream's explicit «none» says so with this: HTTP 200 (the
+   request succeeded — the answer is empty), `x-intmap-no-data: 1`, and a body that names what the
+   upstream said by CODE only (its prose is not relayed, the same rule as relayFail). js/proxy-fetch.js
+   reads the header, reports `reason:'no-data'` to a caller that passes a note, never retries it, and
+   hands back null — «no document» — to every caller that does not ask why. The answer is cacheable:
+   a period with no data today will not gain data by being asked again.
+   ⚠ A RELAY THAT USES THIS EXPOSES THE HEADER ITSELF, in its own CORS object — a custom response
+   header is invisible to cross-origin script unless exposed, and corsFor() deliberately exposes
+   nothing (tests/r468-checks ③: each relay names what it publishes). */
+export const NO_DATA_HEADER = "x-intmap-no-data";
+export function noData(cors, upstream, cacheControl) {
+  const u = upstream || {};
+  const code = /^[A-Za-z][A-Za-z _-]{0,39}$/.test(String(u.code || "")) ? String(u.code) : "";
+  return new Response(JSON.stringify({ noData: true, upstream: { status: Number(u.status) || 0, code } }), {
+    status: 200,
+    headers: {
+      ...(cors || {}),
+      "content-type": "application/json",
+      [NO_DATA_HEADER]: "1",
+      "cache-control": cacheControl || "public, max-age=3600, s-maxage=86400",
+    },
+  });
+}
+
 /* A relay failure the caller may be told about, by CODE only. Never carries an upstream body. */
 export class RelayError extends Error {
   constructor(code, status) {

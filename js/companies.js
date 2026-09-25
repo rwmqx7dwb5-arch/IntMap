@@ -259,9 +259,9 @@ window.IntMapModules.companies=function(HOST){
      * browser waits out the whole round trip before refusing to show it. Paying for a rung that
      * is known to fail is the same mistake this round removed from the logo ladder.
      */
-    async function _fjson(u){
+    async function _fjson(u, note){
       try{
-        const txt=await HOST.fetchViaProxy(u,{as:'json',budgetMs:20000});
+        const txt=await HOST.fetchViaProxy(u,{as:'json',budgetMs:20000,note});
         return txt?JSON.parse(txt):null;
       }catch(_){ return null; }
     }
@@ -320,6 +320,8 @@ window.IntMapModules.companies=function(HOST){
     /* (#R142) _hy = the time-machine year (null = present/live). In a past year market cap = today's shares × the share
        price AT that year (c.hp); a company founded AFTER the year, or a non-live name with no price path, has no cap. */
     let _hy=null, _hSeq=0, _hyLoaded=null;
+    /* (relay-no-data-one-pass) `tk|year` pairs Yahoo has explicitly said it has no price for — see setYear */
+    const _noPrice=new Set();
     function priceOf(c){ return (_hy!=null)?(c.hp||0):(c.price||0); }
     function mcap(c){ if(_hy!=null){ if(c.fnd>_hy) return NaN; return (c.sh>0&&c.hp>0)?(c.sh*c.hp):NaN; } return (c.sh>0 && c.price>0)?(c.sh*c.price):c.mcapSnap; }
     function isLive(c){ return _hy==null && c.sh>0 && c.price>0; }
@@ -368,11 +370,22 @@ window.IntMapModules.companies=function(HOST){
          as Yahoo has data. A name whose data starts later simply has no entry for this year (mcap()=NaN, honest —). */
       let all=null; try{ all=await _histAll(); }catch(_){} if(my!==_hSeq) return;
       if(all){ live.forEach(c=>{ const by=all[c.tk]; const v=by&&by[year]; if(v>0) c.hp=v; }); if(onUpdate){ try{ onUpdate(); }catch(_){} } }
-      /* FALLBACK: any live name the cache didn't cover (spark failed / gap) → the proven per-year chart fetch. */
-      const miss=live.filter(c=>!(c.hp>0));
+      /* FALLBACK: any live name the cache didn't cover (spark failed / gap) → the proven per-year chart fetch.
+         ⚠⚠ (relay-no-data-one-pass) …BUT NOT A YEAR WE ALREADY KNOW HAS NO PRICE. Measured in production 2026-09-26:
+         Chronos at 1850 sent eight names founded before 1850 to this fallback, and Yahoo answered each with
+         「Data doesn't exist for startDate」 — twice, through a relay that called the answer a failure. Two facts
+         already held say so without asking: the full history above is Yahoo's range=max, so a year BEFORE a
+         name's first year in it is a year Yahoo has nothing for; and an explicit «no data» answer, once
+         received, is remembered for that name and year (_noPrice). Only a gap INSIDE a known history, or a name
+         the history does not cover, is asked. */
+      const known=(c)=>{ if(_noPrice.has(c.tk+'|'+year)) return true;
+        const by=all&&all[c.tk]; const ys=by?Object.keys(by).map(Number).filter(Number.isFinite):[];
+        return ys.length>0 && year<Math.min(...ys); };
+      const miss=live.filter(c=>!(c.hp>0) && !known(c));
       if(miss.length){ const p1=Math.floor(Date.UTC(year,0,1)/1000), p2=Math.floor(Date.UTC(year,11,31)/1000); let idx=0, upd=0; const CONC=6;
         async function w(){ for(;;){ if(my!==_hSeq) return; const i=idx++; if(i>=miss.length) return; const c=miss[i];
-          try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
+          try{ const note={}; const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo',note);
+            if(note.reason==='no-data') _noPrice.add(c.tk+'|'+year);   /* Yahoo said so — not asked again this session */
             const rt=j&&j.chart&&j.chart.result&&j.chart.result[0]; const q=rt&&rt.indicators&&rt.indicators.quote&&rt.indicators.quote[0]&&rt.indicators.quote[0].close;
             if(Array.isArray(q)){ for(let k=q.length-1;k>=0;k--){ if(q[k]>0){ c.hp=+q[k]; break; } } if(c.hp>0 && (++upd%8===0) && onUpdate){ try{ onUpdate(); }catch(_){} } } }catch(_){} } }
         try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){} }

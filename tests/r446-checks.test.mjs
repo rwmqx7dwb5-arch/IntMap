@@ -140,7 +140,7 @@ test('R446 ②: as:"html" refuses a relay error envelope and a bot interstitial,
 });
 
 /* ── ③ the ladder costs what the caller said it may cost ──────────────────────────────────────── */
-test('R446 ③: opts.budgetMs bounds the whole ladder, race and fallback together', async () => {
+test('R446 ③: opts.budgetMs bounds the whole ladder — every racer, and there is no second pass', async () => {
   await withFetch({}, async (calls) => {        /* every relay hangs — the measured 20.3 s case */
     const t0 = Date.now();
     const got = await fetchViaProxy(LINK, { as: 'html', budgetMs: 600 });
@@ -157,10 +157,13 @@ test('R446 ③: opts.budgetMs bounds the whole ladder, race and fallback togethe
      strictly more clock-like, not less — pinning the old spelling would have gone red on a change
      that only made the guarantee stronger. */
   assert.match(pf, /const left = \(\) => [^;]*budget - \(Date\.now\(\) - t0\)/, 'the budget is a clock, not a flag');
-  /* (own-fetch-relay) a relay may carry its own attempt clock (`make.ms`) in place of PROXY_FALLBACK_MS; what
-     this pins is that whichever clock it is, the budget's `left()` still caps it */
-  assert.match(pf, /Math\.min\((?:make\.ms \|\| )?PROXY_FALLBACK_MS, left\(\)\)/, 'the bounded pass is bounded by it too');
-  assert.match(pf, /if \(left\(\) <= 0\) break;/, '…and stops entirely when the budget is gone');
+  /* (own-fetch-relay) a relay may carry its own attempt clock (`make.ms`); whichever clock it is, the
+     budget's `left()` still caps every racer.
+     (relay-no-data-one-pass) The "bounded pass" this line used to pin is gone — it re-sent the SAME
+     request to the SAME relay (tests/relay-no-data-one-pass-checks ②), so there is no second pass for
+     the budget to bound: every request the ladder makes is a racer, and every racer is capped here. */
+  assert.match(pf, /Math\.min\((?:make\.ms \|\| )?PROXY_TIMEOUT_MS, left\(\)\)/, 'every racer is bounded by the budget');
+  assert.doesNotMatch(pf, /PROXY_FALLBACK_MS/, 'and no second pass re-sends what the race already sent');
 });
 
 /* ── ④ the reader asks for the thing it parses, and inside a budget ───────────────────────────── */
