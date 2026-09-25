@@ -25,6 +25,7 @@
 //  note at the top of news-relay.
 // ============================================================================
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 
 const CORS = corsFor();
 /* A 40-symbol spark response is tens of kilobytes and a single chart with ten years of
@@ -128,9 +129,19 @@ function hasQuote(j) {
   return false;
 }
 
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/companies.js prices the board with one spark request per ~40 names, and falls back to one
+   chart request per unresolved name with CONC=6 in flight; at roughly one second a request that
+   walk is ~360 a minute, bounded by the number of companies. ESTIMATED from that concurrency. */
+const READER_PER_MIN = 360;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "quotes-relay", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const u = new URL(req.url).searchParams.get("u") || "";
   if (u.length > MAX_QUERY_URL || !allowed(u)) {

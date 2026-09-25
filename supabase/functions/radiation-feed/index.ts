@@ -34,6 +34,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 import { PROVIDERS, providerById, mergeLatest } from "../_shared/radiation-sources.js";
 
 const CORS = corsFor();
@@ -161,9 +162,18 @@ function bad(message) {
   return json({ error: message }, 400, null);
 }
 
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/radiation-obs-core.js reads `latest` once per provider chunk when the layer opens, then a
+   `day` or `series` per station the reader opens. ESTIMATED from those callers. */
+const READER_PER_MIN = 60;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "radiation-feed", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const url = new URL(req.url);
   const params = url.searchParams;

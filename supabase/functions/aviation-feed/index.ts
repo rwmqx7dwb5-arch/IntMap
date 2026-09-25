@@ -53,6 +53,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 import { parseBbox } from "../_shared/bbox.js";
 import { makeReadBudget } from "../_shared/read-budget.js";
 // Both imported for their side effect: they set globalThis.IntMapAviationCodec / …Model.
@@ -997,9 +998,18 @@ function binResponse(bytes, meta) {
 }
 
 // ── request ─────────────────────────────────────────────────────────────────
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute:
+   js/aviation-live.js polls the world every 20 s (WORLD_POLL_MS) and the view every 12 s
+   (VIEW_POLL_MS), plus one view read per settled pan. ESTIMATED from those timers. */
+const READER_PER_MIN = 30;
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
+  const limited = await callerGate(req, CORS, { scope: "aviation-feed", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   const url = new URL(req.url);
   const channel = (url.searchParams.get("ch") || "world").toLowerCase();

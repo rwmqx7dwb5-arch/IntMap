@@ -3894,7 +3894,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>currentLang==='jp';
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-    const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
+    const PROX=[x=>x];   /* (own-fetch-relay) the host itself only — this card has been unreachable since #R22, and the public relays it named are gone from the app */
     const KEY='intmap_acled';
     let cred={email:'',key:''}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cred=s; }catch(_){}
     let card=null, open=false, events=[], pinsOn=true;

@@ -26,6 +26,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { callerGate } from "../_shared/rate-limit.js";
 
 const CORS = corsFor("range");
 /* A 256×256 coverage PNG is a few kilobytes. 2 MB is far above any tile Google serves here and far
@@ -50,9 +51,18 @@ function bad(status, msg) {
   return new Response(msg, { status, headers: { ...CORS, "Content-Type": "text/plain; charset=utf-8" } });
 }
 
+/* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
+   readers one address may hold, and says when the estimate expires). The most requests one reader's
+   page makes of this function in a minute: js/street-view.js samples a 3×3 block of coverage tiles
+   per Street-View click and comes here only for tiles the direct load could not read; ten clicks a
+   minute is 90. ESTIMATED from that caller. */
+const READER_PER_MIN = 120;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "GET") return bad(405, "GET only");
+  const limited = await callerGate(req, CORS, { scope: "sv-cov", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
+  if (limited) return limited;
 
   // The client passes the full Google tile URL as ?u=<encoded>; we validate it hard.
   let target;

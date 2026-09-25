@@ -983,8 +983,10 @@ waves-palette.js                  波高→色 window.IntMapWavePalette——12 
                                   凡例用の CSS グラデーション。色の写しはここにしか無い
 place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
 country-extent.js                 その国が「在る場所」の枠 window.IntMapCountryExtent——遠い海外領土を外し、±180 をまたぐ範囲を区間として書き下す
-proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）。
-                                  `opts.as` が受理する文書の形（feed／html／json）、`opts.budgetMs` が ladder 全体の上限、
+proxy-fetch.js                    ACAO を返さない上流を**自前の relay だけ**で取る唯一の梯子（第三者の公開プロキシは無い）。
+                                  `ownRelayUrl()` はその URL を受け付ける自前 relay の URL（<img>・Cache API の呼び手用）。
+                                  fetch-relay の許可表は supabase/functions/_shared/fetch-relay-policy.js を import する。
+                                  `opts.as` が受理する文書の形（feed／html／json／text）、`opts.budgetMs` が ladder 全体の上限、
                                   `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる
 fetch-deadline.js                 締切つきの JSON 取得 `jsonWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得
 overpass.js                       **Overpass の唯一のクライアント** `overpassQuery()`——ミラー一覧を持つ唯一のファイル。
@@ -1193,16 +1195,19 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全19本をここに宣言する
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全20本をここに宣言する
   migrations/*.sql                DB の唯一の設計図（27本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル。12本）
-  functions/<name>/index.ts       Edge Functions（19本。一覧と各本の役割は Architecture.md §6.2）
+  functions/<name>/index.ts       Edge Functions（20本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
-                                  bbox.js / read-budget.js / client-error-shape.js）
+                                  bbox.js / read-budget.js / client-error-shape.js /
+                                  fetch-relay-policy.js）
+                                  ⚠ fetch-relay-policy.js も**ブラウザが import する**（js/proxy-fetch.js。
+                                  許可表の写しを作らない・own-fetch-relay）
                                   ⚠ client-error-shape.js は**ブラウザも import する**
                                   （js/client-error-report.js。写しを作らない・client-error-log）
                                   ⚠ news-cluster.js は**サーバー専用**——クライアントの

@@ -6,7 +6,7 @@
 >
 > ⚠ **ライブ株価・時価総額（Yahoo）と curated な 190 行の表は `js/companies.js` が正本**であって、
 > ここではない。この文書が足すのは**その上に載る恒久的なプロフィールと拠点**。
-> 株価がどの経路で運ばれるか（Edge Function `quotes-relay` → 公開リレー梯子）は
+> 株価がどの経路で運ばれるか（Edge Function `quotes-relay`。第三者の公開リレーは使わない）は
 > `Architecture.md` §6.2 と §8.1.1。
 
 ---
@@ -330,7 +330,7 @@ TSMC・Siemens で工場と R&D が実際に出ることを見る。**
 ⚠ **プロフィールと拠点の上流は、全部ビルド時。** 実行時にブラウザが外へ出るのは 2 つだけで、
 どちらも「事実を取りに行く」経路ではない:
 
-1. **株価**（`js/companies.js`）— Edge Function `quotes-relay` を第一経路に Yahoo の
+1. **株価**（`js/companies.js`）— Edge Function `quotes-relay` 経由で Yahoo の
    鍵不要エンドポイントを読む。上流へ渡るのは**ティッカー記号と期間だけ**（`Architecture.md` §6.2）。
 2. **ロゴの最終段**（`js/companies-ui.js`）— §4.3 の Commons ロゴを持たない企業に限り、
    Google の favicon にドメイン名だけを送る。取れなければモノグラムで、要求は出ない。

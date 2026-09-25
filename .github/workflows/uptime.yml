@@ -138,8 +138,17 @@ jobs:
   # the LABEL — `status:relay-ladder-down`, never `status:prod-down` — keeps that intent while
   # granting the permission: the query this job runs cannot see, comment on or close `probe`'s
   # issue, because it only ever lists and writes its own label.
+  # ⚠⚠ (own-fetch-relay) RE-AIMED AT OUR OWN RELAYS. The public ladder above no longer exists — js/proxy-fetch.js
+  # offers only this project's Edge Functions — and asked the old question the probe discovered no rung
+  # at all, which the old script called `dead`: this job would have opened its issue every six hours.
+  # It now asks each of our relays (fetch-relay's rules, its article rule, and the specialised relays)
+  # for one real target, routed by the page's own router. The verdicts: `ok` / `degraded` (an upstream's
+  # bad hour — weather, no issue) / `dead` (NO relay of ours carried anything — our relays are down,
+  # exit 1, the issue opens) / `none` (nothing routable — a code fact tests/own-fetch-relay-checks catches; exit 0, no
+  # issue) / `error` (the probe itself broke; exit 2, no issue). Everything above about one label, one
+  # deduplicated issue and a green run still holds.
   ladder:
-    name: CORS relay ladder
+    name: Own relay probe
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -151,13 +160,13 @@ jobs:
         with:
           node-version-file: .nvmrc
       # No `npm ci`: the probe imports js/proxy-fetch.js directly and uses nothing but the runtime.
-      - name: Probe every rung js/proxy-fetch.js actually builds
+      - name: Probe each relay of ours with the target js/proxy-fetch.js routes to it
         id: ladder
         run: |
           set +e
           node scripts/probe-relay-ladder.mjs 2>&1 | tee ladder.log
           code=${PIPESTATUS[0]}
-          # The last line is the machine-readable verdict: RESULT <ok|degraded|dead> <alive>/<total>
+          # The last line is the machine-readable verdict: RESULT <ok|degraded|dead|none|error> <alive>/<total>
           result=$(grep -E '^RESULT ' ladder.log | tail -n 1)
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "result=${result:-RESULT unknown 0/0}" >> "$GITHUB_OUTPUT"
@@ -178,13 +187,14 @@ jobs:
           LOG: ${{ steps.ladder.outputs.log }}
         with:
           script: |
-            // exit 1 from the probe means EVERY rung is dead. Anything else — including a
-            // `degraded` ladder with three of four rungs down — is the weather it was built for.
+            // exit 1 from the probe means NO relay of ours carried its target (own-fetch-relay). Anything else —
+            // `degraded` (an upstream's bad hour), `none` (nothing routable), `error` (the probe broke) — is
+            // not our relays being down and must not open this issue.
             const dead = process.env.CODE === '1';
             const result = process.env.RESULT || '(no RESULT line)';
             const log = process.env.LOG || '';
             const label = 'status:relay-ladder-down';
-            const title = 'Every public CORS relay is down';
+            const title = 'No IntMap relay carried its probe target';
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const now = new Date().toISOString();
 
@@ -193,7 +203,7 @@ jobs:
               catch (e) {
                 if (e.status === 404) {
                   await github.rest.issues.createLabel({ ...context.repo, name: label, color: 'd93f0b',
-                    description: 'Automated: no rung of the js/proxy-fetch.js relay ladder answers' });
+                    description: 'Automated: no IntMap relay (Edge Function) carried its probe target' });
                 } else { throw e; }
               }
             }
@@ -205,17 +215,17 @@ jobs:
                 await ensureLabel();
                 await github.rest.issues.create({ ...context.repo, title, labels: [label],
                   body: [
-                    'Every rung of the CORS relay ladder in `js/proxy-fetch.js` failed against a target',
-                    'whose availability is not in question, so the ladder has stopped being a ladder:',
-                    'every caller can now only spend its full budget and return `null`.', '',
+                    'Every relay of ours (the Edge Functions `js/proxy-fetch.js` routes to) failed to carry',
+                    'its probe target, so every reader asking for a host that sends no ACAO now gets `null`.',
+                    'That is our relays being down (a Supabase outage, a bad deploy), not an upstream.', '',
                     `- Verdict: \`${result}\``,
                     `- Measured (UTC): ${now}`,
                     `- Run: ${runUrl}`, '',
-                    'Per-rung status, as measured:', '',
+                    'Per-relay status, as measured:', '',
                     '```', log.slice(0, 40000), '```', '',
-                    'The rungs are discovered by evaluating `js/proxy-fetch.js`, so this list is what',
-                    'THIS build requests — not a copy. A single dead rung is normal and does not open',
-                    'this issue. It will auto-close as soon as any rung answers again.',
+                    'The targets come from `_shared/fetch-relay-policy.js` and the probe script, and each is',
+                    'routed by evaluating `js/proxy-fetch.js`. One failing target is an upstream\'s bad hour and',
+                    'does not open this issue. It will auto-close as soon as any relay carries its target again.',
                     'See `docs/MONITORING.md` §1c.',
                   ].join('\n') });
                 core.info('Opened the relay-ladder issue.');
@@ -225,7 +235,7 @@ jobs:
             } else {
               for (const iss of open) {
                 await github.rest.issues.createComment({ ...context.repo, issue_number: iss.number,
-                  body: `Recovered at ${now}: \`${result}\`. At least one rung answers again. Auto-closing.\n\nRun: ${runUrl}` });
+                  body: `Recovered at ${now}: \`${result}\`. At least one relay carries its target again. Auto-closing.\n\nRun: ${runUrl}` });
                 await github.rest.issues.update({ ...context.repo, issue_number: iss.number, state: 'closed' });
                 core.info(`Closed recovered relay-ladder issue #${iss.number}.`);
               }

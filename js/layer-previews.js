@@ -7,6 +7,7 @@
  *  declaration, so passing them by value is exactly what the closure saw.
  *      window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);
  * ========================================================================== */
+import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the cable preview's second rung */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     /* (#R71) quality pass ("画像の縦横比が引き延ばされ…クオリティも低い"): canvases are now WEB-MERCATOR
@@ -574,10 +575,9 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
           g.addColorStop(0,'rgba(255,110,40,0.34)'); g.addColorStop(1,'rgba(255,110,40,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,11,0,7); ctx.fill(); });
         ctx.globalCompositeOperation='source-over';
         return Promise.resolve(c.toDataURL('image/png')); },
-      'dl-subcables':()=>(async()=>{ /* same CORS-proxy ladder the layer itself needs for this endpoint */
+      'dl-subcables':()=>(async()=>{ /* (own-fetch-relay) the same two rungs the layer itself has: the host, then our cable-geo relay */
         const u0='https://www.submarinecablemap.com/api/v3/cable/cable-geo.json';
-        const prox=[x=>x,x=>'https://corsproxy.io/?url='+encodeURIComponent(x),x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x),x=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(x)];
-        for(const mk of prox){ try{ const r=await fetch(mk(u0)); if(!r.ok) continue; const j=await r.json(); if(j&&j.features) return j; }catch(_){} } return null; })().then(j=>{
+        for(const src of [u0, ownRelayUrl(u0)]){ if(!src) continue; try{ const r=await fetch(src); if(!r.ok) continue; const j=await r.json(); if(j&&j.features) return j; }catch(_){} } return null; })().then(j=>{
         const fs=(j&&j.features)||[]; if(!fs.length) return null;
         const b=base(); if(!b) return null; const {c,ctx}=b; ctx.lineWidth=0.65; ctx.globalAlpha=0.9;
         fs.forEach(f=>{ const gm=f.geometry; if(!gm) return; const col=(f.properties&&f.properties.color)||'#ffd60a';

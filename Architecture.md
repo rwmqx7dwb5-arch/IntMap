@@ -328,7 +328,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳**。⚠ **開いた台帳は閉じる**——`endTurn` が返答・停止理由・モデル呼び出し回数を書き戻し、取り消しと例外もそれぞれの状態で閉じる（呼び出し元は `js/atlas-console.js` の 1 か所） |
 | ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る。**読者への質問が成功した時点でターンは終わる**（`stopped:'awaiting_user'`）——同じ返信に並んだ後続の呼びは実行せず `turn_ended` で差し戻し、締めの 1 文のためのモデル呼び出しもしない。**旗は道具（と結果）に立っているので、ループは特定の道具の意味を知らない**。⚠ **同じ呼び出しを 1 ターンで 2 回したら、答えは 1 回**——`js/atlas-turn-results.js` の `callKey(name, args)` で同一性を見て、**成功した**先の結果をそのまま返し「これは今このターンで自分が出した答えである」と添える。同じ仕事かは引数の綴りだけでは決まらないので、結果が名乗る `meta.resultKey`（線・面は**形状**から作り、向きを問わない）が同じなら 2 回目以降は「もう済んでいる、地図には 1 つだけ」と名指す（呼び出し自体は実行するのでラベルや色の変更は反映される。作品の改訂は後継であって反復に数えない）。⚠ **上限ではない**——呼び出し回数の予算も plan も 1 つも変えず、拒否もしない。失敗した呼び出しの**結果**は覚えない（再試行が正しい場合だから）が、**同じ呼びが拒否されたことは覚える**——同一の引数での再拒否は進行ではないので、注記して上の回数に数える |
 | ターンが必ず終わること | `js/atlas-agent.js` ＋ `js/proxy-fetch.js` ＋ `js/fetch-deadline.js` | **回数の上限に加えて時計を持つ。** 1 ツール呼び出しは `toolTimeoutMs`（45 秒）で見切り、Atlas には `tool_timeout` として**機械的に伝える**（中断ではなく報告——次に何をするかは Atlas が決める）。ターン全体は `turnBudgetMs`（180 秒）を超えたら道具を呼ぶのをやめ、**持っているもので回答を書く**。⚠ どちらも**健全なターン（実測およそ 10 秒）の一桁上**に置いた退避線であって、Atlas に与える裁量を減らすものではない（CONSTITUTION.md §5） |
-| 外部証拠の取得 | `js/proxy-fetch.js`（唯一の梯子） | 自前の Edge Function を先頭に、公開 relay 4 本を**競争**させ、勝った時点で残りを中断する。⚠ **梯子は自分の評決を述べる**——`opts.note` を渡した呼び手には `reason`（`ok` / `refused` / `aborted` / `no-budget`）と `via`（答えた段）が返る。これが無い間、`null` が「どの段も答えなかった」と「答えは来たが中身が無かった」の**両方**を意味していて、読者はその差を知らされなかった（渡さない呼び手の戻り値は変わらない）。⚠ **公開 relay 4 本が生きているかは誰も測っていなかった**——計器は `scripts/probe-relay-ladder.mjs`、実測と警報の条件は [`docs/MONITORING.md`](docs/MONITORING.md)。⚠ **締切は本文を読み終わるまで掛かる**（ヘッダが着いた時点で解除すると、200 を返してから止まった相手を止めるものが無くなる）。呼び出し側は `budgetMs` で**梯子全体の上限**を、`signal` で**停止**を渡す。Atlas の 1 取得 14 秒／証拠集め全体 32 秒／GDELT の梯子 20 秒 |
+| 外部証拠の取得 | `js/proxy-fetch.js`（唯一の梯子） | **自前の Edge Function だけ**を段にする（第三者の公開 relay は使わない）。複数あれば**競争**させ、勝った時点で残りを中断する。⚠ **梯子は自分の評決を述べる**——`opts.note` を渡した呼び手には `reason`（`ok` / `refused` / `aborted` / `no-budget`）と `via`（答えた段）が返る。これが無い間、`null` が「どの段も答えなかった」と「答えは来たが中身が無かった」の**両方**を意味していて、読者はその差を知らされなかった（渡さない呼び手の戻り値は変わらない）。⚠ **公開 relay 4 本が生きているかは誰も測っていなかった**——計器は `scripts/probe-relay-ladder.mjs`、実測と警報の条件は [`docs/MONITORING.md`](docs/MONITORING.md)。⚠ **締切は本文を読み終わるまで掛かる**（ヘッダが着いた時点で解除すると、200 を返してから止まった相手を止めるものが無くなる）。呼び出し側は `budgetMs` で**梯子全体の上限**を、`signal` で**停止**を渡す。Atlas の 1 取得 14 秒／証拠集め全体 32 秒／GDELT の梯子 20 秒 |
 | 締切つきの単発取得 | `js/fetch-deadline.js` | `jsonWithin(url, ms, init)`。Nominatim のように relay を要さない相手のための 1 回の取得。**呼び出し側の signal は置き換えず連結する** |
 | Overpass への 1 つの入口 | `js/overpass.js` | `overpassQuery(query, opts)`（`window.IntMapOverpass` でも同じ）。**ミラーの一覧を持つのはこのファイルだけ**で、経路・ドローン・Atlas・施設・川・火山・歴史区分（OpenHistoricalMap）の呼び手は全部ここを通る。予算は問い合わせ自身の `[timeout:N]` ＋ 5 秒で、呼び手は下げられるが上げられない。応答の無いミラーは持ち分（予算÷ミラー数）を過ぎたら**次のミラーを並走**させ、504・429・JSON でない本文・`remark` の runtime error は即座に次へ。全部だめなら `OverpassUnavailable`（各ミラーで何が起きたかを `attempts` に持つ）を投げ、**空の `elements` は正常な答え**として返す——「照合できなかった」と「何も無い」を同じ答えにしない |
 | 証拠集めの予算 | `js/atlas-deadlines.js` | Atlas の 1 取得 14 秒／gather 全体 32 秒／GDELT の梯子 20 秒。締切つきの `settleWithin(jobs, ms)` は**まだ飛んでいる件数**を返し、それが読み手に見える「取得不可」の1行になる。⚠ `js/atlas-console.js` は**縮小のみの行数上限**にあるので、この主題はここに置く（上限を上げるのではなく主題を出す） |
@@ -1356,18 +1356,26 @@ Atlas は**読んでいたものの上に**開く——見出し・媒体と日�
 [`docs/NEWS-EVENTS.md` §10.1](docs/NEWS-EVENTS.md)。
 
 ⚠⚠ **記事本文の取得（`fetchReadable()`・`js/article-reader.js`）は 2 段で、全体に 1 つの上限がある。**
-第 1 段は `r.jina.ai` の Markdown、第 2 段は **CORS プロキシ経由の記事 HTML** を `DOMParser` で
-読む（`<article>`／`<p>`／`og:description`）。第 2 段は `fetchViaProxy(link, {as:'html', budgetMs})`
-を呼ぶ——**`as` を省くと `js/proxy-fetch.js` は RSS/Atom しか「答え」と認めない**ので、記事 HTML は
+第 1 段は `r.jina.ai` の Markdown、第 2 段は**発行元から直接読んだ記事 HTML** を `DOMParser` で
+読む（`<article>`／`<p>`／`og:description`）。第 2 段は `fetchViaProxy(link, {as:'html', direct:true, budgetMs})`
+を呼ぶ——段は**発行元そのもの**、次に **`fetch-relay` の記事規則**（`&as=article`。下の §6.2）。ACAO を返す発行元
+〈dw.com・nhk・cnn など〉は直接読め、返さない発行元〈aljazeera・bbc・guardian・lemonde など〉は自前の relay が取る。——**`as` を省くと `js/proxy-fetch.js` は RSS/Atom しか「答え」と認めない**ので、記事 HTML は
 捨てられる。`budgetMs` には `READER_BUDGET_MS` の**残り**を渡し、残りが無ければ第 2 段を行わない。
 ⚠ **上流のエラーページを本文にしない**のが両段の共通規律である。第 1 段は抽出テキストが
 `MIN_ARTICLE_CHARS` 未満なら受理しない（相手サイトの「Something went wrong.」は 2 ブロックある）。
 第 2 段の受理条件は §「`fetchViaProxy(url, opts)`」（下）。
 
-**`fetchViaProxy(url, opts)`（`js/proxy-fetch.js`）** は、自前リレー（`news-relay`・Google News の
-RSS だけ）＋公開プロキシ 4 本を**競争させ**、勝者以外を abort し、全滅時に 1 周だけ再試行する。
+**`fetchViaProxy(url, opts)`（`js/proxy-fetch.js`）** は、その URL を受け付ける**自前の relay だけ**を段にする——
+`gdelt-relay`（単独で先に）、`news-relay`・`quotes-relay`・`cable-geo`・`sv-cov`・`fetch-relay`（表 `OWN_RELAYS`）。
+複数あれば**競争させ**、勝者以外を abort し、全滅時に 1 周だけ再試行する。**第三者の公開 CORS プロキシは段に無い**。
+どの relay も受け付けない URL は、呼び手が `direct` を許したときだけ**ホストそのもの**へ行き、それ以外は
+`null`（`reason:'refused'`）。`fetch-relay` の段は規則ごとの時計（`timeoutMs`＋往復 3 秒）を持ち、`budgetMs` を
+指定しない呼び手には、その時計が収まる予算が与えられる。
+**`ownRelayUrl(url)`** は同じ表から「その URL を受け付ける自前 relay の URL」を返す（無ければ `''`）——
+文字列しか受け取れない呼び手（`<img>` の Street-View 被覆タイル、Cache API に置く海底ケーブル）のための口で、
+relay の URL を自分で組み立てるファイルは無い。
 
-- `opts.as` … `'feed'`（既定・`<rss`／`<feed` を含むこと）または `'html'`。
+- `opts.as` … `'feed'`（既定・`<rss`／`<feed` を含むこと）・`'html'`・`'json'`・`'text'`（空でないこと。CelesTrak の TLE）。
   `'html'` の受理条件は「**HTML 文書を名乗り**（`<!doctype html`／`<html`）・**`HTML_MIN_BYTES` 以上**・
   **`<p>` か description の meta を持つ**」の 3 つ。リレーの JSON エラー封筒・ボット遮断の
   interstitial・空の殻はここで落ちる（`news-relay` が interstitial を feed として返さないのと同じ規律）。
@@ -1708,9 +1716,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **19本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **20本**（`_shared/` は関数ではない）
 
-> ⚠ **19本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **20本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
@@ -1774,6 +1782,23 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   「フィリピン責任領域 (PAR)」の矩形と `expires` を過ぎた速報は落とす。
   ⚠ 上流の期限は 45 秒（上流の悪い日より短い制限時間は生きたフィードを落とす）。キャッシュは 15 秒。
   ⚠ カナダ ECCC は ACAO を返すので **relay を通さない**（要らない relay は落ちうるものを1つ増やすだけ）。
+- **`fetch-relay`** … ACAO を返さず専用の relay も持たない上流のための**汎用の ACAO 付与中継**（`--no-verify-jwt`・秘密なし）。
+  転送するのは `supabase/functions/_shared/fetch-relay-policy.js` の規則が認める URL だけで、**同じファイルを
+  `js/proxy-fetch.js` も import する**（ページと関数が「何を中継できるか」で食い違わない）。規則は上流ごとに
+  ホスト名（完全一致）・パス（錨付き）・クエリ鍵の完全な集合と値の形・答えの Content-Type・バイト上限・期限・
+  共有キャッシュの寿命を持つ。いまの規則は 4 本——IMF DataMapper（比較チャート）、「511」交通カメラ一覧 13 サイト、
+  GEBCO 2020 水深（opentopodata）、CelesTrak の軌道要素（ブラウザが直接届かないときの第 2 経路）。
+  ⚠ **リダイレクトは同じ規則が認める先だけ**辿る（`redirectHosts` はホップとしてだけ認める名前）。上流の 2xx 以外の
+  本文は中継しない。ホスト名は `publicHostname()`（`_shared/relay-guard.js`）がアドレス直書き・単一ラベル・
+  `localhost`／`.local`／`.internal`／`home.arpa` を拒む。
+  ⚠ **記事規則（`ARTICLE_RULE`）だけはホスト一覧を持たない**——記事リーダーの第 2 段は任意の発行元を読むため。
+  代わりに狭める: 呼び手が `as:'html'` のときだけページが `&as=article` で頼む／https・既定ポート・userinfo 無し・
+  `publicHostname()`／**名前を引き、A/AAAA がすべて公開アドレスのときだけ**（`resolvesPublic()`。解決器が無ければ
+  拒否＝fail-closed。リダイレクトの各ホップも同じ）／`text/html`・3 MB 以下・`looksLikeArticle()`（ページと関数が
+  同じ 1 つの述語を import）を満たすものだけ返す／`fetch-relay-article:ip` の小さい bucket（1 人 10/分）。
+  ⚠ 名前を引いた答えと接続が使う答えが違う（TTL 0 の DNS rebinding）ことまでは閉じられない。
+  ⚠ **規則は呼び手があって初めて書く**——`tests/own-fetch-relay-checks.test.mjs` が呼び手の URL をソースから発見し、
+  relay に頼る呼び手が一覧に無い上流を名指せば落ち、呼び手の無い規則のホストも落ちる。
 - **`cable-geo`** … TeleGeography 海底ケーブル GeoJSON（2 URL 固定 allowlist）の ACAO 付与中継。
   ⚠ 海底ケーブル層の**主系統ではない**。線と点は自オリジンの `data/subcables.json` /
   `data/subcables-lp.json` から読み、この関数は**移行用の fallback** として残っている
@@ -1907,9 +1932,8 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   記号は形と本数で縛る）——`startsWith` で見る allowlist は、細工した文字列に別の上流を
   通させる。**上流へ渡るのは結局ティッカー記号と期間だけで、読者を識別するものは 1 つも無い。**
   ⚠ **CORS を通すためだけの関数ではない。** Yahoo は 200 を返すが **ACAO を返さない**ので
-  ブラウザからは構造的に読めず、公開 CORS プロキシに単独で依存しない理由は
-  [`DECISIONS.md`](DECISIONS.md) にある。この関数が落ちたときだけ、ブラウザは
-  `js/proxy-fetch.js` の公開リレー梯子へ退避する（＝以前の挙動）。
+  ブラウザからは構造的に読めず、公開 CORS プロキシを使わない理由は
+  [`DECISIONS.md`](DECISIONS.md) にある。この関数の後ろに第三者の段は無い。
   ⚠ **上流の「拒否」を答えとして返さない**——呼び出し側が実際に読む 3 つの封筒
   （chart・spark・ティッカーを直接キーにした平坦形）のどれでもなければ通さない。
   キャッシュは 60 秒（`s-maxage`）で、同時に開いた読者の集中を 1 回の上流要求に畳む。
@@ -1929,9 +1953,19 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   （pg_cron `client-errors-purge` が毎日 `purge_client_errors` を呼ぶ）。
   詳細は [`docs/MONITORING.md`](docs/MONITORING.md) §2。
 
-⚠ **`_shared/relay-guard.js` を共有するのは17本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` /
-`gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
-`ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、**残り13本は無認証**。
+⚠ **公開の関数はすべて、上流へ出る前に共有 bucket から 1 トークン取る。** `verify_jwt = false` の関数のうち
+秘密で守られた 3 本（`refresh-news`・`news-ingest`・`monitor-run`）と、自前の 2 段の bucket を持つ `client-errors` 以外——
+`alerts-relay`・`ais-feed`・`aviation-feed`・`cable-geo`・`fetch-relay`・`gdelt-relay`・`news-relay`・`quotes-relay`・
+`radiation-feed`・`sv-cov`・`volcano-feed`・`who-don`（公開 GET）——は `_shared/rate-limit.js` の `callerGate()` で
+`<関数名>:ip` の bucket（`public.relay_rate_buckets`）から取る。容量＝その関数の読者 1 人のページが 1 分に送る最大数
+（各関数が `READER_PER_MIN` として、クライアントのタイマーから読んだ**推定**を持つ）×`READERS_PER_ADDRESS`（10。1 アドレスの
+背後の読者数の推定）。**DB が答えなければ通す**（呼び出しごとの請求が無い relay で、DB 障害を全レイヤーの障害にしない）。
+拒否は `429 rate_limit`＋`Retry-After`。`<関数名>_PER_IP_PER_MIN` で 1 本の容量を deploy なしに動かせる。
+`routing-relay` は従来どおり自前の fail-closed の全体上限を持つ。
+
+⚠ **`_shared/relay-guard.js` を共有するのは18本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` /
+`fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
+`ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、**残り14本は無認証**。
 `ai-proxy`・`monitor-run`・`client-errors` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
 POST をヘッダではなく**本文の最後のバイトまで**同じ期限と上限で読む）で、URL allowlist の側ではない。
 ⚠ **リダイレクトは手で辿る**（`followRedirects`）。`redirect:"follow"` は最初の 1 ホップにしか allowlist を訊いていなかったので、
@@ -3507,7 +3541,7 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
 | 何 | 経路 |
 |---|---|
 | **ロゴ** | **段 0**＝ビルド時に Wikidata **P154** から解決して同梱した Wikimedia Commons の画像（`scripts/companies/build.mjs`。索引の `lg` とプロフィールの `identity.logo` は**同じ 1 行から出る**ので食い違わない）。**段 1**＝Commons に画像が無い企業だけ Google の favicon（送るのはドメイン名のみ）。**段外**＝頭文字のモノグラム（外部要求ゼロ）。⚠ **索引が届く前の行はモノグラムを描く**——索引は遅延なので、間に合わせに URL を吐くと「失敗すると分かっている要求」を毎回出すことになる |
-| **株価** | 第一経路は Edge Function **`quotes-relay`**（§6.2）。落ちたときだけ `js/proxy-fetch.js` の公開リレー梯子へ退避する。⚠ **`js/companies.js` は自前のプロキシ梯子を持たない**——同じ判断（どの公開リレーを、どの順で、どこで見切るか）を 2 か所に置かない。⚠ **直接続行の段は置かない**（Yahoo は ACAO を返さないので、その 1 往復は必ず捨てられる）。⚠ **1 回の spark 要求は 20 記号まで**——上流自身が 400 の本文で述べる上限で、クライアントと relay が**同じ数**を持ち、検査が両者を結ぶ |
+| **株価** | 経路は Edge Function **`quotes-relay`**（§6.2）だけ。`js/proxy-fetch.js` がそこへ送り、第三者の公開リレーは使わない。⚠ **`js/companies.js` は自前のプロキシ梯子を持たない**——同じ判断（どの公開リレーを、どの順で、どこで見切るか）を 2 か所に置かない。⚠ **直接続行の段は置かない**（Yahoo は ACAO を返さないので、その 1 往復は必ず捨てられる）。⚠ **1 回の spark 要求は 20 記号まで**——上流自身が 400 の本文で述べる上限で、クライアントと relay が**同じ数**を持ち、検査が両者を結ぶ |
 
 ### 8.2 Panels タブ（ドック）
 
@@ -4829,10 +4863,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を19本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を20本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account atlas-embed; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors; do
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```

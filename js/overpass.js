@@ -63,9 +63,8 @@ export const overpassQuery = (() => {
   ]);
   /* OpenHistoricalMap runs the same Overpass software over the historical database (one instance) */
   const OHM = Object.freeze(['https://overpass-api.openhistoricalmap.org/api/interpreter']);
-  /* a relay of last resort for a caller that has always had one (js/sims.js transit reach): the same
-     query to the first mirror, as a GET, through a CORS relay */
-  const RELAY = (q) => 'https://corsproxy.io/?url=' + encodeURIComponent(MIRRORS[0] + '?data=' + encodeURIComponent(q));
+  /* (own-fetch-relay) there is no public-CORS-proxy rung: it sent the whole query, as a GET, to a
+     third party (corsproxy.io). Every Overpass mirror answers CORS itself. */
   const OVERPASS_DEFAULT_TIMEOUT_S = 180;   /* Overpass QL's own default for a query with no [timeout:] */
   const BODY_SLACK_MS = 5000;               /* see the header: observed 0.95 s for the largest answer */
 
@@ -81,17 +80,15 @@ export const overpassQuery = (() => {
    *   q               an Overpass QL query, ideally starting `[out:json][timeout:N];`
    *   opt.race        start every endpoint at once (patience 0) — for callers that have always raced
    *   opt.budgetMs    a caller whose reader cannot wait the query's declared time may LOWER the budget
-   *   opt.accept(j, via)  a caller-specific test of whether an answer is usable (`via` is 'mirror'
-   *                   or 'relay'); false moves to the next endpoint
+   *   opt.accept(j, via)  a caller-specific test of whether an answer is usable (`via` is 'mirror');
+   *                   false moves to the next endpoint
    *   opt.historical  ask OpenHistoricalMap's Overpass instead of OpenStreetMap's
-   *   opt.relay       after the mirrors, try the first one once more through a CORS relay
    *
    * THROWS `OverpassUnavailable` (with `.attempts`) when nothing usable arrived. */
   function overpassQuery(q, opt) {
     opt = opt || {};
     const body = 'data=' + encodeURIComponent(q);
     const targets = (opt.historical ? OHM : MIRRORS).map((u) => ({ url: u, via: 'mirror', init: { method: 'POST', body } }));
-    if (opt.relay && !opt.historical) targets.push({ url: RELAY(q), via: 'relay', init: {} });
     const declared = declaredMs(q) + BODY_SLACK_MS;
     const budget = (+opt.budgetMs > 0) ? Math.min(+opt.budgetMs, declared) : declared;
     const patience = opt.race ? 0 : budget / targets.length;

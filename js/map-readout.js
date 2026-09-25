@@ -1125,16 +1125,15 @@ window.IntMapModules.mapReadout=function(HOST){
     clearTimeout(HOST.elevTimer);
     if(!_elevCache.has(ckey)) HOST.elevTimer=setTimeout(()=>{ fetchElev(lng,lat); },80);
   }
-  /* GEBCO 2020 bathymetry (real ocean depth) via CORS proxy — Open-Meteo returns 0 over water. */
+  /* GEBCO 2020 bathymetry (real ocean depth) — Open-Meteo returns 0 over water. (own-fetch-relay) api.opentopodata.org sends no
+     Access-Control-Allow-Origin (measured 2026-09-25), so it is read through our own fetch-relay rather than the three
+     public CORS relays this used to walk — which also stops the reader's cursor position going to a stranger. */
   const _bathyCache=new Map();
   async function fetchBathymetry(lat,lng){
     const key=lat.toFixed(2)+','+lng.toFixed(2);
     if(_bathyCache.has(key)) return _bathyCache.get(key);
     const u=`https://api.opentopodata.org/v1/gebco2020?locations=${lat.toFixed(4)},${lng.toFixed(4)}`;
-    const proxies=[ x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(x)}` ];
-    for(const mk of proxies){
-      try{ const r=await fetch(mk(u)); if(!r.ok) continue; const j=await r.json(); const v=j&&j.results&&j.results[0]&&j.results[0].elevation; if(typeof v==='number'){ _bathyCache.set(key,v); return v; } }catch(_){}
-    }
+    try{ const txt=await HOST.fetchViaProxy(u,{as:'json'});   /* (own-fetch-relay) the app's ONE relay ladder, through IM_HOST */ const j=txt?JSON.parse(txt):null; const v=j&&j.results&&j.results[0]&&j.results[0].elevation; if(typeof v==='number'){ _bathyCache.set(key,v); return v; } }catch(_){}
     return null;
   }
   async function fetchElev(lng,lat){

@@ -16,81 +16,94 @@
  *  So: every attempt carries a deadline, the losers are ABORTED the moment one wins, and the
  *  fallback is one bounded pass. WHICH proxies are used is unchanged; they are simply given a clock.
  *
- *  ⚠ ONE EXPORT, and everything else is inside it. tests/r175-checks ③ requires that a js/ module has
- *  no unexported top-level declaration AND no export nobody imports — so the constants and the two
- *  helpers live in the closure rather than becoming five names the rule would have to police.
+ *  ⚠ TWO EXPORTS, and everything else is inside the first. tests/r175-checks ③ requires that a js/
+ *  module has no unexported top-level declaration AND no export nobody imports — so the constants
+ *  and the helpers live in the closure rather than becoming names the rule would have to police.
+ *
+ *  ══ ⚠⚠⚠ (own-fetch-relay) THERE ARE NO PUBLIC PROXIES IN THIS FILE ANY MORE, AND NONE ANYWHERE ELSE ════════
+ *  Everything below that measures corsproxy.io, api.allorigins.win, api.codetabs.com and
+ *  proxy.corsfix.com is history: those four were raced behind our own relays until own-fetch-relay, and
+ *  copied by hand into seventeen more files. They are gone because of what they were, not only
+ *  because of how often they failed — every document they returned had passed through a stranger
+ *  who could see which URL the reader asked for and rewrite what came back, and that included the
+ *  articles and the evidence Atlas cites. What replaced them is OUR OWN relays, each an allow-list:
+ *  the specialised ones in OWN_RELAYS below, and supabase/functions/fetch-relay for everything
+ *  else a caller needs and cannot read directly — whose list is
+ *  supabase/functions/_shared/fetch-relay-policy.js, imported here as it is there, so the page and
+ *  the function cannot disagree about what is relayable (the #R803 shape).
+ *  A URL no relay of ours admits goes to the host itself (when the caller allows that) and
+ *  nowhere else. tests/own-fetch-relay-checks.test.mjs discovers what the callers hand this
+ *  file and fails when a caller that depends on a relay names an upstream no relay admits.
  */
-export const fetchViaProxy = (() => {
-  /* ══ (#R214) WHY THERE IS A FOURTH ONE, AND WHY IT IS THE ODD ONE OUT ═══════════════════════════
-     「日本語版でニュースが表示されない。ずっと読み込み中。」 Measured FROM THE PAGE (#R188), same
-     build, same second, the two WORLD feeds side by side through the three proxies above:
+import { fetchRelayRule, FETCH_RELAY_FUNCTION, ARTICLE_RULE, articleUrlAllowed, looksLikeArticle, ARTICLE_MIN_BYTES } from '../supabase/functions/_shared/fetch-relay-policy.js';
+
+export const { fetchViaProxy, ownRelayUrl } = (() => {
+  /* ══ (#R214 / #R216 / own-fetch-relay) HOW THE PUBLIC PROXIES FAILED, KEPT BECAUSE IT IS WHY THEY ARE GONE ══
+     「日本語版でニュースが表示されない。ずっと読み込み中。」 Measured FROM THE PAGE (#R188), the two WORLD
+     feeds side by side through the public relays this file used to race:
 
         feed        allorigins      corsproxy.io                      codetabs
         en-US       timeout 9 s     200 · 171 KB · valid RSS · 5 ms   timeout 9 s
         ja-JP       timeout 9 s     503 · Google's "Sorry..." page    timeout 9 s
 
-     So it was never the app's Japanese path: GOOGLE serves the en-US edition to that proxy's egress
-     and refuses the ja/JP one — its bot interstitial, byte-identical (2,041 B) for WORLD, BUSINESS,
-     the plain feed and search. With the only reachable proxy blocked for that ONE locale, the race
-     had nothing left to win with, and a Japanese reader waited out the full ~40 s of deadlines to be
-     told it failed. ⚠ A proxy that works is not a proxy that works FOR EVERY TARGET.
-
-     proxy.corsfix.com answers all five editions with real RSS and the right locale in the titles
-     (jp 238 ms / en 537 / de 857 / ru 742 / es 1,277 ms, measured in that order on this build).
-     ⚠ IT TAKES THE URL RAW. Handed an encodeURIComponent'd one it returns 400 with a 247-byte body —
-     which is why this list is a list of FUNCTIONS and not a list of prefixes. */
-  /* ══ ⚠⚠ (#R216) …AND THE FOURTH ONE WAS VERIFIED ON THE WRONG ORIGIN ═══════════════════════════
-     Reported a third time, word for word. #R214's table above was taken on `http://127.0.0.1`.
-     Re-measured from the REAL site (`https://rwmqx7dwb5-arch.github.io`), same build, same second:
-
-        proxy.corsfix.com  → 403  {"corsfix_error":"domain_not_registered"}   255 ms
-        corsproxy.io       → 503  Google's "Sorry…" page (ja-JP only)         8.1 s
-        api.allorigins.win → timeout                                          >20 s
-        api.codetabs.com   → timeout                                          >20 s
-
-     corsfix authorises by CALLING ORIGIN — localhost is allowed by default and a deployed domain
-     has to be registered with them — so the one relay that could read Japanese worked in
-     development and was refused in production. Every Japanese reader of the live site waited out
-     the full ~40 s of deadlines and was told it failed. ⚠ A relay verified from localhost is not a
-     relay verified for the site; the origin is part of the request.
-
-     The first entry is now OUR OWN Edge Function (supabase/functions/news-relay), the same answer
-     #R145 gave for the Street-View tiles and #R190 for the submarine cables: fetch it server-side,
-     where browser CORS does not apply, and hand it back with ACAO. Measured from production —
-     jp 1,111 ms / 70 items, en 1,308 / 45, de 1,145 / 70, ru 1,326 / 70, es 1,290 / 70. The four
-     public relays stay BEHIND it: a cold function or a Supabase outage still falls back to exactly
-     the behaviour this file had before.
+     GOOGLE served the en-US edition to that proxy's egress and refused the ja/JP one. #R214 added
+     proxy.corsfix.com, verified on 127.0.0.1; from the REAL site (#R216) it answered 403
+     {"corsfix_error":"domain_not_registered"} — it authorises by calling origin. ⚠ A relay that
+     works is not a relay that works FOR EVERY TARGET, and a relay verified from localhost is not a
+     relay verified for the site.
+     #R216's answer was OUR OWN Edge Function (supabase/functions/news-relay), the same answer #R145
+     gave for the Street-View tiles and #R190 for the submarine cables: fetch it server-side and hand
+     it back with ACAO. Measured from production — jp 1,111 ms / 70 items, en 1,308 / 45, de 1,145 /
+     70, ru 1,326 / 70, es 1,290 / 70. The public relays stayed BEHIND it until own-fetch-relay, which removed
+     them (see the header): they were the only rung on which a third party read the reader's request.
      ⚠ `window.SUPABASE_URL` is read AT CALL TIME, not when this module is evaluated — src/vendor.js
-     may not have run yet, and a base captured as '' would delete the relay for the whole session. */
-  const PUBLIC_PROXIES = [
-    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    (u) => `https://proxy.corsfix.com/?${u}`,
-    (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
-  ];
+     may not have run yet, and a base captured as '' would delete the relays for the whole session. */
   /* (#R533) OUR OWN RELAYS, AND THE URLS EACH ONE WILL ACTUALLY ANSWER.
      Every one of these is an allow-list on its own side rather than an open proxy, so offering one
      a URL it will refuse only spends a round trip to earn a 400. This table is therefore the
-     browser-side half of a rule the function already enforces — keep the two in step.
+     browser-side half of a rule the function already enforces — and (own-fetch-relay) whether the two halves
+     agree is no longer a promise: tests/own-fetch-relay-checks.test.mjs takes every URL the
+     callers build, routes it through this table and EVALUATES the relay it lands on.
+     fetch-relay's row is not a copy at all — it asks the policy file the function itself reads.
 
      ⚠ IT IS A TABLE BECAUSE IT STOPPED BEING ONE CASE. It was written as a single `relayable()`
      regex for news.google.com, and when the Companies tab needed the same treatment for its share
      prices the shape of the mistake was to give that tab its own private proxy ladder instead
      (js/companies.js, removed in #R533: three entries, no deadline, no race, and both of its
      public relays down at once on the live site). A second caller is not a special case; it is the
-     evidence that the first one was never one either. */
+     evidence that the first one was never one either.
+     ⚠ (own-fetch-relay) news-relay's row is the two SHAPES the function forwards, not the `/rss/` prefix: the
+     prefix also matched `/rss/articles/…`, the redirect every Google News item links to, which the
+     function refuses — so the article reader was offering it a URL it could only answer with 400.
+     `ms` is the clock one attempt gets: a relay whose upstream is slow is not raced at 8 s. */
+  /* (own-fetch-relay) what an attempt at a relay costs on top of that relay's own upstream deadline — the same
+     three seconds #R464 put between gdelt-relay's 25 s upstream clock and OWN_RELAY_TIMEOUT_MS below.
+     Declared before the table that reads it (#R545: a hoisting question is answered by the source,
+     not by when somebody happens to call it). */
+  const RELAY_ROUND_TRIP_MS = 3000;
   const OWN_RELAYS = [
-    { fn: 'news-relay',   test: (u) => /^https:\/\/news\.google\.com\/rss\//.test(u) },
+    { fn: 'news-relay',   test: (u) => /^https:\/\/news\.google\.com\/rss\/(?:search\?|headlines\/section\/topic\/[A-Z][A-Z_]{1,31}(?:\?|$))/.test(u) },
     { fn: 'quotes-relay', test: (u) => /^https:\/\/query[12]\.finance\.yahoo\.com\/v8\/finance\/(?:spark\?|chart\/)/.test(u) },
+    { fn: 'cable-geo',    test: (u) => /^https:\/\/www\.submarinecablemap\.com\/api\/v3\/(?:cable\/cable-geo|landing-point\/landing-point-geo)\.json$/.test(u) },
+    { fn: 'sv-cov',       test: (u) => /^https:\/\/mts[0-3]\.google\.com\/vt\?(?=(?:[^#]*&)?lyrs=svv(?:&|$))[^#]*$/.test(u) },
+    { fn: FETCH_RELAY_FUNCTION, test: (u) => !!fetchRelayRule(u), ms: (u) => { const r = fetchRelayRule(u); return r ? r.timeoutMs + RELAY_ROUND_TRIP_MS : 0; } },
   ];
   const supaBase = () => { try { return String(window.SUPABASE_URL || '').replace(/\/$/, ''); } catch (_) { return ''; } };
-  const proxiesFor = (u) => {
+  /* (own-fetch-relay) `as` is the caller's: an `as:'html'` call for a URL no listed relay admits is offered
+     fetch-relay's ARTICLE rule (`&as=article`) — the one rule with no host list, asked for only by
+     the caller that parses an article page (js/article-reader.js). Any other `as` never reaches it. */
+  const proxiesFor = (u, as) => {
     const base = supaBase();
-    if (!base) return PUBLIC_PROXIES;
-    const mine = OWN_RELAYS.filter((r) => r.test(String(u || '')));
-    if (!mine.length) return PUBLIC_PROXIES;
-    return [...mine.map((r) => (x) => `${base}/functions/v1/${r.fn}?u=${encodeURIComponent(x)}`), ...PUBLIC_PROXIES];
+    if (!base) return [];
+    const s = String(u || '');
+    const mine = OWN_RELAYS.filter((r) => r.test(s));
+    if (!mine.length && as === 'html' && articleUrlAllowed(s)) {
+      return [withClock((x) => `${base}/functions/v1/${FETCH_RELAY_FUNCTION}?as=article&u=${encodeURIComponent(x)}`, ARTICLE_RULE.timeoutMs + RELAY_ROUND_TRIP_MS)];
+    }
+    return mine.map((r) => withClock((x) => `${base}/functions/v1/${r.fn}?u=${encodeURIComponent(x)}`, r.ms ? r.ms(s) : 0));
   };
+  /* a builder that carries its own attempt clock (0 = the ordinary racer's) */
+  function withClock(make, ms) { make.ms = ms > 0 ? ms : 0; return make; }
   /* ══ ⚠⚠⚠ (#R464) GDELT HAS ITS OWN RELAY, AND IT IS NOT IN THE RACE ABOVE ═══════════════════════
      news-relay can ride inside `race()` because Google News answers in ~700 ms, comfortably inside
      one racer's 8 s. gdelt-relay cannot: on a cache MISS it is waiting on api.gdeltproject.org,
@@ -181,26 +194,31 @@ export const fetchViaProxy = (() => {
      before it calls the extract a body, and falls back to the page-embed mode when it cannot. This
      predicate answers only 「is this a page, or is it the relay apologising」. The non-2xx shapes
      never reach it at all — measured, every relay failure above came with 403 / 404 / 530. */
-  const HTML_MIN_BYTES = 4096;
-  const isHTML = (txt) => {
-    if (!txt || txt.length < HTML_MIN_BYTES) return false;
-    if (!/<!doctype\s+html|<html[\s>]/i.test(txt)) return false;
-    return /<p[\s>]/i.test(txt) || /<meta[^>]+(?:og:description|name=["']description)/i.test(txt);
-  };
+  /* (own-fetch-relay) the predicate lives in the policy file, because fetch-relay's article rule applies the
+     SAME test before it hands a page back — one definition, two readers. */
+  const HTML_MIN_BYTES = ARTICLE_MIN_BYTES;
+  const isHTML = looksLikeArticle;   /* its floor is HTML_MIN_BYTES, the same number */
   /* (#R452) …and the same question once more for the callers that want DATA rather than a document:
      a relay's error envelope is JSON-shaped prose or HTML, and must not be handed back as the JSON
      the caller asked for. Parsing is the only honest test of «is this JSON», and these bodies are
      kilobytes. */
   const isJSON = (txt) => { try { const v = JSON.parse(txt); return !!v && typeof v === 'object'; } catch (_) { return false; } };
-  const ACCEPT = { feed: isFeed, html: isHTML, json: isJSON };
+  /* (own-fetch-relay) …and for the one caller whose document is neither: CelesTrak's element sets are plain
+     text (js/satellites-live.js parses them, and refuses what does not parse). Before own-fetch-relay the
+     error pages this acceptor could not tell apart came from the public relays, which answered 200
+     with their own apologies; every rung that is left is ours or the host's, and both answer a
+     failure with a status, which fetchDeadline already refuses. */
+  const isText = (txt) => typeof txt === 'string' && txt.length > 0;
+  const ACCEPT = { feed: isFeed, html: isHTML, json: isJSON, text: isText };
 
   /* fetchViaProxy(url, opts) -> the document as TEXT, or null
    *
-   *   opts.as        'feed' (default) | 'html' | 'json'  — what counts as an answer rather than an
-   *                  error page
+   *   opts.as        'feed' (default) | 'html' | 'json' | 'text' — what counts as an answer rather
+   *                  than an error page
    *   opts.budgetMs  what the whole ladder may cost, end to end (default 20 s)
-   *   opts.direct    try the host ITSELF, before the public relays (#R452) — for hosts a browser
-   *                  may read.
+   *   opts.direct    try the host ITSELF, before our relays (#R452) — for hosts a browser may read.
+   *                  (own-fetch-relay) For a host no relay of ours admits, this is the ONLY rung: without it
+   *                  such a URL answers null with reason 'refused' at once.
    *                  ⚠ (#R464) THE NOTE THAT USED TO BE HERE — 「A CORS refusal costs nothing: it
    *                  rejects before a byte moves」 — IS TRUE OF A REJECTED PRE-FLIGHT AND FALSE OF
    *                  GDELT. Its 429 is a real response that takes 10.7-15.8 s to arrive and merely
@@ -235,7 +253,7 @@ export const fetchViaProxy = (() => {
    * function's floor was 「one 8 s race, then up to four 6 s retries」 — a measured 20.3 s to answer
    * `null`, on top of the 12 s Strategy 1 had already spent. A caller that names a budget now finds
    * out, inside it, whether it got a document. */
-  return async function fetchViaProxy(url, opts) {
+  async function fetchViaProxy(url, opts) {
     const o = opts || {};
     /* ⚠ (#R769) the note is written at EVERY exit, including the early ones — a verdict that is
        only recorded on the paths somebody remembered is not a verdict. */
@@ -245,7 +263,11 @@ export const fetchViaProxy = (() => {
        would put IntMap's plumbing on trial for something the reader did. The signal is the
        authority on that, so it is asked at the exit rather than tracked on the way down. */
     const okDoc = ACCEPT[o.as] || isFeed;
-    const budget = (o.budgetMs > 0) ? o.budgetMs : BUDGET_MS;
+    /* (own-fetch-relay) the relays this URL may use, once — and a caller that names no budget gets one long
+       enough for the slowest of them: a 20 s default in front of a relay whose own upstream is given
+       20 s (www.imf.org routinely takes ten) would cut that relay off before its rule's clock ran. */
+    const relays = proxiesFor(url, o.as);
+    const budget = (o.budgetMs > 0) ? o.budgetMs : Math.max(BUDGET_MS, ...relays.map((m) => m.ms || 0));
     const t0 = Date.now();
     const outer = o.signal || null;
     const outerAborted = () => { try { return !!(outer && outer.aborted); } catch (_) { return false; } };
@@ -285,21 +307,38 @@ export const fetchViaProxy = (() => {
         } catch (_) { /* CORS, a status, or the clock — the relays are next either way */ }
       }
       if (left() <= 0) return say('no-budget');
-      const won = await race(proxiesFor(url), url, okDoc, left, mk);
+      const won = await race(relays, url, okDoc, left, mk);
       return (won === null) ? say('refused') : (say('ok', 'proxy'), won);
     } finally {
       if (outer) { try { outer.removeEventListener('abort', relayAbort); } catch (_) { /* nothing to remove */ } }
     }
-  };
+  }
+
+  /* ownRelayUrl(url) -> the URL of OUR relay that admits `url`, or '' (own-fetch-relay)
+     For the callers that cannot take text back: an <img> that is drawn onto a canvas
+     (js/street-view.js) and a Response that is kept in the Cache API (js/data-layers.js). They ask
+     the same table the ladder above races, so no file keeps a relay URL of its own — the copies
+     that did are how eighteen files came to name the same four strangers. gdelt-relay first, as in
+     the ladder. */
+  function ownRelayUrl(url, as) {
+    const own = ownRelay(url);
+    if (own) return own;
+    const mine = proxiesFor(url, as);
+    return mine.length ? mine[0](String(url || '')) : '';
+  }
+
+  return { fetchViaProxy, ownRelayUrl };
 
   /* the race, and the one bounded pass behind it */
   async function race(PROXIES, url, okDoc, left, mk) {
+    /* (own-fetch-relay) nothing of ours admits this URL, and there is no one else to ask */
+    if (!PROXIES.length) return null;
     const ctls = PROXIES.map(() => mk());
     const attempts = PROXIES.map((make, i) => (async () => {
       /* ⚠ each racer still has its own clock, which is what #R212 put here; what is new is that the
          clock cannot outlast the budget the CALLER named, or a 3 s budget would still sit through an
-         8 s attempt. */
-      const txt = await fetchDeadline(make(url), Math.min(PROXY_TIMEOUT_MS, left()), ctls[i]);
+         8 s attempt. (own-fetch-relay) A relay whose upstream is slow carries its own clock (make.ms). */
+      const txt = await fetchDeadline(make(url), Math.min(make.ms || PROXY_TIMEOUT_MS, left()), ctls[i]);
       if (!okDoc(txt)) throw new Error('not the document that was asked for');
       return txt;
     })());
@@ -313,7 +352,7 @@ export const fetchViaProxy = (() => {
       for (const make of PROXIES) {
         if (left() <= 0) break;
         try {
-          const txt = await fetchDeadline(make(url), Math.min(PROXY_FALLBACK_MS, left()), mk());
+          const txt = await fetchDeadline(make(url), Math.min(make.ms || PROXY_FALLBACK_MS, left()), mk());
           if (okDoc(txt)) return txt;
         } catch (__) { /* try the next one */ }
       }

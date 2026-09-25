@@ -96,7 +96,12 @@ window.IntMapModules.articleReader=function(HOST){
        this branch is unreachable by construction (measured; the note above this function). */
     try{
       const left=READER_BUDGET_MS-(Date.now()-t0);
-      const html=(left>0)?await HOST.fetchViaProxy(item.link,{as:'html',budgetMs:left}):null;
+      /* (own-fetch-relay) `direct:true` — the publisher itself. Until own-fetch-relay this strategy's only rungs were public CORS relays;
+         an arbitrary publisher is on no allow-list of ours, so without the host itself it would have no rung at all.
+         Measured 2026-09-25 with Origin set to the Pages origin: dw.com, www3.nhk.or.jp and edition.cnn.com answer
+         with Access-Control-Allow-Origin:*; aljazeera.com, bbc.com, theguardian.com and lemonde.fr do not (for those
+         the pane falls back to the page-embed mode, as it always did when this returned null). */
+      const html=(left>0)?await HOST.fetchViaProxy(item.link,{as:'html',direct:true,budgetMs:left}):null;
       if(html){
         const doc=new DOMParser().parseFromString(html,'text/html');
         let hero=''; const ogi=doc.querySelector('meta[property="og:image"]'); if(ogi) hero=ogi.getAttribute('content')||'';

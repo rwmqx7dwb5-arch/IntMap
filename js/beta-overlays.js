@@ -28,7 +28,11 @@ window.IntMapModules.betaOverlays=function(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
     const state={ukr:false,bldg:false,hist:false,volc:false,whs:false,radobs:false};
-    const PROX=[x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`];
+    /* (own-fetch-relay) THE HOST ITSELF, AND NO ONE ELSE. Both upstreams here answer the page directly — measured 2026-09-25 with
+       Origin set to the Pages origin: deepstatemap.live 200 + Access-Control-Allow-Origin:* (627,738 B), and
+       raw.githubusercontent.com 200 + ACAO:* for historical-basemaps. The two public CORS relays that stood behind
+       them only ever added a stranger who could read and rewrite the answer. */
+    const PROX=[x=>x];
     const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
 
     /* ---------- Ukraine frontline (DeepState — curl-verified 200 + Access-Control-Allow-Origin:*) ---------- */

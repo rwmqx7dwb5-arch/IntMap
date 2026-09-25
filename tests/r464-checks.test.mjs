@@ -29,7 +29,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { fetchViaProxy } from '../js/proxy-fetch.js';
+import { fetchViaProxy, ownRelayUrl } from '../js/proxy-fetch.js';
 import { makeAtlasSources } from '../js/atlas-sources.js';
 import { ATLAS_BUDGETS } from '../js/atlas-deadlines.js';
 
@@ -49,7 +49,7 @@ const GDELT_FASTEST_OBSERVED_MS = 10700;
 const orHang = (p, ms) => Promise.race([p, new Promise((res) => setTimeout(() => res('HUNG'), ms))]);
 
 /* ── ① our relay is asked BEFORE the reader's own IP, and before the public ladder ─────────────── */
-test('R464 ①: a GDELT fetch reaches gdelt-relay first, then the host, then the public relays', async () => {
+test('R464 ①: a GDELT fetch reaches gdelt-relay first, then the host (no public relay follows since own-fetch-relay)', async () => {
   const realFetch = globalThis.fetch;
   const realWindow = globalThis.window;
   const seen = [];
@@ -241,13 +241,21 @@ test('R464 ⑦: the cache key is the QUESTION, so parameter order cannot halve t
 /* ── ⑧ the relay must not be folded into the public race ───────────────────────────────────────── */
 test('R464 ⑧: gdelt-relay is not one of the raced proxies', () => {
   const src = code('js/proxy-fetch.js');
-  const race = /const PUBLIC_PROXIES = \[([\s\S]*?)\];/.exec(src);
-  assert.ok(race, 'the public relay list must still exist');
-  assert.ok(!race[1].includes('gdelt-relay'),
-    'a racer is aborted at PROXY_TIMEOUT_MS (8 s). Our relay is waiting on a host whose fastest '
-    + 'measured answer is 10.7 s, so racing it would abort every cold miss — i.e. exactly the reads '
-    + 'that fill the cache, which would then never warm');
-  const proxiesFor = /const proxiesFor = \(u\) => \{([\s\S]*?)\n  \};/.exec(src);
+  /* (own-fetch-relay) there is no public relay list any more (nothing public is raced at all); what the check
+     guards is unchanged — gdelt-relay is not a racer, because a racer is aborted at PROXY_TIMEOUT_MS
+     (8 s), our relay is waiting on a host whose fastest measured answer is 10.7 s, and racing it
+     would abort every cold miss, i.e. exactly the reads that fill the cache. The race is built by
+     proxiesFor, below; that it never offers gdelt-relay is EVALUATED as well as read. */
+  const realWindow = globalThis.window;
+  globalThis.window = { SUPABASE_URL: SUPA };
+  try {
+    const gd = 'https://api.gdeltproject.org/api/v2/doc/doc?query=x&mode=artlist&format=json';
+    for (const as of [undefined, 'json', 'html']) {
+      /* ownRelayUrl answers gdelt-relay (the path that is tried first, alone) — never a raced relay */
+      assert.match(ownRelayUrl(gd, as), /\/functions\/v1\/gdelt-relay\?u=/, 'GDELT goes to its own relay, on its own clock');
+    }
+  } finally { globalThis.window = realWindow; }
+  const proxiesFor = /const proxiesFor = \(u(?:, as)?\) => \{([\s\S]*?)\n  \};/.exec(src);
   assert.ok(proxiesFor, 'proxiesFor must still exist');
   assert.ok(!proxiesFor[1].includes('gdelt-relay'),
     'gdelt-relay must be tried on its own clock, ahead of the ladder, not inside it');

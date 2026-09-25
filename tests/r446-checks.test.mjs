@@ -23,7 +23,9 @@
  *
  *  ⚠ THESE CHECKS DRIVE THE SHIPPED MODULE. js/proxy-fetch.js has one export, no DOM and no
  *  globals beyond a try/caught `window`, so the decision the browser makes is the decision made
- *  here: `fetch` is stubbed and the four relays answer with bodies measured from the real ones.
+ *  here: `fetch` is stubbed and the rungs answer with bodies measured from the real relays.
+ *  (own-fetch-relay) The rungs are now the publisher itself and our fetch-relay's article rule; the bodies
+ *  the public relays returned are kept, because what is refused is the SHAPE, whoever sends it.
  *  The two wiring checks read source through `codeOnly`, so this file's own prose — which
  *  necessarily spells out the defect — can never be what a check matches (#R345).
  * ==========================================================================*/
@@ -71,6 +73,8 @@ const FEED = '<?xml version="1.0"?><rss version="2.0"><channel><title>x</title><
    {status, body} pair, or 'hang' — which never settles until the deadline aborts it. */
 function withFetch(plan, fn) {
   const real = globalThis.fetch;
+  const realWindow = globalThis.window;
+  globalThis.window = { SUPABASE_URL: 'https://sb.test' };
   const calls = [];
   globalThis.fetch = (u, init) => {
     const url = String(u);
@@ -89,43 +93,49 @@ function withFetch(plan, fn) {
     const body = (what && what.body !== undefined) ? what.body : what;
     return Promise.resolve({ ok: status >= 200 && status < 300, status, text: () => Promise.resolve(body) });
   };
-  return Promise.resolve(fn(calls)).finally(() => { globalThis.fetch = real; });
+  return Promise.resolve(fn(calls)).finally(() => { globalThis.fetch = real; globalThis.window = realWindow; });
 }
 
 const LINK = 'https://dw.com/en/india-news-police-used-excessive-force/live-78480551';
+/* (own-fetch-relay) the rung an article page now travels by: our own fetch-relay's article rule, not a public
+   relay. Keys of `withFetch` plans are substrings of the requested URL. */
+const ARTICLE_RELAY = 'functions/v1/fetch-relay?as=article';
 
 /* ── ① the article the ladder was already receiving is now an answer ──────────────────────────── */
 test('R446 ①: as:"html" accepts a news article page — the default still accepts only a feed', async () => {
-  await withFetch({ 'corsproxy.io': ARTICLE }, async () => {
+  await withFetch({ [ARTICLE_RELAY]: ARTICLE }, async () => {
     const html = await fetchViaProxy(LINK, { as: 'html', budgetMs: 4000 });
     assert.equal(html, ARTICLE, 'the page the relay returned must come back to the caller');
   });
   /* …and the feed caller is untouched: the SAME body, asked for the old way, is still discarded.
-     This is the whole of the pre-#R446 behaviour, stated as a property rather than assumed. */
-  await withFetch({ 'corsproxy.io': ARTICLE }, async () => {
-    assert.equal(await fetchViaProxy(LINK, { budgetMs: 500 }), null, 'an article is not a feed');
+     This is the whole of the pre-#R446 behaviour, stated as a property rather than assumed.
+     (own-fetch-relay) Only an `as:'html'` call is offered the article relay, so the feed-shaped asks go to the
+     host itself — the one rung a feed caller has for a URL no relay of ours lists. */
+  await withFetch({ [LINK]: ARTICLE }, async () => {
+    assert.equal(await fetchViaProxy(LINK, { direct: true, budgetMs: 500 }), null, 'an article is not a feed');
   });
-  await withFetch({ 'corsproxy.io': FEED }, async () => {
-    assert.equal(await fetchViaProxy(LINK, { budgetMs: 500 }), FEED, 'a feed still is one');
+  await withFetch({ [LINK]: FEED }, async () => {
+    assert.equal(await fetchViaProxy(LINK, { direct: true, budgetMs: 500 }), FEED, 'a feed still is one');
   });
 });
 
 /* ── ② …and a relay apologising is not an article ─────────────────────────────────────────────── */
 test('R446 ②: as:"html" refuses a relay error envelope and a bot interstitial, at 200', async () => {
   for (const [what, body] of [['a JSON error envelope', RELAY_JSON_ERROR], ['an interstitial', INTERSTITIAL]]) {
-    await withFetch({ 'corsproxy.io': body }, async () => {
+    await withFetch({ [ARTICLE_RELAY]: body }, async () => {
       assert.equal(await fetchViaProxy(LINK, { as: 'html', budgetMs: 500 }), null,
         `${what} must not reach the reader as the article body`);
     });
   }
   /* a page with a doctype and nothing the caller can read is not an answer either */
-  await withFetch({ 'corsproxy.io': '<!doctype html><html><body><div>' + 'z'.repeat(9000) + '</div></body></html>' }, async () => {
+  await withFetch({ [ARTICLE_RELAY]: '<!doctype html><html><body><div>' + 'z'.repeat(9000) + '</div></body></html>' }, async () => {
     assert.equal(await fetchViaProxy(LINK, { as: 'html', budgetMs: 500 }), null,
       'a document with no paragraph and no description cannot yield a block');
   });
-  /* and one relay failing does not stop the next one from winning */
-  await withFetch({ 'corsproxy.io': RELAY_JSON_ERROR, 'codetabs': ARTICLE }, async () => {
-    assert.equal(await fetchViaProxy(LINK, { as: 'html', budgetMs: 4000 }), ARTICLE);
+  /* and one rung failing does not stop the next one from winning (own-fetch-relay: the rungs are the
+     publisher itself and our article relay) */
+  await withFetch({ [LINK]: RELAY_JSON_ERROR, [ARTICLE_RELAY]: ARTICLE }, async () => {
+    assert.equal(await fetchViaProxy(LINK, { as: 'html', direct: true, budgetMs: 4000 }), ARTICLE);
   });
 });
 
@@ -137,7 +147,7 @@ test('R446 ③: opts.budgetMs bounds the whole ladder, race and fallback togethe
     const ms = Date.now() - t0;
     assert.equal(got, null, 'nothing answered, so the answer is null');
     assert.ok(ms < 4000, `the ladder must end inside its budget, took ${ms} ms`);
-    assert.ok(calls.length >= 4, 'all four relays are still raced — the budget is not a shortcut');
+    assert.ok(calls.some((c) => c.includes(ARTICLE_RELAY)), 'our relay is still asked — the budget is not a shortcut');
   });
   /* the constants that make that true, and the default for callers that name no budget */
   const pf = R('js/proxy-fetch.js');
@@ -147,14 +157,16 @@ test('R446 ③: opts.budgetMs bounds the whole ladder, race and fallback togethe
      strictly more clock-like, not less — pinning the old spelling would have gone red on a change
      that only made the guarantee stronger. */
   assert.match(pf, /const left = \(\) => [^;]*budget - \(Date\.now\(\) - t0\)/, 'the budget is a clock, not a flag');
-  assert.match(pf, /Math\.min\(PROXY_FALLBACK_MS, left\(\)\)/, 'the bounded pass is bounded by it too');
+  /* (own-fetch-relay) a relay may carry its own attempt clock (`make.ms`) in place of PROXY_FALLBACK_MS; what
+     this pins is that whichever clock it is, the budget's `left()` still caps it */
+  assert.match(pf, /Math\.min\((?:make\.ms \|\| )?PROXY_FALLBACK_MS, left\(\)\)/, 'the bounded pass is bounded by it too');
   assert.match(pf, /if \(left\(\) <= 0\) break;/, '…and stops entirely when the budget is gone');
 });
 
 /* ── ④ the reader asks for the thing it parses, and inside a budget ───────────────────────────── */
 test('R446 ④: js/article-reader.js asks for HTML, with what is left of one reader budget', () => {
   const ar = codeOnly(R('js/article-reader.js'));
-  assert.match(ar, /fetchViaProxy\(item\.link,\{as:'html',budgetMs:left\}\)/,
+  assert.match(ar, /fetchViaProxy\(item\.link,\{as:'html',direct:true,budgetMs:left\}\)/,
     'Strategy 2 must ask for the document shape it parses, and hand over a deadline');
   assert.match(ar, /const READER_BUDGET_MS=\d+/, 'one ceiling for both strategies');
   assert.match(ar, /const left=READER_BUDGET_MS-\(Date\.now\(\)-t0\)/, 'Strategy 2 gets what Strategy 1 left');
@@ -175,7 +187,10 @@ test('R446 ⑤: an extract too short to be prose is not accepted as the body', (
 
   /* the two floors are one rule, so the same reasoning is spelled out where the fetch happens */
   const pf = R('js/proxy-fetch.js');
-  assert.match(pf, /const HTML_MIN_BYTES = \d+/, 'the HTML side needs its own floor');
+  /* (own-fetch-relay) the number now lives in the policy file, because fetch-relay applies the same test
+     before it hands an article page back; the page reads it from there */
+  assert.match(pf, /const HTML_MIN_BYTES = ARTICLE_MIN_BYTES;/, 'the HTML side needs its own floor');
+  assert.match(R('supabase/functions/_shared/fetch-relay-policy.js'), /export const ARTICLE_MIN_BYTES = \d+/, '…stated once');
   /* ⚠ (#R452) …and the table gained a third row (`json: isJSON`, for Atlas's evidence fetches).
      The claim is that every acceptor lives in ONE table rather than being scattered per call site;
      a new row satisfies that claim, so the check reads the table rather than counting it. */

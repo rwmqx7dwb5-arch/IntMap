@@ -84,8 +84,8 @@ export function makeAtlasSources(HOST, CTX) {
        Measured on the live site: the direct attempt is a CORS refusal, corsproxy.io answers 403/503,
        api.allorigins.win takes ~8.7 s. Two locales × three proxies = ~55 s for ONE evidence fetch,
        and `analyze` makes several. The app has ONE answer to 「this host sends no ACAO header」 and
-       it is js/proxy-fetch.js: our own relay first, the four public ones raced behind it, a clock on
-       the body, and a budget for the whole ladder. Google News RSS is a feed, which is exactly what
+       it is js/proxy-fetch.js: our own relays (since own-fetch-relay there is nothing public behind them), a clock
+       on the body, and a budget for the whole ladder. Google News RSS is a feed, which is exactly what
        that module already verifies before declaring a winner. */
     async function _fetchText(url,note){ return fetchViaProxy(url,{budgetMs:CTX.EVIDENCE_BUDGET_MS,signal:(CTX.turnSignal?CTX.turnSignal():undefined),note}); }
     /* ⚠ (#R769) A FACTORY, NOT A NOTE — this engine tries up to TWO editions, and one shared note

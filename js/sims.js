@@ -218,8 +218,10 @@ window.IntMapModules.radiation=function(HOST){
          a 429 is not a retry, it is the same exhausted quota asked three more times through three
          more hops, which is what kept it at zero all day (#R183). */
       try{ if(window.IntMapWx&&window.IntMapWx.isOpenMeteo(url)) return await window.IntMapWx.guardedJSON(url,300000); }catch(_){}
-      const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-      for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
+      /* (own-fetch-relay) anything that is not Open-Meteo is read from the host itself — the two public CORS relays that stood
+         behind it are gone. Every URL this simulator builds is an Open-Meteo one (omURL), so this line is the
+         defensive remainder, not a path the plume takes. */
+      try{ const r=await fetch(url); if(r&&r.ok) return await r.json(); }catch(_){} return null; }
     function ensureLayers(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
       GE().layers.addSource(DEP,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       GE().layers.add({id:'imrad-dep',type:'fill',source:DEP,paint:{'fill-color':['get','c'],'fill-opacity':0.5}});
@@ -1010,9 +1012,10 @@ window.IntMapModules.transitReach=function(HOST){
       GE().layers.add({id:'imtr-stn',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':['interpolate',['linear'],['zoom'],6,3,12,5.5],'circle-color':['coalesce',['get','col'],'#1558d6'],'circle-stroke-color':'#fff','circle-stroke-width':1.4}});
       return true; }catch(_){ return false; } }
     async function fetchNet(bb){ const q='[out:json][timeout:60];(way["railway"~"^(rail|light_rail|subway|tram|narrow_gauge|monorail)$"][!"service"]('+bb+');node["railway"~"^(station|halt)$"]('+bb+'););out body;>;out skel qt;';
-      /* js/overpass.js: the mirrors, then the relay, under one clock; a partial answer (a «runtime error»
-         remark) is a failure there. A mirror's EMPTY answer was never taken here, the relay's was. */
-      return overpassQuery(q,{relay:true,accept:(j,via)=>via==='relay'||j.elements.length>0}).catch(()=>null); }
+      /* js/overpass.js: the mirrors under one clock; a partial answer (a «runtime error» remark) is a
+         failure there. (own-fetch-relay) no public-proxy rung: it sent the whole query to a stranger
+         (corsproxy.io) only after all three mirrors had failed. */
+      return overpassQuery(q,{accept:(j)=>j.elements.length>0}).catch(()=>null); }
     const SPD={rail:70,light_rail:38,subway:35,tram:22,narrow_gauge:45,monorail:40};
     async function run(from,minutes){ if(busy) return {ok:false,reason:'busy'}; minutes=Math.max(10,Math.min(120,+minutes||60));
       const A=[+from.lng,+from.lat]; const radKm=Math.min(90,minutes*1.4); const buf=radKm/111;

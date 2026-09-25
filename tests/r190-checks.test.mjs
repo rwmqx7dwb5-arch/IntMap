@@ -47,7 +47,7 @@ test('R190 aircraft: the lifted body is the original glyph, and "at real altitud
 });
 
 /* ── 2 · the submarine cables stop depending on a volunteer proxy ────────────────────────────── */
-test('R190 default layers: the cables come through our own origin', () => {
+test('R190 default layers: the cables come through our own origin', async () => {
   const fn = read('supabase/functions/cable-geo/index.ts');
   assert.match(fn, /Access-Control-Allow-Origin/, 'the relay sends ACAO — the whole reason it exists');
   assert.match(fn, /const ALLOWED = new Set\(\[/, 'an allowlist, not an open proxy');
@@ -61,14 +61,27 @@ test('R190 default layers: the cables come through our own origin', () => {
     'an HTTP-200 error page is not cached for a day as if it were data');
   assert.doesNotMatch(fn, /:\s*Request\b/, 'no TypeScript annotations — scripts/static-checks parses .ts with acorn');
 
+  /* THE DEFECT: the layer was up only while a VOLUNTEER proxy happened to be alive — a stranger's
+     uptime, and a stranger on the path. (own-fetch-relay) The relay URL is no longer spelled in this file; it
+     is asked of js/proxy-fetch.js, so what is checked is what that router ANSWERS for the two URLs. */
   const dl = read('js/data-layers.js');
-  assert.match(dl, /functions\/v1\/cable-geo\?u=/, 'the client asks our relay…');
-  const list = /const _cableProxies=\(function\(\)\{[\s\S]*?\}\)\(\);/.exec(dl);
-  assert.ok(list, 'the proxy ladder is built from the configured Supabase URL');
-  assert.ok(list[0].indexOf('x=>x') < list[0].indexOf('cable-geo'),
-    '…after the direct URL, which is still tried first');
-  assert.ok(list[0].indexOf('cable-geo') < list[0].indexOf('corsproxy.io'),
-    '…and before the volunteer proxies, which are now only the last resort');
+  const net = /async function _cableNet\(u\)\{[^\n]*/.exec(dl);
+  assert.ok(net, 'the cable fetcher is still one function');
+  assert.match(net[0], /for\(const src of \[u, ownRelayUrl\(u\)\]\)/,
+    'the direct URL is still tried first, then our relay for it — and nothing else');
+  assert.match(dl, /import \{ ownRelayUrl \} from '\.\/proxy-fetch\.js';/, 'the relay URL comes from the one router');
+  const realWindow = globalThis.window;
+  globalThis.window = { SUPABASE_URL: 'https://sb.test' };
+  try {
+    const { ownRelayUrl } = await import(new URL('../js/proxy-fetch.js', import.meta.url).href);
+    for (const u of ['https://www.submarinecablemap.com/api/v3/cable/cable-geo.json',
+                     'https://www.submarinecablemap.com/api/v3/landing-point/landing-point-geo.json']) {
+      assert.equal(ownRelayUrl(u), 'https://sb.test/functions/v1/cable-geo?u=' + encodeURIComponent(u),
+        'the router sends ' + u + ' to cable-geo');
+    }
+  } finally { globalThis.window = realWindow; }
+  assert.doesNotMatch(dl.replace(/\/\*[\s\S]*?\*\//g, ''), /corsproxy\.io|allorigins\.win|codetabs\.com/,
+    'no volunteer proxy is left behind our relay (own-fetch-relay)');
 
   /* the stored sessions written while that dependency existed are healed once */
   /* (#R200) …in js/session-tabs.js, where the session block lives since this round. */

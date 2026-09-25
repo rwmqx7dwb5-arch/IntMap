@@ -19,6 +19,7 @@
  * ==========================================================================*/
 import { everyTick, stopTick, tickKey } from './runtime.js';
 import { sharedIds, LAYERS, BASE, HIDDEN, BETA } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
+import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung */
 
 window.IntMapModules=window.IntMapModules||{};
 /* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
@@ -2028,16 +2029,19 @@ window.IntMapModules.ticker=function(HOST){
     function loadCfg(){ try{ const j=JSON.parse(localStorage.getItem(CFG_KEY)||'null'); if(j&&Array.isArray(j.syms)) return {syms:new Set(j.syms),news:j.news!==false}; }catch(_){} return {syms:new Set(TK_SYMS.map(s=>s.k)),news:true}; }
     let cfg=loadCfg();
     function saveCfg(){ try{ localStorage.setItem(CFG_KEY,JSON.stringify({syms:[...cfg.syms],news:cfg.news})); }catch(_){} }
-    const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
+    /* (own-fetch-relay) rung 1 is OUR relay for the URL, or nothing: the FX, gold and crypto hosts answer the page directly
+       (open.er-api.com, api.fxratesapi.com, api.gold-api.com, api.coingecko.com all 200 + ACAO:*, measured 2026-09-25)
+       and Yahoo's chart endpoint has quotes-relay. The two public CORS relays that were rungs 1 and 2 are gone. */
+    const rungs=(url)=>[url, ownRelayUrl(url)];
     /* ⚠ THE PROXY LADDER IS FOR "CORS WILL NOT LET ME REACH IT", NOT FOR "IT ANSWERED 429".
-       Rung 0 is the host itself; rungs 1 and 2 are relays. A CORS refusal never produces a status
+       Rung 0 is the host itself; rung 1 is our relay. A CORS refusal never produces a status
        at all — fetch rejects — so a status on rung 0 means the HOST really answered, and re-asking
-       the same host through two relays is three requests against one keyless allowance from three
+       the same host through two relays was three requests against one keyless allowance from three
        different addresses. That is how the FX endpoint's 61 calls a day disappeared. A relay's own
        status stays ambiguous (it may be the relay that is busy), so only rung 0 stops the descent. */
     const PEER_REFUSED=new Set([400,401,403,404,410,429,451]);
-    async function fjson(url){ for(let i=0;i<PROX.length;i++){ try{ const r=await fetch(PROX[i](url)); if(r&&r.ok) return await r.json(); if(i===0&&r&&PEER_REFUSED.has(r.status)) return null; }catch(_){} } return null; }
-    async function ftext(url){ for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.text(); }catch(_){} } return null; }
+    async function fjson(url){ const R=rungs(url); for(let i=0;i<R.length;i++){ try{ const u=R[i]; if(!u) continue; const r=await fetch(u); if(r&&r.ok) return await r.json(); if(i===0&&r&&PEER_REFUSED.has(r.status)) return null; }catch(_){} } return null; }
+    async function ftext(url){ for(const u of rungs(url)){ try{ if(!u) continue; const r=await fetch(u); if(r&&r.ok) return await r.text(); }catch(_){} } return null; }
     function css(){ const st=document.createElement('style');
       /* (#R65) DETERMINISTIC column layout — no height calc at all: body becomes a flex column, the app shell
          takes the remaining space and the bar its fixed 30px row BELOW it. There is no arithmetic (dvh/scaling

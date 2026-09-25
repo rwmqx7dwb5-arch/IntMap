@@ -80,6 +80,22 @@ concluding anything — that distinction is the whole reason `coveragePct` and t
 
 ## 1c. The CORS relay ladder (#R769)
 
+> ⚠⚠ **(own-fetch-relay) THE PUBLIC LADDER THIS SECTION DESCRIBES NO LONGER EXISTS, AND THE PROBE WATCHES OUR
+> OWN RELAYS INSTEAD.** `js/proxy-fetch.js` offers only this project's Edge Functions. Asked the old
+> question (`https://example.com/`, which no relay of ours admits) the probe found no rung and called
+> that `dead`, so the `ladder` job would have opened its issue every six hours. It now asks each of
+> our relays for one real target: fetch-relay's rules and its article rule carry a `probe` URL in
+> `_shared/fetch-relay-policy.js`, the specialised relays have one each in the script, and the relay
+> each target goes to is asked of the page's own router. Verdicts: `ok`, `degraded` (an upstream's bad
+> hour — no issue), `dead` (no relay of ours carried anything — exit 1, the issue opens), `none`
+> (nothing routable — a code fact, exit 0, no issue; `tests/own-fetch-relay-checks` ⑤ fails
+> first), `error` (the probe broke — exit 2, no issue). `node scripts/probe-relay-ladder.mjs --list`
+> prints the targets and their relays without touching the network.
+> Measured 2026-09-25 before fetch-relay was deployed: `RESULT degraded 4/10` — news-relay,
+> quotes-relay, cable-geo, sv-cov carried theirs; fetch-relay answered 404 (not deployed) and
+> gdelt-relay 502 (`upstream_unavailable`, GDELT's own 429).
+> The rest of this section is kept as the record of why the public ladder was removed.
+
 `js/proxy-fetch.js` is how every reader gets a document from a host that sends no ACAO header —
 news feeds, article pages, share prices, GDELT. When our own Edge relay is cold or does not cover
 the URL, it falls down a ladder of **public CORS relays**. That ladder is the second black-box
