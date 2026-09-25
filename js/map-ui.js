@@ -246,8 +246,67 @@ window.IntMapModules.layerRegistry=function(HOST){
     function register(id,impl){ REG[id]=impl||{}; }
     function list(){ return Object.keys(REG); }
     function activeIds(){ return Object.keys(REG).filter(id=>{ try{ const r=REG[id]; return r.on?!!r.on():isOn(id); }catch(_){ return false; } }); }
+    /* ══ ⚠⚠⚠ (#729) ライセンスが、人にしか読めない文の中に在った ═══════════════════════════════
+       MEASURED before this round: `source()` was the ONLY thing a registration said about where its
+       numbers come from, and it said it as a SENTENCE. The `ships` row read
+       「aisstream.io / Digitraffic (Fintraffic, CC BY 4.0) AIS」 — a REDISTRIBUTION OBLIGATION spelled
+       inside prose — so 「この数字はどの条件で使えるか」 could be answered by a human reading that
+       line and by nothing else: Atlas was handed the same sentence (js/gis-atlas.js prefetch()
+       `quantity.attribution`), and no gate, no planner and no export could tell CC BY 4.0 from the
+       word 「AIS」 beside it.
+       ⇒ A REGISTRATION STATES ITS PROVENANCE AS VALUES. This is the `measure`→`text` precedent
+       twenty lines down (#R763) applied to credit: `rights` carries publisher / licence / terms as
+       VALUES, in the vocabulary js/data-governance.js is the single owner of, and the sentence is
+       never parsed back out of.
+       ⚠ THE SENTENCE IS NOT DELETED AND NOT REWRITTEN. `source()` has readers (js/gis-atlas.js:354,
+       context() below → Atlas state, js/atlas-console.js `layerData`), and #R510's parenthetical is
+       how a reader with no GIS chunk loaded sees the obligation at all — the kernel lives behind the
+       lazy `gisCore` chunk (js/lazy-modules.js), so a display that REQUIRED it would show the terms
+       only to readers who had opened a GIS panel. So the row keeps its line and the values are
+       stated beside it; what the values buy is that a machine can now answer on what terms.
+       ⚠ WHICH ROWS STATE IT IS DISCOVERED, NOT LISTED (.agents/rules/no-ad-hoc-hardcoding.md §2-4):
+       `rights` is read off whatever registration carries it, here and in js/gis-atlas.js, and a row
+       that says nothing is `undeclared` rather than unlicensed.
+       ⚠ AND NOTHING IS WRITTEN THAT THE ROW DID NOT ALREADY STATE. Every publisher and every licence
+       below is a value taken from that row's own sentence (or, for `radiation`, from the feed's own
+       `sources[]`). A row whose sentence names no terms states no terms — the claim with no author
+       this project keeps removing ([[intmap-data-must-not-claim-an-author-it-lacks]]). */
+    function rightsOf(id){ const r=REG[id]; if(!r||r.rights==null) return null;
+      /* read at CALL time and allowed to be a function, for the reason `holds` is: what a row credits
+         changes while it runs (the AIS relay serves one supplier with the reader's own key and two
+         without it; the radiation feed credits whichever networks answered). */
+      try{ const v=(typeof r.rights==='function')?r.rights():r.rights; return (v&&typeof v==='object')?v:null; }catch(_){ return null; } }
+    /* ⚠ THE TERMS REACH THE LINE THE READER ALREADY SEES, AND ONLY FROM THE VALUE. No new surface:
+       the licence is appended to the sentence this row has always published, so a row that states no
+       licence is byte-identical to before. ⚠ A row whose own sentence already carries those
+       characters is not told twice (#R510's `ships` line states CC BY 4.0 inside it). ⚠ THE KERNEL IS
+       ASKED, NOT COPIED — a second rule here about which key means 「licence」 is exactly how the
+       shipped bundles and the reader-visible credits came to disagree (js/data-governance.js header);
+       its absence costs the suffix and never the sentence. */
+    function _credited(id,text){
+      const rec=rightsOf(id); if(!rec) return text;
+      let lic=null;
+      try{ const G=window.IntMapDataGovernance;
+        if(G){ const r=G.read(rec);
+          /* ⚠ ONE SUFFIX CANNOT SPEAK FOR SUPPLIERS ON DIFFERENT TERMS. read() answers the row-wide
+             licence when exactly one upstream states one — the right answer for a FILE (「a file is
+             only as redistributable as its least permissive part」) and the wrong SENTENCE for a
+             credit line naming several networks: 「EURDEP / REM, Safecast · CC BY 4.0」 would state
+             Safecast's terms, which nobody stated. Such rows print their terms per supplier where
+             the supplier is named (js/radiation-layer.js prints each station's own). */
+          const ups=r.upstreams;
+          if(!ups||!ups.length||ups.every(u=>u.licence===r.licence)) lic=r.licence; } }catch(_){}
+      if(lic==null||lic==='') return text;
+      const s=(text==null||text==='')?'':String(text);
+      if(s.indexOf(String(lic))>=0) return s;
+      return s?(s+' · '+String(lic)):String(lic); }
     function state(id){ const r=REG[id]; if(!r) return null; const g=(fn,fb)=>{ try{ return r[fn]?r[fn]():fb; }catch(_){ return fb; } };
-      return { id, on:(r.on?!!r.on():isOn(id)), label:g('label',id), time:g('time',null), source:g('source',null), legend:g('legend',null) }; }
+      const row={ id, on:(r.on?!!r.on():isOn(id)), label:g('label',id), time:g('time',null), source:_credited(id,g('source',null)), legend:g('legend',null) };
+      /* ⚠ THE FIELD IS ABSENT WHEN NOTHING WAS STATED — `rights:null` would be 「無条件」, which is a
+         claim about somebody else's terms. Built in ONE place, for the reason
+         [[intmap-object-built-twice-and-hidden-class]] gives. */
+      const rt=rightsOf(id); if(rt) row.rights=rt;
+      return row; }
     /* ⚠⚠ (#R763) ONE WALK, TWO KINDS OF ANSWER, AND THE ROW CARRIES BOTH. `value` is what it has
        always been — the sentence the reader is shown, which js/atlas-console.js and js/session-tabs.js
        print verbatim — and a row that MEASURED also carries `number`/`unit` (or `code`/`label`), which
@@ -300,6 +359,12 @@ window.IntMapModules.layerRegistry=function(HOST){
     /* 「everything」, in the vocabulary js/gis-sources.js reads extents in. Stated once because two
        rows below say it, and a second literal is a second thing to get wrong. */
     const _HOLDS_WORLD={w:-180,s:-90,e:180,n:90};
+    /* (#729) The two publishers six of the rows below credit — the imagery and the point service.
+       Stated once for the same reason `_HOLDS_WORLD` is: a second literal is a second thing to get
+       wrong, and these are values rather than a table of sources. ⚠ NO LICENCE IS WRITTEN HERE
+       BECAUSE NOT ONE OF THOSE SIX SENTENCES STATES ONE, and a licence nobody stated would be worse
+       than a silence that can be filled. */
+    const _RGT_GIBS_OM={upstreams:[{publisher:'NASA GIBS'},{publisher:'Open-Meteo'}]};
     function context(){ try{ return activeIds().map(id=>{ const s=state(id); if(!s) return null; const bits=[];
         if(s.time) bits.push('time='+s.time); if(s.source) bits.push('src='+s.source);
         try{ const r=REG[id]; if(r.summary){ const sm=r.summary(); if(sm) bits.push(sm); } }catch(_){}
@@ -322,8 +387,11 @@ window.IntMapModules.layerRegistry=function(HOST){
         return (_tempSrc()==='merra2')?null:_om('temp',x,y); },
       time:()=>{ try{ const W=_wxEC(); if(_tempSrc()==='merra2') return (W&&W.month)?W.month('ec-temp'):null;
           return window.IntMapECMWF.validTime(); }catch(_){ return null; } },
-      source:()=>(_tempSrc()==='merra2')?'NASA GIBS · MERRA-2':'ECMWF IFS HRES · Open-Meteo' });
-    register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), measure:(x,y)=>_om('sst',x,y), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine' });
+      source:()=>(_tempSrc()==='merra2')?'NASA GIBS · MERRA-2':'ECMWF IFS HRES · Open-Meteo',
+      /* the two roads credit two different sets of publishers, so the values follow the road the
+         same way the sentence above does */
+      rights:()=>(_tempSrc()==='merra2')?{publisher:'NASA GIBS'}:{upstreams:[{publisher:'ECMWF'},{publisher:'Open-Meteo'}]} });
+    register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), measure:(x,y)=>_om('sst',x,y), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine', rights:()=>_RGT_GIBS_OM });
     /* ⚠ (#R302) THE WIND ANSWERS FROM THE FIELD THAT IS ON SCREEN, THE WAY `temp` ABOVE DOES.
        This row asked api.open-meteo.com for a point value while the ECMWF field the particles and the
        colour slot are drawn from was already decoded IN RAM — a live 「now」 reading from a different
@@ -351,12 +419,13 @@ window.IntMapModules.layerRegistry=function(HOST){
             return { value:w.speed, unit:'m/s', direction:w.dir, text:sp+' '+(card?(card+' '):'')+'@'+Math.round(w.dir)+'°' }; } }catch(_){}
         return _om('wind',x,y); },
       time:()=>{ try{ return _windFld()?window.IntMapECMWF.validTime():null; }catch(_){ return null; } },
-      source:()=>_windFld()?'ECMWF IFS HRES · Open-Meteo':'Open-Meteo' });
-    register('precip', { label:()=>L5('Precipitation','降水','Niederschlag','Осадки','Precipitación'), measure:(x,y)=>_om('precip',x,y), time:()=>_ld('precip'), source:()=>'NASA GIBS (IMERG) / Open-Meteo' });
-    register('snow',   { label:()=>L5('Snow & ice','積雪・氷','Schnee & Eis','Снег и лёд','Nieve y hielo'), measure:(x,y)=>_om('snow',x,y), time:()=>_ld('snow'), source:()=>'NASA GIBS / Open-Meteo' });
-    register('aod',    { label:()=>L5('Aerosol / haze','エアロゾル','Aerosol','Аэрозоль','Aerosol'), measure:(x,y)=>_om('aod',x,y), time:()=>_ld('aod'), source:()=>'NASA GIBS / Open-Meteo air-quality' });
-    register('no2',    { label:()=>'NO₂', measure:(x,y)=>_om('no2',x,y), time:()=>_ld('no2'), source:()=>'NASA GIBS / Open-Meteo air-quality' });
-    register('co',     { label:()=>'CO', measure:(x,y)=>_om('co',x,y), time:()=>_ld('co'), source:()=>'NASA GIBS / Open-Meteo air-quality' });
+      source:()=>_windFld()?'ECMWF IFS HRES · Open-Meteo':'Open-Meteo',
+      rights:()=>_windFld()?{upstreams:[{publisher:'ECMWF'},{publisher:'Open-Meteo'}]}:{publisher:'Open-Meteo'} });
+    register('precip', { label:()=>L5('Precipitation','降水','Niederschlag','Осадки','Precipitación'), measure:(x,y)=>_om('precip',x,y), time:()=>_ld('precip'), source:()=>'NASA GIBS (IMERG) / Open-Meteo', rights:()=>_RGT_GIBS_OM });
+    register('snow',   { label:()=>L5('Snow & ice','積雪・氷','Schnee & Eis','Снег и лёд','Nieve y hielo'), measure:(x,y)=>_om('snow',x,y), time:()=>_ld('snow'), source:()=>'NASA GIBS / Open-Meteo', rights:()=>_RGT_GIBS_OM });
+    register('aod',    { label:()=>L5('Aerosol / haze','エアロゾル','Aerosol','Аэрозоль','Aerosol'), measure:(x,y)=>_om('aod',x,y), time:()=>_ld('aod'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
+    register('no2',    { label:()=>'NO₂', measure:(x,y)=>_om('no2',x,y), time:()=>_ld('no2'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
+    register('co',     { label:()=>'CO', measure:(x,y)=>_om('co',x,y), time:()=>_ld('co'), source:()=>'NASA GIBS / Open-Meteo air-quality', rights:()=>_RGT_GIBS_OM });
     register('climate',{ label:()=>L5('Köppen climate','ケッペン気候区分','Köppen-Klima','Климат Кёппена','Clima de Köppen'),
       /* (#R245) one climate-name lookup for the whole app — see window.kName in js/data-layers.js */
       /* ⚠ (#R763) A CLASSIFICATION IS NOT A MEASUREMENT, AND IT STATES SO BY HAVING A `code` AND NO
@@ -365,7 +434,7 @@ window.IntMapModules.layerRegistry=function(HOST){
          one string is how 「気候区分ごとの面積」 became a question this layer could not answer. */
       measure:(x,y)=>{ try{ const c=window.sampleKoppenAt&&window.sampleKoppenAt(x,y); if(!c) return null; const nm=window.kName&&window.kName(c);
           return { code:c, label:(nm&&nm!==c)?nm:null, text:c+((nm&&nm!==c)?(' · '+nm):'') }; }catch(_){ return null; } },
-      time:()=>{ try{ return window._koppenPeriod||null; }catch(_){ return null; } }, source:()=>'Beck et al. Köppen-Geiger' });
+      time:()=>{ try{ return window._koppenPeriod||null; }catch(_){ return null; } }, source:()=>'Beck et al. Köppen-Geiger', rights:()=>({publisher:'Beck et al.'}) });
     register('webcams',{ label:()=>L5('Live cameras','ライブカメラ','Live-Kameras','Камеры','Cámaras en vivo'),
       featuresIn:b=>_srcFeatsIn('webcams-src',b), summary:()=>{ const f=_srcFeatsIn('webcams-src',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'OSM/DOT public cams' });
     register('news',   { label:()=>L5('News points','ニュース地点','Nachrichtenpunkte','Точки новостей','Puntos de noticias'),
@@ -382,7 +451,7 @@ window.IntMapModules.layerRegistry=function(HOST){
          not, and js/gis-sources.js reads a missing `live` as 「述べていない」. */
       holds:()=>({extent:_HOLDS_WORLD,complete:true,viewBound:false}),
       /* (#R763) the document, without the map — see featuresOf in js/beta-overlays.js */
-      load:()=>window.IntMapBeta.featuresOf('volcanoes'), source:()=>'Smithsonian GVP' });
+      load:()=>window.IntMapBeta.featuresOf('volcanoes'), source:()=>'Smithsonian GVP', rights:()=>({publisher:'Smithsonian GVP'}) });
     register('heritage',{ label:()=>L5('World Heritage','世界遺産','Welterbe','Всемирное наследие','Patrimonio Mundial'),
       on:()=>{ try{ return !!(GE().layers.has('whs-pt')&&GE().layers.getLayout('whs-pt','visibility')!=='none'); }catch(_){ return false; } },
       featuresIn:b=>_srcFeatsIn('whs-src',b),
@@ -394,7 +463,7 @@ window.IntMapModules.layerRegistry=function(HOST){
          js/gis-sources.js needs to tell `all` apart from 「たまたま画面内が全部だった」. */
       holds:()=>({extent:_HOLDS_WORLD,complete:true,viewBound:false,live:false}),
       load:()=>window.IntMapBeta.featuresOf('heritage'),
-      source:()=>'UNESCO World Heritage Centre' });
+      source:()=>'UNESCO World Heritage Centre', rights:()=>({publisher:'UNESCO World Heritage Centre'}) });
     /* (#R585) MEASURED radiation, so that 「いま画面に見えている観測局は？」 has an answer. The
        summary states the RANGE rather than a count: with ~8,500 stations on the map the number in
        view says nothing, while «71–140 nSv/h» is the reading a person actually wanted. `source`
@@ -404,11 +473,20 @@ window.IntMapModules.layerRegistry=function(HOST){
       featuresIn:b=>_srcFeatsIn('imrad-obs-src',b),
       summary:()=>{ try{ const f=_srcFeatsIn('imrad-obs-src',null)||[]; const v=f.map(x=>x&&x.properties&&x.properties.v).filter(x=>typeof x==='number');
         if(!v.length) return null; return Math.min.apply(null,v)+'–'+Math.max.apply(null,v)+' nSv/h ('+v.length+')'; }catch(_){ return null; } },
-      source:()=>{ try{ return (window.IntMapRadiationObs.sources()||[]).filter(s=>s.read).map(s=>s.attribution||s.name).join(', ')||null; }catch(_){ return null; } } });
+      source:()=>_radNets().map(s=>s.attribution||s.name).join(', ')||null,
+      /* ⚠ (#729) THE FEED ALREADY CARRIED THE TERMS PER NETWORK — js/radiation-layer.js prints
+         「attribution · licence」 in every station popup — and this row threw the licence away on its
+         way to "source()". The values are the feed's own, network by network; nothing is written
+         here that a network did not state. */
+      rights:()=>{ const n=_radNets(); return n.length?{upstreams:n.map(s=>({publisher:s.name,credit:s.attribution||s.name,licence:s.licence||null}))}:null; } });
     register('elevation',{ label:()=>L5('Elevation','標高','Höhe','Высота','Elevación'), on:()=>true,
       /* (#R763) the DEM answers in metres; the rounding is the display's, not the field's. */
-      measure:(x,y)=>{ try{ const v=(typeof demElevAt==='function')?demElevAt(x,y):null; return (v==null)?null:{ value:v, unit:'m', text:Math.round(v)+' m' }; }catch(_){ return null; } }, source:()=>'Mapzen/AWS terrarium DEM' });
+      measure:(x,y)=>{ try{ const v=(typeof demElevAt==='function')?demElevAt(x,y):null; return (v==null)?null:{ value:v, unit:'m', text:Math.round(v)+' m' }; }catch(_){ return null; } },
+      source:()=>'Mapzen/AWS terrarium DEM', rights:()=>({upstreams:[{publisher:'Mapzen'},{publisher:'AWS'}]}) });
     /* ---- (#R120) live traffic layers — the REAL features currently on the map (same geojson the symbols paint) ---- */
+    /* (#729) read once, answered twice — see the `ships` and `radiation` rows below */
+    const _aisOwnKey=()=>{ let own=''; try{ own=localStorage.getItem('intmap_ais_key')||''; }catch(_){} return !!own; };
+    const _radNets=()=>{ try{ return (window.IntMapRadiationObs.sources()||[]).filter(s=>s.read); }catch(_){ return []; } };
     const _lyrVis=id=>{ try{ return !!(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')==='visible'); }catch(_){ return false; } };
     register('aircraft',{ label:()=>L5('Live aircraft','航空機（リアルタイム）','Live-Flugverkehr','Самолёты (онлайн)','Aviones en vivo'),
       on:()=>_lyrVis('lyr-planes'), featuresIn:b=>_srcFeatsIn('src-planes',b),
@@ -417,7 +495,7 @@ window.IntMapModules.layerRegistry=function(HOST){
          view when it last refreshed — never the world's traffic. Saying so is what makes an analysis
          over it read 「表示範囲に限られる」 instead of 「宣言が無い」: two different silences. */
       holds:()=>({complete:false,viewBound:true,live:true}),
-      summary:()=>{ const f=_srcFeatsIn('src-planes',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'airplanes.live ADS-B' });
+      summary:()=>{ const f=_srcFeatsIn('src-planes',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'airplanes.live ADS-B', rights:()=>({publisher:'airplanes.live'}) });
     register('ships',{ label:()=>L5('Live ships','船舶（リアルタイム）','Live-Schiffe','Суда (онлайн)','Barcos en vivo'),
       on:()=>_lyrVis('lyr-ships'), featuresIn:b=>_srcFeatsIn('src-ships',b),
       /* ⚠ (#R756) THE AIS SUBSCRIPTION CARRIES THE CAMERA'S BOX (js/data-layers.js aisBBox), and the
@@ -426,7 +504,20 @@ window.IntMapModules.layerRegistry=function(HOST){
       summary:()=>{ const f=_srcFeatsIn('src-ships',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; },
       /* (#R510) with the reader's own key the browser streams aisstream.io directly; without one the
          shared relay serves aisstream.io AND Digitraffic (CC BY 4.0 — naming it is an obligation) */
-      source:()=>{ let own=''; try{ own=localStorage.getItem('intmap_ais_key')||''; }catch(_){} return own?'aisstream.io AIS':'aisstream.io / Digitraffic (Fintraffic, CC BY 4.0) AIS'; } });
+      /* ⚠ ONE READ OF THE KEY, TWO ANSWERS FROM IT. The sentence and the values must not be able to
+         credit different suppliers, and that is a 「同じ判断を2か所に持たせない」
+         (.agents/rules/no-ad-hoc-hardcoding.md §2-3) rather than a tidy-up. */
+      source:()=>_aisOwnKey()?'aisstream.io AIS':'aisstream.io / Digitraffic (Fintraffic, CC BY 4.0) AIS',
+      /* ⚠⚠⚠ (#729) THE OBLIGATION IS A VALUE NOW, AND IT IS ATTACHED TO THE SUPPLIER THAT IMPOSES
+         IT. 「CC BY 4.0」 belonged to Digitraffic alone, so a row-level licence would state terms
+         aisstream.io never published — js/data-governance.js read() takes the file-wide answer from
+         the upstreams itself (「the strictest obligation wins」), which is a rule this row must not
+         hold a second copy of. "attribution:true" is 「表記が再配布の条件か」 and is exactly what the
+         comment above has said since #R510; the sentence keeps the parenthetical, so a reader whose
+         session never loaded the GIS chunk still sees the credit. */
+      rights:()=>_aisOwnKey()?{publisher:'aisstream.io',credit:'aisstream.io AIS'}
+        :{upstreams:[{publisher:'aisstream.io',credit:'aisstream.io AIS'},
+                     {publisher:'Digitraffic (Fintraffic)',attribution:true,licence:'CC BY 4.0'}]} });
     /* (#R184) live satellites. Unlike the two above, this one does NOT read the source back out of the
        renderer: the layer's own state() is authoritative (a GeoJSON source's data is not readable in
        MapLibre 5 — #R183), and "how many are above the horizon from here" is the meaningful count. */
@@ -435,7 +526,7 @@ window.IntMapModules.layerRegistry=function(HOST){
       featuresIn:b=>_srcFeatsIn('src-sats',b),
       summary:()=>{ try{ const s=window.IntMapSatellites&&window.IntMapSatellites.state(); if(!s) return null;
           return s.drawn+' / '+s.catalogue+' '+L5('tracked','追跡中','verfolgt','отслеживается','en seguimiento'); }catch(_){ return null; } },
-      source:()=>'CelesTrak GP · SGP4/SDP4' });
+      source:()=>'CelesTrak GP · SGP4/SDP4', rights:()=>({publisher:'CelesTrak'}) });
     /* ---- (#R120/#R121) country choropleths — the value of every VISIBLE choropleth family at a point.
        Core stat fills go through window.choroValueAt (countryStats; R121: works OFF-SCREEN too via
        point-in-polygon over countryGeo), the World-Bank beta fills carry their raw value in the feature
@@ -502,12 +593,13 @@ window.IntMapModules.layerRegistry=function(HOST){
               const f=d.features.find(ft=>window._imPipGeo(x,y,ft.geometry)); if(f&&f.properties&&f.properties.raw!=null){ hit={id,p:f.properties}; break; } } }
             if(hit){ const W=_WBF[hit.id]; if(W) outs.push(W.lb()+': '+W.fmt(hit.p)+(hit.p.iso?(' ('+hit.p.iso+')'):'')); } } }catch(_){}
         try{ const bx=window._imBxChoroValueAt&&window._imBxChoroValueAt(x,y); if(bx&&bx.length) outs.push.apply(outs,bx.slice(0,4)); }catch(_){}
-        return outs.length?outs.join(' | '):null; }, source:()=>'World Bank / SIPRI / UNDP' });
+        return outs.length?outs.join(' | '):null; }, source:()=>'World Bank / SIPRI / UNDP',
+      rights:()=>({upstreams:[{publisher:'World Bank'},{publisher:'SIPRI'},{publisher:'UNDP'}]}) });
     /* ---- (#R121) more REAL feature layers on the contract ---- */
     register('earthquakes',{ label:()=>L5('Earthquakes','地震','Erdbeben','Землетрясения','Terremotos'),
       on:()=>_lyrVis('eq-pt'), featuresIn:b=>_srcFeatsIn('src-eq',b),
       summary:()=>{ const f=_srcFeatsIn('src-eq',null); if(!f) return null; let mx=null; f.forEach(q=>{ const m=q.properties&&+q.properties.mag; if(m!=null&&isFinite(m)&&(mx==null||m>mx)) mx=m; });
-        return f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')+(mx!=null?(' · max M'+mx.toFixed(1)):''); }, source:()=>'USGS' });
+        return f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')+(mx!=null?(' · max M'+mx.toFixed(1)):''); }, source:()=>'USGS', rights:()=>({publisher:'USGS'}) });
     register('datacenters',{ label:()=>L5('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infra de IA'),
       on:()=>_lyrVis('dc-pt'), featuresIn:b=>_srcFeatsIn('dc-src',b),
       summary:()=>{ const f=_srcFeatsIn('dc-src',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
@@ -561,7 +653,8 @@ window.IntMapModules.layerRegistry=function(HOST){
       if(_fireCache.size>60) _fireCache.clear(); _fireCache.set(key,out); return out; }
     register('thermal',{ label:()=>L5('Thermal anomalies (fires)','熱異常（火災）','Thermale Anomalien (Brände)','Тепловые аномалии (пожары)','Anomalías térmicas (incendios)'),
       on:()=>['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'].some(_lyrVis), sampleAt:(x,y)=>_fireCount(x,y),
-      time:()=>L5('last','直近','letzte','последние','últimas')+' '+(window._thermalWindow||'24')+' h', source:()=>'NASA FIRMS / GIBS (MODIS+VIIRS)' });
+      time:()=>L5('last','直近','letzte','последние','últimas')+' '+(window._thermalWindow||'24')+' h',
+      source:()=>'NASA FIRMS / GIBS (MODIS+VIIRS)', rights:()=>({upstreams:[{publisher:'NASA FIRMS'},{publisher:'NASA GIBS'}]}) });
     /* ⚠ (#R732) THE SHARED WINDOW, BY NAME. `_srcFeatsIn` is the app's one 「この範囲にある地物」
        predicate, and every registered row above reaches it — but a GeoJSON source that no row
        speaks for (a file the reader dropped, a module that draws without registering) had no way

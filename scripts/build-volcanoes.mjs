@@ -74,6 +74,23 @@ const TYPES = {
 };
 const ATTRIBUTION = 'Smithsonian Institution, Global Volcanism Program — Volcanoes of the World';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* the header states 「Attribution required; declared in js/reference-data.js and sources.html」,
+     so the obligation is a value here and the row that pays it is named by its exact `n`.
+     ⚠ NO LICENCE IDENTIFIER IS STATED — GVP's terms are named nowhere in this build. */
+  const rec = {
+    publisher: ATTRIBUTION,
+    url: WFS,
+    attribution: true,
+    paidBy: 'Smithsonian GVP',
+    builtBy: 'scripts/build-volcanoes.mjs',
+  };
+  return { 'data/volcanoes_gvp.json': rec, 'data/volcano-detail.json.gz': rec };
+})();
+
 /* ⚠⚠⚠ (#R432) THE CATALOG IS NOT «THE HOLOCENE LIST» ANY MORE, AND THE REASON IS A JOIN THAT FAILED.
    js/volcano-intel.js reads `volcano/getMonitoredVolcanoes` (#R395) so the map can say «an
    observatory looked and calls this normal» instead of «nobody publishes anything». Measured

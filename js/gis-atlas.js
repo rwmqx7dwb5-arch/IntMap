@@ -27,6 +27,13 @@
  *  names one; `sources()` is what exists, asked of the map rather than listed here.
  * ==========================================================================*/
 
+/* ⚠ (#729) 「この数字はどこから来た？どの条件で使えるか？いつのものか？」 — the ONE vocabulary
+   (js/data-governance.js). Imported rather than read off `window` because this file and that one are
+   in the same lazily-loaded chunk (js/gis-core.js), and because the facets must be the SAME LIST the
+   gate and the reader-visible credits use: a second spelling of 「licence」 here is precisely how the
+   three worlds that file's header measures came to disagree. */
+import { FACETS, account } from './data-governance.js';
+
 export function makeGisAtlas(core) {
   return (function () {
     const data = core.data, ops = core.ops, layers = core.layers;
@@ -204,6 +211,17 @@ export function makeGisAtlas(core) {
        names and describe() accounts for nowhere is a fact that fell out of the surface silently, and
        a slot describe() fills that this list does not name is one no check could ever see. What is
        NOT written here is any VALUE: every one of them is asked of the supplier that states it. */
+    /* ⚠⚠⚠ (#729) EVERY FACET, NOT A CHOSEN PAIR. This was written as
+       `GOVERNED_SUBJECTS = ['rights','freshness']` and filtered FACETS by it — which is a SECOND LIST
+       of a vocabulary that already exists, the exact thing tests/r759 ① measures this file for and
+       the shape #R747's `targets` used to wipe out all five production answers. There is also no
+       fact behind the pair: a layer's registration may state where its data came from
+       (`origin.*`), what was measured in it (`integrity.*`) and which upstream wins (`precedence.*`)
+       just as well as its terms, and account() already answers for all of them — an unstated facet
+       comes back in `undeclared` with a reason, which is precisely what a planner needs to know to
+       go and ask. So the slots ARE the vocabulary, and a facet added to js/data-governance.js
+       tomorrow reaches the planner the same day. */
+    const GOVERNANCE_SLOTS = FACETS.slice();
     const PREFETCH_SLOTS = [
       /* 何の量か */
       'quantity.payload', 'quantity.name', 'quantity.geometryType', 'quantity.count',
@@ -221,6 +239,20 @@ export function makeGisAtlas(core) {
       /* (#R819) 取得する前に分かる能力（申告）。See the block in prefetch() for why the MEASURED pair
          is not taken here. */
       'query.capabilities',
+      /* ⚠⚠⚠ (#729) どの条件で使えるか・いつのものか — DERIVED FROM THE VOCABULARY, NOT COPIED.
+         Before this round the only thing here about provenance was `quantity.attribution`, and what
+         it carried was js/map-ui.js's SENTENCE: a planner asked 「この地図のデータは再配布できるか」
+         was handed 「aisstream.io / Digitraffic (Fintraffic, CC BY 4.0) AIS」 and had to parse a
+         licence out of prose. The registrations now state those as values, so the slots are the
+         FACETS of that record — a facet js/data-governance.js gains tomorrow is published the same
+         day, which a list written out here could not be ([[intmap-two-readers-one-field-list]]).
+         ⚠ `quantity.attribution` STAYS: the credit LINE a reader is shown is a different fact from
+         the terms it was published under, and #R783's readers of it are not wrong.
+         ⚠ WHICH SUBJECTS THIS SURFACE TAKES IS THIS ROUND'S DECISION, and it is stated as subjects
+         rather than as facet names for that reason: 「誰の仕事か」 and 「形と中身が測られているか」
+         are answered about an ACQUIRED record (datasetRow's `origin`, `fields`, `coverage`), while
+         terms and age are the two a planner needs BEFORE it acquires anything. */
+      ...GOVERNANCE_SLOTS,
     ];
     /* ⚠ THE SUBJECTS ARE THE SLOTS' OWN PREFIXES, NOT A SECOND LIST. Writing them out would be a
        list that can lose a subject the slots gained — the drift tests/r759 ① measures for the
@@ -449,6 +481,25 @@ export function makeGisAtlas(core) {
         if (caps && typeof caps === 'object') put('query.capabilities', caps);
         else none('query.capabilities', mute || 'capabilities-undeclared');
       } else none('query.capabilities', idx.why || 'capabilities-unavailable');
+
+      /* ── どの条件で使えるか・いつのものか ──────────────────────────────────────────────────
+         ⚠ THE THREE-WAY SPLIT IS THE KERNEL'S, CARRIED — not decided again here. account() is the
+         one place that knows 「宣言が無い」 from 「その問いは当たらない」 for a provenance record
+         (a public-domain file owes no credit ROW; a silent one owes an answer), and it names the
+         silence when the registration carries no record at all (`record-absent`). Copying its
+         verdicts into branches here would be a second opinion about somebody else's terms.
+         ⚠ AND THIS IS A PROJECTION OVER THE DECLARED SLOTS, so a facet the vocabulary gains
+         arrives without this loop being touched — the argument datasetRow() `fields` is written
+         for. ⚠ `freshness.verdict` is the kernel's OWN measurement (`derived:true`) and is stated
+         even when nothing was declared: 「測れなかった」 is an answer, and it is not a supplier's
+         silence. */
+      const govAcct = account((st && st.rights) || null, { now: null });
+      for (const facet of GOVERNANCE_SLOTS) {
+        const i = facet.indexOf('.'), bag = govAcct[facet.slice(0, i)], key = facet.slice(i + 1);
+        if (bag && Object.prototype.hasOwnProperty.call(bag, key)) put(facet, bag[key]);
+      }
+      for (const u of govAcct.undeclared) if (GOVERNANCE_SLOTS.indexOf(u.facet) >= 0) none(u.facet, u.why);
+      for (const u of govAcct.notApplicable) if (GOVERNANCE_SLOTS.indexOf(u.facet) >= 0) na(u.facet, u.why);
 
       return out;
     }

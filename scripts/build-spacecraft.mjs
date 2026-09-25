@@ -42,6 +42,19 @@ import path from 'node:path';
 const OUT = path.join(process.cwd(), 'data', 'spacecraft.json');
 const API = 'https://ssd.jpl.nasa.gov/api/horizons.api';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/spacecraft.json': {
+    publisher: 'NASA/JPL-Caltech — Horizons',
+    url: API,
+    licence: 'U.S. Government work — not subject to copyright',
+    attribution: false,
+    builtBy: 'scripts/build-spacecraft.mjs',
+  },
+};
+
 /* ── THE FLEET ────────────────────────────────────────────────────────────────────────────────────
    `id`      Horizons target (negative integers are spacecraft; the 100-block ones are the ones with
              more than one NAIF object, where the bare number is the whole vehicle).

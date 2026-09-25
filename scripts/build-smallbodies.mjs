@@ -31,6 +31,20 @@ import path from 'node:path';
 const OUT = path.join(process.cwd(), 'data', 'small-bodies.json');
 const QUERY = 'https://ssd-api.jpl.nasa.gov/sbdb_query.api';
 const FIELDS = 'full_name,pdes,name,class,e,a,q,i,om,w,ma,tp,epoch,per,H,diameter,albedo,spkid';
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/small-bodies.json': {
+    publisher: 'NASA/JPL-Caltech — Small-Body Database',
+    url: QUERY,
+    /* the bundle's own attribution line states these terms verbatim */
+    licence: 'U.S. Government work — not subject to copyright',
+    attribution: false,
+    builtBy: 'scripts/build-smallbodies.mjs',
+  },
+};
 const F = FIELDS.split(',');
 
 const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));

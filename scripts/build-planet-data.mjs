@@ -49,6 +49,36 @@ const OUT = path.join(ROOT, 'data', 'planets');
 const UA = { 'User-Agent': 'IntMap/build-planet-data (+https://github.com/rwmqx7dwb5-arch/IntMap)' };
 const KEEP = 700;                      /* largest features per body */
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ THE TWO UPSTREAMS DO NOT COVER THE SAME FILES, so one record for the build would be wrong
+     about both: the textures are Solar System Scope's, the feature names are the USGS Gazetteer's,
+     and only data/planets.json carries both. */
+  const tex = {
+    publisher: 'Solar System Scope',
+    url: 'https://www.solarsystemscope.com/textures/',
+    licence: 'CC BY 4.0',
+    /* 「BY」 is part of the identifier: credit is a condition of these terms. */
+    attribution: true,
+    paidBy: 'Solar System Scope — planetary surface textures',
+    builtBy: 'scripts/build-planet-data.mjs',
+  };
+  const names = {
+    publisher: 'USGS Gazetteer of Planetary Nomenclature',
+    url: 'https://planetarynames.wr.usgs.gov/',
+    licence: 'public domain',
+    attribution: false,
+    builtBy: 'scripts/build-planet-data.mjs',
+  };
+  return {
+    'data/planets/': tex,
+    'data/planet-names.json': names,
+    'data/planets.json': { upstreams: [tex, names], builtBy: 'scripts/build-planet-data.mjs' },
+  };
+})();
+
 /* body → the texture file name at the source */
 const TEX = {
   sun: '2k_sun', mercury: '2k_mercury', venus: '2k_venus_surface', earth: '2k_earth_daymap',

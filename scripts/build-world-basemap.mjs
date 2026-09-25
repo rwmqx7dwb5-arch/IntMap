@@ -36,6 +36,21 @@ const URL_ = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi'
   + '?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&CRS=EPSG:4326'
   + '&LAYERS=' + encodeURIComponent(LAYER)
   + '&BBOX=-90,-180,90,180&WIDTH=' + WIDTH + '&HEIGHT=' + HEIGHT + '&FORMAT=image/jpeg';
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* the header states it: NASA Blue Marble shaded relief and bathymetry, 「in the public domain」 */
+  const rec = {
+    publisher: 'NASA EOSDIS GIBS — Blue Marble: Shaded Relief and Bathymetry',
+    url: URL_,
+    licence: 'public domain',
+    attribution: false,
+    builtBy: 'scripts/build-world-basemap.mjs',
+  };
+  return { 'data/world-basemap.jpg': rec, 'data/world-basemap.json': rec };
+})();
 const TIMEOUT_MS = Number(process.env.WORLD_BASE_TIMEOUT_MS || 120000);
 
 const main = async () => {

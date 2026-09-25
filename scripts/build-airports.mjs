@@ -58,6 +58,23 @@ const OUT = path.join(ROOT, 'data', 'airports.json');
 const AIRPORTS = 'https://davidmegginson.github.io/ourairports-data/airports.csv';
 const MLEDOZE = 'https://cdn.jsdelivr.net/gh/mledoze/countries@master/countries.json';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  const upstreams = [
+    { publisher: 'OurAirports', url: AIRPORTS, licence: 'Public domain', attribution: false,
+      fields: 'type, iso_country, scheduled_service' },
+    /* ⚠ 「ODbL 1.0」 NAMES THE TERMS; whether credit is a condition of them is not read here, so the
+       boolean stays silent and only the row that carries the credit today is named. */
+    { publisher: 'mledoze/countries', url: MLEDOZE, licence: 'ODbL 1.0',
+      paidBy: 'Country facts — mledoze/countries (capital, currency, languages, land borders, UN membership, demonym; ODbL 1.0, build time only)',
+      fields: 'cca2 to cca3 only' },
+  ];
+  /* ⚠ ONE BUNDLE, TWO UPSTREAMS: a single licence for the file would be a claim neither made. */
+  return { 'data/airports.json': { upstreams, builtBy: 'scripts/build-airports.mjs' } };
+})();
+
 /* the same one alias data/country-facts.json declares — Natural Earth's KOS is mledoze's UNK */
 const ALIAS = { UNK: 'KOS' };
 
@@ -131,10 +148,9 @@ const capTotal = Object.values(countries).reduce((s, o) => s + o.cap, 0);
 const built = {
   '//': 'Built by scripts/build-airports.mjs — do not edit by hand. Scheduled-service airline infrastructure per country. NOT routes, frequencies or passenger numbers; no source in this project has those.',
   built: new Date().toISOString().slice(0, 10),
-  sources: [
-    { name: 'OurAirports', url: AIRPORTS, license: 'Public domain', fields: 'type, iso_country, scheduled_service' },
-    { name: 'mledoze/countries', url: MLEDOZE, license: 'ODbL 1.0', fields: 'cca2 to cca3 only' },
-  ],
+  /* ⚠ THE SHIPPED SOURCE TABLE IS DERIVED FROM `GOVERNANCE`, not spelled a second time. */
+  sources: GOVERNANCE['data/airports.json'].upstreams.map((u) => (
+    { name: u.publisher, url: u.url, license: u.licence, fields: u.fields })),
   formula: 'cap = large_airport(scheduled) + ' + MEDIUM_WEIGHT + ' x medium_airport(scheduled)',
   mediumWeight: MEDIUM_WEIGHT,
   airportsCounted: considered,

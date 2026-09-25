@@ -27,6 +27,23 @@ export const SOURCE = Object.freeze({
   periods: 'https://pleiades.stoa.org/vocabularies/time-periods',
 });
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/hist-places.json': {
+    /* ⚠ EVERY FIELD HERE IS `SOURCE` READ, NOT RE-TYPED — one declaration, two readers. */
+    publisher: SOURCE.publisher,
+    url: SOURCE.url,
+    licence: SOURCE.licence,
+    licenceUrl: SOURCE.licenceUrl,
+    /* CC BY 3.0: credit is a condition, and #R689 is what it costs when the obligation is prose. */
+    attribution: true,
+    paidBy: 'Pleiades — a gazetteer of past places (CC BY 3.0)',
+    builtBy: 'scripts/build-hist-places.mjs',
+  },
+};
+
 export function eligible(place, year) {
   return /^\d+$/.test(String(place.id))
     && Array.isArray(place.rp) && place.rp.length === 2

@@ -73,6 +73,20 @@ const SOURCES = [
 ];
 const TIMEOUT_MS = Number(process.env.STAR_TIMEOUT_MS || 300000);
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ WHICH UPSTREAM ANSWERED IS DECIDED AT RUN TIME (the three are tried in order), so the bundle
+     names the one it used and this declaration names all three. ⚠ None of them states a licence
+     anywhere in this build, so only 「誰の・どこから」 is declared. */
+  const rec = {
+    upstreams: SOURCES.map((s) => ({ publisher: s.name, url: s.url })),
+    builtBy: 'scripts/build-star-catalogue.mjs',
+  };
+  return { 'data/stars.bin': rec, 'data/stars.json': rec };
+})();
+
 const get = async (url) => {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), TIMEOUT_MS);

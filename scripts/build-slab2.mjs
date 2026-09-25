@@ -66,6 +66,17 @@ const STEP = Number(arg('step', 1));                 /* 0.05° × STEP — read 
 const PARENT = '5aa1b00ee4b0b1c392e86467';
 const SB = 'https://www.sciencebase.gov/catalog/';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ A CITATION IS NOT A LICENCE, AND NOT A PUBLISHER. This build states Slab2's citation
+     (Hayes et al. 2018) and its ScienceBase distribution, and nothing about terms; both facets
+     stay silent. */
+  const rec = { url: SB, builtBy: 'scripts/build-slab2.mjs' };
+  return { 'data/slab2.bin.gz': rec, 'data/slab2.json': rec };
+})();
+
 const DEP_OFF = 5, DEP_SCALE = 20;                   /* depth_km = counts/DEP_SCALE - DEP_OFF (50 m a count) */
 
 async function cachedFetch(url, dst) {

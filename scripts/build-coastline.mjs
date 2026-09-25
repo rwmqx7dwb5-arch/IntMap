@@ -57,6 +57,20 @@ const OUT = join(ROOT, 'data', 'coastline.json.gz');
 const CACHE = join(ROOT, 'node_modules', '.cache', 'intmap-coastline.geojson');
 const SRC = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_coastline.geojson';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/coastline.json.gz': {
+    publisher: 'Natural Earth',
+    url: SRC,
+    /* the manifest this build writes says the same words, from this value */
+    licence: 'public domain',
+    attribution: false,
+    builtBy: 'scripts/build-coastline.mjs',
+  },
+};
+
 /* The tolerance is a MEASURED trade, not a taste: it is the largest error the simplification can
    introduce into an answer, and the file is proportional to how small it is made. 2 km against a
    200 km threshold is 1 %, and the query engine states it. */

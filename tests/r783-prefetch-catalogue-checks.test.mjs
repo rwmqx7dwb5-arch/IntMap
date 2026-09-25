@@ -158,7 +158,17 @@ test('R783 ① 取得前の記述は量・時期・範囲・解像度・検索�
   /* 主題の一覧は slot の宣言から導かれる（gis-atlas.js が 2 つ目の一覧を持たないこと）。
      ⚠ ここで英単語を並べて突き合わせると、この test file が 2 つ目の一覧になる。 */
   assert.deepEqual(subjects, atlas.prefetchSlots().map((s) => s.slice(0, s.indexOf('.'))).filter((s, i, a) => a.indexOf(s) === i));
-  assert.equal(subjects.length, 5, '5 主題ではない: ' + subjects.join(','));
+  /* ⚠ (#729) THE FIVE ARE A FLOOR, NOT A COUNT. This read `subjects.length === 5`, and the defect
+     #R783 was written against is that the description BEFORE acquiring was THINNER than the one
+     after — four of five subjects were missing entirely. A number pinned to the width therefore
+     failed the first correct widening: #729 added the governance subjects (where the data came
+     from, on what terms, how old, what was measured, which upstream wins) and this line called the
+     richer answer a regression. That is a guard for 「the regex hit something」 written as if it were
+     the policy ([[intmap-ceiling-guards-are-not-policies]], [[intmap-restate-the-defect-not-the-fix]]).
+     What must hold is that none of the five ever goes missing again. */
+  for (const g of ['quantity', 'period', 'extent', 'resolution', 'query']) {
+    assert.ok(subjects.includes(g), '取得前の記述から主題が消えた: ' + g + ' — いまは ' + subjects.join(','));
+  }
 
   const rows = atlas.catalogue().layers;
   for (const ref of ['layer:heritage', 'layer:elevation']) {

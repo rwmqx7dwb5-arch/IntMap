@@ -56,6 +56,20 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'histcities-homonyms.json.gz');
 const CACHE = join(ROOT, 'node_modules', '.cache', 'intmap-histcities');
 const SRC = 'https://download.geonames.org/export/dump/cities500.zip';
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/histcities-homonyms.json.gz': {
+    publisher: 'GeoNames',
+    url: SRC,
+    /* ⚠ THE LICENCE IS NOT STATED IN THIS FILE. scripts/build-gazetteer.mjs states GeoNames'
+       terms for the bundle it builds; importing that builder to reuse the value would RUN it, so
+       the facet stays silent here rather than being spelled a second time. */
+    builtBy: 'scripts/build-histcities-homonyms.mjs',
+  },
+};
 const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap) histcities-homonyms';
 
 const CHECK = process.argv.includes('--check');

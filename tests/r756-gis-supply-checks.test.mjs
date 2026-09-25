@@ -314,7 +314,18 @@ test('R756 ⑥ the declaration reaches js/gis-sources.js without anybody calling
   /* ⚠ AND IT IS NOT state()'s SIX FIELDS WEARING A NEW NAME. The state a reader is shown says
      nothing about what the source contains, which is why the claim could not travel. */
   const st = registry.state('heritage');
-  assert.deepEqual(Object.keys(st).sort(), ['id', 'label', 'legend', 'on', 'source', 'time']);
+  /* ⚠ (#729) THE CLAIM IS WHAT state() DOES NOT SAY, NOT HOW MANY KEYS IT HAS. This was a
+     deepEqual against six names, which froze the row's width: #729 added `rights` — what the
+     upstream's TERMS are, which is not a statement about contents either — and the frozen list
+     called it a regression ([[intmap-ceiling-guards-are-not-policies]]). What must stay true is that
+     the reader's row carries none of the supply layer's own vocabulary, because that is why the
+     claim could not travel before #R756. */
+  for (const k of ['extent', 'complete', 'viewBound', 'live', 'resolution']) {
+    assert.ok(!(k in st), `registry.state() now carries the supply declaration's «${k}» — the two are one thing again`);
+  }
+  for (const k of ['id', 'label', 'legend', 'on', 'source', 'time']) {
+    assert.ok(k in st, `registry.state() lost «${k}»`);
+  }
 
   /* an explicit declare() still wins — it is about the id as the caller just filled it */
   sources.declare('heritage', { extent: { w: 0, s: 0, e: 1, n: 1 }, complete: false, viewBound: false });

@@ -343,6 +343,17 @@ gis-units.js                      **量の単位** `window.IntMapGisUnits`（#R7
                                   異なる読めない綴りどうしは拒まれる。⚠ **沈黙は不一致ではない**
                                   （単位を述べていない格子は今までどおり引ける）。°C・°F は
                                   オフセットを持つので、**読みの換算と差の換算が別**
+data-governance.js                **この数字はどこから来たか** `window.IntMapDataGovernance`（#729）
+                                  — 出自・権利・鮮度・測定の**唯一の語彙**。`SPELLINGS`（`licence` と
+                                  `license` が 1 つの事実であると述べる 1 か所）/ `FACETS` / `REASONS` /
+                                  `read` / `freshness` / `attribution` / `account` / `measureQuality`。
+                                  ⚠ **値を 1 つも持たない**——出典の表はここに無く、述べるのは述べる者
+                                  （束自身のバイト・builder 自身の `GOVERNANCE`・レイヤー登録の `rights`）。
+                                  ⚠ **表示文は値から導出する。逆はしない**（`js/map-ui.js` の
+                                  `measure`→`text` と同じ向き）。⚠ **`unknown` は弱い `stale` ではない**
+                                  ——「宣言された周期より古い」と「測る物差しが無い」は別の答えで、
+                                  直し方も別。DOM も fetch も要さないので `scripts/data-governance.mjs`
+                                  が Node でそのまま読む。正本 `docs/DATA-GOVERNANCE.md`
 gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#R738）— 計算列のための
                                   小さな言語。`parse` / `evaluate` / `compile` / `functions` / `refusals`。
                                   ⚠ **読者が打った文字列がコードにならない**——`eval` も `new Function` も
@@ -1469,7 +1480,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 110 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 111 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

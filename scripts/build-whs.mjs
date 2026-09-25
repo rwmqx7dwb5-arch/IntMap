@@ -93,7 +93,28 @@ const detailPath = (tag) => path.join(ROOT, 'data', `whc-detail.${tag}.json.gz`)
 const WHC = 'https://whc.unesco.org';
 const WHC_ATTRIB = 'UNESCO World Heritage Centre';
 const WD_ATTRIB = 'Wikidata';
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
 const WDQS = 'https://query.wikidata.org/sparql';
+
+export const GOVERNANCE = {
+  'data/whc-sites.json': {
+    /* ⚠ TWO UPSTREAMS, CREDITED SEPARATELY, and the header says so: the List itself is UNESCO's
+       and the in-danger status is Wikidata's.
+       ⚠ THE PER-LOCALE DESCRIPTION BUNDLES (`detailPath(tag)`) CARRY THIS SAME RECORD, and their
+       locale set is DISCOVERED from the feeds UNESCO publishes rather than listed here — a list
+       would be a photograph of the day it was typed ([[intmap-discovered-list-is-a-photograph]]). */
+    upstreams: [
+      { publisher: WHC_ATTRIB, url: WHC + '/en/list/xml/', licence: '© UNESCO', attribution: true,
+        paidBy: 'UNESCO World Heritage Centre' },
+      { publisher: WD_ATTRIB, url: WDQS, licence: 'CC0', attribution: false },
+    ],
+    builtBy: 'scripts/build-whs.mjs',
+  },
+};
+
 /* Q222384 — «World Heritage Site in Danger», the value Wikidata's P793 (significant event) takes
    when a property is inscribed on the List in Danger. P580/P582 qualify when it began and ended;
    a statement with no end is a site that is in danger today. */

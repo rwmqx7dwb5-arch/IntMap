@@ -73,6 +73,18 @@ export const WHO_ITEM_BASE = 'https://www.who.int/emergencies/disease-outbreak-n
 const PAGE = 100;
 const UA = 'IntMap/build-who-don (+https://github.com/rwmqx7dwb5-arch/IntMap)';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/who-don.json.gz': {
+    publisher: 'World Health Organization — Disease Outbreak News',
+    url: WHO_API,
+    /* ⚠ NO LICENCE IS STATED BY THIS BUILD. */
+    builtBy: 'scripts/build-who-don.mjs',
+  },
+};
+
 /* v2 (#R660): the corpus now carries `places`, the vocabulary a title's tail is verified against.
    The browser needs it because js/outbreaks.js's live tail runs the same rule, and it cannot page
    WHO's 226 country items on every open to learn WHO's own spellings. */

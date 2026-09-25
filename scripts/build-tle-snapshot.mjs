@@ -31,6 +31,25 @@ import path from 'node:path';
 const OUT_DIR = path.join(process.cwd(), 'data', 'tle');
 const CELESTRAK = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle';
 const SATNOGS = 'https://db.satnogs.org/api/tle/?format=json';
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  ...(() => {
+    /* two upstreams, tried in this order; the bundle records which one answered */
+    const rec = {
+      upstreams: [
+        { publisher: 'CelesTrak', url: CELESTRAK },
+        { publisher: 'SatNOGS DB', url: SATNOGS },
+      ],
+      /* ⚠ NO CADENCE IS DECLARED, and the one this repository refreshes at is NOT it: a schedule we
+         chose is not a period a supplier publishes (js/data-governance.js, `cadence`). */
+      builtBy: 'scripts/build-tle-snapshot.mjs',
+    };
+    return { 'data/tle/catalogue.tle': rec, 'data/tle/catalogue.json': rec, 'data/tle/groups.json': rec };
+  })(),
+};
 const TIMEOUT_MS = Number(process.env.TLE_TIMEOUT_MS || 90000);
 /* ══ (#R207) …AND WHICH OBJECTS ARE IN WHICH CATALOGUE ══════════════════════════════════════════
    「人工衛星レイヤーで、カテゴリ選択が機能していない。」

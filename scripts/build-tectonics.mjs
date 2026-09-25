@@ -53,6 +53,17 @@ const W = Number(arg('width', 1440));
 const H = W / 2;
 const CACHE = arg('cache', path.join(ROOT, '.cache', 'tectonics'));
 const BASE = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/';
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ CITATION AND DISTRIBUTION ONLY. Bird (2003) PB2002 is cited by the manifest this build
+     writes; neither the paper's publisher nor the redistribution terms of the fraxen mirror are
+     stated anywhere here. */
+  const rec = { url: BASE, builtBy: 'scripts/build-tectonics.mjs' };
+  return { 'data/tectonics.bin.gz': rec, 'data/tectonics.json': rec };
+})();
 const D = Math.PI / 180, RE = 6371.0;
 
 /* PB2002's own class names, in the order the byte plane encodes them. `OCB` (oceanic convergent

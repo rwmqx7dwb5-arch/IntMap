@@ -99,6 +99,27 @@ const NE = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geoj
 const MLEDOZE = 'https://cdn.jsdelivr.net/gh/mledoze/countries@master/countries.json';
 const ZONE_TAB = 'https://data.iana.org/time-zones/tzdb/zone.tab';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+/* ⚠ (#729) THIS TABLE WAS ALREADY A VALUE — it used to be written inline inside the built
+   document. Lifting it to module scope is the whole change: the bundle still ships the same bytes,
+   and now GOVERNANCE and the bundle read ONE table instead of agreeing by hand. */
+const UPSTREAMS = [
+  { n: 'mledoze/countries', u: 'https://github.com/mledoze/countries', licence: 'ODbL 1.0', fields: 'capital, currency, languages, area, borders, un, ind, dem' },
+  { n: 'IANA Time Zone Database', u: 'https://www.iana.org/time-zones', licence: 'public domain', fields: 'tz' },
+  { n: 'Natural Earth admin-0', u: 'https://www.naturalearthdata.com/', licence: 'public domain', fields: 'the code set' },
+];
+
+export const GOVERNANCE = {
+  'data/country-facts.json': {
+    /* three upstreams under two different sets of terms; the file has no single licence and saying
+       it did would be a claim none of them made */
+    upstreams: UPSTREAMS.map((s) => ({ publisher: s.n, url: s.u, licence: s.licence })),
+    builtBy: 'scripts/build-country-facts.mjs',
+  },
+};
+
 /* ⚠ NATURAL EARTH'S OWN CODES FOR GROUND NO ISO CODE DESCRIBES. Not an exclusion list — a
    DECLARATION of what the difference is allowed to be. A code appearing here that Natural Earth
    no longer carries, or one it carries that is not here, fails the build. */
@@ -256,11 +277,7 @@ async function build() {
   return {
     '//': 'BUILT FILE — do not edit by hand. Regenerate with `npm run build:countryfacts`. See scripts/build-country-facts.mjs for why these facts are shipped rather than fetched.',
     built: new Date().toISOString().slice(0, 10),
-    sources: [
-      { n: 'mledoze/countries', u: 'https://github.com/mledoze/countries', licence: 'ODbL 1.0', fields: 'capital, currency, languages, area, borders, un, ind, dem' },
-      { n: 'IANA Time Zone Database', u: 'https://www.iana.org/time-zones', licence: 'public domain', fields: 'tz' },
-      { n: 'Natural Earth admin-0', u: 'https://www.naturalearthdata.com/', licence: 'public domain', fields: 'the code set' },
-    ],
+    sources: UPSTREAMS,
     corrections: [
       ...Object.entries(UN_FIX).map(([code, f]) => ({ code, un: f.un, why: f.why })),
       ...Object.entries(BORDER_FIX).map(([code, f]) => ({ code, dropBorders: f.drop, why: f.why })),
