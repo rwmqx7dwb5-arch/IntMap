@@ -31,8 +31,11 @@ window.IntMapVectorTiles=(function(){
   function lib(){
     if(_libP) return _libP;
     _libP=Promise.all([import('@mapbox/vector-tile'), import('pbf'), import('polygon-clipping')]).then(([vt,pbf,clip])=>{
-      _VectorTile=vt.VectorTile||(vt.default&&vt.default.VectorTile);
-      _Pbf=pbf.default||pbf;
+      /* pbf 5 split the one default-exported class into PbfReader / PbfWriter (named only), and
+         @mapbox/vector-tile 3 takes the reader. A namespace fallback here would construct the
+         module object and fail inside the per-tile try — every tile an "error", nothing said. */
+      _VectorTile=vt.VectorTile;
+      _Pbf=pbf.PbfReader;
       _clip=clip.default||clip;
       return !!(_VectorTile&&_Pbf);
     }).catch(()=>false);

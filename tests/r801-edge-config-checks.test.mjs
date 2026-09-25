@@ -32,7 +32,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import { load as loadYaml } from 'js-yaml';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -80,7 +80,7 @@ test('R801 ① every [functions.*] block in supabase/config.toml states its own 
 
 /* ── db.yml を 1 回だけ読む ────────────────────────────────────────────────── */
 const DB_YML = '.github/workflows/db.yml';
-const wf = yaml.load(rd(DB_YML));
+const wf = loadYaml(rd(DB_YML));
 const job = wf.jobs && wf.jobs.db;
 const steps = (job && job.steps) || [];
 const stepName = (s) => s.name || s.uses || '';

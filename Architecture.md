@@ -183,6 +183,14 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 ### 1.2 地図エンジン
 
 - 既定のレンダラは **MapLibre GL JS**（Mercator 平面 ＋ Globe 投影）。
+- **MapLibre の地図を生成するのは `js/geo-engine.js` の `_newMap` ただ 1 か所**で、`createView`・`createSubView`
+  はどちらもここを通る。`_newMap` は呼び手が何を渡しても `attributionControl:false` にする——レンダラ自身の
+  帰属表示は遠隔の TileJSON／スタイルの `attribution` を `innerHTML = DOM.sanitize(…)` で書き、その sanitizer は
+  固定している maplibre-gl で迂回できる（GHSA-jrc7-96c5-q579。修正は 6.4.1 以降にしか無い）。帰属表示を
+  求める呼び手（`credit:true`・`attributionControl` の真値・`customAttribution`）には **IntMap 側の帰属表示**
+  （`div.map-credit-view`）を付ける: いま描かれているレイヤーと地形が読む source の `attribution` を、
+  テキストノードと http(s) の `<a>` だけで組み立てる（マークアップを一切解釈しない）。主地図は従来どおり
+  `#map-credit`（DECISIONS.md の帰属表示の行）。
 - **レンダラの名を出してよいファイルは `js/geo-engine.js` ただ1つ**（アダプタ＋`IntMapGeoEngine`
   ファサード）。他の js/ 全ファイルは `const GE=()=>window.IntMapGeoEngine;` 経由で
   **契約**（`layers` / `camera` / `coords` / `scene` / `ui` / `render` / `input` / `events`）だけを見る。

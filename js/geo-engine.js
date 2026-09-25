@@ -69,6 +69,110 @@ function _m(){ return window.__imap||null; }
   let _claimedOE=null;
   function _claimClick(e){ try{ _claimedOE=(e&&e.originalEvent)||e||null; }catch(_){ _claimedOE=null; } }
   function _clickClaimed(e){ try{ const oe=(e&&e.originalEvent)||e||null; return !!(oe&&_claimedOE===oe); }catch(_){ return false; } }
+  /* ══ THE RENDERER'S OWN CREDIT IS NEVER TURNED ON — IntMap draws the credit instead ══════════════
+     MapLibre's AttributionControl writes the `attribution` of every source in use — strings that
+     arrive inside remote TileJSON and style documents, not only ones this project wrote — into the
+     page as `innerHTML = DOM.sanitize(html)`, and that sanitizer is bypassable in the pinned
+     maplibre-gl (GHSA-jrc7-96c5-q579: it removes attributes while iterating the LIVE NamedNodeMap, so
+     every second one survives — an `onerror` included). The fix exists only from 6.4.1, so the sink
+     is closed here, at the one place a MapLibre view is constructed: `_newMap` decides the option for
+     every caller, and a caller cannot turn it back on by passing `true` or `{compact:true}`.
+     ⚠ A CREDIT IS A LICENCE TERM, so asking for the renderer's control is read as asking for A credit
+     (`credit:true`, `attributionControl` truthy and `customAttribution` are the same wish) and gets
+     IntMap's instead — built from text nodes and http(s) links only, never from markup.
+     ⚠ It names what is DRAWN: the attribution of each source a visible layer (or the terrain) reads,
+     deduplicated the way the renderer's control did, so switching a base switches the credit.
+     Measured when written: js/compare.js and js/playground.js asked for `{compact:true}`; the primary
+     view (js/app-body.js), the flight-sim minimap and harness pages already passed false.
+     Lifts when: the pinned maplibre-gl carries the fix — and even then the credit stays ours unless
+     somebody decides otherwise, because this one does not parse markup at all. */
+  const _ENT={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' ',copy:'©',reg:'®',middot:'·',ndash:'–',mdash:'—'};
+  function _decodeEnt(s){ return String(s).replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi,(m,k)=>{
+    if(k[0]==='#'){ const n=(k[1]==='x'||k[1]==='X')?parseInt(k.slice(2),16):parseInt(k.slice(1),10);
+      try{ return (n>0&&n<=0x10ffff)?String.fromCodePoint(n):m; }catch(_){ return m; } }
+    const v=_ENT[k.toLowerCase()]; return v!=null?v:m; }); }
+  /* absolute http(s) only — `javascript:`, `data:` and relative URLs have no business in a credit */
+  function _creditHref(raw){ try{ const u=new URL(_decodeEnt(raw).trim()); return (u.protocol==='https:'||u.protocol==='http:')?u.href:null; }catch(_){ return null; } }
+  /* An attribution string → [{text, href|null}]. This is NOT a sanitizer and does not need to be one:
+     nothing it returns is ever parsed as markup (see _paintCredit), so a string it misreads can only
+     become odd TEXT. Tags other than <a> contribute their text; script/style bodies are dropped. */
+  const _CREDIT_SKIP={script:1,style:1,template:1,noscript:1,textarea:1,title:1,iframe:1,object:1,svg:1,math:1};
+  function _creditParts(html){
+    const s=String(html==null?'':html), out=[]; let i=0, href=null, skip=null;
+    const push=t=>{ if(!t||skip) return; t=_decodeEnt(t); const last=out[out.length-1];
+      if(last&&last.href===href) last.text+=t; else out.push({ text:t, href }); };
+    while(i<s.length){
+      const lt=s.indexOf('<',i);
+      if(lt<0){ push(s.slice(i)); break; }
+      push(s.slice(i,lt));
+      const nx=s[lt+1]||'';
+      if(!/[a-z\/!?]/i.test(nx)){ push('<'); i=lt+1; continue; }      /* "a < b" is text, as a browser reads it */
+      let j=lt+1, q=null;
+      for(;j<s.length;j++){ const c=s[j]; if(q){ if(c===q) q=null; } else if(c==='"'||c==="'") q=c; else if(c==='>') break; }
+      const tag=s.slice(lt+1,j); i=j+1;
+      if(j>=s.length) break;                                            /* an unterminated tag is dropped, not shown */
+      const m=/^(\/?)([a-z][a-z0-9-]*)/i.exec(tag); if(!m) continue;    /* comments, doctypes, processing instructions */
+      const name=m[2].toLowerCase();
+      if(m[1]){ if(name==='a') href=null; if(skip===name) skip=null; continue; }
+      if(skip) continue;
+      if(_CREDIT_SKIP[name]){ if(!/\/\s*$/.test(tag)) skip=name; continue; }
+      if(name==='a'){ const h=/(?:^|\s)href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(tag.slice(m[0].length));
+        href=h?_creditHref(h[1]!=null?h[1]:h[2]!=null?h[2]:h[3]):null; continue; }
+      if(name==='br') push(' ');
+    }
+    return out;
+  }
+  /* The only writer of a credit element: createElement / createTextNode / textContent — never innerHTML. */
+  function _paintCredit(el,parts){
+    const doc=el.ownerDocument||document;
+    while(el.firstChild) el.removeChild(el.firstChild);
+    for(const p of parts){
+      if(p.href){ const a=doc.createElement('a'); a.href=p.href; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent=p.text; el.appendChild(a); }
+      else el.appendChild(doc.createTextNode(p.text));
+    }
+  }
+  /* what the renderer's control would have listed: sources read by a layer that is drawn at this zoom */
+  function _drawnAttributions(mm,extra){
+    let list=[].concat(extra==null?[]:extra).filter(x=>typeof x==='string');
+    const seen=new Set();
+    const add=id=>{ if(id==null||seen.has(id)) return; seen.add(id);
+      const src=mm.getSource(id), a=src&&src.attribution; if(typeof a==='string'&&!list.includes(a)) list.push(a); };
+    const z=mm.getZoom();
+    for(const id of mm.getLayersOrder()){ const L=mm.getLayer(id); if(!L||!L.source) continue;
+      const hidden=(typeof L.isHidden==='function')?L.isHidden(z):(mm.getLayoutProperty(id,'visibility')==='none');
+      if(!hidden) add(L.source); }
+    const t=mm.getTerrain&&mm.getTerrain(); if(t&&t.source) add(t.source);
+    list=list.filter(e=>String(e).trim()).sort((a,b)=>a.length-b.length);
+    return list.filter((a,i)=>!list.slice(i+1).some(b=>b.includes(a)));
+  }
+  function _mountCredit(mm,extra){
+    const host=mm.getContainer(), doc=host.ownerDocument||document;
+    const el=doc.createElement('div'); el.className='map-credit-view';
+    el.style.cssText='position:absolute;right:0;bottom:0;z-index:3;max-width:100%;box-sizing:border-box;padding:1px 7px;'+
+      'border-top-left-radius:7px;font-size:10px;line-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+
+      'background:var(--card-bg,rgba(255,255,255,0.72));color:var(--text-muted,#555);pointer-events:auto;';
+    el.hidden=true; host.appendChild(el);
+    let key=null, queued=false;
+    const update=()=>{ queued=false; if(!mm) return;
+      let list=[]; try{ list=_drawnAttributions(mm,extra); }catch(_){ return; }   /* no style yet: the next styledata repaints */
+      const k=list.join('\u0000'); if(k===key) return; key=k;
+      const parts=[]; list.forEach((a,n)=>{ if(n) parts.push({ text:' | ', href:null }); parts.push(..._creditParts(a)); });
+      _paintCredit(el,parts); el.hidden=!list.length; };
+    const soon=()=>{ if(queued) return; queued=true; setTimeout(update,0); };
+    ['styledata','sourcedata','terrain','moveend'].forEach(ev=>{ try{ mm.on(ev,soon); }catch(_){} });
+    soon();
+    return { el, update, remove(){ mm=null; try{ el.remove(); }catch(_){} } };
+  }
+  /* THE ONE `new maplibregl.Map` in the project (tests/maplibre-attribution-xss-checks.test.mjs) */
+  function _newMap(o){
+    const opts=Object.assign({},o||{});
+    const wantCredit=!!(opts.credit||opts.attributionControl||opts.customAttribution), extra=opts.customAttribution;
+    delete opts.credit; delete opts.customAttribution; opts.attributionControl=false;
+    let mm=null; try{ mm=new maplibregl.Map(opts); }catch(_){ return null; }
+    if(!mm) return null;
+    let credit=null; if(wantCredit){ try{ credit=_mountCredit(mm,extra); }catch(_){} }
+    return { mm, credit };
+  }
   /** @type {import('../types/geo-engine').GeoEngineCapabilities} */ const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
     rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true,
     /* (#R170) real-scale metric extrusion (base/height in metres) — what the Measure ▸ 3-D volume tool needs */
@@ -1721,7 +1825,7 @@ function _m(){ return window.__imap||null; }
        the engine itself is bound to (`window.__imap`), so app-body.js constructs it here and
        publishes it, and every later call goes through the contract. Exactly one caller.
        (#R179) A SECOND view must NOT come through here — see createSubView. */
-    createView(o){ try{ return new maplibregl.Map(o); }catch(_){ return null; } },
+    createView(o){ const v=_newMap(o); return v?v.mm:null; },
     /* (#R179) AN ADDITIONAL VIEW, as a scoped engine rather than a raw handle.
        The compare pane, the flight simulator's minimap and the geo-guessing game each build one,
        and until now `createView` handed them the renderer itself — so all three drove it with raw
@@ -1732,11 +1836,11 @@ function _m(){ return window.__imap||null; }
        Map is. `.raw()` remains for the handful of places that genuinely need the handle (a
        container element to attach to), and the gate counts those. */
     createSubView(o){
-      let mm=null; try{ mm=new maplibregl.Map(o); }catch(_){ return null; }
-      if(!mm) return null;
+      const made=_newMap(o); if(!made) return null;
+      let mm=made.mm;
       const sub=makeMapLibreAdapter(()=>mm);
       const view=engineFacade(()=>sub);
-      view.destroy=()=>{ try{ mm.remove(); }catch(_){} mm=null; return true; };
+      view.destroy=()=>{ try{ made.credit&&made.credit.remove(); }catch(_){} try{ mm.remove(); }catch(_){} mm=null; return true; };
       return view;
     },
     /* GLOBAL TUNING — how many tile images may be in flight at once. Not per-map, which is why

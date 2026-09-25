@@ -117,6 +117,14 @@ flowchart LR
 
 ## 4. Frontend XSS defense (the primary control)
 
+> **A sink inside a dependency counts too.** The pinned maplibre-gl writes each source's `attribution`
+> (remote TileJSON / style text, not only ours) through its AttributionControl as
+> `innerHTML = DOM.sanitize(html)`, and that sanitizer is bypassable (GHSA-jrc7-96c5-q579, critical, fixed
+> only in 6.4.1+). `js/geo-engine.js` `_newMap` — the single place a MapLibre view is constructed — forces
+> `attributionControl:false` for every caller and mounts IntMap's own credit, built from text nodes and
+> http(s) links only. `tests/maplibre-attribution-xss-checks.test.mjs` evaluates the engine with a recording
+> fake and feeds hostile attribution strings to the credit painter.
+
 Because the boot code is still inline (§6) and the app holds the session token in
 `localStorage`, **correct output-encoding at every sink is the primary XSS defense** (CSP is
 secondary — see §6). The app IS built (Vite, since #R175) and what ships is `dist/`, but that
@@ -490,6 +498,11 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    ⚠ #R430 fed Atlas's open-article bridge (`window._imReader`) from the Event detail and the
    article card's Read click instead of re-wiring this reader, so **this iframe is still
    unreachable** and the paragraph above is still a statement about dormant code.
+
+12. **maplibre-gl 5.24.0 still contains the vulnerable `DOM.sanitize`** (GHSA-jrc7-96c5-q579). Its only sink
+   in the renderer is the AttributionControl, which no view can turn on (§4). The version is pinned since
+   #R158 and 6.x is a breaking migration (#R513's A/B is not merged); `npm audit` keeps reporting it until
+   that migration lands. Lifts when: maplibre-gl ≥ 6.4.1.
 
 ---
 

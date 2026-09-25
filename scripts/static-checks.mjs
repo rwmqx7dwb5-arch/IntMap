@@ -255,7 +255,10 @@ const codeFiles = ALL.filter((f) => ['.js', '.mjs', '.cjs', '.ts'].includes(f.ex
 // ── 5. YAML validity (workflows + any .yml/.yaml) ────────────────────────────
 const yamlFiles = ALL.filter((f) => f.ext === '.yml' || f.ext === '.yaml');
 let yaml = null;
-try { yaml = (await import('js-yaml')).default; } catch { /* installed via npm ci; degrade gracefully */ }
+/* ⚠ NAMED, NOT `.default`. js-yaml 5 has no default export, and reading `.default` returned undefined
+   without throwing — which this line took for "not installed", so every workflow would have been
+   checked structurally only, with a warning, on a green run. Only a failed import degrades. */
+try { const { load } = await import('js-yaml'); yaml = { load }; } catch { /* installed via npm ci; degrade gracefully */ }
 for (const f of yamlFiles) {
   const t = read(f);
   if (/\t/.test(t)) err('yaml', `${f.rel}: contains a TAB character (YAML forbids tabs for indentation)`);

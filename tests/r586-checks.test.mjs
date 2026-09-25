@@ -15,10 +15,10 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import { load as loadYaml } from 'js-yaml';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CI = yaml.load(fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8'));
+const CI = loadYaml(fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8'));
 
 test('① the regression shards cover 1..n exactly once, for one n', () => {
   const job = CI.jobs.checks;
