@@ -426,7 +426,9 @@ function makeAtlasExecutor(HOST, CTX) {
             operationId: operationId, capabilityId: cap.id,
             produced: (verdict.produced || (cap.produces || [])).slice(),
             observed: Object.assign({ before: op.before, after: op.after }, verdict.observed || null),
-            undoToken: (typeof cap.undo === 'function' && verdict.undoToken) ? verdict.undoToken : null
+            /* (atlas-observer-undo) a reversible row is reversed by turn — js/atlas-state.js `undo()` — so the
+               token is the turn this operation ran in, unless the verifier named a finer one */
+            undoToken: (typeof cap.undo === 'function') ? (verdict.undoToken || (op.turnId != null && verdict.status === 'completed' ? { turnId: op.turnId } : null)) : null
           }, verdict);
           /* ══ ⚠⚠⚠ (#R419) THE DISPATCH CASE'S OWN `meta` WAS DROPPED HERE, AND ATLAS READS IT ═════
              A verifier builds a FRESH verdict — {status, code, html, observed} — so anything the case
@@ -495,6 +497,9 @@ function makeAtlasExecutor(HOST, CTX) {
       try {
         var r = cap.undo(Caps.context(), undoToken);
         if (r && typeof r.then === 'function') r = await r;
+        /* (atlas-observer-undo) an undo that ran through the kernel already carries a verified status —
+           wrapping it in `completed` would claim a rewind the verifier did not see */
+        if (r && typeof r.status === 'string' && Results.STATUSES.indexOf(r.status) >= 0) return r;
         return Results.completed({ capabilityId: cap.id, observed: { undo: r || null } });
       } catch (e) {
         return Results.failed({ capabilityId: cap.id, code: 'threw', messageKey: 'atlas.code.threw', observed: { error: (e && e.message) || 'error' } });

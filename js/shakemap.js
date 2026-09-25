@@ -371,6 +371,9 @@ window.IntMapModules.shakeMap = function (HOST) {
     return state();
   }
 
+  /* (atlas-observer-undo) the contour source every metric produces, claimed under the effect key map.shakemap
+     declares; its remover is the whole close, so the module's own state follows the map */
+  try { GE().render.claim(SRC_LN, 'map.shakemap', { clear: () => close() }); } catch (_) { }
   function close() { clearMap(); cur = null; mmiGrid = null; mmiFor = ''; unmountLegend(); fire(); return true; }
   function setOpacity(v) {
     opacity = clamp(+v, 0, 1) || 0;

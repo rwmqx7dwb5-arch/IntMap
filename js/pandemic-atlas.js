@@ -240,6 +240,8 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
     } catch (_) { return null; }   /* unreadable is not zero (#R736) */
   }
 
+  /* (atlas-observer-undo) this module's canvas, claimed under the effect key map.pandemicDay declares */
+  try { GE().render.claim(SRC, 'map.object', { clear: () => clear() }); } catch (_) {}
   function clear() {
     try { if (GE().layers.has(LYR)) GE().layers.remove(LYR); } catch (_) {}
     try { if (GE().layers.hasSource(SRC)) GE().layers.removeSource(SRC); } catch (_) {}

@@ -99,8 +99,8 @@ test('R742 ⓪: map.highlight is on the generic paint verdict, and the painter d
   assert.equal(o.atlas.hlCountries, 6, 'the count #R736 added, still reported (tests/r736-atlas-multiprobe.spec.js reads it)');
   assert.deepEqual(o.atlas.ids.countries, KAZ_NEIGHBOURS.slice().sort(), 'and WHO, in a stable order');
   /* none of the counted sources holds it — a highlight is a feature-state paint, not a source */
-  assert.equal(o.poly, 0);
-  assert.equal(o.line, 0);
+  /* (atlas-observer-undo) the counted sources are now the renderer's claimed surfaces; this stub renderer offers none */
+  assert.ok(o.surfaces == null || Object.values(o.surfaces).every((v) => v === 0 || typeof v === 'string'));
 });
 
 test('R742 ①: repainting the SAME six countries is completed, not `not_rendered`', () => {

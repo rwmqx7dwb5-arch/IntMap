@@ -292,7 +292,8 @@ export function makeAtlasSchemas() {
       'map.shakemap': { type: 'object', properties: { action: one('open', 'close', 'exposure'), eventId: str(), metric: str(), place: str(), from: str(), to: str(), minMagnitude: num(0, 10), minMMI: num(1, 12), limit: int(1, 200) } },
       'data.value': { type: 'object', properties: { country: str(), place: str(), name: str(), metric: str(), what: str() }, anyOf: [{ required: ['country'] }, { required: ['place'] }, { required: ['name'] }] },
       'layers.allOff': { type: 'object', properties: { all: bool() } },             /* `layersOff`; all:true drops the base layers too */
-      'map.clear': { type: 'object', properties: { what: str(), target: str() } },  /* no `what` = everything, which is the case's own default */
+      'map.clear': { type: 'object', properties: { what: str(), target: str() } },
+      'map.undo': { type: 'object', properties: { turn: int() } },   /* (atlas-observer-undo) no `turn` = the most recent turn that changed the map */  /* no `what` = everything, which is the case's own default */
       'view.fullscreen': { type: 'object', properties: { on: bool(), mode: str() } },
       'view.locate': noArgs('locate'),
       /* (#R493) `include` is a CLOSED, ASCII set the dispatch really compares against (rule 2 above),

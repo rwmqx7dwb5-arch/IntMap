@@ -97,7 +97,9 @@ test('atlas-semantic-search ① (the defect, restated) spellings alone put view.
      the meaning half is a request in words no table of the product holds: */
   const back = CAPS.search('地図を今日に戻して', { want: 3, min: 1 });
   assert.ok(!ids(back, 6).includes('time.travel'), 'spellings alone do not reach time.travel for 「地図を今日に戻して」 — ' + ids(back, 6).join(', '));
-  assert.deepEqual(ids(CAPS.search('地図を現代に戻す', { want: 3, min: 1 })), [], 'spellings alone reach nothing for it');
+  /* what the spellings reach moves as the catalogue grows (map.undo's 「戻す」); the defect is that they do not reach time.travel */
+  const modern = ids(CAPS.search('地図を現代に戻す', { want: 3, min: 1 }), 6);
+  assert.ok(!modern.includes('time.travel'), 'spellings alone do not reach time.travel for 「地図を現代に戻す」 — ' + modern.join(', '));
 });
 
 /* ══ ② «COULD NOT ASK» IS NOT «NOTHING MEANS THIS» ════════════════════════════════════════════════ */
@@ -151,8 +153,13 @@ test('atlas-semantic-search ③ every adjacent pair is ordered by evidence, or i
   /* 「地図を今日に戻して」: the rows the spellings reach are ONE declared tie lexically (the alphabet used to
      order such rows), and the capability the request means is not among them … */
   const lex = CAPS.search('地図を今日に戻して', { want: 3, min: 1 }).ranked;
-  assert.ok(lex.length >= 2 && lex[0].rank === lex[1].rank, 'the lexical top is a declared tie');
-  /* … and the meaning of the request is what decides */
+  /* ⚠ The DEFECT is «equals ordered by the alphabet», not «the lexical top is a tie»: which rows the
+     spellings reach moves whenever the catalogue grows (map.undo's text added 「戻して」 and the words'
+     document frequency pushed them past MAX_DF, so the lexical search now reaches NOTHING here — an
+     honest empty list where it used to list wrong rows). Whatever it returns, its top is ordered by
+     evidence or declared equal. */
+  assert.ok(lex.length < 2 || lex[0].rank === lex[1].rank || cmp(lex[0], lex[1]) < 0,
+    'the lexical top is ordered by evidence or is a declared tie: ' + lex.slice(0, 2).map((r) => r.id).join(', '));  /* … and the meaning of the request is what decides */
   const fused = (await CAPS.searchFused('地図を今日に戻して', { want: 3, min: 1 })).ranked;
   assert.equal(fused[0].id, 'time.travel');
   assert.ok(fused[0].semantic && fused[0].rank < fused[1].rank, 'decided by the meaning half, not declared equal');

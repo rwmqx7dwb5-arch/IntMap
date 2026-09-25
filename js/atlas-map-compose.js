@@ -254,6 +254,10 @@ export function makeAtlasMapCompose(deps) {
       try { if (GE && GE().layers.hasSource(SRC)) GE().layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) { /* no renderer */ }
     }
 
+    /* (atlas-observer-undo) the one source every compose layer reads is claimed with the renderer under
+       the effect key map.compose declares — the verdict and the undo ask the renderer about it by that key */
+    try { if (GE) GE().render.claim(SRC, 'map.compose', { clear }); } catch (_) { /* no renderer */ }
+
     function setVisible(v) {
       try { LAYERS.forEach((id) => { if (GE().layers.has(id)) GE().layers.setVisible(id, !!v); }); } catch (_) { /* no renderer */ }
     }

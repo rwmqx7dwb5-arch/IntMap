@@ -114,7 +114,8 @@ test('R726 ⑤ the historical power map is verified by the faction fills on the 
   assert.equal(none.code, 'not_rendered');
   const failed = cap.verify({}, {}, null, null, { ok: false, html: '' });
   assert.equal(failed.status, 'failed');
-  assert.match(liftFunction(CAPS_SRC, 'paintNow'), /nlq-fac-src/, 'and every paint observer now sees the faction source too');
+  /* (atlas-observer-undo) by effect key, through the renderer — js/atlas-console.js claims nlq-fac-src under map.factions */
+  assert.match(liftFunction(CAPS_SRC, 'paintNow'), /ownedFeatures\('map\.factions'\)/, 'and every paint observer now sees the faction surface too');
 });
 
 test('R726 ⑥ the camera observer waits for the camera to arrive before it reports', () => {

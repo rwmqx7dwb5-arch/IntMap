@@ -362,8 +362,10 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   assert.ok(SCHEMAS.schemaFor('map.compose'), 'a schema of its own');
   assert.ok(makeAtlasCatalogText({}, {}).idsCovered().includes('map.compose'), 'the catalogue describes it');
   const caps = R('js/atlas-capabilities.js');
-  assert.match(caps, /compose: sourceFeatureCount\('atl-compose-src'\)/, 'the paint observer counts the compose source');
+  /* (atlas-observer-undo) asked of the renderer by the effect key, and the module claims its source under it */
+  assert.match(caps, /compose: ownedFeatures\('map\.compose'\)/, 'the paint observer reads the compose surface');
   const mod = R('js/atlas-map-compose.js');
+  assert.match(mod, /render\.claim\(SRC, 'map\.compose'/, '…which the module claims under the key map.compose writes');
   assert.match(mod, /const SRC = 'atl-compose-src'/, '…and that is the source the module writes');
   const con = R('js/atlas-console.js');
   assert.match(con, /^import \{ makeAtlasMapCompose \} from '\.\/atlas-map-compose\.js';/m, 'imported at line start (scripts/js-reachability.mjs anchors there)');

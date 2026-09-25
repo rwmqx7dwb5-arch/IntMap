@@ -1132,6 +1132,8 @@ window.IntMapModules.isochrone=function(HOST){
        contours off the map AND hides the panel — so close() is clear(), named for what it is. */
     const isOpen=()=>!!(panel&&panel.style.display!=='none');
     function close(){ if(!isOpen()) return false; clear(); return true; }
+    /* (atlas-observer-undo) the reach claims its source with the renderer under the effect key routing.isochrone declares, so the verdict asks the renderer, not a typed id */
+    try{ GE().render.claim(SRC,'map.isochrone',{clear}); }catch(_){}
     return { open, close, isOpen, run, clear, ensureLayers, _src:SRC }; })();
 };
 
