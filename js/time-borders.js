@@ -80,19 +80,12 @@ window.IntMapModules.timeBorders=function(HOST){
      retry has therefore never once run. Three of the four sites are inside `try{}catch(_){}`, which is
      exactly why it stayed silent: the catch swallowed the ReferenceError and looked like "no retry
      needed". ⚠ A mechanism that throws on its first line is not a weaker safety net — it is none.
-     Same shape as the canonical one (listen + poll + hard-resolve after ~6 s, because addSource works
-     as soon as the style object exists and a slightly-early add beats a layer that never appears),
-     built on THIS file's own `_imCanDraw()` so there is no second notion of "can I draw yet". */
-  function whenStyleReady(){
-    return new Promise(res=>{
-      let done=false;
-      const fin=()=>{ if(done) return; done=true; try{ GE().events.off('idle',ck); GE().events.off('styledata',ck); GE().events.off('load',ck); }catch(_){} res(); };
-      const ck=()=>{ if(_imCanDraw()) fin(); };
-      if(_imCanDraw()){ res(); return; }
-      try{ GE().events.on('idle',ck); GE().events.on('styledata',ck); GE().events.on('load',ck); }catch(_){}
-      let n=0; (function poll(){ if(done) return; if(_imCanDraw()||n++>40) fin(); else setTimeout(poll,150); })();
-    });
-  }
+     It was then written here as a copy of the canonical one — listen + poll + hard-resolve after ~6 s.
+     ⚠ The copy and its deadline are gone: the wait is the engine's (GE().whenCanDraw()), the one
+     js/data-layers.js uses too, and it resolves only when canDraw() is true. A deadline that answers
+     «ready» to a style that is not handed the add to a renderer that throws «Style is not done
+     loading.» and left nothing to retry (dev-notes/2026-09-26-restored-layer-before-style.md). */
+  function whenStyleReady(){ return GE().whenCanDraw(); }
   const applyTheme=HOST.applyTheme, countryStats=HOST.countryStats, showCountryDetail=HOST.showCountryDetail;
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()||!window.IntMapTime) return {};
@@ -1539,8 +1532,8 @@ window.IntMapModules.timeBorders=function(HOST){
       if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
-         ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls + hard-resolves after
-         ~6s — the exact fix R41 made for this class of hang), and guard on the travel seq so a stale deferred apply
+         ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls canDraw(), so a busy
+         map cannot strand it — R41's lesson; it no longer hard-resolves, see its note above), and guard on the travel seq so a stale deferred apply
          from an earlier year can't clobber a newer one ("タイムマシンで変更しても国境線が変化しない"). */
       else whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); }); }
     function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null;

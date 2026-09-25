@@ -2047,28 +2047,22 @@ window.IntMapModules.dataLayers=function(HOST){
        painted: 4497 ms / 3171 ms while busy vs 189 ms while idle. Same click, wildly different latency:
        the reported 「レイヤーをオンオフしても、時間差で表示されたり表示されなかったりする」.
        HOST.canDraw() answers the question actually being asked (is the style object parsed?), which is all
-       addSource/addLayer need. The listeners + poll + hard-resolve below are kept unchanged as the safety
-       net for the genuine not-yet-parsed window (first load, and a real setStyle() base-map swap). */
+       addSource/addLayer need. The listeners + poll are kept as the wait for the genuine not-yet-parsed
+       window (first load, and a real setStyle() base-map swap); the hard-resolve is gone — see below. */
     /* function DECLARATION, not a const: it is called from withCountries() further UP this file, and a
        `const` here would leave those calls in the temporal dead zone (the #R167 trap). */
     function _canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-    function whenStyleReady(){
-      return new Promise(res=>{
-        let done=false;
-        const fin=()=>{ if(done) return; done=true; try{ GE().events.off('idle',ck); GE().events.off('styledata',ck); GE().events.off('load',ck); }catch(_){} res(); };
-        const ck=()=>{ if(_canDraw()) fin(); };
-        if(_canDraw()){ res(); return; }
-        GE().events.on('idle',ck); GE().events.on('styledata',ck); GE().events.on('load',ck);
-        /* (#R41) ROOT CAUSE of "レイヤー/ラベルをチェックしても表示されない・ブラウザ再読み込みで治る": the old version
-           waited ONLY on idle/load. If ANOTHER source is still loading or erroring, the map never reaches a clean
-           idle, so this promise hung FOREVER and the layer was never added — a reload (clean state) was the only
-           cure. Now also listen on styledata, POLL independently (covers the TOCTOU race where the style finished
-           between the sync check and the listener registration), and as a last resort resolve anyway after ~6 s —
-           addSource/addLayer work fine as long as the style object exists, so a slightly-early add beats a layer
-           that never appears. */
-        let n=0; (function poll(){ if(done) return; if(_canDraw()||n++>40) fin(); else setTimeout(poll,150); })();
-      });
-    }
+    /* (#R41) ROOT CAUSE of "レイヤー/ラベルをチェックしても表示されない・ブラウザ再読み込みで治る": the old version
+       waited ONLY on idle/load, and a map that never reached a clean idle hung the promise forever. It then
+       listened on styledata, polled, and — as a last resort — resolved anyway after ~6 s.
+       ⚠ THAT LAST RESORT IS GONE, and so is this file's private copy of the wait. The deadline told every
+       caller «ready» about a style that was not: measured on production, a tab opened hidden parses no
+       style (no animation frames), a restored radar layer was handed to it at ~6 s, threw «Style is not
+       done loading.», and never came back (dev-notes/2026-09-26-restored-layer-before-style.md). The wait
+       is the engine's now — GE().whenCanDraw(), one implementation for this file, js/time-borders.js and
+       js/time-admin1.js — and it answers only when canDraw() is true. The name stays: every branch of
+       toggleLayer reads it. */
+    function whenStyleReady(){ return GE().whenCanDraw(); }
     /* Hover a choropleth country → tooltip with its name + the metric value. */
     const CHORO_META={
       pop:{label:()=>window.IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población'), fmt:s=>s.density!=null?Math.round(s.density).toLocaleString()+' /km²':'—'},
@@ -5961,7 +5955,9 @@ window.IntMapModules.dataLayers=function(HOST){
             if(lp){ if(!GE().layers.hasSource('src-subcables-lp')) GE().layers.addSource('src-subcables-lp',{type:'geojson',data:lp});
               if(!GE().layers.has('lyr-subcables-pts')) GE().layers.add({id:'lyr-subcables-pts',type:'circle',source:'src-subcables-lp',minzoom:3,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,1.6,8,3.5],'circle-color':'#ffd23f','circle-stroke-color':'#1a1a1a','circle-stroke-width':0.6,'circle-opacity':0.9}},beforeId); }
           }catch(e){
-            /* the style refused this add — it is not parsed yet however hard whenStyleReady insisted */
+            /* the style refused this add. whenStyleReady() no longer answers «ready» early (it used to
+               hard-resolve at ~6 s — see its note), so this is now a style that went away between the
+               wait and this line; the ladder stays for exactly that */
             if(again()) return;
             stopHook();
             /* (#R189) giving up QUIETLY here left the one state #R187 was hunting: box ticked, layer

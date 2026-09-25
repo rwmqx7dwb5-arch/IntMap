@@ -126,19 +126,11 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
   const _LT = window.IntMapLang.pick(() => HOST.lang);
 
   /* (#R170/#R421) "Is it safe to addSource/addLayer right now?" — the app-wide predicate, and the
-     wait that goes with it. Both are the shapes js/time-borders.js carries, for the same reasons:
-     a one-shot `once('idle')` never fires on a busy map, so this polls AND hard-resolves. */
+     wait that goes with it. A one-shot `once('idle')` never fires on a busy map, so the wait polls;
+     it is the engine's (GE().whenCanDraw(), shared with js/time-borders.js and js/data-layers.js) and
+     it no longer hard-resolves — see the note on whenCanDraw in js/geo-engine.js. */
   function _imCanDraw() { try { return !!HOST.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } }
-  function whenStyleReady() {
-    return new Promise(res => {
-      let done = false;
-      const fin = () => { if (done) return; done = true; try { GE().events.off('idle', ck); GE().events.off('styledata', ck); GE().events.off('load', ck); } catch (_) {} res(); };
-      const ck = () => { if (_imCanDraw()) fin(); };
-      if (_imCanDraw()) { res(); return; }
-      try { GE().events.on('idle', ck); GE().events.on('styledata', ck); GE().events.on('load', ck); } catch (_) {}
-      let n = 0; (function poll() { if (done) return; if (_imCanDraw() || n++ > 40) fin(); else setTimeout(poll, 150); })();
-    });
-  }
+  function whenStyleReady() { return GE().whenCanDraw(); }
 
   return (function () {
     if (!GE().hasRenderer() || !window.IntMapTime) return {};

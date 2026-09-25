@@ -476,7 +476,9 @@ layer-manifest.js                 **どのレイヤーが在るか**の正本（
                                   DOM も window も持たない純データ（Node の検査がそのまま import する）。棚の並べ替え
                                   （reorganizeLayerPanel）・既定 ON の一覧・タイル盤・共有リンク・お気に入りがここを読む
 layer-rows.js                     manifest の DOM 側 — 基本表示 10 行を manifest から書く（index.html から移った）＋
-                                  `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）
+                                  `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）＋
+                                  `holdUntilDrawable`（スタイルが受け取れる前のレイヤーの `change` を預かり、受け取れる
+                                  ようになってから箱ごとに1回配る。docs/MAP-LAYERS.md §7.2）
 layer-dropdown.js                 レイヤーメニューとそのアコーディオン
 layer-favs.js                     ★を付けたレイヤーとクイックピックのチップ
 layer-previews.js                 レイヤーのサムネイル IntMapLayerPreviews

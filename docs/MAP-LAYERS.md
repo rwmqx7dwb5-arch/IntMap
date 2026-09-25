@@ -690,6 +690,28 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 （`[{ id, key, shelf, label, rest, on, share, lazy }]`。名前は `label` の i18n か、行が組み立てた名前）。
 ⚠ Atlas の `layerCatalog()`（`js/atlas-console.js`）はまだ DOM を歩いている——作り替えは Atlas 側の回。
 
+**スタイルが受け取れる前に来た ON/OFF は預かられる（`holdUntilDrawable`・`js/layer-rows.js`）。**
+指・共有リンクの `&l=`（`js/map-ui.js`）・セッション復元（`js/session-tabs.js`）・既定 ON の発火
+（`js/app-body.js`）・Atlas・お気に入り・パック——どの経路も最後は**箱の `change`** で、行の持ち主の
+ハンドラがそこで addSource/addLayer する。document の capture リスナが、manifest が宣言する箱の `change` を
+**レンダラが在って `canDraw()` が偽のあいだだけ**止め（`stopPropagation`。同じ document に付いた
+セッション保存は利用者自身のクリックをそのまま見る）、後で**箱ごとに1回**、着いた順に、**配る時点の**
+チェック状態で `change` を出し直す（ON→OFF と揺れた箱は OFF として1回）。
+- 最初の `load` より前に預かったもの（起動時）→ **`load` の直後**に配る。それまでに来たものも同じ列に並ぶ
+  （後から来たものが追い越さない）。解析の瞬間に配らないのは、MapLibre の `load` が「その時点の全 source が
+  読めた」ときにしか発火しないから——実測で、共有できる 87 レイヤーを解析の瞬間に足すと、スタイル解放から
+  28 秒たっても `js/app-body.js` の `load` 処理（地球全体の衛星ベース・既定レイヤー・起動画面の段階）が
+  走っていなかった。
+- それより後に預かったもの（スタイルの差し替え）→ `whenCanDraw()` の解決で配る。
+- レンダラが無ければ待つものが無いので、従来どおり素通りする。
+
+⚠ **個々のレイヤーに再試行や try/catch を足して直さない**——海底ケーブルだけが自前の再試行
+（`addSubcables` の梯子）を持っていたので同じ条件から回復し、ほかは失われていた。守るべき事実は
+「箱の `change` は、スタイルが受け取れるときに届く」で、それはこの1か所が持つ。
+回帰検査は `tests/restored-layer-before-style.spec.js`（隠れたタブをアニメーションフレームの保留で再現し、
+`sharedIds()` 全部を載せたリンクで「保留しても失うレイヤーが無い」ことを通常起動と突き合わせる）と
+`tests/restored-layer-before-style-checks.test.mjs`。
+
 `#layer-dropdown` という要素は残っていて、それは UI ではなくレジストリである——行を作るのは今も各モジュールの
 `buildUI()` で（ハンドラ・凡例・スライダーを持つのは行の持ち主）、**状態**（チェック）は今もその箱にある。
 **常時 `display:none`**（表示させる `.show` クラスは存在しない）。

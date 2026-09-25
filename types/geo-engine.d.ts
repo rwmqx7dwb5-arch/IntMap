@@ -467,6 +467,8 @@ export interface GeoEngineFacade {
   hasRenderer(): boolean;
   ready(): any;
   canDraw(): any;
+  /** Resolves once this view has a renderer whose style can take addSource/addLayer — never before. */
+  whenCanDraw(): Promise<void>;
   layers: GeoEngineLayers;
   scene: GeoEngineScene;
   ui: GeoEngineUi;
