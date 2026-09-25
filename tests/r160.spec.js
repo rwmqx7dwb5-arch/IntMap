@@ -68,13 +68,26 @@ test('R160 (B) opening/closing the RIGHT sidebar never moves the map (fixed full
 });
 
 test('R160 (B) the right-anchored HUD slides left to clear the open right sidebar', async () => {
+  /* ⚠ WAIT FOR THE HUD TO SETTLE, NOT FOR THE CLOCK. The HUD slides on `transition:right .38s`
+     (css/intmap.css, #R160) and BOTH reads below are of that sliding edge. The previous test leaves the
+     panel open, so with fixed 500/700 ms sleeps a loaded runner read the «closed» edge while the HUD was
+     still over on the open side, and the nightly deep tier failed `970 > 970` — the same edge read twice.
+     What each read needs is: the panel is in the wanted state AND the HUD's own `right` transition is no
+     longer running. getAnimations() flushes style first, so a transition just started by open()/close()
+     is already listed — «none running» means settled, not «not begun». The target position is NOT
+     waited for: a HUD that stopped sliding settles where it is and fails below, with both numbers. */
+  const settled = (open) => page.waitForFunction((o) => {
+    const el = document.querySelector('.map-controls-top');
+    if (document.body.classList.contains('lsr-open') !== o || !el) return false;
+    return el.getAnimations().every((a) => a.playState !== 'running');
+  }, open, { timeout: 10_000 }).catch(() => {});   // a state that never arrives fails below, with the numbers
   await page.evaluate(() => window.IntMapLayerSidebar.close());
-  await page.waitForTimeout(500);
+  await settled(false);
   const closedRight = await page.evaluate(() => {
     const el = document.querySelector('.map-controls-top'); return el ? Math.round(el.getBoundingClientRect().right) : null;
   });
   await page.evaluate(() => window.IntMapLayerSidebar.open());
-  await page.waitForTimeout(700); // let the .38s right-transition finish (real browser → transitions run)
+  await settled(true);
   const openState = await page.evaluate(() => {
     const el = document.querySelector('.map-controls-top');
     const panelW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lsr-w')) || 300;

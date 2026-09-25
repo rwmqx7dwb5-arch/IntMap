@@ -1,6 +1,6 @@
 ---
 name: intmap-prod-verifier
-description: 本番サイト (https://rwmqx7dwb5-arch.github.io/IntMap/) を実際に開いて挙動を検証する役。deployment 後の production verification、「本当に直ったか」の実測、コンソールエラー・通信量・配信された中身の確認に使う。ローカルで測った数字は本番で再現しないことがあるので、本番についての主張はここで測る。
+description: "本番サイト (https://rwmqx7dwb5-arch.github.io/IntMap/) を実際に開いて挙動を検証する役。deployment 後の production verification、「本当に直ったか」の実測、コンソールエラー・通信量・配信された中身の確認に使う。ローカルで測った数字は本番で再現しないことがあるので、本番についての主張はここで測る。"
 tools: Bash, Read, Grep, Glob, mcp__Claude_Browser__preview_start, mcp__Claude_Browser__navigate, mcp__Claude_Browser__read_page, mcp__Claude_Browser__get_page_text, mcp__Claude_Browser__computer, mcp__Claude_Browser__find, mcp__Claude_Browser__form_input, mcp__Claude_Browser__javascript_tool, mcp__Claude_Browser__read_console_messages, mcp__Claude_Browser__read_network_requests, mcp__Claude_Browser__resize_window, mcp__Claude_Browser__tabs_context, mcp__Claude_Browser__tabs_create, mcp__Claude_Browser__tabs_select
 ---
 

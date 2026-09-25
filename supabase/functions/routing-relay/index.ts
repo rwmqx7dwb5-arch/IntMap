@@ -47,7 +47,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerKey, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
 
 const CORS = corsFor();
 /* ⚠ THE LICENCE HEADER. Not tuning — see §2.10.1 in the note above. */
@@ -113,11 +113,14 @@ const INDEX_RE = /^\d{1,2}$/;
 
    STAGE 2 — THE SHARED BUCKETS (Postgres, `public.relay_take`, _shared/rate-limit.js), taken from
    right before the paid call and only there — a probe or a malformed request never reaches them.
-   Three buckets, in this order:
+   Four buckets, in this order:
      · routing-relay:ip           — the same 60/min as the Map, but counted across every isolate.
                                     Fails OPEN when the database does not answer: the Map above has
                                     already throttled this caller as well as one isolate can, and
                                     the two buckets below are still in front of the paid call.
+     · routing-relay:ip:day       — the caller's SHARE of the day (PER_IP_PER_DAY). Fails OPEN for
+                                    the same reason; refused as `rate_limit` (it is this caller's
+                                    rate, not the project's ceiling).
      · routing-relay:global:minute
      · routing-relay:global:day   — THE PROJECT-WIDE CEILING. Both fail CLOSED: a limiter that
                                     cannot be consulted cannot say the invoice is bounded, so the
@@ -130,7 +133,10 @@ const INDEX_RE = /^\d{1,2}$/;
      · GLOBAL_PER_DAY = 3000. Observation: the Mapbox Directions API price list read 2026-09-18
        grants 100,000 requests a month before the meter starts; 3,000 a day is 90,000–93,000 a
        month, i.e. the whole free allowance with a few days' margin, and the per-IP rate of 60/min
-       means one honest user cannot spend more than 2% of a day. Expires when the price list
+       was once written here as «one honest user cannot spend more than 2% of a day» — that is 2%
+       PER MINUTE: 60/min is 3,000 in fifty minutes, so one address could spend the whole day and
+       every other reader would meet `spend_ceiling` until it refilled (found by the multi-aspect
+       audit, 2026-09-26). The per-address DAY share below is what makes the sentence true. Expires when the price list
        changes, or when the product has more routing than that — then the number goes up ON
        PURPOSE (via ROUTING_RELAY_GLOBAL_PER_DAY, without a deploy), because the ceiling is a
        statement of what the project has agreed to pay, not a guess at demand.
@@ -139,6 +145,15 @@ const INDEX_RE = /^\d{1,2}$/;
        drain 3,000 in ten). 300 = five callers at the full per-IP rate at once, which is more
        concurrency than the routing panel has ever been observed to have. Expires with the per-IP
        rate or the day ceiling, both of which it is derived from.
+     · PER_IP_PER_DAY = GLOBAL_PER_DAY / MIN_ADDRESSES_TO_SPEND_A_DAY (= 300 by default). The
+       project-wide ceiling protects the invoice; this share protects the OTHER readers from one
+       address. MIN_ADDRESSES_TO_SPEND_A_DAY = 10 is the same estimate _shared/rate-limit.js calls
+       READERS_PER_ADDRESS (one office / school / carrier NAT may hold ten readers) read the other
+       way round: no fewer than ten addresses can exhaust a day. An ESTIMATE, not a measurement —
+       it expires the first time production shows `rate_limit` from this bucket for traffic that
+       was readers, and then ROUTING_RELAY_PER_IP_PER_DAY moves it without a deploy. It refills
+       continuously (per second), like every other bucket here, so it is a rate over a day, not a
+       counter that resets at midnight.
      · RATE_PER_MIN = 60 is unchanged from #R347: one route request per second is faster than any
        drag of a waypoint can be issued, and js/routing-traffic.js debounces its refreshes.
      The canonical place for all three is THIS FILE; the environment may raise or lower the two
@@ -158,14 +173,17 @@ function envCeiling(name, fallback) {
 }
 const GLOBAL_PER_MIN = envCeiling("ROUTING_RELAY_GLOBAL_PER_MIN", 300);
 const GLOBAL_PER_DAY = envCeiling("ROUTING_RELAY_GLOBAL_PER_DAY", 3000);
+const MIN_ADDRESSES_TO_SPEND_A_DAY = READERS_PER_ADDRESS;
+const PER_IP_PER_DAY = envCeiling("ROUTING_RELAY_PER_IP_PER_DAY", Math.max(1, Math.floor(GLOBAL_PER_DAY / MIN_ADDRESSES_TO_SPEND_A_DAY)));
+const SCOPE_IP_DAY = "routing-relay:ip:day";
 const SCOPE_IP = "routing-relay:ip";
 const SCOPE_GLOBAL_MINUTE = "routing-relay:global:minute";
 const SCOPE_GLOBAL_DAY = "routing-relay:global:day";
 
-function callerKey(req) {
-  const xff = req.headers.get("x-forwarded-for") || "";
-  return xff.split(",")[0].trim() || "unknown";
-}
+/* callerKey is _shared/rate-limit.js's — one identification of the caller for every relay, not a copy
+   per function. MEASURED 2026-09-26 against production (cable-geo, 75 requests each way): requests
+   carrying a forged x-forwarded-for drained the SAME bucket as the caller's plain requests, so the
+   platform puts the real client address first and a forged header does not buy a fresh bucket. */
 
 /* ⚠ THE MAP KEEPS ITS DECLARED SIZE. Before #R801 the only pressure valve was a sweep of IDLE
    entries when the Map grew past RATE_MAX_KEYS — and a burst of distinct addresses inside one idle
@@ -211,6 +229,12 @@ async function spendOk(key) {
     capacity: RATE_PER_MIN, refillPerSec: RATE_PER_MIN / 60, cost: 1, onUnavailable: "allow",
   });
   if (!ip.allowed) return fail("rate_limit", 429);
+  /* the caller's share of the DAY — before the global buckets, so an address that has spent its
+     share does not also take a token from everyone else's minute */
+  const ipDay = await limiter.take(SCOPE_IP_DAY, key, {
+    capacity: PER_IP_PER_DAY, refillPerSec: PER_IP_PER_DAY / 86400, cost: 1, onUnavailable: "allow",
+  });
+  if (!ipDay.allowed) return fail("rate_limit", 429);
   const minute = await limiter.take(SCOPE_GLOBAL_MINUTE, "*", {
     capacity: GLOBAL_PER_MIN, refillPerSec: GLOBAL_PER_MIN / 60, cost: 1, onUnavailable: "deny",
   });
@@ -226,7 +250,7 @@ async function spendOk(key) {
 
 /* Exported for tests/r801-relay-spend-checks.test.mjs, which evaluates this module (with
    Deno.serve stubbed) rather than reading it — the Map's bound is a property of running code. */
-export { rateOk, buckets, RATE_MAX_KEYS, RATE_PER_MIN, GLOBAL_PER_MIN, GLOBAL_PER_DAY };
+export { rateOk, buckets, RATE_MAX_KEYS, RATE_PER_MIN, GLOBAL_PER_MIN, GLOBAL_PER_DAY, PER_IP_PER_DAY };
 
 /* ══ VALIDATION ════════════════════════════════════════════════════════════════════════════════ */
 

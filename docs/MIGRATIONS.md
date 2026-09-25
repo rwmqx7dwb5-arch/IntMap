@@ -96,10 +96,17 @@ through the Management API in a single begin/commit — then record it with
 file's `commit;` for `rollback;`.
 
 MEASURED 2026-09-25 (read-only, `supabase migration list --linked` and `db push --dry-run`): the
-dry run refuses outright, because production records two versions that are not in this repository
+dry run refused outright, because production records two versions that were not in this repository
 (`20260722000000` mgmt, `20260722120000` passkeys — another application's tables sharing the
-project), and seven local versions are unrecorded. Until that is reconciled, the automated push is
-red for every new migration and the nightly drift job is red. The reconciliation for the baseline is
+project). By 2026-09-26 every local version was recorded, but those two still made the CLI refuse
+**every** push («Remote migration versions not found in local migrations directory»). They are now
+held here as **empty** files of the same version and name (`20260722000000_mgmt.sql`,
+`20260722120000_passkeys.sql` — `select 1;`, no DDL), so the two histories are the same list and
+`db push --dry-run` names exactly the migrations a merge added (measured 2026-09-26). The CLI's own
+suggestion, `migration repair --status reverted`, would delete the other application's record of its
+schema and is not ours to run. ⚠ The automated push also needs the repository secret
+`SUPABASE_ACCESS_TOKEN` (docs/BACKUP-RESTORE.md → 「一度だけの登録」); until it is registered the
+merge applies nothing and the flow above is done by hand. The reconciliation for the baseline is
 this, read-only:
 
 ```bash

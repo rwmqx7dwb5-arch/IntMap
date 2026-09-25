@@ -139,7 +139,18 @@ test('R488 the sidebar handle follows the sidebar, and no collapsed-state rule m
       const sb = document.getElementById('sidebar');
       if (sb.classList.contains('collapsed') !== w) document.getElementById('btn-toggle-sidebar').click();
     }, want);
-    await page.waitForTimeout(700);   // the handle carries its own `transition:left .4s`
+    /* ⚠ WAIT FOR THE TRANSITIONS, NOT FOR THE CLOCK (same fix as #4 above, #748). The handle carries
+       `transition:left .4s` and its chevron `transition:transform .4s` (css/intmap.css), and the probe
+       below reads both. A fixed 700 ms is a guess about the runner; what the probe needs is that the
+       sidebar is in the wanted state AND neither transition is still running. getAnimations() flushes
+       style first, so a transition the click just started is already in the list — «none running» is
+       therefore «settled», not «not begun». The target values are NOT waited for: a handle that stays
+       behind at x=400 settles there and fails below with its measured position. */
+    await page.waitForFunction((w) => {
+      const sb = document.getElementById('sidebar'), tg = document.getElementById('btn-toggle-sidebar');
+      if (sb.classList.contains('collapsed') !== w) return false;
+      return tg.getAnimations({ subtree: true }).every((a) => a.playState !== 'running');
+    }, want, { timeout: 10_000 }).catch(() => {});   // a state that never arrives fails below, with the numbers
   };
   const probe = () => page.evaluate(() => {
     const tg = document.getElementById('btn-toggle-sidebar');

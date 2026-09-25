@@ -7,6 +7,14 @@
 # just CI — which is exactly why the group below covers every ecosystem entry rather than the
 # dev half alone, and why a bump wants the browser suite to run before it merges.
 #
+# ⚠ ONE GROUP FOR EVERYTHING MEANT ONE BREAKING MAJOR BLOCKED EVERY OTHER UPDATE (multi-aspect-audit).
+# The group was called «dev-dependencies» and matched '*' at every update type, so PR #750 carried
+# maplibre-gl 5→6 (pinned on purpose since #R158), @turf/* 6→7 and vite 6→8 in the SAME PR as the
+# patch-level @supabase/supabase-js bump. vite 8 broke the build, the whole PR went red, and so
+# every minor and patch update — security fixes included — sat behind a migration nobody had
+# decided to make. Minor and patch now travel together (they are expected to be drop-in); each
+# MAJOR arrives as its own PR, so a red major is one open question, not a dam.
+#
 # ⚠ THE github-actions ECOSYSTEM UPDATES SHA PINS. Every remote action is pinned to a full
 # 40-hex commit SHA with the version in a trailing comment (`@<sha>  # v4.4.0`); Dependabot
 # reads that comment, proposes the next release's SHA, and rewrites both. A PR that replaces a
@@ -17,10 +25,16 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 6
     groups:
-      dev-dependencies:
+      minor-and-patch:
         patterns: ['*']
+        update-types: [minor, patch]
+      # the Turf sub-packages are one release of one library (src/vendor.js imports each from its own
+      # package to keep the bundle small) — nineteen separate major PRs would be one decision nineteen times
+      turf-major:
+        patterns: ['@turf/*']
+        update-types: [major]
     commit-message:
       prefix: 'deps'
 

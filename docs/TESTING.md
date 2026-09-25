@@ -922,13 +922,14 @@ Two products read this repository, and each reads only its own location: Claude 
 `CLAUDE.md` and `.claude/`, Codex reads `AGENTS.md` and `.codex/`. The instructions are written
 **once**, provider-neutral, under `.agents/` (`rules/`, `roles/`, `skills/`), and the per-product
 files are **rendered** from them by `node scripts/agent-sync.mjs --write`. This gate re-renders
-into memory and compares. It reports four things:
+into memory and compares. It reports five things:
 
 | name | what it asserts |
 |---|---|
 | `doc-size` | `AGENTS.md` is under **32,768 bytes** on the largest checkout that can exist, and prints the margin |
 | `claude-import` | `CLAUDE.md` carries a **bare** `@AGENTS.md` line, plus one per `.agents/rules/*.md` |
 | `render` | every rendered file equals what `.agents/` renders to |
+| `frontmatter-yaml` | every rendered agent and skill frontmatter **parses as YAML** and gives back the source's name and description — Claude Code skips an unparseable one without a word (the verifier role was invisible that way: its description held «へ: », and `render` stayed green because this script's own reader is not YAML) |
 | `stray` | no rendered file survives its source being deleted |
 
 ⚠ **`doc-size` is not a style preference.** `project_doc_max_bytes` defaults to 32,768 and Codex

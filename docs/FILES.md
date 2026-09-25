@@ -1207,7 +1207,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全20本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（27本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（30本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル。12本）
   functions/<name>/index.ts       Edge Functions（20本。一覧と各本の役割は Architecture.md §6.2）
@@ -1363,6 +1363,11 @@ scripts/
                                   ⚠ **早送りだけ＝冪等**なので並行セッションが同時に走らせてよく、
                                   排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
+                                  ⚠ **`--sync` は原本の `node_modules` も `package-lock.json` に合わせる**
+                                  （食い違うときだけ `npm ci`。判定は `deps-fresh.mjs`）。`--check` は食い違いを警告する。
+  deps-fresh.mjs                  **インストール済みの `node_modules` が `package-lock.json` の木か**を版ごとに照合する。
+                                  全 worktree は原本の `node_modules` を junction で借りるので、ここが古いと
+                                  ローカルの門は全部 CI と違う依存で走る（2026-09-26 実測 14 件）。
   data-assets.mjs                 **git の外にあるデータ集合**（`data-assets.json`）の取得・検証・配置・公開。
                                   `pull`（`npm run data:pull`）／`verify`（`npm test` の最初の段）／`list`
                                   （USB ミラーが読む）／`unlink`（`worktree.mjs done`）／`materialize`／`publish`

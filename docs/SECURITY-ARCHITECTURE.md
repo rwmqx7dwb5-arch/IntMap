@@ -249,9 +249,11 @@ bucket since own-fetch-relay — see below), and since the September 2026 audit 
 an accounting boundary rather than a per-isolate courtesy. Two layers: an in-memory bucket per
 `x-forwarded-for` (60 per minute, bounded to `RATE_MAX_KEYS` entries by evicting the least recently
 seen — it used to grow without bound when every entry was fresh) answers the cheap first refusal; then,
-immediately before the paid upstream call, three **shared** buckets in `public.relay_rate_buckets`
-(`_shared/rate-limit.js` → `relay_take`, one row lock per take) — the same caller address, the whole
-project per minute, and the whole project per day. The project-wide buckets **fail closed** (no answer
+immediately before the paid upstream call, four **shared** buckets in `public.relay_rate_buckets`
+(`_shared/rate-limit.js` → `relay_take`, one row lock per take) — the same caller address per minute,
+that address's **share of the day** (`ROUTING_RELAY_PER_IP_PER_DAY`, default the day ceiling ÷
+`READERS_PER_ADDRESS` = 300 — without it 60/min spent the whole 3,000-a-day ceiling in fifty minutes
+from one address, found by the multi-aspect audit), the whole project per minute, and the whole project per day. The project-wide buckets **fail closed** (no answer
 from the database → no paid call, `503 limiter_unavailable`), the per-address one falls back to the
 in-memory bucket. The daily ceiling defaults to 3,000 (inside Mapbox's free Directions tier) and is
 raised deliberately through `ROUTING_RELAY_GLOBAL_PER_DAY` / `_PER_MIN`, never by editing code; a
@@ -292,7 +294,9 @@ is measured in production, not here — if it does not, the rule refuses everyth
 `fetch-relay`, `gdelt-relay`, `news-relay`, `quotes-relay`, `radiation-feed`, `sv-cov`,
 `volcano-feed` and `who-don` (its public GET) takes one from `<name>:ip` in
 `public.relay_rate_buckets` through `callerGate()` (`_shared/rate-limit.js`), keyed by the caller's
-address: capacity = the most a single reader's page asks of that relay in a minute (declared in
+address (MEASURED 2026-09-26 against production: requests carrying a forged `x-forwarded-for`
+drained the same bucket as the caller's plain ones — the platform puts the real client address first,
+so a forged header does not buy a fresh bucket): capacity = the most a single reader's page asks of that relay in a minute (declared in
 the relay, read from its client's timers — an estimate) × `READERS_PER_ADDRESS` (10, an estimate
 of readers behind one NAT). It **fails open**: these relays carry no per-call invoice, and a
 database outage must not become an outage of every live layer. A refusal is `429 rate_limit` with
