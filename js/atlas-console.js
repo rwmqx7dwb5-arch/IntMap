@@ -1421,8 +1421,11 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#732) what the reader's 「使用データ」 line calls an article, by where IntMap got it — the two words that line always used, now carried ON the record so the line can name only the ones an answer cites */
     const _newsLbl=o=>(o==='gdelt'||o==='gnews')?L('web news search','Webニュース検索','Web-News-Suche','поиск веб-новостей','búsqueda de noticias web'):L('news','ニュース','News','новости','noticias');
     /* Render the dated evidence as the single NEWS EVIDENCE block. */
-    function _evidenceBlock(recs){ if(!recs||!recs.length) return '';
-      const lines=recs.map(r=>'['+r.id+'] title: '+r.title+' | source: '+(r.src||'?')+(r.origin?(' ('+(_ORIGIN_LBL[r.origin]||r.origin)+')'):'')+(r.place?(' | place: '+r.place):'')+' | article_date: '+(r.date||'unknown')+' | date_type: '+r.dateType+' | event_date: unknown | url: '+(r.url||'(none)'));
+    /* (atlas-find-semantic) `idOf` = the evidence registry's own numbering (js/atlas-evidence.js) — when the block is
+       written for a structured answer the ids come from there, because that registry is what a citation is resolved
+       against; a line it holds no record for is printed without an id rather than under a number that names another article. */
+    function _evidenceBlock(recs,idOf){ if(!recs||!recs.length) return '';
+      const lines=recs.map(r=>{ const id=idOf?idOf(r.url):r.id; return '['+(id||'no id — not citable')+'] title: '+r.title+' | source: '+(r.src||'?')+(r.origin?(' ('+(_ORIGIN_LBL[r.origin]||r.origin)+')'):'')+(r.place?(' | place: '+r.place):'')+' | article_date: '+(r.date||'unknown')+' | date_type: '+r.dateType+' | event_date: unknown | url: '+(r.url||'(none)'); });
       return lines.join('\n'); }
     /* (#R131) The analysis system prompt. Rebuilt around the Central-Asia failure modes: it now carries a real
        clock, forbids treating an article date as an event date, forbids inferring actors/causality/escalation
@@ -3386,8 +3389,11 @@ window.IntMapModules.atlasConsole=function(HOST){
           /* (#R131) ONE dated NEWS EVIDENCE block (loaded + GDELT + Google News), newest-first, each stamped with
              its date_type and event_date:unknown — replaces the 3 undated headline dumps that let the model read a
              publication/seen date as the event date. */
-          const evRecs=_analyzeEvidence(srcSink); const evBlock=_evidenceBlock(evRecs);
-          if(evBlock){ block+='[NEWS EVIDENCE — headlines IntMap gathered'+(ctx&&ctx.name?(', around '+ctx.name):'')+'. Each item is a LEAD, not a confirmed event: article_date/date_type = when the ARTICLE appeared; event_date is UNKNOWN unless the wording itself verifies it. Ordered newest-first by article date.]\n'+POLICY.turnMechanics.fence.wrap(evBlock)+'\n\n';   /* (#R801) outside text, fenced — see _agentPrompt */ }
+          const evRecs=_analyzeEvidence(srcSink);
+          /* ⚠⚠⚠ (atlas-find-semantic) ONE NUMBERING. This list and the pipeline's EVIDENCE RECORDS list the same articles, and the
+             registry is what resolves a citation — so the list is written from the registry's ids (a part that is a function of
+             it, js/atlas-answer-pipeline.js), and the registry is handed the articles in this list's order, newest first. */
+          if(evRecs.length){ parts.push(block, reg=>'[NEWS EVIDENCE — headlines IntMap gathered'+(ctx&&ctx.name?(', around '+ctx.name):'')+'. Each item is a LEAD, not a confirmed event: article_date/date_type = when the ARTICLE appeared; event_date is UNKNOWN unless the wording itself verifies it. Ordered newest-first by article date. The ids are the EVIDENCE RECORDS ids below.]\n'+POLICY.turnMechanics.fence.wrap(_evidenceBlock(evRecs,reg.idOf))+'\n\n'); block='';   /* (#R801) outside text, fenced — see _agentPrompt */ }
           else if(got.news) push2('LATEST NEWS (loaded in IntMap'+(ctx&&ctx.name?(', filtered to '+ctx.name):'')+')',_newsLbl('loaded'),POLICY.turnMechanics.fence.wrap(got.news));
           else if(freshness.critical) missing.push(L('in-window verified events','対象期間内の確認済み出来事','verifizierte Ereignisse im Zeitfenster','подтверждённые события в окне','eventos verificados en la ventana'));
           push2('CURRENT NATIONAL LEADERS (Wikidata LIVE query, P6/P35 — authoritative for who currently holds office)','Wikidata',got.leaders);
@@ -3441,7 +3447,7 @@ window.IntMapModules.atlasConsole=function(HOST){
                  sentence, which is the layer this round removed. */
               temporalMode:String((a&&a.temporalMode)||'unspecified'),
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
-              turnId:_curTurnKey, webMode:analysisWebMode, clientSources:srcSink.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
+              turnId:_curTurnKey, webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
               appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
           catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }

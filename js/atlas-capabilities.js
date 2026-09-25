@@ -1503,7 +1503,31 @@ export function makeAtlasCapabilities(HOST) {
     function termsOf(nq) {
       var latin = (nq.match(/[a-z0-9]{3,}/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
       var runs = (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
-      return { latin: latin, runs: runs };
+      return { latin: latin, runs: runs, words: runWords(runs) };
+    }
+    /* ⚠⚠⚠ (atlas-find-semantic) A RUN IS NOT A WORD, AND THE LANGUAGE CAN SAY WHERE ITS WORDS ARE.
+       A run is cut by SCRIPT, and a Japanese particle is written in the same script as the words it joins,
+       so 「現在地の天気」 is one run. Its only evidence was the whole run or a 4-character fragment
+       (runWindows below) — and 天気 is two characters inside it. MEASURED (2026-09-25, this code):
+       find_capability('現在地の天気') returned ten routing/navigation rows and NOT data.weather;
+       「ここの天気」 returned nothing; 「今いる場所の天気」 only view.locate. The weather block writes 天気.
+       ⇒ The platform's word segmenter (Intl.Segmenter, ICU's dictionary) is asked where the words of
+       each run are: 現在地|の|天気. Each word of two or more characters is a term exactly like a Latin
+       word, worth what its own df says — no vocabulary is listed here. A run the segmenter keeps whole
+       (「ありがとう」, #R745) yields nothing new. Where the platform has no segmenter the run is read as
+       before. */
+    var _seg = null;
+    function runWords(runs) {
+      if (_seg === null) { try { _seg = new Intl.Segmenter('ja', { granularity: 'word' }); } catch (_) { _seg = false; } }
+      if (!_seg) return [];
+      var out = [];
+      runs.forEach(function (run) {
+        for (var it = _seg.segment(run)[Symbol.iterator](), s = it.next(); !s.done; s = it.next()) {
+          var w = s.value.segment;
+          if (s.value.isWordLike && w.length >= 2 && w !== run && out.indexOf(w) < 0) out.push(w);
+        }
+      });
+      return out;
     }
     var _docNorm = null;   /* id → normalised catalogue block, filled once (a block is up to ~24 kB) */
     var _docBlk = null;    /* the DISTINCT blocks: text, the capabilities each documents, and where */
@@ -1722,6 +1746,7 @@ export function makeAtlasCapabilities(HOST) {
         };
         terms.latin.forEach(add);
         terms.runs.forEach(function (run) { runWindows(run, d).forEach(add); });
+        terms.words.forEach(add);                    /* the words the language finds inside a run — see runWords */
         _evBy.set(b, ev);
         return ev;
       };

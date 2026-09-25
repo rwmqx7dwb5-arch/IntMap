@@ -278,6 +278,14 @@ export function makeAtlasEvidence() {
     }
 
     function get(id) { return byId.get(String(id || '')) || null; }
+    /* (atlas-find-semantic) THE ID THIS REGISTRY GAVE A DOCUMENT — the only numbering a citation is resolved
+       against, so any other text that lists the same articles must be numbered from here. null = not a
+       record (rejected, over the cap, or never added): such a line cannot be cited, and says so. */
+    function idOf(url) {
+      const c = canonicalizeUrl(url);
+      const r = c.ok ? byKey.get(c.key) : null;
+      return r ? r.id : null;
+    }
     function all() { return Array.from(byId.values()); }
     function hosts() { const h = new Set(); byId.forEach((r) => { if (r.host) h.add(r.host); }); return h; }
 
@@ -302,7 +310,7 @@ export function makeAtlasEvidence() {
     return {
       callId, turnId, retrievedAt,
       add, addProviderCitations, addClientSources, addAppData, addDataBlock, allowCall, ownsCall,
-      get, all, hosts, promptBlock,
+      get, idOf, all, hosts, promptBlock,
       rejected: () => rejected.slice(),
       size: () => byId.size,
     };

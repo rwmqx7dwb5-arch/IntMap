@@ -99,7 +99,13 @@ export function makeAtlasAnswerPipeline() {
        claim can name the block it rests on, and the caller can tell which blocks the answer used
        from the claims instead of from what it happened to put in the prompt. */
     let dataText = '';
+    /* ⚠⚠⚠ (atlas-find-semantic) A PART MAY BE A FUNCTION OF THE REGISTRY. The caller's NEWS EVIDENCE list
+       numbered the articles [e1]… by date, and this registry numbered the SAME articles e1… in the order
+       they were fetched — both in one prompt, so a claim citing «e3» from the list was resolved here to a
+       different article and the reader's source line named it. A text that lists registered documents is
+       written from `idOf`, after the client sources are in, so there is one numbering. */
     (Array.isArray(opts.dataBlock) ? opts.dataBlock : [opts.dataBlock]).forEach((p) => {
+      if (typeof p === 'function') { dataText += String(p({ idOf: registry.idOf }) || ''); return; }
       if (!p || typeof p !== 'object') { dataText += String(p || ''); return; }
       const r = registry.addDataBlock({ title: String(p.tag || ''), label: String(p.label || '') });
       dataText += '[' + String(p.tag || '') + (r ? ' — evidence id ' + r.id : '') + ']\n' + String(p.text || '') + '\n\n';
