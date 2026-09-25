@@ -45,6 +45,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { staleDeps, describeStale } from './deps-fresh.mjs';
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
@@ -111,9 +112,18 @@ const blocking = (s) => {
   if (s.ahead) out.push(`the master is ${s.ahead} commit(s) ahead of origin/main (not pushed).`);
   return out;
 };
-const advisory = (s) => (s.dirty.length
-  ? [`the master has ${s.dirty.length} uncommitted change(s) — a concurrent session may own them (AGENTS.md §6); they are mirrored as they are.`]
-  : []);
+const advisory = (s) => {
+  const out = s.dirty.length
+    ? [`the master has ${s.dirty.length} uncommitted change(s) — a concurrent session may own them (AGENTS.md §6); they are mirrored as they are.`]
+    : [];
+  /* (multi-aspect-audit) every worktree runs its gates on the master's node_modules through a
+     junction, so an installed tree behind package-lock.json is every local gate on this machine
+     running against dependencies CI never sees. Advisory like a dirty file: the master's commit
+     is still the merged one; --sync is what repairs it. */
+  const deps = staleDeps(MASTER);
+  if (deps.stale.length) out.push(`the master's node_modules is not package-lock.json (${deps.stale.length} package(s): ${describeStale(deps, 3)}) — every worktree borrows it; run --sync.`);
+  return out;
+};
 
 /* ── MACHINE-LOCAL PATHS: THE ONE THING A FAST-FORWARD IS ALLOWED TO CARRY ACROSS ──────────────
    A machine-local path is one whose CONTENT belongs to this machine and to no commit: absolute
@@ -293,6 +303,25 @@ if (want('--sync')) {
       console.error('master-sync: the master is at origin/main, but its datasets are NOT in place (above). Run `npm run data:pull` in the master.');
       process.exit(1);
     }
+  }
+  /* (multi-aspect-audit) THE INSTALLED DEPENDENCIES FOLLOW THE LOCKFILE, THE WAY THE DATASETS DO.
+     The fast-forward moves package-lock.json; nothing moved node_modules with it. MEASURED
+     2026-09-26: 14 packages behind the lock after the dependency bump had merged (pdfjs-dist 4 for
+     6, js-yaml 4 for 5, @playwright/test 1.61 for 1.63 …) — and every worktree junctions to this
+     tree. `npm ci` only when the tree actually differs (an up-to-date tree is left alone, so the
+     run stays idempotent and cheap), and success is not reported while it still differs. */
+  const deps = staleDeps(MASTER);
+  if (deps.stale.length) {
+    console.log(`master-sync: node_modules differs from package-lock.json in ${deps.stale.length} package(s) (${describeStale(deps, 3)}) — npm ci`);
+    try {
+      execFileSync('npm ci --no-audit --no-fund', { cwd: MASTER, stdio: 'inherit', shell: true });
+    } catch { /* judged by the re-check below, not by the exit code alone */ }
+    const again = staleDeps(MASTER);
+    if (again.stale.length) {
+      console.error(`master-sync: node_modules is STILL not package-lock.json (${describeStale(again)}). Run \`npm ci\` in the master.`);
+      process.exit(1);
+    }
+    console.log(`master-sync: node_modules now matches package-lock.json (${again.checked} package(s)).`);
   }
   process.exit(blocking(after).length ? 1 : 0);
 }

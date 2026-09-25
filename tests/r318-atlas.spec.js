@@ -241,15 +241,19 @@ test('R406 ①: the built app binds the real argument schemas, not the permissiv
        of a hundred and twenty-five with `routing.isochrone` first at score 161 against nine ties
        at 16, while 「ありがとう」 returns NONE. A fixed page could not produce both numbers. */
 test('R406 ②: what is sent is small, and discovery returns what matched — not a page of it', async () => {
-  const r = await page.evaluate(() => {
+  /* ⚠ (#738) find() IS ASYNC. It became the FUSED search (lexical + meaning, js/atlas-toolsurface.js),
+     so it returns a Promise — and this evaluate read `.matches` off the Promise and threw «Cannot read
+     properties of undefined (reading 'length')» every night on the deep tier. Awaited, the same three
+     requests put the same three questions to the search the built app actually runs. */
+  const r = await page.evaluate(async () => {
     const T = window.IntMapAtlasTools, C = window.IntMapCapabilities;
     const tools = T.baseTools();
     const block = Object.keys(tools).map((k) => JSON.stringify(tools[k])).join('\n');
-    const hit = T.find('isochrone reachable area');
+    const hit = await T.find('isochrone reachable area');
     /* the request that the alphabet used to answer with five «plan a route first» (#R413) */
-    const jp = T.find('現在地から大阪駅までの経路');
+    const jp = await T.find('現在地から大阪駅までの経路');
     /* a sentence that asks for nothing IntMap does — the other end of the same measurement */
-    const none = T.find('ありがとう');
+    const none = await T.find('ありがとう');
     return {
       names: Object.keys(tools).sort(), chars: block.length,
       all: C.catalogBytes(null),

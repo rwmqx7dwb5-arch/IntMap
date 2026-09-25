@@ -674,14 +674,19 @@ window.IntMapModules.newsUi=function(HOST){
     return HOST.readerBar({back,extra,publisher:item.publisher});
   }
 
+  /* (multi-aspect-audit SEC) item.link and res.hero come from feeds and from the extracted page, and
+     escForReader only escapes for the ATTRIBUTE — it does not say what kind of URL it is. A javascript:
+     link in the web-mode iframe (sandbox allow-same-origin allow-scripts) would run in IntMap's origin.
+     Every URL attribute here goes through IntMapSafe.url (http(s) only) first, like the card's own
+     open button at the top of this file already did. */
   function renderReaderMode(item,res,mode){
     const pane=document.getElementById('news-reader-pane'); if(!pane) return;
     const metaRow=`<div class="nrp-meta"><span>${HOST.escForReader(item.publisher)}</span><span class="nrp-dot"></span><span>${HOST.escForReader(formatCustomDate(item.pubDate))}</span></div>`;
     if(mode==='web'){
       pane.innerHTML=`${readerBar(item,'web')}
         <h1 class="nrp-title">${HOST.escForReader(item.title)}</h1>${metaRow}
-        <div class="nrp-webwrap"><div class="nrp-webnote" id="nrp-webnote">${window.IntMapLang.t(HOST.lang,'Loading page…','ページを読み込み中…','Seite lädt…','Загрузка страницы…','Cargando página…')}</div><iframe class="nrp-iframe" src="${HOST.escForReader(item.link)}" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe></div>
-        <a class="nrp-orig" href="${HOST.escForReader(item.link)}" target="_blank" rel="noopener">${window.IntMapLang.t(HOST.lang,'Open in new tab','新しいタブで開く','In neuem Tab öffnen','Открыть в новой вкладке','Abrir en pestaña nueva')} ↗</a>`;
+        <div class="nrp-webwrap"><div class="nrp-webnote" id="nrp-webnote">${window.IntMapLang.t(HOST.lang,'Loading page…','ページを読み込み中…','Seite lädt…','Загрузка страницы…','Cargando página…')}</div><iframe class="nrp-iframe" src="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe></div>
+        <a class="nrp-orig" href="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" target="_blank" rel="noopener">${window.IntMapLang.t(HOST.lang,'Open in new tab','新しいタブで開く','In neuem Tab öffnen','Открыть в новой вкладке','Abrir en pestaña nueva')} ↗</a>`;
       const ifr=pane.querySelector('.nrp-iframe'); const note=pane.querySelector('#nrp-webnote');
       if(ifr){ ifr.addEventListener('load',()=>{ if(note) note.style.display='none'; });
         setTimeout(()=>{ if(note&&note.style.display!=='none') note.innerHTML=window.IntMapLang.t(HOST.lang,'This site blocks embedding. Try “📖 Reader” or open it in a new tab.','このサイトは埋め込み表示を許可していません。「📖 リーダー」か「新しいタブで開く」をお使いください。','Diese Seite erlaubt kein Einbetten. Nutze „📖 Reader“ oder öffne sie in einem neuen Tab.','Сайт запрещает встраивание. Используйте «📖 Читалка» или откройте в новой вкладке.','Este sitio bloquea la inserción. Prueba «📖 Lector» o ábrelo en una pestaña nueva.'); }, 5000); }
@@ -690,13 +695,13 @@ window.IntMapModules.newsUi=function(HOST){
       const bodyHtml=(res.blocks&&res.blocks.length)
         ? res.blocks.map(b=> b.t==='h' ? `<h3>${HOST.escForReader(b.v)}</h3>` : `<p>${HOST.escForReader(b.v)}</p>`).join('')
         : `<p>${window.IntMapLang.t(HOST.lang,'Could not extract text — use “🌐 Web” above to open the page.','本文を自動取得できませんでした。上の「🌐 ページ表示」で元ページを開けます。','Text konnte nicht extrahiert werden — öffne die Seite über „🌐 Web“ oben.','Не удалось извлечь текст — откройте страницу через «🌐 Веб» выше.','No se pudo extraer el texto — abre la página con «🌐 Web» arriba.')}</p>`;
-      const heroHtml=res.hero?`<img class="nrp-hero" src="${HOST.escForReader(res.hero)}" onerror="this.style.display='none'">`:'';
+      const heroHtml=res.hero?`<img class="nrp-hero" src="${HOST.escForReader(IntMapSafe.url(res.hero))}" onerror="this.style.display='none'">`:'';
       const locHtml=locName?`<span class="nrp-loc" id="nrp-loc">${HOST.escForReader(locName)}</span>`:'';
       pane.innerHTML=`${readerBar(item,'reader')}
         ${heroHtml}${locHtml}
         <h1 class="nrp-title">${HOST.escForReader(item.title)}</h1>${metaRow}
         <div class="nrp-body">${bodyHtml}</div>
-        <a class="nrp-orig" href="${HOST.escForReader(item.link)}" target="_blank" rel="noopener">${window.IntMapLang.t(HOST.lang,'Open original','元記事を開く','Original öffnen','Открыть оригинал','Abrir original')} ↗</a>`;
+        <a class="nrp-orig" href="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" target="_blank" rel="noopener">${window.IntMapLang.t(HOST.lang,'Open original','元記事を開く','Original öffnen','Открыть оригинал','Abrir original')} ↗</a>`;
       const locEl=pane.querySelector('#nrp-loc');
       if(locEl) locEl.onclick=()=>{ if(item.analysis&&item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
     }

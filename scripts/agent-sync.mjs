@@ -37,6 +37,7 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, rmSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crlfBytes } from './eol.mjs';
+import * as yaml from 'js-yaml';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRITE = process.argv.includes('--write');
@@ -157,11 +158,23 @@ const tomlBlock = (v) => {
   return `'''\n${v.replace(/\n+$/, '')}\n'''`;
 };
 
+/* ── YAML emitter ─────────────────────────────────────────────────────────────────────────
+   The Claude Code frontmatter is YAML, and a plain (unquoted) YAML scalar may not contain
+   «: » or start with an indicator. The descriptions are prose, so they do: the verifier's
+   description gained «呼び出し側へ: … model: "opus" …» and from that commit on its file was
+   no longer YAML — Claude Code dropped the role WITHOUT A WORD (Agent tool: "Agent type
+   'intmap-verifier' not found"), while this script's own reader, which is not YAML, kept
+   calling it rendered and current. So every value is emitted as a double-quoted scalar
+   unless it is a bare token, and the gate below reads the result with a real YAML parser —
+   the reader Claude Code is, not the reader this script is. JSON string syntax is a subset
+   of YAML's double-quoted scalar, which is why JSON.stringify is the quoting. */
+const yamlStr = (v) => (/^[A-Za-z0-9_.\-]+(, [A-Za-z0-9_.\-]+)*$/.test(v) ? v : JSON.stringify(v));
+
 /* ── renderers ────────────────────────────────────────────────────────────────────────── */
 const renderClaudeRole = (r) => {
-  const fm = ['---', `name: ${r.name}`, `description: ${r.description}`];
-  if (r.claude.tools) fm.push(`tools: ${r.claude.tools}`);
-  if (r.claude.model) fm.push(`model: ${r.claude.model}`);
+  const fm = ['---', `name: ${yamlStr(r.name)}`, `description: ${yamlStr(r.description)}`];
+  if (r.claude.tools) fm.push(`tools: ${yamlStr(r.claude.tools)}`);
+  if (r.claude.model) fm.push(`model: ${yamlStr(r.claude.model)}`);
   fm.push('---', '');
   return `${fm.join('\n')}\n${GENERATED_MD}\n${r.body}`;
 };
@@ -190,6 +203,7 @@ const GENERATED_TOML = `# ⚠ 生成物。編集しない。正本は .agents/ro
 
 /* ── the render plan: every rendered path, and what should be in it ───────────────────── */
 const plan = new Map();                                   /* rel path → expected content */
+const expectFm = new Map();                               /* rel path → frontmatter values the product must read back */
 
 /* ── which model a role runs on ───────────────────────────────────────────────────────────
    (#R787) A role may name the model it runs on, so the mechanical readers do not cost what
@@ -218,6 +232,7 @@ for (const f of roles) {
     fail('role-model', `${ROLE_DIR}/${f}: claude.model «${r.claude.model}» is not one Claude Code accepts (${[...CLAUDE_MODELS].join(', ')}) — it would be written into the frontmatter, ignored without a word, and the role would quietly run on the inherited model`);
   }
   plan.set(`.claude/agents/${r.name}.md`, renderClaudeRole(r));
+  expectFm.set(`.claude/agents/${r.name}.md`, { name: r.name, description: r.description });
   plan.set(`.codex/agents/${r.name}.toml`, renderCodexRole(r));
 }
 
@@ -291,6 +306,27 @@ const SKILL_SRC = '.agents/skills';
 const skillFiles = existsSync(join(ROOT, SKILL_SRC)) ? walk(SKILL_SRC) : [];
 if (!skillFiles.some((f) => f.endsWith('/SKILL.md'))) fail('skills', `${SKILL_SRC} holds no SKILL.md — the round procedure is the source, not the copy`);
 for (const f of skillFiles) plan.set(f.replace(SKILL_SRC, '.claude/skills'), rd(f));
+
+/* ── does the PRODUCT read what we rendered? ──────────────────────────────────────────────
+   Comparing the rendered text with the file only proves the file is what this script meant.
+   Claude Code reads the frontmatter as YAML and silently skips a file it cannot parse, so
+   each rendered agent and skill is parsed here with a YAML parser and must give back the
+   name and description the source holds. A role Claude Code cannot see is a role that does
+   not exist, however current its copy is. */
+for (const [rel, text] of plan) {
+  const isSkill = /^\.claude\/skills\/.+\/SKILL\.md$/.test(rel);
+  if (!isSkill && !expectFm.has(rel)) continue;
+  const m = lf(text).match(/^---\n([\s\S]*?)\n---\n/);
+  let fm = null;
+  try { fm = m && yaml.load(m[1]); } catch (e) { fail('frontmatter-yaml', `${rel}: frontmatter is not YAML (${e.message.split('\n')[0]}) — Claude Code skips this file without a word`); continue; }
+  if (!fm || typeof fm !== 'object') { fail('frontmatter-yaml', `${rel}: no YAML frontmatter`); continue; }
+  const want = expectFm.get(rel) ?? { name: rel.split('/').slice(-2, -1)[0] };
+  for (const [k, v] of Object.entries(want)) {
+    if (fm[k] !== v) fail('frontmatter-yaml', `${rel}: YAML reads ${k} as ${JSON.stringify(fm[k])?.slice(0, 80)}, the source says ${JSON.stringify(v).slice(0, 80)}`);
+  }
+  if (typeof fm.description !== 'string' || !fm.description) fail('frontmatter-yaml', `${rel}: YAML reads no description`);
+}
+if (!problems.some((p) => p.startsWith('frontmatter-yaml'))) ok('frontmatter-yaml', `${[...plan.keys()].filter((k) => expectFm.has(k) || /\/SKILL\.md$/.test(k)).length} agent/skill frontmatter(s) read back as YAML with the source's name and description`);
 
 /* ── apply, or compare ────────────────────────────────────────────────────────────────── */
 {

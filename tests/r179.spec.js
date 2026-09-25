@@ -352,10 +352,27 @@ test('the adapter records what the caller declared, and clears it (#R179)', asyn
     /* THE RECORD ITSELF, read while the movement is still running. An instantaneous call is no use
        for this: jumpTo/setPitch fire 'moveend' synchronously, which is where the record is dropped,
        so by the time control returns it is already null — the record lasting exactly as long as its
-       movement is the behaviour, not a gap in it. Hence an animated flyTo, sampled mid-flight. */
-    C().flyTo({ center: [2.35, 48.86], zoom: 6, duration: 900 });
-    await wait(200); out.midFlight = D().decl;
-    await wait(1200); out.afterFlight = D().decl;
+       movement is the behaviour, not a gap in it. Hence an animated flyTo, sampled mid-flight.
+       ⚠ SAMPLED ON THE MOVEMENT'S OWN EVENTS, NOT ON A CLOCK. This read used to be one `wait(200)` into a
+       900 ms flight; on a loaded runner the flight's frames had all run by then (or the first frame came
+       after the duration and landed it at once), so the read met a finished movement and a correct null.
+       A 'move' event is by definition fired while the movement is running, and the adapter drops the
+       record on 'moveend' — so the record read at the first 'move' is «the record mid-flight», however
+       slow the runner. `isMoving()` is asked too, so a sample taken after the end cannot pass for one
+       taken during it. The «after» read waits for that same flight's 'moveend' (every moveend listener,
+       the adapter's included, has run by the time the awaiting code resumes). */
+    {
+      const mid = [];
+      const onMove = () => { mid.push({ moving: m.isMoving(), decl: D().decl }); };
+      const ended = new Promise((res) => m.once('moveend', res));
+      m.on('move', onMove);
+      C().flyTo({ center: [2.35, 48.86], zoom: 6, duration: 900 });
+      await Promise.race([ended, wait(15000)]);
+      m.off('move', onMove);
+      const first = mid.find((x) => x.moving);
+      out.midFlight = first ? first.decl : 'no move event fired while the map was moving (' + mid.length + ' move events)';
+      out.afterFlight = D().decl;
+    }
     /* …and WHAT THE HOOK DID with it, which is the part the two fixes actually rest on. */
     C().setProjection({ type: 'mercator' });
     C().jumpTo({ center: [139.767, 35.681], zoom: 8, pitch: 0, bearing: 0 }); await wait(600);

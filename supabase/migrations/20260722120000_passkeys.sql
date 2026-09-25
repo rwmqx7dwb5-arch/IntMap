@@ -1,0 +1,20 @@
+-- ============================================================================
+--  20260722120000 «passkeys» — a version ANOTHER APPLICATION recorded in this shared project.
+--  This file is deliberately EMPTY. It does not create, alter or drop anything.
+-- ----------------------------------------------------------------------------
+--  Production's migration history holds this version because a different
+--  application that shares the Supabase project created its mgmt_passkeys table
+--  here (docs/SECURITY-ARCHITECTURE.md §8, item 5 — left untouched by decision).
+--
+--  MEASURED 2026-09-26 (`supabase db push --dry-run --linked`): with the version
+--  absent from this directory the CLI refuses EVERY push — «Remote migration
+--  versions not found in local migrations directory» — so scripts/supabase-deploy.mjs
+--  was red for every migration any PR added, whether or not its secret was set.
+--  The CLI's own suggestion (`migration repair --status reverted`) would delete the
+--  other application's record of its own schema; that is not ours to delete.
+--  Holding the version here as a no-op makes the two histories the same list, and
+--  on every database this repository builds (CI, `supabase db reset`) it does nothing.
+--
+--  ⚠ Do not add DDL to this file. The objects belong to the other application.
+-- ============================================================================
+select 1;

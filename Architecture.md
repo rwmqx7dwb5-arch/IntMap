@@ -1765,10 +1765,12 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ⚠ **レート制限と支出上限を自前で持つ唯一の relay**。Mapbox は支出のハードキャップを持たないので、
   ここが唯一の天井になる。2 段: プロセス内の per-IP バケツ（第一段。LRU で `RATE_MAX_KEYS` を守る）と、
   有料呼び出しの直前に訊く **Postgres の共有バケツ**（`relay_rate_buckets` ＋ `relay_take`・
-  `_shared/rate-limit.js`）——IP 別・プロジェクト全体 1 分・プロジェクト全体 1 日。全体の 2 つは
+  `_shared/rate-limit.js`）——IP 別 1 分・**IP 別の 1 日の取り分**（既定は全体の 1 日 ÷
+  `READERS_PER_ADDRESS`＝300。1 つのアドレスが全体の 1 日を使い切って他の全員を止められないように）・
+  プロジェクト全体 1 分・プロジェクト全体 1 日。IP 別の 2 つは fail-open で拒否は 429 `rate_limit`、全体の 2 つは
   fail-closed（DB が答えなければ有料呼び出しをしない・503 `limiter_unavailable`）、拒否は 429
-  `spend_ceiling`。上限は `ROUTING_RELAY_GLOBAL_PER_MIN` / `_PER_DAY` で意図して上げる（既定は
-  Mapbox の無料枠の内側）。
+  `spend_ceiling`。上限は `ROUTING_RELAY_GLOBAL_PER_MIN` / `_PER_DAY` / `ROUTING_RELAY_PER_IP_PER_DAY` で意図して動かす（既定は
+  Mapbox の無料枠の内側）。呼び出し元は `_shared/rate-limit.js` の `callerKey`（全 relay で 1 つ）。
 - **`sv-cov`** … ストリートビュー・カバレッジ svv タイルの **ACAO 付与プロキシ**（秘密なし）。
   **厳格 allowlist**（`mts0-3.google.com/vt?…lyrs=svv` ＋ 整数 x/y/z のみ・空タイルは透明 PNG）
   ＝オープンプロキシではない。
@@ -5029,7 +5031,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（27本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（30本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持）。

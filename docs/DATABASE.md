@@ -171,6 +171,18 @@ functions) pin `extensions` alone, because
 pgvector's `<=>` operator lives there and operators are resolved through the search path.
 `supabase/tests/09_r801_security_audit_test.sql` measures this over `pg_proc`, not over a list.
 
+A SECURITY DEFINER function runs with its owner's rights, so **who may call it is its whole access
+control** — and PostgreSQL gives EXECUTE to PUBLIC on creation while Supabase's default privileges give
+it to `anon`. `grant … to authenticated` does not revoke those: measured 2026-09-26, `anon` could
+execute `monitor_limit_self()` and `monitor_mark_read(uuid)` in production although their migrations
+granted `authenticated` only (`20260926090000` revokes them). The rule, asserted over the catalogue by
+`supabase/tests/11_definer_execute_test.sql`: **`anon` may execute a callable SECURITY DEFINER function in
+`public` only when an RLS policy that applies to `anon` calls it** (a policy runs with the caller's
+privileges) **or its own COMMENT says why in words — `ANON MAY CALL: <reason>`** (`is_admin()`: it
+returns only a boolean about the caller; the baseline chose that grant, and the sentence now lives
+where the catalogue can read it). Trigger and event-trigger functions cannot be called as RPCs and are
+not counted.
+
 Three privileges never go through RLS — `TRUNCATE`, `REFERENCES`, `TRIGGER` — and Supabase's
 default privileges hand them to `anon`/`authenticated` on every new table. They are revoked from
 **every** table in `public` (a loop over the catalogue, so the next table is covered), and the
@@ -285,6 +297,9 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   disturb the card, a new signup, and an account deletion that takes the card with it. ⚠ The
   older files assert the **projection** (four columns, no `email`); every one of those assertions
   was also true of the SECURITY DEFINER view, which is why this file asserts the **mechanism**.
+- **`11_definer_execute_test.sql`** *(multi-aspect-audit)* — no callable SECURITY DEFINER function in
+  `public` is executable by `anon` unless an `anon`-facing RLS policy calls it (stated on `pg_proc` ×
+  `pg_policies`, not on names), and the two RPCs that had inherited `anon` no longer do.
 - **`10_client_errors_test.sql`** *(client-error-log)* — the error record: RLS on; anon and a non-admin
   reader can neither read nor write it and cannot call `record_client_error`; an admin reads every
   row and cannot update one; the table has no column that could hold an IP, a user, a session, a

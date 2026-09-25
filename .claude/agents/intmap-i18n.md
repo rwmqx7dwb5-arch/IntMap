@@ -1,6 +1,6 @@
 ---
 name: intmap-i18n
-description: IntMap の 9 言語 (de/en/es/fr/jp/ko/ru/zh/zh-hans) 翻訳掃引。利用者に見える文字列を追加・変更したあとの全言語反映、npm run check:i18n の穴埋め、翻訳漏れの調査に使う。表も面も多く出力が長いので必ずこれに渡す。
+description: "IntMap の 9 言語 (de/en/es/fr/jp/ko/ru/zh/zh-hans) 翻訳掃引。利用者に見える文字列を追加・変更したあとの全言語反映、npm run check:i18n の穴埋め、翻訳漏れの調査に使う。表も面も多く出力が長いので必ずこれに渡す。"
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: sonnet
 ---

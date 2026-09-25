@@ -158,10 +158,11 @@ test('R801 ③ every shared bucket is taken BEFORE Mapbox is asked, in the decla
   assert.equal(res.status, 200);
   assert.equal(body, mapboxJson, 'the upstream answer passes through unaltered');
   const kinds = calls.map((c) => c.kind);
-  assert.deepEqual(kinds, ['rpc', 'rpc', 'rpc', 'mapbox'], 'three takes, then the paid call, nothing else');
-  assert.deepEqual(calls.slice(0, 3).map((c) => c.scope),
-    ['routing-relay:ip', 'routing-relay:global:minute', 'routing-relay:global:day']);
-  assert.deepEqual(calls.slice(1, 3).map((c) => c.key), ['*', '*'], 'the global buckets are one row each');
+  assert.deepEqual(kinds, ['rpc', 'rpc', 'rpc', 'rpc', 'mapbox'], 'four takes, then the paid call, nothing else');
+  assert.deepEqual(calls.slice(0, 4).map((c) => c.scope),
+    ['routing-relay:ip', 'routing-relay:ip:day', 'routing-relay:global:minute', 'routing-relay:global:day']);
+  assert.deepEqual(calls.slice(2, 4).map((c) => c.key), ['*', '*'], 'the global buckets are one row each');
+  assert.equal(calls[1].key, calls[0].key, 'the day share is keyed on the same caller as the minute bucket');
   assert.equal(calls[0].capacity, RATE_PER_MIN, 'the shared IP bucket states the same rate as the Map');
   assert.equal(res.headers.get('cache-control'), 'no-store');
 });
@@ -189,7 +190,7 @@ test('R801 ③ the global buckets fail CLOSED and the IP bucket fails OPEN when 
   /* only the IP take fails: the Map already throttled this caller, the global buckets still stand */
   r = await ask(ROUTE, (s) => (s === 'routing-relay:ip' ? 'down' : { allowed: true }));
   assert.equal(r.res.status, 200, 'fail-open for the per-caller bucket');
-  assert.deepEqual(r.calls.map((c) => c.kind), ['rpc', 'rpc', 'rpc', 'mapbox']);
+  assert.deepEqual(r.calls.map((c) => c.kind), ['rpc', 'rpc', 'rpc', 'rpc', 'mapbox']);
   /* the day bucket alone down: still closed */
   r = await ask(ROUTE, (s) => (s === 'routing-relay:global:day' ? 'down' : { allowed: true }));
   assert.equal(r.res.status, 503);
@@ -210,7 +211,7 @@ test('R801 ③ a probe and a malformed request never reach the shared buckets', 
 test('R801 ③ the refresh endpoint is a paid call too, and passes the same buckets', async () => {
   const { res, calls } = await ask('https://edge.test/functions/v1/routing-relay?provider=mapbox&refresh=1&routeId=abc&routeIndex=0&legIndex=0', ALLOW);
   assert.equal(res.status, 200);
-  assert.deepEqual(calls.map((c) => c.kind), ['rpc', 'rpc', 'rpc', 'mapbox']);
+  assert.deepEqual(calls.map((c) => c.kind), ['rpc', 'rpc', 'rpc', 'rpc', 'mapbox']);
 });
 
 /* ── 受け側: 新しいコードは HTTP status でしか読まれない ────────────────────────────────── */
