@@ -2826,7 +2826,9 @@ window.IntMapCesiumEngine=(function(){
       isVisible(id){ const v=V(); return v?v.isVisible(id):false; },
       setPaint(id,p,x){ const v=V(); if(v) v.setPaint(id,p,x); },
       getPaint(id,p){ const v=V(); return v?v.getPaint(id,p):undefined; },
-      setLayout(id,p,x){ const v=V(); if(v) v.setLayout(id,p,x); },
+      /* `_o` is MapLibre's StyleSetterOptions (the contract's fourth argument). This engine does not
+         parse style expressions, so there is nothing for `validate` to switch off: accepted, ignored. */
+      setLayout(id,p,x,_o){ const v=V(); if(v) v.setLayout(id,p,x); },
       getLayout(id,p){ const v=V(); return v?v.getLayout(id,p):undefined; },
       setFilter(id,f){ const v=V(); if(v) v.setFilter(id,f); },
       getFilter(id){ const v=V(); return v?v.getFilter(id):null; },

@@ -123,7 +123,7 @@ export interface GeoEngineAdapterCore {
   setVisible(id?: any, v?: any): any;
   isVisible(id?: any): any;
   setPaint(id?: any, p?: any, v?: any): any;
-  setLayout(id?: any, p?: any, v?: any): any;
+  setLayout(id?: any, p?: any, v?: any, o?: any): any;
   setOpacity(id?: any, v?: any): any;
   on(e?: any, c?: any): any;
   off(e?: any, c?: any): any;
@@ -341,7 +341,7 @@ export interface GeoEngineLayers {
   setVisible(id?: any, v?: any): any;
   isVisible(id?: any): any;
   setPaint(id?: any, p?: any, v?: any): any;
-  setLayout(id?: any, p?: any, v?: any): any;
+  setLayout(id?: any, p?: any, v?: any, o?: any): any;
   setOpacity(id?: any, v?: any): any;
   addExtrusion(d?: any, b?: any): any;
   setExtrusionRange(id?: any, a?: any, b?: any): any;

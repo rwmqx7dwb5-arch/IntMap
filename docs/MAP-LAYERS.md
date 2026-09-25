@@ -928,6 +928,10 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   綴りは **`neighbourhood`**（OpenMapTiles のスキーマ値。US 綴りは1件もマッチしない）。
   クラスを3段に分け、`['step',['zoom'],1, 13,2, 14,3]` で開く。⚠ **段は整数**
   （`['zoom']` はフィルタ内では整数ズームでしか再評価されない）。
+  ⚠ **時間旅行中の `ofm-city` の `text-field` は `js/hist-cities.js` が作る歴史名の式**（1916 年で約 0.9 MB）。
+  作り直しと書き込みは**名前の期間の境目（エポック）を跨いだときだけ**で、同じエポックの中の移動では
+  `setLayoutProperty` を呼ばない。跨いだときは候補群ごとの距離判定を 1 回だけ書いた式を `{validate:false}` で
+  書く。境目の導出・式の形・検査の正本は `Architecture.md`（「都市名ラベルも時計に従う」）。
 - **地方行政区分ラベル**：同じ `place` レイヤの `state` / `province` クラスから `ofm-admin1`。
   ここでの `rank` は**面積で世界規模にそろった順序**なので、ズームの階段は国別ではなく rank 別。
   ⚠ **色は「その区分を描いている線の色」**＝`js/border-style.js` の `ADMIN1_COLOR` を**そのモジュールから

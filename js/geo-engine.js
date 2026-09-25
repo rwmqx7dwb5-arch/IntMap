@@ -1237,10 +1237,14 @@ function _m(){ return window.__imap||null; }
       if(!Y) return absent(_cmd,'paint',id);
       if((CMD.on||CMD.skip.paint)&&skipProp(_cmd,'paint',id,Y.getPaintProperty?Y.getPaintProperty(p):undefined,v)) return;
       const _t=t0(); m.setPaintProperty(id,p,v); t1(_cmd,'paint',_t); },
-    setLayout(id,p,v){ const m=_m(); if(!m) return; const Y=m.getLayer(id);
+    /* `o` is MapLibre's StyleSetterOptions, passed through untouched. Its one member, `validate`,
+       is documented as «a performance optimization that should only be used if you have previously
+       validated the values»: the caller decides that, never this adapter. The one caller that says
+       `{validate:false}` is js/place-labels.js for js/hist-cities.js's generated era expression. */
+    setLayout(id,p,v,o){ const m=_m(); if(!m) return; const Y=m.getLayer(id);
       if(!Y) return absent(_cmd,'layout',id);
       if((CMD.on||CMD.skip.layout)&&skipProp(_cmd,'layout',id,Y.getLayoutProperty?Y.getLayoutProperty(p):undefined,v)) return;
-      const _t=t0(); m.setLayoutProperty(id,p,v); t1(_cmd,'layout',_t); },
+      const _t=t0(); m.setLayoutProperty(id,p,v,o); t1(_cmd,'layout',_t); },
     setOpacity(id,v){ const m=_m(); if(!(m&&m.getLayer(id))) return; let t=''; try{ t=m.getLayer(id).type; }catch(_){} const p={raster:'raster-opacity',fill:'fill-opacity',line:'line-opacity',circle:'circle-opacity',symbol:'icon-opacity','fill-extrusion':'fill-extrusion-opacity',heatmap:'heatmap-opacity'}[t]; if(p) m.setPaintProperty(id,p,v); },
     on(e,c){ const m=_m(); if(m) m.on(e,c); }, off(e,c){ const m=_m(); if(m) m.off(e,c); }, once(e,c){ const m=_m(); if(m) m.once(e,c); },
     /* (#R160) Phase-2 contract broadening — the common camera getters, zoom controls, render + feature-state ops
@@ -1980,7 +1984,7 @@ function _m(){ return window.__imap||null; }
     hasRenderer:()=>{ try{ return !!A().raw(); }catch(_){ return false; } },
     ready:()=>A().styleReady(),
     canDraw:()=>A().canDraw(),
-    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>A().hasLayer(id), add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v)=>A().setLayout(id,p,v), setOpacity:(id,v)=>A().setOpacity(id,v),
+    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>A().hasLayer(id), add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v,o)=>A().setLayout(id,p,v,o), setOpacity:(id,v)=>A().setOpacity(id,v),
       /* (#R170) real-scale 3-D volumes (metres above ground) */
       addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */

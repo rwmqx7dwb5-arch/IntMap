@@ -1490,7 +1490,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 111 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 112 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

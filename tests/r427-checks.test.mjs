@@ -136,18 +136,32 @@ test('④ every branch of the built expression is gated on position, and falls t
      only say that a line survived a refactor; it cannot say that the expression means anything.
      So: build the real thing and walk it. */
   const built = await buildExpr('1942-09-13');
-  assert.equal(built[0], 'let', 'the two fall-through values are bound once, not copied per branch');
-  const byEn = built[3];                          /* ['let', BASE, base, ['let', LOCAL, byLocal, byEn]] */
-  assert.equal(byEn[0], 'let');
-  const outer = byEn[3], inner = byEn[2];
+  /* ['let', BASE, base, ['let', G0, case0, G1, case1, …, ['let', EN, byEn, LOCAL, byLocal, pick]]]
+     — each group's guarded `case` is bound ONCE and both name fields refer to it (the two matches
+     used to carry a copy each, which doubled what MapLibre parses; see js/hist-cities.js). */
+  assert.equal(built[0], 'let', 'the fall-through values are bound once, not copied per branch');
+  const groupsLet = built[3];
+  assert.equal(groupsLet[0], 'let');
+  const bound = new Map();
+  for (let i = 1; i < groupsLet.length - 1; i += 2) bound.set(groupsLet[i], groupsLet[i + 1]);
+  const pickLet = groupsLet[groupsLet.length - 1];
+  assert.equal(pickLet[0], 'let');
+  const outer = pickLet[2], inner = pickLet[4], pick = pickLet[5];
   /* ⚠ compared as text: the expression was built inside the vm sandbox, so its arrays come from
      another realm and deepStrictEqual would fail on the prototype while printing an identical diff */
-  assert.equal(JSON.stringify(outer[1]), JSON.stringify(['coalesce', ['get', 'name:en'], '']), 'the outer match reads name:en');
-  assert.equal(JSON.stringify(inner[1]), JSON.stringify(['coalesce', ['get', 'name'], '']), 'the inner match reads the local name');
+  assert.equal(JSON.stringify(outer[1]), JSON.stringify(['coalesce', ['get', 'name:en'], '']), 'the first match reads name:en');
+  assert.equal(JSON.stringify(inner[1]), JSON.stringify(['coalesce', ['get', 'name'], '']), 'the second match reads the local name');
+  /* name:en's answer first, then the local name's, then the ordinary label — never a guess */
+  assert.equal(JSON.stringify(pick), JSON.stringify(['case', ['!=', ['var', pickLet[1]], ''], ['var', pickLet[1]],
+    ['!=', ['var', pickLet[3]], ''], ['var', pickLet[3]], ['var', built[1]]]), 'the answer order is name:en, name, ordinary label');
   let branches = 0;
+  const used = new Set();
   for (const m of [outer, inner]) {
     for (let i = 2; i < m.length - 1; i += 2) {
-      const v = m[i + 1];
+      const ref = m[i + 1];
+      assert.equal(ref[0], 'var', `the branch for «${m[i]}» must refer to its group's guarded case, not carry a copy`);
+      const v = bound.get(ref[1]);
+      assert.ok(v, `«${ref[1]}» is bound`);
       assert.equal(v[0], 'case', `the branch for «${m[i]}» hands back a bare label — every branch must ask where the feature is`);
       for (let j = 1; j < v.length - 1; j += 2) {
         assert.equal(v[j][0], '<=');
@@ -155,11 +169,13 @@ test('④ every branch of the built expression is gated on position, and falls t
         assert.equal(v[j][1][1].type, 'Point');
         assert.ok(v[j][2] >= 2000 && v[j][2] <= 20000, "the radius is the record's, in metres");
       }
-      assert.equal(v[v.length - 1][0], 'var', 'a feature outside the guard falls through, it does not get the era name');
+      assert.equal(v[v.length - 1], '', 'a feature outside the guard finds nothing here and falls through, it does not get the era name');
+      used.add(ref[1]);
       branches++;
     }
-    assert.equal(m[m.length - 1][0], 'var', 'and an unmatched spelling falls through too');
+    assert.equal(m[m.length - 1], '', 'and an unmatched spelling finds nothing, so it falls through too');
   }
+  assert.equal(used.size, bound.size, 'every bound group is reached from a spelling');
   assert.ok(branches > 200, `only ${branches} guarded branches`);
 
   const src = rd('js/hist-cities.js');
@@ -178,7 +194,7 @@ test('⑤ place-labels applies it to ofm-city and to nothing else', () => {
   /* the only mention of the module is that one line — a second call site would be a second owner */
   assert.equal((src.match(/IntMapHistCities/g) || []).length, 1,
     'exactly one call site; the record\'s collision exemptions are written against ofm-city\'s class filter');
-  assert.match(src, /GE\(\)\.layers\.setLayout\(id,'text-field',_fld\)/, 'the wrapped expression is what is set');
+  assert.match(src, /GE\(\)\.layers\.setLayout\(id,'text-field',_fld[,)]/, 'the wrapped expression is what is set');
 });
 
 test('⑥ the module is imported eagerly, and the record is NOT', () => {
