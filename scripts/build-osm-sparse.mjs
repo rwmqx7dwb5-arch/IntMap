@@ -33,6 +33,28 @@ const EPS = [
 const SLICES = [];
 for (let lon = -180; lon < 180; lon += 60) SLICES.push([-90, lon, 90, lon + 60]);
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* the same words the bundles' own `source` field carries, from this value */
+  const rec = (paidBy) => ({
+    publisher: 'OpenStreetMap contributors',
+    url: EPS[0],
+    licence: 'ODbL',
+    /* ⚠ 「ODbL」 IS THE NAME OF THE TERMS AND NOT A READING OF THEM. Whether credit is a condition
+       is stated by js/reference-data.js (「OpenStreetMap is ODbL 1.0 and does」), and the row that
+       pays it is named per bundle because the two bundles are credited separately. */
+    attribution: true,
+    paidBy,
+    builtBy: 'scripts/build-osm-sparse.mjs',
+  });
+  return {
+    'data/osm-diplo.json': rec('Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)'),
+    'data/osm-space.json': rec('Spaceports & satellite ground stations — OpenStreetMap (aeroway=spaceport, man_made=launch_pad/satellite_dish, Overpass API)'),
+  };
+})();
+
 const SETS = {
   diplo: {
     q: ['nwr["amenity"="embassy"]', 'nwr["office"="diplomatic"]'],

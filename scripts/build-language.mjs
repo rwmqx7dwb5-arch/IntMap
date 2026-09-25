@@ -39,6 +39,24 @@ import { loadGlottolog, loadLedger, normName, GLOTTOLOG_STAMP, LEVELS, AES } fro
 import { alpha3to2, CLDR_STAMP } from './lib/cldr.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  const rec = {
+    upstreams: [
+      /* SOURCE_STAMP states 「US Government work, public domain」 for the Factbook fields */
+      { publisher: 'CIA World Factbook', url: SOURCE_STAMP.url, licence: 'public domain', attribution: false },
+      /* GLOTTOLOG_STAMP carries its licence as a value; it is referenced, not copied */
+      { publisher: 'Glottolog', url: GLOTTOLOG_STAMP.url, licence: GLOTTOLOG_STAMP.licence,
+        attribution: true,
+        paidBy: 'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)' },
+    ],
+    builtBy: 'scripts/build-language.mjs',
+  };
+  return { 'data/language.json': rec, 'data/language-tree.json': rec };
+})();
 const CHECK = process.argv.includes('--check');
 
 /* the nine languages IntMap speaks; Glottolog carries localized languoid names for some of them */

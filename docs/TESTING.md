@@ -43,7 +43,7 @@ and unchanged resolution and image fallback. These count released resources; the
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**116 measured spec files / 81.4 min** of serial browser time against a ceiling of 81.4 min; and
+**117 measured spec files / 81.4 min** of serial browser time against a ceiling of 81.4 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -64,7 +64,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **110 spec files** — is the whole suite minus core
+**deep** tier — **111 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -672,7 +672,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **110 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **111 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -1370,6 +1370,58 @@ hash なので、集合が変わらない commit はネットワークに触れ�
 ⚠ **残余**: `npm run dev`（Vite の開発サーバ）がリンク先のファイルを配るかは確かめていない
 （プレビューと試験は `dist/` を配る `scripts/serve.mjs` で、そちらは実体のコピー）。
 回帰検査は `tests/data-outside-git-checks.test.mjs`。
+
+### `npm run check:datagov` — 一般規則が註としてしか存在しなかった (#729)
+
+`scripts/data-governance.mjs --check`（オフライン・`npm test` と CI の両方が呼ぶ）は、
+上の主題別の門が**それぞれ 1 束について**測っていることを、**全部の束について**測る。
+
+⚠⚠⚠ **この門の前、その一般規則は文章としてしか存在しなかった。** `scripts/build-cshapes.mjs` が
+「every shipped data bundle's `src` names its licence — is `scripts/doc-facts.mjs`'s `bundle-licence`,
+whose universe is discovered from data/」と述べていたが、実測で **`bundle-licen` という綴りは
+追跡ファイル全体でその 1 文にしか無く**、`doc-facts.mjs` にその rule は無かった。
+**一般規則の唯一の記述が、書かれなかった実装への指差しだった。**
+
+**母集合は発見する**（`node scripts/data-governance.mjs --check` が毎回この行を印字する）:
+`data/` の論理データセット **72**（ファイル 66 ＋ シャードのディレクトリ 6＝7,529 ファイル）/
+`data/` へ書き込む script **43**（追跡された `.mjs` 226 本のうち）/ 読者向けの出典行 **175**。
+
+測るのは 6 つ:
+
+- **`gov-declared`** — `data/` へ書く script は `export const GOVERNANCE` で出自を**値として**述べる。
+  ⚠ **script を import しない**（多くは top-level で走る）——ソースから静的に取り出す。
+  ⚠ **「読めなかった」と「述べていない」を分ける**（前者は門についての観測、後者は世界についての観測）。
+- **`bundle-licence`** — ⚠ **註が約束していた規則そのもの。** `attribution: true`（帰属表示が
+  再配布の条件）の宣言は、`paidBy` が `js/reference-data.js` の `DATA_SOURCES` に**実在する行の `n` と
+  完全一致**しなければならない。⚠ **説明ではなく値で照合する**。実測 **15 件が条件つきで、14 件が
+  実在する行に払われている**。
+- **`freshness-stated`** — ⚠⚠⚠ **拒むのは沈黙であって古さではない。** 周期を述べていない宣言は
+  落第、**述べた周期より古いのは note**（exit 0 を妨げない）。著者の無い閾値でデータを拒むと、
+  誤検出が正しいデータを消す（`.agents/rules/no-ad-hoc-hardcoding.md` §4）。
+- **`update-failure`** — 上流の応答を確かめずに束へ流れる経路があるか。⚠ **7 本の名前を門に
+  書かない**（それが場当たりの一覧）——事実を測り、静的解析で**確実に言えないものは note にして
+  file:line で根拠を出す**。実測 **3 件が確実・2 件が疑い**。
+- **`facets-accounted`** — 19 欄が主題ごとに `stated` / `undeclared(why)` / `notApplicable(why)` の
+  **どれか 1 つ**に入る。⚠ **鍵が無いのはこの 3 つのどれでもない。**
+- **`ledger-shrinks`** — 既存の違反は `data/governance-ledger.json` にあり、**counts は下向きにしか
+  動かない**。台帳に無い新しい違反も、直したのに縮めていない台帳も落第。
+  ⚠ **台帳は免責ではない**——載っている 1 行は読者に対する未払いである。
+
+⚠ **残る危険を、含みではなく明示で**: 束のバイトへの `gov` 書き込みは**次のリビルドが運ぶ**。
+#729 は宣言を builder 側に置いた（165 MB を再取得せずに正本を作るため）ので、
+**束のバイトと builder の宣言が食い違いうる期間がある**。門は両方を別の主題として読む。
+正本は [`DATA-GOVERNANCE.md`](DATA-GOVERNANCE.md)。
+
+### `tests/data-governance.spec.js` — 読者に届く行は、二度言わず、一度も隠さない
+
+派生した出典の文が、**その同じ文が既に述べたライセンスを繰り返さない**こと。
+⚠ **測るのは述語ではなく描かれたページ**（一緒に作られた読み手は反証にならない）。
+⚠ **主題は派生した文であって、項目全体ではない**——実測で 9 項目が「行の名前」と「説明文」の
+2 か所で同じライセンスを述べているが、それは**この回が書いていない散文**であり、検査を通すために
+読者に見える文を書き換えるのは依頼の外（`AGENTS.md` §3-2）。
+2 つ目の検査は逆向きを見る: 「CC BY」は「CC BY-NC-SA」の接頭辞なので、**部分一致で抑止すると
+行が持つ条件が、より厳しい別のライセンスに飲み込まれる**。⚠ **隠すほうが繰り返すより悪い**
+——それは #R689 が実際に出荷した失敗である。
 
 ### `npm run check:histplaces` — 選択規則を測ることと、出荷したバイトを測ることは別 (#R716)
 

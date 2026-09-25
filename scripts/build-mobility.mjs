@@ -96,6 +96,30 @@ const AIRPORTS = 'https://davidmegginson.github.io/ourairports-data/airports.csv
 const MLEDOZE = 'https://cdn.jsdelivr.net/gh/mledoze/countries@master/countries.json';
 const WB = 'https://api.worldbank.org/v2/country/all/indicator/';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  const upstreams = [
+    /* ⚠ THE SNAPSHOT DATE IS THE UPSTREAM'S OWN AND IT IS THE POINT: OpenFlights stopped in 2014,
+       so `asOf` is 2014-06 and no cadence exists to declare. */
+    { publisher: 'OpenFlights route database', url: ROUTES, licence: 'ODbL 1.0', asOf: '2014-06',
+      cadence: 'static', paidBy: 'OpenFlights — airline route database (country-pair route counts for the pandemic simulator; snapshot of June 2014, no longer updated; ODbL 1.0)' },
+    { publisher: 'OurAirports', url: AIRPORTS, licence: 'public domain', attribution: false },
+    { publisher: 'World Bank World Development Indicators', url: WB, licence: 'CC BY 4.0',
+      attribution: true, paidBy: 'World Bank Open Data' },
+    { publisher: 'mledoze/countries', url: MLEDOZE, licence: 'ODbL 1.0',
+      paidBy: 'Country facts — mledoze/countries (capital, currency, languages, land borders, UN membership, demonym; ODbL 1.0, build time only)' },
+  ];
+  return { 'data/mobility.json': { upstreams, builtBy: 'scripts/build-mobility.mjs' } };
+})();
+
+/* the reader-visible credit lines, DERIVED from those values */
+const CREDIT = (i) => {
+  const u = GOVERNANCE['data/mobility.json'].upstreams[i];
+  return u.publisher + ' (' + u.licence + ')';
+};
+
 /* the same one alias data/country-facts.json and data/airports.json declare */
 const ALIAS = { UNK: 'KOS' };
 
@@ -256,10 +280,10 @@ async function build() {
       + 'Built by scripts/build-mobility.mjs. See Architecture.md §8.5.',
     built: new Date().toISOString().slice(0, 10),
     sources: [
-      'OpenFlights route database (ODbL 1.0) — snapshot June 2014, no longer updated',
-      'OurAirports (public domain) — airport code to country',
-      'World Bank World Development Indicators (CC BY 4.0) — ST.INT.ARVL',
-      'mledoze/countries (ODbL 1.0) — cca2 to cca3'
+      CREDIT(0) + ' — snapshot June 2014, no longer updated',
+      CREDIT(1) + ' — airport code to country',
+      CREDIT(2) + ' — ST.INT.ARVL',
+      CREDIT(3) + ' — cca2 to cca3'
     ],
     routesSnapshot: '2014-06',
     preCovidYear: PRE_COVID_YEAR,

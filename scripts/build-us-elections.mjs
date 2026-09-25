@@ -48,6 +48,30 @@ const CHECK = process.argv.includes('--check');
 const NE_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_1_states_provinces.geojson';
 const CSV_URL = 'https://raw.githubusercontent.com/zonination/election-history/master/elec.csv';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/us-states.json': {
+    publisher: 'Natural Earth',
+    url: NE_URL,
+    /* the payload this build writes states it in the same words: 1:110m admin-1, public domain */
+    licence: 'public domain',
+    attribution: false,
+    builtBy: 'scripts/build-us-elections.mjs',
+  },
+  'data/us-elections.json': {
+    /* ⚠ NO LICENCE IS STATED FOR EITHER RESULTS COMPILATION. What the build states is WHOSE
+       returns they are (National Archives, and the American Presidency Project at UCSB) and which
+       mirror it read them from — provenance, not terms. */
+    upstreams: [
+      { publisher: 'National Archives / American Presidency Project (UCSB), compiled via zonination/election-history', url: CSV_URL },
+      { publisher: 'tonmcg/US_County_Level_Election_Results_08-24', url: 'https://github.com/tonmcg/US_County_Level_Election_Results_08-24' },
+    ],
+    builtBy: 'scripts/build-us-elections.mjs',
+  },
+};
+
 /* ── the palette. A party's colour is the one broadcast maps have used for it. ────────────────── */
 const PARTIES = {
   D:  { en: 'Democratic',              col: '#1f5fd0' },

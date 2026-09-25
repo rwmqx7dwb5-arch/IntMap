@@ -94,6 +94,26 @@ const ALT = 'https://download.geonames.org/export/dump/alternateNamesV2.zip';
 const FCODES = 'https://download.geonames.org/export/dump/featureCodes_en.txt';
 const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap) gazetteer-build';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/gazetteer-world.json.gz': {
+    publisher: 'GeoNames',
+    url: SRC,
+    /* the licence the header states for all three dumps this build reads */
+    licence: 'CC BY 4.0',
+    /* 「BY」 is part of the identifier: credit is a condition of these terms. */
+    attribution: true,
+    paidBy: 'GeoNames',
+    builtBy: 'scripts/build-gazetteer.mjs',
+  },
+};
+
+/* the credit line the bundle carries, BUILT from the values above */
+const CREDIT = 'Places, populations and names: ' + GOVERNANCE['data/gazetteer-world.json.gz'].publisher
+  + ' (cities1000 + alternateNamesV2 + featureCodes_en, ' + GOVERNANCE['data/gazetteer-world.json.gz'].licence + ').';
+
 /* The languages js/newsgeo.js can actually match (see the header). `ja` is kept in its own column
    because the app's UI is bilingual and every caller reads row[1] as "the Japanese name".
    ⚠ (#R620) `en` IS DELIBERATELY NOT IN HERE AND MUST NOT BE ADDED. This list is the set of
@@ -438,7 +458,7 @@ async function main() {
   const doc = {
     v: 3,
     built: new Date().toISOString().slice(0, 10),
-    attribution: 'Places, populations and names: GeoNames (cities1000 + alternateNamesV2 + featureCodes_en, CC BY 4.0).',
+    attribution: CREDIT,
     langs: LANGS,
     /* ⚠ 0–6 are #R198/#R208/#R495 order and are read by index everywhere. New fields APPEND. */
     fields: ['en', 'ja', 'iso2', 'lng', 'lat', 'pop', 'alt', 'gid', 'fcode', 'disp', 'cur'],

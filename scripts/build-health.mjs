@@ -74,6 +74,28 @@ const OUT = path.join(ROOT, 'data', 'health.json');
 const GHO = 'https://ghoapi.azureedge.net/api/';
 const WB = 'https://api.worldbank.org/v2/country/all/indicator/';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  const upstreams = [
+    { publisher: 'WHO Global Health Observatory', url: GHO, licence: 'CC BY-NC-SA 3.0 IGO',
+      /* ⚠ 「BY」 IS PART OF THE IDENTIFIER, so credit is a condition the identifier itself states;
+         the row that pays it is named by its exact `n` in js/reference-data.js. */
+      attribution: true,
+      paidBy: 'WHO Global Health Observatory — UHC service coverage index & IHR SPAR (CC BY-NC-SA 3.0 IGO)' },
+    { publisher: 'World Bank World Development Indicators', url: WB, licence: 'CC BY 4.0',
+      attribution: true, paidBy: 'World Bank Open Data' },
+  ];
+  return { 'data/health.json': { upstreams, builtBy: 'scripts/build-health.mjs' } };
+})();
+
+/* the sentence a reader sees, BUILT FROM those values — never parsed back out of it */
+const CREDIT = (i) => {
+  const u = GOVERNANCE['data/health.json'].upstreams[i];
+  return u.publisher + ' (' + u.licence + ')';
+};
+
 /* How far back a reading may come from before it is dropped. These four indicators are annual and
    currently land on 2023–2024 for every country that reports at all — MEASURED. The window exists
    so that an upstream that quietly stops publishing shows up as a missing country (which the model
@@ -160,9 +182,9 @@ const data = {
     + 'COVID-19 immunity and none is invented here. Built by scripts/build-health.mjs. See Architecture.md §8.5.',
   built: new Date().toISOString().slice(0, 10),
   sources: [
-    'WHO Global Health Observatory (CC BY-NC-SA 3.0 IGO) — UHC service coverage index (SDG 3.8.1)',
-    'WHO Global Health Observatory (CC BY-NC-SA 3.0 IGO) — IHR SPAR capacity 7, health emergency management',
-    'World Bank World Development Indicators (CC BY 4.0) — SH.IMM.IDPT and SH.IMM.MEAS (WHO/UNICEF WUENIC)'
+    CREDIT(0) + ' — UHC service coverage index (SDG 3.8.1)',
+    CREDIT(0) + ' — IHR SPAR capacity 7, health emergency management',
+    CREDIT(1) + ' — SH.IMM.IDPT and SH.IMM.MEAS (WHO/UNICEF WUENIC)'
   ],
   fields: {
     uhc: 'WHO UHC service coverage index (SDG 3.8.1), 0-100 — drives medical capacity',

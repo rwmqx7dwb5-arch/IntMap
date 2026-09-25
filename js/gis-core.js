@@ -13,6 +13,13 @@
  *      js/gis-project.js    window.IntMapGisProject   what survives closing the tab
  *      js/gis-panel.js      window.IntMapGisPanel     the operating surface
  *
+ *  ⚠ (#729) AND ONE THAT IS NOT A GIS FILE AT ALL:
+ *      js/data-governance.js  window.IntMapDataGovernance  where a number came from, on what terms,
+ *                                                          how old it is, and what was measured
+ *  It is mounted here because the readers that need it are here (js/gis-export.js writes what it
+ *  reads) and because the ones that are NOT here reach it the same way every kernel is reached — by
+ *  global, at call time. It is pure: no DOM, no fetch, no table of sources.
+ *
  *  ⚠ WHY ONE LAZY ENTRY AND NOT SEVEN. js/lazy-modules.js is part of the app SHELL, and the shell
  *  has a line budget (tests/r168-checks ⑧) with single-digit headroom most rounds — four entries is
  *  twelve lines in three tables. It is also not a real choice: the registry with no ops is a list
@@ -88,6 +95,7 @@ import { makeGisAtlas } from './gis-atlas.js';
 import { makeGisIndex } from './gis-index.js';
 import { makeGisExpr } from './gis-expr.js';
 import { makeGisUnits } from './gis-units.js';
+import { makeDataGovernance } from './data-governance.js';
 import { makeGisWorker } from './gis-worker.js';
 import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
@@ -157,6 +165,14 @@ function mount(scope, HOST, CONTEXT) {
      reader's expression) read window.IntMapGisUnits at CALL time, and a private import in either
      would be a second opinion about whether metres and kilometres are the same quantity. */
   const units = makeGisUnits();
+  /* (#729) 「この数字はどこから来た？」 — the one vocabulary for provenance, terms, freshness and the
+     quality measurements, read by js/gis-export.js (what a written file carries), js/map-ui.js (what
+     a layer registration states), js/reference-data.js (what the reader is shown) and
+     scripts/data-governance.mjs (what the gate refuses). Mounted here for the reason every kernel
+     above is: a second opinion about whether `licence` and `license` are one fact is exactly how the
+     reader-visible credits and the shipped bundle came to disagree (34 of 69 bundles named no terms
+     at all). ⚠ It reads nothing and holds no table of sources — see its header. */
+  const governance = makeDataGovernance();
   /* (#R752) Parallelism, which is the half of 「重い処理」 the yield in js/gis-ops.js does NOT provide
      (docs/GIS-CORE.md §6 said so: 「ここで足りないのは並列性であって応答性ではない」). It takes PURE
      ARITHMETIC over numeric arrays — pixel loops, where there is no registry and no geodesy to leave
@@ -283,7 +299,7 @@ function mount(scope, HOST, CONTEXT) {
      (.agents/rules/no-ad-hoc-hardcoding.md §2-4: 「一覧が要るなら、一覧を発見する」). */
   const verified = [['IntMapData', data], ['IntMapGisGeometry', geometry], ['IntMapGisCrs', crs],
     ['IntMapGisRaster', raster], ['IntMapGisWarp', warp], ['IntMapGisIndex', index], ['IntMapGisExpr', expr],
-    ['IntMapGisUnits', units], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
+    ['IntMapGisUnits', units], ['IntMapDataGovernance', governance], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
     ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapGis', API],
     ['IntMapGisContext', ctx]];
   const unreachable = [];

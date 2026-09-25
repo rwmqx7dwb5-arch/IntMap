@@ -57,6 +57,22 @@ import { ringArea } from './histborders/geom.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'border-coast.js');
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/border-coast.js': {
+    /* ⚠ THE ONE UPSTREAM THIS BUNDLE ACTUALLY ASKS is the coastline it measures against; the
+       outlines themselves come from bundles already in the tree, each of which declares its own
+       terms in its own builder. */
+    publisher: 'Natural Earth',
+    url: 'https://www.naturalearthdata.com/',
+    licence: 'public domain',
+    attribution: false,
+    builtBy: 'scripts/build-border-coast.mjs',
+  },
+};
+
 /* ⚠ MEASURED, 2026-09-07, TWO WAYS, AND THE SECOND ONE IS WHY IT IS 6 AND NOT 2.5.
    `--report` walks all 646,722 edges of both bundles and bins the deepest point of each. The shape
    is bimodal — 95,640 edges peak in the first kilometre, the border mass sits past 20 km — but the

@@ -139,6 +139,32 @@ const WIND_SOURCE = { id: 'noaacwBlendedWindStressMonthly',
   x: 'x_tau', y: 'y_tau', extra: '[(10.0)]', lon360: true, t0: '1988-01-16', t1: '2025-12-16',
   name: 'NOAA NCEI blended sea-surface wind stress (0.25°, monthly, Version 2.0)' };
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ THE LICENCE IS THE SENTENCE THE BUNDLE ALREADY CARRIES, AS A VALUE: 「All U.S. Government
+     works in the public domain; data courtesy of NOAA, altimetric products generated using
+     AVISO+」. The three products are read straight from the source constants above, so a change of
+     upstream cannot leave this declaration naming the old one. */
+  const one = (s) => ({
+    publisher: s.name,
+    url: s.base,
+    licence: 'U.S. Government work — public domain',
+    attribution: false,
+    builtBy: 'scripts/build-ocean-currents.mjs',
+  });
+  const rec = {
+    upstreams: [...VEL_SOURCES.map(one), one(WIND_SOURCE), one(SST_SOURCE)],
+    builtBy: 'scripts/build-ocean-currents.mjs',
+  };
+  return {
+    'data/ocean-currents.json': rec,
+    'data/ocean-currents-field.bin.gz': rec,
+    'data/ocean-currents-months.bin.gz': rec,
+  };
+})();
+
 /* ── the named currents ──────────────────────────────────────────────────────────────────────
    [en, ja, de, ru, es, seedLng, seedLat]. Seeds are the published position of each current's
    CORE. They decide where a trace starts and nothing else; the geometry is the field's. */

@@ -88,16 +88,46 @@ const CACHE = process.env.INTMAP_CSHAPES_CACHE || join(tmpdir(), 'intmap-cshapes
 const GEOJSON = join(CACHE, 'CShapes-2.0.geojson');
 const URL_GEOJSON = 'https://icr.ethz.ch/data/cshapes/CShapes-2.0.geojson';
 
-/* ⚠ THE ONE PLACE THAT SAYS WHAT SHIPPING THIS RECORD COSTS. `source` is not a label, it is the
+/* ⚠ THE ONE PLACE THAT SAYS WHAT SHIPPING THIS RECORD COSTS. `paidBy` is not a label, it is the
    exact `n` of the js/reference-data.js row that pays the credit — the check below compares the
-   two, so the obligation cannot be satisfied by a row that merely looks similar. */
+   two, so the obligation cannot be satisfied by a row that merely looks similar.
+   ⚠⚠⚠ (#729) AND THE LITERALS MOVED HERE, RATHER THAN A SECOND COPY BEING WRITTEN BESIDE THEM.
+   The shared vocabulary (js/data-governance.js) is what `npm run check:datagov` reads, and it reads
+   it STATICALLY — a declaration assembled out of identifiers is one the gate has to answer
+   「読めなかった」 about, which is a different thing from 「述べていない」 but just as unverified. So the
+   strings live in GOVERNANCE, which is the literal, and LICENCE is BUILT FROM IT below. The
+   direction matters: two spellings of one obligation is the defect this whole round exists to
+   remove, and inverting it here costs nothing because LIC() still validates every field.
+   ⚠ THE FIELDS ARE MAPPED, NOT HANDED OVER WHOLE. LIC()'s `source` means 「the row that PAYS」 while
+   the shared vocabulary's `source` group means 「where the data came from」 — two different facts
+   wearing one word. Handing the object over whole would read the paying row as a URL and leave
+   `paidBy` silent, which is the one obligation this bundle exists to record. */
+export const GOVERNANCE = {
+  'data/cshapes.js': {
+    publisher: 'Schvitz, Rüegger, Girardin, Cederman, Weidmann, Gleditsch (ICR, ETH Zürich)',
+    url: 'https://icr.ethz.ch/data/cshapes/',
+    licence: 'CC BY-NC-SA 4.0',
+    attribution: true,
+    paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
+    retrievedAt: '2026-09-11',
+    /* ⚠ `static` IS A FRESHNESS ANSWER, NOT THE ABSENCE OF ONE. CShapes 2.0 is a published,
+       finished dataset covering 1886-2019; there is no next edition for this copy to be behind.
+       Saying nothing would make the gate answer `unknown`, which sends a reader after a refresh
+       that does not exist. EXPIRES: if ETH Zürich publishes a CShapes 3.0. */
+    cadence: 'static',
+    builtBy: 'scripts/build-cshapes.mjs',
+  },
+};
+
+/* The same statement in the shape the histcities record loader and its gate already speak — built
+   from the values above, never spelled a second time. */
 export const LICENCE = LIC({
-  publisher: 'Schvitz, Rüegger, Girardin, Cederman, Weidmann, Gleditsch (ICR, ETH Zürich)',
-  licence: 'CC BY-NC-SA 4.0',
-  url: 'https://icr.ethz.ch/data/cshapes/',
-  attribution: true,
-  source: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
-  read: '2026-09-11',
+  publisher: GOVERNANCE['data/cshapes.js'].publisher,
+  licence: GOVERNANCE['data/cshapes.js'].licence,
+  url: GOVERNANCE['data/cshapes.js'].url,
+  attribution: GOVERNANCE['data/cshapes.js'].attribution,
+  source: GOVERNANCE['data/cshapes.js'].paidBy,
+  read: GOVERNANCE['data/cshapes.js'].retrievedAt,
 });
 /* ⚠ (#R717) THE BUNDLE'S OWN `src` LINE, ASSEMBLED FROM THE LICENCE VALUE ABOVE rather than
    spelled a second time — the rights have to travel with the data (#R689), and a second spelling
@@ -369,7 +399,16 @@ function check() {
      licence adds one, so this round wrote it. ⚠ THE STRING IS NOT SPELLED TWICE: the check reads the
      builder's own LICENCE value, so a change of terms upstream cannot leave the bundle asserting the
      old ones. The general rule — every shipped data bundle's `src` names its licence — is
-     scripts/doc-facts.mjs's `bundle-licence`, whose universe is discovered from data/. */
+     scripts/data-governance.mjs's `bundle-licence`, whose universe is discovered from data/.
+     ⚠⚠⚠ (#729) AND UNTIL #729 THAT SENTENCE POINTED AT NOTHING. It named
+     scripts/doc-facts.mjs, and MEASURED: the spelling `bundle-licen` occurred in exactly one
+     tracked file — this comment — while doc-facts.mjs had no such rule and never had one. So the
+     repository's only statement of the cross-cutting rule was a pointer to an implementation
+     nobody wrote, and the cost was visible the moment anybody counted: the gate that replaced the
+     sentence finds 130 subjects under data/ that state not one governance facet. A general rule written as prose is a rule with no reader
+     ([[intmap-licence-must-be-a-value]], [[intmap-refusal-that-becomes-implementation]]). The gate
+     now exists, `npm test` runs it, and tests/data-governance-checks ⑪ fails if this sentence
+     ever again names a place that does not implement it. */
   ok(d && /CShapes/i.test(d.src), 'src must name CShapes');
   ok(d && /ethz/i.test(d.src), 'src must name the publisher (ethz)');
   ok(d && d.src.includes(LICENCE.licence), 'src must name the licence «' + LICENCE.licence + '»');

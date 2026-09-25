@@ -35,6 +35,22 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const W = 2048, H = 1024;
 const SRC = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_land.geojson';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* the header states it in these words: 「public domain, no permission required, no attribution
+     required — attributed anyway in js/reference-data.js」 */
+  const rec = {
+    publisher: 'Natural Earth',
+    url: SRC,
+    licence: 'public domain',
+    attribution: false,
+    builtBy: 'scripts/build-land-mask.mjs',
+  };
+  return { 'data/land-mask.png': rec, 'data/land-mask.json': rec };
+})();
+
 /* ── the rasteriser ────────────────────────────────────────────────────────────────────────────
    Scanlines through each output row. For each polygon, every ring contributes its crossings of that
    latitude and the spans between alternate crossings are land — the even-odd rule, which is what

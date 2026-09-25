@@ -33,6 +33,20 @@ import path from 'node:path';
 const OUT = path.join(process.cwd(), 'data', 'deep-sky.json');
 const TAP = 'https://simbad.u-strasbg.fr/simbad/sim-tap/sync';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/deep-sky.json': {
+    publisher: 'SIMBAD — Centre de Données astronomiques de Strasbourg',
+    url: TAP,
+    /* ⚠ SIMBAD ASKS TO BE CITED, which this build writes into the bundle's `attribution`. That is a
+       CREDIT LINE and not, as read here, a statement about the licence's terms — so `licence` stays
+       silent and the boolean 「表記が再配布の条件か」 is not answered either. */
+    builtBy: 'scripts/build-deepsky.mjs',
+  },
+};
+
 const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
 async function adql(query){

@@ -18,6 +18,7 @@ developer_instructions = '''
 | コマンド | 何を主張するか |
 |---|---|
 | `npm run check:static` | 構文・JSON/YAML・merge marker・秘密・資産 |
+| `npm run check:datagov` | **同梱データの出自・権利・鮮度**（`scripts/data-governance.mjs`）。⚠ この門より前、横断する規則は**註としてしか存在しなかった**——`scripts/build-cshapes.mjs:372` が「一般規則は `doc-facts.mjs` の `bundle-licence`」と述べ、その綴りは追跡ファイル全体でその文 1 か所にしか無かった（実測: 69 束中 licence を名乗るのは 35・出典 42・日時 47）。母集合は**発見する**（`data/` が何を出荷しているか・どの script が `data/` へ書くか）。語彙の正本は `js/data-governance.js`。⚠ **測るのは沈黙であって古さではない**——宣言された周期より古いのは note、周期を述べていないのは落第。既存の違反は `data/governance-ledger.json` にあり、**counts は下向きにしか動かない** |
 | `npm run check:engine` | レンダラ脱依存 |
 | `npm run check:i18n` | 9 言語 × 全 surface |
 | `npm run check:companies` | 企業アトラス（拠点・座標・出典） |

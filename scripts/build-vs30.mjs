@@ -106,6 +106,20 @@ const HOSTS = [
   'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium'
 ];
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ SAME UPSTREAM AS scripts/build-bathymetry.mjs AND SAME SILENCE: the terrarium dataset's
+     terms live on the AWS Open Data registry page, which this builder never reads. */
+  const rec = {
+    publisher: 'AWS Terrain Tiles (terrarium)',
+    url: HOSTS[0] + '/{z}/{x}/{y}.png',
+    builtBy: 'scripts/build-vs30.mjs',
+  };
+  return { 'data/vs30.png': rec, 'data/vs30-phone.png': rec, 'data/vs30.json': rec };
+})();
+
 /* ── the same minimal PNG reader/writer as scripts/build-bathymetry.mjs ──────────────────────── */
 function pngDecode(buf) {
   if (!(buf[0] === 0x89 && buf[1] === 0x50)) throw new Error('not a PNG');

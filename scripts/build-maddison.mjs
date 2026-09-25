@@ -53,6 +53,21 @@ const SRC = 'https://raw.githubusercontent.com/owid/owid-datasets/master/dataset
   + 'Maddison%20Project%20Database%202020%20(Bolt%20and%20van%20Zanden%20(2020))/'
   + 'Maddison%20Project%20Database%202020%20(Bolt%20and%20van%20Zanden%20(2020)).csv';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/maddison.json': {
+    publisher: 'Maddison Project Database 2020 (Bolt & van Zanden)',
+    /* ⚠ THIS IS THE MIRROR, NOT THE RELEASE, and the header says why: MPD2020's own release is an
+       .xlsx behind a signed dataverse URL, so the copy read here is Our World in Data's CSV of the
+       same release. The figures were verified against the committed bundle cell for cell. */
+    url: SRC,
+    /* ⚠ NO LICENCE IS STATED BY THIS BUILD for either the release or the mirror. */
+    builtBy: 'scripts/build-maddison.mjs',
+  },
+};
+
 /* ISO3 (plus the three former states MPD carries as first-class entities) → the CSV's `Entity`.
    ⚠ THIS TABLE WAS DERIVED, NOT TYPED. 153 of the 168 rows were found by matching each committed
    series against every entity in the CSV and taking the one that reproduced it exactly; the

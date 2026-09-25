@@ -76,10 +76,12 @@
  *  ⚠ AND NOTHING ELSE. [[intmap-data-must-not-claim-an-author-it-lacks]]: a record whose provenance
  *  states no licence gets NO licence member — not an empty string, not 「unknown」. The test measures
  *  both directions, because a field that is always present is a field that says nothing.
- *  ⚠ THE INTEROP TABLE BELOW IS A SYNONYM MAP, NOT A CASE LIST. The verbatim copy is the real
- *  carrier: a provenance key this table has never heard of still travels, in full, under
+ *  ⚠ THE SYNONYM TABLE IS A SYNONYM MAP, NOT A CASE LIST. The verbatim copy is the real
+ *  carrier: a provenance key that table has never heard of still travels, in full, under
  *  `intmap.provenance`. The table exists only so that a reader's OTHER tools find the licence where
- *  their conventions put it.
+ *  their conventions put it. ⚠ (#729) IT IS NO LONGER IN THIS FILE — js/data-governance.js
+ *  `SPELLINGS` holds it, because the same synonyms decide what a gate reads out of a shipped bundle
+ *  and what js/reference-data.js credits. One vocabulary, several readers.
  *
  *  ══ §2 · WHAT A CSV CAN AND CANNOT CARRY, SAID OUT LOUD ═══════════════════════════════════════
  *  A CSV is a table. Everything below is in `stated`, in the answer, next to the bytes:
@@ -98,6 +100,13 @@
  *    · A COLUMN NAME COLLISION is resolved by suffixing the ADDED column (`longitude_1`), never by
  *      overwriting the reader's own column, and `stated.geometryColumns` names what was written.
  * ==========================================================================*/
+
+/* ⚠ (#729) THE SYNONYM TABLE THAT USED TO LIVE IN THIS FILE NOW LIVES IN ONE PLACE. It was
+   `INTEROP` in the closure below — correct for what this file read, and unreachable from anywhere
+   else, so the 53 build scripts that write the same facts used their own spellings (`src`,
+   `generated`, `lic`) and js/reference-data.js used a third. One vocabulary with several readers is
+   the point; two vocabularies is how 「ライセンス」 and 「licence」 become two facts. */
+import { statedValue } from './data-governance.js';
 
 export function makeGisExport() {
   return (function () {
@@ -183,37 +192,34 @@ export function makeGisExport() {
        js/map-ui.js writes `file` / `format` / `readAt`, js/gis-layers.js writes `layer` / `at`, and
        js/gis-datasets.js's header states `{kind:'import', file, licence, url}`. ⚠ `licence` and
        `license` are two spellings of ONE word, not two facts. A key that is in none of these lists
-       is NOT lost: the whole provenance object travels verbatim beside them. */
-    const INTEROP = Object.freeze({
-      license: Object.freeze(['licence', 'license']),
-      attribution: Object.freeze(['attribution', 'attributions', 'credit']),
-      source: Object.freeze(['url', 'source', 'href']),
-      retrievedAt: Object.freeze(['retrievedAt', 'fetchedAt', 'readAt', 'acquiredAt', 'at']),
-    });
+       is NOT lost: the whole provenance object travels verbatim beside them.
+       ⚠⚠⚠ (#729) AND THE TABLE IS NO LONGER HERE. The groups come from js/data-governance.js,
+       which every gate, every build script and the reader-visible credits now read, so a spelling
+       added for a bundle is a spelling this exporter understands the same day. The only thing left
+       in this file is the NAMES THE WRITERS BELOW USE — `license` is the key of the returned object,
+       `licence` is the group in the shared vocabulary, and mapping one to the other here keeps both
+       halves of the contract unchanged. */
+    const GROUP = Object.freeze({ license: 'licence', attribution: 'attribution', source: 'source', retrievedAt: 'retrievedAt' });
 
     /* The first key of the group that the provenance ACTUALLY carries, or null. ⚠ An empty string is
-       not a statement: a licence field somebody left blank must not become a licence claim. */
-    function statedValue(prov, group) {
-      if (!prov || typeof prov !== 'object') return null;
-      for (const key of INTEROP[group]) {
-        if (!Object.prototype.hasOwnProperty.call(prov, key)) continue;
-        const v = prov[key];
-        if (v == null) continue;
-        if (typeof v === 'string' && v.trim() === '') continue;
-        return v;
-      }
-      return null;
-    }
+       not a statement: a licence field somebody left blank must not become a licence claim — the
+       rule now lives beside the vocabulary it guards, so the blank that this exporter refuses is the
+       blank a gate refuses.
+       ⚠ THE IMPORT IS NOT RENAMED; THE LOCAL WRAPPER IS. scripts/check-split-scope.mjs walks an
+       `import { a as b }` specifier as a REFERENCE to `a`, so an aliased import reads as a free
+       identifier that resolves to nothing. js/nominatim-gate.js:86 and js/pandemic-world.js:40 both
+       record the same encounter and the same answer — take the name the module exports. */
+    const statedOf = (prov, group) => statedValue(prov, GROUP[group]);
 
     /* What the record's provenance states, as four values plus the whole object. Used by both
        writers, so a licence that reaches a GeoJSON reaches a GeoTIFF too — one rule, two carriers. */
     function provenanceOf(rec) {
       const prov = (rec && rec.provenance) || null;
       return {
-        license: statedValue(prov, 'license'),
-        attribution: statedValue(prov, 'attribution'),
-        source: statedValue(prov, 'source'),
-        retrievedAt: statedValue(prov, 'retrievedAt'),
+        license: statedOf(prov, 'license'),
+        attribution: statedOf(prov, 'attribution'),
+        source: statedOf(prov, 'source'),
+        retrievedAt: statedOf(prov, 'retrievedAt'),
         /* verbatim — the real carrier. null when the record states nothing at all. */
         raw: prov ? clone(prov) : null,
       };

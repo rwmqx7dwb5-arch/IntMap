@@ -186,6 +186,21 @@ const HALVES = [
          are supposed to come from. A selection rule proved on a fixture says nothing about the file
          that ships. Offline, 0.14 s. */
       ['node', ['scripts/build-hist-places.mjs', '--check']],
+      /* ⚠⚠⚠ (#729) …and the TENTH, which is the one the nine above it could not be. Each of them
+         reads ONE bundle, and eight of the nine were written because that bundle had no gate. The
+         cross-cutting rule they all imply — 「every shipped data bundle names its terms, its
+         upstream and its own age」 — was written down ONCE, as prose, in
+         scripts/build-cshapes.mjs:372: 「The general rule … is scripts/doc-facts.mjs's
+         `bundle-licence`, whose universe is discovered from data/」. MEASURED: `bundle-licen` occurs
+         in exactly one tracked file, and that file is the sentence itself. doc-facts.mjs has no
+         such rule and never had one, so the general rule existed only as a pointer to an
+         implementation nobody wrote — and 34 of the 69 bundles under data/ named no licence at all,
+         27 named no upstream, and 22 carried no date. This gate is that rule.
+         ⚠ ITS UNIVERSE IS DISCOVERED, from what data/ holds and from which scripts write into it,
+         so a bundle added tomorrow is accounted for the same day. What it refuses is SILENCE, never
+         age: a bundle older than its declared cadence is a note, and a bundle that declares no
+         cadence is a failure (.agents/rules/no-ad-hoc-hardcoding.md §4). */
+      ['node', ['scripts/data-governance.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

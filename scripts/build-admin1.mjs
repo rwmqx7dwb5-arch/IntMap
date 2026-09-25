@@ -40,6 +40,21 @@ const SRC = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/mast
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const OUT = path.resolve(ROOT, argOf('--out', 'data/admin1-world.json.gz'));
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/admin1-world.json.gz': {
+    publisher: 'Natural Earth',
+    url: SRC,
+    licence: 'public domain',
+    /* 「public domain」 itself states that credit is not a CONDITION of redistribution; this file's
+       header says so in the same words. Natural Earth is attributed anyway in js/reference-data.js. */
+    attribution: false,
+    builtBy: 'scripts/build-admin1.mjs',
+  },
+};
 const TOL = parseFloat(argOf('--tol', '0.01'));
 const QUANT = 1e4;                       /* four decimals ≈ 11 m at the equator */
 const MIN_AREA = 1e-4;                   /* deg² — an island under ~1 km² is not a grey unit */

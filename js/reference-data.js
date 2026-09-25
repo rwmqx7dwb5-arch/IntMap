@@ -155,6 +155,35 @@ window.IntMapRefData=(function(){
     _dc('d2-kuriles','geo','geo',147.5,44.5,'Kuril Islands','千島列島','Russo-Japanese territorial dispute (Northern Territories).','日露の領土問題（北方領土）。','Kuril_Islands','Disputed'),
     _dc('d2-darien','geo','geo',-77.5,8.4,'Darién Gap','ダリエン地峡','Roadless jungle break in the Pan-American Highway.','パンアメリカン道が途切れる密林地帯。','Darién_Gap','Geo')
   ];
+  /* ══ ⚠⚠⚠ (#729) THE TERMS ARE VALUES ON THE ROW. THEY USED TO BE SENTENCES INSIDE THE NAME ═════
+     A row is `{n, u}` plus, when its terms are KNOWN, `lic` / `licUrl` / `credit`:
+        lic     the licence identifier, spelled as the publisher spells it
+        licUrl  where the conditions themselves are published
+        credit  TRUE when naming the source is a CONDITION of redistributing it, false when it is
+                not. A boolean, because 「表記が必要か」 has a yes and a no and no maybe — the same
+                shape scripts/histcities/lang.mjs's LIC() gave it (#R689).
+     ⚠ NOTHING IS ADDED THAT THE ROW OR THIS REPOSITORY DID NOT ALREADY STATE. Every value below was
+     read either out of this row's own `n` prose («…; ODbL 1.0, build time only») or off a VALUE
+     elsewhere in the tree that names the same publisher — scripts/build-country-facts.mjs's
+     `licence`, scripts/subcables/sources.mjs, scripts/lib/glottolog.mjs,
+     supabase/functions/_shared/radiation-sources.js, docs/AVIATION-DATA-SOURCES.md's table.
+     A row whose terms are stated NOWHERE gets no `lic` at all, and that silence is the answer
+     ([[intmap-data-must-not-claim-an-author-it-lacks]]): 62 rows could state theirs and 112 could
+     not, and inventing 「probably CC BY」 for the rest would be the failure this file was fixing.
+     ⚠ THE LICENCE IS NO LONGER REMOVED FROM `n` WHERE IT ALREADY SITS THERE, and must not be: `n`
+     is the lookup key of the nine `sourceUse` dictionaries in js/locales/pages.*.js AND the value
+     scripts/build-cshapes.mjs and scripts/build-hist-cities.mjs compare against to prove the credit
+     they owe is paid. So the prose stays and the value joins it; `useText` below is what keeps the
+     reader from being told the same thing twice.
+     ⚠ (#729) js/data-governance.js `read()` NOW SEES `lic` / `licUrl` — they were added to its
+     SPELLINGS groups in the same round, because a vocabulary that cannot read the one registry a
+     reader actually opens is two spellings of one fact. The note below records what the groups held
+     before, and why the edit belonged there rather than here: SPELLINGS groups hold
+     `licence`/`license` and `licenceUrl`/`licenseUrl`/`licenceHref`/`terms`, and this registry's own
+     spelling (#R700's, and the one both readers already call) is `lic`. `credit` it does read: that
+     key is in SPELLINGS.attribution, so a boolean here arrives as `creditRequired`. Adding `lic` and
+     `licUrl` to those two groups is what makes the other 8 facets of this registry legible to the
+     kernel; it is one edit in one place and it is not made here. */
   const DATA_SOURCES=[
     {n:'CARTO basemaps',u:'https://carto.com/attribution/'},
     /* (#R180) the two rendering engines themselves. MapLibre has always been here in spirit; it is
@@ -166,7 +195,7 @@ window.IntMapRefData=(function(){
     {n:'CesiumJS',u:'https://cesium.com/platform/cesiumjs/'},
     {n:'Twemoji (Twitter Emoji)',u:'https://github.com/jdecked/twemoji'},
     {n:'Esri World Imagery',u:'https://www.esri.com/'},
-    {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright'},
+    {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'NASA GIBS / Worldview',u:'https://www.earthdata.nasa.gov/'},
     /* (#R186) the two datasets this round bundles WITH the app rather than fetching at run time —
        both are rebuilt by a script in scripts/, and both are named here because a shipped copy needs
@@ -186,12 +215,12 @@ window.IntMapRefData=(function(){
        is actually read, and both entries are build time only. mledoze/countries is REST Countries'
        own upstream, which is why the values did not change when the server did; ODbL 1.0 makes
        the first line a licence obligation rather than a courtesy, as it is for OpenStreetMap. */
-    {n:"Country facts — mledoze/countries (capital, currency, languages, land borders, UN membership, demonym; ODbL 1.0, build time only)",u:'https://github.com/mledoze/countries'},
-    {n:"Country facts — IANA Time Zone Database (standard-time offsets, build time only)",u:'https://www.iana.org/time-zones'},
+    {n:"Country facts — mledoze/countries (capital, currency, languages, land borders, UN membership, demonym; ODbL 1.0, build time only)",u:'https://github.com/mledoze/countries',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:"Country facts — IANA Time Zone Database (standard-time offsets, build time only)",u:'https://www.iana.org/time-zones',lic:'Public domain',credit:false},
     {n:'NASA FIRMS',u:'https://firms.modaps.eosdis.nasa.gov/'},
     {n:'RainViewer',u:'https://www.rainviewer.com/'},
-    {n:'Open-Meteo',u:'https://open-meteo.com/'},
-    {n:'Open-Meteo Marine',u:'https://open-meteo.com/en/docs/marine-weather-api'},
+    {n:'Open-Meteo',u:'https://open-meteo.com/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'Open-Meteo Marine',u:'https://open-meteo.com/en/docs/marine-weather-api',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     /* (#R577) THE SEA STATE. The wave layer draws two models, and the reader switches between them
        (js/wx-models.js `roles:['wave']`); both arrive through the same Open-Meteo S3 path the other
        forecast layers use, so what is new here is the DATA, not a delivery route. The agency
@@ -203,7 +232,7 @@ window.IntMapRefData=(function(){
        third-party use, so the credit is for the twelve numbers and the row is worded so that a
        reader cannot conclude the sea state itself came from there. The legend says the same thing
        in the reader's own language. */
-    {n:'ECMWF WAM — ocean wave model (significant wave height, mean direction and period; via Open-Meteo, CC-BY-4.0)',u:'https://www.ecmwf.int/en/research/modelling-and-prediction/marine'},
+    {n:'ECMWF WAM — ocean wave model (significant wave height, mean direction and period; via Open-Meteo, CC-BY-4.0)',u:'https://www.ecmwf.int/en/research/modelling-and-prediction/marine',lic:'CC-BY-4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'NOAA NCEP GFS Wave — ocean wave model (significant wave height, mean direction and period; via Open-Meteo)',u:'https://polar.ncep.noaa.gov/waves/'},
     {n:'Wave-height colour scale — windy.com (the published twelve-stop scale only; no Windy tiles, forecasts or requests)',u:'https://www.windy.com/'},
     {n:'MET Norway (Locationforecast)',u:'https://api.met.no/'},
@@ -214,10 +243,10 @@ window.IntMapRefData=(function(){
     {n:'Global Watersheds (mghydro.com)',u:'https://mghydro.com/watersheds/'},
     {n:'GRDC / World Bank — Major River Basins of the World',u:'https://datacatalog.worldbank.org/search/dataset/0041426'},
     {n:'OpenTopoMap',u:'https://opentopomap.org/'},
-    {n:'USGS Earthquake Hazards Program',u:'https://earthquake.usgs.gov/'},
-    {n:'OpenStreetMap Overpass API',u:'https://wiki.openstreetmap.org/wiki/Overpass_API'},
-    {n:'Wikidata Query Service',u:'https://query.wikidata.org/'},
-    {n:'GeoNames',u:'https://www.geonames.org/'},
+    {n:'USGS Earthquake Hazards Program',u:'https://earthquake.usgs.gov/',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
+    {n:'OpenStreetMap Overpass API',u:'https://wiki.openstreetmap.org/wiki/Overpass_API',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Wikidata Query Service',u:'https://query.wikidata.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
+    {n:'GeoNames',u:'https://www.geonames.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     /* (#R284) also the warning layer's last shape rung — the ADM1/ADM2 outline of a warning area
        that is in no NUTS, in no national file and in nothing the WMO register happens to hold today. */
     {n:'geoBoundaries',u:'https://www.geoboundaries.org/'},
@@ -238,11 +267,11 @@ window.IntMapRefData=(function(){
     /* (#R354) the company atlas — docs/COMPANIES.md §10. All four are read at BUILD time and
        shipped as data/companies/; the browser calls none of them. OSM's ODbL makes the second
        line a licence obligation rather than a courtesy. */
-    {n:"Company atlas — Wikidata (identity, headquarters, officers, subsidiaries, facilities)",u:'https://www.wikidata.org/'},
-    {n:"Company atlas — OpenStreetMap (operator / owner / brand :wikidata, Overpass API)",u:'https://www.openstreetmap.org/copyright'},
+    {n:"Company atlas — Wikidata (identity, headquarters, officers, subsidiaries, facilities)",u:'https://www.wikidata.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
+    {n:"Company atlas — OpenStreetMap (operator / owner / brand :wikidata, Overpass API)",u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:"SEC EDGAR — XBRL company facts",u:'https://www.sec.gov/edgar/sec-api-documentation'},
     {n:"GLEIF — Global LEI Index",u:'https://www.gleif.org/en/lei-data/gleif-golden-copy'},
-    {n:"Natural Earth (admin-0 boundaries, build time only)",u:'https://www.naturalearthdata.com/'},
+    {n:"Natural Earth (admin-0 boundaries, build time only)",u:'https://www.naturalearthdata.com/',lic:'Public domain',credit:false},
     /* (#R533) ⚠ THE NAME THAT STOOD HERE WAS A HOST THAT NO LONGER EXISTS. Clearbit's Logo API was
        deprecated 2025-03-18 and shut down 2025-12-08 after the HubSpot acquisition; logo.clearbit.com
        resolves on NO public resolver today (8.8.8.8 / 1.1.1.1 / 9.9.9.9 each answer with the
@@ -253,36 +282,36 @@ window.IntMapRefData=(function(){
        fallback for the rest, a monogram is the floor, and the browser asks Wikidata nothing. */
     {n:"Company logos — Wikidata (P154) via Wikimedia Commons, Google favicons as fallback",u:'https://commons.wikimedia.org/'},
     {n:'Wikipedia (Wikimedia REST API)',u:'https://www.wikipedia.org/'},
-    {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam'},
+    {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R388) the railway atlas. ⚠ THIS REPLACED A NATURAL EARTH LAYER, SO THE TERMS CHANGED WITH IT:
        Natural Earth is public domain and required no attribution; OpenStreetMap is ODbL 1.0 and does.
        The credit is on the map whenever the layer is on (the source declares it) and here. */
-    {n:'World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:railway'},
+    {n:'World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:railway',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R254) the data-center layer: OSM's own surveyed buildings (ODbL) plus the operators' published region lists */
-    {n:'Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:telecom%3Ddata_center'},
+    {n:'Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:telecom%3Ddata_center',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R255) the four surveyed-facility layers — js/osm-facilities.js. Same live Overpass path,
        same ODbL terms; each card prints the object’s own tags and links to the object itself. */
-    {n:'Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Dembassy'},
-    {n:'Military sites — OpenStreetMap (military=*, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:military'},
-    {n:'Health facilities — OpenStreetMap (amenity=hospital/clinic/doctors/pharmacy, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:healthcare'},
-    {n:'Telecom & internet infrastructure — OpenStreetMap (telecom=*, communications towers, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:telecom'},
+    {n:'Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Dembassy',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Military sites — OpenStreetMap (military=*, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:military',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Health facilities — OpenStreetMap (amenity=hospital/clinic/doctors/pharmacy, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:healthcare',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Telecom & internet infrastructure — OpenStreetMap (telecom=*, communications towers, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:telecom',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R258/#R261) the eight further surveyed-facility layers — same engine, same live Overpass
        path, same ODbL terms. ⚠ #R258 shipped `osmpower`/`osmextract` WITHOUT registering them
        here, so two layers were drawing OSM data with no entry on the sources page; both are
        added with the six this round adds. */
-    {n:'Power plants & grid — OpenStreetMap (power=plant/substation/generator, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:power'},
-    {n:'Mines, quarries & wells — OpenStreetMap (landuse=quarry, man_made=mineshaft/petroleum_well, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:landuse%3Dquarry'},
-    {n:'Airports & air infrastructure — OpenStreetMap (aeroway=aerodrome/terminal/heliport, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:aeroway'},
-    {n:'Ports, harbours & terminals — OpenStreetMap (harbour, landuse=port, ferry terminals, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:harbour'},
-    {n:'Water & wastewater plant — OpenStreetMap (man_made=water_works/wastewater_plant/pumping_station, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dwater_works'},
-    {n:'Universities & research institutes — OpenStreetMap (amenity=university/college/research_institute, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Duniversity'},
-    {n:'Emergency services — OpenStreetMap (fire_station / police / ambulance_station, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Dfire_station'},
-    {n:'Spaceports & satellite ground stations — OpenStreetMap (aeroway=spaceport, man_made=launch_pad/satellite_dish, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dsatellite_dish'},
+    {n:'Power plants & grid — OpenStreetMap (power=plant/substation/generator, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:power',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Mines, quarries & wells — OpenStreetMap (landuse=quarry, man_made=mineshaft/petroleum_well, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:landuse%3Dquarry',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Airports & air infrastructure — OpenStreetMap (aeroway=aerodrome/terminal/heliport, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:aeroway',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Ports, harbours & terminals — OpenStreetMap (harbour, landuse=port, ferry terminals, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:harbour',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Water & wastewater plant — OpenStreetMap (man_made=water_works/wastewater_plant/pumping_station, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dwater_works',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Universities & research institutes — OpenStreetMap (amenity=university/college/research_institute, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Duniversity',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Emergency services — OpenStreetMap (fire_station / police / ambulance_station, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Dfire_station',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    {n:'Spaceports & satellite ground stations — OpenStreetMap (aeroway=spaceport, man_made=launch_pad/satellite_dish, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dsatellite_dish',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R266) the round's new datasets */
     {n:'Annual precipitation, 1981–2010 normal — CHELSA V2.1 bio12 (30 arc-seconds, ~1 km)',u:'https://chelsa-climate.org/'},
     {n:'Annual precipitation by year, 1981–2020 — GPCC Full Data Monthly V2022, Deutscher Wetterdienst (0.5°, gauge analysis over land)',u:'https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/05/'},
-    {n:'Religion and language composition by country — CIA World Factbook (US Government work, public domain)',u:'https://www.cia.gov/the-world-factbook/'},
-    {n:'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)',u:'https://glottolog.org/'},
+    {n:'Religion and language composition by country — CIA World Factbook (US Government work, public domain)',u:'https://www.cia.gov/the-world-factbook/',lic:'Public domain',credit:false},
+    {n:'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)',u:'https://glottolog.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'Weather warnings, Canada — Environment and Climate Change Canada (OGC API — Features)',u:'https://api.weather.gc.ca/collections/weather-alerts'},
     {n:'Weather warnings, Europe — MeteoAlarm (EUMETNET), 35 national services',u:'https://feeds.meteoalarm.org/'},
     {n:'Weather warnings, China — China Meteorological Administration public warning list',u:'https://www.nmc.cn/'},
@@ -341,7 +370,7 @@ window.IntMapRefData=(function(){
        named here because the map now carries their data. */
     /* ⚠ THE NAME IS THE KEY. `js/locales/pages.<code>.js` describes every row by its `n`, and
        tests/r218-checks ⑤ requires all nine — so renaming a row is renaming it in nine files. */
-    {n:'TeleGeography Submarine Cable Map',u:'https://www.submarinecablemap.com/'},
+    {n:'TeleGeography Submarine Cable Map',u:'https://www.submarinecablemap.com/',lic:'CC BY-SA 4.0',credit:true},
     /* ══ (#R565) THE INTERNET ITSELF, AS A THING THAT CAN BE MEASURED ═══════════════════════════
        The cables above are the plant; these three are the observation of whether traffic is moving
        over it. All three are read DIRECTLY BY THE READER'S BROWSER and nothing is mirrored here —
@@ -352,20 +381,20 @@ window.IntMapRefData=(function(){
     {n:'IODA — Internet Outage Detection and Analysis (Georgia Tech)',u:'https://ioda.inetintel.cc.gatech.edu/'},
     {n:'RIPE Atlas',u:'https://atlas.ripe.net/'},
     {n:'RIPEstat (RIPE NCC)',u:'https://stat.ripe.net/'},
-    {n:'NOAA Office for Coastal Management — Marine Cadastre',u:'https://marinecadastre.gov/'},
-    {n:'EMODnet Human Activities — submarine cables',u:'https://emodnet.ec.europa.eu/en/human-activities'},
-    {n:'ACMA / Geoscience Australia — Australian submarine cable locations',u:'https://www.arcgis.com/home/item.html?id=bc1e7fb37fca40faa5dafbc8a5a4dc3c'},
-    {n:'Natural Earth 1:10m physical — lakes',u:'https://www.naturalearthdata.com/'},
+    {n:'NOAA Office for Coastal Management — Marine Cadastre',u:'https://marinecadastre.gov/',lic:'US Government work — not subject to copyright (17 U.S.C. §105)',credit:false},
+    {n:'EMODnet Human Activities — submarine cables',u:'https://emodnet.ec.europa.eu/en/human-activities',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'ACMA / Geoscience Australia — Australian submarine cable locations',u:'https://www.arcgis.com/home/item.html?id=bc1e7fb37fca40faa5dafbc8a5a4dc3c',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'Natural Earth 1:10m physical — lakes',u:'https://www.naturalearthdata.com/',lic:'Public domain',credit:false},
     /* (#R495) …and the same publisher's 1:10m physical COASTLINE, simplified to a 2 km tolerance at
        build time (scripts/build-coastline.mjs) into data/coastline.json.gz. It is what makes
        「海から200km以上の都市」 a measurement instead of a research question: js/coastline.js reads it
        and js/atlas-query.js turns it into the `coastKm` / `seaKm` columns. Public domain. */
-    {n:'Natural Earth 1:10m physical — coastline',u:'https://www.naturalearthdata.com/'},
+    {n:'Natural Earth 1:10m physical — coastline',u:'https://www.naturalearthdata.com/',lic:'Public domain',credit:false},
     {n:'NASA SEDAC GPW v4',u:'https://sedac.ciesin.columbia.edu/'},
     {n:'UNDP / EIU / SIPRI / World Bank',u:'https://hdr.undp.org/'},
     {n:'AISstream.io',u:'https://aisstream.io/'},
-    {n:'Digitraffic / Fintraffic (marine AIS)',u:'https://www.digitraffic.fi/en/marine-traffic/'},
-    {n:'adsb.lol',u:'https://www.adsb.lol/'},
+    {n:'Digitraffic / Fintraffic (marine AIS)',u:'https://www.digitraffic.fi/en/marine-traffic/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'adsb.lol',u:'https://www.adsb.lol/',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'airplanes.live',u:'https://airplanes.live/'},
     /* (#R666) ⚠ THE RUNWAY UPSTREAM HAD NEVER BEEN CREDITED HERE. js/map-extras.js has read
        OurAirports at run time since #R8c (and the flight sim's real thresholds since #R119); this
@@ -373,21 +402,21 @@ window.IntMapRefData=(function(){
        per country, which weights the pandemic simulator's international spread. Public domain, so
        the line is a statement of provenance rather than a licence obligation; it is here because a
        reader must be able to see that the connectivity figure is INFRASTRUCTURE, not traffic. */
-    {n:'OurAirports — airport size class & scheduled service (runway geometry at run time; per-country air connectivity at build time; public domain)',u:'https://ourairports.com/data/'},
+    {n:'OurAirports — airport size class & scheduled service (runway geometry at run time; per-country air connectivity at build time; public domain)',u:'https://ourairports.com/data/',lic:'Public domain',credit:false},
     /* (#R678) ⚠ THE ROUTE NETWORK IS A LICENCE OBLIGATION, NOT ONLY A COURTESY. OpenFlights is
        ODbL 1.0 — share-alike — so a derived database that is published has to name it and carry the
        same terms. data/mobility.json is that derived database (per-country-pair route counts), and
        it weights which country the pandemic simulator's outbreak reaches next.
        ⚠ AND THE ROW SAYS THE DATE, because the reader needs it: the upstream stopped being updated
        in June 2014 and says so itself. A credit that hid that would be the wrong credit. */
-    {n:'OpenFlights — airline route database (country-pair route counts for the pandemic simulator; snapshot of June 2014, no longer updated; ODbL 1.0)',u:'https://openflights.org/data.php'},
+    {n:'OpenFlights — airline route database (country-pair route counts for the pandemic simulator; snapshot of June 2014, no longer updated; ODbL 1.0)',u:'https://openflights.org/data.php',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     /* (#R678) WHO Global Health Observatory — the UHC service coverage index (SDG 3.8.1) and IHR
        SPAR capacity 7, which give the pandemic simulator each country's medical capacity and
        emergency-response capability instead of the GDP proxy all four capacities used to share.
        CC BY-NC-SA 3.0 IGO, so the attribution is required rather than optional. The immunisation
        coverage that feeds vaccine delivery and the measles starting immunity is the same WHO/UNICEF
        WUENIC series, reached through the World Bank row below. */
-    {n:'WHO Global Health Observatory — UHC service coverage index & IHR SPAR (CC BY-NC-SA 3.0 IGO)',u:'https://www.who.int/data/gho'},
+    {n:'WHO Global Health Observatory — UHC service coverage index & IHR SPAR (CC BY-NC-SA 3.0 IGO)',u:'https://www.who.int/data/gho',lic:'CC BY-NC-SA 3.0 IGO',credit:true},
     {n:'CelesTrak',u:'https://celestrak.org/'},
     {n:'satellite.js',u:'https://github.com/shashwatak/satellite-js'},
     {n:'Planespotters.net',u:'https://www.planespotters.net/photo/api'},
@@ -396,17 +425,17 @@ window.IntMapRefData=(function(){
        4,515 first-level units across 247 countries, simplified from Natural Earth 10 m at build
        time by scripts/build-admin1.mjs. It is what lets 「発令なし」 be drawn at the UNIT for every
        country rather than for the fifty this map held a closer index for. Public domain. */
-    {n:'Natural Earth',u:'https://www.naturalearthdata.com/'},
+    {n:'Natural Earth',u:'https://www.naturalearthdata.com/',lic:'Public domain',credit:false},
     /* (#R197) the three sources the global tsunami model and the space explorer added */
     {n:'AWS Terrain Tiles — the bundled global sea floor',u:'https://registry.opendata.aws/terrain-tiles/'},
     {n:'Solar System Scope — planetary surface textures',u:'https://www.solarsystemscope.com/textures/'},
-    {n:'USGS Gazetteer of Planetary Nomenclature',u:'https://planetarynames.wr.usgs.gov/'},
+    {n:'USGS Gazetteer of Planetary Nomenclature',u:'https://planetarynames.wr.usgs.gov/',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
     /* (#R263) the shipped earth model the earthquake simulator's regional constants come from,
        and the recordings its validation harness is scored against */
     {n:'CRUST1.0 — global crustal model',u:'https://igppweb.ucsd.edu/~gabi/crust1.html'},
-    {n:'USGS Slab2 — subduction zone geometry',u:'https://www.sciencebase.gov/catalog/item/5aa1b00ee4b0b1c392e86467'},
+    {n:'USGS Slab2 — subduction zone geometry',u:'https://www.sciencebase.gov/catalog/item/5aa1b00ee4b0b1c392e86467',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
     {n:'Bird (2003) PB2002 plate boundaries',u:'https://github.com/fraxen/tectonicplates'},
-    {n:'USGS ShakeMap station lists',u:'https://earthquake.usgs.gov/data/shakemap/'},
+    {n:'USGS ShakeMap station lists',u:'https://earthquake.usgs.gov/data/shakemap/',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
     {n:'OpenRailwayMap / OpenSeaMap',u:'https://www.openrailwaymap.org/'},
     {n:'Wikipedia / Wikimedia',u:'https://www.wikipedia.org/'},
     /* (own-fetch-relay) kept as a row so the page can say they are NO LONGER used, and what replaced them — the link is now the
@@ -415,7 +444,7 @@ window.IntMapRefData=(function(){
     {n:'Google News',u:'https://news.google.com/'},
     {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/'},
     {n:'Google Fonts (Noto Sans JP / SC / TC)',u:'https://fonts.google.com/noto'},
-    {n:'Inter / Pretendard (bundled, SIL OFL 1.1)',u:'https://rsms.me/inter/'},
+    {n:'Inter / Pretendard (bundled, SIL OFL 1.1)',u:'https://rsms.me/inter/',lic:'SIL OFL 1.1',credit:true},
     {n:'ESA WorldCover',u:'https://esa-worldcover.org/'},
     {n:'RESOLVE / WWF Ecoregions 2017',u:'https://ecoregions.appspot.com/'},
     {n:'UNESCO World Heritage Centre',u:'https://whc.unesco.org/en/list/'},
@@ -426,8 +455,8 @@ window.IntMapRefData=(function(){
     /* (#R353) Volcano Intelligence — the five live sources beside the bundled GVP catalog. Four of
        them the browser reads directly; the two without CORS go through supabase/functions/volcano-feed. */
     {n:'Smithsonian / USGS Weekly Volcanic Activity Report',u:'https://volcano.si.edu/reports_weekly.cfm'},
-    {n:'USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)',u:'https://volcanoes.usgs.gov/vhp/updates.html'},
-    {n:'USGS Volcano Hazards Program — published volcano hazard zones',u:'https://www.usgs.gov/programs/VHP'},
+    {n:'USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)',u:'https://volcanoes.usgs.gov/vhp/updates.html',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
+    {n:'USGS Volcano Hazards Program — published volcano hazard zones',u:'https://www.usgs.gov/programs/VHP',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
     {n:'噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)',u:'https://www.jma.go.jp/bosai/map.html#contents=volcano'},
     {n:'International SIGMET (volcanic ash) — NOAA Aviation Weather Center',u:'https://aviationweather.gov/'},
     {n:'NASA GIBS — OMPS SO₂, upper troposphere & stratosphere',u:'https://www.earthdata.nasa.gov/'},
@@ -439,13 +468,13 @@ window.IntMapRefData=(function(){
        may not be reused without their prior written agreement — and BfS's own site policy says the
        same thing about the third-party data it mirrors, which is why its `eurdep_latestValue` layer
        is not carried either even though it fetches. */
-    {n:'Bundesamt für Strahlenschutz (BfS) — ODL-Messnetz (Datenlizenz Deutschland – Namensnennung – Version 2.0)',u:'https://odlinfo.bfs.de/'},
-    {n:'原子力規制委員会 — 放射線モニタリング情報 (Nuclear Regulation Authority, Japan; 政府標準利用規約 2.0)',u:'https://www.ramis.nra.go.jp/'},
-    {n:'Säteilyturvakeskus (STUK) via Ilmatieteen laitos open data (CC BY 4.0)',u:'https://en.ilmatieteenlaitos.fi/open-data'},
-    {n:'US EPA RadNet',u:'https://www.epa.gov/radnet'},
-    {n:'RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)',u:'https://www.rivm.nl/nationaal-meetnet-radioactiviteit'},
-    {n:'Hong Kong Observatory — ambient gamma radiation (data.gov.hk)',u:'https://data.weather.gov.hk/'},
-    {n:'SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)',u:'https://data.gov.ua/'},
+    {n:'Bundesamt für Strahlenschutz (BfS) — ODL-Messnetz (Datenlizenz Deutschland – Namensnennung – Version 2.0)',u:'https://odlinfo.bfs.de/',lic:'Datenlizenz Deutschland – Namensnennung – Version 2.0',licUrl:'https://www.govdata.de/dl-de/by-2-0',credit:true},
+    {n:'原子力規制委員会 — 放射線モニタリング情報 (Nuclear Regulation Authority, Japan; 政府標準利用規約 2.0)',u:'https://www.ramis.nra.go.jp/',lic:'政府標準利用規約 2.0',credit:true},
+    {n:'Säteilyturvakeskus (STUK) via Ilmatieteen laitos open data (CC BY 4.0)',u:'https://en.ilmatieteenlaitos.fi/open-data',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
+    {n:'US EPA RadNet',u:'https://www.epa.gov/radnet',lic:'Public domain (work of the U.S. federal government)',credit:false},
+    {n:'RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)',u:'https://www.rivm.nl/nationaal-meetnet-radioactiviteit',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
+    {n:'Hong Kong Observatory — ambient gamma radiation (data.gov.hk)',u:'https://data.weather.gov.hk/',lic:'data.gov.hk Terms of Use (redistribution permitted with attribution)',licUrl:'https://data.gov.hk/en/terms-and-conditions',credit:true},
+    {n:'SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)',u:'https://data.gov.ua/',lic:'CC BY',credit:true},
     /* (#R650) WHO Disease Outbreak News — the layer's own archive (data/who-don.json.gz, built by
        scripts/build-who-don.mjs) AND the live tail the page reads straight from WHO. ONE ROW: it is
        one publication from one organisation, whichever of the two paths a given item arrived by. */
@@ -457,7 +486,7 @@ window.IntMapRefData=(function(){
        2026-09-10: LICENSE is the full text of the GNU GPL v3, GitHub's own licence detection says
        `gpl-3.0`, and README.md names no licence at all — there is no CC declaration anywhere in
        it, contrary to what several downstream copies assume. What is stated is what was read. */
-    {n:'historical-basemaps (aourednik) — GPL-3.0',u:'https://github.com/aourednik/historical-basemaps'},
+    {n:'historical-basemaps (aourednik) — GPL-3.0',u:'https://github.com/aourednik/historical-basemaps',lic:'GPL-3.0',credit:true},
     /* ⚠⚠⚠ (#R689) THE CREDIT #R679 WROTE DOWN AS AN INSTRUCTION AND THEN DID NOT PAY. The
        harvest that produced scripts/histcities/derived-pleiades.mjs put the condition in that
        file's own header — «sources.html must name Pleiades and its contributors» — and 785 rows
@@ -470,7 +499,7 @@ window.IntMapRefData=(function(){
        «The Creators», and exactly one is CC BY-SA 3.0 (Ancient World Mapping Center), which the
        harvest leaves out and counts — so this row can say CC BY 3.0 because that was made true of
        what ships, not because a dataset-wide claim was believed. */
-    {n:'Pleiades — a gazetteer of past places (CC BY 3.0)',u:'https://pleiades.stoa.org/credits'},
+    {n:'Pleiades — a gazetteer of past places (CC BY 3.0)',u:'https://pleiades.stoa.org/credits',lic:'CC BY 3.0',licUrl:'https://creativecommons.org/licenses/by/3.0/',credit:true},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
        #R690) and the first-level
@@ -492,7 +521,7 @@ window.IntMapRefData=(function(){
        66 of those tiles. The older the date, the more regional the record — so a country drawn with
        no subdivision line in a past year is one the record is still silent about, not one that had
        no subdivisions. */
-    {n:'OpenHistoricalMap (CC0 1.0)',u:'https://www.openhistoricalmap.org/'},
+    {n:'OpenHistoricalMap (CC0 1.0)',u:'https://www.openhistoricalmap.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
     /* ⚠ (#R669) AND WHERE OHM IS SILENT, THE MAP SAYS WHOSE RECORD IT USED INSTEAD. Measured
        2026-09-10, OHM holds 53 of the 68 classical provinces of Japan and no relation at all for
        the other fifteen — 陸奥 出羽 信濃 越後 上野 下野 美濃 飛騨 若狭 越前 加賀 能登 越中 佐渡
@@ -503,8 +532,8 @@ window.IntMapRefData=(function(){
        281 m OHM draws 伊豆国 with), and the names come from Wikidata, also CC0.
        ⚠ TWO ROWS, BECAUSE THEY ARE TWO PUBLISHERS. The derivation is IntMap's; the records are
        theirs, and a derived work still says whose. */
-    {n:'令制国 raster — Asukana/Ryoseikoku (CC0 1.0)',u:'https://github.com/Asukana/Ryoseikoku_20230626_TSV'},
-    {n:'Wikidata (CC0 1.0)',u:'https://www.wikidata.org/'},
+    {n:'令制国 raster — Asukana/Ryoseikoku (CC0 1.0)',u:'https://github.com/Asukana/Ryoseikoku_20230626_TSV',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
+    {n:'Wikidata (CC0 1.0)',u:'https://www.wikidata.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
     /* ⚠⚠ (#R719) AND THE SECOND PLACE OHM IS SILENT IS MOST OF THE WORLD. Measured 2026-09-15 on a
        0.25° land grid: the shipped subdivisions cover 46.8% of the world's land in 1900, with 68
        countries at zero and 38 answered only in part. OHM has no more to give — the bundles ship
@@ -539,9 +568,9 @@ window.IntMapRefData=(function(){
        in their legend, and until this round a reader who followed that credit to the Sources page
        found only CShapes — the outlines, not the dates, the fronts, the operations or the figures.
        The record is ours, it is public, and a source a layer names has to be reachable from here. */
-    {n:'IntMap war record (scripts/wars/)',u:'https://github.com/rwmqx7dwb5-arch/IntMap/tree/main/scripts/wars'},
+    {n:'IntMap war record (scripts/wars/)',u:'https://github.com/rwmqx7dwb5-arch/IntMap/tree/main/scripts/wars',lic:'IntMap — Personal & Research Use License'},
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/'},
-    {n:'World Bank Open Data',u:'https://data.worldbank.org/'},
+    {n:'World Bank Open Data',u:'https://data.worldbank.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO'},
     {n:'WorldPop (University of Southampton)',u:'https://www.worldpop.org/'},
     {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/'}
@@ -564,12 +593,43 @@ window.IntMapRefData=(function(){
      and the publisher's own citation are appended here — where BOTH readers already are — instead of
      in each of them. Punctuation only: no label is introduced, because a label would be a new
      user-visible word owing nine translations, while a licence name and a bibliographic reference
-     are the source's own spelling in every language. */
+     are the source's own spelling in every language.
+     ⚠ (#729) AND IT DOES NOT SAY IT TWICE. When the mechanism served one row that was moot; now that
+     62 rows declare their terms, most of them are rows that have ALWAYS said them in prose — inside
+     `n` («Wikidata (CC0 1.0)», «historical-basemaps (aourednik) — GPL-3.0») or inside the description
+     itself («…gauge, electrification… (ODbL 1.0)»). MEASURED before this guard existed: 8 of the 63
+     lines told the reader the same licence twice, and one told it three times. The value stays on the
+     row — that is what a machine reads — and the SENTENCE adds it only where the sentence the reader
+     is already getting has not said it. Compared case-insensitively against both halves, because a
+     row that writes 「public domain」 in prose and `Public domain` as a value states one fact in two
+     spellings, and the reader needs neither of them twice.
+     ⚠⚠⚠ AND THE VERSION IS NOT PART OF THE IDENTITY FOR THIS COMPARISON. Measured on the built page:
+     matching the WHOLE value left EIGHTEEN of the 63 rows that carry a value saying it twice (37 lines
+     would have carried the suffix, 20 now do), because the prose names the licence
+     without its number — 「…ライブ取得（ODbL）」 beside a `lic` of 「ODbL 1.0」. So the comparison is on
+     the licence's NAME, with a trailing version dropped from the value.
+     ⚠ IT STOPS AT A NAME BOUNDARY, and that is the whole reason this is not a substring test: 「CC BY」
+     is a prefix of 「CC BY-NC-SA」, so a prose that says CC BY-NC-SA 4.0 would otherwise SWALLOW a value
+     of CC BY 4.0 and the reader would be shown the stricter licence in place of the one this row
+     actually carries. Hiding terms is a worse failure than repeating them, so the match must end
+     where the name ends. */
   const useText=(name,lang)=>{ const d=_pgDoc(lang), e=_pgDoc('en');
     const base=(d&&d.sourceUse&&d.sourceUse[name])||(e&&e.sourceUse&&e.sourceUse[name])||'';
     const row=DATA_SOURCES.find(s=>s.n===name);
     if(!row||!row.lic) return base;
-    return (base?base+' — ':'')+row.lic+(row.cite?' · '+row.cite:''); };
+    const hay=(name+' '+base).toLowerCase();
+    /* the value without its trailing version — 「odbl 1.0」 → 「odbl」, 「cc by-nc-sa 4.0」 → 「cc by-nc-sa」 */
+    const stem=String(row.lic).toLowerCase().replace(/[\s-]*v?\d+(\.\d+)*\s*$/,'').trim();
+    let said=false;
+    if(stem){ for(let i=hay.indexOf(stem); i>=0; i=hay.indexOf(stem,i+1)){
+      const after=hay.charAt(i+stem.length);
+      /* a letter or a hyphen after the name means the prose is naming a DIFFERENT licence that
+         merely starts the same way (CC BY-NC-SA where the value is CC BY) */
+      if(!/[a-z-]/.test(after)){ said=true; break; } } }
+    const say=!said;
+    const tail=(say?row.lic:'')+(row.cite?(say?' · ':'')+row.cite:'');
+    if(!tail) return base;
+    return (base?base+' — ':'')+tail; };
   /* fetch the English document and the reader's, then call back; already-loaded languages are free */
   const ensureDocs=(lang,cb)=>{ const one=(l)=>{ if(_pgDoc(l)){ cb(); return; }
       const c=_pgCode(l); let ok=false; try{ ok=(window.IntMapLang.list()||[]).some(r=>String(r.html).toLowerCase()===c); }catch(_){}

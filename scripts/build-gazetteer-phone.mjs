@@ -41,6 +41,20 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'data', 'gazetteer-world.json.gz');
 const OUT = join(ROOT, 'data', 'gazetteer-phone.json.gz');
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/gazetteer-phone.json.gz': {
+    /* ⚠ THIS BUNDLE IS A SLICE OF ANOTHER ONE and re-derives nothing: the rows, the credit line and
+       therefore the terms are carried through from data/gazetteer-world.json.gz, whose builder
+       states them. Restating the licence here would be a second spelling of one fact, so only the
+       publisher and the derivation are declared. */
+    publisher: 'GeoNames',
+    builtBy: 'scripts/build-gazetteer-phone.mjs',
+  },
+};
+
 /** The phone's row cap, read from the one place that owns it. */
 export function phoneCap() {
   const src = readFileSync(join(ROOT, 'js', 'gazetteer.js'), 'utf8');

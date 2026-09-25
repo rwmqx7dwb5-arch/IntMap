@@ -59,6 +59,7 @@
 |---|---|
 | 何であれ（構文・JSON/YAML・merge marker・秘密） | `npm run check:static` |
 | レンダラ・型に触れるコード | `npm run check:engine` `npm run check:types` |
+| データの出自・権利・鮮度 | `npm run check:datagov` |
 | 利用者に見える文字列 | `npm run check:i18n` |
 | 企業アトラス | `npm run check:companies` |
 | 文書 | `npm run check:docs` |

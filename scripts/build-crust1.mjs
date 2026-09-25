@@ -47,6 +47,17 @@ const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ?
 const CACHE = arg('cache', path.join(ROOT, '.cache', 'crust1'));
 const SRC = 'https://igppweb.ucsd.edu/~gabi/crust1/crust1.0.tar.gz';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ NEITHER A PUBLISHER NOR A LICENCE IS STATED ANYWHERE IN THIS BUILD. What it has is a
+     CITATION (Laske, Masters, Ma & Pasyanos 2013) and a distribution URL, and a citation is not a
+     licence. Both facets stay silent rather than being guessed at. */
+  const rec = { url: SRC, builtBy: 'scripts/build-crust1.mjs' };
+  return { 'data/crust1.bin.gz': rec, 'data/crust1.json': rec };
+})();
+
 const NLON = 360, NLAT = 180, NLAY = 9, NCELL = NLON * NLAT;
 
 /* ── the archive, cached ─────────────────────────────────────────────────────────────────────────

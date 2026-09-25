@@ -39,6 +39,23 @@ import { RAW, SOURCE_STAMP, j, useCache, countryFiles, isoIndex, isoOf, shortNam
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/religion.json': {
+    publisher: 'CIA World Factbook',
+    url: SOURCE_STAMP.url,
+    /* SOURCE_STAMP itself states 「US Government work, public domain」 — a work in the public domain
+       states that credit is not a CONDITION of redistribution. */
+    licence: 'public domain',
+    attribution: false,
+    /* ⚠ THE COPY IS READ FROM factbook/factbook.json, whose own terms this build does not state;
+       SOURCE_STAMP.via records which mirror answered. */
+    builtBy: 'scripts/build-culture.mjs',
+  },
+};
+
 /* ── religion: the group a Factbook label belongs to. Ordered — first match wins. ─────────────── */
 const REL = [
   [/orthodox|coptic|armenian apostolic|ethiopian orthodox|eritrean orthodox|greek catholic|syriac/i, 'orthodox'],

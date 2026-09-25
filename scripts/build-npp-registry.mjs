@@ -63,6 +63,22 @@ const REACTOR = 'Q80877';      /* nuclear reactor — the class whose instances/
 const WATT = 'Q25236';         /* the SI unit every P2109 value must reduce to before it can be called MW */
 const OUT = path.join(ROOT, 'data', 'npp.json');
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/npp.json': {
+    publisher: 'Wikidata',
+    url: 'https://query.wikidata.org/sparql',
+    /* ⚠ THE SAME VALUE THE BUNDLE SHIPS — see the `sources` entry written below, which reads it
+       from here rather than spelling CC0 a second time. */
+    licence: 'CC0-1.0',
+    /* CC0 waives the conditions, so no DATA_SOURCES row is owed for this bundle. */
+    attribution: false,
+    builtBy: 'scripts/build-npp-registry.mjs',
+  },
+};
+
 /* Wikidata labels, in the order this program prefers them. A record with no
    label in ANY of these is dropped rather than shipped under its Q-number. */
 const NAME_LANGS = ['en', 'ja', 'de', 'fr', 'es', 'ru', 'ko', 'zh-hant', 'zh-hans', 'zh'];
@@ -510,8 +526,8 @@ const out = {
     .sort((a, b) => a[0].localeCompare(b[0])).map(([c, s]) => [c, [...s].sort()])),
   sources: [{
     id: 'wikidata',
-    licence: 'CC0-1.0',
-    url: 'https://query.wikidata.org/sparql',
+    licence: GOVERNANCE['data/npp.json'].licence,
+    url: GOVERNANCE['data/npp.json'].url,
     scope: 'P31/P279* wd:' + SCOPE,
     count: counts.wikidata || 0,
   }],

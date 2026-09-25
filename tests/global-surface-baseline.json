@@ -405,6 +405,7 @@
   "IntMapCurrents",
   "IntMapData",
   "IntMapDataCenters",
+  "IntMapDataGovernance",
   "IntMapDataHealth",
   "IntMapDatedLayers",
   "IntMapDefaultLayers",

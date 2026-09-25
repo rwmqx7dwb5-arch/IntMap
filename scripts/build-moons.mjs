@@ -47,6 +47,20 @@ const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap) moon-table-bu
 const ELEM = 'https://ssd.jpl.nasa.gov/sats/elem/';
 const PHYS = 'https://ssd.jpl.nasa.gov/sats/phys_par/';
 
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/moons.json': {
+    publisher: 'JPL Solar System Dynamics',
+    url: ELEM,
+    /* ⚠ NO LICENCE STATEMENT IS READ BY THIS BUILD. What it does carry is the one fact that makes
+       the table usable — the stated epoch and frame, per satellite — and that is `asOf` per row
+       rather than a property of the bundle, so it is not lifted here. */
+    builtBy: 'scripts/build-moons.mjs',
+  },
+};
+
 /* the planet a satellite code belongs to: 3xx Earth, 4xx Mars, 5xx Jupiter … (IAU/NAIF numbering) */
 const PLANET_OF = { 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune', 9: 'pluto' };
 

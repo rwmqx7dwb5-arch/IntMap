@@ -29,6 +29,20 @@ import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 
 const URL_CSV = 'https://hdr.undp.org/sites/default/files/2023-24_HDR/HDR23-24_Composite_indices_complete_time_series.csv';
 const OUT = 'data/hdi-series.json';
+
+/* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
+   npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+export const GOVERNANCE = {
+  'data/hdi-series.json': {
+    publisher: 'UNDP Human Development Report Office',
+    url: URL_CSV,
+    /* ⚠ THE LICENCE IS NOT STATED IN THIS BUILD. The header names the publisher and the table
+       (HDR 2023/24 composite indices) and says the attribution already made is the one that
+       applies — which is a statement about a credit, not about terms. */
+    builtBy: 'scripts/build-hdi.mjs',
+  },
+};
 const CHECK = process.argv.includes('--check');
 
 /* the file is plain comma-separated with quoted country names — split respecting quotes */
