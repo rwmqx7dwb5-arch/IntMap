@@ -178,7 +178,9 @@ execute `monitor_limit_self()` and `monitor_mark_read(uuid)` in production altho
 granted `authenticated` only (`20260926090000` revokes them). The rule, asserted over the catalogue by
 `supabase/tests/11_definer_execute_test.sql`: **`anon` may execute a callable SECURITY DEFINER function in
 `public` only when an RLS policy that applies to `anon` calls it** (a policy runs with the caller's
-privileges — `is_admin()` today). Trigger and event-trigger functions cannot be called as RPCs and are
+privileges) **or its own COMMENT says why in words — `ANON MAY CALL: <reason>`** (`is_admin()`: it
+returns only a boolean about the caller; the baseline chose that grant, and the sentence now lives
+where the catalogue can read it). Trigger and event-trigger functions cannot be called as RPCs and are
 not counted.
 
 Three privileges never go through RLS — `TRUNCATE`, `REFERENCES`, `TRIGGER` — and Supabase's
