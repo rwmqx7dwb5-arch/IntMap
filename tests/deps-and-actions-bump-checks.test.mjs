@@ -30,7 +30,8 @@ const DYNAMIC = /import\(\s*['"]([^'".\/][^'"]*)['"]\s*\)\s*\)\s*\.default/g;
 function uses() {
   const out = [];
   for (const f of tracked) {
-    const src = readFileSync(join(ROOT, f), 'utf8');
+    /* comments are prose about imports, not imports (this file's own header quotes the defect) */
+    const src = readFileSync(join(ROOT, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     for (const m of src.matchAll(STATIC)) if (!m[2].startsWith('node:')) out.push({ file: f, pkg: m[2] });
     for (const m of src.matchAll(DYNAMIC)) if (!m[1].startsWith('node:')) out.push({ file: f, pkg: m[1] });
   }
