@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { buildStamp } from '../scripts/build-stamp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -138,8 +139,10 @@ test('client-error-log ② query strings and fragments are removed from the path
   /* a long quoted string (possibly something typed) and a JWT are masked */
   const typed = S.cleanMessage('SyntaxError: "my home address is 1 Example Street" is not valid JSON; key eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig');
   assert.ok(!/Example Street|eyJhbGci/.test(typed), typed);
-  /* the release must look like a build id, or it is dropped */
-  assert.equal(S.cleanRelease('2026-09-25-client-error-log'), '2026-09-25-client-error-log');
+  /* the release must look like a build id, or it is dropped — and «a build id» is what the build WRITES,
+     not a spelling copied here: every report arrived with release "" in production once the stamp gained a time */
+  const stamp = buildStamp(ROOT);
+  assert.equal(S.cleanRelease(stamp), stamp, 'the stamp the build writes survives cleaning: ' + stamp);
   assert.equal(S.cleanRelease('<script>'), '');
 });
 

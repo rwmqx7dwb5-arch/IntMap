@@ -36,7 +36,8 @@
      frame ~100-200 characters with a full asset URL; 20 lines covers Firefox/Safari, which do not
      cap, at the depth that identifies a call site. Bounds a row at roughly 5 KB.
    · path 200 — the deployed paths are /IntMap/, /IntMap/admin.html and the two policy pages.
-   · release 64 — window.INTMAP_BUILD is `YYYY-MM-DD-R###` (15 characters).
+   · release 64 — window.INTMAP_BUILD is what scripts/build-stamp.mjs writes: `<committer time>Z-<short sha>`
+     (27 characters, e.g. 2026-09-25T00:52:08Z-fd7ffef). Expires if that format grows past 64.
    · browser 40 — «Samsung Internet 25» is the longest name browserOf() returns.
    The canonical place for all of these is THIS FILE; the migration's CHECK constraints restate them
    as the database's own ceiling (a row that exceeds them is refused, not stored). */
@@ -125,7 +126,10 @@ export function cleanPath(p) {
 
 export function cleanRelease(r) {
   const s = String(r == null ? "" : r);
-  return /^[0-9A-Za-z._-]{1,64}$/.test(s) ? s : "";
+  /* `:` is in the charset because the build stamp carries a time (T00:52:08Z). MEASURED 2026-09-25 in
+     production: with the old charset every report arrived with release "" — the stamp format changed
+     and this kept the old one. The test feeds it the stamp the build ACTUALLY writes. */
+  return /^[0-9A-Za-z._:-]{1,64}$/.test(s) ? s : "";
 }
 
 export function cleanStack(stack) {
