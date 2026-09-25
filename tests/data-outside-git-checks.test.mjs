@@ -148,6 +148,24 @@ test('② an altered copy is named, a pull refuses to overwrite it, and --force 
   } finally { drop(root); }
 }));
 
+/* MEASURED 2026-09-25 on the master: the fast-forward that untracked data/border-detail left the
+   folder behind with 0 files (OneDrive kept it), and pull refused it as «not the manifest's content»
+   without --force — so master-sync reported the datasets missing. An empty folder is not a copy of
+   anything; a folder holding even one file still is, and is still refused. */
+test('② an EMPTY directory left where a set belongs is placed over; a non-empty one is still refused', withStore(async (store) => {
+  const { root } = await fixture(store);
+  try {
+    mkdirSync(join(root, 'data', 'fx', 'sub'), { recursive: true });
+    assert.deepEqual(await DA.pull(root, { copy: true, say: quiet }), [], 'the empty shell must not need --force');
+    assert.deepEqual(DA.problems(root), [], 'and the set is then placed and verified');
+    drop(join(root, 'data', 'fx'));
+    mkdirSync(join(root, 'data', 'fx'), { recursive: true });
+    writeFileSync(join(root, 'data', 'fx', 'local.json'), '{}\n');
+    const refused = await DA.pull(root, { say: quiet });
+    assert.equal(refused.length, 1, 'a folder with a file in it may be an unpublished regeneration');
+  } finally { drop(root); }
+}));
+
 test('② a store entry altered behind a link is detected, not served', withStore(async (store) => {
   const { root, m } = await fixture(store);
   try {
