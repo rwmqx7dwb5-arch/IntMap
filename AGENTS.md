@@ -38,7 +38,7 @@
   を自分で走らせる**——写しを作らず同じ場所へ書く）
   ⚠ **memory は主題で名づける。番号を名前にしない**（正本 `.agents/skills/intmap-round/` §4）。
 - **`.agents/rules/` の全ファイル**（⚠ Claude Code は import で自動・**Codex は自分で開く**）
-- **最新の記録**（`DEV-NOTES.md` は `dev-notes/` の生成索引で、先頭が最新）
+- **最新の記録**（`node scripts/dev-notes.mjs --latest`。一覧は `--list`）
 - `CONSTITUTION.md`（製品の不文律）
 - **[`docs/README.md`](docs/README.md) — 文書の索引。**「どれが何の正本か・いつ更新するか」がここに
   1枚の表であるので、今回触る主題の**正本**をここで特定してから、その文書を読む
@@ -78,7 +78,7 @@ node scripts/worktree.mjs status
 | 現状仕様書 | `Architecture.md`（＋ `docs/FILES.md` ファイル台帳・`docs/MAP-LAYERS.md` レイヤー実装） |
 | 製品 | `PRODUCT.md`（目的・機能一覧・Atlas の到達点） |
 | 技術判断 | `DECISIONS.md`（今も有効な判断とその理由だけ） |
-| 開発記録 | **`dev-notes/`**（**1 エントリ 1 ファイル**）。`DEV-NOTES.md` はその**生成索引**（手で編集しない） |
+| 開発記録 | **`dev-notes/`**（**1 エントリ 1 ファイル**）。`DEV-NOTES.md` は**固定の案内**（一覧は `--list`） |
 | 過去記録 | `DEV-NOTES-ARCHIVE.md`（読むだけ・追記しない） |
 | 統治原則 | `CONSTITUTION.md` |
 | 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE}.md` |
@@ -344,7 +344,7 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
 - ファイルの分担の全体像は [`docs/README.md`](docs/README.md) と `CONSTITUTION.md` §6:
   `PRODUCT.md`＝何のためにあり何ができるか / `DECISIONS.md`＝なぜそうなっているか /
   `Architecture.md`＝今どうなっているか（主題順） /
-  `dev-notes/`＝記録（1 エントリ 1 ファイル。`DEV-NOTES.md` が新しい順の索引） /
+  `dev-notes/`＝記録（1 エントリ 1 ファイル。一覧は `node scripts/dev-notes.mjs --list`） /
   `DEV-NOTES-ARCHIVE.md`＝それ以前（古い順・追記しない）。
 
 ---
