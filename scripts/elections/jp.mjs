@@ -483,20 +483,26 @@ function upperHouseGeo({ topo, named }, pref, prefIdx, labels) {
  *  of the run that came before, and guessing it from «wide characters are one em» misjoins the
  *  columns of any year whose tracking differs. */
 async function pdfRuns(buf) {
-  const doc = await getDocument({ data: new Uint8Array(buf), useSystemFonts: false, verbosity: 0 }).promise;
-  const pages = [];
-  for (let i = 1; i <= doc.numPages; i++) {
-    const tc = await (await doc.getPage(i)).getTextContent();
-    const runs = [];
-    for (const it of tc.items) {
-      if (!it.str || !it.str.trim()) continue;
-      const m = it.transform;
-      runs.push({ x: m[4], y: -m[5], w: it.width || 0, t: it.str, s: Math.hypot(m[0], m[1]) || 10 });
+  /* pdfjs 6 removed PDFDocumentProxy#destroy — the loading task owns the worker and the document,
+     so it is the task that is kept and destroyed (and destroyed on a throw too, not only on success). */
+  const task = getDocument({ data: new Uint8Array(buf), useSystemFonts: false, verbosity: 0 });
+  try {
+    const doc = await task.promise;
+    const pages = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const tc = await (await doc.getPage(i)).getTextContent();
+      const runs = [];
+      for (const it of tc.items) {
+        if (!it.str || !it.str.trim()) continue;
+        const m = it.transform;
+        runs.push({ x: m[4], y: -m[5], w: it.width || 0, t: it.str, s: Math.hypot(m[0], m[1]) || 10 });
+      }
+      pages.push(runs);
     }
-    pages.push(runs);
+    return pages;
+  } finally {
+    await task.destroy();
   }
-  await doc.destroy();
-  return pages;
 }
 
 /** Glyph runs → cells, each tagged with the ROW it is printed on.

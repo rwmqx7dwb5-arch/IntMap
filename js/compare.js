@@ -503,7 +503,7 @@ window.IntMapModules.compare=function(HOST){
          land on top of the × ("×がレイヤー選択ボタンと重なって終了できない") — now nothing in the header/controls
          can ever overlap it, on ANY platform. (Base + mobile CSS position #cmp-close absolutely.) */
       try{ const _x=win.querySelector('#cmp-close'); if(_x) win.appendChild(_x); }catch(_){}
-      cmap=GE().ui.createSubView({container:'compare-map',style:compareStyle(),center:GE().camera.getCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
+      cmap=GE().ui.createSubView({container:'compare-map',style:compareStyle(),center:GE().camera.getCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),credit:true,renderWorldCopies:false,maxPitch:85});
       try{ _wantGlobe=(typeof HOST.proj==='undefined'||HOST.proj!=='flat'); cmap.camera.setProjection(_wantGlobe?'globe':'flat'); }catch(_){}
       /* (#R25) ROOT CAUSE of "メインマップがGlobeでもcompareはFlatのまま / Flatに戻してからGlobeにしないと反映
          されない": MapLibre's default projection is MERCATOR, and the setProjection() above runs BEFORE the

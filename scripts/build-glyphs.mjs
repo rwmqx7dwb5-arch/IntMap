@@ -41,7 +41,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import opentype from 'opentype.js';
-import Pbf from 'pbf';
+import { PbfReader, PbfWriter } from 'pbf';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC_TTF = join(ROOT, 'fonts', 'src', 'Inter.ttf');
@@ -189,7 +189,7 @@ function writeGlyph(g, pbf) {
   pbf.writeVarintField(7, g.advance);
 }
 function encode(name, range, glyphs) {
-  const pbf = new Pbf();
+  const pbf = new PbfWriter();
   pbf.writeMessage(1, (_, p) => {
     p.writeStringField(1, name);
     p.writeStringField(2, range);
@@ -208,9 +208,9 @@ function readGlyph(tag, g, pbf) {
 }
 function decode(buf) {
   const out = [];
-  new Pbf(buf).readFields((tag, _, pbf) => {
+  new PbfReader(buf).readFields((tag, _, pbf) => {
     if (tag !== 1) return;
-    /* ⚠ no explicit skip: Pbf.readFields skips any field the callback did not consume, and calling
+    /* ⚠ no explicit skip: PbfReader.readFields skips any field the callback did not consume, and calling
        `skip` with a TAG rather than the tag-and-wire-type byte corrupts the stream (measured: every
        fallback range decoded to zero glyphs). */
     pbf.readMessage((t2, __, p2) => { if (t2 === 3) out.push(p2.readMessage(readGlyph, {})); }, null);
