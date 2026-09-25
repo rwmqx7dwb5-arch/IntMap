@@ -434,9 +434,8 @@ window.IntMapModules.dataCenters=function(HOST){
       src:d[8]||'', col:colOf(d[3]), r:rFor(d[4],+d[6]||0), origin:'curated' }})); }
 
   /* ══ OPENSTREETMAP — the other 4,600 ═════════════════════════════════════════════════════════════
-     Raced mirrors with a hard abort, the shape js/atlas-sources.js uses; a silent 504 from one
-     endpoint must not become a layer that quietly knows less than it could. */
-  const _OP_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+     Raced mirrors with a hard abort (js/overpass.js, `race`); a silent 504 from one endpoint must
+     not become a layer that quietly knows less than it could. */
   const _osmCache=new Map();
   const OSM_ZOOM=6;   /* below this the viewport is most of a continent and the answer is thousands of rows */
   const _opFromTag=(t)=>{ const s=String(t||'').toLowerCase();
@@ -457,14 +456,7 @@ window.IntMapModules.dataCenters=function(HOST){
     if(_osmCache.has(key)) return _osmCache.get(key);
     const bb='('+bbox[1].toFixed(4)+','+bbox[0].toFixed(4)+','+bbox[3].toFixed(4)+','+bbox[2].toFixed(4)+')';
     const ql='[out:json][timeout:30];(nwr["telecom"="data_center"]'+bb+';nwr["man_made"="data_center"]'+bb+';nwr["building"="data_center"]'+bb+';);out center 900;';
-    const ctls=[];
-    const tryEp=ep=>new Promise(res=>{ let c=null; try{ c=new AbortController(); ctls.push(c); }catch(_){}
-      const tm=setTimeout(()=>{ try{ c&&c.abort(); }catch(_){} },26000);
-      fetch(ep,Object.assign({method:'POST',body:'data='+encodeURIComponent(ql)},c?{signal:c.signal}:{}))
-        .then(r=>r.ok?r.json():null).then(j=>{ clearTimeout(tm); res((j&&Array.isArray(j.elements))?j.elements:null); })
-        .catch(()=>{ clearTimeout(tm); res(null); }); });
-    const els=await new Promise(res=>{ let pending=_OP_EPS.length, done=false;
-      _OP_EPS.forEach(ep=>{ tryEp(ep).then(x=>{ if(done) return; if(x){ done=true; ctls.forEach(c=>{ try{ c.abort(); }catch(_){} }); res(x); } else if(--pending<=0) res(null); }); }); });
+    const els=await window.IntMapOverpass(ql,{race:true,budgetMs:26000}).then(j=>j.elements,()=>null);
     const out=[];
     (els||[]).forEach(e=>{ const t=e.tags||{}; const lon=(e.lon!=null?e.lon:(e.center&&e.center.lon)), lat=(e.lat!=null?e.lat:(e.center&&e.center.lat));
       if(lon==null||lat==null) return;

@@ -12,6 +12,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.cameras=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -24,7 +25,6 @@ window.IntMapModules.cameras=function(HOST){
   const satToast=HOST.satToast;
   (function(){
     if(!GE().hasRenderer()) return;
-    const EP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
     const LLw=window.IntMapLang.pick(()=>HOST.lang);
     const lbl=()=>LLw('Live cameras','ライブカメラ','Live-Kameras','Веб-камеры','Cámaras en vivo');
     let on=false, popup=null, fetching=false, lastBox=null, lastZoom=-1, moveT=null, camById={}, tflDone=false, caltransDone=false, finlandDone=false, otcmDone=false, oneStopDone=false, refreshTimer=null, _osDataT=null;
@@ -49,7 +49,6 @@ window.IntMapModules.cameras=function(HOST){
       return ''; }
     function _stopRefresh(){ if(refreshTimer){ stopTick(refreshTimer); refreshTimer=null; } }
     function contains(a,c){ return a&&c&&a[0]<=c[0]&&a[1]<=c[1]&&a[2]>=c[2]&&a[3]>=c[3]; }
-    function tryEP(q,i){ i=i||0; if(i>=EP.length) return Promise.reject(new Error('overpass')); return fetch(EP[i],{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>tryEP(q,i+1)); }
     function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource('webcams-src')) GE().layers.addSource('webcams-src',{type:'geojson',data:fc()});
       if(!GE().layers.has('webcams-pt')){
@@ -186,7 +185,7 @@ window.IntMapModules.cameras=function(HOST){
       const qb=[Math.max(-90,cur[0]-padLa),Math.max(-180,cur[1]-padLo),Math.min(90,cur[2]+padLa),Math.min(180,cur[3]+padLo)].map(n=>n.toFixed(4)).join(',');
       const q='[out:json][timeout:25];(node["contact:webcam"]('+qb+');node["webcam"]('+qb+'););out body 1500;';
       fetching=true; if(window.satToast && !Object.keys(camById).length){ try{ satToast(LLw('Loading cameras…','カメラを読み込み中…','Kameras werden geladen…','Загрузка камер…','Cargando cámaras…')); }catch(_){} }
-      tryEP(q).then(j=>{ fetching=false; lastBox=[+qb.split(',')[0],+qb.split(',')[1],+qb.split(',')[2],+qb.split(',')[3]]; lastZoom=z;
+      overpassQuery(q).then(j=>{ fetching=false; lastBox=[+qb.split(',')[0],+qb.split(',')[1],+qb.split(',')[2],+qb.split(',')[3]]; lastZoom=z;
         ((j&&j.elements)||[]).forEach(el=>{ if(!el.tags||camById[el.id]) return; let u=el.tags['contact:webcam']||el.tags.webcam; if(!u) return; u=String(u).trim();
           if(!/^https?:\/\//i.test(u)){ if(/^\/\//.test(u)) u='https:'+u; else u='https://'+u.replace(/^\/+/,''); }
           const kind=classify(u); if(!kind) return;   /* DROP link-out-only cams (the old facade) — keep only cams that display */

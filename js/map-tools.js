@@ -18,6 +18,7 @@
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) the one Nominatim floor — js/nominatim-gate.js. The outline tool asks for `polygon_geojson` up to ten results at a time; that is exactly the shape the host's policy is about. */
 
 window.IntMapModules=window.IntMapModules||{};
@@ -770,21 +771,13 @@ window.IntMapModules.outline=function(HOST){
     function _bboxArea(gj){ const bb=bboxOf(gj); return bb?((bb[1][0]-bb[0][0])*(bb[1][1]-bb[0][1])):Infinity; }
     function _bboxHas(gj,x,y){ const bb=bboxOf(gj); return !!(bb&&x>=bb[0][0]&&x<=bb[1][0]&&y>=bb[0][1]&&y<=bb[1][1]); }
     /* (#R254) the OSM object with THIS name AROUND THIS POINT, then its polygon through the same
-       Nominatim geometry endpoint every other outline uses. Mirrors raced with a hard abort, exactly
-       as js/atlas-sources.js does — a silent 504 from one endpoint must not become a dead click. */
-    const _OP_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+       Nominatim geometry endpoint every other outline uses. Mirrors raced with a hard abort
+       (js/overpass.js, `race`) — a silent 504 from one endpoint must not become a dead click. */
     async function _overpassArea(q,lng,lat){
       const safe=String(q).replace(/["\\]/g,'').trim(); if(!safe) return null;
       const d=0.03, bb='('+(lat-d).toFixed(4)+','+(lng-d).toFixed(4)+','+(lat+d).toFixed(4)+','+(lng+d).toFixed(4)+')';
       const ql='[out:json][timeout:20];(way["name"="'+safe+'"]'+bb+';relation["name"="'+safe+'"]'+bb+';);out ids 6;';
-      const ctls=[];
-      const tryEp=ep=>new Promise(res=>{ let c=null; try{ c=new AbortController(); ctls.push(c); }catch(_){}
-        const tm=setTimeout(()=>{ try{ c&&c.abort(); }catch(_){} },14000);
-        fetch(ep,Object.assign({method:'POST',body:'data='+encodeURIComponent(ql)},c?{signal:c.signal}:{}))
-          .then(r=>r.ok?r.json():null).then(j=>{ clearTimeout(tm); res((j&&Array.isArray(j.elements))?j.elements:null); })
-          .catch(()=>{ clearTimeout(tm); res(null); }); });
-      const els=await new Promise(res=>{ let pending=_OP_EPS.length, done=false;
-        _OP_EPS.forEach(ep=>{ tryEp(ep).then(x=>{ if(done) return; if(x){ done=true; ctls.forEach(c=>{ try{ c.abort(); }catch(_){} }); res(x); } else if(--pending<=0) res(null); }); }); });
+      const els=await overpassQuery(ql,{race:true,budgetMs:14000}).then(j=>j.elements,()=>null);
       if(!els||!els.length) return null;
       /* relations first — a 丁目 / Kiez / quartier boundary is usually one */
       const ids=els.slice().sort((a,b)=>(a.type==='relation'?0:1)-(b.type==='relation'?0:1))

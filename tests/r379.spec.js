@@ -273,11 +273,32 @@ async function headingTable(page, rows, size, big, altM) {
       g.drawImage(cv, x0, y0, side, side, 0, 0, side, side);
       return g.getImageData(0, 0, side, side).data;
     };
+    /* ⚠⚠ (#R805) THE BASEMAP DOES NOT STAY SWITCHED OFF BY ITSELF. The IIFE below hides every style
+       layer for the measurement (#R411), but the application OWNS those layers' visibility and puts it
+       back: js/app-body.js re-asserts every checked reference/border/coast layer on each `sourcedata`
+       of the `ofm` source (#R38/#R40/#R289), and the label groups are re-applied the same way —
+       MEASURED (2026-09-25, by reading every frame's style and wrapping setLayoutProperty): 18 of the
+       hidden layers were visible again at the FIRST frame — stacks through `__refApply`,
+       `_applyBorders`, `_applyAdmin1` and the label re-apply — and three more (layer-world-base /
+       layer-sat / layer-world-cap) came back at the pitch-78 row. With labels
+       placing and fading between the two frames of a pair, the subtraction stops being exact and
+       the mask is no longer the mark — which is every nightly failure of this test since it landed
+       (track 90 at pitch 0 «drawn at 78.7°», masks 256/289 at pitch 78). Hiding is not what the
+       measurement needs; a FRAME IN WHICH THEY ARE HIDDEN is. So a frame is taken only once the
+       ids hidden below are all still off when it renders, re-hiding them and asking for another
+       frame otherwise — bounded, so a map that re-shows them forever still reaches the checks. */
+    let HIDDEN = [];
+    const stillHidden = () => HIDDEN.every((id) => { try { return m.getLayoutProperty(id, 'visibility') === 'none'; } catch (_) { return true; } });
+    const rehide = () => { for (const id of HIDDEN) { try { if (m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none'); } catch (_) { } } };
     const frame = () => new Promise((done) => {
-      /* belt and braces: hidden again for THIS frame, in case anything re-showed it */
-      E.layers.setAircraftCloud(LIVE, { visible: false });
-      m.once('render', () => done(grab()));
-      m.triggerRepaint();
+      const once = (n) => {
+        /* belt and braces: hidden again for THIS frame, in case anything re-showed it */
+        E.layers.setAircraftCloud(LIVE, { visible: false });
+        rehide();
+        m.once('render', () => { if (n < 20 && !stillHidden()) { once(n + 1); return; } done(grab()); });
+        m.triggerRepaint();
+      };
+      once(0);
     });
     const publish = (mx, my, ms, trk, col) => E.layers.setAircraftCloud(PROBE, {
       buffers: {
@@ -344,6 +365,7 @@ async function headingTable(page, rows, size, big, altM) {
       /* (#R411) hoisted so the catch below can put the map back even when a row throws — this page
          is shared with every other test in the worker (tests/helpers/app.js). */
       const hidden = [];
+      HIDDEN = hidden;
       try {
         /* ⚠ WAIT FOR THE LIVE LAYER TO BE RUNNING BEFORE STOPPING IT. loadAviation() switches the
            row on and returns as soon as the CLOUD exists, which is earlier than the controller

@@ -15,6 +15,7 @@
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 /* (#R568) the plume model itself — the same module src/radiation-worker.js runs off the page. */
 import { RAD } from './radiation-model.js';
 window.IntMapModules=window.IntMapModules||{};
@@ -774,10 +775,9 @@ window.IntMapModules.sun=function(HOST){
       const s=b.getSouth().toFixed(4),w=b.getWest().toFixed(4),n=b.getNorth().toFixed(4),eA=b.getEast().toFixed(4); const key=[s,w,n,eA].join(',');
       if(key===bboxKey&&bbldCache) return bbldCache; bboxKey=key;
       const q='[out:json][timeout:25];(way["building"]('+s+','+w+','+n+','+eA+'););out geom 900;';
-      const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-      for(const ep of EPS){ try{ const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q)}); if(!r.ok) continue; const j=await r.json();
+      try{ const j=await overpassQuery(q);   /* js/overpass.js — it used to be two mirrors with no clock */
         const bld=(j.elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>{ const t=el.tags||{}; let h=parseFloat(t.height)||((parseFloat(t['building:levels'])||0)*3)||10; return { ring:el.geometry.map(g=>[g.lon,g.lat]), h:Math.min(h,400) }; });
-        bbldCache=bld; return bld; }catch(_){} }
+        bbldCache=bld; return bld; }catch(_){}
       return bbldCache||[]; }
     async function drawShadows(){ if(busy) return; busy=true; try{ ensure();
       const c=siteLL();
@@ -1009,13 +1009,10 @@ window.IntMapModules.transitReach=function(HOST){
       GE().layers.add({id:'imtr-area-l',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#1558d6','line-width':1.4,'line-dasharray':[2,1.5]}});
       GE().layers.add({id:'imtr-stn',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':['interpolate',['linear'],['zoom'],6,3,12,5.5],'circle-color':['coalesce',['get','col'],'#1558d6'],'circle-stroke-color':'#fff','circle-stroke-width':1.4}});
       return true; }catch(_){ return false; } }
-    const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
     async function fetchNet(bb){ const q='[out:json][timeout:60];(way["railway"~"^(rail|light_rail|subway|tram|narrow_gauge|monorail)$"][!"service"]('+bb+');node["railway"~"^(station|halt)$"]('+bb+'););out body;>;out skel qt;';
-      const _partial=j=>/timed out|out of memory|runtime error/i.test((j&&j.remark)||'');
-      const _fetchT=(u,o)=>{ const ac=new AbortController(),t=setTimeout(()=>{try{ac.abort();}catch(_){}} ,55000); return fetch(u,Object.assign({signal:ac.signal},o||{})).finally(()=>clearTimeout(t)); };
-      for(const ep of EPS){ try{ const r=await _fetchT(ep,{method:'POST',body:'data='+encodeURIComponent(q)}); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&j.elements.length&&!_partial(j)) return j; } }catch(_){} }
-      try{ const r=await _fetchT('https://corsproxy.io/?url='+encodeURIComponent(EPS[0]+'?data='+encodeURIComponent(q))); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&!_partial(j)) return j; } }catch(_){}
-      return null; }
+      /* js/overpass.js: the mirrors, then the relay, under one clock; a partial answer (a «runtime error»
+         remark) is a failure there. A mirror's EMPTY answer was never taken here, the relay's was. */
+      return overpassQuery(q,{relay:true,accept:(j,via)=>via==='relay'||j.elements.length>0}).catch(()=>null); }
     const SPD={rail:70,light_rail:38,subway:35,tram:22,narrow_gauge:45,monorail:40};
     async function run(from,minutes){ if(busy) return {ok:false,reason:'busy'}; minutes=Math.max(10,Math.min(120,+minutes||60));
       const A=[+from.lng,+from.lat]; const radKm=Math.min(90,minutes*1.4); const buf=radKm/111;

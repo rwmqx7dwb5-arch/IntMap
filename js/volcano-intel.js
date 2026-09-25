@@ -796,9 +796,8 @@ window.IntMapModules.volcanoIntel=function(HOST){
   /* ══ 7. NEAREST AERODROMES — OpenStreetMap, asked per volcano ══════════════════════════════
      「周辺人口・空港・航空路への影響」. The population radii are bundled (GVP measures them); the
      airports are not, because no bundled airport set exists in this repo. `aeroway=aerodrome` inside
-     150 km, from the same three Overpass mirrors js/atlas-sources.js races, raced rather than
-     chained so one slow mirror does not become the answer's latency. */
-  const OP_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+     150 km, from the Overpass mirrors js/overpass.js knows, raced rather than chained so one slow
+     mirror does not become the answer's latency. */
   const aptCache=new Map();
   async function airportsNear(vn,radiusKm){
     const f=base(vn); if(!f) return null;
@@ -806,10 +805,8 @@ window.IntMapModules.volcanoIntel=function(HOST){
     if(aptCache.has(key)) return aptCache.get(key);
     const c=f.geometry.coordinates;
     const q='[out:json][timeout:25];nwr["aeroway"="aerodrome"](around:'+((radiusKm||150)*1000)+','+c[1].toFixed(4)+','+c[0].toFixed(4)+');out center tags 60;';
-    const one=(ep)=>fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q),
-      headers:{'content-type':'application/x-www-form-urlencoded'}}).then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)));
     try{
-      const j=await Promise.any(OP_EPS.map(one));
+      const j=await window.IntMapOverpass(q,{race:true});
       const rows=((j&&j.elements)||[]).map(el=>{
         const t=el.tags||{}, lat=el.lat!=null?el.lat:(el.center&&el.center.lat), lon=el.lon!=null?el.lon:(el.center&&el.center.lon);
         if(lat==null||lon==null) return null;

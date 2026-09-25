@@ -399,7 +399,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       if(!out){ try{ const ll=await geocode(nm); if(ll&&isFinite(ll.lng)){ const d2=3.2; const bb='('+(ll.lat-d2).toFixed(2)+','+(ll.lng-d2).toFixed(2)+','+(ll.lat+d2).toFixed(2)+','+(ll.lng+d2).toFixed(2)+')';
         const safe=String(nm).replace(/["\\]/g,'').trim();
         const q2='[out:json][timeout:30];way["waterway"~"^(river|canal|stream)$"]["name"~"'+safe+'",i]'+bb+';out geom 300;';
-        const j2=await new Promise(res=>{ fetch(_OP_EPS[0],{method:'POST',body:'data='+encodeURIComponent(q2)}).then(r2=>r2.ok?r2.json():null).then(res).catch(()=>res(null)); });
+        const j2=await overpassRaw(q2).catch(()=>null);
         if(j2&&Array.isArray(j2.elements)&&j2.elements.length){ const coords=[]; j2.elements.forEach(el=>{ if(el.geometry&&el.geometry.length>1) coords.push(el.geometry.map(g=>[g.lon,g.lat])); });
           if(coords.length) out={geo:{type:'MultiLineString',coordinates:coords},name:nm}; } } }catch(_){}
       }
@@ -414,8 +414,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     async function _tribOne(ring,cap){ const step=Math.max(1,Math.ceil(ring.length/70));
       const poly=ring.filter((_,i)=>i%step===0).map(c=>c[1].toFixed(3)+' '+c[0].toFixed(3)).join(' ');
       const q2='[out:json][timeout:60];way["waterway"~"^(river|canal)$"](poly:"'+poly+'");out geom '+cap+';';
-      return await new Promise(res=>{ const tryEp=(i)=>{ if(i>=_OP_EPS.length){ res(null); return; }
-        fetch(_OP_EPS[i],{method:'POST',body:'data='+encodeURIComponent(q2)}).then(r2=>r2.ok?r2.json():null).then(x=>{ if(x&&Array.isArray(x.elements)) res(x.elements); else tryEp(i+1); }).catch(()=>tryEp(i+1)); }; tryEp(0); }); }
+      return await overpassRaw(q2).then(x=>x.elements,()=>null); }
     async function fetchTributaries(basinGeo,cap){
       try{ const CAP=cap||3000; const ring=_basinRing(basinGeo); if(!ring) return null;
         let els=await _tribOne(ring,CAP); if(els===null) return null;
@@ -1566,7 +1565,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       visionSys:function(){ try{ return _visionSYS(); }catch(_){ return ''; } } }; }catch(_){}
     /* (#R199) ↳ js/atlas-sources.js — external evidence sources — leaders, live news, POI catalogues.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { _OP_EPS, overpassRaw, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, WEB_BUDGET_MS, turnSignal });
+    const { overpassRaw, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, WEB_BUDGET_MS, turnSignal });
     let _pois=[], _poiColor=null;
     function ensurePoiLayer(){ try{ if(!GE().layers.hasSource('nlq-poi-src')) GE().layers.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(GE().layers.has('nlq-poi-c')) return true;
@@ -3727,14 +3726,9 @@ window.IntMapModules.atlasConsole=function(HOST){
           const cityJob=(async()=>{
             const bb='('+(ctr.lat-dLat).toFixed(3)+','+(ctr.lng-dLng).toFixed(3)+','+(ctr.lat+dLat).toFixed(3)+','+(ctr.lng+dLng).toFixed(3)+')';
             const q3='[out:json][timeout:12];node[place~"^(city|town)$"]["population"]'+bb+';out 200;';
-            for(const ep of ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter']){
-              try{ const ctl=new AbortController(); const tt=setTimeout(()=>ctl.abort(),14000);
-                let j=null; try{ const r2=await fetch(ep+'?data='+encodeURIComponent(q3),{signal:ctl.signal}); if(!r2.ok) continue; j=await r2.json(); } finally{ clearTimeout(tt); }
-                if(!j||!Array.isArray(j.elements)) continue;
-                /* a successful reply with ZERO cities is a real answer (open ocean), not a failure */
-                return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0)})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); }catch(_){}
-            }
-            return null; });
+            const j=await overpassRaw(q3).catch(()=>null); if(!j) return null;
+            /* a successful reply with ZERO cities is a real answer (open ocean), not a failure */
+            return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0)})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); });
           const qkP=_fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').catch(()=>null);
           const facRes=await Promise.all(facJobs);
           let cities=await cityJob();   /* sequential — after the facility race frees the Overpass slots */

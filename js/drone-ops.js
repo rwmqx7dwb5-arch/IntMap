@@ -210,12 +210,9 @@ window.IntMapModules.droneOps=function(HOST){
   const PHYS=()=>{ try{ return window.IntMapLOS._phys; }catch(_){ return null; } };
 
   /* ══ 5 · RESTRICTED AREAS (OSM) ═════════════════════════════════════════════════════════════ */
-  const OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-  function overpass(q,i){ i=i||0;
-    if(i>=OVERPASS.length) return Promise.reject(new Error('overpass'));
-    return fetch(OVERPASS[i],{ method:'POST', body:'data='+encodeURIComponent(q) })
-      .then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); })
-      .catch(()=>overpass(q,i+1)); }
+  /* Overpass is asked through js/overpass.js — this used to be a clock-less walk of three mirrors that
+     held prepare() for minutes when they were congested. A failure THROWS, and the catch in each
+     caller records it (zonesErr / sitesErr) so the plan says it was NOT checked. */
   /* What OSM can actually answer, with the buffer each kind conventionally carries. These are
      ADVISORY distances — they are the ones drone rules most commonly use, and the panel says the
      source is OSM rather than an aviation authority. */
@@ -256,7 +253,7 @@ window.IntMapModules.droneOps=function(HOST){
        and it is the polygon that matters, so the bounding box is what has to come back. */
     const q='[out:json][timeout:35];('+parts+');out tags bb 400;';
     try{
-      const j=await overpass(q);
+      const j=await window.IntMapOverpass(q);
       const out=[];
       (j.elements||[]).forEach(el=>{
         const c=el.center||(el.lat!=null?{lat:el.lat,lon:el.lon}
@@ -312,7 +309,7 @@ window.IntMapModules.droneOps=function(HOST){
     const q='[out:json][timeout:35];('+SITE_SEL.map(s=>'way'+s.sel+'('+bb+');relation'+s.sel+'('+bb+');').join('')+');out tags bb 300;';
     let cand=[];
     try{
-      const j=await overpass(q);
+      const j=await window.IntMapOverpass(q);
       (j.elements||[]).forEach(el=>{
         /* same reason as the zone query: the SIZE of the patch is the point — a 12 m² lawn is not a
            landing site — and `center` alone cannot answer that */

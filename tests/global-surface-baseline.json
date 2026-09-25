@@ -506,6 +506,7 @@
   "IntMapOsmNameKeys",
   "IntMapOutbreaks",
   "IntMapOutline",
+  "IntMapOverpass",
   "IntMapPageI18N",
   "IntMapPandemic",
   "IntMapPandemicAtlas",

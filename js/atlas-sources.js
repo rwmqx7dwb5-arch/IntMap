@@ -13,6 +13,7 @@
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
+import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 import { fetchViaProxy } from './proxy-fetch.js';   /* (#R452) the app's ONE relay ladder — see _fetchText below */
 
 export function makeAtlasSources(HOST, CTX) {
@@ -148,20 +149,11 @@ export function makeAtlasSources(HOST, CTX) {
     ];
     function poiSelectors(kindStr){ const s2=String(kindStr||''); for(const k of POI_KINDS){ if(k[0].test(s2)) return {sel:k[1],named:true}; }
       const safe=s2.replace(/["\\]/g,'').trim(); if(!safe) return null; return {sel:['nwr["name"~"'+safe+'",i]'],named:false}; }
-    const _OP_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-    /* ⚠ (#R589) A RAW OVERPASS QUERY, RACED OVER THE SAME MIRRORS. `look_at_map` asks «what named
-       features overlap this frame», which is not a POI-kind search, so `overpassPOIs` above cannot serve
-       it — but the ENDPOINT LIST must not be spelled a second time, and this file is where it lives.
-       Lives here rather than in js/atlas-console.js because that file is shrink-only (tests/r419 ⑨d):
-       the kernel is a door, and the fetching belongs with the sources. */
-    async function overpassRaw(q,ms){ const t=Math.max(1000,+ms||20000);
-      for(const ep of _OP_EPS){
-        try{ const ctl=new AbortController(); const tt=setTimeout(()=>ctl.abort(),t);
-          try{ const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q),signal:ctl.signal}); if(!r.ok) continue; return await r.json(); }
-          finally{ clearTimeout(tt); } }catch(_){ /* next mirror */ }
-      }
-      throw new Error('every Overpass mirror refused');
-    }
+    /* ⚠ (#R589) A RAW OVERPASS QUERY. `look_at_map` asks «what named features overlap this frame»,
+       which is not a POI-kind search, so `overpassPOIs` below cannot serve it. Both go through
+       js/overpass.js — no file but that one spells an Overpass endpoint. `ms`, when given, LOWERS the
+       budget the query's own [timeout:] declares; a failure THROWS. */
+    const overpassRaw=(q,ms)=>overpassQuery(q,{budgetMs:ms});
     async function overpassPOIs(kindStr,box,lite,areaRel){ const ps=poiSelectors(kindStr); if(!ps) return null;
       /* (#R64) whole-admin-area coverage ("地点が一部地域だけ"): when the place resolved to a real OSM admin
          relation (a country/state), query by AREA — every tagged facility in the whole territory, not a clamped
@@ -172,15 +164,9 @@ export function makeAtlasSources(HOST, CTX) {
       const sels=lite?ps.sel.slice(0,2):ps.sel;
       const q2='[out:json][timeout:'+(lite?60:25)+'];'+(useArea?('area('+(3600000000+(+areaRel))+')->.__a;'):'')+'('+sels.map(s2=>s2+bb+';').join('')+');out center 600;';
       /* (#R63) RACE the mirrors in parallel with a hard client-side abort — the old sequential ladder could sit
-         silent for minutes on a big area (the reported "機能してない"). First good answer wins, the rest abort. */
-      const ctls=[]; const capMs=lite?65000:28000;
-      const tryEp=ep=>new Promise(res=>{ const c=('AbortController' in window)?new AbortController():null; if(c) ctls.push(c);
-        const tm=setTimeout(()=>{ try{ c&&c.abort(); }catch(_){} },capMs);
-        fetch(ep,c?{method:'POST',body:'data='+encodeURIComponent(q2),signal:c.signal}:{method:'POST',body:'data='+encodeURIComponent(q2)})
-          .then(r=>r.ok?r.json():null).then(j2=>{ clearTimeout(tm); res((j2&&Array.isArray(j2.elements))?j2:null); })
-          .catch(()=>{ clearTimeout(tm); res(null); }); });
-      const j=await new Promise(res=>{ let pending=_OP_EPS.length, done=false;
-        _OP_EPS.forEach(ep=>{ tryEp(ep).then(x=>{ if(done) return; if(x){ done=true; ctls.forEach(c=>{ try{ c.abort(); }catch(_){} }); res(x); } else if(--pending<=0) res(null); }); }); });
+         silent for minutes on a big area (the reported "機能してない"). First good answer wins, the rest abort
+         (js/overpass.js, `race`; the budget is the query's own [timeout:] above). */
+      const j=await overpassQuery(q2,{race:true}).catch(()=>null);
       if(!j||!Array.isArray(j.elements)) return null;
       const out=[],seen=new Set();
       for(const el of j.elements){ const lat=(el.lat!=null)?el.lat:(el.center&&el.center.lat), lon=(el.lon!=null)?el.lon:(el.center&&el.center.lon); if(lat==null||lon==null) continue;
@@ -256,5 +242,5 @@ export function makeAtlasSources(HOST, CTX) {
         }catch(_){} }
         return out;   /* [] = source answered, nothing tagged; null = source failed */
       }catch(_){ return null; } }
-  return { _OP_EPS, overpassRaw, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs };
+  return { overpassRaw, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs };
 }

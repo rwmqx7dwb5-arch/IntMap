@@ -43,6 +43,23 @@ test('R439 the pressure legend: a picker that fits, an isobar switch that works,
       && a.querySelector('.ec-wind-parts') && b.querySelector('.ec-wind-parts'));
   }, null, { timeout: 30000 });
 
+  /* ⚠ (#R805) ① IS A QUESTION ABOUT AN OPEN LEGEND. Since #R742 the tiler gives a stack of
+     legends a budget and folds the OLDEST to its title bar when a column runs out of room — and
+     with two ECMWF legends in this 1280×720 window the pressure one (switched on first) is the one
+     that folds. A folded legend has no picker to measure: every rectangle below it read 0, so
+     「it starts inside it」 failed on 0 ≥ 437.5 every night from 2026-09-16. The reader opens a
+     folded legend with its own button, so that is what this does — a real press, not a class
+     edit — and the fold is not undone behind the tiler's back (`legPinOpen` keeps it open). */
+  const slpMin = page.locator('#data-legend-ec-slp .legend-min');
+  if (await page.evaluate(() => document.getElementById('data-legend-ec-slp').classList.contains('legend-collapsed'))) {
+    await slpMin.click();
+  }
+  await page.waitForFunction(() => {
+    const box = document.getElementById('data-legend-ec-slp');
+    const sel = box && box.querySelector('.ecl-modelpick select');
+    return !!(sel && !box.classList.contains('legend-collapsed') && sel.getBoundingClientRect().width > 0);
+  }, null, { timeout: 8000 });
+
   /* ── ① the picker, and the legend, as rectangles ──────────────────────────────────────────── */
   const m = await page.evaluate(() => {
     const box = document.getElementById('data-legend-ec-slp');
