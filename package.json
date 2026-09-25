@@ -120,7 +120,7 @@
     "opentype.js": "^2.0.0",
     "pdfjs-dist": "6.3.289",
     "typescript": "7.0.2",
-    "vite": "6.4.3",
+    "vite": "8.3.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "dependencies": {
