@@ -218,6 +218,10 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
          `factions` and `isochrone` above: the same day redrawn moves no count and was the shape that
          reported working draws as not_rendered. */
       pandemic: ['map'],
+      /* (atlas-observer-undo) the "undo" observer captures every restorable section again after
+         `map.undo` ran (js/atlas-state.js undoCheck) and holds it against the turn's opening
+         snapshot — the camera, the clock and the map sections are what it reads. */
+      undo: ['map', 'camera', 'time'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
 
   /* ⑦ what a capability says it PRODUCES is something its verifier can observe */

@@ -1,8 +1,8 @@
 {
   "eager": {
-    "raw": 4873325,
-    "gzip": 1632906,
-    "brotli": 1242302,
+    "raw": 4893348,
+    "gzip": 1641078,
+    "brotli": 1248776,
     "requests": 6,
     "modules": 304,
     "cssRaw": 341942,
@@ -23,7 +23,7 @@
       "atlas-attach": 22537,
       "atlas-chart": 10777,
       "atlas-console": 1095991,
-      "atlas-executor": 49585,
+      "atlas-executor": 55350,
       "atlas-query": 50105,
       "atlas-view-capture": 8477,
       "atlas-view-ground": 3808,

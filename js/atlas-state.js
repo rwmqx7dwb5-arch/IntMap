@@ -380,6 +380,86 @@ export function makeAtlasState(HOST) {
         return out;
       });
 
+      /* ══ (atlas-observer-undo) THE SECTIONS THIS FILE CAN ALSO PUT BACK ══════════════════════════
+         Four of the sections above have an owner here and nowhere else, so their restorers live here
+         too; a module that owns its own state registers its own (js/atlas-console.js: the layer
+         switches and Atlas's drawings). See `API.undo` below for the one mechanism that uses them. */
+      var click = function (id) { var d = DOC(); var b = d && d.getElementById(id); if (!b) return false; try { b.click(); return true; } catch (_) { return false; } };
+      API.registerRestorer('camera', { covers: ['camera', 'map.basemap'],
+        capture: function () {
+          var E = GE(); var cam = E && E.camera; if (!cam) return null;
+          var c = cam.getCenter(); var z = +cam.getZoom();
+          if (!c || !isFinite(+c.lng) || !isFinite(+c.lat) || !isFinite(z)) return null;
+          return { lng: +c.lng, lat: +c.lat, zoom: z, bearing: +cam.getBearing() || 0, pitch: +cam.getPitch() || 0,
+            base: isActive('btn-view-sat') ? 'satellite' : 'map',
+            projection: isActive('btn-view-3d') ? '3d-terrain' : (isActive('btn-view-flat') ? 'flat' : 'globe') };
+        },
+        /* the view buttons first (a projection switch may move the camera), then the camera itself —
+           through the same buttons the reader presses, so the app's own state follows */
+        restore: function (want, now) {
+          if (!want) return;
+          if (!now || now.projection !== want.projection) click(want.projection === 'flat' ? 'btn-view-flat' : (want.projection === '3d-terrain' ? 'btn-view-3d' : 'btn-view-globe'));
+          if (!now || now.base !== want.base) click(want.base === 'satellite' ? 'btn-view-sat' : 'btn-view-map');
+          var E = GE(); if (E && E.camera) E.camera.jumpTo({ center: [want.lng, want.lat], zoom: want.zoom, bearing: want.bearing, pitch: want.pitch });
+        },
+        /* ⚠ A RENDERER ROUNDS. jumpTo to the numbers it reported lands within float noise of them,
+           so equality is to the precision cameraNow() in js/atlas-capabilities.js already reports */
+        same: function (a, b) {
+          if (!a || !b) return a === b;
+          return a.base === b.base && a.projection === b.projection && Math.abs(a.lng - b.lng) < 1e-5 && Math.abs(a.lat - b.lat) < 1e-5 &&
+            Math.abs(a.zoom - b.zoom) < 1e-3 && Math.abs(a.bearing - b.bearing) < 1e-2 && Math.abs(a.pitch - b.pitch) < 1e-2;
+        }
+      });
+      API.registerRestorer('time', { covers: ['time'],
+        capture: function () {
+          var T = GLOBAL('IntMapTime'); if (!T || typeof T.isLive !== 'function') return null;
+          if (T.isLive()) return { live: true, t: null };
+          var d = (typeof T.get === 'function') ? T.get() : null;
+          return { live: false, t: d ? d.getTime() : null };
+        },
+        restore: function (want) {
+          var T = GLOBAL('IntMapTime'); if (!T || !want) return;
+          if (want.live) { if (typeof T.setNow === 'function') T.setNow({ source: 'atlas-undo' }); }
+          else if (want.t != null && typeof T.set === 'function') T.set(new Date(want.t), { source: 'atlas-undo', allowFuture: true });
+        }
+      });
+      /* the universal object list (js/map-tools.js IntMapObjects): what appeared is taken off through the
+         object's own remover. ⚠ What the turn DELETED cannot be recreated from an id, and the check
+         below says so by name rather than pretending — the capture carries kind and name for that. */
+      API.registerRestorer('objects', { covers: [],   /* additions only — see js/atlas-capabilities.js UNDO_EXACT */
+        capture: function () {
+          var OB = GLOBAL('IntMapObjects'); if (!OB || typeof OB.list !== 'function') return null;
+          return (OB.list() || []).map(function (o) { return { id: String(o.id), kind: String(o.kind || ''), name: String(o.name == null ? '' : o.name) }; })
+            .sort(function (x, y) { return x.id < y.id ? -1 : (x.id > y.id ? 1 : 0); });
+        },
+        restore: function (want) {
+          var OB = GLOBAL('IntMapObjects'); if (!OB || typeof OB.list !== 'function' || typeof OB.remove !== 'function') return;
+          var keep = Object.create(null); (want || []).forEach(function (o) { keep[o.id] = 1; });
+          (OB.list() || []).forEach(function (o) { if (!keep[String(o.id)]) { try { OB.remove(o.id); } catch (_) { } } });
+        }
+      });
+      /* the surfaces painters CLAIM with the renderer (js/geo-engine.js render.claim/drawn) — a drawing
+         that appeared is taken off with the claimant's own remover. Each is fingerprinted by its feature
+         count and first feature, so a drawing the turn REPLACED reads as changed, not as the same. */
+      API.registerRestorer('surfaces', { covers: [],   /* additions only */
+        capture: function () {
+          var E = GE(); var R = E && E.render; if (!R || typeof R.drawn !== 'function') return null;
+          var r = R.drawn({}); if (!r || !r.observable) return null;
+          var out = {};
+          r.drawn.forEach(function (id) {
+            var s = r.surfaces[id], first = '';
+            try { var d = E.layers.sourceData(id); first = (d && d.features && d.features[0]) ? JSON.stringify(d.features[0]).slice(0, 400) : ''; } catch (_) { first = ''; }
+            out[id] = { n: s.features, first: first };
+          });
+          return out;
+        },
+        restore: function (want) {
+          var E = GE(); var R = E && E.render; if (!R || typeof R.drawn !== 'function') return;
+          var r = R.drawn({}); if (!r) return;
+          r.drawn.forEach(function (id) { if (!want || !want[id]) R.clearSurface(id); });
+        }
+      });
+
       return named;
     };
 
@@ -960,6 +1040,7 @@ export function makeAtlasState(HOST) {
       try { observePaints(null); } catch (_) { }   /* (#R775) same baseline, same reason */
       var rec = {
         turnId: turnId, question: String(question || ''), at: (function () { try { return Date.now(); } catch (_) { return 0; } })(),
+        mapBefore: captureAll(),   /* (atlas-observer-undo) what `undo()` puts back — see below */
         plan: null, operations: [], objectIds: [], unresolved: [],   /* (#R406) `goalSpec` left with the planner */
         resumeToken: null, reply: '', status: 'running', repairs: 0, aiCalls: 0
       };
@@ -1004,6 +1085,130 @@ export function makeAtlasState(HOST) {
       Object.assign(t, o || {});
       if (!o || !o.status) t.status = 'done';
       return t;
+    };
+
+    /* ══ (atlas-observer-undo) UNDO — ONE MECHANISM FOR EVERY TURN, NOT ONE PER CAPABILITY ══════════
+       No capability could take back what it had put on the map (0 of 145 had an `undo`). Writing one
+       per capability would be 145 copies of 「what did I change」, each wrong in its own way. Instead
+       the SUBSYSTEM that owns a piece of map state registers how to capture it and how to put it back
+       (`registerRestorer`, the same shape as `registerStateProvider`), `beginTurn` captures every
+       section, and `undo()` puts back the sections that differ — for whichever capabilities changed
+       them. ⚠ READ, NOT BELIEVED: `undoCheck()` captures again and names every section that did not
+       come back (a drawing the turn replaced cannot be redrawn from an id); the verdict in
+       js/atlas-capabilities.js reports those as `unresolved` instead of claiming a rewind.
+       ⚠ ORDER MATTERS ONLY WHERE ONE SECTION MOVES ANOTHER: the clock first (the era highlight is
+       drawn for the year), the camera last (a projection switch moves it); the rest are independent. */
+    var restorers = Object.create(null);
+    var RESTORE_FIRST = ['time', 'layers', 'atlas', 'objects', 'surfaces'], RESTORE_LAST = ['camera'];
+    API.registerRestorer = function (name, r) {
+      if (!name || !r || typeof r.capture !== 'function' || typeof r.restore !== 'function') return false;
+      restorers[String(name)] = r;
+      return true;
+    };
+    API.restorerNames = function () { return Object.keys(restorers).sort(); };
+    /* the effects each restorer puts back WHOLE (both what a turn added and what it replaced) — js/atlas-capabilities.js UNDO_EXACT is held against this */
+    API.restorerCovers = function () { var o = {}; Object.keys(restorers).forEach(function (n) { o[n] = (restorers[n].covers || []).slice(); }); return o; };
+    function restoreOrder() {
+      var names = Object.keys(restorers);
+      var mid = names.filter(function (n) { return RESTORE_FIRST.indexOf(n) < 0 && RESTORE_LAST.indexOf(n) < 0; }).sort();
+      return RESTORE_FIRST.filter(function (n) { return restorers[n]; }).concat(mid, RESTORE_LAST.filter(function (n) { return restorers[n]; }));
+    }
+    function captureAll() {
+      var out = {};
+      Object.keys(restorers).forEach(function (n) {
+        try { var v = restorers[n].capture(); if (v !== undefined && v !== null) out[n] = v; } catch (_) { }
+      });
+      return out;
+    }
+    function sameSection(n, a, b) {
+      var r = restorers[n];
+      if (r && typeof r.same === 'function') { try { return !!r.same(a, b); } catch (_) { return false; } }
+      return stable(a) === stable(b);
+    }
+    /* the sections of `from` whose current value differs — only sections captured on both sides */
+    function differing(from, to) {
+      if (!from || !to) return [];
+      return Object.keys(from).filter(function (n) { return (n in to) && !sameSection(n, from[n], to[n]); });
+    }
+    function mark(turnId, key, v) { var t = API.turn(turnId); if (t) t[key] = v; }
+    /* the turn to take back: the most recent one (other than the one asking) that changed a captured
+       section and has not itself been undone or been an undo — so undo twice walks further back
+       instead of redoing. Its END is the next turn's opening snapshot, or now. */
+    function undoTarget(currentTurnId, now, explicitTurn) {
+      var nextStart = now;
+      for (var i = turns.length - 1; i >= 0; i--) {
+        var t = turns[i];
+        if (t.turnId === currentTurnId) { if (t.mapBefore) nextStart = t.mapBefore; continue; }
+        if (explicitTurn != null) { if (t.turnId === explicitTurn) return t.mapBefore ? t : null; continue; }
+        if (!t.mapBefore) continue;
+        if (t.undoneBy != null || t.performedUndo) { nextStart = t.mapBefore; continue; }
+        if (differing(t.mapBefore, nextStart).length || untouchedIn(t).length) return t;   /* a turn that only changed what no snapshot holds still changed the map — take it, and name it */
+        nextStart = t.mapBefore;
+      }
+      return null;
+    }
+    /* undo(currentTurnId, {turn}) — puts the map back to before the chosen turn. */
+    API.undo = async function (currentTurnId, o) {
+      o = o || {};
+      /* ⚠ the SAME call twice in one turn is 「already done」, never a second rewind (one-pass §4) */
+      if (currentTurnId != null) {
+        for (var k = 0; k < turns.length; k++) {
+          if (turns[k].undoneBy === currentTurnId) return { ok: true, already: true, turnId: turns[k].turnId, restored: [], unresolved: [] };
+        }
+      }
+      var now = captureAll();
+      var target = undoTarget(currentTurnId, now, o.turn != null ? o.turn : null);
+      if (!target) return { ok: false, code: 'nothing_to_undo', restored: [], unresolved: [] };
+      var want = target.mapBefore, restored = [], threw = [];
+      var order = restoreOrder();
+      for (var i = 0; i < order.length; i++) {
+        var n = order[i];
+        if (!(n in want) || !(n in now) || sameSection(n, want[n], now[n])) continue;
+        try { var r = restorers[n].restore(want[n], now[n]); if (r && typeof r.then === 'function') await r; restored.push(n); }
+        catch (_) { threw.push(n); }
+      }
+      target.undoneBy = (currentTurnId != null) ? currentTurnId : 'ui';
+      target.undoSections = restored.concat(threw);
+      if (currentTurnId != null) mark(currentTurnId, 'performedUndo', true);
+      var chk = API.undoCheck(target.turnId);
+      return { ok: true, turnId: target.turnId, question: target.question, restored: restored,
+        unresolved: chk ? chk.unresolved : threw };
+    };
+    /* undoCheck(turnId) — capture again and hold every section the undo touched against the snapshot */
+    /* ══ WHAT NO RESTORER CAN SEE IS NAMED FROM THE LEDGER, NOT LEFT SILENT ═══════════════════════════
+       A section can only be compared if something captures it. A capability whose declared effect
+       (column 5 of js/atlas-capabilities.js) is one `map.undo` does not touch at all — a forecast model,
+       a rail axis, the device-location dot, the 3-D volume — changed state that no snapshot holds, so
+       comparing snapshots would say nothing and the undo would look complete. The turn ledger knows what
+       ran: every operation from the turn taken back up to now that did something (completed / partial)
+       and wrote an untouched effect is named by its capability id. ⚠ Only UNTOUCHED effects: an effect
+       the undo touches (objects, claimed surfaces) is judged by comparing its section, which names a
+       deletion it could not undo and stays quiet about an addition it did take off. */
+    function untouchedIn(t) {
+      var C = GLOBAL('IntMapCapabilities'); if (!C || typeof C.resolve !== 'function') return [];
+      var U = C.resolve('map.undo'); var touches = (U && U.effects && U.effects.writes) || [];
+      var out = [];
+      (t.operations || []).forEach(function (op) {
+        if (!op || (op.status !== 'completed' && op.status !== 'partial')) return;
+        var c = C.resolve(op.capabilityId); if (!c || c === U) return;
+        var w = (c.effects && c.effects.writes) || [];
+        /* only effects on the MAP — its drawings, camera and clock (the heads js/atlas-capabilities.js's own rule reads); a panel the turn opened is not a change to the map */
+        if (w.some(function (k) { return /^(map|camera|time)(\.|$)/.test(String(k)) && touches.indexOf(k) < 0; }) && out.indexOf(c.id) < 0) out.push(c.id);
+      });
+      return out;
+    }
+    function untouched(fromTurnId) {
+      var out = [], seen = false;
+      turns.forEach(function (t) { if (t.turnId === fromTurnId) seen = true; if (seen) untouchedIn(t).forEach(function (id) { if (out.indexOf(id) < 0) out.push(id); }); });
+      return out;
+    }
+    API.undoCheck = function (turnId) {
+      var t = API.turn(turnId); if (!t || !t.mapBefore) return null;
+      var now = captureAll();
+      var touched = t.undoSections || Object.keys(t.mapBefore);
+      var unresolved = touched.filter(function (n) { return !(n in now) || !sameSection(n, t.mapBefore[n], now[n]); });
+      var ran = untouched(turnId);
+      return { turnId: turnId, checked: touched.slice(), unresolved: unresolved.concat(ran), notReversible: ran };
     };
 
     /* resolveReference(word) — "それ" / "that" / "さっきの経路" by ID, not by prose.

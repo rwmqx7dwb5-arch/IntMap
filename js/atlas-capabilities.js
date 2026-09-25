@@ -113,7 +113,7 @@ export function makeAtlasCapabilities(HOST) {
        arguments do not carry one answers `needs_input` — it does NOT quietly take the map centre. */
     var T = [
       /* id                          legacy            aliases                                                        cat        obs        writes                    produces               risk       confirm   target      lazy        [ingests] */
-      ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight',          'map',                 'session', 'none',   '',         ''],
+      ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight,map.compose',          'map',                 'session', 'none',   '',         ''],
       ['layers.toggle',              'layer',          '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
       ['layers.opacity',             'opacity',        '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
       ['view.projection',            'projection',     '',                                                            'view',    'camera',  'camera',                 'map',                 'session', 'none',   '',         ''],
@@ -207,8 +207,8 @@ export function makeAtlasCapabilities(HOST) {
       ['data.runways',               'runway',         'airports',                                                    'data',    'panel',   'panel.runway',           'panel',               'read',    'none',   'place',    ''],
       ['panel.education',            'edu',            'learn',                                                       'panel',   'panel',   'panel.edu',              'panel',               'session', 'none',   '',         ''],
       ['panel.ecmwf',                'ecmwf',          'weatherLayers',                                               'panel',   'panel',   'panel.ecmwf',            'panel',               'session', 'none',   '',         ''],
-      ['data.wxModel',               'wxModel',        'weatherModel,forecastModel',                                  'data',    'wxModel', 'map.layer',              'map,explanation',     'session', 'none',   '',         ''],
-      ['layers.railAxis',            'railAxis',       'railwayAxis,gaugeAxis',                                       'data',    'paint',   'map.layer',              'map,explanation',     'session', 'none',   '',         'railways'],
+      ['data.wxModel',               'wxModel',        'weatherModel,forecastModel',                                  'data',    'wxModel', 'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         ''],
+      ['layers.railAxis',            'railAxis',       'railwayAxis,gaugeAxis',                                       'data',    'paint',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         'railways'],
       ['panel.widgets',              'widgets',        '',                                                            'panel',   'panel',   'panel.widgets',          'panel',               'session', 'none',   '',         ''],
       ['panel.screenshot',           'screenshot',     '',                                                            'panel',   'panel',   'panel.screenshot',       'panel,file',          'session', 'none',   '',         ''],
       ['panel.share',                'share',          '',                                                            'panel',   'panel',   'panel.share',            'panel',               'session', 'none',   '',         ''],
@@ -219,7 +219,7 @@ export function makeAtlasCapabilities(HOST) {
       ['map.pin',                    'pin',            '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
       ['map.tool',                   'tool',           '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
       ['map.radius',                 'radius',         '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
-      ['map.volume3d',               'volume3d',       'volume',                                                      'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
+      ['map.volume3d',               'volume3d',       'volume',                                                      'map',     'object',  'map.object,map.volume',             'object,map',          'session', 'none',   'place',    ''],
       ['routing.drone',              'drone',          '',                                                            'routing', 'route',   'map.drone',              'route,map,panel',     'session', 'none',   '',         ''],
       /* ══ (#R347) ACTIVE NAVIGATION — §34 ═════════════════════════════════════════════════════
          「「AtlasにはできるがUIからできない」「UIにはできるがAtlasにはできない」という状態を原則なくす。」
@@ -236,7 +236,7 @@ export function makeAtlasCapabilities(HOST) {
       ['navigation.start',           'startNavigation','startNav,beginNavigation,guideMe,driveThere',           'routing', 'route',   'map.route,navigation',   'route,map,panel',     'external','explicit','',        'navigation'],
       ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'none',    'navigation',             'panel',               'session', 'none',   '',         ''],
       ['navigation.status',          'navStatus',      'howLongLeft,etaNow,remaining,nextTurn,arrivalTime',           'routing', 'none',    '',                       'explanation',         'read',    'none',   '',         ''],
-      ['navigation.camera',          'navCamera',      'recenter,overview,followMe,northUp',                          'routing', 'camera',  'camera',                 'map,camera',          'session', 'none',   '',         ''],
+      ['navigation.camera',          'navCamera',      'recenter,overview,followMe,northUp',                          'routing', 'camera',  'camera,camera.follow',                 'map,camera',          'session', 'none',   '',         ''],
       ['navigation.voice',           'navVoice',       'mute,unmute,voiceGuidance',                                   'routing', 'setting', 'navigation',             'setting',             'session', 'none',   '',         ''],
       /* ⚠ `measure` ARMS the tool; the line appears when the USER clicks. Declaring 'map' here made
          the verifier promise a drawing that correctly is not there yet (§6's panel rule). */
@@ -256,7 +256,7 @@ export function makeAtlasCapabilities(HOST) {
       ['sim.tsunami',                'tsunami',        'tsunamiSim,tsunamiPropagation',                               'sim',     'sim',     'map.tsunami',            'map',                 'session', 'none',   'point',    'tsunami'],
       ['system.diagnose',            'diagnose',       'health,selfCheck,systemStatus,status',                        'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['map.clearAll',               'clearAll',       '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'explicit','',        ''],
-      ['map.outline',                'outline',        'extent,showExtent',                                           'map',     'paint',   'map.highlight',          'object,map',          'session', 'none',   'place',    ''],
+      ['map.outline',                'outline',        'extent,showExtent',                                           'map',     'paint',   'map.highlight,map.outline',          'object,map',          'session', 'none',   'place',    ''],
       /* ══ ⚠⚠⚠ (#R754) THE SIMULATOR ITSELF, NOT THE SCREEN IT IS DRAWN ON ═══════════════════════
          The row above opens the Playground PANEL, and until this round that was the only thing Atlas
          could do about a pandemic: asked to simulate one from Lagos it answered, correctly given what
@@ -290,11 +290,18 @@ export function makeAtlasCapabilities(HOST) {
       ['data.value',                 'value',          'stat,lookup',                                                 'data',    'none',    '',                       'explanation',         'read',    'none',   'country',  ''],
       ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
       ['map.clear',                  'clear',          '',                                                            'map',     'clear',   'map.all',                'map',                 'session', 'none',   '',         ''],
+      /* (atlas-observer-undo) PUT THE MAP BACK THE WAY IT WAS BEFORE A TURN. ONE mechanism, not one undo
+         per capability: js/atlas-state.js snapshots every restorable section when a turn opens (camera,
+         clock, layer switches, Atlas's own drawings, the object list, the claimed surfaces) and this
+         puts the snapshot back. Column 5 is what it touches — and therefore what `hasUndo` below
+         reports for every other row: a capability whose effects all fall inside it is reversible. What
+         it cannot put back (a drawing the turn REPLACED, an object it deleted) the verdict names. */
+      ['map.undo',                   'undo',           'undoTurn,undoLast,revertTurn',                                'map',     'undo',    'camera,time,map.basemap,map.layer,map.highlight,map.choropleth,map.polygon,map.line,map.poi,map.object,map.isochrone,map.fly,map.ballistic,map.elevation,map.factions,map.compose,map.shakemap', 'map', 'session', 'none', '', ''],
       ['view.fullscreen',            'fullscreen',     '',                                                            'view',    'none',    'view.fullscreen',        'view',                'session', 'none',   '',         ''],
       /* ⚠ (#R801) WHAT LEAVES, TO WHOM: the device's position, read from the sensor and returned to
          the MODEL as a fact ({lat,lng,accuracyM}, #R413) — column 8 'explicit', same rule as
          navigation.start above. */
-      ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera',                 'camera,map',          'session', 'explicit','',        ''],
+      ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera,map.location',                 'camera,map',          'session', 'explicit','',        ''],
       /* ⚠ (#R493) THE ONLY CAPABILITY WHOSE RESULT IS A PICTURE. Every other row hands Atlas facts
          it can already read off the state ledger; this one hands it the PIXELS — the frame the
          reader is looking at, attached to the next model call as a real image. It writes nothing
@@ -337,19 +344,19 @@ export function makeAtlasCapabilities(HOST) {
       ['settings.eyeAltitude',       'eyeAltitude',    '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
       /* (#R313) the animated streaks inside the Wind layer, on their own switch — the colour
          raster and the particles come from one forecast field and are toggled separately. */
-      ['layers.windParticles',       'windParticles',  'windAnimation',                                               'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+      ['layers.windParticles',       'windParticles',  'windAnimation',                                               'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
       /* (#R439) the 4 hPa contours over the sea-level-pressure field — a switch inside that layer's
          legend, so it is its own verb rather than a layer name (js/weather.js `sub`). */
-      ['layers.isobars',             'isobars',        'pressureContours,isolines',                                   'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+      ['layers.isobars',             'isobars',        'pressureContours,isolines',                                   'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
       /* The base-display preset the layer panel offers as a radio — Default / Clean / Custom
          (js/data-layers.js IntMapBaseDisplay). It was a control the reader had and Atlas did not:
          「基本表示をデフォルトに戻して」 sent Atlas through nine find_capability calls and out of
          steps with nothing done (measured on production, 2026-09-15). */
-      ['layers.baseDisplay',         'baseDisplay',    'baseMode,basemapMode,basicDisplay,basePreset,defaultDisplay,cleanDisplay,displayPreset', 'layers',  'layer',   'map.layer',              'map',                 'persist', 'none',   '',         ''],
-      ['layers.nightSide',           'nightSide',      '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
-      ['layers.planeAltitude',       'planeAltitude',  'aircraftAltitude',                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
-      ['layers.aircraftTrack',       'aircraftTrack',  'planeTrack',                                                  'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
-      ['layers.satellites',          'satellites',     'satellite,sats,orbit',                                        'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+      ['layers.baseDisplay',         'baseDisplay',    'baseMode,basemapMode,basicDisplay,basePreset,defaultDisplay,cleanDisplay,displayPreset', 'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'persist', 'none',   '',         ''],
+      ['layers.nightSide',           'nightSide',      '',                                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+      ['layers.planeAltitude',       'planeAltitude',  'aircraftAltitude',                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+      ['layers.aircraftTrack',       'aircraftTrack',  'planeTrack',                                                  'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+      ['layers.satellites',          'satellites',     'satellite,sats,orbit',                                        'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
       ['panel.ticker',               'ticker',         '',                                                            'panel',   'panel',   'panel.ticker',           'panel',               'session', 'none',   '',         ''],
       ['data.compareStats',          'compareStats',   'compareCountries,statsCompare',                               'data',    'panel',   'panel.compare',          'panel',               'session', 'none',   'country',  ''],
       ['map.scoreMap',               'scoreMap',       'customLayer,evaluate',                                        'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   '',         ''],
@@ -514,9 +521,6 @@ export function makeAtlasCapabilities(HOST) {
       } catch (_) { }
       return out;
     }
-    function sourceFeatureCount(src) {
-      try { var d = GE().layers.sourceData(src); return (d && Array.isArray(d.features)) ? d.features.length : -1; } catch (_) { return -1; }
-    }
     function cameraNow() {
       try {
         var c = GE().camera.getCenter();
@@ -550,6 +554,49 @@ export function makeAtlasCapabilities(HOST) {
         return (O.list() || []).map(function (o) { return String(o && (o.id != null ? o.id : o)); });
       } catch (_) { return []; }
     }
+    /* ══ ⚠⚠⚠ 「IS IT ON THE MAP」 IS ASKED OF THE RENDERER, ONCE (render.drawn — js/geo-engine.js) ══════
+       This file used to answer it itself, from source ids typed into `paintNow()`, the isochrone
+       observer and the faction observer — and every typed id was a surface somebody else had to
+       remember to list. The #R551 shape cost `research.historicalMap` its own verifier, then `factions`,
+       then `routing.isochrone` (#R740: five redraws of one reach called `not_rendered`), then the
+       markers (R802 §3: `research.situationMap` alternating ok / not_rendered in one turn).
+       Now the PAINTER claims its sources beside the code that creates them, under the effect keys the
+       capabilities in the table below declare they write (`GE().render.claim(id, 'map.isochrone')`),
+       and the renderer answers for both engines through members both adapters implement.
+       ⚠ THREE ANSWERS, NOT TWO: drawn / gone / 「could not be asked」. `rendererDrawn()` is null when the
+       contract has no answer at all (an older renderer, a test stub) — and then nothing below changes
+       the verdict it gave before. */
+    function rendererDrawn(q) {
+      try { var E = GE(); if (!E || !E.render || typeof E.render.drawn !== 'function') return null; return E.render.drawn(q || {}) || null; } catch (_) { return null; }
+    }
+    /* true / false / null — `false` is 「the renderer is up but cannot draw yet」, `null` 「no one to ask」 */
+    function rendererObservable() { var r = rendererDrawn({ sources: [] }); return r ? !!r.observable : null; }
+    /* the features on the map in the surfaces claimed under `owner`: -1 when none of them exists or the
+       renderer cannot be asked, because 「could not observe」 is never 0 (the #R397 reading) */
+    function ownedFeatures(owner) {
+      var r = rendererDrawn({ owners: [owner] }); if (!r || !r.observable) return -1;
+      var n = -1;
+      Object.keys(r.surfaces).forEach(function (id) {
+        var s = r.surfaces[id]; if (s.state === 'absent' || s.state === 'unknown') return;
+        n = Math.max(n, 0) + (s.state === 'drawn' ? (s.features != null ? +s.features : 1) : 0);
+      });
+      return n;
+    }
+    /* the surfaces claimed under the effects THIS capability declares it writes (column 5 of the table) —
+       null when it declares none, or nothing is claimed under them, or there is no renderer to ask */
+    function ownSurfaces(capId) {
+      var c = capId && byId[capId]; var w = (c && c.effects && c.effects.writes) || [];
+      if (!w.length) return null;
+      var r = rendererDrawn({ owners: w });
+      return (r && Object.keys(r.surfaces).length) ? r : null;
+    }
+    /* every claimed surface and what it holds now — DISCOVERED from the claims, not listed here */
+    function surfaceInventory() {
+      var r = rendererDrawn({}); if (!r || !r.observable) return null;
+      var o = {};
+      Object.keys(r.surfaces).sort().forEach(function (id) { var s = r.surfaces[id]; o[id] = s.state === 'drawn' ? (s.features != null ? +s.features : 'drawn') : s.state; });
+      return o;
+    }
     /* ⚠ THE THREE QUESTIONS ARE ALREADY SEPARATE IN js/routing.js AND THAT IS THE POINT.
        `hasRoute()` = a result exists. `painted()` = its layers are on the map. `visible()` = they are
        actually being shown. The dispatch case collapsed all three into one ok:true, which is how a
@@ -578,16 +625,17 @@ export function makeAtlasCapabilities(HOST) {
     function timeNow() {
       try { var T = window.IntMapTime; return T && T.get ? T.get() : null; } catch (_) { return null; }
     }
-    /* the Atlas-drawn canvases: how many features each holds right now.
-       ⚠ THE IDS ARE THE ONES THE APP ACTUALLY CREATES — `user-pins` is added in js/app-body.js and
-       `nlq-poi-src` in js/atlas-console.js. tests/r397-checks.test.mjs re-derives both from those
-       files, because the pair that stood here was invented and cost the paint observer its eyes. */
+    /* the Atlas-drawn canvases: what each holds right now.
+       ⚠ THE SURFACES ARE NO LONGER LISTED HERE. Seven source ids used to be typed on these lines (#R397
+       found two of them invented; #R740 found the reach missing; R802 the markers), and a surface
+       nobody typed was one no count could see move. They are now the surfaces painters CLAIM with the
+       renderer (`surfaces`, from `render.drawn()`), so a new painter is observed the moment it claims.
+       `compose` and `factions` stay as named readings because two verifiers below read exactly those —
+       they are asked by EFFECT KEY, the same key the table declares, not by source id. */
     function paintNow() {
-      return { poly: sourceFeatureCount('nlq-poly-src'), line: sourceFeatureCount('nlq-line-src'),
-        pins: sourceFeatureCount('user-pins'), poi: sourceFeatureCount('nlq-poi-src'),
-        compose: sourceFeatureCount('atl-compose-src'),   /* (#R511) js/atlas-map-compose.js — the ONE source every compose layer reads */
-        shakemap: sourceFeatureCount('shk-cont-src'),    /* (#R546) js/shakemap.js — the contour source every metric produces */
-        factions: sourceFeatureCount('nlq-fac-src'),     /* js/atlas-sims.js paintFactions — the faction fills of the historical power map */
+      return { surfaces: surfaceInventory(),
+        compose: ownedFeatures('map.compose'),     /* (#R511) js/atlas-map-compose.js claims its one source under this key */
+        factions: ownedFeatures('map.factions'),   /* js/atlas-sims.js claims the faction fills of the historical power map */
         visible: visibleLayerIds().length, objects: objectIds().length,
         /* ⚠⚠⚠ (#R736) THE SURFACES ABOVE ARE SOURCES; A COUNTRY HIGHLIGHT IS NOT ONE. It paints with
            `setFeatureState` on `nlq-src` (and, while Chronos is in the past, into `nlq-era-src`), so every
@@ -1039,7 +1087,9 @@ export function makeAtlasCapabilities(HOST) {
          and reads it AFTER the call: features there = the area is up, redraw or not; none =
          `not_rendered`. The refusal is not removed — an empty source is still a failure to render. */
       isochrone: {
-        observe: function () { return { iso: sourceFeatureCount('im-iso-src') }; },
+        /* (atlas-observer-undo) the reach is asked of the renderer by its effect key — js/map-tools.js
+           claims `im-iso-src` under 'map.isochrone' where it creates it — so no source id lives here */
+        observe: function () { return { iso: ownedFeatures('map.isochrone') }; },
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: (raw && raw.html) || '' };
           var n = (after && +after.iso) || 0;
@@ -1230,7 +1280,7 @@ export function makeAtlasCapabilities(HOST) {
       },
       sim: {
         observe: function () { return paintNow(); },
-        verify: function (ctx, args, before, after, raw) {
+        verify: function (ctx, args, before, after, raw, capId) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           /* A simulation that is still computing says so. `raw.running` is what a migrated executor
              sets; a legacy case cannot, so its absence is not evidence of completion — the canvas is. */
@@ -1244,7 +1294,15 @@ export function makeAtlasCapabilities(HOST) {
              told the answer might be incomplete. The opener knows what it opened; this reads that
              declaration rather than re-deriving it from a surface that cannot hold it. */
           if (raw && raw.meta && raw.meta.opened) return { status: 'completed', code: 'ok', observed: { opened: raw.meta.opened, paint: after }, html: (raw && raw.html) || '' };
-          if (before && after && !changed(before, after)) return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+          if (before && after && !changed(before, after)) {
+            /* (atlas-observer-undo) …and a simulation re-run over its own drawing moves no count either —
+               the #R747 shape. Before calling that `not_rendered`, ask the renderer whether the surfaces
+               claimed under THIS capability's declared effects are on the map now. Only an upgrade: no
+               claim, or a renderer that cannot be asked, leaves the verdict exactly as it was. */
+            var own = ownSurfaces(capId);
+            if (own && own.observable && own.drawn.length) return { status: 'completed', code: 'already_there', observed: { paint: after, surfaces: own.drawn, already: true }, html: (raw && raw.html) || '' };
+            return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+          }
           return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
         }
       },
@@ -1276,9 +1334,49 @@ export function makeAtlasCapabilities(HOST) {
           if (before && after && !changed(before, after)) return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', html: (raw && raw.html) || '' };
         }
+      },
+      /* ══ (atlas-observer-undo) `map.undo` IS VERIFIED LIKE EVERYTHING ELSE: BY READING, NOT BELIEVING ══
+         The undo is js/atlas-state.js `undo()` — ONE mechanism for every turn: the turn's opening
+         snapshot of each restorable section, put back section by section. This verdict does not take
+         the dispatch's word that it worked: it asks the ledger to capture every section AGAIN and hold
+         it against the snapshot (`undoCheck`). A section that did not come back is named in
+         `unresolved` — a fly path the turn replaced cannot be redrawn from a snapshot, and saying so is
+         the whole point — and a second undo inside the same turn is `already_there`, not a second
+         rewind (.agents/rules/one-pass-or-a-reason.md §4: the same call says 「already done」). */
+      undo: {
+        observe: function () { return null; },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          var ex = (raw && raw.exec) || {};
+          if (ex.already) return { status: 'completed', code: 'already_there', observed: { undo: { turnId: ex.turnId, already: true } }, html: html };
+          var S = null; try { S = window.IntMapAtlasState; } catch (_) { S = null; }
+          var chk = (S && typeof S.undoCheck === 'function') ? S.undoCheck(ex.turnId) : null;
+          if (!chk) return { status: 'failed', code: 'unavailable', html: html };
+          if (chk.unresolved.length) return { status: 'partial', code: 'incomplete', observed: { undo: chk }, unresolved: chk.unresolved.slice(), html: html };
+          return { status: 'completed', code: 'ok', observed: { undo: chk }, html: html };
+        }
       }
     };
     API.OBSERVERS = OBSERVERS;
+
+    /* ══ ⚠⚠⚠ (atlas-observer-undo) 「I COULD NOT LOOK」 IS NOT 「IT IS NOT THERE」 — FOR EVERY CAPABILITY ═══
+       #R768 taught the camera this (`not_rendering`), and only the camera. Every other verdict that
+       ends 「nothing moved」 said `not_rendered` / `no_change` whether or not the renderer could have
+       shown anything at all — during a style reload, before the style is parsed — and Atlas, told its
+       draw had failed, drew again. ONE rule, applied here to every capability that writes the map or
+       the camera, instead of one copy per observer: a negative verdict given while the renderer
+       itself answers `observable:false` becomes `not_rendering`. ⚠ ONLY A NEGATIVE CAN BE CHANGED, AND
+       ONLY INTO 「unobserved」: a completion is never touched, a renderer that cannot be asked (`null`)
+       changes nothing, and nothing is refused, retried or capped here (CONSTITUTION.md §5). */
+    var NEGATIVE_CODES = { not_rendered: 1, no_change: 1 };
+    function drawsOnMap(writes) { return (writes || []).some(function (w) { var h = String(w).split('.')[0]; return h === 'map' || h === 'camera'; }); }
+    function unobservedOr(v, writes) {
+      if (v && typeof v.then === 'function') return v.then(function (x) { return unobservedOr(x, writes); });
+      if (!v || v.status !== 'partial' || !NEGATIVE_CODES[v.code] || !drawsOnMap(writes)) return v;
+      if (rendererObservable() !== false) return v;
+      return Object.assign({}, v, { code: 'not_rendering', observed: Object.assign({}, v.observed || null, { rendering: false, observable: false }) });
+    }
 
     /* ══ BUILD THE DESCRIPTORS ═══════════════════════════════════════════════════════════════════ */
     var byId = Object.create(null), byAlias = Object.create(null), order = [];
@@ -1397,7 +1495,7 @@ export function makeAtlasCapabilities(HOST) {
            — a verifier that had to infer which axis a number referred to would be guessing, which is
            the one thing a verdict may never do. The extra argument is ignored by every observer that
            does not need it, and `verify(ctx,args,before,after,raw)` still behaves as it always did. */
-        verify: function (ctx, args, before, after, raw) { return obs.verify(ctx, args, before, after, raw, id); },
+        verify: function (ctx, args, before, after, raw) { return unobservedOr(obs.verify(ctx, args, before, after, raw, id), writes); },
         examples: [], negativeExamples: [], limitations: []
       };
       cap.execute = legacyExecute(cap);
@@ -1437,6 +1535,39 @@ export function makeAtlasCapabilities(HOST) {
       });
       byAlias[cap.id.toLowerCase()] = cap.id;
     });
+
+    /* ══ (atlas-observer-undo) WHICH ROWS THE ONE UNDO REVERSES — DERIVED FROM THE TABLE, NOT LISTED ══
+       `hasUndo` in `toJSON()` is `typeof c.undo === 'function'`, and 0 of 145 rows had one. A row gets an
+       `undo` (which runs `map.undo` for the turn the operation belonged to — js/atlas-executor.js hands
+       that turn back as the `undoToken`, through IntMapOS.execute so the kernel verifies it) ONLY when every
+       effect it declares in column 5 is one the undo PUTS BACK, not merely one it touches:
+         · UNDO_EXACT — the effects whose state a restorer captures whole and restores whole (the camera
+           with projection and base, the clock, layer switches and opacity, Atlas's own highlights,
+           shading, polygons, lines and markers). Column 5 of `map.undo` touches these AND the effects it
+           can only take ADDITIONS off (objects, claimed surfaces): a pin a turn added goes, a pin it
+           deleted cannot be recreated from an id — so a row writing those is not declared reversible.
+         · a row whose effect has NO restorer at all declares that effect under its own key (column 5:
+           `map.layerOption` for a layer's settings other than on/off and opacity, `map.location`,
+           `camera.follow`, `map.outline`, `map.volume`), so it falls outside by construction — and the undo
+           NAMES it when it ran in the turn being taken back (js/atlas-state.js `untouched()`).
+       ⚠ THE DECLARATION IS HELD AGAINST THE MECHANISM: tests/atlas-observer-undo-checks.test.mjs requires
+       UNDO_EXACT ⊆ map.undo's column 5 and runs the undo over each restorer this file's tests can build. */
+    var UNDO_EXACT = ['camera', 'time', 'map.basemap', 'map.layer', 'map.highlight', 'map.choropleth', 'map.polygon', 'map.line', 'map.poi'];
+    API.undoExact = function () { return UNDO_EXACT.slice(); };
+    (function () {
+      var U = byId['map.undo']; if (!U) return;
+      order.forEach(function (cid) {
+        var c = byId[cid]; if (c === U || c.withdrawn) return;
+        var w = c.effects.writes;
+        if (!w.length || !w.every(function (k) { return UNDO_EXACT.indexOf(k) >= 0 && U.effects.writes.indexOf(k) >= 0; })) return;
+        c.undoneBy = U.id;
+        c.undo = function (ctx, token) {
+          var OS = null; try { OS = window.IntMapOS; } catch (_) { OS = null; }
+          if (!OS || typeof OS.execute !== 'function') return Promise.resolve({ ok: false, meta: { code: 'unavailable' } });
+          return OS.execute(U.id, (token && token.turnId != null) ? { turn: token.turnId } : {}, { source: 'undo' });
+        };
+      });
+    })();
 
     /* ══ THE PUBLIC FACE ═════════════════════════════════════════════════════════════════════════ */
     API.list = function () { return order.slice(); };

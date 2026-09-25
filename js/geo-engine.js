@@ -1883,7 +1883,36 @@ function _m(){ return window.__imap||null; }
      contract simply had no way to describe anything but the primary map.
      `A` is a GETTER rather than the adapter itself: `use()` may swap the engine's adapter at
      runtime — that is how a Cesium adapter arrives — and every method must follow it. */
+  /* ══ IS IT ON THE MAP? — ONE QUESTION, ASKED OF THE RENDERER (render.claim / render.drawn) ═══════
+     Every Atlas verdict used to answer this for itself, from source ids typed into
+     js/atlas-capabilities.js, and each typed list missed the next surface somebody painted
+     (nlq-fac-src, then im-iso-src, then the markers — dev-notes R802 §3). A painter now CLAIMS the
+     sources it draws, beside the code that creates them, under the effect keys its capabilities
+     declare ('map.isochrone', 'map.factions', …), optionally with the function that takes it off;
+     `drawn()` answers about those — or about ids named directly — reading only members BOTH adapters
+     implement, so the two engines cannot answer it differently. States per source:
+       drawn     it holds features (or is not GeoJSON) and a layer reading it is visible
+       empty     it exists and holds no features        hidden    features, every reader hidden
+       unlayered features, no layer reads it           absent    no such source
+       unknown   the renderer could not be asked
+     ⚠ `observable:false` (no renderer, or its style not parsed yet) is 「could not look」 and never
+     「nothing there」 — .agents/rules/one-pass-or-a-reason.md §5. Claims are per view (a sub-view's
+     facade has its own), keyed by id, so a style reload does not lose them. */
+  function claimSurfaces(claims,ids,owner,o){ const own=[].concat(owner||[]).map(String).filter(Boolean), clear=(o&&typeof o.clear==='function')?o.clear:null;
+    [].concat(ids||[]).forEach(id=>{ if(!id) return; const k=String(id), c=claims.get(k)||{owners:[],clear:null}; own.forEach(w=>{ if(c.owners.indexOf(w)<0) c.owners.push(w); }); if(clear) c.clear=clear; claims.set(k,c); }); return true; }
+  function surfacesDrawn(A,claims,q){ q=q||{}; const a=A(); let observable=false; try{ observable=!!(a&&a.raw()&&a.canDraw()); }catch(_){ observable=false; }
+    const owners=[].concat(q.owners||[]).map(String), named=[].concat(q.sources||[]).map(String), ids=named.slice();
+    claims.forEach((c,id)=>{ if(ids.indexOf(id)>=0) return; if(owners.length?c.owners.some(w=>owners.indexOf(w)>=0):!q.sources) ids.push(id); });
+    const out={observable, surfaces:{}, drawn:[], gone:[]}; let byLayer=null;
+    const readers=id=>{ if(!byLayer){ byLayer={}; try{ const st=a.getStyle(); ((st&&st.layers)||[]).forEach(l=>{ if(l&&l.source) (byLayer[l.source]||(byLayer[l.source]=[])).push(l.id); }); }catch(_){} } return byLayer[id]||[]; };
+    ids.forEach(id=>{ const c=claims.get(id), rec={owners:c?c.owners.slice():[], state:'unknown', features:null};
+      if(observable){ try{ if(!a.hasSource(id)) rec.state='absent';
+        else { const d=a.sourceData(id), n=(d&&Array.isArray(d.features))?d.features.length:null; rec.features=n;
+          if(n===0) rec.state='empty'; else { const ls=readers(id); rec.state=!ls.length?'unlayered':(ls.some(l=>{ try{ return !!a.isVisible(l); }catch(_){ return false; } })?'drawn':'hidden'); } } }catch(_){ rec.state='unknown'; } }
+      out.surfaces[id]=rec; if(rec.state==='drawn') out.drawn.push(id); else if(rec.state!=='unknown') out.gone.push(id); });
+    return out; }
   /** @param {() => import('../types/geo-engine').GeoEngineAdapter} A @returns {import('../types/geo-engine').GeoEngineFacade} */ function engineFacade(A){
+   const _claims=new Map();   /* this view's claimed surfaces — see surfacesDrawn above */
    return {
     /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
     id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },
@@ -2025,6 +2054,9 @@ function _m(){ return window.__imap||null; }
       attach:o=>A().attach?A().attach(o):o },
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
     render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(), /* (#R768) IS THE RENDERER DRAWING RIGHT NOW? `onNextFrame` runs fn INSIDE the tick (a WebGL drawing buffer is only readable there); `ticking` asks the same thing as a Promise. Both adapters fire 'render'. ⚠ A false answer may only WEAKEN a claim, never make one — .agents/rules/one-pass-or-a-reason.md §5, DEV-NOTES #R768. ⚠ ON ONE LINE BECAUSE THE APP-SHELL BUDGET HAD NO HEADROOM AT ALL (8,049/8,050 at origin/main; the ceiling was retired in #R795) — the prose for this lives in DEV-NOTES and in the two files that read it, not here. */ onNextFrame(ms,fn){ let d=false; const f=v=>{ if(d) return; d=true; try{ fn(!!v); }catch(_){} }; try{ A().once('render',()=>f(true)); A().triggerRepaint(); }catch(_){ f(false); } setTimeout(()=>f(false), Math.max(50,+ms||600)); }, ticking(ms){ return new Promise(r=>{ try{ this.onNextFrame(ms,r); }catch(_){ r(false); } }); },
+      /* the one 「is it on the map」 question every verdict asks, and the claims it answers about — see surfacesDrawn above */
+      claim:(ids,owner,o)=>claimSurfaces(_claims,ids,owner,o), drawn:q=>surfacesDrawn(A,_claims,q),
+      clearSurface:id=>{ const c=_claims.get(String(id)); if(!c||!c.clear) return false; try{ c.clear(); return true; }catch(_){ return false; } },
       container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),
       /* (#R202) the render resolution, read and written — see js/render-scale.js */
       getRenderScale:()=>A().getRenderScale?A().getRenderScale():null,

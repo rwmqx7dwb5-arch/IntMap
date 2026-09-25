@@ -31,6 +31,20 @@
 
 export interface LngLat { lng: number; lat: number }
 
+/** One source's answer to `render.drawn()` (js/geo-engine.js surfacesDrawn). */
+export interface SurfaceState {
+  owners: string[];
+  state: 'drawn' | 'empty' | 'hidden' | 'unlayered' | 'absent' | 'unknown';
+  features: number | null;
+}
+/** `render.drawn()` — `observable:false` means the renderer could not be asked, never 「nothing there」. */
+export interface SurfacesDrawn {
+  observable: boolean;
+  surfaces: { [id: string]: SurfaceState };
+  drawn: string[];
+  gone: string[];
+}
+
 /** The camera the facade's `camera.get()` answers with. */
 export interface CameraState { center: LngLat; zoom: number; bearing: number; pitch: number }
 
@@ -402,6 +416,12 @@ export interface GeoEngineRender {
   canvas(): any;
   onNextFrame(ms?: any, fn?: any): any;
   ticking(ms?: any): any;
+  /** a painter declares the sources it draws, under the effect keys its capabilities write */
+  claim(ids?: any, owner?: any, o?: any): any;
+  /** 「is it on the map」: per-source state of claimed (or named) surfaces, and whether the renderer could be asked */
+  drawn(q?: any): SurfacesDrawn;
+  /** runs the claimant's own remover for a claimed source; false when none was declared */
+  clearSurface(id?: any): any;
   container(): any;
   size(): any;
   setCursor(c?: any): any;

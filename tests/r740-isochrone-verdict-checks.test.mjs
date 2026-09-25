@@ -44,9 +44,25 @@ const ISO_SRC = 'im-iso-src';
 
 /* A renderer that holds exactly the sources it is given. Every façade name below is one the real
    observers call (js/geo-engine.js): layers.sourceData, scene.getStyle, camera.*, hasRenderer. */
+/* (atlas-observer-undo) the reach is now asked of the renderer — `render.drawn()` — by the effect key
+   js/map-tools.js claims `im-iso-src` under. The answer comes from the SHIPPED facade
+   (js/geo-engine.js makeFacade) over an adapter holding exactly `sources`, not from a retyped copy. */
+await import('../js/geo-engine.js');
+const ENGINE = window.IntMapGeoEngine;
+function drawnFacade(sources) {
+  const f = ENGINE.makeFacade({
+    raw: () => ({}), canDraw: () => true, isVisible: () => true,
+    hasSource: (id) => id in sources,
+    sourceData: (id) => ((id in sources) ? { type: 'FeatureCollection', features: sources[id] } : null),
+    getStyle: () => ({ layers: [{ id: 'im-iso-fill', source: ISO_SRC }, { id: 'im-iso-line', source: ISO_SRC }, { id: 'im-iso-ctr', source: ISO_SRC }] })
+  });
+  f.render.claim(ISO_SRC, 'map.isochrone');
+  return f.render;
+}
 function renderer(sources) {
   return {
     hasRenderer: () => true,
+    render: drawnFacade(sources),
     layers: {
       sourceData: (id) => {
         if (!(id in sources)) throw new Error('no such source: ' + id);
@@ -203,20 +219,21 @@ test('R740 ⑦: the generic `paint` verdict still refuses a map that declares no
   });
 });
 
-test('R740 ⑧: and the reason it had to be an exception — the paint observation cannot see the reach', () => {
-  /* The structural fact behind the production log: `paintNow()` enumerates its surfaces by hand and
-     `im-iso-src` is not among them, so a reachable area appearing on the map moves NOTHING the
-     generic observer reads. Adding the id to that hand list would have fixed the first draw and left
-     redraws two through six exactly as broken, which is why the verdict — not the list — was moved.
-     ⚠ The list itself is the recurring defect (#R551 → historicalMap → factions → here); the general
-     answer is the painter declaring its own surface (`window._imAtlasPaint`, #R736). */
+test('R740 ⑧: the paint observation now SEES the reach — and that is why the verdict, not a list, had to move', () => {
+  /* It used to assert the opposite: `paintNow()` enumerated its surfaces by hand and `im-iso-src` was
+     not among them, so a reach appearing moved NOTHING the generic observer read. (atlas-observer-undo)
+     retired the hand list: painters CLAIM their sources with the renderer and the observation carries
+     every claimed surface, so the reach appearing now does move it. ⚠ What this round's rule still
+     says is true: a DIFF over it calls an identical redraw not_rendered, which is why routing.isochrone
+     keeps a verifier that reads the reach AFTER the call (②) rather than the generic paint diff. */
   const base = { 'nlq-poly-src': [], 'nlq-line-src': [], 'user-pins': [], 'nlq-poi-src': [],
     'atl-compose-src': [], 'shk-cont-src': [], 'nlq-fac-src': [] };
-  const blind = withMap({ ...base, [ISO_SRC]: [] }, () => generic.observe());
+  const empty = withMap({ ...base, [ISO_SRC]: [] }, () => generic.observe());
   const drawn = withMap({ ...base, [ISO_SRC]: polygons(3) }, () => generic.observe());
-  assert.equal(JSON.stringify(blind), JSON.stringify(drawn),
-    'the paint observation now reads the isochrone source — if that is deliberate, this test is the '
-    + 'place to say so, but note that a diff over it still calls an identical redraw not_rendered');
+  assert.notEqual(JSON.stringify(empty), JSON.stringify(drawn), 'a claimed surface appearing did not move the paint observation');
+  assert.equal(drawn.surfaces[ISO_SRC], 3, 'the observation carries what the claimed reach holds');
+  const redraw = withMap({ ...base, [ISO_SRC]: polygons(3) }, () => generic.observe());
+  assert.equal(JSON.stringify(drawn), JSON.stringify(redraw), 'an identical redraw is still identical — the diff alone cannot tell it from a failure');
 });
 
 /* ════════════════════════════════════════════════════════════════════════════════════════════════

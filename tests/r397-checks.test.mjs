@@ -64,7 +64,8 @@ test('R397 ①a: the layers façade has no enumerator, so the observer must not 
 
 test('R397 ①b: visibleLayerIds enumerates through a method the façade really has', () => {
   const fn = CAPS_CODE.slice(CAPS_CODE.indexOf('function visibleLayerIds'));
-  const body = fn.slice(0, fn.indexOf('function sourceFeatureCount'));
+  /* (atlas-observer-undo) `sourceFeatureCount` left with the typed source list; cameraNow follows directly */
+  const body = fn.slice(0, fn.indexOf('function cameraNow'));
   assert.ok(body.length > 50, 'visibleLayerIds() is gone — the layer observer has no population');
   const called = [...body.matchAll(/GE\(\)\.(\w+)\.(\w+)\s*\(/g)].map((m) => m[1] + '.' + m[2]);
   assert.ok(called.length > 0, 'visibleLayerIds() no longer asks the engine anything');
@@ -99,12 +100,30 @@ test('R397 ①c: the camera observer reads the shape getCenter actually returns'
 /* ══ §2 THE PAINT OBSERVER NAMES SOURCES THAT ARE ACTUALLY CREATED ═════════════════════════════
    MUTATION THAT MUST GO RED: change either id back to 'nlq-pin-src' / 'atl-poi-src'. */
 
-test('R397 ②: every source id the paint observer counts is a source some file adds', () => {
+test('R397 ②: every source the paint observer reads is a source some file adds', () => {
+  /* (atlas-observer-undo) THE POPULATION MOVED. paintNow() no longer types source ids — it reads the
+     surfaces painters CLAIM with the renderer (js/geo-engine.js render.claim / render.drawn). So the
+     fact this check protects — 「the observer cannot be pointed at a source nothing creates」 — is now
+     asked of every claim in js/, and paintNow() itself must not grow a typed id back. MUTATION THAT
+     MUST GO RED: claim 'nlq-pin-src' anywhere, or type a quoted '…-src' back into paintNow(). */
   const fn = CAPS_CODE.slice(CAPS_CODE.indexOf('function paintNow'));
   const body = fn.slice(0, fn.indexOf('function changed'));
   assert.ok(body.length > 50, 'paintNow() is gone — the paint observer has no population');
-  const ids = [...body.matchAll(/sourceFeatureCount\('([^']+)'\)/g)].map((m) => m[1]);
-  assert.ok(ids.length >= 4, `paintNow() counts only ${ids.length} sources — it counted four (poly, line, pins, poi)`);
+  assert.match(body, /surfaceInventory\(\)/, 'paintNow() no longer reads the claimed surfaces');
+  assert.ok(!/'[\w-]+-src'/.test(body), 'paintNow() types a source id again — that list is what missed every new surface');
+  const ids = [];
+  for (const f of readdirSync(resolve(ROOT, 'js')).filter((x) => x.endsWith('.js'))) {
+    const src = codeOnly(read('js/' + f));
+    const konst = new Map();
+    for (const m of src.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*'([^'\n]+)'|,\s*([A-Za-z_$][\w$]*)\s*=\s*'([^'\n]+)'/g)) {
+      const nm = m[1] || m[3], val = m[2] || m[4];
+      if (nm && !konst.has(nm)) konst.set(nm, val);
+    }
+    for (const m of src.matchAll(/\bclaim\(\s*(?:'([^'\n]+)'|([A-Za-z_$][\w$]*))/g)) {
+      if (m[1]) ids.push(m[1]); else if (konst.has(m[2])) ids.push(konst.get(m[2]));
+    }
+  }
+  assert.ok(ids.length >= 8, `only ${ids.length} claimed surfaces were found in js/ — the sweep or the claims are broken`);
   /* Where a source is CREATED is the authority — and BOTH halves of how that was
      asked here were the shape #R488/#R533 keep costing this project:
        · the creators were a HAND-WRITTEN list of five files, so a source created

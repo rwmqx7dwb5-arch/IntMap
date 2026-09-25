@@ -355,7 +355,9 @@ test('R546 ⑪ the capability points at the module that exists and at the source
   const rec = {}, M = load(rec);
   await M.open('nc72282711', 'mmi');
   const drawn = Object.keys(rec.layers.sources);
-  assert.ok(caps.includes("sourceFeatureCount('shk-cont-src')"), 'the paint observer must count a source the module really creates');
+  /* (atlas-observer-undo) the observer no longer types the id: the module claims it under the key the row writes */
+  assert.ok(row.includes("'map.shakemap'") && /render\.claim\(SRC_LN, 'map\.shakemap'/.test(fs.readFileSync(path.join(ROOT, 'js/shakemap.js'), 'utf8')),
+    'the module must claim the source it really creates under the effect key the row writes');
   assert.ok(drawn.includes('shk-cont-src'), 'and the module really creates it');
   assert.deepEqual(M.layerIds().slice().sort(), ['shk-cont', 'shk-cont-lbl', 'shk-field'].sort());
 });
