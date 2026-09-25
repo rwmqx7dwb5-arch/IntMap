@@ -380,12 +380,21 @@ async function pullOne(root, m, id, set, { copy, force }, say) {
     let d = null;
     try { d = digestOf(pl.abs, set.kind); } catch { /* unreadable counts as different */ }
     if (d && d.sha256 === set.sha256) { say(`  ✓ ${id}: ${set.path} (a real copy, already the manifest's content)`); return; }
-    if (!force) {
+    /* An EMPTY directory is not a copy of anything: it is the shell git leaves when the commit that
+       untracks a set is fast-forwarded and something (OneDrive, an open handle) keeps the folder.
+       MEASURED 2026-09-25 on the master: data/border-detail held 0 files, hashed to the empty digest,
+       and this refused to place it without --force — so master-sync reported the datasets missing.
+       A folder with no file in it cannot be an unpublished regeneration; it is removed and placed. */
+    if (d && set.kind === 'dir' && d.files === 0) {
+      say(`  · ${id}: ${set.path} is an empty directory (left behind when it was untracked) — placing the set`);
+      removeTree(pl.abs);
+    } else if (!force) {
       throw new Error(`${set.path} exists and is NOT the manifest's content${d ? ` (${d.sha256.slice(0, 12)} ≠ ${set.sha256.slice(0, 12)})` : ''}. `
         + `It may be a regeneration nobody has published: \`npm run data:publish ${id}\` publishes it; \`${PULL_HINT} -- --force\` replaces it.`);
+    } else {
+      say(`  ⚠ ${id}: replacing ${set.path} (--force)`);
+      if (set.kind === 'dir') removeTree(pl.abs); else { chmodSync(pl.abs, 0o644); unlinkSync(pl.abs); }
     }
-    say(`  ⚠ ${id}: replacing ${set.path} (--force)`);
-    if (set.kind === 'dir') removeTree(pl.abs); else { chmodSync(pl.abs, 0o644); unlinkSync(pl.abs); }
   } else if (pl.state === 'link') {
     unlinkSync(pl.abs);                        // removes the link itself, never what it points at
   }
