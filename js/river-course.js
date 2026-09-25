@@ -172,7 +172,6 @@ window.IntMapRiverCourse=(function(){
      two clicks on the Danube in two countries produce two different `name` strings and must not be
      two different cache entries. A miss is remembered as null so a river OSM cannot answer for is
      asked about once per session, not once per click. */
-  const OP_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
   const NOMINATIM='https://nominatim.openstreetmap.org/search';
   const _cache=Object.create(null);
   function cacheKey(names){ return Array.from(names).sort().join('|'); }
@@ -252,18 +251,14 @@ window.IntMapRiverCourse=(function(){
     s=Math.max(-85,s); n=Math.min(85,n);
     const bb='('+s.toFixed(2)+','+w.toFixed(2)+','+n.toFixed(2)+','+e.toFixed(2)+')';
     const q='[out:json][timeout:30];way["waterway"~"^(river|canal)$"]["name"~"^('+alts.join('|')+')$",i]'+bb+';out geom 800;';
-    for(const ep of OP_EPS){
-      try{
-        const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q)});
-        if(!r.ok) continue;
-        const j=await r.json();
-        const els=(j&&j.elements)||[];
-        const coords=[];
-        for(const el of els){ if(el&&el.geometry&&el.geometry.length>1) coords.push(el.geometry.map(g=>[g.lon,g.lat])); }
-        if(coords.length) return {geo:{type:'MultiLineString',coordinates:coords},src:'overpass',km:0};
-      }catch(_){ }
-    }
-    return null;
+    /* js/overpass.js walks the mirrors with a clock; a mirror whose answer has no river geometry is
+       not usable here, so the next one is asked (what this loop always did) */
+    const hasLine=el=>el&&el.geometry&&el.geometry.length>1;
+    try{
+      const j=await window.IntMapOverpass(q,{accept:j=>j.elements.some(hasLine)});
+      const coords=j.elements.filter(hasLine).map(el=>el.geometry.map(g=>[g.lon,g.lat]));
+      return {geo:{type:'MultiLineString',coordinates:coords},src:'overpass',km:0};
+    }catch(_){ return null; }
   }
   /* Resolve the real course of the river the clicked feature belongs to.
      Resolves to `{geo, src}` or null — it never rejects, because the caller already has a picture. */

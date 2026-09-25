@@ -402,18 +402,10 @@ window.IntMapModules.facilities=function(HOST){
     web:()=>L('Website','ウェブサイト','Website','Сайт','Sitio web')
   };
 
-  /* ─── Overpass, raced across mirrors — the shape js/atlas-sources.js and js/datacenters.js use ─── */
-  const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+  /* ─── Overpass, raced across mirrors (js/overpass.js, `race`). `null` means NOTHING ARRIVED — the
+     contract build() below relies on (#R262): an empty answer and no answer are different values. ─── */
   async function overpass(ql){
-    const ctls=[];
-    const one=ep=>new Promise(res=>{ let c=null; try{ c=new AbortController(); ctls.push(c); }catch(_){}
-      const tm=setTimeout(()=>{ try{ c&&c.abort(); }catch(_){} },26000);
-      fetch(ep,Object.assign({method:'POST',body:'data='+encodeURIComponent(ql)},c?{signal:c.signal}:{}))
-        .then(r=>r.ok?r.json():null).then(j=>{ clearTimeout(tm); res((j&&Array.isArray(j.elements))?j.elements:null); })
-        .catch(()=>{ clearTimeout(tm); res(null); }); });
-    return await new Promise(res=>{ let pending=EPS.length, done=false;
-      EPS.forEach(ep=>{ one(ep).then(x=>{ if(done) return; if(x){ done=true; ctls.forEach(c=>{ try{ c.abort(); }catch(_){} }); res(x); }
-        else if(--pending<=0) res(null); }); }); });
+    return window.IntMapOverpass(ql,{race:true,budgetMs:26000}).then(j=>j.elements,()=>null);
   }
 
   /* ─── one layer, built from one set ───────────────────────────────────────────────────────────── */

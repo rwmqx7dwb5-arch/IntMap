@@ -317,12 +317,10 @@ window.IntMapModules.routingOps=function(HOST){
     lastDiff=null; return true; }
 
   /* ══ ROUTING ON A HISTORICAL NETWORK ════════════════════════════════════════════════════════ */
-  const OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-  function overpass(q,i){ i=i||0;
-    if(i>=OVERPASS.length) return Promise.reject(new Error('overpass'));
-    return fetch(OVERPASS[i],{ method:'POST', body:'data='+encodeURIComponent(q) })
-      .then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); })
-      .catch(()=>overpass(q,i+1)); }
+  /* Overpass is asked through js/overpass.js. This file used to walk the three mirrors with no clock,
+     and a congested afternoon (504s after 12 s, 102 s and 93 s) held the route search for 207 s; the
+     query's own [timeout:60] is now the budget of the whole call, and a failure is THROWN, which the
+     catch below reports as err:'overpass' — never as a network that happens to be empty. */
   /* OSM writes dates in a lot of shapes: "1889", "1889-06", "1889-06-15", "C19", "~1890", "1889..1892".
      A YEAR is the only part this needs, and a value it cannot read is treated as UNKNOWN rather than
      as a pass or a fail — an unknown date is exactly what "we do not know" means. */
@@ -375,7 +373,7 @@ window.IntMapModules.routingOps=function(HOST){
          'way["razed:highway"]('+bb+');','way["historic"="road"]('+bb+');'].join('');
     const q='[out:json][timeout:60];('+sel+');out geom 6000;';
     let els=null;
-    try{ const j=await overpass(q); els=j.elements||[]; }
+    try{ const j=await window.IntMapOverpass(q); els=j.elements||[]; }
     catch(e){ return (lastHist={ err:'overpass', msg:String(e&&e.message||e) }); }
     /* Keep the ways that existed in `year`. THREE kinds of evidence, counted separately, because the
        difference between them is the difference between a record and an assumption and the panel has

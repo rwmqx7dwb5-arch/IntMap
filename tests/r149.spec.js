@@ -79,6 +79,16 @@ test('#9 dropping an image into Atlas shows a thumbnail and enables Send', async
     Object.defineProperty(ev, 'dataTransfer', { value: dt });
     p.dispatchEvent(ev);
     await new Promise((res) => setTimeout(res, 500));
+    /* ⚠ (#R805) …AND THEN FOR THE THUMBNAIL ITSELF. The thumbnail is the output of compressImage
+       (decode → canvas → JPEG), which is asynchronous; 500 ms was enough here and not on the nightly
+       runner, where this read came back with 0 thumbnails on the first attempt of 17 of the 24
+       nights 2026-08-31…09-23 and passed on the retry every time. A drop that never produces a
+       thumbnail still fails below — the wait is bounded and the counts are read after it. */
+    for (let t0 = performance.now(); performance.now() - t0 < 10000;) {
+      const r0 = p.querySelector('.atl-imgrow');
+      if (r0 && r0.querySelector('.atl-thumb img')) break;
+      await new Promise((res) => setTimeout(res, 100));
+    }
     const row = p.querySelector('.atl-imgrow');
     const go = p.querySelector('.atl-go');
     const img = row && row.querySelector('.atl-thumb img');

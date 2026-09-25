@@ -304,7 +304,9 @@ test('#R254 ⑩ the data-center layer is its own module, sourced, and invents no
 
   /* the other half — OpenStreetMap, raced mirrors, ODbL attribution */
   assert.match(dcc, /telecom"="data_center/, 'the OSM half is gone');
-  assert.match(dcc, /overpass-api\.de[\s\S]{0,200}kumi\.systems/, 'the Overpass mirrors are not raced — one 504 would silence the layer');
+  /* the mirror list lives in js/overpass.js alone now (tests/nightly-deep-red-checks.test.mjs counts
+     that); what this layer must still do is RACE them, which is the option it hands the one client */
+  assert.match(dcc, /IntMapOverpass\(ql,\{race:true/, 'the Overpass mirrors are not raced — one 504 would silence the layer');
   assert.match(dcc, /attribution:'[^']*OpenStreetMap[^']*ODbL/, 'the OSM half is not attributed');
 
   /* the click opens a real card, and every value is escaped */

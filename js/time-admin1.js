@@ -1034,7 +1034,6 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        round trip, and js/map-tools.js replaces it in place when the true one lands — the same
        "never latch the un-measured picture" rule the line itself follows. If the fetch fails, the
        coarse outline is what stays, which is exactly what shipped before this round. */
-    const OHM_EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
     const _fullGeom = new Map();   /* relation id → Promise<geometry|null>, one flight per unit */
     function idAt(props) {
       try {
@@ -1052,10 +1051,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       let p = _fullGeom.get(id); if (p) return p;
       p = (async function () {
         try {
-          const r = await fetch(OHM_EP, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                                          body: '[out:json][timeout:60];relation(id:' + id + ');out geom;' });
-          if (!r.ok) return null;
-          const j = await r.json();
+          /* OpenHistoricalMap's Overpass, through the one client (js/overpass.js): it used to have no clock */
+          const j = await window.IntMapOverpass('[out:json][timeout:60];relation(id:' + id + ');out geom;', { historical: true });
           const el = (j.elements || []).find(e => e.type === 'relation');
           if (!el) return null;
           const R = window.IntMapOhmRings; if (!R) return null;

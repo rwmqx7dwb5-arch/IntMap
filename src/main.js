@@ -54,6 +54,7 @@ import '../js/historical-basemap.js';
    and nothing about this file needs to precede it — its consumers all call it lazily. */
 import '../js/wx-source.js';
 import '../js/nominatim-gate.js';   /* (#R489) …and, for the same reason one guarded weather client exists, ONE queue in front of Nominatim. Seven files call that host; two kept private floors and five kept none, so «one request per second» was one per second EACH and fourteen Atlas oblast outlines left as fast as the network took them. EAGER and BEFORE the window-global callers (js/routing.js, js/river-course.js, js/search-geocode.js, js/routing-geocode.js): those reach it as window.IntMapNominatimGate rather than by name (they predate named imports in js/). */
+import '../js/overpass.js';   /* …and ONE Overpass client with a clock (window.IntMapOverpass for the classic-shaped callers) — js/overpass.js */
 /* (#R183) …and the pure "how close should the camera go for THIS kind of place" decision, which
    js/search-geocode.js consults from gotoPlace. Its own file because that factory's body may
    contain only declarations (tests/r169-checks #4) and because being map-free is what lets the

@@ -100,8 +100,24 @@ test('R650 ① the layer draws one circle per country, and the panel agrees with
   /* an item in two countries is two circles' worth of one note, so the sum is ≥ the note count */
   expect(seen.sumN).toBeGreaterThanOrEqual(seen.st.placed);
 
-  const body = await page.textContent('#data-legend-whodon .wp-body');
-  expect(body).toContain(String(seen.st.shown));
+  /* ⚠ (#R805) THE PANEL IS ASKED ABOUT THE STATE IT IS SHOWING NOW, NOT ABOUT `seen`. This read was
+     a second round trip after the one above, so the same live tail the note above describes could
+     land in between: MEASURED on the nightly of 2026-09-23 the panel said «35 WHO notes» while
+     `seen.st.shown` was 34 — the panel was right and the comparison was stale. What is claimed is
+     that the panel and the layer's state agree, so both are read together, and the read is repeated
+     only until they do (a panel that never catches up still fails, with both numbers). */
+  let agree = null;
+  try {
+    await page.waitForFunction(() => {
+      const b = document.querySelector('#data-legend-whodon .wp-body');
+      return !!b && b.textContent.includes(String(window.IntMapOutbreaks.state().shown));
+    }, null, { timeout: 10000 });
+  } catch (_) { /* reported below with the numbers */ }
+  agree = await page.evaluate(() => ({
+    body: (document.querySelector('#data-legend-whodon .wp-body') || {}).textContent || '',
+    shown: window.IntMapOutbreaks.state().shown,
+  }));
+  expect(agree.body, `the panel states the ${agree.shown} notes the layer holds`).toContain(String(agree.shown));
 });
 
 test('R650 ② the items that are not about one country are listed and NOT placed', async ({ app }) => {

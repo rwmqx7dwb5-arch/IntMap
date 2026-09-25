@@ -88,7 +88,14 @@ test('R159 #4 → R160 LEFT sidebar toggle keeps its mechanism AND never drives 
   await page.evaluate(() => document.getElementById('btn-toggle-sidebar').click());
   await page.waitForTimeout(400);
   await page.evaluate(() => document.getElementById('btn-toggle-sidebar').click());
-  await page.waitForTimeout(400);
+  /* ⚠ (#R805) WAIT FOR THE RESIZE, NOT FOR THE CLOCK. The sidebar's margin transition is 0.4 s
+     (css/intmap.css `.sidebar`), and this read came exactly 400 ms after the click — on a loaded
+     runner the transition has not finished (or not begun) by then, and MEASURED on the nightly
+     deep tier the width read back unchanged, 880→880, on the first attempt of 17 of the 24 nights 2026-08-31…09-23.
+     Waiting for the width to move is the same claim asked at the right moment; a toggle that
+     really stopped resizing the map still fails below, with both widths. */
+  await page.waitForFunction((bw) => Math.abs(document.getElementById('map-container').getBoundingClientRect().width - bw) > 120,
+    before.w, { timeout: 5000 }).catch(() => {});
 
   const after = await page.evaluate(() => {
     const m = window.__imap; const c = m.getCenter();

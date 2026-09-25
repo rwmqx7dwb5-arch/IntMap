@@ -88,6 +88,13 @@ test('fresh desktop profile: normal mode, Countries open, no ticker', async ({ a
      pays for it; the other eight in this file no longer do. */
   const page = await app.freshPage();
   await page.waitForTimeout(2500);
+  /* ⚠ (#R805) the 2.5 s above is kept (a ticker that switches itself on during boot is still caught),
+     but on the nightly runner the Countries tab had not been selected yet when it elapsed — the
+     first attempt of 18 of the 24 nights 2026-08-31…09-23 failed here (both attempts on 4). So the
+     read also waits, bounded, for the boot to reach the state it is asking about; a boot that never
+     selects the tab still fails below. */
+  await page.waitForFunction(() => !!document.getElementById('btn-stats')?.classList.contains('active'),
+    null, { timeout: 15000 }).catch(() => {});
   const st = await page.evaluate(() => ({
     ws: document.body.classList.contains('ws-mode'),
     ticker: window.imTicker,

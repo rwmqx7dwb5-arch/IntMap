@@ -115,7 +115,8 @@ test('R217 ②a: nearestKm measures a click against a real course', () => {
 test('R217 ②b: the resolver asks the two sources this app already declares, in Atlas\'s order', () => {
   const src = rd('js/river-course.js');
   assert.match(src, /nominatim\.openstreetmap\.org\/search/, 'Nominatim first — one GET for the whole named river');
-  assert.match(src, /overpass-api\.de\/api\/interpreter/, 'Overpass as the fallback');
+  /* Overpass is reached through the one client (js/overpass.js owns the endpoints) */
+  assert.match(src, /window\.IntMapOverpass\(/, 'Overpass as the fallback');
   assert.ok(src.indexOf('_nominatim(') < src.indexOf('_overpass('), 'Nominatim is tried before Overpass');
   /* ⚠ (#R218) INTENDED REPLACEMENT: every Nominatim answer that runs past the river is now KEPT and
      unioned, because a river renamed at each border is several OSM objects and taking the first one

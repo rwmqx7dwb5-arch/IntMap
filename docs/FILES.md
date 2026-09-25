@@ -987,6 +987,11 @@ proxy-fetch.js                    CORS プロキシ経由の取得（相手先�
                                   `opts.as` が受理する文書の形（feed／html／json）、`opts.budgetMs` が ladder 全体の上限、
                                   `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる
 fetch-deadline.js                 締切つきの JSON 取得 `jsonWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得
+overpass.js                       **Overpass の唯一のクライアント** `overpassQuery()`——ミラー一覧を持つ唯一のファイル。
+                                  予算は問い合わせ自身の `[timeout:N]`＋本文の余裕、応答の無いミラーは持ち分を過ぎたら
+                                  次のミラーを並走させ、観測された失敗は即座に次へ。全滅は `OverpassUnavailable` を投げる
+                                  （空の答えとは別）。`race`・`budgetMs`（下げるだけ）・`accept`・`historical`（OHM）・`relay`。
+                                  window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
