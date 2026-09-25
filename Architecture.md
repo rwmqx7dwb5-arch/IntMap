@@ -391,6 +391,35 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 同じカテゴリで誰かが名指されたら候補から降りる（そうしないと同点が**登録順**で並び、
 「世界の原子力発電所を…」が `layers.*` の辞書順の先頭 8 件を「一致」として受け取る）。これが無いと最長のブロックが何にでも勝つ。⚠ **5 ブロック以上が持つ語は一致に数えない**（`DOC_TERM_MAX_DF`＝4）——数えると、ほぼ全能力が score > 0 になり、打ち切りの無い `find_capability` が 60 id・42 kB を返す（実測: 次のモデル呼び出しが 94 秒）。空振りの文は「持っている id で直接 `run_capability` を」と告げる
 （「そんな制御は無い」は、検索が主題を読めなかっただけのときに嘘になる）。
+⚠ **同点を綴りで決めない。** 語彙の順序は `self` → 得点 → **証拠の数**（要求の中の別々の語が何個その能力を指したか）で、
+それでも等しい行は**同じ `rank` を持つ宣言された同点**として返る（配列には順序が要るので中はレジストリ順だが、
+それは判断ではないと結果が述べている）。以前は最後の鍵が `localeCompare` で、「現在地」の `view.locate` が
+`m`・`n`・`r` の後ろの 4 位だった。
+
+**⚠ 意味検索を語彙検索と融合する（`searchFused`）。語彙検索は消していない。** 別の言語・別の言い回しで同じことを
+言う要求（「現在地」／«where am i»、「地図を現代に戻す」／`time.travel {"now":true}`）は綴りを共有しないので、
+語彙だけでは届かない。`IntMapCapabilities.searchFused(q, opts)` は非同期の扉で、同期の `search` と同じ形
+（`ranked` / `strong` / `confident`）に**何で決めたか**を足して返し、reject しない:
+- 意味の半分は Edge Function **`atlas-embed`**（§6.2）が答える。問い合わせは毎回 OpenAI の埋め込み
+  （既定 `text-embedding-3-small`）にし、**保存しない**。能力側は各能力の説明（id・別名・カタログのうち
+  **その能力について書かれた区間**・ブロックの見出し。6,000 字で切る）を**カタログ全体の SHA-256** を鍵に
+  `atlas_capability_vectors` へ 1 回だけ埋めて置く（鍵はサーバが受け取った本文から計算し直す＝他人の本文を
+  自分の鍵に登録できない）。類似度は Postgres（pgvector の `<=>`）で**全能力ぶん**返す。
+  未知のカタログは、その検索が語彙で答えて `catalog_indexing` と述べている間に**裏で 1 回だけ**送られる。
+- **近いことは一致ではない。** 余弦類似度は全能力について何かの値を返すので、「ありがとう」にも最寄りの能力はある。
+  候補にするのは、その問い合わせ自身の 144 個の類似度の中で**頑健 z（中央値と MAD）が z\* = Φ⁻¹(1 − α/n)**
+  （α = 0.05・n は答えから数える。n = 144 で約 3.39）を超えたものだけ。⚠ 正規近似は**推定**で、本番の実測は
+  まだ無い——結果が `semantic.threshold` と各行の `z` を持っているので、最初の本番の問い合わせが測定になる。
+- 融合は **Reciprocal Rank Fusion**（K = 60）。語彙側の順位は **`self` → 証拠の数**で付け、category hint を
+  含めない（hint はカテゴリ全員に同じ点を与えるので、意味の半分を多数決で負かしてはならない）。同点は類似度、
+  次に語彙の鍵、それでも等しければ宣言された同点。
+- **引けなかったことを 0 件と同じ答えにしない。** 意味の半分が使えないとき（未ログイン・関数の失敗・
+  タイムアウト 8 秒・未知のカタログ）は語彙だけで答え、`basis:'lexical'`・`semantic:{state:'unavailable',
+  reason}` を付ける。引けて何も立たなかったときは `basis:'lexical+semantic'`・`candidates:0`。
+  同期の `search` は `basis:'lexical'`・`semantic:{state:'not_consulted'}` と述べる。
+- ⚠ **`find_capability`（`js/atlas-toolsurface.js` の `find`）はまだ同期の `search` を呼んでいる。**
+  融合が Atlas に届くのは、その `find` が `await CAPS.searchFused(...)` を返し、空振りの文を
+  `semantic.state` で言い分けるようになったときである。
 
 **⚠ 既に答えた呼び出しだけの手が 2 回続いたら、ターンは答えへ向かう**（`maxRepeatSteps`＝2・`stopped:'repeated_calls'`）。
 同一の呼び出し（`callKey`）は `reusedFromEarlierCallThisTurn` の注記付きで最初の結果を返すが、それでも同じ呼び出しを
@@ -1603,8 +1632,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **36 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **37 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
+`atlas_capability_vectors` /
 `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
 ＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
@@ -1615,15 +1645,23 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **18本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **19本**（`_shared/` は関数ではない）
 
-> ⚠ **18本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **19本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
 > `[functions._shared]` は書かない。
 
 - **`ai-proxy`** … アカウント制AI（§5）。`verify_jwt` あり。
+- **`atlas-embed`** … Atlas の能力検索の**意味の半分**（§2.1 の `searchFused`）。`verify_jwt` あり＋関数内でも
+  呼び出し元を解決する。`op:"search"` は問い合わせを OpenAI の埋め込みにして `atlas_capability_similarity` で
+  全能力との余弦類似度を返し、`op:"seed"` は能力の説明文を埋めて `atlas_capability_seed` で 1 文で保存する
+  （鍵のカタログ SHA-256 は受け取った本文から計算し直す）。未知のカタログへの検索は**問い合わせを埋める前に**
+  `catalog_unknown` を返す。問い合わせは保存しない。支出は `_shared/rate-limit.js` の共有バケツ
+  （利用者ごと 1 分・利用者ごとの seed 1 時間・プロジェクト全体 1 日。全部 fail-closed）。
+  秘密は `OPENAI_API_KEY`（ai-proxy と同じ）・任意で `ATLAS_EMBED_MODEL` / `ATLAS_EMBED_GLOBAL_PER_DAY`。
+  ⚠ 403/404 は `model_unavailable` と述べる——この鍵が埋め込みモデルに届かなかった実測が `news-ingest` にある。
 - **`refresh-news`** … ニュース取得＋AI地点解析＋書き込み（§4.1）。`--no-verify-jwt` で公開だが
   **fail-closed**：`REFRESH_SECRET` 未設定なら全リクエストを拒否する。秘密は `x-refresh-secret`
   **ヘッダのみ**（クエリ文字列不可）・**定数時間比較**・POST のみ。
@@ -1828,9 +1866,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   （pg_cron `client-errors-purge` が毎日 `purge_client_errors` を呼ぶ）。
   詳細は [`docs/MONITORING.md`](docs/MONITORING.md) §2。
 
-⚠ **`_shared/relay-guard.js` を共有するのは16本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` / `client-errors` /
+⚠ **`_shared/relay-guard.js` を共有するのは17本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` /
 `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
-`ai-proxy`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 3 本が認証を持ち、**残り13本は無認証**。
+`ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、**残り13本は無認証**。
 `ai-proxy`・`monitor-run`・`client-errors` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
 POST をヘッダではなく**本文の最後のバイトまで**同じ期限と上限で読む）で、URL allowlist の側ではない。
 ⚠ **リダイレクトは手で辿る**（`followRedirects`）。`redirect:"follow"` は最初の 1 ホップにしか allowlist を訊いていなかったので、
@@ -1850,6 +1888,8 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
 - news-ingest: `NEWS_INGEST_SECRET`（**必須**）, `NEWS_GEO_AI=off`（任意・AI 地点解析の kill-switch）,
   `NEWS_GEO_MODEL`（任意・地点解析だけ別モデル）, `NEWS_TRANSLATE=off` / `NEWS_TRANSLATE_MODEL`,
   `NEWS_EMBED=off` / `NEWS_EMBED_MODEL`
+- atlas-embed: `OPENAI_API_KEY`（ai-proxy と同じ鍵）, `ATLAS_EMBED_MODEL`（任意・既定 `text-embedding-3-small`）,
+  `ATLAS_EMBED_GLOBAL_PER_DAY`（任意・プロジェクト全体の 1 日の上限）
 - monitor-run: `MONITOR_SECRET`
 - Gemini 経路のみ: `GEMINI_SEARCH_ENABLED`（既定 OFF）
 
@@ -4714,9 +4754,9 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を18本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を19本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
-   for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
+   for f in ai-proxy delete-account atlas-embed; do supabase functions deploy $f --project-ref <REF>; done
    for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
@@ -4872,7 +4912,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（25本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（26本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持）。

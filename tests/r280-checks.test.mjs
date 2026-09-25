@@ -96,9 +96,12 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
          (#R507) profiles_public stopped being a VIEW and became a table, so it joined both lists
          too, 32 → 33 — and it is now the last name in list #1, so the anchor is on it.
          (#R650) who_don_extracts joined them, 33 → 34, and the anchor moved onto it.
-         (client-error-log) client_errors joined them, 34 → 35, and the anchor moved onto it. */
-      from: "  'client_errors'\n]) as t;                                                    -- 35 assertions\n\n-- 2)",
-      to: "]) as t;                                                    -- 35 assertions\n\n-- 2)" },
+         ⚠ (atlas-semantic-search) AND THAT IS THE LAST TIME THE ANCHOR MOVES BY HAND. Every table
+         anyone adds joins this list, so an anchor spelled as «the last name and the count» broke on
+         every correct addition and was re-typed six times. The mutation is written as what it DOES:
+         take the last name (and the comment lines above it) out of list #1, whatever that name is. */
+      re: /,\n(?:[ \t]*--[^\n]*\n)*[ \t]*'[a-z0-9_]+'\n(\]\) as t;)/,
+      to: (_m, tail) => '\n' + tail },
     { rule: 'legal', file: 'privacy.html',
       from: '<script src="./js/legal-text.js"></script>\n', to: '' },
     { rule: 'doc-index', file: 'docs/README.md',
@@ -114,10 +117,10 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
        thrown away), and `finally` puts the ORIGINAL BYTES back, so the checkout is untouched. */
     const originalBytes = rd(c.file);
     const original = readLF(join(ROOT, c.file));
-    const re = anchorRe(c.from);            /* (#R286) a line break in the anchor ⇒ this checkout's line break */
+    const re = c.re || anchorRe(c.from);    /* (#R286) a line break in the anchor ⇒ this checkout's line break */
     assert.ok(re.test(original), `${c.file} no longer contains the anchor for the ${c.rule} case`);
     /* the replacement is a FUNCTION, so a `$` inside `to` stays text instead of becoming a back-reference */
-    const broken = original.replace(re, () => c.to);
+    const broken = original.replace(re, typeof c.to === 'function' ? c.to : () => c.to);
     assert.notEqual(broken, original, `the ${c.rule} case did not change ${c.file}`);
     try {
       writeFileSync(join(ROOT, c.file), broken);

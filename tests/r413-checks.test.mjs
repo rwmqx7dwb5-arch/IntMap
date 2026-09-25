@@ -359,8 +359,13 @@ test('R413 ⑪: re-introducing each defect makes the matching check fail', async
   assert.ok(ranked.length > 8, 'ⓓ more than eight capabilities score on this request');
   assert.ok(new Set(ranked.slice(0, 8).map((r) => r.score)).size === 1,
     '…all of them equally, so the first eight were an alphabetical accident');
-  assert.ok(!ranked.slice(0, 8).some((r) => r.id === 'routing.route'),
+  /* (atlas-semantic-search) the alphabet no longer breaks this tie — the ranking DECLARES it (the tied rows share one
+     `rank`) — so the defect is re-applied here the way it ran: equal scores, then the alphabet. */
+  const alphabetical = ranked.slice().sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+  assert.ok(!alphabetical.slice(0, 8).some((r) => r.id === 'routing.route'),
     '…and routing.route is not among them: the cut is what dropped it, not the score');
+  assert.equal(new Set(ranked.filter((r) => r.score === ranked[0].score).map((r) => r.rank)).size, 1,
+    '…and today the tie is declared as a tie, not decided by the spelling');
 });
 
 /* ══ ⑫ AND NO TEST MAY GO ON ASSERTING THE LIMIT EITHER (#R433) ═══════════════════════════════

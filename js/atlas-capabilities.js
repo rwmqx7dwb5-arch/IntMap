@@ -1295,6 +1295,8 @@ export function makeAtlasCapabilities(HOST) {
       if (o.resolvePlace) runtime.resolvePlace = o.resolvePlace;
       if (o.pinnedPoint) runtime.pinnedPoint = o.pinnedPoint;
       if (o.selection) runtime.selection = o.selection;
+      /* (atlas-semantic-search) the meaning half of the search — see searchFused. Absent = the atlas-embed Edge Function. */
+      if (typeof o.semantic === 'function') runtime.semantic = o.semantic;
     };
     API.runtimeReady = function () { return !!runtime.dispatch; };
     API.docsReady = function () { return !!runtime.docs; };
@@ -1688,8 +1690,10 @@ export function makeAtlasCapabilities(HOST) {
        scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
        request; the next model call took 94 s (measured on production, 2026-09-15). */
     var _evQ = null, _evBy = null;
+    /* returns { pts, n }: the points, and how many DISTINCT terms earned them (atlas-semantic-search — the breadth
+       of the evidence is one of the things a tie is broken by; see search below) */
     function docTermScore(cap, nq) {
-      if (!runtime.docs) return 0;
+      if (!runtime.docs) return { pts: 0, n: 0 };
       /* what a term is worth: nothing at all past DOC_TERM_MAX_DF blocks, and less the more blocks
          carry it. The number is memoised across the whole session — a term's df cannot change. */
       var award = function (t) {
@@ -1721,7 +1725,7 @@ export function makeAtlasCapabilities(HOST) {
         _evBy.set(b, ev);
         return ev;
       };
-      var mine = docBlocks().of[cap.id] || [], pts = 0, counted = Object.create(null);
+      var mine = docBlocks().of[cap.id] || [], pts = 0, n = 0, counted = Object.create(null);
       mine.forEach(function (b) {
         var ev = evidence(b);
         for (var i = 0; i < ev.length; i++) {
@@ -1731,9 +1735,10 @@ export function makeAtlasCapabilities(HOST) {
           if (!owned) continue;                      /* carried by this block, but written about another capability */
           counted[ev[i].t] = 1;
           pts += ev[i].pts;
+          n++;
         }
       });
-      return Math.min(DOC_TERM_CAP, pts);
+      return { pts: Math.min(DOC_TERM_CAP, pts), n: n };
     }
     /* ══ SEARCH HINTS ═══════════════════════════════════════════════════════
        MATCH TERMS, not text the app writes. These are the words a REQUEST may
@@ -1803,16 +1808,16 @@ export function makeAtlasCapabilities(HOST) {
        about it — decides the order, and a category hint breaks ties among equals. `score()` still
        returns one number, and it is the same number it always was. */
     API.scoreParts = function (cap, q, ctx) {
-      var self = 0, hint = 0, nq = norm(q);
-      if (!nq) return { self: 0, hint: 0, total: 0 };
-      if (cap.withdrawn) return { self: -1, hint: 0, total: -1 };
+      var self = 0, hint = 0, terms = 0, nq = norm(q);
+      if (!nq) return { self: 0, hint: 0, total: 0, terms: 0 };
+      if (cap.withdrawn) return { self: -1, hint: 0, total: -1, terms: 0 };
       cap.aliases.forEach(function (a) {
         var na = norm(a);
         if (!na) return;
-        if (nq === na) self += 100;
-        else if (na.length >= 4 && spelledIn(nq, na)) self += 40;
+        if (nq === na) { self += 100; terms++; }
+        else if (na.length >= 4 && spelledIn(nq, na)) { self += 40; terms++; }
       });
-      if (spelledIn(nq, norm(cap.id.split('.').pop()))) self += 25;
+      if (spelledIn(nq, norm(cap.id.split('.').pop()))) { self += 25; terms++; }
       (VERB_HINTS[cap.category] || []).forEach(function (h) { if (h && nq.indexOf(norm(h)) >= 0) hint += 8; });
       /* ⚠ THE DOCUMENTATION IS PART OF THE SEARCH. Aliases and hints are the words a request may use in
          nine languages, but the catalogue block is where a capability's SUBJECT lives — «ISS», 「衛星」,
@@ -1823,7 +1828,9 @@ export function makeAtlasCapabilities(HOST) {
          adds a little; the cap keeps a long block from outranking an exact alias. It is SELF evidence
          because #R802 made it evidence about this capability rather than about the thirty others its
          block also documents. */
-      self += docTermScore(cap, nq);
+      var dt = docTermScore(cap, nq);
+      self += dt.pts;
+      terms += dt.n;
       if (ctx) {
         if (ctx.recent && ctx.recent.indexOf(cap.id) >= 0) self += 12;
         if (ctx.requiredOutputs && ctx.requiredOutputs.length) {
@@ -1832,7 +1839,7 @@ export function makeAtlasCapabilities(HOST) {
         }
       }
       if (cap.isFallback) self -= 5;
-      return { self: self, hint: hint, total: self + hint };
+      return { self: self, hint: hint, total: self + hint, terms: terms };
     };
     API.score = function (cap, q, ctx) { return API.scoreParts(cap, q, ctx).total; };
     /* search(q, opts) — the ranking. `opts.min` is the score below which a capability is not
@@ -1866,16 +1873,296 @@ export function makeAtlasCapabilities(HOST) {
         .map(function (c) {
           var p = API.scoreParts(c, q, ctx);
           if (p.self > 0 && p.total > 0) named[c.category] = 1;
-          return { id: c.id, score: p.total, self: p.self, category: c.category };
+          return { id: c.id, score: p.total, self: p.self, terms: p.terms, category: c.category };
         })
         .filter(function (r) { return r.score > 0 && (r.self > 0 || !named[r.category]); })
-        .sort(function (a, b) { return b.self - a.self || b.score - a.score || a.id.localeCompare(b.id); });
+        .sort(lexicalOrder);
+      declareTies(rows, lexicalOrder);
       var min = opts.min == null ? 8 : opts.min;
       /* ⚠ CONFIDENCE IS ABOUT THE CAPABILITY, NOT ABOUT THE CATEGORY. Rows that share one category hint
          are copies of one weak observation, and answering «confident» to that is how a caller stops
          widening while holding nothing. A row is strong when the request named IT. */
       var strong = rows.filter(function (r) { return r.score >= min && r.self > 0; });
-      return { ranked: rows, strong: strong, confident: strong.length >= (opts.want || 3) };
+      /* (atlas-semantic-search) `basis` says what this ranking was decided by. This synchronous door never asks the
+         meaning half — `searchFused` below does — and it says so rather than leaving a reader to
+         assume that an empty list means «nothing means this». */
+      return { ranked: rows, strong: strong, confident: strong.length >= (opts.want || 3),
+        basis: 'lexical', semantic: { state: 'not_consulted' } };
+    };
+    /* ⚠⚠⚠ (atlas-semantic-search) THE LAST KEY WAS THE ALPHABET, AND THE ALPHABET SAYS NOTHING ABOUT A REQUEST.
+       MEASURED (this checkout, before the change): 「現在地」 scores navigation.camera,
+       routing.isochrone, map.radius and view.locate at the same `self` — and view.locate, the one
+       capability whose job is the reader's position, came FOURTH because «v» sorts after «m», «n»
+       and «r». #R802 had already moved `self` in front of the alphabet; the alphabet was still what
+       decided every tie that survived.
+       Now the keys are all evidence about the request: what it said about THIS capability (`self`),
+       the category hint (`score`), and how many DISTINCT pieces of evidence there were (`terms` —
+       three different words of the request pointing at one capability are more evidence than one
+       word worth the same points). When all three are equal NOTHING in the request tells the rows
+       apart, and the ranking SAYS so: tied rows share one `rank`, so a reader of the ranking can see
+       that their order is not a judgement. (Within a tie the order is the registry's, because an
+       array has to have one; it is declared, not claimed.) `searchFused` adds the meaning of the
+       request as a further key, which is what actually separates 「現在地」's four. */
+    function lexicalOrder(a, b) { return b.self - a.self || b.score - a.score || (b.terms || 0) - (a.terms || 0); }
+    function declareTies(rows, cmp) {
+      for (var i = 0; i < rows.length; i++) rows[i].rank = (i && cmp(rows[i - 1], rows[i]) === 0) ? rows[i - 1].rank : i + 1;
+      return rows;
+    }
+
+    /* ══ (atlas-semantic-search) THE MEANING HALF: searchFused ════════════════════════════════════════════════════
+       ⚠⚠⚠ WHAT WAS MEASURED. Everything above matches SPELLINGS — aliases, ids, the words of the
+       catalogue — and 134 of the 145 capabilities can be reached ONLY through it (find_capability).
+       On production (#R802) three Japanese requests ran zero operations; in this checkout
+       「現在地」 still puts view.locate fourth and 「地図を現代に戻す」 matches nothing, although
+       time.* exists to do exactly that. #R802 repaired the spelling match as far as spellings go;
+       a request and a capability that MEAN the same thing in words they do not share are beyond it
+       in any language, and a multilingual embedding is the instrument for that.
+       ⚠ THE LEXICAL SEARCH IS NOT REPLACED (CONSTITUTION.md §5 — reach is not reduced). The two
+       rankings are FUSED; when the meaning half cannot be asked, the answer is the lexical one AND
+       SAYS SO (`basis`, `semantic.state`, `semantic.reason`). «Could not be consulted» and «nothing
+       means this» are different answers and must not come back as the same empty list
+       (.agents/rules/one-pass-or-a-reason.md §5).
+
+       HOW IT IS SPLIT, AND WHY THE SYNCHRONOUS DOOR STAYS SYNCHRONOUS. `search` above is called
+       synchronously (js/atlas-toolsurface.js `find`, and the checks of #R318, #R413, #R727, #R728,
+       #R733 and #R802); an embedding is a network round trip. So `search` is left exactly as a
+       synchronous lexical answer, and `searchFused(q, opts)` is the asynchronous door that returns
+       the SAME shape (ranked / strong / confident) plus what decided it. It never rejects.
+
+       WHERE THE VECTORS COME FROM. The page does not hold a key. `runtime.semantic` is a transport
+       `(query, catalogue, signal) → Promise<{state, sims?}>`; the default one below asks the
+       atlas-embed Edge Function with the reader's session, which embeds the query, compares it in
+       Postgres with the stored vectors of THIS catalogue, and returns one cosine similarity per
+       capability. A catalogue it has never seen is sent to it once (in the background — the search
+       that found it unknown answers lexically and says `catalog_indexing`). Tests bind a
+       deterministic transport through bindRuntime({ semantic }). */
+
+    /* The text each capability is embedded from. Its own words first — the id and aliases — then the
+       stretches of the catalogue written ABOUT it (the same sectioning #R802 gave the lexical
+       evidence, so a 33-capability block does not make 33 identical vectors), then the headings of
+       its blocks (what the block is about). Cut to SEMANTIC_MAX_DOC_CHARS, which is the Edge
+       Function's bound (atlas-embed/core.js MAX_DOC_CHARS; a test holds the two equal); the cut is
+       made BEFORE hashing, so it is part of the key and never a silent loss on one side. */
+    var SEMANTIC_MAX_DOC_CHARS = 6000;
+    API.SEMANTIC_MAX_DOC_CHARS = SEMANTIC_MAX_DOC_CHARS;
+    function semanticDoc(cap) {
+      var own = [], heads = [];
+      (docBlocks().of[cap.id] || []).forEach(function (b) {
+        if (b.whole[cap.id]) { own.push(b.text); return; }
+        (b.own[cap.id] || []).forEach(function (sp) { own.push(b.text.slice(sp[0], sp[1])); });
+        if (b.heading > 0) heads.push(b.text.slice(0, b.heading));
+      });
+      var head = norm(cap.id.replace('.', ' ')) + (cap.aliases.length ? ': ' + cap.aliases.map(norm).join(', ') : '');
+      return [head].concat(own, heads).join('\n').slice(0, SEMANTIC_MAX_DOC_CHARS);
+    }
+    API.semanticDocs = function () {
+      if (!runtime.docs) return [];
+      return API.all().filter(function (c) { return !c.withdrawn; })
+        .map(function (c) { return { id: c.id, text: semanticDoc(c) }; });
+    };
+    /* the key the vectors are stored under — the SAME canonical form and digest as
+       supabase/functions/atlas-embed/core.js (catalogueHash), which recomputes it server-side */
+    function canonicalCatalogue(entries) {
+      var rows = entries.map(function (e) { return [String(e.id), String(e.text)]; });
+      rows.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+      return JSON.stringify(rows);
+    }
+    var _catP = null, _catDocs = null;
+    API.semanticCatalogue = function () {
+      if (_catP && _catDocs === runtime.docs) return _catP;
+      _catDocs = runtime.docs;
+      var entries = API.semanticDocs();
+      var subtle = null;
+      try { subtle = globalThis.crypto && globalThis.crypto.subtle; } catch (_) { subtle = null; }
+      if (!entries.length || !subtle) { _catP = Promise.resolve(null); return _catP; }
+      _catP = subtle.digest('SHA-256', new TextEncoder().encode(canonicalCatalogue(entries))).then(function (buf) {
+        var hex = Array.prototype.map.call(new Uint8Array(buf), function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join('');
+        return { hash: hex, entries: entries };
+      }, function () { return null; });
+      return _catP;
+    };
+
+    /* ── WHAT STANDS OUT. A cosine similarity is always SOME number, for every capability, so «the
+       nearest capability» exists for 「ありがとう」 too — and answering a thank-you with the nearest
+       capability is exactly the failure #R745 and #R802 ③ removed. A capability is SEMANTIC EVIDENCE
+       only when it stands out from this query's own similarities to the whole registry.
+       The rule: a robust z-score (median and MAD, so the relevant capabilities do not inflate the
+       spread they are measured against) above the level that, if NO capability were about the
+       request, would be exceeded by any of the n capabilities with probability SEMANTIC_ALPHA —
+       z* = Φ⁻¹(1 − α/n), a Bonferroni bound. With n = 144 live capabilities and α = 0.05, z* ≈ 3.39.
+       ⚠ THE NUMBERS (no-ad-hoc-hardcoding §4):
+         · SEMANTIC_ALPHA = 0.05 is a POLICY — how often an unrelated request may be handed one
+           spurious candidate — not a measurement.
+         · the normal approximation of the null distribution is an ESTIMATE: no production
+           similarities have been recorded yet (the Edge Function is new). Every fused result
+           carries `semantic.threshold` and each row its `z`, so the first production queries are
+           the measurement; the expiry is the first recorded 「ありがとう」 or 「現在地」 whose z
+           contradicts it.
+         · n is COUNTED from the answer, never written down. */
+    var SEMANTIC_ALPHA = 0.05;
+    /* Φ⁻¹ for the upper tail, Abramowitz & Stegun 26.2.23 (|error| < 4.5e-4) — z* is a threshold,
+       and a fourth decimal cannot move a capability across it in any way a reader would see. */
+    function upperQuantile(p) {
+      var t = Math.sqrt(-2 * Math.log(p));
+      return t - (2.515517 + 0.802853 * t + 0.010328 * t * t) / (1 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t);
+    }
+    function median(xs) {
+      var a = xs.slice().sort(function (x, y) { return x - y; }), m = a.length >> 1;
+      return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+    }
+    API.semanticCandidates = function (sims) {
+      var ids = Object.keys(sims || {}).filter(function (id) { var c = byId[id]; return c && !c.withdrawn && Number.isFinite(+sims[id]); });
+      var n = ids.length;
+      if (n < 2) return { rows: [], threshold: null, n: n };
+      var xs = ids.map(function (id) { return +sims[id]; });
+      var med = median(xs);
+      var scale = 1.4826 * median(xs.map(function (x) { return Math.abs(x - med); }));
+      if (!(scale > 0)) {   /* more than half the registry at one value: fall back to the standard deviation */
+        var mean = xs.reduce(function (s, x) { return s + x; }, 0) / n;
+        scale = Math.sqrt(xs.reduce(function (s, x) { return s + (x - mean) * (x - mean); }, 0) / n);
+      }
+      var zStar = upperQuantile(SEMANTIC_ALPHA / n);
+      if (!(scale > 0)) return { rows: [], threshold: zStar, n: n };   /* nothing stands out from anything */
+      var rows = ids.map(function (id) { var s = +sims[id]; return { id: id, similarity: s, z: (s - med) / scale }; })
+        .filter(function (r) { return r.z >= zStar; })
+        .sort(function (a, b) { return b.similarity - a.similarity; });
+      declareTies(rows, function (a, b) { return b.similarity - a.similarity; });
+      return { rows: rows, threshold: zStar, n: n };
+    };
+
+    /* ── THE FUSION. Reciprocal Rank Fusion (Cormack, Clarke & Büttcher, SIGIR 2009):
+       score = Σ 1 / (K + rank) over the rankings a row appears in, K = 60 as that paper sets it.
+       Ranks, not scores, because the two scales are not comparable (40 points for an alias against a
+       cosine of 0.43). Tied rows carry one rank, so a declared tie contributes equally.
+       Order: fused score, then the similarity (the meaning of the request), then the lexical keys;
+       whatever is still equal is a declared tie, as above. */
+    var RRF_K = 60;
+    API.fuse = function (lexical, semantic, opts) {
+      opts = opts || {};
+      var by = Object.create(null), out = [];
+      var row = function (id) {
+        if (!by[id]) { var c = byId[id]; by[id] = { id: id, category: c ? c.category : '', score: 0, self: 0, terms: 0, lexical: null, semantic: null }; out.push(by[id]); }
+        return by[id];
+      };
+      /* ⚠ THE LEXICAL RANK THAT ENTERS THE FUSION IS THE RANK BY EVIDENCE ABOUT THE CAPABILITY — `self`,
+         then `terms` — WITHOUT the category hint. #R802's rule, carried into the fusion: a hint gives
+         the same points to its whole category, so it cannot tell two capabilities apart, and letting
+         it open a rank gap would let it outvote the meaning half. MEASURED on the fake model of the
+         check (tests/r824 ①): with the hint in the rank, 「現在地」 — a `routing` hint word — put
+         routing.isochrone (lexical rank 1 by +8 of hint) above view.locate (semantic rank 1). The
+         hint still orders rows the fusion leaves equal (the comparator below). */
+      var evidence = function (a, b) { return b.self - a.self || (b.terms || 0) - (a.terms || 0); };
+      var lx = declareTies((lexical.ranked || []).map(function (r) { return { id: r.id, self: r.self, terms: r.terms || 0 }; }).sort(evidence), evidence);
+      var lxRank = Object.create(null);
+      lx.forEach(function (r) { lxRank[r.id] = r.rank; });
+      (lexical.ranked || []).forEach(function (r) {
+        var x = row(r.id);
+        x.lexical = { rank: r.rank, score: r.score, self: r.self, terms: r.terms || 0 };
+        x.self = r.self; x.terms = r.terms || 0;
+        x.score += 1 / (RRF_K + lxRank[r.id]);
+      });
+      (semantic.rows || []).forEach(function (r) {
+        var x = row(r.id);
+        x.semantic = { rank: r.rank, similarity: r.similarity, z: r.z };
+        x.score += 1 / (RRF_K + r.rank);
+      });
+      var sim = function (x) { return x.semantic ? x.semantic.similarity : -Infinity; };
+      var cmp = function (a, b) {
+        return (b.score - a.score) || (sim(b) - sim(a) || 0) || lexicalOrder(a.lexical || { self: 0, score: 0, terms: 0 }, b.lexical || { self: 0, score: 0, terms: 0 });
+      };
+      out.sort(cmp);
+      declareTies(out, cmp);
+      var min = opts.min == null ? 8 : opts.min;
+      /* strong: named by the request (the lexical rule above) OR standing out in meaning — both are
+         evidence about THAT capability, which is what «strong» has meant since #R802 */
+      var strong = out.filter(function (x) { return !!x.semantic || (x.lexical && x.lexical.score >= min && x.lexical.self > 0); });
+      return { ranked: out, strong: strong, confident: strong.length >= (opts.want || 3) };
+    };
+
+    /* ── THE DEFAULT TRANSPORT: the atlas-embed Edge Function, with the reader's own session.
+       A reason code comes back for everything that is not an answer, and the code is what the result
+       reports. The seed of an unknown catalogue runs in the background, ONCE per catalogue per page:
+       its outcome is kept (`semanticStatus`) and a failed seed is not re-sent on every search — the
+       searches report why instead (one-pass-or-a-reason §5: retry only when something differs). */
+    var _seed = { catalog: null, state: 'none', at: 0 };
+    API.semanticStatus = function () { return Object.assign({}, _seed); };
+    function httpTransport(q, cat, signal) {
+      var W = null; try { W = window; } catch (_) { W = null; }
+      var base = W && String(W.SUPABASE_URL || '').replace(/\/+$/, '');
+      if (!base) return Promise.resolve({ state: 'no_endpoint' });
+      var DB = null; try { DB = HOST && HOST.DB; } catch (_) { DB = null; }
+      if (!DB || !DB.auth || typeof DB.auth.getSession !== 'function') return Promise.resolve({ state: 'signed_out' });
+      return Promise.resolve(DB.auth.getSession()).then(function (res) {
+        var tok = res && res.data && res.data.session && res.data.session.access_token;
+        if (!tok) return { state: 'signed_out' };
+        var post = function (body, sig) {
+          return fetch(base + '/functions/v1/atlas-embed', {
+            method: 'POST', signal: sig,
+            headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok, apikey: String(W.SUPABASE_ANON_KEY || '') },
+            body: JSON.stringify(body),
+          }).then(function (r) {
+            return r.json().then(function (j) { return (j && j.state) ? j : { state: 'http_' + r.status }; },
+              function () { return { state: 'http_' + r.status }; });
+          });
+        };
+        return post({ op: 'search', catalog: cat.hash, q: q }, signal).then(function (j) {
+          if (j.state !== 'catalog_unknown') return j;
+          if (_seed.catalog === cat.hash) {
+            return { state: _seed.state === 'running' ? 'catalog_indexing' : ('catalog_seed_' + _seed.state) };
+          }
+          _seed = { catalog: cat.hash, state: 'running', at: Date.now() };
+          /* ⚠ THE SEED HAS ITS OWN DEADLINE, or a hung request would leave this page saying
+             `catalog_indexing` for ever. SEED_TIMEOUT_MS is an ESTIMATE: the function gives one
+             embeddings call 30 s (atlas-embed EMBED_TIMEOUT_MS) and today's catalogue is ONE batch
+             (≈122,000 characters against BATCH_CHARS 200,000), so 60 s is that call, the store and a
+             cold start. A seed that the page stopped waiting for may still have been stored — the
+             next search then simply finds the catalogue known. */
+          var sctl = null; try { sctl = new AbortController(); } catch (_) { sctl = null; }
+          var stimer = setTimeout(function () { try { sctl && sctl.abort(); } catch (_) { } }, SEED_TIMEOUT_MS);
+          post({ op: 'seed', catalog: cat.hash, entries: cat.entries }, sctl && sctl.signal).then(function (s) {
+            clearTimeout(stimer);
+            if (_seed.catalog === cat.hash) _seed = { catalog: cat.hash, state: s.state === 'ok' ? 'ok' : s.state, at: Date.now() };
+          }, function () {
+            clearTimeout(stimer);
+            if (_seed.catalog === cat.hash) _seed = { catalog: cat.hash, state: 'unreachable', at: Date.now() };
+          });
+          return { state: 'catalog_indexing' };
+        });
+      });
+    }
+
+    /* How long a search waits for the meaning half before answering from spellings. ESTIMATE, not a
+       measurement: an Edge Function answers a warm call in well under a second and a cold start in
+       a few; nothing has been recorded for this one yet. Every result carries `semantic.ms`, which
+       is the measurement; the expiry is a recorded production distribution. */
+    var SEMANTIC_TIMEOUT_MS = 8000;
+    var SEED_TIMEOUT_MS = 60000;   /* see the seed in httpTransport above */
+    API.searchFused = function (q, opts) {
+      opts = opts || {};
+      var lexical = API.search(q, opts);
+      var t0 = Date.now();
+      var lexicalOnly = function (reason) {
+        return Object.assign({}, lexical, { basis: 'lexical', semantic: { state: 'unavailable', reason: reason, ms: Date.now() - t0 } });
+      };
+      if (!norm(q)) return Promise.resolve(lexicalOnly('empty_query'));
+      var transport = runtime.semantic || httpTransport;
+      return API.semanticCatalogue().then(function (cat) {
+        if (!cat) return lexicalOnly(runtime.docs ? 'no_digest' : 'no_catalogue');
+        var ctl = null; try { ctl = new AbortController(); } catch (_) { ctl = null; }
+        var timer = null;
+        var timeout = new Promise(function (res) {
+          timer = setTimeout(function () { try { ctl && ctl.abort(); } catch (_) { } res({ state: 'timeout' }); }, opts.timeoutMs || SEMANTIC_TIMEOUT_MS);
+        });
+        return Promise.race([Promise.resolve().then(function () { return transport(String(q), cat, ctl && ctl.signal); }), timeout])
+          .then(function (ans) {
+            clearTimeout(timer);
+            if (!ans || ans.state !== 'ok' || !ans.sims) return lexicalOnly((ans && ans.state) || 'no_answer');
+            var sem = API.semanticCandidates(ans.sims);
+            var fused = API.fuse(lexical, sem, opts);
+            return Object.assign(fused, { basis: 'lexical+semantic',
+              semantic: { state: 'ok', model: ans.model || null, threshold: sem.threshold, compared: sem.n, candidates: sem.rows.length, ms: Date.now() - t0 } });
+          }, function () { clearTimeout(timer); return lexicalOnly('unreachable'); });
+      }, function () { return lexicalOnly('no_digest'); });
     };
 
     /* catalogText(ids) — the planner's catalogue. `null` means EVERY capability, which reproduces
