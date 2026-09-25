@@ -130,7 +130,7 @@ test('R722 ③ a provider switch does not inherit the AI_MODEL secret', () => {
 test('R722 ④ the fallback walks sol → terra → luna, and stops for a model the developer chose', () => {
   assert.match(PROXY, /const noFallbackForPick = !!devPick\?\.model;/);
   const call = PROXY.slice(PROXY.indexOf('out = await callOpenAI(model, key'));
-  assert.match(call.slice(0, 260), /imageDetail, noFallbackForPick, oaFormat\)/,
+  assert.match(call.slice(0, 260), /imageDetail, noFallbackForPick, oaFormat[,)]/,   /* (atlas-native-tools) the turn and its cache key follow it */
     'the call site still hard-codes false — a chosen model would be substituted in silence');
 
   /* ⚠ THE WALK IS BOUNDED BY POSITION, NOT BY A COUNTER. Each failure takes the model AFTER the one

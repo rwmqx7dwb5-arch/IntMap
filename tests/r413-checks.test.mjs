@@ -227,16 +227,16 @@ test('R413 ⑥: every camelCase spelling in the registry is reachable by the wor
   assert.ok(CAPS.score(CAPS.resolve('view.locate'), 'myLocation') >= 100, 'the verbatim identifier is an exact hit');
 });
 
-test('R413 ⑦: find_capability does not truncate, so a tie cannot be decided by the alphabet', () => {
+test('R413 ⑦: find_capability does not truncate, so a tie cannot be decided by the alphabet', async () => {
   for (const q of ['現在地から大阪駅までの経路', '경로 안내', 'itinéraire depuis ma position']) {
     const scored = CAPS.search(q, { want: 3, min: 1 }).ranked;
-    const returned = TOOLS.find(q).matches;
+    const returned = (await TOOLS.find(q)).matches;
     assert.equal(returned.length, scored.length, `${q}: every capability that scored is returned`);
     assert.ok(returned.some((m) => m.id === 'routing.route'),
       `${q}: routing.route is the capability that answers this and it was ninth of ten equal scores`);
   }
   /* and each match still arrives with the schema that makes it callable */
-  assert.ok(TOOLS.find('directions').matches.every((m) => m.schema && m.schema.type === 'object'));
+  assert.ok((await TOOLS.find('directions')).matches.every((m) => m.schema && m.schema.type === 'object'));
 });
 
 test('R413 ⑧: the reader\'s own position is a tool Atlas always has, wired to the capability that exists', () => {
@@ -263,7 +263,7 @@ test('R413 ⑧: the reader\'s own position is a tool Atlas always has, wired to 
    The standing instruction is 「制限を増やす方向、例外を増やす方向に持っていくな」. What can be
    checked mechanically is that the caps this round removed have not come back, and that the
    constitution still carries the rule that says so. */
-test('R413 ⑨: the caps this round removed have not come back', () => {
+test('R413 ⑨: the caps this round removed have not come back', async () => {
   const surface = code(rd('js/atlas-toolsurface.js'));
   assert.ok(!/var MAX_FIND\s*=/.test(surface), 'find_capability has no per-search result cap');
   assert.ok(!/var MAX_DOC\s*=/.test(surface), 'and no per-capability documentation cap');
@@ -277,8 +277,20 @@ test('R413 ⑨: the caps this round removed have not come back', () => {
     'only the headline and the article body are still clipped, and the comment above says why');
 
   const console_ = code(rd('js/atlas-console.js'));
-  assert.match(rd('js/atlas-console.js'), /steps\.push\('IntMap observed: '\+JSON\.stringify\(m\.content\)\)/,
-    'the mechanical record of what the tools did reaches Atlas unclipped');
+  /* ⚠ (atlas-native-tools) THE RECORD IS BUILT IN js/atlas-agent.js NOW, AND IT IS MEASURED BY RUNNING IT. The
+     old assertion read the spelling of one line of `_agentPrompt`; that line was unclipped and the
+     transport cut the whole string at 24,000 characters anyway. What this guards is the fact: a
+     result reaches Atlas whole, and one too large for an item is cut only WITH its size and the way
+     to read the rest — never silently. */
+  if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+  const A = (await import('../js/atlas-agent.js')).makeAtlasAgent();
+  const turnOf = (big) => ({ transcript: [{ role: 'user', content: 'q' },
+    { role: 'assistant', content: '', toolCalls: [{ id: 'c1', name: 'find_capability', arguments: { query: 'x' } }] },
+    { role: 'tool', content: [{ id: 'c1', ok: true, documentation: big }] }], request: 'q' });
+  const whole = A.composeInput(turnOf('w'.repeat(20000))).input.find((it) => it.type === 'function_call_output');
+  assert.ok(whole.output.indexOf('w'.repeat(20000)) >= 0, 'the mechanical record of what the tools did reaches Atlas unclipped');
+  const cut = A.composeInput(turnOf('z'.repeat(A.INPUT_BUDGET.item + 5000))).input.find((it) => it.type === 'function_call_output');
+  assert.match(cut.output, /read_result/, 'a result cut to fit says how to read the rest');
 
   const agent = code(rd('js/atlas-agent.js'));
   const steps = /maxSteps:\s*(\d+)/.exec(agent);

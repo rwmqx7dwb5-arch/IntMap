@@ -305,10 +305,20 @@ function plannerPromptSize() {
     controlCatalog: () => 'x'.repeat(3727),
     layerCatalogText: () => 'x'.repeat(3750),
     moduleCatalog: () => 'x'.repeat(1482),
+    Object, String,
   };
-  const stub = new Proxy(env, { has: () => true, get: (t, k) => (k === Symbol.unscopables ? undefined : (k in t ? t[k] : (typeof k === 'string' ? () => '' : undefined))) });
-  /* `new Function` bodies are sloppy-mode, so `with` is available even from this ES module. */
-  return new Function('__stub', 'with(__stub){ ' + lines.slice(s, e + 1).join('\n') + ' return SYS(); }')(stub).length;
+  /* ⚠ (atlas-native-tools) SYS() HAS TWO FORMS NOW, and the bound must hold for the LARGER. By default the tools
+     travel as the provider's functions and are not pasted into the system text; the one-string
+     envelope an older ai-proxy still speaks (`_aiProto === 'legacy'`) pastes them, as before. Both
+     are measured, so this check does not start passing merely because the default form shrank. */
+  const size = (proto) => {
+    const stub = new Proxy(Object.assign({}, env, { _aiProto: proto }), { has: () => true, get: (t, k) => (k === Symbol.unscopables ? undefined : (k in t ? t[k] : (typeof k === 'string' ? () => '' : undefined))) });
+    /* `new Function` bodies are sloppy-mode, so `with` is available even from this ES module. */
+    return new Function('__stub', 'with(__stub){ ' + lines.slice(s, e + 1).join('\n') + ' return SYS(); }')(stub).length;
+  };
+  const native = size(''), legacy = size('legacy');
+  assert.ok(legacy > native, 'the legacy form no longer carries the tool block — the two forms were meant to differ by exactly it');
+  return Math.max(native, legacy);
 }
 
 test('R285 (8) ai-proxy admits the whole planner prompt, with room to grow', () => {
