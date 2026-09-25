@@ -39,16 +39,25 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) the rows and their tick are the manifest's */
+import { publishedList } from './helpers/layer-groups.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 
-/* the ids window.IntMapDefaultOn names directly (its `.concat(IntMapDefaultLayers)` half is
-   thematic — dl-* rows that no markup ships checked, so they are not part of this comparison) */
-function declaredDefaultOn(dl) {
-  const m = /window\.IntMapDefaultOn=\[([^\]]*)\]/.exec(dl);
-  assert.ok(m, 'window.IntMapDefaultOn is declared as a literal array');
-  return m[1].split(',').map((x) => x.trim().replace(/'/g, '')).filter(Boolean);
+/* ⚠ (layer-manifest) THE TWO EDITS ARE ONE FIELD NOW. index.html's rows are written from js/layer-manifest.js
+   (js/layer-rows.js), and window.IntMapDefaultOn is published from the same manifest — the `on` of a
+   row both ticks the generated box and names the id. Both sides below are still DERIVED from what
+   ships (the generated markup, the published list), so the loops keep proving the equality rather than
+   assuming it: a future change that ticks a box some other way still turns them red. */
+const shippedMarkup = () => LM.htmlRows().map((l) => LM.rowHTML(l)).join('\n');
+
+/* the ids window.IntMapDefaultOn names for the markup rows (its thematic half — dl-* rows that no
+   markup ships checked — is not part of this comparison) */
+function declaredDefaultOn() {
+  const all = publishedList('IntMapDefaultOn');
+  const thematic = publishedList('IntMapDefaultLayers');
+  return all.filter((id) => thematic.indexOf(id) < 0);
 }
 
 /* every base-display checkbox the markup ships, and whether it carries `checked` */
@@ -60,8 +69,8 @@ function shippedCheckboxes(html) {
 
 /* ── ① THE TICK AND THE LIST AGREE, IN BOTH DIRECTIONS ────────────────────────────────────────── */
 test('R476 ① every cb-* that ships checked is in IntMapDefaultOn, and vice versa', () => {
-  const declared = declaredDefaultOn(read('js/data-layers.js'));
-  const shipped = shippedCheckboxes(read('index.html'));
+  const declared = declaredDefaultOn();
+  const shipped = shippedCheckboxes(shippedMarkup());
 
   assert.ok(shipped.size >= 10, `index.html should ship the base-display rows, found ${shipped.size}`);
   /* ⚠ (#R719) THIS FLOOR IS A «THE REGEX MATCHED SOMETHING» GUARD, NOT A POLICY. It was written as
@@ -95,15 +104,15 @@ test('R476 ① every cb-* that ships checked is in IntMapDefaultOn, and vice ver
    itself is untouched: it stays in 基本表示, keeps its handler, its legend and its session entry. */
 test('R476 ② cb-coast ships off, on both sides, and stays inside 基本表示', () => {
   const dl = read('js/data-layers.js');
-  const html = read('index.html');
+  const html = shippedMarkup();
 
   assert.match(html, /<input type="checkbox" id="cb-coast">/, 'the row ships unchecked');
-  assert.ok(!declaredDefaultOn(dl).includes('cb-coast'), 'and the id is NOT in window.IntMapDefaultOn');
+  assert.ok(!declaredDefaultOn().includes('cb-coast'), 'and the id is NOT in window.IntMapDefaultOn');
 
   /* ⚠ it must NOT start being counted as an overlay. js/data-layers.js's chip counter and
      js/widget-core.js's 「N layers on」 card both skip window.IntMapBasicLayers (#R309/#R233), and
      cb-coast has been a member since #R289 — being default-on must not move it out. */
-  assert.match(dl, /window\.IntMapBasicLayerRows=\[[^\]]*'cb-coast'/,
+  assert.ok(publishedList('IntMapBasicLayerRows').includes('cb-coast'),
     'cb-coast stays in the 基本表示 membership, so switching it on adds no chip and no FAB accent');
   assert.match(dl, /const skip=new Set\(window\.IntMapBasicLayers\);/,
     'and the chip counter still derives its skip set from that one list');

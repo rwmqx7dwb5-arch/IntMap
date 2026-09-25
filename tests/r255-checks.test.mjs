@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { byKey } from './helpers/layer-groups.mjs';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) which layers exist, and their facts */
 
 const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 /* comments carry the reasoning and quote the very strings under test — strip them first */
@@ -209,8 +210,10 @@ test('#R255 ⑧ four new categories exist, are filled, and are named in all nine
   /* the four surveyed-facility layers are the point layers those categories were asked for */
   ['osmdiplo', 'osmmil', 'osmhealth', 'osmtelecom'].forEach((i) =>
     assert.ok(seen.has(i), `${i} is not filed in any category`));
-  /* rowFor must know the prefix those rows are created with, or they fall to the beta sweep */
-  assert.match(dl, /getElementById\('fac-dl-'\+id\)/, "rowFor does not know the 'fac-dl-' prefix");
+  /* rowFor must find the rows those categories name, or they fall to the beta sweep.
+     (layer-manifest) it resolves through the checkbox id js/layer-manifest.js declares, not through a prefix table */
+  ['osmdiplo', 'osmmil', 'osmhealth', 'osmtelecom'].forEach((i) =>
+    assert.ok(LM.layerFor(i) && /^fac-dl-/.test(LM.layerFor(i).id), "rowFor does not resolve '" + i + "' to its fac-dl- row"));
 
   for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hans', 'zh']) {
     const s = read('js/locales/ui.' + c + '.js');

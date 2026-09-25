@@ -30,6 +30,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GROUPS, named as namedOf, rest as restOf, publishedList } from './helpers/layer-groups.mjs';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) the registry's facts */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -79,7 +80,7 @@ const listOf = publishedList;
 
 /* ══════════════════ ① 🕒 タイムゾーンは普通のレイヤーになった ══════════════════════════════ */
 test('① the time-zone overlay is a layer of a category, and is counted as one', () => {
-  const basics = balanced(DLC, 'window.IntMapBasicLayers=', '[', ']');
+  const basics = listOf('IntMapBasicLayers').join(',');   /* (layer-manifest) the manifest's `base` shelf, as published */
   assert.ok(!/dl-tz/.test(basics),
     'dl-tz has left window.IntMapBasicLayers — that list is what every counter SUBTRACTS, so a row ' +
     'still named there is a layer that 「表示中のレイヤー」 refuses to count');
@@ -131,9 +132,11 @@ test('③ a hidden row keeps its checkbox, and every sweep is told about it', ()
     'the two rows the panel stops drawing while the layers go on working');
   /* the checkbox itself must SURVIVE — Atlas's countryInfo action, _wsCountryInfo and the session
      snapshot all resolve it by id, and 「レイヤー行だけ隠す」 is what the reader narrowed ③ to */
-  assert.ok(/id="cb-countries"/.test(read('index.html')), 'cb-countries is still in the registry');
+  /* (layer-manifest) the registry's own rows are written from js/layer-manifest.js (they were index.html markup) */
+  const cc = LM.LAYERS.find((l) => l.id === 'cb-countries');
+  assert.ok(cc && cc.html && /id="cb-countries"/.test(LM.rowHTML(cc)), 'cb-countries is still in the registry');
   assert.ok(/'countryInfo'/.test(code('js/atlas-console.js')), "…and Atlas's door to it still exists");
-  assert.ok(!/'cb-countries'/.test(balanced(DLC, 'window.IntMapBasicLayerRows=', '[', ']')),
+  assert.ok(!listOf('IntMapBasicLayerRows').includes('cb-countries'),
     'but it is no longer part of 基本表示');
   /* ⚠ EVERY SWEEP THAT FILES ROWS. `order.push` MOVES an element, so a row nobody claims lands in
      Beta — MEASURED in #R271, when 🕒 タイムゾーン came out exactly there. */
@@ -187,7 +190,7 @@ test('⑥ the two promoted rows are in their new category, past its named rows',
   assert.ok(pop && pop[0] === 'lyrGrpDemo', '人口密度（国別） is a population row now');
   assert.ok(rest(pop).indexOf('pop') >= 0, '…in 「その他」, as the reader wrote');
   /* and they must have LEFT the beta list, or the safety sweep never sees them */
-  const others = balanced(DLC, 'const OTHERS_IDS=', '[', ']');
+  const others = LM.betaKeys().join(',');   /* (layer-manifest) the Beta list is the manifest's, as reorganizeLayerPanel reads it */
   assert.ok(!/ec-cape/.test(others), 'ec-cape is no longer routed to Beta by name');
 });
 

@@ -17,7 +17,8 @@
  *  Every factory is called at the exact spot its block used to occupy, so execution order is
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-import { everyTick, stopTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { everyTick, stopTick, tickKey } from './runtime.js';
+import { sharedIds, LAYERS, BASE, HIDDEN, BETA } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
 
 window.IntMapModules=window.IntMapModules||{};
 /* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
@@ -1045,27 +1046,36 @@ window.IntMapModules.layerSidebar=function(HOST){
     _wireFrontMost();
     /* ---- (#R70) tile-grid builder: the classic dropdown is the data source, never the UI ---- */
     function rowsFromDropdown(){ const dd=document.getElementById('layer-dropdown'); const out=[]; if(!dd) return out;
-      let sec='', secBeta=false;   /* (#R101) track the beta section by data-i18n, not translated text */
+      /* ══ (layer-manifest) THE ROWS ARE LISTED BY THE MANIFEST, NOT FOUND BY WALKING THE REGISTRY ═════════════
+         This walked `#layer-dropdown` child by child and learned three things from the DOM: which rows
+         exist, which heading each is under, and their order. All three are js/layer-manifest.js now (the
+         order reorganizeLayerPanel files them in IS the manifest's), so the walk is a loop over the
+         manifest. What is still read off the row is what only the row knows: the checkbox (its state)
+         and the name a module composes for it. A row the manifest does not declare still gets a tile,
+         under Beta — where reorganizeLayerPanel's safety sweep files it — and the spec fails for it. */
       const skipIn=el=>el.closest&&(el.closest('#layer-active-section')||el.closest('#layer-fav-section')||el.closest('#layer-search-wrap')||el.closest('#layer-tools'));
-      const walk=(el)=>{ for(const ch of el.children){ if(skipIn(ch)) continue;
-        if(ch.classList&&(ch.classList.contains('lyr-head')||ch.classList.contains('lyr-section-label'))){ const t2=(ch.textContent||'').replace(/\s+/g,' ').trim(); if(t2){ sec=t2; secBeta=(ch.getAttribute&&ch.getAttribute('data-i18n')==='lyrGrpOthers'); } continue; }
-        if(ch.matches&&ch.matches('label')){ const cb=ch.querySelector('input[type=checkbox]');
-          if(cb){ const sp=ch.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)');
-            const name=((sp?sp.textContent:ch.textContent)||'').replace(/★/g,'').replace(/\s+/g,' ').trim();
-            const id=cb.id||cb.getAttribute('data-layer')||'';
-            /* ⚠ (#R469) a row whose checkbox is in `IntMapHiddenLayerRows` is NOT a row of this browser.
-               The box stays in the registry so the layer, its legend, the session snapshot and Atlas's
-               door to it all keep working — it simply has no tile. 国境・国情報 (the reader asked for the
-               row) and 等高線 (now a switch inside three legends) are the two. */
-            const hidden=(window.IntMapHiddenLayerRows||[]).indexOf(id)>=0;
-            /* (#R469) 「以下に指定されたレイヤー以外は、『その他N件』と、各カテゴリの中で畳む」 — the mark is
-               written onto the ROW by reorganizeLayerPanel, which is where the reader's order lives. */
-            const rowEl=(ch.closest&&ch.closest('.lyr-row'))||ch;
-            const rest=!!(rowEl.getAttribute&&rowEl.getAttribute('data-lyr-rest')==='1');
-            if(name&&id&&!hidden) out.push({cb,id,name,sec,secBeta,rest,gk:cb.getAttribute('data-layer')||''}); }
-          continue; }
-        if(ch.children&&ch.children.length) walk(ch); } };
-      walk(dd); return out; }
+      const secOf=(key)=>{ if(key===BASE) return '';   /* the always-on block has no heading above it */
+        const h=dd.querySelector(':scope > .lyr-head[data-i18n="'+key+'"]'); if(h) return (h.textContent||'').replace(/\s+/g,' ').trim();
+        try{ const T=window.IntMapI18N||{}; return ((T[HOST.lang]&&T[HOST.lang][key])||(T.en&&T.en[key])||key); }catch(_){ return key; } };
+      const hiddenIds=(window.IntMapHiddenLayerRows||[]);
+      const push=(cb,sec,secBeta,rest)=>{ const ch=cb.closest('label'); if(!ch||skipIn(ch)) return;
+        const sp=ch.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)');
+        const name=((sp?sp.textContent:ch.textContent)||'').replace(/★/g,'').replace(/\s+/g,' ').trim();
+        const id=cb.id||cb.getAttribute('data-layer')||'';
+        /* ⚠ (#R469) a row whose checkbox is in `IntMapHiddenLayerRows` is NOT a row of this browser.
+           The box stays in the registry so the layer, its legend, the session snapshot and Atlas's
+           door to it all keep working — it simply has no tile. 国境・国情報 (the reader asked for the
+           row) and 等高線 (now a switch inside three legends) are the two. */
+        const hidden=hiddenIds.indexOf(id)>=0;
+        /* (#R469) 「以下に指定されたレイヤー以外は、『その他N件』と、各カテゴリの中で畳む」 — the mark is
+           written onto the ROW by reorganizeLayerPanel, which is where the reader's order lives. */
+        if(name&&id&&!hidden) out.push({cb,id,name,sec,secBeta,rest,gk:cb.getAttribute('data-layer')||''}); };
+      const seen=new Set();
+      LAYERS.forEach(l=>{ if(l.shelf===HIDDEN) return; const cb=document.getElementById(l.id); if(!cb||!dd.contains(cb)) return;
+        seen.add(cb); push(cb,secOf(l.shelf),l.shelf===BETA,!!l.rest); });
+      dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(seen.has(cb)) return; const r=cb.closest('.lyr-row')||cb.closest('label');
+        if(r&&r.querySelector('input[type=checkbox]')===cb) push(cb,secOf(BETA),true,false); });
+      return out; }
     /* (#R309) `asRow` — the "Base map & labels" shape: a full-width switch row with no thumbnail.
        Same element, same dataset, same click path; only the children and the class differ. */
     function tileFor(r,asRow){ const d=document.createElement('div'); d.className='lst-tile'+(asRow?' lst-row':'')+(r.cb.checked?' on':''); d.dataset.lid=r.id; d.dataset.nm=r.name.toLowerCase();
@@ -3613,7 +3623,11 @@ window.IntMapModules.viewHash=function(HOST){
     function activeLayers(){ const ids=new Set(); try{
       /* (#R40) capture EVERY data-layer checkbox convention so the share link carries ALL selected layers
          (previously only dl-* / geo-layer-cb → GIBS gx-*, eco-dl-*, round-9 l9-dl-*, beta-dl-* were lost). */
-      document.querySelectorAll('input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.add(k); });
+      /* (layer-manifest) …and "every convention" was a selector of nine id prefixes, i.e. a list of families that
+         the next family would not be on. Which layers the link carries is the manifest's `share` now —
+         the same rows that selector matched on the day it was replaced (scripts/layer-manifest-extract.mjs
+         read them off the document), one field per layer instead of one prefix per family. */
+      sharedIds().forEach(id=>{ const cb=document.getElementById(id); if(cb&&cb.checked) ids.add(id); });
     }catch(_){} return Array.from(ids); }
     function encode(){ try{ const c=GE().camera.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),GE().camera.getZoom().toFixed(2),Math.round(GE().camera.getBearing()),Math.round(GE().camera.getPitch()),(HOST.proj==='globe'?'g':'f')].join(',');
       const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(',');
@@ -3686,7 +3700,6 @@ window.IntMapModules.viewHash=function(HOST){
           if(!wantSet.has('dl-ec-slp')){ wantSet.add('dl-ec-slp'); want.push('dl-ec-slp'); }
           const i=want.indexOf('dl-ec-isobars'); if(i>=0) want.splice(i,1);
           [900,2000,3400].forEach(ms=>setTimeout(()=>{ try{ window._imWxIsobars&&window._imWxIsobars(true); }catch(_){} },ms)); }
-        const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
         const apply=()=>{
           /* ⚠ (#R225) A RETIRED KEY MUST STOP BEING READ, NOT MERELY STOP BEING WRITTEN. `activeLayers()` no
              longer WRITES `.geo-layer-cb` keys into the hash, but a link (or an address bar) saved months
@@ -3696,7 +3709,8 @@ window.IntMapModules.viewHash=function(HOST){
           want.forEach(k=>{ const cb=document.getElementById(k); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
           /* turn OFF any data layer NOT in the link so the shared state is reproduced EXACTLY (matters when a
              link is pasted into a tab that already had layers on). Base toggles (names/borders/…) are untouched. */
-          document.querySelectorAll(DATASEL).forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
+          /* (layer-manifest) «any data layer» is the manifest's `share` set — the same rows the link can carry */
+          sharedIds().forEach(k=>{ const cb=document.getElementById(k); if(cb && cb.checked && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
         };
         [700,1800,3200].forEach(ms=>setTimeout(apply,ms));
         /* (#R101) restore time-travel via the kernel (mode-independent). `tt`=ISO instant; keep `ts` (old day-based

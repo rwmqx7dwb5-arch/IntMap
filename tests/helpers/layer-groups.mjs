@@ -16,37 +16,32 @@
  *  A regex over a literal is a check on SPELLING. This module evaluates the
  *  literal instead, so a check can ask what the taxonomy CONTAINS. The array is
  *  plain data — no identifiers, no calls — so evaluating it is reading it.
+ *
+ *  ⚠ (layer-manifest) THE LITERAL IS GONE: the taxonomy is js/layer-manifest.js, and
+ *  js/data-layers.js reads it as `GROUPS=layerGroups()`. This helper now IMPORTS
+ *  the manifest — the same value the app files its rows by — and every export
+ *  below keeps its shape, so the checks that ask through it did not change.
  * ==========================================================================*/
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as M from '../../js/layer-manifest.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-
-/* the brace-balanced literal, so the parse does not depend on where the author
-   put the newlines or how many elements a tuple has */
-function literal(src, needle, open, close) {
-  const start = src.indexOf(needle);
-  if (start < 0) throw new Error('js/data-layers.js no longer declares ' + needle);
-  const from = src.indexOf(open, start);
-  let depth = 0;
-  for (let i = from; i < src.length; i++) {
-    if (src[i] === open) depth++;
-    else if (src[i] === close) { depth--; if (!depth) return src.slice(from, i + 1); }
-  }
-  throw new Error('unbalanced ' + open + ' after ' + needle);
-}
 
 const SRC = readFileSync(resolve(ROOT, 'js/data-layers.js'), 'utf8')
   /* the comments in this file QUOTE ids that were moved or deleted, so they have to go before the
      literal is read — otherwise a shelf's history counts as its contents */
   .replace(/\/\*[\s\S]*?\*\//g, ' ');
 
-/** every shelf, in panel order: `[key, ids, namedCount]` */
-export const GROUPS = (0, eval)('(' + literal(SRC, 'const GROUPS=', '[', ']') + ')');
+/** every shelf, in panel order: `[key, ids, namedCount]` — the manifest's view, which is what
+    reorganizeLayerPanel reads (the check below makes sure it still does) */
+if (!SRC.includes('const GROUPS=layerGroups();')) throw new Error('js/data-layers.js no longer files its rows by the manifest (const GROUPS=layerGroups();)');
+export const GROUPS = M.layerGroups();
 
 /** the ids explicitly routed to Beta before the safety sweep runs */
-export const OTHERS_IDS = (0, eval)('(' + literal(SRC, 'const OTHERS_IDS=', '[', ']') + ')');
+if (!SRC.includes('const OTHERS_IDS=betaKeys();')) throw new Error('js/data-layers.js no longer routes Beta by the manifest (const OTHERS_IDS=betaKeys();)');
+export const OTHERS_IDS = M.betaKeys();
 
 /* ⚠ (#R478) THE HEADING AN UNLISTED ROW LANDS UNDER — and it is NOT one of the shelves above.
    「その他 (beta)」 is not in `GROUPS`; `reorganizeLayerPanel`'s safety sweep builds it for every
@@ -81,5 +76,14 @@ export const rest = (key) => {
   return g[1].slice(g[2] == null ? g[1].length : g[2]);
 };
 
-/** a `window.<name>=[…]` list from the same file, evaluated the same way */
-export const publishedList = (name) => (0, eval)('(' + literal(SRC, 'window.' + name + '=', '[', ']') + ')');
+/** a `window.<name>` list js/data-layers.js publishes. ⚠ (layer-manifest) they were literals and are derived from
+    the manifest now (`window.IntMapHiddenLayerRows=hiddenRows();`); the value is the manifest function's,
+    and the file must still be publishing it from that function. */
+const PUBLISHED = { IntMapDefaultLayers: 'defaultLayers', IntMapDefaultOn: 'defaultOn', IntMapBasicLayerRows: 'basicRows',
+  IntMapBasicLayers: 'basicLayers', IntMapHiddenLayerRows: 'hiddenRows' };
+export const publishedList = (name) => {
+  const fn = PUBLISHED[name];
+  if (!fn) throw new Error('no manifest view is known for window.' + name);
+  if (!SRC.includes('window.' + name + '=' + fn + '();')) throw new Error('js/data-layers.js no longer publishes window.' + name + ' from the manifest function ' + fn + '()');
+  return M[fn]();
+};

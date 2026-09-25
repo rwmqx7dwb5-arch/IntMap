@@ -33,6 +33,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { byKey } from './helpers/layer-groups.mjs';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) which layers exist, and their facts */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -194,7 +195,8 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
        clearer name and the better ramp, so the QUANTITY is still on a shelf; it is the second
        copy that left. The check below proves the merge rather than the removal. */
     'wbdensity','wbedu','wbagremp'];
-  const groups = dl.slice(dl.indexOf('const GROUPS=['), dl.indexOf("const OTHERS_IDS="));
+  /* (layer-manifest) the taxonomy is js/layer-manifest.js — asked as a value through the shared reader */
+  const groups = Object.values(byKey).flat().map((k) => "'" + k + "'").join(',');
   R254_OTHERS.forEach(k => assert.ok(groups.includes("'" + k + "'"),
     k + ' left Others and is on NO shelf — #R254 listed it and nothing may be lost'));
   const wb = read('js/wb-layers.js');
@@ -236,7 +238,8 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   assert.equal(energyShelf.length, 1, 'the energy-mix row must be on exactly one shelf');
   assert.ok(!/Others|Beta/i.test(energyShelf[0]),
     'the energy-mix row is not promoted out of Beta — it is on ' + energyShelf[0]);
-  assert.match(dl, /getElementById\('wp-dl-'\+id\)/, 'rowFor cannot find a world-packs row, so the promotion resolves to nothing');
+  /* (layer-manifest) rowFor resolves a short name through the checkbox id the manifest names (no prefix table) */
+  assert.ok(/^wp-dl-/.test(LM.layerFor('energy').id), 'rowFor cannot find a world-packs row, so the promotion resolves to nothing');
 
   /* every language says «beta» without «others», and every language has the new group */
   const LOCALES = ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans'];

@@ -667,23 +667,43 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 呼ばない。携帯では同じタイル盤が「Map & layers」シートに載る。**「どちらのレイヤー欄を使うか」という
 設定は無い。**
 
-⚠ **`#layer-dropdown` という要素は残っていて、それは UI ではなくレジストリである。**
-このアプリのレイヤーの**チェックボックスは全部この要素の中にいる**——右サイドバーのタイルは
-`rowsFromDropdown()` がこの要素を歩いて組み立てるし、レイヤープリセット・Atlas のレイヤーカタログ・
-不具合報告・共有リンクも同じ要素を数える。だから要素は残り、**常時 `display:none`**（表示させる
-`.show` クラスは存在しない）。**新しいレイヤーの行はこれまでどおりここに追加する。**
+⚠⚠ **どのレイヤーが在るかの正本は `js/layer-manifest.js` である（DOM ではない）。**
+`#layer-dropdown` の**全チェックボックス**（174 個）を、パネルが見せる順に、パネルが載せる棚の上で宣言する
+純データ（DOM も `window` も持たない）。1 行 1 レイヤーで、欄は次のとおり:
 
-`js/data-layers.js` の `GROUPS` が **18 の棚に 140 行**を配る。`GROUPS` に無い行は末尾の
-**「Others」**と**「ベータ」**へ自動的に掃かれる（ベータは削除ではなく1段下の棚）。
+| 欄 | 意味 |
+|---|---|
+| `id` | チェックボックスの id（セッション・共有リンク・お気に入り・Atlas が持つ鍵） |
+| `key` | 棚の並べ替えが使う短い名前（`climate`・`wbgini`・`nightside` …）。無い行もある |
+| `label` | 名前の i18n キー（行が `data-i18n` で名乗るとき）。**136 行は行を作るモジュールが名前を組み立てるので無い** |
+| `rest` | 棚の中の「その他N件」に畳む（#R469） |
+| `on` | 初回訪問者に ON（`window.IntMapDefaultOn` はここから導く） |
+| `share` | 共有リンクの `&l=` が運ぶ |
+| `html` | 行そのものを manifest が書く（`js/layer-rows.js`。以前は `index.html` の markup） |
+| `lazy` | その行を ON にすると読まれる遅延モジュール（`js/lazy-modules.js` の `LAZY_REGISTRY`） |
 
-**各要素は `[キー, id の配列, 名指しされた件数]` の3つ組である。**
-id の配列は**利用者が挙げた順**で、先頭の「名指しされた件数」本だけがカテゴリを開いたときに並ぶ。
-残りは**カテゴリの中の「その他N件」**の後ろに畳まれる（実測 **名指し 56 行 / 畳み 84 行**）。
-3つ目を省くと全件が名指し扱いになる。
+棚は `SHELVES` の並び＝パネルの並びで、`base`（常設スイッチ）・18 の `lyrGrp*`・`lyrGrpOthers`（ベータ）・
+`hidden`（行を持たない箱）。**この一覧を読む側**: `reorganizeLayerPanel`（`GROUPS=layerGroups()`・
+`OTHERS_IDS=betaKeys()`・`rowFor` は manifest の id で引く）、`js/data-layers.js` 先頭の 5 つの
+`window.IntMap*` 一覧、タイル盤（`rowsFromDropdown()`）、共有リンク（`sharedIds()`）、お気に入り、
+セッション復元（`whenBoxes`）。Atlas が DOM を数えずに一覧を得る入口は `catalog()`
+（`[{ id, key, shelf, label, rest, on, share, lazy }]`。名前は `label` の i18n か、行が組み立てた名前）。
+⚠ Atlas の `layerCatalog()`（`js/atlas-console.js`）はまだ DOM を歩いている——作り替えは Atlas 側の回。
 
-⚠ **その数はカテゴリの並び順と同じ場所に置く。** どのレイヤーを最初に見せるかは利用者が決めたことで、
-順序と不可分だから同じ行に書く。描画側（`js/map-ui.js` の `buildTiles`）はこの配列を読まない——
-`reorganizeLayerPanel` が畳む行に `data-lyr-rest="1"` を書き、`rowsFromDropdown()` がそれを運ぶ。
+`#layer-dropdown` という要素は残っていて、それは UI ではなくレジストリである——行を作るのは今も各モジュールの
+`buildUI()` で（ハンドラ・凡例・スライダーを持つのは行の持ち主）、**状態**（チェック）は今もその箱にある。
+**常時 `display:none`**（表示させる `.show` クラスは存在しない）。
+**新しいレイヤーは、manifest に 1 行足し、行をこれまでどおりここに追加する。** manifest に無い行も
+ベータへ掃かれて描かれるが、`tests/layer-manifest.spec.js` が落ちる——manifest を読む全員がその行を知らない。
+
+**`layerGroups()` の各要素は `[キー, 短い名前の配列, 名指しされた件数]` の3つ組**（旧 `GROUPS` と同じ形）。
+棚の中の並びは**利用者が挙げた順**で、`rest` の無い先頭の行だけがカテゴリを開いたときに並ぶ。
+残りは**カテゴリの中の「その他N件」**の後ろに畳まれる（実測 **名指し 56 行 / 畳み 94 行**——18 の棚に 150 行）。
+畳む行は棚の**末尾に連続**していなければならない（件数で言えるように。`tests/layer-manifest-checks` ①）。
+
+⚠ **その印はカテゴリの並び順と同じ場所に置く。** どのレイヤーを最初に見せるかは利用者が決めたことで、
+順序と不可分だから同じ行に書く。描画側（`js/map-ui.js` の `buildTiles`）は manifest の `rest` を
+`rowsFromDropdown()` 経由で受け取る。`reorganizeLayerPanel` は同じ印を行に `data-lyr-rest="1"` として書く。
 ⚠ **ベータには畳みを適用しない。** 利用者のカテゴリ一覧にベータは無く、適用すると全行が
 「その他N件」の中に隠れて見出しの下が1行になる。掃き出しは印を**明示的に消す**
 （この関数は冪等なので、棚から出た行が古い印を持ち込みうる）。
@@ -721,7 +741,8 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
 - **基本表示カテゴリ（`Base map & labels`）は「地図をどう描くか」の常設スイッチであって、レイヤーではない。**
   中身は **11 行**——地名・水と地形のラベル・施設名・国境・**海岸線**・州県境・道路・鉄道・グリッドの
   9 個の `cb-*` に、**昼夜の表示**（`dl-nightside`）・**3D 建物**（`beta-dl-bldg3d`）が加わる。
-  ⚠ **その一覧の正本は `window.IntMapBasicLayers` ただ1つ**（`js/data-layers.js` の先頭で宣言）。
+  ⚠ **その一覧の正本は `window.IntMapBasicLayers` ただ1つ**（`js/data-layers.js` の先頭で、manifest の
+  `base` 棚から導く——`basicLayers()`）。
   「レイヤーが何個オンか」を数えるものは**全部これを引く**——`_refreshActiveLayers()` の `skip`
   （＝パネル上部の `Active layers (N)`）、`window._imActiveLayerCount`（携帯 FAB の着色）、
   `IntMapWidgetCore.activeLayers()`（ウィジェットの `N layers on` と**おすすめレイヤーのルーレット**）。
@@ -748,7 +769,7 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   - ⚠ **降格の判定は落ち着いた状態に対して行う（400 ms のデバウンス）。** 復元は change イベントの
     **列**であって、その途中の状態は利用者が選んだ状態ではない。デバウンスが無いと毎回の読み込みが
     半分適用されたセッションを見て「カスタム」と判定する。
-- ⚠⚠ **レジストリに在って、パネルが描かない行がある。** `window.IntMapHiddenLayerRows` がその一覧で、
+- ⚠⚠ **レジストリに在って、パネルが描かない行がある。** `window.IntMapHiddenLayerRows`（manifest の `hidden` 棚）がその一覧で、
   今は **`cb-countries`（国境・国情報）と `dl-contours`（等高線）** の 2 つ。
   チェックボックスは `#layer-dropdown` に残るので、レイヤー本体・ハンドラ・凡例・不透明度・
   セッションの保存/復元・Atlas の入口は**1バイトも変わらない**。無くなるのは行だけ。
@@ -801,9 +822,9 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   ——1つの幾何なので1レイヤーが両方に答える。`swimming_pool` は除く。
   ⚠ **タイルの継ぎ目は出ない**（実タイル復号：切断は extent 4096 に対し −64 / +4160 ＝バッファ内で、
   タイル境界に乗る線分は 0。MapLibre のステンシルがバッファを捨てる）。
-  ⚠ **既定は OFF**（#R719「Coastlines & shoresはdefault base map & labelsから除外」。#R476 の「デフォルトでオンにして」を読み手自身が戻したもので、**行そのものは 基本表示 に残る**——ハンドラ・凡例・セッション記録・風レイヤーの1回提案はどれも変わらない）。⚠⚠ **既定は2か所で
-  1つの編集**——`index.html` の `checked` と `window.IntMapDefaultOn`（`js/data-layers.js`）の両方が要る。
-  片方だけだと**両方向とも無症状で壊れる**: `checked` だけなら線は出るが `IntMapBaseDisplay.matches()` が
+  ⚠ **既定は OFF**（#R719「Coastlines & shoresはdefault base map & labelsから除外」。#R476 の「デフォルトでオンにして」を読み手自身が戻したもので、**行そのものは 基本表示 に残る**——ハンドラ・凡例・セッション記録・風レイヤーの1回提案はどれも変わらない）。⚠⚠ **既定は1つの欄**——manifest の
+  `on` が、生成される箱の `checked` と `window.IntMapDefaultOn` の両方を決める（layer-manifest までは `index.html` の
+  `checked` と `js/data-layers.js` の一覧の2か所で1つの編集だった）。片方だけだと**両方向とも無症状で壊れた**: `checked` だけなら線は出るが `IntMapBaseDisplay.matches()` が
   食い違い**起動 400 ms 後に基本表示が毎回「カスタム」へ降格**し、id だけなら boot dispatcher が
   点いていない箱に `change` を投げないので**何も描かれない**（#R34）。`tests/r476-checks` ① が
   **両方向を導出して**照合する（#R225 ⑤ はリスト→markup の一方向しか歩いていなかった）。
@@ -832,7 +853,9 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   `js/data-layers.js` の `BASE` の**両方を解析**して照合、写しを持たない）、
   `tests/smoke.spec.js` ㉑（**最上段に層を1枚足して自己修復を実際に走らせる**）、
   `tests/prod-smoke.spec.js`（**本番の実ラスタの上に本当に載っているか**）。
-- **行 id の接頭辞**は `rowFor()` が知っている必要がある（世界データ層 `wp-dl-`、施設層 `fac-dl-` など）。
+- **行を棚に載せるのは manifest の `id`** である（`rowFor()` は短い名前を manifest の id で引く）。
+  layer-manifest までは id の接頭辞の表（世界データ層 `wp-dl-`、施設層 `fac-dl-` など）で、新しい系統は表に
+  教えるまでベータに残っていた。
 - **分類の規則は1つ——レイヤーは、それが測っている主題に属する**（作った計器でも、対象の場所でも、
   出てきた表でもない）。
 - ⚠ **過去の指示で beta へ降格されたものを、勝手に昇格させない**（「beta」は品質の判断、分類は主題の判断）。

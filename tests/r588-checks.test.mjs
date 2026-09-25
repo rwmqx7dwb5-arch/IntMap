@@ -15,6 +15,10 @@ import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import { validate } from '../scripts/lib/elections-schema.mjs';
 import { ciRuns } from './helpers/ci-reach.mjs';
+import * as LM from '../js/layer-manifest.js';   /* the Layers taxonomy (layer manifest) */
+/* is `key` filed on `shelf`, and does the manifest resolve it to the box the row builder makes */
+const onShelf = (shelf, key, id) => (LM.layerGroups().find(([k]) => k === shelf) || [null, []])[1].includes(key)
+  && (LM.layerFor(key) || {}).id === id;
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -88,7 +92,9 @@ test('④ the elections module is in every ledger an eager layer needs', () => {
   assert.match(rd('src/main.js'), /import '\.\.\/js\/elections\.js'/, 'src/main.js does not import it');
   assert.match(rd('src/main.js'), /'elections'/, "src/main.js's eager list does not name it");
   assert.match(rd('js/app-body.js'), /IntMapModules\.elections\(IM_HOST\)/, 'js/app-body.js never calls it');
-  assert.match(rd('js/data-layers.js'), /'lyrGrpPolitics',\[[^\]]*'elect'/, 'the row is not in 政治 / Politics');
+  /* the fourth ledger is js/layer-manifest.js now (the shelf reorganizeLayerPanel files by, and the id it
+     resolves the row through) — a layer it does not declare is swept into Beta and unknown to its readers */
+  assert.ok(onShelf('lyrGrpPolitics', 'elect', 'dl-elect'), 'the row is not in 政治 / Politics');
   /* …and it is NOT in the lazy ledgers, because it is not lazy (#R546: a name in the wrong ledger
      is as wrong as a name in no ledger) */
   assert.doesNotMatch(rd('js/lazy-modules.js'), /['"]elections['"]/, 'js/lazy-modules.js claims it is lazy');
@@ -228,7 +234,7 @@ test('⑧ data/elections holds exactly the files the index names', () => {
 test('⑨ the U.S. presidential layer still exists and is still registered', () => {
   assert.ok(existsSync(join(ROOT, 'js', 'us-elections.js')));
   assert.ok(existsSync(join(ROOT, 'data', 'us-elections.json')));
-  assert.match(rd('js/data-layers.js'), /'lyrGrpPolitics',\[[^\]]*'uselect'/);
+  assert.ok(onShelf('lyrGrpPolitics', 'uselect', 'dl-uselect'), 'the U.S. presidential row is still on 政治 / Politics (layer manifest)');
   assert.match(rd('js/app-body.js'), /IntMapModules\.usElections\(IM_HOST\)/);
   assert.match(rd('js/layer-home.js'), /HOMES\['dl-uselect'\]/);
 });

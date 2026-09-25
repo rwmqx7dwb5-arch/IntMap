@@ -17,6 +17,7 @@
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
+import { whenBoxes } from './layer-rows.js';   /* (layer-manifest) «as soon as its row exists», from the manifest — not a poll */
 export function makeSessionTabs(HOST, CTX) {
   const GE=CTX.GE, isMobile=CTX.isMobile, setMode=CTX.setMode;
   /* ===== (#R122) SESSION STATE PERSISTENCE — a browser reload used to reset everything except the map coordinates
@@ -91,7 +92,7 @@ export function makeSessionTabs(HOST, CTX) {
       try{ if(s.base==='sat'&&HOST.mapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
       /* re-enable each saved layer as soon as its checkbox exists (rows build lazily up to ~1 s + beta modules) */
-      const want=Array.isArray(s.layers)?s.layers.slice():[]; let tries=0;
+      const want=Array.isArray(s.layers)?s.layers.slice():[];
       /* ══ (#R224) A RETIRED CHECKBOX ID IS NOT A LAYER THE USER GAVE UP ═══════════════════════════
          「海流レイヤー、二つあるなんていうややこしいことするな。統一しろ。」 The Oceans & maritime row
          (`dl-oceancur`, #R208) is gone and js/ocean-currents.js is the one ocean-current layer. A saved
@@ -140,20 +141,24 @@ export function makeSessionTabs(HOST, CTX) {
       /* (#R225) …and the set is `IntMapDefaultOn` — every id the HTML ships CHECKED, not only the two
          thematic ones. See the note by that list in js/data-layers.js: the base toggles were saved as
          «off» and then restored to their HTML default, so switching one off never survived a reload. */
-      const defOff=(window.IntMapDefaultOn||window.IntMapDefaultLayers||[]).filter(id=>want.indexOf(id)<0); let offTries=0;
-      (function pollOff(){ offTries++; const left=[];
-        defOff.forEach(id=>{ const cb=document.getElementById(id);
-          if(cb){ if(cb.checked){ cb.__defFired=true; try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } else cb.__defFired=true; }
-          else left.push(id); });
-        if(left.length&&offTries<25){ defOff.length=0; defOff.push.apply(defOff,left); setTimeout(pollOff,220); } })();
-      (function poll(){ tries++; const pending=[];
-        /* ⚠ (#R313) MARK THE BOX AS «THE RESTORE DID THIS», NOT THE READER. js/layer-home.js lets a
+      const defOff=(window.IntMapDefaultOn||window.IntMapDefaultLayers||[]).filter(id=>want.indexOf(id)<0);
+      /* ══ (layer-manifest) NOT A POLL ANY MORE ════════════════════════════════════════════════════════════
+         Both halves below were `setTimeout(…,220)` × 25: rows are built by their own modules from 900 ms
+         on, so the restore asked every 220 ms whether each one existed yet, and gave up at 5.5 s — an id
+         whose row came later was silently not restored, and an id that will never have a row cost 25
+         asks. js/layer-manifest.js now says which ids ARE layers before any row exists, so `whenBoxes`
+         (js/layer-rows.js) settles an undeclared id at once and applies a declared one the moment its
+         row is inserted into the registry. Order is unchanged: the off-sweep is registered first, and
+         each id is acted on exactly once, as the poll did. */
+      whenBoxes(defOff,cb=>{ if(cb.checked){ cb.__defFired=true; try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } else cb.__defFired=true; });
+      /* ⚠ (#R313) MARK THE BOX AS «THE RESTORE DID THIS», NOT THE READER. js/layer-home.js lets a
            handful of region-only layers frame their region on switch-on; the event below is the same
            `change` a finger produces, and this poll runs for up to 5.5 s while `_restoring` clears at
            1.6 s — so timing cannot tell them apart and the mark does. The mark is SPENT, not
-           permanent: the reader's own toggle later in the same session still flies. */
-        want.forEach(id=>{ const cb=document.getElementById(id); if(cb){ if(!cb.checked){ try{ cb.__imRestored=1; cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } } else pending.push(id); });
-        if(pending.length&&tries<25){ want.length=0; want.push.apply(want,pending); setTimeout(poll,220); } })();
+           permanent: the reader's own toggle later in the same session still flies.
+           (layer-manifest) «this poll» is `whenBoxes` now and has no 5.5 s end at all — a row that arrives late is
+           still restored — which is one more reason the mark, not the clock, is what tells them apart. */
+      whenBoxes(want,cb=>{ if(!cb.checked){ try{ cb.__imRestored=1; cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
       /* open the saved tab */
       /* (#R231) `monitors:'tab.monitors'` was here. A saved session that last had the Monitors tab open
          would have re-opened a tab that no longer exists in the row — so the mapping is gone with the

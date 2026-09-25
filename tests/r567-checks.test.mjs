@@ -17,6 +17,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import * as LM from '../js/layer-manifest.js';   /* the Layers taxonomy and its defaults (layer manifest) */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const doc = JSON.parse(readFileSync(join(ROOT, 'data', 'whc-sites.json'), 'utf8'));
@@ -205,7 +206,11 @@ test('R567 ⑧ the layer is wired to the panel, the read-out and the kernel by t
      the legend buttons and Atlas both press — one id, four places, and a row that reaches none of
      the shelves falls into Others(beta) rather than failing (#R271), so the shelf is asserted. */
   assert.match(beta, /\['whs','#c9903a',whsToggle\]/, 'js/beta-overlays.js does not build the World Heritage row');
-  assert.match(layers, /'lyrGrpSociety',\[[^\]]*'whs'/, 'the row is on no shelf — it would fall through to Others(beta)');
+  /* the shelves are js/layer-manifest.js (reorganizeLayerPanel reads GROUPS=layerGroups()), and the manifest
+     must name the id the row builder makes, or rowFor finds nothing and the row falls to Beta */
+  const whs = LM.layerFor('whs');
+  assert.ok((LM.layerGroups().find(([k]) => k === 'lyrGrpSociety') || [null, []])[1].includes('whs') && whs && whs.id === 'beta-dl-whs',
+    'the row is on no shelf — it would fall through to Others(beta)');
   for (const cmd of ['heritage.open', 'heritage.filter']) {
     assert.ok(beta.includes(`OS2.register('${cmd}'`), `js/beta-overlays.js does not register ${cmd}`);
   }

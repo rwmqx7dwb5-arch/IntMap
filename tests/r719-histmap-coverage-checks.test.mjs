@@ -21,6 +21,7 @@ import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registry, shipTags } from '../scripts/histadmin/langs.mjs';
 import { ciRuns } from './helpers/ci-reach.mjs';
+import { publishedList } from './helpers/layer-groups.mjs';   /* the default lists are views of js/layer-manifest.js */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -292,7 +293,10 @@ test('#R719 ⑨ the stroke is captured finer than the trace the area is measured
    is the one that has no gate of its own (#R225 wrote «keep this in step» as prose). */
 test('#R719 ⑩ the seeded session agrees with the default-on list it is derived from', () => {
   const dl = read('js/data-layers.js');
-  const declared = /window\.IntMapDefaultOn=\[([^\]]*)\]/.exec(dl)[1].split(',').map((x) => x.trim().replace(/'/g, ''));
+  /* the base half of window.IntMapDefaultOn — published from the layer manifest (publishedList checks it
+     still is), minus the thematic half the seed deliberately leaves out */
+  const thematic = publishedList('IntMapDefaultLayers');
+  const declared = publishedList('IntMapDefaultOn').filter((id) => thematic.indexOf(id) < 0);
   const seed = read('tests/helpers/session-seed.js');
   const base = /export const BASE_LAYERS = \[([^\]]*)\]/.exec(seed)[1].split(',').map((x) => x.trim().replace(/'/g, ''));
   assert.deepEqual(base.slice().sort(), declared.slice().sort(),
@@ -302,5 +306,5 @@ test('#R719 ⑩ the seeded session agrees with the default-on list it is derived
   assert.deepEqual(JSON.parse(value).layers.slice().sort(), declared.slice().sort(), 'and so must SESSION_VALUE');
   assert.ok(!declared.includes('cb-coast'), 'the coastline is not on by default (#R719)');
   /* …and it is still a ROW: the reader asked for the default, not for the layer */
-  assert.match(dl, /window\.IntMapBasicLayerRows=\[[^\]]*'cb-coast'/, 'the row stays in 基本表示');
+  assert.ok(publishedList('IntMapBasicLayerRows').includes('cb-coast'), 'the row stays in 基本表示');
 });

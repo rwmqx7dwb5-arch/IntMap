@@ -28,6 +28,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { publishedList } from './helpers/layer-groups.mjs';   /* (layer-manifest) the lists are views of js/layer-manifest.js */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -175,9 +176,10 @@ test('r309 ⑥ the base-map section is ONE published list, and it covers every r
   /* ⚠ both halves are on `window`: js/data-layers.js is a module, so a top-level `const` would be
      private to it and js/widget-core.js could not subtract the same list (tests/r175 ③ fails the
      shape outright, which is how the first attempt at this was caught). */
-  const cb = /window\.IntMapBasicLayerRows\s*=\s*\[([^\]]*)\]/.exec(DL);
-  assert.ok(cb, 'js/data-layers.js publishes IntMapBasicLayerRows');
-  const cbIds = cb[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  /* (layer-manifest) the section is the manifest's `base` shelf; publishedList checks js/data-layers.js still
+     publishes it FROM there (window.IntMapBasicLayerRows=basicRows();) and returns the value */
+  const cbIds = publishedList('IntMapBasicLayerRows');
+  assert.ok(cbIds, 'js/data-layers.js publishes IntMapBasicLayerRows');
   /* ⚠⚠ (#R469) THE FLOOR IS 9, AND WHAT IT PROTECTS IS UNCHANGED. This number is not a count of
      the section — it is a guard against the list being quietly emptied, which is the shape #R309
      found (four hand-written copies of this membership, disagreeing). `cb-countries` left it by
@@ -190,9 +192,9 @@ test('r309 ⑥ the base-map section is ONE published list, and it covers every r
      holds for the nine rows this section draws — but a layer with no row and no chip cannot be
      switched off at all, so the 「表示中のレイヤー」 chip is now its only handle and it has to count. */
   assert.ok(cbIds.length >= 9, 'the checkbox half of the section is there (' + cbIds.length + ')');
-  const pub = /IntMapBasicLayers\s*=\s*window\.IntMapBasicLayerRows\.concat\(\[([^\]]*)\]\)/.exec(DL);
-  assert.ok(pub, 'window.IntMapBasicLayers is those rows plus the ones that were moved in');
-  const extra = pub[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  const all = publishedList('IntMapBasicLayers');
+  assert.deepEqual(all.slice(0, cbIds.length), cbIds, 'window.IntMapBasicLayers is those rows plus the ones that were moved in');
+  const extra = all.slice(cbIds.length);
 
   /* ⚠ THE GUARD THAT WOULD HAVE CAUGHT #R271 AND #R273. `reorganizeLayerPanel` builds the section by
      pushing rows until the first divider; every `rowFor('x')` in that stretch is a member. Two of

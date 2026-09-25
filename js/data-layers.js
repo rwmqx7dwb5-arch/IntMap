@@ -14,6 +14,9 @@
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
+/* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
+   below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
+import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor } from './layer-manifest.js';
 /* ── (#R186) THE DATA LAYERS THAT ARE ON BEFORE ANYONE TOUCHES ANYTHING ──────────────────────────
    「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」
    Three readers need this list and they must not disagree, so it is stated once, here, above the
@@ -24,7 +27,7 @@ import './night-lights.js';   /* (#R550) which night-lights epoch is on screen �
      · the session restore in js/app-body.js switches one back OFF when the saved snapshot says the
        user had switched it off, so "default on" never means "cannot be turned off".
    Ids, not layer keys, because that is what all three readers hold. */
-window.IntMapDefaultLayers=['dl-climate','dl-subcables'];
+window.IntMapDefaultLayers=defaultLayers();   /* (layer-manifest) the manifest's `on` rows that are not markup rows — dl-climate, dl-subcables */
 /* ══ ⚠⚠ (#R225) THE BASE TOGGLES SHIP `checked` AND THE RESTORE NEVER TURNED THEM BACK OFF ══════════
    「base map & labelsも勝手に全部オンになる」 — and it was structural, not a glitch. index.html ships
    `cb-names / cb-geolabels / cb-poi / cb-borders / cb-admin1 / cb-roads / cb-rail2` CHECKED. The session
@@ -43,12 +46,13 @@ window.IntMapDefaultLayers=['dl-climate','dl-subcables'];
    against defOn(). Half the edit is silent both ways: the tick alone drops 基本表示 to 「カスタム」 400 ms
    after every boot, the id alone paints nothing. tests/r476-checks ① holds the two sides equal, in BOTH
    directions — the html→list direction had no gate at all until this round.
+   ⚠ (layer-manifest) AND NOW IT IS ONE FIELD. The box is no longer markup: js/layer-rows.js writes it from
+   js/layer-manifest.js, whose `on` both ticks it and puts the id in this list (defaultOn() below).
    ⚠ It reaches FIRST-TIME readers only. A saved session that predates the change has the id absent, and
    the restore's off-sweep below reads absence as «the reader switched it off» (#R186/#R225) and switches
    it back off. Healing those would be a `defv` generation bump (#R189/#R190); not done — the round was
    asked for the default, not for a migration. */
-window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2']
-  .concat(window.IntMapDefaultLayers);
+window.IntMapDefaultOn=defaultOn();   /* (layer-manifest) every `on` row of the manifest, markup rows first — the SAME field that ticks the generated box, so the tick and this list are one edit by construction */
 /* ══ ⚠⚠⚠ (#R309) WHAT "Base map & labels" CONTAINS, AS ONE LIST ═══════════════════════════════════
    「Base map & labelsのオン数をレイヤーのオン数にみなすな。」 The reason it was counted is that the
    membership of that section existed in FOUR hand-written copies and they disagreed. Measured against
@@ -79,8 +83,8 @@ window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admi
        cannot be turned off.
      · `dl-tz` 🕒 タイムゾーン — 「基本表示ではなく普通のレイヤーにして」. It is a row of `lyrGrpPolitics`
        now and is counted like any other layer. */
-window.IntMapBasicLayerRows=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2','cb-grid'];
-window.IntMapBasicLayers=window.IntMapBasicLayerRows.concat(['dl-nightside','beta-dl-bldg3d']);
+window.IntMapBasicLayerRows=basicRows();   /* (layer-manifest) the manifest's `base` shelf, markup rows, in panel order */
+window.IntMapBasicLayers=basicLayers();     /* (layer-manifest) …and the whole `base` shelf (+ dl-nightside, beta-dl-bldg3d) */
 /* ══ ⚠⚠⚠ (#R469) ROWS THAT KEEP THEIR CHECKBOX AND LOSE THEIR ROW ═════════════════════════════════
    A layer the panel never draws is not a layer that was deleted: the checkbox stays in the
    permanently-hidden `#layer-dropdown` registry, so its change handler, its legend, its opacity, its
@@ -94,7 +98,7 @@ window.IntMapBasicLayers=window.IntMapBasicLayerRows.concat(['dl-nightside','bet
    so a row nobody claims lands in Beta — measured in #R271, when 🕒 タイムゾーン came out there.
    `rowsFromDropdown` (js/map-ui.js) and `renderLayerFavs` (js/layer-favs.js) read this list too: a
    hidden row must not come back as a favourite star or a tile. */
-window.IntMapHiddenLayerRows=['cb-countries','dl-contours'];
+window.IntMapHiddenLayerRows=hiddenRows();   /* (layer-manifest) the manifest's `hidden` shelf — cb-countries, dl-contours */
 /* ══ ⚠⚠⚠ (#R469) 基本表示 IS THREE EXCLUSIVE CHOICES NOW, NOT A LIST OF ELEVEN SWITCHES ═════════════
    「もとは基本表示があった場所をデフォルト/クリーン/カスタムとして、カスタムを選択すれば今の基本表示の
      一覧が出てくるように。デフォルトは今の基本表示のデフォルトオンをそのままやればいい。クリーンは全基本
@@ -1737,331 +1741,19 @@ window.IntMapModules.dataLayers=function(HOST){
     window.reorganizeLayerPanel=function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       try{
-        /* (#R15 / #26) Curated taxonomy. Only the layers the user wants front-and-center live in these
-           categories; every other (beta / incomplete) layer is swept into the "Others (beta)" group at the
-           bottom so the panel reads cleanly. (#R15c) ec-time moved OUT of the panel into a floating legend. */
-        /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
-           groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
-        /* ══ ⚠⚠⚠ (#R271) THE PANEL WAS RE-SORTED, THIS TIME BECAUSE IT WAS ASKED FOR ═════════════
-           「レイヤーのカテゴリ分類があきらかに不適切なレイヤーが大量にある。大規模にレイヤーカテゴリ分類を
-             再編しろ。」
-
-           #R255, #R258, #R261 and #R270 all wrote the same ⚠ note into this file — 「再編 is not a
-           licence to overturn a list the reader wrote out by hand」 — and each moved three or four
-           rows. That reservation was right while the instruction said 「任せる」 about 「いくつか」.
-           It is now 「大量にある」 and 「大規模に…再編しろ」, which is the licence those notes said they
-           did not have, so the whole panel was read against its headings and TWENTY rows moved. Each
-           one is named below with the reason, and the reason is always the same shape: the row's own
-           subject names a category that exists on this panel and is not the one it was on.
-
-           WHAT MOVED, and out of / into what:
-             · 民主主義指数 `dem`, 汚職・腐敗指標 `cpi`   人口・経済 → 政治・統治
-               Two governance indices on the population shelf while a Politics & governance shelf
-               existed (#R255 created it and #R270 explicitly left these two behind, saying 「say the
-               word and they move」). This is the word.
-             · 平均寿命 `lifeexp`                        人口・経済 → 医療・衛生
-               …where 平均寿命（世界銀行） `wblife` already was. Two life-expectancy rows, two shelves.
-             · エネルギー構成 `energy`                    人口・経済 → エネルギー・資源
-               #R254 filed it under 人口・経済 because there was no energy shelf; #R258 built one.
-             · オーロラ予測 `aurora`                      災害・夜空 → 宇宙・軌道
-               A space-weather forecast, beside the satellites it disturbs.
-             · 夜間光 `nightsat`                          災害・夜空 → 人口・経済
-               Night lights are the satellite view of where people live; they are not a hazard.
-               (…and with those two gone the heading no longer says 「夜空」 — see the locale files.)
-             · 人口増加率・65歳以上・合計特殊出生率（世界銀行）・都市人口・農村人口・人口密度（世界銀行）・
-               難民受け入れ数  `wbpopgrow` `wbaging` `wbfert` `wburb` `wbrural` `wbdensity` `wbref`
-                                                          社会・教育 → 人口・経済
-               Seven demographic series were on the education shelf while the population shelf held
-               eight rows. A reader looking for 人口 statistics looks under 人口.
-             · 土地被覆・エコリージョン・植生指数・森林面積率
-               `worldcover` `ecoregions` `gxndvi` `wbforest`   地形・標高 → 自然・土地被覆 (NEW)
-               Land COVER is not elevation. Four rows about what grows on the ground were filed with
-               the rows about the shape of it; they get their own shelf.
-             · 3D建物（都市）`bldg3d`                     地形・標高 → テクノロジー・インフラ
-               #R261 filed it under terrain with 「built ground is still ground」. A building is not
-               ground; it is built infrastructure, which this panel has a shelf for.
-             · タイムゾーン `tz`                          指標・オーバーレイ → the always-on switches
-               「指標・オーバーレイ」 held exactly one row. A live-clock overlay of the whole planet is
-               the same KIND of switch as the grid and the day/night shading (#R233's reasoning for
-               `nightside`), so it joins them and the one-row shelf is empty (its KEY is kept).
-
-           ⚠ WHAT DID NOT MOVE, and why: every row whose subject the heading above it actually names.
-           #R254's sixty-one World-Bank rows keep their families and their internal order; the four
-           shelves #R261 created keep their contents; nothing is deleted, and the safety sweep at the
-           end of this function still catches anything unlisted. */
-        const GROUPS=[
-          /* ══ (#R268) FOUR ROWS THAT WERE ON THE WRONG SHELF ══════════════════════════════════════
-             「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」 Only rows whose
-             own subject names a different category are moved, and each one is said out loud here;
-             #R233's 人口・経済 seven and #R254's World-Bank list are untouched, for the reason
-             #R255/#R258/#R261 all give — 再編 is not a licence to overturn a list written by hand.
-               · `wbforest` 森林面積率 : Climate → Terrain & land. It is a LAND-COVER share, and it
-                 belongs beside `worldcover` and `ecoregions`, not beside CO₂ and rainfall.
-               · `wbagri` 農地率 : Terrain → Agriculture. Its own twin `wbagremp`(農業就業率) was
-                 already there and these two are the same subject counted two ways.
-               · `gxsoil` 土壌水分 : Terrain → Agriculture. The layer's own note says what it is for
-                 — 「干ばつ・農業の指標」 — and that sentence names the category.
-               · `wbpm25` PM2.5大気汚染 : Health → Climate & atmosphere, where the other three air
-                 -composition rasters (AOD, UV aerosol index, CO) already are. Air pollution was
-                 split across two shelves by whether the number came from a satellite or a table. */
-          /* ══ ⚠⚠ (#R439) FOUR ECMWF ROWS PROMOTED OUT OF 「その他 (beta)」 ═══════════════════════
-             「気圧レイヤー、最大瞬間風速レイヤーは気象レイヤーに昇格」, and then 「降水量、露点もWindyと
-             グラフィックをRGBレベルで対応させる作業やってから、気候・気象レイヤーに。」 — i.e. the
-             promotion is conditional on the work, and the work is this round's: all four now paint
-             from a table fitted to windy.com's own paint function (js/wx-ecmwf.js), the gust layer
-             on the wind family #R293 already fitted, and the pressure layer carries the isobars.
-             ⚠ #R273's note says no row an instruction DEMOTED is promoted back on a judgement of
-             ours — 「beta」 is a judgement about quality. This is not ours: it is four rows named by
-             name, with the reason the reader gave for each. `ec-wind` (the 10 m arrows) and
-             `ec-cape` were NOT named and stay where they are.
-             ⚠⚠ (#R469) …AND THEN CAPE WAS NAMED: 「ベータからはCAPE不安定度レイヤーを気象に昇格。」 The
-             rule above is untouched — what changed is its premise, for that one row. `ec-wind` still
-             has not been named and is still in the beta list.
-             ⚠ `ec-isobars` IS NOT IN ANY LIST ANY MORE — it is not a row. See js/weather.js `sub`. */
-          ['lyrGrpClimate',['climate','wind','annprecip','ec-temp','ec-precip','radar','ec-slp','ec-gust','snow','ec-cloud','ec-dew','aod','ec-cape','wbpm25','wbco2'],9],   /* (#R289) the two CO₂ rows (#R261) are ONE row with a total/per-capita switch in its own legend; 紫外線エアロゾル指数・一酸化炭素・雲・赤外 are deleted */
-          /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
-             lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
-          ['lyrGrpOrbit',['sats','aurora','osmspace'],2],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
-          /* ⚠ (#R255) `subcables` LEFT THIS GROUP for Technology & infrastructure. A submarine cable
-             is under the sea the way a railway is under a hill — the sea is where it runs, not what
-             it is — and a reader looking for the internet's physical plant looks under technology,
-             beside the data centres it lands at. ⚠ It must appear in exactly ONE list: `order.push`
-             MOVES the element, so an id in two groups renders only in the last one. */
-          /* (#R261) `planes` LEFT for Transport & mobility (it is aircraft, not ocean); tides and
-             ocean currents ARRIVED from the beta sweep — both are finished world-packs layers with
-             their own panel, legend and sources, and neither was ever demoted by an instruction. */
-          /* (#R577) 波 `waves` — significant wave height + the wave-direction animation (js/waves.js).
-             ⚠ IT MUST BE NAMED HERE OR IT IS NOT A MARITIME LAYER: the safety sweep at the end of this
-             function files every row nobody claimed under 「その他 (beta)」, so an unlisted row lands in
-             Beta while looking like it was placed. */
-          ['lyrGrpMaritime',['sst','waves','currents','gxsstanom','tides','gxseaice'],3],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
-          /* ⚠ (#R469) TWO ROWS LEFT THIS SHELF AND NEITHER WENT TO ANOTHER ONE.
-             · 等高線 `contours` — 「等高線レイヤーは廃止し、標高（カラー段彩）、陰影起伏（標高）、
-               カラー段彩・陰影（ASTER）の凡例内でトグルでオンオフできるように統合。」 It is a switch
-               inside those three legends now (`ensureContourSwitch`); the checkbox survives in
-               `window.IntMapHiddenLayerRows`, which is why nothing about the layer was rewritten.
-             · 傾斜・斜面方向 `slope` — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 #R273 had promoted it
-               here out of Beta; the module, its Atlas action and its catalogue entry are gone. */
-          ['lyrGrpTerrain',['plates','relief','sealevel','hillshade','gxrelief'],3],
-          /* (#R271) the new shelf: what is ON the ground, as against the shape of it */
-          ['lyrGrpNature',['worldcover','ecoregions','gxndvi','wbforest'],3],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
-          /* ⚠⚠ (#R469) 「人口密度（国別）を昇格。」 — `pop`, one of the rows #R233 demoted, is back on
-             this shelf by name, in the folded half. Everything the note below says still holds; one
-             row of it was reversed by the reader, the way `energy` was in #R254.
-             ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
-             「人口・経済レイヤーは 人口密度（1kmグリッド）／1人当たりGDP／合計特殊出生率／HDI (2022)／
-             民主主義指数 (2023)／汚職・腐敗指標／平均寿命 以外のものはbetaに降格。」
-             #R39/#R40 had promoted eighteen more World-Bank choropleths here on the argument that they
-             were "objective and sourced", which is true and is not the same question as whether the
-             category reads as a curated set. Nothing is deleted and nothing is unreachable: a row that
-             leaves a GROUP falls through the safety sweep below into Others (beta), which is exactly
-             where 'beta に降格' puts it — same row, same data, same legend, one section lower. */
-          /* (#R254) 「エネルギー構成レイヤーは昇格」 — out of the beta sweep and into the curated set,
-             beside the other per-country statistics (confirmed: 人口・経済). It is the world-packs row
-             `wp-dl-energy`; see rowFor's prefix list. */
-          /* ══ ⚠⚠⚠ (#R273) THE BIG RE-SHELVING — AND THE PERMISSION FOR IT IS EXPLICIT ═════════
-             「レイヤーのカテゴリ分類があきらかに不適切なレイヤーが大量にある。大規模にレイヤーカテゴリ分類を再編しろ。」
-             — and, asked directly whether the hand-written lists (#R233's seven, #R254's sixty-one
-             and their order) were included: 「全部動かしてよい」. #R255, #R258, #R261 and #R270 each
-             wrote the note that 再編 is not a licence to overturn a list somebody wrote out by hand,
-             and each was right at the time. That reservation is now withdrawn in writing, so this
-             round applies ONE rule to all 167 rows:
-
-                 A LAYER BELONGS TO THE SUBJECT IT MEASURES — not to the instrument that produced
-                 it, not to the place it happens to be about, and not to the family of the table it
-                 came out of.
-
-             Fourteen rows moved and one heading was renamed; every one is named on its own line
-             below with the sentence that puts it where it now is. Nothing is deleted, nothing
-             becomes unreachable, and no row that an instruction DEMOTED (the ECMWF rasters, #R40)
-             is promoted — 「beta」 is a judgement about quality and this is one about subject. */
-          /* (#R273) −GDP per capita (→ Economy: it measures the economy), −HDI (→ Society: a
-             human-development composite of health, schooling and income), +adolescent fertility
-             (← Health: it is a fertility rate, and the other four already live here). The heading
-             is 「人口・人口動態」 now, because with GDP gone there is no economy left on the shelf. */
-          ['lyrGrpDemo',['popgrid','nightsat','tfr','pop','wbpopgrow','wbaging','wbfert','wbadofert','wburb','wbrural','wbdensity','wbref'],3],
-          /* (#R233) 'nightside' LEFT this group — 「昼夜の表示はレイヤー選択欄の基本表示カテゴリです。」
-             It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
-             the other always-there view switches (place names, borders, roads, grid) at the top of the
-             panel. Moved by name into that list below, not duplicated: one row, one owner. */
-          ['lyrGrpHazard',['alerts','eq','volc2','thermal','osmemg','radobs'],3],   /* (#R585) +measured radiation — docs/RADIATION.md */   /* (#R270) +emergency response bases — see the note below */   /* (#R273) +live weather & disaster warnings — one national agency per country, GDACS removed */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
-          /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
-             「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
-               それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
-             as «任せる» when asked.)
-
-             `lyrGrpGeoPol` was one shelf holding two unrelated subjects — who governs (elections, EU
-             membership, democracy and corruption indices) and who is armed (defence spending, NATO,
-             a front line). It is replaced by `lyrGrpPolitics` and `lyrGrpSecurity`, which is the
-             split the instruction names. The health family and the digital/infrastructure family were
-             not shelved at all: #R233 demoted the World-Bank health indicators to «Others» with the
-             rest of that table, and the submarine cables sat in «Oceans & maritime» because that is
-             where the water is — neither is where a reader looks for them.
-
-             ⚠ NOTHING IS DELETED AND NOTHING BECOMES UNREACHABLE. Every id below already existed; a
-             row that leaves one GROUP arrives in another, and the safety sweep at the end of this
-             function still catches anything not listed. `lyrGrpGeoPol`'s KEY is retained in the nine
-             locale files (an old saved session or a share link can still name it) — it simply has no
-             rows any more, and a group with no rows is not rendered.
-             ⚠ `rail` is in Technology & infrastructure on purpose: it is the rail NETWORK layer
-             (js/routing.js, line colours and routing), i.e. built infrastructure, which is what that
-             category is named for — the base «Railways» toggle is a different row and stays at the
-             top with the other always-there view switches.
-             ⚠⚠ 民主主義指数 (`dem`), 汚職・腐敗指標 (`cpi`) and 平均寿命 (`lifeexp`) READ like Politics and
-             Health and are DELIBERATELY LEFT in 人口・経済: #R233 is an explicit instruction naming
-             those seven rows as that category's contents, and this round's authorisation to
-             reorganise is not a reason to quietly overturn a list the reader wrote out by hand. Say
-             the word and they move. */
-          /* (#R273) +maritime EEZ / 12 nm (← Oceans): an exclusive economic zone is a JURISDICTION
-             drawn on water, not a property of the water — it belongs with the other borders. */
-          /* (#R349) +wars: who held what in the two world wars is the same kind of fact as who won
-             a state's electoral votes — a political map that moves with the clock.
-             (#R409) 「WW1とWW2でレイヤーを分けろ。」 — one row became two, side by side and in the
-             order the wars happened. The old single id `wars` is gone from the panel; a share link
-             that still names it opens both (js/map-ui.js). */
-          /* (#R519) 「朝鮮戦争、ベトナム戦争、中東戦争、ユーゴ紛争などを同じwar-layer形式へ追加すると、既存基盤を
-             そのまま使える」 — four more day-by-day wars, in the order they happened, beside the two that
-             were already here. ⚠ THE 6 IS NOT BUMPED. That number is how many ids the reader named
-             (#R469), and `ww1` already folds under 「その他N件」 with it; raising it to keep the new rows
-             visible would be re-writing a list the reader wrote by hand, which #R255/#R258/#R261 all
-             refuse to do. The new wars fold exactly where ww1 folds. */
-          /* (#R588) `elect` (national parliamentary elections) is the FIRST row after the six the
-             reader named, not the fifth. ⚠ IT WAS WRITTEN NEXT TO `uselect` FIRST — a reader who has
-             found one election map is looking for the other — and tests/r469 ④ was right to refuse
-             it: the 6 is how many ids the reader listed BY HAND, so inserting inside that run does
-             not «add a row», it silently DEMOTES 第二次世界大戦 out of what the panel shows unfolded.
-             #R519 left the same number alone for the same reason when it added four wars. This row
-             folds under 「その他N件」 exactly where `ww1` folds. */
-          ['lyrGrpPolitics',['dem','cpi','eez','uselect','eu','ww2','elect','ww1','korea','vietnam','mideast','yugoslavia','tz','wbwomparl','osmdiplo'],6],
-          /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
-             「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
-
-             The whole panel was read against its headings again (167 rows, 17 headings). Most of it
-             is where a reader would look; these three were not, and each is wrong for a reason that
-             can be stated rather than felt:
-
-               · 殺人発生率 (`wbhomicide`) was in 「軍事・安全保障 / Defense & security」, whose other
-                 seven rows are defence spending, NATO, armed-forces strength, a front line and
-                 military installations. A homicide rate is a crime statistic about a society, and it
-                 joins the social indicators.
-               · 緊急対応拠点 —— 消防・警察・救急 (`osmemg`) was in 「医療・衛生 / Health & sanitation」.
-                 An ambulance station belongs to that subject; a POLICE station and a FIRE station do
-                 not. All three are what a place has for an emergency, so they sit with the hazards.
-               · 合計特殊出生率 (`wbfert`) was in Health, one shelf away from the OTHER 合計特殊出生率
-                 (`tfr`, in 人口・経済) and away from the World-Bank demographic family it belongs to
-                 (人口増加率・65歳以上人口比率・都市/農村人口比率・人口密度), all of which are in
-                 Society & education. It joins them, and its NAME now says which of the two it is.
-
-             ⚠ NOTHING ELSE MOVED, and that is deliberate. #R233's seven in 人口・経済, #R254's
-             sixty-one and #R261's four new shelves were each written out by a reader by hand, and
-             「任せる」 for the obviously-wrong rows is not a licence to re-sort a list somebody chose.
-             オーロラ予測 and 夜間光 stay in 「災害・夜空 / Hazards & night sky」 — that heading names
-             them; the shelf is not only about disasters. */
-          ['lyrGrpSecurity',['milSpend','nato','ukrfront','wbmilgdp','wbmilppl','osmmil'],3],   /* (#R289) 国防費 is one row with a $B / %GDP switch */
-          /* (#R273) −clean cooking fuel access (→ Energy: it is an energy-access rate and sits
-             beside electricity access), −undernourishment (→ Agriculture & food: it measures food),
-             −adolescent fertility (→ Population), −pharma hubs (→ Economy: they are factories).
-             What is left is care, disease, sanitation and the things a body does. */
-          ['lyrGrpHealth',['lifeexp','wbinfmort','wbsuicide','wbsmoke','wbalcohol','wbwater','wbhealth','wbphys','wbbeds','wbu5mort','wblife','wbsan','wboverwt','osmhealth','osmwater'],6],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
-          /* (#R261) `rail` LEFT for Transport & mobility — a railway network is transport, and the
-             category it was in is the one about computing and communications. */
-          /* (#R273) −high-tech exports (→ Economy: it is a share of EXPORTS, i.e. a trade
-             statistic), − 3-D city buildings (→ the always-on view switches at the top: it is a way
-             of DRAWING the map, like Roads and Place names, not a statistic about technology). */
-          ['lyrGrpTech',['subcables','dc','nethlth','netreach','wbnet','wbmobile','wbbbnd','wbrnd','wbresearch','wbpatent','osmtelecom'],1],
-          /* ══ ⚠⚠ (#R261) FOUR NEW SHELVES, AND «OTHERS» AND «BETA» EMPTIED INTO THEM ═══════════════
-             「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの
-               再編のほか、新レイヤー…全部任せる。結局何もしませんはやめろ。」
-
-             This is the authorisation #R255 and #R258 both said they did not have. Both wrote the
-             same ⚠ note — «再編 is not a licence to overturn a list the reader wrote out by hand» —
-             and refused to touch #R233's seven or #R254's sixty-one. The instruction now names
-             Others and Beta specifically, so those two are what moves; #R233's 人口・経済 seven and
-             #R254's energy-mix promotion stay exactly where the reader put them.
-
-             WHAT WAS WRONG, MEASURED off the shipped panel (167 rows, 16 headings):
-               · «Others» was 33 rows and every one was a World-Bank indicator — inflation beside
-                 literacy beside refugees beside renewable electricity. That is not a category, it is
-                 the tail of one table. It is now four families: economic (14), social and
-                 educational (14), energy (5), and CO₂ total, which joins its own per-capita twin in
-                 Climate. Nothing is dropped and the order inside each family is #R254's.
-               · «Beta» was 40 rows, six of which are finished world-packs layers with their own
-                 panel, legend, time-machine wiring and published sources (trade flows, ocean
-                 currents, tides, crops, industry web, weather warnings). They were never demoted by
-                 an instruction; they had no shelf and fell through the safety sweep at the end of
-                 this function.
-               · Three shelves had ONE row (Space & orbit, Indicators) or two (Energy). Six new
-                 surveyed-object layers (js/osm-facilities.js) fill them with things you can click.
-             ⚠ NOTHING DEMOTED BY AN INSTRUCTION IS PROMOTED. The GIBS rasters and the plain
-             temp/precip rows carry «DEMOTED to Others(beta) per request» in #R40's note, and the
-             ECMWF family sits with them; all of that stays in Beta. Assuming a past instruction has
-             expired is the failure this file has warned about twice. */
-          /* (#R273) +GDP per capita (← Population), +extreme poverty, +income inequality (Gini) and
-             +female labour participation (← Society: all three measure income and the labour market),
-             +high-tech exports (← Technology), +pharma manufacturing hubs (← Health). */
-          ['lyrGrpEconomy',['gdppc','trade','wbgini','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbhitech','wbfdi','wbunemp','wbgni','wbpov','wbflfp','wbremit','wbtour','pharma'],3],
-          /* (#R273) +HDI (← Population: it is the human-development composite), and −poverty,
-             −Gini, −female labour participation (→ Economy). */
-          ['lyrGrpSociety',['hdi','wbhomicide','cat-language','whs','wblit','wbschool','wbtert','wbedu','osmedu','cat-religion'],3],   /* (#R567) +World Heritage — by the rule this block states, a layer belongs to the subject it measures, and what the List measures is cultural and natural heritage; it sits beside the language and religion rows for that reason and not because UNESCO produced it. */   /* (#R270) +homicide rate, +fertility rate — see the note above */
-          /* (#R273) +live cameras (← Beta, where it had no shelf rather than a demotion): the feeds
-             are road and traffic cameras — TfL JamCams, Caltrans, the DOT 「511」 networks. */
-          ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport','webcams'],2],
-          /* (#R273) +undernourishment (← Health): it is the food-security measure, and it belongs
-             with the land that grows the food. */
-          ['lyrGrpAgri',['crops','wbagremp','wbunder','wbagri','gxsoil'],3],
-          /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
-             「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけの
-               やつじゃなくて、モノホンのやつ。）」 The map had no shelf for energy at all: the country
-             energy MIX is a choropleth the reader filed under 人口・経済 by name (#R254) and CO₂ is
-             in Climate, so there was nowhere that answers 「この発電所は何を燃やしているのか」. Both
-             rows here are surveyed OSM objects for the current view (js/osm-facilities.js), not a
-             country painted a colour.
-             ⚠ NOTHING IS MOVED INTO IT. Every existing row stays where it is: #R233's seven and
-             #R254's sixty-one were named one by one by the reader, and 「再編」 is not a licence to
-             overturn a list somebody wrote out by hand (the same reasoning as the ⚠⚠ note above). */
-          /* (#R273) +clean cooking fuel access (← Health), directly beside electricity access:
-             both are 「does this household have energy」 rates. */
-          ['lyrGrpEnergy',['energy','wbrenew','wbelec','osmpower','osmextract','dams','wbcook','wbelecuse','wbrenelec','wbenergy'],3],
-          /* (#R271) EMPTY, AND KEPT — `tz` joined the always-on switches at the top of the panel;
-             the KEY stays for the same reason `lyrGrpGeoPol` and `lyrGrpOthers` keep theirs. */
-          ['lyrGrpIndic',[],0],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
-          /* ══ ⚠ (#R254) "OTHERS" IS A REAL CATEGORY NOW, AND "BETA" MEANS BETA ═══════════════════════
-             「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
-               Others(beta)は単にベータとすること。」 The sixty-one rows named in that instruction are
-             EXACTLY the World-Bank indicator rows that #R233 demoted (`bx-wb*`, ids without the
-             prefix here — the row wrapper is `lyrrow-<id>`); the only three `bx-wb*` rows NOT in the
-             reader's list are wbco2 / wbforest / wbagri, and those three are already filed in Climate
-             and Terrain above. So this list is not a hand-picked subset that will drift: it is «the
-             World-Bank indicator family», and the demoted-vs-promoted split is now a category rather
-             than a beta warning. The group is ordered exactly as the instruction listed them.
-             ⚠ `lyrGrpOthers` keeps its KEY and loses its «(beta)» wording in all nine languages — the
-             key is what js/map-ui.js and js/layer-dropdown.js use to find the collapsible beta group
-             on mobile, and renaming it would silently un-collapse that section. */
-          /* (#R261) EMPTY, AND KEPT — every one of #R254's thirty-three rows is on a named shelf
-             above, in the order that instruction listed them. The KEY stays for the same reason
-             #R255 kept `lyrGrpGeoPol`: an old saved session or a share link can still name it, and a
-             group with no rows is simply not rendered. Nothing is deleted; the shelf is empty
-             because the things on it found their families. */
-          ['lyrGrpOthersReal',[],0]
-        ];
-        /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
-        /* (#R439) −ec-precip −ec-dew −ec-slp (promoted to 気候・気象, see the GROUPS note) and
-           −ec-isobars (no longer a row at all — it is a switch inside the pressure legend).
-           `ec-gust` was never in this list; it reached Beta through the safety sweep below, and it
-           now reaches 気候・気象 through the group. */
-        const OTHERS_IDS=['precip','ec-wind','ec-sst'];   /* (#R261) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
-        const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
-          /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group.
-             (#R254) …and wp-dl- for the same reason, so a world-packs row (energy mix) can be too. */
-          /* (#R255) …and fac-dl- for the four surveyed-facility layers (js/osm-facilities.js). */
-          /* ⚠ (#R261) …and `ox-` for the two OpenRailwayMap / OpenSeaMap overlays. MEASURED: filing
-             them under Transport & mobility changed nothing at all — the group came out with five
-             rows instead of seven and both stayed in Beta, because this list is what turns an id
-             into a row and it had never been told about that prefix. A prefix table is a place a
-             new family gets forgotten, which is why the check is a test now (tests/r261). */
-          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id)||document.getElementById('wp-dl-'+id)||document.getElementById('fac-dl-'+id)||document.getElementById('ox-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
-          el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
-          return null; };
+        /* ══ (layer-manifest) THE TAXONOMY IS js/layer-manifest.js ═══════════════════════════════════════════
+           Which shelf each row is on, in which order, and how many of each shelf the reader named were a
+           253-line `GROUPS` literal here, with the history of every move beside it. They are the
+           manifest's SHELVES now (the history travelled with them, verbatim), and these two are views of
+           it in the shape this function has always read: `[heading key, short names, named count]`, and
+           the rows filed under Beta explicitly, in order. Nothing below this line changed. */
+        const GROUPS=layerGroups();
+        const OTHERS_IDS=betaKeys();
+        /* (layer-manifest) A short name → its row, through the checkbox id the manifest names. This was a table of
+           six id prefixes that every new family had to be taught (#R20 beta-dl-, #R254 wp-dl-, #R255
+           fac-dl-, #R261 ox-: 「filing them under Transport changed nothing at all」 until the prefix was
+           added); the manifest names each row's own checkbox, so there is no table to forget. */
+        const rowFor=(id)=>{ const M=layerFor(id); const el=M&&document.getElementById(M.id); return el?(el.closest('.lyr-row')||el.closest('label')):null; };
         const lang=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
         const T=(k)=>{ try{ return (i18n[lang]&&i18n[lang][k])||(i18n.en&&i18n.en[k])||k; }catch(_){ return k; } };   /* (#R40) fall back to English (e.g. Spanish/beta) so group headers never show the raw key */
         /* strip old headers + top-level dividers (favorites' inner <hr> is nested, so it survives) */

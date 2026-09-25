@@ -460,6 +460,12 @@ coastline.js                      **海までの距離**（#R495）— data/coas
                                   ⚠ js/coast-line.js（上）は描画用のレイヤーで、こちらは計測用。別物。
 grid-style.js                     経緯線のスタイル層
 layer-home.js                     カメラを動かしてよいレイヤーの表 window.IntMapLayerHome
+layer-manifest.js                 **どのレイヤーが在るか**の正本（layer-manifest）— `#layer-dropdown` の全チェックボックスの
+                                  id・棚・並び・「その他N件」・名前の i18n キー・既定 ON・共有リンク・遅延モジュール。
+                                  DOM も window も持たない純データ（Node の検査がそのまま import する）。棚の並べ替え
+                                  （reorganizeLayerPanel）・既定 ON の一覧・タイル盤・共有リンク・お気に入りがここを読む
+layer-rows.js                     manifest の DOM 側 — 基本表示 10 行を manifest から書く（index.html から移った）＋
+                                  `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）
 layer-dropdown.js                 レイヤーメニューとそのアコーディオン
 layer-favs.js                     ★を付けたレイヤーとクイックピックのチップ
 layer-previews.js                 レイヤーのサムネイル IntMapLayerPreviews
@@ -1414,6 +1420,10 @@ scripts/
                                   （ブラウザは暖まるほど速くなる）。床（アプリのレイヤー全部非表示）は
                                   **最後に**測る。指・起動・スナップショットは `mobile-trace.mjs` から
                                   import する（写しを持たない）。
+  layer-manifest-extract.mjs      **移行の記録**（ゲートではない・layer-manifest）。移行前のビルドを起動して
+                                  `#layer-dropdown` の全行を読み、1 行ずつ新しいページで ON にして
+                                  `IntMapLazy.need` を観測し、`js/layer-manifest.js` の SHELVES を書いた。
+                                  GROUPS と index.html の行は移行後には存在しないので `--rev <移行前の commit>`
   view-matrix.mjs                 **{ベクタ, 衛星}×{平面, globe} の 4 条件＋日付変更線セル**に同じ指を
                                   当てる計器。切替はアプリ自身の命令（`view.base.*` / `view.proj.*`）。
                                   5 つ目のセルは MapLibre 5.24 の既知の欠陥（globe・pitch>40°・z>5・
@@ -1454,7 +1464,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 109 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 110 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

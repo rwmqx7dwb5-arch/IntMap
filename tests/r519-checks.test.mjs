@@ -29,6 +29,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { WarGeom } from '../js/war-geom.js';
+import * as LM from '../js/layer-manifest.js';   /* the Layers taxonomy (layer manifest) */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
@@ -51,10 +52,16 @@ test('R519 ①: every row is a war in data/wars.json, and every war has a row', 
 
 /* ── ② …and every one of them is on a shelf in the Layers panel ──────────────────────────────── */
 test('R519 ②: every war row is listed in the politics group', () => {
-  const m = codeOnly(R('js/data-layers.js')).match(/\['lyrGrpPolitics',\[([^\]]+)\]/);
-  assert.ok(m, 'the politics group is no longer a literal list — this check reads the list itself');
-  const ids = m[1].split(',').map((s) => s.trim().replace(/^'|'$/g, ''));
-  for (const r of ROWS) assert.ok(ids.includes(r.id), r.id + ' has a row but no shelf: it would strand under 「その他」');
+  /* the shelves are js/layer-manifest.js — reorganizeLayerPanel files by layerGroups() and resolves each
+     short name through the checkbox id the manifest names; a war with no entry, or an entry naming the
+     wrong box, strands its row under 「その他」 exactly as a missing literal entry did */
+  const shelf = LM.layerGroups().find(([k]) => k === 'lyrGrpPolitics');
+  assert.ok(shelf, 'the politics group is no longer a shelf of the layer manifest — this check reads the list itself');
+  const ids = shelf[1];
+  for (const r of ROWS) {
+    assert.ok(ids.includes(r.id), r.id + ' has a row but no shelf: it would strand under 「その他」');
+    assert.equal((LM.layerFor(r.id) || {}).id, 'dl-' + r.id, r.id + ': the manifest resolves the shelf entry to a different box than the row builder makes');
+  }
 });
 
 /* ── ③ Atlas can be asked for each of them by name ───────────────────────────────────────────── */

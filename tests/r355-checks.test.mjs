@@ -31,7 +31,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { corridorAxes, axisFit, splitAntimeridian, unwrap, lineLength, haversine } from '../scripts/subcables/geo.mjs';
-import { byKey } from './helpers/layer-groups.mjs';
+import { byKey, publishedList } from './helpers/layer-groups.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(path.join(ROOT, p));
@@ -80,7 +80,7 @@ test('① the three layers are inserted in the same order, at the same anchor', 
 
 test('① default opacity, default-ON state and the opacity control are unchanged', () => {
   assert.match(DL, /subcables:0\.95/, 'the cable layer\'s default opacity is no longer 0.95');
-  assert.match(DL, /window\.IntMapDefaultLayers=\['dl-climate','dl-subcables'\];/, 'the cable layer is no longer default-ON');
+  assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'], 'the cable layer is no longer default-ON');
   assert.match(DL, /else if\(id==='subcables'\)\{ if\(GE\(\)\.layers\.has\('lyr-subcables'\)\)GE\(\)\.layers\.setPaint\('lyr-subcables','line-opacity',v\); \}/,
     'the per-layer opacity control for the cables changed');
   assert.match(DL, /'dl-subcables':\['lyr-subcables','lyr-subcables-glow','lyr-subcables-pts'\]/,

@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { publishedList } from './helpers/layer-groups.mjs';   /* (layer-manifest) the lists are views of js/layer-manifest.js */
 
 const read = (p) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
 const bytes = (p) => fs.readFileSync(path.join(process.cwd(), p));
@@ -244,7 +245,7 @@ test('R187 water: the traced course is a raster of water, not a polyline', () =>
 /* ── 7. a refused layer add is retried ───────────────────────────────────────────────────────── */
 test('R187 default layers: the cables survive a style that is not ready yet', () => {
   const src = read('js/data-layers.js');
-  assert.match(src, /window\.IntMapDefaultLayers=\['dl-climate','dl-subcables'\]/, 'both still default on');
+  assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'], 'both still default on');
   /* REPRODUCED on a cold load: whenStyleReady() hard-resolves after ~6 s (that escape hatch is #R41's
      and is deliberate), MapLibre then refuses addSource with "Style is not done loading", and the old
      code logged it and stopped — one of the two default layers on screen, which is the report. */

@@ -19,6 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { byKey } from './helpers/layer-groups.mjs';
+import * as LM from '../js/layer-manifest.js';   /* (layer-manifest) which layers exist, and their facts */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(path.join(ROOT, p));
@@ -258,7 +259,8 @@ test('R261 ⑩: Others is emptied into named families and the demoted rows stay 
     assert.ok(!/Others|Beta/i.test(w[0]), id + ' fell back into ' + w[0]);
   }
   /* the rows #R40 demoted BY INSTRUCTION are not promoted */
-  const groups = s.slice(s.indexOf('const GROUPS=['), s.indexOf('/* Explicit order for the Others'));
+  /* (layer-manifest) the curated shelves are js/layer-manifest.js — their short names, as the old slice read them */
+  const groups = LM.layerGroups().flatMap(([, ids]) => ids).map((k) => "'" + k + "'").join(',');
   /* ⚠ (#R266) THE GIBS HALF OF THIS LIST IS GONE, AND NOT BECAUSE IT WAS PROMOTED. #R40 demoted
      seven GIBS rasters to Beta by instruction; #R266 DELETED eight of them by instruction (「以下の
      レイヤーは削除」), so «is gxtruecolor still in Beta» no longer has a subject. The three EC
@@ -283,8 +285,10 @@ test('R261 ⑩: Others is emptied into named families and the demoted rows stay 
   for (const id of ['gxtruecolor','gxlst','gxcloud'])
     assert.ok(!s.includes("'" + id + "'"), id + ' was deleted in #R266 and must not come back');
   /* every id in a GROUP has to be resolvable, which is what the `ox-` prefix gap broke */
-  assert.match(s, /document\.getElementById\('ox-'\+id\)/,
-    'rowFor knows the ox- prefix, or oxrail/oxsea silently stay in Beta');
+  /* (layer-manifest) rowFor resolves through the checkbox id js/layer-manifest.js declares — every short name has one */
+  for (const k of LM.layerGroups().flatMap(([, ids]) => ids)) assert.ok(LM.layerFor(k), k + ' resolves to no row');
+  assert.ok(/^ox-/.test(LM.layerFor('oxrail').id) && /^ox-/.test(LM.layerFor('oxsea').id),
+    'rowFor knows the ox- rows, or oxrail/oxsea silently stay in Beta');
   /* the nine locales carry the four new headings */
   for (const f of ['en','jp','de','ru','es','fr','ko','zh','zh-hans']) {
     const t = read('js/locales/ui.' + f + '.js');
@@ -305,8 +309,8 @@ test('R261 ⑪: the six new facility sets exist, are filed, and invent nothing',
   /* each one queries OpenStreetMap for real objects — no synthetic geometry anywhere in this file */
   assert.doesNotMatch(s, /Math\.random\(\)/, 'nothing here is generated');
   /* and every one of them is on a shelf */
-  const dl = read('js/data-layers.js');
-  for (const id of ids) assert.ok(dl.includes("'" + id + "'"), id + ' is filed into a group');
+  /* (layer-manifest) the shelves are js/layer-manifest.js */
+  for (const id of ids) assert.ok(LM.layerGroups().some(([, g]) => g.includes(id)), id + ' is filed into a group');
 });
 
 /* ── ⑫ the data-centre layer can be asked a question ────────────────────────────────────────────
