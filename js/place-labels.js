@@ -594,6 +594,18 @@ window.IntMapModules.placeLabels=function(HOST){
     return {type:'FeatureCollection',features:S.map((r,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[r[0],r[1]]},
       properties:{z:r[2],big:r[2]<=1?1:0,en:r[3],jp:r[4],de:r[5],ru:r[6],es:r[7],lbl:raw?r[3]:_seaL.arr([r[3],r[4],r[5],r[6],r[7]])}}))};
   }
+  /* ══ ⚠⚠ THE SETTLEMENT FIELD IS WRITTEN ONLY WHEN IT IS A DIFFERENT OBJECT ═══════════════════
+     While the clock is on a past year, `ofm-city`'s text-field is the era expression from
+     js/hist-cities.js — about 0.9 MB on 1916-07-01, one guarded case per group of spellings. That module hands back the
+     SAME array for as long as no name span starts or ends (its cache is keyed by the epoch, not the
+     date), and treats it as immutable. Handing that same array to MapLibre again is not free:
+     `setLayoutProperty` clones the stored value and deep-compares it before deciding nothing
+     changed — measured (2026-09-26) at 10–44 ms per write, and this function runs several times per
+     clock move and on every `ofm` sourcedata. So the last array written is remembered PER STYLE
+     LAYER: a recreated layer is a different key, and starts from whatever its definition says.
+     ⚠ By identity only. The base expression below is rebuilt on every call, so the ordinary
+     (not travelling) label is never skipped by this; it is cheap and MapLibre compares it itself. */
+  const _cityFieldWritten=new WeakMap();
   function applyLabelLang(){
     if(!GE().hasRenderer()) return;
     const mode=window.imLabelLang||'ui';
@@ -688,9 +700,14 @@ window.IntMapModules.placeLabels=function(HOST){
     ['ofm-country','ofm-admin1','ofm-city','ofm-other'].forEach(id=>{ if(!GE().layers.has(id)) return;
       const _showThis=((id==='ofm-country'&&_travelingLbl)||(id==='ofm-admin1'&&_travelingAdm))?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');
-      let _fld=nameExpr;
-      if(id==='ofm-city'){ try{ const HC=window.IntMapHistCities; if(HC) _fld=HC.textField(nameExpr,HOST.lang,mode); }catch(_){ _fld=nameExpr; } }
-      GE().layers.setLayout(id,'text-field',_fld);
+      let _fld=nameExpr, _gen=false;
+      if(id==='ofm-city'){ try{ const HC=window.IntMapHistCities; if(HC){ _fld=HC.textField(nameExpr,HOST.lang,mode); _gen=!!(HC.built&&HC.built(_fld)); } }catch(_){ _fld=nameExpr; _gen=false; } }
+      const _lyr=(id==='ofm-city')?GE().layers.get(id):null;
+      const _held=!!(_lyr&&typeof _lyr==='object'&&_cityFieldWritten.get(_lyr)===_fld);
+      /* ⚠ `{validate:false}` ONLY for the era expression js/hist-cities.js says it built (see `built`
+         there): MapLibre's validator parses it a second time on every real change, and its shape is
+         validated by the tests instead. Everything else here is validated as always. */
+      if(!_held){ GE().layers.setLayout(id,'text-field',_fld,_gen?{validate:false}:undefined); if(_lyr&&typeof _lyr==='object') _cityFieldWritten.set(_lyr,_fld); }
       GE().layers.setLayout(id,'text-font',fontExpr);   /* (#R253) the face follows the label's own language */
       /* dark map / satellite → light text; light map → dark text. */
       const lightText = sat || isDark;

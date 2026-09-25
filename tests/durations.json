@@ -116,5 +116,6 @@
  "tests/r588.spec.js": 11,
  "tests/r668.spec.js": 3,
  "tests/r736-atlas-multiprobe.spec.js": 21,
- "tests/data-governance.spec.js": 5
+ "tests/data-governance.spec.js": 5,
+ "tests/hist-city-label-epoch.spec.js": 9
 }

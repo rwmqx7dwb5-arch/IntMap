@@ -22,7 +22,7 @@
  *  zoom ladder, and every other label on Earth is completely untouched. A `match` compiles to a hash
  *  lookup, so the cost does not grow with the size of the table.
  *
- *  ⚠ TWO MATCHES, NESTED, because the tile may carry the spelling in either field: `name:en` is
+ *  ⚠ TWO MATCHES, TRIED IN ORDER, because the tile may carry the spelling in either field: `name:en` is
  *  tried first and `name` (the local form) second. Every key of a city is in BOTH, and
  *  candidates sharing a spelling are grouped into ONE branch with a distance case per place.
  *  The build only admits shared spellings whose evidence-derived guards cannot overlap, so distant
@@ -51,7 +51,8 @@
  *  ⚠ AND THE FALLTHROUGHS ARE `let` BINDINGS, not copies. A branch that fails its guard has to
  *  fall back to the OTHER match (and that one to the base expression), and writing those out per
  *  branch would repeat the base expression once per key inside one layout property. `['let', …]`
- *  binds each once; the branch says `['var', …]`.
+ *  binds each once; the branch says `['var', …]`. The same goes for each group's guarded `case`:
+ *  it is bound once and both matches refer to it (see `textField`).
  *
  *  ══ WHEN IT APPLIES ════════════════════════════════════════════════════════════════════════════
  *  Whenever the master clock is NOT live. ⚠ NOT gated on `IntMapTimeBorders.active()`, which is what
@@ -69,6 +70,9 @@
 window.IntMapHistCities = (function () {
   var data = null, loading = null, wired = false;
   var cache = { key: null, expr: null };
+  /* the instants at which the set of spans the clock falls in can change — derived from `data`
+     the first time a label is asked for (see `epochOf`) */
+  var bounds = null;
   /* the nine language codes are js/lang-registry.js's own — the file carries all of them spelled
      out, so there is no fallback rule here that could drift from the one the build applied. */
   /* ⚠⚠⚠ (#R717) THE FALLBACK TO `en` IS NOW LOAD-BEARING, AND THAT IS THE POINT. The record used to
@@ -79,9 +83,11 @@ window.IntMapHistCities = (function () {
      ORDINARY here, not a defect — and `en` itself is the record's own spelling, which for 537 spans
      is in the script the source wrote it in (data/hist-cities.json's own `note` states the count). */
   var say = function (n, lang) { return (n && (n[lang] || n.en)) || ''; };
-  /* the two `let` bindings the guarded branches fall through to (#R521). Named, not inlined, so
-     the expression is read the same way by this file and by the tests that walk it. */
-  var VAR_BASE = 'imhcBase', VAR_LOCAL = 'imhcLocal';
+  /* the `let` bindings of the built expression (#R521): the ordinary label, the answer found through
+     each of the tile's two name fields, and one per candidate group (`VAR_GROUP` + its index).
+     Named, not inlined, so the expression is read the same way by this file and by the tests that
+     walk it. */
+  var VAR_BASE = 'imhcBase', VAR_EN = 'imhcEn', VAR_LOCAL = 'imhcLocal', VAR_GROUP = 'imhcG';
 
   /* the clock's instant as the same YYYYMMDD integer the build wrote into `f` / `t` */
   function dnum(d) { return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate(); }
@@ -91,6 +97,48 @@ window.IntMapHistCities = (function () {
       if ((!e.f || d >= e.f) && (!e.t || d <= e.t)) return e;
     }
     return null;   /* outside every span → the modern label the tile already carries */
+  }
+
+  /* ══ ⚠⚠⚠ THE EXPRESSION DEPENDS ON THE EPOCH, NOT ON THE DATE ═══════════════════════════════════
+     The label table below is a pure function of WHICH spans contain the clock's instant: `nameAt`
+     asks each span two integer questions, `d >= f` and `d <= t`, and nothing else about `d`. Those
+     answers can only change at `f` (the first day a span is in force) and at `t + 1` (the first
+     integer past its last day) — so between two consecutive such values every city's label is fixed,
+     and the expression built for any date in that interval is the same expression, byte for byte.
+     ⚠ This used to be keyed by the DATE (and the clock subscriber emptied it on every event), so every
+     move of the clock rebuilt the ~1.2 MB expression (6–14 ms) and every redraw — one to six per move,
+     measured 2026-09-26 — handed a new, equal object to MapLibre, which clones what it holds and
+     deep-compares before deciding nothing changed (4–44 ms each, 22–95 ms at 4× CPU throttling).
+     The build itself is unchanged; what changed is that a move that crosses no span boundary gets the
+     SAME object back, and js/place-labels.js then does not write it at all.
+     ⚠ A move that DOES cross one still costs one full parse, and leaving the present always crosses
+     one. That cost is MapLibre's, per real change, and this key cannot remove it — what made it
+     smaller is below: each group's guards written once (`textField`) and `{validate:false}` (`built`).
+     Measured 2026-09-26 on 1916-07-01, the same page and machine, one real change: 1,207,908 bytes /
+     7,954 `distance` → 874,655 bytes / 3,977, and 266–461 ms → 30–57 ms (1.2–1.6 s → 0.15–0.23 s at 4×).
+     ⚠ The boundaries are read off the record, never typed: a new row adds its own edges. `t + 1` is
+     an integer, not necessarily a calendar day (19661231 + 1 = 19661232) — that is intended, because
+     the question being mirrored is the integer comparison `d <= t`, and no valid `d` lies between
+     19661232 and 19670101. BCE instants are negative in the same encoding (`dnum`) and order the
+     same way. */
+  function boundaries(j) {
+    var s = new Set();
+    for (var i = 0; i < j.cities.length; i++) {
+      var e = j.cities[i].e;
+      for (var k = 0; k < e.length; k++) {
+        if (e[k].f) s.add(e[k].f);
+        if (e[k].t) s.add(e[k].t + 1);
+      }
+    }
+    return Array.from(s).sort(function (a, b) { return a - b; });
+  }
+  /* the number of boundaries at or before `d` — two instants with the same count lie in the same
+     interval, so every span answers them alike */
+  function epochOf(d) {
+    if (!bounds) bounds = boundaries(data);
+    var lo = 0, hi = bounds.length;
+    while (lo < hi) { var mid = (lo + hi) >>> 1; if (bounds[mid] <= d) lo = mid + 1; else hi = mid; }
+    return lo;
   }
 
   /* An open start is missing evidence, not a claim extending to the clock's earliest year.
@@ -110,6 +158,7 @@ window.IntMapHistCities = (function () {
     /* Publish the in-flight promise before fetch or redraw can re-enter this reader. */
     loading = Promise.resolve().then(function () { return fetch(url); }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       data = (j && Array.isArray(j.cities) && j.cities.length) ? j : null;
+      bounds = null; cache = { key: null, expr: null };   /* both are derived from `data` */
       /* the labels were drawn while this was in flight — redraw them now that the table exists */
       if (data) { try { if (window.applyLabelLang) window.applyLabelLang(); } catch (_) {} }
       return data;
@@ -178,17 +227,20 @@ window.IntMapHistCities = (function () {
        asking for something the record does not hold. */
     var lg = labelLanguage(lang, mode);
     var d = dnum(window.IntMapTime.when());
-    /* ⚠ THE BASE EXPRESSION IS PART OF THE KEY, not just the date and the language. `base` is what
+    /* ⚠ THE BASE EXPRESSION IS PART OF THE KEY, not just the epoch and the language. `base` is what
        everything falls through to — the label every city outside the record gets — and it is rebuilt by
        the caller on every call. 'en' and 'local' both resolve to the English column above, so a
        reader switching 「英語で」→「現地表記で」 while travelling would hit a cache entry whose
        default was still the OTHER mode's expression, and every unlisted city on Earth would keep
-       the wrong language until the year moved. */
-    var key = d + '|' + lg + '|' + JSON.stringify(base);
+       the wrong language until the year moved.
+       ⚠ And the EPOCH, not the date (see `epochOf`): a hit returns the very object the last call
+       returned, which is what lets js/place-labels.js skip the write altogether. */
+    var key = epochOf(d) + '|' + lg + '|' + JSON.stringify(base);
     if (cache.key === key && cache.expr) return cache.expr;
 
     var byEn = ['match', ['coalesce', ['get', 'name:en'], '']];
     var byLocal = ['match', ['coalesce', ['get', 'name'], '']];
+    var groupBindings = ['let'];
     var hits = 0, candidates = new Map();
     for (var i = 0; i < data.cities.length; i++) {
       var c = data.cities[i];
@@ -213,34 +265,48 @@ window.IntMapHistCities = (function () {
       if (!groups.has(signature)) groups.set(signature, { keys: [], list: list });
       groups.get(signature).keys.push(spelling);
     });
+    /* ══ ⚠⚠ EACH GROUP'S GUARDS ARE WRITTEN ONCE, AND BOTH NAME FIELDS POINT AT THEM ══════════════
+       The two matches used to carry their own copy of every group's `case` — on 1916-07-01, 3,977
+       guarded candidates written twice, 7,954 `distance` conditions, all parsed by MapLibre on every
+       real change. The `case` is now one `let` binding per group, and both matches answer with
+       `['var', …]`. MapLibre's `var` evaluates its bound expression where it is used (Let / Var in
+       @maplibre/maplibre-gl-style-spec evaluate lazily), so a feature still only asks the guards of
+       the group its spelling selected.
+       ⚠ The fall-through means what it meant: a group with no guard containing the feature answers
+       '' (never a label — `displayName` is never empty for a candidate), the name:en answer wins when
+       it is not '', then the local-name answer, then the ordinary label. */
+    var gi = 0;
     groups.forEach(function (group) {
-      var enCase = ['case'], localCase = ['case'];
-      group.list.forEach(function (v) {
-        enCase.push(v.near, v.label);
-        localCase.push(v.near, v.label);
-      });
-      enCase.push(['var', VAR_LOCAL]);
-      localCase.push(['var', VAR_BASE]);
-      byEn.push(group.keys, enCase);
-      byLocal.push(group.keys, localCase);
+      var guarded = ['case'];
+      group.list.forEach(function (v) { guarded.push(v.near, v.label); });
+      guarded.push('');
+      var name = VAR_GROUP + (gi++);
+      groupBindings.push(name, guarded);
+      byEn.push(group.keys, ['var', name]);
+      byLocal.push(group.keys, ['var', name]);
     });
     if (!hits) { cache = { key: key, expr: base }; return base; }
-    byLocal.push(['var', VAR_BASE]);   /* nothing matched either field → the ordinary label */
-    byEn.push(['var', VAR_LOCAL]);
-    var expr = ['let', VAR_BASE, base, ['let', VAR_LOCAL, byLocal, byEn]];
-    cache = { key: key, expr: expr };
+    byEn.push('');     /* a spelling in neither table: nothing found through this field */
+    byLocal.push('');
+    groupBindings.push(['let', VAR_EN, byEn, VAR_LOCAL, byLocal,
+      ['case', ['!=', ['var', VAR_EN], ''], ['var', VAR_EN],
+        ['!=', ['var', VAR_LOCAL], ''], ['var', VAR_LOCAL],
+        ['var', VAR_BASE]]]);
+    var expr = ['let', VAR_BASE, base, groupBindings];
+    cache = { key: key, expr: expr, built: true };
     return expr;
   }
 
   /* ── the clock ─────────────────────────────────────────────────────────────────────────────── */
   /* ⚠ THE REDRAW IS THIS FILE'S JOB. `applyLabelLang` runs on styledata, on a language change and
      on the two label toggles — none of which fires when the year moves — so before this subscriber
-     existed the era name would not have appeared until something else happened to repaint. */
+     existed the era name would not have appeared until something else happened to repaint.
+     ⚠ It no longer empties the cache: the key already carries the epoch, and emptying it on every
+     tick is what made a move inside one epoch rebuild — and rewrite — the whole expression. */
   function wire() {
     if (wired) return; wired = true;
     try {
       window.IntMapTime.on(function (e) {
-        cache = { key: null, expr: null };
         if (!e.isLive) ensure();
         try { if (window.applyLabelLang) window.applyLabelLang(); } catch (_) {}
       });
@@ -248,6 +314,17 @@ window.IntMapHistCities = (function () {
   }
   wire();
 
-  return { textField: textField, at: at, forFeature: forFeature, ensure: ensure, ready: function () { return !!data; },
+  /* ── is this the expression this file BUILT? ─────────────────────────────────────────────────
+     True only for the era expression last handed out — not for the caller's own `base` handed back.
+     js/place-labels.js asks, because this is the one `text-field` it writes with MapLibre's
+     `{validate:false}`: every piece of it is generated here from a fixed shape, and that shape is
+     run through the style validator itself (`validateStyleMin`) and MapLibre's own parser by
+     tests/hist-city-label-epoch-checks.test.mjs, tests/r427-checks.test.mjs and others, at dates
+     chosen from the record. Validation parses the expression (~0.9 MB on 1916-07-01) a second time on
+     every real change — about half of what a change cost, measured — and what it would catch is
+     caught there instead. */
+  function built(expr) { return !!(expr && cache.built && expr === cache.expr); }
+
+  return { textField: textField, built: built, at: at, forFeature: forFeature, ensure: ensure, ready: function () { return !!data; },
     count: function () { return data ? data.cities.length : 0; } };
 })();
