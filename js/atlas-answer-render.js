@@ -274,7 +274,34 @@ export function makeAtlasAnswerRender() {
     return demoteUnfetchedLinks(html, hosts);
   }
 
-    const API = { answerCSS, answerPlainText, renderAnswer, stripModelUrls, demoteUnfetchedLinks, demoteProseLinks };
+  /**
+   * citedRecords(env, registry) -> records the RENDERED answer rests on, in first-citation order.
+   *
+   * ⚠ (#732) THIS IS WHAT 「使用データ」 SAYS NOW. It used to be the labels of every data block the
+   * caller had put in the prompt, so an answer about a lake's area listed 「地震」 (measured on
+   * production 2026-09-18). The model already states what each claim rests on (`evidenceIds`, and
+   * `basedOn` for an inference that rests on other claims); this reads that statement from the
+   * text the reader actually sees — the direct answer and every non-empty block — and nothing else.
+   * A record nobody cites is not in the answer, however much of the prompt it filled.
+   */
+  function citedRecords(env, registry) {
+    const out = [];
+    if (!env || !env.answer || !registry) return out;
+    const byId = new Map(); (env.claims || []).forEach((c) => byId.set(c.id, c));
+    const seen = new Set(), visited = new Set();
+    const visit = (cid) => {
+      if (visited.has(cid)) return; visited.add(cid);
+      const c = byId.get(cid); if (!c) return;
+      (c.evidenceIds || []).forEach((eid) => { const r = registry.get(eid); if (r && !seen.has(r.id)) { seen.add(r.id); out.push(r); } });
+      (c.basedOn || []).forEach(visit);
+    };
+    const da = env.answer.directAnswer;
+    if (da && String(da.text || '').trim()) (da.claimIds || []).forEach(visit);
+    (env.answer.sections || []).forEach((s) => (s.blocks || []).forEach((b) => { if (String(b.text || '').trim()) (b.claimIds || []).forEach(visit); }));
+    return out;
+  }
+
+    const API = { answerCSS, answerPlainText, citedRecords, renderAnswer, stripModelUrls, demoteUnfetchedLinks, demoteProseLinks };
     try { window.IntMapAnswerRender = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

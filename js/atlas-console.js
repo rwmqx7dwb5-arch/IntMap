@@ -1037,7 +1037,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        exported factory per file, nothing private at a module's top level, and the API attached to
        window so the browser spec can drive the REAL renderer rather than a Node copy of it. */
     const { runStructuredAnswer, auditMeta } = makeAtlasAnswerPipeline();
-    const ARENDER = makeAtlasAnswerRender(); const { renderAnswer, answerPlainText, answerCSS } = ARENDER;   /* (#R589) the whole surface too, because _atlCompose needs demoteProseLinks */
+    const ARENDER = makeAtlasAnswerRender(); const { renderAnswer, answerPlainText, answerCSS, citedRecords } = ARENDER;   /* (#R589) the whole surface too, because _atlCompose needs demoteProseLinks */
     const { makeEvidenceRegistry } = makeAtlasEvidence();
     const { normalizeAnswer } = makeAtlasAnswerContract();
     const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
@@ -1419,6 +1419,8 @@ window.IntMapModules.atlasConsole=function(HOST){
       recs.forEach((r,i)=>{ r.id='e'+(i+1); });
       return recs; }
     const _ORIGIN_LBL={ loaded:'loaded IntMap feed', gdelt:'GDELT web search', gnews:'Google News web search' };
+    /* (#732) what the reader's 「使用データ」 line calls an article, by where IntMap got it — the two words that line always used, now carried ON the record so the line can name only the ones an answer cites */
+    const _newsLbl=o=>(o==='gdelt'||o==='gnews')?L('web news search','Webニュース検索','Web-News-Suche','поиск веб-новостей','búsqueda de noticias web'):L('news','ニュース','News','новости','noticias');
     /* Render the dated evidence as the single NEWS EVIDENCE block. */
     function _evidenceBlock(recs){ if(!recs||!recs.length) return '';
       const lines=recs.map(r=>'['+r.id+'] title: '+r.title+' | source: '+(r.src||'?')+(r.origin?(' ('+(_ORIGIN_LBL[r.origin]||r.origin)+')'):'')+(r.place?(' | place: '+r.place):'')+' | article_date: '+(r.date||'unknown')+' | date_type: '+r.dateType+' | event_date: unknown | url: '+(r.url||'(none)'));
@@ -3241,11 +3243,12 @@ window.IntMapModules.atlasConsole=function(HOST){
           /* ⚠⚠⚠ (#R747) A LINE IS ITS COURSE, NOT ITS CAPTION — the rule `addPin` and `_radiusFromPoint`
              take in js/app-body.js. Measured: 「нарисуй линию」 Lisbon→Cape Town drew the SAME line five
              times because each retry carried a different label and colour. A redraw is a restyling. */
-          const _lnKey=pts.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)).join(' ');
-          const _lnSame=_hlLines.find(l=>l&&l.geo&&l.geo.type==='LineString'&&(l.geo.coordinates||[]).map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)).join(' ')===_lnKey);
+          /* ⚠ (#732) …AND A COURSE HAS NO DIRECTION: Cape Town→Reykjavik is the line Reykjavik→Cape Town already on the map, so the key is the smaller of the two readings */
+          const _lnK=ps=>{ const f=ps.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)), b=f.slice().reverse().join(' '), a=f.join(' '); return a<b?a:b; }, _lnKey=_lnK(pts);
+          const _lnSame=_hlLines.find(l=>l&&l.geo&&l.geo.type==='LineString'&&_lnK(l.geo.coordinates||[])===_lnKey);
           let _lnObj; if(_lnSame){ _lnObj=_lnSame; _lnSame.key=_lnKey; _lnSame.color=col||undefined; _lnSame.w=(a.width!=null&&isFinite(+a.width))?+a.width:3; if(String(a.label||'')) _lnSame.name=String(a.label||''); } else { _lnObj={geo:{type:'LineString',coordinates:pts},key:_lnKey,color:col||undefined,w:(a.width!=null&&isFinite(+a.width))?+a.width:3,name:String(a.label||'')}; _hlLines.push(_lnObj); }   /* (#R760) the course IS the identity (see the note above) — js/atlas-era-highlight.js reads `name || key` */
           const okL=paintLines(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
-          return R(okL, okL?note('✏️ '+L('Line drawn','ラインを描画しました','Linie gezeichnet','Линия нарисована','Línea dibujada')+(a.label?(' — '+esc(a.label)):'')+' ('+pts.length+' pts)'):warn('⚠'), okL?{meta:{painted:{lines:[_lnObj.name||_lnObj.key]}}}:null); }   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/r760-atlas-verdict-checks.test.mjs */
+          return R(okL, okL?note('✏️ '+L('Line drawn','ラインを描画しました','Linie gezeichnet','Линия нарисована','Línea dibujada')+(a.label?(' — '+esc(a.label)):'')+' ('+pts.length+' pts)'):warn('⚠'), okL?{meta:{painted:{lines:[_lnObj.name||_lnObj.key]},resultKey:'map.line:'+_lnKey}}:null); }   /* (#732) `resultKey` = WHAT this call did, and a caption is not what it did: js/atlas-agent.js reads it to tell Atlas that a relabelled redraw is the line it already drew */   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/r760-atlas-verdict-checks.test.mjs */
         case 'drawPolygon': case 'polygon': { let pts=[]; if(Array.isArray(a.points)) pts=a.points.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
           if(!pts.length&&Array.isArray(a.places)){ for(const pn of a.places.slice(0,12)){ const g=await geocode(String(pn)); if(g) pts.push([g.lng,g.lat]); } }
           if(pts.length<3) return R(false, warn('⚠ '+L('Need at least three points','3点以上必要です','Mindestens drei Punkte nötig','Нужно минимум три точки','Se necesitan al menos tres puntos')));
@@ -3254,7 +3257,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const _pgKey=pts.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)).join(' '); let _pgObj=_hlPolys.find(p=>p&&p.key===_pgKey); if(_pgObj){ _pgObj.color=colP||undefined; if(String(a.label||'')) _pgObj.name=String(a.label||''); } else { _pgObj={geo:{type:'Polygon',coordinates:[pts]},key:_pgKey,color:colP||undefined,name:String(a.label||'')}; _hlPolys.push(_pgObj); }   /* ⚠ (#R760) THE RING IS THE IDENTITY, AND A REDRAW OF IT IS A RESTYLING — the rule #R747 gave the line, which drawPolygon never got: measured locally, two identical `map.drawPolygon` calls left TWO polygons stacked on the map and both were reported `ok`, so nothing anywhere said the second one was the first one again */
           const _pgId=(window._imHlPolys&&window._imHlPolys.tagId)?window._imHlPolys.tagId(_pgObj):null;   /* (#R120) drawn polygon becomes a referencable map-object */
           const okPg=paintPolys(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
-          return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn('⚠'), okPg?Object.assign({meta:{painted:{polys:[_pgObj.name||_pgObj.key]}}},_pgId?{objectIds:[_pgId]}:null):null); }
+          return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn('⚠'), okPg?Object.assign({meta:{painted:{polys:[_pgObj.name||_pgObj.key]},resultKey:'map.polygon:'+_pgKey}},_pgId?{objectIds:[_pgId]}:null):null); }
         case 'controls': { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") */
           const items=Array.isArray(a.items)?a.items.slice(0,8):[];
           if(!items.length) return R(false, warn('⚠'));
@@ -3376,8 +3379,8 @@ window.IntMapModules.atlasConsole=function(HOST){
           const covNames=[]; try{ codes.forEach(c=>{ const s6=countryStats[c]; if(s6&&(s6.nameEn||nm(s6))) covNames.push(s6.nameEn||nm(s6)); }); }catch(_){}
           if(!covNames.length&&cnames.length) cnames.forEach(n7=>{ const t7=String(n7||'').trim(); if(t7) covNames.push(t7); });
           const coverage={ region:(placeStr||(ctx&&ctx.name)||''), countries:covNames };
-          let block=''; const usedNames=[];
-          const push2=(tag,lbl,v)=>{ if(v){ block+='['+tag+']\n'+v+'\n\n'; usedNames.push(lbl); } };
+          let block=''; const parts=[];   /* ⚠⚠⚠ (#732) each DATA block is a part with its reader label, and becomes an evidence record the answer's claims can cite (js/atlas-answer-pipeline.js) — 「使用データ」 is read off those citations below, no longer off what was put in the prompt */
+          const push2=(tag,lbl,v)=>{ if(v){ parts.push(block,{tag:tag,label:lbl,text:v}); block=''; } };
           /* TIME CONTEXT + REQUESTED COVERAGE first — the model reads the clock (and the country set it must cover)
              before the evidence. Shared with the regression harness via _analyzeHeaderBlock so they never drift. */
           block+=_analyzeHeaderBlock(nowCtx, freshness, coverage);
@@ -3385,11 +3388,8 @@ window.IntMapModules.atlasConsole=function(HOST){
              its date_type and event_date:unknown — replaces the 3 undated headline dumps that let the model read a
              publication/seen date as the event date. */
           const evRecs=_analyzeEvidence(srcSink); const evBlock=_evidenceBlock(evRecs);
-          if(evBlock){ block+='[NEWS EVIDENCE — headlines IntMap gathered'+(ctx&&ctx.name?(', around '+ctx.name):'')+'. Each item is a LEAD, not a confirmed event: article_date/date_type = when the ARTICLE appeared; event_date is UNKNOWN unless the wording itself verifies it. Ordered newest-first by article date.]\n'+POLICY.turnMechanics.fence.wrap(evBlock)+'\n\n';   /* (#R801) outside text, fenced — see _agentPrompt */
-            const origins=new Set(evRecs.map(r=>r.origin));
-            if(origins.has('loaded')) usedNames.push(L('news','ニュース','News','новости','noticias'));
-            if(origins.has('gdelt')||origins.has('gnews')) usedNames.push(L('web news search','Webニュース検索','Web-News-Suche','поиск веб-новостей','búsqueda de noticias web')); }
-          else if(got.news){ block+='[LATEST NEWS (loaded in IntMap'+(ctx&&ctx.name?(', filtered to '+ctx.name):'')+')]\n'+POLICY.turnMechanics.fence.wrap(got.news)+'\n\n'; usedNames.push(L('news','ニュース','News','новости','noticias')); }
+          if(evBlock){ block+='[NEWS EVIDENCE — headlines IntMap gathered'+(ctx&&ctx.name?(', around '+ctx.name):'')+'. Each item is a LEAD, not a confirmed event: article_date/date_type = when the ARTICLE appeared; event_date is UNKNOWN unless the wording itself verifies it. Ordered newest-first by article date.]\n'+POLICY.turnMechanics.fence.wrap(evBlock)+'\n\n';   /* (#R801) outside text, fenced — see _agentPrompt */ }
+          else if(got.news) push2('LATEST NEWS (loaded in IntMap'+(ctx&&ctx.name?(', filtered to '+ctx.name):'')+')',_newsLbl('loaded'),POLICY.turnMechanics.fence.wrap(got.news));
           else if(freshness.critical) missing.push(L('in-window verified events','対象期間内の確認済み出来事','verifizierte Ereignisse im Zeitfenster','подтверждённые события в окне','eventos verificados en la ventana'));
           push2('CURRENT NATIONAL LEADERS (Wikidata LIVE query, P6/P35 — authoritative for who currently holds office)','Wikidata',got.leaders);
           push2('BACKGROUND (Wikipedia)','Wikipedia',got.wiki);
@@ -3436,14 +3436,14 @@ window.IntMapModules.atlasConsole=function(HOST){
              kernel is under a shrink-only ceiling (tests/r199 ⑤) and new logic goes to a module. */
           let RES=null;
           try{ RES=await runStructuredAnswer({
-              question:q, dataBlock:block, systemPrompt:sys2, language:lang,
+              question:q, dataBlock:parts.concat([block]), systemPrompt:sys2, language:lang,
               /* (#R406) ATLAS says whether this is about now or about the past, as an argument on the
                  call. It used to be _requestProfile(q) — a regular expression over the reader's
                  sentence, which is the layer this round removed. */
               temporalMode:String((a&&a.temporalMode)||'unspecified'),
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
-              turnId:_curTurnKey, webMode:analysisWebMode, clientSources:srcSink,
-              appFacts:_statsFacts(codes), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
+              turnId:_curTurnKey, webMode:analysisWebMode, clientSources:srcSink.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
+              appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
           catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           const _env=RES.env, _reg=RES.registry;
@@ -3470,7 +3470,7 @@ window.IntMapModules.atlasConsole=function(HOST){
             'Die Live-Web-Verifizierung wurde für diese zeitkritische Frage nicht abgeschlossen — dies ist eine VORLÄUFIGE Einschätzung, überwiegend auf bereits gesammelten Schlagzeilen; als Hinweise, nicht als bestätigte Belege behandeln.',
             'Проверка в реальном времени по этому чувствительному ко времени вопросу не завершилась — это ПРЕДВАРИТЕЛЬНАЯ оценка, в основном по уже собранным заголовкам; считайте их зацепками, а не подтверждёнными доказательствами.',
             'No se completó la verificación web en vivo para esta pregunta sensible al tiempo, por lo que es una evaluación PROVISIONAL basada sobre todo en titulares ya recopilados; trátalos como indicios, no como evidencia directa confirmada.')+'</div>';
-          const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
+          const usedAll=[]; citedRecords(_env,_reg).forEach(r=>{ if(r.label&&usedAll.indexOf(r.label)<0) usedAll.push(r.label); });   /* (#732) what the rendered claims CITE (js/atlas-answer-render.js citedRecords) — not every block that was put in the prompt */
           if(RES.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
           if(usedAll.length) html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+'</div>';   /* (#R118) no data → NO empty "Data used:" line */
           const _am=auditMeta(_env); return _am?R(true,html,{meta:_am}):R(true,html); }   /* ⚠ (#R419/#R472) THE ANSWER IS RENDERED IN FULL AND ATLAS IS TOLD WHAT THE AUDIT NOTICED — codes, not a verdict, and never a claim that something was removed (nothing is). auditMeta() in js/atlas-answer-pipeline.js. */
@@ -3903,12 +3903,21 @@ window.IntMapModules.atlasConsole=function(HOST){
       if(/[가-힯]/.test(s)) return 'Korean';
       if(/[؀-ۿ]/.test(s)) return 'Arabic';
       if(/[а-яё]/i.test(s)) return 'Russian';
-      if(/[a-zà-ÿœß]/i.test(s)){ const low=' '+s.toLowerCase()+' ';
-        if(/\s(der|die|das|und|nicht|eine?|zeige?|bitte|karte|wo\s+ist)\s/.test(low)||/[äöüß]/.test(s)) return 'German';
-        if(/\s(el|la|los|las|una?|qué|cómo|dónde|muestra|país|por favor)\s/.test(low)||/[¿¡ñ]/.test(s)) return 'Spanish';
-        if(/\s(le|les|une?|est|montre|où|carte|pays|s'il)\s/.test(low)) return 'French';
-        if(/\s(il|lo|gli|una?|dove|mostra|paese|per favore)\s/.test(low)) return 'Italian';
-        if(/\s(the|is|are|show|please|what|where|map|and|of|to)\s/.test(low)) return 'English';
+      /* ⚠⚠⚠ (#732) THE LANGUAGE IS THE ONE WITH THE MOST EVIDENCE, NOT THE FIRST ONE ASKED. These tests ran in a
+         fixed order and returned on the FIRST hit, and a hit was one word or one letter — so German, asked first,
+         won on a single 「die」 or a single umlaut, and Spanish on a single 「los」 or 「la」, before English was ever
+         asked. A place name carries exactly those: 「Show Los Angeles on the map」 answered in Spanish, 「What is the
+         weather in Zürich?」 in German, 「Why did the dinosaurs die out?」 in German — while the same sentence held
+         three or four English function words. MEASURED on production (2026-09-18, build R783): one English question
+         of 46 was answered in German. Same word lists, same letters; each now counts, and the most-attested
+         language wins. A tie goes to the reader's own UI language when it is among the tied, which is what the
+         fallback below already means by 「unclear」. */
+      if(/[a-zà-ÿœß]/i.test(s)){ const words=s.toLowerCase().split(/[^a-zà-ÿœß']+/).filter(Boolean);
+        const LEX=[['German',/^(der|die|das|und|nicht|eine?|zeige?|bitte|karte|wo|ist)$/,/[äöüß]/],['Spanish',/^(el|la|los|las|una?|qué|cómo|dónde|muestra|país|por)$/,/[¿¡ñ]/],
+          ['French',/^(le|les|une?|est|montre|où|carte|pays|s'il)$/,null],['Italian',/^(il|lo|gli|una?|dove|mostra|paese|per)$/,null],['English',/^(the|is|are|show|please|what|where|map|and|of|to)$/,null]];
+        const sc=LEX.map(([nm,w,mark])=>[nm,words.filter(x=>w.test(x)).length+((mark&&mark.test(s))?1:0)]); const top=Math.max.apply(null,sc.map(x=>x[1]));
+        if(top>0){ const tied=sc.filter(x=>x[1]===top).map(x=>x[0]); let ui=''; try{ ui=(typeof _aiLangName==='function')?_aiLangName():''; }catch(_){}
+          return tied.indexOf(ui)>=0?ui:(tied.indexOf('English')>=0?'English':tied[0]); }
       }
       /* (#R85d) CJK ideographs WITHOUT kana: NEVER assume Chinese — IntMap does not reply in Chinese, and its users
          write Japanese in kanji ("漢字で入力したら中国語で返答される" bug). Mirror the user's chosen UI language. */

@@ -113,9 +113,12 @@ test('R760 ⑥ the painters that hold a named surface declare what they painted'
   const src = readLF(join(ROOT, 'js', 'atlas-console.js'));
   assert.ok(src.includes('meta:{painted:{choro:Object.keys(_choroState)}}'),
     'drawChoro states the countries it shaded');
-  assert.ok(src.includes('meta:{painted:{lines:[_lnObj.name||_lnObj.key]}}'),
+  /* ⚠ (#732) the declaration is a MEMBER of `meta`, and `meta` may say more than one thing — #732 added
+     `resultKey` beside it and the old spelling (`…]}}`, i.e. «painted is the last member») failed a change
+     that kept the declaration intact. The fact is that the painter declares; that is what is read. */
+  assert.match(src, /meta:\{painted:\{lines:\[_lnObj\.name\|\|_lnObj\.key\]\}[,}]/,
     'drawLine states the course it drew');
-  assert.ok(src.includes('meta:{painted:{polys:[_pgObj.name||_pgObj.key]}}'),
+  assert.match(src, /meta:\{painted:\{polys:\[_pgObj\.name\|\|_pgObj\.key\]\}[,}]/,
     'drawPolygon states the ring it drew');
   /* and the course is put ON the object, or the declaration names something the reading cannot find */
   assert.ok(src.includes('_lnSame.key=_lnKey'), 'a restyled line keeps its course as its identity');

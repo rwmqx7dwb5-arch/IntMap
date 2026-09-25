@@ -22,6 +22,7 @@
  *  invisible features). "Tidying" one is how the correction gets lost. Change a block only to fix
  *  what it says about the app, and say which round and which report in the change.
  * ==========================================================================*/
+import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* (#732) for `placeRules.selfLocWords` only — see `_PHRASES` below. Both files are in js/atlas-console.js's on-demand graph already, so this moves nothing onto the boot path. */
 export function makeAtlasCatalogText(HOST, CTX) {
   return (function () {
     var moduleCatalog = (CTX && CTX.moduleCatalog) || function () { return ''; };
@@ -181,6 +182,22 @@ export function makeAtlasCatalogText(HOST, CTX) {
     }
 
     var API = {};
+    /* ══ ⚠⚠⚠ (#732) THE PHRASES A READER USES FOR A CAPABILITY, WHERE THE PRODUCT ALREADY HOLDS THEM ══════
+       MEASURED (R802 §10, production 2026-09-18): 「現在地」 did not reach `view.locate`. The registry row's
+       spellings are `myLocation, whereAmI` — English identifiers, by design (a Japanese word there is a
+       translation tuple, #R347) — so «my location» scored 100 and 「現在地」 scored 3, the documentation's
+       share for a word four blocks carry, and lost the tie to the two capabilities whose CATEGORY hint
+       happens to contain it (navigation.camera, routing.isochrone). Meanwhile js/atlas-geo-resolve.js has
+       held the reader's own phrases for exactly this act — 「現在地」 in all nine languages, the table
+       #R413 made MEASURABLE — and that table decides, on every call, that such a phrase means the device.
+       ⚠ SO THE SEARCH IS HANDED THAT TABLE, NOT A TRANSLATION OF IT. One vocabulary answers both 「what
+       does the reader mean by this place」 and 「which capability shows it」, and a phrase added there
+       reaches both. js/atlas-capabilities.js scores a phrase exactly as it scores the row's own spellings.
+       The map says WHICH capability a product vocabulary names; the vocabulary itself is never copied. */
+    var _PHRASES = {
+      'view.locate': function () { var w = makeAtlasGeoResolve.placeRules.selfLocWords || {}; return Object.keys(w).reduce(function (a, k) { return a.concat(w[k]); }, []); },
+    };
+    API.phrases = function (id) { var f = _PHRASES[id]; try { return f ? f().slice() : []; } catch (_) { return []; } };
     API.blocks = function () { return blocks().map(function (b) { return { ids: b.ids.slice(), bytes: b.t.length }; }); };
     API.count = function () { return blocks().length; };
     API.idsCovered = function () {

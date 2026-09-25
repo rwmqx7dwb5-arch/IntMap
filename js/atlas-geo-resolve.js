@@ -243,10 +243,20 @@ makeAtlasGeoResolve.placeRules = (function(){
        reader which reaches it by name and a reader which reaches it off the global get the same
        object — js/nominatim-gate.js's shape, for js/nominatim-gate.js's reason. `namesakeOk` is
        offered but belongs to the confirming door; see its own note above. */
+    const SELFLOC_WORDS=Object.freeze({
+      en:['my location','my current location','my position','my current position','current location','current position','where am i','where i am','where iam'],
+      jp:['現在地','現在の位置','今いる場所','今いる位置','今の場所','今の位置','自分の位置','自分の居場所','自分の現在地','マイロケーション','マイ ロケーション'],
+      de:['mein standort','mein aktueller standort','aktueller standort','meine position','wo bin ich'],
+      ru:['где я','где я нахожусь','моё местоположение','моёместоположение','мое местоположение','текущее местоположение','моя позиция'],
+      es:['mi ubicación','mi ubicacion','ubicación actual','ubicacion actual','mi posición','mi posicion','dónde estoy','donde estoy'],
+      fr:['ma position','ma position actuelle','position actuelle','ma localisation','où je suis','ou je suis','où suis-je','ou suis-je'],
+      ko:['내 위치','내위치','현재 위치','현재위치','지금 위치','지금위치','내 현재 위치'],
+      zh:['我的位置','目前位置','現在位置','目前所在位置','我在哪','我在哪裡'],
+      'zh-hans':['我的位置','当前位置','现在位置','当前所在位置','我在哪','我在哪里'] });
     return { featureNames: makeAtlasGeoResolve.featureNames,
       nkey: _nkey, agreement: _nameAgreement, rankable: _rankableFor, namesakeOk: _namesakeOk,
       classBonus: _classBonus, queryCore: _queryCore, regionBox: regionBox, REGION_ALIASES: REGION_ALIASES,
-      NAME_AGREE_MIN: NAME_AGREE_MIN, IMPORTANCE_FLOOR: IMPORTANCE_FLOOR };
+      NAME_AGREE_MIN: NAME_AGREE_MIN, IMPORTANCE_FLOOR: IMPORTANCE_FLOOR, selfLocWords: SELFLOC_WORDS };
 })();
 try{ window.IntMapPlaceRules = makeAtlasGeoResolve.placeRules; }catch(_){}
 
@@ -279,16 +289,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
        reads the shipped set off the directory and requires a key for each. A hand-written list of
        "the languages we support" is the exact shape #R399 found lying. Every spelling the old
        expression accepted is still here. */
-    const SELFLOC_WORDS=Object.freeze({
-      en:['my location','my current location','my position','my current position','current location','current position','where am i','where i am','where iam'],
-      jp:['現在地','現在の位置','今いる場所','今いる位置','今の場所','今の位置','自分の位置','自分の居場所','自分の現在地','マイロケーション','マイ ロケーション'],
-      de:['mein standort','mein aktueller standort','aktueller standort','meine position','wo bin ich'],
-      ru:['где я','где я нахожусь','моё местоположение','моёместоположение','мое местоположение','текущее местоположение','моя позиция'],
-      es:['mi ubicación','mi ubicacion','ubicación actual','ubicacion actual','mi posición','mi posicion','dónde estoy','donde estoy'],
-      fr:['ma position','ma position actuelle','position actuelle','ma localisation','où je suis','ou je suis','où suis-je','ou suis-je'],
-      ko:['내 위치','내위치','현재 위치','현재위치','지금 위치','지금위치','내 현재 위치'],
-      zh:['我的位置','目前位置','現在位置','目前所在位置','我在哪','我在哪裡'],
-      'zh-hans':['我的位置','当前位置','现在位置','当前所在位置','我在哪','我在哪里'] });
+    const SELFLOC_WORDS=_PR.selfLocWords;   /* (#732) the table itself now lives in `placeRules` above, beside the other rules the three doors share — the capability search reads the same object (js/atlas-catalog-text.js `phrases`), so 「現在地」 is one vocabulary, not two */
     const SELFLOC_RE=new RegExp('^\\s*(?:'+Object.keys(SELFLOC_WORDS)
       .reduce((a,k)=>a.concat(SELFLOC_WORDS[k]),[])
       .map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))
@@ -347,6 +348,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
          NO single OSM boundary, so whatever a free-text search returns for them is a namesake by
          construction. A name the store does not hold falls through unchanged. */
       { const reg=regionBox(place); if(reg) return _setLast({lng:reg.lng, lat:reg.lat, name:reg.name, bbox:reg.box, kind:'region', region:true}); }
+      { const hp=_histPolity(place); if(hp) return _setLast({lng:hp.lng, lat:hp.lat, name:hp.name, bbox:hp.box, kind:'polity'}); }   /* (#732) the polity the map is drawing this year — see `_histPolity` */
       if(!place||DEIXIS_RE.test(place)){
         const _lastPlace=CTX.lastPlace(); if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=GE().camera.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
       /* (#R93d) A 'capital' fuzzy match carries the COUNTRY's centroid, NOT the city — up to ~80 km off (searching
@@ -354,7 +356,15 @@ export function makeAtlasGeoResolve(HOST, CTX) {
          out in the countryside where transit/road routers find no stop → a false "no route". So DON'T short-circuit on
          a capital match: prefer precise Nominatim coords for it, and keep the coarse fuzzy result only as a fallback. */
       let _fz=null;
-      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length){ _fz={lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}; if(_fz.kind!=='capital') return _setLast(_fz); } } }catch(_){}
+      /* ⚠⚠⚠ (#732) A FUZZY ROW IS A SUGGESTION, AND THIS DOOR CONFIRMS. `localFuzzyPlaces` is the search box's
+         typo-tolerant matcher — prefix, substring, Levenshtein — and this line took its FIRST row and returned it
+         before the rules below were ever asked. So a partial match became the answer: 「Pacific」 → Pacifica,
+         California (the word-prefix tier), 「大西洋」 → Atlantic City, New Jersey (whose Chinese name 大西洋城
+         contains the query) — an ocean asked for, a town answered, while Nominatim names the ocean itself and
+         says what KIND it is (`place`/`ocean`). #R802's `_namesakeOk` states the rule for a confirming door: a
+         row answers only to its own whole name. The matcher says which of its rows are that (`exact`); only
+         those confirm here, and everything else goes on to the gazetteers that can be held to the rules. */
+      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); const h0=h&&h.find(x=>x&&x.exact); if(h0){ _fz={lng:+h0.lng,lat:+h0.lat,name:h0.name,kind:h0.kind||''}; if(_fz.kind!=='capital') return _setLast(_fz); } } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
          real extent so a continent zooms out and a city zooms in (was: everything pinned at country-zoom ~6). */
       try{ await NominatimGate.nominatimSlot(); const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&namedetails=1&limit=8&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); const hit=_pickNominatim(place,j); if(hit){ const b=hit.boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+hit.lon,lat:+hit.lat,name:(hit.display_name||'').split(',')[0],bbox,kind:(hit.addresstype||hit.type||hit.class||'')}); } }catch(_){}   /* (#R515) candidates, not the first hit — and NOTHING rather than a stranger */
@@ -753,9 +763,37 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       window.IntMapRegionResolverDebug={ get last(){ return _rrLast; }, mem:function(){ return Array.from(_rrMem.keys()); }, cacheGet:_rrCacheGet };
       window.IntMapRegionResolverTest={ run:_rrSelfTest }; }catch(_){}
 
+    /* ══ ⚠⚠⚠ (#732) A POLITY THE MAP IS DRAWING IS A PLACE THE READER CAN NAME ══════════════════════════
+       MEASURED on production (2026-09-18, build R783), R802 §10: 「ローマ帝国」 answered 「⚠ 地名が見つかりません」
+       with Chronos at 117 — while the map under that sentence was drawing the Roman Empire. Every door here asks
+       gazetteers of the PRESENT (the region store, OSM, GeoNames), and none of them holds a polity that ended
+       fifteen centuries ago; the record that does is the one on screen: `IntMapTimeBorders.currentFC()` (CShapes,
+       the day-exact bundle or the era sheets, whichever answers the year), and each feature carries its names
+       in every language IntMap has for it (`_i18n`, from data/histnames.json — the record `check:histnames`
+       holds). So the question is asked of THAT record, and nothing here lists a polity.
+       ⚠ ONLY WHILE THE MAP SHOWS A PAST YEAR, AND ONLY ITS OWN NAME. A polity is an answer about the year that
+       is drawn (.agents/rules/historical-verification.md §1): at the live date the record is not in force and
+       this says nothing. And like every confirming door here (#R802 `_namesakeOk`) a feature answers only to
+       one of its own whole names — a 「Rome (Diocletianus)」 is not 「Rome」. Several features of one name
+       (a polity drawn in pieces) are one answer: their union's extent. */
+    function _histPolity(place){ try{
+      const TB=(typeof window!=='undefined')?window.IntMapTimeBorders:null; if(!(TB&&TB.active&&TB.active())) return null;
+      const fc=TB.currentFC&&TB.currentFC(); if(!fc||!Array.isArray(fc.features)) return null;
+      const q=_PR.nkey(_queryCore(place)); if(!q) return null;
+      const hit=fc.features.filter(f=>{ const p=(f&&f.properties)||{}; if(!f.geometry) return false; const i=p._i18n||{};
+        return [p.NAME,p.name].concat(Object.keys(i).filter(k=>k.charAt(0)!=='_').map(k=>i[k])).some(n=>n&&_PR.nkey(n)===q); });
+      if(!hit.length) return null;
+      const coords=[]; hit.forEach(f=>{ const g=f.geometry; if(g.type==='Polygon') coords.push(g.coordinates); else if(g.type==='MultiPolygon') g.coordinates.forEach(c=>coords.push(c)); });
+      if(!coords.length) return null;
+      const geo={type:'MultiPolygon',coordinates:coords}, box=robustExtent(geo); if(!box) return null;
+      const p0=hit[0].properties||{}, i0=p0._i18n||{}, lg=(typeof HOST.lang!=='undefined'&&HOST.lang)?String(HOST.lang):'en';
+      return {lng:(box[0][0]+box[1][0])/2, lat:(box[0][1]+box[1][1])/2, name:String(i0[lg]||p0.NAME||p0.name||place), box, geojson:geo, adminPoly:true,
+        cls:'boundary', typ:'historical', kind:'polity', year:(TB.current&&TB.current())||null};
+    }catch(_){ return null; } }
     async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)||WORLD_RE.test(place)) return null;   /* (#R85) 現在地 has no Nominatim extent — resolve it via geocode()→device GPS */
       /* 1) macro-region with a known real extent (Nominatim has no clean polygon for these). */
       const reg=regionBox(place); if(reg) return reg;
+      const hp=_histPolity(place); if(hp) return hp;   /* (#732) a polity of the year the map shows — see `_histPolity` */
       /* 2) "city centre of X" → the city core at a close view (a small box around the city point). */
       const cb=parseCenter(place); if(cb){ const e=await _nomExtent(cb); if(e&&isFinite(e.lng)){ const d=0.06; return {lng:e.lng, lat:e.lat, name:e.name, box:[[e.lng-d,e.lat-d*0.8],[e.lng+d,e.lat+d*0.8]]}; } }
       /* 3) directional sub-region. A "Dir + Word" string is often a PROPER name (South Korea, West Virginia,

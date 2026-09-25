@@ -149,6 +149,22 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 削除の前にその junction を外す。⚠ **ハーネスの worktree**（上）にはこれが走らないので、そこでは自分で
 `npm run data:pull` を走らせる——走らせなければ門が赤くなってそう言う。
 
+### 5.1 ⚠⚠⚠ worktree を手で消すときは、リンクを 1 つも辿らない（#732 実測）
+
+どの worktree も `node_modules`（と上のデータ集合）を**原本・共有の 1 部への junction** として持つ（`scripts/worktree.mjs new`・ハーネス）。
+消す道具がそれを辿ると、**原本の `node_modules` の中身が消え、全セッションが同時に壊れる**。
+実測（2026-09-25）: `cmd /c dir /s /b /aL <worktree>` で「中のリンクを先に外す」つもりが junction の
+**向こう側**まで列挙し、原本から必須パッケージ 45 個と `acorn/dist/acorn.mjs` などのファイルが消えた
+（`npm ci` で復旧。`package.json` の有無だけを見る確認では**ファイル単位の欠損を見逃した**）。
+
+- 自分の worktree は `node scripts/worktree.mjs done` で片付ける（junction を先に外す）。
+- それ以外を消すときは、各項目を `lstat` で見て**リンクはリンクそのものだけ外す**実装を使う
+  （Node は junction を `isSymbolicLink()` と報告する）。`dir /s`・PowerShell 5.1 の
+  `Remove-Item -Recurse`・`rm -rf` を junction を含みうる木に使わない。
+- ⚠ OneDrive 配下のファイルは同期のために **reparse point 属性**を持つ（`.git/worktrees/*` も）。
+  「reparse point か」でリンクを判定すると全部がリンクに見える——見るのは `LinkType` / `isSymbolicLink()`。
+- 消した後は、原本で lock の全パッケージの**中身**が揃っているかを確かめる（`npm ci` が最も確実）。
+
 ---
 
 ## 6. subagent・ツール・MCP

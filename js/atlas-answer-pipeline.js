@@ -73,7 +73,8 @@ export function makeAtlasAnswerPipeline() {
    *
    * opts:
    *   question          the user's text
-   *   dataBlock         the DATA blocks IntMap assembled (time context, coverage, layer values …)
+   *   dataBlock         the DATA blocks IntMap assembled (time context, coverage, layer values …) —
+   *                     a string, or a list of strings and {tag, label, text} blocks (#732)
    *   systemPrompt      the analysis system prompt WITHOUT any source/trailer instructions
    *   language          the answer language, as a name ("Japanese")
    *   temporalMode      'current' | 'historical' | 'mixed' | 'unspecified'
@@ -92,6 +93,17 @@ export function makeAtlasAnswerPipeline() {
     const registry = makeEvidenceRegistry({ callId, turnId: opts.turnId || '', retrievedAt: opts.retrievedAt || '' });
     registry.addClientSources(opts.clientSources || []);
     (opts.appFacts || []).forEach((f) => registry.addAppData(f));
+    /* ⚠ (#732) `dataBlock` MAY BE A LIST OF PARTS. A string part is prompt text as before; a part
+       `{tag, label, text}` is one DATA block IntMap gathered, and it enters the registry as a record
+       (js/atlas-evidence.js `addDataBlock`) whose id is written into the block's own heading — so a
+       claim can name the block it rests on, and the caller can tell which blocks the answer used
+       from the claims instead of from what it happened to put in the prompt. */
+    let dataText = '';
+    (Array.isArray(opts.dataBlock) ? opts.dataBlock : [opts.dataBlock]).forEach((p) => {
+      if (!p || typeof p !== 'object') { dataText += String(p || ''); return; }
+      const r = registry.addDataBlock({ title: String(p.tag || ''), label: String(p.label || '') });
+      dataText += '[' + String(p.tag || '') + (r ? ' — evidence id ' + r.id : '') + ']\n' + String(p.text || '') + '\n\n';
+    });
 
     const contract = answerContractRules({ language: opts.language || 'the user\'s language' });
     const system = String(opts.systemPrompt || '') + '\n\n[ANSWER CONTRACT]\n' + contract;
@@ -117,7 +129,7 @@ export function makeAtlasAnswerPipeline() {
           + 'and your own knowledge; never write a URL and never invent an id.]\n\n'
         : '');
     const prompt = '[QUESTION]\n' + String(opts.question || '') + '\n\n'
-      + String(opts.dataBlock || '') + evidenceSection;
+      + dataText + evidenceSection;
 
     const trace = { callId, calls: [] };
     const ctx = { webUsed: false, temporalMode: opts.temporalMode || 'unspecified' };

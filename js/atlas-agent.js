@@ -579,6 +579,7 @@ export function makeAtlasAgent() {
          refused here either: the call still runs, and a partial that comes back with a DIFFERENT code
          (more targets resolved, a different surface reached) resets the run, because that is progress. */
       const partialCalls = Object.create(null);
+      const doneResults = Object.create(null);   /* (#732) what a successful call DID (its `resultKey`) → the call that did it first */
       const permanentFails = Object.create(null);   /* (#R760) refusals the capability declared to be about the KIND of request */
       const callById = Object.create(null);         /* (atlas-native-tools) every answered call of this turn, by id — what read_result reads */
       const localTools = Object.assign({}, tools, { read_result: READ_RESULT_TOOL });   /* validated like any tool; offered only when something was cut */
@@ -938,6 +939,23 @@ export function makeAtlasAgent() {
             }
             failedCalls[ckey] = true;
           }
+          /* ⚠⚠⚠ (#732) THE SAME WORK UNDER DIFFERENT WORDS. `ckey` is the call's ARGUMENTS, so the identical
+             line drawn four times under four captions was four different calls here, each run and each
+             `ok`, and nothing ever told Atlas the map still held ONE line (measured on production
+             2026-09-18, R802 §10 ⑥). The capability knows what it did and says so in `resultKey`
+             (js/atlas-toolsurface.js carries it out); a later call that did the SAME thing is named as
+             such, exactly as #R731 names a reused answer. ⚠ NOTHING IS TAKEN (CONSTITUTION.md §5): the
+             call ran — a restyle is applied — and nothing is refused; a revision of an artefact states
+             its revision and is a successor, never a repeat. Only a success is remembered, as above. */
+          if (rec.resultKey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') {
+            const rid = String(rec.resultKey) + (rec.revision != null ? '@' + rec.revision : '');
+            if (doneResults[rid] && doneResults[rid] !== ckey) {
+              rec.sameResultAsEarlierCallThisTurn = true;
+              rec.note = 'An earlier call in this turn already did exactly this (' + String(rec.resultKey).slice(0, 120) + '). '
+                + 'The app holds ONE of it, not two — whatever this call changed (a caption, a colour) was applied to that '
+                + 'same one, and nothing new was produced. Use that result, or do something different.';
+            } else if (!doneResults[rid]) doneResults[rid] = ckey || rid;
+          }
           stepResults.push(rec);
           results.push(rec);
           /* the TOOL may declare it, or the RESULT may — the second is how a generic invoker
@@ -962,7 +980,7 @@ export function makeAtlasAgent() {
         }
         /* ⚠ (#R731) THE SAME CALL, MADE AGAIN AFTER ITS OWN ANSWER WAS HANDED BACK, IS NOT PROGRESS.
            ⚠ (#R741) …and neither is the same call made again after its own REFUSAL. */
-        repeatRun = (stepResults.length && stepResults.every((r) => r && (r.reusedFromEarlierCallThisTurn || r.repeatedFailedCallThisTurn || r.repeatedPartialCallThisTurn))) ? (repeatRun + 1) : 0;
+        repeatRun = (stepResults.length && stepResults.every((r) => r && (r.reusedFromEarlierCallThisTurn || r.repeatedFailedCallThisTurn || r.repeatedPartialCallThisTurn || r.sameResultAsEarlierCallThisTurn))) ? (repeatRun + 1) : 0;   /* (#732) …or the same work under different words */
         if (repeatRun >= lim.maxRepeatSteps) {
           stopped = 'repeated_calls';
           break;

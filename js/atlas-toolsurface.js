@@ -375,6 +375,14 @@ export function makeAtlasToolSurface(deps) {
         /* (#R801) the registry's column 11, stamped on the result the way `endsTurn` is: the loop
            reads a flag on the result, never a capability's name (tests/r511 ⑩, r663 ⑥) */
         ingests: (built.cap && built.cap.ingests === 'external') ? 'external' : undefined,
+        /* ⚠⚠⚠ (#732) WHAT THE CALL DID, AS THE CAPABILITY STATES IT. `meta.resultKey` is the identity a case
+           declares for its own work (#R441 — 「ここから」 and the coordinates it resolved to are one start),
+           and it never left the console: js/atlas-agent.js knew a call only by its ARGUMENTS, so the same line
+           redrawn under four captions was four different calls to it, each `ok`, and Atlas kept relabelling
+           (measured on production 2026-09-18, R802 §10). A revision of an artefact is a successor, not a
+           repeat, so its revision number rides beside the key. */
+        resultKey: (ok && meta.resultKey) ? String(meta.resultKey) : undefined,
+        revision: (ok && meta.resultKey && meta.artifact && meta.artifact.revision != null) ? meta.artifact.revision : undefined,
       };
       /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
          a capability whose registry row PRODUCES the map, and whose run the observer marked
