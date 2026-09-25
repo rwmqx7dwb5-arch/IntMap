@@ -91,8 +91,12 @@ test('atlas-semantic-search ① a request in Japanese reaches the same capabilit
 
 test('atlas-semantic-search ① (the defect, restated) spellings alone put view.locate behind the alphabet and found nothing for 「地図を現代に戻す」', () => {
   const CAPS = registry(fakeTransport());
-  const here = CAPS.search('現在地', { want: 3, min: 1 });
-  assert.notEqual(ids(here, 1)[0], 'view.locate', 'this is the case the meaning half exists for; if spellings now reach it, restate ① ');
+  /* 「現在地」 was the other half of this defect. It is closed on the SPELLING side now: the phrases the
+     product already keeps for «where I am» (placeRules.selfLocWords) are spellings of view.locate, so the
+     lexical half ranks it first on its own (tests/atlas-50-remainder-checks.test.mjs ③). What remains for
+     the meaning half is a request in words no table of the product holds: */
+  const back = CAPS.search('地図を今日に戻して', { want: 3, min: 1 });
+  assert.ok(!ids(back, 6).includes('time.travel'), 'spellings alone do not reach time.travel for 「地図を今日に戻して」 — ' + ids(back, 6).join(', '));
   assert.deepEqual(ids(CAPS.search('地図を現代に戻す', { want: 3, min: 1 })), [], 'spellings alone reach nothing for it');
 });
 
@@ -144,13 +148,13 @@ test('atlas-semantic-search ③ every adjacent pair is ordered by evidence, or i
       assert.ok(cmp(r[i - 1], r[i]) < 0, q + ': ' + r[i - 1].id + ' before ' + r[i].id + ' with equal evidence and different ranks');
     }
   }
-  /* 「現在地」: the four rows the alphabet used to order are ONE declared tie lexically … */
-  const lex = CAPS.search('現在地', { want: 3, min: 1 }).ranked;
-  const tied = lex.filter((x) => x.rank === lex.find((y) => y.id === 'view.locate').rank);
-  assert.ok(tied.length >= 2 && tied.some((x) => x.id !== 'view.locate'), 'view.locate shares its lexical rank');
-  /* … and the meaning of the request is what separates them */
-  const fused = (await CAPS.searchFused('現在地', { want: 3, min: 1 })).ranked;
-  assert.equal(fused[0].id, 'view.locate');
+  /* 「地図を今日に戻して」: the rows the spellings reach are ONE declared tie lexically (the alphabet used to
+     order such rows), and the capability the request means is not among them … */
+  const lex = CAPS.search('地図を今日に戻して', { want: 3, min: 1 }).ranked;
+  assert.ok(lex.length >= 2 && lex[0].rank === lex[1].rank, 'the lexical top is a declared tie');
+  /* … and the meaning of the request is what decides */
+  const fused = (await CAPS.searchFused('地図を今日に戻して', { want: 3, min: 1 })).ranked;
+  assert.equal(fused[0].id, 'time.travel');
   assert.ok(fused[0].semantic && fused[0].rank < fused[1].rank, 'decided by the meaning half, not declared equal');
 });
 

@@ -1811,11 +1811,24 @@ export function makeAtlasCapabilities(HOST) {
       var self = 0, hint = 0, terms = 0, nq = norm(q);
       if (!nq) return { self: 0, hint: 0, total: 0, terms: 0 };
       if (cap.withdrawn) return { self: -1, hint: 0, total: -1, terms: 0 };
-      cap.aliases.forEach(function (a) {
-        var na = norm(a);
-        if (!na) return;
+      /* ⚠ (#732) …AND THE PHRASES THE PRODUCT ALREADY HOLDS FOR IT, scored by the same rule. The row's
+         spellings are English identifiers by design, so a capability whose subject the reader names in
+         another language could only be reached through the documentation's share — 「現在地」 scored 3
+         for `view.locate` and lost to two capabilities whose category hint contains the word. Where the
+         product keeps the reader's own phrases for an act (js/atlas-catalog-text.js `phrases`, which
+         hands over the table the resolver itself decides with), they ARE spellings of it. One set, so
+         a phrase that is also an alias counts once. */
+      var spell = Object.create(null);
+      cap.aliases.concat((runtime.docs && typeof runtime.docs.phrases === 'function') ? (runtime.docs.phrases(cap.id) || []) : [])
+        .forEach(function (a) { var na = norm(a); if (na) spell[na] = 1; });
+      var runs = null;
+      Object.keys(spell).forEach(function (na) {
         if (nq === na) { self += 100; terms++; }
         else if (na.length >= 4 && spelledIn(nq, na)) { self += 40; terms++; }
+        /* a spelling in a script without spaces is a WORD of the request when it is one of the request's
+           own runs — the rule `runWindows` states for the documentation («the whole run: the request wrote
+           that word»), given to the spellings: 「現在地 表示」 names 現在地, 「現在地から大阪駅まで」 does not */
+        else if (!/^[a-z0-9]/.test(na) && (runs || (runs = termsOf(nq).runs)).indexOf(na) >= 0) { self += 40; terms++; }
       });
       if (spelledIn(nq, norm(cap.id.split('.').pop()))) { self += 25; terms++; }
       (VERB_HINTS[cap.category] || []).forEach(function (h) { if (h && nq.indexOf(norm(h)) >= 0) hint += 8; });

@@ -152,7 +152,9 @@ test('R733 ② a code-shaped string the store does not know is NOT handed to the
     cName: (r) => (r && r.nameEn) || '',
     countryStats: () => store,
     _setLast: (x) => x,
-    localFuzzyPlaces: (q) => { asked.push(q); return [{ lng: 4.4, lat: 50.8, name: 'Deurne', kind: 'place' }]; },
+    /* (#732) the row says it IS what was asked (`exact`) — the matcher's own statement, and since #732 the only
+       kind of fuzzy row the confirming door takes; a row that merely resembles the query goes on to the gazetteers */
+    localFuzzyPlaces: (q) => { asked.push(q); return [{ lng: 4.4, lat: 50.8, name: 'Deurne', kind: 'place', exact: true }]; },
     /* every country polygon here is DEU, so ANY point the geocoder returns 「is」 Germany — the exact
        shape that let a Belgian point be reported as Germany's neighbour in production. */
     geo: () => ({ features: [{ id: 'DEU', geometry: { type: 'Polygon', coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]] } }] }),

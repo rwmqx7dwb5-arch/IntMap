@@ -59,7 +59,7 @@ window.IntMapModules.searchGeocode=function(HOST){
   function localFuzzyPlaces(q){
     const ql=(q||'').toLowerCase().trim(); if(!ql) return [];
     const out=[];
-    const push=(name,lng,lat,score,kind,bbox)=>{ lng=+lng;lat=+lat; if(isNaN(lng)||isNaN(lat))return; out.push({name,lng,lat,score,kind:kind||'',bbox:bbox||null}); };   /* (#R46) kind = scale hint (country/capital/city/…) for Atlas zoom */
+    const push=(name,lng,lat,score,kind,bbox,exact)=>{ lng=+lng;lat=+lat; if(isNaN(lng)||isNaN(lat))return; out.push({name,lng,lat,score,kind:kind||'',bbox:bbox||null,exact:!!exact}); };   /* (#732) `exact` = this row's own name IS the query — the only kind of row a CONFIRMING door (js/atlas-geo-resolve.js `geocode`) may take; the rest are suggestions */   /* (#R46) kind = scale hint (country/capital/city/…) for Atlas zoom */
     try{ Object.values(HOST.countryStats||{}).forEach(s=>{
       if(!s.latlng) return; const en=(s.nameEn||'').toLowerCase(), jp=(s.nameJp||''), cap=(s.capital||'').toLowerCase();
       let sc=0, suffix='';
@@ -75,7 +75,7 @@ window.IntMapModules.searchGeocode=function(HOST){
          search frames Monaco like Monaco and Russia like Russia instead of giving both the one
          `country` zoom. A CAPITAL match is a point inside the country and must not be framed by the
          country's box — it keeps the class zoom, as before. */
-      if(sc>0) push(s.nameEn+suffix, s.latlng[1], s.latlng[0], sc, suffix?'capital':'country', suffix?null:s.bbox);
+      if(sc>0) push(s.nameEn+suffix, s.latlng[1], s.latlng[0], sc, suffix?'capital':'country', suffix?null:s.bbox, en===ql||(jp&&jp===q)||(suffix&&cap===ql));
     }); }catch(_){}
     try{ const gz=(typeof HOST.BUILTIN_GAZETTEER!=='undefined')?HOST.BUILTIN_GAZETTEER:null;
       if(gz) for(const type in gz){ gz[type].forEach(e=>{ const terms=Array.isArray(e.terms)?e.terms.join(' '):String(e.terms||''); const tl=terms.toLowerCase(); const nm=(e.name&&(e.name[HOST.lang]||e.name.en))||terms;
@@ -83,7 +83,7 @@ window.IntMapModules.searchGeocode=function(HOST){
         let sc=0; if(words.includes(ql)) sc=88; else if(words.some(w=>w.startsWith(ql))&&ql.length>=3) sc=68;   /* (#R19) prefix */
         else if(tl.includes(ql)&&ql.length>=3) sc=64;
         else if(ql.length>=4 && words.some(w=>w.length>=4&&_lev(w,ql)<=2)) sc=58;   /* (#R19) per-word typo tolerance */
-        if(sc>0 && e.loc) push(nm, e.loc[0], e.loc[1], sc, type); }); }
+        if(sc>0 && e.loc) push(nm, e.loc[0], e.loc[1], sc, type, null, (Array.isArray(e.terms)?e.terms:String(e.terms||'').split('|')).some(t=>String(t).toLowerCase().trim()===ql)); }); }
     }catch(_){}
     const seen=new Set();
     return out.sort((a,b)=>b.score-a.score).filter(x=>{ const k=x.name+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,7);

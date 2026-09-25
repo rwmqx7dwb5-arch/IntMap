@@ -145,7 +145,7 @@ export function makeAtlasEvidence() {
     const byId = new Map();
     const byKey = new Map();
     const rejected = [];
-    let seq = 0;
+    let seq = 0, dseq = 0;
 
     function add(rec) {
       rec = rec || {};
@@ -161,12 +161,15 @@ export function makeAtlasEvidence() {
         const dup = byKey.get(canon.key);
         if (dup) return dup;                              /* same document, already registered */
       }
-      if (byId.size >= MAX_RECORDS) return null;
-      seq++;
-      const id = 'e' + seq;
+      /* (#732) a DATA block's record is exempt from the cap and numbered apart — see addDataBlock */
+      const block = rec.dataBlock === true;
+      if (!block && byId.size - dseq >= MAX_RECORDS) return null;
+      const id = block ? ('d' + (++dseq)) : ('e' + (++seq));
       const out = {
         id,
         origin,
+        /* (#732) what the reader calls this kind of evidence — the words of the 「使用データ」 line */
+        label: clampText(rec.label || '', 60),
         sourceType: SOURCE_TYPES.indexOf(rec.sourceType) >= 0 ? rec.sourceType : 'other',
         originalUrl: rec.originalUrl ? String(rec.originalUrl) : null,
         canonicalUrl: canon ? canon.key : null,
@@ -238,6 +241,7 @@ export function makeAtlasEvidence() {
           originalUrl: s.url,
           title: s.title || '',
           publisher: s.src || '',
+          label: s.label || '',
           publishedAt: s.date || null,
           retrievedAt: retrievedAt,
           dateType: s.dateType === 'gdelt_seen_date' ? 'retrieval_time' : (s.dateType || 'publication_date'),
@@ -253,6 +257,24 @@ export function makeAtlasEvidence() {
        WHEN they were true, which is why `validTime` is separate from `retrievedAt`. */
     function addAppData(rec) {
       return add(Object.assign({ origin: 'app_data', sourceType: 'dataset', dateType: 'valid_time' }, rec || {}));
+    }
+
+    /* ══ ⚠⚠⚠ (#732) A DATA BLOCK IntMap PUT IN THE PROMPT IS EVIDENCE THE ANSWER CAN NAME ══════════
+       js/atlas-console.js `analyze` writes its gathered data into the prompt as labelled blocks —
+       [EARTHQUAKES (USGS, last 24 h)], [CURRENT WEATHER], [COUNTRY STATISTICS] … — and the reader's
+       「使用データ」 line was the list of those LABELS: what was put in front of the model, not what
+       the answer rested on. MEASURED on production (2026-09-18, build R783): a question about a
+       lake's area and one about a typhoon both ended 「使用データ: ニュース, 地震, ライブWeb検証」.
+       The answer contract already has the one mechanism by which the MODEL states what a sentence
+       rests on — a claim's `evidenceIds` — and the blocks had no id to be named by. Each block now
+       gets one: the line becomes the records the rendered claims actually cite.
+       ⚠ NUMBERED APART (`d1`, `d2` …) so that the news records keep exactly the `e` ids they had,
+       and EXEMPT FROM MAX_RECORDS: the cap bounds a list that grows with the world (articles); the
+       blocks are bounded by the code that writes them — one per kind of data — and each costs the
+       prompt one short line beside a block that is already there whole. */
+    function addDataBlock(rec) {
+      return add(Object.assign({ origin: 'app_data', sourceType: 'dataset', dateType: 'retrieval_time' }, rec || {},
+        { dataBlock: true, publisher: (rec && (rec.publisher || rec.label)) || 'IntMap' }));
     }
 
     function get(id) { return byId.get(String(id || '')) || null; }
@@ -279,7 +301,7 @@ export function makeAtlasEvidence() {
 
     return {
       callId, turnId, retrievedAt,
-      add, addProviderCitations, addClientSources, addAppData, allowCall, ownsCall,
+      add, addProviderCitations, addClientSources, addAppData, addDataBlock, allowCall, ownsCall,
       get, all, hosts, promptBlock,
       rejected: () => rejected.slice(),
       size: () => byId.size,
