@@ -150,6 +150,7 @@ export function makeGisPanel(HOST) {
       return e;
     }
     function row(css) { return el('div', 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;' + (css || '')); }
+    let _paramSeq = 0;   /* ids for a parameter's name line, which names the control(s) paramControl builds under it */
 
     /* ══ REFUSAL CODES → SENTENCES ════════════════════════════════════════════════════════════
        ⚠ THE SET IS THE UNION OF WHAT THE THREE MODULES RETURN — js/gis-ops.js, js/gis-project.js
@@ -807,7 +808,11 @@ export function makeGisPanel(HOST) {
       wrap.className = 'gis-param';
       wrap.setAttribute('data-param', name);
       const lab = row('gap:5px;');
-      lab.appendChild(el('span', 'font-size:11px;color:var(--text-muted,#98989f);', name));
+      /* ⚠ the parameter's name is the name of the control built under it, whichever control the type
+         makes (select / textarea / input / the lone tick box) — referenced, so it is the same words */
+      const nameEl = el('span', 'font-size:11px;color:var(--text-muted,#98989f);', name);
+      nameEl.id = 'gis-param-name-' + (++_paramSeq);
+      lab.appendChild(nameEl);
       if (spec && spec.unit) lab.appendChild(el('span', 'font-size:10.5px;color:var(--text-muted,#98989f);opacity:0.85;', '(' + String(spec.unit) + ')'));
       if (spec && spec.required) lab.appendChild(el('span', 'font-size:10.5px;color:#ff9f0a;', window.IntMapLang.t(HOST.lang, 'required', '必須', 'erforderlich', 'обязательно', 'obligatorio')));
       wrap.appendChild(lab);
@@ -825,12 +830,12 @@ export function makeGisPanel(HOST) {
           const columns = cols();
           rowsArr.forEach((c, i) => {
             const r = row('gap:4px;'); r.className = 'gis-cond-row';
-            const f = el('select', CSS_IN + 'flex:2 1 96px;width:auto;min-width:84px;'); f.className = 'gis-cond-field';
+            const f = el('select', CSS_IN + 'flex:2 1 96px;width:auto;min-width:84px;'); f.className = 'gis-cond-field'; f.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Column', '列'));
             if (!columns.length) { const o = el('option', '', window.IntMapLang.t(HOST.lang, 'Choose an input dataset first', '先に入力データセットを選んでください', 'Wählen Sie zuerst einen Eingabedatensatz', 'Сначала выберите входной набор данных', 'Elige primero un conjunto de datos de entrada')); o.value = ''; f.appendChild(o); f.disabled = true; }
             if (columns.length && !c.field) c.field = columns[0].name;
             columns.forEach((col) => { const o = el('option', '', col.name + ' · ' + col.type); o.value = col.name; if (col.name === c.field) o.selected = true; f.appendChild(o); });
             f.onchange = () => { c.field = f.value; };
-            const o2 = el('select', CSS_IN + 'flex:0 0 auto;width:auto;min-width:76px;'); o2.className = 'gis-cond-op';
+            const o2 = el('select', CSS_IN + 'flex:0 0 auto;width:auto;min-width:76px;'); o2.className = 'gis-cond-op'; o2.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Comparison', '比較'));
             if (OPERATORS.indexOf(c.op) < 0) c.op = OPERATORS[0];
             OPERATORS.forEach((op) => { const o = el('option', '', op); o.value = op; if (op === c.op) o.selected = true; o2.appendChild(o); });
             o2.onchange = () => { c.op = o2.value; paint(); };
@@ -840,19 +845,19 @@ export function makeGisPanel(HOST) {
                `value2` would be a shape only this panel understands. */
             if (c.op === 'between') {
               const pair = Array.isArray(c.value) ? c.value : [];
-              const v1 = el('input', CSS_IN + 'flex:1 1 60px;width:auto;min-width:52px;'); v1.className = 'gis-cond-val'; v1.type = 'text'; v1.value = pair[0] == null ? '' : String(pair[0]);
-              const v2 = el('input', CSS_IN + 'flex:1 1 60px;width:auto;min-width:52px;'); v2.className = 'gis-cond-val2'; v2.type = 'text'; v2.value = pair[1] == null ? '' : String(pair[1]);
+              const v1 = el('input', CSS_IN + 'flex:1 1 60px;width:auto;min-width:52px;'); v1.className = 'gis-cond-val'; v1.type = 'text'; v1.value = pair[0] == null ? '' : String(pair[0]); v1.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Lower value', '下限値'));
+              const v2 = el('input', CSS_IN + 'flex:1 1 60px;width:auto;min-width:52px;'); v2.className = 'gis-cond-val2'; v2.type = 'text'; v2.value = pair[1] == null ? '' : String(pair[1]); v2.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Upper value', '上限値'));
               const sync = () => { c.value = [v1.value, v2.value]; };
               v1.oninput = sync; v2.oninput = sync;
               if (!Array.isArray(c.value)) sync();
               r.appendChild(v1); r.appendChild(v2);
             } else if (c.op === 'in') {
-              const v1 = el('input', CSS_IN + 'flex:1 1 68px;width:auto;min-width:56px;'); v1.className = 'gis-cond-val'; v1.type = 'text';
+              const v1 = el('input', CSS_IN + 'flex:1 1 68px;width:auto;min-width:56px;'); v1.className = 'gis-cond-val'; v1.type = 'text'; v1.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Values (comma-separated)', '値（カンマ区切り）'));
               v1.value = Array.isArray(c.value) ? c.value.join(', ') : (c.value == null ? '' : String(c.value));
               v1.oninput = () => { c.value = v1.value.split(',').map((s) => s.trim()).filter((s) => s !== ''); };
               r.appendChild(v1);
             } else {
-              const v1 = el('input', CSS_IN + 'flex:1 1 68px;width:auto;min-width:56px;'); v1.className = 'gis-cond-val'; v1.type = 'text';
+              const v1 = el('input', CSS_IN + 'flex:1 1 68px;width:auto;min-width:56px;'); v1.className = 'gis-cond-val'; v1.type = 'text'; v1.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Value', '値'));
               v1.value = (c.value == null || Array.isArray(c.value)) ? '' : String(c.value);
               v1.oninput = () => { c.value = v1.value; };
               r.appendChild(v1);
@@ -878,7 +883,7 @@ export function makeGisPanel(HOST) {
 
       if (type === 'enum' || type === 'field') {
         const sel = el('select', CSS_IN);
-        sel.className = type === 'field' ? 'gis-param-field' : 'gis-param-enum';
+        sel.className = type === 'field' ? 'gis-param-field' : 'gis-param-enum'; sel.setAttribute('aria-labelledby', nameEl.id);
         const values = type === 'enum'
           ? (Array.isArray(spec && spec.values) ? spec.values.map((v) => ({ v: String(v), t: String(v) })) : [])
           : cols().map((c) => ({ v: c.name, t: c.name + ' · ' + c.type }));
@@ -941,7 +946,7 @@ export function makeGisPanel(HOST) {
          parser's own reference form, so a column whose name has a space or a comma still works. */
       if (type === 'expression') {
         const ta = el('textarea', CSS_IN + 'min-height:64px;padding:6px 8px;line-height:1.5;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;');
-        ta.className = 'gis-param-expr';
+        ta.className = 'gis-param-expr'; ta.setAttribute('aria-labelledby', nameEl.id);
         if (initial != null) ta.value = String(initial);
         else if (spec && spec.default != null) ta.value = String(spec.default);
         const put = (frag, caretBack) => {
@@ -996,7 +1001,7 @@ export function makeGisPanel(HOST) {
            copy of it — a wide <label> is here only to give the tick a finger-sized target */
         const lb = el('label', 'display:flex;align-items:center;min-height:30px;cursor:pointer;');
         const cb = el('input', 'min-width:18px;min-height:18px;flex:0 0 auto;');
-        cb.type = 'checkbox'; cb.className = 'gis-param-bool';
+        cb.type = 'checkbox'; cb.className = 'gis-param-bool'; cb.setAttribute('aria-labelledby', nameEl.id);
         cb.checked = (initial != null) ? (initial === true || String(initial) === 'true') : ((spec && spec.default) === true);
         lb.appendChild(cb);
         wrap.appendChild(lb);
@@ -1006,7 +1011,7 @@ export function makeGisPanel(HOST) {
       /* number, text, and anything this file has never heard of — a control it cannot draw is
          still a control the reader can fill, which is strictly better than dropping the row. */
       const inp = el('input', CSS_IN);
-      inp.className = 'gis-param-input';
+      inp.className = 'gis-param-input'; inp.setAttribute('aria-labelledby', nameEl.id);
       inp.type = type === 'number' ? 'number' : 'text';
       if (initial != null) inp.value = String(initial);
       else if (spec && spec.default != null) inp.value = String(spec.default);
@@ -1129,7 +1134,7 @@ export function makeGisPanel(HOST) {
           if (cellEdit && cellEdit.id === ds.id && cellEdit.index === i && cellEdit.field === c.name) {
             const td = el('td', base + 'padding:2px 4px;');
             const inp = el('input', CSS_IN + 'min-height:26px;font-size:11px;min-width:96px;');
-            inp.className = 'gis-cell-input'; inp.type = 'text'; inp.value = cellEdit.value;
+            inp.className = 'gis-cell-input'; inp.type = 'text'; inp.value = cellEdit.value; inp.setAttribute('aria-label', String(c.name));
             inp.oninput = () => { if (cellEdit) cellEdit.value = inp.value; };
             inp.onkeydown = (ev) => {
               if (ev.key === 'Enter') { ev.preventDefault(); commitCell(); }
@@ -1346,7 +1351,7 @@ export function makeGisPanel(HOST) {
 
       if (cols.length) {
         const pick = el('select', CSS_IN);
-        pick.className = 'gis-col-pick';
+        pick.className = 'gis-col-pick'; pick.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Column', '列'));
         cols.forEach((c) => { const o = el('option', '', c.name + ' · ' + c.type); o.value = c.name; if (c.name === held.field) o.selected = true; pick.appendChild(o); });
         pick.onchange = () => { held.field = pick.value; render(); };
         box.appendChild(pick);
@@ -1356,7 +1361,7 @@ export function makeGisPanel(HOST) {
            make deliberate. */
         const dbar = row('');
         const tsel = el('select', CSS_IN + 'flex:1 1 92px;width:auto;min-width:84px;');
-        tsel.className = 'gis-col-type';
+        tsel.className = 'gis-col-type'; tsel.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Column type', '列の型'));
         const blank = el('option', '', '—'); blank.value = ''; tsel.appendChild(blank);
         const types = declarableTypes(ds.id, held.field);
         types.forEach((t) => { const o = el('option', '', t); o.value = t; if (t === held.type) o.selected = true; tsel.appendChild(o); });
@@ -1442,13 +1447,13 @@ export function makeGisPanel(HOST) {
 
       const bar1 = row('');
       const fsel = el('select', CSS_IN + 'flex:1 1 104px;width:auto;min-width:88px;');
-      fsel.className = 'gis-style-field';
+      fsel.className = 'gis-style-field'; fsel.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Column', '列'));
       cols.forEach((c) => { const o = el('option', '', c.name + ' · ' + c.type); o.value = c.name; if (c.name === held.field) o.selected = true; fsel.appendChild(o); });
       fsel.onchange = () => { held.field = fsel.value; };
       /* The two modes the classifier declares in its own contract (js/map-ui.js style(ref, spec)).
          Their words are the reader's, their values are the API's. */
       const msel = el('select', CSS_IN + 'flex:1 1 104px;width:auto;min-width:88px;');
-      msel.className = 'gis-style-mode';
+      msel.className = 'gis-style-mode'; msel.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Colouring', '塗り分け'));
       [['categorical', window.IntMapLang.t(HOST.lang, 'One colour per value', '値ごとに1色')],
        ['graduated', window.IntMapLang.t(HOST.lang, 'A ladder of numbers', '数値の段階')]].forEach((p) => {
         const o = el('option', '', p[1]); o.value = p[0]; if (p[0] === held.mode) o.selected = true; msel.appendChild(o);
@@ -1460,7 +1465,7 @@ export function makeGisPanel(HOST) {
       if (held.mode === 'graduated') {
         const bar2 = row('');
         const sel = el('select', CSS_IN + 'flex:1 1 96px;width:auto;min-width:84px;');
-        sel.className = 'gis-style-method';
+        sel.className = 'gis-style-method'; sel.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Class method', '区分の方法'));
         [['quantile', window.IntMapLang.t(HOST.lang, 'quantiles', '分位')],
          ['equal', window.IntMapLang.t(HOST.lang, 'equal intervals', '等間隔')]].forEach((p) => {
           const o = el('option', '', p[1]); o.value = p[0]; if (p[0] === held.method) o.selected = true; sel.appendChild(o);
@@ -1645,7 +1650,7 @@ export function makeGisPanel(HOST) {
       }
       const bar = row('');
       const sel = el('select', CSS_IN + 'flex:0 1 auto;width:auto;min-width:104px;');
-      sel.className = 'gis-export-format';
+      sel.className = 'gis-export-format'; sel.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'File format', 'ファイル形式'));
       list.forEach((f) => {
         const o = document.createElement('option');
         o.value = f.id;
@@ -1770,7 +1775,7 @@ export function makeGisPanel(HOST) {
            came first in the file — 「誰も述べていない主張」 in the most literal sense. */
         if (ds.kind === 'raster' && Array.isArray(ds.bands) && ds.bands.length > 1) {
           const bs = el('select', CSS_IN + 'flex:0 1 auto;width:auto;min-width:90px;');
-          bs.className = 'gis-draw-band';
+          bs.className = 'gis-draw-band'; bs.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Band', 'バンド'));
           ds.bands.forEach((bd, i) => {
             const o = document.createElement('option');
             o.value = String(i);
@@ -1942,7 +1947,7 @@ export function makeGisPanel(HOST) {
         /* ⚠ THE SECOND BUTTON APPEARS ONLY WHERE THE LAYER ANSWERS 「その地点の値は」. Offering it on
            a layer with no sampleAt would be a control whose only outcome is a refusal. */
         if (typeof L.canSample === 'function' && L.canSample(s.id)) {
-          const size = el('select', CSS_IN + 'width:auto;min-width:92px;');
+          const size = el('select', CSS_IN + 'width:auto;min-width:92px;'); size.setAttribute('aria-label', window.IntMapLang.t(HOST.lang, 'Sampling grid', '標本の格子'));
           /* Powers of two from 64 to 512: the cost is one await per pixel, so this is 4k to 262k
              awaits — a choice the reader makes with the progress line and the stop button in view,
              rather than a ceiling written here for a cost that depends on which layer is asked. */
@@ -2027,7 +2032,8 @@ export function makeGisPanel(HOST) {
 
     function sectionOps() {
       const sec = el('div', CSS_SECT); sec.className = 'gis-sect gis-sect-ops';
-      sec.appendChild(el('div', CSS_SECTH, window.IntMapLang.t(HOST.lang, 'Run a step', '処理を足す', 'Schritt ausführen', 'Выполнить шаг', 'Ejecutar un paso')));
+      const opHead = el('div', CSS_SECTH, window.IntMapLang.t(HOST.lang, 'Run a step', '処理を足す', 'Schritt ausführen', 'Выполнить шаг', 'Ejecutar un paso'));
+      opHead.id = 'gis-op-head'; sec.appendChild(opHead);
       const O = OPS();
       if (!O || typeof O.ops !== 'function') { sec.appendChild(el('div', CSS_NOTE, reasonText('ops-unavailable'))); return sec; }
       const decls = O.ops() || [];
@@ -2035,7 +2041,7 @@ export function makeGisPanel(HOST) {
       if (!opId || !decls.some((d) => String(d.id) === String(opId))) opId = String(decls[0].id);
       const decl = decls.filter((d) => String(d.id) === String(opId))[0];
 
-      const pick = el('select', CSS_IN); pick.className = 'gis-op-select';
+      const pick = el('select', CSS_IN); pick.className = 'gis-op-select'; pick.setAttribute('aria-labelledby', 'gis-op-head');
       decls.forEach((d) => { const o = el('option', '', opLabel(d)); o.value = String(d.id); if (String(d.id) === String(opId)) o.selected = true; pick.appendChild(o); });
       pick.onchange = () => { opId = pick.value; opMsg = ''; render(); };
       sec.appendChild(pick);
@@ -2051,9 +2057,10 @@ export function makeGisPanel(HOST) {
       if (nIn && !all.length) inBox.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang, 'There is no dataset to run this on yet', 'この処理にかけられるデータセットがまだありません', 'Es gibt noch keinen Datensatz dafür', 'Пока нет набора данных для этого шага', 'Todavía no hay un conjunto de datos para esto')));
       for (let i = 0; i < nIn; i++) {
         const wrap = el('div', 'display:flex;flex-direction:column;gap:3px;min-width:0;');
-        wrap.appendChild(el('div', 'font-size:11px;color:var(--text-muted,#98989f);',
-          window.IntMapLang.t(HOST.lang, 'Input', '入力', 'Eingabe', 'Вход', 'Entrada') + ' ' + nf(i + 1) + ' · ' + acceptsAt(decl, i)));
-        const sel = el('select', CSS_IN); sel.className = 'gis-in-select'; sel.setAttribute('data-slot', String(i));
+        const inLbl = el('div', 'font-size:11px;color:var(--text-muted,#98989f);',
+          window.IntMapLang.t(HOST.lang, 'Input', '入力', 'Eingabe', 'Вход', 'Entrada') + ' ' + nf(i + 1) + ' · ' + acceptsAt(decl, i));
+        inLbl.id = 'gis-in-lbl-' + i; wrap.appendChild(inLbl);
+        const sel = el('select', CSS_IN); sel.className = 'gis-in-select'; sel.setAttribute('data-slot', String(i)); sel.setAttribute('aria-labelledby', inLbl.id);
         const blank = el('option', '', '—'); blank.value = ''; sel.appendChild(blank);
         all.forEach((ds) => {
           const o = el('option', '', titleOf(ds) + ' · ' + geomText(ds) + ' · ' + nf(ds.count));

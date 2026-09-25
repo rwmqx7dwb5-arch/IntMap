@@ -534,14 +534,14 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
           <button class="ntl-mode" id="ntl-mode-time" type="button" data-mode="time"></button><!-- (#R137) time-of-day · (#R293) 「時刻と予報タブを分けるな」: the model's transport is inside this tab, and both write the master clock -->
         </div>
         <!-- (#R289) 「どこの時刻を採用するかのプルダウン」 — the clock Chronos reads and writes wall-clock time in. -->
-        <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone"></select></div><label class="ntl-jumprow" for="ntl-jump"><span id="ntl-jump-lbl"></span><input type="datetime-local" id="ntl-jump" class="ntl-jump"></label><!-- (#R378) 「年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ」 — ONE native datetime control for the exact instant, OUTSIDE the Year/Date/Time tabs (it shares this source line with the zone row because the shell is at its line budget — tests/r168 #8). Wired in js/news-timeline.js. -->
+        <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone" aria-labelledby="ntl-zone-lbl"></select></div><label class="ntl-jumprow" for="ntl-jump"><span id="ntl-jump-lbl"></span><input type="datetime-local" id="ntl-jump" class="ntl-jump"></label><!-- (#R378) 「年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ」 — ONE native datetime control for the exact instant, OUTSIDE the Year/Date/Time tabs (it shares this source line with the zone row because the shell is at its line budget — tests/r168 #8). Wired in js/news-timeline.js. -->
         <div class="ntl-valrow">   <!-- (#R313) the Time tab's date sits UNDER the clock: .ntl-bigval is 26px with `text-overflow:ellipsis` in a fixed-width body, so one line would truncate it silently. DEV-NOTES #R313 §5. -->
           <div class="ntl-valcol"><div class="ntl-bigval" id="ntl-bigval">—</div><div class="ntl-bigdate" id="ntl-bigdate"></div></div>
           <button class="ntl-now" id="ntl-today" type="button"></button>
         </div>
-        <input type="date" id="ntl-date" class="ntl-date" style="display:none;">
-        <input type="time" id="ntl-time" class="ntl-date" style="display:none;"><!-- (#R137) time-of-day picker (shown in Time mode) -->
-        <input type="range" id="ntl-slider" class="ntl-slider" min="0" max="1000" value="1000" step="1">
+        <input type="date" id="ntl-date" class="ntl-date" aria-labelledby="ntl-mode-date" style="display:none;">
+        <input type="time" id="ntl-time" class="ntl-date" aria-labelledby="ntl-mode-time" style="display:none;"><!-- (#R137) time-of-day picker (shown in Time mode) -->
+        <input type="range" id="ntl-slider" class="ntl-slider" aria-labelledby="ntl-mode-year" min="0" max="1000" value="1000" step="1">
         <!-- (#R337) 「ChronosのTimeのタイムスライダーは、目盛りを付けるように。」 The Time tab's ruler, and it sits HERE — directly under the slider — because .ntl-scale below is on the far side of the forecast player and a graduation detached from its axis is not a graduation. Built by js/news-timeline.js `buildTicks`; empty and hidden in the Year and Date tabs, which keep the label row they have always had. -->
         <div class="ntl-ticks" id="ntl-ticks" aria-hidden="true" style="display:none;"></div>
         <div class="ntl-player" id="ntl-player" style="display:none;"></div><div class="ntl-scale" id="ntl-scale"></div><div class="ntl-bstep" id="ntl-bstep" style="display:none;"><button class="ntl-bstep-b" id="ntl-bstep-prev" type="button">‹</button><span class="ntl-bstep-l" id="ntl-bstep-lbl"></span><button class="ntl-bstep-b" id="ntl-bstep-next" type="button">›</button></div><!-- (#R288) the player is built from window.IntMapWxPlayer, so the two views of the clock cannot disagree about which button is play --><!-- (#R421) 「歴史国境の更新ペースをさらに細かくして。理想は月日単位。」 — the border-change stepper: the year axis above is the COARSE control, and this row steps the clock onto the days the borders actually changed (CShapes' own validity dates, 369 of them 1886-2019), hidden unless the chosen instant is inside that range. Wired in js/news-timeline.js. ⚠ IT SHARES THIS SOURCE LINE for the same reason the zone and jump rows share theirs: the shell is at the line budget tests/r168 #8 sets, and origin/main reached this round with ONE line of headroom. -->
@@ -565,8 +565,8 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="settings-sec">
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
     
-    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option><option value="es">Español</option></select></div>
-    <div class="setting-group"><label id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
+    <div class="setting-group"><label for="setting-lang" data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option><option value="es">Español</option></select></div>
+    <div class="setting-group"><label for="setting-theme" id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
       <!-- (#R33) Only System Default / Dark / Light kept per request; the skin themes were deleted. -->
       <option value="auto" id="opt-theme-auto">System Default</option>
       <option value="light" data-i18n="optLight">Light</option>
@@ -585,10 +585,10 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
         <button type="button" class="accent-sw" data-accent="#34c759" style="--sw:#34c759" title="Green" data-i18n-title="accGreen"></button>
         <button type="button" class="accent-sw" data-accent="#30b0c7" style="--sw:#30b0c7" title="Teal" data-i18n-title="accTeal"></button>
         <button type="button" class="accent-sw" data-accent="#8e8e93" style="--sw:#8e8e93" title="Graphite" data-i18n-title="accGraphite"></button>
-        <label class="accent-custom" data-i18n-title="accentCustom" title="Custom color"><input type="color" id="setting-accent-custom" value="#007aff"></label>
+        <label class="accent-custom" data-i18n-title="accentCustom" title="Custom color"><input type="color" id="setting-accent-custom" aria-label="Custom color" data-i18n-aria="accentCustom" value="#007aff"></label>
       </div>
     </div>
-    <div class="setting-group"><label data-i18n="lblSidebarStyle">Sidebar appearance</label><select id="setting-sidebar-style"><option value="opaque" data-i18n="sidebarOpaque">Solid (default)</option><option value="translucent" data-i18n="sidebarTranslucent">Frosted glass</option><option value="glass2" data-i18n="sidebarGlass2">Frosted glass (more transparent)</option></select></div>
+    <div class="setting-group"><label for="setting-sidebar-style" data-i18n="lblSidebarStyle">Sidebar appearance</label><select id="setting-sidebar-style"><option value="opaque" data-i18n="sidebarOpaque">Solid (default)</option><option value="translucent" data-i18n="sidebarTranslucent">Frosted glass</option><option value="glass2" data-i18n="sidebarGlass2">Frosted glass (more transparent)</option></select></div>
     </div>
     <div class="settings-sech" data-i18n="setSecLayout">Layout &amp; panels</div>
     <div class="settings-sec">
@@ -596,8 +596,8 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          The 「Layer panel」 row stood here with two options. There is one panel now, so there is nothing
          to choose: the Layers button always opens the right sidebar (js/layer-dropdown.js). -->
     <!-- (#R137) show/hide the rank number in the Countries list (default OFF) -->
-    <div class="setting-group"><label data-i18n="lblShowRank">Rank numbers (Countries)</label><select id="setting-showrank"><option value="on" data-i18n="showRankOn">On (default)</option><option value="off" data-i18n="showRankOff">Off</option></select></div>
-    <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select>
+    <div class="setting-group"><label for="setting-showrank" data-i18n="lblShowRank">Rank numbers (Countries)</label><select id="setting-showrank"><option value="on" data-i18n="showRankOn">On (default)</option><option value="off" data-i18n="showRankOff">Off</option></select></div>
+    <div class="setting-group"><label for="setting-ticker" data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select>
       <div id="ticker-syms" style="margin-top:10px;"></div></div>
     <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><button type="button" id="setting-wsmode-btn" style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--primary-color);background:var(--primary-color);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;">Switch to workspace →</button><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
     </div>
@@ -607,47 +607,47 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          engine behind the same IntMapGeoEngine contract (js/cesium-engine.js), downloaded
          only when it is chosen. Switching needs a reload, because a scene cannot be moved
          from one renderer to another once its layers exist — the hint says so. -->
-    <div class="setting-group"><label data-i18n="lblEngine">Map engine</label><select id="setting-engine"><option value="maplibre" data-i18n="engineMapLibre">MapLibre — 2-D/3-D map (default)</option><option value="cesium" data-i18n="engineCesium">Cesium — true 3-D globe with real terrain</option></select>
+    <div class="setting-group"><label for="setting-engine" data-i18n="lblEngine">Map engine</label><select id="setting-engine"><option value="maplibre" data-i18n="engineMapLibre">MapLibre — 2-D/3-D map (default)</option><option value="cesium" data-i18n="engineCesium">Cesium — true 3-D globe with real terrain</option></select>
       <div class="sat-keys-hint" data-i18n="engineHint">Cesium renders the Earth as a real ellipsoid at every zoom, with the same satellite imagery and the same elevation data. It is downloaded only when selected, and switching reloads the page. Contour lines and the closed 3-D solid tool stay MapLibre-only.</div>
       <div id="engine-status" class="sat-keys-hint" style="display:none;"></div></div>
-    <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
+    <div class="setting-group"><label for="setting-map-color" data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <!-- (#R238) the dock, off by default on every device; the hint states what stays on the map -->
-    <div class="setting-group"><label data-i18n="lblDockPanels">Legends and tool windows</label><select id="setting-dock-panels"><option value="off" data-i18n="dockPanelsOff">On the map (default)</option><option value="on" data-i18n="dockPanelsOn">Collected in a sidebar tab</option></select>
+    <div class="setting-group"><label for="setting-dock-panels" data-i18n="lblDockPanels">Legends and tool windows</label><select id="setting-dock-panels"><option value="off" data-i18n="dockPanelsOff">On the map (default)</option><option value="on" data-i18n="dockPanelsOn">Collected in a sidebar tab</option></select>
       <div class="sat-keys-hint" data-i18n="dockPanelsHint">Every legend, readout and tool window moves into one “Panels” tab in the left sidebar, so the map is left clear. Popups anchored to a place you clicked stay on the map.</div></div>
-    <div class="setting-group"><label data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="ui+local" data-i18n="labelLangUiLocal">App language, with the local name underneath</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
+    <div class="setting-group"><label for="setting-label-lang" data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="ui+local" data-i18n="labelLangUiLocal">App language, with the local name underneath</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
     <!-- (#R171) Tilt ceiling. Standard is the long-standing 78°; Unlimited hands over the renderer's whole
          range (0-180°, i.e. straight down → horizon → straight up). -->
-    <div class="setting-group"><label data-i18n="lblTiltLimit">Map tilt limit</label><select id="setting-tilt-limit"><option value="standard" data-i18n="tiltStandard">Standard — up to 78° (default)</option><option value="unlimited" data-i18n="tiltUnlimited">Unlimited — the full 0–180° range</option></select>
+    <div class="setting-group"><label for="setting-tilt-limit" data-i18n="lblTiltLimit">Map tilt limit</label><select id="setting-tilt-limit"><option value="standard" data-i18n="tiltStandard">Standard — up to 78° (default)</option><option value="unlimited" data-i18n="tiltUnlimited">Unlimited — the full 0–180° range</option></select>
       <div class="sat-keys-hint" data-i18n="tiltHint">Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.</div></div>
     <!-- (#R171) Viewpoint altitude in the always-on readout (bottom-left corner of the map). -->
-    <div class="setting-group"><label data-i18n="lblEyeAlt">Viewpoint altitude in the readout</label><select id="setting-eye-alt"><option value="off" data-i18n="eyeAltOff">Off (default)</option><option value="on" data-i18n="eyeAltOn">On — show the camera's altitude</option></select></div>
+    <div class="setting-group"><label for="setting-eye-alt" data-i18n="lblEyeAlt">Viewpoint altitude in the readout</label><select id="setting-eye-alt"><option value="off" data-i18n="eyeAltOff">Off (default)</option><option value="on" data-i18n="eyeAltOn">On — show the camera's altitude</option></select></div>
     <!-- (#R210) Day/night shading + VIIRS city lights (js/night-side.js). On by default; the answer persists. -->
-    <div class="setting-group"><label data-i18n="lblNightSide">Day &amp; night shading</label><select id="setting-night-side"><option value="on" data-i18n="nightSideOn">On (default) — darken the night side &amp; show city lights</option><option value="off" data-i18n="nightSideOff">Off — one evenly lit globe</option></select></div>
+    <div class="setting-group"><label for="setting-night-side" data-i18n="lblNightSide">Day &amp; night shading</label><select id="setting-night-side"><option value="on" data-i18n="nightSideOn">On (default) — darken the night side &amp; show city lights</option><option value="off" data-i18n="nightSideOff">Off — one evenly lit globe</option></select></div>
     <!-- (#R20) Map navigation sensitivity — zoom (wheel/pinch rate) + pan (drag inertia). 100% = the long-standing default. -->
     
     <div class="setting-group"><label data-i18n="lblNavSens">Map navigation sensitivity</label>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
-        <span data-i18n="lblNavZoom" style="font-size:12px;color:var(--text-muted);min-width:74px;">Zoom</span>
-        <input type="range" id="setting-zoom-sens" min="25" max="300" step="5" value="100" style="flex:1;">
+        <span id="lbl-nav-zoom" data-i18n="lblNavZoom" style="font-size:12px;color:var(--text-muted);min-width:74px;">Zoom</span>
+        <input type="range" id="setting-zoom-sens" aria-labelledby="lbl-nav-zoom" min="25" max="300" step="5" value="100" style="flex:1;">
         <b id="zoom-sens-val" style="font-size:12px;color:var(--text-main);min-width:42px;text-align:right;">100%</b>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <span data-i18n="lblNavPan" style="font-size:12px;color:var(--text-muted);min-width:74px;">Pan</span>
-        <input type="range" id="setting-pan-sens" min="25" max="300" step="5" value="100" style="flex:1;">
+        <span id="lbl-nav-pan" data-i18n="lblNavPan" style="font-size:12px;color:var(--text-muted);min-width:74px;">Pan</span>
+        <input type="range" id="setting-pan-sens" aria-labelledby="lbl-nav-pan" min="25" max="300" step="5" value="100" style="flex:1;">
         <b id="pan-sens-val" style="font-size:12px;color:var(--text-main);min-width:42px;text-align:right;">100%</b>
       </div>
       <!-- (#R23) inertia / momentum glide: 0 = stop instantly, 100% = current default. Works on touch too. -->
       <div style="display:flex;align-items:center;gap:10px;margin-top:7px;">
-        <span data-i18n="lblNavInertia" style="font-size:12px;color:var(--text-muted);min-width:74px;">Inertia</span>
-        <input type="range" id="setting-inertia" min="0" max="150" step="5" value="100" style="flex:1;">
+        <span id="lbl-nav-inertia" data-i18n="lblNavInertia" style="font-size:12px;color:var(--text-muted);min-width:74px;">Inertia</span>
+        <input type="range" id="setting-inertia" aria-labelledby="lbl-nav-inertia" min="0" max="150" step="5" value="100" style="flex:1;">
         <b id="inertia-val" style="font-size:12px;color:var(--text-main);min-width:42px;text-align:right;">100%</b>
       </div>
     </div>
     </div>
     <div class="settings-sech" data-i18n="setSecUnits">Units &amp; time</div>
     <div class="settings-sec">
-    <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
-    <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
+    <div class="setting-group"><label for="setting-units" id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
+    <div class="setting-group"><label for="setting-temp-unit" data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
     <!-- (#R29) "AI location analysis" setting removed — news location is now always pre-analysed
          server-side, so there is nothing for the user to choose here. -->
     
@@ -655,13 +655,13 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       <div class="tz-combo" id="tz-combo" style="position:relative;">
         <input type="text" id="setting-tz-search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" placeholder="Search timezone…" data-i18n-ph="tzSearch">
         <div class="tz-results" id="tz-results"></div>
-        <select id="setting-tz" size="1" style="display:none;" aria-hidden="true"></select>
+        <select id="setting-tz" aria-labelledby="lbl-tz" size="1" style="display:none;" aria-hidden="true"></select>
       </div>
     </div>
     </div>
     <div class="settings-sech" data-i18n="setSecNews">News &amp; ticker</div>
     <div class="settings-sec">
-    <div class="setting-group"><label data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMultiSel">Multiple languages…</option></select>
+    <div class="setting-group"><label for="setting-newslang" data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMultiSel">Multiple languages…</option></select>
       <div id="newslang-dd" class="nc-dd" style="display:none; margin-top:10px;">
         <button type="button" id="newslang-dd-btn" class="nc-dd-btn"><span id="newslang-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
         <div id="newslang-multi" class="nc-dd-panel"></div>
@@ -672,7 +672,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          統一感がなく気持ち悪い。」 This block now has byte-for-byte the same shape as the languages block
          above it: a <select> that chooses the MODE, the nc-dd multi-select shown only when that mode is
          "choose…", and the explanatory hint BELOW the control rather than above it. -->
-    <div class="setting-group"><label data-i18n="lblNewsCountries">News by country media</label><select id="setting-newscountry"><option value="off" data-i18n="newsCountryOff">Default feeds only</option><option value="multi" data-i18n="newsCountryMultiSel">Choose countries…</option></select>
+    <div class="setting-group"><label for="setting-newscountry" data-i18n="lblNewsCountries">News by country media</label><select id="setting-newscountry"><option value="off" data-i18n="newsCountryOff">Default feeds only</option><option value="multi" data-i18n="newsCountryMultiSel">Choose countries…</option></select>
       <div id="newscountry-dd" class="nc-dd" style="display:none; margin-top:10px;">
         <button type="button" id="newscountry-dd-btn" class="nc-dd-btn"><span id="newscountry-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
         <div id="newscountry-multi" class="nc-dd-panel"></div>
@@ -682,7 +682,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (#R207) 「ニュースは、ニュースの元を選択できるように。例えば、ロイターとか、なんとか新聞とか、
          そういう。複数選択可能。」 Same UI again; the list is built from the outlets the feed has actually
          delivered (see _populateNewsSources), so it never claims an outlet that is not there. -->
-    <div class="setting-group"><label data-i18n="lblNewsSources">News outlets</label><select id="setting-newssource"><option value="off" data-i18n="newsSourceAll">All outlets</option><option value="multi" data-i18n="newsSourceMultiSel">Choose outlets…</option></select>
+    <div class="setting-group"><label for="setting-newssource" data-i18n="lblNewsSources">News outlets</label><select id="setting-newssource"><option value="off" data-i18n="newsSourceAll">All outlets</option><option value="multi" data-i18n="newsSourceMultiSel">Choose outlets…</option></select>
       <div id="newssource-dd" class="nc-dd" style="display:none; margin-top:10px;">
         <button type="button" id="newssource-dd-btn" class="nc-dd-btn"><span id="newssource-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
         <div id="newssource-multi" class="nc-dd-panel"></div>

@@ -6287,7 +6287,7 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<button class="wp-t-play" style="'+TB+'min-width:26px;">'+(playTmr?'⏸':'▶')+'</button>'
           +'<button class="wp-t-step" data-d="1" title="'+esc(L('an hour on','1時間後','eine Stunde weiter','на час вперёд','una hora adelante'))+'" style="'+TB+'">›</button>'
           +'<button class="wp-t-step" data-d="6" title="'+esc(L('on about a quarter cycle (6 h)','1/4周期ほど進む（6時間）','etwa ein Viertelzyklus weiter','примерно на четверть цикла вперёд','un cuarto de ciclo adelante (6 h)'))+'" style="'+TB+'">»</button>'
-          +'<input class="wp-t-when" type="datetime-local" step="3600" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
+          +'<input class="wp-t-when" type="datetime-local" step="3600" aria-label="'+esc(L('Date and time','日時'))+'" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
           +'<button class="wp-t-live" style="'+TB+(live?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
           +'</div>'; }
       function setWhen(ms){ try{ window.IntMapTime.set(new Date(snapHour(ms)),{allowFuture:true,source:'tides'}); }catch(_){} }

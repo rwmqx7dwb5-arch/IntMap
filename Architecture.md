@@ -2063,6 +2063,14 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
   ⚠ 高さも幅も**位置を1つも書く前に全部読む**（1枚ごとに測る形へ戻さない——実測で、指の1回のパンで
   起きた `getBoundingClientRect` 5,852 回のうち 5,724 回がこの関数から出ていた）。
   ⚠ 読者が動かした凡例（`data-dragged`）は積み直しの対象にしない。
+- **携帯（≤768 px）の凡例の置き場は、地図の上に浮いている部品が残した場所である。** 起点（上端）と
+  右端は `css/intmap.css` の `--m-legend-top` / `--m-legend-right` で、これは左の列（地名検索の丸と
+  地図切替 `.bm-square`）の下端と右の丸ボタン列（`.m-fab-stack`）の幅から**導出**される（§9.2）。
+  2つは `@property` で長さとして登録してあるので、`tileLegends()` は解決済みの px を1回のスタイル
+  読み出しで得て、そこから積む（CSS の無い偽 DOM では旧来の 64 px）。凡例の `top`/`left` に
+  `!important` を付けない——付けると積み上げが書いた位置が全部上書きされ、複数の凡例が同じ場所に
+  重なる。⚠ ケッペンの凡例は `flex` で表示されるが、携帯では**他と同じ置き場の一員**として積む
+  （デスクトップでは従来どおり自分の全高の場所を持つ）。
 - **段彩の凡例は連続、分類の凡例は帯。** 世界銀行系の塗り分けはグラデーション帯で、停止は**値の位置**に
   置く（`interpolate` は値について線形）。タイルのサムネイルも同じランプを層から読む（`IntMapWB.rampOf`）。
 - **1分類＝1色。** `js/layer-packs.js` の `paletteOf(n)` は手で選んだ30色を使い切ったあと
@@ -3622,6 +3630,24 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
   （`placeClear()` が覆っている物の矩形を測る）。
 - **進捗バーは1種類。** `var(--prog-grad)` の塗り幅＝割合 ＋ ％表示。`busy()` / `set(f)` / `done()` の
   3状態だけ。⚠ 割合が出せないなら**上流を直す**（不確定モードを足さない）。
+- **フォーム部品（`input` / `select` / `textarea`）の名前は、部品を作る場所が付ける。** 隣に語が
+  書いてあるなら部品と結ぶ（`<label for>`、語と部品を包む `<label style="display:contents">`——
+  行の flex 配置を変えない——、または `aria-labelledby`）。語が画面に無いなら、作る側が知っている意味
+  から `aria-label` を付ける。レイヤー行の不透明度スライダと日付欄は「自分の語（翻訳キー付きの
+  `aria-label`）＋行のレイヤー名 `#lyrname-<id>`」を `aria-labelledby` で**参照**するので、言語が
+  変わっても画面の文字と同じ経路で名前が変わる。凡例の不透明度行（`.dl-op-row`）は3つの組み立て
+  （`js/data-layers.js` `ensureLegendOpacity`・`js/weather.js` `opRow`・`js/waves.js` `opRow`）が
+  同じ形で、％表示は名前に入れない（ドラッグのたびに名前が変わるため）。⚠ 包む `<label>` の中に
+  `‹` ボタンがある日付行では、`<label>` はボタンを名指してしまう——その形では `aria-labelledby` を使う。
+  Atlas の命名掃引（`_uiNameSweep()`）は名前の無いものを後から拾う補助であって、この規則の代わりでは
+  ない。門は `tests/form-control-names.spec.js` ①（各レイヤー系統を1枚ずつ点けた状態で DOM の全部品。
+  描画されている部品はブラウザの accessibility tree に訊き、されていない部品に当てる規則がその答えと
+  一致することも同時に測る）と ③（ツールの入口——Layers の Tools 欄 `.lst-toolbody` のボタン全部と、
+  携帯の tools sheet が名指す地図ツールバーの実ボタン——を**実体から見つけて1つずつ**押し、開いた物の
+  部品を読んでから閉じる。シミュレーターを同時に2つ動かさない）。
+  ⚠ Data & analysis（`js/gis-panel.js`）の引数欄は `paramControl` 1か所で作られ、**引数名の行**
+  （`#gis-param-name-<n>`）がその下に作られる部品——型によって select / textarea / input / 単独の
+  チェックボックス——の名前になる。
 
 ### 8.4 経路 (Directions)
 
@@ -4182,6 +4208,13 @@ disconnect／close を持つもの、または関数）で**登録したもの�
 - **チェックボックスのタップ**：`input{pointer-events:none}` ＋ `touch-action:manipulation` ＋
   行そのものの `pointerdown` でトグルする。
 - **compare を開いている間**：メインの m-fab-stack を**下に移動**する（消さない）。
+- **地図の上に浮く部品の寸法は1か所にある。** `css/intmap.css` の携帯ブロックの `:root` が
+  `--m-edge`（端からの間隔）・`--m-fab`（丸ボタンの径）・`--m-bm`（地図切替の辺）・`--m-chrome-top`
+  （安全領域を含む上端）・`--m-bm-top` を持ち、地名検索の丸・`.m-fab-stack`・`.bm-square`・`.bm-pop`
+  は全部これを読む。凡例の置き場 `--m-legend-top`（左の列の下端＋8 px）と `--m-legend-right`
+  （右の列の幅＋8 px）は**ここから導出**され、凡例は `box-sizing:border-box` でその幅に収まる（§7）。
+  門は `tests/form-control-names.spec.js` ②（375×812 で凡例を3枚開き、各カードの四隅——角丸の
+  半径だけ内側——と中心で `elementFromPoint` がそのカード自身を返すこと）。
 - **Radius パネル**：携帯では左下のコンパクトなカード（地図と FAB を塞がない）。
 - **`.m-scrim` は、閉じている間 `visibility:hidden`。**
 - ⚠ **「携帯」の問いは2種類あり、答える述語も2つある。** 幅（`isMobile()` ＝

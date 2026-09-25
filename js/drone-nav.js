@@ -596,7 +596,7 @@ window.IntMapModules.droneNav=function(HOST){
   function render(){
     const p=ensurePanel(); if(!route) route=newRoute();
     const st=lastResult;
-    const refSel=`<select id="dn-ref" class="v3d-unitsel">
+    const refSel=`<select id="dn-ref" class="v3d-unitsel" aria-label="${L('Altitude reference','高度の基準')}">
       <option value="agl"${typedRef==='agl'?' selected':''}>AGL — ${L('above ground','対地高度','über Grund','над землёй','sobre el suelo')}</option>
       <option value="amsl"${typedRef==='amsl'?' selected':''}>AMSL — ${L('above sea level','海抜高度','über NN','над уровнем моря','sobre el nivel del mar')}</option></select>`;
     const wpRows=route.wp.map((w,i)=>{
@@ -628,9 +628,9 @@ window.IntMapModules.droneNav=function(HOST){
 
     p.innerHTML=`<div class="tp-header"><span class="tp-title">🛸 ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>
         <span class="tp-hd-btns"><button class="tp-min-btn" type="button" title="–">–</button><button class="tp-close" type="button" title="${HOST.t('close')}">×</button></span></div>
-      <input type="text" id="dn-name" class="dn-name" value="${esc(route.name)}">
-      <div class="dn-sec">${L('Aircraft','機体','Fluggerät','Аппарат','Aeronave')}</div>
-      <select id="dn-preset" class="tp-select">${PRESETS.map(x=>`<option value="${x.id}"${route.presetId===x.id?' selected':''}>${esc(presetName(x))}</option>`).join('')}<option value="custom"${route.presetId==='custom'?' selected':''}>${L('Custom','カスタム','Eigene','Свой','Personalizado')}</option></select>
+      <input type="text" id="dn-name" class="dn-name" aria-label="${L('Route name','ルート名')}" value="${esc(route.name)}">
+      <div class="dn-sec" id="dn-preset-lbl">${L('Aircraft','機体','Fluggerät','Аппарат','Aeronave')}</div>
+      <select id="dn-preset" class="tp-select" aria-labelledby="dn-preset-lbl">${PRESETS.map(x=>`<option value="${x.id}"${route.presetId===x.id?' selected':''}>${esc(presetName(x))}</option>`).join('')}<option value="custom"${route.presetId==='custom'?' selected':''}>${L('Custom','カスタム','Eigene','Свой','Personalizado')}</option></select>
       <details class="tp-more" id="dn-specbox"${route.wp.length?'':' open'}><summary>${L('Aircraft limits','機体条件','Grenzwerte','Ограничения','Límites')}</summary><div class="dn-specs">${specRows}</div></details>
       <div class="dn-sec">${L('Waypoints','ウェイポイント','Wegpunkte','Точки маршрута','Puntos de ruta')} <span class="dn-refbox">${refSel}</span></div>
       <div class="dn-wps">${wpRows||`<div class="tp-hint">${addMode?L('Click the map to drop a waypoint.','地図をクリックしてウェイポイントを追加します。','Auf die Karte klicken, um einen Wegpunkt zu setzen.','Нажмите на карту, чтобы добавить точку.','Haz clic en el mapa para añadir un punto.'):L('Press “Add on map”, then click the map.','「地図に追加」を押してから地図をクリックしてください。','„Auf Karte setzen“ drücken und klicken.','Нажмите «Добавить на карте», затем кликните.','Pulsa «Añadir en el mapa» y haz clic.')}</div>`}</div>

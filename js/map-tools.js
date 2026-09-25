@@ -306,8 +306,8 @@ window.IntMapModules.drawTool=function(HOST){
         `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Length","距離","Länge","Длина","Longitud")}</span><b>${distHTML(lengthKm)}</b></div>`+
         `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Area (loops)","面積（閉領域）","Fläche (geschlossen)","Площадь (замкнутые)","Superficie (cerrado)")}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
         `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Points (simpl/raw)","点数（簡略/元）","Punkte (vereinfacht/roh)","Точки (упрощ./исходн.)","Puntos (simplif./bruto)")}</span><b>${simplified.length}/${raw.length}</b></div>`+
-        `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span>${window.IntMapLang.t(HOST.lang,"Resolution (right = coarser)","解像度（右ほど粗く）","Auflösung (rechts = gröber)","Разрешение (правее — грубее)","Resolución (derecha = más basto)")}</span>`+
-          `<input type="range" id="draw-res" min="0" max="100" step="1" value="${resolution}" style="width:100%;accent-color:var(--primary-color);"></div>`+
+        `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span id="draw-res-lbl">${window.IntMapLang.t(HOST.lang,"Resolution (right = coarser)","解像度（右ほど粗く）","Auflösung (rechts = gröber)","Разрешение (правее — грубее)","Resolución (derecha = más basto)")}</span>`+
+          `<input type="range" id="draw-res" aria-labelledby="draw-res-lbl" min="0" max="100" step="1" value="${resolution}" style="width:100%;accent-color:var(--primary-color);"></div>`+
         `<div class="tp-hint">${hint}</div>`+
         /* (#R123) POPULATION inside the drawn loop(s) — same WorldPop 100m grid as the measure/radius tools, now
            available for the freehand Draw tool too ("Drawでも使えるように"). Shown once the trace encloses an area. */

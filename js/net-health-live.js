@@ -444,6 +444,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
     const sel = box.querySelector('.nh-sig');
     const opts = [['', L('All signals', 'すべての信号', 'Alle Signale', 'Все сигналы', 'Todas las señales')]].concat(S.sig.map((s) => [s, s]));
     sel.innerHTML = opts.map((o) => '<option value="' + HOST.escapeHtml(o[0]) + '">' + HOST.escapeHtml(o[1]) + '</option>').join('');
+    sel.setAttribute('aria-label', L('Measurement signal', '計測信号'));   /* re-set with the options, so it follows the language they do */
     sel.value = S.signal;
     box.querySelector('.nh-key').innerHTML = '<div style="height:8px;border-radius:4px;background:linear-gradient(90deg,#f0c419,#e08a2e,#c8483f,#7e1d19)"></div>'
       + '<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px"><span>0%</span><span>'

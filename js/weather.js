@@ -101,7 +101,7 @@ window.IntMapModules=window.IntMapModules||{};
         +_b('next',L('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),IC.next)
         +_b('now',L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now')
         +'</div>'
-        +'<div class="kl-period" style="margin:6px 0 2px;"><label>'+L('Time','時刻','Zeit','Время','Hora')+'</label>'
+        +'<div class="kl-period" style="margin:6px 0 2px;"><label for="'+id+'">'+L('Time','時刻','Zeit','Время','Hora')+'</label>'
         +'<select class="ecl-timesel" id="'+id+'">'+o+'</select></div>'
         +'<input type="range" class="ecl-timerange" id="'+id+'-r" min="0" max="'+Math.max(0,n-1)+'" step="1" value="'+i+'" '
         +'aria-label="'+L('Time','時刻','Zeit','Время','Hora')+'" style="--ntl-fill:'+pct.toFixed(1)+'%;">'
@@ -929,7 +929,7 @@ window.IntMapModules.wind=function(HOST){
       const parts='<label class="kl-period wind-parts-row" style="margin:7px 0 2px;cursor:pointer;">'
         +'<input type="checkbox" id="wind-parts-sw"'+(partsOn?' checked':'')+' style="accent-color:var(--primary-color);margin:0;cursor:pointer;">'
         +'<span style="font-size:11px;color:var(--text-muted);">'+L('Particles','パーティクル','Partikel','Частицы','Partículas')+'</span></label>';
-      const units='<div class="kl-period" style="margin:7px 0 2px;"><label>'+L('Units','単位','Einheiten','Единицы','Unidades')+'</label>'
+      const units='<div class="kl-period" style="margin:7px 0 2px;"><label for="wind-unit-sel">'+L('Units','単位','Einheiten','Единицы','Unidades')+'</label>'
         +'<select id="wind-unit-sel">'+(window.WIND_UNITS||[]).map(u=>'<option value="'+u[0]+'"'+(u[0]===window.windUnit?' selected':'')+'>'+u[1]+'</option>').join('')+'</select></div>';
       const vt=E?E.validTime():'', ref=E?E.referenceTime():'';
       /* (#R290) the layer's own discrete clock — window.IntMapWxPlayer.timeUI, the one declaration */
@@ -1853,8 +1853,8 @@ window.IntMapModules.weatherEC=function(HOST){
        opacity uses (js/data-layers.js `ensureLegendOpacity`), so it looks and behaves identically. */
     function opRow(cfg){
       const v=state[cfg.id].op;
-      return '<div class="dl-op-row">'+L('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')
-        +'<input type="range" class="ec-oplg" data-for="'+cfg.id+'" min="0" max="1" step="0.05" value="'+v+'">'
+      return '<div class="dl-op-row"><label style="display:contents;">'+L('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')
+        +'<input type="range" class="ec-oplg" data-for="'+cfg.id+'" min="0" max="1" step="0.05" value="'+v+'"></label>'
         +'<span class="dl-op-val">'+Math.round(v*100)+'%</span></div>';
     }
     /* ⚠ (#R337) the wind's streaks over THIS layer — the switch belongs in this legend by #R16's
@@ -1935,7 +1935,8 @@ window.IntMapModules.weatherEC=function(HOST){
       if((n|0)<60) setTimeout(()=>wireClock((n|0)+1),200); })(0);
 
     /* ── the Layers-panel rows ───────────────────────────────────────────────────────────────── */
-    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); if(anyOn()) renderLegend(); }
+    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l);
+      const o=document.getElementById('ec-op-'+l.id); if(o) o.setAttribute('aria-label',L('Opacity','不透明度')); }); if(anyOn()) renderLegend(); }   /* the slider's own word follows the language with the row's name (its accessible name is the two together) */
     function mountRows(){
       const dd=document.getElementById('layer-dropdown'); if(!dd||rowsMounted) return;
       rowsMounted=true;
@@ -1943,7 +1944,7 @@ window.IntMapModules.weatherEC=function(HOST){
         if(l.sub) return;   /* (#R439) a sub-layer's switch lives in its parent's legend, not here */
         if(document.getElementById('lyrrow-'+l.id)) return;
         const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+l.id;
-        w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-'+l.id+'"> <span class="ec-lbl">'+ecLbl(l)+'</span></label><input type="range" class="lyr-op ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'">';
+        w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-'+l.id+'"> <span class="ec-lbl" id="lyrname-'+l.id+'">'+ecLbl(l)+'</span></label><input type="range" class="lyr-op ec-op" data-for="'+l.id+'" id="ec-op-'+l.id+'" aria-label="'+L('Opacity','不透明度')+'" aria-labelledby="ec-op-'+l.id+' lyrname-'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'">';
         dd.appendChild(w);
         const cb=w.querySelector('#dl-'+l.id), op=w.querySelector('.ec-op');
         cb.addEventListener('change',()=>{ w.classList.toggle('on',cb.checked); toggle(l.id,cb.checked); });

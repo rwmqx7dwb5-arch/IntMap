@@ -135,17 +135,17 @@ window.IntMapModules.satellite=function(HOST){
     });
     let dateCtrl;
     if(p.dated&&p.dateMode==='day'){
-      dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><div class="satc-date"><button class="satc-step" id="satc-prev" title="${HOST.t('satPrevDay')}">◀</button><input type="date" id="satc-day" value="${HOST.satState.day}" max="${satMaxDay()}"><button class="satc-step" id="satc-next" title="${HOST.t('satNextDay')}">▶</button></div></div>`;
+      dateCtrl=`<div class="satc-row"><label for="satc-day">${HOST.t('satDate')}</label><div class="satc-date"><button class="satc-step" id="satc-prev" title="${HOST.t('satPrevDay')}">◀</button><input type="date" id="satc-day" value="${HOST.satState.day}" max="${satMaxDay()}"><button class="satc-step" id="satc-next" title="${HOST.t('satNextDay')}">▶</button></div></div>`;
     } else if(p.dated&&p.dateMode==='year'){
       const yo=p.years.map(y=>`<option value="${y}"${y===HOST.satState.year?' selected':''}>${y}</option>`).join('');
-      dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><select id="satc-year">${yo}</select></div>`;
+      dateCtrl=`<div class="satc-row"><label for="satc-year">${HOST.t('satDate')}</label><select id="satc-year">${yo}</select></div>`;
     } else {
       dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><span class="satc-latest">${HOST.t('satLatest')}</span></div>`;
     }
     panel.innerHTML=`<div class="satc-head">📡 <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
-      `<div class="satc-row"><label>${HOST.t('satProvider')}</label><select id="satc-provider">${opts}</select></div>`+
+      `<div class="satc-row"><label for="satc-provider">${HOST.t('satProvider')}</label><select id="satc-provider">${opts}</select></div>`+
       dateCtrl+
-      `<div class="satc-row"><label>${HOST.t('opacity')}</label><input type="range" id="satc-op" min="0.2" max="1" step="0.05" value="${HOST.satState.opacity}"></div>`+
+      `<div class="satc-row"><label for="satc-op">${HOST.t('opacity')}</label><input type="range" id="satc-op" min="0.2" max="1" step="0.05" value="${HOST.satState.opacity}"></div>`+
       aiSatChangeBlockHTML(p)+
       `<div class="satc-attr">${p.attribution||''}</div>`;
     const sp=panel.querySelector('#satc-provider'); if(sp) sp.onchange=ev=>satSelectProvider(ev.target.value);

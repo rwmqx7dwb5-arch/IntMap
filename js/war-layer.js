@@ -561,7 +561,7 @@ window.IntMapModules.warLayer = function (HOST) {
         + 'aria-label="' + esc(L('Day', '日付', 'Tag', 'Дата', 'Día')) + '" style="--ntl-fill:' + pct.toFixed(1) + '%;">'
         + '<div class="ecl-timescale"><span>' + esc(sp[0]) + '</span><span>' + esc(sp[1]) + '</span></div>'
         + '<div class="war-ctl">'
-        + '<input type="date" class="war-day" min="' + esc(sp[0]) + '" max="' + esc(sp[1]) + '" value="' + esc(curDate || sp[0]) + '">'
+        + '<input type="date" class="war-day" aria-label="' + esc(L('Day', '日付')) + '" min="' + esc(sp[0]) + '" max="' + esc(sp[1]) + '" value="' + esc(curDate || sp[0]) + '">'
         + '<label style="display:flex;align-items:center;gap:4px;">' + esc(L('Step', '刻み', 'Schritt', 'Шаг', 'Paso'))
         + '<select class="war-speed">' + speeds.map((s) => '<option value="' + s[0] + '"' + (s[0] === stepDays ? ' selected' : '') + '>' + esc(s[1]) + '</option>').join('') + '</select></label>'
         + '</div>';

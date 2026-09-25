@@ -171,8 +171,8 @@ window.IntMapModules.precipAnnual = function (HOST) {
     b.innerHTML = '<div style="display:flex;border-radius:3px;overflow:hidden;border:1px solid rgba(128,128,128,0.28);margin-top:5px;">' + swatch + '</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:2px;"><span>0</span><span>500</span><span>1000</span><span>2000</span><span>≥5000 mm</span></div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10.5px;color:var(--text-muted);">'
-      + '<span>' + esc(L('Year', '年', 'Jahr', 'Год', 'Año')) + '</span>'
-      + '<select class="pa-year" style="flex:1;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">' + opts + '</select></div>'
+      + '<label style="display:contents;"><span>' + esc(L('Year', '年', 'Jahr', 'Год', 'Año')) + '</span>'
+      + '<select class="pa-year" style="flex:1;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">' + opts + '</select></label></div>'
       + '<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:6px;">' + esc(year === CLIM ? CLIM_ONE() : YEAR_ONE(year)) + '</div>'
       + '<details class="im-more"><summary>' + esc(L('Sources', '出典', 'Quellen', 'Источники', 'Fuentes')) + '</summary>'
       + '<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">' + esc(SRC_TEXT()) + '</div></details>';

@@ -522,10 +522,10 @@ LIMIT ${limit}`;
     }
     function html() {
       const cur = INDUSTRIES.find(i => i.q === qid) || INDUSTRIES[0];
-      let s = '<label style="font-size:11px;color:var(--text-muted);">' + esc(L('Industry', '業界', 'Branche', 'Отрасль', 'Sector')) + '</label>'
+      let s = '<label style="display:contents;"><span style="font-size:11px;color:var(--text-muted);">' + esc(L('Industry', '業界', 'Branche', 'Отрасль', 'Sector')) + '</span>'
         + '<select class="iw-pick" style="width:100%;padding:7px 9px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:12.5px;">'
         + INDUSTRIES.map(i => '<option value="' + esc(i.q) + '"' + (i.q === qid ? ' selected' : '') + '>' + esc(indName(i)) + '</option>').join('')
-        + '</select>';
+        + '</select></label>';
       if (status === 'loading') return s + '<div style="font-size:12px;color:var(--text-muted);">' + esc(L('Querying Wikidata…', 'Wikidata に問い合わせ中…', 'Wikidata wird abgefragt…', 'Запрос к Wikidata…', 'Consultando Wikidata…')) + '</div>';
       /* ══ ⚠ (#R266) THIS SENTENCE WAS WRITTEN FOR WHOEVER WROTE THE QUERY ═════════════════════
          「この表示を辞めろ。これは開発者向けサービスではない。」 — and the two lines it quoted were

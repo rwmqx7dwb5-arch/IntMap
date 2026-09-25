@@ -3928,7 +3928,7 @@ window.IntMapModules.seismic=function(HOST){
           +'<button class="sq-src-past '+SEGC(evSrc!=='recent')+'">'+L('Past earthquakes','過去の地震','Vergangene Beben','Прошлые землетрясения','Terremotos pasados')+'</button>'
           +'<button class="sq-src-recent '+SEGC(evSrc==='recent')+'">'+L('Recent earthquakes','最近の地震','Aktuelle Beben','Недавние землетрясения','Terremotos recientes')+'</button>'
         +'</div>'
-        +'<div class="sq-ev-row"><select class="sq-ev" style="flex:1;min-width:0;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
+        +'<div class="sq-ev-row"><select class="sq-ev" aria-label="'+(evSrc==='recent'?L('Recent earthquakes','最近の地震'):L('Past earthquakes','過去の地震'))+'" style="flex:1;min-width:0;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:'+FS+';">'
         +(evSrc==='recent'
           ? ('<option value="">'+(_realBusy
                 ? L('Loading the recent earthquakes…','最近の地震を読み込み中…','Aktuelle Beben werden geladen…','Загрузка недавних землетрясений…','Cargando terremotos recientes…')
@@ -4203,7 +4203,7 @@ window.IntMapModules.seismic=function(HOST){
             +'<div class="sq-segwrap sq-pl-chips">'+SPEEDS.map(v=>'<button class="sq-seg sq-spdc'+(v===speed?' on':'')+'" data-spd="'+v+'">×'+v+'</button>').join('')+'</div>'
           +'</div>'
           /* the <select> the handler below reads stays, hidden — one source of truth for the rate */
-          +'<select class="sq-spd" style="display:none;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
+          +'<select class="sq-spd" aria-label="'+L('Playback speed','再生速度')+'" style="display:none;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
         +'</div>'
         +'</div></div>'
         /* CARD 5 — 結果 */

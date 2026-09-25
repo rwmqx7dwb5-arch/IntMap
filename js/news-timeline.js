@@ -670,6 +670,8 @@ window.IntMapModules.newsTimeline=function(HOST){
       if(modeTime) modeTime.classList.toggle('on',m==='time');
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
       if(timePicker) timePicker.style.display=(m==='time')?'':'none';
+      /* the slider is the active tab's axis, so the active tab is its name (index.html starts it on Year) */
+      if(slider&&(m==='year'||m==='date'||m==='time')) slider.setAttribute('aria-labelledby','ntl-mode-'+m);
       if(m==='year'){ slider.min='0'; slider.max=String(YPOS); slider.step='1'; }   /* (#R604) a POSITION, read through p2y/y2p */
       else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R210) the whole day, today included */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
