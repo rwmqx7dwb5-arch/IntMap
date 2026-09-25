@@ -24,7 +24,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { functionRosterFromConfig, planDeploy, parseNameStatus, pendingFromDryRun, migrationMismatch } from '../scripts/supabase-deploy.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));

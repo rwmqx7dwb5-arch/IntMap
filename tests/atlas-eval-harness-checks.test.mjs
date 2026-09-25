@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');

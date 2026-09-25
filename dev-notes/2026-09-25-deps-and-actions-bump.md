@@ -66,6 +66,10 @@ date: 2026-09-25
 
 `check:perf` の eager が天井を越えた: raw 4,853,021 → **4,873,325 B**（+20.3 kB）・gzip 1,624,241 → **1,632,906 B**（+8.7 kB）・brotli 1,235,813 → **1,242,302 B**。モジュール数は 302 のまま。上げた依存はどれも起動時のチャンクに入っていない（eager の node_modules 内訳を build-report から集計して確認）。増分のうちこの回のものは `js/geo-engine.js` の帰属表示の描画（§1。約 6 kB raw・コメント込み）で、残りはこの回の基点以後に main へ入った変更の分——**内訳を main 単独で測ってはいない**。帰属表示はライセンスの条件で、XSS の経路を閉じる代わりに要るものなので、`--update`（全項目を追認する）は使わず eager の 3 項目だけを実測値にした。
 
+## 3c. 同じ週に書かれた 3 本が、同じ形で落ちた
+
+この PR の CI は、別の作業が同じ週に足した `tests/data-outside-git-checks.test.mjs` の `import yaml from 'js-yaml'` で赤くなった（js-yaml 5 に default export は無いので、テストは 1 件も走らずに link で落ちる）。同じ行が `tests/atlas-eval-harness-checks`・`tests/backup-and-deploy-as-code-checks` にもあり、3 本とも `import * as yaml` にした。⇒ 規則を 2 つのパッケージではなく事実に付けた: `tests/deps-and-actions-bump-checks.test.mjs` が scripts/・tests/ の .mjs で**パッケージを default import している箇所を全部拾い、そのパッケージを実際に import して `default` が在るかを訊く**（明日足されたパッケージにも効く）。1 本を元に戻すと赤くなることを確かめた。
+
 ## 4. 検査
 
 `tests/maplibre-attribution-xss-checks.test.mjs`（5 件）: ① 本物の geo-engine を、渡された値を記録する偽の
