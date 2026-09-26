@@ -118,25 +118,17 @@ const styleErrors = (errs) => errs.filter((e) => /Style is not done loading/i.te
 
 test.describe.configure({ mode: 'parallel' });
 
-test('the reported pair: aircraft and radar restored before the style are drawn once it is', async ({ browser }) => {
-  test.setTimeout(150000);
-  const ids = ['dl-planes', 'dl-radar'];
-  const r = await openLink(browser, ids, { hold: true });
-  try {
-    /* the condition itself — without it this test proves nothing */
-    expect(r.drawableWhileHeld, 'the style must still be unparsed while the restore runs').toBe(false);
-    expect(r.heldAtRelease, 'both restored changes were held by the gate').toEqual(expect.arrayContaining(ids));
-    await expect.poll(() => mapLayers(r.page), { timeout: 30000, message: 'the restored layers are on the map' })
-      .toEqual(expect.arrayContaining(['lyr-planes', 'lyr-radar']));
-    expect(await r.page.evaluate((w) => w.map((id) => document.getElementById(id).checked), ids)).toEqual([true, true]);
-    expect(styleErrors(r.errors), 'no add may reach a style that cannot take it').toEqual([]);
-  } finally { await r.ctx.close(); }
-});
+/* The reported pair (aircraft and radar, the two production showed failing) is asserted INSIDE the
+   whole-link test rather than in a test of its own: both are layers a link carries, so a separate test
+   paid a second pair of boots to re-prove a subset of what the one below proves — and the suite's time
+   ceiling is a total (scripts/test-budget.mjs). */
+const REPORTED = [['dl-planes', 'lyr-planes'], ['dl-radar', 'lyr-radar']];
 
 test('every layer a link can carry: holding the style back costs no layer', async ({ browser }) => {
   test.setTimeout(240000);
   const ids = sharedIds();
   expect(ids.length).toBeGreaterThan(0);
+  for (const [box] of REPORTED) expect(ids, 'the reported layers are among those a link carries').toContain(box);
   /* both boots at once: the reference is whatever the NORMAL boot has drawn after SETTLE_MS, and the
      held boot must end up with at least that. A busier machine only makes the reference smaller
      (fewer slow layers in it), never wrong. */
@@ -153,6 +145,11 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
        handlers fetch their data first — the same wait the normal boot's reference already had */
     await expect.poll(async () => { const have = new Set(await mapLayers(held.page)); return reference.filter((id) => !have.has(id)); },
       { timeout: 60000, intervals: [2000], message: 'layers the normal boot drew and the held boot did not' }).toEqual([]);
+    /* the reported pair, by name: held by the gate, then on the map with their boxes still ticked */
+    expect(held.heldAtRelease, 'both reported changes were held by the gate').toEqual(expect.arrayContaining(REPORTED.map(([box]) => box)));
+    await expect.poll(() => mapLayers(held.page), { timeout: 30000, message: 'the reported layers are on the map' })
+      .toEqual(expect.arrayContaining(REPORTED.map(([, layer]) => layer)));
+    expect(await held.page.evaluate((w) => w.map((id) => document.getElementById(id).checked), REPORTED.map(([box]) => box))).toEqual([true, true]);
     expect(styleErrors(held.errors), 'no add may reach a style that cannot take it').toEqual([]);
   } finally { await held.ctx.close(); }
 });
