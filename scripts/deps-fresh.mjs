@@ -12,12 +12,14 @@
  * node_modules is the same class of thing and now gets the same answer.
  *
  *   node scripts/deps-fresh.mjs            # report; exit 1 when stale
+ *   node scripts/deps-fresh.mjs --install [dir]   # npm ci when stale, then the test browsers; exit 1 if still stale
  *   import { staleDeps } from './deps-fresh.mjs'
  *
  * The lockfile is the source: each `node_modules/…` entry names the version npm ci would place.
  * An optional entry that is absent is a platform package this machine does not take (esbuild's
  * per-OS binaries and the like), not a stale one. */
 import { readFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,11 +49,39 @@ export const describeStale = ({ stale }, max = 6) => stale.slice(0, max)
   .map((s) => `${s.path.replace(/^node_modules\//, '')} ${s.got} (lock: ${s.want})`)
   .join(', ') + (stale.length > max ? `, … +${stale.length - max}` : '');
 
+/* --install: make the tree the lock, and only when it is not (an up-to-date tree is left alone, so
+   the step stays idempotent and cheap). ⚠ THE LOCK MOVING @playwright/test IS NOT THE WHOLE INSTALL.
+   Playwright's browsers live outside node_modules and are pinned per release; MEASURED 2026-09-26,
+   after npm ci moved 1.61 -> 1.63 every local spec failed at launch («Executable doesn't exist …
+   chromium_headless_shell-1243»). So an install that changed the tree also asks Playwright for the
+   browser the suite runs (chromium — playwright.config.js runs no other), which is a no-op when present. */
+export function install(dir) {
+  const r = staleDeps(dir);
+  if (!r.stale.length) return { changed: false, after: r };
+  console.log(`deps-fresh: node_modules differs from package-lock.json in ${r.stale.length} package(s) (${describeStale(r, 3)}) — npm ci`);
+  try { execFileSync('npm ci --no-audit --no-fund', { cwd: dir, stdio: 'inherit', shell: true }); } catch { /* judged by the re-check */ }
+  const after = staleDeps(dir);
+  if (!after.stale.length && existsSync(join(dir, 'node_modules', '@playwright', 'test'))) {
+    try { execFileSync('npx playwright install chromium', { cwd: dir, stdio: 'inherit', shell: true }); }
+    catch { console.error('deps-fresh: the test browser could not be installed — run `npx playwright install chromium`'); }
+  }
+  return { changed: true, after };
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const dir = process.argv[2] ? resolve(process.argv[2]) : join(dirname(fileURLToPath(import.meta.url)), '..');
+  const args = process.argv.slice(2);
+  const INSTALL = args.includes('--install');
+  const pos = args.filter((a) => !a.startsWith('--'));
+  const dir = pos[0] ? resolve(pos[0]) : join(dirname(fileURLToPath(import.meta.url)), '..');
+  if (INSTALL) {
+    const { changed, after } = install(dir);
+    if (after.stale.length) { console.error(`deps-fresh: node_modules is STILL not package-lock.json (${describeStale(after)})`); process.exit(1); }
+    console.log(`deps-fresh: OK — ${after.checked} installed package(s) match package-lock.json${changed ? ' (installed now)' : ''}`);
+    process.exit(0);
+  }
   const r = staleDeps(dir);
   if (!r.stale.length) { console.log(`deps-fresh: OK — ${r.checked} installed package(s) match package-lock.json`); process.exit(0); }
   console.error(`deps-fresh: node_modules is NOT the locked tree — ${r.stale.length} package(s) differ: ${describeStale(r)}`);
-  console.error('  run `npm ci` in the master (node scripts/master-sync.mjs --sync does it)');
+  console.error('  run `node scripts/deps-fresh.mjs --install` in the master (node scripts/master-sync.mjs --sync does it)');
   process.exit(1);
 }
