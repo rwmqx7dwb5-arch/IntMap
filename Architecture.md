@@ -198,6 +198,13 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   誤検知せず、ローカル変数 `map` も依存とみなさない）。
   ⚠ 契約に無い関数名をアダプタにだけ足すと「2つ目以降」が静かに落ちる——**アダプタに足したメソッドは
   必ず契約側にも出すこと**。
+- **「レイヤーを足してよいか」は `canDraw()`（スタイルが解析済みか）、それを待つのは `whenCanDraw()`**
+  （ファサードの1か所。`js/data-layers.js`・`js/time-borders.js`・`js/time-admin1.js` の `whenStyleReady()`
+  はこれを返すだけ）。`styledata`/`load`/`idle` の購読と 150 ms のポーリングで、待ち手が何人いても
+  ビューごとに1組。⚠ **期限で「準備できた」と答えない**——`canDraw()` が真になるまで解決しない。
+  期限つきの待ち（約 6 秒で強制解決）は、隠れたタブ（アニメーションフレームが走らず、MapLibre は
+  スタイルをフレームの中で解析する）で未解析のスタイルに addSource させ、「Style is not done loading.」で
+  レイヤーを失わせていた。
 - **契約は型として宣言され、コンパイラが両エンジンに対して検査する**（`npm run check:types` ＝
   `tsc --noEmit`）。`types/geo-engine.d.ts` が、両アダプタが持つ**共通メンバー**（`GeoEngineAdapterCore`）、
   片方だけが持つメンバー（`MapLibreOnly` / `CesiumOnly`。ファサードから見ると任意で、ファサードは
@@ -3519,6 +3526,15 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   レジストリを読む最初のモジュール `js/data-layers.js` より前に import する）。**一覧を知るために行を数えない**——
   タイル盤・共有リンク・お気に入り・セッション復元は manifest を読み、行からは状態（チェック）と、モジュールが
   組み立てた名前だけを読む。セッション復元は行の出現を `MutationObserver` で待つ（`whenBoxes`・時計を使わない）。
+  **レイヤーの ON/OFF はどの経路でも箱の `change` 1つに行き着き、スタイルが受け取れる前に来たものは
+  `js/layer-rows.js` の `holdUntilDrawable` が預かる**（document の capture リスナ。manifest が宣言する箱だけ・
+  レンダラが在って `canDraw()` が偽のあいだだけ）。預かった箱には後で `change` を**1回だけ**、着いた順に、
+  そのときのチェック状態で配る。配る時刻は `whenCanDraw()` の解決で、**MapLibre の `load` には結び付けない**。
+  **アプリの起動処理（`js/app-body.js`）・共有リンク復元（`js/map-ui.js`）・セッション復元（`js/session-tabs.js`）も
+  `load` ではなく `whenCanDraw()` を入口にする**——`load` は描画の内側で「その時点の全 source が読めた」ときにしか
+  発火せず、忙しい地図では何分も来ない。起動処理の待ちは箱が生まれる前に登録されるので、預かったレイヤーより
+  先に答えられる（待ちは登録順に解ける）。預かり中の一覧は `window.IntMapLayerHold.pending()`。
+  詳細は `docs/MAP-LAYERS.md` §7.2。
   ⚠ Atlas の `layerCatalog()` はまだ `#layer-dropdown` を歩く。manifest 側の入口は `catalog()`。
   **Active layers** は `_refreshActiveLayers()` がオン中のレイヤーをチップで出し、常に**上部 sticky**の
   先頭要素にいる（固定高1行の横スクロール。空でも "(0)" で常時表示＝高さが動かない）。

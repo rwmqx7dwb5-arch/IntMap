@@ -454,7 +454,15 @@ const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s
    on this machine against a recorded entry of 9, so the SLOWER of the two runs is ≈ 20.6 table-seconds. ENTERED AS 21, at
    that upper bound (#R402's method is the upper bound, not the mean). Not paid out of a stale-high entry: the only entry measured this round is
    r143's, and it came out exactly at its entry (#R405: a round may only take from what it measured). */
-const TOTAL_BUDGET_S = 4882;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) */
+/* ⚠⚠ (restored-layer-before-style) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 4,882 -> 4,910 (+28 s).
+   Saying it here as well as in the ledger because this file's own message is «never raise it»; #R410 …
+   #R545 above are the precedents. The spec guards a production defect (restored layers left ticked and
+   undrawn when the style was not yet parsed) over EVERY layer a link can carry, and it paid out of
+   itself first: it began as two tests — the reported pair and the whole link — each paying two boots,
+   and the pair is a subset of the link, so it is ONE test now (94 -> 70 s, the 70 measured at CPU ×4
+   as the CI proxy: the CI run of the pair alone was 23.7 s against 14 s locally). The remaining 28 s
+   is what the whole-link claim costs once. */
+const TOTAL_BUDGET_S = 4910;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) + 28 (restored-layer-before-style: tests/restored-layer-before-style.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

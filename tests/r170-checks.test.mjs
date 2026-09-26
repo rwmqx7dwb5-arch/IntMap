@@ -110,7 +110,15 @@ test('whenStyleReady() resolves on canDraw, not on isStyleLoaded', () => {
   assert.ok(i > 0, 'whenStyleReady must still exist');
   const fn = src.slice(i, i + 1200);
   assert.ok(!/map\.isStyleLoaded\(\)/.test(fn), 'whenStyleReady must not gate on isStyleLoaded any more');
-  assert.ok((fn.match(/_canDraw\(\)/g) || []).length >= 3, 'the sync check, the listener and the poll must all use _canDraw');
+  /* (restored-layer-before-style) the wait is the engine's now — GE().whenCanDraw() — so the claim
+     «it resolves on canDraw, not on isStyleLoaded» is asked of THAT body: every check it makes is
+     the adapter's canDraw(), and none is styleReady()/isStyleLoaded(). */
+  assert.match(fn, /function whenStyleReady\(\)\{ return GE\(\)\.whenCanDraw\(\); \}/, 'whenStyleReady is the engine\'s wait');
+  const GEsrc = stripComments(R('js/geo-engine.js'));
+  const w = GEsrc.slice(GEsrc.indexOf('whenCanDraw(){'), GEsrc.indexOf('whenCanDraw(){') + 1200);
+  assert.ok(GEsrc.includes('whenCanDraw(){'), 'the engine\'s wait exists');
+  assert.match(w, /a\.canDraw\(\)/, 'it asks canDraw()');
+  assert.ok(!/styleReady\(\)|isStyleLoaded\(\)/.test(w), 'and never styleReady()/isStyleLoaded()');
   assert.match(src, /function _canDraw\(\)/, '_canDraw must be a function DECLARATION — withCountries() calls it from further up the file (#R167 TDZ trap)');
 });
 

@@ -476,7 +476,9 @@ layer-manifest.js                 **どのレイヤーが在るか**の正本（
                                   DOM も window も持たない純データ（Node の検査がそのまま import する）。棚の並べ替え
                                   （reorganizeLayerPanel）・既定 ON の一覧・タイル盤・共有リンク・お気に入りがここを読む
 layer-rows.js                     manifest の DOM 側 — 基本表示 10 行を manifest から書く（index.html から移った）＋
-                                  `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）
+                                  `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）＋
+                                  `holdUntilDrawable`（スタイルが受け取れる前のレイヤーの `change` を預かり、受け取れる
+                                  ようになってから箱ごとに1回配る。docs/MAP-LAYERS.md §7.2）
 layer-dropdown.js                 レイヤーメニューとそのアコーディオン
 layer-favs.js                     ★を付けたレイヤーとクイックピックのチップ
 layer-previews.js                 レイヤーのサムネイル IntMapLayerPreviews
@@ -1490,7 +1492,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 113 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 114 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

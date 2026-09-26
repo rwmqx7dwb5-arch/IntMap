@@ -21,6 +21,42 @@
  *    does not declare (and the document does not have) is settled at once, and a declared one is
  *    applied the moment its row is inserted — a MutationObserver on the registry, disconnected when
  *    the last id has arrived. No clock decides anything.
+ *
+ *  ③ A LAYER'S `change` THAT ARRIVES BEFORE THE STYLE CAN TAKE LAYERS IS HELD, AND DELIVERED ONCE WHEN
+ *    IT CAN (`holdUntilDrawable`). Every way a layer is switched — a finger, the share link's `&l=`
+ *    (js/map-ui.js), the saved session (js/session-tabs.js), the default-on boxes (js/app-body.js),
+ *    Atlas, the favourites, the packs — ends in the same `change` on the box, and the handlers of all
+ *    the manifest's rows (built by some twenty modules) answer it with addSource/addLayer.
+ *    Measured on production (2026-09-26): a tab opened HIDDEN parses no
+ *    style (MapLibre parses inside an animation frame, and a hidden tab runs none), the restore fired
+ *    anyway, the aircraft handler threw «Style is not done loading.» on the spot, the radar's wait
+ *    gave up at ~6 s and threw the same, and neither ever came back while both boxes stayed ticked.
+ *    Only the submarine cables recovered, because #R187/#R355 had given THAT layer a retry of its own.
+ *    Giving each of the others its own retry is the per-case fix .agents/rules/no-ad-hoc-hardcoding.md
+ *    forbids; the fact they share is the event, so this is where it is held:
+ *      · a capture listener on the document sees every box's `change` before its module does;
+ *      · a box the manifest declares, while the renderer EXISTS but canDraw() is false, is stopped
+ *        before it reaches the box (`stopPropagation`, not the immediate form — a listener on the
+ *        document itself, the session save, still sees the reader's own click as it happened);
+ *      · each held box then gets ONE fresh `change`, in arrival order, carrying the state it has THEN:
+ *        a box ticked and unticked while the style was loading is delivered once, as unticked.
+ *    They are delivered when GE().whenCanDraw() resolves — which it never does early (js/geo-engine.js)
+ *    — and at no other moment.
+ *    ⚠ NOT AT MapLibre's `load`. The first version waited for it, to keep the held layers' sources
+ *    from delaying the app's own boot (which was keyed to `load` too). `load` is not an event anyone
+ *    can wait on: MapLibre fires it from INSIDE a render, only when every source present has loaded,
+ *    and a render that throws never reaches it. MEASURED in CI (PR #760, Browser rest 2/2): the held
+ *    boot still had neither the app's boot work nor a single delivered layer 180 s after the style was
+ *    released; locally under 4-6x CPU throttling the same boot logged
+ *    «Cannot read properties of undefined (reading 'bind')» from drawRaster 44-54 times per run. A
+ *    wait keyed to that event is the deadlock one-pass-or-a-reason.md §2 describes. The boot is keyed
+ *    to whenCanDraw() instead (js/app-body.js), and its wait was registered long before any box can
+ *    change, so it is answered FIRST — the queue drains in registration order — and the held layers
+ *    come after the app's own boot work, not in front of it.
+ *    With no renderer at all there is nothing to wait for, and the event passes as it always did.
+ *    Measured before this: the same share link carrying all 87 shareable layers, opened with the style
+ *    held back, ended with 23 map layers fewer than the same link opened normally
+ *    (tests/restored-layer-before-style.spec.js).
  * ==========================================================================*/
 import { htmlRows, rowHTML, isLayer } from './layer-manifest.js';
 
@@ -69,4 +105,34 @@ export function whenBoxes(ids, fn, doc) {
   return waiting;
 }
 
+/** hold a declared layer box's `change` while the renderer cannot take layers; deliver it once it can.
+    `engine()` returns the geo-engine facade (window.IntMapGeoEngine in the app). Returns the listener. */
+export function holdUntilDrawable(doc, engine) {
+  const d = doc || document;
+  const held = new Map();   /* id → box, in the order they first arrived */
+  let waiting = false;
+  const deliver = () => {
+    waiting = false;
+    const boxes = Array.from(held.values()); held.clear();
+    for (const cb of boxes) { try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {} }
+  };
+  const listener = (e) => {
+    const cb = e.target;
+    if (!cb || cb.type !== 'checkbox' || !cb.id || !isLayer(cb.id)) return;
+    let E = null;
+    try { E = engine(); } catch (_) { E = null; }
+    try { if (!(E && E.hasRenderer()) || E.canDraw()) return; } catch (_) { return; }
+    e.stopPropagation();
+    if (!held.has(cb.id)) held.set(cb.id, cb);
+    if (waiting) return;
+    waiting = true;
+    E.whenCanDraw().then(deliver, deliver);
+  };
+  d.addEventListener('change', listener, true);
+  /* what is being held right now — the observable «everything has been delivered» is `pending()` empty */
+  listener.pending = () => Array.from(held.keys());
+  return listener;
+}
+
 try { if (typeof document !== 'undefined') mountManifestRows(document); } catch (e) { try { console.warn('[IntMap] layer rows', e); } catch (_) {} }
+try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => window.IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }

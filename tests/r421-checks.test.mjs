@@ -235,12 +235,13 @@ test('R421 #13 whenStyleReady() is DEFINED in the file that calls it', () => {
   assert.match(TB, /function whenStyleReady\(\)/, 'the function must be defined in js/time-borders.js');
   const calls = (TB.match(/whenStyleReady\(\)/g) || []).length;
   assert.ok(calls >= 4, `all call sites must remain; found ${calls}`);
-  // it must resolve on THIS file's own predicate — a second notion of "can I draw" is how they drift
-  const body = TB.slice(TB.indexOf('function whenStyleReady()'));
-  const end = body.indexOf('\n  }');
-  assert.match(body.slice(0, end), /_imCanDraw\(\)/, 'it must be built on _imCanDraw()');
-  // and it must hard-resolve rather than hang for ever (the #R41 lesson the canonical one records)
-  assert.match(body.slice(0, end), /n\+\+>40/, 'it must give up waiting and resolve anyway');
+  // it must resolve on the app's ONE notion of "can I draw" — a second notion is how they drift.
+  // (restored-layer-before-style) That notion is the engine's wait now, shared with js/data-layers.js
+  // and js/time-admin1.js. ⚠ It no longer hard-resolves after ~6 s: that deadline answered «ready»
+  // to a style that was not, and the add it released threw «Style is not done loading.» with nothing
+  // left to retry. It does not hang on a busy map either — it polls canDraw(), not idle — and that
+  // is asserted by evaluation in tests/restored-layer-before-style-checks.test.mjs ①.
+  assert.match(TB, /function whenStyleReady\(\)\{ return GE\(\)\.whenCanDraw\(\); \}/, 'it must be the engine\'s wait');
 });
 
 test('R421 #14 the Atlas catalogue no longer tells the planner to round to a year', () => {

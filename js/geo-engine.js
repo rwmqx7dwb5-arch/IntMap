@@ -1917,6 +1917,7 @@ function _m(){ return window.__imap||null; }
     return out; }
   /** @param {() => import('../types/geo-engine').GeoEngineAdapter} A @returns {import('../types/geo-engine').GeoEngineFacade} */ function engineFacade(A){
    const _claims=new Map();   /* this view's claimed surfaces — see surfacesDrawn above */
+   const _drawWaiters=[];     /* this view's whenCanDraw() callers still waiting — see whenCanDraw below */
    return {
     /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
     id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },
@@ -1984,6 +1985,37 @@ function _m(){ return window.__imap||null; }
     hasRenderer:()=>{ try{ return !!A().raw(); }catch(_){ return false; } },
     ready:()=>A().styleReady(),
     canDraw:()=>A().canDraw(),
+    /* ══ WAIT FOR canDraw() — AND NEVER SAY YES BEFORE IT IS TRUE ═══════════════════════════════════
+       Resolves the moment this view has a renderer whose style can take addSource/addLayer. It used to
+       exist as three private copies (js/data-layers.js, js/time-borders.js, js/time-admin1.js), each of
+       which also HARD-RESOLVED after ~6 s (#R41: waiting on `idle` alone could hang, so «a slightly-early
+       add beats a layer that never appears»). Since #R170 the wait asks canDraw(), which does not depend
+       on tiles settling, so the reason for the deadline is gone — and the deadline itself had become the
+       defect: measured on production, a tab opened hidden has no animation frames, MapLibre parses its
+       style inside a frame, and the 6 s «ready» handed the radar and every other deferred add to a style
+       that threw «Style is not done loading.» with nothing left to retry
+       (dev-notes/2026-09-26-restored-layer-before-style.md). A wait that answers «ready» when it could
+       not see readiness is an observer reporting a failure as a success
+       (.agents/rules/one-pass-or-a-reason.md §2-1), so this one only ever answers when it is true.
+       ONE listener set and ONE poll per view however many callers wait: the poll is what covers a
+       `styledata` that fired between the check and the subscription, and it stops when the list drains. */
+    whenCanDraw(){
+      const ok=()=>{ try{ const a=A(); return !!(a&&a.raw()&&a.canDraw()); }catch(_){ return false; } };
+      if(ok()) return Promise.resolve();
+      return new Promise(res=>{
+        _drawWaiters.push(res);
+        if(_drawWaiters.length>1) return;
+        const EV=['styledata','load','idle'];
+        let on=null;
+        const drain=()=>{ if(!ok()) return false;
+          if(on){ for(const e of EV){ try{ on.off(e,drain); }catch(_){} } on=null; }
+          for(const r of _drawWaiters.splice(0)){ try{ r(); }catch(_){} }
+          return true; };
+        const listen=()=>{ const a=A(); if(!a||on===a) return; if(on){ for(const e of EV){ try{ on.off(e,drain); }catch(_){} } }
+          on=a; for(const e of EV){ try{ a.on(e,drain); }catch(_){} } };
+        (function poll(){ if(!_drawWaiters.length) return; listen(); if(!drain()) setTimeout(poll,150); })();
+      });
+    },
     layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>A().hasLayer(id), add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v,o)=>A().setLayout(id,p,v,o), setOpacity:(id,v)=>A().setOpacity(id,v),
       /* (#R170) real-scale 3-D volumes (metres above ground) */
       addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),

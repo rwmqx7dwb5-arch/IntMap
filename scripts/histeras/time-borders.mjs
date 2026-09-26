@@ -53,7 +53,10 @@ export function timeBorders(opts = {}) {
   w.window = w; w.document = sandbox.document;
   w.addEventListener = noop; w.removeEventListener = noop; w.dispatchEvent = noop;
   w.setTimeout = () => 0; w.location = { href: 'http://localhost/', search: '' };
-  w.IntMapGeoEngine = new Proxy({ hasRenderer: () => true, ready: () => true }, {
+  /* `whenCanDraw` is the engine's wait for a style that can take layers (js/geo-engine.js). This
+     harness has no style — the host below answers canDraw() false — so the wait is the one that
+     never answers, which is what the real one does for a style that is not there. */
+  w.IntMapGeoEngine = new Proxy({ hasRenderer: () => true, ready: () => true, whenCanDraw: () => new Promise(() => {}) }, {
     get: (t, k) => ((k in t) ? t[k] : deep()),
   });
   w.IntMapTime = { year: () => (opts.year != null ? opts.year : 1500), isLive: () => false, on: noop, when: () => null };
