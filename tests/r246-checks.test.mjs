@@ -77,14 +77,35 @@ test('r246 ② the adjacent-pair surface is measured and printed as an OPEN GAP'
 });
 
 /* ── ③ THE SOURCE REGISTRY'S PROSE HAS ONE HOME, AND IT IS INSIDE THE MEASURED UNIVERSE ────── */
-test('r246 ③ every source description is a reading-page string, in all nine languages', () => {
+test('r246 ③ every source description is a reading-page string, in every language the policy authors, and no carried language below its floor', async () => {
   /* ⚠ WHY THIS MOVED. scripts/i18n-pages-audit.mjs measures each language against every string PATH
      in the ENGLISH document. The English text used to live in js/reference-data.js (`use:{en,jp}`),
      so the de/ru/es `sourceUse` tables were outside the universe and the total ABSENCE of
      fr/ko/zh/zh-Hans read as 287/287 — 100 %, on a surface that was English for four languages. */
   const p = json('i18n-pages-audit.mjs');
   assert.ok(p.want >= 374, `the reading-page universe shrank to ${p.want} — sourceUse left pages.en.js`);
-  for (const r of p.rows) assert.equal(r.have, r.want, `${r.code} is short on the reading pages`);
+  /* ⚠ (licence-stated-once) THIS LINE KEPT A SECOND COPY OF THE LANGUAGE POLICY — «all nine, 100 %» —
+     after CONSTITUTION.md §7 (2026-09-11) narrowed authoring to en+jp. It stayed green only because no
+     round had added a reading-page string since; the first one (the licence names) turned it red for
+     the seven carried languages. r239 ① met the same shape (#R707) and was fixed by DISTRIBUTING the
+     judgement rather than copying it: scripts/lang-policy.mjs says who is authored (100 %) and who is
+     carried (held at tests/i18n-coverage-floor.json's `pages`, which fails if a row is deleted). Restore
+     the nine (`return all;` there) and this is «every language, 100 %» again with no edit here. */
+  const { authoredLangs, carriedLangs } = await import('../scripts/lang-policy.mjs');
+  const AUTHORED = new Set(authoredLangs(ROOT));
+  const CARRIED = new Set(carriedLangs(ROOT));
+  const FLOOR = JSON.parse(readFileSync(join(ROOT, 'tests', 'i18n-coverage-floor.json'), 'utf8')).langs;
+  let authored = 0, carried = 0;
+  for (const r of p.rows) {
+    if (AUTHORED.has(r.code)) { assert.equal(r.have, r.want, `${r.code} is short on the reading pages — IntMap authors this language`); authored++; }
+    else if (CARRIED.has(r.code)) {
+      const f = (FLOOR[r.code] || {}).pages;
+      assert.ok(f != null, `${r.code}: no reading-page floor recorded — the carried half would assert nothing`);
+      assert.ok(r.have >= f, `${r.code}: reading pages fell to ${r.have}, below the floor of ${f}`);
+      carried++;
+    } else assert.fail(`${r.code} is neither authored nor carried by scripts/lang-policy.mjs`);
+  }
+  assert.ok(authored > 0 && carried > 0, 'r246 ③ measured nothing on one side');
   assert.match(read('js/locales/pages.en.js'), /\n {2}sourceUse: \{/, 'the English original is not a page string');
   /* …and the eager bundle no longer carries any of it */
   assert.equal(/use:\{en:/.test(read('js/reference-data.js')), false, 'the registry still holds prose');

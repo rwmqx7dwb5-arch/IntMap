@@ -621,4 +621,15 @@ window.IntMapPageI18N.define('ja', {
     "Hong Kong Observatory — ambient gamma radiation (data.gov.hk)": "実測放射線レイヤーがその場で取得：香港天文台の11観測局における周辺γ線量率の日平均。前日分の公報から読み取り（µSv/h）、nSv/h に正規化しています。",
     "SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)": "⚠ 出典一覧には残していますが、ここからの値は現在1点も地図に出ていません。ウクライナのオープンデータは観測局の座標と測定値の一括アーカイブから成り、現在値を返す公開エンドポイントがありません（SaveEcoBot 自身の API は鍵を要求します）。測定値の無い座標一覧は線量図ではないので、ウクライナは埋めずに空白のままにし、その空白を明示するためにこの出典をここに残しています。",
   }
+,
+
+  /* ── IntMap の言葉であるライセンス値（出版者が名づけた名称ではないもの） ─────────────────────
+     キーは js/reference-data.js の `lic` の値。英語版の同じ表が母集合で、ここはその日本語名。
+     「CC BY 4.0」「ODbL 1.0」のような出版者の名称はここに置かず、どの言語でも綴りのまま示す。 */
+  licenceName: {
+    "Public domain": "パブリックドメイン",
+    "Public domain (work of the U.S. federal government)": "パブリックドメイン（米国連邦政府の著作物）",
+    "US Government work — not subject to copyright (17 U.S.C. §105)": "米国政府の著作物——著作権の対象外（17 U.S.C. §105）",
+    "data.gov.hk Terms of Use (redistribution permitted with attribution)": "data.gov.hk 利用規約（出典の明記を条件に再配布可）"
+  }
 });

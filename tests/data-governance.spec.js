@@ -25,6 +25,11 @@
  *  predate this round, live in prose this round did not author, and rewriting reader-visible text to
  *  make a test pass would be a change nobody asked for (AGENTS.md §3-2). What #729 owns is whether
  *  the sentence it DERIVES repeats what that same sentence already said.
+ *
+ *  ⚠ THIS PAGE IS LOADED IN ENGLISH, AND `NAME` BELOW KNOWS ENGLISH SPELLINGS ONLY — so it could not
+ *  see the Japanese page state 「パブリックドメイン」 and then 「— Public domain」 on four rows (measured
+ *  on production 2026-09-26). Every row × every language, with the names each language gives a
+ *  licence read from the vocabulary rather than written here, is tests/licence-stated-once-checks.test.mjs.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 
