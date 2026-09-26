@@ -127,7 +127,7 @@ window.IntMapModules.playground=function(HOST){
         '}';
       document.head.appendChild(s); }
     window._pgWorldExplorer=function(){
-      if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
+      if(!GE().hasRenderer()){ try{ imToast(window.IntMapLang.t(HOST.lang,'Map not ready','地図の準備ができていません')); }catch(_){} return; }
       _pgWeStyle();
       ensureCountries(()=>{
         const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country data unavailable","国境データを読み込めません","Länderdaten nicht verfügbar","Данные по странам недоступны","Datos de países no disponibles")); }catch(_){} return; }
@@ -246,7 +246,7 @@ window.IntMapModules.playground=function(HOST){
        js/pandemic-world.js, which is now their only caller: they fill the world, and the world is
        what this panel and the Atlas capability share. `placesFor` is the placement bank for dots. */
     window._pgPandemic=function(){
-      if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
+      if(!GE().hasRenderer()){ try{ imToast(window.IntMapLang.t(HOST.lang,'Map not ready','地図の準備ができていません')); }catch(_){} return; }
       _pgWeStyle();
       /* ══ ⚠⚠⚠ (#R754) THE WORLD IS BUILT SOMEWHERE ELSE NOW, AND THAT IS THE POINT ═══════════════
          Everything that used to stand here — which Natural Earth rows are places where people live,

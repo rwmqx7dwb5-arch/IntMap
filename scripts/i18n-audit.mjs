@@ -153,6 +153,9 @@ const pairs = run('i18n-pair-audit.mjs');
    fields each. See scripts/i18n-doc-audit.mjs for what is measured and what is excluded on
    purpose (og:/twitter: cards, admin.html). */
 const docs = run('i18n-doc-audit.mjs');
+/* ══ (2026-09-27) A NOTICE HANDED A BARE LITERAL — `imToast('Map not ready')`. Not a tuple of any shape,
+   so no surface above can count it. The sinks are discovered by name; see the script's header. */
+const sinks = run('i18n-sink-literal-audit.mjs');
 /* ══ ⚠⚠⚠ (#R370) THE SEVENTEENTH SURFACE — «does this English key mean ONE thing» ═══════════════
    Every surface above asks whether a string HAS a translation. This asks whether the translation
    it has can possibly be right, and it is the first one whose answer can be «no» while the row is
@@ -530,6 +533,7 @@ if (process.argv.includes('--gate')) {
   /* (#R246) the eleventh surface, promoted from a printed number to a gate — it reached zero */
   if (langmap.total) problems.push(`${langmap.total} translation tuple(s) held as a language-keyed object — run scripts/langmap-codemod.mjs`);
   /* (#R249) the fifteenth surface — a gate from the day it was added: three documents, two fields */
+  if (sinks.total) problems.push(`${sinks.total} notice(s) handed a bare literal (${sinks.findings.slice(0, 5).map((f) => `${f.file}:${f.line}`).join(', ')}) — wrap each in IntMapLang.t(lang, en, jp); run scripts/i18n-sink-literal-audit.mjs`);
   if (docs.bad.length) problems.push(`${docs.bad.length} document(s) with unlocalised <title>/<meta description> — run scripts/i18n-doc-audit.mjs`);
   /* ⚠⚠⚠ (#R249) A MISAPPLIED EXEMPTION IS A HARD FAILURE, and it is the only part of the twelfth
      shape that IS gated. The OPEN GAP itself may not be gated (#R242's rule: a gate nobody can

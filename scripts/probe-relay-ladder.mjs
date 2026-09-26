@@ -41,6 +41,7 @@
  *    node scripts/probe-relay-ladder.mjs --supabase-url https://<ref>.supabase.co --origin https://…
  */
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const ARGV = process.argv.slice(2);
 const arg = (name, dflt) => {
@@ -74,14 +75,22 @@ const OWN_RELAY_PROBES = [
 ];
 
 /* ── 1. the targets, and the relay the page's own router sends each one to ──────────────────── */
-async function discover() {
+export async function discover() {
   if (!globalThis.window) globalThis.window = {};
   globalThis.window.SUPABASE_URL = SUPABASE_URL;
   const pf = await import(new URL('../js/proxy-fetch.js', import.meta.url).href);
   const policy = await import(new URL('../supabase/functions/_shared/fetch-relay-policy.js', import.meta.url).href);
   const targets = [
     ...policy.FETCH_RELAY_RULES.map((r) => ({ url: r.probe, as: undefined, expect: r.type, rule: r.id })),
-    { url: policy.ARTICLE_RULE.probe, as: 'html', expect: policy.ARTICLE_RULE.type, rule: policy.ARTICLE_RULE.id },
+    /* ⚠ An article is judged by its BODY, with the page's own predicate — never by the relay's
+       Content-Type. Measured 2026-09-27 on production, with the function freshly deployed from this
+       source: the relay returns 245,526 B of Wikipedia's HTML under `text/plain`, because the
+       Supabase gateway rewrites an Edge Function's text/html on the default domain. The header test
+       (`ARTICLE_RULE.type`) therefore answered «no» on every run that uptime.yml ever made, so a
+       relay that really died here would have looked exactly like one that works. ARTICLE_RULE.type
+       stays what the RELAY asks of the UPSTREAM; what the READER asks of the relay is
+       looksLikeArticle (js/proxy-fetch.js uses the same function). */
+    { url: policy.ARTICLE_RULE.probe, as: 'html', expect: null, body: policy.looksLikeArticle, rule: policy.ARTICLE_RULE.id },
     ...OWN_RELAY_PROBES.map((t) => ({ ...t, as: undefined, rule: '' })),
   ];
   return targets.map((t) => {
@@ -92,17 +101,17 @@ async function discover() {
 }
 
 /* ── 2. ask our relay for each target ─────────────────────────────────────────────────────────── */
-async function probe(t) {
+export async function probe(t) {
   const t0 = Date.now();
   try {
     const headers = ORIGIN ? { Origin: ORIGIN, Referer: `${ORIGIN.replace(/\/$/, '')}/IntMap/` } : {};
     const res = await fetch(t.relayUrl, { headers, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     const ct = res.headers.get('content-type') || '';
-    let bytes = 0; let snippet = '';
-    try { const buf = new Uint8Array(await res.arrayBuffer()); bytes = buf.length; snippet = snip(new TextDecoder().decode(buf.slice(0, 400))); } catch (_) { /* body unreadable */ }
+    let bytes = 0; let snippet = ''; let text = '';
+    try { const buf = new Uint8Array(await res.arrayBuffer()); bytes = buf.length; text = t.body ? new TextDecoder().decode(buf) : ''; snippet = snip(new TextDecoder().decode(buf.slice(0, 400))); } catch (_) { /* body unreadable */ }
     /* «Alive» is not «HTTP 200»: the relay's own refusal is JSON with a status, and #R446 measured the
        cost of taking an envelope for the document. Alive = 2xx, a body, and the type the target is. */
-    const alive = res.ok && bytes > 0 && (!t.expect || t.expect.test(ct));
+    const alive = res.ok && bytes > 0 && (!t.expect || t.expect.test(ct)) && (!t.body || t.body(text));
     return { ...t, status: res.status, ms: Date.now() - t0, bytes, contentType: ct, alive, snippet, error: null };
   } catch (e) {
     return { ...t, status: null, ms: Date.now() - t0, bytes: 0, contentType: '', alive: false, snippet: '', error: String((e && e.message) || e) };
@@ -156,7 +165,8 @@ async function main() {
   process.exitCode = (verdict === 'dead') ? 1 : 0;
 }
 
-main().catch((e) => {
+/* imported by tests/audit-sweep-0927-checks (which calls probe() against a local server) — run only as a script */
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main().catch((e) => {
   /* the probe itself broke — neither our relays nor an upstream; say so rather than `dead` */
   console.error(String((e && e.stack) || e));
   console.log('RESULT error 0/0');

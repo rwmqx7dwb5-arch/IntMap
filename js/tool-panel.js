@@ -442,7 +442,7 @@ window.IntMapModules.toolPanel=function(HOST){
 
   async function aiSummarizeArea(){
     if(!HOST.aiGate()) return;
-    if(!HOST.hasTurf()){ HOST.aiToast('Turf.js unavailable'); return; }
+    if(!HOST.hasTurf()){ HOST.aiToast(window.IntMapLang.t(HOST.lang,'Turf.js unavailable','Turf.js（図形計算）を読み込めませんでした')); return; }
     let inside=null;
     if(HOST.toolMode==='radius'){
       if(!HOST.radiusItems.length){ HOST.aiToast(HOST.t('aiSumNoArea')); return; }
