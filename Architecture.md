@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（946行・92 KB）＋ `css/`（3本）＋ `js/`（324本・14.9 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（946行・92 KB）＋ `css/`（3本）＋ `js/`（324本・14.9 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -109,8 +109,20 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   `package.json` の `dependencies` がアプリに入る依存の唯一のリスト。
   ⚠ **他のモジュールが自分で動的 import する依存も、そこに宣言する。** 警報レイヤーの
   `polygon-clipping`（「発表なし」の形＝区分 − 発表 と、灰色斜線の形＝国 − この層が答えている単位 の
-  2つを計算する。`js/world-packs.js` が最初にレイヤーを点けたときに別チャンクで取る）は turf の下にも
-  入っているが、**推移的に届いているものは依存ではない**——上流が版を変えれば黙って消える。
+  2つを計算する。`js/world-packs.js` が最初にレイヤーを点けたときに別チャンクで取る）は、かつて
+  Turf 6 の `union` の下にも入っていて、Turf 7 の `union` はもう使っていない——**推移的に届いているものは
+  依存ではない**の実例で、上流が版を変えたら実際に消えた。
+- **Turf は関数ごとのサブパッケージから名前で取り、`window.turf` に載せる**（全部入りの `@turf/turf` は
+  import しない）。起動時の `geo` チャンクに入るのは**入口から静的 import だけで届く** `@turf/*` と
+  `topojson-client` で、`vite.config.js` の `geo` group の `name()` がそれを**モジュールグラフから判定する**
+  （名前の一覧は持たない）。重い 3 つは**要るときに取る**: `convex`・`buffer`（`@turf/jsts`）は
+  `window.turf.ensureHeavy()`、`union`（polyclip-ts ＋ bignumber.js）は `window.turf.ensureUnion()`。
+  ⚠ 公開する `turf.bbox` は**座標から測る**（Turf 7 単体はオブジェクトが宣言する `bbox` 欄をそのまま返す）。
+- **Supabase クライアントは `createClient` で作るが、Storage と Functions のクライアントは束に入れない。**
+  アプリはどちらも使わない（Edge Function は `fetch` で直に呼ぶ・バケットは無い）ので、`vite.config.js` の
+  alias が `@supabase/storage-js`・`@supabase/functions-js` を `src/supabase-unbundled-stub.js` に向ける
+  ——触れた瞬間にその旨を述べて投げるスタブで、`tests/deps-runtime-majors-checks.test.mjs` が
+  「アプリの誰も触れていない」ことを先に測る。`admin.html` は SDK 自身の UMD 版（完全）を読む。
 - **Supabase の接続先は `src/vendor.js`**（`window.SUPABASE_URL` / `window.SUPABASE_ANON_KEY`）。
   `admin.html` はバンドラを通らない別ページなので、同じ2つを自分のインライン script で持つ。
   どちらも publishable(anon) キー＝**公開前提**で、保護は RLS が行う（§17）。
@@ -3649,6 +3661,13 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   通信が死んでいれば永久に）**欠けたまま読まれる**。
 - **確認と入力はシートの中で行う**（`_acctAsk()`）。`window.confirm` / `window.prompt` は使わない
   ——スタイルも翻訳も効かず、携帯では「127.0.0.1 says…」と**出自の名前**で出る。
+- **パスキー**（ログイン画面のボタンと、セキュリティのカードの一覧・追加・削除）は SDK の関数と
+  ブラウザの WebAuthn の**両方が在るときだけ**出る（`_passkeysAvailable()`）。失敗は `_pkFailure()` が
+  SDK の返すエラーから3つに分ける——**取消**（出し直す）／**失敗**（通信・5xx。ボタンは残す）／
+  **この origin では使えない**（relying party の拒否・エンドポイントが無い。そのセッションの間は
+  パスキーの操作を**全部引っ込める**）。どれでも「メールアドレスとパスワードでログインできる」と述べて
+  パスワード欄にカーソルを移す。一覧の取得失敗は「まだありません」ではなく失敗として述べる。
+  プロジェクト側の RP 設定は `docs/SECURITY-ARCHITECTURE.md` §9。
 
 ### 8.1.1 企業アトラス (Company atlas)
 

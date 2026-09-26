@@ -45,7 +45,7 @@ and unchanged resolution and image fallback. These count released resources; the
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**121 measured spec files / 82.0 min** of serial browser time against a ceiling of 82.0 min; and
+**122 measured spec files / 82.3 min** of serial browser time against a ceiling of 82.3 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -66,7 +66,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **115 spec files** — is the whole suite minus core
+**deep** tier — **116 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -641,7 +641,15 @@ deferred only when nothing a reader can see depends on it having run.)
 * `tests/r209-checks.test.mjs` — source level: none of them is still in `src/main.js`, every
   dynamic specifier is a literal (nothing else is visible to `scripts/static-checks.mjs`), every
   entry point awaits the loader, and every `turf.<name>` the source calls is on the object
-  `src/vendor.js` publishes.
+  `src/vendor.js` publishes — or is brought by one of its `ensure<X>()` loaders (read out of the
+  object, not listed: `convex`/`buffer` → `ensureHeavy`, `union` → `ensureUnion`), in which case
+  every caller must await that loader.
+* `tests/deps-runtime-majors-checks.test.mjs` — the Turf 7 and supabase-js 2.117 contracts,
+  evaluated against the installed libraries: the two border dissolves under Turf 7's
+  FeatureCollection `union`, the published `bbox` measuring coordinates, the eager `geo` chunk
+  decided by static reachability, the Storage/Functions stub covering every name the SDK imports,
+  and the passkey failure classes fed the real auth-js WebAuthn errors. `tests/deps-runtime-majors.spec.js`
+  is the browser half (a real `signInWithPasskey` refused by the browser's WebAuthn).
 * `tests/r209.spec.js` — browser level, and the one that matters: they are absent before they
   are asked for, ALL of them arrive when asked, and `window.__imLazyCheck.failed` is empty. The last
   is the loader's own verdict — it checks that the factory registered and that the module's global
@@ -676,7 +684,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **115 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **116 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is

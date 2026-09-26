@@ -310,6 +310,43 @@ const slash = (id) => id.replace(/\\/g, '/');
 const inPackage = (id, ...pkgs) => pkgs.some((p) => slash(id).includes('node_modules/' + p));
 const isBundlerHelper = (id) => id.startsWith('\0') && !slash(id).includes('node_modules/');
 
+/* ══ ⚠⚠ (Turf 7) WHICH @turf MODULES BELONG IN THE EAGER `geo` CHUNK IS DISCOVERED, NOT LISTED ══════
+   The geo group used to be «every @turf / topojson-client module, except the ones on this hand-written
+   list» (turf-jsts, polygon-clipping, @turf/buffer, @turf/convex, splaytree, concaveman). Turf 7
+   renamed buffer's 272 kB geometry engine from `turf-jsts` to `@turf/jsts` — inside @turf/, so the
+   prefix claimed it and the list did not know it. MEASURED (Vite 6 build, same tree): eager raw
+   4.78 → 5.06 MB, and the async total fell by the same 304 kB, because the module behind
+   `window.turf.ensureHeavy()` had been moved into the chunk every session loads. A list of what is
+   lazy is exactly the photograph that misses the next thing to become lazy.
+   So the question is asked of the graph: a @turf / topojson-client module is `geo` iff some chain of
+   STATIC importers leads from it back to an entry. Anything only a dynamic `import()` reaches
+   (buffer, convex, union and whatever they depend on, whatever it is called next release) gets no
+   name from this group, which leaves it in the chunk its import() creates.
+   Rolldown hands a group's `name()` a chunking context whose ModuleInfo objects «are reused within
+   the current chunking pass», so the memo is keyed on those objects: a new pass has new objects,
+   and a verdict cannot outlive the graph it was computed on. */
+const _staticReach = new WeakMap();
+function staticallyReached(id, getModuleInfo) {
+  const start = getModuleInfo(id);
+  if (!start) return false;
+  if (_staticReach.has(start)) return _staticReach.get(start);
+  const seen = new Set([id]), stack = [start], visited = [start];
+  let hit = false;
+  while (stack.length && !hit) {
+    const info = stack.pop();
+    if (info.isEntry || _staticReach.get(info) === true) { hit = true; break; }
+    for (const imp of info.importers) {
+      if (seen.has(imp)) continue;
+      seen.add(imp);
+      const up = getModuleInfo(imp);
+      if (up) { stack.push(up); visited.push(up); }
+    }
+  }
+  /* a hit proves only the start (the walk stopped early); a miss proves every module it walked */
+  if (hit) _staticReach.set(start, true); else for (const v of visited) _staticReach.set(v, false);
+  return hit;
+}
+
 export default defineConfig({
   root: ROOT,
   base: './',
@@ -321,9 +358,16 @@ export default defineConfig({
      build then fails with «Module format "iife" does not support top-level await». IntMap uses the
      pure-JS SGP4/SDP4 path only (a few hundred objects a second, not a 30,000-object catalogue), so
      both are pointed at a stub that throws if it is ever actually called. See the stub for the full
-     reasoning; tests/r184-checks.test.mjs pins this so a dependency bump cannot quietly undo it. */
+     reasoning; tests/r184-checks.test.mjs pins this so a dependency bump cannot quietly undo it.
+     ⚠ (supabase-js 2.117) the second alias does the same for the Supabase Storage and Functions
+     clients, which `createClient` imports and constructs whether or not anything uses them. IntMap
+     uses neither (Edge Functions are called with fetch; there is no bucket); MEASURED, they were
+     31.3 kB of the eager `supabase` chunk. src/supabase-unbundled-stub.js says what fails, and how
+     loudly, if something ever reaches for them; tests/deps-runtime-majors-checks.test.mjs fails
+     first. admin.html loads the SDK's complete UMD build and is not affected. */
   resolve: {
-    alias: [{ find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') }],
+    alias: [{ find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') },
+      { find: /^@supabase\/(storage|functions)-js$/, replacement: resolve(ROOT, 'src/supabase-unbundled-stub.js') }],
     /* ══ `module` BEFORE `browser` — WHAT VITE 6 CHOSE, NOW SAID INSTEAD OF SNIFFED ════════════════
        Until Vite 8, a package that declares BOTH a string `browser` and a `module` field was resolved
        by reading the `browser` file: if it was not ESM (a UMD bundle), Vite took `module`. Vite 8
@@ -408,26 +452,25 @@ export default defineConfig({
                The ids are virtual (`\0`-prefixed) and carry no node_modules/ path, which is what
                separates them from a package's own modules. */
             { name: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
-            /* ⚠⚠ (#R734) THE SENTENCE BELOW IS AN INTENTION, AND FOR polygon-clipping IT IS NOT WHAT
-               HAPPENS. Measured on the R731 and R732 production builds (Rollup) and again on the
-               first Rolldown build: leaving polygon-clipping out of `test` does NOT keep it out of
-               the eager chunk — @turf/union depends on it, the geo group captures its dependencies,
-               and every session fetches the sweep-line at boot. turf-jsts IS excluded as described.
-               Nothing measures either claim, which is why one of them could stop being true without
-               a single test going red; the fix (naming a chunk of its own, or a gate that asserts
-               which chunk holds it) is not this round's.
-               ⚠ (#R209) turf-jsts and polygon-clipping are NOT in the eager geo chunk. `@turf/convex`
-               + `@turf/buffer` reach turf-jsts, which measured 332 kB — 81% of everything the geo
-               chunk contained after the umbrella `import * as turf` was replaced by named imports —
-               and the app calls them from ONE place (the reachable-area hull in js/sims.js, which
-               now awaits window.turf.ensureHeavy()). Naming them here would drag them back in with
-               the rest of turf and undo the split; leaving them out lets the bundler put them in the
-               dynamic chunk their only import() creates.
+            /* ⚠ (#R209) buffer + convex (and their geometry engine) are NOT in the eager geo chunk: the
+               app calls them from ONE place (the reachable-area hull in js/sims.js, which awaits
+               window.turf.ensureHeavy()), and naming them here would drag them back in with the rest
+               of turf. Since Turf 7 the same holds for union (window.turf.ensureUnion()).
+               ⚠⚠ (#R734, and why it is resolved) #R734 measured polygon-clipping in the eager
+               `geo-<hash>.js` although nothing named it. The reason was not the bundler ignoring the
+               rule: @turf/union 6.5 was a thin wrapper that STATICALLY imported polygon-clipping, and
+               union sat in the eager turf object, so the sweep-line was a static dependency of the
+               boot path (and a Rolldown group captures a member's dependencies). Turf 7's union no
+               longer uses it and is lazy besides — MEASURED, polygon-clipping is now its own async
+               chunk (`polygon-clipping.esm`) reached only by its three dynamic importers.
+               The hand-written exclusion list that stood here is replaced by the reachability question
+               above `defineConfig` (staticallyReached): `test` says which packages the group is
+               about, `name` says whether this module of theirs is on the boot path.
                The priority is ABOVE cesium's for a measured reason: Cesium's GeoJsonDataSource
                depends on topojson-client, and at equal footing the lazy engine captured it — main
                then imported topojson from the cesium chunk. */
-            { name: 'geo', priority: 3, test: (id) => !inPackage(id, 'turf-jsts', 'polygon-clipping', '@turf/buffer',
-                '@turf/convex', 'splaytree', 'concaveman') && inPackage(id, '@turf', 'topojson-client') },
+            { name: (id, ctx) => (staticallyReached(id, (m) => ctx.getModuleInfo(m)) ? 'geo' : null), debugName: 'geo',
+              priority: 3, test: (id) => inPackage(id, '@turf', 'topojson-client') },
             { name: 'supabase', priority: 3, test: (id) => inPackage(id, '@supabase') },
             /* (#R180) the SECOND engine, in a chunk of its own for the same reason as the first — and,
                far more importantly, so that the default session never asks for it. It is reached only

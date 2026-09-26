@@ -333,15 +333,24 @@ test('R209 ⑤: turf still answers every call the app makes, and the heavy pair 
     const t = window.turf;
     const eager = {
       point: typeof t.point, bbox: typeof t.bbox, distance: typeof t.distance,
-      booleanPointInPolygon: typeof t.booleanPointInPolygon, union: typeof t.union,
+      booleanPointInPolygon: typeof t.booleanPointInPolygon,
       greatCircle: typeof t.greatCircle, circle: typeof t.circle, area: typeof t.area,
       kinks: typeof t.kinks, along: typeof t.along, bboxClip: typeof t.bboxClip,
     };
     /* a real answer, not just a function reference */
     const d = t.distance(t.point([0, 0]), t.point([0, 1]), { units: 'kilometres' });
-    const before = { convex: typeof t.convex, buffer: typeof t.buffer };
+    /* ⚠ (Turf 7) `union` left the boot object too — its engine is polyclip-ts + bignumber.js, for the
+       one caller in js/time-borders.js — and arrives through ensureUnion(). Asserted the same way as
+       the heavy pair: absent before, a working function after. */
+    const before = { convex: typeof t.convex, buffer: typeof t.buffer, union: typeof t.union };
     await t.ensureHeavy();
-    return { eager, d, before, after: { convex: typeof t.convex, buffer: typeof t.buffer } };
+    const unionLoaded = await t.ensureUnion();
+    let merged = null;
+    try {
+      const u = t.union(t.featureCollection([t.polygon([[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]), t.polygon([[[1, 0], [2, 0], [2, 1], [1, 1], [1, 0]]])]));
+      merged = u && u.geometry ? u.geometry.type : null;
+    } catch (e) { merged = 'threw: ' + e.message; }
+    return { eager, d, before, unionLoaded, merged, after: { convex: typeof t.convex, buffer: typeof t.buffer, union: typeof t.union } };
   });
   for (const [k, v] of Object.entries(r.eager)) expect(v, `turf.${k} is bundled`).toBe('function');
   expect(r.d, 'and computes — one degree of latitude is ~111 km').toBeGreaterThan(110);
@@ -350,4 +359,8 @@ test('R209 ⑤: turf still answers every call the app makes, and the heavy pair 
   expect(r.before.buffer, 'nor is buffer').toBe('undefined');
   expect(r.after.convex, 'and ensureHeavy() brings them').toBe('function');
   expect(r.after.buffer).toBe('function');
+  expect(r.before.union, 'union is NOT in the boot bundle (Turf 7: polyclip-ts + bignumber.js)').toBe('undefined');
+  expect(r.unionLoaded, 'ensureUnion() reports that it loaded').toBe(true);
+  expect(r.after.union, 'and brings it').toBe('function');
+  expect(r.merged, 'which dissolves two touching squares into one polygon (the FeatureCollection form)').toBe('Polygon');
 });

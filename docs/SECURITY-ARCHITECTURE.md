@@ -536,7 +536,11 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    and every CI pgTAP run executes against, which is a test-infrastructure decision of its own.
 9. **Passkeys are enabled on the project** (`GET /auth/v1/settings` → `passkeys_enabled: true`)
    and `config.toml` says nothing about them. No factor is enrolled (`auth.mfa_factors` is
-   empty), so nothing depends on it today.
+   empty), so nothing depends on it today. The relying party IS configured: measured 2026-09-27,
+   `POST /auth/v1/passkeys/authentication/options` answers with `rpId: rwmqx7dwb5-arch.github.io`.
+   Since supabase-js 2.117 (the first pinned SDK that has the passkey methods) the controls are live
+   on production; on any other origin the browser refuses that relying party, and `js/auth-ui.js`
+   withdraws the controls for the session and points the reader at the password form (§11.3).
 10. **The maintainer's e-mail address remains in this repository's git HISTORY.** It was removed
    from every tracked file (`ai-proxy`, `static-checks.mjs`, `js/ai-core.js`, `js/auth-ui.js`);
    removing it from past commits means rewriting published history, which is destructive and out
@@ -560,7 +564,9 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
 12. **maplibre-gl 5.24.0 still contains the vulnerable `DOM.sanitize`** (GHSA-jrc7-96c5-q579). Its only sink
    in the renderer is the AttributionControl, which no view can turn on (§4). The version is pinned since
    #R158 and 6.x is a breaking migration (#R513's A/B is not merged); `npm audit` keeps reporting it until
-   that migration lands. Lifts when: maplibre-gl ≥ 6.4.1.
+   that migration lands. Lifts when: maplibre-gl ≥ 6.4.1. (Re-measured 2026-09-27 against 6.11.2, which
+   contains the fix: the migration removes `map.transform` and `getMatrixForModel` that `js/geo-engine.js`
+   builds on, so it stays a round of its own — see DECISIONS.md, the MapLibre XSS row.)
 
 ---
 
@@ -615,6 +621,8 @@ put a real secret value in the repo, a PR, or a log.**
   passkey buttons degrade gracefully to password auth (feature-detected). supabase-js ≥ 2.105 is
   required; the app no longer takes it from a CDN at all — `src/vendor.js` imports the version
   `package.json` pins, so **check that pin** (and `admin.html`'s vendored copy) when this matters.
+  Current state: the pin is 2.117.2, `admin.html`'s copy is built from the same package, and the
+  relying party above answers on production (§8 item 9).
 - **Auth → SMTP**: for reliable delivery of confirmation / reset / email-change mails at volume,
   configure a custom SMTP sender (the default Supabase mailer is rate-limited). Optional but
   recommended once real users exist.
@@ -673,9 +681,16 @@ one thing vanilla CI could not otherwise reproduce.
 - **Account deletion (real, not logout):** `delete-account` Edge Function — JWT-gated,
   `confirm:"DELETE"` required, explicit owned-row purge across every user-owned table, then
   `auth.admin.deleteUser`. The account menu has a type-your-email confirmation.
-- **Passkeys (WebAuthn):** `supabase-js` `experimental.passkey` — sign-in on the login modal,
-  enroll/list/remove in the account Security section. Feature-detected (`browserSupportsWebAuthn`
-  + method presence) with graceful password fallback.
+- **Passkeys (WebAuthn):** supabase-js's passkey API (`signInWithPasskey`, `registerPasskey`,
+  `auth.passkey.list/delete`; on by default since the SDK stopped reading `experimental.passkey`) —
+  sign-in on the login modal, enroll/list/remove in the account Security section. Feature-detected
+  (`PublicKeyCredential` + method presence). A failure is classified from the SDK's own error
+  (`_pkFailure` in `js/auth-ui.js`): a cancelled prompt is offered again, a network/server failure
+  keeps the button, and a relying-party refusal (this origin is not the project's RP) withdraws every
+  passkey control for the session. Each one says so and hands the reader to the password form; a
+  failed list is reported as a failure, not as "no passkeys". Evaluated against the real auth-js error
+  mapping in `tests/deps-runtime-majors-checks.test.mjs` and in a browser in
+  `tests/deps-runtime-majors.spec.js`.
 - **Password reset / change, email change, log-out-all-devices:** `resetPasswordForEmail` +
   `PASSWORD_RECOVERY` → a strength-and-breach-gated set-password modal; `updateUser({password})`
   / `updateUser({email})`; `signOut({scope:'global'})`.

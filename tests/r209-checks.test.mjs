@@ -150,9 +150,28 @@ test('R209 ⑥: every turf function the app calls is on the object src/vendor.js
   assert.ok(pub, 'src/vendor.js publishes window.turf as an explicit object');
   const published = new Set([...code(pub[1]).matchAll(/(?:^|[\s,{])([A-Za-z_$][\w$]*)\s*(?:,|$|\()/gm)].map((m) => m[1]));
 
-  /* the two that arrive later, and the loader's own members — not "missing", deferred */
-  const HEAVY = ['convex', 'buffer'];
-  const LOADER = ['ensureHeavy', '_heavyP'];
+  /* the ones that arrive later, and the loaders' own members — not "missing", deferred.
+     ⚠ (Turf 7) DISCOVERED, NOT LISTED. This used to be HEAVY = ['convex','buffer'] beside
+     LOADER = ['ensureHeavy','_heavyP']; Turf 7 moved `union` behind a second loader
+     (ensureUnion — its polyclip-ts + bignumber.js engine is ~135 kB raw for one caller), and a
+     hand list here would have to be edited again for the next one. So each `ensure<X>() {…}`
+     member of the published object is read for the `window.turf.<name> =` it assigns: that name
+     is lazy and owned by that loader, and the loader's own promise (`_<x>P`) is its member. */
+  const pubCode = code(pub[1]);
+  const LAZY_BY = new Map();         /* lazy name → the loader that brings it */
+  const LOADER = [];
+  const starts = [...pubCode.matchAll(/(?:^|[\s,{])(ensure[A-Za-z0-9_$]*)\s*\(\)\s*\{/g)]
+    .map((m) => ({ name: m[1], at: m.index }));
+  starts.forEach(({ name, at }, i) => {
+    LOADER.push(name);
+    const body = pubCode.slice(at, i + 1 < starts.length ? starts[i + 1].at : pubCode.length);
+    for (const m of body.matchAll(/window\.turf\.([A-Za-z_$][\w$]*)\s*=(?!=)/g)) {
+      if (m[1].startsWith('_')) LOADER.push(m[1]); else LAZY_BY.set(m[1], name);
+    }
+  });
+  assert.ok(LAZY_BY.has('convex') && LAZY_BY.has('buffer'),
+    "the reachable-area hull's two are still lazy (read out of the loader that assigns them)");
+  const HEAVY = [...LAZY_BY.keys()];
   const called = new Map();          /* name → the files that call it */
   for (const dir of ['js', 'src']) {
     for (const f of readdirSync(join(ROOT, dir)).filter((x) => x.endsWith('.js'))) {
@@ -167,14 +186,16 @@ test('R209 ⑥: every turf function the app calls is on the object src/vendor.js
   assert.deepEqual(missing, [],
     `these turf functions are called but no longer bundled — add them to the named imports in src/vendor.js:\n  ${missing.join(', ')}`);
 
-  /* …and the two heavy ones are NOT in the eager object, or the 332 kB comes straight back. Their
-     callers are checked BY NAME rather than by count: a second caller that forgets to await
-     ensureHeavy() would find them undefined, draw an unbuffered hull, and say nothing. */
+  /* …and the lazy ones are NOT in the eager object, or their engine comes straight back into the
+     boot path. Their callers are checked BY NAME rather than by count: a second caller that forgets
+     to await the loader would find them undefined, draw an unbuffered hull (or leave an undissolved
+     border), and say nothing. */
   for (const n of HEAVY) {
-    assert.ok(!published.has(n), `${n} reaches turf-jsts (332 kB) and must stay behind window.turf.ensureHeavy()`);
+    const via = LAZY_BY.get(n);
+    assert.ok(!published.has(n), `${n} is loaded on demand and must stay behind window.turf.${via}()`);
     for (const f of (called.get(n) || [])) {
-      assert.match(code(R(f)), /turf\.ensureHeavy\(\)/,
-        `${f} calls turf.${n}, which is not in the boot bundle — it must await window.turf.ensureHeavy() first`);
+      assert.match(code(R(f)), new RegExp(`turf\\.${via}\\(\\)`),
+        `${f} calls turf.${n}, which is not in the boot bundle — it must await window.turf.${via}() first`);
     }
   }
   assert.doesNotMatch(vendor, /from '@turf\/turf'/,

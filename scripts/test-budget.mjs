@@ -462,7 +462,17 @@ const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s
    and the pair is a subset of the link, so it is ONE test now (94 -> 70 s, the 70 measured at CPU ×4
    as the CI proxy: the CI run of the pair alone was 23.7 s against 14 s locally). The remaining 28 s
    is what the whole-link claim costs once. */
-const TOTAL_BUDGET_S = 4919;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) + 28 (restored-layer-before-style: tests/restored-layer-before-style.spec.js) + 9 (legend-stack-and-held-heal: tests/legend-stack-and-held-heal.spec.js — one boot, measured 7.3–11.9 s, median 8.4 s) */
+/* ⚠⚠ (deps-runtime-majors) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 4,919 -> 4,936 (+17 s).
+   tests/deps-runtime-majors.spec.js is the browser half of the supabase-js 2.117 update: the passkey
+   controls the SDK brings to the surface must fail in a way the reader can act on, and a relying party
+   the origin cannot use must take the button away. That needs the REAL `signInWithPasskey()` refused by
+   the browser's own WebAuthn — nothing Node can evaluate — and a signed-in session for the list, which
+   is a second boot (a different storage state), so the two cannot share one page.
+   ⚠ CALIBRATED, NOT COPIED (#R402's method, upper bound): 9.0 s locally (6.99 + 2.01, one worker, server
+   up); tests/r753-account-menu.spec.js measured 1.07 s in the same conditions against its entry of 2,
+   i.e. ≈ 1.87 table-seconds per local second → 16.8. ENTERED AS 17. (tests/r168.spec.js in the same run
+   gave 28.5 s against an entry of 8 — the ratio the other way; the upper bound is the one taken.) */
+const TOTAL_BUDGET_S = 4936;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) + 28 (restored-layer-before-style: tests/restored-layer-before-style.spec.js) + 9 (legend-stack-and-held-heal: tests/legend-stack-and-held-heal.spec.js — one boot, measured 7.3–11.9 s, median 8.4 s) + 17 (deps-runtime-majors: tests/deps-runtime-majors.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

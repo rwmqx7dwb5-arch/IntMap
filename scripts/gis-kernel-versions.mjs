@@ -146,8 +146,11 @@ export const KERNELS = {
      three buffers / distance / five predicates / three validates / two repairs / two refusals —
      run against HEAD and against this file in one process, byte-identical on every one. */
   /* HASH ONLY again: three comments renamed the regression files they cite (tests/r819-gis-* → tests/gis-*) when
-     round numbers stopped being names. Comment text only — no statement changed. */
-  'js/gis-geometry.js': { version: 'geom-2', sha256: 'b0fd785d9f6c98bdaabf30c2f20aa8fd004b354d89b3feac95d7e4a08476f1ec' },
+     round numbers stopped being names. Comment text only — no statement changed.
+     HASH ONLY once more (deps-runtime-majors): the header paragraph about where polygon-clipping's
+     bytes arrive was re-measured after Turf 7 (it is its own async chunk now) and says so. Comment
+     text only — the dynamic import and every statement are unchanged. */
+  'js/gis-geometry.js': { version: 'geom-2', sha256: '01df1d718c6c72daf3f221e6210bf182a40102a599addf95e432aa6b57b4d9e6' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
