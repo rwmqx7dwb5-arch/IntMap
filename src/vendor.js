@@ -3,16 +3,18 @@
  * ----------------------------------------------------------------------------
  *  Before this round these arrived as seven <script src="https://unpkg.com/…"> / jsDelivr tags, each a
  *  separate DNS + TLS + round trip on a third party's uptime, and each defining a global the rest of the
- *  app reads by name. They are npm dependencies now, pinned to the SAME versions, bundled by Vite — and
- *  this file re-publishes exactly the globals those tags used to define, so not one call site changes:
+ *  app reads by name. They are npm dependencies now (pinned at #R175 to the versions the tags carried,
+ *  and moved since only through package.json), bundled by Vite — and this file re-publishes exactly the
+ *  globals those tags used to define, so not one call site changes. The versions below are what
+ *  package.json declares today; tests/r175-checks compares every one of them with it:
  *
  *      maplibre-gl@5.24.0        → window.maplibregl     (pinned exactly since #R158 — camera-API behaviour)
- *      maplibre-contour@0.1.0    → window.mlcontour
+ *      maplibre-contour@0.1.1    → window.mlcontour
  *      @turf/turf@6.5.0          → window.turf
  *      topojson-client@3.1.0     → window.topojson
  *      @supabase/supabase-js@2   → window.supabase + window.sb
  *      html2canvas@1.4.1         → window.html2canvas    (lazy — see below)
- *      katex@0.16.11             → window.katex + its CSS (lazy — see below)
+ *      katex@0.18.7              → window.katex + its CSS (lazy — see below)
  *
  *  ── WHY TWO OF THEM ARE STILL LAZY ─────────────────────────────────────────────────────────
  *  html2canvas is only reachable from the screenshot button and KaTeX only from an Atlas reply that

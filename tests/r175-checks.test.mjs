@@ -287,7 +287,13 @@ test('R175 ③: the vendor shim republishes every global the CDN tags used to de
 test('R175 ③: the pinned versions did not drift when they moved to npm', () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
   assert.equal(pkg.dependencies['maplibre-gl'], '5.24.0', 'pinned EXACTLY since #R158 — camera-API behaviour depends on it');
-  assert.equal(pkg.dependencies['maplibre-contour'], '0.1.0');
+  /* ⚠ maplibre-contour is EXACTLY PINNED, not «0.1.0». The literal was a copy of the version the CDN
+     tag carried when #R175 moved it to npm, with no behaviour pinned to it (unlike maplibre-gl above);
+     it went red on the first patch release (0.1.1, a fix for a tile buffer detached by the transfer to
+     MapLibre's worker), which is a copy of the tree failing because the tree moved. What «did not
+     drift» asserts is «cannot float» — and that the vendor shim's own list of versions still says
+     what package.json says, which is the next test. */
+  assert.match(pkg.dependencies['maplibre-contour'], /^\d+\.\d+\.\d+$/, 'maplibre-contour is pinned exactly');
   /* ⚠ EXACTLY PINNED, not a particular number — see the same note in tests/r156-checks. Both KaTeX
      and Vite moved this round to leave a published advisory behind; «did not drift» has always meant
      «cannot float», which is what an exact pin says and what a hard-coded version cannot check. */
@@ -296,6 +302,29 @@ test('R175 ③: the pinned versions did not drift when they moved to npm', () =>
   assert.equal(pkg.dependencies['html2canvas'], '1.4.1');
   assert.equal(pkg.scripts.build, 'vite build');
   assert.match(pkg.scripts.serve, /npm run build && node scripts\/serve\.mjs --root dist/, '`npm run serve` still means "the real site" — it just builds first');
+});
+
+test('R175 ③: the versions src/vendor.js names are the versions package.json declares', () => {
+  /* The header of src/vendor.js lists `package@version → window.<global>` for every library it
+     re-publishes. That list is prose, and prose that copies a version drifts on the next bump
+     (measured: it said katex@0.16.11 while package.json declared 0.18.7). The declared spec is the
+     truth — `npm ci` installs exactly it, and every exact pin above is asserted as such — so each
+     entry is compared with it: an exact version must equal the pin; a bare major (`@2`) must be the
+     pin's major. The list itself is read out of the header, not written here. */
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const declared = { ...pkg.devDependencies, ...pkg.dependencies };
+  const header = vendor.slice(0, vendor.indexOf('*/'));
+  const rows = [...header.matchAll(/^\s*\*\s+((?:@[\w.-]+\/)?[\w.-]+)@(\d+(?:\.\d+){0,2})\s+→/gm)];
+  assert.ok(rows.length >= 1, 'the header lists the libraries it re-publishes');
+  const wrong = [];
+  for (const [, name, said] of rows) {
+    const spec = declared[name];
+    if (!spec) { wrong.push(`${name}@${said}: not a dependency in package.json`); continue; }
+    const pinned = spec.replace(/^[\^~]/, '');
+    const agrees = said.split('.').length === 3 ? said === pinned : pinned.split('.')[0] === said;
+    if (!agrees) wrong.push(`${name}@${said}: package.json declares ${spec}`);
+  }
+  assert.deepEqual(wrong, [], 'src/vendor.js names a version package.json does not declare');
 });
 
 test('R175 ③: every root asset the site references is in the build’s copy list', async () => {

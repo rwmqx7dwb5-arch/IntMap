@@ -225,8 +225,9 @@ function katexAssets() {
    floating major-version tag fetched from a third-party CDN and injected with document.write: no
    pinned version, no integrity, no subresource this project controls, and a parser-blocking write
    that runs whatever that URL answers with.
-   The SDK is already a dependency of this repo, pinned exactly in package.json (@supabase/supabase-js
-   2.58.0). Copying its UMD build here gives admin.html the SAME API from OUR origin at a version the
+   The SDK is already a dependency of this repo, pinned exactly in package.json (the version lives
+   there only — a copy of it in this comment outlived the pin it described).
+   Copying its UMD build here gives admin.html the SAME API from OUR origin at a version the
    lockfile decides, which is what lets admin.html's CSP drop the CDN host entirely. */
 const SB_UMD = join(ROOT, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
 const SB_VENDOR_URL = '/vendor/supabase-js.js';
@@ -345,6 +346,23 @@ export default defineConfig({
            used to be the CDN filename. Naming the chunk after the package keeps a stack trace
            attributable to the library it came from. */
         manualChunks(id) {
+          /* ⚠⚠ THE BUNDLER'S OWN RUNTIME HELPERS ARE PLACED HERE, IN A CHUNK EVERY SESSION LOADS.
+             Rollup adds a module's dependencies to the manual chunk that asks for it first, and
+             `\0vite/preload-helper.js` is a dependency of EVERY module that contains a dynamic
+             import() — main's included. Left unnamed, the helper therefore lived wherever the
+             traversal happened to meet it: in the supabase chunk (harmless, it is eager) until
+             Cesium 1.145 brought @zip.js/zip.js 2.17, whose zip-writer.js does
+             `await import("./zip-reader.js")`. MEASURED on that build: the helper moved into the
+             `cesium` chunk, main imported `_` from it, and the whole second engine became eager —
+             eager raw 4.77 → 9.72 MB, requests 6 → 7, modules 306 → 1746, "cesium" gone from the
+             async list. The same applies to `\0commonjsHelpers.js`, which both engines' CommonJS
+             dependencies need. So the rule is not "the helper goes next to MapLibre" but "a
+             helper every chunk may depend on must never be captured by a LAZY chunk"; the
+             renderer chunk is the one eager chunk that exists for the same lifetime as the page.
+             The ids are virtual (`\0`-prefixed) and carry no node_modules/ path, which is what
+             separates them from the `\0…/node_modules/<pkg>/…?commonjs-*` wrappers that belong
+             to their package's chunk. */
+          if (id.startsWith('\0') && !id.includes('node_modules/')) return 'maplibre-gl';
           if (id.includes('node_modules/maplibre-gl')) return 'maplibre-gl';
           /* (#R180) the SECOND engine, in a chunk of its own for the same reason as the
              first — and, far more importantly, so that the default session never asks
