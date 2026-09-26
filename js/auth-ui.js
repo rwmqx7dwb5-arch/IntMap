@@ -73,8 +73,35 @@ window.IntMapModules.authUi=function(HOST){
   function _sessionProvider(session){ try{ const am=(session&&session.user&&session.user.app_metadata)||{};
     return String(am.provider||(Array.isArray(am.providers)&&am.providers[0])||''); }catch(_){ return ''; } }
 
-  /* (#R155) Passkey capability: the SDK method exists AND the browser supports WebAuthn. */
-  function _passkeysAvailable(){ try{ return !!(HOST.DB&&HOST.DB.auth&&typeof HOST.DB.auth.signInWithPasskey==='function'&&window.PublicKeyCredential); }catch(_){ return false; } }
+  /* (#R155) Passkey capability: the SDK method exists AND the browser supports WebAuthn.
+     ⚠ (supabase-js 2.117) …AND THIS ORIGIN HAS NOT ALREADY BEEN REFUSED. 2.58's auth-js had none of
+     these methods, so every passkey control stayed hidden from #R155 until the SDK update; 2.117
+     has them, and the project answers `passkeys/authentication/options` with its relying party
+     (rpId rwmqx7dwb5-arch.github.io, measured). A page served from any OTHER origin — a preview, a
+     fork, 127.0.0.1 — gets a WebAuthn SecurityError on every press, forever. What the reader must not
+     be shown is a button that can only fail, so the first failure that says «this origin / this
+     project cannot do passkeys» (_pkFailure → 'unavailable') switches them off for the session and
+     every passkey control asks this function before it draws. */
+  let _pkOff=false;
+  function _passkeysAvailable(){ try{ return !_pkOff&&!!(HOST.DB&&HOST.DB.auth&&typeof HOST.DB.auth.signInWithPasskey==='function'&&window.PublicKeyCredential); }catch(_){ return false; } }
+  /* What a passkey failure MEANS, from the error the SDK returns (auth-js wraps the browser's
+     DOMException as WebAuthnError{code,cause}; a server refusal is an AuthApiError{status}).
+       'cancel'      — the reader dismissed the prompt or chose no credential. WebAuthn deliberately
+                       reports both as NotAllowedError, so they cannot be told apart; offer it again.
+       'unavailable' — this origin is not the project's relying party (SecurityError / the SDK's
+                       ERROR_INVALID_DOMAIN / ERROR_INVALID_RP_ID), or the endpoint is not there
+                       (404). Nothing the reader can do changes it; stop offering passkeys.
+       'failed'      — anything else (network, 5xx, an expired challenge): a real failure, so the
+                       button stays and a second press is a fresh attempt. */
+  function _pkFailure(e){ try{
+    const code=String((e&&e.code)||''), cause=(e&&e.cause)||null, nm=String((cause&&cause.name)||(e&&e.name)||'');
+    if(code==='ERROR_CEREMONY_ABORTED'||nm==='NotAllowedError'||nm==='AbortError') return 'cancel';
+    if(code==='ERROR_INVALID_DOMAIN'||code==='ERROR_INVALID_RP_ID'||nm==='SecurityError'||(e&&e.status===404)) return 'unavailable';
+  }catch(_){} return 'failed'; }
+  /* after an 'unavailable': every passkey control re-asks _passkeysAvailable() and disappears */
+  function _pkSwitchOff(){ _pkOff=true;
+    try{ const b=document.getElementById('am-passkey'); if(b) b.style.display='none'; }catch(_){}
+    try{ _renderPasskeys(); }catch(_){} }
 
   async function _renderPasskeys(){ const box=document.getElementById('acct-passkeys'); if(!box) return;
     const addBtn=document.getElementById('acct-add-passkey');
@@ -84,8 +111,14 @@ window.IntMapModules.authUi=function(HOST){
     if(addBtn) addBtn.hidden=false;
     box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+HOST.escapeHtml(_authL('Loading passkeys…','パスキーを読み込み中…','Passkeys werden geladen…','Загрузка паскеев…','Cargando passkeys…'))+'</div>';
     let list=[];
-    try{ const r=await HOST.DB.auth.passkey.list(); const d=(r&&r.data)||r; list=Array.isArray(d)?d:(d&&(d.passkeys||d.all||d.factors))||[]; }
-    catch(_){ box.innerHTML=''; return; }
+    /* ⚠ (supabase-js 2.117) list() RETURNS its error ({data:null,error}) rather than throwing, and the
+       line that read it took `(r.data)||r` — the whole result object — so a failed request fell
+       through to «No passkeys yet.» on an account that may well have some. An error is said as one. */
+    let listErr=null;
+    try{ const r=await HOST.DB.auth.passkey.list(); if(r&&r.error) listErr=r.error; else { const d=(r&&r.data)||r; list=Array.isArray(d)?d:(d&&(d.passkeys||d.all||d.factors))||[]; } }
+    catch(e){ listErr=e||true; }
+    if(listErr){ if(_pkFailure(listErr)==='unavailable'){ _pkSwitchOff(); return; }
+      box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+HOST.escapeHtml(_authL('Could not load your passkeys.','パスキーを読み込めませんでした。','Deine Passkeys konnten nicht geladen werden.','Не удалось загрузить паскеи.','No se pudieron cargar tus passkeys.'))+'</div>'; return; }
     if(!list.length){ box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+HOST.escapeHtml(_authL('No passkeys yet.','パスキーはまだありません。','Noch keine Passkeys.','Паскеев пока нет.','Aún no hay passkeys.'))+'</div>'; return; }
     box.innerHTML=list.map(pk=>{ const nm=HOST.escapeHtml(pk.friendly_name||pk.friendlyName||pk.name||'Passkey'), id=HOST.escapeHtml(String(pk.id||''));
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--input-bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;"><span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nm+'</span><button data-pkdel="'+id+'" style="background:transparent;border:none;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;">'+HOST.escapeHtml(_authL('Remove','削除','Entfernen','Удалить','Quitar'))+'</button></div>'; }).join('');
@@ -94,7 +127,13 @@ window.IntMapModules.authUi=function(HOST){
       if(await _acctAsk({ title:_authL('Remove this passkey?','このパスキーを削除しますか？','Diesen Passkey entfernen?','Удалить этот паскей?','¿Quitar este passkey?'),
         body:_authL('You will not be able to sign in with it on that device any more.','その端末ではこのパスキーでログインできなくなります。','Auf diesem Gerät kannst du dich damit nicht mehr anmelden.','На этом устройстве вход по нему станет невозможен.','Ya no podrás iniciar sesión con él en ese dispositivo.'),
         danger:true, confirmLabel:_authL('Remove','削除','Entfernen','Удалить','Quitar') })===null) return;
-      try{ await HOST.DB.auth.passkey.delete({id}); }catch(_){ try{ await HOST.DB.auth.passkey.delete({passkeyId:id}); }catch(__){} }
+      /* ⚠ (supabase-js 2.117) the parameter is `passkeyId` (DELETE …/passkeys/<passkeyId>). The line
+         here guessed `{id}` first and fell back on a throw — but the SDK does not throw, it RETURNS
+         {error}, so the guess sent DELETE …/passkeys/undefined, «succeeded», and the fallback never
+         ran: the passkey stayed and the sheet redrew it without a word. */
+      const amsg=document.getElementById('acct-msg');
+      try{ const r=await HOST.DB.auth.passkey.delete({passkeyId:id}); if(r&&r.error) throw r.error; }
+      catch(_){ if(amsg) amsg.textContent=_authL('Could not remove the passkey.','パスキーを削除できませんでした。','Der Passkey konnte nicht entfernt werden.','Не удалось удалить паскей.','No se pudo quitar el passkey.'); }
       _renderPasskeys();
     });
   }
@@ -239,7 +278,14 @@ window.IntMapModules.authUi=function(HOST){
       $am('am-passkey').disabled=true; msg.textContent=_authL('Waiting for your passkey…','パスキーを待機中…','Warte auf deinen Passkey…','Ожидание паскея…','Esperando tu passkey…');
       try{ const {data,error}=await HOST.DB.auth.signInWithPasskey(); if(error) throw error;
         m.style.display='none'; try{ HOST.recordLogin(data&&data.user&&data.user.id); }catch(_){}
-      }catch(e){ msg.textContent=_authL('Passkey sign-in failed or was canceled.','パスキーのログインに失敗またはキャンセルされました。','Passkey-Anmeldung fehlgeschlagen oder abgebrochen.','Вход по паскею не удался или отменён.','El inicio con passkey falló o se canceló.'); }
+      }catch(e){
+        /* (supabase-js 2.117) the password form is on this same tab and never depended on the
+           passkey, so the way out of ANY failure is to say so and put the caret in it. */
+        const why=_pkFailure(e);
+        msg.textContent=(why==='unavailable'?_authL('Passkeys can\'t be used on this site right now.','このサイトでは現在パスキーを利用できません。','Passkeys können auf dieser Website derzeit nicht verwendet werden.','Паскеи сейчас нельзя использовать на этом сайте.','Ahora mismo no se pueden usar passkeys en este sitio.'):_authL('Passkey sign-in failed or was canceled.','パスキーのログインに失敗またはキャンセルされました。','Passkey-Anmeldung fehlgeschlagen oder abgebrochen.','Вход по паскею не удался или отменён.','El inicio con passkey falló o se canceló.'))+' '+_authL('You can sign in with your email and password instead.','代わりにメールアドレスとパスワードでログインできます。','Du kannst dich stattdessen mit E-Mail und Passwort anmelden.','Вместо этого можно войти по e-mail и паролю.','En su lugar puedes iniciar sesión con tu correo y contraseña.');
+        if(why==='unavailable') _pkSwitchOff();
+        try{ const em=$am('am-email'); (em&&!em.value?em:$am('am-pass')).focus(); }catch(_){}
+      }
       finally{ $am('am-passkey').disabled=false; }
     };
     /* (#R155) Forgot password → email a reset link. Enumeration-safe: identical message regardless. */
@@ -481,7 +527,8 @@ window.IntMapModules.authUi=function(HOST){
         if(!_passkeysAvailable()||typeof HOST.DB.auth.registerPasskey!=='function'){ msg.textContent=_authL('Passkeys aren\'t available on this device.','この端末ではパスキーを利用できません。','Passkeys sind auf diesem Gerät nicht verfügbar.','Паскеи недоступны на этом устройстве.','Los passkeys no están disponibles en este dispositivo.'); return; }
         msg.textContent=_authL('Follow your device prompt to create a passkey…','端末の指示に従ってパスキーを作成してください…','Folge der Geräteaufforderung, um einen Passkey zu erstellen…','Следуйте подсказке устройства, чтобы создать паскей…','Sigue la indicación de tu dispositivo para crear un passkey…');
         try{ const {error}=await HOST.DB.auth.registerPasskey(); if(error) throw error; msg.textContent=_authL('Passkey added.','パスキーを追加しました。','Passkey hinzugefügt.','Паскей добавлен.','Passkey añadido.'); _renderPasskeys(); }
-        catch(e){ msg.textContent=_authL('Could not add a passkey (or it was canceled).','パスキーを追加できませんでした（またはキャンセルされました）。','Passkey konnte nicht hinzugefügt werden (oder abgebrochen).','Не удалось добавить паскей (или отменено).','No se pudo añadir el passkey (o se canceló).'); }
+        catch(e){ if(_pkFailure(e)==='unavailable'){ msg.textContent=_authL('Passkeys can\'t be used on this site right now.','このサイトでは現在パスキーを利用できません。','Passkeys können auf dieser Website derzeit nicht verwendet werden.','Паскеи сейчас нельзя использовать на этом сайте.','Ahora mismo no se pueden usar passkeys en este sitio.'); _pkSwitchOff(); }
+          else msg.textContent=_authL('Could not add a passkey (or it was canceled).','パスキーを追加できませんでした（またはキャンセルされました）。','Passkey konnte nicht hinzugefügt werden (oder abgebrochen).','Не удалось добавить паскей (или отменено).','No se pudo añadir el passkey (o se canceló).'); }
       };
       document.getElementById('acct-change-email').onclick=async()=>{ const msg=document.getElementById('acct-msg');
         const ne=await _acctAsk({ title:_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo'),

@@ -34,6 +34,11 @@
  *  What IS true and measured: the import here costs no NEW bytes, because those bytes are already in
  *  the session before this module is built. Anyone changing the chunking should re-measure this
  *  paragraph rather than trust it.
+ *  ⚠ RE-MEASURED at the Turf 7 update, and the paragraph above is now history: the static route in
+ *  was @turf/union 6.5, a wrapper over polygon-clipping that sat in the eager turf object. Turf 7's
+ *  union does not use it (and is loaded on demand), so polygon-clipping is its own async chunk
+ *  (`polygon-clipping.esm`, 22.0 kB under vite 8) and a reader who never runs an overlay, never opens the
+ *  warning packs and never runs Cesium does not download it. The import here is what brings it.
  *
  *  ══ THE BUFFER IS A MINKOWSKI SUM, NOT AN OFFSET CURVE ════════════════════════════════════════
  *  A buffer of radius r is, by definition, the set of points within r of the shape — i.e. the

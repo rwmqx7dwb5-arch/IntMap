@@ -475,7 +475,10 @@ window.IntMapModules.timeBorders=function(HOST){
        Tibet feature(s) into the China feature so the shared internal border is dissolved, then DROP the Tibet
        feature(s). China keeps its own name/properties so tagSame still gives it the normal localized label. Falls
        back to the R106 rename-only (label suppressed, geometry unchanged) when turf/union or a China feature is
-       unavailable — never worse than before. Returns a NEW FeatureCollection; never mutates the input. */
+       unavailable — never worse than before. Returns a NEW FeatureCollection; never mutates the input.
+       ⚠ (Turf 7) union takes ONE FeatureCollection. The two-argument 6.5 form `union(a,b)` now throws
+       «Must have at least 2 geometries», and the catch in the loop below would swallow that into the
+       rename-only fallback without a word — which is why both dissolves pass featureCollection([…]). */
     function _mergeTibet(fc){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
       const tibet=[]; let china=null;
       fc.features.forEach(f=>{ const p=f.properties||{}; const n=String((p.NAME||p.name)||'');
@@ -485,7 +488,7 @@ window.IntMapModules.timeBorders=function(HOST){
       const _renameOnly=()=>({type:'FeatureCollection',features:fc.features.map(f=>{ const p=f.properties||{}; if(!p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')))
         return {type:'Feature',geometry:f.geometry,properties:Object.assign({},p,{NAME:'China',name:'China',_corrected:1,_same:1,_modName:''})}; return f; })});
       if(!china || !(window.turf&&window.turf.union)) return _renameOnly();
-      let merged=china; for(const t of tibet){ try{ const u=window.turf.union(merged,t); if(u&&u.geometry) merged={type:'Feature',geometry:u.geometry,properties:china.properties}; }catch(_){} }
+      let merged=china; for(const t of tibet){ try{ const u=window.turf.union(window.turf.featureCollection([merged,t])); if(u&&u.geometry) merged={type:'Feature',geometry:u.geometry,properties:china.properties}; }catch(_){} }
       if(merged===china) return _renameOnly();   /* union produced nothing usable → don't drop Tibet */
       const feats=[]; for(const f of fc.features){ if(tibet.indexOf(f)>=0) continue;   /* drop the dissolved Tibet feature(s) */
         if(f===china) feats.push({type:'Feature',geometry:merged.geometry,properties:Object.assign({},china.properties)});   /* China now includes Tibet's area, one border */
@@ -511,7 +514,7 @@ window.IntMapModules.timeBorders=function(HOST){
       const _renameOnly=()=>({type:'FeatureCollection',features:fc.features.map(f=>{ const p=f.properties||{}; if(!p._corrected && _EPRUS_RE.test(String((p.NAME||p.name)||'')))
         return {type:'Feature',geometry:f.geometry,properties:Object.assign({},p,{NAME:'Germany',name:'Germany',_corrected:1,_same:1,_modName:''})}; return f; })});
       if(!de || !(window.turf&&window.turf.union)) return _renameOnly();
-      let merged=de; for(const t of ep){ try{ const u=window.turf.union(merged,t); if(u&&u.geometry) merged={type:'Feature',geometry:u.geometry,properties:de.properties}; }catch(_){} }
+      let merged=de; for(const t of ep){ try{ const u=window.turf.union(window.turf.featureCollection([merged,t])); if(u&&u.geometry) merged={type:'Feature',geometry:u.geometry,properties:de.properties}; }catch(_){} }
       if(merged===de) return _renameOnly();   /* union produced nothing usable → don't drop East Prussia */
       const feats=[]; for(const f of fc.features){ if(ep.indexOf(f)>=0) continue;   /* drop the dissolved East Prussia feature(s) */
         if(f===de) feats.push({type:'Feature',geometry:merged.geometry,properties:Object.assign({},de.properties)});   /* Germany now includes East Prussia, one identity */
@@ -672,18 +675,24 @@ window.IntMapModules.timeBorders=function(HOST){
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
       fc={type:'FeatureCollection',features:feats}; _erFC.set(k,fc); return fc; }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
+      /* ⚠ (Turf 7) `turf.union` is on its own chunk (src/vendor.js ensureUnion) and every path below
+         hands its snapshot to _correctEra, whose two dissolves need it. Asked for in PARALLEL with the
+         snapshot so it costs no extra round trip, and awaited before the first correction — never
+         after, or the cached snapshot would keep the rename-only fallback for the whole session. */
+      const unionP=(window.turf&&window.turf.ensureUnion)?window.turf.ensureUnion():null;
+      const _union=async()=>{ if(unionP){ try{ await unionP; }catch(_){} } };
       /* the bundle answers first; `year` here is astronomical and `erFC` keys on that */
-      try{ const d=await erLoad(); if(d){ const b=erFC(d,year);
+      try{ const d=await erLoad(); await _union(); if(d){ const b=erFC(d,year);
         if(b&&b.features.length){ const bc=_correctEra(b,year); cache.set(year,bc); return bc; } } }catch(_){}
       /* ⚠ THE FALLBACK CAN ONLY ASK FOR WHAT THE FILE NAME IS, and below year 1 it has none to ask
          for without the bundle that carries them — so a deep year with no bundle is honestly absent
          rather than answered with the nearest year the old list happened to hold. */
       if(year<1) return null;
-      if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ const cc=_correctEra(c,year); cache.set(year,cc); return cc; } }catch(_){} }
+      if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ await _union(); const cc=_correctEra(c,year); cache.set(year,cc); return cc; } }catch(_){} }
       for(const wrap of PROX){ try{ const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,20000):null;
         const r=await fetch(wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson'),ctrl?{signal:ctrl.signal}:undefined); if(to) clearTimeout(to);
         if(!r.ok) continue; const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
-        const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
+        await _union(); const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
     /* ══ (#R520) 一国につき一つ — THE ERA NAMES GET THEIR OWN POINT SOURCE ══════════════════════
        「昔の国名ラベルが1国につき何十個も出る。」 `imtb-lbl` / `imtb-lbl2` took their text FROM THE

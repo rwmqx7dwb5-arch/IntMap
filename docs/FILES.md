@@ -101,6 +101,7 @@ src/
   aviation-worker.js / aviation-worker-client.js  ライブ航空機の在庫（デコード・格納・時効・フィルタ・GPU バッファの pack）をワーカーで回す
   radiation-worker.js / radiation-worker-client.js  放射性プルームのラグランジュ solve をワーカーで回す（物理は js/radiation-model.js・worker が無ければページ側が少ない粒子で解き、run がそう名乗る）
   satellite-wasm-stub.js            satellite.js の wasm 経路を使わないためのスタブ
+  supabase-unbundled-stub.js        Supabase の Storage / Functions クライアントを束に入れないためのスタブ（触れると投げる）
 fonts/                              Inter（サブセット woff2 ＋ MapLibre 用 pbf グリフ）と Pretendard
 ```
 
@@ -1496,7 +1497,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 115 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 116 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

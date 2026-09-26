@@ -10,7 +10,7 @@
  *
  *      maplibre-gl@5.24.0        → window.maplibregl     (pinned exactly since #R158 — camera-API behaviour)
  *      maplibre-contour@0.1.1    → window.mlcontour
- *      @turf/turf@6.5.0          → window.turf
+ *      @turf/turf@7.4.0          → window.turf
  *      topojson-client@3.1.0     → window.topojson
  *      @supabase/supabase-js@2   → window.supabase + window.sb
  *      html2canvas@1.4.1         → window.html2canvas    (lazy — see below)
@@ -51,7 +51,7 @@ import mlcontour from 'maplibre-contour';
    contains and fails if one of them is missing from this object. Add a call, add it here. */
 import along from '@turf/along';
 import area from '@turf/area';
-import bbox from '@turf/bbox';
+import turfBbox from '@turf/bbox';
 import bboxClip from '@turf/bbox-clip';
 import bearing from '@turf/bearing';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
@@ -63,22 +63,31 @@ import greatCircle from '@turf/great-circle';
 import kinks from '@turf/kinks';
 import length from '@turf/length';
 import pointOnFeature from '@turf/point-on-feature';
-import union from '@turf/union';
 import { featureCollection, lineString, point, polygon } from '@turf/helpers';
 import * as topojson from 'topojson-client';
 import { createClient } from '@supabase/supabase-js';
+
+/* ⚠ (Turf 7) `bbox` NOW TRUSTS A DECLARED `bbox` MEMBER. 7.x returns `geojson.bbox` unread whenever the
+   object carries one, unless `{recompute:true}` is passed; 6.5 always measured the coordinates. Every
+   caller here (the imported-file fit in js/map-ui.js, the smallest-containing-country picks, the sims'
+   clip grid) asks "where are these coordinates", and a `bbox` member on a reader's own GeoJSON file is
+   a claim nobody checked — so the one published `bbox` keeps 6.5's contract for every caller at once
+   rather than each call site remembering the flag. */
+function bbox(geojson, options) { return turfBbox(geojson, Object.assign({}, options, { recompute: true })); }
 
 window.maplibregl = maplibregl;
 window.mlcontour = mlcontour;
 window.turf = {
   along, area, bbox, bboxClip, bearing, booleanPointInPolygon, center, centroid, circle,
   distance, featureCollection, greatCircle, kinks, length, lineString, point,
-  pointOnFeature, polygon, union,
+  pointOnFeature, polygon,
   /* ⚠ (#R209) …AND TWO THAT ARE NOT HERE YET. `convex` + `buffer` reach turf-jsts, which is 332 kB
      — 81% of everything left in this chunk after the umbrella import was named — and the app calls
      them from ONE place: the reachable-area hull in js/sims.js. So they arrive on their own chunk,
      and the one caller awaits this before drawing. It is a promise rather than a silent absence
-     precisely so the hull is never quietly drawn unbuffered (the #R205 shape). */
+     precisely so the hull is never quietly drawn unbuffered (the #R205 shape).
+     (Turf 7: the engine is `@turf/jsts` now, 272 kB raw — still the reason, and vite.config.js now
+     DISCOVERS that it is off the boot path instead of listing its name.) */
   ensureHeavy() {
     if (!window.turf._heavyP) {
       /* ⚠ THE TWO SUB-PACKAGES, NOT THE UMBRELLA. Measured: `import('@turf/turf')` here re-merges
@@ -90,6 +99,24 @@ window.turf = {
     }
     return window.turf._heavyP;
   },
+  /* ⚠⚠ (Turf 7) …AND `union` IS BEHIND ITS OWN LOADER NOW. 6.5's union was a thin wrapper over
+     polygon-clipping; 7.x's is polyclip-ts, which brings bignumber.js and splaytree-ts with it.
+     MEASURED on this branch with union still in the object above: the eager geo chunk carried
+     bignumber.js 84.6 kB + polyclip-ts 39.2 kB + splaytree-ts 11.5 kB (raw) for a function the app
+     calls from ONE place — js/time-borders.js dissolving Tibet into China (≥1951) and East Prussia
+     into Germany (the 1920/1930 snapshots), both inside the async snapshot fetch. So it arrives on
+     its own chunk, and that fetch awaits this before correcting a snapshot. A promise rather than a
+     silent absence for the same reason as ensureHeavy: without it the merge falls back to the
+     rename-only path and the pre-1951 border line stays drawn. A failed load is forgotten so the
+     next snapshot asks again — a real failure is the one case a second request is owed. */
+  ensureUnion() {
+    if (!window.turf._unionP) {
+      window.turf._unionP = import('@turf/union').then((m) => {
+        window.turf.union = m.default || m.union; return true;
+      }).catch(() => { window.turf._unionP = null; return false; });
+    }
+    return window.turf._unionP;
+  },
 };
 window.topojson = topojson;
 
@@ -98,7 +125,16 @@ window.topojson = topojson;
       that guarded it is gone too (it could not have run from a module anyway — document.write after
       parsing wipes the document). The anon/publishable key is public on purpose; Row Level Security
       protects every table. `experimental.passkey` enables the passkey namespace and is inert until the
-      dashboard's WebAuthn relying-party is configured, so it never breaks password auth (#R155). */
+      dashboard's WebAuthn relying-party is configured, so it never breaks password auth (#R155).
+      ⚠ (supabase-js 2.117) the flag is now IGNORED — auth-js enables passkeys by default and keeps the
+      option only so existing code compiles (its own type says so; removed at the next major). It stays
+      written because tests/r175-checks pins these options verbatim, and saying it does nothing is
+      truer than a silent removal. What decides whether a passkey control is SHOWN is js/auth-ui.js
+      (_passkeysAvailable / _pkFailure), which feature-detects the SDK and withdraws the controls on
+      an origin the project's relying party refuses.
+      ⚠ AND THE STORAGE / FUNCTIONS CLIENTS ARE NOT IN THIS BUNDLE: vite.config.js points
+      @supabase/storage-js and @supabase/functions-js at src/supabase-unbundled-stub.js (the app uses
+      neither — why, and what happens if something ever reaches for them, is written there). */
 window.SUPABASE_URL = 'https://vpekfwdpurzejrrmacac.supabase.co';
 window.SUPABASE_ANON_KEY = 'sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
 window.supabase = { createClient };
