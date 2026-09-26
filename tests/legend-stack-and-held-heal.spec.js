@@ -33,7 +33,7 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
-import { BASE, SESSION_KEY, sessionWith } from './helpers/session-seed.js';
+import { sessionWith, seededStorageState } from './helpers/session-seed.js';
 
 /* every legend card on screen that the reader has not dragged, and every pair of them that overlaps */
 const OVERLAPS = () => {
@@ -83,7 +83,7 @@ test('a tick held while the style loads is not pulsed off by the heal, and the f
   test.setTimeout(120_000);
   /* the default-on thematic pair a fresh profile starts with (js/layer-manifest.js `on: true`) */
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 },
-    storageState: { cookies: [], origins: [{ origin: BASE, localStorage: [{ name: SESSION_KEY, value: sessionWith(['dl-climate', 'dl-subcables']) }] }] } });
+    storageState: seededStorageState([], sessionWith(['dl-climate', 'dl-subcables'])) });
   await installHermeticRouting(ctx);
   await ctx.route('https://api.rainviewer.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RV_INDEX()) }));
   await ctx.addInitScript(HOLD_FRAMES);
