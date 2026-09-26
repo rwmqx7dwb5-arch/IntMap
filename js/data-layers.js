@@ -459,7 +459,13 @@ window.IntMapModules.dataLayers=function(HOST){
     document.head.appendChild(style);
 
     const mc=document.getElementById('map-container');
-    const legend=document.createElement('div'); legend.className='koppen-legend'; legend.id='koppen-legend'; mc.appendChild(legend);
+    const legend=document.createElement('div'); legend.className='koppen-legend'; legend.id='koppen-legend';
+    /* On every dock but the phone's this card is placed by its OWN stylesheet — top-anchored, full
+       height, and the one legend with a vertical resize grip (#R8c/#R150: the grip only stretches
+       downward because the top is where it is held). tileLegends() therefore does not move it, and
+       places every other legend clear of it. The phone stylesheet docks it like any other card. */
+    legend.dataset.ownPlace='1';
+    mc.appendChild(legend);
     /* Data legends for HDI / Democracy / Pop density / NATO / EEZ / Temperature — colored scale bars */
     /* (#R39) Short "what is this data" explanations for the NON-obvious metrics (well-known ones like
        population density / GDP are left without one, per "よく知られているもの以外は…説明を入れて"). 4-language. */
@@ -3678,13 +3684,29 @@ window.IntMapModules.dataLayers=function(HOST){
       const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('[id^="data-legend-ec-"]')]).concat([...document.querySelectorAll('.data-legend.generic-legend')]);
       const ws=document.body.classList.contains('ws-mode');
       const mobile = !ws && window.matchMedia && window.matchMedia('(max-width:768px)').matches;
-      /* ⚠ ON A PHONE THE KÖPPEN BOX IS A DOCK MEMBER LIKE ANY OTHER, and it is shown as `flex`, not
-         `block`. The stylesheet already docks it (`.koppen-legend:not([data-dragged])` in the ≤768 px
-         block), so a placer that only counted `block` stacked the others FROM THE SAME ORIGIN and drew
-         them over it — MEASURED at 375×812: Köppen at 130 px, radar at 130 px on top of it, wind at 184.
-         On the desktop it keeps its own full-height, top-anchored place (css/intmap.css), as before. */
-      const visible=all.filter(el=>el&&(el.style.display==='block'||(mobile&&el.style.display==='flex')) && !el.dataset.dragged);
-      all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourSwitch(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
+      /* ══ ⚠⚠⚠ WHETHER A LEGEND IS ON SCREEN IS ASKED OF THE PAGE, NOT OF ONE SPELLING OF `display` ══
+         This was `el.style.display==='block'` (and `'flex'` on phones only). The Köppen card is shown as
+         `flex`, so on the desktop the stack was built as if it were not there. MEASURED in production and
+         in tests/legend-stack-and-held-heal.spec.js, a first-time reader at 1440×900 (Köppen and the
+         submarine cables are on by default): Köppen at y 74…559, cables at 546…737 — 13 px on top of it;
+         at 1280×720 the cables card (366…557) sat wholly on Köppen's lower half. The phone had been
+         fixed the same way once already by adding the second spelling to its branch alone (at 375×812:
+         Köppen at 130 px, radar at 130 px on top of it). So the question is the fact itself: its owner
+         has not hidden it, and the page renders it (`hidden`, the inline declaration, then the computed
+         display — which also sees a stylesheet that suppresses every legend, e.g. during a flight).
+         ⚠ Where the page cannot be asked (a test's fake DOM) the inline declaration answers alone. */
+      const shown=el=>{ if(!el||!el.style||el.hidden) return false; const d=el.style.display; if(d==='none') return false;
+        try{ return getComputedStyle(el).display!=='none'; }catch(_){ return !!d; } };
+      /* ⚠ A LEGEND THAT KEEPS ITS OWN PLACE is on screen too, and the stack has to know where. Only the
+         phone stylesheet docks such a card with the others (`.koppen-legend:not([data-dragged])` in the
+         ≤768 px block); everywhere else it is left where its stylesheet holds it and the stack is placed
+         clear of it (`OWN` below). It declares this itself (`data-own-place`), so the rule serves the card
+         that has it today and any that says so later, and no list here names one. */
+      const ownsPlace=el=>!mobile&&!!(el.dataset&&el.dataset.ownPlace);
+      const docked=el=>!!(el.classList&&el.classList.contains('im-docked'));
+      const visible=all.filter(el=>shown(el) && !el.dataset.dragged && !ownsPlace(el));
+      const ownPlaced=all.filter(el=>shown(el) && !el.dataset.dragged && ownsPlace(el) && !docked(el));
+      all.forEach(el=>{ if(shown(el)) try{ ensureLegendOpacity(el); ensureContourSwitch(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
       all.forEach(el=>{ try{ watchLegendSize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
          over the map, so offset past it (unless collapsed); mobile keeps its own right-dock CSS. */
@@ -3720,6 +3742,9 @@ window.IntMapModules.dataLayers=function(HOST){
          when our own `max-height` from a previous call is what is holding the box down. */
       visible.forEach(el=>{ let r=null,sh=0; try{ r=el.getBoundingClientRect(); sh=el.scrollHeight||0; }catch(_){}
         H.push(r?r.height:0); W.push(r?r.width:0); NAT.push(Math.max(r?r.height:0,sh)); });
+      /* the boxes the stack must stay clear of, read in the same pass (viewport coordinates; made
+         container-relative below, once the container's own box is known) */
+      const OWN_R=[]; ownPlaced.forEach(el=>{ try{ const r=el.getBoundingClientRect(); if(r&&r.width>0&&r.height>0) OWN_R.push(r); }catch(_){} });
       /* ⚠ the guard compares against the INLINE declaration, not a remembered copy: reading
          `el.style.top` is a CSSOM read and costs no layout, and a remembered copy would go stale the
          moment anything else touched the box (a drag restoring `cssText`, the dock, a theme rebuild). */
@@ -3749,6 +3774,8 @@ window.IntMapModules.dataLayers=function(HOST){
         const R=window.IntMapRuntime; return (R&&R.box)?R.box(mc):mc.getBoundingClientRect(); }catch(_){ return null; } })();
       const mcH=(mcBox&&mcBox.height)||window.innerHeight||0;
       const mcW=(mcBox&&mcBox.width)||window.innerWidth||0;
+      const mcL=(mcBox&&+mcBox.left)||0, mcT=(mcBox&&+mcBox.top)||0;
+      const OWN=OWN_R.map(r=>({x0:r.left-mcL,x1:r.right-mcL,y0:r.top-mcT,y1:r.bottom-mcT}));
       /* The three docks differ by three numbers and nothing else. They are stated once here because
          the ceiling below has to know where the cursor starts before the branches run — the numbers
          themselves are the ones the three branches have always used. */
@@ -3785,7 +3812,10 @@ window.IntMapModules.dataLayers=function(HOST){
          is closed — a legend re-opened later is the newest one again. */
       const seenNow=Date.now();
       visible.forEach(el=>{ if(!el.dataset.legSeen) el.dataset.legSeen=String(seenNow); });
-      all.forEach(el=>{ if(el&&el.style&&el.style.display!=='block'&&el.style.display!=='flex'&&el.dataset&&el.dataset.legSeen){ delete el.dataset.legSeen; delete el.dataset.legFold; delete el.dataset.legPinOpen; } });
+      /* "closed" is its OWNER hiding it (no inline declaration, or `none`) — not a stylesheet that
+         suppresses every legend for a while (a flight, the route planner), after which the reader's
+         open/fold choices are still theirs. */
+      all.forEach(el=>{ if(el&&el.style&&(!el.style.display||el.style.display==='none')&&el.dataset&&el.dataset.legSeen){ delete el.dataset.legSeen; delete el.dataset.legFold; delete el.dataset.legPinOpen; } });
       visible.forEach(el=>{ if(el.dataset.legFold==='1'&&!isFolded(el)){ delete el.dataset.legFold; el.dataset.legPinOpen='1'; } });
       const room1=Math.max(48,mcH-dock.start-8);
       const newestFirst=visible.map((_,i)=>i).sort((a,b)=>((+visible[b].dataset.legSeen||0)-(+visible[a].dataset.legSeen||0))||(b-a));
@@ -3817,7 +3847,17 @@ window.IntMapModules.dataLayers=function(HOST){
       /* One column-wrapping placer for all three docks. `start` is the cursor's origin measured from
          the anchored edge (bottom for the two desktop docks, top on phones), `gap` the spacing the
          dock has always used, `base` its left margin. Nothing in here reads the DOM. */
-      const flow=(start,gap,base,edgeW=mcW)=>{
+      /* ⚠ A SLOT THAT WOULD LAND ON A LEGEND KEEPING ITS OWN PLACE (`OWN`) is not taken: the column is
+         done at that height, and the next one starts past that legend's right edge — measured, like
+         every other column step. So Köppen's column holds whatever fits under Köppen and nothing on
+         it, and a Köppen the reader stretches (its grip resizes it; the size observer re-places the
+         stack) pushes what no longer fits into the next column. `fromTop` is the phone dock's anchor,
+         where no legend keeps its own place; the rule is written for both anchors all the same. */
+      const hitOwn=(left,w,off,h,gap,fromTop)=>{ if(!OWN.length) return null;
+        const y0=fromTop?off:mcH-off-h, y1=y0+h;
+        for(const o of OWN){ if(left<o.x1+gap&&left+w>o.x0-gap&&y0<o.y1+gap&&y1>o.y0-gap) return o; }
+        return null; };
+      const flow=(start,gap,base,edgeW=mcW,fromTop=false)=>{
         const out=[]; let off=start, colX=0, colW=0;
         const room=Math.max(48,mcH-start-8);
         for(let i=0;i<visible.length;i++){
@@ -3833,6 +3873,13 @@ window.IntMapModules.dataLayers=function(HOST){
           if(H[i]>room) cap=room; else if(el.dataset.legCap&&NAT[i]>room) cap=room;
           const h=cap||H[i];
           if(out.length&&off+h>mcH-8){ colX+=colW+12; colW=0; off=start; }
+          /* each step clears one own-placed legend for good (the new column begins past its right
+             edge), so this ends within OWN.length steps; at the container's edge it stops stepping */
+          for(let k=0;k<OWN.length;k++){
+            const x=base+colX; if(Math.min(x,Math.max(base,edgeW-w-8))!==x) break;
+            const o=hitOwn(x,w,off,h,gap,fromTop); if(!o) break;
+            colW=Math.max(colW,o.x1-x); colX+=colW+12; colW=0; off=start;
+          }
           /* Out of room sideways too (many tall legends in a narrow map): the column stops AT the
              container's edge rather than walking out of it — the last resort, and still reachable. */
           out.push({off,left:Math.min(base+colX,Math.max(base,edgeW-w-8)),cap,h});
@@ -3856,7 +3903,7 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R15d) Stack legends DOWNWARD from the phone dock's origin (under the map switcher — see
            `mDock` above), left-aligned and clear of the FAB column. The CSS default is for the first
            paint; this keeps multiple open legends from overlapping. */
-        const P=flow(dock.start,dock.gap,dock.base,dock.edgeW);
+        const P=flow(dock.start,dock.gap,dock.base,dock.edgeW,true);
         visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'top',P[i].off+'px'); put(el,'bottom','auto'); put(el,'left',P[i].left+'px'); put(el,'right','auto'); });
       } else {
         /* ══ ⚠ (#R244) A LEGEND MAY ASK TO GROW DOWNWARD ═════════════════════════════════════════════
@@ -6737,6 +6784,20 @@ window.IntMapModules.dataLayers=function(HOST){
         setTimeout(()=>{ try{ if(cb.__userChangeT&&cb.__userChangeT>t0) return;   /* user intervened during the pulse → respect their choice */
           if(!cb.checked){ cb.checked=true; fireSyn(cb); } }catch(_){} },420); }
       try{ document.addEventListener('change',e=>{ const cb=e.target; try{ if(cb&&cb.type==='checkbox'&&!cb.__syn&&!cb.__reassertGuard&&cb.closest&&cb.closest('#layer-dropdown')) cb.__userChangeT=Date.now(); }catch(_){} },true); }catch(_){}
+      /* ══ ⚠⚠ «NOT PAINTED» IS ONLY A FINDING WHEN PAINTING WAS POSSIBLE ═══════════════════════════
+         While the renderer cannot take layers, a box's `change` is HELD by js/layer-rows.js and has
+         not reached its handler yet — so its layers are absent because nothing has been asked to draw
+         them, not because drawing failed. Judging it then is observing nothing and calling it a failure
+         (.agents/rules/one-pass-or-a-reason.md §2 ① / §5). MEASURED: the #R109 heal below looked 2.8 s
+         after a restored radar tick in a hidden tab, found it unpainted and pulsed it off→on; the
+         pulse was held too, and its «off» outlived its «on» (production: 12,320 ms off, 12,743 ms on
+         again, 1 run in 2 ended unticked; tests/legend-stack-and-held-heal.spec.js 2/2). The held box
+         is delivered as one fresh `change` when the renderer can draw, and that change starts its
+         own look — so there is nothing to retry here, only something not to judge.
+         The periodic audit already refused to judge an undrawable map (#R170); the per-box half is
+         the same fact, asked of the gate that is doing the holding. */
+      const heldNow=cb=>{ try{ const H=window.IntMapLayerHold; return !!(H&&H.pending().indexOf(cb.id)>=0); }catch(_){ return false; } };
+      const observable=cb=>_canDraw()&&!heldNow(cb);
       const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
       function painted(ids){ try{ for(const lid of ids){ if(GE().layers.has(lid)&&GE().layers.getLayout(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
       function check(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return null; return painted(ids); }
@@ -6780,7 +6841,8 @@ window.IntMapModules.dataLayers=function(HOST){
            exists precisely to fix "box on, nothing painted" was itself mostly asleep. It reads getLayer() +
            visibility, which need only a parsed style. */
         if(!_canDraw()) return;
-        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const ids=idsFor(cb.id); if(!ids||!ids.length){ _auditLearned(cb); return; }
+        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(heldNow(cb)){ sus[cb.id]=0; return; }
+          const ids=idsFor(cb.id); if(!ids||!ids.length){ _auditLearned(cb); return; }
           if(userTouched(cb)){ sus[cb.id]=0; return; }   /* (#R85) defer to a very recent user toggle — never race it */
           const vis=painted(ids);
           if(cb.checked&&!vis){ sus[cb.id]=(sus[cb.id]||0)+1;
@@ -6805,6 +6867,7 @@ window.IntMapModules.dataLayers=function(HOST){
       try{ document.addEventListener('change',e=>{ const cb=e.target;
         try{ if(!(cb&&cb.type==='checkbox'&&!cb.__syn&&cb.checked&&cb.closest&&cb.closest('#layer-dropdown'))) return; if(_LEARN_SKIP.test(cb.id)) return;
           const t0=Date.now(); setTimeout(()=>{ try{ if(!cb.checked) return; if(cb.__userChangeT&&cb.__userChangeT>t0) return;   /* user re-toggled → respect it */
+            if(!observable(cb)) return;   /* held → its delivery starts a look of its own; undrawable → the periodic audit looks once it can (see `observable`) */
             let ids=idsFor(cb.id); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return;
             if(painted(ids)) return; if(healed[cb.id]&&Date.now()-healed[cb.id]<240000) return; healed[cb.id]=Date.now();
             log.push({id:cb.id,t:Date.now(),fix:'toggle-heal'}); if(log.length>60) log.shift();
