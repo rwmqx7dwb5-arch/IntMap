@@ -1366,10 +1366,12 @@ scripts/
                                   排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
                                   ⚠ **`--sync` は原本の `node_modules` も `package-lock.json` に合わせる**
-                                  （食い違うときだけ `npm ci`。判定は `deps-fresh.mjs`）。`--check` は食い違いを警告する。
+                                  （早送りの後の**原本自身の** `deps-fresh.mjs --install` を呼ぶ——走っている master-sync は
+                                  早送り前の版でありうる）。`--check` は食い違いを警告する。
   deps-fresh.mjs                  **インストール済みの `node_modules` が `package-lock.json` の木か**を版ごとに照合する。
                                   全 worktree は原本の `node_modules` を junction で借りるので、ここが古いと
-                                  ローカルの門は全部 CI と違う依存で走る（2026-09-26 実測 14 件）。
+                                  ローカルの門は全部 CI と違う依存で走る（2026-09-26 実測 14 件）。`--install` は食い違うときだけ
+                                  `npm ci` し、再確認し、Playwright のブラウザ（版ごとに固定・node_modules の外）も入れる。
   data-assets.mjs                 **git の外にあるデータ集合**（`data-assets.json`）の取得・検証・配置・公開。
                                   `pull`（`npm run data:pull`）／`verify`（`npm test` の最初の段）／`list`
                                   （USB ミラーが読む）／`unlink`（`worktree.mjs done`）／`materialize`／`publish`

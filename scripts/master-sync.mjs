@@ -308,20 +308,20 @@ if (want('--sync')) {
      The fast-forward moves package-lock.json; nothing moved node_modules with it. MEASURED
      2026-09-26: 14 packages behind the lock after the dependency bump had merged (pdfjs-dist 4 for
      6, js-yaml 4 for 5, @playwright/test 1.61 for 1.63 …) — and every worktree junctions to this
-     tree. `npm ci` only when the tree actually differs (an up-to-date tree is left alone, so the
-     run stays idempotent and cheap), and success is not reported while it still differs. */
-  const deps = staleDeps(MASTER);
-  if (deps.stale.length) {
-    console.log(`master-sync: node_modules differs from package-lock.json in ${deps.stale.length} package(s) (${describeStale(deps, 3)}) — npm ci`);
+     tree.
+     ⚠ (master-sync-follow-through) RUN WITH THE MASTER'S OWN SCRIPT, like the datasets above. This
+     process is whichever copy of master-sync was started — often a worktree's, or the master's own
+     copy from BEFORE the fast-forward it just made. MEASURED 2026-09-26: the first --sync after the
+     merge that added this step did not run it at all (the running code was the pre-merge file), and
+     a second run was needed. The installing is therefore done by `<master>/scripts/deps-fresh.mjs
+     --install`, the file the fast-forward just brought, and judged by its exit code. */
+  if (existsSync(path.join(MASTER, 'scripts', 'deps-fresh.mjs'))) {
     try {
-      execFileSync('npm ci --no-audit --no-fund', { cwd: MASTER, stdio: 'inherit', shell: true });
-    } catch { /* judged by the re-check below, not by the exit code alone */ }
-    const again = staleDeps(MASTER);
-    if (again.stale.length) {
-      console.error(`master-sync: node_modules is STILL not package-lock.json (${describeStale(again)}). Run \`npm ci\` in the master.`);
+      execFileSync(process.execPath, [path.join(MASTER, 'scripts', 'deps-fresh.mjs'), '--install', MASTER], { cwd: MASTER, stdio: 'inherit' });
+    } catch {
+      console.error('master-sync: the master is at origin/main, but its node_modules is NOT the locked tree (above). Run `npm ci` in the master.');
       process.exit(1);
     }
-    console.log(`master-sync: node_modules now matches package-lock.json (${again.checked} package(s)).`);
   }
   process.exit(blocking(after).length ? 1 : 0);
 }

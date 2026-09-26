@@ -77,11 +77,17 @@ test('deps-fresh names an installed tree that is not the lockfile, and only that
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-/* ②b The one command that moves the master forward also moves its installed tree. */
+/* ②b The one command that moves the master forward also moves its installed tree — with the
+   MASTER's own deps-fresh (the running master-sync may predate the fast-forward it just made:
+   measured, the first --sync after the merge skipped the step), and the install re-checks and
+   brings the test browser the new @playwright/test pins. */
 test('master-sync --sync re-installs when the tree differs, and --check reports it', () => {
   const src = rd('scripts/master-sync.mjs');
   const sync = src.slice(src.indexOf("if (want('--sync'))"));
-  assert.match(sync, /staleDeps\(MASTER\)[\s\S]*npm ci[\s\S]*staleDeps\(MASTER\)/, '--sync installs and re-checks');
+  assert.match(sync, /path\.join\(MASTER, 'scripts', 'deps-fresh\.mjs'\), '--install'/, "--sync runs the master's own deps-fresh --install");
+  const df = rd('scripts/deps-fresh.mjs');
+  const inst = df.slice(df.indexOf('export function install'));
+  assert.match(inst, /staleDeps\(dir\)[\s\S]*npm ci[\s\S]*staleDeps\(dir\)[\s\S]*playwright install chromium/, 'install: check, npm ci, re-check, then the browser');
   assert.match(src.slice(src.indexOf('const advisory'), src.indexOf("if (want('--check'))")), /staleDeps\(MASTER\)/, '--check (and so worktree status) warns');
 });
 
