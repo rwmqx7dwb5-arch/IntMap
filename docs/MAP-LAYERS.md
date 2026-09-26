@@ -943,6 +943,10 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   同じ位置の周囲に置き場所を探し、重なった文字を強制表示しない。
 - **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country` / `ofm-city` /
   `ofm-other` を生成する（冪等）。`cb-names`（既定 ON）で表示。
+  ⚠ **`ofm` のタイルが届くたびの `sourcedata` は、ラベル層も参照線も書き直さない。** 2 つの購読は
+  `GE().layers.witness()` の下で走り、前回の pass が訊いた層が生まれた・作り直された・消えたときだけ
+  pass をやり直す（言語・テーマ・衛星・トグル・時計は自分の呼び出しを持つ）。正本は
+  `Architecture.md` §1.2 の命令の集計の項。
   ⚠ **どの言語で描くかは設定「Place-name labels」の 4 択**（`ui` / `local` / `en` / `ui+local`。**既定は `ui+local`**）。
   `ui+local` は設定言語の下に現地語を併記する 2 行ラベルで、瓦名を描く全レイヤー
   （`ofm-country` / `ofm-admin1` / `ofm-city` / `ofm-other` / `ofm-poi` / `ofm-river` / `ofm-water` /

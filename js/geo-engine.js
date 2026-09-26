@@ -1918,6 +1918,7 @@ function _m(){ return window.__imap||null; }
   /** @param {() => import('../types/geo-engine').GeoEngineAdapter} A @returns {import('../types/geo-engine').GeoEngineFacade} */ function engineFacade(A){
    const _claims=new Map();   /* this view's claimed surfaces — see surfacesDrawn above */
    const _drawWaiters=[];     /* this view's whenCanDraw() callers still waiting — see whenCanDraw below */
+   let _looking=null;         /* the layers.witness() pass running now, told every layer id it asks about — see there */
    return {
     /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
     id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },
@@ -2016,7 +2017,7 @@ function _m(){ return window.__imap||null; }
         (function poll(){ if(!_drawWaiters.length) return; listen(); if(!drain()) setTimeout(poll,150); })();
       });
     },
-    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>A().hasLayer(id), add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v,o)=>A().setLayout(id,p,v,o), setOpacity:(id,v)=>A().setOpacity(id,v),
+    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>{ if(_looking) _looking(id); return A().hasLayer(id); }, add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v,o)=>A().setLayout(id,p,v,o), setOpacity:(id,v)=>A().setOpacity(id,v),
       /* (#R170) real-scale 3-D volumes (metres above ground) */
       addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
@@ -2042,7 +2043,37 @@ function _m(){ return window.__imap||null; }
       /* (#R161) read a paint property back (theme code needs to know the current value) */
       getPaint:(id,p)=>A().getPaint(id,p),
       /* (#R178) the rest of the layer surface — see the adapter block */
-      get:id=>A().getLayer(id), getLayout:(id,p)=>A().getLayout(id,p),
+      /* ══ ⚠⚠ «IS ANY LAYER THIS PASS LOOKED AT NOT THE ONE IT LAST FOUND?» ═══════════════════════
+         MEASURED in production 2026-09-26 (375×812, clock and camera still): the `ofm` source fires
+         `sourcedata` with `isSourceLoaded` every 0.1–1.2 s, and js/app-body.js answered every one by
+         re-running two whole passes — the place-label pass (49 writes to `ofm-city` alone in twelve
+         seconds) and the reference-line re-assert (roads / rail / provinces / borders / coast). This
+         facade does not drop a repeated write on purpose (js/geo-command-log.js #R322), so how OFTEN
+         a pass runs is the caller's to decide — and what those two subscriptions exist for (#R26,
+         #R38) is a layer that came into existence after the pass last ran: born `visibility:'none'`,
+         added late because the source was late, or put back after being dropped (#R72). That is a
+         fact about LAYER IDENTITY, so it is answered here, once, for every caller:
+           `run(fn)`       runs the pass and, while it runs, records every id it asks `has` / `get`
+                           about (whoever asks — the pass's own code, or the modules it calls). When
+                           it returns, each recorded id is paired with the layer the renderer holds
+                           under it NOW (or null) — after the pass, so a layer the pass itself
+                           created counts as seen.
+           `unchanged()`   true only when a pass has completed and every recorded id still names that
+                           same layer object. A layer that appears, disappears or is recreated is a
+                           different answer, and so is a pass that threw (nothing is recorded).
+         ⚠ The pass is not second-guessed about anything else: every other input it reads (language,
+         theme, a toggle, the clock) has its own caller that runs it directly.
+         ⚠ An adapter whose getLayer() hands back a fresh copy each time (js/cesium-engine.js) never
+         answers «the same», and the caller then runs every time — exactly what it did before. */
+      witness:()=>{ let seen=null;
+        const now=id=>{ try{ return A().getLayer(id)||null; }catch(_){ return null; } };
+        return {
+          unchanged(){ if(!seen) return false; for(const [id,was] of seen){ if(now(id)!==was) return false; } return true; },
+          run(fn){ const ids=new Set(), outer=_looking; let ok=false;
+            _looking=id=>{ ids.add(id); if(outer) outer(id); };
+            try{ const r=fn(); ok=true; return r; }
+            finally{ _looking=outer; if(ok){ const m=new Map(); for(const id of ids) m.set(id,now(id)); seen=m; } } } }; },
+      get:id=>{ if(_looking) _looking(id); return A().getLayer(id); }, getLayout:(id,p)=>A().getLayout(id,p),
       move:(id,before)=>A().moveLayer(id,before),
       setFilter:(id,f)=>A().setFilter(id,f), getFilter:id=>A().getFilter(id),
       getFeatureState:f=>A().getFeatureState(f),

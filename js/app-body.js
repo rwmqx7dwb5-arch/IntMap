@@ -1582,7 +1582,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          tiles arrive — so names/borders appear on load without the user toggling them. */
       const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._applyBorders(); }catch(_){} };
       [500,1400,3000].forEach(ms=>setTimeout(_assertNamesBorders,ms));
-      GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
+      { const beat=GE().layers.witness(); GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded&&!beat.unchanged()){ try{ beat.run(()=>{ ensurePlaceLabels(); applyLabelLang(); }); }catch(_){} } }); }   /* only when a label layer is new, recreated or gone — not on every tile (layers.witness, js/geo-engine.js) */
       /* (#R186) the real night sky behind the globe, and the whole-Earth floor under the satellite
          tiles. Both start here because both need a renderer; the sky decides for itself whether the
          conditions (dark theme, globe, an engine with no sky of its own) are met, and the floor is
@@ -1933,10 +1933,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }); }
   _wireRef('cb-admin1','ref-admin1'); _wireRef('cb-roads','ref-roads'); _wireRef('cb-rail2','ref-rail');
   /* (#R38) re-assert any checked state/road/rail ref layer the moment the OFM vector tiles (re)load. */
-  try{ GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
+  /* …and, like the label pass above, only when a layer it looks at is new, recreated or gone (layers.witness, js/geo-engine.js). */
+  try{ const beat=GE().layers.witness(); GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded&&!beat.unchanged()) beat.run(()=>{ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
     /* (#R40) re-assert OFM-sourced country borders the moment the vector tiles (re)load too */
     try{ if(bordersOn) ensureBordersLayer(); window._applyBorders(); }catch(_){}
-    try{ window._imCoastReassert&&window._imCoastReassert(); }catch(_){}   /* (#R289) the coastline rides the same source, so the same race */ } }); }catch(_){}
+    try{ window._imCoastReassert&&window._imCoastReassert(); }catch(_){}   /* (#R289) the coastline rides the same source, so the same race */ }); }); }catch(_){}
   /* (#R40) Country borders / State-province / Roads / Railways now DEFAULT ON (HTML `checked`). Fire their
      (retry-hardened) change handlers once at startup so the layers are created + shown on first load; they
      self-heal if the style/ofm source isn't ready yet. These 4 utility toggles are NOT persisted in the URL

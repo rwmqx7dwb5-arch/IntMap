@@ -3587,7 +3587,12 @@ window.IntMapModules.dataLayers=function(HOST){
     function ensureLegendMinimize(el,fold){
       if(!el) return;
       let b=el.querySelector('.legend-min');
-      if(!b){ b=document.createElement('button'); b.className='legend-min'; b.onclick=(e)=>{ e.stopPropagation(); toggleLegendMin(el); }; el.appendChild(b); }
+      /* The reader's own press is the reader's decision, both ways: a legend they OPENED is not
+         folded back by the tiler (the same `legPinOpen` a re-opened fold gets), and one they SHUT
+         gives the pin up. The re-placement itself is not asked for here — the card changed size,
+         and `watchLegendSize` re-places on every size change, whoever made it. */
+      if(!b){ b=document.createElement('button'); b.className='legend-min'; b.onclick=(e)=>{ e.stopPropagation(); toggleLegendMin(el);
+        if(el.classList.contains('legend-collapsed')) delete el.dataset.legPinOpen; else el.dataset.legPinOpen='1'; }; el.appendChild(b); }
       const collapsed=el.classList.contains('legend-collapsed');
       b.textContent=collapsed?'▢':'–'; b.title=collapsed?(window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar'));
       /* On phones, start minimized so the legend never covers the map on open.
@@ -3631,6 +3636,36 @@ window.IntMapModules.dataLayers=function(HOST){
       all.forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); changed=true; }catch(_){} } });
       if(changed) try{ tileLegends(); }catch(_){}
     };
+    /* ══ ⚠⚠⚠ A LEGEND THAT CHANGES SIZE IS RE-PLACED, WHOEVER CHANGED IT ═══════════════════════
+       MEASURED in production 2026-09-26 at 375×812: with three legends docked down the phone's
+       left edge, pressing ▢ on the top one grew it from its title bar to its full body and left the
+       two below it where they were — so the expanded card's lower half sat UNDER them. tileLegends
+       places every card from its MEASURED height, so the arithmetic was right; nothing asked it
+       again. The – / ▢ button called `toggleLegendMin` alone, while the two other folds in this file
+       (`_minimizeOpenLegends` and the tiler's own) each end in a tileLegends() of their own — a
+       rule held by every caller remembering it, which the next caller did not.
+       ⚠ So the rule is attached to the FACT, not to the button: a card's size changed. One
+       ResizeObserver watches every legend the tiler has discovered (the same `all`, so there is no
+       second list of what a legend is), and a size change asks for ONE re-placement on the next
+       frame through js/runtime.js's `frame` register, keyed, so a burst of changes (a fold that
+       shrinks four cards, a body filled in by a late fetch, a re-rendered election year) costs one
+       call. Content that arrives late and changes a card's height is the same case as the button.
+       ⚠ IT SETTLES. tileLegends writes only through the guarded `put` and `capTo`, so a call whose
+       inputs are unchanged writes nothing and changes no size; a call that DOES cap or fold changes
+       sizes once, the observer asks once more, and that call writes nothing. Folding is one-way per
+       opening (`legPinOpen`), so the second pass cannot fold what the first opened.
+       ⚠ The next frame, not the observer's own callback: re-placing inside the callback resizes
+       other observed siblings of the same depth, which the browser reports as a ResizeObserver
+       loop error. */
+    let _legRO=null; const _legWatched=new WeakSet();
+    function watchLegendSize(el){
+      if(!el||_legWatched.has(el)) return;
+      if(!_legRO){ if(typeof ResizeObserver!=='function') return;
+        const again=()=>{ try{ tileLegends(); }catch(_){} };
+        _legRO=new ResizeObserver(()=>{ const R=window.IntMapRuntime;
+          if(R&&R.frame) R.frame('legends.reflow',again); else requestAnimationFrame(again); }); }
+      _legWatched.add(el); _legRO.observe(el);
+    }
     function tileLegends(_refold){
       /* ⚠ (#R276) THE ECMWF BOXES HAVE TO BE IN THIS LIST. They dock at the same left/bottom as every
          other legend, and a legend the tiler cannot see is a legend that sits ON TOP of the one below
@@ -3650,6 +3685,7 @@ window.IntMapModules.dataLayers=function(HOST){
          On the desktop it keeps its own full-height, top-anchored place (css/intmap.css), as before. */
       const visible=all.filter(el=>el&&(el.style.display==='block'||(mobile&&el.style.display==='flex')) && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourSwitch(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
+      all.forEach(el=>{ try{ watchLegendSize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
          over the map, so offset past it (unless collapsed); mobile keeps its own right-dock CSS. */
       let leftBase=24;
