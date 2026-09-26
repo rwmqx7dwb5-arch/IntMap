@@ -319,9 +319,20 @@ test('R180 ③: Atlas can operate the engine, and the planner knows the action e
     'including the read-only form, so "which engine is this?" is answerable');
 });
 
-test('R180 ③: the build keeps Cesium in its own chunk and copies its runtime directories', () => {
+test('R180 ③: the build keeps Cesium in its own chunk and copies its runtime directories', async () => {
   const vite = R('vite.config.js');
-  assert.match(vite, /node_modules\/cesium.*return 'cesium'/s, 'a chunk of its own');
+  /* ⚠ The chunking is EVALUATED, not spelled. This read `return 'cesium'` out of a manualChunks
+     function; vite 8 (Rolldown) expresses the same split as prioritised codeSplitting groups, and a
+     group that also matched the helpers main imports is exactly how Cesium once came in at boot —
+     so what is asserted is who OWNS each module, and that the lazy engine loses every tie. */
+  const { default: cfg } = await import('../vite.config.js');
+  const groups = cfg.build.rolldownOptions.output.codeSplitting.groups;
+  const hit = (g, id) => (typeof g.test === 'function' ? g.test(id) : g.test.test(id));
+  const owner = (id) => groups.filter((g) => hit(g, id)).sort((a, b) => b.priority - a.priority)[0]?.name;
+  assert.equal(owner('/r/node_modules/cesium/Source/Cesium.js'), 'cesium', 'a chunk of its own');
+  assert.equal(owner('\0vite/preload-helper.js'), 'maplibre-gl', 'the bundler helpers main imports never sit in the lazy chunk');
+  const c = groups.find((g) => g.name === 'cesium');
+  assert.ok(c && groups.every((g) => g === c || g.priority > c.priority), 'the lazy engine is the lowest priority');
   assert.match(vite, /CESIUM_DIRS\s*=\s*\['Workers', 'Assets', 'ThirdParty', 'Widgets'\]/,
     'Cesium resolves these at RUN time — bundling the module is not enough');
   assert.match(vite, /apply: 'serve'/, 'and the dev server maps the same path onto node_modules');

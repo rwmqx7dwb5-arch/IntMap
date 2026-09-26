@@ -44,7 +44,8 @@ data-assets.json                **git の外にあるデータ集合の目録**�
                                 件数とバイト数・それを運ぶ GitHub Release の asset とその sha256。
                                 取得は `npm run data:pull`、公開は `npm run data:publish <集合>`（scripts/data-assets.mjs）
 .nvmrc                          Node のバージョン（CI・ローカル共通）
-vite.config.js                  ビルド設定（チャンク分割・静的アセットのコピー・prebuild フック）
+vite.config.js                  ビルド設定（Vite 8／Rolldown。優先度つきのチャンク group・`resolve.mainFields`・
+                                CSS 最小化器・静的アセットのコピー・prebuild フック）
 tsconfig.json                   `npm run check:types`（tsc --noEmit）の設定。checkJs は off で、
                                 `// @ts-check` を持つ js/ ファイルだけが検査される（一覧は持たない）
 types/geo-engine.d.ts           地図エンジンの契約の型: 両アダプタ共通のメンバー・片方だけのメンバー・
@@ -1403,7 +1404,7 @@ scripts/
                                   ⚠ `status` は**前夜の deep tier の判定**も出す（`scripts/deep-alarm.mjs` と
                                   同じ答え）。`gh` が無い・未ログイン・オフラインは**黙って省略**し、
                                   6 秒で打ち切る——`status` は決して非ゼロで終わらない（#R304）。
-  build-report.mjs                **起動予算の計器**（vite プラグイン＋CLI）。Rollup の最終グラフから
+  build-report.mjs                **起動予算の計器**（vite プラグイン＋CLI）。束ね器（Rolldown）の最終グラフから
                                   eager（index.html のエントリ＋静的 import の推移閉包＝modulepreload
                                   される集合）と async を**導出**し、raw / gzip / brotli とモジュール別の
                                   内訳を `.perf/build-report.json` に書く（追跡対象外）。

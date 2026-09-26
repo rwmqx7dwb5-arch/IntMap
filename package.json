@@ -115,12 +115,13 @@
     "@playwright/test": "^1.63.0",
     "acorn": "^8.18.0",
     "acorn-walk": "^8.3.5",
+    "esbuild": "0.28.2",
     "js-yaml": "5.4.2",
     "opencc-js": "^1.4.2",
     "opentype.js": "^2.0.0",
     "pdfjs-dist": "6.3.289",
     "typescript": "7.0.2",
-    "vite": "6.4.3",
+    "vite": "8.3.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "dependencies": {
@@ -157,7 +158,7 @@
     "topojson-client": "3.1.0"
   },
   "allowScripts": {
-    "esbuild@0.25.12": true
+    "esbuild@0.28.2": true
   },
   "overrides": {
     "dompurify": "3.4.13",

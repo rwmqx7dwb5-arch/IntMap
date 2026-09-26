@@ -20,6 +20,9 @@
 | **ビルドは Vite**、`src/main.js` が `js/*.js` を index.html と同じ順で import | ハッシュ付き・最小化・チャンク分割を素の HTML では得られない。順序を保てるのは、`js/` の全ファイルに**トップレベル宣言が1つも無い**ことを AST で毎回確かめているから。 |
 | **配信入れ替え直後の「古い文書」からの復帰は `index.html` のインライン script で行う（Service Worker に navigation を持たせない）** | 直せる場所が3つあり、2つは使えない。①**ヘッダ**——GitHub Pages は `max-age=600` を**全応答に一律**で返し（名前にハッシュを持つ不変資産も同じ値）、ファイル単位の指定手段が無い。②**Service Worker**——`sw.js` を登録するのは `js/tile-warm.js`＝**バンドルの中**なので、この失敗に遭う読者が worker を持っているとは限らず、**守れる範囲はインラインの復帰より狭い**。そのうえ navigation を fetch ハンドラに通せば**温まった起動すべてに往復が1回増え**（`Architecture.md` §1.1 の起動予算）、そのハンドラの不具合は**戻ってくる読者全員を締め出す**——404 が起きた後にしか動かないリスナーとは影響範囲が桁違い。③**インライン**なら欠けている `assets/` に依存せず、健全な起動には1バイトも足さない。 |
 | **本番にソースマップを出さない** | 出すと全ソースの完全な写しを配ることになる（実測 8.8 MB あった）。 |
+| **名前付きチャンクは優先度つきの `codeSplitting.groups` で作る（補助モジュールと MapLibre が最上位、遅延の Cesium が最下位）** | Rolldown の group は捕まえたモジュールの依存も取り込むので、名指しだけでは共有の補助モジュールや `topojson-client` を遅延チャンクが取り、main がそこから import して第2エンジンが eager になる（実測 eager 4.78 → 9.45 MB）。優先度だけが「低い group は取り返せない」を言える。group を使う代償に Rolldown の runtime は独立チャンクになる（約 1.3 kB・起動時の要求 +1）——畳めるのは唯一の消費者だけ、と Rolldown が決めている。 |
+| **`resolve.mainFields` は `module` を `browser` より前に置く** | Vite 8 は `browser` の中身を嗅いで ESM を選ぶ処理をやめた。この依存の木で `browser` 文字列と `module` を両方持つパッケージは全部 `browser` が UMD なので、順序を入れ替えれば以前と同じファイルに解決する（名前の一覧で alias するより、次に入る同種のパッケージにも効く）。 |
+| **CSS の最小化は esbuild（Lightning CSS にしない）、esbuild は devDependency に明示** | Lightning CSS は `backdrop-filter` と `-webkit-backdrop-filter` の組で標準のほうを捨て、Chromium ではぼかしが消える（実測 40 規則）。esbuild の出力は以前の配信物とバイト同一。Lightning CSS がその組を保つようになったら見直す。 |
 | **実行時依存は npm から取り、`src/vendor.js` が同じグローバル名で再公開する** | CDN の浮動タグ（`@2` のような可動タグ）は「次に何が公開されても実行する」という約束になる。⚠ `index.html` の CSP に残る CDN ホストは計測・地図系の**既存**のタグで、これは残存リスクとして追跡している（`docs/SECURITY-ARCHITECTURE.md` §8）。 |
 
 ## 地図

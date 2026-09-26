@@ -176,7 +176,7 @@ test('r311 ⑨ `npm run dev` resolves the satellite WASM entry points the same w
   const cfg = read('vite.config.js');
   assert.ok(/#wasm-\(single\|multi\)-thread/.test(cfg), 'the build still aliases the two Emscripten entry points');
   assert.ok(/optimizeDeps[\s\S]{0,200}exclude[\s\S]{0,80}satellite\.js/.test(cfg),
-    'and dependency pre-bundling is told to leave the package alone — esbuild does not honour resolve.alias, so without this `vite` dies with «Top-level await is not available» before it ever serves a page');
+    'and dependency pre-bundling is told to leave the package alone — the pre-bundler does not honour resolve.alias, so without this it bundles the real Emscripten entry and dev would run a different satellite.js than production (vite 6 died outright with «Top-level await is not available»)');
 });
 
 /* ─────────────────────────────────────────────────────────────────────────

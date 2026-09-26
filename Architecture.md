@@ -39,7 +39,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 ### 1.1 ビルドと配信
 
 - **本体は `index.html`（946行・92 KB）＋ `css/`（3本）＋ `js/`（324本・14.9 MB）＋ `src/`（14本）。**
-  ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
+  ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
+  **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
 - `index.html` は**プログラムではない**。マークアップ＋ブート用の `<script>` ＋
@@ -127,7 +128,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   秘密である配置は存在しない。無料枠は 5,000,000 タイル要求/月（ラスタ＋ベクタ合算）。
 - **ソースマップは本番に出さない**（`vite.config.js` の `build.sourcemap` は false）。
 - **ビルドは自分を計測する。** `vite.config.js` の `buildReportPlugin()`（`scripts/build-report.mjs`）が
-  Rollup の最終グラフから **eager**（`index.html` のエントリ＋その静的 import の推移閉包＝Vite が
+  束ね器（Rolldown）の最終グラフから **eager**（`index.html` のエントリ＋その静的 import の推移閉包＝Vite が
   `modulepreload` を出す集合）と **async** を導出し、raw / gzip / brotli とモジュール別の内訳を
   `.perf/build-report.json`（追跡対象外）へ書く。`npm run check:perf`（`scripts/perf-budget.mjs`）が
   それを `tests/perf-baseline.json` と突き合わせる。
@@ -176,9 +177,36 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   隣の `.geojson` と**バイト同一**なので `STATIC_EXCLUDE` で配布から外してある——リポジトリには
   残す（消したのは配布であって記録ではない）。`js/layer-packs.js` の `window.__loadEcoregions` は
   `fetch` を先に、`<script>` を後に試す。
-- ⚠ **`resolve.alias` は dev サーバに届かない。** 依存の事前バンドルは esbuild が自分で解決するので、
-  `satellite.js` の Emscripten 入口（top-level await）にそのまま当たって `vite` が起動できない。
-  `optimizeDeps.exclude` に置いて、dev もビルドと同じ alias 経路を通す。
+- ⚠ **`resolve.alias` は dev サーバの事前バンドルに届かない。** 事前バンドル（Vite 8 では Rolldown）は
+  `satellite.js` の `imports` 表を自分で辿るので、ビルドでは stub に差し替わる Emscripten 入口
+  （`pthreads-release`）を**本物のまま**束ねる。`optimizeDeps.exclude` に置いて、dev もビルドと同じ
+  alias 経路を通す（esbuild だった頃は top-level await で `vite` が起動すらしなかった）。
+- ⚠⚠ **チャンクの置き場は「名指し」ではなく「優先度」で決まる。** `vite.config.js` の
+  `build.rolldownOptions.output.codeSplitting.groups` が 4 つの名前付きチャンクを作る——
+  `maplibre-gl`（優先度 4。束ね器の補助モジュール＝`\0` で始まり node_modules を含まない id もここ）、
+  `geo`（3。`@turf/*` と `topojson-client`、ただし `turf-jsts`・`@turf/buffer`・`@turf/convex` などの重い側は除く）、
+  `supabase`（3）、`cesium`（1。`cesium`・`@mapbox/vector-tile`・`pbf`）。
+  Rolldown の group は**捕まえたモジュールの依存も再帰的に取り込む**ので、優先度を付けないと遅延の
+  `cesium` が preload helper・Oxc の class-field 補助・`topojson-client`（Cesium の GeoJsonDataSource が依存）
+  を取り込み、main がそれを import した瞬間に**第2エンジンが丸ごと eager になる**（実測: eager raw
+  4.78 → 9.45 MB、requests 6 → 8）。高い優先度の group が先に取り、低い group は取り返せない。
+  ⚠ **group を使うと Rolldown は自分の runtime（`\0rolldown/runtime.js`、約 1.3 kB）を独立チャンク
+  `rolldown-runtime` に置き、どの group にも入れさせない**——複数のチャンクが消費するとき、どれかへ畳むと
+  静的な循環になりうるからで、畳めるのは「唯一の消費者」だけ（ここでは main・`maplibre-gl`・`supabase`・`geo`・`cesium` ほかが消費する）。
+  したがって eager は **main＋`maplibre-gl`＋`geo`＋`supabase`＋`rolldown-runtime`** の 5 本と CSS 2 本。
+  eager に入る**ソースモジュールの集合**は Rollup 時代と同一で、違いは束ね器の仮想モジュールだけ
+  （CommonJS ラッパーが無くなり、Oxc の補助と runtime が加わった）。
+- ⚠ **`resolve.mainFields` は `module` を `browser` より前に置く。** Vite 8 は「`browser` が UMD なら
+  `module` を選ぶ」という中身の嗅ぎ分けをやめ、既定の順序（`browser` が先）に従う。そのままだと
+  `polygon-clipping`・`turf-jsts`・`html2canvas` が ESM から UMD に替わる。この node_modules で `browser`
+  文字列と `module` を両方持ち `exports` の無いパッケージは、**全部 `browser` 側が非 ESM**
+  ＝以前の Vite が `module` を選んでいた場合なので、順序の入れ替えで以前と同じ解決になる。
+- ⚠ **CSS の最小化は esbuild（`build.cssMinify: 'esbuild'`）。** Vite 8 既定の Lightning CSS は、
+  `backdrop-filter: X; -webkit-backdrop-filter: X;` の並びで**標準のほうを捨てる**（どの target でも）。
+  Chromium は接頭辞付きを受け付けない（`CSS.supports` が false、計算値 `none`）ので、サイドバー・
+  ドロップダウン・シートのぼかしが Chrome / Edge / Firefox で消える。esbuild で最小化した CSS は
+  以前の配信物とバイト同一。esbuild は `devDependencies` に明示してある（Vite 8 はもう連れてこない。
+  node 検査の 2 本も TypeScript の型除去と IIFE 化に使う）。
 
 ### 1.2 地図エンジン
 
@@ -1207,7 +1235,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 - **リポジトリのルートがサイトそのもの**。`index.html` が頂点にあり、`css/` `js/` `src/` と
   静的アセット（Köppen ラスタ・国旗 webfont・`sw.js`・`data/`・`admin.html`・
   `science.html` / `sources.html` / `privacy.html` / `terms.html`）が横に並ぶ。
-  `vite.config.js` の `STATIC_ASSETS` が「Rollup を通さずそのまま配るファイル」の**明示リスト**で、
+  `vite.config.js` の `STATIC_ASSETS` が「束ね器を通さずそのまま配るファイル」の**明示リスト**で、
   `tests/r175-checks.test.mjs` が、参照されているのにリストに無いアセットで落ちる。
 - **`js/`** — アプリ本体。`js/app-body.js` が中核（`IM_HOST`）で、他は主題ごとのモジュール
   （地図の表面／データレイヤー／ニュース／Atlas と AI／分析とシミュレーション／宇宙／シェルと
@@ -2399,10 +2427,11 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
 sweep-line。**既存の依存**で `js/world-packs.js` と `js/cesium-vector-tiles.js` も同じように読む）、
 座標変換は `proj4` を、**どちらも最初に要求されたときに**取りに行く。
 ⚠ **ただし「動的 import」は、いつバイトが届くかを決めない。** 本番と `dist/` の両方で実測:
-`polygon-clipping` は `geo-<hash>.js`（52,137 B）に入り、そのチャンクは
+`polygon-clipping` は `geo-<hash>.js`（Rolldown の build で 51,164 B）に入り、そのチャンクは
 `main-<hash>.js` が**静的に** import したうえ `index.html` に `modulepreload` まで置かれる
-——**重ね合わせを一度も走らせない読者にも起動時に届いている**。`vite.config.js` の `manualChunks`
-は逆の意図を述べているが、それを測るものは無い。チャンクの分け方を変える人は、この段落を信じずに
+——**重ね合わせを一度も走らせない読者にも起動時に届いている**。`vite.config.js` の `geo` group は
+`polygon-clipping` を `test` から外しているが、`@turf/union` の依存として group が再帰的に取り込む。
+注記は逆の意図を述べているが、それを測るものは無い。チャンクの分け方を変える人は、この段落を信じずに
 測り直すこと。取りに行けなかったときは `geometry-unavailable` / `crs-unknown` で
 **名指して断る**——近似で代わりを描かない。
 

@@ -45,7 +45,7 @@ export const BROTLI_Q = { gated: 11, context: 5 };
 /* ── the Vite plugin ────────────────────────────────────────────────────────
    generateBundle sees the finished graph: which chunk is an entry, which is a
    dynamic entry, what each one statically imports, and which source modules
-   Rollup put inside it. Everything below is derived from that — nothing is
+   the bundler (Rolldown, since vite 8) put inside it. Everything below is derived from that — nothing is
    guessed from filenames. */
 export function buildReportPlugin(opts = {}) {
   const out = opts.out || REPORT_PATH;
@@ -117,7 +117,7 @@ export function buildReportPlugin(opts = {}) {
       const cssSum = (set, key) => [...set].reduce((a, f) => a + (assets[f]?.[key] || 0), 0);
       const eagerCss = cssOf(eager);
 
-      /* A module that Rollup copied into more than one chunk is paid for twice
+      /* A module that the bundler copied into more than one chunk is paid for twice
          whenever both are loaded. Worth naming, not automatically a defect. */
       const where = new Map();
       for (const [f, c] of Object.entries(chunks))
