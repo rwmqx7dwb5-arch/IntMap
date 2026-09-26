@@ -9,8 +9,8 @@
     "cssGzip": 57540
   },
   "async": {
-    "raw": 11278881,
-    "gzip": 3704359,
+    "raw": 11410985,
+    "gzip": 3749457,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24512,
@@ -29,7 +29,7 @@
       "atlas-view-capture": 8477,
       "atlas-view-ground": 3808,
       "aviation-live": 33857,
-      "cesium": 4840419,
+      "cesium": 4966972,
       "cesium-engine": 67750,
       "cesium-input": 15013,
       "cesium-layers": 18296,
@@ -92,6 +92,6 @@
   "dist": {
     "total": 772755028,
     "data": 715643953,
-    "assets": 18888005
+    "assets": 19029459
   }
 }

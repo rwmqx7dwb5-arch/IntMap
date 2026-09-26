@@ -241,7 +241,8 @@
      tag @supabase/supabase-js@2 on cdn.jsdelivr.net. So in practice the admin console's auth stack
      was a third-party CDN at a version nothing here pinned, with no integrity attribute, executing
      whatever that URL answered with. vite.config.js copies the exact build
-     the lockfile resolved (@supabase/supabase-js 2.58.0) to dist/vendor/supabase-js.js, so this is
+     the lockfile resolved (the @supabase/supabase-js version package.json pins) to
+     dist/vendor/supabase-js.js, so this is
      now the same origin as the console itself and moves only when package-lock.json does.
      js/admin-literal.js is the data-literal PARSER the starter-dataset import uses instead of eval. -->
 <script src="vendor/supabase-js.js"></script>
