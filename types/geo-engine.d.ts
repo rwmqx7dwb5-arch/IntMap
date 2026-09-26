@@ -330,6 +330,13 @@ export interface GeoEngineCoords {
   lngLat(lng?: any, lat?: any): any;
 }
 
+export interface GeoEngineLayerWitness {
+  /** runs `fn`, recording every layer id it asks `has` / `get` about, and pairs each with the layer held after it returns */
+  run<T>(fn: () => T): T;
+  /** true when a pass has completed and every recorded id still names the same layer */
+  unchanged(): boolean;
+}
+
 export interface GeoEngineLayers {
   hasSource(id?: any): any;
   addSource(id?: any, d?: any): any;
@@ -370,6 +377,8 @@ export interface GeoEngineLayers {
   setFilter(id?: any, f?: any): any;
   getFilter(id?: any): any;
   getFeatureState(f?: any): any;
+  /** «Is any layer this pass looked at not the one it last found?» — see `witness` in js/geo-engine.js. */
+  witness(): GeoEngineLayerWitness;
   updateImage(id?: any, o?: any): any;
   addDynamicImage(id?: any, o?: any, b?: any): any;
   imageRowLatitudes(c?: any, h?: any): any;

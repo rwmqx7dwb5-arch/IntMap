@@ -6,6 +6,9 @@
  *  was a layer's opacity slider sitting right next to the word 「Opacity」, the two never joined.
  *  And at 375×812 a legend card's top-left was under the map switcher (`#bm-square`'s canvas) and its
  *  right end under the round FAB column — elementFromPoint said so.
+ *  ② also opens each of those cards with its own button and asks the same five points (an opened card
+ *  used to sit under the next one), and fires the `ofm` tile heartbeat twenty times to see it write
+ *  nothing — both ride this boot because the phone profile cannot share the worker page (see ② itself).
  *
  *  ⚠ THE POPULATION IS DISCOVERED, NOT LISTED. ① asks the DOM for every input / select / textarea
  *  there is, visible or not, with one layer of every family the Layers panel offers switched on — so a
@@ -123,16 +126,39 @@ test('① with a layer of every family on, every input / select / textarea in th
     const browserName = String((ax.name && ax.name.value) || '').trim();
     if (!!browserName !== !!c.name) disagree.push(`${c.what}: browser ${browserName ? `"${browserName}"` : 'unnamed'}, rule ${c.name ? `"${c.name}"` : 'unnamed'}`);
   }
-  expect(asked, 'some controls were rendered to ask the browser about').toBeGreaterThan(5);
+  /* ⚠ A GUARD, NOT A POLICY. This number only says «the comparison below compared something». It was
+     `> 5` and failed 2 runs in 4 at exactly 5 on the unchanged code: controls re-rendered between the
+     DOM read and the tree read lose their tag and are not asked (see above), so how many are asked is a
+     property of timing, not of naming. The claim is the next line; a vacuous run is what this refuses. */
+  expect(asked, `some rendered controls were asked about (${ctl.filter((c) => c.rendered).length} rendered)`).toBeGreaterThan(0);
   expect(disagree, 'the naming rule applied to hidden controls must agree with the browser on rendered ones').toEqual([]);
   const unnamed = ctl.filter((c) => !c.name).map((c) => c.what + (c.rendered ? ' (on screen)' : ''));
   expect(unnamed, `${unnamed.length} of ${ctl.length} form controls have no accessible name (layers on: ${ids.join(', ')})`).toEqual([]);
 });
 
+/* every visible legend card, and each of its four corners and its centre that is not its own */
+const COVERED = () => {
+  const who = (e) => e ? e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + ((e.closest('[id]') && !e.id) ? ' in #' + e.closest('[id]').id : '') : 'nothing';
+  const out = [];
+  for (const el of document.querySelectorAll('.data-legend, .koppen-legend')) {
+    const cs = getComputedStyle(el); const b = el.getBoundingClientRect();
+    if (cs.display === 'none' || cs.visibility === 'hidden' || b.width <= 1 || b.height <= 1) continue;
+    /* a rounded corner is not part of the card: step in by the corner's own radius */
+    const k = Math.max(2, Math.ceil(parseFloat(cs.borderTopLeftRadius) || 0));
+    const pts = { 'top-left': [b.left + k, b.top + k], 'top-right': [b.right - k, b.top + k], 'bottom-left': [b.left + k, b.bottom - k],
+      'bottom-right': [b.right - k, b.bottom - k], centre: [(b.left + b.right) / 2, (b.top + b.bottom) / 2] };
+    for (const [where, [x, y]] of Object.entries(pts)) {
+      const h = document.elementFromPoint(x, y);
+      if (!(h && (h === el || el.contains(h)))) out.push(`#${el.id} ${where} (${Math.round(x)},${Math.round(y)}) is under ${who(h)}`);
+    }
+  }
+  return out;
+};
+
 test.describe('② phone', () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
 
-  test('② at 375×812 every legend card on screen is its own at its four corners and its centre', async ({ page }) => {
+  test('② at 375×812 every legend card on screen is its own at its four corners and its centre — also after each is opened — and the ofm tile heartbeat writes nothing', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!window.__imap && window.__imap.isStyleLoaded(), null, { timeout: 60_000 });
@@ -141,32 +167,108 @@ test.describe('② phone', () => {
       .filter((el) => { const cs = getComputedStyle(el); const r = el.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 1 && r.height > 1; }).length);
     const rows = await page.evaluate(() => [...document.querySelectorAll('#layer-dropdown .lyr-row.has-legend input[type=checkbox]')]
       .filter((c) => c.id && !c.checked).map((c) => c.id));
+    /* ⚠ WAITS ON THE CONDITION, NOT ON THE CLOCK. This used to sleep 1.5 s per layer and 1.5 s more
+       «because the tiler runs on the legends' own timers». Since every legend's size change re-places
+       the stack on the next frame (js/data-layers.js `watchLegendSize`), what is waited for is the card
+       itself; the steps below re-ask after every press, so a card whose body arrives late is asked
+       again anyway. The seconds this saved pay for those steps. */
     for (const id of rows) {
-      if ((await legendsUp()) >= 3) break;
+      const n = await legendsUp();
+      if (n >= 3) break;
       await page.evaluate((cid) => { const c = document.getElementById(cid); c.checked = true; c.dispatchEvent(new Event('change', { bubbles: true })); }, id);
-      await page.waitForTimeout(1_500);
+      await page.waitForFunction((k) => [...document.querySelectorAll('.data-legend, .koppen-legend')]
+        .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 1).length > k, n, { timeout: 1_500 }).catch(() => {});   /* at most the 1.5 s the old sleep always took */
     }
-    await page.waitForTimeout(1_500);   /* the tiler runs on the legends' own timers */
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r)))));
     expect(await legendsUp(), 'three legend cards are on screen').toBeGreaterThanOrEqual(3);
 
-    const covered = await page.evaluate(() => {
-      const who = (e) => e ? e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + ((e.closest('[id]') && !e.id) ? ' in #' + e.closest('[id]').id : '') : 'nothing';
-      const out = [];
-      for (const el of document.querySelectorAll('.data-legend, .koppen-legend')) {
-        const cs = getComputedStyle(el); const b = el.getBoundingClientRect();
-        if (cs.display === 'none' || cs.visibility === 'hidden' || b.width <= 1 || b.height <= 1) continue;
-        /* a rounded corner is not part of the card: step in by the corner's own radius */
-        const k = Math.max(2, Math.ceil(parseFloat(cs.borderTopLeftRadius) || 0));
-        const pts = { 'top-left': [b.left + k, b.top + k], 'top-right': [b.right - k, b.top + k], 'bottom-left': [b.left + k, b.bottom - k],
-          'bottom-right': [b.right - k, b.bottom - k], centre: [(b.left + b.right) / 2, (b.top + b.bottom) / 2] };
-        for (const [where, [x, y]] of Object.entries(pts)) {
-          const h = document.elementFromPoint(x, y);
-          if (!(h && (h === el || el.contains(h)))) out.push(`#${el.id} ${where} (${Math.round(x)},${Math.round(y)}) is under ${who(h)}`);
-        }
+    expect(await page.evaluate(COVERED)).toEqual([]);
+
+    /* ══ …AND STILL WHEN ONE OF THEM IS OPENED (2026-09-26, production, 375×812) ════════════════
+       Pressing ▢ grew a card to its full body and left the cards below it where they were: the
+       opened card's lower half was under the next one (measured here before the fix: Köppen's
+       centre under the radar card; with the radar card open, all five points of the snow card
+       under it). Every card is opened by its OWN button, in turn, and the same five points are
+       asked of every card on screen — and a card the reader opened is not folded back. It rides
+       this test's boot because the phone profile cannot share the worker page and the question
+       needs exactly the three cards set up above. */
+    await test.step('each legend, opened by its own button, is still its own at its corners and centre', async () => {
+      const ids = await page.evaluate(() => [...document.querySelectorAll('.data-legend, .koppen-legend')]
+        .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 1).map((el) => el.id));
+      const frames = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r)))));
+      const shut = (i) => page.evaluate((x) => document.getElementById(x).classList.contains('legend-collapsed'), i);
+      const tall = (i) => page.evaluate((x) => document.getElementById(x).getBoundingClientRect().height, i);
+      let opened = 0;
+      for (const id of ids) {
+        if (!(await shut(id))) continue;
+        const btn = page.locator(`#${id} > .legend-min`);
+        const before = await tall(id);
+        await btn.click();
+        await page.waitForFunction((x) => !document.getElementById(x).classList.contains('legend-collapsed'), id);
+        await frames();
+        expect(await tall(id), `#${id} did not open`).toBeGreaterThan(before);
+        expect(await page.evaluate(COVERED), `after opening #${id}`).toEqual([]);
+        expect(await shut(id), `#${id} was folded back by the tiler`).toBe(false);
+        opened++;
+        await btn.click();
+        await page.waitForFunction((x) => document.getElementById(x).classList.contains('legend-collapsed'), id);
+        await frames();
+        expect(await page.evaluate(COVERED), `after closing #${id} again`).toEqual([]);
       }
-      return out;
+      expect(opened, 'no card on the phone started folded, so nothing was opened').toBeGreaterThanOrEqual(2);
     });
-    expect(covered).toEqual([]);
+
+    /* ══ THE `ofm` TILE HEARTBEAT WRITES NOTHING (2026-09-26, production) ════════════════════════
+       With the clock and camera still, `ofm` fired `sourcedata` every 0.1–1.2 s and js/app-body.js
+       re-ran two whole passes each time (49 writes to `ofm-city` in twelve seconds). Both now run
+       under `layers.witness()` (js/geo-engine.js). ⚠ FIRED, NOT WAITED FOR: on this harness a map
+       at rest received no `ofm` sourcedata at all in twelve seconds, so waiting would prove nothing;
+       the renderer's own event is dispatched twenty times and every write it causes is synchronous.
+       Nothing here names a layer except the one the heal/theme/language half reads: `ofm-city`
+       when the style has it (the layer the report counted), otherwise the first `ofm` symbol layer. */
+    await test.step('the ofm heartbeat writes nothing; a new layer, the basemap, the theme and the language still do', async () => {
+      await page.evaluate(() => {
+        const m = window.__imap; const W = (window.__hbW = { on: false, n: {} });
+        for (const f of ['setLayoutProperty', 'setPaintProperty']) {
+          const orig = m[f].bind(m);
+          m[f] = (id, p, v, o) => { if (W.on) { const k = id + ' ' + p; W.n[k] = (W.n[k] || 0) + 1; } return orig(id, p, v, o); };
+        }
+      });
+      const beat = (n) => page.evaluate((k) => { const W = window.__hbW; W.n = {}; W.on = true;
+        try { for (let i = 0; i < k; i++) window.__imap.fire('sourcedata', { sourceId: 'ofm', dataType: 'source', isSourceLoaded: true, sourceDataType: 'content' }); }
+        finally { W.on = false; } return W.n; }, n);
+      await beat(1);   /* the passes run once for whatever changed since boot (the legends above added layers) */
+      expect(await beat(20), 'twenty ofm heartbeats over unchanged layers wrote to the renderer').toEqual({});
+
+      const victim = await page.evaluate(() => { const L = window.__imap.getStyle().layers.filter((l) => l.type === 'symbol' && l.source === 'ofm').map((l) => l.id);
+        return L.includes('ofm-city') ? 'ofm-city' : L[0]; });
+      expect(victim, 'the style has place-label layers on the ofm source').toBeTruthy();
+      /* a RECREATED label layer is given the pass by the next heartbeat (the #R26 / #R72 purpose) */
+      await page.evaluate((id) => { const m = window.__imap; const ls = m.getStyle().layers; const i = ls.findIndex((l) => l.id === id);
+        const def = ls[i], before = ls[i + 1] && ls[i + 1].id; m.removeLayer(id); m.addLayer(def, before); }, victim);
+      const healed = await beat(1);
+      expect(Object.keys(healed).includes(victim + ' text-font'), `the recreated ${victim} was not given the label pass`).toBe(true);
+
+      /* the basemap and the theme reach the label colour, the language its text — each through its
+         own caller (applyTheme / the language pill), which the heartbeat's witness never gates */
+      const colourOf = () => page.evaluate((id) => JSON.stringify(window.__imap.getPaintProperty(id, 'text-color')), victim);
+      const changes = (c) => page.waitForFunction(({ id, c }) => JSON.stringify(window.__imap.getPaintProperty(id, 'text-color')) !== c, { id: victim, c }, { timeout: 15_000 });
+      if (await page.evaluate(() => document.getElementById('btn-view-sat').classList.contains('active'))) {
+        const s0 = await colourOf();
+        await page.evaluate(() => window.IntMapOS.exec('view.base.map', { source: 'test' }));
+        /* on a light theme the map basemap gives dark text, where the satellite gave light */
+        if (await page.evaluate(() => document.documentElement.getAttribute('data-theme') !== 'dark')) await changes(s0);
+      }
+      const c0 = await colourOf();
+      const toDark = await page.evaluate(() => document.documentElement.getAttribute('data-theme') !== 'dark');
+      const tr = await page.evaluate((d) => window.IntMapConsole.dispatch({ type: 'theme', mode: d ? 'dark' : 'light' }), toDark);
+      expect(tr && tr.ok, 'the theme action reported success').toBe(true);
+      await changes(c0);
+      const f0 = await page.evaluate((id) => JSON.stringify(window.__imap.getLayoutProperty(id, 'text-field')), victim);
+      const other = await page.evaluate(() => (document.getElementById('lang-jp').classList.contains('active') ? 'en' : 'jp'));
+      await page.evaluate((c) => document.getElementById('lang-' + c).click(), other);
+      await page.waitForFunction(({ id, f }) => JSON.stringify(window.__imap.getLayoutProperty(id, 'text-field')) !== f, { id: victim, f: f0 }, { timeout: 15_000 });
+    });
   });
 });
 
