@@ -302,6 +302,14 @@ function cesiumDevAssets() {
   };
 }
 
+/* The two predicates the chunk groups below are written in. Module ids are compared with forward
+   slashes whatever the platform, and a package is matched by the PREFIX of its node_modules path —
+   the same test the Rollup-era manualChunks made, so `cesium` still means the `cesium` package and
+   not `@cesium/engine` (which reaches the cesium chunk as a dependency of it, as it always did). */
+const slash = (id) => id.replace(/\\/g, '/');
+const inPackage = (id, ...pkgs) => pkgs.some((p) => slash(id).includes('node_modules/' + p));
+const isBundlerHelper = (id) => id.startsWith('\0') && !slash(id).includes('node_modules/');
+
 export default defineConfig({
   root: ROOT,
   base: './',
@@ -316,6 +324,22 @@ export default defineConfig({
      reasoning; tests/r184-checks.test.mjs pins this so a dependency bump cannot quietly undo it. */
   resolve: {
     alias: [{ find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') }],
+    /* ══ `module` BEFORE `browser` — WHAT VITE 6 CHOSE, NOW SAID INSTEAD OF SNIFFED ════════════════
+       Until Vite 8, a package that declares BOTH a string `browser` and a `module` field was resolved
+       by reading the `browser` file: if it was not ESM (a UMD bundle), Vite took `module`. Vite 8
+       removed that sniffing and follows `mainFields` in order, and its default puts `browser` first.
+       MEASURED on the first vite 8.3.1 build: three packages silently changed file — polygon-clipping
+       (esm.js → umd.js, in the EAGER geo chunk), turf-jsts (jsts.mjs → jsts.min.js) and html2canvas
+       (esm.js → the UMD dist/html2canvas.js) — each an ES module traded for a UMD bundle that the
+       bundler can neither tree-shake nor interop the way it did.
+       The order below reproduces the old choice for the whole tree rather than for those three
+       names: in this node_modules every package with both fields and no `exports` has a NON-ESM
+       `browser` file (counted, not assumed — dev-notes/2026-09-27-vite-8-migration.md), which is
+       exactly the case where Vite 6 picked `module`. A `browser` OBJECT (a file-to-file map) is still
+       honoured, because 'browser' stays in the list; only the string form loses its precedence.
+       ⚠ It is Vite's own default order with one swap (`module` ahead of `browser`); a package whose
+       `exports` answers is resolved by `exports` and never reaches this list. */
+    mainFields: ['module', 'browser', 'jsnext:main', 'jsnext'],
   },
   /* ⚠ (#R311) …AND THE ALIAS ABOVE DOES NOT REACH THE DEV SERVER, so `npm run dev` did not start.
      MEASURED on origin/main before this round touched anything: `npx vite` dies in dependency
@@ -327,68 +351,90 @@ export default defineConfig({
      worked), so this was invisible to CI and to every round that only ever ran `npm run build`.
      Excluding the package from pre-bundling makes dev resolve it through the same aliased path the
      build uses. The dependency is dynamically imported from ONE place (js/satellites-live.js) and
-     never at boot, so there is nothing here for the optimizer to have been saving. */
+     never at boot, so there is nothing here for the optimizer to have been saving.
+     ⚠ UNDER VITE 8 THE PRE-BUNDLER IS ROLLDOWN, AND THE EXCLUSION NOW HOLDS FOR THE OTHER HALF OF ITS
+     REASON. MEASURED with vite 8.3.1's optimizer run on satellite.js and nothing excluded (no server
+     started): it no longer dies — its ESM output accepts top-level await — but the alias still does
+     not reach it, and it bundles the real Emscripten entry (`await import("./pthreads-release-….js")`)
+     where the build has the stub. Without this line `npm run dev` would run a different satellite.js
+     from the one production ships. */
   optimizeDeps: { exclude: ['satellite.js'] },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     /* index.html is the app; admin.html is a separate operator page that must keep working. */
-    rollupOptions: {
+    rolldownOptions: {
       input: { main: resolve(ROOT, 'index.html'), admin: resolve(ROOT, 'admin.html') },
       output: {
-        /* MapLibre is by far the largest dependency and it changes on its own release cadence, so it
-           gets a stable chunk of its own: a change anywhere in IntMap then leaves the renderer's
-           hashed filename — and therefore the returning visitor's cache entry — untouched.
-           The name is 'maplibre-gl', not 'maplibre', on purpose. MapLibre's worker serializer
-           overflows the stack when the country FeatureCollection is re-broadcast (a real MapLibre bug
-           recorded in #R166, reproduced on every tree since), and the browser suites tell that known
-           renderer fault apart from an app fault by looking for "maplibre-gl" in the stack — which
-           used to be the CDN filename. Naming the chunk after the package keeps a stack trace
-           attributable to the library it came from. */
-        manualChunks(id) {
-          /* ⚠⚠ THE BUNDLER'S OWN RUNTIME HELPERS ARE PLACED HERE, IN A CHUNK EVERY SESSION LOADS.
-             Rollup adds a module's dependencies to the manual chunk that asks for it first, and
-             `\0vite/preload-helper.js` is a dependency of EVERY module that contains a dynamic
-             import() — main's included. Left unnamed, the helper therefore lived wherever the
-             traversal happened to meet it: in the supabase chunk (harmless, it is eager) until
-             Cesium 1.145 brought @zip.js/zip.js 2.17, whose zip-writer.js does
-             `await import("./zip-reader.js")`. MEASURED on that build: the helper moved into the
-             `cesium` chunk, main imported `_` from it, and the whole second engine became eager —
-             eager raw 4.77 → 9.72 MB, requests 6 → 7, modules 306 → 1746, "cesium" gone from the
-             async list. The same applies to `\0commonjsHelpers.js`, which both engines' CommonJS
-             dependencies need. So the rule is not "the helper goes next to MapLibre" but "a
-             helper every chunk may depend on must never be captured by a LAZY chunk"; the
-             renderer chunk is the one eager chunk that exists for the same lifetime as the page.
-             The ids are virtual (`\0`-prefixed) and carry no node_modules/ path, which is what
-             separates them from the `\0…/node_modules/<pkg>/…?commonjs-*` wrappers that belong
-             to their package's chunk. */
-          if (id.startsWith('\0') && !id.includes('node_modules/')) return 'maplibre-gl';
-          if (id.includes('node_modules/maplibre-gl')) return 'maplibre-gl';
-          /* (#R180) the SECOND engine, in a chunk of its own for the same reason as the
-             first — and, far more importantly, so that the default session never asks
-             for it. It is reached only through the dynamic import in
-             js/engine-select.js, which runs when the Settings choice is 'cesium'. */
-          if (id.includes('node_modules/cesium') || id.includes('node_modules/@mapbox/vector-tile') ||
-              id.includes('node_modules/pbf')) return 'cesium';
-          /* ⚠⚠ (#R734) THE SENTENCE BELOW IS AN INTENTION, AND FOR polygon-clipping IT IS NOT WHAT
-             HAPPENS. Measured on the R731 and R732 production builds: returning undefined here does
-             NOT keep polygon-clipping out of the eager chunk — Rollup places it in `geo-<hash>.js`,
-             which main statically imports, so every session fetches the 52 kB sweep-line at boot.
-             turf-jsts IS excluded as described. Nothing measures either claim, which is why one of
-             them could stop being true without a single test going red; the fix (naming a chunk of
-             its own, or a gate that asserts which chunk holds it) is not this round's.
-             ⚠ (#R209) turf-jsts and polygon-clipping are NOT in the eager geo chunk. `@turf/convex`
-             + `@turf/buffer` reach turf-jsts, which measured 332 kB — 81% of everything the geo
-             chunk contained after the umbrella `import * as turf` was replaced by named imports —
-             and the app calls them from ONE place (the reachable-area hull in js/sims.js, which
-             now awaits window.turf.ensureHeavy()). Naming them here would drag them back in with
-             the rest of turf and undo the split; leaving them unnamed lets Rollup put them in the
-             dynamic chunk their only import() creates. */
-          if (id.includes('node_modules/turf-jsts') || id.includes('node_modules/polygon-clipping') ||
-              id.includes('node_modules/@turf/buffer') || id.includes('node_modules/@turf/convex') ||
-              id.includes('node_modules/splaytree') || id.includes('node_modules/concaveman')) return;
-          if (id.includes('node_modules/@turf') || id.includes('node_modules/topojson-client')) return 'geo';
-          if (id.includes('node_modules/@supabase')) return 'supabase';
+        /* ══ THE FOUR NAMED CHUNKS, AS PRIORITISED GROUPS ════════════════════════════════════════
+           Vite 8 bundles with Rolldown, which has no Rollup `manualChunks` of its own: the function
+           form is a deprecated shim that becomes ONE group whose `name()` is that function, and a
+           Rolldown group captures a module's dependencies too (`includeDependenciesRecursively`,
+           default true). So whichever named module the traversal met first decided where every
+           shared dependency went, and naming a module did NOT keep it out of another group.
+           MEASURED with the Rollup-era function left in place (vite 8.3.1): `cesium` captured
+           `\0vite/preload-helper.js`, the Oxc class-field helpers and topojson-client, main
+           imported all three from it, and the second engine became eager — eager raw 4.78 → 9.45 MB,
+           requests 6 → 8, modules 306 → 1733. That is the same failure the helper rule below was
+           written for under Rollup, reached by a different road.
+           Groups with a `priority` are the Rolldown way to say "this module belongs HERE even if
+           a lower group depends on it": a higher group takes its modules (and their dependencies)
+           first, and a lower group cannot take them back. The order below is therefore the rule —
+           helpers and the renderer, then the two eager libraries, then the lazy engine last. */
+        codeSplitting: {
+          groups: [
+            /* MapLibre is by far the largest dependency and it changes on its own release cadence, so
+               it gets a stable chunk of its own: a change anywhere in IntMap then leaves the
+               renderer's hashed filename — and therefore the returning visitor's cache entry —
+               untouched.
+               The name is 'maplibre-gl', not 'maplibre', on purpose. MapLibre's worker serializer
+               overflows the stack when the country FeatureCollection is re-broadcast (a real MapLibre
+               bug recorded in #R166, reproduced on every tree since), and the browser suites tell
+               that known renderer fault apart from an app fault by looking for "maplibre-gl" in the
+               stack — which used to be the CDN filename. Naming the chunk after the package keeps a
+               stack trace attributable to the library it came from.
+               ⚠⚠ THE BUNDLER'S OWN RUNTIME HELPERS ARE PLACED HERE, IN A CHUNK EVERY SESSION LOADS.
+               `\0vite/preload-helper.js` is a dependency of EVERY module that contains a dynamic
+               import() — main's included — and Cesium's @zip.js/zip.js has one of its own
+               (zip-writer.js `await import("./zip-reader.js")`), so a lazy chunk that captures its
+               dependencies captures the helper too, and main then has to import it from there.
+               MEASURED under Rollup when Cesium 1.145 arrived: eager raw 4.77 → 9.72 MB, requests
+               6 → 7, modules 306 → 1746. The same holds for Rolldown's `\0rolldown/runtime.js` and
+               the `\0@oxc-project+runtime/helpers/*` that lower class fields for `target` below —
+               both engines and main need them. So the rule is not "the helper goes next to
+               MapLibre" but "a helper every chunk may depend on must never be captured by a LAZY
+               chunk"; the renderer chunk is the one eager chunk that exists for the same lifetime as
+               the page (and without this group Rolldown gives its runtime a request of its own).
+               The ids are virtual (`\0`-prefixed) and carry no node_modules/ path, which is what
+               separates them from a package's own modules. */
+            { name: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
+            /* ⚠⚠ (#R734) THE SENTENCE BELOW IS AN INTENTION, AND FOR polygon-clipping IT IS NOT WHAT
+               HAPPENS. Measured on the R731 and R732 production builds (Rollup) and again on the
+               first Rolldown build: leaving polygon-clipping out of `test` does NOT keep it out of
+               the eager chunk — @turf/union depends on it, the geo group captures its dependencies,
+               and every session fetches the sweep-line at boot. turf-jsts IS excluded as described.
+               Nothing measures either claim, which is why one of them could stop being true without
+               a single test going red; the fix (naming a chunk of its own, or a gate that asserts
+               which chunk holds it) is not this round's.
+               ⚠ (#R209) turf-jsts and polygon-clipping are NOT in the eager geo chunk. `@turf/convex`
+               + `@turf/buffer` reach turf-jsts, which measured 332 kB — 81% of everything the geo
+               chunk contained after the umbrella `import * as turf` was replaced by named imports —
+               and the app calls them from ONE place (the reachable-area hull in js/sims.js, which
+               now awaits window.turf.ensureHeavy()). Naming them here would drag them back in with
+               the rest of turf and undo the split; leaving them out lets the bundler put them in the
+               dynamic chunk their only import() creates.
+               The priority is ABOVE cesium's for a measured reason: Cesium's GeoJsonDataSource
+               depends on topojson-client, and at equal footing the lazy engine captured it — main
+               then imported topojson from the cesium chunk. */
+            { name: 'geo', priority: 3, test: (id) => !inPackage(id, 'turf-jsts', 'polygon-clipping', '@turf/buffer',
+                '@turf/convex', 'splaytree', 'concaveman') && inPackage(id, '@turf', 'topojson-client') },
+            { name: 'supabase', priority: 3, test: (id) => inPackage(id, '@supabase') },
+            /* (#R180) the SECOND engine, in a chunk of its own for the same reason as the first — and,
+               far more importantly, so that the default session never asks for it. It is reached only
+               through the dynamic import in js/engine-select.js, which runs when the Settings choice
+               is 'cesium'. LOWEST priority: anything it shares with an eager group stays there. */
+            { name: 'cesium', priority: 1, test: (id) => inPackage(id, 'cesium', '@mapbox/vector-tile', 'pbf') },
+          ],
         },
       },
     },
@@ -403,6 +449,21 @@ export default defineConfig({
        IM_SOURCEMAP=1 turns them back on for a local debugging build, where they belong. */
     sourcemap: process.env.IM_SOURCEMAP === '1',
     target: 'es2020',
+    /* ══ ⚠ CSS IS MINIFIED BY esbuild, AS IT WAS BEFORE VITE 8 — LIGHTNING CSS DROPS THE GLASS ══════
+       Vite 8 switched the CSS minifier to Lightning CSS (1.33 here). MEASURED on the first vite 8
+       build: 40 rules of dist/assets/main-*.css came out with `-webkit-backdrop-filter` ONLY — the
+       unprefixed `backdrop-filter` was gone (production, minified by esbuild: 0 such rules). css/
+       writes the pair as `backdrop-filter: X; -webkit-backdrop-filter: X;`, and Lightning CSS reads
+       the later prefixed declaration as overriding the earlier standard one, for every target set
+       tried (Chrome-only included). The other prefixed pairs css/ uses (user-select, mask,
+       appearance) survive; this one does not. Chromium does NOT accept the prefixed spelling —
+       measured in the suite's own headless Chromium: CSS.supports('-webkit-backdrop-filter', …) is
+       false and the computed backdrop-filter is `none` — so the sidebar, the dropdowns and the
+       sheets lose their blur on Chrome and Edge (and Firefox, which never had the prefix).
+       esbuild minifies without merging vendor pairs and is a declared devDependency, so this keeps
+       the stylesheet the deploy has always shipped. Revisit when Lightning CSS keeps the standard
+       declaration of that pair — dev-notes/2026-09-27-vite-8-migration.md has the reproduction. */
+    cssMinify: 'esbuild',
     cssCodeSplit: true,
     reportCompressedSize: false,
   },

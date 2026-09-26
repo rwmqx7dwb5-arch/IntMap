@@ -262,7 +262,7 @@ jobs:
   # ten machines finding out. scripts/perf-budget.mjs then judges the two halves separately —
   # eager bytes ratcheted in both directions, async chunks and dist/ totals under a ceiling —
   # because "the biggest chunk is big" is a fact about Cesium, not about start-up.
-  # (#R322) …and the other half of the deploy. The budget above weighs what Rollup produced,
+  # (#R322) …and the other half of the deploy. The budget above weighs what the bundler (Rolldown, since vite 8) produced,
   # which is 12.5 MB of a 105.7 MB tree; `data/` is copied whole by vite.config.js and never
   # passes through the bundler, so nothing could tell that a file in it had stopped being
   # fetched. This matches every shipped file against the strings the source actually contains

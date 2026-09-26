@@ -12,9 +12,11 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 > first and serves the build output, because what has to keep working is what GitHub Pages
 > publishes. A build-only failure — a bad chunk split, a static asset the build forgot to
 > copy, a module that only resolves through the dev server — would otherwise be discovered in
-> production. MEASURED 2026-08-20 on this machine, `npm run build` is **21–25 s** (Vite reports
-> 20.2 s and 21.7 s for the bundle; 24.9 s wall including npm's own start-up). The "~10 s" this
-> line used to claim predates the Cesium chunk.
+> production. MEASURED 2026-09-27 on this machine with Vite 8 (Rolldown), `npm run build` is
+> **23–34 s** wall (three timed runs); Vite reports **9.9–19.6 s** for the bundle (six builds), and most of the rest is
+> the plugins that run after it — the build report's brotli-11 pass over the eager chunks and the
+> copy of `data/` and Cesium's runtime tree into `dist/`. (Vite 6 measured 20–22 s for the bundle
+> alone on 2026-08-20.)
 
 ## What runs
 
@@ -111,7 +113,9 @@ rather than depend on which is currently the default.
 - That is all. `npm ci` installs both halves of `package.json`: `dependencies` are the
   libraries the browser ships (MapLibre, Turf, TopoJSON, Supabase, KaTeX, html2canvas — all
   version-pinned, all bundled by Vite since #R175), and `devDependencies` are the build and
-  CI tooling (`vite`, `@playwright/test`, `acorn`, `js-yaml`). The static server that serves
+  CI tooling (`vite`, `@playwright/test`, `acorn`, `js-yaml`, and `esbuild` — Vite 8 no longer
+  brings it, and it is still what minifies the CSS and what two node checks use to strip
+  TypeScript / wrap an IIFE; Architecture.md §1.1 says why). The static server that serves
   the build output (`scripts/serve.mjs`) is still dependency-free.
 
 ## First-time setup
@@ -299,7 +303,7 @@ node scripts/perf-budget.mjs --update   # accept the current numbers as the new 
 chunk in this repo is Cesium at 4.7 MB, and a MapLibre session never asks for it — a gate on "the
 biggest chunk" would be loudest about the one number a default session does not pay, and silent
 about a hundred kilobytes moving into the entry. `scripts/build-report.mjs` therefore DERIVES the
-split from the graph Rollup finished with (the entry chunk of `index.html` plus the transitive
+split from the graph the bundler (Rolldown, since Vite 8) finished with (the entry chunk of `index.html` plus the transitive
 closure of its static imports = what Vite emits `modulepreload` for) rather than reading it off
 filenames, and the budget applies two different rules:
 
@@ -326,7 +330,7 @@ external request and measure a map that never drew.
 
 ### Gating: the other half of the deploy — `npm run check:assets` (#R322)
 
-The budget above weighs what Rollup produced. That is the smaller half: JavaScript is 12.5 MB of a
+The budget above weighs what the bundler produced. That is the smaller half: JavaScript is 12.5 MB of a
 105.7 MB deploy and `data/` alone is 55.8 MB, copied whole by `vite.config.js` and never seen by the
 bundler. So `check:perf` can say a chunk grew and cannot say that a file in `data/` had stopped
 being fetched a year ago.
