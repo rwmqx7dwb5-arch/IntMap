@@ -632,4 +632,23 @@ window.IntMapPageI18N.define('en', {
     "Hong Kong Observatory — ambient gamma radiation (data.gov.hk)": "Read live for the measured-radiation layer: the daily mean ambient gamma dose rate at the Hong Kong Observatory's eleven monitoring stations, taken from the observatory's bulletin for the previous day (µSv/h, normalised to nSv/h).",
     "SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)": "⚠ Kept in the source list, but no value from it is on the map at present. Ukraine's open radiation data consists of station coordinates and a bulk archive of measurements; there is no public endpoint that returns current values (SaveEcoBot's own API requires a key). A list of coordinates with no readings is not a dose map, so Ukraine is left blank rather than filled in, and the source is kept here so that the gap is stated rather than hidden.",
   }
+,
+
+  /* ── licence values that are IntMap's words, not a publisher's title ──────────────────────────
+     js/reference-data.js `useText` appends a row's `lic` to its description when the description
+     has not already named it, and asks 「already named?」 in the READER's language as well as in
+     English. Keyed by the registry's `lic` VALUE, the way `sourceUse` is keyed by `n`.
+     ⚠ ONLY VALUES NO PUBLISHER TITLED BELONG HERE. 「CC BY 4.0」, 「ODbL 1.0」, 「GPL-3.0」,
+     「政府標準利用規約 2.0」 are names their publishers chose and are shown as spelled, in every
+     language — an absent entry is that answer. A status (public domain, not subject to copyright)
+     or a gloss IntMap wrote after a title is IntMap's own sentence, so it is authored in en + jp
+     (CONSTITUTION.md §7) and the other languages fall back to this English, key by key.
+     Here the English name IS the value: this table is the universe the audit measures the other
+     languages against, not a translation of anything. */
+  licenceName: {
+    "Public domain": "Public domain",
+    "Public domain (work of the U.S. federal government)": "Public domain (work of the U.S. federal government)",
+    "US Government work — not subject to copyright (17 U.S.C. §105)": "US Government work — not subject to copyright (17 U.S.C. §105)",
+    "data.gov.hk Terms of Use (redistribution permitted with attribution)": "data.gov.hk Terms of Use (redistribution permitted with attribution)"
+  }
 });

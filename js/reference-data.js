@@ -557,7 +557,10 @@ window.IntMapRefData=(function(){
        citation are their own fields and `useText` below appends them — one implementation, reaching
        both readers (the in-app dialog and the Sources page) without either of them changing.
        ⚠ NEITHER IS TRANSLATED, and that is not an omission: a licence name and a bibliographic
-       reference are spelled the way the publisher spells them, in every language.
+       reference are spelled the way the publisher spells them, in every language. (What IS shown
+       in the reader's language is a licence value that no publisher titled — 「Public domain」 is a
+       status, not a name somebody owns; see `licenceName` in js/locales/pages.<code>.js and
+       `useText` below.)
        ⚠ scripts/build-cshapes.mjs `--check` holds both equal to its own LIC() value, so this row
        cannot drift from the licence the build declares. */
     {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/',
@@ -612,22 +615,45 @@ window.IntMapRefData=(function(){
      is a prefix of 「CC BY-NC-SA」, so a prose that says CC BY-NC-SA 4.0 would otherwise SWALLOW a value
      of CC BY 4.0 and the reader would be shown the stricter licence in place of the one this row
      actually carries. Hiding terms is a worse failure than repeating them, so the match must end
-     where the name ends. */
+     where the name ends.
+     ⚠⚠ AND 「ALREADY SAID」 IS ASKED IN THE LANGUAGE THE READER IS READING. MEASURED on production
+     (sources.html?lang=jp, 2026-09-26): four rows said 「パブリックドメイン」 in their Japanese
+     description and were then shown 「— Public domain」 — one fact, twice, in two languages — while
+     the English page repeated nothing, because this comparison knew only the English spelling of the
+     value. The same four rows did it in all eight non-English languages. The fix is not a list of
+     translations of 「public domain」 here: a licence is ONE value with a name per language, and the
+     names a value has are `licenceName[value]` in the page documents (js/locales/pages.<code>.js),
+     which is where every other reader-language word on this surface already lives. So the question
+     is 「does the sentence already name THIS licence, by any name the reader's language or English
+     gives it (or the value itself)?」, and the tail, when it is owed, is spoken in the reader's
+     language. A value with no `licenceName` entry is a publisher's own title (CC BY 4.0, ODbL 1.0,
+     政府標準利用規約 2.0) and is shown as spelled — the absent entry IS that answer, not a gap.
+     A language whose document does not name the value falls back to English, key by key, the same
+     rule `sourceUse` follows (CONSTITUTION.md §7: IntMap's own words are en + jp). */
+  const licenceNames=(lic,lang)=>{ const pick=(l)=>{ const doc=_pgDoc(l); return doc&&doc.licenceName&&doc.licenceName[lic]; };
+    const shown=pick(lang)||pick('en')||lic;
+    /* the shown name first; then every other name the same value has, so either one counts as said */
+    return { shown, all:[...new Set([shown,pick('en')||lic,lic])] }; };
   const useText=(name,lang)=>{ const d=_pgDoc(lang), e=_pgDoc('en');
     const base=(d&&d.sourceUse&&d.sourceUse[name])||(e&&e.sourceUse&&e.sourceUse[name])||'';
     const row=DATA_SOURCES.find(s=>s.n===name);
     if(!row||!row.lic) return base;
     const hay=(name+' '+base).toLowerCase();
-    /* the value without its trailing version — 「odbl 1.0」 → 「odbl」, 「cc by-nc-sa 4.0」 → 「cc by-nc-sa」 */
-    const stem=String(row.lic).toLowerCase().replace(/[\s-]*v?\d+(\.\d+)*\s*$/,'').trim();
-    let said=false;
-    if(stem){ for(let i=hay.indexOf(stem); i>=0; i=hay.indexOf(stem,i+1)){
-      const after=hay.charAt(i+stem.length);
-      /* a letter or a hyphen after the name means the prose is naming a DIFFERENT licence that
-         merely starts the same way (CC BY-NC-SA where the value is CC BY) */
-      if(!/[a-z-]/.test(after)){ said=true; break; } } }
-    const say=!said;
-    const tail=(say?row.lic:'')+(row.cite?(say?' · ':'')+row.cite:'');
+    const names=licenceNames(row.lic,lang);
+    const named=(value)=>{
+      /* the value without its trailing version — 「odbl 1.0」 → 「odbl」, 「cc by-nc-sa 4.0」 → 「cc by-nc-sa」 */
+      const stem=String(value).toLowerCase().replace(/[\s-]*v?\d+(\.\d+)*\s*$/,'').trim();
+      if(!stem) return false;
+      for(let i=hay.indexOf(stem); i>=0; i=hay.indexOf(stem,i+1)){
+        const rest=hay.slice(i+stem.length);
+        /* a letter or a hyphen after the name means the prose is naming a DIFFERENT licence that
+           merely starts the same way (CC BY-NC-SA where the value is CC BY) — unless the hyphen
+           opens a VERSION: 「CC-BY-4.0」 is the value 「CC-BY-4.0」 written in its own spelling, and
+           treating that hyphen as a longer name had the ECMWF row state it twice in every language */
+        if(!/^[a-z]/.test(rest)&&!/^-(?!v?\d)/.test(rest)) return true; }
+      return false; };
+    const say=!names.all.some(named);
+    const tail=(say?names.shown:'')+(row.cite?(say?' · ':'')+row.cite:'');
     if(!tail) return base;
     return (base?base+' — ':'')+tail; };
   /* fetch the English document and the reader's, then call back; already-loaded languages are free */
