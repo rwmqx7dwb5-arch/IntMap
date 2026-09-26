@@ -108,6 +108,66 @@ window.IntMapModules.searchGeocode=function(HOST){
   }
   function _agrees(R,asked,row){ try{ return !R || R.agreement(R.queryCore(asked),row)>=R.NAME_AGREE_MIN; }catch(_){ return true; } }
 
+  /* ══ ⚠⚠⚠ (search-result-dedupe) ONE PLACE IS ONE ROW ═══════════════════════════════════════════
+     Reported on production: 「Kyoto」 listed 「Kyoto, Kyoto Prefecture, Japan」 THREE times.
+     MEASURED against the three geocoders' live answers (2026-09-27, captured in
+     tests/search-result-dedupe-checks.test.mjs): they were not three copies of the city. They were the
+     city (Nominatim relation 357794 — Photon's copy of the same relation WAS folded) and Kyoto Station
+     twice: Photon answers three railway nodes named 「Kyoto」 within 90 m and labels them identically,
+     and the old key `label|lng.toFixed(2)|lat.toFixed(2)` put lat 34.9846 and 34.9853 in DIFFERENT
+     0.01° cells. A grid key splits two points that straddle a cell edge however close they are, and
+     it merges nothing whose label differs by a word — so Open-Meteo's 「Kyoto, Kyoto, Japan」, the same
+     city (GeoNames PPLA, 1.6 km from OSM's point), also stood beside it.
+     ⇒ Two rows are one row when a FACT about the feature says so, not when two strings collide:
+       1. the same OSM object (Nominatim and Photon both name it) — identity, no measure needed;
+       2. otherwise the same KIND, the same NAME and the same PLACE, where
+            kind  = js/place-framing.js `placeClass` — the one reading of Nominatim / Photon / GeoNames /
+                    gazetteer vocabularies there is (PPLA and boundary/city are both `city`);
+            name  = js/atlas-geo-resolve.js `nkey` — the fold (width, case, diacritics) the name rules
+                    already use, borrowed through the same `placeRules` surface as `_agrees` above;
+            place = one row's point lies inside the other's own extent (`placeExtent`), or the two
+                    points land within FRAME_PAD_PX of each other at the zoom this card flies that
+                    kind of place to (`framingFor`) — i.e. choosing either row shows the same view.
+     A station and the city it stands in stay two rows (different kind); Kyoto in Tanzania stays a row.
+     When two rows merge, the one that knows MORE stays — a reviewed home extent over a provider's
+     extent over none, then a known kind — and an already-shown row is rewritten in place, so the card
+     does not depend on which geocoder happened to answer first.
+     ⚠ FRAME_PAD_PX is the margin gotoPlace already leaves around what it frames (one constant, used by
+     both). Observed: the Kyoto Station nodes sit 28–34 px apart at the station zoom (14.6), GeoNames'
+     and OSM's Kyoto 39 px apart at the city zoom (10.6); the Kyōto subway node, 230 m off, is 89 px
+     and stays its own row. EXPIRES if gotoPlace's padding or js/place-framing.js's zoom table changes
+     (both are read here, not copied), or if the renderer stops using the 512-px world of MapLibre
+     zoom levels. */
+  const FRAME_PAD_PX=64;
+  function _osmRef(raw){ try{ const t=String(raw&&raw.osm_type||'').charAt(0).toUpperCase(), id=raw&&raw.osm_id; return (t&&id!=null&&id!=='')?t+id:null; }catch(_){ return null; } }
+  function _rowFacts(label,lng,lat,raw,kind){
+    const PF=window.IntMapPlaceFraming;
+    let cls=null, zoom=null, ext=null;
+    try{ if(PF){ cls=PF.placeClass(raw,kind)||null; zoom=PF.framingFor(raw,kind).zoom; ext=PF.placeExtent(raw,null); } }catch(_){}
+    const own=raw&&typeof raw.name==='string'&&raw.name.trim();
+    const name=own||String(label||'').split(',')[0].split(' · ')[0].trim();
+    const box=Array.isArray(ext)?ext:null;
+    const extRank=box?(raw&&raw.homeExtent?3:2):((ext&&ext.huge)?1:0);
+    return { label, lng, lat, raw, kind, name, cls, zoom, box, osm:_osmRef(raw), rich:extRank*2+(cls?1:0) };
+  }
+  /* Web-Mercator pixel offset between two points at MapLibre zoom `z` (a 512-px world); ±85.0511° is
+     where that projection ends. */
+  function _pxApart(a,b,z){
+    const W=512*Math.pow(2,z), X=(l)=>(l+180)/360*W;
+    const Y=(f)=>{ const s=Math.sin(Math.max(-85.0511,Math.min(85.0511,f))*Math.PI/180); return (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*W; };
+    let dx=Math.abs(X(a.lng)-X(b.lng)); dx=Math.min(dx,W-dx);
+    return Math.hypot(dx,Y(a.lat)-Y(b.lat));
+  }
+  function _inside(box,p){ return !!box&&p.lng>=box[0][0]&&p.lng<=box[1][0]&&p.lat>=box[0][1]&&p.lat<=box[1][1]; }
+  function _sameFeature(a,b,nameKey){
+    if(a.osm&&b.osm&&a.osm===b.osm) return true;
+    if(a.cls!==b.cls) return false;
+    const na=nameKey(a.name); if(!na||na!==nameKey(b.name)) return false;
+    if(_inside(a.box,b)||_inside(b.box,a)) return true;
+    const z=Math.max(+a.zoom||0,+b.zoom||0);
+    return z>0&&_pxApart(a,b,z)<=FRAME_PAD_PX;
+  }
+
   async function doGeocode(){
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q)return;
     res.style.display='block';
@@ -121,11 +181,21 @@ window.IntMapModules.searchGeocode=function(HOST){
     const pq=preprocessNLQuery(q);
     const rulesP=_placeRules();   /* (#R802) started here, awaited beside the three geocoders below */
     const local=localFuzzyPlaces(q);
-    const seen=new Set();
+    /* (search-result-dedupe) the rows on the card, each with what is known about its feature — see
+       `_sameFeature` above. The name fold is read when two rows are COMPARED, not when they arrive:
+       the local rows below are added before the rules module may have loaded. */
+    const rows=[];
+    let _rules=window.IntMapPlaceRules||null; rulesP.then((r)=>{ if(r) _rules=r; },()=>{});
+    const _nameKey=(s)=>{ try{ if(_rules&&_rules.nkey) return _rules.nkey(s); }catch(_){} return String(s==null?'':s).toLowerCase().trim(); };
     /* (#R183) `kind` rides along so a local (gazetteer / country / capital) match — which has no
        provider metadata at all — still gets framed by what it IS rather than by the default. */
-    const addItem=(label,lng,lat,raw,kind)=>{ if(isNaN(lng)||isNaN(lat))return; const key=label+'|'+lng.toFixed(2)+'|'+lat.toFixed(2); if(seen.has(key))return; seen.add(key);
-      const d=document.createElement('div'); d.className='ms-item'; d.textContent=label; d.onclick=()=>{ gotoPlace(lng,lat,label,raw||null,kind||null); res.style.display='none'; inp.value=String(label).split(',')[0].split(' · ')[0]; }; res.appendChild(d); };
+    const addItem=(label,lng,lat,raw,kind)=>{ if(isNaN(lng)||isNaN(lat))return;
+      const f=_rowFacts(label,lng,lat,raw,kind);
+      const same=rows.find((r)=>_sameFeature(r.f,f,_nameKey));
+      if(same){ if(f.rich>same.f.rich){ same.f=f; same.el.textContent=label; } return; }   /* the row that knows more stays, rewritten in place */
+      const d=document.createElement('div'); d.className='ms-item'; d.textContent=label; const row={f,el:d};
+      d.onclick=()=>{ const g=row.f; gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); res.style.display='none'; inp.value=String(g.label).split(',')[0].split(' · ')[0]; };
+      rows.push(row); res.appendChild(d); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
        (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
@@ -169,7 +239,7 @@ window.IntMapModules.searchGeocode=function(HOST){
       .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.features||[]).forEach(f=>{ try{ const p=f.properties||{}, g=f.geometry; if(!g||!g.coordinates) return;
         if(!_agrees(R,q,{name:p.name}))return;   /* (#R802) */
         const label=[p.name,p.city,p.state,p.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
-        if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,osm_key:p.osm_key,osm_value:p.osm_value,extent:p.extent,address:{country:p.country}}); }catch(_){} }); }).catch(()=>{});
+        if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,osm_key:p.osm_key,osm_value:p.osm_value,extent:p.extent,address:{country:p.country},osm_type:p.osm_type,osm_id:p.osm_id}); }catch(_){} }); }).catch(()=>{});
     /* (#R802) …and IntMap's own reviewed extents for the ninety names that have NO single OSM
        boundary (「the Alps」, 「Scandinavia」, 「Middle East」, 「アルプス」). It rides in with the rules
        above rather than being a second table here, and it carries a REAL box, so js/place-framing.js
@@ -178,7 +248,7 @@ window.IntMapModules.searchGeocode=function(HOST){
       if(_reg) addItem(_reg.name,_reg.lng,_reg.lat,{boundingbox:[_reg.box[0][1],_reg.box[1][1],_reg.box[0][0],_reg.box[1][0]],lat:_reg.lat,lon:_reg.lng,homeExtent:true},'region'); }catch(_){}
     await Promise.allSettled([omP,nomP,phP]); clearTimeout(to);
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
-    if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind)); }   /* weak local fallback */
+    if(!res.querySelector('.ms-item')){ res.innerHTML=''; rows.length=0; local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind)); }   /* weak local fallback */
     if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${HOST.t('noMatch')}</div>`; }
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;
@@ -256,9 +326,9 @@ window.IntMapModules.searchGeocode=function(HOST){
     let flown=false;
     if(fr.bounds&&!fr.bounds.huge){
       try{
-        const cam=GEO.camera.forBounds(fr.bounds,{padding:64,maxZoom:16.5});
+        const cam=GEO.camera.forBounds(fr.bounds,{padding:FRAME_PAD_PX,maxZoom:16.5});
         if(cam&&cam.center&&isFinite(cam.zoom)){ GEO.camera.flyTo({center:cam.center,zoom:cam.zoom,speed:1.4,essential:true}); flown=true; }
-        else { GEO.camera.fitBounds(fr.bounds,{padding:64,maxZoom:16.5,speed:1.4,essential:true}); flown=true; }
+        else { GEO.camera.fitBounds(fr.bounds,{padding:FRAME_PAD_PX,maxZoom:16.5,speed:1.4,essential:true}); flown=true; }
       }catch(_){}
     }
     if(!flown) GEO.camera.flyTo({center:[lng,lat],zoom:fr.zoom,speed:1.4});

@@ -462,7 +462,7 @@ const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s
    and the pair is a subset of the link, so it is ONE test now (94 -> 70 s, the 70 measured at CPU ×4
    as the CI proxy: the CI run of the pair alone was 23.7 s against 14 s locally). The remaining 28 s
    is what the whole-link claim costs once. */
-const TOTAL_BUDGET_S = 4910;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) + 28 (restored-layer-before-style: tests/restored-layer-before-style.spec.js) */
+const TOTAL_BUDGET_S = 4919;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) + 28 (restored-layer-before-style: tests/restored-layer-before-style.spec.js) + 9 (legend-stack-and-held-heal: tests/legend-stack-and-held-heal.spec.js — one boot, measured 7.3–11.9 s, median 8.4 s) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

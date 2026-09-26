@@ -79,10 +79,12 @@ export const BASE = `http://127.0.0.1:${PORT}`;
 /**
  * The storageState a context must carry to boot the way the suite expects.
  * @param {Array<{name: string, value: string}>} [extra] additional localStorage entries
+ * @param {string} [session] the session snapshot to seed — `sessionWith([...])` when a spec needs
+ *   thematic layers on at boot; it still carries the generation stamp, so this is the same seed
  */
-export function seededStorageState(extra) {
+export function seededStorageState(extra, session = SESSION_VALUE) {
   return {
     cookies: [],
-    origins: [{ origin: BASE, localStorage: [{ name: SESSION_KEY, value: SESSION_VALUE }].concat(extra || []) }],
+    origins: [{ origin: BASE, localStorage: [{ name: SESSION_KEY, value: session }].concat(extra || []) }],
   };
 }

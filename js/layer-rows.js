@@ -39,7 +39,9 @@
  *        before it reaches the box (`stopPropagation`, not the immediate form — a listener on the
  *        document itself, the session save, still sees the reader's own click as it happened);
  *      · each held box then gets ONE fresh `change`, in arrival order, carrying the state it has THEN:
- *        a box ticked and unticked while the style was loading is delivered once, as unticked.
+ *        a box ticked and unticked while the style was loading is delivered once, as unticked —
+ *        and carrying WHO set that state: a box whose latest held change was the reconciler's own
+ *        (`cb.__syn`, js/data-layers.js) is delivered as the reconciler's own, not as the reader's.
  *    They are delivered when GE().whenCanDraw() resolves — which it never does early (js/geo-engine.js)
  *    — and at no other moment.
  *    ⚠ NOT AT MapLibre's `load`. The first version waited for it, to keep the held layers' sources
@@ -109,12 +111,33 @@ export function whenBoxes(ids, fn, doc) {
     `engine()` returns the geo-engine facade (window.IntMapGeoEngine in the app). Returns the listener. */
 export function holdUntilDrawable(doc, engine) {
   const d = doc || document;
-  const held = new Map();   /* id → box, in the order they first arrived */
+  /* id → { cb, own }, in the order they first arrived. `own` says whether the LATEST change held for
+     the box was the map's own re-dispatch — see `deliver`. */
+  const held = new Map();
   let waiting = false;
+  /* ══ ⚠⚠ THE DELIVERED CHANGE STANDS FOR THE CHANGES IT REPLACES — INCLUDING WHO MADE THEM ════════
+     js/data-layers.js tells the reconciler's own dispatches from everyone else's by a mark on the box,
+     `cb.__syn`, raised for exactly the duration of the dispatch; every other change on a Layers box is
+     read as the reader's («never fight the user», #R85). A held change is re-sent LATER, when that mark
+     is long gone. MEASURED (production, then tests/legend-stack-and-held-heal.spec.js 2/2 before this):
+     the #R109 heal pulsed a held radar box off→on, the style became drawable between the two halves,
+     this gate delivered the «off» unmarked, the reconciler recorded the reader unticking, and the
+     pulse's second half stood down — box unticked, no layer, nobody having touched it.
+     So the provenance is kept, and it is the provenance of the change that set the state being
+     delivered — the LATEST one held. The delivered change carries the box's state at delivery, and that
+     state is what the last change made it: a reader's tick overwritten by the map's own «off» is
+     delivered as the map's «off» (the map's own «on» follows it), and a map's pulse overwritten by the
+     reader's tick is delivered as the reader's. MEASURED: «the reader's if ANY held change was», the
+     first form of this, still delivered that radar «off» as the reader's (the reader's tick had been
+     held first) and the box still ended unticked, 2 runs of 2. */
   const deliver = () => {
     waiting = false;
     const boxes = Array.from(held.values()); held.clear();
-    for (const cb of boxes) { try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {} }
+    for (const { cb, own } of boxes) {
+      if (own) { try { cb.__syn = (cb.__syn || 0) + 1; } catch (_) {} }
+      try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      finally { if (own) { try { cb.__syn = Math.max(0, (cb.__syn || 1) - 1); } catch (_) {} } }
+    }
   };
   const listener = (e) => {
     const cb = e.target;
@@ -123,7 +146,10 @@ export function holdUntilDrawable(doc, engine) {
     try { E = engine(); } catch (_) { E = null; }
     try { if (!(E && E.hasRenderer()) || E.canDraw()) return; } catch (_) { return; }
     e.stopPropagation();
-    if (!held.has(cb.id)) held.set(cb.id, cb);
+    const own = !!cb.__syn;
+    const was = held.get(cb.id);
+    if (!was) held.set(cb.id, { cb, own });
+    else was.own = own;
     if (waiting) return;
     waiting = true;
     E.whenCanDraw().then(deliver, deliver);
