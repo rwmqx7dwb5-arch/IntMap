@@ -215,7 +215,7 @@ export function makeAtlasAnswerRender() {
   .atl-cite{display:inline-block;min-width:1.15em;height:1.15em;line-height:1.15em;text-align:center;margin:0 .12em;padding:0 .22em;
     border-radius:.6em;background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);font-size:.68em;font-weight:600;
     text-decoration:none;vertical-align:.35em;transition:background .15s,color .15s;}
-  .atl-cite:hover{background:var(--primary-color);color:#fff;}
+  .atl-cite:hover{background:var(--primary-fill);color:#fff;}
   .atl-cite-data{cursor:default;}
   .atl-cite-data:hover{background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);}
   /* (#R494) the citation CLUSTER: several marks for one statement share one pill instead of scattering

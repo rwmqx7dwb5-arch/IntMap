@@ -789,7 +789,7 @@ window.IntMapModules.workspace=function(HOST){
       if(on){ b.textContent=T('← Exit workspace','← 通常モードに戻る','← Workspace verlassen','← Выйти из режима','← Salir del espacio');
         b.style.background='var(--input-bg)'; b.style.color='var(--text-main)'; b.style.borderColor='var(--glass-border,rgba(128,128,128,0.35))'; }
       else{ b.textContent=T('Switch to workspace →','ワークスペースに切り替え →','Zum Workspace-Modus →','Перейти в оконный режим →','Cambiar al espacio de ventanas →');
-        b.style.background='var(--primary-color)'; b.style.color='#fff'; b.style.borderColor='var(--primary-color)'; } }
+        b.style.background='var(--primary-fill)'; b.style.color='#fff'; b.style.borderColor='var(--primary-color)'; } }
     function bind(){ const b=document.getElementById('setting-wsmode-btn'); if(!b) return;
       b.addEventListener('click',()=>{ if(on) disable(); else enable(); syncModeBtn();
         /* (#R102) close the Settings popup when switching between normal ⇔ workspace mode ("設定のポップアップが消える

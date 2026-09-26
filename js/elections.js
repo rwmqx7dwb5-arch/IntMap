@@ -265,7 +265,7 @@ window.IntMapModules.elections = function (HOST) {
       '.elec-step{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(128,128,128,0.24);'
         + 'background:var(--input-bg);color:var(--text-main);font-size:22px;font-weight:600;line-height:1;'
         + 'cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;}',
-      '.elec-step:hover:not(:disabled){background:var(--primary-color);color:#fff;border-color:transparent;}',
+      '.elec-step:hover:not(:disabled){background:var(--primary-fill);color:#fff;border-color:transparent;}',
       '@media(max-width:768px){.elec-step{width:44px;height:44px;font-size:24px;}}',
       '.elec-step:disabled{opacity:.35;cursor:default;}',
       '.elec-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:baseline;margin-bottom:7px;}',

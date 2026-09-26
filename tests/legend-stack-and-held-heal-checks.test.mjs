@@ -34,7 +34,9 @@ import { holdUntilDrawable } from '../js/layer-rows.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DL = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
-const BODY = liftFunction(DL, 'tileLegends');
+/* ⚠ with legendShown: the ONE answer to «is this legend on screen», which tileLegends and
+   _minimizeOpenLegends both read (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③) */
+const BODY = liftFunction(DL, 'legendShown') + '\n' + liftFunction(DL, 'tileLegends');
 
 /* the identifiers tileLegends closes over in js/data-layers.js §legends */
 const LGD = ['lgdHDI', 'lgdDem', 'lgdPop', 'lgdEEZ', 'lgdThermal', 'lgdRadar', 'lgdSST', 'lgdPopGrid',

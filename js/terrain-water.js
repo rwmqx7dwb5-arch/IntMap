@@ -1818,7 +1818,7 @@ window.IntMapModules.terrainWater=function(HOST){
         '.tw-segwrap{display:flex;gap:2px;background:var(--input-bg);border-radius:9px;padding:2px;}',
         '.tw-seg{flex:1;min-width:0;border:none;background:transparent;color:var(--text-main);font-size:'+TW_FS+';'
           +'font-weight:500;padding:'+(_mob()?'7px':'5px')+' 6px;border-radius:7px;cursor:pointer;line-height:1.25;white-space:nowrap;}',
-        '.tw-seg.on{background:var(--primary-color);color:#fff;font-weight:600;}',
+        '.tw-seg.on{background:var(--primary-fill);color:#fff;font-weight:600;}',
         /* ══ ⚠⚠ (#R277) 「ツールは上部に一行でスティックしろ。」 ════════════════════════════════════
            #R275 got the sticking right (the picker is a SIBLING of the scroller, so it never scrolls
            away) and left it THREE ROWS TALL. MEASURED on the built page, desktop: `.tw-tools` came
@@ -1845,7 +1845,7 @@ window.IntMapModules.terrainWater=function(HOST){
            js/seismic.js is 32 px at `border-radius:9px` — already a rounded square. `.tw-play` was
            the only disc, so this change makes the two players AGREE rather than diverge. A note
            that says «matched to X» is only evidence about X if somebody looked at X. */
-        '.tw-play{width:'+TW_CTL+';height:'+TW_CTL+';flex:0 0 auto;border-radius:9px;border:none;background:var(--primary-color);'
+        '.tw-play{width:'+TW_CTL+';height:'+TW_CTL+';flex:0 0 auto;border-radius:9px;border:none;background:var(--primary-fill);'
           +'color:#fff;font-size:'+(_mob()?'15px':'13px')+';line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
         '.tw-play:disabled{opacity:.42;cursor:default;}',
         '.tw-clock{font-variant-numeric:tabular-nums;font-size:'+TW_FS+';color:var(--text-main);white-space:nowrap;}',

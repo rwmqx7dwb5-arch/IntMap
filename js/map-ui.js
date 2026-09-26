@@ -947,7 +947,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lst-tile.lst-row .lst-star,.lsr-mount .lst-tile.lst-row .lst-star{position:static;flex:0 0 auto;background:transparent;color:var(--text-muted);width:20px;height:20px;font-size:12px;}'
         +'#layer-sidebar-r .lst-tile.lst-row .lst-star.on,.lsr-mount .lst-tile.lst-row .lst-star.on{color:#ffd60a;}'
         +'#layer-sidebar-r .lst-sw,.lsr-mount .lst-sw{position:relative;flex:0 0 auto;width:42px;height:26px;border-radius:13px;background:rgba(128,128,128,0.32);transition:background .16s;pointer-events:none;}'
-        +'#layer-sidebar-r .lst-tile.on .lst-sw,.lsr-mount .lst-tile.on .lst-sw{background:var(--primary-color);}'
+        +'#layer-sidebar-r .lst-tile.on .lst-sw,.lsr-mount .lst-tile.on .lst-sw{background:var(--primary-fill);}'
         +'#layer-sidebar-r .lst-sw i,.lsr-mount .lst-sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.28);transition:transform .16s cubic-bezier(0.2,0.7,0.2,1);}'
         +'#layer-sidebar-r .lst-tile.on .lst-sw i,.lsr-mount .lst-tile.on .lst-sw i{transform:translateX(16px);}'
         /* ══ ⚠⚠ (#R483) 「基本表示の、カスタムにしたときに出てくる選択肢は、もっと縦方向をコンパクトに。」 ═══
@@ -1040,7 +1040,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lst-toolt,.lsr-mount .lst-toolt{flex:1;min-width:0;position:relative;}'
         /* (#R291) 「現在経路が存在する場合は、控えめなアクティブ表示」 — a route outlives its panel, so a
            row needs a way to say «there is one» that is not the same signal as «the panel is open». */
-        +'#layer-sidebar-r .lst-tooldot,.lsr-mount .lst-tooldot{position:absolute;top:2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--primary-color);}'
+        +'#layer-sidebar-r .lst-tooldot,.lsr-mount .lst-tooldot{position:absolute;top:2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--primary-fill);}'
         +'#layer-sidebar-r .lst-toolgo,.lsr-mount .lst-toolgo{flex:0 0 auto;color:var(--text-muted);font-size:15px;}'
         /* Active-layers bar pinned at the top of the tile browser — COMPACT here: the chip strip is hidden
            (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
@@ -3870,7 +3870,7 @@ window.IntMapModules.share=function(HOST){
         +'#share-panel .sh-x:hover{background:var(--input-bg);color:var(--text-main);}'
         +'#share-panel .sh-row{display:flex;gap:8px;margin-top:12px;}'
         +'#share-panel .sh-url{flex:1;min-width:0;height:40px;padding:0 12px;border-radius:11px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12px;box-sizing:border-box;}'
-        +'#share-panel .sh-btn{flex:0 0 auto;height:40px;padding:0 16px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s ease,filter .15s ease;}'
+        +'#share-panel .sh-btn{flex:0 0 auto;height:40px;padding:0 16px;border:none;border-radius:11px;background:var(--primary-fill);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s ease,filter .15s ease;}'
         +'#share-panel .sh-btn.sec{background:var(--input-bg);color:var(--text-main);}'
         +'#share-panel .sh-btn:hover{filter:brightness(1.06);}'
         +'#share-panel .sh-btn:active{transform:scale(0.96);}'

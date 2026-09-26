@@ -946,6 +946,12 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   ⑴ 衛星写真でなければ `null`（標準マップに大気は出さない）、⑵ **昼夜表示がオフなら 90°**
   （`_aimSun()` がカメラ中心の真上へ向けた光の読み戻し）、⑶ それ以外は実際の太陽高度を返す。
   ⚠ **「モードをオフ」は「その量が不明」ではない**——`null` を返すとアプリ自身の大気がそもそも点かない。
+- **`image` source は両エンジンで Mercator の 1 枚**：MapLibre は 4 隅を Web Mercator に写して Mercator Y に
+  線形に貼る。Cesium（`js/cesium-layers.js` `makeImageSourceProvider`）は画像を読んでから、その 4 隅の
+  Mercator 矩形を 1 枚のタイルとする `WebMercatorTilingScheme` で同じ置き方をする。⚠ 以前の Cesium は
+  `SingleTileImageryProvider` を tileWidth 無しで作って例外を握りつぶしており、**Köppen を含む全ての
+  `image` source が Cesium で描かれていなかった**（凡例と行は出たまま）。描けなかった層は `unpainted` に
+  理由を持つ。詳細は `Architecture.md` の Cesium の節。
 
 ### 7.6 ラベル
 

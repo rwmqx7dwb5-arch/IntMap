@@ -330,6 +330,43 @@
     if(ext&&ext.huge) return { cls:cls||null, bounds:null, zoom:Math.min(zoom,3.2), huge:true };
     return { cls:cls||null, bounds:ext, zoom };
   }
-  window.IntMapPlaceFraming={ framingFor, placeClass, placeExtent,
+  /* ══ (ui-a11y-polish) WHAT EACH CLASS IS CALLED, FOR THE READER ══════════════════════════════════
+     Reported on production: 「Kyoto」 listed the city and Kyoto Station as two rows that both read
+     「Kyoto, Kyoto Prefecture, Japan」 — Photon's label is name + city + state + country and carries no
+     kind at all, so two different things looked like one thing twice. js/search-geocode.js shows each
+     row's CLASS under its label, and the class is `placeClass` above: the one reading of the four
+     geocoder vocabularies there is, the same one that decides how close to fly.
+     ⚠ A NAME PER KEY OF PLACE_ZOOM, BECAUSE THOSE ARE ALL THE ANSWERS placeClass CAN GIVE —
+     tests/ui-a11y-polish-checks asks `zoomTable()` for them and fails on a key with no name here, so a
+     class added to the table above cannot reach the search card unnamed.
+     ⚠ A NAME SAYS WHAT THE WHOLE BUCKET HOLDS, not its most famous member. `station` is every
+     railway=* (a level crossing too), `park` every leisure=* but a stadium, `landmark` every tourism=*
+     (a hotel is tourism=hotel in OSM), `rock` also natural=tree, `town` every place=* the table above
+     does not name — so each bucket is named by what it holds, and a hotel is not called a 「sight」.
+     ⚠ BUILT WHEN ASKED, NOT AT LOAD: this file loads before js/lang-registry.js (src/main.js), and the
+     tuples are `pickArgs` calls so scripts/i18n-audit.mjs counts every one of them (#R241). */
+  function classNames(){
+    const LA=window.IntMapLang.pickArgs();
+    return {
+      continent:LA('Continent','大陸'), ocean:LA('Ocean','大洋'), sea:LA('Sea','海'), archipelago:LA('Archipelago','諸島'),
+      desert:LA('Desert / dunes','砂漠・砂丘'), plain:LA('Plain','平野'),
+      country:LA('Country','国'), dependency:LA('Dependent territory','属領'), state:LA('State / prefecture','州・都道府県'),
+      region:LA('Region','地域'), province:LA('Province','省・州'), county:LA('County','郡'), district:LA('District / area','地区・区域'),
+      municipality:LA('Municipality / commune','市町村'), borough:LA('Borough','区'),
+      megacity:LA('Major city','大都市'), city:LA('City','都市'), town:LA('Town / locality','町・地名'), village:LA('Village','村'),
+      hamlet:LA('Hamlet','集落'), suburb:LA('Suburb','市内の地区'), neighbourhood:LA('Neighbourhood','町内・街区'),
+      island:LA('Island','島'), lake:LA('Lake / water body','湖・水域'), river:LA('River / waterway','河川・水路'), mountain:LA('Mountain / hill / pass','山・丘・峠'),
+      volcano:LA('Volcano','火山'), glacier:LA('Glacier','氷河'), forest:LA('Forest / scrub','森林・低木林'), bay:LA('Bay','湾'),
+      cape:LA('Cape','岬'), reef:LA('Reef / shoal','礁・浅瀬'), valley:LA('Valley / gorge','谷・峡谷'), plateau:LA('Plateau','高原・台地'),
+      peninsula:LA('Peninsula','半島'), strait:LA('Strait / channel','海峡・水道'), ridge:LA('Ridge','尾根'), cliff:LA('Cliff','崖'),
+      beach:LA('Beach','浜'), wetland:LA('Wetland / grassland','湿地・草地'), spring:LA('Spring / geyser','泉・温泉'), cave:LA('Cave / sinkhole','洞窟・陥没穴'),
+      rock:LA('Natural object','自然物'), reserve:LA('Protected area','保護地域'), natural:LA('Natural feature','自然地物'),
+      airport:LA('Airport / airfield','空港・飛行場'), port:LA('Pier / port','港・桟橋'), station:LA('Station / railway','駅・鉄道'),
+      park:LA('Park / leisure','公園・レジャー'), university:LA('University / college','大学'), stadium:LA('Stadium / sports centre','競技場・スポーツ施設'),
+      museum:LA('Museum / gallery','博物館・美術館'), landmark:LA('Tourism / landmark','観光・名所'), building:LA('Building','建物'),
+      address:LA('Street / address','道路・住所'), poi:LA('Facility / shop','施設・店舗')
+    };
+  }
+  window.IntMapPlaceFraming={ framingFor, placeClass, placeExtent, classNames,
     zoomTable:()=>Object.assign({},PLACE_ZOOM), defaultZoom:()=>DEFAULT_ZOOM };
 })();

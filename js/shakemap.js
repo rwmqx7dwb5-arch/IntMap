@@ -498,7 +498,7 @@ window.IntMapModules.shakeMap = function (HOST) {
     let box = el.querySelector('.shk-ctl');
     if (!box) { box = document.createElement('div'); box.className = 'shk-ctl'; box.style.cssText = 'margin-top:6px;'; el.appendChild(box); }
     const s = state();
-    const btn = (k, on) => '<button data-shk-m="' + IntMapSafe.html(k) + '" style="border:1px solid rgba(128,128,128,0.3);background:' + (on ? 'var(--primary-color)' : 'var(--input-bg)') + ';color:' + (on ? '#fff' : 'var(--text-main)') + ';border-radius:7px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;">' + IntMapSafe.html(k.toUpperCase()) + '</button>';
+    const btn = (k, on) => '<button data-shk-m="' + IntMapSafe.html(k) + '" style="border:1px solid rgba(128,128,128,0.3);background:' + (on ? 'var(--primary-fill)' : 'var(--input-bg)') + ';color:' + (on ? '#fff' : 'var(--text-main)') + ';border-radius:7px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;">' + IntMapSafe.html(k.toUpperCase()) + '</button>';
     const sw = legend().map(r => '<span style="display:inline-flex;align-items:center;gap:4px;margin:0 7px 3px 0;font-size:10px;color:var(--text-muted);"><i style="width:11px;height:11px;border-radius:2px;background:' + IntMapSafe.html(r.color) + ';display:inline-block;"></i>' + IntMapSafe.html(fmt(r.value) + (r.units && r.units !== 'mmi' ? (' ' + r.units) : '')) + '</span>').join('');
     box.innerHTML = '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + s.metrics.map(k => btn(k, k === s.metric)).join('') + '</div>'
       + '<div style="margin-top:6px;line-height:1.5;">' + sw + '</div>'

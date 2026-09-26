@@ -18,7 +18,7 @@
  *  (relay-no-data-one-pass) The bounded pass is gone: it re-sent the same request to the same relay —
  *  see race() below.
  *
- *  ⚠ TWO EXPORTS, and everything else is inside the first. tests/r175-checks ③ requires that a js/
+ *  ⚠ THREE EXPORTS (peekOwnRelay since the boot-probe fix), and everything else is inside the first. tests/r175-checks ③ requires that a js/
  *  module has no unexported top-level declaration AND no export nobody imports — so the constants
  *  and the helpers live in the closure rather than becoming names the rule would have to police.
  *
@@ -40,7 +40,7 @@
 import { fetchRelayRule, FETCH_RELAY_FUNCTION, ARTICLE_RULE, articleUrlAllowed, looksLikeArticle, ARTICLE_MIN_BYTES } from '../supabase/functions/_shared/fetch-relay-policy.js';
 import { NO_DATA_HEADER } from '../supabase/functions/_shared/relay-guard.js';
 
-export const { fetchViaProxy, ownRelayUrl } = (() => {
+export const { fetchViaProxy, ownRelayUrl, peekOwnRelay } = (() => {
   /* ══ (#R214 / #R216 / own-fetch-relay) HOW THE PUBLIC PROXIES FAILED, KEPT BECAUSE IT IS WHY THEY ARE GONE ══
      「日本語版でニュースが表示されない。ずっと読み込み中。」 Measured FROM THE PAGE (#R188), the two WORLD
      feeds side by side through the public relays this file used to race:
@@ -349,7 +349,49 @@ export const { fetchViaProxy, ownRelayUrl } = (() => {
     return mine.length ? mine[0](String(url || '')) : '';
   }
 
-  return { fetchViaProxy, ownRelayUrl };
+  /* peekOwnRelay(url) -> the state of OUR relay for `url`'s host, WITHOUT a request to that host
+   *
+   * ⚠⚠⚠ THE SELF-DIAGNOSIS WAS ASKING THE UPSTREAM, ONCE PER VISITOR PER BOOT. js/atlas-console.js
+   * probed GDELT 25 s after every page load by fetching a real query through fetchViaProxy — our
+   * relay, then the host itself from the reader's IP. MEASURED from production 2026-09-27 on the
+   * probe's own URL: gdelt-relay 502 `upstream_unavailable` with `x-intmap-gdelt-upstream: 429/1`
+   * after 11.4 s, then the direct read aborted at the ladder's budget — two console errors in every
+   * visitor's page, and on a cold cache one boot sent GDELT an in-band read, a warm of up to seven
+   * more and a direct read. The upstream's own refusal came back to the reader as «GDELT
+   * unreachable», the same verdict a dead relay would have produced.
+   * ⚠ So the question is put to the relay, which already records what the upstream last said
+   * (supabase/functions/gdelt-relay `?peek=1`, classified THERE — one reading, used by its own cold
+   * status too). The answer keeps the three facts apart (.agents/rules/one-pass-or-a-reason.md §5):
+   *   state 'down'        our relay did not answer — IntMap's fault          ok:false
+   *   state 'busy'        the relay is up, the upstream is refusing for now   ok:false, status 429|503
+   *   state 'fault'       the relay is up, the upstream answered garbage      ok:false, status 502
+   *   state 'unobserved'  the relay is up and has no upstream outcome yet     ok:null
+   *   state 'ok'          the upstream's last answer was an artlist           ok:true
+   * One request, to our relay; never the host, never a second try. */
+  async function peekOwnRelay(url, timeoutMs) {
+    const t0 = Date.now();
+    const own = ownRelay(url);
+    if (!own) return { ok: false, state: 'down', status: 0, ms: 0, via: 'no-relay' };
+    const out = (o) => Object.assign({ ms: Date.now() - t0 }, o);
+    let r = null;
+    try {
+      const c = new AbortController();
+      const t = setTimeout(() => { try { c.abort(); } catch (_) { /* already done */ } }, timeoutMs > 0 ? timeoutMs : PROXY_TIMEOUT_MS);
+      try { r = await fetch(own.split('?')[0] + '?peek=1', { signal: c.signal, cache: 'no-store' }); } finally { clearTimeout(t); }
+    } catch (e) { return out({ ok: false, state: 'down', status: 0, err: (e && e.name) || 'error' }); }
+    if (!r || !r.ok) return out({ ok: false, state: 'down', status: r ? r.status : 0 });
+    let j = null;
+    try { j = await r.json(); } catch (_) { j = null; }
+    if (!j || j.relay !== 'up') return out({ ok: false, state: 'down', status: r.status });
+    const note = String(j.upstream || ''), age = (j.upstreamAgeMs == null) ? null : +j.upstreamAgeMs;
+    const st = String(j.state || '');
+    if (st === 'ok') return out({ ok: true, state: 'ok', status: 200, upstream: note, upstreamAgeMs: age });
+    if (st === 'busy') return out({ ok: false, state: 'busy', status: /^429\//.test(note) ? 429 : 503, upstream: note, upstreamAgeMs: age });
+    if (st === 'fault') return out({ ok: false, state: 'fault', status: 502, upstream: note, upstreamAgeMs: age });
+    return out({ ok: null, state: 'unobserved', status: 200, upstream: note, upstreamAgeMs: age });
+  }
+
+  return { fetchViaProxy, ownRelayUrl, peekOwnRelay };
 
   /* the race — each rung asked once */
   async function race(PROXIES, url, okDoc, left, mk) {

@@ -308,10 +308,10 @@ window.IntMapModules.statsCompare=function(HOST){
         +'#scp-view .scp-add{height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.3);background:var(--card-bg);color:var(--text-main);font-size:12.5px;outline:none;min-width:0;flex:1;box-sizing:border-box;}'
         +'#scp-view .scp-pickbtn{flex:0 0 auto;width:38px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid rgba(128,128,128,0.3);background:var(--card-bg);color:var(--text-muted);cursor:pointer;transition:.15s;}'
         +'#scp-view .scp-pickbtn:hover{color:var(--text-main);border-color:var(--primary-color);}'
-        +'#scp-view .scp-pickbtn.on{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}'
+        +'#scp-view .scp-pickbtn.on{background:var(--primary-fill);border-color:var(--primary-fill);color:#fff;}'
         +'#scp-view .scp-metrics{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 2px;}'
         +'#scp-view .scp-m{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);cursor:pointer;}'
-        +'#scp-view .scp-m.on{background:var(--primary-color);border-color:var(--primary-color);color:#fff;font-weight:600;}'
+        +'#scp-view .scp-m.on{background:var(--primary-fill);border-color:var(--primary-fill);color:#fff;font-weight:600;}'
         +'#scp-view .scp-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}'
         +'#scp-view .scp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin:4px 0 6px;}'
         +'#scp-view .scp-tbl td,#scp-view .scp-tbl th{padding:4px 7px;text-align:right;border-bottom:1px solid rgba(128,128,128,0.12);white-space:nowrap;}'
@@ -324,7 +324,7 @@ window.IntMapModules.statsCompare=function(HOST){
         +'#scp-view .scp-src{font-size:10.5px;color:var(--text-muted);font-weight:400;}'
         +'#scp-view .scp-srcsw{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:8px;overflow:hidden;}'
         +'#scp-view .scp-srcsw button{border:none;background:transparent;color:var(--text-muted);font-size:10px;padding:2.5px 8px;cursor:pointer;font-weight:600;}'
-        +'#scp-view .scp-srcsw button.on{background:var(--primary-color);color:#fff;}'
+        +'#scp-view .scp-srcsw button.on{background:var(--primary-fill);color:#fff;}'
         /* (#R105) Back button: white background, black text, a refined minimal arrow (no plain "←"). */
         +'#scp-view .scp-back{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(0,0,0,0.12);border-radius:10px;background:#ffffff;color:#111;padding:3px 12px 3px 9px;font-size:12px;font-weight:600;cursor:pointer;margin:0;flex:0 0 auto;}'   /* (#R108) tighter vertical padding (6→3), text size unchanged */
         +'#scp-view .scp-back:hover{background:#f2f2f4;}'
@@ -358,7 +358,7 @@ window.IntMapModules.statsCompare=function(HOST){
         /* (#R108) white divider lines between Bar chart / Time-series / Table (white in dark, subtle grey in light so visible in both) */
         +'#scp-view .scp-modes button + button{border-left:1px solid rgba(128,128,128,0.35);}'
         +'[data-theme="dark"] #scp-view .scp-modes button + button{border-left-color:rgba(255,255,255,0.6);}'
-        +'#scp-view .scp-modes button.on{background:var(--primary-color);color:#fff;}'
+        +'#scp-view .scp-modes button.on{background:var(--primary-fill);color:#fff;}'
         /* (#R122) time-series year-range control */
         +'#scp-view .scp-tsrange{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;padding:6px 8px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);border-radius:9px;font-size:12px;}'
         +'#scp-view .scp-tsrange .scp-tsl{color:var(--text-muted);font-weight:600;}'
@@ -385,7 +385,7 @@ window.IntMapModules.statsCompare=function(HOST){
         /* (#R107) count reserves a constant 2-digit width so the button never changes size / re-flows as indicators are toggled */
         +'#scp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;display:inline-block;min-width:2.9em;text-align:right;}'
         /* (#R107) Indicators button turns primary-blue while its cloud is expanded */
-        +'#scp-view .scp-mtog.open{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}'
+        +'#scp-view .scp-mtog.open{background:var(--primary-fill);border-color:var(--primary-fill);color:#fff;}'
         +'#scp-view .scp-mtog.open .scp-mcount{color:rgba(255,255,255,0.85);}'
         /* (#R107) "灰色枠から白枠に" — the mode segment + the Indicators toggle get a WHITE frame in dark mode (matching
            the R105 indicator pills); the expanded (blue) Indicators button keeps its primary border. */

@@ -524,7 +524,7 @@ window.IntMapModules.aiCore=function(HOST){
     }
     const left=aiUsesLeft(), lim=aiDailyLimit(), used=Math.max(0, lim-left);
     const pct=lim>0?Math.round((used/lim)*100):0;
-    const bar=`<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:${pct}%;background:${left>0?'var(--primary-color)':'#ff453a'};transition:width .25s;"></div></div>`;
+    const bar=`<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:${pct}%;background:${left>0?'var(--primary-fill)':'#ff453a'};transition:width .25s;"></div></div>`;
     wrap.innerHTML=
       /* (#R101) the "✨ Built-in AI is ready…" line duplicated the section hint above — removed (de-dup + no ✨). */
       `<div class="ai-row" style="font-size:13px;color:var(--text-main);font-weight:600;">`+

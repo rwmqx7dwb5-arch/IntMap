@@ -27,7 +27,9 @@
  *    ok        every target came back through our relay
  *    degraded  some did — an upstream having a bad hour (IMF is slow, CelesTrak goes dark) is
  *              ordinary weather and is NOT an alarm; the table in the log is the time series
- *    dead      none did — that is our relays being down (a Supabase outage, a bad deploy), exit 1
+ *    dead      no relay ANSWERED — that is our relays being down (a Supabase outage, a bad deploy),
+ *              exit 1. A relay that answered 503 with its own `upstream_…` envelope is up and its
+ *              upstream is refusing (see upstreamRefused); that is `degraded`, never `dead`.
  *    none      no target could be routed at all: this build has nothing to probe. Exit 0 and NO
  *              issue — it is a fact about the code, which tests/own-fetch-relay-checks catches, not about the network.
  *
@@ -107,15 +109,27 @@ export async function probe(t) {
     const headers = ORIGIN ? { Origin: ORIGIN, Referer: `${ORIGIN.replace(/\/$/, '')}/IntMap/` } : {};
     const res = await fetch(t.relayUrl, { headers, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     const ct = res.headers.get('content-type') || '';
-    let bytes = 0; let snippet = ''; let text = '';
-    try { const buf = new Uint8Array(await res.arrayBuffer()); bytes = buf.length; text = t.body ? new TextDecoder().decode(buf) : ''; snippet = snip(new TextDecoder().decode(buf.slice(0, 400))); } catch (_) { /* body unreadable */ }
+    let bytes = 0; let snippet = ''; let text = ''; let whole = '';
+    try { const buf = new Uint8Array(await res.arrayBuffer()); bytes = buf.length; whole = new TextDecoder().decode(buf); text = t.body ? whole : ''; snippet = snip(whole.slice(0, 400)); } catch (_) { /* body unreadable */ }
     /* «Alive» is not «HTTP 200»: the relay's own refusal is JSON with a status, and #R446 measured the
        cost of taking an envelope for the document. Alive = 2xx, a body, and the type the target is. */
     const alive = res.ok && bytes > 0 && (!t.expect || t.expect.test(ct)) && (!t.body || t.body(text));
-    return { ...t, status: res.status, ms: Date.now() - t0, bytes, contentType: ct, alive, snippet, error: null };
+    return { ...t, status: res.status, ms: Date.now() - t0, bytes, contentType: ct, alive, upstreamRefused: !alive && upstreamRefused(res.status, whole), snippet, error: null };
   } catch (e) {
-    return { ...t, status: null, ms: Date.now() - t0, bytes: 0, contentType: '', alive: false, snippet: '', error: String((e && e.message) || e) };
+    return { ...t, status: null, ms: Date.now() - t0, bytes: 0, contentType: '', alive: false, upstreamRefused: false, snippet: '', error: String((e && e.message) || e) };
   }
+}
+
+/* ⚠ «Our relay answered, and said its UPSTREAM is unavailable for now» is not «our relay is down».
+   A relay of ours says it with 503 and its own envelope — `{"error":"upstream_…"}` (gdelt-relay's
+   cold refusal since the boot-probe fix, _shared/relay-guard.js's upstream timeout/unreachable). The
+   Supabase gateway's own 503 (a function that failed to boot) carries `{"code":…,"message":…}` and
+   no such field, so it stays what it is: a relay that did not run. MEASURED 2026-09-27: gdelt-relay
+   answered its probe target 502 `upstream_unavailable` / `x-intmap-gdelt-upstream: 429/1` — GDELT's
+   rate limit, reported by a relay that was working. */
+export function upstreamRefused(status, body) {
+  if (status !== 503) return false;
+  try { const j = JSON.parse(body); return !!j && typeof j.error === 'string' && /^upstream_/.test(j.error); } catch (_) { return false; }
 }
 
 const snip = (s) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 120);
@@ -145,12 +159,14 @@ async function main() {
   const rows = [];
   for (const t of routed) rows.push(await probe(t));
   console.log(`${pad('#', 3)}${pad('relay', 14)}${pad('upstream', 28)}${pad('status', 8)}${pad('ms', 8)}${pad('bytes', 10)}alive`);
-  rows.forEach((r, i) => console.log(`${pad(i + 1, 3)}${pad(r.relay, 14)}${pad(host(r.url), 28)}${pad(r.status ?? '—', 8)}${pad(r.ms, 8)}${pad(r.bytes, 10)}${r.alive ? 'yes' : 'no'}`));
+  rows.forEach((r, i) => console.log(`${pad(i + 1, 3)}${pad(r.relay, 14)}${pad(host(r.url), 28)}${pad(r.status ?? '—', 8)}${pad(r.ms, 8)}${pad(r.bytes, 10)}${r.alive ? 'yes' : (r.upstreamRefused ? 'no (relay up, upstream refusing)' : 'no')}`));
   console.log('');
   rows.forEach((r, i) => { if (!r.alive) console.log(`${i + 1}. ${r.relayUrl}\n   ${r.error ? `error: ${r.error}` : `${r.contentType} · ${r.snippet || '(empty)'}`}`); });
 
   const alive = rows.filter((r) => r.alive).length;
-  const verdict = alive === rows.length ? 'ok' : (alive > 0 ? 'degraded' : 'dead');
+  /* a relay that answered with its upstream's refusal is up — only no relay ANSWERING is `dead` */
+  const relayUp = rows.filter((r) => r.alive || r.upstreamRefused).length;
+  const verdict = alive === rows.length ? 'ok' : (relayUp > 0 ? 'degraded' : 'dead');
   if (verdict === 'dead') {
     console.log('⚠ NO relay of ours carried its target. That is our relays being down, not an upstream\'s');
     console.log('  bad hour. See docs/MONITORING.md §1c.');
@@ -159,7 +175,7 @@ async function main() {
   }
   if (AS_JSON) {
     console.log(JSON.stringify({ measuredAt: new Date().toISOString(), origin: ORIGIN, supabase: SUPABASE_URL,
-      verdict, alive, total: rows.length, rungs: rows.map(({ expect, ...r }) => r) }, null, 2));
+      verdict, alive, relayUp, total: rows.length, rungs: rows.map(({ expect, ...r }) => r) }, null, 2));
   }
   console.log(`RESULT ${verdict} ${alive}/${rows.length}`);
   process.exitCode = (verdict === 'dead') ? 1 : 0;

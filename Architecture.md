@@ -333,6 +333,12 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     同じ DEM から計算したラスタ、terrain は**同じ terrarium タイル**から `HeightmapTerrainData`。
     **キーレス（Ion トークン不要）**。⚠ `ImageBitmap` は `UNPACK_FLIP_Y_WEBGL` を無視するので、
     テクスチャ化は必ず `toTexture()` を通す。
+    ⚠ **`image` source（Köppen・年降水量・日射・地震動・ShakeMap・地形の水・可視域・world packs）**は
+    `makeImageSourceProvider()` が**画像を読んでから**その大きさで作るプロバイダで、`ImageryLayer.fromProviderAsync`
+    として style の位置にすぐ置かれる。タイル方式は **Web Mercator の 1 枚**（4 隅の Mercator 矩形がそのタイル）——
+    MapLibre が `image` source を Mercator Y に線形に貼るのと同じ置き方で、地理座標で貼ると 60°N の行が
+    約 35.6°N に来る。`updateImage` は次の画像が読み終わるまで今の画像を画面に残し（`retiring`）、
+    読めなかった層は `unpainted` に理由を持って `error` を出す——**style に在って何も描かない層を黙って持たない**。
   - `js/cesium-vector-tiles.js` — タイルピラミッド（cover/fetch/decode/cache）。`@mapbox/vector-tile` が
     タイルを GeoJSON にする。要るタイル集合は**今の視界が覆うタイル集合**で決める。
   - `js/cesium-input.js` — **操作は MapLibre の操作**。8ジェスチャ（pan / rotate / pitch / wheel /
@@ -1906,6 +1912,16 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ⚠ **応答は上流が何と言ったかを名乗る**（`x-intmap-gdelt-upstream`＝上流の status か
   `not-artlist` / `not-json` / `unreachable` ＋ 試行回数）。これが無い間、「拒まれた」
   「artlist でないものが返った」「到達できなかった」は外から**同じ 1 つの出来事**に見えていた。
+  ⚠ **cold の失敗の status はその読みから決まる**（`upstreamState()`）：上流の 429・5xx・時間切れ・
+  到達不能は「いまは無理」なので **503**、artlist でない 200 など**壊れた答えは 502**。GDELT の 429 は
+  `Retry-After` を持たない（実測）ので付けない。
+  ⚠ **`?peek=1` は上流に 1 回も触れずに管の状態を答える**（常に 200）。上流を読んだ結果はどれも
+  `upstream-last.json` に 1 つ書き残され、peek はそれと `state`（`ok` / `busy` / `fault` / `unobserved`）・
+  経過時間を返す。Atlas の自己診断（起動 25 秒後と 10 分ごと）は GDELT をこれで訊く
+  （`js/proxy-fetch.js` の `peekOwnRelay`）。以前は訪問者ごとに実際の GDELT 検索を梯子ごと流し、
+  cold では 1 回の起動が在線読み・最大 7 回の温め直し・読者 IP からの直接読みを GDELT に送り、
+  502 と中断が全訪問者のコンソールに出ていた。自己診断は「中継が死んでいる」（`down`）と
+  「上流がいま拒んでいる」（`busy`）と「まだ何も観測していない」（`unobserved`）を別に扱う。
   ⚠ 秘密は `GDELT_STORAGE_KEY`（Storage 書き込み用。platform 注入の
   `SUPABASE_SERVICE_ROLE_KEY` は本プロジェクトでは Storage に AccessDenied になる）。
 - **`aviation-feed`** … ライブ航空機の**唯一の上流読み取り役**（`--no-verify-jwt`・秘密なし）。
@@ -2145,7 +2161,8 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
   読み出しで得て、そこから積む（CSS の無い偽 DOM では旧来の 64 px）。凡例の `top`/`left` に
   `!important` を付けない——付けると積み上げが書いた位置が全部上書きされ、複数の凡例が同じ場所に
   重なる。⚠ ケッペンの凡例は携帯では**他と同じ置き場の一員**として積む。
-- **「画面に出ている凡例」は `display` の綴りではなくページに訊く。** `tileLegends()` の母集合は、持ち主が
+- **「画面に出ている凡例」は `display` の綴りではなくページに訊く。** 判定は `legendShown()` の 1 か所で、
+  `tileLegends()` と携帯で地図をタップしたときの `_minimizeOpenLegends()` の両方がそれを読む。`tileLegends()` の母集合は、持ち主が
   隠しておらず（インラインが `none` でない・`hidden` でない）、計算済みの `display` が `none` でない凡例
   （偽 DOM ではインラインの宣言だけで答える）。`block` だけを数えていた頃は `flex` で出るケッペンの凡例が
   デスクトップで数えられず、初めての読者の既定（ケッペン＋海底ケーブル）で 2 枚が重なっていた。
@@ -3753,6 +3770,42 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
   一致することも同時に測る）と ③（ツールの入口——Layers の Tools 欄 `.lst-toolbody` のボタン全部と、
   携帯の tools sheet が名指す地図ツールバーの実ボタン——を**実体から見つけて1つずつ**押し、開いた物の
   部品を読んでから閉じる。シミュレーターを同時に2つ動かさない）。
+- **キーボードのフォーカスは、全ての操作部品で 2 px のリングとして見える。** `css/intmap.css` の
+  テーマ定義の直後にある `:where(…):focus-visible` の規則 1 つが `outline:2px solid var(--focus-ring)`
+  を `!important` で書く——部品ごとの `outline:none` が基底の状態（`:focus` ではない）に書かれていて、
+  特異度が (0,4,1) まであるため。`outline-offset` は `!important` にせず一覧も `:where()` なので、
+  自前のリングを持つ部品（`.wgt-*`・`.rtp-*` など、どれも同じアクセント色）は後の規則の offset を保つ。
+  `--focus-ring` はアクセント（`--primary-color`）で、カードに対して両テーマで 3:1 以上。
+  ⚠ `:focus-visible` なので**マウスで押したボタン・select にはリングが出ない**。ただし文字を打つ欄は
+  ブラウザがクリックでも `:focus-visible` とみなす——枠の無い欄を持つ検索ピル（`.search-bar`・
+  `.map-search`）では欄はリングを描かず、ピルの `:focus-within` が 1 px の枠＋1 px の輪＝2 px の
+  アクセントの縁を描く。門は `tests/ui-a11y-polish.spec.js` ①（1280 px・初回訪問の状態で Tab を
+  45 回押し、到達した部品すべてのリングの太さと色を測る。母集合は Tab が届いたもの）。
+- **アクセントには 2 つの役があり、トークンも 2 つある。** `--primary-color` は**文字としての**
+  アクセント（文字・枠・リング・アイコン）、`--primary-fill` は**白い文字を載せる面としての**アクセント
+  （ボタン・チップ・選択中のピル）。ライトは `#0069db` で、白いカードに 5.19:1・`--bg-color`
+  （`#f5f5f7`）に 4.77:1・カードの上の `--input-bg`（`#f2f2f2`）に 4.64:1、その上に白文字でも
+  5.19:1 なので、ライトの面はアクセントそのもの。ダークの文字は `#0a84ff`（`#1c1c1e` に 4.66:1）で、
+  白文字の面はそれに黒を 15 % 混ぜたもの（`color-mix(in srgb, var(--primary-color) 85%, #000)`。既定で
+  `#0970d9`、白文字 4.85:1）——暗いカードの上の文字（相対輝度 0.228 以上が要る）と白文字の面
+  （0.183 以下が要る）は 1 つの値では両立しないため。混ぜて**導く**ので、利用者が選んだアクセントも
+  面では同じ色相のまま暗くなる（選んだ色そのもののコントラストは保証しない）。
+  ⚠ **アクセントで塗る背景は、CSS・JS のインライン style・index.html のどこでも `--primary-fill` を読む。**
+  ダークの選択中セグメントは `#fff` 地に `#111`。門は `tests/ui-a11y-polish-checks.test.mjs` ③〜⑦
+  （スタイルシートのトークンと規則から比を計算し、⑥ は `background` を文字用のトークンで塗る箇所を
+  コード全体から探して 0 件であること、⑦ はアクセント文字が載る灰色の面を規則から見つけて全部測る）と
+  `tests/ui-a11y-polish.spec.js` ①（画面上でアクセント色の文字を持つ要素すべてを、合成した背景に
+  対して測る。ライトとダーク）。
+- **携帯の地図の帰属表示のリンクは、見た目の大きさのまま指には 24 × 24 px 以上で当たる。**
+  `#map-credit a::after` が文字の中心に `max(100%,24px)` 四方の透明な当たり判定を置き、ピルは
+  `overflow:visible`（切り取られた箱は当たり判定も切り取られる。ピルの高さは 23 px）。門は
+  `tests/ui-a11y-polish.spec.js` ②（375 px で各リンクの 24 × 24 の四隅と上下辺の中点を
+  `elementFromPoint` に訊く）。
+- **地図の地名検索の placeholder は、欄に収まる形を出す。** 欄の幅は `js/mobile-ui.js` の見張りが
+  2 つのサイドバーの隙間から決める（1280 px の初回訪問で欄は 105 px）ので、同じファイルの次の
+  見張りが欄の実幅と計算済みフォントで文を測り、`js/i18n.js` が書いた全文（`msPh`）が入らなければ
+  短い形（「Search places」／「地名を検索」）にする。それでも入らなければ `text-overflow:ellipsis`。
+  言語の切り替えは placeholder の書き換えとして `MutationObserver` が受け取り、測り直す。
   ⚠ Data & analysis（`js/gis-panel.js`）の引数欄は `paramControl` 1か所で作られ、**引数名の行**
   （`#gis-param-name-<n>`）がその下に作られる部品——型によって select / textarea / input / 単独の
   チェックボックス——の名前になる。
@@ -5004,9 +5057,21 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   書き換わる——どのジオコーダが先に答えたかでカードが変わらない。⚠ 以前の鍵
   「ラベル＋座標を 0.01° に丸めたもの」は、セルの境をまたぐ 2 点を何 m 近くても分け、
   1 語違うラベルは何も束ねなかった（実測：「Kyoto」で京都駅の 3 ノードが 2 行、Open-Meteo の京都市が
-  別行）。⚠ **同じ名前の別の物は束ねない**——京都市と京都駅は同じラベル「Kyoto, Kyoto Prefecture, Japan」
-  のまま 2 行として残る（ラベルが種別を述べていないため）。検査は `tests/search-result-dedupe-checks.test.mjs`
-  （実測した 3 提供者の応答で出荷の `doGeocode` を走らせ、全行を押して行き先を数える。到着順 3 通り）。
+  別行）。⚠ **同じ名前の別の物は束ねない**——京都市と京都駅は 2 行として残る。検査は
+  `tests/search-result-dedupe-checks.test.mjs`（実測した 3 提供者の応答で出荷の `doGeocode` を走らせ、
+  全行を押して行き先を数える。到着順 3 通り）。
+- **地名検索の各行は、ラベルの下に「何であるか」を控えめに添える。** Photon のラベルは名前・市・州・国
+  だけで種別を含まないので、京都市と京都駅はどちらも「Kyoto, Kyoto Prefecture, Japan」と読めた。
+  各行の 2 行目（`.ms-kind`）は、その行について既に計算している `placeClass` の答えを
+  `js/place-framing.js` の `classNames()`（`PLACE_ZOOM` の全キーに en＋jp の名前。名前はその分類に
+  入るもの全体を述べる——`station` は railway=* 全部なので「Station / railway」）で読んだもの。
+  ⚠ **同じ種別で名前が畳むと同じになる行が他にもあるとき**だけ、提供者自身の行政の連なり
+  （Photon の county・city・district・locality、Open-Meteo の admin2〜4。粗い順）から、ラベルに出て
+  おらず相手の行に無い最初の地名を足す（実測：Photon の「Kyoto」駅と地下鉄の「Kyōto」駅は
+  「Minami Ward」と「Shimogyo Ward」）。行は到着のたびにカード全体を塗り直す——相方が後から来るため。
+  種別を答えられない行（GeoNames の AIRH・PRK など）には何も書かない。検査は
+  `tests/ui-a11y-polish-checks.test.mjs` ①②（`zoomTable()` の全キーに名前があること／実測した応答で、
+  畳んだラベルの地名集合と 2 行目が一致する行が無いこと。en と jp・到着順 3 通り）。
 - **「行がある」と「一覧に出る」は別の主張で、あいだに主権フラグが1枚ある。** `countryGeo` の全 id が
   `countryStats` に行を持つこと（上）は、その国が **Countries 一覧に出ること**を意味しない——
   `renderStats` は `sov!==false` で絞るからである。このフラグは `_mkStat()` が **1 か所で**書き、

@@ -103,7 +103,9 @@ const REFUSED = () => jsonRes('{"error":"rate limited"}', 429);
 test('R769 ①: cold かつ上流拒否のとき、この分岐は棚に何かを残そうとする', async () => {
   const { res, waited } = await ask({ upstream: REFUSED });
 
-  assert.equal(res.status, 502);
+  /* (boot-probe fix) 503, not 502: GDELT's 429 is a valid «not now», and a gateway whose upstream is
+     temporarily refusing is 503 — tests/cesium-koppen-and-boot-probe-checks.test.mjs ② */
+  assert.equal(res.status, 503);
   assert.equal(res.headers.get('x-intmap-gdelt-cache'), 'cold');
   assert.ok(waited.length >= 1,
     'キャッシュが空で GDELT が拒否したとき、この分岐は読者の後ろで何も走らせずに 502 を返していた'
@@ -130,7 +132,7 @@ test('R769 ②: その 502 は、上流が何と言ったかを名指す', async
 test('R769 ③: 拒否・artlist でない 200・到達不能 は、互いに違う語で返る', async () => {
   const word = async (upstream) => {
     const { res } = await ask({ upstream });
-    assert.equal(res.status, 502, 'どれもキャッシュが空のまま失敗する道である');
+    assert.ok(res.status === 502 || res.status === 503, 'どれもキャッシュが空のまま失敗する道である（一時的な拒否・到達不能は 503、壊れた答えは 502）');
     return String(res.headers.get('x-intmap-gdelt-upstream') || '');
   };
 

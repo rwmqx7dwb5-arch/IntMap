@@ -30,7 +30,9 @@ import { liftFunction } from './helpers/lift-function.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
-const BODY = liftFunction(SRC, 'tileLegends');
+/* ⚠ with legendShown: the ONE answer to «is this legend on screen», which tileLegends and
+   _minimizeOpenLegends both read (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③) */
+const BODY = liftFunction(SRC, 'legendShown') + '\n' + liftFunction(SRC, 'tileLegends');
 
 /* the identifiers tileLegends closes over in js/data-layers.js §legends. The seventeen `lgd*`
    boxes are legends like any other, so the fixture hands them in as ordinary elements. */

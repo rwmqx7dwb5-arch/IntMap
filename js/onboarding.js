@@ -45,7 +45,7 @@ window.IntMapModules.onboarding=function(HOST){
       /* (#R22) Make it unmistakable this is a TEMPORARY one-time intro auto-play, not a permanent state —
          a pulsing "AUTO" badge + "intro demo" wording + an explicit "End tour" button. */
       const badge=document.createElement('span'); badge.textContent=window.IntMapLang.t(HOST.lang,"AUTO","自動再生","AUTO","АВТО","AUTO");
-      badge.style.cssText='font-size:9.5px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:999px;background:var(--primary-color);color:#fff;text-transform:uppercase;animation:imDemoPulse 1.6s ease-in-out infinite;';
+      badge.style.cssText='font-size:9.5px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:999px;background:var(--primary-fill);color:#fff;text-transform:uppercase;animation:imDemoPulse 1.6s ease-in-out infinite;';
       pill.appendChild(badge);
       const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(window.IntMapLang.t(HOST.lang,"Intro demo:","初回デモ:","Einführungsdemo:","Вводная демонстрация:","Demostración inicial:"))+'</span> <b>'+name+'</b>'; pill.appendChild(t);
       /* (#R32) iOS-clean controls — SVG play/pause + a circular × instead of the ▶ ⏸ × emoji
@@ -156,7 +156,7 @@ window.IntMapModules.onboarding=function(HOST){
     card.appendChild(list);
     const close=()=>{ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} ov.style.opacity='0'; setTimeout(()=>{ try{ ov.remove(); }catch(_){} },280); };
     const primary=document.createElement('button'); primary.textContent=LW('Start exploring','使ってみる','Loslegen','Начать','Empezar a explorar');
-    primary.style.cssText='width:100%;padding:14px;border:none;border-radius:13px;background:var(--primary-color);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;';
+    primary.style.cssText='width:100%;padding:14px;border:none;border-radius:13px;background:var(--primary-fill);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;';
     primary.onclick=close; card.appendChild(primary);
     /* (#R102) the "Play Satellite Drop" and "Watch the layer tour" buttons were removed from the Start card per request
        ("satellite drop, watch the layer tourボタンはいらない"). Both features remain reachable — Satellite Drop from the

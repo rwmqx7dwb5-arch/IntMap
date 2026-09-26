@@ -148,7 +148,8 @@ window.IntMapModules.searchGeocode=function(HOST){
     const name=own||String(label||'').split(',')[0].split(' · ')[0].trim();
     const box=Array.isArray(ext)?ext:null;
     const extRank=box?(raw&&raw.homeExtent?3:2):((ext&&ext.huge)?1:0);
-    return { label, lng, lat, raw, kind, name, cls, zoom, box, osm:_osmRef(raw), rich:extRank*2+(cls?1:0) };
+    const within=(raw&&Array.isArray(raw.within))?raw.within.filter((w)=>typeof w==='string'&&w.trim()):[];   /* (ui-a11y-polish) the provider's admin chain, coarse → fine — read by `_paint` in doGeocode */
+    return { label, lng, lat, raw, kind, name, cls, zoom, box, within, osm:_osmRef(raw), rich:extRank*2+(cls?1:0) };
   }
   /* Web-Mercator pixel offset between two points at MapLibre zoom `z` (a 512-px world); ±85.0511° is
      where that projection ends. */
@@ -189,13 +190,38 @@ window.IntMapModules.searchGeocode=function(HOST){
     const _nameKey=(s)=>{ try{ if(_rules&&_rules.nkey) return _rules.nkey(s); }catch(_){} return String(s==null?'':s).toLowerCase().trim(); };
     /* (#R183) `kind` rides along so a local (gazetteer / country / capital) match — which has no
        provider metadata at all — still gets framed by what it IS rather than by the default. */
+    /* ══ (ui-a11y-polish) WHAT EACH ROW IS, UNDER WHAT IT IS CALLED ═══════════════════════════════
+       The fold above leaves the city and Kyoto Station as two rows — correctly, they are two things —
+       and both read 「Kyoto, Kyoto Prefecture, Japan」, because Photon's label is name + city + state +
+       country and says nothing about kind. So every row carries a quiet second line:
+         ① its CLASS, named by js/place-framing.js `classNames` — `placeClass`'s own answer, the one
+           already computed for this row (`f.cls`), not a second reading of the provider's type;
+         ② and, only when another row on the card still reads the same (same folded NAME, same class),
+           the first place it lies WITHIN that the other does not — the provider's own admin chain
+           (`raw.within`, coarse → fine), skipping what the label already shows. MEASURED 2026-09-27:
+           Photon's 「Kyoto」 station nodes and the subway's 「Kyōto」 fold to one name — and Photon labels
+           them 「Kyoto, Kyoto Prefecture, Japan」 and 「Kyōto, Kyoto, Kyoto Prefecture, Japan」, which differ
+           only by the city it drops when it equals the name; one point is in Minami Ward and the other in
+           Shimogyo Ward, and that is what each row now says.
+       Painted for the WHOLE card on every arrival, because a row's twin can arrive after it does. */
+    const _kindOf=(cls)=>{ try{ const N=window.IntMapPlaceFraming.classNames(); return (cls&&N[cls])?window.IntMapLang.pick(()=>HOST.lang).arr(N[cls]):''; }catch(_){ return ''; } };
+    const _paint=()=>{
+      const same=(a,b)=>a!==b&&a.f.cls===b.f.cls&&_nameKey(a.f.name)===_nameKey(b.f.name);
+      rows.forEach((r)=>{
+        const twins=rows.filter((o)=>same(r,o)), shown=new Set(String(r.f.label).split(',').map((s)=>_nameKey(s)));
+        const inOther=(w)=>twins.every((o)=>(o.f.within||[]).some((x)=>_nameKey(x)===_nameKey(w)));
+        const where=twins.length?(r.f.within||[]).find((w)=>!shown.has(_nameKey(w))&&!inOther(w)):null;
+        const sub=[_kindOf(r.f.cls),where].filter(Boolean).join(' · ');
+        r.el.textContent=r.f.label;
+        if(sub){ const s=document.createElement('span'); s.className='ms-kind'; s.textContent=sub; r.el.appendChild(s); }
+      }); };
     const addItem=(label,lng,lat,raw,kind)=>{ if(isNaN(lng)||isNaN(lat))return;
       const f=_rowFacts(label,lng,lat,raw,kind);
       const same=rows.find((r)=>_sameFeature(r.f,f,_nameKey));
-      if(same){ if(f.rich>same.f.rich){ same.f=f; same.el.textContent=label; } return; }   /* the row that knows more stays, rewritten in place */
-      const d=document.createElement('div'); d.className='ms-item'; d.textContent=label; const row={f,el:d};
+      if(same){ if(f.rich>same.f.rich){ same.f=f; _paint(); } return; }   /* the row that knows more stays, rewritten in place */
+      const d=document.createElement('div'); d.className='ms-item'; const row={f,el:d};
       d.onclick=()=>{ const g=row.f; gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); res.style.display='none'; inp.value=String(g.label).split(',')[0].split(' · ')[0]; };
-      rows.push(row); res.appendChild(d); };
+      rows.push(row); res.appendChild(d); _paint(); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
        (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
@@ -220,7 +246,7 @@ window.IntMapModules.searchGeocode=function(HOST){
     const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${window.IntMapLang.locale(HOST.lang,"en")}&format=json`,{signal:ctrl.signal})
       /* (#R183) `feature_code` is carried under its own name as well as `type`: it is a GeoNames code
          (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
-      .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; if(!_agrees(R,q,{name:p.name}))return;   /* (#R802) */ const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country}}); }); }).catch(()=>{});
+      .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; if(!_agrees(R,q,{name:p.name}))return;   /* (#R802) */ const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country},within:[p.admin2,p.admin3,p.admin4]}); }); }).catch(()=>{});
     /* (#R489) …behind the app's ONE one-a-second Nominatim floor (js/nominatim-gate.js), reached
        through `window` because this file may contain no top-level declarations (tests/r175 #4).
        ⚠ IT QUEUES RATHER THAN DROPPING. #R298 measured what dropping does to a typed search — every
@@ -239,7 +265,7 @@ window.IntMapModules.searchGeocode=function(HOST){
       .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.features||[]).forEach(f=>{ try{ const p=f.properties||{}, g=f.geometry; if(!g||!g.coordinates) return;
         if(!_agrees(R,q,{name:p.name}))return;   /* (#R802) */
         const label=[p.name,p.city,p.state,p.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
-        if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,osm_key:p.osm_key,osm_value:p.osm_value,extent:p.extent,address:{country:p.country},osm_type:p.osm_type,osm_id:p.osm_id}); }catch(_){} }); }).catch(()=>{});
+        if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,osm_key:p.osm_key,osm_value:p.osm_value,extent:p.extent,address:{country:p.country},osm_type:p.osm_type,osm_id:p.osm_id,within:[p.county,p.city,p.district,p.locality]}); }catch(_){} }); }).catch(()=>{});
     /* (#R802) …and IntMap's own reviewed extents for the ninety names that have NO single OSM
        boundary (「the Alps」, 「Scandinavia」, 「Middle East」, 「アルプス」). It rides in with the rules
        above rather than being a second table here, and it carries a REAL box, so js/place-framing.js

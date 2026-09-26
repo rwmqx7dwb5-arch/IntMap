@@ -502,6 +502,11 @@ function tilerRig({ mobile = true, n = 4 } = {}) {
   const i = src.search(/function tileLegends\(/);
   assert.ok(i > 0, 'tileLegends() is no longer a named function in js/data-layers.js');
   const fn = src.slice(i, src.indexOf('{', i)) + balanced(src, src.indexOf('{', i), '{', '}');
+  /* ⚠ …and the declaration it reads for «is this legend on screen», shared with _minimizeOpenLegends
+     (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③) — found the same way */
+  const j = src.search(/function legendShown\(/);
+  assert.ok(j > 0, 'legendShown() is no longer a named function in js/data-layers.js');
+  const shownFn = src.slice(j, src.indexOf('{', j)) + balanced(src, src.indexOf('{', j), '{', '}');
 
   const g = { Math, console, Object, Array, parseFloat, isFinite, String, Number };
   g.window = g;
@@ -517,6 +522,7 @@ function tilerRig({ mobile = true, n = 4 } = {}) {
   vm.runInContext(`let lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat;
     function ensureLegendOpacity(){} function ensureContourSwitch(){} function ensureContourDensity(){} function ensureLegendMinimize(){}
     globalThis.__setBoxes = (b) => { [lgdHDI,lgdDem,lgdPop,lgdEEZ]=b; };
+    ${shownFn}
     ${fn}
     globalThis.__tile = tileLegends;`, g, { filename: 'data-layers-tile.js' });
   g.__setBoxes(boxes);

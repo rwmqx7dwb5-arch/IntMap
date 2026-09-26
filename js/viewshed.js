@@ -486,7 +486,7 @@ window.IntMapModules.los=function(HOST){
     function render(){
       const p=panel; if(!p) return;
       const MB='flex:1;height:28px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:11.5px;';
-      const MBON='background:var(--primary-color);color:#fff;border-color:var(--primary-color);';
+      const MBON='background:var(--primary-fill);color:#fff;border-color:var(--primary-color);';
       p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+L('Radio coverage & line of sight','電波・通信圏／見通し線','Funkabdeckung & Sichtlinie','Радиопокрытие и линия видимости','Cobertura de radio y línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         /* (#R296) the two analyses, as the one switch the merged tool needs */
         +'<div class="tp-row" style="gap:5px;">'

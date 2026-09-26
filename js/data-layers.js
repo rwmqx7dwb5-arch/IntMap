@@ -258,7 +258,7 @@ window.IntMapModules.dataLayers=function(HOST){
       .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); } .kl-item.sel .kl-nm{ color:var(--text-main); }
       .kl-sw{ width:11px; height:11px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
       .kl-clear{ width:100%; margin-top:6px; padding:5px; background:var(--input-bg); color:var(--text-main); border:none; border-radius:7px; cursor:pointer; font-size:10.5px; font-weight:600; }
-      .kl-clear:hover{ background:var(--primary-color); color:#fff; }
+      .kl-clear:hover{ background:var(--primary-fill); color:#fff; }
       .layer-popup-x{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:4px 6px; border-radius:6px; line-height:1; }
       .layer-popup-x:hover{ background:var(--input-bg); color:var(--info-mil); }
       /* Generic color-scale legend (HDI/Dem/Pop/NATO) */
@@ -286,7 +286,7 @@ window.IntMapModules.dataLayers=function(HOST){
          pill (.rv-b / .ecl-b, 22×20) so a date control looks like a time control everywhere. */
       .dl-datebox{ display:inline-flex; align-items:center; gap:4px; }
       .dl-step{ flex:0 0 auto; width:22px; height:20px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--glass-border,rgba(128,128,128,0.2)); border-radius:6px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
-      .dl-step:hover:not(:disabled){ background:var(--primary-color); color:#fff; border-color:transparent; }
+      .dl-step:hover:not(:disabled){ background:var(--primary-fill); color:#fff; border-color:transparent; }
       .dl-step:disabled{ opacity:0.35; cursor:default; }
       .dl-step svg{ display:block; }
       .dl-note{ display:none; width:100%; color:var(--text-muted); font-size:9.5px; line-height:1.35; margin-top:3px; font-variant-numeric:tabular-nums; }
@@ -325,8 +325,8 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .wx-iso-row span, .data-legend .wind-parts-row span{ min-width:0; overflow-wrap:anywhere; }
       .data-legend .ecl-player{ display:flex; gap:3px; justify-content:center; margin:5px 0 3px; }
       .data-legend .ecl-b, .data-legend .rv-b{ flex:0 0 auto; min-width:22px; height:20px; padding:0 4px; font-size:10.5px; line-height:1; border:1px solid var(--glass-border,rgba(128,128,128,0.2)); border-radius:6px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
-      .data-legend .ecl-b:hover, .data-legend .rv-b:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
-      .data-legend .ecl-b.ecl-play{ background:var(--primary-color); color:#fff; border-color:transparent; }
+      .data-legend .ecl-b:hover, .data-legend .rv-b:hover{ background:var(--primary-fill); color:#fff; border-color:transparent; }
+      .data-legend .ecl-b.ecl-play{ background:var(--primary-fill); color:#fff; border-color:transparent; }
       .data-legend .ecl-b.ecl-now{ min-width:auto; padding:0 7px; font-size:9.5px; font-weight:600; }
       .data-legend .ecl-b svg{ display:block; margin:0 auto; }
       .data-legend .ecl-items{ margin-top:6px; }
@@ -786,7 +786,7 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${window.IntMapLang.t(HOST.lang,'Flooded (≤ today ','浸水域 (≤ 現海面 ','Überflutet (≤ heute ','Затоплено (≤ текущего ','Inundado (≤ hoy ')}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${HOST.lang==='jp'?')':')'}</div>
       <label style="display:flex; align-items:center; gap:8px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">-150<input type="range" class="sl-legend-range" min="-150" max="70" step="1" value="${Math.max(-150,Math.min(70,slL))}" style="flex:1; accent-color:var(--primary-color);">+70 m</label>
-      <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-color); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${window.IntMapLang.t(HOST.lang,'Set','設定','Festlegen','Задать','Fijar')}</button></div>
+      <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-fill); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${window.IntMapLang.t(HOST.lang,'Set','設定','Festlegen','Задать','Fijar')}</button></div>
       <div class="sl-err" style="display:none; color:var(--info-mil); font-size:10px; margin:0 0 2px;"></div>
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve "bathtub" fill from the AWS Terrain DEM — ignores tides & defenses.','スライダーまたは数値（-11000〜9000 m、マイナス=海面低下）。AWS Terrain DEM に基づく簡易浸水。潮汐・防潮堤は未考慮。','Schieberegler oder Zahl (-11000–9000 m; negativ = Meeresspiegel-Abfall). Einfache „Badewannen“-Flutung aus dem AWS-Terrain-DEM — ohne Gezeiten & Deiche.','Ползунок или число (-11000–9000 м; минус = падение уровня). Простое «наполнение ванны» по DEM AWS Terrain — без приливов и дамб.','Deslizador o número (-11000–9000 m; negativo = descenso del nivel). Inundación simple («bañera») según el DEM de AWS Terrain — sin mareas ni defensas.')}</div>`;
     mc.appendChild(lgdSeaLevel);
@@ -2261,7 +2261,7 @@ window.IntMapModules.dataLayers=function(HOST){
       r.querySelectorAll('button[data-s]').forEach(b=>{ const k=b.getAttribute('data-s');
         const o=OPT.filter(x=>x[0]===k)[0]; if(o) b.textContent=o[1]();
         const act=(k===get());
-        b.style.background=act?'var(--primary-color)':'var(--input-bg)';
+        b.style.background=act?'var(--primary-fill)':'var(--input-bg)';
         b.style.color=act?'#fff':'var(--text-main)';
         b.setAttribute('aria-pressed',act?'true':'false'); });
       /* the gradient bar describes the uniform colouring only — see the note above */
@@ -2392,7 +2392,7 @@ window.IntMapModules.dataLayers=function(HOST){
       r.querySelectorAll('button[data-m]').forEach(b=>{ const k=b.getAttribute('data-m');
         const m=MIL_MODES.filter(x=>x[0]===k)[0]; if(m) b.textContent=m[1]();
         const act=(k===milMode);
-        b.style.background=act?'var(--primary-color)':'var(--input-bg)';
+        b.style.background=act?'var(--primary-fill)':'var(--input-bg)';
         b.style.color=act?'#fff':'var(--text-main)';
         b.setAttribute('aria-pressed',act?'true':'false'); }); }
     function applyMilMode(){
@@ -3639,7 +3639,10 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R240) a DOCKED legend is not over the map, so tapping the map has no reason to collapse
          it — and doing so is the other half of 「最小化された状態でスタートしないように」: the
          reader taps the map once and every panel in the sidebar shuts. */
-      all.forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); changed=true; }catch(_){} } });
+      /* ⚠ WHICH legends are open is asked of `legendShown`, the tiler's own question — this line spelled
+         it `display==='block'||'flex'` after the tiler stopped, so a card its stylesheet shows (inline
+         display '') was left open over the map. tests/cesium-koppen-and-boot-probe-checks.test.mjs ③. */
+      all.forEach(el=>{ if(legendShown(el) && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); changed=true; }catch(_){} } });
       if(changed) try{ tileLegends(); }catch(_){}
     };
     /* ══ ⚠⚠⚠ A LEGEND THAT CHANGES SIZE IS RE-PLACED, WHOEVER CHANGED IT ═══════════════════════
@@ -3672,6 +3675,11 @@ window.IntMapModules.dataLayers=function(HOST){
           if(R&&R.frame) R.frame('legends.reflow',again); else requestAnimationFrame(again); }); }
       _legWatched.add(el); _legRO.observe(el);
     }
+    /* Is this legend on screen? The ONE answer, read by the tiler and by `_minimizeOpenLegends` — see the
+       note in tileLegends for why it is the fact and not a spelling of `display`. A declaration at this
+       level, not a closure inside the tiler, so both readers (and the checks that lift them) share it. */
+    function legendShown(el){ if(!el||!el.style||el.hidden) return false; const d=el.style.display; if(d==='none') return false;
+      try{ return getComputedStyle(el).display!=='none'; }catch(_){ return !!d; } }
     function tileLegends(_refold){
       /* ⚠ (#R276) THE ECMWF BOXES HAVE TO BE IN THIS LIST. They dock at the same left/bottom as every
          other legend, and a legend the tiler cannot see is a legend that sits ON TOP of the one below
@@ -3695,8 +3703,7 @@ window.IntMapModules.dataLayers=function(HOST){
          has not hidden it, and the page renders it (`hidden`, the inline declaration, then the computed
          display — which also sees a stylesheet that suppresses every legend, e.g. during a flight).
          ⚠ Where the page cannot be asked (a test's fake DOM) the inline declaration answers alone. */
-      const shown=el=>{ if(!el||!el.style||el.hidden) return false; const d=el.style.display; if(d==='none') return false;
-        try{ return getComputedStyle(el).display!=='none'; }catch(_){ return !!d; } };
+      const shown=legendShown;
       /* ⚠ A LEGEND THAT KEEPS ITS OWN PLACE is on screen too, and the stack has to know where. Only the
          phone stylesheet docks such a card with the others (`.koppen-legend:not([data-dragged])` in the
          ≤768 px block); everywhere else it is left where its stylesheet holds it and the stack is placed

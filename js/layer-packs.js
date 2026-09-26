@@ -736,7 +736,7 @@ window.IntMapModules.betaPack2=function(HOST){
       const draw=()=>{
         const cur=RM.axis();
         box.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:4px;">'
-          +RM.axes().map(([k,lbl])=>'<button type="button" class="rail-axis-b" data-a="'+esc(k)+'" style="border:1px solid '+(k===cur?'var(--primary-color)':'rgba(128,128,128,0.35)')+';background:'+(k===cur?'var(--primary-color)':'transparent')+';color:'+(k===cur?'#fff':'var(--text-main)')+';font:inherit;font-size:10.5px;padding:2px 7px;border-radius:999px;cursor:pointer;">'+esc(lbl)+'</button>').join('')
+          +RM.axes().map(([k,lbl])=>'<button type="button" class="rail-axis-b" data-a="'+esc(k)+'" style="border:1px solid '+(k===cur?'var(--primary-color)':'rgba(128,128,128,0.35)')+';background:'+(k===cur?'var(--primary-fill)':'transparent')+';color:'+(k===cur?'#fff':'var(--text-main)')+';font:inherit;font-size:10.5px;padding:2px 7px;border-radius:999px;cursor:pointer;">'+esc(lbl)+'</button>').join('')
           +'</div><div style="display:flex;flex-direction:column;gap:3px;">'
           +RM.key().map(([c,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+esc(c)+';"></span>'+esc(l)+'</div>').join('')
           +'</div><div style="display:flex;flex-direction:column;gap:3px;padding-top:2px;">'

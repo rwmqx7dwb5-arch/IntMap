@@ -101,7 +101,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'.atl-codelang{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted);}'
       +'.atl-codecopy{font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
       +'.atl-codecopy:hover{color:var(--text-main);border-color:var(--primary-color);}'
-      +'.atl-codecopy.ok{color:#fff;background:var(--primary-color);border-color:var(--primary-color);}'
+      +'.atl-codecopy.ok{color:#fff;background:var(--primary-fill);border-color:var(--primary-fill);}'
       +'.atl-codeblock{margin:0;padding:10px 12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px;line-height:1.55;white-space:pre;}'
       +'.atl-codeblock code{font-family:inherit;white-space:pre;background:none;padding:0;color:var(--text-main);}'
       +'.atl-code-i{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:rgba(120,120,128,.16);border:1px solid rgba(128,128,128,.16);border-radius:5px;padding:.5px 5px;white-space:pre-wrap;word-break:break-word;}'
@@ -272,7 +272,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'#atlas-panel .atl-traj-row{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 2px;}'
       +'#atlas-panel .atl-traj-btn{font-size:11px;font-weight:600;color:var(--text-main);background:rgba(120,120,128,0.12);border:1px solid rgba(128,128,128,0.2);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease,border-color .15s ease;}'
       +'#atlas-panel .atl-traj-btn:hover{background:rgba(120,120,128,0.22);border-color:var(--primary-color);}'
-      +'#atlas-panel .atl-traj-btn.on{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}'
+      +'#atlas-panel .atl-traj-btn.on{background:var(--primary-fill);color:#fff;border-color:var(--primary-fill);}'
       +'#atlas-panel .atl-chip{font-size:11px;color:var(--text-main);background:rgba(120,120,128,0.10);border:1px solid rgba(128,128,128,0.16);border-radius:12px;padding:6px 10px;cursor:pointer;text-align:left;transition:background .15s ease,border-color .15s ease;}'
       +'#atlas-panel .atl-chip:hover{background:rgba(120,120,128,0.2);border-color:var(--primary-color);}'
       +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 9px 4px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
@@ -305,12 +305,12 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
          user has entered something ("文字を入力するまでは今の色"): the base .atl-go is the active state (accent fill,
          white icon); .idle (empty input) keeps the previous white-bg/black-arrow look; .busy (Stop) is also accent.
          Accent = var(--primary-color) with a matching white icon so it reads as a filled primary button. */
-      +'#atlas-panel .atl-go{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:var(--primary-color);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:transform .08s ease,opacity .15s ease,background .15s ease,filter .15s ease;}'
+      +'#atlas-panel .atl-go{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:var(--primary-fill);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:transform .08s ease,opacity .15s ease,background .15s ease,filter .15s ease;}'
       +'#atlas-panel .atl-go svg{display:block;}'
       +'#atlas-panel .atl-go:hover{filter:brightness(1.07);} #atlas-panel .atl-go:active{transform:scale(0.9);}'
       +'#atlas-panel .atl-go.idle{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);color:#111;border-color:rgba(0,0,0,0.08);}'   /* (#R149/#R156) empty input keeps the previous SOLID-BLACK ↑ on white ("文字を入力するまでは今の色") */
       +'#atlas-panel .atl-go.idle:hover{background:#f0f0f4;filter:none;}'
-      +'#atlas-panel .atl-go.busy{background:var(--primary-color);box-shadow:0 2px 8px rgba(0,0,0,0.2);color:#fff;border-color:transparent;}'   /* (#R156) Stop-answering button = accent fill + white square icon */
+      +'#atlas-panel .atl-go.busy{background:var(--primary-fill);box-shadow:0 2px 8px rgba(0,0,0,0.2);color:#fff;border-color:transparent;}'   /* (#R156) Stop-answering button = accent fill + white square icon */
       +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.07);}'
       +MSG_TOOLS_CSS
       +GLOSS_CSS   /* (#R491) ⚠ NOT scoped to #atlas-panel: the card is appended to <body> so the panel's overflow cannot clip it */
