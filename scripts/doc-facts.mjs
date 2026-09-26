@@ -29,6 +29,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { sharedRoster, auditRoster, inventories } from './shared-roster.mjs';
+import { auditLedger } from './ledger-claims.mjs';
 import { claims, CHECKED } from './doc-claims.mjs';
 import { authoredLangs, carriedLangs } from './lang-policy.mjs';
 import { requireData } from './data-assets.mjs';
@@ -432,6 +433,24 @@ const FILES = BODY.get('docs/FILES.md') || '';
      of the two sides is the same shape as the separator set in rule 2a: the answer is bounded
      by where you looked. The test now takes `fail(` ∪ `ok(`. */
   ok('sql-path', `${seen} sql path(s) named in the documents all exist`);
+}
+
+/* ═══ 3b. the file ledger's tree: counts, rosters, existence ═════════════════════════════════
+ *  (2026-09-27) Rule 3 measured ONE count in the tree (migrations) with ONE needle, so the rows
+ *  beside it drifted unwatched: `tests/*_test.sql … 12本` (13), `*.spec.js（114本）` (122),
+ *  `r<n>-checks.test.mjs（349本）` (no counting gives 349), and `.github/workflows/` without
+ *  `aviation-sweep.yml`. The rules live in scripts/ledger-claims.mjs and apply to every row by its
+ *  kind — a wildcard row's stated count, a plain row's existence, and a directory row that says
+ *  「全件」 must name all of its directory. */
+{
+  const r = auditLedger(FILES, ROOT);
+  for (const p of r.problems) {
+    if (p.kind === 'count') fail('ledger', `docs/FILES.md:${p.line} says ${p.path} holds ${p.stated}; it holds ${p.actual}`);
+    if (p.kind === 'missing') fail('ledger', `docs/FILES.md:${p.line} lists ${p.path}, which does not exist`);
+    if (p.kind === 'omits') fail('ledger', `docs/FILES.md:${p.line} says ${p.path} is listed in full (全件) but omits ${p.names.join(', ')}`);
+  }
+  if (!r.located) fail('ledger', 'docs/FILES.md has no rooted tree rows any more — the ledger cannot be read');
+  else ok('ledger', `${r.rows} tree rows: ${r.counted} stated count(s), ${r.located} path(s), ${r.rosters} full roster(s) checked against the tree`);
 }
 
 /* ⚠ (#R699) FROM HERE DOWN, EVERY `ok()` STATES HOW BIG THE THING IT SWEPT WAS. A rule that

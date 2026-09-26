@@ -135,8 +135,13 @@ globally-defined helper, `window.IntMapSafe` (defined in the first `<head>` scri
   **attribute** contexts.
 - `IntMapSafe.url(s, {allowData})` — allows **only** `http(s)` / `mailto` / `tel` (+ raster
   `data:image`, never SVG); `javascript:` / `data:text/html` / `vbscript:` / tab-obfuscated
-  schemes → `''`. For a URL in `href`/`src`/`style`, wrap as `html(url(s))` (scheme-check
-  then quote-escape).
+  schemes → `''`. **Its result is itself inert in a quoted attribute**: `" ' < > `` and blanks
+  are percent-encoded (the same address — it is the encoding the URL parser applies), so
+  `href="'+url(s)+'"` cannot be closed from the value. `html(url(s))` stays correct and is still
+  the preferred form. ⚠ Measured 2026-09-27: nine sinks in six files (`aircraft-detail`,
+  `datacenters`, `osm-facilities`, `company-panel`, `monitors`, `news-events`) wrote `url()` alone,
+  reachable from OSM `website` tags and feed URLs — the rule was fixed on the helper, where every
+  caller gets it, rather than on nine call sites.
 
 **Sinks hardened this round** (all were confirmed reachable from attacker-controlled data):
 

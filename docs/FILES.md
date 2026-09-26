@@ -1211,7 +1211,7 @@ supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全20本をここに宣言する
   migrations/*.sql                DB の唯一の設計図（30本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル。12本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限。13本）
   functions/<name>/index.ts       Edge Functions（20本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
@@ -1239,6 +1239,7 @@ scripts/
   serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
+  ledger-claims.mjs               この台帳の木が述べる本数・実在・「全件」の名簿を実体に訊く純関数（doc-facts の `ledger` 規則）
   atlas-catalog.mjs               **Atlas の操作カタログのゲート**（`PRODUCT.md` §3.4・ディスパッチャ ⇄ SYS）
   arch-files-check.mjs            §3 と js/ の突き合わせ。**どの段が js/ の話かは §3.x の見出しに訊く**
                                   （下の ⚠ を見よ）。以前は行頭の綴りで見分けて控除表で引いていた
@@ -1520,10 +1521,10 @@ scripts/
   ci-incident-issue.cjs           定期 job の Issue を 1 本だけ持つ（赤で開く・赤の間は本文を書き直す・緑で閉じる）。
                                   db-backup.yml と supabase-deploy.yml が github-script から require する
 tests/
-  tests/smoke.spec.js                   hermetic なスモーク
-  tests/internal-qa.spec.js             内部 QA（IntMapAtlasQA / IntMapRegionResolverTest / IntMapUIAudit）
-  tests/prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
-  tests/security.spec.js                実ブラウザでの無害化確認
+  smoke.spec.js                   hermetic なスモーク
+  internal-qa.spec.js             内部 QA（IntMapAtlasQA / IntMapRegionResolverTest / IntMapUIAudit）
+  prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
+  security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
   helpers/colour-difference.js    **2色がどれくらい違って見えるか**（sRGB→CIELAB＋CIEDE2000）。
                                   #R487 まで prod-smoke は「見分けられるか」を **sRGB のユークリッド距離**で
@@ -1533,9 +1534,10 @@ tests/
   helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
                                   prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
                                   コードだけ——コメントの中の `corsFor()` は契約ではない
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（349本）
-  *.spec.js                       ブラウザ回帰（114本）
-.github/workflows/
+  *.test.mjs                      Node の回帰検査。番号で呼んでいた頃は `r<n>-…`、以降は主題名 `<slug>-checks`（本数は
+                                  毎回の作業で増えるので書かない——`ls tests/*.test.mjs`）
+  *.spec.js                       ブラウザ回帰（同じ理由で本数は書かない）
+.github/workflows/               （全件。docs/FILES.md の `ledger` 規則が実体と照合する）
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
   deploy.yml                      本番公開（**有効**。§15.4）
   rollback.yml                    手動ロールバック（履歴に実在する ref のみ）
@@ -1545,7 +1547,8 @@ tests/
   security.yml                    CodeQL ほかセキュリティ検査
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
   atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いを送って評価（Secret 2本が無ければ**赤**。休眠しない）
-  tle-refresh.yml                 衛星軌道要素スナップショットの定期更新
+  tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）
+  aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
 .github/actions/
   browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・実行・報告）。ci.yml の browser／browser-deep が使う
   data-assets/                    git の外にあるデータ集合を置く（`data-assets.json` の hash を key にしたキャッシュ ＋

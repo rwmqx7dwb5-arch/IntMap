@@ -1428,7 +1428,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R9/#51) "News in this area": filter the analyzed news to the drawn radius/polygon and show it in
      the News feed, with a dismissable banner. Reuses the same geometry as the AI area-summary. */
   window._searchNewsInArea=function(){
-    if(!hasTurf()){ try{ imToast('Turf.js unavailable'); }catch(_){} return; }
+    if(!hasTurf()){ try{ imToast(window.IntMapLang.t(currentLang,'Turf.js unavailable','Turf.js（図形計算）を読み込めませんでした')); }catch(_){} return; }
     let test=null;
     if(toolMode==='radius'){ if(!radiusItems.length){ try{ imToast(t('aiSumNoArea')); }catch(_){} return; } const items=radiusItems.slice(); test=(lng,lat)=>items.some(c=>{ try{ return turf.distance(turf.point(c.center),turf.point([lng,lat]),{units:'kilometers'})<=c.radiusKm; }catch(_){ return false; } }); }
     else if(toolMode==='area'){ if(measurePoints.length<3){ try{ imToast(t('aiSumNoArea')); }catch(_){} return; } let poly; try{ poly=turf.polygon([[...measurePoints,measurePoints[0]]]); }catch(_){ return; } test=(lng,lat)=>{ try{ return turf.booleanPointInPolygon(turf.point([lng,lat]),poly); }catch(_){ return false; } }; }

@@ -94,6 +94,11 @@ concluding anything — that distinction is the whole reason `coveragePct` and t
 > Measured 2026-09-25 before fetch-relay was deployed: `RESULT degraded 4/10` — news-relay,
 > quotes-relay, cable-geo, sv-cov carried theirs; fetch-relay answered 404 (not deployed) and
 > gdelt-relay 502 (`upstream_unavailable`, GDELT's own 429).
+> ⚠ The article rung is judged by its **body** (`looksLikeArticle`, the same predicate the page uses),
+> not by the relay's Content-Type: the Supabase gateway serves an Edge Function's `text/html` as
+> `text/plain` on the default domain. Measured 2026-09-27 on a freshly deployed fetch-relay:
+> 245,526 B of Wikipedia's HTML under `text/plain` — the header test had answered «no» on every
+> uptime run, so a dead article relay would have looked the same as a working one.
 > The rest of this section is kept as the record of why the public ladder was removed.
 
 `js/proxy-fetch.js` is how every reader gets a document from a host that sends no ACAO header —

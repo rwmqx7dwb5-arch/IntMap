@@ -304,8 +304,11 @@ for (const f of yamlFiles) {
   }
 }
 
-// ── 6. Referenced local assets exist (index.html / admin.html) ───────────────
-for (const htmlName of ['index.html', 'admin.html']) {
+// ── 6. Referenced local assets exist — EVERY page at the root, discovered ───────
+// ⚠ (2026-09-27) This read a hand-written pair, index.html and admin.html, so sources.html /
+// science.html / privacy.html / terms.html — the pages a reader opens from the footer — had no
+// machine check that what they link to exists. The pages are the tracked *.html at the root.
+for (const htmlName of ALL.filter((x) => !x.rel.includes('/') && x.rel.endsWith('.html')).map((x) => x.rel)) {
   const f = ALL.find((x) => x.rel === htmlName);
   if (!f) continue;
   const t = read(f);

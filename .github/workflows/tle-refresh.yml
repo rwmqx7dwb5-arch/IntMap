@@ -40,7 +40,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: write                 # (#R372) only for .../actions/runs/<id>/approve on this one branch
+  actions: write                 # (#R372) .../actions/runs/<id>/approve on this one branch, and dispatching deploy.yml after the merge
 
 concurrency:
   group: tle-snapshot
@@ -130,7 +130,18 @@ jobs:
             echo "$OUT" | tail -20
             if [ "$RC" = "0" ]; then
               if gh pr merge "$PR" --squash --delete-branch=false; then
-                echo "catalogue landed on main"; exit 0
+                echo "catalogue landed on main"
+                # ⚠⚠ LANDING ON MAIN IS NOT REACHING READERS. This merge is made with GITHUB_TOKEN,
+                # and a push made with GITHUB_TOKEN starts no other workflow — deploy.yml listens for
+                # `push` — so the catalogue sat on main until a person happened to push. Measured
+                # 2026-09-27: 19 of 19 bot commits since 09-10 had no push-triggered run at all;
+                # #773 (built 09-26 08:36) was still not on the Pages site the next day, and one
+                # earlier catalogue took 11.5 h. workflow_dispatch is the documented exception that
+                # GITHUB_TOKEN may start, so the deploy is asked for by name. A refusal is RED: a
+                # catalogue that cannot reach readers is the failure this job exists to report.
+                gh workflow run deploy.yml --ref main \
+                  || { echo "::error::the catalogue landed on main but deploy.yml could not be dispatched — it will not reach the Pages site until the next push."; exit 1; }
+                echo "deploy.yml dispatched for main"; exit 0
               fi
               echo "checks passed but the merge was refused — re-syncing and trying again"
               continue

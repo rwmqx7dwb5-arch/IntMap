@@ -47,10 +47,21 @@ const CAMERAS = [
    `IntMapOS.exec('tab.stats')` fired straight after boot is a silent no-op when js/session-tabs.js has
    not registered the command yet — measured: the tab stayed on News and the list was the one drawn at
    boot, i.e. the modern names, which would have failed this test for the wrong reason. */
+/* ⚠ EACH STAGE HAS ITS OWN BOUND, AND THE TEST'S BOUND IS THEIR SUM. Measured on the nightly deep
+   tier 2026-09-20…25: this test timed out in 6 of 7 runs at the config's 60 s, mid-way through the
+   camera loop — while its OWN stages allowed 20+20+20+20 s before the loop and 40 s per camera, i.e.
+   up to 180 s. The readiness it printed reached the list at 14.2 s, 24.3 s and 49.6 s on three runs,
+   so what failed was the arithmetic, not the map: no stage had run out. A stage that truly hangs
+   still fails at ITS bound with ITS message; the whole-test bound only has to be reachable. */
+const STAGE_MS = { boot: 20000, eraBorders: 20000, attributes: 20000, tab: 20000, list: 20000, camera: 40000 };
+const GOTO_MS = 30000; /* page.goto(domcontentloaded) of the full app under the deep tier's load */
+const TEST_MS = GOTO_MS + Object.entries(STAGE_MS)
+  .reduce((n, [k, v]) => n + (k === 'camera' ? v * CAMERAS.length : v), 0);
+
 const openCountries = (page) => page.waitForFunction(() => {
   try { window.IntMapOS.exec('tab.stats', { source: 'test' }); } catch (_) { }
   return !!(window._countriesActive && window._countriesActive());
-}, null, { timeout: 20000, polling: 250 });
+}, null, { timeout: STAGE_MS.tab, polling: 250 });
 
 const READ = () => {
   const map = window.__imap;
@@ -76,12 +87,13 @@ const READ = () => {
 };
 
 test('R410 ② 国別属性が国境より遅れて届いても、地図の国名は一覧に追いつく', async ({ browser }) => {
+  test.setTimeout(TEST_MS);
   const page = await browser.newPage();
   let delayed = 0, release;
   const gate = new Promise(resolve => { release = resolve; });
   const stages = [], started = Date.now();
   const mark = stage => stages.push({ stage, ms: Date.now() - started });
-  const attributeResponse = page.waitForResponse(response => /ne_\d+m_admin_0_countries\.geojson/.test(response.url()) && response.ok());
+  const attributeResponse = page.waitForResponse(response => /ne_\d+m_admin_0_countries\.geojson/.test(response.url()) && response.ok(), { timeout: GOTO_MS + STAGE_MS.boot + STAGE_MS.eraBorders + STAGE_MS.attributes });
   attributeResponse.catch(() => {});
   await page.route(/ne_\d+m_admin_0_countries\.geojson/, async (route) => {
     delayed++;
@@ -91,8 +103,8 @@ test('R410 ② 国別属性が国境より遅れて届いても、地図の国�
   try {
     /* Full style readiness includes unrelated network sources. This test deliberately
        holds one source back, so wait for the clock and renderer, then their actual result. */
-    await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => !!(window.__imap && window.IntMapTime), null, { timeout: 20000 });
+    await page.goto('/index.html', { waitUntil: 'domcontentloaded', timeout: GOTO_MS });
+    await page.waitForFunction(() => !!(window.__imap && window.IntMapTime), null, { timeout: STAGE_MS.boot });
     mark('clock and renderer ready');
     await page.evaluate((c) => window.__imap.jumpTo({ center: c.center, zoom: c.zoom, pitch: 0, bearing: 0 }), CAMERAS[0][0]);
     await page.evaluate(() => window.IntMapTime.set(new Date('1916-07-01T12:00:00Z'), { source: 'test' }));
@@ -102,7 +114,7 @@ test('R410 ② 国別属性が国境より遅れて届いても、地図の国�
         const d = s && s.serialize().data;
         return !!(d && d.features && d.features.some(f => f.properties && f.properties.NAME === 'Germany'));
       } catch (_) { return false; }
-    }, null, { timeout: 20000, polling: 200 });
+    }, null, { timeout: STAGE_MS.eraBorders, polling: 200 });
     mark('era borders before attributes');
     expect(delayed, 'the attribute file really went through the held route').toBeGreaterThan(0);
     release();
@@ -113,7 +125,7 @@ test('R410 ② 国別属性が国境より遅れて届いても、地図の国�
     await page.waitForFunction(names => {
       const rows = [...document.querySelectorAll('.stat-row .stat-name')].map(n => n.textContent.trim());
       return names.every(name => rows.includes(name));
-    }, CAMERAS.flatMap(([, names]) => Object.values(names)), { timeout: 20000, polling: 200 });
+    }, CAMERAS.flatMap(([, names]) => Object.values(names)), { timeout: STAGE_MS.list, polling: 200 });
     mark('1916 list identities ready');
 
     for (const [camera, want] of CAMERAS) {
@@ -138,7 +150,7 @@ test('R410 ② 国別属性が国境より遅れて届いても、地図の国�
           }
         }
         return names.every((n) => drawn.has(n));
-      }, Object.keys(want), { timeout: 40000, polling: 200 });
+      }, Object.keys(want), { timeout: STAGE_MS.camera, polling: 200 });
 
       const r = await page.evaluate(READ);
       expect(r.listOpen).toBe(true);
