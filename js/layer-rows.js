@@ -40,18 +40,19 @@
  *        document itself, the session save, still sees the reader's own click as it happened);
  *      · each held box then gets ONE fresh `change`, in arrival order, carrying the state it has THEN:
  *        a box ticked and unticked while the style was loading is delivered once, as unticked.
- *    WHEN it is delivered depends on whether the renderer has had its first `load`:
- *      · held before that first `load` (the boot — the only time the production failure happened) →
- *        delivered right AFTER it, and everything that arrives until then waits in the same queue so
- *        nothing overtakes it. Not at the first moment canDraw() is true: MapLibre fires `load` only
- *        once every source present has loaded, so adding the held layers at the parse puts their
- *        sources in front of the app's own boot. MEASURED with all 87 shareable layers held: the
- *        app's `load` handler (js/app-body.js — the whole-Earth floor, the default layers, the launch
- *        screen's milestones) had not run 28 s after the style was released. The app's own restores
- *        were written to run after `load` (js/map-ui.js, js/session-tabs.js wait for it); this only
- *        restores that order for the requests whose fallback clocks ran ahead of it.
- *      · held after it (a style that was parsed and is being replaced) → delivered when
- *        GE().whenCanDraw() resolves, which it never does early (js/geo-engine.js).
+ *    They are delivered when GE().whenCanDraw() resolves — which it never does early (js/geo-engine.js)
+ *    — and at no other moment.
+ *    ⚠ NOT AT MapLibre's `load`. The first version waited for it, to keep the held layers' sources
+ *    from delaying the app's own boot (which was keyed to `load` too). `load` is not an event anyone
+ *    can wait on: MapLibre fires it from INSIDE a render, only when every source present has loaded,
+ *    and a render that throws never reaches it. MEASURED in CI (PR #760, Browser rest 2/2): the held
+ *    boot still had neither the app's boot work nor a single delivered layer 180 s after the style was
+ *    released; locally under 4-6x CPU throttling the same boot logged
+ *    «Cannot read properties of undefined (reading 'bind')» from drawRaster 44-54 times per run. A
+ *    wait keyed to that event is the deadlock one-pass-or-a-reason.md §2 describes. The boot is keyed
+ *    to whenCanDraw() instead (js/app-body.js), and its wait was registered long before any box can
+ *    change, so it is answered FIRST — the queue drains in registration order — and the held layers
+ *    come after the app's own boot work, not in front of it.
  *    With no renderer at all there is nothing to wait for, and the event passes as it always did.
  *    Measured before this: the same share link carrying all 87 shareable layers, opened with the style
  *    held back, ended with 23 map layers fewer than the same link opened normally
@@ -110,11 +111,6 @@ export function holdUntilDrawable(doc, engine) {
   const d = doc || document;
   const held = new Map();   /* id → box, in the order they first arrived */
   let waiting = false;
-  /* has the renderer had its first `load`? undefined = not asked yet. It can only be learned by
-     listening BEFORE it happens, and the one moment that is certain is a check that finds the style
-     unparsed (`load` implies a parsed style). A first look that finds it parsed cannot tell, and
-     answers «yes»: the event then passes exactly as it did before this gate existed. */
-  let booted;
   const deliver = () => {
     waiting = false;
     const boxes = Array.from(held.values()); held.clear();
@@ -123,26 +119,20 @@ export function holdUntilDrawable(doc, engine) {
   const listener = (e) => {
     const cb = e.target;
     if (!cb || cb.type !== 'checkbox' || !cb.id || !isLayer(cb.id)) return;
-    let E = null, drawable = true;
+    let E = null;
     try { E = engine(); } catch (_) { E = null; }
-    try { if (!(E && E.hasRenderer())) return; drawable = !!E.canDraw(); } catch (_) { return; }
-    if (booted === undefined) {
-      booted = drawable;
-      if (!booted) {
-        try { E.events.once('load', () => { booted = true; if (held.size) E.whenCanDraw().then(deliver, deliver); else waiting = false; }); }
-        catch (_) { booted = true; }
-      }
-    }
-    if (drawable && booted) return;
+    try { if (!(E && E.hasRenderer()) || E.canDraw()) return; } catch (_) { return; }
     e.stopPropagation();
     if (!held.has(cb.id)) held.set(cb.id, cb);
     if (waiting) return;
     waiting = true;
-    if (booted) E.whenCanDraw().then(deliver, deliver);   /* else: the `load` listener above delivers */
+    E.whenCanDraw().then(deliver, deliver);
   };
   d.addEventListener('change', listener, true);
+  /* what is being held right now — the observable «everything has been delivered» is `pending()` empty */
+  listener.pending = () => Array.from(held.keys());
   return listener;
 }
 
 try { if (typeof document !== 'undefined') mountManifestRows(document); } catch (e) { try { console.warn('[IntMap] layer rows', e); } catch (_) {} }
-try { if (typeof document !== 'undefined') holdUntilDrawable(document, () => window.IntMapGeoEngine); } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }
+try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => window.IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }

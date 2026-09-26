@@ -22,8 +22,8 @@
  *  more: no response is delayed and no module of the app is patched.
  *
  *  ── WHAT IS ASSERTED ────────────────────────────────────────────────────────
- *  ① the reported pair: after release both layers exist, nothing threw, and the
- *     app's own `load` work ran.
+ *  ① the reported pair: both changes were HELD while the style was unparsed, and
+ *     after release both layers exist and nothing threw.
  *  ② EVERY layer a share link can carry (js/layer-manifest.js `sharedIds()`, read
  *     here, not typed): the same link is opened normally and then with the style
  *     held back, and every map layer the normal boot has must also appear after
@@ -32,17 +32,27 @@
  *     would have to keep in step. MEASURED on the code before the fix: 23 layers
  *     missing (the aircraft, the ships, the volcano overlays, the base roads/rail/
  *     admin lines …), not only the two that were reported.
+ *
+ *  ── WHAT IS WAITED FOR, AND WHAT IS NOT ─────────────────────────────────────
+ *  After release the spec waits for the STATE «nothing is held any more»
+ *  (window.IntMapLayerHold.pending() empty — js/layer-rows.js), not for a
+ *  duration; only the layers whose handlers fetch data before adding them are
+ *  then polled for. ⚠ It does NOT read the launch screen's progress: that number
+ *  stops moving when the screen's own 20 s escape fires, so a boot that finished
+ *  a moment after the escape read as a boot that never ran (measured locally
+ *  under 6x CPU throttling: `load` at 20.6 s, progress frozen at 58).
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
 import { sharedIds } from '../js/layer-manifest.js';
 
-/* how long the style is held back. The clocks that decided the failure were the share-link
-   restore's own fallback (js/map-ui.js boots it at 8 s when the renderer has not said `load`) and
-   whenStyleReady's old ~6 s hard resolve counted from the restore; the hold has to outlast both
-   for the old defect to be reachable at all. */
-const HOLD_MS = 16000;
+/* how long the tab stays «hidden». This is the scenario, not a wait: the share-link restore runs on
+   its own backstop clock when the style has not been parsed — js/map-ui.js `setTimeout(_boot,8000)`,
+   then its passes at +700 / +1800 / +3200 ms — so a hold shorter than ~11.2 s would not put the
+   restore inside it. Each test ASSERTS at release that the gate is holding what it should, so a
+   hold that stopped reaching the restore fails instead of passing vacuously. */
+const HOLD_MS = 12000;
 /* how long the normal boot is given before its layer set is taken as the reference */
 const SETTLE_MS = 12000;
 
@@ -85,19 +95,25 @@ async function openLink(browser, ids, { hold }) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto('/index.html#v=139.7000,35.7000,4.00,0,0,f&l=' + ids.join(','), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
-  let drawableWhileHeld = null;
+  let drawableWhileHeld = null, heldAtRelease = null;
   if (hold) {
     await page.waitForTimeout(HOLD_MS);
-    drawableWhileHeld = await page.evaluate(() => { try { return !!window.IntMapGeoEngine.canDraw(); } catch (_) { return null; } });
+    ({ drawableWhileHeld, heldAtRelease } = await page.evaluate(() => {
+      let d = null, h = null;
+      try { d = !!window.IntMapGeoEngine.canDraw(); } catch (_) {}
+      try { h = window.IntMapLayerHold.pending(); } catch (_) {}
+      return { drawableWhileHeld: d, heldAtRelease: h };
+    }));
     await page.evaluate(() => window.__styleHeldRelease());
   }
-  await page.waitForFunction(() => { try { return window.IntMapGeoEngine.canDraw(); } catch (_) { return false; } }, null, { timeout: 60000 });
-  return { ctx, page, errors, drawableWhileHeld };
+  /* the state, not a duration: the style can take layers AND the gate has delivered everything */
+  await page.waitForFunction(() => {
+    try { return window.IntMapGeoEngine.canDraw() && window.IntMapLayerHold.pending().length === 0; } catch (_) { return false; }
+  }, null, { timeout: 60000 });
+  return { ctx, page, errors, drawableWhileHeld, heldAtRelease };
 }
 
 const mapLayers = (page) => page.evaluate(() => { try { return (window.__imap.getStyle().layers || []).map((l) => l.id); } catch (_) { return []; } });
-/* js/app-body.js reports 88 ('layers-fired') from inside the renderer's `load` handler */
-const bootProgress = (page) => page.evaluate(() => { try { return window.__imBoot.progress(); } catch (_) { return null; } });
 const styleErrors = (errs) => errs.filter((e) => /Style is not done loading/i.test(e));
 
 test.describe.configure({ mode: 'parallel' });
@@ -109,16 +125,16 @@ test('the reported pair: aircraft and radar restored before the style are drawn 
   try {
     /* the condition itself — without it this test proves nothing */
     expect(r.drawableWhileHeld, 'the style must still be unparsed while the restore runs').toBe(false);
+    expect(r.heldAtRelease, 'both restored changes were held by the gate').toEqual(expect.arrayContaining(ids));
     await expect.poll(() => mapLayers(r.page), { timeout: 30000, message: 'the restored layers are on the map' })
       .toEqual(expect.arrayContaining(['lyr-planes', 'lyr-radar']));
     expect(await r.page.evaluate((w) => w.map((id) => document.getElementById(id).checked), ids)).toEqual([true, true]);
-    await expect.poll(() => bootProgress(r.page), { timeout: 30000, message: "the app's own load work ran" }).toBeGreaterThanOrEqual(88);
     expect(styleErrors(r.errors), 'no add may reach a style that cannot take it').toEqual([]);
   } finally { await r.ctx.close(); }
 });
 
 test('every layer a link can carry: holding the style back costs no layer', async ({ browser }) => {
-  test.setTimeout(420000);
+  test.setTimeout(240000);
   const ids = sharedIds();
   expect(ids.length).toBeGreaterThan(0);
   /* both boots at once: the reference is whatever the NORMAL boot has drawn after SETTLE_MS, and the
@@ -132,9 +148,11 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
   const held = await heldP;
   try {
     expect(held.drawableWhileHeld, 'the style must still be unparsed while the restore runs').toBe(false);
+    expect((held.heldAtRelease || []).length, "the restore's changes were held by the gate").toBeGreaterThan(0);
+    /* everything has been delivered (openLink waited for that state); what is left is the layers whose
+       handlers fetch their data first — the same wait the normal boot's reference already had */
     await expect.poll(async () => { const have = new Set(await mapLayers(held.page)); return reference.filter((id) => !have.has(id)); },
-      { timeout: 180000, intervals: [5000], message: 'layers the normal boot drew and the held boot did not' }).toEqual([]);
-    expect(await bootProgress(held.page), "the app's own load work ran").toBeGreaterThanOrEqual(88);
+      { timeout: 60000, intervals: [2000], message: 'layers the normal boot drew and the held boot did not' }).toEqual([]);
     expect(styleErrors(held.errors), 'no add may reach a style that cannot take it').toEqual([]);
   } finally { await held.ctx.close(); }
 });

@@ -102,7 +102,8 @@ test('② every private `whenStyleReady` in js/ is the engine\'s wait, not a cop
 function fakeEngine(state) {
   const A = fakeAdapter(state);
   const f = ENGINE.makeFacade(A);
-  return { A, E: { hasRenderer: () => state.renderer !== false, canDraw: () => !!state.parsed, events: { once: (e, fn) => A.once(e, fn) }, whenCanDraw: () => f.whenCanDraw() } };
+  const E = { hasRenderer: () => state.renderer !== false, canDraw: () => !!state.parsed, events: { once: (e, fn) => A.once(e, fn) }, whenCanDraw: () => f.whenCanDraw() };
+  return { A, E };
 }
 function box(id, checked) {
   const b = Object.assign(new EventTarget(), { id, type: 'checkbox', checked });
@@ -112,13 +113,14 @@ function box(id, checked) {
 }
 function gate(E) {
   const doc = { addEventListener(type, fn, capture) { this.type = type; this.fn = fn; this.capture = capture; } };
-  holdUntilDrawable(doc, () => E);
+  const l = holdUntilDrawable(doc, () => E);
+  E.pending = l.pending;
   assert.equal(doc.type, 'change'); assert.equal(doc.capture, true, 'a CAPTURE listener: it must see the event before the box\'s own module');
   return (b) => { const ev = { target: b, stopped: false, stopPropagation() { this.stopped = true; } }; doc.fn(ev); return ev.stopped; };
 }
 const [ID1, ID2, ID3] = sharedIds();
 
-test('③ before the first `load`, every layer box is held and delivered once, in order, after it', async () => {
+test('③ while the style cannot take layers, every layer box is held and delivered once, in order, when it can', async () => {
   const state = { parsed: false };
   const { A, E } = fakeEngine(state);
   const send = gate(E);
@@ -126,17 +128,28 @@ test('③ before the first `load`, every layer box is held and delivered once, i
   assert.equal(send(a), true, 'unparsed style → held');
   assert.equal(send(b), true);
   a.checked = false; assert.equal(send(a), true, 'the same box again is still one entry');
-  state.parsed = true; A.fire('styledata');
-  await flush();
-  assert.equal(send(c), true, 'parsed but not loaded → it queues behind the earlier ones instead of overtaking them');
-  assert.deepEqual([a.got, b.got, c.got], [[], [], []], 'nothing is delivered before `load`');
+  assert.equal(send(c), true);
+  assert.deepEqual(E.pending(), [ID1, ID2, ID3], 'what is held is observable');
+  assert.deepEqual([a.got, b.got, c.got], [[], [], []], 'nothing is delivered while the style is unparsed');
   const order = [];
   for (const x of [a, b, c]) x.addEventListener('change', () => order.push(x.id));
-  A.fire('load');
+  state.parsed = true; A.fire('styledata');
   await flush();
   assert.deepEqual(order, [ID1, ID2, ID3], 'arrival order');
   assert.deepEqual([a.got, b.got, c.got], [[false], [true], [false]], 'each ONCE, with the state it has at delivery');
+  assert.deepEqual(E.pending(), [], 'and nothing is left held');
   assert.equal(send(a), false, 'afterwards the event passes untouched');
+});
+
+test('③ (cont.) delivery is never keyed to MapLibre\'s `load` — a `load` that never comes does not strand a layer', async () => {
+  const state = { parsed: false };
+  const { A, E } = fakeEngine(state);
+  const send = gate(E);
+  const a = box(ID1, true);
+  send(a);
+  state.parsed = true; A.fire('styledata');   /* no `load` is ever fired */
+  await flush();
+  assert.deepEqual(a.got, [true]);
 });
 
 test('③ (cont.) a parsed style, no renderer, and a box that is not a layer all pass as before', async () => {
@@ -152,12 +165,12 @@ test('③ (cont.) a parsed style, no renderer, and a box that is not a layer all
   assert.equal(gate(none.E)(box(ID1, true)), false, 'no renderer → nothing to wait for');
 });
 
-test('③ (cont.) after the first `load`, a style that goes away again holds until canDraw() comes back', async (t) => {
+test('③ (cont.) a style that goes away again holds until canDraw() comes back — not on a clock', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const state = { parsed: true };
   const { A, E } = fakeEngine(state);
   const send = gate(E);
-  assert.equal(send(box(ID2, true)), false, 'first look: parsed → the renderer is taken as booted');
+  assert.equal(send(box(ID2, true)), false);
   state.parsed = false;
   const b = box(ID1, true);
   assert.equal(send(b), true, 'a style being replaced → held');
@@ -167,4 +180,35 @@ test('③ (cont.) after the first `load`, a style that goes away again holds unt
   state.parsed = true; A.fire('styledata');
   await flush();
   assert.deepEqual(b.got, [true], 'delivered when the style can take it');
+});
+
+test('④ a wait registered before the held changes is answered before they are delivered (the app\'s boot first)', async () => {
+  const state = { parsed: false };
+  const { A, E } = fakeEngine(state);
+  const order = [];
+  E.whenCanDraw().then(() => order.push('boot'));   /* js/app-body.js registers its boot at construction */
+  const send = gate(E);
+  const a = box(ID1, true);
+  a.addEventListener('change', () => order.push('layer'));
+  send(a);
+  state.parsed = true; A.fire('styledata');
+  await flush();
+  assert.deepEqual(order, ['boot', 'layer']);
+});
+
+test('④ (cont.) the boot and the restores wait for the style, not for MapLibre\'s `load`', () => {
+  /* the three places the production failure ran through: the app's boot (its first milestone), the
+     share-link restore, the saved-session restore — each is found by what it DOES, then its entry asked */
+  const entry = (file, marker) => {
+    const src = codeOnly(readFileSync(join(ROOT, file), 'utf8'));
+    const at = src.indexOf(marker);
+    assert.ok(at > 0, file + ': ' + marker + ' is still there');
+    return src;
+  };
+  const AB = entry('js/app-body.js', "__imBoot.set(80,'style')");
+  const boot = AB.lastIndexOf('GE().whenCanDraw().then(()=>{', AB.indexOf("__imBoot.set(80,'style')"));
+  const load = AB.lastIndexOf("GE().events.on('load',()=>{", AB.indexOf("__imBoot.set(80,'style')"));
+  assert.ok(boot > load, 'js/app-body.js: the boot that reports «style» is entered from whenCanDraw()');
+  assert.match(entry('js/map-ui.js', 'const _boot=()=>'), /GE\(\)\.whenCanDraw\(\)\.then\(_boot\)/, 'js/map-ui.js: the share-link restore');
+  assert.match(entry('js/session-tabs.js', 'setTimeout(_restore,600)'), /GE\(\)\.whenCanDraw\(\)\.then\(\(\)=>setTimeout\(_restore,600\)\)/, 'js/session-tabs.js: the saved-session restore');
 });

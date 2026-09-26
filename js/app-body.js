@@ -1554,7 +1554,17 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     GE().events.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
     GE().events.on('rotate',updateCompass); GE().events.on('pitch',updateCompass);
     GE().events.on('moveend',refreshGrid); GE().events.on('zoomend',refreshGrid);
-    GE().events.on('load',()=>{
+    /* ══ THE BOOT RUNS WHEN THE STYLE CAN TAKE LAYERS, NOT ON MapLibre's `load` ════════════════════
+       Everything below asks the renderer to add or show things — the question canDraw() answers
+       (#R170) — and its own milestone says so: «4: the style is parsed and the map is usable». It was
+       registered on `load`, which MapLibre fires from inside a render and only once every source
+       present has loaded: a map busy with a restored link's layers can go minutes without one
+       (measured under 4x CPU throttling: never, in 311 s), and a render that throws never reaches it.
+       Then the whole-Earth floor, the default layers and the launch-screen milestones never happened
+       (dev-notes/2026-09-26-restored-layer-before-style.md). GE().whenCanDraw() resolves once, when
+       the style is parsed — and because this wait is registered here, before any layer box exists,
+       it is answered before the layer changes js/layer-rows.js held back. */
+    GE().whenCanDraw().then(()=>{
       /* (#R178) the contract takes a MODE ('flat' | 'globe' | 'globe-true'), not a MapLibre projection
          spec — the point of the seam is that "a globe" is a request, and each engine decides what
          object expresses it. __imap is published at construction now (see there), not here. */
@@ -1947,7 +1957,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(!wanted(id)){ c.__defFired=true; if(c.checked){ c.checked=false; const r=c.closest('.lyr-row'); if(r) r.classList.remove('on'); const ex=r&&r.querySelector('.lyr-extras'); if(ex) ex.style.display='none'; } return; }
       if(c.checked){ c.__defFired=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
     window.__imFireDefaultLayers=fire;
-    try{ if(GE().ready()) setTimeout(fire,300); GE().events.on('load',()=>setTimeout(fire,300)); setTimeout(fire,600); setTimeout(fire,1600); setTimeout(fire,2600); }catch(_){} })();
+    try{ if(GE().ready()) setTimeout(fire,300); GE().whenCanDraw().then(()=>setTimeout(fire,300)); setTimeout(fire,600); setTimeout(fire,1600); setTimeout(fire,2600); }catch(_){} })();
 
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }

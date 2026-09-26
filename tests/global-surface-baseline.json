@@ -467,6 +467,7 @@
   "IntMapLang",
   "IntMapLangSwitch",
   "IntMapLayerAudit",
+  "IntMapLayerHold",
   "IntMapLayerHome",
   "IntMapLayerPreviews",
   "IntMapLayerSidebar",

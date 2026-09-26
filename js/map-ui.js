@@ -3847,9 +3847,12 @@ window.IntMapModules.viewHash=function(HOST){
     /* ⚠ (#R244) ONE boot pass, whichever way the renderer becomes ready — and a backstop, because
        `load` may already have fired when this module is evaluated, in which case `on('load',…)`
        never calls back and `booted` would stay false for the whole session (the address bar would
-       stop following the map). `bootDone` makes the three entries idempotent. */
+       stop following the map). `bootDone` makes the three entries idempotent.
+       (restored-layer-before-style) The event entry is GE().whenCanDraw() now, not MapLibre's `load`,
+       which a busy map may not fire for minutes. The 8 s backstop stays: a restore that runs before
+       the style is parsed is safe, because js/layer-rows.js holds its layer changes until it is. */
     const _boot=()=>{ if(bootRan) return; bootRan=true; try{ restore(); }catch(_){} bootDone=true; booted=true; };
-    if(_imCanDraw()) _boot(); else { GE().events.on('load',_boot); setTimeout(_boot,8000); }
+    if(_imCanDraw()) _boot(); else { GE().whenCanDraw().then(_boot); setTimeout(_boot,8000); }
     window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
   })();
 };

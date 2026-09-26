@@ -3529,9 +3529,12 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   **レイヤーの ON/OFF はどの経路でも箱の `change` 1つに行き着き、スタイルが受け取れる前に来たものは
   `js/layer-rows.js` の `holdUntilDrawable` が預かる**（document の capture リスナ。manifest が宣言する箱だけ・
   レンダラが在って `canDraw()` が偽のあいだだけ）。預かった箱には後で `change` を**1回だけ**、着いた順に、
-  そのときのチェック状態で配る。配る時刻は、最初の `load` より前に預かったもの（起動時）は **`load` の直後**
-  （解析の瞬間に足すと、それらの source が揃うまで `load` が発火せず、`js/app-body.js` の起動処理が走らない）、
-  それより後（スタイルの差し替え）は `whenCanDraw()`。詳細は `docs/MAP-LAYERS.md` §7.2。
+  そのときのチェック状態で配る。配る時刻は `whenCanDraw()` の解決で、**MapLibre の `load` には結び付けない**。
+  **アプリの起動処理（`js/app-body.js`）・共有リンク復元（`js/map-ui.js`）・セッション復元（`js/session-tabs.js`）も
+  `load` ではなく `whenCanDraw()` を入口にする**——`load` は描画の内側で「その時点の全 source が読めた」ときにしか
+  発火せず、忙しい地図では何分も来ない。起動処理の待ちは箱が生まれる前に登録されるので、預かったレイヤーより
+  先に答えられる（待ちは登録順に解ける）。預かり中の一覧は `window.IntMapLayerHold.pending()`。
+  詳細は `docs/MAP-LAYERS.md` §7.2。
   ⚠ Atlas の `layerCatalog()` はまだ `#layer-dropdown` を歩く。manifest 側の入口は `catalog()`。
   **Active layers** は `_refreshActiveLayers()` がオン中のレイヤーをチップで出し、常に**上部 sticky**の
   先頭要素にいる（固定高1行の横スクロール。空でも "(0)" で常時表示＝高さが動かない）。
