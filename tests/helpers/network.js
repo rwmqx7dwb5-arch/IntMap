@@ -103,6 +103,25 @@ const BENIGN_CONSOLE = [
    Nothing legitimate is lost by refusing the whole class: the hermetic policy blocks hosts, which
    produces `net::ERR_FAILED`, never a CSP refusal. A CSP violation always means the page asked for
    something its OWN policy forbids, and that is a defect by construction. */
+/* ⚠ A STUB FOR AN UPSTREAM MUST MATCH THE UPSTREAM, HOWEVER THE PAGE REACHES IT. Since the public
+   CORS proxies were retired, a browser asks our own Edge relays for a third-party document and
+   names it in `?u=` — URL-encoded, so a glob on the upstream's path (`**\/v8/finance/spark**`)
+   never matches. Measured on the nightly deep tier 2026-09-26: tests/r170's stub was bypassed and
+   the spec read the live AAPL price from production (335.92, not the stubbed 225.5) — a test that
+   silently depended on the network. So the stub is matched against the upstream the request is FOR:
+   the request itself, or the `u` a relay of ours carries. */
+export function upstreamOf(url) {
+  try {
+    const u = new URL(url);
+    if (/\/functions\/v1\/[a-z0-9-]+$/.test(u.pathname) && u.searchParams.get('u')) return u.searchParams.get('u');
+  } catch (_) { /* not a URL — nothing to unwrap */ }
+  return String(url);
+}
+/** page.route / context.route for whatever the page asks of `test(upstreamUrl)`, direct or relayed. */
+export function routeUpstream(target, test, handler) {
+  return target.route((url) => test(upstreamOf(url.href)), handler);
+}
+
 // Is this console/error text harmless under the hermetic policy?
 export function isBenign(text) {
   const t = String(text || '');

@@ -13,6 +13,8 @@ const booted = (page) => page.waitForFunction(() => !!(window.__imBoot && window
 
 test('R186 launch screen: covers the app from the first frame and lifts on real milestones', async ({ page }) => {
   test.setTimeout(180_000);
+  const markRequests = [];
+  page.on('request', (req) => { if (/IntMap\.Icon/.test(req.url())) markRequests.push(req.url()); });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   /* It is static markup in the body, so it is there before any module has run. */
   await expect(page.locator('#boot-splash')).toBeVisible();
@@ -22,14 +24,16 @@ test('R186 launch screen: covers the app from the first frame and lifts on real 
      WINS the cascade is ever fetched — two <img> tags would pull 331 KB to show 118 KB of it. What
      has to hold is what this line was for: the launch screen shows a content-hashed IntMap mark from
      the first frame. Where the URL is written down is not the property. */
-  const mark = await page.locator('#boot-splash .boot-icon')
-    .evaluate((el) => getComputedStyle(el).backgroundImage);
+  /* ⚠ READ FROM THE NETWORK, NOT FROM THE SPLASH. Since the splash lifts on `whenCanDraw` rather than
+     on `load`, it can be gone before a second evaluate reaches it — measured on the nightly deep tier
+     2026-09-26: the element was already detached and getComputedStyle answered "" for a mark that had
+     been served once. What has to hold is unchanged: the launch screen asked for a content-hashed
+     IntMap mark, and for exactly one of the two (the other declaration lost the cascade). */
+  await booted(page);
+  expect(markRequests.length, `only the winning declaration is fetched: ${markRequests.join(', ')}`).toBe(1);
   /* either mark — a light context gets IntMap.Icon_BW-inverted, a dark one gets IntMap.Icon — and
      `[-.]` after the name is the content hash (built) or the plain extension (unbuilt) */
-  expect(mark, 'the launch screen shows an IntMap mark').toMatch(/IntMap\.Icon(_BW-inverted)?[-.]/);
-  /* and EXACTLY ONE of them is fetched: the other declaration lost the cascade and is never requested */
-  expect(mark.match(/IntMap\.Icon/g).length, 'only the winning declaration is fetched').toBe(1);
-  await booted(page);
+  expect(markRequests[0], 'the launch screen shows an IntMap mark').toMatch(/IntMap\.Icon(_BW-inverted)?[-.]/);
   /* The splash dissolves over 420 ms and is then removed. Wait for the RESULT — a fixed sleep is a
      test of the runner's load, and on a busy CI runner 700 ms was not enough (it passed on retry,
      which is the signature of a timing assertion rather than a behavioural one). */
@@ -80,7 +84,11 @@ test.describe('R186 default layers', () => {
      about the base map: omitting them now means «the reader switched the base map off too», and the
      restore spends its poll doing that instead of reaching dl-climate inside this test's window. */
   await page.evaluate((v) => localStorage.setItem('intmap_session2', v), sessionWith(['dl-subcables'], { tabInit: true }));
-  await page.reload();
+  /* ⚠ NOT page.reload(): the first load writes its default-on layers into the URL hash (`&l=…`), and a
+     reload keeps the hash — a shared link, which by design outranks the stored session. Since the boot
+     got faster (the hash is written before this line runs) that turned climate back on: measured on the
+     nightly deep tier 2026-09-26. The claim is about the NEXT load of the app, i.e. a hash-less URL. */
+  await page.goto('/');
   await booted(page);
   await page.waitForTimeout(2500);
   const r = await page.evaluate(() => ({

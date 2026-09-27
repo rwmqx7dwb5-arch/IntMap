@@ -13,6 +13,7 @@
 //      the ground elevation, or the box would float above the mountain instead of above the sea.
 //   3. The requested defaults, observed on a fresh profile: no ticker, no workspace, Countries open.
 import { test, expect, bootPage, loadLazyModules } from './helpers/app.js';
+import { routeUpstream } from './helpers/network.js';
 
 /* ⚠ (#R208) THE APPLICATION IS BOOTED ONCE PER WORKER, NOT ONCE PER TEST. Every test in this file
    used to start the whole app to ask one question of it. Measured, that boot is 2.4 s on the
@@ -265,7 +266,8 @@ test('a live price is stamped with the quote\'s OWN time, not the fetch time', a
   // response with a known quote timestamp and checks the stamp is that timestamp — the difference
   // between "priced at 14:32" and "we fetched something at 14:32" is the whole point of priceTexact.
   const QUOTE_MS = Date.UTC(2026, 6, 24, 20, 0, 0);          // a fixed, recognisable quote time
-  await page.route('**/v8/finance/spark**', route => route.fulfill({
+  /* matched against the UPSTREAM, direct or relayed — tests/helpers/network.js `routeUpstream` says why */
+  await routeUpstream(page, (u) => /\/v8\/finance\/spark\b/.test(u), route => route.fulfill({
     status: 200, contentType: 'application/json',
     headers: { 'access-control-allow-origin': '*' },
     body: JSON.stringify({
