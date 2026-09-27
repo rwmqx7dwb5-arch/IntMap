@@ -77,13 +77,13 @@ window.IntMapModules.compare=function(HOST){
       '#cmp-close:hover{background:#ff3b30;color:#fff;}'+
       '.cmp-seg{display:inline-flex;background:var(--input-bg);border-radius:9px;padding:2px;gap:2px;flex:0 0 auto;}'+
       '.cmp-seg .cmp-btn{background:transparent;border-radius:7px;padding:4px 9px;}'+
-      '.cmp-seg .cmp-btn.on{background:var(--primary-color);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);}'+
+      '.cmp-seg .cmp-btn.on{background:var(--primary-fill);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);}'+
       '.cmp-icon{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:8px;flex:0 0 auto;}'+
       /* (#R24) touch-action:manipulation → compare buttons (Map/Sat/Sync/Free/X-ray/min/close) fire on the
          FIRST tap with no iOS 300ms delayed/retargeted click — a big reason map/satellite "押しても変わらない"
          and the close "終了できない" on mobile. */
       '.cmp-btn{background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}'+
-      '.cmp-btn.on{background:var(--primary-color);color:#fff;}'+
+      '.cmp-btn.on{background:var(--primary-fill);color:#fff;}'+
       '.cmp-body{position:relative;flex:1 1 auto;min-height:0;}'+
       '#compare-map{position:absolute;inset:0;}'+
       /* (#R31) layer picker row directly under the control segments. */
@@ -131,7 +131,7 @@ window.IntMapModules.compare=function(HOST){
       '[data-theme="dark"] #compare-window.cmp-xray .cmp-head{background:#1a1c22 !important;box-shadow:0 2px 10px rgba(0,0,0,0.45);}'+
       '#compare-window.cmp-xray .cmp-head .cmp-title{color:var(--text-main) !important;}'+
       '#compare-window.cmp-xray .cmp-btn{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
-      '#compare-window.cmp-xray .cmp-btn.on{background:var(--primary-color) !important;color:#fff !important;}'+
+      '#compare-window.cmp-xray .cmp-btn.on{background:var(--primary-fill) !important;color:#fff !important;}'+
       '#compare-window.cmp-xray #cmp-close{background:#ff3b30 !important;color:#fff !important;}'+
       '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;z-index:6;}'+
       '#compare-window.cmp-xray .cmp-ctrls select{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
@@ -164,7 +164,7 @@ window.IntMapModules.compare=function(HOST){
       '.cmp-head .cmp-title{flex:1 1 100%;font-size:14px;margin:0;}'+
       '.cmp-head .cmp-seg{flex:1 1 0;display:flex;background:var(--input-bg);border-radius:9px;padding:2px;gap:2px;}'+
       '.cmp-head .cmp-seg .cmp-btn{flex:1 1 0;min-width:0;padding:7px 4px;font-size:12px;min-height:32px;background:transparent;border-radius:7px;}'+
-      '.cmp-head .cmp-seg .cmp-btn.on{background:var(--primary-color);color:#fff;}'+
+      '.cmp-head .cmp-seg .cmp-btn.on{background:var(--primary-fill);color:#fff;}'+
       '#cmp-close,#cmp-min{position:absolute !important;top:10px;z-index:30 !important;pointer-events:auto !important;width:34px;height:34px;min-width:34px;border-radius:9px;padding:0;display:flex !important;align-items:center;justify-content:center;background:var(--input-bg) !important;color:var(--text-main) !important;border:none;}'+
       '#cmp-close{right:10px;} #cmp-min{right:50px;}'+
       /* (#R30) Main-map FABs move to the BOTTOM-LEFT while compare is open — clear of the compare ×

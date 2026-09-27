@@ -498,6 +498,32 @@ window.IntMapModules.layoutReflow=function(HOST){
         if(hud) ['transitionend','transitioncancel'].forEach(ev=>hud.addEventListener(ev,(e)=>{ if(!e||e.propertyName==='right') upd(); })); }catch(_){} }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
   })();
+  /* ══ (ui-a11y-polish) …AND THE PLACEHOLDER IS THE ONE THAT FITS THE PILL THIS WATCHER LEFT ══════════
+     MEASURED on production (2026-09-27, 1280 × 800, first visit — the right layer panel opens itself):
+     the watcher above centres the pill in the gap between the two sidebars at 203 px, which leaves the
+     field 105 px, and 「Search any place on Earth...」 is 185 px — it read 「Search any pla」. Widening
+     the pill is the one thing this layout must not do (it would slide under the controls, #R25/#R484)
+     and dropping it to a second row is what #R122 was asked to stop, so the WORDS give way instead:
+     the full sentence while it fits the field's measured room, the short one when it does not, and the
+     stylesheet's `text-overflow:ellipsis` below either.
+     ⚠ THE FULL FORM IS WHATEVER js/i18n.js LAST WROTE (`data-i18n-ph="msPh"`), read back through a
+     MutationObserver, so a language switch re-measures and nothing here restates the locale tables.
+     ⚠ MEASURED, NOT ASSUMED: the room is the field's own clientWidth less its padding, and the text is
+     measured in the field's own computed font — a width threshold would be wrong in the other language. */
+  (function(){
+    function wire(){
+      const inp=document.getElementById('ms-input'); if(!inp||typeof ResizeObserver!=='function') return;
+      let full=inp.placeholder, mine=null, ctx=null;
+      const fits=(txt)=>{ try{ const cs=getComputedStyle(inp); ctx=ctx||document.createElement('canvas').getContext('2d');
+        ctx.font=[cs.fontStyle,cs.fontWeight,cs.fontSize,cs.fontFamily].join(' ');
+        return ctx.measureText(txt).width<=inp.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0); }catch(_){ return true; } };
+      const fit=()=>{ if(!inp.clientWidth) return;   /* the collapsed phone FAB has no field to fit */
+        const want=fits(full)?full:window.IntMapLang.t(HOST.lang,'Search places','地名を検索');
+        if(inp.placeholder!==want){ mine=want; inp.placeholder=want; } };
+      new MutationObserver(()=>{ if(inp.placeholder!==mine){ full=inp.placeholder; fit(); } }).observe(inp,{attributes:true,attributeFilter:['placeholder']});
+      new ResizeObserver(fit).observe(inp); fit(); }
+    if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
+  })();
 
   /* (#R21) Desktop sidebar width is user-resizable — a slim col-resize handle on the sidebar's
      right edge drives --sidebar-w; persists in intmap_sidebar_w; camera padding re-follows. */

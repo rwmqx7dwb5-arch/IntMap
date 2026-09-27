@@ -94,7 +94,7 @@ window.IntMapModules.analysisTimeSeries=function(HOST){
         /* (#R35) The intersection dot is an HTML element (perfect circle) — the old SVG <circle> lived in a
            preserveAspectRatio="none" chart, so the non-uniform x/y scale squashed it into an ellipse
            ("ドットが縦に潰れて楕円"). An absolutely-positioned div is immune to that scaling. */
-        +'<div class="ts-dot" style="display:none;position:absolute;width:9px;height:9px;border-radius:50%;background:var(--primary-color);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.18);pointer-events:none;transform:translate(-50%,-50%);z-index:6;"></div>'
+        +'<div class="ts-dot" style="display:none;position:absolute;width:9px;height:9px;border-radius:50%;background:var(--primary-fill);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.18);pointer-events:none;transform:translate(-50%,-50%);z-index:6;"></div>'
       +'</div>';
     }
     /* (#R34) Wire each chart's instant crosshair after its HTML is in the DOM. */

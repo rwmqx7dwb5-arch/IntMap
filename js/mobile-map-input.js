@@ -99,7 +99,7 @@ window.IntMapModules.mobileMapInput=function(HOST){
     #m-crosshair::before,#m-crosshair::after{ content:''; position:absolute; background:rgba(255,255,255,0.6); box-shadow:0 0 1.5px rgba(0,0,0,0.7); }
     #m-crosshair::before{ left:50%; top:0; width:1.4px; height:100%; margin-left:-0.7px; }
     #m-crosshair::after{ top:50%; left:0; height:1.4px; width:100%; margin-top:-0.7px; }
-    #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:1200; background:var(--primary-color); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
+    #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:1200; background:var(--primary-fill); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
     #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
     /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
        smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */

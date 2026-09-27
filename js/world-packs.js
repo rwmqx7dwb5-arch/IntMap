@@ -804,7 +804,7 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R270) the year, on the layer — BACI's own range. See makePanel.clockYear. */
         panel.clockYear({min:YMIN,max:YMAX});
         const mark=(sel,active)=>b.querySelectorAll(sel).forEach(x=>{ const a=active(x);
-          x.style.background=a?'var(--primary-color)':'var(--input-bg)'; x.style.color=a?'#fff':'var(--text-main)'; });
+          x.style.background=a?'var(--primary-fill)':'var(--input-bg)'; x.style.color=a?'#fff':'var(--text-main)'; });
         mark('.wp-x',()=>dir==='X'); mark('.wp-m',()=>dir==='M');
         mark('.wp-n',(x)=>+x.getAttribute('data-n')===topN);
         /* ══ ⚠ (#R218) THE SEGMENT THAT NEVER RE-LIT ═══════════════════════════════════════════════
@@ -1031,7 +1031,7 @@ window.IntMapModules.worldPacks=function(HOST){
            actually loaded rather than assumed; before they land the row is simply not built. */
         { const yr=owidRange(SRCS[kind].slug); if(yr) panel.clockYear(yr); }
         b.querySelectorAll('.wp-k').forEach(x=>{ const a=x.getAttribute('data-k')===kind;
-          x.style.background=a?'var(--primary-color)':'var(--input-bg)'; x.style.color=a?'#fff':'var(--text-main)';
+          x.style.background=a?'var(--primary-fill)':'var(--input-bg)'; x.style.color=a?'#fff':'var(--text-main)';
           x.onclick=()=>{ const nk=x.getAttribute('data-k'); if(nk===kind) return; setKind(nk); }; });
         return b; }
 
@@ -5484,7 +5484,7 @@ window.IntMapModules.worldPacks=function(HOST){
         st.textContent='.wpa-seg{display:flex;gap:2px;background:var(--input-bg);border-radius:8px;padding:2px;flex:1;min-width:0;}'
           +'.wpa-seg button{flex:1;min-width:0;border:0;background:transparent;color:var(--text-main);font-size:10.5px;'
           +'font-weight:500;padding:4px 3px;border-radius:6px;cursor:pointer;line-height:1.2;white-space:nowrap;}'
-          +'.wpa-seg button.on{background:var(--primary-color);color:#fff;font-weight:600;}';
+          +'.wpa-seg button.on{background:var(--primary-fill);color:#fff;font-weight:600;}';
         (document.head||document.documentElement).appendChild(st); }
       function wireControls(b){ if(!b) return;
         b.querySelectorAll('.wpa-seg').forEach(sg=>{ const kind=sg.getAttribute('data-seg');
@@ -6288,7 +6288,7 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<button class="wp-t-step" data-d="1" title="'+esc(L('an hour on','1時間後','eine Stunde weiter','на час вперёд','una hora adelante'))+'" style="'+TB+'">›</button>'
           +'<button class="wp-t-step" data-d="6" title="'+esc(L('on about a quarter cycle (6 h)','1/4周期ほど進む（6時間）','etwa ein Viertelzyklus weiter','примерно на четверть цикла вперёд','un cuarto de ciclo adelante (6 h)'))+'" style="'+TB+'">»</button>'
           +'<input class="wp-t-when" type="datetime-local" step="3600" aria-label="'+esc(L('Date and time','日時'))+'" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
-          +'<button class="wp-t-live" style="'+TB+(live?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
+          +'<button class="wp-t-live" style="'+TB+(live?'background:var(--primary-fill);color:#fff;border-color:var(--primary-color);':'')+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
           +'</div>'; }
       function setWhen(ms){ try{ window.IntMapTime.set(new Date(snapHour(ms)),{allowFuture:true,source:'tides'}); }catch(_){} }
       function stopPlay(){ if(playTmr){ stopTick(playTmr); playTmr=0; } }

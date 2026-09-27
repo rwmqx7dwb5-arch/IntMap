@@ -67,8 +67,8 @@ test('R468 ②: the failure answer says WHY, the same way the successes do', () 
      not the exact object literal beside them. */
   const fail = /return new Response\(JSON\.stringify\(\{ error: "upstream_unavailable"[\s\S]*?\n {4}\}\);/.exec(RELAY);
   assert.ok(fail, 'the cold-and-refused branch must still exist');
-  assert.match(fail[0], /status:\s*502/,
-    'and it must still be the 502 — a branch that stopped saying the upstream failed would satisfy '
+  assert.match(fail[0], /status:\s*(?:502|coldStatus\()/,
+    'and it must still be a failure status (502, or since the boot-probe fix coldStatus(): 503 for a refusing upstream) — a branch that stopped saying the upstream failed would satisfy '
     + 'every other assertion here while telling the reader nothing');
   assert.match(fail[0], /x-intmap-gdelt-cache["']\s*:\s*["']cold["']/,
     'a 502 must say the cache was COLD — otherwise "we had nothing" and "GDELT refused a refresh of '

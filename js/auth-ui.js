@@ -147,7 +147,7 @@ window.IntMapModules.authUi=function(HOST){
       d.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:340px;box-sizing:border-box;">'
         +'<h2 style="margin:0 0 12px;font-size:18px;">'+HOST.escapeHtml(_authL('Set a new password','新しいパスワードを設定','Neues Passwort festlegen','Задать новый пароль','Establecer nueva contraseña'))+'</h2>'
         +'<input id="setpw-input" type="password" autocomplete="new-password" placeholder="'+HOST.escapeHtml(_authL('New password (min. 8, incl. a number)','新しいパスワード（8文字以上・数字を含む）','Neues Passwort (min. 8, mit Ziffer)','Новый пароль (мин. 8, с цифрой)','Nueva contraseña (mín. 8, con número)'))+'" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin-bottom:12px;">'
-        +'<button id="setpw-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;cursor:pointer;">'+HOST.escapeHtml(_authL('Save','保存','Speichern','Сохранить','Guardar'))+'</button>'
+        +'<button id="setpw-save" style="width:100%;background:var(--primary-fill);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;cursor:pointer;">'+HOST.escapeHtml(_authL('Save','保存','Speichern','Сохранить','Guardar'))+'</button>'
         +'<p id="setpw-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>'
         +'<button id="setpw-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">'+HOST.escapeHtml(_authL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button></div>';
       document.body.appendChild(d);
@@ -213,7 +213,7 @@ window.IntMapModules.authUi=function(HOST){
       <input id="am-email" type="email" placeholder="you@example.com" autocomplete="username" style="${inStyle}">
       <input id="am-pass" type="password" placeholder="${window.IntMapLang.t(HOST.lang,'Password','パスワード','Passwort','Пароль','Contraseña')}" autocomplete="current-password" style="${inStyle}margin-bottom:8px;">
       <div id="am-forgot-row" style="text-align:right;margin:-2px 0 12px;"><a id="am-forgot" href="#" style="color:var(--text-muted);font-size:12px;text-decoration:none;">${_authL('Forgot password?','パスワードをお忘れですか？','Passwort vergessen?','Забыли пароль?','¿Olvidaste tu contraseña?')}</a></div>
-      <button id="am-submit" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">Log In</button>
+      <button id="am-submit" style="width:100%;background:var(--primary-fill);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">Log In</button>
       <button id="am-passkey" style="width:100%;background:var(--card-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);padding:10px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;margin-top:8px;display:none;">${_authL('Sign in with a passkey','パスキーでログイン','Mit Passkey anmelden','Войти по паскею','Iniciar sesión con passkey')}</button>
       <p id="am-msg" style="margin:12px 0 0;color:var(--text-muted);font-size:12.5px;line-height:1.5;"></p>
       <button id="am-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">Close</button>

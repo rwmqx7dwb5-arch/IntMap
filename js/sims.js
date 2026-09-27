@@ -448,7 +448,7 @@ window.IntMapModules.radiation=function(HOST){
       p.innerHTML='<div class="rad-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">☢ '
           +LL('Radioactive dispersion','放射性物質の拡散','Radioaktive Ausbreitung','Рассеивание радиации','Dispersión radiactiva')+'</span><button class="rad-x" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
-        +'<button class="rad-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '
+        +'<button class="rad-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-fill);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '
           +LL('Place the source on the map','地図で放出源を設定','Quelle auf der Karte setzen','Задать источник на карте','Colocar la fuente en el mapa')+'</button>'
         +'<div style="font-size:11.5px;color:var(--text-main);">'+_esc(where)+'</div>'
         +'<label style="'+LB+'">'+LL('Source term','放出量','Quellterm','Выброс','Término fuente')+'<select class="rad-src" style="'+IN+'">'
@@ -460,7 +460,7 @@ window.IntMapModules.radiation=function(HOST){
         +'<label style="'+LB+'">'+LL('Window (h)','追跡時間 (h)','Zeitfenster (h)','Окно (ч)','Ventana (h)')+'<input class="rad-hours" type="number" min="6" max="80" step="1" value="'+uiHours+'" style="'+IN+'"></label>'
         +'</div>'
         +'<label style="'+LB+'">'+LL('Release height (m)','放出高度 (m)','Freisetzungshöhe (m)','Высота выброса (м)','Altura de emisión (m)')+'<input class="rad-rise" type="number" min="10" max="3000" step="10" value="'+(uiRiseTouched?uiRise:presetRise())+'" style="'+IN+'"></label>'
-        +'<button class="rad-go" style="height:34px;border:none;border-radius:9px;background:'+(site?'var(--primary-color)':'var(--input-bg)')+';color:'+(site?'#fff':'var(--text-muted)')+';font-size:12.5px;font-weight:700;cursor:'+(site?'pointer':'default')+';">'
+        +'<button class="rad-go" style="height:34px;border:none;border-radius:9px;background:'+(site?'var(--primary-fill)':'var(--input-bg)')+';color:'+(site?'#fff':'var(--text-muted)')+';font-size:12.5px;font-weight:700;cursor:'+(site?'pointer':'default')+';">'
           +LL('Run the dispersion','拡散を実行','Ausbreitung rechnen','Рассчитать','Ejecutar')+'</button>'
         +'<div class="rad-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;">'+_esc(state||'')+'</div>'
         +'<button class="rad-clr" style="height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:9px;background:var(--input-bg);color:var(--text-muted);font-size:12px;cursor:pointer;">'
@@ -819,7 +819,7 @@ window.IntMapModules.sun=function(HOST){
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       panel.innerHTML='<div class="sun-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌇 '+SN('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+'</span><button class="sun-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
-        +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
+        +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-fill);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
         +'<div style="display:flex;align-items:center;gap:8px;"><input type="range" class="sun-slider" min="0" max="1439" value="720" style="flex:1;"><span class="sun-time" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:44px;text-align:right;">12:00</span></div>'
         /* (#R298) the coordinate every number below is for — filled by updatePanel() */
         +'<div class="sun-where" style="font-size:11px;color:var(--text-muted);"></div>'
@@ -868,7 +868,7 @@ window.IntMapModules.sun=function(HOST){
     const ENG=()=>window.IntMapInsolation;
     function engSay(h){ const e=panel&&panel.querySelector('.sun-eng'); if(e) e.innerHTML=h; }
     function syncTerrBtn(){ const b=panel&&panel.querySelector('.sun-terr'); if(!b) return;
-      b.style.background=terrainOn?'var(--primary-color)':'var(--input-bg)'; b.style.color=terrainOn?'#fff':'var(--text-main)'; }
+      b.style.background=terrainOn?'var(--primary-fill)':'var(--input-bg)'; b.style.color=terrainOn?'#fff':'var(--text-main)'; }
     const nf=(v,d)=>Number(v).toLocaleString(undefined,{maximumFractionDigits:d==null?0:d});
     async function drawTerrain(){ if(!terrainOn||engBusy||!ENG()) return;
       const at=siteLL(); if(!at) return;   /* (#R302) the sun's altitude is a property of ONE point — with none there is nothing to shade */

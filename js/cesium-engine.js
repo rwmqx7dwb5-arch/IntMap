@@ -1192,7 +1192,7 @@ window.IntMapCesiumEngine=(function(){
     getLayer(id){ const l=this._layerById.get(id); return l?Object.assign({},l.def):null; }
     addLayer(def,before){
       if(!def||!def.id||this._layerById.has(def.id)) return;
-      const rec={ def:Object.assign({},def), kind:kindOf(def.type), ds:null, imagery:null, provider:null };
+      const rec={ def:Object.assign({},def), kind:kindOf(def.type), ds:null, imagery:null, provider:null, retiring:null, unpainted:null };
       const at=before?this._layers.findIndex(l=>l.def.id===before):-1;
       if(at>=0) this._layers.splice(at,0,rec); else this._layers.push(rec);
       this._layerById.set(def.id,rec);
@@ -1219,15 +1219,56 @@ window.IntMapCesiumEngine=(function(){
     _teardownLayer(rec){
       try{ if(rec.ds){ this._dsColl.remove(rec.ds,true); rec.ds=null; } }catch(_){}
       try{ if(rec.imagery){ this._scene.imageryLayers.remove(rec.imagery,true); rec.imagery=null; } }catch(_){}
+      this._retire(rec);
     }
-    _rebuildLayer(rec){ this._teardownLayer(rec); this._buildLayer(rec); }
+    /* the picture an `image` source showed before its latest updateImage, kept on screen until the
+       new one has arrived — see _buildImageSourceLayer */
+    _retire(rec){ try{ if(rec.retiring){ this._scene.imageryLayers.remove(rec.retiring,true); } }catch(_){} rec.retiring=null; }
+    _imageSourced(rec){ const s=this._sources.get(rec.def.source); return rec.def.type==='raster'&&!!s&&s.type==='image'; }
+    _rebuildLayer(rec){
+      /* an `image` source's new picture is fetched and decoded before it can be shown; tearing the old
+         one down first would blank the layer for that long on every updateImage (a Köppen class
+         highlight, the full-resolution swap). The one on screen stays until its successor is ready. */
+      if(rec.imagery&&this._imageSourced(rec)){
+        const cur=rec.imagery; rec.imagery=null;
+        if(cur.ready){ this._retire(rec); rec.retiring=cur; }
+        else { try{ this._scene.imageryLayers.remove(cur,true); }catch(_){} }   /* never shown — nothing to keep */
+        this._buildLayer(rec); return;
+      }
+      this._teardownLayer(rec); this._buildLayer(rec);
+    }
+    /* ══ AN `image` SOURCE IS BUILT ASYNCHRONOUSLY, AND ITS FAILURE IS A FACT ON THE LAYER ═══════════
+       js/cesium-layers.js makeImageSourceProvider says why these were never painted (a constructor
+       that threw into a catch that returned null). The layer is added at once, in its style position,
+       and fills when the picture has decoded. If it cannot — the URL fails, the image is empty — the
+       record says so (`rec.unpainted`) and the engine fires `error` naming the layer, instead of
+       holding a layer id that draws nothing, which is what the style used to be told. */
+    _buildImageSourceLayer(rec,visible){
+      const spec=(this._sources.get(rec.def.source)||{spec:{}}).spec||{};
+      const L=Cesium.ImageryLayer.fromProviderAsync(CL().makeImageSourceProvider(Cesium,spec),{});
+      rec.imagery=L; rec.provider=null; rec.unpainted=null;
+      L.readyEvent.addEventListener(p=>{ if(rec.imagery!==L) return;
+        rec.provider=p; this._retire(rec); try{ this._scene.requestRender(); }catch(_){} });
+      L.errorEvent.addEventListener(err=>{ if(rec.imagery!==L) return;
+        this._retire(rec);
+        this._unpainted(rec,(err&&err.message)||String(err||'image source failed'),err);
+        try{ this._scene.requestRender(); }catch(_){} });
+      this._scene.imageryLayers.add(L);
+      this._applyImageryPaint(rec);
+      L.show=visible;
+      this._reorderImagery();
+    }
     _buildLayer(rec){
       const def=rec.def;
       const visible=(def.layout&&def.layout.visibility)!=='none';
+      rec.unpainted=null;
       try{
-        if(rec.kind==='imagery'){
+        if(rec.kind==='imagery'&&this._imageSourced(rec)){
+          this._buildImageSourceLayer(rec,visible);
+        } else if(rec.kind==='imagery'){
           const prov=this._providerFor(rec);
-          if(!prov) return;
+          /* ⚠ not silently: a style layer that draws nothing says so, on the record and as an event */
+          if(!prov){ this._unpainted(rec,'no '+def.type+' provider'); return; }
           const L=new Cesium.ImageryLayer(prov,{});
           rec.provider=prov;
           rec.imagery=L;
@@ -1245,10 +1286,15 @@ window.IntMapCesiumEngine=(function(){
           this._dsColl.add(ds);
         } else if(rec.kind==='background'){
           this._applyBackground();
+        } else {
+          this._unpainted(rec,'layer type '+def.type+' is not drawn by this engine');
         }
-      }catch(e){ this.fire('error',{error:e}); }
+      }catch(e){ this._unpainted(rec,(e&&e.message)||String(e),e); }
       this._scene.requestRender();
     }
+    /* a layer that is in the style and on no surface: the record carries why, and `error` names it */
+    _unpainted(rec,why,err){ rec.unpainted=String(why||'not drawn').slice(0,160);
+      this.fire('error',{error:err||new Error(rec.unpainted),layerId:rec.def.id,sourceId:rec.def.source}); }
     /* Background is one ordered style stack, not the last layer whose paint was
        touched. Hiding Chronos must restore the visible background (or globe default). */
     _applyBackground(){
@@ -1262,10 +1308,7 @@ window.IntMapCesiumEngine=(function(){
       const def=rec.def, src=this._sources.get(def.source)||{spec:{}};
       const spec=src.spec||{};
       if(def.type==='raster'){
-        if(src.type==='image'){
-          try{ return new Cesium.SingleTileImageryProvider({ url:spec.url,
-            rectangle:rectFromCoords(Cesium,spec.coordinates) }); }catch(_){ return null; }
-        }
+        /* an `image` source never reaches here: _buildImageSourceLayer builds it asynchronously */
         return CL().makeTileImageryProvider(Cesium,{ tiles:spec.tiles||[], tileSize:spec.tileSize||256,
           maxzoom:spec.maxzoom, minzoom:spec.minzoom, attribution:spec.attribution, protocols:PROTOCOLS,
           /* (#R185) the two numbers that decide how much imagery a screen pixel gets —
@@ -1334,6 +1377,9 @@ window.IntMapCesiumEngine=(function(){
       L.saturation=1+n('raster-saturation',0);
       L.hue=n('raster-hue-rotate',0)*D2R;
       L.gamma=1;
+      /* the picture still on screen while its successor decodes follows the same paint */
+      const R=rec.retiring;
+      if(R){ R.alpha=L.alpha; R.brightness=L.brightness; R.contrast=L.contrast; R.saturation=L.saturation; R.hue=L.hue; R.gamma=L.gamma; }
     }
     /* Cesium stretches the first visible imagery layer to the whole globe,
        even if its provider only covers a polar cap (ImageryLayer.isBaseLayer).
@@ -1352,7 +1398,8 @@ window.IntMapCesiumEngine=(function(){
     _reorderImagery(){
       try{
         const coll=this._scene.imageryLayers;
-        const want=this._layers.filter(l=>l.imagery).map(l=>l.imagery);
+        /* a picture still on screen while its successor decodes sits just under it, in the same place */
+        const want=[]; this._layers.forEach(l=>{ if(l.retiring) want.push(l.retiring); if(l.imagery) want.push(l.imagery); });
         want.forEach(L=>{ try{ coll.raiseToTop(L); }catch(_){} });
       }catch(_){}
     }
@@ -1415,6 +1462,7 @@ window.IntMapCesiumEngine=(function(){
       if((rec.def.layout?.visibility!=='none')===!!on&&(!rec.ds||rec.ds.show===!!on)&&(!rec.imagery||rec.imagery.show===!!on)) return;
       rec.def.layout=Object.assign({},rec.def.layout,{visibility:on?'visible':'none'});
       if(rec.imagery) rec.imagery.show=!!on;
+      if(rec.retiring) rec.retiring.show=!!on;
       if(rec.ds){ rec.ds.show=!!on; if(on) this._dirty.add(id); }
       if(rec.kind==='background') this._applyBackground();
       else if(!rec.imagery&&!rec.ds&&on) this._buildLayer(rec);
@@ -2591,11 +2639,6 @@ window.IntMapCesiumEngine=(function(){
      now flies to the camera the INSTANT path produces, so there is nothing left to keep in
      step and the copy is gone. The formula it held is still written out above `_hpr`, which is
      where it is read BACKWARDS. */
-  function rectFromCoords(Cesium,coords){
-    if(!Array.isArray(coords)||coords.length<4) return Cesium.Rectangle.MAX_VALUE;
-    const lngs=coords.map(c=>c[0]), lats=coords.map(c=>c[1]);
-    return Cesium.Rectangle.fromDegrees(Math.min(...lngs),Math.min(...lats),Math.max(...lngs),Math.max(...lats));
-  }
   function dsList(coll){ const out=[]; for(let i=0;i<coll.length;i++) out.push(coll.get(i)); return out; }
 
   return CesiumView;

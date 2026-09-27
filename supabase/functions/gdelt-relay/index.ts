@@ -257,7 +257,13 @@ async function ensureBucket() {
    minutes of deploying. The isolate is per-request (measured), so a module-level slot is
    request-scoped by construction. */
 let STORE_NOTE = "";
-async function writeCache(key, body) {
+/* `quiet`: a bookkeeping write (the upstream receipt below) that must not rewrite STORE_NOTE, which
+   reports on the CACHE write of this very request. */
+async function writeCache(key, body, quiet) {
+  const saved = STORE_NOTE;
+  try { return await writeCacheNoted(key, body); } finally { if (quiet) STORE_NOTE = saved; }
+}
+async function writeCacheNoted(key, body) {
   const k = storageKey();
   const u = svcUrl("/storage/v1/object/" + BUCKET + "/" + key);
   if (!k) { STORE_NOTE = "no-key"; return false; }
@@ -356,11 +362,59 @@ async function refresh(canonUrl, key, budgetMs, maxTries) {
     if (!j || typeof j !== "object" || !Array.isArray(j.articles)) { why = "not-artlist"; break; }
     await writeCache(key, txt);
     UPSTREAM_NOTE = "200/" + tries;
+    await noteUpstream(UPSTREAM_NOTE);
     return txt;
   }
   UPSTREAM_NOTE = why + "/" + tries;
+  if (tries > 0) await noteUpstream(UPSTREAM_NOTE);
   return null;
 }
+
+/* ══ ⚠⚠⚠ WHAT THE UPSTREAM LAST SAID, FOR A READER THAT MUST NOT ASK IT (?peek=1) ══════════════════
+   js/atlas-console.js's self-diagnosis asked «is GDELT reachable?» by sending every visitor's page,
+   25 s after boot, through this relay to api.gdeltproject.org. MEASURED from production 2026-09-27
+   with the probe's own URL: 502 `upstream_unavailable`, `x-intmap-gdelt-upstream: 429/1`, and a warm
+   receipt `miss:upstream_unreachable/7` from 54 s earlier — so on a cold cache ONE boot cost an
+   in-band upstream read, a warm of up to seven more, and (through js/proxy-fetch.js's ladder) a
+   direct read from the reader's own IP; the 502 and the direct read's abort were console errors in
+   every visitor's page. The question the diagnosis has is not «fetch me a document», it is «what is
+   the state of this pipe», and this function already knows the answer without spending a slot GDELT
+   counts: every upstream read ends here, in `refresh`, and the outcome is written down once, for
+   the whole relay. `?peek=1` reads it back — 200, because the relay answering is the relay being up;
+   what the upstream last said, and how long ago, is the body. */
+const UPSTREAM_KEY = "upstream-last.json";
+async function noteUpstream(note) { await writeCache(UPSTREAM_KEY, JSON.stringify({ note }), true); }
+async function peek() {
+  const j = await readCache(UPSTREAM_KEY);
+  let note = "none";
+  if (j) { try { const r = JSON.parse(j.b); note = String((r && r.note) || "-").slice(0, 40); } catch (_) { note = "unreadable"; } }
+  return new Response(JSON.stringify({ relay: "up", upstream: note, state: upstreamState(note), upstreamAgeMs: j ? Math.max(0, Date.now() - j.t) : null }), {
+    status: 200,
+    headers: { ...CORS, "content-type": "application/json", "cache-control": "no-store", "x-intmap-gdelt-upstream": note },
+  });
+}
+
+/* ══ THE STATUS OF A COLD MISS FOLLOWS WHAT THE UPSTREAM SAID ════════════════════════════════════
+   This was 502 for every cold failure. 502 is «the upstream's response was INVALID» (RFC 9110
+   §15.6.3) — right for a 200 that is not an artlist, wrong for GDELT's 429, which is a perfectly valid
+   answer meaning «not now». A gateway whose upstream is temporarily refusing is 503 (§15.6.4), the
+   same status _shared/relay-guard.js already gives an upstream that timed out or could not be
+   reached. No Retry-After: GDELT's 429 carries none (measured 2026-09-27), and this function has no
+   number of its own to offer. */
+/* ONE reading of an upstream note, for both readers: the cold answer's status and peek's `state`.
+     ok          the upstream answered with an artlist
+     busy        it refused for now (429, a 5xx), timed out or could not be reached — temporary
+     fault       it answered with something that is not an artlist (or a 4xx other than 429)
+     unobserved  nothing has been recorded yet */
+function upstreamState(note) {
+  const why = String(note || "").split("/")[0];
+  if (why === "200") return "ok";
+  if (!why || why === "none" || why === "unreadable" || why === "-") return "unobserved";
+  const n = Number(why);
+  if (Number.isFinite(n) && n > 0) return (n === 429 || n >= 500) ? "busy" : "fault";
+  return (why === "upstream_timeout" || why === "upstream_unreachable" || why === "no-attempt") ? "busy" : "fault";
+}
+function coldStatus(note) { return upstreamState(note) === "busy" ? 503 : 502; }
 
 /* ⚠⚠⚠ (#R769) A WARM THAT NEVER RUNS LOOKS EXACTLY LIKE A WARM THAT RUNS AND IS REFUSED.
    #R464 wrote that sentence about the cache WRITE ("a cache that silently fails to persist looks
@@ -436,7 +490,10 @@ Deno.serve(async (req) => {
   const limited = await callerGate(req, CORS, { scope: "gdelt-relay", readerPerMin: READER_PER_MIN, env: (k) => Deno.env.get(k) || "" });
   if (limited) return limited;
 
-  const raw = new URL(req.url).searchParams.get("u") || "";
+  const params = new URL(req.url).searchParams;
+  /* the pipe's state, from what the last upstream read said — see peek(). Never touches GDELT. */
+  if (params.get("peek") === "1") return peek();
+  const raw = params.get("u") || "";
   if (raw.length > MAX_QUERY_URL || !allowed(raw)) {
     return new Response(
       JSON.stringify({ error: "only https://api.gdeltproject.org/api/v2/doc/doc?query=... is relayed" }),
@@ -488,7 +545,7 @@ Deno.serve(async (req) => {
     const prevWarm = await lastWarm(key);
     const warmStarted = await warmBehind(canonUrl, key, WARM_BUDGET_MS);
     return new Response(JSON.stringify({ error: "upstream_unavailable", upstream: coldNote }), {
-      status: 502,
+      status: coldStatus(coldNote),
       headers: {
         ...CORS,
         "content-type": "application/json",

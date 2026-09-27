@@ -42,7 +42,7 @@ window.IntMapModules.streetView=function(HOST){
           +'<button class="sv-turn-r" title="'+LL('Turn right','右を向く','Nach rechts','Вправо','Derecha')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:30px;height:26px;cursor:pointer;font-size:13px;">↻</button>'
           +'<span style="width:1px;height:18px;background:rgba(128,128,128,0.3);flex:0 0 auto;margin:0 2px;"></span>'
           +'<button class="sv-back" title="'+LL('Step back','後退','Zurück','Назад','Atrás')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:30px;height:26px;cursor:pointer;font-size:13px;">▼</button>'
-          +'<button class="sv-fwd" title="'+LL('Step forward','前進','Vorwärts','Вперёд','Adelante')+'" style="border:none;background:var(--primary-color);color:#fff;border-radius:7px;width:34px;height:26px;cursor:pointer;font-size:13px;font-weight:700;">▲</button>'
+          +'<button class="sv-fwd" title="'+LL('Step forward','前進','Vorwärts','Вперёд','Adelante')+'" style="border:none;background:var(--primary-fill);color:#fff;border-radius:7px;width:34px;height:26px;cursor:pointer;font-size:13px;font-weight:700;">▲</button>'
           +'<span style="font-size:9px;color:var(--text-muted);flex:0 0 auto;line-height:1.15;">'+LL('move here<br>= map syncs','移動＝<br>地図同期','bewegen<br>= Karte','движение<br>= карта','mover<br>= mapa')+'</span>'
         +'</div>'
         +'<div class="sv-body" style="flex:1 1 auto;position:relative;background:#000;min-height:0;"><iframe class="sv-if" style="width:100%;height:100%;border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'

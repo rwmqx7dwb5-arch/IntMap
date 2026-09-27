@@ -423,6 +423,63 @@ window.IntMapCesiumLayers=(function(){
     return new CanvasImageryProvider();
   }
 
+  /* ── AN `image` SOURCE: ONE PICTURE OVER FOUR CORNERS ───────────────────────
+     ⚠⚠⚠ EVERY `image` SOURCE WAS ABSENT FROM THIS ENGINE, AND NOTHING SAID SO. The adapter built
+     them with `new SingleTileImageryProvider({url, rectangle})`, and since Cesium 1.104 that
+     constructor REQUIRES `tileWidth` and `tileHeight` (Check.typeOf.number — the module is imported
+     from source, so the check is live). It threw, the throw was caught, `_providerFor` returned null
+     and `_buildLayer` returned without a layer. MEASURED on the built site, Cesium, Köppen on: the
+     style HAD `lyr-climate` and `src-climate`, the row was ticked and the legend drawn, and the
+     layer record carried `imagery:false, provider:null` — the globe was simply not painted. Every
+     other `image` source (annual precipitation, insolation, the seismic and ShakeMap fields,
+     terrain water, viewshed, the world packs) took the same path.
+     The size is not known until the picture arrives, so this is the async factory Cesium's own
+     `fromUrl` is, returning the provider once the image has loaded (ImageryLayer.fromProviderAsync
+     is the caller).
+     ⚠ AND THE PICTURE IS MERCATOR, NOT GEOGRAPHIC. SingleTileImageryProvider drapes its image
+     linearly in LATITUDE; MapLibre places an image source as one quad whose corners are converted
+     to Web Mercator, so its texture runs linearly in MERCATOR Y (js/geo-engine.js, #R195 — the
+     Köppen PNG was reprojected to Web Mercator for exactly that reason). Draped geographically the
+     climate zones slide: the row MapLibre puts at 60° N lands at about 35.6° N. So the tile here is
+     the image's own Mercator rectangle — a WebMercatorTilingScheme with one level-0 tile whose
+     extent IS the four corners — and Cesium reprojects it the way it reprojects every Mercator
+     imagery tile. Corners are taken as their bounding box, as the old single-tile path did; every
+     `image` source in the app is axis-aligned. */
+  function makeImageSourceProvider(Cesium,spec){
+    const url=spec&&spec.url, c=spec&&spec.coordinates;
+    if(!url||!Array.isArray(c)||c.length<4) return Promise.reject(new Error('image source without url/coordinates'));
+    const lngs=c.map(p=>+p[0]), lats=c.map(p=>+p[1]);
+    const LIM=Cesium.Math.toDegrees(Cesium.WebMercatorProjection.MaximumLatitude);
+    const clampLat=v=>Math.max(-LIM,Math.min(LIM,v));
+    const proj=new Cesium.WebMercatorProjection();
+    const sw=proj.project(Cesium.Cartographic.fromDegrees(Math.min(...lngs),clampLat(Math.min(...lats))));
+    const ne=proj.project(Cesium.Cartographic.fromDegrees(Math.max(...lngs),clampLat(Math.max(...lats))));
+    const scheme=new Cesium.WebMercatorTilingScheme({ numberOfLevelZeroTilesX:1, numberOfLevelZeroTilesY:1,
+      rectangleSouthwestInMeters:new Cesium.Cartesian2(sw.x,sw.y), rectangleNortheastInMeters:new Cesium.Cartesian2(ne.x,ne.y) });
+    /* Cesium's own loader: data:/blob: URLs and relative paths alike, decoded the right way up.
+       Called inside the chain, so a loader that throws is a rejection like one that fails. */
+    return Promise.resolve().then(()=>Cesium.ImageryProvider.loadImage(null,url)).then(img=>{
+      const w=img&&(img.width||img.naturalWidth), h=img&&(img.height||img.naturalHeight);
+      if(!(w>0&&h>0)) throw new Error('image source decoded to nothing: '+String(url).slice(0,80));
+      class ImageSourceProvider {
+        constructor(){
+          this._errorEvent=new Cesium.Event();
+          this.tilingScheme=scheme; this.rectangle=scheme.rectangle;
+          /* the picture's own size: one level, so this only tells Cesium how many texels it has */
+          this.tileWidth=w; this.tileHeight=h;
+          this.minimumLevel=0; this.maximumLevel=0;
+          this.ready=true; this.hasAlphaChannel=true;
+          this.credit=undefined; this.proxy=undefined; this.tileDiscardPolicy=undefined;
+        }
+        get errorEvent(){ return this._errorEvent; }
+        getTileCredits(){ return undefined; }
+        pickFeatures(){ return undefined; }
+        requestImage(x,y,level){ return (x===0&&y===0&&level===0)?Promise.resolve(img):undefined; }
+      }
+      return new ImageSourceProvider();
+    });
+  }
+
   /* tile (x,y,level) → its lng/lat box, the conversion every canvas producer needs */
   function tileBox(x,y,level){
     const n=Math.pow(2,level);
@@ -913,7 +970,7 @@ window.IntMapCesiumLayers=(function(){
     return { build, update, placeLabels, ctxFor };
   }
 
-  return { makeDemCache, makeTerrainProvider, makeTileImageryProvider, makeCanvasImageryProvider,
+  return { makeDemCache, makeTerrainProvider, makeTileImageryProvider, makeCanvasImageryProvider, makeImageSourceProvider,
            makeHillshadeDraw, makeReliefDraw, makeHeatmapDraw, makeVectorRenderer, tileBox, newCanvas,
            RELIEF_CTX_PATCH };
 })();

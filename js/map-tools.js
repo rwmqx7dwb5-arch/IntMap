@@ -124,7 +124,7 @@ window.IntMapModules.projView=function(HOST){
         .proj-bar .proj-title{ font-size:12.5px; font-weight:700; color:var(--text-main); }
         .proj-bar select{ padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px; }
         .proj-bar button{ border:1px solid rgba(128,128,128,0.22); background:var(--input-bg); color:var(--text-main); border-radius:8px; padding:6px 10px; font-size:13px; font-weight:600; cursor:pointer; }
-        .proj-bar button.proj-close{ background:var(--primary-color); color:#fff; border-color:transparent; }
+        .proj-bar button.proj-close{ background:var(--primary-fill); color:#fff; border-color:transparent; }
         .proj-entry{ -webkit-appearance:none; appearance:none; }
         @media(max-width:768px){ .proj-bar{ top:calc(env(safe-area-inset-top) + 8px); } }
       `; document.head.appendChild(st);
@@ -953,7 +953,7 @@ window.IntMapModules.moveShape=function(HOST){
       /* (#R123) honest suffix: flat map = true-area preserved (Mercator counter-scale); globe = plain reposition. */
       const sizeNote=_mercNow()?L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real'):L('— true shape preserved','（形状を保持して移動）','— Form bleibt erhalten','— форма сохраняется','— forma conservada');
       const rotNote=L(' · right-drag to rotate',' · 右ドラッグで回転',' · Rechtsziehen: drehen',' · правая кнопка — поворот',' · clic derecho: girar');
-      pill.innerHTML='<span>'+L('Drag ','ドラッグで移動 · ','Ziehen · ','Перетащите · ','Arrastra · ')+'<b>'+String(name||'').replace(/[&<>"]/g,'')+'</b> '+sizeNote+rotNote+'</span><button style="border:none;background:var(--primary-color);color:#fff;border-radius:15px;padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">'+L('Done','完了','Fertig','Готово','Listo')+'</button>';
+      pill.innerHTML='<span>'+L('Drag ','ドラッグで移動 · ','Ziehen · ','Перетащите · ','Arrastra · ')+'<b>'+String(name||'').replace(/[&<>"]/g,'')+'</b> '+sizeNote+rotNote+'</span><button style="border:none;background:var(--primary-fill);color:#fff;border-radius:15px;padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">'+L('Done','完了','Fertig','Готово','Listo')+'</button>';
       pill.querySelector('button').onclick=()=>stop();
       document.body.appendChild(pill); }catch(_){} }
     function start(geom,name){ if(!geom||!geom.coordinates) return false; stop();
@@ -1109,16 +1109,16 @@ window.IntMapModules.isochrone=function(HOST){
       const modes=[['auto','🚗',LL('Drive','車','Auto','Авто','Coche')],['pedestrian','🚶',LL('Walk','徒歩','Zu Fuß','Пешком','A pie')],['bicycle','🚲',LL('Cycle','自転車','Rad','Вело','Bici')],
         ['transit','🚆',LL('Transit','公共交通','ÖPNV','Транспорт','Transporte')]];
       const presets=[10,15,20,30,45,60]; const bs='height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:12px;';
-      body.innerHTML='<button class="iso-pick" style="width:100%;'+bs+(center?'':'background:var(--primary-color);color:#fff;border-color:var(--primary-color);')+'">'
+      body.innerHTML='<button class="iso-pick" style="width:100%;'+bs+(center?'':'background:var(--primary-fill);color:#fff;border-color:var(--primary-color);')+'">'
           +(center?('📍 '+LL('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'))
                   :('◎ '+LL('Place the point on the map','地図で地点を設定','Punkt auf der Karte setzen','Задать точку на карте','Colocar el punto en el mapa')))+'</button>'
         +'<div style="font-size:11px;color:var(--text-muted);">'+(center?(center.lat.toFixed(3)+', '+center.lng.toFixed(3))
           :LL('No point placed yet','地点が未設定です','Kein Punkt gesetzt','Точка не задана','Sin punto colocado'))+'</div>'
-        +'<div style="display:flex;gap:5px;">'+modes.map(m=>'<button class="iso-mode" data-m="'+m[0]+'" style="flex:1;'+bs+(m[0]===mode?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">'+m[1]+' '+m[2]+'</button>').join('')+'</div>'
+        +'<div style="display:flex;gap:5px;">'+modes.map(m=>'<button class="iso-mode" data-m="'+m[0]+'" style="flex:1;'+bs+(m[0]===mode?'background:var(--primary-fill);color:#fff;border-color:var(--primary-color);':'')+'">'+m[1]+' '+m[2]+'</button>').join('')+'</div>'
         +'<div style="font-size:11px;color:var(--text-muted);">'+(mode==='transit'
             ? LL('Time — the rail model solves one budget, so the largest is used','時間 — 鉄道モデルは1つの持ち時間を解くため、最大値を使います','Zeit — das Bahnmodell löst ein Budget, also gilt der größte Wert','Время — ж/д модель решает один бюджет: берётся максимум','Tiempo — el modelo ferroviario resuelve un solo presupuesto: se usa el mayor')
             : LL('Time — tap to add/remove (max 3)','時間 — タップで追加/削除（最大3）','Zeit — antippen (max. 3)','Время — нажмите (макс. 3)','Tiempo — toca (máx. 3)'))+'</div>'
-        +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'+presets.map(v=>'<button class="iso-min" data-v="'+v+'" style="flex:1;min-width:38px;'+bs+(mins.indexOf(v)>=0?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">'+v+'</button>').join('')+'</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'+presets.map(v=>'<button class="iso-min" data-v="'+v+'" style="flex:1;min-width:38px;'+bs+(mins.indexOf(v)>=0?'background:var(--primary-fill);color:#fff;border-color:var(--primary-color);':'')+'">'+v+'</button>').join('')+'</div>'
         +(busy?'<div style="font-size:11.5px;color:var(--text-muted);">'+LL('Computing…','計算中…','Berechne…','Расчёт…','Calculando…')+'</div>':(state==='err'?'<div style="font-size:11.5px;color:#ff9f0a;">'+LL('Could not compute (service busy) — try again','算出できませんでした（混雑）— 再試行を','Fehlgeschlagen — erneut versuchen','Не удалось — снова','No se pudo — reintenta')+'</div>':(lastMinutes.length?'<div style="display:flex;flex-direction:column;gap:3px;">'+lastMinutes.slice().sort((a,b)=>a-b).map((v,i)=>'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-main);"><span style="width:13px;height:13px;border-radius:3px;background:'+PAL[Math.min(PAL.length-1,i)]+';opacity:0.75;"></span>'+ICON[mode]+' '+v+' '+LL('min','分','Min','мин','min')+'</div>').join('')+'</div>':'')))
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+(mode==='transit'
             ? LL('Rides the real rail network (OpenStreetMap), at typical speeds per line class — not a published timetable. Walk to the nearest station is included.','実在の鉄道網（OpenStreetMap）を路線種別の標準速度で辿った範囲です（公表時刻表ではありません）。最寄駅までの徒歩を含みます。','Über das echte Schienennetz (OSM), mit typischen Geschwindigkeiten je Linienklasse — kein Fahrplan. Fußweg zum nächsten Bahnhof inklusive.','По реальной ж/д сети (OSM), по типовым скоростям — не расписание. Включён пеший подход к станции.','Por la red ferroviaria real (OSM), a velocidades típicas por clase de línea — no un horario publicado. Incluye el paseo hasta la estación.')

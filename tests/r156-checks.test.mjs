@@ -125,9 +125,9 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
 });
 
 test('R156 #6 send/stop button = accent (idle keeps the previous white/black)', () => {
-  assert.match(html, /#atlas-panel \.atl-go\{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:var\(--primary-color\);color:#fff;/, 'base (active) button = accent fill + white icon');
+  assert.match(html, /#atlas-panel \.atl-go\{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid transparent;background:var\(--primary-fill\);color:#fff;/, 'base (active) button = accent fill + white icon (the FILL token: white on it is ≥4.5:1 in both themes, tests/ui-a11y-polish-checks ⑥)');
   assert.match(html, /#atlas-panel \.atl-go\.idle\{background:#fff;box-shadow:0 1px 4px rgba\(0,0,0,0\.12\);color:#111;/, 'idle (empty input) keeps the previous white bg + black ↑');
-  assert.match(html, /#atlas-panel \.atl-go\.busy\{background:var\(--primary-color\);box-shadow:0 2px 8px rgba\(0,0,0,0\.2\);color:#fff;/, 'Stop (busy) button = accent fill + white square');
+  assert.match(html, /#atlas-panel \.atl-go\.busy\{background:var\(--primary-fill\);box-shadow:0 2px 8px rgba\(0,0,0,0\.2\);color:#fff;/, 'Stop (busy) button = accent fill + white square');
 });
 
 test('R156 #7 ai-proxy: vision_read task + input_image detail:high', () => {

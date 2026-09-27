@@ -3494,11 +3494,11 @@ window.IntMapModules.seismic=function(HOST){
         '.sq-segwrap{display:flex;gap:3px;background:var(--input-bg);border-radius:10px;padding:3px;}',
         '.sq-seg{flex:1;min-width:0;border:none;background:transparent;color:var(--text-main);font-size:'+FS+';'
           +'font-weight:500;padding:7px 6px;border-radius:8px;cursor:pointer;line-height:1.25;}',
-        '.sq-seg.on{background:var(--primary-color);color:#fff;font-weight:600;}',
+        '.sq-seg.on{background:var(--primary-fill);color:#fff;font-weight:600;}',
         '.sq-btn{padding:8px 10px;border-radius:10px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
           +'background:var(--input-bg);color:var(--text-main);font-size:'+FS+';cursor:pointer;}',
         '.sq-btn-wide{width:100%;min-height:40px;border-radius:12px;font-weight:600;}',
-        '.sq-btn-accent{background:var(--primary-color);color:#fff;border-color:transparent;}',
+        '.sq-btn-accent{background:var(--primary-fill);color:#fff;border-color:transparent;}',
         /* ══ ⚠⚠ (#R240) THE PINNED FOOTER — the flow, and the one verb ═══════════════════════════════
            Outside `.sq-body`, so it never scrolls away: 「フローが破綻している」 is in large part
            that the button which produces the answer was the fifth control in the fourth card. */
@@ -3524,7 +3524,7 @@ window.IntMapModules.seismic=function(HOST){
           +'background:var(--input-bg);color:var(--text-main);display:flex;align-items:center;justify-content:center;'
           +'transition:transform .12s ease,background .12s ease;padding:0;}',
         '.sq-play svg{width:15px;height:15px;}',
-        '.sq-play.on{background:var(--primary-color);color:#fff;}',
+        '.sq-play.on{background:var(--primary-fill);color:#fff;}',
         '.sq-play:active{transform:scale(0.94);}',
         '.sq-pl-meta{display:flex;align-items:center;gap:8px;font-size:'+FS_S+';}',
         '.sq-pl-cap{flex:1;min-width:0;color:var(--text-muted);letter-spacing:.01em;}',
@@ -3640,14 +3640,14 @@ window.IntMapModules.seismic=function(HOST){
         '.sq-strow{display:flex;align-items:center;gap:10px;min-height:46px;padding:7px 11px;box-sizing:border-box;}',
         '.sq-stn{flex:0 0 auto;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;'
           +'font-size:'+FS_S+';font-weight:600;border:1.5px solid var(--glass-border,rgba(128,128,128,0.4));color:var(--text-main);}',
-        '.sq-step.done .sq-stn{background:var(--primary-color);border-color:transparent;color:#fff;}',
+        '.sq-step.done .sq-stn{background:var(--primary-fill);border-color:transparent;color:#fff;}',
         '.sq-step.on .sq-stn{border-color:var(--primary-color);}',
         '.sq-stlab{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;}',
         '.sq-stlab b{font-size:'+FS+';font-weight:600;color:var(--text-main);}',
         '.sq-stlab span{font-size:'+FS_S+';color:var(--text-main);opacity:.72;}',
         '.sq-stbtn{flex:0 0 auto;padding:7px 13px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
           +'background:var(--input-bg);color:var(--text-main);font-size:'+FS+';font-weight:500;cursor:pointer;white-space:nowrap;}',
-        '.sq-stbtn.on{background:var(--primary-color);border-color:transparent;color:#fff;font-weight:600;}',
+        '.sq-stbtn.on{background:var(--primary-fill);border-color:transparent;color:#fff;font-weight:600;}',
         '.sq-stbtn:disabled{opacity:.45;cursor:default;}',
         '.sq-stbody{padding:0 11px 10px;display:flex;flex-direction:column;gap:8px;}',
       ].join('');
@@ -3762,7 +3762,7 @@ window.IntMapModules.seismic=function(HOST){
     /* ══ (#R206) THE ACCENT FILL MEANS "ON", SO A BUTTON THAT IS NEVER ON MUST NOT WEAR IT ═════════
        「地震シミュレータで震源地を設置ボタンがずっと選択中になっているというUIがくそ。」
 
-       ◎ 震源地を設置 was declared with `background:var(--primary-color);color:#fff;font-weight:700`
+       ◎ 震源地を設置 was declared with `background:var(--primary-fill);color:#fff;font-weight:700`
        UNCONDITIONALLY — byte for byte the style SEG() above uses to mean "this mode is selected" —
        and #R205 put the segmented row directly underneath it. So the panel opened with TWO of its
        three ◎/◇ controls painted as selected, one of which could never turn off: it is an action
@@ -5156,7 +5156,7 @@ window.IntMapModules.seismic=function(HOST){
         +'background:var(--popup-bg,rgba(28,28,30,0.82));border:1px solid var(--glass-border,rgba(128,128,128,0.28));'
         +'box-shadow:0 14px 44px rgba(0,0,0,0.42);backdrop-filter:blur(22px) saturate(1.7);-webkit-backdrop-filter:blur(22px) saturate(1.7);}'
         +'#sq-hud.on{display:flex;}'
-        +'#sq-hud .sqh-dot{flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:var(--primary-color);'
+        +'#sq-hud .sqh-dot{flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:var(--primary-fill);'
         +'box-shadow:0 0 0 0 var(--primary-color);animation:sqhPulse 1.8s ease-out infinite;}'
         +'@keyframes sqhPulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,0.55);}70%{box-shadow:0 0 0 9px rgba(10,132,255,0);}100%{box-shadow:0 0 0 0 rgba(10,132,255,0);}}'
         +'#sq-hud .sqh-txt{flex:1 1 auto;min-width:0;}'
@@ -5166,7 +5166,7 @@ window.IntMapModules.seismic=function(HOST){
         +'#sq-hud .sqh-t{display:block;font-size:'+FS_H+';font-weight:700;color:var(--text-main);line-height:1.25;}'
         +'#sq-hud .sqh-s{display:block;font-size:'+FS_S+';color:var(--text-muted);line-height:1.35;margin-top:1px;}'
         +'#sq-hud button{flex:0 0 auto;border:none;border-radius:16px;height:32px;padding:0 15px;font-size:'+FS_H+';'
-        +'font-weight:700;cursor:pointer;background:var(--primary-color);color:#fff;}'
+        +'font-weight:700;cursor:pointer;background:var(--primary-fill);color:#fff;}'
         +'#sq-hud button.sqh-2{background:var(--input-bg);color:var(--text-main);}'
         +'@media(prefers-reduced-motion:reduce){#sq-hud .sqh-dot{animation:none;}}';
       document.head.appendChild(st);

@@ -173,7 +173,7 @@ window.IntMapModules.warLayer = function (HOST) {
       '.war-go{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}',
       '.war-go button{flex:1 1 auto;min-width:96px;padding:7px 8px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);'
         + 'background:var(--input-bg);color:var(--text-main);font-size:11.5px;cursor:pointer;}',
-      '.war-go button:hover{background:var(--primary-color);color:#fff;border-color:transparent;}',
+      '.war-go button:hover{background:var(--primary-fill);color:#fff;border-color:transparent;}',
       '.war-ctl{display:flex;align-items:center;gap:6px;margin:4px 0 2px;flex-wrap:wrap;font-size:10.5px;color:var(--text-muted);}',
       '.war-ctl input[type=date],.war-ctl select{padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));'
         + 'background:var(--input-bg);color:var(--text-main);font-size:10.5px;font-variant-numeric:tabular-nums;}',

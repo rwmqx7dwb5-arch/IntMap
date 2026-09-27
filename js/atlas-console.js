@@ -30,6 +30,7 @@ import { makeAtlasControls } from './atlas-controls.js';
 import { makeAtlasSources } from './atlas-sources.js';
 import { ATLAS_BUDGETS, settleWithin, lateNote, makeFetchJSON, newTurnController } from './atlas-deadlines.js';   /* (#R452) the turn's clocks — Atlas had two private, unbounded copies of the relay ladder */
 import { makeAtlasSims } from './atlas-sims.js';
+import { peekOwnRelay } from './proxy-fetch.js';   /* the self-diagnosis asks OUR relay what the upstream last said, instead of asking the upstream (see _PROBES) */
 import { makeAtlasVerify } from './atlas-verify.js';
 import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) normally js/app-body.js has already built the registry at boot; this is the fallback for a boot that did not get that far, so Atlas is never the thing that has no capabilities */
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
@@ -1258,24 +1259,25 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _PROBES=[
       {k:'USGS earthquakes', u:'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson', mode:'direct'},
       {k:'Open-Meteo', u:'https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m', mode:'direct'},
-      {k:'GDELT news', u:'https://api.gdeltproject.org/api/v2/doc/doc?query=news&mode=artlist&maxrecords=1&format=json&timespan=1d', mode:'proxy'}
+      /* ⚠ mode 'relay': NOT a GDELT query. This was one per visitor per boot, through the whole ladder — measured 2026-09-27 as a relay 502 (GDELT's own 429) plus an aborted direct read in every visitor's console, and upstream load that GDELT counts. peekOwnRelay (js/proxy-fetch.js) asks gdelt-relay what the upstream last said and keeps 「our relay is down」, 「GDELT is refusing for now」 and 「nothing observed yet」 apart. */
+      {k:'GDELT news', u:'https://api.gdeltproject.org/api/v2/doc/doc?query=news&mode=artlist&maxrecords=1&format=json&timespan=1d', mode:'relay'}
     ];
     async function _probeOne(p){ const t0=Date.now();
-      if(p.mode==='proxy'){ try{ /* cap the proxy ladder (direct+2 proxies could take ~27 s) so a health check stays responsive */
-        const j=await Promise.race([_fetchJSON(p.u), new Promise(r=>setTimeout(()=>r('__to__'),8000))]); const okp=(!!j&&j!=='__to__'); return {ok:okp, ms:Date.now()-t0, status:okp?200:0}; }catch(_){ return {ok:false, ms:Date.now()-t0, status:0}; } }
+      if(p.mode==='relay'){ try{ return await peekOwnRelay(p.u,8000); }catch(_){ return {ok:false, state:'down', ms:Date.now()-t0, status:0}; } }
       try{ const c=('AbortController' in window)?new AbortController():null; const to=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },7000):null;
         const r=await fetch(p.u,c?{signal:c.signal,cache:'no-store'}:{cache:'no-store'}); if(to) clearTimeout(to); return {ok:!!(r&&r.ok), ms:Date.now()-t0, status:r?r.status:0}; }catch(e){ return {ok:false, ms:Date.now()-t0, status:0, err:(e&&e.name)||'error'}; } }
     async function probeEndpoints(force){ if(_HEALTH.probing) return _HEALTH.endpoints; if(!force&&_HEALTH.endpoints&&(Date.now()-_HEALTH.probedAt)<300000) return _HEALTH.endpoints;
       _HEALTH.probing=true; try{ const res={}; await Promise.all(_PROBES.map(async p=>{ res[p.k]=await _probeOne(p); })); _HEALTH.endpoints=res; _HEALTH.probedAt=Date.now(); return res; } finally{ _HEALTH.probing=false; } }
     async function healthCheck(opts){ opts=opts||{}; const news=_newsHealth(), layers=_layerHealth();
       let endpoints=_HEALTH.endpoints; if(opts.probe!==false){ try{ endpoints=await probeEndpoints(opts.probe===true); }catch(_){} }
-      const down=endpoints?Object.keys(endpoints).filter(k=>!endpoints[k].ok):[];
+      const down=endpoints?Object.keys(endpoints).filter(k=>endpoints[k].ok===false&&endpoints[k].state!=='busy'):[], busy=endpoints?Object.keys(endpoints).filter(k=>endpoints[k].state==='busy'):[];   /* a refusing upstream behind a live relay is not IntMap's pipe being down, and ok:null (nothing observed yet) is neither */
       const ok=(!news.stale)&&(layers.bad===0)&&(down.length===0);
-      return {ok, news, layers, endpoints, down, probedAt:_HEALTH.probedAt}; }
+      return {ok, news, layers, endpoints, down, busy, probedAt:_HEALTH.probedAt}; }
     /* synchronous flag from the CACHE only (no network) — safe to call inside stateContext every turn. */
     function _healthFlag(){ try{ const parts=[]; const n=_newsHealth(); if(n.stale&&n.count) parts.push('the loaded news feed looks stale (newest item is '+(n.ageH==null?'undated':n.ageH+'h old')+' — the feed may have stopped updating)');
       const l=_layerHealth(); if(l.bad) parts.push(l.bad+' enabled layer(s) are NOT painting on the map'+(l.badN.length?(' ('+l.badN.join(', ')+')'):'')+' — their data may be loading or their source may be down');
-      const ep=_HEALTH.endpoints; if(ep){ const down=Object.keys(ep).filter(k=>!ep[k].ok); if(down.length) parts.push('these live data sources were unreachable at the last check: '+down.join(', ')); }
+      const ep=_HEALTH.endpoints; if(ep){ const down=Object.keys(ep).filter(k=>ep[k].ok===false&&ep[k].state!=='busy'), busy=Object.keys(ep).filter(k=>ep[k].state==='busy'); if(down.length) parts.push('these live data sources were unreachable at the last check: '+down.join(', '));
+        if(busy.length) parts.push('these upstreams were refusing requests for now (rate limit / temporarily unavailable) at their last observed answer — the IntMap relay itself is up: '+busy.map(k=>k+(ep[k].upstreamAgeMs!=null?(' ('+Math.round(ep[k].upstreamAgeMs/60000)+' min ago)'):'')).join(', ')); }
       return parts.length?('SELF-DIAGNOSIS ALERT (IntMap health) — '+parts.join('; ')+'. If the question depends on this data, tell the user honestly and, where possible, use an alternative; suggest they say "diagnose" for a full check.'):''; }catch(_){ return ''; } }
     try{ window.IntMapDataHealth={ check:o=>healthCheck(o), news:_newsHealth, layers:_layerHealth, probe:f=>probeEndpoints(f), flag:_healthFlag, last:()=>_HEALTH.endpoints }; }catch(_){}
     /* light "常時監視": one probe ~25 s after load, then every 10 min — but ONLY while the tab is visible, so a
@@ -1984,7 +1986,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const ord=_tspOrder(pts); const seq=ord.map(i=>pts[i]);
           const mi=mode2==='walking'?'🚶':mode2==='cycling'?'🚲':'🚗';
           let r=null; try{ r=await window.IntMapRouting.route({lng:seq[0].lng,lat:seq[0].lat},{lng:seq[seq.length-1].lng,lat:seq[seq.length-1].lat},{mode:mode2,via:seq.slice(1,-1).map(p=>({lng:p.lng,lat:p.lat}))}); }catch(_){}
-          const listHtml=seq.map((p,i)=>'<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--primary-color);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+(i+1)+'</span><span style="flex:1;min-width:0;font-size:12.5px;">'+esc(p.name)+'</span></div>').join('');
+          const listHtml=seq.map((p,i)=>'<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--primary-fill);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+(i+1)+'</span><span style="flex:1;min-width:0;font-size:12.5px;">'+esc(p.name)+'</span></div>').join('');
           let summ=''; if(r&&r.ok&&r.distance!=null){ const km=r.distance/1000, mn=Math.round(r.duration/60), h=Math.floor(mn/60), rm=mn%60; summ=mi+' <b>'+(h?(h+' h '+rm+' min'):(mn+' min'))+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km'; }
           else { try{ GE().camera.fitBounds([[Math.min.apply(null,seq.map(p=>p.lng)),Math.min.apply(null,seq.map(p=>p.lat))],[Math.max.apply(null,seq.map(p=>p.lng)),Math.max.apply(null,seq.map(p=>p.lat))]],{padding:70,duration:900}); }catch(_){} }
           return R(true, note('🧭 '+L('Optimized order','最短順路','Optimierte Reihenfolge','Оптимальный порядок','Orden óptimo')+' · '+pts.length+' '+L('stops','地点','Stopps','точек','paradas'))
@@ -2590,7 +2592,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           let h='<div style="font-weight:600;margin:2px 0 6px;">'+L('Data & connection status','データ・接続状態','Daten- & Verbindungsstatus','Данные и соединение','Estado de datos y conexión')+'</div><div style="font-size:12px;line-height:1.75;">';
           h+=dot(!H.news.stale)+' '+L('News feed','ニュース','Nachrichten','Новости','Noticias')+': '+(H.news.count?(H.news.count+' '+L('articles','件','Artikel','статей','artículos')+(H.news.ageH==null?(' — '+L('undated','日付なし','ohne Datum','без дат','sin fecha')):(' — '+L('newest','最新','neuste','свежесть','más reciente')+' '+H.news.ageH+'h'))+(H.news.stale?(' ⚠ '+L('may have stopped updating','更新停止の可能性','evtl. keine Updates','возможно не обновляется','quizá no se actualiza')):'')):L('not loaded yet','未読込','noch nicht geladen','ещё не загружено','no cargado'))+'<br>';
           h+=dot(H.layers.bad===0)+' '+L('Layers','レイヤー','Ebenen','Слои','Capas')+': '+H.layers.on+' '+L('on','オン','an','вкл','activas')+(H.layers.bad?(' ⚠ '+H.layers.bad+' '+L('not painting','未描画','nicht gezeichnet','не отрисованы','sin pintar')+(H.layers.badN.length?(' ('+H.layers.badN.map(esc).join(', ')+')'):'')):(' — '+L('all painting','全て描画','alle ok','все ок','todas ok')))+'<br>';
-          if(H.endpoints){ Object.keys(H.endpoints).forEach(k=>{ const e=H.endpoints[k]; h+=dot(e.ok)+' '+esc(k)+': '+(e.ok?(L('reachable','到達可能','erreichbar','доступно','accesible')+' · '+e.ms+'ms'):(e.status===429?(L('rate-limited','レート制限','ratenbegrenzt','лимит запросов','límite de tasa')+' (429)'):e.status?(L('error','エラー','Fehler','ошибка','error')+' '+e.status):(L('unreachable','到達不可','nicht erreichbar','недоступно','inaccesible'))))+'<br>'; }); }
+          if(H.endpoints){ Object.keys(H.endpoints).forEach(k=>{ const e=H.endpoints[k]; if(e.ok==null){ h+='⚪ '+esc(k)+': '+L('not observed yet','未観測')+'<br>'; return; } h+=dot(e.ok)+' '+esc(k)+': '+(e.ok?(L('reachable','到達可能','erreichbar','доступно','accesible')+' · '+e.ms+'ms'):(e.status===429?(L('rate-limited','レート制限','ratenbegrenzt','лимит запросов','límite de tasa')+' (429)'):e.status?(L('error','エラー','Fehler','ошибка','error')+' '+e.status):(L('unreachable','到達不可','nicht erreichbar','недоступно','inaccesible'))))+'<br>'; }); }
           else h+='⚪ '+L('Live APIs: not probed','ライブAPI: 未確認','Live-APIs: nicht geprüft','Живые API: не проверены','APIs: sin comprobar')+'<br>';
           h+='</div>';
           h+=note(H.ok?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):('⚠ '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));

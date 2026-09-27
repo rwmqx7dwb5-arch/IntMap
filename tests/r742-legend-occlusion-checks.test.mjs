@@ -120,7 +120,9 @@ const STUBS = ['ensureLegendOpacity', 'ensureContourSwitch', 'ensureContourDensi
    function EXPRESSION, so it is renamed into a declaration for the shared brace matcher rather
    than matched by a second, private one (#R531). */
 const DL_DECL = DL.replace('window._minimizeOpenLegends=function(', 'function minimizeOpenLegends(');
-const DL_BODY = ['toggleLegendMin', 'ensureLegendMinimize', 'tileLegends'].map((n) => liftFunction(DL, n))
+/* ⚠ `legendShown` is lifted with them: it is the ONE answer to «is this legend on screen» that the
+   tiler and _minimizeOpenLegends both read (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③). */
+const DL_BODY = ['legendShown', 'toggleLegendMin', 'ensureLegendMinimize', 'tileLegends'].map((n) => liftFunction(DL, n))
   .concat([liftFunction(DL_DECL, 'minimizeOpenLegends')]).join('\n');
 
 /* ── the fixture DOM ─────────────────────────────────────────────────────────────────────
