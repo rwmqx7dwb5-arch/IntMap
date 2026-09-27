@@ -14,7 +14,7 @@
  *      topojson-client@3.1.0     → window.topojson
  *      @supabase/supabase-js@2   → window.supabase + window.sb
  *      html2canvas@1.4.1         → window.html2canvas    (lazy — see below)
- *      katex@0.18.7              → window.katex + its CSS (lazy — see below)
+ *      katex@0.18.9              → window.katex + its CSS (lazy — see below)
  *
  *  ── WHY TWO OF THEM ARE STILL LAZY ─────────────────────────────────────────────────────────
  *  html2canvas is only reachable from the screenshot button and KaTeX only from an Atlas reply that
