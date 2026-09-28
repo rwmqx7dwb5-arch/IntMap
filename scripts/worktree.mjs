@@ -233,7 +233,23 @@ const labelList = (labels) => (labels.length > LABELS_SHOWN
    site, so the sha of its last SUCCESSFUL run is what the public is looking at. A newer run that
    failed is a separate fact and is reported separately: «the deploy is red» and «the deploy has
    not caught up» have different next moves. Capped at five runs and six seconds, like nightly(). */
+/** The display name of the deploy.yml job that publishes (the one using actions/deploy-pages). */
+export function pagesJobName(yml) {
+  const lines = String(yml || '').split(/\r?\n/);
+  let job = null;
+  for (const l of lines) {
+    const k = /^  ([A-Za-z0-9_-]+):\s*$/.exec(l);
+    if (k) { job = { name: k[1] }; continue; }
+    const n = /^    name:\s*(.+?)\s*$/.exec(l);
+    if (job && n && !job.display) job.display = n[1].replace(/^['"]|['"]$/g, '');
+    if (job && /uses:\s*actions\/deploy-pages@/.test(l)) return job.display || job.name;
+  }
+  return null;
+}
+
 function deployState() {
+  let pagesJob = null;
+  try { pagesJob = pagesJobName(readFileSync(join(REPO, '.github', 'workflows', 'deploy.yml'), 'utf8')); } catch { /* no workflow file */ }
   let raw = '';
   try {
     raw = execFileSync('gh', ['run', 'list', '--workflow=deploy.yml', '--limit', '5',
@@ -247,7 +263,22 @@ function deployState() {
   /* `conclusion` is '' while a run is still going: that is «not finished», not «failed». */
   const broken = newest.conclusion && newest.conclusion !== 'success'
     ? { id: newest.databaseId, what: newest.conclusion, day: String(newest.createdAt || '').slice(0, 10) } : null;
-  const ok = runs.find((r) => r.conclusion === 'success');
+  /* ⚠ A RED RUN CAN STILL HAVE PUT ITS BYTES ON THE SITE. deploy.yml publishes in one job and then
+     smoke-tests the live URL in another; when only the smoke is red the Pages job succeeded and the public
+     is looking at that commit. Measured 2026-09-28: three runs red on a smoke assertion alone, and this
+     line said «3 commits have not reached production» while the served build stamp was the newest of them.
+     So a run counts as on-production when its PUBLISHING job succeeded — the job is found in deploy.yml as
+     the one that uses actions/deploy-pages, not by a name written here. */
+  const published = (r) => {
+    if (r.conclusion === 'success') return true;
+    if (!r.conclusion || !pagesJob) return false;
+    try {
+      const jobs = JSON.parse(execFileSync('gh', ['run', 'view', String(r.databaseId), '--json', 'jobs'],
+        { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 6000 })).jobs || [];
+      return jobs.some((j) => j.name === pagesJob && j.conclusion === 'success');
+    } catch { return false; }
+  };
+  const ok = runs.find(published);
   if (!ok || !ok.headSha) return { known: false, broken };
 
   const target = q(['rev-parse', 'origin/main']);

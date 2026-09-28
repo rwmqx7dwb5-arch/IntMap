@@ -652,6 +652,13 @@ test('(#R533) every third-party host the delivered build names still resolves an
      business probing (analytics, payment) are not in the build's data path; everything else that
      appears as an absolute https:// URL inside the delivered code is. */
   const SKIP = /^(?:localhost|127\.|.*\.supabase\.co$|.*\.github\.io$|.*\.github\.com$|schema\.org$|www\.w3\.org$)/;
+  /* ⚠ A SPECIAL-USE NAME IS NOT A HOST ANYONE CAN BE SENT TO. RFC 2606 / RFC 6761 reserve `.invalid`,
+     `.test`, `.example` and `.localhost` so they never resolve, and the second-level `example.{com,net,org}`
+     for documentation. A library writes one as a placeholder base, not as a destination: MapLibre 6 resolves
+     relative URLs against `https://maplibre.invalid`, and after the MapLibre 6 migration this test called
+     that host «gone from DNS» and turned three production deploys red (2026-09-28, runs 36412394387 …
+     36423632705) while the site itself had deployed. The rule is the reservation, not the name. */
+  const SPECIAL_USE = /(?:^|\.)(?:invalid|test|example|localhost)$|(?:^|\.)example\.(?:com|net|org)$/;
   const hosts = new Set();
   /* same-origin, so these are fast — but there are dozens of them and they do not depend on each
      other either (see the note on the probes below) */
@@ -666,7 +673,7 @@ test('(#R533) every third-party host the delivered build names still resolves an
   for (const txt of bodies) {
     for (const m of txt.matchAll(/https:\/\/([a-z0-9][a-z0-9.-]*\.[a-z]{2,})[/'"`)]/gi)) {
       const h = m[1].toLowerCase();
-      if (!SKIP.test(h)) hosts.add(h);
+      if (!SKIP.test(h) && !SPECIAL_USE.test(h)) hosts.add(h);
     }
   }
   expect(hosts.size, 'the delivered build names third-party hosts').toBeGreaterThan(3);
