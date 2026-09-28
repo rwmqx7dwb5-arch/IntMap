@@ -1008,8 +1008,10 @@ proxy-fetch.js                    ACAO を返さない上流を**自前の relay
                                   `ownRelayUrl()` はその URL を受け付ける自前 relay の URL（<img>・Cache API の呼び手用）。
                                   fetch-relay の許可表は supabase/functions/_shared/fetch-relay-policy.js を import する。
                                   `opts.as` が受理する文書の形（feed／html／json／text）、`opts.budgetMs` が ladder 全体の上限、
-                                  `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる
-fetch-deadline.js                 締切つきの JSON 取得 `jsonWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得
+                                  `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる。
+                                  `clockFor(url, via)` は 1 回の取得の秒数を host ごとに答える（直接／自前 relay 段）
+fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
+                                  `opts.idle` は本文の塊ごとに時計を掛け直す（大きなファイルの無音を測る）
 overpass.js                       **Overpass の唯一のクライアント** `overpassQuery()`——ミラー一覧を持つ唯一のファイル。
                                   予算は問い合わせ自身の `[timeout:N]`＋本文の余裕、応答の無いミラーは持ち分を過ぎたら
                                   次のミラーを並走させ、観測された失敗は即座に次へ。全滅は `OverpassUnavailable` を投げる
@@ -1430,6 +1432,7 @@ scripts/
   global-surface.mjs              **共有窓口の広さのゲート**（`npm run check:surface`）。`IM_HOST` の項目と
                                   `js/`・`src/` が `window.*` に代入する公開名を**名前で**
                                   `tests/global-surface-baseline.json` と両方向に照合する。行数の天井の代わり。
+                                  コメント・文字列・正規表現を消すのは acorn の字句解析（`codeOnly` を export）。
   export-readers.mjs              **export に読み手が居るか**の導出（`tests/r175-checks` ③ が読む）。読み手は
                                   `js/`・`src/`・`scripts/`・`tests/` の名前付き import・namespace・
                                   dynamic import の 3 形。

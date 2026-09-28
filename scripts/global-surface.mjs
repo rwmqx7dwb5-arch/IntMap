@@ -34,26 +34,35 @@ import * as acorn from 'acorn';
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 export const BASELINE = join(ROOT, 'tests', 'global-surface-baseline.json');
 
-/* comments and string/template literals blanked, so that prose about `window.X =` is not a publication */
-function codeOnly(src) {
-  let out = '', i = 0, inBlock = false;
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; out += '  '; i += 2; } else { out += c === '\n' ? '\n' : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; out += '  '; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== '\n') { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === '\\') { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === '\n' ? '\n' : ' '; i++;
-      }
-      continue;
+/* comments, string literals, template-literal text and regular-expression literals blanked (same
+   offsets, line breaks kept), so that prose — or a pattern — about `window.X =` is not a publication.
+   ⚠⚠ (stalled-fetch-and-surface-gauge) THE TOKENS COME FROM THE PARSER, NOT FROM A CHARACTER LOOP.
+   The loop this replaces knew comments and quotes but not regular expressions, so a literal like
+   js/data-layers.js `/named '([^']+)'/` (three quotes) opened a «string» that ran on into the code
+   after it: every `window.X =` in that stretch was blanked, and adding one apostrophe to a comment
+   anywhere later flipped the stretch back. Measured on the tree this round: 76 names published by
+   js/ were missing from the register (window._refreshThermal and _setThermalOpacity among them),
+   and the missing set agreed exactly with an AST walk of every `window.X =` assignment.
+   Whether a `/` opens a regular expression or divides is decided by the grammar, which only the
+   parser knows — so acorn tokenizes (the same acorn hostMembers() already parses with), and a file
+   it cannot parse is an error, not a guess. */
+export function codeOnly(src, file) {
+  const out = String(src).split('');
+  const blank = (s, e) => { for (let k = s; k < e; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '; };
+  const BLANKED = new Set(['string', 'template', 'invalidTemplate', 'regexp', '`']);   /* the backquotes too: window[`X`] reads like window['X'] */
+  const opts = (sourceType) => ({
+    ecmaVersion: 'latest', sourceType, allowHashBang: true, locations: false,
+    onComment: (_block, _text, s, e) => blank(s, e),
+    onToken: (t) => { if (BLANKED.has(t.type.label)) blank(t.start, t.end); },
+  });
+  /* the program is ES modules; a classic script (no import/export, sloppy-mode syntax) is read as one */
+  try { acorn.parse(String(src), opts('module')); } catch (asModule) {
+    out.splice(0, out.length, ...String(src).split(''));
+    try { acorn.parse(String(src), opts('script')); } catch (asScript) {
+      throw new Error(`global-surface: cannot tokenize ${file || 'source'} — ${asModule.message}`);
     }
-    out += c; i++;
   }
-  return out;
+  return out.join('');
 }
 
 /** The members of IM_HOST, from the parser: literal properties (getter/setter/value, deduplicated)
@@ -95,7 +104,7 @@ export function windowPublications(root) {
     if (!existsSync(d)) continue;
     for (const f of readdirSync(d).filter((x) => x.endsWith('.js')).sort()) {
       const raw = readFileSync(join(d, f), 'utf8');
-      const src = codeOnly(raw);
+      const src = codeOnly(raw, dir + '/' + f);
       for (const m of src.matchAll(/(?<![\w$.])window\.([A-Za-z_$][\w$]*)\s*=(?!=)/g)) if (!names.has(m[1])) names.set(m[1], dir + '/' + f);
       /* the bracket form names the global INSIDE a string literal, which codeOnly() blanked. The match
          is taken on the blanked text (so comments and prose cannot match) and the name is read back

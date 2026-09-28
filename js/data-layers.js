@@ -13,9 +13,10 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
-import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the TeleGeography fallback's second rung */
+import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the TeleGeography fallback's second rung; (stalled-fetch) and how long one read of a host may take */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
+import { jsonWithin, readWithin } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock — see rvFetch */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor } from './layer-manifest.js';
@@ -1358,18 +1359,27 @@ window.IntMapModules.dataLayers=function(HOST){
        cannot be found") when ANY one product has no data for that day (live-verified: VIIRS_SNPP missing for
        today & yesterday blanked the whole thermal layer). Probe each day once with a tiny GetMap, parse the
        failing product out of the ServiceException, and request only the products that actually draw. */
+    /* (stalled-fetch) THE PROBE IS READ UNDER A CLOCK. It is the fire row's request (addFirmsThermal
+       returns the day slots, each waiting on this), and a bare `fetch` to a GIBS that stopped answering
+       held the row «in flight» for the session. js/fetch-deadline.js `readWithin` hands back the status,
+       the type and the ServiceException text, all read inside the clock js/proxy-fetch.js `clockFor`
+       gives the host read directly (DIRECT_TIMEOUT_MS, 6 s). A timed-out probe lands in the `catch`
+       below — the path a refused one always took: keep the current list and let the layer try to draw.
+         · observed 2026-09-28: three 4×4 probes, 1.19–1.35 s, 83 B image/png.
+         · lapses if GIBS's WMS stops answering a 4×4 GetMap in about a second. */
     const _thermalDayCache={};
     async function _thermalLayersFor(day){ if(_thermalDayCache[day]!==undefined) return _thermalDayCache[day];
       let list=GIBS_FIRE_LAYERS.split(',');
       for(let t=0;t<4&&list.length;t++){
         try{ const M=20037508.34;
-          const r=await fetch('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+list.join(',')+'&CRS=EPSG:3857&BBOX='+(-M)+','+(-M)+','+M+','+M+'&WIDTH=4&HEIGHT=4&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+day);
-          const ct=(r.headers.get('content-type')||'');
+          const u='https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+list.join(',')+'&CRS=EPSG:3857&BBOX='+(-M)+','+(-M)+','+M+','+M+'&WIDTH=4&HEIGHT=4&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+day;
+          const r=await readWithin(u,clockFor(u));
+          const ct=r.type;
           if(r.ok&&ct.indexOf('image')>=0) break;
-          const tx=await r.text(); const m=tx.match(/named '([^']+)'/)||tx.match(/named &#39;([^&#]+)&#39;/);
+          const tx=r.text; const m=tx.match(/named '([^']+)'/)||tx.match(/named &#39;([^&#]+)&#39;/);
           if(!m||list.indexOf(m[1])<0){ list=[]; break; }
           list=list.filter(x=>x!==m[1]);
-        }catch(_){ break; } }   /* network error → keep the current list (the layer may still draw) */
+        }catch(_){ break; } }   /* network error or the clock → keep the current list (the layer may still draw) */
       _thermalDayCache[day]=list; return list; }
     function _clearThermal(){ THERMAL_IDS.forEach((lid,i)=>{ try{ if(GE().layers.has(lid)) GE().layers.remove(lid); }catch(_){} try{ const sid='src-thermal-'+i; if(GE().layers.hasSource(sid)) GE().layers.removeSource(sid); }catch(_){} }); }
     /* (heal-waits-for-inflight) returns the request — every day slot settled (js/layer-rows.js ④) */
@@ -5904,7 +5914,7 @@ window.IntMapModules.dataLayers=function(HOST){
        (own-fetch-relay) The volunteer proxies that stood LAST are gone: a build with no Supabase URL has the bundled routes
        (step 1 below) and the Cache API, and the relay URL is asked of js/proxy-fetch.js at call time instead of being
        built here once when this module was evaluated (the #R216 shape — a base read too early is '' for good). */
-    async function _cableNet(u){ for(const src of [u, ownRelayUrl(u)]){ if(!src) continue; try{ const r=await fetch(src); if(!r.ok) continue; const j=await r.json(); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
+    async function _cableNet(u){ for(const src of [u, ownRelayUrl(u)]){ if(!src) continue; try{ const j=await jsonWithin(src,clockFor(u,src===u?'direct':'relay'),undefined,{idle:true}); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
     /* ══ (#R355) THE ROUTES COME FROM THIS APP'S OWN ORIGIN NOW ═══════════════════════════════════
        「世界中の全海底ケーブルが…実際に海底を通っていると考えられる場所に描画され」
 
@@ -5933,9 +5943,29 @@ window.IntMapModules.dataLayers=function(HOST){
     const CABLE_LOCAL=(p)=>{ try{ return new URL(p,document.baseURI).toString(); }catch(_){ return p; } };
     const CABLE_LOCAL_URL=CABLE_LOCAL('data/subcables.json');
     const CABLE_LOCAL_LP_URL=CABLE_LOCAL('data/subcables-lp.json');
+    /* ══ (stalled-fetch) EVERY CABLE READ HAS A CLOCK — AND IT MEASURES SILENCE, NOT LENGTH ══════════
+       The cable row's request is `_subcRequest()`, settled only where the download or the build ends.
+       Its reads were bare `fetch`es, so a connection that stopped answering held the row «in flight» for
+       the session. Each read now goes through js/fetch-deadline.js `jsonWithin` with the IDLE clock:
+       data/subcables.json is 2,188,692 B, and a deadline on the whole transfer would measure the
+       reader's line, not a stall — the clock restarts on every chunk, so `ms` is the longest silence.
+       The numbers are js/proxy-fetch.js `clockFor`:
+         · our own origin and submarinecablemap.com, read directly — DIRECT_TIMEOUT_MS (6 s). Observed
+           2026-09-28 from the live site: subcables.json in 1.06 / 1.87 s, subcables-lp.json (329,206 B)
+           in 0.71 / 0.92 s; not one of those reads was silent for anything like 6 s.
+         · the cable-geo relay — the clock the relay ladder races that same relay at (PROXY_TIMEOUT_MS,
+           8 s, since its row carries no clock of its own).
+         Lapses if a read of ours or the relay's legitimately goes silent for longer (a cold relay whose
+         upstream answers after 8 s — the ladder would then need the relay's own row clock, as gdelt-relay has).
+       A timed-out read is a null here, which is what a refused one always was, so the ladder below is the
+       failure path: kept copy → TeleGeography → the 5 / 15 / 45 s back-off (#R188) → the toast 「Submarine
+       cable data unavailable」, `imAutoOff`, and the request settled.
+       ⚠ THE 90 s HORIZON IS NOT THE DOWNLOAD'S BOUND. `BUILD_HORIZON_MS` in addSubcables starts only once
+       fetchSubcables() has handed back data, and it bounds the renderer refusing the add. The download
+       is bounded by these clocks: per attempt, the two local reads in parallel, then the direct and relay
+       reads — at most one silence each — and four attempts separated by 65 s of back-off. */
     async function _cableLocal(u){
-      try{ const r=await fetch(u,{cache:'default'}); if(!r.ok) return null;
-        const j=await r.json();
+      try{ const j=await jsonWithin(u,clockFor(u),{cache:'default'},{idle:true});
         /* a truncated or half-written answer is not data — the layer must fall through, not draw a
            fragment and call it the world's cables */
         if(!j||!Array.isArray(j.features)||!j.features.length) return null;
@@ -6182,10 +6212,27 @@ window.IntMapModules.dataLayers=function(HOST){
        blur, not error. ⚠ Do not raise this number again — a taller ceiling does not buy detail the
        free tier has, it buys the grey plate. */
     const RV_MAX_Z=7;                  /* deepest zoom the free tile cache serves radar at (measured) */
+    /* ══ ⚠⚠ (stalled-fetch) THE FRAME INDEX IS READ UNDER A CLOCK — A STALLED READ IS A FAILED ONE ════
+       The radar row's request (toggleLayer → `req`, handed to js/layer-rows.js `layerInflight`) is this
+       read. With a bare `fetch` it had no end: a host that stopped answering left `_rvPending` pending
+       for ever, so (a) the box stayed «in flight» and the reconciler never judged it again, (b) no toast
+       ever said the weather could not be fetched, and (c) every later tick got the SAME dead promise
+       back, because `_rvPending` is what a second caller is handed while a read is on its way.
+       js/fetch-deadline.js `jsonWithin` is the app's clock for a direct JSON read, and it covers the
+       BODY as well as the headers (#R452). Its deadline rejects like a refusal does, so the existing
+       `.catch` is the failure path: `_rvPending` is cleared (the next request starts a new read), the
+       branch finds no frames, toasts 「Live weather data unavailable」 and unticks the row.
+       THE CLOCK is js/proxy-fetch.js `clockFor` — the host read directly, so DIRECT_TIMEOUT_MS (6 s,
+       «hosts that answer quickly»), stated once, there.
+         · observed 2026-09-28: five reads of the index from a home line, 0.97–1.24 s to the last byte,
+           818 B each.
+         · lapses if RainViewer's index stops being a sub-kilobyte file answered in about a second (the
+           host then needs its own row in proxy-fetch's per-host table, as GDELT and the World Bank have). */
+    const RV_INDEX_URL='https://api.rainviewer.com/public/weather-maps.json';
     function rvFetch(){
       if(_rvData && Date.now()-_rvAt<5*60000) return Promise.resolve(_rvData);
       if(_rvPending) return _rvPending;
-      _rvPending=fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.ok?r.json():null)
+      _rvPending=jsonWithin(RV_INDEX_URL,clockFor(RV_INDEX_URL))
         .then(j=>{ if(j){ _rvData=j; _rvAt=Date.now(); rvRefreshFrames(); } _rvPending=null; return _rvData; })
         .catch(()=>{ _rvPending=null; return null; });
       return _rvPending;
@@ -6385,11 +6432,14 @@ window.IntMapModules.dataLayers=function(HOST){
         }
         else if(id==='tfr'){
           lgdTfr.style.display='block'; tileLegends();
-          /* (#R11) Total fertility rate — fetched live from the World Bank (latest year), cached. */
+          /* (#R11) Total fertility rate — fetched live from the World Bank (latest year), cached.
+             (stalled-fetch) read under js/proxy-fetch.js `clockFor` — the World Bank's own row there
+             (20 s; its cold answers were measured at up to 8.2 s). A timed-out read lands in the `.catch`
+             that already said 「Could not load fertility data」, and withCountries settles with it. */
           req=withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
             const apply=()=>applyChoro('tfr',s=>s.tfr!=null?s.tfr:null);
             if(window._tfrData){ apply(); }
-            else { return fetch('https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400').then(r=>r.json()).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
+            else { const u='https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400'; return readWithin(u,clockFor(u)).then(r=>JSON.parse(r.text)).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
         else if(id==='nato'){

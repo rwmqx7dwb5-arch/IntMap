@@ -294,7 +294,11 @@ from a line joined to its neighbour, so it had stopped measuring what it was for
 
 - the members of `IM_HOST` in js/app-body.js (getter, setter, and any later `IM_HOST.x =`), and
   which of them are writable;
-- every `window.NAME =` a js/ or src/ file performs (comments and strings blanked first).
+- every `window.NAME =` a js/ or src/ file performs (comments, strings, template text and regular-
+  expression literals blanked first — by acorn's tokenizer, because only the grammar can tell a `/`
+  that opens a pattern from one that divides; a file acorn cannot parse is an error naming it).
+  `tests/stalled-fetch-and-surface-gauge-checks.test.mjs` holds the register equal to an AST walk of
+  every `window.X =` assignment, and keeps the character loop it replaced as a mutant that must fail.
 
 Both are held as **names** in `tests/global-surface-baseline.json` and ratcheted both ways, like
 `check:perf`: a name that appears fails until it is accepted with `--update` (and named in

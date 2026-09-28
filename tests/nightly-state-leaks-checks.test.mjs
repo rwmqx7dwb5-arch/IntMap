@@ -140,14 +140,21 @@ async function railwaysOn(opts) {
   return { R, eng };
 }
 
-/* between macrotasks, as a renderer would, until the condition holds (bounded, and says so) */
+/* between macrotasks, as a renderer would, until the condition holds (bounded, and says so).
+   ⚠ BOUNDED BY TIME, NOT BY A COUNT OF TURNS. The cells arrive through fetch → DecompressionStream,
+   which runs off the event loop; 400 setImmediate turns is a few milliseconds on one machine and not
+   enough on another. Measured 2026-09-28: green in one worktree, red in CI and in a second worktree
+   whose only difference was which test ran before it — the verdict was the runner's speed. */
+const FRAMES_MS = 5000;   /* a wall-clock bound far above the gunzip of two tiny fixtures; a real hang still fails */
 async function frames(eng, cond, what) {
-  for (let i = 0; i < 400; i++) {
-    await new Promise((r) => setImmediate(r));
-    eng.frame();
+  const t0 = Date.now();
+  let turns = 0;
+  while (Date.now() - t0 < FRAMES_MS) {
+    await new Promise((r) => setTimeout(r, 0));
+    eng.frame(); turns++;
     if (cond()) return;
   }
-  assert.fail('never reached: ' + what);
+  assert.fail(`never reached within ${FRAMES_MS} ms (${turns} frames): ${what}`);
 }
 
 test('nightly-state-leaks ② the world line stays until the detail can draw — an announcement is not a drawing', async () => {

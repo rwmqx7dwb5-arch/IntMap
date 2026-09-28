@@ -11,6 +11,8 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — this read had none */
+import { readWithin } from './fetch-deadline.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.wbLayers=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -49,8 +51,11 @@ window.IntMapModules.wbLayers=function(HOST){
     function wbSeries(code){ const key=_wbKey(code);
       if(wbSeriesCache[key]) return Promise.resolve(wbSeriesCache[key]);
       const to=new Date().getUTCFullYear()+1;
-      const one=(c)=>fetch('https://api.worldbank.org/v2/country/all/indicator/'+c+'?format=json&date='+WB_FROM+':'+to+'&per_page=20000')
-        .then(r=>r.json()).then(j=>(j&&j[1])||[]).catch(()=>[]);
+      /* (stalled-fetch-and-surface-gauge) every year since WB_FROM for every country in one answer — a large body,
+         so the clock measures SILENCE (`idle`: re-armed on every chunk), not the length of the download. A read
+         that stops is `[]`, exactly as a refused one always was. */
+      const one=(c)=>{ const u='https://api.worldbank.org/v2/country/all/indicator/'+c+'?format=json&date='+WB_FROM+':'+to+'&per_page=20000';
+        return readWithin(u,clockFor(u),undefined,{idle:true}).then(r=>JSON.parse(r.text)).then(j=>(j&&j[1])||[]).catch(()=>[]); };
       const codes=Array.isArray(code)?code:[code];
       return Promise.all(codes.map(one)).then(parts=>{
         const by=Object.create(null);

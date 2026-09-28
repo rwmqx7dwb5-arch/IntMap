@@ -7,7 +7,8 @@
  *  declaration, so passing them by value is exactly what the closure saw.
  *      window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);
  * ========================================================================== */
-import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the cable preview's second rung */
+import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the cable preview's second rung; (stalled-fetch-and-surface-gauge) and how long one read of a host may take */
+import { readWithin } from './fetch-deadline.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     /* (#R71) quality pass ("画像の縦横比が引き延ばされ…クオリティも低い"): canvases are now WEB-MERCATOR
@@ -241,8 +242,10 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       const done=v=>{ setTimeout(()=>{ _wbBusy--; _wbPump2(); },350); t.res(v); };
       try{
         if(!t.spec.url&&window.IntMapWB&&window.IntMapWB.fetch){ window.IntMapWB.fetch(t.spec.c).then(m=>done(m||{})).catch(()=>done({})); }
-        else{ fetch(t.spec.url||('https://api.worldbank.org/v2/country/all/indicator/'+t.spec.c+'?format=json&mrnev=1&per_page=400'))
-          .then(r=>r.json()).then(j=>{ const m={}; ((j&&j[1])||[]).forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value}; }); done(m); }).catch(()=>done({})); }
+        /* (stalled-fetch-and-surface-gauge) under the host's clock: the queue runs ONE read at a time, so a read
+           that never ended held every later preview behind it for the session */
+        else{ const u=t.spec.url||('https://api.worldbank.org/v2/country/all/indicator/'+t.spec.c+'?format=json&mrnev=1&per_page=400');
+          readWithin(u,clockFor(u)).then(r=>JSON.parse(r.text)).then(j=>{ const m={}; ((j&&j[1])||[]).forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value}; }); done(m); }).catch(()=>done({})); }
       }catch(_){ done({}); } } }
     /* (#R270) the ramp comes from the LAYER when it is loaded (`IntMapWB.rampOf`), because the copy
        in WBP below went stale the moment #R268 made GDP growth diverging — the tile was still red →

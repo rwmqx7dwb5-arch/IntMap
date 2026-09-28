@@ -69,7 +69,9 @@ test('R190 default layers: the cables come through our own origin', async () => 
   assert.ok(net, 'the cable fetcher is still one function');
   assert.match(net[0], /for\(const src of \[u, ownRelayUrl\(u\)\]\)/,
     'the direct URL is still tried first, then our relay for it — and nothing else');
-  assert.match(dl, /import \{ ownRelayUrl \} from '\.\/proxy-fetch\.js';/, 'the relay URL comes from the one router');
+  /* the import may name what else it takes from the router (stalled-fetch-and-surface-gauge: `clockFor`);
+     what is held is that ownRelayUrl comes from there */
+  assert.match(dl, /import \{[^}]*\bownRelayUrl\b[^}]*\} from '\.\/proxy-fetch\.js';/, 'the relay URL comes from the one router');
   const realWindow = globalThis.window;
   globalThis.window = { SUPABASE_URL: 'https://sb.test' };
   try {

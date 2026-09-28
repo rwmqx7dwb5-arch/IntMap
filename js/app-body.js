@@ -43,7 +43,8 @@ import { makeDemSource } from './dem-source.js';
 import { gridLayerSpecs } from './grid-style.js';
 import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
 import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, drawn round the water */
-import { fetchViaProxy } from './proxy-fetch.js';
+import { fetchViaProxy, clockFor } from './proxy-fetch.js';
+import { readWithin } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
 import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
@@ -1224,8 +1225,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     gdpPPPPromise=(async()=>{
       try{ const c=JSON.parse(localStorage.getItem('intmap_gdpppp')||'null');
         if(c&&c.ts&&(Date.now()-c.ts<30*864e5)&&c.pc){ _mergePPP(c.pc,c.tot); return; } }catch(_){}
-      const fetchInd=async(ind)=>{ try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+ind+'?format=json&per_page=400&mrnev=1');
-          const j=await r.json(); const out={}; (j&&j[1]||[]).forEach(d=>{ if(d&&d.countryiso3code&&d.value!=null) out[d.countryiso3code]=d.value; }); return out; }catch(_){ return {}; } };
+      const fetchInd=async(ind)=>{ try{ const u='https://api.worldbank.org/v2/country/all/indicator/'+ind+'?format=json&per_page=400&mrnev=1';
+          const j=JSON.parse((await readWithin(u,clockFor(u))).text); const out={};   /* (stalled-fetch-and-surface-gauge) a read that never ends is `{}`, like a refused one */ (j&&j[1]||[]).forEach(d=>{ if(d&&d.countryiso3code&&d.value!=null) out[d.countryiso3code]=d.value; }); return out; }catch(_){ return {}; } };
       const [pc,tot]=await Promise.all([fetchInd('NY.GDP.PCAP.PP.CD'),fetchInd('NY.GDP.MKTP.PP.CD')]);
       if(Object.keys(pc).length||Object.keys(tot).length){ try{ localStorage.setItem('intmap_gdpppp',JSON.stringify({ts:Date.now(),pc,tot})); }catch(_){} }
       _mergePPP(pc,tot);

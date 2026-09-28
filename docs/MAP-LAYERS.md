@@ -730,6 +730,21 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   ⚠ 登録を時計で終わらせない。要求は各自の終わりを持つ：描画の待ちは描けるときにだけ解け（描けないあいだは
   どの判定も元々しない）、取得はネットワークで終わり、梯子は自分の地平線（90 秒）と後退（5+15+45 秒）を持つ。
   終わらない取得は揺すっても直らない——`rvFetch` は取得中の同じ要求を返すので、揺すり直しは同じ要求に繋がるだけ。
+  だから**取得が自分の終わりを持つ**。行の要求になる取得は全部 `js/fetch-deadline.js`（本文まで覆う時計）で読み、
+  **何秒かは `js/proxy-fetch.js` の `clockFor(url, via)` が host ごとに答える**（直接読む相手は `DIRECT_TIMEOUT_MS`
+  6 秒、GDELT 18 秒、World Bank 20 秒。自前の relay 段はその relay を梯子が走らせる時計）。期限切れは拒否と同じく
+  各枝の既存の失敗の経路へ流れ、要求が settle するので登録からも外れる:
+  - **雨雲レーダー**（RainViewer の索引・6 秒。実測 0.97〜1.24 秒・818 B）——共有の要求が空になり（次の要求は
+    新しく読む）、「Live weather data unavailable」を出して箱を外す。
+  - **火災**（`_thermalLayersFor` の GIBS WMS 探り・6 秒。実測 1.19〜1.35 秒）——`readWithin` が状態・型・
+    ServiceException の本文を時計の中で読む。期限切れは拒否と同じく「今の一覧のまま描いてみる」。
+  - **海底ケーブル**（`_cableLocal` / `_cableNet`）——2.2 MB のファイルなので**無音の長さ**を測る時計（`idle`。
+    本文の塊が届くたびに掛け直す）。同一オリジンと TeleGeography 直は 6 秒、cable-geo relay は 8 秒。期限切れは
+    null＝保存した写し → TeleGeography → 5/15/45 秒の後退 →「Submarine cable data unavailable」と `imAutoOff`。
+    ⚠ `addSubcables` の 90 秒の地平線は**取得の後**の構築の梯子の上限で、取得の上限ではない。
+  - **合計特殊出生率**（World Bank・20 秒。実測 0.34〜8.23 秒）——既存の「Could not load fertility data」。
+  ⚠ 他の枝が同じ形を持たないことは、下の `tests/stalled-fetch-and-surface-gauge-checks.test.mjs` ④ が
+  `toggleLayer` の全枝について何も返さない相手と模擬時計で確かめている（枝の一覧は関数から読む）。
 
 ⚠ **個々のレイヤーに再試行や try/catch を足して直さない**——海底ケーブルだけが自前の再試行
 （`addSubcables` の梯子）を持っていたので同じ条件から回復し、ほかは失われていた。守るべき事実は
@@ -741,6 +756,10 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 箱を ON にし、整合器が揺すったらその瞬間に描けるようにする＝本番の競合を決定的に再現）。取得中の判定は
 `tests/heal-waits-for-inflight-checks.test.mjs`（登録・点検・`toggleLayer` の全枝・`withCountries` を実際に評価）と
 `tests/heal-waits-for-inflight.spec.js`（RainViewer の索引を点検より遅く返し、揺すり 0 件・中断タイル 0 枚）。
+止まった取得は `tests/stalled-fetch-and-surface-gauge-checks.test.mjs`——①（出荷された `rvFetch` と `toggleLayer` を
+実際の `jsonWithin` と登録で評価し、期限で失敗の経路・登録の解除・次の要求での新しい取得を確かめる）と
+④（`toggleLayer` の全枝を、それが届くレイヤーの閉包の宣言ごと評価し、何も返さない相手に対して各枝の要求が
+終わること、4 つの枝の期限切れが既存の失敗の経路に届くことを確かめる。素の `fetch` に戻すと 4 つとも赤）。
 
 `#layer-dropdown` という要素は残っていて、それは UI ではなくレジストリである——行を作るのは今も各モジュールの
 `buildUI()` で（ハンドラ・凡例・スライダーを持つのは行の持ち主）、**状態**（チェック）は今もその箱にある。
