@@ -5914,7 +5914,12 @@ window.IntMapModules.dataLayers=function(HOST){
        (own-fetch-relay) The volunteer proxies that stood LAST are gone: a build with no Supabase URL has the bundled routes
        (step 1 below) and the Cache API, and the relay URL is asked of js/proxy-fetch.js at call time instead of being
        built here once when this module was evaluated (the #R216 shape — a base read too early is '' for good). */
-    async function _cableNet(u){ for(const src of [u, ownRelayUrl(u)]){ if(!src) continue; try{ const j=await jsonWithin(src,clockFor(u,src===u?'direct':'relay'),undefined,{idle:true}); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
+    /* ⚠ (cable-relay-first) OUR RELAY FIRST WHEN THERE IS ONE. submarinecablemap.com sends no ACAO, so the bare
+       URL is refused in EVERY page context a reader has (measured again on production 2026-09-29: two CORS errors +
+       two net::ERR_FAILED in the console whenever the bundled file missed its clock). The #R190 reason for keeping it
+       first — «origins that are allowed to read it» — has no such origin in a browser. It stays as the last rung for a
+       build with no relay (ownRelayUrl → ''), where it is the only thing left to try. */
+    async function _cableNet(u){ for(const src of [ownRelayUrl(u), u]){ if(!src) continue; try{ const j=await jsonWithin(src,clockFor(u,src===u?'direct':'relay'),undefined,{idle:true}); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
     /* ══ (#R355) THE ROUTES COME FROM THIS APP'S OWN ORIGIN NOW ═══════════════════════════════════
        「世界中の全海底ケーブルが…実際に海底を通っていると考えられる場所に描画され」
 
