@@ -15,6 +15,7 @@
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the TeleGeography fallback's second rung */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
+import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor } from './layer-manifest.js';
@@ -1371,11 +1372,12 @@ window.IntMapModules.dataLayers=function(HOST){
         }catch(_){ break; } }   /* network error → keep the current list (the layer may still draw) */
       _thermalDayCache[day]=list; return list; }
     function _clearThermal(){ THERMAL_IDS.forEach((lid,i)=>{ try{ if(GE().layers.has(lid)) GE().layers.remove(lid); }catch(_){} try{ const sid='src-thermal-'+i; if(GE().layers.hasSource(sid)) GE().layers.removeSource(sid); }catch(_){} }); }
+    /* (heal-waits-for-inflight) returns the request — every day slot settled (js/layer-rows.js ④) */
     function addFirmsThermal(){
       _clearThermal();
-      thermalDayOffsets().forEach((off,i)=>{
+      return Promise.all(thermalDayOffsets().map((off,i)=>{
         const sid='src-thermal-'+i, lid=THERMAL_IDS[i], day=_utcDayISO(off);
-        _thermalLayersFor(day).then(list=>{
+        return _thermalLayersFor(day).then(list=>{
           if(!list||!list.length) return;   /* no fire product at all for that day (yet) — skip the slot honestly */
           try{
             if(GE().layers.hasSource(sid)||GE().layers.has(lid)) return;   /* a re-toggle raced us */
@@ -1383,7 +1385,7 @@ window.IntMapModules.dataLayers=function(HOST){
             GE().layers.add({id:lid,type:'raster',source:sid,layout:{visibility:_thermalOn?'visible':'none'},paint:{'raster-opacity':opacities.thermal}},beforeId);
           }catch(_){}
         }).catch(()=>{});
-      });
+      }));
     }
     function setThermalVis(on){ _thermalOn=on; THERMAL_IDS.forEach(lid=>{ if(GE().layers.has(lid)) GE().layers.setLayout(lid,'visibility',on?'visible':'none'); }); }
     window._setThermalOpacity=function(v){ THERMAL_IDS.forEach(lid=>{ if(GE().layers.has(lid)) GE().layers.setPaint(lid,'raster-opacity',v); }); };
@@ -1492,7 +1494,9 @@ window.IntMapModules.dataLayers=function(HOST){
       cb.addEventListener('change',e=>{
         w.classList.toggle('on',e.target.checked);
         const ex=w.querySelector('.lyr-extras'); if(ex) ex.style.display=e.target.checked?'block':'none';
-        toggleLayer(id,e.target.checked);
+        /* the promise is the request this change started; until it settles the box is in flight and the
+           reconciler at the foot of this file does not judge it (js/layer-rows.js ④) */
+        layerInflight.track(cb.id,toggleLayer(id,e.target.checked));
       });
       w.querySelector('#op-'+id).addEventListener('input',e=>setLayerOpacity(id,parseFloat(e.target.value)));
       if(isDated){
@@ -2024,8 +2028,11 @@ window.IntMapModules.dataLayers=function(HOST){
         if(n++<20) setTimeout(t,1500); else _hiResPolling=false;
       })();
     }
+    /* (heal-waits-for-inflight) returns the request: it settles with whatever `cb` returned (a promise
+       `cb` returns is waited on too), or when the wait below gives up — so a row asking for the country
+       table is in flight until it has either painted or stopped trying (js/layer-rows.js ④) */
     function withCountries(cb){
-      loadCountryData().then(()=>{
+      return loadCountryData().then(()=>new Promise(done=>{
         function tryAdd(){
           if(_canDraw()&&HOST.countryGeo&&!GE().layers.hasSource('countries')){   /* (#R170) parsed style is all addCountryLayers needs */
             try{ addCountryLayers(); }catch(e){ console.warn('addCountryLayers failed (will retry)',e); }
@@ -2036,14 +2043,14 @@ window.IntMapModules.dataLayers=function(HOST){
         (function w(){
           if(GE().layers.hasSource('countries')&&HOST.countryGeo){
             try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(true); }catch(_){}   /* (#R254) fine borders BEFORE the paint */
-            try{ cb(); }catch(e){ console.warn('withCountries cb failed',e); }
+            let r; try{ r=cb(); }catch(e){ console.warn('withCountries cb failed',e); }
             _hiResCountries();                                                               /* (#R254) …and again when the late upgrade lands */
-            return; }
+            done(r); return; }
           /* Wait MUCH longer (200 tries × 200ms = 40 s) to survive slow CDN style loads. */
           if(n++<200){ tryAdd(); setTimeout(w,200); }
-          else console.warn('withCountries: gave up waiting for country source');
+          else { console.warn('withCountries: gave up waiting for country source'); done(); }
         })();
-      });
+      }));
     }
     /* Helper: resolves as soon as it is SAFE TO ADD sources/layers — not when the map has fully settled.
        (#R170) That distinction is the whole point. This gate used to test map.isStyleLoaded(), which in
@@ -2404,7 +2411,7 @@ window.IntMapModules.dataLayers=function(HOST){
       try{ setVis('milSpend-fill',on&&!gdp); }catch(_){}
       try{ setVis('milSpendGDP-fill',on&&gdp); }catch(_){}
       if(!on) return;
-      withCountries(()=>{ try{
+      return withCountries(()=>{ try{
         if(gdp){ addChoro('milSpendGDP'); applyChoro('milSpendGDP',s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null); setVis('milSpendGDP-fill',true); }
         else   { addChoro('milSpend');    applyChoro('milSpend',   s=>s.milSpend);                                          setVis('milSpend-fill',true); }
       }catch(e){ console.warn('milSpend choro fail',e); } });
@@ -3186,8 +3193,13 @@ window.IntMapModules.dataLayers=function(HOST){
        one mechanism still able to fix it. */
     const KOPPEN_HORIZON_MS=90000;
     let _kStyleHook=null,_kRetryT=null,_kGiveUpAt=0;
+    /* (heal-waits-for-inflight) the request addKoppen() returned: settled wherever the ladder ends —
+       built, given up at the horizon, or abandoned because the box was unticked. Every end passes
+       through _koppenStop, so that is where it is settled (js/layer-rows.js ④). */
+    let _kDone=null;
     function _koppenStop(){ if(_kStyleHook){ try{ GE().events.off('styledata',_kStyleHook); }catch(_){} _kStyleHook=null; }
-      if(_kRetryT){ clearTimeout(_kRetryT); _kRetryT=null; } }
+      if(_kRetryT){ clearTimeout(_kRetryT); _kRetryT=null; }
+      if(_kDone){ const d=_kDone; _kDone=null; d(); } }
     function _koppenWanted(){ const cb=document.getElementById('dl-climate'); return !cb||!!cb.checked; }
     /* the ONE way back into the build from a timer or from the style — so «the reader turned it off
        while we waited» is checked once, in the place both paths pass through (#R85: never fight them) */
@@ -3235,10 +3247,13 @@ window.IntMapModules.dataLayers=function(HOST){
          crash source). The legend stays as a color key (+ era switch + right-click criteria). */
       KURL=koppenDisplayURL(window._koppenPeriod);   /* (#R23) recompute now that isMobile() is reliable → phones get the 4k texture */
       _kGiveUpAt=Date.now()+KOPPEN_HORIZON_MS;       /* (#R372) every fresh request gets the full horizon */
+      /* a newer request stands for the older one — the older is settled, the ladder goes on for this one */
+      const req=new Promise(res=>{ if(_kDone) _kDone(); _kDone=res; });
       _koppenBuild();
       /* the legend is DOM, not style: it is drawn whether or not the renderer took the raster, so a
          reader waiting out a slow style still has the colour key the ticked row promises */
       buildLegend();
+      return req;
     }
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
@@ -5784,7 +5799,7 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     /* (#R311) THE ROW IS THE DOOR: js/satellites-live.js (and its detail card) are fetched here, and
        the "unavailable" branch below now answers a fetch that FAILED rather than one that never ran. */
-    function startSats(){ window.IntMapLazy.need('satellitesLive').then(_startSats); }
+    function startSats(){ return window.IntMapLazy.need('satellitesLive').then(_startSats); }
     function _startSats(){
       const A=window.IntMapSatellites;
       if(!A){ try{ satToast(window.IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
@@ -5972,9 +5987,17 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ _subcInfo=window.IntMapSubcableInfo(HOST); _subcInfo.attach(); }catch(e){ console.warn('subcable info',e); }
       }).catch(e=>{ console.warn('subcable info',e); });
     }
+    /* (heal-waits-for-inflight) the request addSubcables() returns — ONE across the download, its
+       back-off (#R188) and the build ladder (#R355), settled where any of them ends: drawn, given up
+       (autoUncheck), or abandoned because the box was unticked. Bounded by those: three back-offs
+       (5 + 15 + 45 s) and the horizon of the ladder itself (BUILD_HORIZON_MS). js/layer-rows.js ④. */
+    let _subcReq=null,_subcDone=null;
+    function _subcRequest(){ if(!_subcReq) _subcReq=new Promise(r=>{ _subcDone=r; }); return _subcReq; }
+    function _subcSettle(){ const d=_subcDone; _subcReq=null; _subcDone=null; if(d) d(); }
     function addSubcables(){
-      if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); _wireSubcableInfo(); return; }
-      if(_subcablesLoading) return; _subcablesLoading=true;
+      if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); _wireSubcableInfo(); _subcSettle(); return; }
+      const req=_subcRequest();
+      if(_subcablesLoading) return req; _subcablesLoading=true;
       fetchSubcables().then(({cab,lp})=>{
         _subcablesLoading=false;
         if(!cab){
@@ -5983,8 +6006,8 @@ window.IntMapModules.dataLayers=function(HOST){
              reported — and even then as `imAutoOff`, which the session does not record as a choice. */
           const cb=document.getElementById('dl-subcables');
           if(cb&&cb.checked&&_subcableTries<3){ const wait=[5000,15000,45000][_subcableTries++];
-            setTimeout(()=>{ const c2=document.getElementById('dl-subcables'); if(c2&&c2.checked) addSubcables(); },wait); return; }
-          _subcableTries=0; autoUncheck('dl-subcables');
+            setTimeout(()=>{ const c2=document.getElementById('dl-subcables'); if(c2&&c2.checked) addSubcables(); else _subcSettle(); },wait); return; }
+          _subcableTries=0; autoUncheck('dl-subcables'); _subcSettle();
           try{ satToast(window.IntMapLang.t(HOST.lang,'Submarine cable data unavailable','海底ケーブルデータを取得できませんでした','Seekabel-Daten nicht verfügbar','Данные о подводных кабелях недоступны','Datos de cables submarinos no disponibles')); }catch(_){} return; }
         _subcableTries=0;
         /* ══ (#R187) A REFUSED ADD IS NOT AN ANSWER — TRY AGAIN ═══════════════════════════════════
@@ -6053,13 +6076,13 @@ window.IntMapModules.dataLayers=function(HOST){
             /* (#R189) giving up QUIETLY here left the one state #R187 was hunting: box ticked, layer
                absent. Say so the same way the download path does — imAutoOff, so the session still
                wants the layer, and a toast, so the screen is not silently missing what the row claims. */
-            console.warn('addSubcables',e); autoUncheck('dl-subcables');
+            console.warn('addSubcables',e); autoUncheck('dl-subcables'); _subcSettle();
             try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
           if(!GE().layers.has('lyr-subcables')){                 /* refused without throwing */
             if(again()) return;
             stopHook();
-            console.warn('addSubcables: the style never accepted the cable layers'); autoUncheck('dl-subcables');
+            console.warn('addSubcables: the style never accepted the cable layers'); autoUncheck('dl-subcables'); _subcSettle();
             try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
           stopHook();
@@ -6067,9 +6090,11 @@ window.IntMapModules.dataLayers=function(HOST){
           /* the layer is up — whatever an earlier failure recorded is settled (#R188) */
           try{ const cb=document.getElementById('dl-subcables'); if(cb&&cb.dataset) delete cb.dataset.imAutoOff; }catch(_){}
           _wireSubcableInfo();
+          _subcSettle();
         };
         build();
-      });
+      }).then(null,e=>{ _subcSettle(); throw e; });   /* a download or build that threw has ended too */
+      return req;
     }
     /* === Contour lines — generated on the fly from the terrarium DEM ===
        (#R179) the DEM source itself now lives in the engine (scene.demContourSource): it has to be
@@ -6253,17 +6278,25 @@ window.IntMapModules.dataLayers=function(HOST){
       addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
+    /* ══ (heal-waits-for-inflight) RETURNS THE REQUEST THE SWITCH STARTED ═══════════════════════════
+       Most rows cannot draw in the same tick they are switched on: they wait for the renderer, fetch an
+       index or a table, or climb a build ladder. `req` is the last asynchronous step of each branch, and
+       it is returned AFTER the code every branch shares (the generic legend, the #R30 orphan guard) —
+       assigned, not `return`ed, so that shared code still runs. A branch that draws at once leaves it
+       undefined. The change handler hands it to js/layer-rows.js `layerInflight`; while it is pending
+       the reconciler at the foot of this file does not call the row «not painted». */
     function toggleLayer(id,on){
+      let req;
       if(on){
-        if(id==='climate'){ addKoppen(); /* layer added async after CORS preflight; setVis once it appears */ const t0=Date.now(); (function w(){ if(GE().layers.has('lyr-climate')){ setVis('lyr-climate',true); } else if(Date.now()-t0<5000){ setTimeout(w,150); } })(); legend.style.display='flex'; try{ const _f=()=>{ try{ window._fitKoppenLegend&&window._fitKoppenLegend(); }catch(_){} }; requestAnimationFrame(()=>{ requestAnimationFrame(_f); }); setTimeout(_f,120); }catch(_){} }   /* (#R147/#R148) fit legend height to content once visible — double-rAF + a timeout backstop so it runs after layout settles */
-        else if(id==='precip'){ whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
+        if(id==='climate'){ req=addKoppen(); /* layer added async after CORS preflight; setVis once it appears */ const t0=Date.now(); (function w(){ if(GE().layers.has('lyr-climate')){ setVis('lyr-climate',true); } else if(Date.now()-t0<5000){ setTimeout(w,150); } })(); legend.style.display='flex'; try{ const _f=()=>{ try{ window._fitKoppenLegend&&window._fitKoppenLegend(); }catch(_){} }; requestAnimationFrame(()=>{ requestAnimationFrame(_f); }); setTimeout(_f,120); }catch(_){} }   /* (#R147/#R148) fit legend height to content once visible — double-rAF + a timeout backstop so it runs after layout settles */
+        else if(id==='precip'){ req=whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{ try{ addFirmsThermal(); setThermalVis(true); }catch(e){ console.warn('thermal (GIBS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
+          req=whenStyleReady().then(()=>{ try{ const built=addFirmsThermal(); setThermalVis(true); return built; }catch(e){ console.warn('thermal (GIBS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
         }
         else if(id==='radar'){
           lgdRadar.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>rvFetch()).then(()=>{
+          req=whenStyleReady().then(()=>rvFetch()).then(()=>{
             if(!addRainViewer()){
               try{ satToast(window.IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
               const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
@@ -6275,16 +6308,16 @@ window.IntMapModules.dataLayers=function(HOST){
         }
         else if(id==='sst'){
           lgdSST.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{ try{ addRaster('sst',gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',layerDates.sst),7); }catch(_){} try{ setVis('lyr-sst',true); }catch(_){} });
+          req=whenStyleReady().then(()=>{ try{ addRaster('sst',gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',layerDates.sst),7); }catch(_){} try{ setVis('lyr-sst',true); }catch(_){} });
         }
-        else if(id==='snow'){ lgdSnow.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
-        else if(id==='aod'){ lgdAod.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
+        else if(id==='snow'){ lgdSnow.style.display='block'; tileLegends(); req=whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
+        else if(id==='aod'){ lgdAod.style.display='block'; tileLegends(); req=whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
         /* Night-time satellite (#R9/#39) — VIIRS "Black Marble" city-lights composite via NASA GIBS. */
-        else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); try{ _refreshLegendDates(); }catch(_){} whenStyleReady().then(()=>{ _applyNightsat(); }); }
+        else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); try{ _refreshLegendDates(); }catch(_){} req=whenStyleReady().then(()=>{ _applyNightsat(); }); }
         else if(id==='popgrid'){
           lgdPopGrid.style.display='block'; tileLegends();
           try{ _refreshLegendDates(); }catch(_){}
-          whenStyleReady().then(()=>{ try{ addRaster('popgrid',popgridTiles(),7); }catch(_){} try{ GE().layers.setSourceTiles('src-popgrid',popgridTiles()); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
+          req=whenStyleReady().then(()=>{ try{ addRaster('popgrid',popgridTiles(),7); }catch(_){} try{ GE().layers.setSourceTiles('src-popgrid',popgridTiles()); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
         }
         /* (#R289) 「風レイヤーオン時は（海岸線が）デフォルトでオン」 — a colour field covers the basemap,
            so the coast is what tells you where you are looking. `_imCoastAuto` latches, so this is a
@@ -6292,7 +6325,7 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='wind'){ try{ const l=document.getElementById('data-legend-wind'); if(l){ l.style.display='block'; tileLegends(); window._updateWindLegend&&window._updateWindLegend(); } window.Wind&&window.Wind.toggle(true); window._imCoastAuto&&window._imCoastAuto(); }catch(_){} }
         else if(id==='relief'){
           /* Color elevation relief (#5) — MapLibre v5 color-relief over the DEM, hypsometric tint. */
-          whenStyleReady().then(()=>{ try{
+          req=whenStyleReady().then(()=>{ try{
             ensureTerrainSource();
             if(!GE().layers.has('lyr-relief')){
               GE().layers.add({id:'lyr-relief',type:'color-relief',source:'terrain-dem',layout:{visibility:'none'},paint:{'color-relief-opacity':opacities.relief,
@@ -6305,59 +6338,59 @@ window.IntMapModules.dataLayers=function(HOST){
         }
         else if(id==='sealevel'){
           lgdSeaLevel.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
+          req=whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
         }
-        else if(id==='subcables'){ whenStyleReady().then(()=>{ try{ addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
+        else if(id==='subcables'){ req=whenStyleReady().then(()=>{ try{ return addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
         else if(id==='hillshade'){
-          whenStyleReady().then(()=>{ try{
+          req=whenStyleReady().then(()=>{ try{
             ensureTerrainSource();
             if(!GE().layers.has('lyr-hillshade')) GE().layers.add({id:'lyr-hillshade',type:'hillshade',source:'terrain-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.6,'hillshade-shadow-color':'#1a2a44','hillshade-highlight-color':'#ffffff','hillshade-accent-color':'#5a6b85'}},beforeId);
             setVis('lyr-hillshade',true);
           }catch(e){ console.warn('hillshade fail',e); } });
         }
         else if(id==='contours'){
-          whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(window.IntMapLang.t(HOST.lang,'Could not initialize contours','等高線を初期化できませんでした','Höhenlinien konnten nicht initialisiert werden','Не удалось инициализировать изолинии','No se pudieron iniciar las curvas de nivel')); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
+          req=whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(window.IntMapLang.t(HOST.lang,'Could not initialize contours','等高線を初期化できませんでした','Höhenlinien konnten nicht initialisiert werden','Не удалось инициализировать изолинии','No se pudieron iniciar las curvas de nivel')); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
         }
         else if(id==='eez'){
           /* Show legend immediately so user sees feedback; defer source add until style loads */
           lgdEEZ.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{
+          req=whenStyleReady().then(()=>{
             try{ addEEZ(); }catch(e){ console.warn('addEEZ failed',e); }
             try{ setVis('lyr-eez',true); }catch(_){}
           });
         }
         else if(id==='ships'||id==='planes'){ startTraffic(id); }
-        else if(id==='sats'){ startSats(); }
+        else if(id==='sats'){ req=startSats(); }
         else if(id==='pop'){
           lgdPop.style.display='block'; tileLegends();
-          withCountries(()=>{ try{ addChoro('pop'); applyChoro('pop',s=>s.density); setVis('pop-fill',true); }catch(e){ console.warn('pop choro fail',e); } });
+          req=withCountries(()=>{ try{ addChoro('pop'); applyChoro('pop',s=>s.density); setVis('pop-fill',true); }catch(e){ console.warn('pop choro fail',e); } });
         }
         else if(id==='hdi'){
           lgdHDI.style.display='block'; tileLegends();
-          withCountries(()=>{ try{ addChoro('hdi'); applyChoro('hdi',s=>s.hdi); setVis('hdi-fill',true); }catch(e){ console.warn('hdi choro fail',e); } });
+          req=withCountries(()=>{ try{ addChoro('hdi'); applyChoro('hdi',s=>s.hdi); setVis('hdi-fill',true); }catch(e){ console.warn('hdi choro fail',e); } });
         }
         else if(id==='dem'){
           lgdDem.style.display='block'; tileLegends();
-          withCountries(()=>{ try{ addChoro('dem'); applyChoro('dem',s=>s.dem); setVis('dem-fill',true); }catch(e){ console.warn('dem choro fail',e); } });
+          req=withCountries(()=>{ try{ addChoro('dem'); applyChoro('dem',s=>s.dem); setVis('dem-fill',true); }catch(e){ console.warn('dem choro fail',e); } });
         }
-        else if(id==='milSpend'){ applyMilMode(); }   /* (#R289) whichever of the two modes is selected */
+        else if(id==='milSpend'){ req=applyMilMode(); }   /* (#R289) whichever of the two modes is selected */
         else if(id==='gdppc'){
           lgdGdppc.style.display='block'; tileLegends();
-          withCountries(()=>{ try{ addChoro('gdppc'); applyChoro('gdppc',s=>s.gdppc!=null?s.gdppc:null); setVis('gdppc-fill',true); }catch(e){ console.warn('gdppc choro fail',e); } });
+          req=withCountries(()=>{ try{ addChoro('gdppc'); applyChoro('gdppc',s=>s.gdppc!=null?s.gdppc:null); setVis('gdppc-fill',true); }catch(e){ console.warn('gdppc choro fail',e); } });
         }
         else if(id==='tfr'){
           lgdTfr.style.display='block'; tileLegends();
           /* (#R11) Total fertility rate — fetched live from the World Bank (latest year), cached. */
-          withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
+          req=withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
             const apply=()=>applyChoro('tfr',s=>s.tfr!=null?s.tfr:null);
             if(window._tfrData){ apply(); }
-            else { fetch('https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400').then(r=>r.json()).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
+            else { return fetch('https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400').then(r=>r.json()).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
         else if(id==='nato'){
           /* NATO members fill (#14) + accession-year time-travel control (#R25/#24); accession year +
              defense %GDP also show on hover. */
-          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); natoLegend();
+          req=withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); natoLegend();
             /* ⚠ (#R337) 「NATO membersレイヤーをオンにしたら、自動的にNATOに行くように。」 Inside
                `withCountries` for the same reason the EU branch below is: the frame is measured from
                the members' own footprints and those arrive with the country table. The «may this layer
@@ -6367,7 +6400,7 @@ window.IntMapModules.dataLayers=function(HOST){
         }
         else if(id==='eu'){
           /* (#R26) EU members fill + accession-year time-travel control (mirrors NATO). */
-          withCountries(()=>{ try{ addEu(); applyEu(); wireEuHover(); setEuVis(true); euLegend();
+          req=withCountries(()=>{ try{ addEu(); applyEu(); wireEuHover(); setEuVis(true); euLegend();
             /* ⚠ (#R313) 「EU membersレイヤーをオンにしたら、自動的にEUに行くように。」 Inside
                `withCountries` because the frame is the union of the members' own footprints and
                those arrive with the country table. The «may this layer move the camera / has it
@@ -6433,6 +6466,7 @@ window.IntMapModules.dataLayers=function(HOST){
         tileLegends();
         if(id==='nightside'){ _setNightSide(false); }   /* (#R232) */
       }
+      return req;
     }
     /* ══ (#R232) THE ONE PLACE THE DAY/NIGHT SWITCH IS WRITTEN ═══════════════════════════════════
        There are now THREE surfaces for one boolean — this layer row, the Settings picker
@@ -6805,6 +6839,21 @@ window.IntMapModules.dataLayers=function(HOST){
          the same fact, asked of the gate that is doing the holding. */
       const heldNow=cb=>{ try{ const H=window.IntMapLayerHold; return !!(H&&H.pending().indexOf(cb.id)>=0); }catch(_){ return false; } };
       const observable=cb=>_canDraw()&&!heldNow(cb);
+      /* ══ ⚠⚠ …NOR WHILE THE ASK IS STILL BEING ANSWERED (heal-waits-for-inflight) ════════════════════
+         `heldNow` is the time BEFORE a change reaches its row; this is the time AFTER — the row has
+         been asked and the request it started has not settled. Its layer is absent because it has not
+         arrived yet, which is not a finding either. MEASURED (production, 2026-09-27, a normal boot):
+         the radar row was waiting for the RainViewer frame index; the look 2.8 s after the tick found no
+         layer, pulsed the box off→on (one `toggle-heal` in the log) and the pulse aborted the 34 radar
+         tiles the first request had already started. The box ended ticked and drawn — it would have
+         anyway: the pulse re-asked for the very request that was on its way (rvFetch hands back the
+         pending one).
+         The row itself says what is in flight — toggleLayer returns its request and the change
+         handler records it in js/layer-rows.js `layerInflight` — so no list of slow layers exists
+         here, and a row that becomes asynchronous tomorrow is covered by returning its promise.
+         The post-toggle look WAITS for that request and looks once when it has settled (fulfilled or
+         rejected); the periodic audit just does not count a box while it is in flight. */
+      function inFlightNow(cb){ try{ return layerInflight.has(cb.id); }catch(_){ return false; } }
       const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
       function painted(ids){ try{ for(const lid of ids){ if(GE().layers.has(lid)&&GE().layers.getLayout(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
       function check(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return null; return painted(ids); }
@@ -6848,7 +6897,7 @@ window.IntMapModules.dataLayers=function(HOST){
            exists precisely to fix "box on, nothing painted" was itself mostly asleep. It reads getLayer() +
            visibility, which need only a parsed style. */
         if(!_canDraw()) return;
-        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(heldNow(cb)){ sus[cb.id]=0; return; }
+        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(heldNow(cb)||inFlightNow(cb)){ sus[cb.id]=0; return; }
           const ids=idsFor(cb.id); if(!ids||!ids.length){ _auditLearned(cb); return; }
           if(userTouched(cb)){ sus[cb.id]=0; return; }   /* (#R85) defer to a very recent user toggle — never race it */
           const vis=painted(ids);
@@ -6871,14 +6920,16 @@ window.IntMapModules.dataLayers=function(HOST){
          actually painted; if not (and they haven't re-toggled it), re-fire ONCE right away instead of waiting for the
          2-hit background audit. Directly attacks "選択状況と表示状況が合っていない" for a freshly-toggled layer, using
          the SAME cooldown + skip list so it can never fight the user. */
+      function toggleLook(cb,t0){ try{ if(!cb.checked) return; if(cb.__userChangeT&&cb.__userChangeT>t0) return;   /* user re-toggled → respect it */
+          if(inFlightNow(cb)){ layerInflight.idle(cb.id).then(()=>toggleLook(cb,t0)); return; }   /* still being answered → look once, when it has settled (see `inFlightNow`) */
+          if(!observable(cb)) return;   /* held → its delivery starts a look of its own; undrawable → the periodic audit looks once it can (see `observable`) */
+          let ids=idsFor(cb.id); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return;
+          if(painted(ids)) return; if(healed[cb.id]&&Date.now()-healed[cb.id]<240000) return; healed[cb.id]=Date.now();
+          log.push({id:cb.id,t:Date.now(),fix:'toggle-heal'}); if(log.length>60) log.shift();
+          if(BASE[cb.id]) fireSyn(cb); else rearm(cb); }catch(_){} }
       try{ document.addEventListener('change',e=>{ const cb=e.target;
         try{ if(!(cb&&cb.type==='checkbox'&&!cb.__syn&&cb.checked&&cb.closest&&cb.closest('#layer-dropdown'))) return; if(_LEARN_SKIP.test(cb.id)) return;
-          const t0=Date.now(); setTimeout(()=>{ try{ if(!cb.checked) return; if(cb.__userChangeT&&cb.__userChangeT>t0) return;   /* user re-toggled → respect it */
-            if(!observable(cb)) return;   /* held → its delivery starts a look of its own; undrawable → the periodic audit looks once it can (see `observable`) */
-            let ids=idsFor(cb.id); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return;
-            if(painted(ids)) return; if(healed[cb.id]&&Date.now()-healed[cb.id]<240000) return; healed[cb.id]=Date.now();
-            log.push({id:cb.id,t:Date.now(),fix:'toggle-heal'}); if(log.length>60) log.shift();
-            if(BASE[cb.id]) fireSyn(cb); else rearm(cb); }catch(_){} },2800);
+          const t0=Date.now(); setTimeout(()=>toggleLook(cb,t0),2800);
         }catch(_){} },true); }catch(_){}
       /* (#R79) The audit was RIGHT but too SLOW: on a 15s cadence a checked-but-blank layer (source failed,
          or a base-map/style swap wiped the overlay and nothing re-added it) stayed visibly wrong for up to
