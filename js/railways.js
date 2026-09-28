@@ -137,6 +137,19 @@ window.IntMapModules.railways = function (HOST) {
   let stIndex = null, stIndexPending = null;
   let detailCovers = false;         /* every cell the view needs is in hand */
   let wired = false, moveTimer = 0;
+  /* ⚠ WHAT THE RENDERER HOLDS, SO THAT ASKING FOR THE SAME STATE TWICE CHANGES NOTHING.
+     `toggle(true)` is called by the row, by the session restore, by Atlas and by the
+     basemap-swap self-heal in js/layer-packs.js — measured in production (b778dd6) 15 times in
+     15 seconds, once per `styledata`. Each call used to hand the whole world file (111,660
+     lines) to the renderer again and re-send the detail cells, and re-sending the detail
+     cancelled the handover still waiting for them: the renderer was never left alone long
+     enough to finish a tile, `idle` never came (0 in 45 s), and the world line stayed on top
+     of the detail for good. A call that asks for what is already on the map is now a no-op
+     (.agents/rules/one-pass-or-a-reason.md §2-3, «the operation is not idempotent»).
+     Both records describe the sources AS THEY EXIST NOW: `ensure()` resets them whenever it
+     has to create the sources afresh (a basemap swap takes them away with the style). */
+  let sentWorld = null;             /* the world FeatureCollection rail-src currently holds */
+  let sentDetail = null;            /* the cell set rail-det-src holds and the view is showing (or handing over to) */
 
   /* ── loading ─────────────────────────────────────────────────────────────
      ⚠ The files are gzip on disk and are un-gzipped HERE, not by the transport:
@@ -287,6 +300,9 @@ window.IntMapModules.railways = function (HOST) {
   function ensure() {
     if (GE().layers.hasSource('rail-src')) return true;
     if (!_imCanDraw()) return false;
+    /* new sources: nothing of the old ones is on the map any more, and a handover still waiting
+       would be waiting on a source that no longer exists */
+    cancelReveal(); detailCovers = false; sentWorld = world; sentDetail = null;
     try {
       const ATTR = '© OpenStreetMap contributors (ODbL)';
       const empty = { type: 'FeatureCollection', features: [] };
@@ -407,7 +423,7 @@ window.IntMapModules.railways = function (HOST) {
     const bounds = viewBox();
     if (z < DETAIL_Z || !bounds) {
       cancelReveal();
-      detailCovers = false;
+      detailCovers = false; sentDetail = null;
       setVis(['rail-det-ln', 'rail-cons-ln'], false);
       setVis(['rail-ln'], true);
       return;
@@ -420,13 +436,18 @@ window.IntMapModules.railways = function (HOST) {
       if (want.length > MAX_CELLS) {
         /* a view this wide is what the world file is for */
         cancelReveal();
-        detailCovers = false;
+        detailCovers = false; sentDetail = null;
         setVis(['rail-det-ln', 'rail-cons-ln'], false);
         setVis(['rail-ln'], true);
         return;
       }
+      const cells = want.slice().sort().join(' ');
       Promise.all(want.map(loadCell)).then((lists) => {
         if (!state.on) return;
+        /* the same cells are already on the map, or already being handed over to: sending them
+           again would cancel that handover and start the renderer's work over (see sentDetail) */
+        if (cells === sentDetail && GE().layers.hasSource('rail-det-src')) return;
+        sentDetail = cells;
         const feats = [];
         for (const l of lists) for (const f of l) feats.push(f);
         /* ⚠ THE WORLD LAYER IS HIDDEN ONLY ONCE THE DETAIL IS IN HAND. Hiding it
@@ -617,7 +638,7 @@ window.IntMapModules.railways = function (HOST) {
       if (on) {
         loadWorld().then((fc) => {
           if (!state.on) return;
-          try { GE().layers.setSourceData('rail-src', fc); } catch (_) {}
+          if (sentWorld !== fc) { try { GE().layers.setSourceData('rail-src', fc); sentWorld = fc; } catch (_) {} }
           setVis(['rail-ln'], !detailCovers);
           refreshDetail();
         }).catch(() => {});
@@ -625,7 +646,7 @@ window.IntMapModules.railways = function (HOST) {
         cancelReveal();
         /* the detail no longer covers anything once it is hidden: an OFF→ON must start from the world
            lines and hand over again, not from «covered» with no detail drawn (a blank until it lands) */
-        detailCovers = false;
+        detailCovers = false; sentDetail = null;
         setVis(['rail-ln', 'rail-det-ln', 'rail-cons-ln', 'rail-st', 'rail-st-lbl'], false);
         closeCard();
       }
@@ -658,6 +679,7 @@ window.IntMapModules.railways = function (HOST) {
       for (const s2 of ['rail-st-src', 'rail-det-src', 'rail-src']) if (GE().layers.hasSource(s2)) GE().layers.removeSource(s2);
     } catch (_) {}
     world = null; cellCache.clear(); stCache.clear(); wired = false; detailCovers = false;
+    sentWorld = null; sentDetail = null;
   }
 
   window.IntMapRailways = {
