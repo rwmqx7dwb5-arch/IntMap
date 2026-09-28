@@ -78,6 +78,8 @@ interface IntMapPublished {
   IntMapShakeMap: any;
   IntMapRadiationObs: any;
   IntMapVolume3D: any;
+  /** js/lazy-modules.js — index.html's vite:preloadError listener asks it which reload prompt is true (stale-tab-chunks) */
+  __imChunkFailed: () => void;
 }
 
 interface PublishedElsewhere {

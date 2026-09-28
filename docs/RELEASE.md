@@ -175,6 +175,11 @@ server’s copy names a different entry. So:
 
 - **A blank page reported in the ten minutes after a release is expected to self-heal on the
   reader’s next load.** Ask whether it persists; if it does, it is not this.
+- **A tab left open across a release loses its not-yet-fetched lazy chunks** (Pages keeps no
+  previous assets). The reader gets a pressable prompt: «a new version» when the server’s
+  `__imBuild` differs from the tab’s, «part of IntMap could not be downloaded — reload to retry»
+  when it does not (`Architecture.md` §1.1; `tests/stale-tab-chunks-checks.test.mjs`). A report of
+  one feature dying after a release, with that prompt on screen, is this and is cured by the reload.
 - **The post-deploy smoke cannot see this failure.** Playwright starts from a cold profile with an
   empty HTTP cache, so it always gets the fresh document. A green post-deploy run says nothing
   about readers holding a warm cache — the regression tests for that are `tests/r465-checks.test.mjs`.

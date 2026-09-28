@@ -121,6 +121,42 @@ export const LAZY_REGISTRY = Object.freeze({
 export const LAZY_NAMES = Object.freeze(Object.keys(LAZY_REGISTRY).filter((n) => !LAZY_REGISTRY[n].self));
 export const CARRIED_NAMES = Object.freeze(['aircraftPoints']);
 
+/* ══ A CHUNK THAT WOULD NOT DOWNLOAD — WAS IT A NEW DEPLOY, OR JUST THE NETWORK? ═══════════════
+ *  Measured on production: a tab opened on one build and kept across the next deploy asks for
+ *  `atlas-console-<hash>.js`, GitHub Pages answers 404 (a deploy keeps no previous assets), and
+ *  index.html's `vite:preloadError` listener raised «a new version is available» — for ANY
+ *  failed chunk while online, so a dropped connection on the SAME build was told the same thing.
+ *  The words have to be earned: ask the server which build it serves now (index.html's own stamp)
+ *  and compare it with this page's.
+ *  · a different stamp → a new build replaced the one this tab names: «new version, reload»
+ *  · the same stamp (or none readable) → still a pressable prompt, with the words that are true.
+ *    ⚠ NOT silence: a failed `import()` stays failed for its URL for the life of the tab (module
+ *    map, measured — Architecture.md §1.1), so a feature this failed is dead until a reload, and
+ *    saying nothing is exactly the silent death this exists to prevent.
+ *  · the document itself could not be fetched → the offline case: no prompt (the panel's own
+ *    «check your connection» is right), and the one question is NOT spent, so the next failure asks.
+ *  ⚠ ONE question per tab: a boot hint and a click can fail the same chunk several times in a
+ *  second (measured: 3 events for one module), and each would otherwise fetch the document. */
+/*  ⚠ Arrow CONSTANTS, not function declarations: tests/r209 ② holds this file to every top-level
+ *  statement exported and ONE exported function — the factory the shell calls (makeLazyModules).
+ *  These two are the loader's failure policy, read by that factory and by the tests, not by the shell. */
+/** @type {(mine: string, servedHtml: string) => 'new-build'|'same-build'} */
+export const chunkFailureVerdict = (mine, servedHtml) => {
+  const m = /window\.__imBuild\s*=\s*'([^']*)'/.exec(String(servedHtml || ''));   /* index.html's own stamp, as the build writes it */
+  return m && mine && m[1] !== String(mine) ? 'new-build' : 'same-build';
+};
+/** @type {(io: { mine: () => string, fetchDoc: () => Promise<string>, prompt: (verdict: 'new-build'|'same-build') => void }) => () => Promise<string>} */
+export const makeChunkFailureCheck = (io) => {
+  /** @type {Promise<string>|null} */ let asked = null;
+  return function chunkFailed() {
+    if (asked) return asked;
+    const p = Promise.resolve().then(() => io.fetchDoc()).then(
+      (html) => { const v = chunkFailureVerdict(io.mine(), html); io.prompt(v); return v; },
+      () => { if (asked === p) asked = null; return 'unreachable'; });
+    asked = p; return p;
+  };
+};
+
 /** @param {import('../types/im-host').IMHost} HOST */ export function makeLazyModules(HOST) {
   return (function () {
     /* ⚠ THE ALIAS IS DELIBERATE AND IT IS NOT COSMETIC. The mount calls below are byte-identical to
@@ -208,6 +244,16 @@ export const CARRIED_NAMES = Object.freeze(['aircraftPoints']);
       check: () => window.__imLazyCheck || { loaded: [], failed: [] },
     };
     try { window.IntMapLazy = API; } catch (_) { }
+    /* the verdict above, handed to index.html's `vite:preloadError` listener (it fires for every
+       dynamic import, not only these). `cache:'reload'` also re-seeds the HTTP cache — Pages sends
+       max-age=600 on the document too — so the reload the prompt offers reads the CURRENT build. */
+    try {
+      window.__imChunkFailed = makeChunkFailureCheck({
+        mine: () => String(/** @type {any} */ (window).__imBuild || ''),
+        fetchDoc: () => fetch(location.href, { cache: 'reload' }).then((r) => (r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status)))),
+        prompt: (v) => { const w = /** @type {any} */ (window); if (typeof w.__imReloadPrompt === 'function') w.__imReloadPrompt(false, v === 'same-build'); },
+      });
+    } catch (_) { }
     try { window.__imLazyCheck = window.__imLazyCheck || { loaded: [], failed: [] }; } catch (_) { }
     return API;
   })();
