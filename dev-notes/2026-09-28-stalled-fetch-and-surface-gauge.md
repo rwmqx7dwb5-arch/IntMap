@@ -156,3 +156,11 @@ module で読めなければ script で読み、それでも読めないファ�
   （範囲内。eager の modules 280・requests 7 は不変）。
 - `IM_TIER=all` で heal-waits-for-inflight・restored-layer-before-style・legend-stack-and-held-heal・smoke・r164・r209 の
   spec: 69 passed。
+
+## 追補: 鉄道の引き渡しの検査は、上限を回数でなく時間で切る
+
+CI の Regression 3/3 で `tests/nightly-state-leaks-checks` ② が「never reached: the detail cells were handed over」で赤。
+同じファイルを単独のパターンで走らせると緑、別の worktree でも緑——判定が走者の速さで決まっていた。
+待ちの上限が「setImmediate を 400 回」という**回数**で、セルは fetch → DecompressionStream（イベントループの外）を
+通って届くので、その 400 回が数ミリ秒で尽きる機械では届く前に諦めていた。上限を壁時計の 5 秒にし、
+各回は `setTimeout(0)` で譲る。失敗の文面は待った時間と回数を述べる。3 回連続で緑。
