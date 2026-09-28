@@ -721,6 +721,17 @@ window.IntMapCesiumEngine=(function(){
                  range, pitch, heading:((heading%360)+360)%360 };
       }catch(_){ return null; }
     }
+    /* THE ZOOM FLOOR AT A LATITUDE — MapLibre 6's globe clamps to `minZoom + getZoomAdjustment(0, lat)`
+       (vertical_perspective_transform.ts), i.e. + log2(cos lat) with the latitude constrained to Web
+       Mercator's edge: a zoom number is a Mercator scale, and the same apparent globe is a smaller number
+       nearer a pole. This engine clamped to the bare minZoom everywhere, so at 80°N MapLibre let a reader
+       zoom out ~2.5 levels further than Cesium did on the same view. Every clamp reads this one function. */
+    minZoomAt(lat){
+      let globe=true; try{ globe=this._scene.mode===Cesium.SceneMode.SCENE3D; }catch(_){}
+      if(!globe||!isFinite(lat)) return this._minZoom;
+      const EDGE=85.0511287798066, L=Math.max(-EDGE,Math.min(EDGE,lat));
+      return this._minZoom+Math.log2(Math.cos(L*Math.PI/180));
+    }
     getZoom(){
       const h=this._hpr(); if(!h) return this._minZoom;
       const z=this.zoomFor(h.lat,h.range);
@@ -746,7 +757,7 @@ window.IntMapCesiumEngine=(function(){
       const now={ center:this.getCenter(), zoom:this.getZoom(), bearing:this.getBearing(), pitch:this.getPitch() };
       const c=cam.center!=null?normLngLat(cam.center):now.center;
       let zoom=(cam.zoom==null?now.zoom:cam.zoom);
-      zoom=Math.max(this._minZoom,Math.min(this._maxZoom,zoom));
+      zoom=Math.max(this.minZoomAt(c.lat),Math.min(this._maxZoom,zoom));
       let pitch=(cam.pitch==null?now.pitch:cam.pitch);
       pitch=Math.max(this._minPitch,Math.min(this._maxPitch,pitch));
       const bearing=(cam.bearing==null?now.bearing:cam.bearing);
@@ -2593,7 +2604,7 @@ window.IntMapCesiumEngine=(function(){
           if(range>0){ const zs=v.zoomFor(lat,range); if(isFinite(zs)) zoom=Math.min(zoom,zs); }
         }
       }catch(_){}
-      zoom=Math.max(v._minZoom,Math.min(v._maxZoom,zoom));
+      zoom=Math.max(v.minZoomAt(lat),Math.min(v._maxZoom,zoom));
       return { center:{lng,lat}, zoom, bearing:(o&&o.bearing)||0, pitch:(o&&o.pitch)||0 };
     }
     setGesture(name,on){
