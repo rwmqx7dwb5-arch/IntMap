@@ -244,7 +244,9 @@ test('the eye altitude is derived from the renderer, not guessed from the zoom',
   const i = INDEX.indexOf('eyePosition(){');
   const adapter = INDEX.slice(i, i + 1200);
   assert.ok(i > 0, 'the adapter must expose the viewpoint position');
-  assert.match(adapter, /return gEye\(cam,gC2C\(t,m\),tile,gSpherical\(t\),1\);/,
+  /* (maplibre-6-migration) gC2C's second argument is the renderer's live transform now, not the map
+     (MapLibre 6 keeps no transform on the map) — `t` here already is that transform */
+  assert.match(adapter, /return gEye\(cam,gC2C\(t,t\),tile,gSpherical\(t\),1\);/,
     'the viewpoint comes from the ONE camera geometry, not from a second copy of it');
   assert.match(adapter, /getCameraTargetElevation/, 'the terrain under the centre is carried, so the number is above SEA LEVEL');
   const geo = GEOM.slice(GEOM.indexOf('function gEye('), GEOM.indexOf('function gEye(') + 1600);

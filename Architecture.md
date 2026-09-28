@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（946行・92 KB）＋ `css/`（3本）＋ `js/`（324本・14.9 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（946行・92 KB）＋ `css/`（3本）＋ `js/`（325本・14.9 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -106,7 +106,14 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **実行時依存は npm から取る**（CDN の浮動タグは使わない）。`src/vendor.js` が
   `maplibregl` / `turf` / `topojson` / `mlcontour` / `supabase` / `sb` を同じグローバル名で
   再公開するので、呼び出し側は1行も変わらない。KaTeX と html2canvas は動的 import で別チャンク。
-  `package.json` の `dependencies` がアプリに入る依存の唯一のリスト。
+  `package.json` の `dependencies` がアプリに入る依存の唯一のリスト（`src/vendor.js` の見出しは各パッケージの
+  **主版だけ**を書く——正確な版の正本は `package.json` と lock）。
+  ⚠ **maplibre-gl は 6 系で ESM 専用**。default export が無いので `import * as maplibregl` で取り、
+  worker は束の中の文字列ではなく**実ファイル**（`dist/maplibre-gl-worker.mjs` が隣の
+  `maplibre-gl-shared.mjs` を import する）なので、`src/vendor.js` が Vite の `?worker&url` で
+  **自己完結した worker を別アセットとして組ませ**、最初の Map より前に `setWorkerUrl` で渡す
+  （素の `?url` は兄弟ファイル無しで写すので worker が最初の import で死ぬ）。同一オリジンなので CSP の
+  `worker-src 'self'` のままで足りる。
   ⚠ **他のモジュールが自分で動的 import する依存も、そこに宣言する。** 警報レイヤーの
   `polygon-clipping`（「発表なし」の形＝区分 − 発表 と、灰色斜線の形＝国 − この層が答えている単位 の
   2つを計算する。`js/world-packs.js` が最初にレイヤーを点けたときに別チャンクで取る）は、かつて
@@ -141,7 +148,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **ソースマップは本番に出さない**（`vite.config.js` の `build.sourcemap` は false）。
 - **ビルドは自分を計測する。** `vite.config.js` の `buildReportPlugin()`（`scripts/build-report.mjs`）が
   束ね器（Rolldown）の最終グラフから **eager**（`index.html` のエントリ＋その静的 import の推移閉包＝Vite が
-  `modulepreload` を出す集合）と **async** を導出し、raw / gzip / brotli とモジュール別の内訳を
+  `modulepreload` を出す集合）と **async** を導出する。eager には**起動経路が立ち上げる worker**も入る
+  ——eager チャンクに描画された `?worker&url` モジュールが名指す worker アセット（MapLibre 6 の worker。
+  チャンクではないので推移閉包からは見えないが、最初のタイルの前に毎回取得・コンパイルされる）。
+  関数の中で `new Worker(new URL(…))` する worker（航空機・放射線・衛星・津波）はこの形ではなく入らない。
+  raw / gzip / brotli とモジュール別の内訳を
   `.perf/build-report.json`（追跡対象外）へ書く。`npm run check:perf`（`scripts/perf-budget.mjs`）が
   それを `tests/perf-baseline.json` と突き合わせる。
   ⚠ **2つの半分は別々の規則で見る。** eager は**両方向のラチェット**——増えれば退行、減ったのに
@@ -205,7 +216,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   ⚠ **group を使うと Rolldown は自分の runtime（`\0rolldown/runtime.js`、約 1.3 kB）を独立チャンク
   `rolldown-runtime` に置き、どの group にも入れさせない**——複数のチャンクが消費するとき、どれかへ畳むと
   静的な循環になりうるからで、畳めるのは「唯一の消費者」だけ（ここでは main・`maplibre-gl`・`supabase`・`geo`・`cesium` ほかが消費する）。
-  したがって eager は **main＋`maplibre-gl`＋`geo`＋`supabase`＋`rolldown-runtime`** の 5 本と CSS 2 本。
+  したがって eager は **main＋`maplibre-gl`＋`geo`＋`supabase`＋`rolldown-runtime`** の 5 本と CSS 2 本、
+  それに **MapLibre の worker 1 本**（アセット `maplibre-gl-worker-*.js`）。`maplibre-gl` チャンクには 6 系の
+  `maplibre-gl.mjs` と `maplibre-gl-shared.mjs`、worker の URL だけを持つ小さなモジュールが入る。worker は
+  shared を**自分の中にもう一度持つ**（Vite の worker は本体の束とチャンクを共有しない）——ESM 配布の実測の代価
+  （開発記録 `2026-09-27-maplibre-6-migration`）。
   eager に入る**ソースモジュールの集合**は Rollup 時代と同一で、違いは束ね器の仮想モジュールだけ
   （CommonJS ラッパーが無くなり、Oxc の補助と runtime が加わった）。
 - ⚠ **`resolve.mainFields` は `module` を `browser` より前に置く。** Vite 8 は「`browser` が UMD なら
@@ -225,8 +240,10 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - 既定のレンダラは **MapLibre GL JS**（Mercator 平面 ＋ Globe 投影）。
 - **MapLibre の地図を生成するのは `js/geo-engine.js` の `_newMap` ただ 1 か所**で、`createView`・`createSubView`
   はどちらもここを通る。`_newMap` は呼び手が何を渡しても `attributionControl:false` にする——レンダラ自身の
-  帰属表示は遠隔の TileJSON／スタイルの `attribution` を `innerHTML = DOM.sanitize(…)` で書き、その sanitizer は
-  固定している maplibre-gl で迂回できる（GHSA-jrc7-96c5-q579。修正は 6.4.1 以降にしか無い）。帰属表示を
+  帰属表示は遠隔の TileJSON／スタイルの `attribution` を HTML として解釈して書く（5.24 の sanitizer は
+  GHSA-jrc7-96c5-q579 で迂回でき、6.4.1 で修正・6.11.1 で許可リスト方式・DOM ノード挿入になった）。
+  6 系に上げた今も**マークアップを解釈する書き手を持たない**という形を保つ——修正は上流の 1 実装に掛かった
+  もので、IntMap 側の帰属表示はそもそも解釈しない（判断は DECISIONS.md の該当行）。帰属表示を
   求める呼び手（`credit:true`・`attributionControl` の真値・`customAttribution`）には **IntMap 側の帰属表示**
   （`div.map-credit-view`）を付ける: いま描かれているレイヤーと地形が読む source の `attribution` を、
   テキストノードと http(s) の `<a>` だけで組み立てる（マークアップを一切解釈しない）。主地図は従来どおり
@@ -238,6 +255,22 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   誤検知せず、ローカル変数 `map` も依存とみなさない）。
   ⚠ 契約に無い関数名をアダプタにだけ足すと「2つ目以降」が静かに落ちる——**アダプタに足したメソッドは
   必ず契約側にも出すこと**。
+- **アダプタがレンダラの内部に触れる口は 2 つだけ**——`_cam(m)`（MapLibre 6 の Map が合成して持つ Camera、
+  `map._camera`）と `_tr(m)`（その transform＝painter が描画に使う transform）。6 系の Map は Camera を継承せず
+  `map.transform` を持たないので、行列・遠クリップ面・視点距離（大気の周縁・星空の枠・地平線の遠方・視点の
+  位置・高度つき投影）は全部 `_tr` を通る。`isEasing()`（`camera.isAnimating()`）と
+  `_elevateCameraIfInsideTerrain`（無制限チルトの地下補正の修理。修理は**カメラ**に置く）は `_cam` を通る。
+  視点ピボットのフックは**公開の** `setTransformCameraUpdate` で入れる（Map の `transformCameraUpdate` 欄は
+  6 系では読まれない）。高度つきの点の画面位置（`coords.projectAltitude`・`layers.projectMercAlt`＝航空機・
+  衛星の hover）は、6.0 で消えた `getMatrixForModel` の代わりに、MapLibre がカスタムレイヤーに渡す投影データを
+  シェーダの `projectTileFor3D` と同じ式で CPU 上で通す（平面・球・11→12 のクロスフェードとも）。
+  描く側——衛星（`js/orbit-points.js`）・航空機（`js/aircraft-points.js`）・3-D 体積（`js/solid3d.js`）の
+  カスタム層——は `js/lifted-projection.js` の `projectLifted` を共有する: 球の半分には m、平面の半分には
+  Mercator 単位を渡す（6 系はカスタム層にも globe のクロスフェードを実値で渡すので、1 つの高度では両方を
+  満たせない）。拾う位置と描く位置が同じ式であることは同じ spec がキャンバス上で測る。
+  これらが**黙って効かなくなっていないこと**は、`tests/maplibre-6-migration-checks.test.mjs`
+  （アダプタが Map に対して呼ぶ全メソッドが入っている版に実在する・内部には 2 つの口からしか触れない）と
+  `tests/maplibre-6-migration.spec.js`（動いているレンダラに訊く）が測る。
 - **「レイヤーを足してよいか」は `canDraw()`（スタイルが解析済みか）、それを待つのは `whenCanDraw()`**
   （ファサードの1か所。`js/data-layers.js`・`js/time-borders.js`・`js/time-admin1.js` の `whenStyleReady()`
   はこれを返すだけ）。`styledata`/`load`/`idle` の購読と 150 ms のポーリングで、待ち手が何人いても
@@ -344,8 +377,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   - `js/cesium-input.js` — **操作は MapLibre の操作**。8ジェスチャ（pan / rotate / pitch / wheel /
     box zoom / 矢印キー / ctrl ドラッグ / shift ドラッグ）の定数と式は同梱の `node_modules/maplibre-gl`
     のハンドラ実装そのものから取っており、`tests/r182-checks.test.mjs` が両者を突き合わせる
-    （＝依存を上げて操作感が変わると落ちる）。カメラは必ず `setCamera()` 経由で、ジェスチャ1回につき
-    `movestart…moveend` は1組。
+    （＝依存を上げて操作感が変わると落ちる。定数は入っている版を評価するか、版が同梱する `src/` の宣言から読む）。
+    慣性の速度は 6 系の方式（離した瞬間までの直近 60 ms・先頭の記録は区間の始点だけ）。⚠ 6.4 で MapLibre の
+    **globe のドラッグ**は掴んだ点を指に付けるバーソル回転になったが、ここはまだ 5.24 の
+    `computeGlobePanCenter` の法則でドラッグする（6 系ではその式は慣性だけが使う）——未解決として開発記録に残す。
+    カメラは必ず `setCamera()` 経由で、ジェスチャ1回につき `movestart…moveend` は1組。
   - `js/cesium-engine.js` — アダプタ本体（`makeMapLibreAdapter` と**同じメソッド集合**）。
   - `js/engine-select.js` — DOMContentLoaded より前に選択。既定では**何も publish しない**。
   - **既定セッションは 1 バイトも払わない**：cesium の import は動的、main チャンクから cesium

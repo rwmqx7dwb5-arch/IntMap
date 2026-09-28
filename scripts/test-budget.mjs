@@ -472,7 +472,18 @@ const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s
    up); tests/r753-account-menu.spec.js measured 1.07 s in the same conditions against its entry of 2,
    i.e. ≈ 1.87 table-seconds per local second → 16.8. ENTERED AS 17. (tests/r168.spec.js in the same run
    gave 28.5 s against an entry of 8 — the ratio the other way; the upper bound is the one taken.) */
-const TOTAL_BUDGET_S = 5016;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) + 28 (restored-layer-before-style: tests/restored-layer-before-style.spec.js) + 9 (legend-stack-and-held-heal: tests/legend-stack-and-held-heal.spec.js — one boot, measured 7.3–11.9 s, median 8.4 s) + 17 (deps-runtime-majors: tests/deps-runtime-majors.spec.js) + 15 (ui-a11y-polish: tests/ui-a11y-polish.spec.js — measured 14.2 / 14.2 / 9.9 s) + 57 (cesium-koppen-and-boot-probe: tests/cesium-koppen-and-boot-probe-cesium.spec.js — one Cesium boot, measured 54.3 s and 57.0 s) + 8 (heal-waits-for-inflight: tests/heal-waits-for-inflight.spec.js — one boot, measured 8.0 / 8.1 s) */
+/* ⚠⚠ (maplibre-6-migration) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 5,016 -> 5,080 (+64 s).
+   tests/maplibre-6-migration.spec.js asks the RUNNING renderer the five things MapLibre 6 moved without
+   an error (the camera's transform, isEasing, the worker file, the lifted projection, the globe band,
+   the cockpit camera). None of them has a handle in Node: the camera is built by the Map constructor,
+   which needs WebGL2, and the lifted projection's yardstick is the pixels MapLibre draws. It replaces
+   source reads that could no longer run at all (5.24's dist/maplibre-gl-dev.js is gone), so it is new
+   cost rather than moved cost. Paid out of itself first: one boot for all seven tests (serial, shared
+   page), and the six lifted-point cases (MapLibre's own drawing, and our custom layer's) share it.
+   ⚠ CALIBRATED, NOT COPIED (#R402's method, upper bound): 27.5 s of test time locally (one worker,
+   server up); tests/r143.spec.js measured 3.92 s in the same run against its entry of 9 (×2.30) and
+   tests/r753-account-menu.spec.js 1.98 s against 2 (×1.01). 27.5 × 2.30 = 63.3. ENTERED AS 64. */
+const TOTAL_BUDGET_S = 5080;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) + 2 (#R753: tests/r753-account-menu.spec.js) + 28 (restored-layer-before-style: tests/restored-layer-before-style.spec.js) + 9 (legend-stack-and-held-heal: tests/legend-stack-and-held-heal.spec.js — one boot, measured 7.3–11.9 s, median 8.4 s) + 17 (deps-runtime-majors: tests/deps-runtime-majors.spec.js) + 15 (ui-a11y-polish: tests/ui-a11y-polish.spec.js — measured 14.2 / 14.2 / 9.9 s) + 57 (cesium-koppen-and-boot-probe: tests/cesium-koppen-and-boot-probe-cesium.spec.js — one Cesium boot, measured 54.3 s and 57.0 s) + 8 (heal-waits-for-inflight: tests/heal-waits-for-inflight.spec.js — one boot, measured 8.0 / 8.1 s) + 64 (maplibre-6-migration: tests/maplibre-6-migration.spec.js — one boot for seven tests, 27.5 s local × 2.30 calibration) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

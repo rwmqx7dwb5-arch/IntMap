@@ -121,7 +121,9 @@ test('actual border style validates and distinguishes source precision with visi
   const layer=await borderLayer();
   const errors=validateStyleMin({version:8,sources:{'imtb-ln-src':{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[layer]});
   assert.deepEqual(errors,[]);
-  const expression=createExpression(layer.paint['line-dasharray']);
+  /* (maplibre-6-migration) style-spec 26 (the one maplibre-gl 6 installs) takes the expression's
+     location in the style as its SECOND, required argument — it names the path in its errors */
+  const expression=createExpression(layer.paint['line-dasharray'],'layers[0].paint.line-dasharray');
   assert.equal(expression.result,'success');
   const read=bp=>expression.value.evaluate({zoom:4},{properties:bp==null?{}:{BORDERPRECISION:bp}});
   assert.deepEqual(read(1),[2,2]);assert.deepEqual(read(2),[6,2]);

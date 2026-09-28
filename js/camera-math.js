@@ -47,7 +47,9 @@ export function makeCameraMath() {
        z12 Tokyo             16,522 m → 16,588 m                     193 m
 
    THE RENDERER HAS TWO CAMERA MODELS, not one, and `globe` owns both (it swaps by zoom —
-   #R173's globeness). Transcribed from MapLibre 5.24's _calcMatrices:
+   #R173's globeness). Transcribed from MapLibre 5.24's _calcMatrices (re-read in 6.11's
+   vertical_perspective_transform.ts: the same chain; tests/r177.spec.js ② measures it against 6.x's
+   draw matrix):
 
      MERCATOR   cameraPosition = [worldPx, worldPx, METRES]. The eye sits c2c/worldSize merc
                 units back along the bearing, and its HEIGHT is that same number times
@@ -77,10 +79,13 @@ const grotY=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[2]*s+v[0]*c, v
    which is drawing, and the clone handed to transformCameraUpdate carries it. A plain
    mercator transform has no such property, which reads false — correctly. */
 const gSpherical=t=>{ try{ return !!(t&&t.isGlobeRendering); }catch(_){ return false; } };
-/* the canvas-and-fov constant, in pixels; never latitude- or zoom-dependent */
-function gC2C(t,m){ let v; try{ v=t&&t.cameraToCenterDistance; }catch(_){}
+/* the canvas-and-fov constant, in pixels; never latitude- or zoom-dependent. `t` is the transform
+   being judged (often a proposal clone); `live` is the renderer's own transform, asked when the
+   proposal does not carry the number. The caller supplies `live` — js/geo-engine.js is the one file
+   that knows where MapLibre keeps it (under v6, on the map's composed camera, not on the map). */
+function gC2C(t,live){ let v; try{ v=t&&t.cameraToCenterDistance; }catch(_){}
   if(isFinite(v)&&v>0) return v;
-  try{ const w=m&&m.transform&&m.transform.cameraToCenterDistance; if(isFinite(w)&&w>0) return w; }catch(_){}
+  try{ const w=live&&live.cameraToCenterDistance; if(isFinite(w)&&w>0) return w; }catch(_){}
   return 1050; }
 /* WHERE THE EYE IS for a camera state {lng,lat,zoom,pitch,bearing,elevation}, as a place:
    {lng, lat, alt in metres above sea level, distance in ground metres to the point it looks

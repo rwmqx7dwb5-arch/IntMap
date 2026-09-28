@@ -12,6 +12,8 @@
  *             parses and executes before the app can run: Vite emits a
  *             <link rel="modulepreload"> for every one of them, so they are on
  *             the critical path whether or not the user ever opens a feature.
+ *             PLUS the workers that boot path starts (MapLibre 6's renderer
+ *             worker — see `eagerWorkers` below), which are assets, not chunks.
  *    ASYNC  — everything reachable only through import(). Large is not by
  *             itself a defect here (Cesium is 4.8 MB and a MapLibre session
  *             never asks for it); what matters is that it stays out of EAGER.
@@ -95,6 +97,31 @@ export function buildReportPlugin(opts = {}) {
       const adminEager = closure(entryOf('admin'));
       const async_ = new Set(Object.keys(chunks).filter((f) => !eager.has(f) && !adminEager.has(f)));
 
+      /* ══ A WORKER THE BOOT PATH HANDS TO THE PLATFORM IS PART OF THE BOOT ══════════════════════
+         MapLibre 6 ships its worker as a real file (dist/maplibre-gl-worker.mjs) where 5.x carried it
+         as a string inside the renderer bundle, and src/vendor.js now imports its URL with Vite's
+         `?worker&url` and hands it to setWorkerUrl before the first Map exists. That file is an
+         ASSET, not a chunk, so the closure above cannot see it — and every session fetches and
+         parses it before the first tile can draw. MEASURED on the first 6.11.2 build: the bundle's
+         renderer chunk grew by 35 kB while a 510 kB worker appeared beside it, and without this the
+         gate would have reported the renderer upgrade as nearly free.
+         What decides it is the MODULE GRAPH, not a filename: a `?worker&url` module rendered into an
+         EAGER chunk is a URL the boot path holds from the start, and the asset its rendered code
+         names is the worker. A worker a module constructs on demand (`new Worker(new URL(…))` inside
+         a function — aviation, radiation, satellites, tsunami) is not this shape and stays out. */
+      const eagerWorkers = new Set();
+      for (const f of eager) {
+        const o = bundle[f];
+        for (const [id, m] of Object.entries((o && o.modules) || {})) {
+          if (!/[?&]worker&url$/.test(id)) continue;
+          /* the bundler's rendered text of THIS module — not the whole chunk, which also names workers
+             that other modules start on demand */
+          if (!(m && typeof m.code === 'string')) throw new Error('build-report: the bundler no longer reports the rendered code of ' + id + ' — the boot worker cannot be attributed');
+          const src = m.code;
+          for (const a of Object.keys(assets)) if (/\.m?js$/.test(a) && src.includes(a.split('/').pop())) eagerWorkers.add(a);
+        }
+      }
+
       /* …and only NOW are the compressed sizes taken, because the quality depends on which half a
          chunk landed in (see BROTLI_Q). Everything the gate reads is measured at quality 11. */
       for (const [f, c] of Object.entries(chunks)) {
@@ -104,7 +131,7 @@ export function buildReportPlugin(opts = {}) {
       const eagerCssFiles = new Set();
       for (const f of eager) for (const c of chunks[f].css) eagerCssFiles.add(c);
       for (const [f, a] of Object.entries(assets)) {
-        const q = eagerCssFiles.has(f) ? BROTLI_Q.gated : BROTLI_Q.context;
+        const q = (eagerCssFiles.has(f) || eagerWorkers.has(f)) ? BROTLI_Q.gated : BROTLI_Q.context;
         a.gzip = gz(a._buf); a.brotli = br(a._buf, q); a.brotliQ = q; delete a._buf;
       }
 
@@ -133,12 +160,17 @@ export function buildReportPlugin(opts = {}) {
         eager: {
           chunks: [...eager].sort(),
           count: eager.size,
-          raw: sum(eager, 'raw'), gzip: sum(eager, 'gzip'), brotli: sum(eager, 'brotli'),
+          /* the boot's JavaScript: its chunks AND the workers it starts (see eagerWorkers above) —
+             both are fetched and compiled before the first frame the app draws */
+          raw: sum(eager, 'raw') + cssSum(eagerWorkers, 'raw'),
+          gzip: sum(eager, 'gzip') + cssSum(eagerWorkers, 'gzip'),
+          brotli: sum(eager, 'brotli') + cssSum(eagerWorkers, 'brotli'),
           modules: [...eager].reduce((a, f) => a + Object.keys(chunks[f].modules).length, 0),
+          workers: { files: [...eagerWorkers].sort(), raw: cssSum(eagerWorkers, 'raw'), gzip: cssSum(eagerWorkers, 'gzip'), brotli: cssSum(eagerWorkers, 'brotli') },
           css: { files: [...eagerCss].sort(), raw: cssSum(eagerCss, 'raw'), gzip: cssSum(eagerCss, 'gzip'), brotli: cssSum(eagerCss, 'brotli') },
           /* what the browser actually asks for before it can run: the entry
-             script, its modulepreloads, and the stylesheets they pull in. */
-          requests: eager.size + eagerCss.size,
+             script, its modulepreloads, the stylesheets they pull in, and the workers it starts. */
+          requests: eager.size + eagerCss.size + eagerWorkers.size,
         },
         async: {
           chunks: [...async_].sort(),
@@ -161,6 +193,7 @@ function print(r) {
   console.log('\nIntMap · build report            raw       gzip     brotli');
   console.log('  ─────────────────────────────────────────────────────────');
   line(`EAGER JS (${r.eager.count} chunks)`, r.eager);
+  if (r.eager.workers && r.eager.workers.files.length) line(`  of which workers (${r.eager.workers.files.length})`, r.eager.workers);
   line('EAGER CSS', r.eager.css);
   console.log(`  eager requests        ${String(r.eager.requests).padStart(9)}    modules ${r.eager.modules}`);
   console.log('  ─────────────────────────────────────────────────────────');

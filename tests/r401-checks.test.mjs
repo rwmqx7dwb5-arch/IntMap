@@ -159,7 +159,9 @@ test('R401 ⑤ the mark is turned by a transform read out of the projection', ()
   const src = code('js/aircraft-points.js');
   const vert = /const VERT = `([\s\S]*?)`;/.exec(src);
   assert.ok(vert, 'the vertex shader source is still a template literal named VERT');
-  const projections = (vert[1].match(/projectTileFor3D\s*\(/g) || []).length;
+  /* (maplibre-6-migration) projectLifted is the prelude's projectTileFor3D with each half fed its own unit
+     (js/lifted-projection.js) */
+  const projections = (vert[1].match(/projectLifted\s*\(/g) || []).length;
   assert.ok(projections >= 2,
     'the vertex shader projects the aircraft AND at least one neighbour (found ' + projections + ')');
   assert.match(vert[1], /atan\(/, 'and it reads an angle out of what it projected');

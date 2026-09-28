@@ -23,7 +23,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -63,33 +63,47 @@ const GEOC = code(GEO);
 const CENSUSC = code(CENSUS);
 
 /* ── ① the switch table is a consequence of MapLibre's behaviour, not an opinion ─────────────── */
-test('R322 ① every operation the renderer already deduplicates is left alone; the one it does not is skipped', () => {
-  const ML = join(ROOT, 'node_modules', 'maplibre-gl', 'dist', 'maplibre-gl-dev.js');
-  if (!existsSync(ML)) { assert.ok(true, 'maplibre-gl is not installed — nothing to compare against'); return; }
-  const ml = readFileSync(ML, 'utf8');
-
-  /* what MapLibre does: does Style.setX short-circuit on an equal value? */
-  const guards = (setter) => {
-    const at = ml.indexOf('\n    ' + setter + '(layerId');
-    assert.ok(at >= 0, `MapLibre no longer has Style.${setter} — this check is about a renderer that changed`);
-    const body = ml.slice(at, at + 1400);
-    return /deepEqual\(/.test(body.split('\n').slice(0, 22).join('\n'));
+test('R322 ① every operation the renderer already deduplicates is left alone; the one it does not is skipped', async () => {
+  /* (maplibre-6-migration) ASKED OF THE INSTALLED LIBRARY, NOT READ OUT OF ONE FILE'S TEXT. This used
+     to search 5.24's dist/maplibre-gl-dev.js for a `deepEqual(` near each setter — and under 6.x that
+     file does not exist, so the `existsSync` guard below it returned early and the whole check PASSED
+     WITHOUT LOOKING (the #R301 shape: green because it never ran). Now the renderer's own Style setters
+     and GeoJSONSource.setData are RUN, on stand-ins whose layer already holds the value. */
+  const ml = await import('maplibre-gl');
+  const writes = (method, name, current, next) => {
+    let wrote = false;
+    const layer = { id: 'L', filter: current, getPaintProperty: () => current, getLayoutProperty: () => current,
+      setPaintProperty: () => { wrote = true; return false; }, setLayoutProperty: () => { wrote = true; }, setFilter: () => { wrote = true; } };
+    const style = { _checkLoaded() {}, getLayer: () => layer, fire() {}, _validate: () => false, _updateLayer() {},
+      _updatePaintProperty() { wrote = true; }, _changed: false, _updatedPaintProps: {} };
+    if (method === 'setFilter') ml.Style.prototype.setFilter.call(style, 'L', next);
+    else ml.Style.prototype[method].call(style, 'L', name, next);
+    return wrote;
+  };
+  const value = ['interpolate', ['linear'], ['zoom'], 3, '#abc', 9, '#def'];
+  const dedupes = (method, name) => {
+    /* the stand-in must reach the write for a DIFFERENT value, or «no write» below measured nothing */
+    assert.equal(writes(method, name, value, ['get', 'x']), true, `Style.${method} applies a different value to the stand-in`);
+    return !writes(method, name, value, JSON.parse(JSON.stringify(value)));
   };
   const rendererDedupes = {
-    paint: guards('setPaintProperty'),
-    layout: guards('setLayoutProperty'),
-    filter: guards('setFilter'),
+    paint: dedupes('setPaintProperty', 'fill-color'),
+    layout: dedupes('setLayoutProperty', 'visibility'),
+    filter: dedupes('setFilter', null),
   };
   assert.equal(rendererDedupes.paint, true, 'Style.setPaintProperty stopped comparing — the skip table has to be re-decided');
   assert.equal(rendererDedupes.layout, true, 'Style.setLayoutProperty stopped comparing');
   assert.equal(rendererDedupes.filter, true, 'Style.setFilter stopped comparing');
 
   /* GeoJSONSource.setData still has no comparison of its own — that absence is the whole argument
-     for skipping it here, so it is asserted rather than remembered. */
-  const sd = ml.indexOf('\n    setData(data, waitForCompletion) {');
-  assert.ok(sd >= 0, 'GeoJSONSource.setData is not where it was');
-  const sdBody = ml.slice(sd, sd + 700).split('\n').slice(0, 12).join('\n');
-  assert.ok(!/deepEqual\(/.test(sdBody),
+     for skipping it here, so it is asserted rather than remembered: the same object twice is two
+     updates for the worker. */
+  let posted = 0;
+  const src = { _updateWorkerData() { posted++; return Promise.resolve(); } };
+  const fc = { type: 'FeatureCollection', features: [] };
+  ml.GeoJSONSource.prototype.setData.call(src, fc);
+  ml.GeoJSONSource.prototype.setData.call(src, fc);
+  assert.equal(posted, 2,
     'GeoJSONSource.setData now compares its argument — the skip in js/geo-engine.js became a second mechanism for a job the renderer does, and must be switched off');
 
   /* what this app does: the declared table */

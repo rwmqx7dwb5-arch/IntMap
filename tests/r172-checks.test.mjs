@@ -91,7 +91,11 @@ test('the sim hands the tilt pivot back on the way out', () => {
 
 test('the tilt pivot is expressed as an intent and implemented on the pre-apply hook', () => {
   assert.match(INDEX, /setTiltPivot\(mode\)\{/, 'the contract states WHAT ("pivot about the eye"), not HOW');
-  assert.match(INDEX, /m\.transformCameraUpdate=/, 'the correction rides along with the gesture');
+  /* (MapLibre 6) through the public setter: the map has no transformCameraUpdate property of its own
+     any more, so the assignment 5.24 took would install nothing. tests/r177.spec and r179.spec read
+     the renderer camera's own field to prove it is set; this pins that no dead assignment remains. */
+  assert.match(INDEX, /m\.setTransformCameraUpdate\(\(t\)=>\{/, 'the correction rides along with the gesture');
+  assert.doesNotMatch(INDEX, /\bm\.transformCameraUpdate\s*=/, 'and nothing writes the property MapLibre 6 no longer reads');
   const vc = stripComments(R('js/view-controls.js'));
   const tilt = vc.slice(vc.indexOf('window.IntMapTilt=(function()'), vc.indexOf('window.IntMapEyeAlt=(function()'));
   assert.ok(!/events\.on\('pitch/.test(tilt),

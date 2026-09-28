@@ -141,11 +141,13 @@ test('R411 ② the vertex shader takes a step EAST and a step NORTH, and still k
   const vert = /const VERT = `([\s\S]*?)`;/.exec(src);
   assert.ok(vert, 'the vertex shader source is still a template literal named VERT');
   const v = vert[1];
-  const projections = (v.match(/projectTileFor3D\s*\(/g) || []).length;
+  /* (maplibre-6-migration) through projectLifted — the prelude's projectTileFor3D with the sphere fed metres
+     and the plane mercator units (js/lifted-projection.js) */
+  const projections = (v.match(/projectLifted\s*\(/g) || []).length;
   assert.equal(projections, 3,
     'the aircraft, one step east and one step north (found ' + projections + ')');
-  assert.match(v, /projectTileFor3D\(p \+ vec2\(u_probe, 0\.0\), e\)/, 'the east step');
-  assert.match(v, /projectTileFor3D\(p \+ vec2\(0\.0, -u_probe\), e\)/,
+  assert.match(v, /projectLifted\(p \+ vec2\(u_probe, 0\.0\), alt, em\)/, 'the east step');
+  assert.match(v, /projectLifted\(p \+ vec2\(0\.0, -u_probe\), alt, em\)/,
     'the north step — mercator y grows SOUTHWARD, so north is minus');
   /* ⚠ THE STEPS ARE EAST AND NORTH, NOT ALONG THE TRACK. #R401 projected a step ahead and used its
      angle alone; the two steps here span the whole ground→screen Jacobian, which is what lets

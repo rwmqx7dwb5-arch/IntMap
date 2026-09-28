@@ -22,9 +22,24 @@
  *  more than enough to read as a real drift.
  *
  *  Installs window.__eye() → {space, lng, lat, alt} and window.__gap(a,b) → metres.
+ *
+ *  ── AND THE ONE PLACE THE SPECS REACH INTO THE RENDERER ─────────────────────
+ *  Also installs window.__mlCam() / window.__mlTr(): MapLibre's camera and the
+ *  transform it draws with. Under 6.x neither is on the Map any more (the Map
+ *  COMPOSES a Camera; `map.transform` was removed), and under 5.24 a spec that
+ *  read `m.transform` or `m.transformCameraUpdate` got the real thing — under
+ *  6.x the same line reads `undefined`, which a `== null` assertion passes
+ *  vacuously. So every spec that needs the renderer's own state asks these two,
+ *  and they THROW when the internal has moved again rather than answering
+ *  nothing. Written here, not borrowed from js/geo-engine.js: the ruler must
+ *  share no code with the app it measures (the note above).
  * ==========================================================================*/
 export const installCameraRuler = () => {
   const m = window.__imap, R = 6371008.8, D = Math.PI / 180;
+  window.__mlCam = () => { const c = m && m._camera;
+    if (!c || !c.transform) throw new Error('MapLibre no longer keeps its camera at map._camera — the specs cannot see the renderer');
+    return c; };
+  window.__mlTr = () => window.__mlCam().transform;
   const inv = a => { const o = new Float64Array(16);
     const b00=a[0]*a[5]-a[1]*a[4],b01=a[0]*a[6]-a[2]*a[4],b02=a[0]*a[7]-a[3]*a[4],b03=a[1]*a[6]-a[2]*a[5],
           b04=a[1]*a[7]-a[3]*a[5],b05=a[2]*a[7]-a[3]*a[6],b06=a[8]*a[13]-a[9]*a[12],b07=a[8]*a[14]-a[10]*a[12],
@@ -38,7 +53,7 @@ export const installCameraRuler = () => {
   const xf = (M, v) => { const x=v[0],y=v[1],z=v[2], w=M[3]*x+M[7]*y+M[11]*z+M[15];
     return [(M[0]*x+M[4]*y+M[8]*z+M[12])/w, (M[1]*x+M[5]*y+M[9]*z+M[13])/w, (M[2]*x+M[6]*y+M[10]*z+M[14])/w]; };
   window.__eye = () => {
-    const I = inv(m.transform.modelViewProjectionMatrix); if (!I) return null;
+    const I = inv(window.__mlTr().modelViewProjectionMatrix); if (!I) return null;
     const A = xf(I,[0,0,-0.9]), B = xf(I,[0,0,0.9]), C = xf(I,[0.6,0.4,-0.9]), E = xf(I,[0.6,0.4,0.9]);
     const u=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], v=[E[0]-C[0],E[1]-C[1],E[2]-C[2]], w0=[A[0]-C[0],A[1]-C[1],A[2]-C[2]];
     const dot=(p,q)=>p[0]*q[0]+p[1]*q[1]+p[2]*q[2];
@@ -48,7 +63,7 @@ export const installCameraRuler = () => {
     // the vertical-perspective matrix works in EARTH RADII, the mercator one in [worldPx, worldPx, m]
     if (Math.max(Math.abs(p[0]),Math.abs(p[1]),Math.abs(p[2])) < 64) { const r = Math.hypot(p[0],p[1],p[2]);
       return { space:'sphere', lng: Math.atan2(p[0],p[2])/D, lat: Math.asin(Math.max(-1,Math.min(1,p[1]/r)))/D, alt: (r-1)*R }; }
-    const ws = m.transform.worldSize, x = p[0]/ws, y = p[1]/ws;
+    const ws = window.__mlTr().worldSize, x = p[0]/ws, y = p[1]/ws;
     return { space:'merc', lng: ((((x*360-180)+180)%360+360)%360)-180,
              lat: 360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90, alt: p[2] };
   };

@@ -930,6 +930,14 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 ### 7.5 地図の初期化・基図・投影
 
 - **初期化**：`map = new maplibregl.Map(...)`。`renderWorldCopies` は投影／自由パンに応じて切り替える。
+  レンダラは **maplibre-gl 6 系**。6.0 で変わった描画の既定は**そのまま受け入れている**（打ち消す設定は置かない）:
+  `zoomLevelsToOverscale` の既定 4（source の maxzoom を超えたベクタタイルを拡大せず切り出す——高ズームの
+  ラベル配置と `queryRenderedFeatures` の結果が変わりうる）、半透明の線が自分との重なりで濃くならない、
+  offset 付きアイコンを `icon-size` で拡大しない（アプリに `icon-offset` を使うレイヤーは無い）、アラビア文字・
+  ヘブライ文字・デーヴァナーガリーなどをプラグイン無しで正しく組む。⚠ **GeoJSON の入れ子の properties は、
+  描画された地物から値のまま返る**（5.x は JSON 文字列に畳んでいた）。入れ子を持つ source は実測で
+  `imtb-src`・`imtb-lbl-src`（`_i18n`）・`imta-src`（`dates`）・`elec-src`（`n`）・`ukr-src`（`styleMapHash`）で、
+  読み手はどれも source のデータを読むか、文字列と値の両方を受ける（`js/map-ui.js` の `_eraSourceDates`）。
   基盤は CARTO / Esri のラスタ ＋ OpenFreeMap のベクタ（`ofm`）。
   ⚠ **CARTO のラスタは API キーが要る**（2026-08 から）。組み立ては `window.cartoTiles()` の1か所、
   キーは `js/carto-basemap.js`。キー無しでも 200 で返るが、絵に「API KEY REQUIRED」が焼かれている。

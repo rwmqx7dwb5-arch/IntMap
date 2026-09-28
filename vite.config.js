@@ -450,7 +450,15 @@ export default defineConfig({
                chunk"; the renderer chunk is the one eager chunk that exists for the same lifetime as
                the page (and without this group Rolldown gives its runtime a request of its own).
                The ids are virtual (`\0`-prefixed) and carry no node_modules/ path, which is what
-               separates them from a package's own modules. */
+               separates them from a package's own modules.
+               ⚠ (MapLibre 6) THE PACKAGE IS THREE FILES NOW, AND ONLY TWO OF THEM ARE IN THIS CHUNK.
+               6.x is ESM-only: dist/maplibre-gl.mjs imports dist/maplibre-gl-shared.mjs (both land
+               here — 5.x was one UMD file), and dist/maplibre-gl-worker.mjs, which imports the same
+               shared module, is NOT a chunk at all: src/vendor.js imports it with `?worker&url`,
+               Vite builds it into a self-contained asset of its own, and only the tiny URL module
+               sits here. That asset is fetched on every boot, so scripts/build-report.mjs counts it
+               as eager (`eagerWorkers`) — the shared code it repeats is the measured price of the
+               ESM distribution (dev-notes/2026-09-27-maplibre-6-migration.md §perf). */
             { name: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
             /* ⚠ (#R209) buffer + convex (and their geometry engine) are NOT in the eager geo chunk: the
                app calls them from ONE place (the reachable-area hull in js/sims.js, which awaits

@@ -30,7 +30,10 @@
  *  The instruction is not "make it work", it is "make it respond the way
  *  MapLibre does", so every constant and every formula below is transcribed from
  *  the MapLibre build this project already ships (node_modules/maplibre-gl,
- *  pinned at 5.24.0 since #R158) — from the handler classes themselves, not from
+ *  pinned exactly since #R158; transcribed from 5.24.0 and re-checked against
+ *  6.x — tests/r182-checks reads each constant out of the installed library,
+ *  and the one algorithm 6.x changed that is transcribed here, the inertia
+ *  velocity, follows it) — from the handler classes themselves, not from
  *  a description of them, and each is cited at its use site. That is the
  *  discipline #R177 set for the camera: ONE copy of the law, taken from the
  *  thing that defines it, rather than two that agree with each other and not
@@ -45,6 +48,12 @@
  *  (`enableInputs = false`) rather than re-tuned: its rotate/tilt/zoom are a
  *  different model, and two camera drivers on one pointer is the class of defect
  *  #R172 and #R179 each spent a round on.
+ *  ⚠ (MapLibre 6) THAT SENTENCE IS 5.24's. 6.4 moved MapLibre's globe DRAG to a
+ *  versor rotation that keeps the grabbed point under the pointer
+ *  (versorSetLocationAtPoint); computeGlobePanCenter, which panCentre below
+ *  transcribes, now answers only the pan INERTIA. The drag law here was not moved
+ *  with it — that is a change of feel on the second engine, not a migration of
+ *  the first, and dev-notes/2026-09-27-maplibre-6-migration.md records it as open.
  *
  *  ── AND WHY THE CAMERA IS STILL SET THROUGH setCamera() ─────────────────────
  *  Every gesture here ends in `view.setCamera({center, zoom, bearing, pitch})`.
@@ -74,7 +83,8 @@ window.IntMapCesiumInput=(function(){
   const TOUCH_PITCH_MIN_PX=2;           /* TwoFingersTouchPitchHandler: gestureBeginsVertically threshold */
   const KEY_PAN_STEP=100, KEY_BEARING_STEP=15, KEY_PITCH_STEP=10;   /* KeyboardHandler: defaultOptions */
   const KEY_EASE_MS=300, DBLCLICK_EASE_MS=300;                      /* both handlers' easeTo duration */
-  const INERTIA_CUTOFF=160;             /* HandlerInertia: cutoff */
+  const INERTIA_CUTOFF=160;             /* HandlerInertia: BUFFER_CUTOFF (5.x: cutoff) */
+  const VELOCITY_WINDOW=60;             /* HandlerInertia: VELOCITY_WINDOW (new in 6.x) */
   const INERTIA={                       /* HandlerInertia: default{Pan,Zoom,Bearing,Pitch}InertiaOptions */
     pan:    { linearity:0.3, deceleration:2500, maxSpeed:1400 },
     zoom:   { linearity:0.3, deceleration:20,   maxSpeed:1400 },
@@ -360,7 +370,15 @@ window.IntMapCesiumInput=(function(){
     /* ══ INERTIA ═══════════════════════════════════════════════════════════════
        HandlerInertia: keep the last 160 ms of deltas, sum them, convert each
        family with its own deceleration, and let the longest of the resulting
-       durations carry all of them (extendDuration). */
+       durations carry all of them (extendDuration).
+       ⚠ (MapLibre 6) …and the VELOCITY is measured the 6.x way, not 5.24's:
+       over the entries of the last VELOCITY_WINDOW ms up to the RELEASE (never
+       fewer than the last two), the first of them only marking where the interval
+       starts — its delta happened before it — and the interval ending NOW, not at
+       the last movement. So a drag held still before letting go glides less, down
+       to not at all (HandlerInertia._getVelocityEntries / _onMoveEnd). 5.24 summed
+       every entry of the 160 ms buffer over first→last, which on the same gesture
+       flung the map further than MapLibre 6 now does. */
     function record(s){
       const t=now();
       while(st.inertia.length&&t-st.inertia[0].t>INERTIA_CUTOFF) st.inertia.shift();
@@ -369,14 +387,18 @@ window.IntMapCesiumInput=(function(){
     function releaseInertia(){
       const t=now();
       while(st.inertia.length&&t-st.inertia[0].t>INERTIA_CUTOFF) st.inertia.shift();
-      if(st.inertia.length<2){ st.inertia.length=0; end(); return; }
-      let px=0,py=0,dz=0,db=0,dp=0,around=null;
-      for(const e of st.inertia){
-        px+=e.s.px||0; py+=e.s.py||0; dz+=e.s.zoom||0; db+=e.s.bearing||0; dp+=e.s.pitch||0;
-        if(e.s.around) around=e.s.around;
-      }
-      const ms=st.inertia[st.inertia.length-1].t-st.inertia[0].t;
+      let first=Math.max(0,st.inertia.length-2);
+      while(first>0&&st.inertia[first-1].t>=t-VELOCITY_WINDOW) first--;
+      const E=st.inertia.slice(first);
       st.inertia.length=0;
+      if(E.length<2){ end(); return; }
+      let px=0,py=0,dz=0,db=0,dp=0,around=null;
+      for(const e of E) if(e.s.around) around=e.s.around;
+      for(const e of E.slice(1)){
+        px+=e.s.px||0; py+=e.s.py||0; dz+=e.s.zoom||0; db+=e.s.bearing||0; dp+=e.s.pitch||0;
+      }
+      if(!(px||py||dz||db||dp)){ end(); return; }
+      const ms=t-E[0].t;
       const from=read();
       const to={}; let dur=0;
       const mag=Math.hypot(px,py);
@@ -851,5 +873,5 @@ window.IntMapCesiumInput=(function(){
               WHEEL_EASE_MS, WHEEL_TIME_ADJ, TOUCH_ZOOM_RATE, TOUCH_ZOOM_THRESHOLD,
               TOUCH_ROTATE_THRESHOLD, TOUCH_SINGLE_MS, TOUCH_PITCH_MIN_PX,
               KEY_PAN_STEP, KEY_BEARING_STEP, KEY_PITCH_STEP, KEY_EASE_MS, DBLCLICK_EASE_MS,
-              INERTIA_CUTOFF, INERTIA, MAX_VALID_LATITUDE, TILE } };
+              INERTIA_CUTOFF, VELOCITY_WINDOW, INERTIA, MAX_VALID_LATITUDE, TILE } };
 })();

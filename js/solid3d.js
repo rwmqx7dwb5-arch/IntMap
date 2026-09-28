@@ -37,6 +37,7 @@
  *  `layers.addSolid/setSolid/removeSolid` may reach for it, and a future Earth/Cesium adapter answers
  *  the same three calls with its own primitive.
  * ==========================================================================*/
+import { LIFTED_GLSL } from './lifted-projection.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.solid3d=function(){
   const R=6371008.8, D2R=Math.PI/180;
@@ -137,12 +138,12 @@ in vec2 a_pos;      /* mercator [0..1] */
 in float a_alt;     /* metres above sea level (or above ground when terrain is on) */
 in vec3 a_local;    /* east / north / up metres, about the footprint centroid */
 in vec3 a_norm;     /* outward normal in the same metric frame */
-uniform float u_altScale;   /* metres → whatever THIS variant's prelude wants (see render) */
+uniform float u_altScale;   /* metres → mercator units at the body's latitude (see render) */
 out vec3 v_local;
 out vec3 v_norm;
 void main(){
   v_local=a_local; v_norm=a_norm;
-  gl_Position=projectTileFor3D(a_pos, a_alt*u_altScale);
+  gl_Position=projectLifted(a_pos, a_alt, a_alt*u_altScale);   /* js/lifted-projection.js */
 }`;
   const FRAG=`
 precision highp float;
@@ -172,7 +173,7 @@ void main(){
     const mk=(type,src)=>{ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
       if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)||'shader');
       return s; };
-    const v=mk(gl.VERTEX_SHADER,'#version 300 es\n'+def+'\n'+pre+'\n'+VERT);
+    const v=mk(gl.VERTEX_SHADER,'#version 300 es\n'+def+'\n'+pre+'\n'+LIFTED_GLSL+'\n'+VERT);
     const f=mk(gl.FRAGMENT_SHADER,'#version 300 es\n'+def+'\n'+FRAG);
     const p=gl.createProgram(); gl.attachShader(p,v); gl.attachShader(p,f); gl.linkProgram(p);
     if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)||'link');
@@ -349,10 +350,11 @@ void main(){
            Measured directly against the renderer's own answer for (139.76, 35.68) at 3,000 m: at z12 the
            true screen position is y=183, metres-as-elevation lands it at y=1,902 with ndc z=1.0139 (outside
            [-1,1] → clipped), and altitude/(2πR·cos φ) lands it at y=184, ndc z=0.984. Same at z13 (−39 vs
-           −38) and z15 (−6,766 vs −6,722). One scale factor, chosen by the variant the renderer reports. */
-        gl.uniform1f(prog.u.altScale, (vname==='mercator')
-          ? 1/Math.max(1, MERC_CIRC*Math.cos(((S.origin&&S.origin.lat)||0)*D2R))
-          : 1);
+           −38) and z15 (−6,766 vs −6,722). One scale factor, chosen by the variant the renderer reports.
+           (MapLibre 6) …and on the globe while it cross-fades BOTH units are wanted at once — the sphere
+           half takes metres, the plane half mercator units — so the shader is handed the metres AND this
+           factor, and js/lifted-projection.js gives each half its own. */
+        gl.uniform1f(prog.u.altScale, 1/Math.max(1, MERC_CIRC*Math.cos(((S.origin&&S.origin.lat)||0)*D2R)));
         const bind=(buf,loc,size)=>{ if(loc<0) return; gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0); };
         bind(bPos,prog.a.pos,2); bind(bAlt,prog.a.alt,1); bind(bLocal,prog.a.local,3); bind(bNorm,prog.a.norm,3);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdx);

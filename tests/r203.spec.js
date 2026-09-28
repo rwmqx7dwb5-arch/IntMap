@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { OpeningView } from '../js/opening-view.js';
+import { installCameraRuler } from './helpers/camera-ruler.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -88,10 +89,14 @@ test('R203 ① the app does not open on a black planet, at whatever hour the sui
 test('R203 ② a pitched zoom does not flip the far clip plane frame to frame', async () => {
   await page.evaluate(() => window.__imap.jumpTo({ center: [138.7274, 35.3606], zoom: 11.5, pitch: 78, bearing: 20 }));
   await page.waitForTimeout(4000);
+  /* the far plane is the renderer's own, read where MapLibre 6 keeps it (camera-ruler's __mlTr) —
+     under 5.24 this read `__imap.transform.farZ`; under 6.x that is undefined on every frame, and
+     the ratio test below passes a list of undefineds vacuously. So every frame must carry a number. */
+  await page.evaluate(installCameraRuler);
   await page.evaluate(() => {
     window.__fz = [];
     window.__fzOff = () => window.__imap.off('render', window.__fzOn);
-    window.__fzOn = () => { try { window.__fz.push(window.__imap.transform.farZ); } catch (_) {} };
+    window.__fzOn = () => { try { window.__fz.push(window.__mlTr().farZ); } catch (e) { window.__fz.push(String(e && e.message)); } };
     window.__imap.on('render', window.__fzOn);
   });
   const box = await page.evaluate(() => { const r = window.__imap.getCanvas().getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
@@ -102,6 +107,7 @@ test('R203 ② a pitched zoom does not flip the far clip plane frame to frame', 
   }
   const fz = await page.evaluate(() => { window.__fzOff(); return window.__fz; });
   expect(fz.length, 'frames were drawn').toBeGreaterThan(20);
+  expect(fz.filter((v) => !(typeof v === 'number' && v > 0)), 'every frame reported the renderer\'s far plane').toEqual([]);
   let flips = 0;
   for (let i = 1; i < fz.length; i++) {
     const a = fz[i - 1], b = fz[i];

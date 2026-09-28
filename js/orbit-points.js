@@ -34,6 +34,7 @@
  *  This file is the MapLibre ADAPTER's implementation detail, exactly as js/solid3d.js is. Nothing
  *  outside IntMapGeoEngine's `layers.addOrbit/setOrbit/removeOrbit` may reach for it.
  * ==========================================================================*/
+import { LIFTED_GLSL } from './lifted-projection.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.orbitPoints=function(){
   const D2R=Math.PI/180;
@@ -50,15 +51,15 @@ in float a_mscale;    /* metres → mercator units at THIS point's latitude */
 in vec4 a_col;        /* rgba, 0..1 */
 in float a_size;      /* device pixels */
 uniform float u_dt;         /* seconds since the propagation the buffers hold */
-uniform float u_altScale;   /* 0 = the prelude wants metres (globe), 1 = mercator units */
 uniform float u_pxRatio;
 out vec4 v_col;
 void main(){
   v_col=a_col;
   vec2 p=a_pos+a_vel*u_dt;
   float alt=a_alt+a_altv*u_dt;
-  float e=mix(alt, alt*a_mscale, u_altScale);
-  gl_Position=projectTileFor3D(p, e);
+  /* (MapLibre 6) metres for the sphere, mercator units for the plane — each half of the prelude its
+     own unit, which one elevation cannot be once the globe cross-fades (js/lifted-projection.js) */
+  gl_Position=projectLifted(p, alt, alt*a_mscale);
   gl_PointSize=a_size*u_pxRatio;
 }`;
   const FRAG=`
@@ -80,7 +81,7 @@ void main(){
     const mk=(type,src)=>{ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
       if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)||'shader');
       return s; };
-    const v=mk(gl.VERTEX_SHADER,'#version 300 es\n'+def+'\n'+pre+'\n'+VERT);
+    const v=mk(gl.VERTEX_SHADER,'#version 300 es\n'+def+'\n'+pre+'\n'+LIFTED_GLSL+'\n'+VERT);
     const f=mk(gl.FRAGMENT_SHADER,'#version 300 es\n'+def+'\n'+FRAG);
     const p=gl.createProgram(); gl.attachShader(p,v); gl.attachShader(p,f); gl.linkProgram(p);
     if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)||'link');
@@ -90,7 +91,7 @@ void main(){
                     alt:gl.getAttribLocation(p,'a_alt'), altv:gl.getAttribLocation(p,'a_altv'),
                     mscale:gl.getAttribLocation(p,'a_mscale'), col:gl.getAttribLocation(p,'a_col'),
                     size:gl.getAttribLocation(p,'a_size') },
-             u:{ dt:loc('u_dt'), altScale:loc('u_altScale'), pxRatio:loc('u_pxRatio'),
+             u:{ dt:loc('u_dt'), pxRatio:loc('u_pxRatio'),
                  mat:loc('u_projection_matrix'), fallback:loc('u_projection_fallback_matrix'),
                  tileCoords:loc('u_projection_tile_mercator_coords'), clip:loc('u_projection_clipping_plane'),
                  transition:loc('u_projection_transition') } };
@@ -183,7 +184,6 @@ void main(){
            an uncapped dt would fling every object along its last velocity for as long as the stall
            lasted, which is a picture of something that never happened. Past two ticks it holds. */
         gl.uniform1f(prog.u.dt,Math.max(0,Math.min(4,(now-S.t0)/1000)));
-        gl.uniform1f(prog.u.altScale,(vname==='mercator')?1:0);
         let pr=1; try{ pr=Math.max(1,Math.min(3,window.devicePixelRatio||1)); }catch(_){}
         gl.uniform1f(prog.u.pxRatio,pr);
         const bind=(buf,loc,size)=>{ if(loc<0) return; gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0); };

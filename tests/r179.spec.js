@@ -17,7 +17,8 @@
 //                               eye 1,071,682 m → 56,088 m at z6, 4,186 m → 219 m at z14
 //
 // The cause is an ORDERING fact inside MapLibre, not arithmetic of ours: Camera._applyUpdated
-// Transform runs `_elevateCameraIfInsideTerrain` BEFORE `transformCameraUpdate`, and that check
+// Transform (6.x: Camera.applyUpdatedTransform, on the camera the map composes) runs
+// `_elevateCameraIfInsideTerrain` BEFORE `transformCameraUpdate`, and that check
 // judges `_requestedCameraState` — the proposal, which #R173 established never receives this
 // hook's overrides. During a drag the proposal is cloned once at gesture start, so its elevation
 // stays 0; past 90° the cosine in `getCameraAltitude()` turns negative, the camera reads as
@@ -149,8 +150,13 @@ for (const c of [{ proj: 'mercator', z: 1.7, tag: 'flat z1.7 (STARTUP)', sphere:
 test('the eye pivot installs both halves and restores the renderer afterwards (#R179)', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
+  await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
-    const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
+    /* ⚠ (MapLibre 6) the correction is a CAMERA method now — the modifier chain calls it with `this`
+       the camera the map composes — so the repair has to sit on the camera, and so does this probe.
+       Under 6.x a patch on the map is never consulted; asking the map would report «unpatched» for
+       a working repair and «patched» for a dead one. */
+    const m = window.__mlCam(), wait = ms => new Promise(res => setTimeout(res, ms));
     const D = () => window.IntMapGeoEngine.camera.eyePivotDiag();
     const patched = () => Object.prototype.hasOwnProperty.call(m, '_elevateCameraIfInsideTerrain');
     window.IntMapTilt.set(false); await wait(250);
@@ -164,7 +170,7 @@ test('the eye pivot installs both halves and restores the renderer afterwards (#
   expect(r.on.diag.pivot, 'the setting is on').toBe(true);
   expect(r.on.diag.hook, 'the camera hook is installed').toBe(true);
   expect(r.on.diag.underGuard, 'and so is the repair to the correction that runs ahead of it').toBe('active');
-  expect(r.on.patched, 'which means the map carries it as its own property').toBe(true);
+  expect(r.on.patched, 'which means the renderer\'s camera carries it as its own property').toBe(true);
   expect(r.off.diag.underGuard, 'nothing is installed while the setting is off').toBe('off');
   expect(r.back.diag.underGuard, 'and turning it off removes it again').toBe('off');
   expect(r.back.patched, 'leaving MapLibre\'s own method in place, not a patched copy').toBe(false);
@@ -188,26 +194,27 @@ test('the eye pivot installs both halves and restores the renderer afterwards (#
 test('the underground check is repaired, not suppressed (#R179)', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
+  await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
-    const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
+    const m = window.__imap, cam = window.__mlCam(), wait = ms => new Promise(res => setTimeout(res, ms));
     window.IntMapTilt.set(true); await wait(300);
     m.setProjection({ type: 'mercator' });
     m.jumpTo({ center: [139.767, 35.681], zoom: 16, pitch: 0, bearing: 0, elevation: 0 });
     await wait(700);
     /* MapLibre's own, from the prototype it was patched over — a fresh clone each time, since the
        repair mutates the transform it is handed (that is the whole point of it) */
-    let proto = Object.getPrototypeOf(m);
+    let proto = Object.getPrototypeOf(cam);
     while (proto && !Object.prototype.hasOwnProperty.call(proto, '_elevateCameraIfInsideTerrain'))
       proto = Object.getPrototypeOf(proto);
-    const lookUp = () => { const t = m.transform.clone(); t.setPitch(150); t.setElevation(0); return t; };
+    const lookUp = () => { const t = window.__mlTr().clone(); t.setPitch(150); t.setElevation(0); return t; };
     const corrects = a => !!(a && (a.pitch != null || a.zoom != null));
     const raw = proto && proto._elevateCameraIfInsideTerrain;
     const out = {
       foundProto: typeof raw === 'function',
-      rawFires: typeof raw === 'function' ? corrects(raw.call(m, lookUp())) : null,
-      repaired: corrects(m._elevateCameraIfInsideTerrain(lookUp())),
+      rawFires: typeof raw === 'function' ? corrects(raw.call(cam, lookUp())) : null,
+      repaired: corrects(cam._elevateCameraIfInsideTerrain(lookUp())),
     };
-    try { window.__fsCamActive = true; out.whileFlying = corrects(m._elevateCameraIfInsideTerrain(lookUp())); }
+    try { window.__fsCamActive = true; out.whileFlying = corrects(cam._elevateCameraIfInsideTerrain(lookUp())); }
     finally { window.__fsCamActive = false; }
     return out;
   });

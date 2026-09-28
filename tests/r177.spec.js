@@ -128,11 +128,13 @@ test('a journey still lands where it was sent (#R173)', async ({ page }) => {
 test('standard tilt does not go through any of this', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
+  await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
     const m = window.__imap;
     window.IntMapTilt.set(false);
     await new Promise(res => setTimeout(res, 200));
-    return { hook: m.transformCameraUpdate == null, ceiling: m.getMaxPitch() };
+    /* the renderer's own field — MapLibre 6 keeps it on the composed camera (see camera-ruler) */
+    return { hook: window.__mlCam().transformCameraUpdate == null, ceiling: m.getMaxPitch() };
   });
   expect(r.hook, 'no transformCameraUpdate while the ceiling is standard').toBe(true);
   expect(r.ceiling).toBe(78);
@@ -146,6 +148,7 @@ test('standard tilt does not go through any of this', async ({ page }) => {
 test('the anchor never emits a camera outside the renderer\'s range', async ({ page }) => {
   test.setTimeout(180000);
   await boot(page);
+  await page.evaluate(installCameraRuler);
   const r = await Promise.race([
     page.evaluate(async () => {
       const m = window.__imap;
@@ -157,7 +160,7 @@ test('the anchor never emits a camera outside the renderer\'s range', async ({ p
         m.setProjection({ type: 'globe' });
         m.jumpTo({ center: [139.767, 35.681], zoom: s.z, pitch: s.p, bearing: s.b });
         await wait(350);
-        const t = m.transform, R = 6371008.8;
+        const t = window.__mlTr(), R = 6371008.8;
         const look = ((t.cameraToCenterDistance || 1080) / t.worldSize) * 2 * Math.PI * R * Math.cos(m.getCenter().lat * Math.PI / 180);
         seen.push({ tag: `z${s.z} p${s.p}`, zoom: m.getZoom(), lat: m.getCenter().lat,
                     elev: +m.getCameraTargetElevation() || 0, look,
