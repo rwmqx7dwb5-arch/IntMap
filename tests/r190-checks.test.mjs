@@ -67,8 +67,10 @@ test('R190 default layers: the cables come through our own origin', async () => 
   const dl = read('js/data-layers.js');
   const net = /async function _cableNet\(u\)\{[^\n]*/.exec(dl);
   assert.ok(net, 'the cable fetcher is still one function');
-  assert.match(net[0], /for\(const src of \[u, ownRelayUrl\(u\)\]\)/,
-    'the direct URL is still tried first, then our relay for it — and nothing else');
+  /* (cable-relay-first) our relay FIRST, the bare URL only for a build with no relay: the bare URL is refused by
+     every browser origin (no ACAO), so trying it first was a guaranteed CORS error in production. */
+  assert.match(net[0], /for\(const src of \[ownRelayUrl\(u\), u\]\)/,
+    'our relay is tried first, then the direct URL — and nothing else');
   /* the import may name what else it takes from the router (stalled-fetch-and-surface-gauge: `clockFor`);
      what is held is that ownRelayUrl comes from there */
   assert.match(dl, /import \{[^}]*\bownRelayUrl\b[^}]*\} from '\.\/proxy-fetch\.js';/, 'the relay URL comes from the one router');
