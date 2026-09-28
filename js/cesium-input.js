@@ -327,7 +327,8 @@ window.IntMapCesiumInput=(function(){
        reaches on the MapLibre side (map.scrollZoom.setWheelZoomRate / setZoomRate) */
     let wheelRate=WHEEL_ZOOM_RATE, smallRate=DEFAULT_ZOOM_RATE;
 
-    const limits=()=>({ minZoom:view._minZoom, maxZoom:view._maxZoom,
+    /* the zoom floor follows the latitude it applies at (CesiumView.minZoomAt — MapLibre 6's globe floor) */
+    const limits=(lat)=>({ minZoom:view.minZoomAt(lat==null?view.getCenter().lat:lat), maxZoom:view._maxZoom,
                         minPitch:view._minPitch, maxPitch:view._maxPitch });
     function read(){
       const c=view.getCenter();
@@ -335,7 +336,7 @@ window.IntMapCesiumInput=(function(){
                bearing:view.getBearing(), pitch:view.getPitch() };
     }
     function normalise(cam){
-      const L=limits();
+      const L=limits(cam.lat);
       cam.zoom=clamp(cam.zoom,L.minZoom,L.maxZoom);
       cam.pitch=clamp(cam.pitch,L.minPitch,L.maxPitch);
       cam.lat=clamp(cam.lat,-MAX_VALID_LATITUDE,MAX_VALID_LATITUDE);
@@ -432,7 +433,7 @@ window.IntMapCesiumInput=(function(){
     function zoomAround(cam,zoomDelta,x,y){
       const loc=unprojectAt(x,y);
       const before=cam.zoom;
-      cam.zoom=clamp(cam.zoom+zoomDelta,limits().minZoom,limits().maxZoom);
+      cam.zoom=clamp(cam.zoom+zoomDelta,limits(cam.lat).minZoom,limits().maxZoom);
       const actual=cam.zoom-before;
       apply(cam);
       if(!actual||!loc) return actual;
