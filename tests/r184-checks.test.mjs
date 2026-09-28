@@ -176,7 +176,9 @@ test('R184 #7: the satellite layer is registered, grouped, legended and toggled'
      fr/ko/zh read element 0 (English) for ever. Same table, same key, same assertion. */
   assert.match(dl, /sats:LA\('Live satellites'/, 'it has a legend');
   assert.match(dl, /HAS_LEGEND=new Set\(\[[\s\S]{0,400}'sats'/, 'and the panel knows the legend exists');
-  assert.match(dl, /id==='sats'\)\{ startSats\(\)/, 'switching it on starts it');
+  /* (heal-waits-for-inflight) the branch hands its chain back as the box's request — `req=` is how
+     every asynchronous branch of toggleLayer now reports «still working» to the heal */
+  assert.match(dl, /id==='sats'\)\{ (?:req=)?startSats\(\)/, 'switching it on starts it');
   assert.match(dl, /id==='sats'\)\{ stopSats\(\)/, 'switching it off stops it');
   assert.match(dl, /opacities\.sats|sats:0\.95/, 'it has a default opacity');
   assert.match(dl, /dl-sats/, 'and it is excluded from the layer-reconcile auto-learn like the other live layers');

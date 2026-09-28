@@ -59,6 +59,26 @@
  *    Measured before this: the same share link carrying all 87 shareable layers, opened with the style
  *    held back, ended with 23 map layers fewer than the same link opened normally
  *    (tests/restored-layer-before-style.spec.js).
+ *
+ *  ④ A DELIVERED `change` WHOSE ANSWER IS STILL BEING FETCHED IS IN FLIGHT (`inFlight`). ③ covers the
+ *    time before a change reaches its handler; this covers the time after — the handler has been asked
+ *    to draw and the work it started (a style wait, a fetch, a build ladder) has not finished. The
+ *    handler says so itself: it hands the promise its request returned to `track(id, p)`, and the entry
+ *    leaves when that promise settles, fulfilled OR rejected. The newest change for a box is the one in
+ *    flight — a later `track` replaces an earlier one, and a change answered at once (`p` not a
+ *    promise) clears it — so an older request finishing late never clears a newer one.
+ *    Readers: the reconciler in js/data-layers.js does not judge a box in flight («not painted» while
+ *    the paint is still being fetched is observing nothing — .agents/rules/one-pass-or-a-reason.md
+ *    §2 ①), and its post-toggle look waits on `idle(id)` and looks once when the request has settled.
+ *    MEASURED (production, 2026-09-27, normal boot): the radar row waits for RainViewer's index before
+ *    it can add its layer; the look 2.8 s after the tick found it not yet added, pulsed the box
+ *    off→on, and the pulse aborted 34 radar tiles (ERR_ABORTED) that the first request had started.
+ *    ⚠ No clock ends an entry. It lasts exactly as long as the request, and every request a row starts
+ *    has its own end: the renderer's wait resolves only when it can draw (and while it cannot, every
+ *    judge abstains anyway — `_canDraw()`), fetches end with the network, and the build ladders keep
+ *    their own horizons (see each branch of toggleLayer). A request that never ends could not be
+ *    helped by a pulse either: the rows share their pending request (rvFetch returns the same one),
+ *    so a re-ask attaches to the very promise being waited on.
  * ==========================================================================*/
 import { htmlRows, rowHTML, isLayer } from './layer-manifest.js';
 
@@ -159,6 +179,32 @@ export function holdUntilDrawable(doc, engine) {
   listener.pending = () => Array.from(held.keys());
   return listener;
 }
+
+/** the boxes whose delivered `change` is still being answered — see ④ in the header.
+    `track(id, p)` records the promise a handler's request returned (anything not thenable clears the
+    box: the change was answered at once); `has(id)` asks; `idle(id)` resolves once nothing is in flight
+    for the box, whichever request that turns out to be; `pending()` lists the boxes. */
+export function inFlight() {
+  const live = new Map();
+  const has = (id) => live.has(id);
+  const track = (id, p) => {
+    if (!id) return;
+    if (!p || typeof p.then !== 'function') { live.delete(id); return; }
+    live.set(id, p);
+    const clear = () => { if (live.get(id) === p) live.delete(id); };
+    try { p.then(clear, clear); } catch (_) { clear(); }
+  };
+  /* wait on whatever is in flight NOW, and again if a newer request replaced it meanwhile. `clear` was
+     attached first, so by the time this runs the settled entry has already gone (or been replaced). */
+  const idle = (id) => new Promise((res) => {
+    const wait = () => { const p = live.get(id); if (!p) { res(); return; } p.then(wait, wait); };
+    wait();
+  });
+  return { track, has, idle, pending: () => Array.from(live.keys()) };
+}
+/* the one registry the app uses: the rows that start requests (js/data-layers.js) and the reconciler
+   that must not judge them (same file) import it — a module binding, not one more window global */
+export const layerInflight = inFlight();
 
 try { if (typeof document !== 'undefined') mountManifestRows(document); } catch (e) { try { console.warn('[IntMap] layer rows', e); } catch (_) {} }
 try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => window.IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }
