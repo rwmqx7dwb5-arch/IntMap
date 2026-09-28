@@ -34,6 +34,31 @@ import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gau
 import { readWithin } from './fetch-deadline.js';
 window.IntMapModules=window.IntMapModules||{};
 
+/* ══ ⚠ (railways-handover-idempotent) THE BASEMAP-SWAP SELF-HEAL — ONE RULE FOR EVERY PACK IN THIS FILE ══
+   `styledata` is NOT «the basemap was swapped». MapLibre fires it after ANY change to the style
+   (Style.update → 'data' → map 'styledata'): a visibility, a paint value, a filter, a layer added
+   anywhere — the self-heals' own writes included. Measured in production (b778dd6): 14 in 15 s with
+   the railway layer on, and each one handed the railway world file (111,660 lines) to the renderer
+   again and cancelled the detail handover waiting on it, so `idle` never came (0 in 45 s) and the
+   world line stayed on top of the detail. Every pack below had the same shape: the aurora feed and
+   the plate boundaries were re-fetched, the time-zone labels, the pharma points and the World Bank
+   choropleths re-sent, once per style change.
+   ⇒ A swap is recognised by what it DOES: A ROW'S LAYERS ARE GONE FROM THE STYLE. `rows()` names
+   every row, whether it is on, and the layer ids it draws — read from the pack's own table, not
+   copied here; `heal(keys)` runs with the rows that are on and lost a layer, and only then. One
+   check per `delay` however many `styledata` arrive inside it.
+   The listener carries its own receipt (`rows`, `heals`), so the check finds every self-heal in
+   this file by its subscription rather than from a list someone has to extend
+   (tests/railways-handover-idempotent-checks.test.mjs). */
+function healWhenLost(GE,delay,rows,heal){
+  let pending=0;
+  const lost=()=>rows().filter(r=>r.on&&r.ids.some(id=>{ try{ return !GE().layers.has(id); }catch(_){ return true; } })).map(r=>r.key);
+  const onStyle=()=>{ if(pending||!rows().some(r=>r.on)) return;
+    pending=setTimeout(()=>{ pending=0; const keys=lost(); if(!keys.length) return; onStyle.heals++; heal(keys); },delay); };
+  onStyle.rows=rows; onStyle.heals=0;
+  GE().events.on('styledata',onStyle);
+}
+
 window.IntMapModules.earthSky=function(HOST){
 
   const LPK=window.IntMapLang.pick(()=>HOST.lang);
@@ -140,7 +165,7 @@ window.IntMapModules.earthSky=function(HOST){
       const apply=()=>{ if(!ensureLayers()){ GE().events.once('idle',apply); return; } setVis(SETS[which],on);
         if(which==='aurora'){ if(on){ loadAurora(); if(!auroraTimer) auroraTimer=everyTick('layer-packs:aurora',300000,loadAurora); } else if(auroraTimer){ stopTick(auroraTimer); auroraTimer=null; } } };
       apply(); }
-    GE().events.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
+    healWhenLost(GE,60,()=>Object.keys(SETS).map(k=>({key:k,on:!!state[k],ids:SETS[k]})),(lost)=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],!!state[k])); if(lost.includes('aurora')) loadAurora(); } });
     /* (#R38) [JP, EN, DE, RU]; l9Lbl() picks the active language. */
     const L9LBL={dams:LA('Major dams','主要ダム・水インフラ','Große Talsperren','Крупные плотины','Grandes presas'),volcanoes:LA('Active volcanoes','活火山','Aktive Vulkane','Действующие вулканы','Volcanes activos'),aurora:LA('Aurora forecast (NOAA)','オーロラ予測（NOAA）','Polarlicht-Vorhersage (NOAA)','Прогноз полярных сияний (NOAA)','Pronóstico de auroras (NOAA)'),seaice:LA('Sea ice (Arctic/Antarctic)','海氷（北極・南極）','Meereis (Arktis/Antarktis)','Морской лёд (Арктика/Антарктика)','Hielo marino (Ártico/Antártico)'),adiz:LA('Air-defense zones (ADIZ ≈)','防空識別圏 (ADIZ ≈)','Luftverteidigungszonen (ADIZ ≈)','Зоны ПВО (ADIZ ≈)','Zonas de defensa aérea (ADIZ ≈)')};
     const l9Lbl=(k)=>LPK.arr(L9LBL[k]);
@@ -455,7 +480,7 @@ window.IntMapModules.landCover=function(HOST){
         else if(!on&&window._hideGenericLegend&&which!=='worldcover') window._hideGenericLegend('eco-'+which);
       }catch(_){}
     }
-    GE().events.on('styledata',()=>{ if(state.worldcover||state.plates||state.ecoregions){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } if(state.ecoregions){ if(!GE().layers.hasSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } },60); } });
+    healWhenLost(GE,60,()=>Object.keys(SETS).map(k=>({key:k,on:!!state[k],ids:SETS[k]})),(lost)=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(lost.includes('plates')) loadPlates(()=>{}); } if(lost.includes('ecoregions')){ if(!GE().layers.hasSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } });
     /* (#R38) [JP, EN, DE, RU]; ecoLbl() picks the active language. */
     const ECLBL={worldcover:LA('Land cover (ESA 2021)','土地被覆 (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)','Cobertura del suelo (ESA 2021)'),ecoregions:LA('Ecoregions (WWF/RESOLVE)','生態地域 (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)','Ecorregiones (WWF/RESOLVE)'),plates:LA('Tectonic plates','プレート境界','Tektonische Platten','Тектонические плиты','Placas tectónicas')};
     const ecoLbl=(k)=>LPK.arr(ECLBL[k]);
@@ -504,6 +529,9 @@ window.IntMapModules.betaPack2=function(HOST){
     const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
     const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
     const state={rail:false,dc:false,pharma:false,cpi:false,lifeexp:false,spin:false};
+    /* the style layers each module-owned row draws — ONE list, read by the opacity registration and
+       by the basemap-swap self-heal below (the World Bank rows carry theirs in WB[k].ids) */
+    const ROW_LAYERS={dc:['dc-pt','dc-lbl'],pharma:['ph-pt','ph-lbl'],rail:['rail-ln','rail-det-ln','rail-cons-ln','rail-st','rail-st-lbl']};
     const cache={};
     let pop2=null;
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -674,7 +702,7 @@ window.IntMapModules.betaPack2=function(HOST){
       const DCM=window.IntMapDataCenters;
       if(!DCM||!DCM.toggle){ try{ console.warn('IntMapDataCenters is not loaded — the data-center layer cannot draw'); }catch(_){} return; }
       DCM.toggle(on);
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),['dc-pt','dc-lbl'],'beta-dl-dc');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),ROW_LAYERS.dc,'beta-dl-dc');
             if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               /* the key is asked of the layer, so a colour cannot be right in one place and wrong here.
                  (#R258) each row is a SWITCH for its own class — see IntMapDataCenters.toggleKey. */
@@ -703,7 +731,7 @@ window.IntMapModules.betaPack2=function(HOST){
       const a=()=>{ if(!ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ GE().events.once('idle',a); return; }
         load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); setVis(['ph-pt','ph-lbl'],on); };
       a();
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionsstandorte','Центры фармацевтического производства','Centros de fabricación farmacéutica'),['ph-pt','ph-lbl'],'beta-dl-pharma');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionsstandorte','Центры фармацевтического производства','Centros de fabricación farmacéutica'),ROW_LAYERS.pharma,'beta-dl-pharma');
             if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.","主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。","Zentralen und Produktionscluster großer Pharmaunternehmen (repräsentative Standorte). Passt zur Ebene Lebenserwartung.","Штаб-квартиры и производственные кластеры крупных фармкомпаний (репрезентативные точки). Хорошо сочетается со слоем ожидаемой продолжительности жизни.","Sedes y clústeres de fabricación de las grandes farmacéuticas (puntos representativos). Combina con la capa de esperanza de vida."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
     }
@@ -726,7 +754,7 @@ window.IntMapModules.betaPack2=function(HOST){
          ⚠ (#R668) the DEVICE decides that, not the viewport width — `_phoneDev` at the top of this
          file records what a phone in landscape was keeping resident instead. */
       if(!on&&_phoneDev()){ try{ RM.drop(); }catch(_){} cache.rail=null; }
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',LA('World railways','世界の鉄道','Eisenbahnen weltweit','Железные дороги мира','Ferrocarriles del mundo'),['rail-ln','rail-det-ln','rail-cons-ln','rail-st','rail-st-lbl'],'beta-dl-rail');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',LA('World railways','世界の鉄道','Eisenbahnen weltweit','Железные дороги мира','Ferrocarriles del mundo'),ROW_LAYERS.rail,'beta-dl-rail');
             if(el) railLegend(el,RM); }
          else if(window._hideGenericLegend) window._hideGenericLegend('rail2'); }catch(_){}
     }
@@ -955,15 +983,15 @@ window.IntMapModules.betaPack2=function(HOST){
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ Object.keys(B2LBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=b2Lbl(k); }); }
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
-    /* self-heal across basemap swaps */
-    GE().events.on('styledata',()=>{ if(state.dc||state.pharma||state.rail||state.cpi||state.lifeexp||state.unemp||state.internet||state.precip){ setTimeout(()=>{
+    /* self-heal across basemap swaps — only for a row whose layers the style lost (healWhenLost, top of file) */
+    healWhenLost(GE,90,()=>Object.keys(ROW_LAYERS).concat(Object.keys(WB)).map(k=>({key:k,on:!!state[k],ids:ROW_LAYERS[k]||WB[k].ids})),(gone)=>{
       /* (#R254) the data-center layer rebuilds itself — its module owns the source, the OSM half and the card */
-      if(state.dc){ try{ window.IntMapDataCenters&&window.IntMapDataCenters.toggle(true); }catch(_){} }
-      if(state.pharma&&ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ setVis(['ph-pt','ph-lbl'],true); load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); }
+      if(gone.includes('dc')){ try{ window.IntMapDataCenters&&window.IntMapDataCenters.toggle(true); }catch(_){} }
+      if(gone.includes('pharma')&&ptEnsure('pharma','ph-src',ROW_LAYERS.pharma)){ setVis(ROW_LAYERS.pharma,true); load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); }
       /* (#R388) the railway layer rebuilds itself — its module owns the sources, the cells and the card */
-      if(state.rail){ try{ window.IntMapRailways&&window.IntMapRailways.toggle(true); }catch(_){} }
-      ['cpi','lifeexp','unemp','internet','precip'].forEach(k=>{ if(state[k]) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
-    },90); } });
+      if(gone.includes('rail')){ try{ window.IntMapRailways&&window.IntMapRailways.toggle(true); }catch(_){} }
+      Object.keys(WB).forEach(k=>{ if(gone.includes(k)) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
+    });
     window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail){ cache.rail=null; try{ window.IntMapRailways&&window.IntMapRailways.drop(); }catch(_){} } });
     /* ⚠ (#R783) THE ACQUISITION DOORS ARE OPENED HERE, and they cost no request: a registration is a
        statement, and the first byte moves when somebody acquires. Doing it at pack construction is
@@ -1403,7 +1431,7 @@ window.IntMapModules.religionLang=function(HOST){
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=LPK.arr(CLBL[k]); if(state[k]) legend(k); }); },20));
-    GE().events.on('styledata',()=>{ if(state.religion||state.language){ setTimeout(()=>{ ['religion','language'].forEach(k=>{ if(state[k]){ if(GE().layers.hasSource(CFG[k].src)) setVis(k,true); else build(k); } }); },90); } });
+    healWhenLost(GE,90,()=>Object.keys(CFG).map(k=>({key:k,on:!!state[k],ids:CFG[k].ids})),(lost)=>{ lost.forEach(k=>{ if(GE().layers.hasSource(CFG[k].src)) setVis(k,true); else build(k); }); });
     /* the facts the layer publishes — Atlas and the tests read these instead of the paint expression */
     window.IntMapCulture={ toggle, isOn:(k)=>!!state[k], data:(k)=>DATA[k],
       categories:(k)=>(order[k]||[]).slice(), of:(k,iso)=>((DATA[k]&&DATA[k].countries&&DATA[k].countries[iso])||null),
@@ -1503,7 +1531,8 @@ window.IntMapModules.timeZones=function(HOST){
         GE().events.onLayer('mouseleave',id,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
       }catch(_){} });
     }
-    function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v?'visible':'none'); }catch(_){} });
+    const TZ_IDS=['tzl-fill','tzl-line','tzl-time'];
+    function setVis(v){ TZ_IDS.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v?'visible':'none'); }catch(_){} });
       ['tzl-hl','tzl-hl-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',(v&&hlZone!=null)?'visible':'none'); }catch(_){} }); }
     function toggle(v){ on=v;
       if(v){
@@ -1546,7 +1575,7 @@ window.IntMapModules.timeZones=function(HOST){
           if(z==null||!f.geometry) continue;
           try{ if(window._imPipGeo(lng,lat,f.geometry)) return +z; }catch(_){} }
         return null; } }); }catch(_){}
-    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(_imCanDraw()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
+    healWhenLost(GE,80,()=>[{key:'tz',on:!!on,ids:TZ_IDS}],()=>{ if(_imCanDraw()&&geo){ addLayers(); setVis(true); refreshTimes(); } });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-tz')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-tz';
       const lab=document.createElement('label'); lab.className='layer-option';
@@ -1776,7 +1805,7 @@ window.IntMapModules.gibsScience=function(HOST){
         else { try{ window._hideGenericLegend&&window._hideGenericLegend('gx-'+L.id); }catch(_){} } };
       apply();
       if(on) [400,1500].forEach(ms=>setTimeout(apply,ms)); }
-    GE().events.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ GE().layers.setLayout(layId(L),'visibility','visible'); }catch(_){} } }); },80); });
+    healWhenLost(GE,80,()=>LIST.map(L=>({key:L.id,on:!!state[L.id],ids:[layId(L)]})),(lost)=>{ LIST.forEach(L=>{ if(lost.includes(L.id)&&ensure(L)){ try{ GE().layers.setLayout(layId(L),'visibility','visible'); }catch(_){} } }); });
     /* ===== (#R120) GIBS PIXEL → PHYSICAL VALUE — the reverse of the legend: fetch the actual rendered tile
        (same URL the layer paints), read the pixel under the point, project its colour onto the layer's
        colormap gradient (the SCALES stops were sampled from the REAL GIBS colormap XMLs in R42), and map the

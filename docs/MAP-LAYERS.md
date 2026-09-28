@@ -1558,6 +1558,8 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   凡例の行は `IntMapRailways.key()` に**訊いて**作る——色を凡例側に書き写さない。
   ⚠ **不透明度は5つのレイヤー id をまとめて動かす**（`rail-ln` / `rail-det-ln` / `rail-cons-ln` /
   `rail-st` / `rail-st-lbl`）。詳細セルと駅を登録から落とすと、ズームした先だけスライダーが効かなくなる。
+  ⚠ **この5つは基図差し替えの自己修復の判定にも使う**（`ROW_LAYERS.rail`）——`styledata` のたびではなく、
+  このどれかがスタイルから消えたときだけ `IntMapRailways.toggle(true)` を呼ぶ（冪等性は §7.3c）。
 
 - **年降水量**（`dl-annprecip` / `js/precip-annual.js`）— **平年値**は CHELSA V2.1 bio12（30秒角 ≒ 1 km、
   1981–2010）をメルカトルに再投影したもの、**年別**は GPCC Full Data Monthly V2022（DWD、0.5°、
