@@ -137,30 +137,62 @@ test('the track survives zooming in over high ground with 3-D terrain on', async
         gs: 200, track: 55, seen: 1, dbFlags: 0 }] }) }); });
   /* ⚠ ?aviation=v1 — see the note on boot(). What is captured below is what `src-plane-track` and
      `src-planes-3d` are handed, and the default rendering feeds neither: without the pin the sources
-     do not exist and `getSource(…)` answers null (measured, #R341). The assertions are unchanged. */
+     do not exist and `getSource(…)` answers null (measured, #R341). #R341 changed no assertion. */
   await boot(page, '?aviation=v1');
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => { const b = document.getElementById('btn-view-3d'); if (b && !b.classList.contains('active')) b.click(); });
   await page.evaluate(() => window.__imap.jumpTo({ center: [138.72, 35.38], zoom: 10.5, pitch: 45, bearing: 0 }));
   await page.waitForTimeout(2500);
   await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
-  await page.waitForTimeout(3000);
-  for (let i = 0; i < 5; i++) { await page.evaluate(() => window.__imap.fire('moveend')); await page.waitForTimeout(2000); }
+
+  /* ══ ⚠⚠⚠ THE TRACK IS BUILT BY WAITING FOR ITS FIXES, NOT BY COUNTING NUDGES ══════════════════════
+     This used to be «wait 3 s, then five × (fire moveend, wait 2 s)», on the premise that each moveend
+     is one more poll and so one more fix. The module does not promise that, on purpose: a view change
+     while a sweep of the same sky is still in flight yields to that sweep (fetchPlanes, #R186/#R188),
+     and one inside the refetch gap is not a request at all. MEASURED: the nightly deep tier failed here
+     on its first attempt six nights running (2026-09-22 → 27) with legs=2 or 3 at z10.5 — and a local
+     run whose stub answers 2.5 s late gives exactly that, legs=2 with 3 requests served and legs=3 with
+     4: every request the module made became a fix; the missing fixes are requests it rightly never
+     made. So the precondition — a track of LEGS_BEFORE_ZOOM legs — is now waited for as a fact: one
+     nudge only when the module says it would start a sweep for it (state().refetch), then wait for that
+     fix to be recorded. Nothing asserted below is relaxed; the 480 s budget is unchanged. */
+  const LEGS_BEFORE_ZOOM = 5;   /* what 1 + 5 polls built here since #R174; the stub has 9 distinct positions */
+  const fixes = () => page.evaluate(() => window.IntMapPlanes3D.track('ABC123').length);
+  for (let n = await fixes(); n < LEGS_BEFORE_ZOOM + 1; n = await fixes()) {
+    await page.waitForFunction(() => { const r = window.IntMapPlanes3D.state().refetch;
+      return !r.busy && Date.now() - r.lastAt > r.gapMs; });
+    await page.evaluate(() => window.__imap.fire('moveend'));
+    /* a sweep the module's own 20 s poll starts in between answers just as well — either lands a fix */
+    await page.waitForFunction(k => window.IntMapPlanes3D.track('ABC123').length > k, n);
+  }
 
   /* Capture what the module hands the renderer. queryRenderedFeatures cannot answer this: with terrain on
-     it reports 0 for the aircraft too, while the aeroplane is plainly drawn on screen. */
-  await page.evaluate(() => { const m = window.__imap; window.__cap = {};
-    for (const [k, id] of [['track', 'src-plane-track'], ['planes', 'src-planes-3d']]) {
-      const s = m.getSource(id); if (!s) continue; const orig = s.setData.bind(s);
-      s.setData = d => { try { window.__cap[k] = JSON.parse(JSON.stringify(d)); } catch (_) {} return orig(d); }; } });
-  await page.evaluate(() => window.IntMapPlanes3D.select('ABC123'));
-  await page.waitForTimeout(1500);
+     it reports 0 for the aircraft too, while the aeroplane is plainly drawn on screen.
+     ⚠ Captured at the ENGINE CONTRACT (IntMapGeoEngine.layers.setSourceData), which is where the module
+     hands it over — not at the MapLibre source's setData. The adapter declines to re-post a collection
+     the renderer already holds (#R322, skipData in js/geo-command-log.js), and from about z12.7 the
+     ribbons sit on their 25 m floor, so a zoom step's redraw is identical to the last one: MEASURED, the
+     source saw no post at z13.24 and z13.79 at all. A capture there cannot tell «redrawn, unchanged»
+     from «not redrawn».
+     `zoomEnds` / `trackAfter` say whether the track in hand was drawn AFTER the latest zoom finished
+     (the module redraws it on zoomend — the ribbons are sized from the scale): a fixed 1.4 s after a
+     wheel step could read the previous zoom's drawing under load and pass without measuring the step. */
+  await page.evaluate(() => { const m = window.__imap, L = window.IntMapGeoEngine.layers;
+    window.__cap = { zoomEnds: 0, trackAfter: -1 };
+    m.on('zoomend', () => { window.__cap.zoomEnds++; });
+    const keyOf = { 'src-plane-track': 'track', 'src-planes-3d': 'planes' }, orig = L.setSourceData;
+    L.setSourceData = (id, d, o) => { const k = keyOf[id];
+      if (k) { try { window.__cap[k] = JSON.parse(JSON.stringify(d));
+        if (k === 'track') window.__cap.trackAfter = window.__cap.zoomEnds; } catch (_) {} }
+      return orig(id, d, o); }; });
+  await page.evaluate(() => window.IntMapPlanes3D.select('ABC123'));   /* draws the track synchronously */
 
   const snap = () => page.evaluate(() => { const m = window.__imap, c = m.getCenter();
     const g = m.queryTerrainElevation ? m.queryTerrainElevation({ lng: c.lng, lat: c.lat }) : null;
     const t = window.__cap.track, p = window.__cap.planes;
     return { zoom: +m.getZoom().toFixed(2), centreGround: g == null ? null : Math.round(g),
       legs: t ? t.features.filter(f => f.properties.kind === 'leg').length : -1,
+      fixes: window.IntMapPlanes3D.track('ABC123').length,
       /* (#R183) one aircraft is FOUR extrusions now (fuselage/wing/stabiliser/fin), so counting
          non-post features counts PARTS. The aircraft is counted the way the module counts it — by
          its fuselage, or by the single silhouette when the body is drawn plainly. */
@@ -170,12 +202,20 @@ test('the track survives zooming in over high ground with 3-D terrain on', async
     return { x: Math.round(c.x + c.width / 2), y: Math.round(c.y + c.height / 2) }; });
   await page.mouse.move(box.x, box.y);
   const seen = [await snap()];
-  for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, -300); await page.waitForTimeout(1400); seen.push(await snap()); }
+  for (let i = 0; i < 6; i++) {
+    const ends = await page.evaluate(() => window.__cap.zoomEnds);
+    await page.mouse.wheel(0, -300);
+    await page.waitForFunction(e => { const c = window.__cap;
+      return c.zoomEnds > e && c.trackAfter === c.zoomEnds && !window.__imap.isMoving(); }, ends);
+    seen.push(await snap());
+  }
 
   expect(seen[0].centreGround, 'the map centre really is standing on high ground').toBeGreaterThan(1500);
   for (const s of seen) {
     expect(s.bodies, `the aircraft is drawn at z${s.zoom}`).toBe(1);
-    expect(s.legs, `and so is its track at z${s.zoom} — this was 0 at every step`).toBeGreaterThan(4);
+    expect(s.legs, `and so is its track at z${s.zoom} — this was 0 at every step`).toBeGreaterThanOrEqual(LEGS_BEFORE_ZOOM);
+    /* the track survives = every leg between two recorded fixes is handed to the renderer, none dropped */
+    expect(s.legs, `every recorded leg is drawn at z${s.zoom}`).toBe(s.fixes - 1);
   }
   expect(seen[seen.length - 1].zoom, 'the zoom really did go in').toBeGreaterThan(seen[0].zoom + 2);
 });

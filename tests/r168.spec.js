@@ -290,14 +290,28 @@ test('R168 #7 WRITE-THROUGH: appendNewsBatch advances renderedCount (no duplicat
     const count = () => feed.querySelectorAll('.news-item, .news-card').length;
     const first = count();
     feed.scrollTop = feed.scrollHeight;
+    /* what the scroll handler in js/app-body.js reads, as it was when it was asked — so a failure
+       says which half of its condition was false instead of only «30» */
+    const at = { scrollTop: feed.scrollTop, clientHeight: feed.clientHeight, scrollHeight: feed.scrollHeight,
+      newsTab: !!document.getElementById('btn-news')?.classList.contains('active') };
     feed.dispatchEvent(new Event('scroll', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 900));
+    /* ⚠ A CONDITION WITH A DEADLINE, NOT A FIXED 900 ms. Measured on the nightly run 36348262163:
+       30 cards on both attempts, with the feed scrolled to the bottom and the News tab active in the
+       failure screenshot. The handler appends synchronously when its condition holds, so this wait
+       only admits the one other way the append arrives — the browser's own `scroll` event, which it
+       queues for the next frame. Why the dispatched event did not append on that run is NOT KNOWN:
+       the artifacts carry neither `renderedCount` nor `newsFiltered` (closure state of
+       js/app-body.js), and four local runs of the unchanged file (2026-09-28) all passed. `at` above is there so the next failure
+       carries the geometry the handler saw. The assertions below are unchanged. */
+    const t0 = Date.now();
+    while (Date.now() - t0 < 10000 && count() <= first) await new Promise((r) => setTimeout(r, 50));
     const links = [...feed.querySelectorAll('.news-item, .news-card')]
       .map((c) => c.getAttribute('data-link') || c.querySelector('a')?.getAttribute('href') || c.innerText.slice(0, 60));
-    return { first, second: count(), unique: new Set(links).size };
+    return { first, second: count(), unique: new Set(links).size, at, waitedMs: Date.now() - t0 };
   });
   expect(res.first, 'the first batch rendered NEWS_BATCH cards').toBe(30);
-  expect(res.second, 'the second batch appended the remaining 15 of 45 seeded items').toBe(45);
+  expect(res.second, 'the second batch appended the remaining 15 of 45 seeded items — the handler saw '
+    + JSON.stringify(res.at) + ' and waited ' + res.waitedMs + ' ms').toBe(45);
   expect(res.unique, 'every card is distinct — renderedCount really advanced').toBe(45);
 });
 

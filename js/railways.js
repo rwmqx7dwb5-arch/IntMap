@@ -356,6 +356,49 @@ window.IntMapModules.railways = function (HOST) {
     try { if (GE().layers.has('rail-det-ln')) GE().layers.setFilter('rail-det-ln', f); } catch (_) {}
   }
 
+  /* ── handing the view from the world line to the detail line ────────────────
+     The world line comes off when the DETAIL SOURCE says it can draw, asked two
+     ways, whichever answers first:
+       · `sourcedata` for 'rail-det-src' reporting itself loaded — from a tile that
+         has just landed (`e.tile`), or from an engine whose GeoJSON has no tiles to
+         wait for. ⚠ NOT from an announcement (`e.sourceDataType`: metadata / content
+         / idle / visibility): a source that has not been asked for a tile yet
+         reports itself loaded immediately, which is the blank #R297 and #R298
+         measured on the weather layers one source along (js/weather.js).
+       · `idle` — the whole map has nothing left to load, so neither has this
+         source. This is the answer when nothing new has to be fetched at all (the
+         same features handed over again are not re-sent, js/geo-command-log.js
+         `skipData`, and tiles can come back from the renderer's own cache), where
+         no tile event will ever come.
+     There is no timer: until one of these answers, both lines are on the map, and
+     the world line under the detail one is the same railway — a slower handover
+     costs nothing a reader can see; an early one is the blank this replaces.
+     One handover at a time: a newer view, a zoom-out below the detail threshold or
+     switching the layer off cancels the one still waiting, so a late answer cannot
+     take the world line off a view that no longer has the detail on it. */
+  let cancelPending = null;
+  function cancelReveal() { const c = cancelPending; cancelPending = null; if (c) c(); }
+  function revealDetail() {
+    cancelReveal();
+    let done = false;
+    const off = () => {
+      done = true;
+      try { GE().events.off('sourcedata', onData); } catch (_) {}
+      try { GE().events.off('idle', onIdle); } catch (_) {}
+    };
+    const reveal = () => {
+      if (done) return;
+      off(); cancelPending = null;
+      if (!state.on) return;
+      detailCovers = true;
+      setVis(['rail-ln'], false);
+    };
+    function onData(e) { if (e && e.sourceId === 'rail-det-src' && e.isSourceLoaded && (e.tile || !e.sourceDataType)) reveal(); }
+    function onIdle() { reveal(); }
+    cancelPending = off;
+    try { GE().events.on('sourcedata', onData); GE().events.on('idle', onIdle); } catch (_) { reveal(); }
+  }
+
   /* ── the viewport: which cells, and does the world file still have to draw ─ */
   function refreshDetail() {
     if (!state.on) return;
@@ -363,6 +406,7 @@ window.IntMapModules.railways = function (HOST) {
     try { z = GE().camera.getZoom(); } catch (_) { return; }
     const bounds = viewBox();
     if (z < DETAIL_Z || !bounds) {
+      cancelReveal();
       detailCovers = false;
       setVis(['rail-det-ln', 'rail-cons-ln'], false);
       setVis(['rail-ln'], true);
@@ -375,6 +419,7 @@ window.IntMapModules.railways = function (HOST) {
         .filter((k) => Object.prototype.hasOwnProperty.call(idx.cells, k));
       if (want.length > MAX_CELLS) {
         /* a view this wide is what the world file is for */
+        cancelReveal();
         detailCovers = false;
         setVis(['rail-det-ln', 'rail-cons-ln'], false);
         setVis(['rail-ln'], true);
@@ -384,14 +429,21 @@ window.IntMapModules.railways = function (HOST) {
         if (!state.on) return;
         const feats = [];
         for (const l of lists) for (const f of l) feats.push(f);
-        try { GE().layers.setSourceData('rail-det-src', { type: 'FeatureCollection', features: feats }); } catch (_) {}
         /* ⚠ THE WORLD LAYER IS HIDDEN ONLY ONCE THE DETAIL IS IN HAND. Hiding it
            on the zoom threshold alone leaves the map blank for as long as the
-           fetch takes, which on a cold cell is the whole of it. */
-        detailCovers = true;
+           fetch takes, which on a cold cell is the whole of it.
+           ⚠ …AND «IN HAND» IS «THE RENDERER CAN DRAW IT», NOT «IT WAS HANDED OVER».
+           This used to hide the world line in the same tick as `setSourceData` —
+           but a GeoJSON source parses its data in a worker and cuts its own tiles
+           afterwards, so between the two there was a moment with neither line on
+           the map. Measured on the nightly run 36348262163: tests/r388-detail.spec.js
+           saw the world line, looked again, and found no line at all. The hide is
+           now `revealDetail`'s, armed BEFORE the data goes over (one engine reports
+           a GeoJSON source loaded synchronously, inside `setSourceData`). */
+        revealDetail();
+        try { GE().layers.setSourceData('rail-det-src', { type: 'FeatureCollection', features: feats }); } catch (_) {}
         setVis(['rail-det-ln'], true);
         setVis(['rail-cons-ln'], true);
-        setVis(['rail-ln'], false);
         applyUrbanFilter();
       });
       if (state.stations && z >= STATION_Z) {
@@ -570,6 +622,10 @@ window.IntMapModules.railways = function (HOST) {
           refreshDetail();
         }).catch(() => {});
       } else {
+        cancelReveal();
+        /* the detail no longer covers anything once it is hidden: an OFF→ON must start from the world
+           lines and hand over again, not from «covered» with no detail drawn (a blank until it lands) */
+        detailCovers = false;
         setVis(['rail-ln', 'rail-det-ln', 'rail-cons-ln', 'rail-st', 'rail-st-lbl'], false);
         closeCard();
       }
@@ -596,6 +652,7 @@ window.IntMapModules.railways = function (HOST) {
   function loadWorldFC(cb) { loadWorld().then((fc) => { try { cb(fc); } catch (_) {} }).catch(() => {}); }
 
   function drop() {
+    cancelReveal();
     try {
       for (const id of ['rail-st-lbl', 'rail-st', 'rail-cons-ln', 'rail-det-ln', 'rail-ln']) if (GE().layers.has(id)) GE().layers.remove(id);
       for (const s2 of ['rail-st-src', 'rail-det-src', 'rail-src']) if (GE().layers.hasSource(s2)) GE().layers.removeSource(s2);

@@ -32,29 +32,30 @@ test('R388 ① a click on a line answers for that line', async ({ app }) => {
      px off. The point is found by asking the renderer what it actually drew, and the canvas offset
      is added back before the mouse is told anything. */
   await page.evaluate(([lng, lat]) => window.IntMapGeoEngine.camera.jumpTo({ center: { lng, lat }, zoom: 11 }), pick);
-  await page.waitForFunction(() => {
+  /* ⚠ THE WAIT AND THE SEARCH ARE ONE QUESTION, AND IT IS ASKED OF THE DETAIL LAYER. Measured on the
+     nightly run 36348262163 (the retry of this test, on a fresh worker): the wait asked for
+     'rail-det-ln' OR 'rail-ln' inside a 120-px box and was satisfied by the WORLD file's line; a
+     moment later js/railways.js swapped the world line out for the detail cells, and the separate
+     point search that followed found nothing — `hit: null`. At zoom 11 the line the reader clicks
+     is the detail layer's, so that is the layer waited for, and the point is found INSIDE the wait,
+     so the point returned is one the renderer was drawing at the moment it answered. */
+  const hit = await (await page.waitForFunction(() => {
     try {
       const c = window.IntMapGeoEngine.render.canvas();
-      const box = [[c.clientWidth / 2 - 60, c.clientHeight / 2 - 60], [c.clientWidth / 2 + 60, c.clientHeight / 2 + 60]];
-      return window.IntMapGeoEngine.coords.queryRenderedFeatures(box, { layers: ['rail-det-ln', 'rail-ln'] }).length > 0;
-    } catch (_) { return false; }
-  }, null, { timeout: 60000 });
-
-  const hit = await page.evaluate(() => {
-    const c = window.IntMapGeoEngine.render.canvas();
-    const cx = c.clientWidth / 2, cy = c.clientHeight / 2;
-    for (let r = 0; r <= 60; r += 4) {
-      for (const [dx, dy] of [[r, 0], [0, r], [-r, 0], [0, -r], [r, r], [-r, -r], [r, -r], [-r, r]]) {
-        const p = [cx + dx, cy + dy];
-        const f = window.IntMapGeoEngine.coords.queryRenderedFeatures(p, { layers: ['rail-det-ln', 'rail-ln'] });
-        if (f && f.length) {
-          const rect = c.getBoundingClientRect();
-          return { x: Math.round(rect.left + p[0]), y: Math.round(rect.top + p[1]) };
+      const cx = c.clientWidth / 2, cy = c.clientHeight / 2;
+      for (let r = 0; r <= 60; r += 4) {
+        for (const [dx, dy] of [[r, 0], [0, r], [-r, 0], [0, -r], [r, r], [-r, -r], [r, -r], [-r, r]]) {
+          const p = [cx + dx, cy + dy];
+          const f = window.IntMapGeoEngine.coords.queryRenderedFeatures(p, { layers: ['rail-det-ln'] });
+          if (f && f.length) {
+            const rect = c.getBoundingClientRect();
+            return { x: Math.round(rect.left + p[0]), y: Math.round(rect.top + p[1]) };
+          }
         }
       }
-    }
+    } catch (_) { }
     return null;
-  });
+  }, null, { timeout: 60000 })).jsonValue();
   expect(hit).toBeTruthy();
   await page.mouse.click(hit.x, hit.y);
   await page.waitForSelector('#rail-detail', { timeout: 15000 });
