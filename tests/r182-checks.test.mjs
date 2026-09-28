@@ -10,7 +10,7 @@
 // with the old and new values printed, instead of arriving as a bug report.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walker from 'acorn-walk';
 
@@ -21,8 +21,34 @@ const parse = (src) => acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'mo
 const INPUT = read('js/cesium-input.js');
 const ENGINE = read('js/cesium-engine.js');
 const SELECT = read('js/engine-select.js');
-const ML_URL = new URL('node_modules/maplibre-gl/dist/maplibre-gl-dev.js', ROOT);
-const ML = existsSync(ML_URL) ? readFileSync(ML_URL, 'utf8') : null;
+/* ══ (maplibre-6-migration) MAPLIBRE'S NUMBERS, ASKED OF THE INSTALLED LIBRARY ══════════════════════
+   This read 5.24's dist/maplibre-gl-dev.js, which 6.x does not ship (it is ESM-only, and its bundles
+   rename). Two sources replace it, in order of preference:
+     · EVALUATION where the library holds the number on something it exports — the keyboard steps
+       and the two scroll rates are fields of KeyboardHandler / ScrollZoomHandler instances;
+     · the library's OWN SOURCE, which the package ships under src/, for the numbers that live only
+       in a module-scope `const` or a parameter default (no runtime handle reaches them). The file is
+       FOUND by searching that tree for the declaration, not named here, and every declaration found
+       must agree — a second, different one fails rather than being picked from. */
+const ML_PKG = new URL('node_modules/maplibre-gl/', ROOT);
+const ML_SRC = (() => {
+  const out = [];
+  const walkDir = (u) => { for (const e of readdirSync(u, { withFileTypes: true })) {
+    const c = new URL(e.name + (e.isDirectory() ? '/' : ''), u);
+    if (e.isDirectory()) walkDir(c); else if (/\.ts$/.test(e.name) && !/\.test\.ts$/.test(e.name)) out.push({ file: c.pathname.split('/maplibre-gl/')[1], text: readFileSync(c, 'utf8') });
+  } };
+  walkDir(new URL('src/', ML_PKG));
+  return out;
+})();
+function libConst(re) {
+  const seen = new Map();
+  for (const { file, text } of ML_SRC) for (const m of text.matchAll(new RegExp(re.source, 'g'))) seen.set(file + ':' + m[1], Number(m[1]));
+  const vals = new Set(seen.values());
+  assert.ok(vals.size > 0, `${re}: not declared anywhere in maplibre-gl/src — the transcription can no longer be verified`);
+  assert.equal(vals.size, 1, `${re}: declared with different values (${[...seen.keys()].join(', ')})`);
+  return [...vals][0];
+}
+const mlLib = await import('maplibre-gl');
 
 /* the module is an IIFE assigned to window; evaluate it against a stub so the pure
    arithmetic can be exercised directly, the way #R180 tests js/cesium-style.js */
@@ -43,47 +69,56 @@ test('R182: the module loads and exposes its arithmetic and constants', () => {
    Each entry names the handler it comes from and a regex that finds it in the shipped
    library. If maplibre-gl is not installed the check says so rather than passing quietly. */
 test('R182 ①: the transcribed constants match the installed maplibre-gl', () => {
-  assert.ok(ML, 'node_modules/maplibre-gl/dist/maplibre-gl-dev.js must be present to verify the transcription');
   const C = loadInput()._consts;
   const cases = [
-    ['ROTATE_DEG_PER_PX', C.ROTATE_DEG_PER_PX, /rotateDegreesPerPixelMoved\s*=\s*([\d.]+)/],
-    ['PITCH_DEG_PER_PX', C.PITCH_DEG_PER_PX, /pitchDegreesPerPixelMoved\s*=\s*(-?[\d.]+)/],
-    ['ROTATE_CENTRE_PX', C.ROTATE_CENTRE_PX, /minPixelCenterThreshold\s*=\s*([\d.]+)/],
-    ['WHEEL_ZOOM_DELTA', C.WHEEL_ZOOM_DELTA, /wheelZoomDelta\s*=\s*([\d.]+)/],
-    ['MAX_SCALE_PER_FRAME', C.MAX_SCALE_PER_FRAME, /maxScalePerFrame\s*=\s*([\d.]+)/],
-    ['WHEEL_TIME_ADJ', C.WHEEL_TIME_ADJ, /wheelEventTimeDiffAdjustment\s*=\s*([\d.]+)/],
-    ['KEY_PAN_STEP', C.KEY_PAN_STEP, /panStep:\s*([\d.]+)/],
-    ['KEY_BEARING_STEP', C.KEY_BEARING_STEP, /bearingStep:\s*([\d.]+)/],
-    ['KEY_PITCH_STEP', C.KEY_PITCH_STEP, /pitchStep:\s*([\d.]+)/],
-    ['TOUCH_ROTATE_THRESHOLD', C.TOUCH_ROTATE_THRESHOLD, /ROTATION_THRESHOLD\s*=\s*([\d.]+)/],
-    ['TOUCH_SINGLE_MS', C.TOUCH_SINGLE_MS, /ALLOWED_SINGLE_TOUCH_TIME\s*=\s*([\d.]+)/],
-    ['INERTIA_CUTOFF', C.INERTIA_CUTOFF, /cutoff\s*=\s*(\d+);\s*\/\/\s*msec/],
+    /* MapOptions defaults since 6.1 (rotateSpeed / pitchSpeed); 5.x had them as handler parameters */
+    ['ROTATE_DEG_PER_PX', C.ROTATE_DEG_PER_PX, /\brotateSpeed\s*[:=]\s*(-?[\d.]+)/],
+    ['PITCH_DEG_PER_PX', C.PITCH_DEG_PER_PX, /\bpitchSpeed\s*[:=]\s*(-?[\d.]+)/],
+    ['ROTATE_CENTRE_PX', C.ROTATE_CENTRE_PX, /\bminPixelCenterThreshold\s*=\s*([\d.]+)/],
+    ['WHEEL_ZOOM_DELTA', C.WHEEL_ZOOM_DELTA, /\bconst wheelZoomDelta\s*=\s*([\d.]+)/],
+    ['MAX_SCALE_PER_FRAME', C.MAX_SCALE_PER_FRAME, /\bconst maxScalePerFrame\s*=\s*([\d.]+)/],
+    ['WHEEL_TIME_ADJ', C.WHEEL_TIME_ADJ, /\bconst wheelEventTimeDiffAdjustment\s*=\s*([\d.]+)/],
+    ['TOUCH_ROTATE_THRESHOLD', C.TOUCH_ROTATE_THRESHOLD, /\bconst ROTATION_THRESHOLD\s*=\s*([\d.]+)/],
+    ['TOUCH_SINGLE_MS', C.TOUCH_SINGLE_MS, /\bconst ALLOWED_SINGLE_TOUCH_TIME\s*=\s*([\d.]+)/],
+    ['INERTIA_CUTOFF', C.INERTIA_CUTOFF, /\bconst BUFFER_CUTOFF\s*=\s*(\d+)/],
+    /* 6.x measures the release velocity over this window (HandlerInertia._getVelocityEntries) */
+    ['VELOCITY_WINDOW', C.VELOCITY_WINDOW, /\bconst VELOCITY_WINDOW\s*=\s*(\d+)/],
   ];
   for (const [name, mine, re] of cases) {
-    const m = re.exec(ML);
-    assert.ok(m, `${name}: could not find its source in maplibre-gl — the transcription can no longer be verified`);
-    assert.equal(mine, Number(m[1]), `${name}: transcribed ${mine}, maplibre-gl now says ${m[1]}`);
+    const theirs = libConst(re);
+    assert.equal(mine, theirs, `${name}: transcribed ${mine}, maplibre-gl now says ${theirs}`);
   }
-  /* the two scroll rates are named the same way in both files */
-  assert.match(ML, /defaultZoomRate\$1\s*=\s*1\s*\/\s*100/);
-  assert.match(ML, /wheelZoomRate\s*=\s*1\s*\/\s*450/);
-  assert.equal(C.DEFAULT_ZOOM_RATE, 1 / 100);
-  assert.equal(C.WHEEL_ZOOM_RATE, 1 / 450);
-  /* and the four inertia families */
-  assert.match(ML, /linearity:\s*0\.3/);
-  assert.equal(C.INERTIA.pan.deceleration, 2500);
-  assert.equal(C.INERTIA.pan.maxSpeed, 1400);
-  assert.equal(C.INERTIA.zoom.deceleration, 20);
-  assert.equal(C.INERTIA.bearing.deceleration, 1000);
-  assert.equal(C.INERTIA.bearing.maxSpeed, 360);
-  assert.equal(C.INERTIA.pitch.maxSpeed, 90);
-  for (const dec of [2500, 20, 1000]) assert.match(ML, new RegExp(`deceleration:\\s*${dec}`));
+  /* EVALUATED: the handler instances hold these themselves */
+  const kb = new mlLib.KeyboardHandler({}, {});
+  assert.equal(C.KEY_PAN_STEP, kb._panStep, 'KeyboardHandler pan step');
+  assert.equal(C.KEY_BEARING_STEP, kb._bearingStep, 'KeyboardHandler bearing step');
+  assert.equal(C.KEY_PITCH_STEP, kb._pitchStep, 'KeyboardHandler pitch step');
+  const sz = new mlLib.ScrollZoomHandler({}, () => {}, {});
+  assert.equal(C.DEFAULT_ZOOM_RATE, sz._defaultZoomRate, 'ScrollZoomHandler default (trackpad) zoom rate');
+  assert.equal(C.WHEEL_ZOOM_RATE, sz._wheelZoomRate, 'ScrollZoomHandler wheel zoom rate');
+  /* and the four inertia families — the defaults object is module-scope, so read from the source */
+  const inertiaSrc = ML_SRC.filter((x) => /\bconst defaultInertiaOptions\b/.test(x.text));
+  assert.equal(inertiaSrc.length, 1, 'HandlerInertia\'s defaults are declared in one place');
+  const T = inertiaSrc[0].text;
+  const fam = (n) => { const m = new RegExp('const default' + n + 'InertiaOptions\\s*=\\s*extend\\(\\{([^}]*)\\}').exec(T); assert.ok(m, n); return m[1]; };
+  const num = (body, k) => Number(new RegExp(k + ':\\s*([\\d.]+)').exec(body)[1]);
+  assert.equal(num(/const defaultInertiaOptions\s*=\s*\{([^}]*)\}/.exec(T)[1], 'linearity'), 0.3);
+  for (const [key, n] of [['pan', 'Pan'], ['zoom', 'Zoom'], ['bearing', 'Bearing'], ['pitch', 'Pitch']]) {
+    const body = fam(n);
+    assert.equal(C.INERTIA[key].deceleration, num(body, 'deceleration'), key + ' deceleration');
+    assert.equal(C.INERTIA[key].maxSpeed, num(body, 'maxSpeed'), key + ' maxSpeed');
+  }
 });
 
 /* ── ② THE GLOBE PAN IS MAPLIBRE'S, NOT THE INTUITIVE ONE ────────────────────────────────
    computeGlobePanCenter, evaluated against numbers measured from the running MapLibre map:
    at z4/lat 20 a 10 px step moved the centre 0.04386°/px in longitude and 0.0413°/px in
-   latitude, and panning north raised the reported zoom by +0.0244 over 2.89° of latitude. */
+   latitude, and panning north raised the reported zoom by +0.0244 over 2.89° of latitude.
+   ⚠ (maplibre-6-migration) THOSE NUMBERS ARE 5.24's DRAG. MapLibre 6.4 drags the globe with a versor
+   (versorSetLocationAtPoint) and keeps computeGlobePanCenter for the pan INERTIA only; js/cesium-input.js
+   still drags by this law. What this pins is the transcription of computeGlobePanCenter, which 6.x still
+   ships; the drag's change of feel on the second engine is recorded as open in
+   dev-notes/2026-09-27-maplibre-6-migration.md, not hidden by editing these numbers. */
 test('R182 ②: computeGlobePanCenter reproduces the measured MapLibre pan', () => {
   const { panCentre, zoomAdjust, degPerPx, worldSizeAt } = loadInput()._math;
   const cam = { lng: 10, lat: 20, zoom: 4, bearing: 0 };
@@ -153,7 +188,7 @@ test('R182 ④: the inertia easing is the cubic bezier MapLibre uses', () => {
   /* a linear bezier really is linear — a sanity check on the solver itself */
   const lin = unitBezier(1 / 3, 1 / 3, 2 / 3, 2 / 3);
   for (const t of [0.1, 0.37, 0.5, 0.9]) assert.ok(Math.abs(lin(t) - t) < 1e-3, `linear bezier at ${t}: ${lin(t)}`);
-  assert.match(ML || '', /bezier\(0,\s*0,\s*0\.3,\s*1\)/, 'maplibre still uses bezier(0,0,0.3,1) for inertia');
+  assert.match(ML_SRC.find((x) => /\bconst defaultInertiaOptions\b/.test(x.text)).text, /easing:\s*bezier\(0,\s*0,\s*0\.3,\s*1\)/, 'maplibre still uses bezier(0,0,0.3,1) for inertia');
 });
 
 test('R182 ④: calculateEasing is MapLibre\'s, including the maxSpeed clamp', () => {

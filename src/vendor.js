@@ -5,16 +5,18 @@
  *  separate DNS + TLS + round trip on a third party's uptime, and each defining a global the rest of the
  *  app reads by name. They are npm dependencies now (pinned at #R175 to the versions the tags carried,
  *  and moved since only through package.json), bundled by Vite — and this file re-publishes exactly the
- *  globals those tags used to define, so not one call site changes. The versions below are what
- *  package.json declares today; tests/r175-checks compares every one of them with it:
+ *  globals those tags used to define, so not one call site changes. Each line names the package's
+ *  MAJOR version only: the exact version is package.json's and package-lock.json's to state, and a
+ *  copy of it here went stale on every patch bump (tests/r175-checks compares each major with
+ *  package.json, so a major bump still has to be written here):
  *
- *      maplibre-gl@5.24.0        → window.maplibregl     (pinned exactly since #R158 — camera-API behaviour)
- *      maplibre-contour@0.1.1    → window.mlcontour
- *      @turf/turf@7.4.0          → window.turf
- *      topojson-client@3.1.0     → window.topojson
+ *      maplibre-gl@6             → window.maplibregl     (a namespace object — v6 has no default export)
+ *      maplibre-contour@0        → window.mlcontour
+ *      @turf/turf@7              → window.turf
+ *      topojson-client@3         → window.topojson
  *      @supabase/supabase-js@2   → window.supabase + window.sb
- *      html2canvas@1.4.1         → window.html2canvas    (lazy — see below)
- *      katex@0.18.9              → window.katex + its CSS (lazy — see below)
+ *      html2canvas@1             → window.html2canvas    (lazy — see below)
+ *      katex@0                   → window.katex + its CSS (lazy — see below)
  *
  *  ── WHY TWO OF THEM ARE STILL LAZY ─────────────────────────────────────────────────────────
  *  html2canvas is only reachable from the screenshot button and KaTeX only from an Atlas reply that
@@ -26,7 +28,19 @@
  *  Deliberately NOT converted to awaited imports at the call sites: that would turn a graceful
  *  degradation into a hard dependency.
  * ==========================================================================*/
-import maplibregl from 'maplibre-gl';
+/* ══ MAPLIBRE 6 IS ESM-ONLY, AND ITS WORKER IS A REAL FILE ═══════════════════════════════════
+   v6 publishes no default export (`import * as` is the documented form) and no longer carries its
+   worker as a string it turns into a blob: the worker is dist/maplibre-gl-worker.mjs, which imports
+   its sibling maplibre-gl-shared.mjs by relative path. A bundler has to be told where the built
+   worker lives (setWorkerUrl) — without it MapLibre resolves the file against its own module URL,
+   which inside our bundle is the hashed renderer chunk, and the map mounts but no tile ever loads.
+   `?worker&url` is Vite's worker pipeline: it builds the worker WITH its shared sibling into one
+   self-contained file among the other assets and hands back its URL. (A plain `?url` copies the
+   worker verbatim WITHOUT the sibling, and it dies on its first import — MapLibre's own install
+   notes say the same.) Same-origin, so the CSP's `worker-src 'self'` already admits it.
+   Set once, here, before any Map exists: MapLibre starts its worker pool with the first Map. */
+import * as maplibregl from 'maplibre-gl';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import mlcontour from 'maplibre-contour';
 /* ══ (#R209) TURF IS IMPORTED BY NAME, NOT AS A NAMESPACE ══════════════════════════════════════
@@ -75,6 +89,7 @@ import { createClient } from '@supabase/supabase-js';
    rather than each call site remembering the flag. */
 function bbox(geojson, options) { return turfBbox(geojson, Object.assign({}, options, { recompute: true })); }
 
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 window.maplibregl = maplibregl;
 window.mlcontour = mlcontour;
 window.turf = {

@@ -1,12 +1,12 @@
 {
   "eager": {
-    "raw": 4812654,
-    "gzip": 1574007,
-    "brotli": 1180357,
-    "requests": 7,
-    "modules": 280,
-    "cssRaw": 342540,
-    "cssGzip": 57736
+    "raw": 5365102,
+    "gzip": 1734624,
+    "brotli": 1312705,
+    "requests": 8,
+    "modules": 283,
+    "cssRaw": 356704,
+    "cssGzip": 58496
   },
   "async": {
     "raw": 11272809,
@@ -93,8 +93,8 @@
     }
   },
   "dist": {
-    "total": 772632817,
+    "total": 773330533,
     "data": 715643472,
-    "assets": 18763127
+    "assets": 19379851
   }
 }

@@ -105,6 +105,7 @@
 /* ⚠ THE MARK ITSELF. Imported rather than transcribed — see the header. The import is hoisted, so
    window.IntMapPlaneGlyph exists before this module's body builds the shader source. */
 import './plane-glyph.js';
+import { LIFTED_GLSL } from './lifted-projection.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.aircraftPoints = function () {
@@ -176,7 +177,6 @@ in float a_mscale;    /* metres → mercator units at THIS aircraft's latitude *
 in vec4 a_col;        /* rgba, 0..1 */
 in vec2 a_form;       /* x = relative size (1 = ordinary), y = track in radians */
 uniform float u_dt;         /* seconds since the observation the buffers hold */
-uniform float u_altScale;   /* 0 = the prelude wants metres (globe), 1 = mercator units */
 uniform float u_pxRatio;
 uniform float u_sizePx;     /* the zoom-dependent base size, so a zoom change needs no repack */
 uniform float u_opacity;
@@ -189,8 +189,9 @@ void main(){
   v_col = vec4(a_col.rgb, a_col.a * u_opacity);
   vec2 p = a_pos + a_vel * u_dt;
   float alt = a_alt + a_altv * u_dt;
-  float e = mix(alt, alt * a_mscale, u_altScale);
-  vec4 here = projectTileFor3D(p, e);
+  /* (MapLibre 6) metres for the sphere, mercator units for the plane (js/lifted-projection.js) */
+  float em = alt * a_mscale;
+  vec4 here = projectLifted(p, alt, em);
   gl_Position = here;
 
   float px = a_form.x * u_sizePx * u_pxRatio;
@@ -200,8 +201,8 @@ void main(){
   /* (#R434) the mark's own axes, projected — see the note above this string */
   float trk = a_form.y, st = sin(trk), ct = cos(trk);
   vec2 fw = vec2(st, ct), rw = vec2(ct, -st);
-  vec4 pe = projectTileFor3D(p + vec2(u_probe, 0.0), e);
-  vec4 pn = projectTileFor3D(p + vec2(0.0, -u_probe), e);
+  vec4 pe = projectLifted(p + vec2(u_probe, 0.0), alt, em);
+  vec4 pn = projectLifted(p + vec2(0.0, -u_probe), alt, em);
   if (here.w > 0.0 && pe.w > 0.0 && pn.w > 0.0) {
     vec2 o = here.xy / here.w;
     vec2 dE = (pe.xy / pe.w - o) * u_viewport;
@@ -356,7 +357,7 @@ void main(){
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
       return s;
     };
-    const v = mk(gl.VERTEX_SHADER, '#version 300 es\n' + def + '\n' + pre + '\n' + VERT);
+    const v = mk(gl.VERTEX_SHADER, '#version 300 es\n' + def + '\n' + pre + '\n' + LIFTED_GLSL + '\n' + VERT);
     const f = mk(gl.FRAGMENT_SHADER, '#version 300 es\n' + def + '\n' + FRAG);
     const p = gl.createProgram(); gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
@@ -371,7 +372,7 @@ void main(){
         form: gl.getAttribLocation(p, 'a_form'),
       },
       u: {
-        dt: loc('u_dt'), altScale: loc('u_altScale'), pxRatio: loc('u_pxRatio'),
+        dt: loc('u_dt'), pxRatio: loc('u_pxRatio'),
         sizePx: loc('u_sizePx'), opacity: loc('u_opacity'),
         probe: loc('u_probe'), viewport: loc('u_viewport'),
         mat: loc('u_projection_matrix'), fallback: loc('u_projection_fallback_matrix'),
@@ -482,7 +483,6 @@ void main(){
         /* ⚠ CAPPED — see the header. Past EXTRAP_MAX_S the glyph holds where it was rather than
            continuing along a velocity that is no longer evidence of anything. */
         gl.uniform1f(prog.u.dt, Math.max(0, Math.min(EXTRAP_MAX_S, (now - S.t0) / 1000)));
-        gl.uniform1f(prog.u.altScale, (vname === 'mercator') ? 1 : 0);
         gl.uniform1f(prog.u.sizePx, S.sizePx);
         gl.uniform1f(prog.u.opacity, S.opacity);
         let pr = 1; try { pr = Math.max(1, Math.min(3, window.devicePixelRatio || 1)); } catch (_) { }

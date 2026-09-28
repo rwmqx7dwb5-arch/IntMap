@@ -94,7 +94,9 @@ css/
   fonts.css                         同梱フォントの @font-face
 src/
   main.js                           js/ を index.html と同じ順序で import するエントリ
-  vendor.js                         npm 依存を従来と同じグローバル名で再公開し、Supabase クライアントを作る
+  vendor.js                         npm 依存を従来と同じグローバル名で再公開し、Supabase クライアントを作る。
+                                    maplibre-gl 6 は namespace で取り、自己完結した worker（`?worker&url`）を
+                                    最初の Map より前に `setWorkerUrl` で渡す
   locale-boot.js                    import.meta.glob('../js/locales/ui.*.js') で言語をディレクトリから読む（lazy）
   sat-worker.js / sat-worker-client.js      衛星の軌道計算（SGP4/SDP4）をワーカーで回す
   tsunami-worker.js / tsunami-worker-client.js  津波の伝播計算をワーカーで回す
@@ -111,10 +113,12 @@ fonts/                              Inter（サブセット woff2 ＋ MapLibre �
 app-body.js                       アプリ本体（392 KB・最大のファイル）。状態宣言・ブート・地図構築・
                                   DOM 配線・map.on() ハンドラ・IntMapOS・セッション永続化・IM_HOST。
                                   ⚠ 新規機能はここに足さない。§3.13 の手順で別ファイルへ
-geo-engine.js                     レンダラの継ぎ目そのもの window.IntMapGeoEngine（178 KB）
+geo-engine.js                     レンダラの継ぎ目そのもの window.IntMapGeoEngine（178 KB）。MapLibre の内部に
+                                  触れる口は `_cam`（Map が合成する Camera）と `_tr`（その transform）の 2 つだけ
 camera-math.js                    ↳ カメラ幾何。メルカトル投影・カメラから見た「目」の位置・
                                   飽和するピッチ・球で見上げたときのズーム下限。引数を取り数を返す
-                                  だけ（状態も、レンダラの名前も持たない）。⚠ `gGuard` だけは
+                                  だけ（状態も、レンダラの名前も持たない。transform は引数で受け取り、
+                                  map から探しに行かない）。⚠ `gGuard` だけは
                                   レンダラに直接訊くので geo-engine.js に残り、`guard` として渡る
 geo-command-log.js                ↳ レンダラ命令の集計と比較。attempted / sent / same / absent と、
                                   「同じ値をもう一度送るか」の判定。既定では数えない（?cmdlog=1）
@@ -931,6 +935,8 @@ aircraft-detail.js                ライブ航空機——クリックの先の�
 aviation-live.js                  ライブ航空機レイヤーの制御役 window.IntMapAviation——取得・LOD・picking・選択
 aircraft-points.js                航空機が実際にいる場所——数万機を1描画呼び出しで描く GPU 点群
 plane-glyph.js                    飛行機マークの正本——頂点18のプランフォームを両エンジンが読む
+lifted-projection.js              高度つきの点の GLSL（projectLifted）——衛星・航空機・3-D 体積のカスタム層が共有。
+                                  球には m、平面には Mercator 単位を渡す（globe のクロスフェード中は両方）
 aviation-codec.js                 IMAV/1 バイナリ形式の正本（encode/decode）。_shared/ へ写して server と共有
 aviation-model.js                 provider 正規化・出典・タイル格子の正本。同じく _shared/ へ写す
 ```
@@ -1408,7 +1414,8 @@ scripts/
   build-report.mjs                **起動予算の計器**（vite プラグイン＋CLI）。束ね器（Rolldown）の最終グラフから
                                   eager（index.html のエントリ＋静的 import の推移閉包＝modulepreload
                                   される集合）と async を**導出**し、raw / gzip / brotli とモジュール別の
-                                  内訳を `.perf/build-report.json` に書く（追跡対象外）。
+                                  内訳を `.perf/build-report.json` に書く（追跡対象外）。eager には起動経路が
+                                  `?worker&url` で持つ worker アセット（MapLibre 6 の worker）も入る。
                                   ⚠ brotli は**2つの品質**を使う——ゲートが読む eager だけ 11、それ以外は 5。
                                   全部を 11 にするとビルドが 40 秒延びる（Cesium だけで 4.8 MB）。
   perf-budget.mjs                 **起動予算のゲート**（`npm run check:perf`・CI の静的 job）。
@@ -1459,7 +1466,7 @@ scripts/
                                   GROUPS と index.html の行は移行後には存在しないので `--rev <移行前の commit>`
   view-matrix.mjs                 **{ベクタ, 衛星}×{平面, globe} の 4 条件＋日付変更線セル**に同じ指を
                                   当てる計器。切替はアプリ自身の命令（`view.base.*` / `view.proj.*`）。
-                                  5 つ目のセルは MapLibre 5.24 の既知の欠陥（globe・pitch>40°・z>5・
+                                  5 つ目のセルは MapLibre 5.24 で記録した既知の欠陥（globe・pitch>40°・z>5・
                                   日付変更線越し）の再現条件で、そこだけ遅ければレンダラの費用。
   phase-profile.mjs               **指が動いている間（または静止中）に誰が走っているか**を CDP の
                                   サンプリングプロファイラで関数ごとに出す。mobile-trace の `other` 列
@@ -1497,7 +1504,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 119 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 120 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

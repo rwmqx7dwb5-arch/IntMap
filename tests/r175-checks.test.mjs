@@ -286,7 +286,11 @@ test('R175 ③: the vendor shim republishes every global the CDN tags used to de
 
 test('R175 ③: the pinned versions did not drift when they moved to npm', () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-  assert.equal(pkg.dependencies['maplibre-gl'], '5.24.0', 'pinned EXACTLY since #R158 — camera-API behaviour depends on it');
+  /* (maplibre-6-migration) EXACTLY PINNED, not a particular number: the adapter reaches renderer
+     internals (the composed camera, its transform — js/geo-engine.js `_cam`/`_tr`), and a float would
+     move them under it between two installs. The behaviour the pin used to stand for is measured by
+     tests/maplibre-6-migration.spec.js and -checks.test.mjs on whatever version is installed. */
+  assert.match(pkg.dependencies['maplibre-gl'], /^\d+\.\d+\.\d+$/, 'pinned EXACTLY since #R158 — camera-API behaviour depends on it');
   /* ⚠ maplibre-contour is EXACTLY PINNED, not «0.1.0». The literal was a copy of the version the CDN
      tag carried when #R175 moved it to npm, with no behaviour pinned to it (unlike maplibre-gl above);
      it went red on the first patch release (0.1.1, a fix for a tile buffer detached by the transfer to

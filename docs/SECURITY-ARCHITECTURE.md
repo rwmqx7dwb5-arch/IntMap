@@ -117,13 +117,15 @@ flowchart LR
 
 ## 4. Frontend XSS defense (the primary control)
 
-> **A sink inside a dependency counts too.** The pinned maplibre-gl writes each source's `attribution`
-> (remote TileJSON / style text, not only ours) through its AttributionControl as
-> `innerHTML = DOM.sanitize(html)`, and that sanitizer is bypassable (GHSA-jrc7-96c5-q579, critical, fixed
-> only in 6.4.1+). `js/geo-engine.js` `_newMap` — the single place a MapLibre view is constructed — forces
-> `attributionControl:false` for every caller and mounts IntMap's own credit, built from text nodes and
-> http(s) links only. `tests/maplibre-attribution-xss-checks.test.mjs` evaluates the engine with a recording
-> fake and feeds hostile attribution strings to the credit painter.
+> **A sink inside a dependency counts too.** maplibre-gl's AttributionControl renders each source's
+> `attribution` (remote TileJSON / style text, not only ours) as HTML. Up to 6.4.0 it did so as
+> `innerHTML = DOM.sanitize(html)`, and that sanitizer was bypassable (GHSA-jrc7-96c5-q579, critical);
+> 6.4.1 fixed it and 6.11.1 moved it to an allow-list inserted as DOM nodes. IntMap now ships 6.x and
+> STILL never turns the control on: `js/geo-engine.js` `_newMap` — the single place a MapLibre view is
+> constructed — forces `attributionControl:false` for every caller and mounts IntMap's own credit, built
+> from text nodes and http(s) links only, so no remote string is ever interpreted as markup, whatever the
+> renderer's sanitizer does in a given release. `tests/maplibre-attribution-xss-checks.test.mjs` evaluates
+> the engine with a recording fake and feeds hostile attribution strings to the credit painter.
 
 Because the boot code is still inline (§6) and the app holds the session token in
 `localStorage`, **correct output-encoding at every sink is the primary XSS defense** (CSP is
@@ -561,12 +563,12 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    article card's Read click instead of re-wiring this reader, so **this iframe is still
    unreachable** and the paragraph above is still a statement about dormant code.
 
-12. **maplibre-gl 5.24.0 still contains the vulnerable `DOM.sanitize`** (GHSA-jrc7-96c5-q579). Its only sink
-   in the renderer is the AttributionControl, which no view can turn on (§4). The version is pinned since
-   #R158 and 6.x is a breaking migration (#R513's A/B is not merged); `npm audit` keeps reporting it until
-   that migration lands. Lifts when: maplibre-gl ≥ 6.4.1. (Re-measured 2026-09-27 against 6.11.2, which
-   contains the fix: the migration removes `map.transform` and `getMatrixForModel` that `js/geo-engine.js`
-   builds on, so it stays a round of its own — see DECISIONS.md, the MapLibre XSS row.)
+12. **Resolved: maplibre-gl is on 6.x, which contains the fix for GHSA-jrc7-96c5-q579** (6.4.1; the
+   version installed is package.json's exact pin). The migration (dev-notes/2026-09-27-maplibre-6-migration.md)
+   moved the adapter's renderer internals to the camera the 6.x Map composes and replaced the removed
+   `getMatrixForModel`. The reach-path defence stays (§4, and DECISIONS.md's attribution row): the
+   renderer's AttributionControl is still never enabled, so the fix is defence in depth rather than the
+   only control. `npm audit` no longer reports this advisory.
 
 ---
 

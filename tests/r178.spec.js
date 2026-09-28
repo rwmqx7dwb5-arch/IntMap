@@ -124,12 +124,13 @@ test('unlimited tilt owns the zoom floor and gives it back (#R178)', async ({ pa
 test('the renderer can still be asked whether it would move a camera (#R178)', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
+  await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
     const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
     m.setProjection({ type: 'mercator' });
     m.jumpTo({ center: [10, 20], zoom: 1.7, pitch: 0, bearing: 0 });
     await wait(600);
-    const t = m.transform, before = { lat: m.getCenter().lat, zoom: m.getZoom() };
+    const t = window.__mlTr(), before = { lat: m.getCenter().lat, zoom: m.getZoom() };
     const near = t.applyConstrain(new maplibregl.LngLat(10, 20), 1.7);
     const far = t.applyConstrain(new maplibregl.LngLat(10, 84), 1.7);
     await wait(120);

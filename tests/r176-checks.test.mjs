@@ -99,7 +99,8 @@ test('R176 ①: the eye anchor is solved in the renderer’s own geometry, with 
   /* the #R175 dolly must survive: the look distance scales by k in both models */
   assert.match(body, /const anchor=gEye\(was,c2c,tile,sphere,k\);/, 'the eye is still pre-scaled by k for a zoom (#R175)');
   /* and the measuring stick that hid the bug for FIVE rounds is fixed too — by there being one */
-  assert.match(body, /return gEye\(cam,gC2C\(t,m\),tile,gSpherical\(t\),1\);/,
+  /* (maplibre-6-migration) `t` is the renderer's live transform (`_tr(m)`), which is also gC2C's fallback */
+  assert.match(body, /return gEye\(cam,gC2C\(t,t\),tile,gSpherical\(t\),1\);/,
     'eyePosition reports the eye from the same geometry the anchor solves, so they cannot disagree');
   assert.doesNotMatch(body, /const mLat=110574, mLng=\(111320\*Math\.cos\(c\.lat\*r\)\)\|\|1;/, 'no metres-per-degree left in eyePosition');
 });

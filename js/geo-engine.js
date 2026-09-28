@@ -49,6 +49,28 @@ window.IntMapGeoEngine=(function(){
    app-body.js's closure variable, which this file no longer shares — app-body publishes the
    handle the moment the map is constructed, so the fallback had nothing left to catch. */
 function _m(){ return window.__imap||null; }
+  /* ══ THE RENDERER'S CAMERA — WHICH MAPLIBRE 6 NO LONGER HANGS ON THE MAP ══════════════════════
+     v6's Map COMPOSES a Camera instead of extending one (its 6.0.0 changelog, and the v5→v6
+     migration guide: «The internal `map.transform` property has been removed»). The transform the painter
+     draws with is the camera's (`this.painter = new Painter(gl, this._camera.transform)`, and
+     migrateProjection hands the painter the camera's new one), and three things this adapter needs
+     live only there:
+       · the transform's matrices, its far plane and its camera distance — the limb, the sky's frame,
+         the horizon reach, the eye geometry and the lifted projection below. None is public in any
+         form; the Map's public getters forward to exactly this object (`getZoom(){ return
+         this._camera.transform.zoom; }`).
+       · `_elevateCameraIfInsideTerrain`, which is now a CAMERA method: the modifier chain calls
+         `this._elevateCameraIfInsideTerrain(tr)` with `this` the camera, so an override placed on
+         the MAP — where #R179 put it under v5 — is never consulted, and it does not throw either.
+       · `isEasing()`, which the Map no longer forwards: under v6 `m.isEasing` is undefined, and
+         isAnimating() read «not animating» for every flyTo.
+     So every read of them goes through these two, and nothing else in this file names `_camera`.
+     Both answer null rather than throwing when the internal is gone, and eyePivotDiag() and the
+     contract tests (tests/maplibre-6-migration-checks, tests/r179.spec) SAY so — a renamed internal
+     must fail a test, not quietly turn a feature off (#R162). The transform is re-read on every
+     call, never cached: a projection change REPLACES it (Camera.migrateProjection). */
+  function _cam(m){ try{ const c=m&&m._camera; return (c&&typeof c==='object')?c:null; }catch(_){ return null; } }
+  function _tr(m){ const c=_cam(m); try{ return (c&&c.transform)||null; }catch(_){ return null; } }
   /* (#R207) every layer id with a registered `click` handler through the contract — see
      `events.onLayer` below. Module scope, not per-view: the answer is about the APP's wiring, and a
      style reload or an engine swap does not change which layers the app makes clickable. */
@@ -335,7 +357,7 @@ function _m(){ return window.__imap||null; }
   function _limbUniforms(id){
     if(!_limbOn[id]) return null;
     const m=_m(); if(!m) return null;
-    const t=m.transform; if(!(t&&t.inverseProjectionMatrix&&t.modelViewProjectionMatrix)) return null;
+    const t=_tr(m); if(!(t&&t.inverseProjectionMatrix&&t.modelViewProjectionMatrix)) return null;
     const RG=6371000, RT=6471000;
     try{ if((m.getProjection&&m.getProjection().type)!=='globe') return null; }catch(_){ }
     const mul=(M,v)=>{ const o=[0,0,0,0];
@@ -408,7 +430,70 @@ function _m(){ return window.__imap||null; }
     }catch(_){ return null; }
   }
   /* (#R173) a few-millisecond cache of the renderer's projection data — see projectAltitude */
-  let _pd=null, _pdAt=0;
+  let _pd=null, _pdAt=0, _pdT=null, _pdSph=false;
+  /* ══ (MapLibre 6) A POINT UP IN THE AIR, PROJECTED THROUGH THE RENDERER'S OWN PROJECTION DATA ═════
+     projectAltitude and projectMercAlt used `transform.getMatrixForModel`, and v6 REMOVED it (6.0.0
+     changelog: «Removed the internal transform.getMatrixForModel helper») with no public successor.
+     Falling back to project() would pick every aircraft and satellite at its GROUND point — the
+     #R173/#R184 defect, returned in silence.
+     This is MapLibre's projection prelude on the CPU — src/shaders/glsl/_projection_mercator and
+     _projection_globe.vertex.glsl (projectTileFor3D / interpolateProjectionFor3D) — fed the projection
+     data MapLibre hands every custom layer, `transform.getProjectionDataForCustomLayer(isRenderingGlobe)`
+     (webgl/draw/draw_custom.ts). #R186's rule, transcribe the renderer rather than re-derive it:
+       · plane:  clip = mainMatrix · (x, y, metres / circumferenceAt(lat), 1) — z in mercator units.
+       · sphere: projectToSphere(x, y) · (1 + metres / 6,371,008.8) through mainMatrix; while the globe
+                 cross-fades (0 < projectionTransition < 1) blended, as the prelude blends, with the
+                 plane's clip position through fallbackMatrix — which for custom-layer data IS the plane's
+                 mainMatrix, so it takes the plane's z (mercator units), not metres.
+     THE YARDSTICK IS MAPLIBRE'S OWN ELEVATED DRAWING, not this file: a symbol lifted with 6.6's
+     `symbol-height-offset` (anchor 'absolute') is MapLibre placing a point at an altitude by its own
+     code path. MEASURED against it (Tokyo, the glyph's centroid): flat z10 pitch 60 at 10 km — drawn
+     y 238.5, this 238.48; globe z8 pitch 50 at 50 km — 215.5 / 214.8; the z11.5 cross-fade at 8 km —
+     drawn 35.6, where 5.24's getMatrixForModel (which knew nothing of the fade) answered 38.6.
+     ⚠ Feeding the fallback METRES instead — as our own custom layers did until MapLibre 6 made the
+     fade live for them — loses the point for the whole z11→z12 band. js/lifted-projection.js is the
+     GPU half of this same law, and tests/maplibre-6-migration.spec.js checks the two against each other
+     on the canvas (the orbit layer's dot lands where projectMercAlt picks, flat, globe and mid-fade).
+     `sph` is which data the renderer hands its custom layers (GlobeTransform.getProjectionData-
+     ForCustomLayer returns the globe's exactly when isGlobeRendering), read off the same transform.
+     Returns null when the renderer's transform is unreachable — never a ground-level guess. */
+  function _lifted(m){
+    const t=_tr(m); if(!(t&&typeof t.getProjectionDataForCustomLayer==='function')) return null;
+    const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+    /* the projection data is per-CAMERA, not per-point, and building it allocates matrices — a hover
+       that asks for 600 aircraft would otherwise rebuild it 600 times in one mouse move. Held for a
+       few milliseconds (less than a frame), and never across a projection change, which REPLACES
+       the transform. */
+    if(!_pd||now-_pdAt>6||_pdT!==t){ _pd=t.getProjectionDataForCustomLayer(true); _pdSph=gSpherical(t); _pdAt=now; _pdT=t; }
+    const P=_pd||{}, A=P.mainMatrix; if(!A) return null;
+    const F=P.fallbackMatrix||A, sph=_pdSph;
+    const g=(typeof P.projectionTransition==='number'&&isFinite(P.projectionTransition))?P.projectionTransition:(sph?1:0);
+    const cv=m.getCanvas(); const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
+    const R=6371008.8, PI=Math.PI;
+    /* → [screenX, screenY] written at out[i], out[i+1]; false (and NaN written) when the point is at
+       or behind the eye, where the perspective divide means nothing */
+    return (mx,my,alt,out,i)=>{
+      alt=+alt||0;
+      const tt=Math.exp(PI-my*2*PI), t2=tt*tt, den=t2+1;
+      const cosLat=2*tt/den;                                  /* the prelude's own algebra for cos(lat) */
+      let cx,cy,cw;
+      if(!sph){
+        const z=cosLat>0?alt/(GEO_CIRC*cosLat):0;
+        cx=A[0]*mx+A[4]*my+A[8]*z+A[12]; cy=A[1]*mx+A[5]*my+A[9]*z+A[13]; cw=A[3]*mx+A[7]*my+A[11]*z+A[15];
+      }else{
+        const sx=mx*2*PI+PI, k=1+alt/R;
+        const px=Math.sin(sx)*cosLat*k, py=(t2-1)/den*k, pz=Math.cos(sx)*cosLat*k;
+        cx=A[0]*px+A[4]*py+A[8]*pz+A[12]; cy=A[1]*px+A[5]*py+A[9]*pz+A[13]; cw=A[3]*px+A[7]*py+A[11]*pz+A[15];
+        if(!(g>0.999)){
+          const z=cosLat>0?alt/(GEO_CIRC*cosLat):0;
+          const fx=F[0]*mx+F[4]*my+F[8]*z+F[12], fy=F[1]*mx+F[5]*my+F[9]*z+F[13], fw=F[3]*mx+F[7]*my+F[11]*z+F[15];
+          cx=fx+(cx-fx)*g; cy=fy+(cy-fy)*g; cw=fw+(cw-fw)*g;
+        }
+      }
+      if(!(cw>1e-9)||!isFinite(cx)||!isFinite(cy)){ out[i]=NaN; out[i+1]=NaN; return false; }
+      out[i]=(cx/cw*0.5+0.5)*W; out[i+1]=(0.5-cy/cw*0.5)*H; return true;
+    };
+  }
   let _appMinZoom=null, _eyePivot=false;
   /* (#R179) the DEM contour source, built once per view — see demContourSource */
   let _demSrc=null;
@@ -436,7 +521,7 @@ function _m(){ return window.__imap||null; }
     return { zoom:has('zoom'), center:has('center'), pitch:has('pitch'),
              bearing:has('bearing'), roll:has('roll') };
   }
-  let _ugShim=null;                        /* {map, prev, own} while installed; null otherwise */
+  let _ugShim=null;                        /* {cam, prev, own} while installed; null otherwise */
   /* the elevation the tilt correction will put on THIS proposal — the same gSolveAt the hook
      uses, at the proposal's own pitch, so cos(pitch)·look + elevation comes out as the eye's
      real altitude rather than as a camera buried under the map. `guard` is deliberately null:
@@ -446,7 +531,7 @@ function _m(){ return window.__imap||null; }
     try{
       const c=m.getCenter(); if(!c) return null;
       let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
-      const sphere=gSpherical(t), c2c=gC2C(t,m);
+      const sphere=gSpherical(t), c2c=gC2C(t,_tr(m));
       const was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(),
                   elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
       const anchor=gEye(was,c2c,tile,sphere,1); if(!anchor) return null;
@@ -455,16 +540,51 @@ function _m(){ return window.__imap||null; }
       return (sol&&isFinite(sol.elevation))?sol.elevation:null;
     }catch(_){ return null; }
   }
+  /* ⚠⚠ (MapLibre 6) …AND ON THE SPHERE THE CHECK NOW ACTUALLY RUNS. Under 5.24 the globe camera's
+     getCameraAltitude() returned NaN (MapLibre 6.8.0's changelog: «Fix getCameraAltitude() returning
+     NaN under globe and vertical-perspective, which disabled … the camera terrain check»), so
+     `cameraAltitude < minAltitude` was false on every sphere proposal and this repair only ever had
+     the MERCATOR case to handle. Under 6 the sphere is judged — and the proposal of a look-up drag IS
+     under the surface there: its pivot is welded to the ground and it keeps the zoom the gesture
+     started at, so past ~95° its eye (radius √(1 + 2·dg·cos p + dg²)) drops inside the planet.
+     MEASURED on globe z6 Tokyo, before this branch: the check rewrote the proposal from pitch 96 to
+     95.21 on the first frame past 93°, the hook then held the eye of that rewritten camera, and the
+     viewpoint slid 1,223 km while the drag continued (tests/r179 globe z6/z9/Tromsø).
+     The repair is the same one, in the sphere's own degree of freedom: the hook holds the eye by
+     spending the ZOOM and walking the centre (the target elevation is inert on a sphere — MapLibre
+     says so itself), so the camera this engine is about to produce is the hook's own solve, pitch
+     limit included. That camera is judged on a CLONE, and the proposal is left untouched: the hook
+     reads the proposal's zoom and centre as the gesture's history (#R173/#R177), and writing the
+     held zoom into it would read as a dolly on the next frame. If the produced camera is fine, the
+     check has nothing to correct; if even that camera is underground, MapLibre is right and its
+     answer stands, exactly as for the mercator branch. */
+  function _heldSphereCamera(m,t){
+    try{
+      const c=m.getCenter(); if(!c) return null;
+      let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
+      const c2c=gC2C(t,_tr(m));
+      const was={ lng:c.lng, lat:c.lat, zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(),
+                  elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
+      const anchor=gEye(was,c2c,tile,true,1); if(!anchor) return null;
+      return gLimitPitch(anchor,t.pitch,t.bearing,c2c,tile,t.zoom,true,
+                         {lng:t.center.lng,lat:t.center.lat},gGuard(t),was.pitch)||null;
+    }catch(_){ return null; }
+  }
   /* Installed and removed with the hook itself, so nothing outside the unlimited-tilt setting
      changes. Reported through the contract (camera.eyePivotDiag) rather than left to be assumed:
      #R162's lesson is that a `typeof` guard around a renderer internal makes a feature vanish in
      SILENCE if the internal is ever renamed, and this one would take the whole seventh-round fix
      with it. The regression test asserts 'active' while the pivot is on. */
+  /* ⚠ (MapLibre 6) THE OVERRIDE GOES ON THE CAMERA. The method moved from Map to the Camera the map
+     composes, and Camera.applyUpdatedTransform calls it as `this._elevateCameraIfInsideTerrain(tr)`
+     with `this` the camera — an own property on the map is simply never read. The order is unchanged
+     from 5.24 (it is still modifiers[0], ahead of transformCameraUpdate), so everything below holds. */
   function _installUnderGuard(m){
     if(_ugShim||!m) return false;
-    if(typeof m._elevateCameraIfInsideTerrain!=='function') return false;
-    const own=Object.prototype.hasOwnProperty.call(m,'_elevateCameraIfInsideTerrain');
-    const prev=m._elevateCameraIfInsideTerrain, orig=prev.bind(m);
+    const cam=_cam(m);
+    if(!(cam&&typeof cam._elevateCameraIfInsideTerrain==='function')) return false;
+    const own=Object.prototype.hasOwnProperty.call(cam,'_elevateCameraIfInsideTerrain');
+    const prev=cam._elevateCameraIfInsideTerrain, orig=prev.bind(cam);
     try{
       /* (#R179) …and it is asked THROUGH A CATCH, because it can throw. Measured on `main` as
          well as here, so this is pre-existing and only reachable with unlimited tilt on (the
@@ -476,7 +596,7 @@ function _m(){ return window.__imap||null; }
          over the centre). The exception escapes into _applyUpdatedTransform, which does not catch
          it, so the whole camera update dies mid-flight. A refusal is the honest answer for a
          degenerate pair — there is no direction to elevate along — so that is what it becomes. */
-      m._elevateCameraIfInsideTerrain=(t)=>{
+      cam._elevateCameraIfInsideTerrain=(t)=>{
         const ask=()=>{ try{ return orig(t); }catch(_){ return null; } };
         const wants=a=>!!(a&&(a.pitch!=null||a.zoom!=null));
         const first=ask();
@@ -492,18 +612,30 @@ function _m(){ return window.__imap||null; }
            rather than something to talk it out of. */
         if(_decl&&(_decl.zoom||_decl.center)) return first||{};
         if(!(t&&typeof t.setElevation==='function')) return first||{};
+        if(gSpherical(t)){                  /* (MapLibre 6) see _heldSphereCamera */
+          const sol=_heldSphereCamera(m,t);
+          if(!sol||typeof t.clone!=='function') return first||{};
+          let probe=null;
+          try{ probe=t.clone();
+               if(sol.pitch!=null&&isFinite(sol.pitch)) probe.setPitch(sol.pitch);
+               if(sol.zoom!=null&&isFinite(sol.zoom)) probe.setZoom(sol.zoom);
+               if(isFinite(sol.lng)&&isFinite(sol.lat)) probe.setCenter(new maplibregl.LngLat(sol.lng,sol.lat));
+          }catch(_){ return first||{}; }
+          let a=null; try{ a=orig(probe); }catch(_){ a=null; }
+          return (a&&!wants(a))?{}:(first||{});
+        }
         const el=_heldElevation(m,t);
         if(el==null) return first||{};
         t.setElevation(el);                 /* the transform it judges is the one we will produce */
         return ask()||{};
       };
     }catch(_){ return false; }
-    _ugShim={ map:m, prev, own }; return true;
+    _ugShim={ cam, prev, own }; return true;
   }
   function _removeUnderGuard(){
     const s=_ugShim; _ugShim=null; if(!s) return false;
-    try{ if(s.own) s.map._elevateCameraIfInsideTerrain=s.prev;
-         else delete s.map._elevateCameraIfInsideTerrain; }catch(_){ return false; }
+    try{ if(s.own) s.cam._elevateCameraIfInsideTerrain=s.prev;
+         else delete s.cam._elevateCameraIfInsideTerrain; }catch(_){ return false; }
     return true;
   }
   /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
@@ -562,7 +694,7 @@ function _m(){ return window.__imap||null; }
        shader's getSunPos() applies exactly the same chain to the light direction. tests/r186 checks
        the reconstruction against map.project() rather than trusting that reading. */
     viewFrame(){ const m=_m(); if(!m) return null;
-      try{ const t=m.transform; if(!t) return null;
+      try{ const t=_tr(m); if(!t) return null;
         const c=t.center||m.getCenter(), off=t.centerOffset||{x:0,y:0};
         const fov=(typeof t.fovInRadians==='number')?t.fovInRadians:((t.fov||36.87)*Math.PI/180);
         const world=t.worldSize||0, gr=world?(world/(2*Math.PI)/Math.max(1e-6,Math.cos((c.lat||0)*Math.PI/180))):0;
@@ -623,11 +755,11 @@ function _m(){ return window.__imap||null; }
     eyePosition(){ const m=_m(); if(!m) return null;
       try{
         const c=m.getCenter(); if(!c) return null;
-        const t=m.transform;
+        const t=_tr(m);
         let tile=512; try{ const v=t&&t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
         const cam={ lng:c.lng, lat:c.lat, zoom:m.getZoom()||0, pitch:m.getPitch()||0, bearing:m.getBearing()||0,
                     elevation:(m.getCameraTargetElevation?(+m.getCameraTargetElevation()||0):0) };
-        return gEye(cam,gC2C(t,m),tile,gSpherical(t),1);
+        return gEye(cam,gC2C(t,t),tile,gSpherical(t),1);
       }catch(_){ return null; } },
     /* (#R172) …and the inverse: put the viewpoint AT {lng,lat,alt} looking along {bearing,pitch}, keeping
        `distance` (so the zoom does not change). Built on calculateCameraOptionsFromTo — the same call the
@@ -665,7 +797,7 @@ function _m(){ return window.__imap||null; }
       }catch(_){ return false; } },
     /* (#R172) is the RENDERER running a camera animation of its own right now? Lets a caller tell a user
        gesture apart from a programmatic flyTo/easeTo without reaching for MapLibre's isEasing(). */
-    isAnimating(){ const m=_m(); try{ return !!(m&&m.isEasing&&m.isEasing()); }catch(_){ return false; } },
+    isAnimating(){ const c=_cam(_m()); try{ return !!(c&&typeof c.isEasing==='function'&&c.isEasing()); }catch(_){ return false; } },
     /* (#R172) does the point the camera looks at STICK TO THE GROUND? MapLibre pins it there by default,
        which is why jumpTo silently drops the `elevation` that calculateCameraOptionsFromTo returns
        (measured: asked for 8,531 m, read back 0 m) — and with the target pinned to the ground the eye's
@@ -697,8 +829,8 @@ function _m(){ return window.__imap||null; }
        ⚠ AND NOT AT EVERY PITCH. Looking down, `furthestDistance·1.01` is the binding term and there
        is nothing beyond it to show; stretching the plane there would only spend depth precision. */
     setHorizonReach(on){
-      const m=_m(); if(!m||!m.transform) return false;
-      const t=m.transform;
+      const m=_m(); if(!m||!_tr(m)) return false;
+      const t=_tr(m);
       if(!(t.overrideNearFarZ&&t.clearNearFarZOverride)) return false;
       if(!on){ if(this._hzOff){ try{ this._hzOff(); }catch(_){} this._hzOff=null; }
         try{ t.clearNearFarZOverride(); }catch(_){} return true; }
@@ -740,8 +872,7 @@ function _m(){ return window.__imap||null; }
         ||tr.height!==prisH||tr.width!==prisW||sph!==prisSph);
       const apply=(force)=>{
         try{
-          const mm=_m(); if(!mm||!mm.transform) return;
-          const tr=mm.transform;
+          const mm=_m(); const tr=_tr(mm); if(!tr) return;
           const alt=this.cameraAltitude();
           if(!(alt>0)) return;
           /* ⚠ ONLY WHEN THE HORIZON IS IN THE PICTURE — AND THIS IS NOT A TASTE JUDGEMENT, IT IS A
@@ -851,7 +982,10 @@ function _m(){ return window.__imap||null; }
        jumpTo was in the loop: the drag died on the first correction. `transformCameraUpdate` gets the
        PROPOSED camera before it is applied, so the correction rides along with the gesture. */
     setTiltPivot(mode){ const m=_m(); if(!m) return false;
-      if(mode!=='eye'){ try{ m.transformCameraUpdate=null; }catch(_){ return false; }
+      /* ⚠ (MapLibre 6) THROUGH THE PUBLIC SETTER. v6 keeps the hook on the composed camera and the map
+         has no `transformCameraUpdate` property any more, so the assignment this used to be creates an
+         unrelated field on the map and installs nothing — the eye pivot would silently be off. */
+      if(mode!=='eye'){ try{ m.setTransformCameraUpdate(null); }catch(_){ return false; }
         _eyePivot=false; _removeUnderGuard(); _applyZoomFloor(); return true; }
       /* (#R178) give the solve the room the renderer really has before installing the hook —
          see _applyZoomFloor. Done here rather than in the tilt module so an engine whose zoom
@@ -868,7 +1002,7 @@ function _m(){ return window.__imap||null; }
          applied centre made a tilt drag drift 5.3 km; comparing like with like holds it at 0. */
       let req=null;
       try{
-        m.transformCameraUpdate=(t)=>{
+        m.setTransformCameraUpdate((t)=>{
           let cur, was;
           try{ cur={ lng:t.center.lng, lat:t.center.lat, zoom:t.zoom, bearing:t.bearing, pitch:t.pitch };
                /* "before" is read from the LIVE map, not from a cache of what we returned last time:
@@ -927,7 +1061,7 @@ function _m(){ return window.__imap||null; }
           /* (#R177) which of the renderer's two camera models is on screen for THIS proposal */
           const sphere=gSpherical(t);
           let tile=512; try{ const v=t.tileSize; if(isFinite(v)&&v>0) tile=v; }catch(_){}
-          const c2c=gC2C(t,m);
+          const c2c=gC2C(t,_tr(m));
           /* (#R177) A STALE TARGET ALTITUDE IS A HAZARD BY ITSELF, whatever this frame decides.
              MapLibre sizes its frustum from `cameraToCenterDistance + elevation·pixelPerMeter`,
              and a target left thousands of look-distances up is the shape of camera that froze
@@ -1059,14 +1193,17 @@ function _m(){ return window.__imap||null; }
           /* only the sphere returns a zoom, and only because its pivot leaves no other freedom */
           if(sol.zoom!=null&&isFinite(sol.zoom)) out.zoom=sol.zoom;
           return out;
-        };
+        });
       }catch(_){ return false; }
       return true; },
     /* (#R179) the two halves of the eye pivot, reported rather than assumed — see the contract note */
-    eyePivotDiag(){ const m=_m();
+    /* ⚠ (MapLibre 6) both halves are read where v6 keeps them — the composed camera — not off the map,
+       which has neither: reading `m.transformCameraUpdate` would report «no hook» with the hook
+       installed, and `m._elevateCameraIfInsideTerrain` would report 'n/a' with the guard active. */
+    eyePivotDiag(){ const m=_m(), c=_cam(m);
       return { pivot:_eyePivot,
-               hook:(()=>{ try{ return !!(m&&m.transformCameraUpdate); }catch(_){ return false; } })(),
-               underGuard:(!m||typeof m._elevateCameraIfInsideTerrain!=='function')?'n/a'
+               hook:(()=>{ try{ return !!(c&&c.transformCameraUpdate); }catch(_){ return false; } })(),
+               underGuard:(!c||typeof c._elevateCameraIfInsideTerrain!=='function')?'n/a'
                           :(_ugShim?'active':'off'),
                /* (#R179) what the last caller DECLARED, and what the hook last did with it. Reported
                   because the declaration is the thing that replaced six rounds of history-guessing:
@@ -1082,25 +1219,18 @@ function _m(){ return window.__imap||null; }
        drawn at y=272 and its ground point at y=388, the only pixel that reported a feature was 388, at
        every zoom and in both regimes. So nothing lifted into the air could be hovered or clicked where
        it is drawn. This projects a real (lng, lat, altitude) through the renderer's own matrices —
-       transform.getMatrixForModel + the custom-layer projection data, the supported path for placing
-       3-D content — so it is right on the globe as well as on the flat map.
+       the custom-layer projection data, through the prelude's projectTileFor3D (see _lifted: under
+       5.24 this was transform.getMatrixForModel, which v6 removed) — so it is right on the globe as
+       well as on the flat map.
        Returns null when the point is behind the camera. */
     projectAltitude(ll,altM){ const m=_m(); if(!m) return null;
       try{
-        const t=m.transform; if(!(t&&t.getMatrixForModel&&t.getProjectionDataForCustomLayer)) return null;
+        const P=_lifted(m); if(!P) return null;
         const lng=(ll&&ll.lng!=null)?ll.lng:(ll?ll[0]:0), lat=(ll&&ll.lat!=null)?ll.lat:(ll?ll[1]:0);
-        const M=t.getMatrixForModel({lng,lat},+altM||0);           /* model origin = the point itself */
-        /* the projection data is per-CAMERA, not per-point, and building it allocates matrices — a
-           hover that asks for 600 aircraft would otherwise rebuild it 600 times in one mouse move.
-           Held for a few milliseconds, which is less than a frame. */
-        const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-        if(!_pd||now-_pdAt>6){ _pd=t.getProjectionDataForCustomLayer(true); _pdAt=now; }
-        const A=(_pd||{}).mainMatrix; if(!(A&&M)) return null;
-        const x=M[12],y=M[13],z=M[14];
-        const cx=A[0]*x+A[4]*y+A[8]*z+A[12], cy=A[1]*x+A[5]*y+A[9]*z+A[13], cw=A[3]*x+A[7]*y+A[11]*z+A[15];
-        if(!(cw>1e-9)||!isFinite(cx)||!isFinite(cy)) return null;   /* behind the camera / degenerate */
-        const cv=m.getCanvas(); const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
-        return { x:(cx/cw*0.5+0.5)*W, y:(0.5-cy/cw*0.5)*H };
+        const la=Math.max(-89.9999,Math.min(89.9999,+lat||0))*Math.PI/180;
+        const mx=(180+(+lng||0))/360, my=(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+la/2)))/360;
+        const o=[0,0]; if(!P(mx,my,altM,o,0)) return null;
+        return { x:o[0], y:o[1] };
       }catch(_){ return null; } },
     terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
     queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
@@ -1511,33 +1641,17 @@ function _m(){ return window.__imap||null; }
        the object is behind the camera. */
     projectMercAlt(xy){ const m=_m(); if(!m||!xy) return null;
       try{
-        const t=m.transform; if(!(t&&t.getMatrixForModel&&t.getProjectionDataForCustomLayer)) return null;
         /* ⚠ THIS IS projectAltitude'S ARITHMETIC, NOT A SECOND DERIVATION OF IT. The first version of
            this method multiplied (mercatorX, mercatorY, altitude) by `mainMatrix` directly, which is
            right in the flat regime and WRONG on the globe: there the prelude does not multiply, it
            turns the mercator pair into a point on a sphere first, and the matrix comes after. It
            returned NaN for every object and the pick silently fell back to the ground positions.
-           #R186's rule — do not re-derive a projection, transcribe it — applies to the renderer's own
-           model matrices too: getMatrixForModel is the supported answer and it is correct in both
-           regimes. What is batched here is everything AROUND it: the projection data is fetched once
-           for the whole array instead of once per point. */
-        const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-        if(!_pd||now-_pdAt>6){ _pd=t.getProjectionDataForCustomLayer(true); _pdAt=now; }
-        const A=(_pd||{}).mainMatrix; if(!A) return null;
-        const D2R=Math.PI/180;
-        const cv=m.getCanvas(); const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
+           Both methods now go through _lifted — the shader's own projectTileFor3D — and what is
+           batched here is everything AROUND it: the projection data is fetched once for the whole
+           array instead of once per point. */
+        const P=_lifted(m); if(!P) return null;
         const n=(xy.length/3)|0, out=new Float32Array(n*2);
-        const ll={lng:0,lat:0};
-        for(let i=0;i<n;i++){
-          ll.lng=xy[i*3]*360-180;
-          ll.lat=(2*Math.atan(Math.exp((0.5-xy[i*3+1])*2*Math.PI))-Math.PI/2)/D2R;
-          const M=t.getMatrixForModel(ll,xy[i*3+2]);
-          if(!M){ out[i*2]=NaN; out[i*2+1]=NaN; continue; }
-          const x=M[12],y=M[13],z=M[14];
-          const cx=A[0]*x+A[4]*y+A[8]*z+A[12], cy=A[1]*x+A[5]*y+A[9]*z+A[13], cw=A[3]*x+A[7]*y+A[11]*z+A[15];
-          if(!(cw>1e-9)||!isFinite(cx)||!isFinite(cy)){ out[i*2]=NaN; out[i*2+1]=NaN; continue; }
-          out[i*2]=(cx/cw*0.5+0.5)*W; out[i*2+1]=(0.5-cy/cw*0.5)*H;
-        }
+        for(let i=0;i<n;i++) P(xy[i*3],xy[i*3+1],xy[i*3+2],out,i*2);
         return out;
       }catch(_){ return null; } },
     /* (#R171) INPUT — hand the drag gesture to a tool for the length of a stroke. A tool that traces a
@@ -1767,8 +1881,8 @@ function _m(){ return window.__imap||null; }
        distance to a map distance without a round trip through unproject. Two callers derive a
        metres-per-pixel from it; both reached into transform.worldSize, which is a private field
        of a MapLibre class and the single most engine-specific thing left in js/. */
-    worldSize(){ const m=_m(); try{ const v=m&&m.transform&&m.transform.worldSize; if(isFinite(v)&&v>0) return v; }catch(_){}
-      try{ let t=512; const tr=m&&m.transform; if(tr&&isFinite(tr.tileSize)&&tr.tileSize>0) t=tr.tileSize;
+    worldSize(){ const m=_m(); try{ const tr=_tr(m), v=tr&&tr.worldSize; if(isFinite(v)&&v>0) return v; }catch(_){}
+      try{ let t=512; const tr=_tr(m); if(tr&&isFinite(tr.tileSize)&&tr.tileSize>0) t=tr.tileSize;
            const z=m&&m.getZoom?m.getZoom():0; const v=t*Math.pow(2,z); return isFinite(v)?v:0; }catch(_){ return 0; } },
     getCanvasContainer(){ const m=_m(); try{ return (m&&m.getCanvasContainer)?m.getCanvasContainer():null; }catch(_){ return null; } },
     /* INPUT — the whole gesture set, by NAME rather than by MapLibre's handler objects. The

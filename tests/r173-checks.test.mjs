@@ -96,8 +96,12 @@ test('the volume is drawn as one closed mesh — floor included, no interior she
   /* (#R174) …through the prelude, but with the altitude scaled to the units THAT prelude takes: metres on
      the globe, mercator units on the flat map. Passing metres either way clipped the whole body away from
      z12 up, which is where the app's globe becomes plain mercator. */
-  assert.match(s, /projectTileFor3D\(a_pos, a_alt\*u_altScale\)/, 'projected through MapLibre’s own prelude');
-  assert.match(s, /vname==='mercator'/, '…with the elevation unit chosen by the reported variant');
+  /* (maplibre-6-migration) …and since MapLibre 6 hands custom layers the LIVE globe cross-fade, both units
+     at once: js/lifted-projection.js's projectLifted gives the sphere half metres and the plane half
+     mercator units (it is the prelude's projectTileFor3D off the globe). tests/maplibre-6-migration.spec.js
+     measures where the layers draw. */
+  assert.match(s, /projectLifted\(a_pos, a_alt, a_alt\*u_altScale\)/, 'projected through MapLibre’s own prelude');
+  assert.match(s, /import \{ LIFTED_GLSL \} from '\.\/lifted-projection\.js'/, '…with each half of it fed its own elevation unit');
 });
 
 /* ─── 3. unlimited tilt keeps the viewpoint ─────────────────────────────────────────────────── */
@@ -129,7 +133,10 @@ test('an aircraft can be picked where it is DRAWN, not where its shadow falls', 
   assert.match(d, /function pickPlane\(pt\)/, 'the pick is ours');
   assert.match(d, /E\.coords\.projectAltitude/, 'and it projects the aircraft’s real altitude through the engine');
   assert.match(INDEX, /projectAltitude\(ll,altM\)\{/, 'the engine can project a point that is up in the air');
-  assert.match(INDEX, /t\.getMatrixForModel\(\{lng,lat\},\+altM\|\|0\)/, 'through the renderer’s own model matrix, so the globe is right too');
+  /* (maplibre-6-migration) 6.0 removed transform.getMatrixForModel; the projection goes through the
+     renderer's projection data (`_lifted`), and tests/maplibre-6-migration.spec.js ③ measures it
+     against the pixels MapLibre itself draws for an elevated point, flat, globe and mid-fade */
+  assert.match(INDEX, /projectAltitude\(ll,altM\)\{ const m=_m\(\); if\(!m\) return null;\s*try\{\s*const P=_lifted\(m\);/, 'through the renderer’s own projection data, so the globe is right too');
   assert.match(d, /events\.on\('mousemove',_planesHover\)/   /* (#R178) …through the contract */, 'hover uses it');
   assert.match(d, /let d=pickPlane\(e\.point\), props=null;/, 'and so does the click');
   assert.ok(!/map\.on\('click',ly,/.test(d),

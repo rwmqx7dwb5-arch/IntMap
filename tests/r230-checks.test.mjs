@@ -96,7 +96,7 @@ test('R230 ② …and it stays painted for the whole fade-out', () => {
     'the reduced-motion block zeroes the scrim delay too (it only overrides transition-duration)');
 });
 
-test('R230 ③ the phone gets MapLibre\'s own image-request default, not a raised one', () => {
+test('R230 ③ the phone gets MapLibre\'s own image-request default, not a raised one', async () => {
   const app = code('js/app-body.js');
 
   const m = app.match(/const\s+_imgConcurrency\s*=\s*\/[^/]+\/\.test\(navigator\.userAgent\)\s*\?\s*(\d+)\s*:\s*(\d+)/);
@@ -106,11 +106,14 @@ test('R230 ③ the phone gets MapLibre\'s own image-request default, not a raise
   /* ⚠ READ MAPLIBRE'S DEFAULT RATHER THAN PINNING 16 (#R229/#R203's rule: a test that pins this
      round's literal goes red the next time the same instruction is followed). If MapLibre changes
      its own default, this says so instead of silently blessing a number nobody chose. */
-  const ml = fs.readFileSync(path.join(ROOT, 'node_modules/maplibre-gl/dist/maplibre-gl-dev.js'), 'utf8');
-  const def = ml.match(/MAX_PARALLEL_IMAGE_REQUESTS\s*:\s*(\d+)/);
-  assert.ok(def, 'maplibre-gl states MAX_PARALLEL_IMAGE_REQUESTS');
-  assert.equal(phone, Number(def[1]),
-    'the phone value IS MapLibre\'s default (' + def[1] + '). 48 meant up to 48 decodes+GPU uploads '
+  /* (maplibre-6-migration) ASKED OF THE LIBRARY, not read out of one bundle file's text: 5.24's
+     dist/maplibre-gl-dev.js no longer exists in 6.x (ESM-only), and the installed module answers the
+     question itself — getMaxParallelImageRequests() before anything has set it IS the default. */
+  const ml = await import('maplibre-gl');
+  const def = ml.getMaxParallelImageRequests();
+  assert.ok(def > 0, 'maplibre-gl states MAX_PARALLEL_IMAGE_REQUESTS');
+  assert.equal(phone, def,
+    'the phone value IS MapLibre\'s default (' + def + '). 48 meant up to 48 decodes+GPU uploads '
     + 'started while the map was still, all of them landing inside the gesture that followed — '
     + 'starting a request is throttled while moving, finishing one is not');
 

@@ -58,9 +58,13 @@ test('R158 #6 flight-sim camera teleport — look-ahead target + smoothing + val
   ok('const camAlt=Math.max(st.alt, _grd+2.5);', 'camera eye altitude floored above smoothed terrain (decoupled from aircraft)');
   ok('try{ if(GE().camera.stop) GE().camera.stop(); }catch(_){} try{ window.__fsCamSkips=0', 'flight start halts other camera animations (sole controller)');
   /* (#R175) the pin survived the move to npm — and matters for the same reason it was made in #R158:
-     the camera APIs this flight-sim fix rides on are exact-version behaviour, not a documented API. */
+     the camera APIs this flight-sim fix rides on are exact-version behaviour, not a documented API.
+     (maplibre-6-migration) …so it stays EXACT, and what it protected is now MEASURED rather than frozen:
+     tests/maplibre-6-migration.spec.js ⑤ builds the cockpit camera through camera.fromTo and checks the
+     eye lands where it was asked, on whatever version is installed. This line used to be the literal
+     '5.24.0', which could only say «nobody moved it» — not «the cockpit still works». */
   const pkg = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
-  assert.equal(pkg.dependencies['maplibre-gl'], '5.24.0', 'MapLibre pinned to an exact version');
+  assert.match(pkg.dependencies['maplibre-gl'], /^\d+\.\d+\.\d+$/, 'MapLibre pinned to an exact version');
   assert.ok(!/unpkg\.com\/maplibre-gl@/.test(html), 'and the unpinnable CDN copy is gone');
   /* (#R178) the CALL is what must be gone, not the name — js/flight-sim.js still explains in a comment
      why that API was abandoned, and deleting the explanation would lose the reason. */

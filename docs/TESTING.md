@@ -45,7 +45,7 @@ and unchanged resolution and image fallback. These count released resources; the
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**125 measured spec files / 83.6 min** of serial browser time against a ceiling of 83.6 min; and
+**126 measured spec files / 84.7 min** of serial browser time against a ceiling of 84.7 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -66,7 +66,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **119 spec files** — is the whole suite minus core
+**deep** tier — **120 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -250,6 +250,35 @@ each one fails with a diagnostic in the file it should (about 10 s: six compiler
 142 of them `Cesium`, which is `null` until boot) and 16 on the facade's own guards (TS2722 — a guard
 on `A().x` does not narrow the second call `A().x()`). Turning it on is a separate change.
 
+### The renderer's internals, asked of the installed MapLibre — `tests/maplibre-6-migration-*`
+
+MapLibre 6 moved or removed every renderer internal `js/geo-engine.js` stood on (`map.transform`,
+`transform.getMatrixForModel`, `isEasing`, `transformCameraUpdate`, `_elevateCameraIfInsideTerrain` —
+all on the camera the Map now composes, or gone), and each failed SILENTLY: a missing field reads
+`undefined`, a patch on the wrong object is never called. So nothing here reads a copy of the names:
+
+* `tests/maplibre-6-migration-checks.test.mjs` — every method the adapter calls on the renderer's map
+  (found by resolving each call's binding to `_m()` / `new maplibregl.Map`, so a JavaScript `Map`
+  called `m` is not mistaken for it) exists on the INSTALLED `maplibre-gl`'s `Map.prototype`; the
+  camera internals are reached only through `_cam` / `_tr`; `src/vendor.js` imports the namespace and
+  hands `setWorkerUrl` a Vite-built worker before `window.maplibregl` exists (because the published
+  worker imports a sibling a plain `?url` copy would not ship).
+* `tests/maplibre-6-migration.spec.js` — the running renderer: the transform the adapter reads IS the
+  painter's; `isAnimating()` sees a `flyTo`; the worker is same-origin and tiles a GeoJSON source;
+  a point in the air (`coords.projectAltitude`) lands on the pixels MapLibre itself draws for an
+  elevated point (6.6's `symbol-height-offset`), flat, globe and mid-fade; IntMap's own elevated custom
+  layer (the orbit layer; aircraft and the 3-D volume share `js/lifted-projection.js`) draws where
+  `layers.projectMercAlt` picks, in the same three regimes; the globe hands over between
+  z11 and z12; and the cockpit camera built through `camera.fromTo` puts the eye where it was asked.
+* The specs that need the renderer's camera (`tests/r177`, `r178`, `r179`, `r203`) reach it through
+  `tests/helpers/camera-ruler.js`'s `__mlCam()` / `__mlTr()`, which THROW when the internal moves
+  again — under 6.x the old `m.transformCameraUpdate == null` passed vacuously.
+* `tests/r182-checks`, `r230-checks` and `r322-checks` read 5.24's `dist/maplibre-gl-dev.js`, which 6.x
+  does not ship — r322 ① then PASSED WITHOUT LOOKING behind its `existsSync` guard. They now evaluate
+  the installed library (handler instances, `getMaxParallelImageRequests()`, `Style.prototype`'s setters
+  and `GeoJSONSource.prototype.setData` on stand-ins) and, for the constants that live only in a
+  module-scope `const`, read the TypeScript source the package ships under `src/`.
+
 ### Gating: the global surface — `npm run check:surface` (#R795)
 
 **What it replaced.** From #R168 to #R795 `tests/r168-checks` #8 held `lines < N` over the app shell
@@ -305,7 +334,9 @@ biggest chunk" would be loudest about the one number a default session does not 
 about a hundred kilobytes moving into the entry. `scripts/build-report.mjs` therefore DERIVES the
 split from the graph the bundler (Rolldown, since Vite 8) finished with (the entry chunk of `index.html` plus the transitive
 closure of its static imports = what Vite emits `modulepreload` for) rather than reading it off
-filenames, and the budget applies two different rules:
+filenames — plus the workers that boot path starts (a `?worker&url` module rendered into an eager
+chunk names its worker asset; MapLibre 6's renderer worker is the one today, and it is fetched and
+compiled before the first tile) — and the budget applies two different rules:
 
 * **EAGER — a ratchet in both directions.** Over the ceiling fails as a regression. *Under* it by
   more than a little also fails, and says so: a ceiling with permanent headroom has stopped
@@ -684,7 +715,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **119 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **120 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is

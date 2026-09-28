@@ -108,8 +108,10 @@ test('a double-click zoom no longer clears the selected aircraft (a separate def
 test('the solid body scales its altitude to the projection variant', () => {
   const s = R('js/solid3d.js'), code = stripComments(s);
   assert.match(code, /uniform float u_altScale/, 'the shader takes a scale');
-  assert.match(code, /projectTileFor3D\(a_pos, a_alt\*u_altScale\)/, 'and applies it to the elevation');
-  assert.match(code, /vname==='mercator'/, 'chosen by the variant the renderer reports');
+  /* (maplibre-6-migration) the scale is now always metres → mercator units, and the shader is handed the
+     metres AS WELL: projectLifted (js/lifted-projection.js) gives the globe prelude metres and the plane
+     mercator units — both at once while the globe cross-fades, which MapLibre 6 made live */
+  assert.match(code, /projectLifted\(a_pos, a_alt, a_alt\*u_altScale\)/, 'and applies it to the elevation');
   assert.match(code, /MERC_CIRC\*Math\.cos/, 'mercator wants altitude / (2πR·cos φ), not metres');
   assert.match(code, /const MERC_CIRC=2\*Math\.PI\*6378137/, 'on the WGS84 equatorial radius MapLibre uses');
 });

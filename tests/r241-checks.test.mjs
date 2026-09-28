@@ -182,9 +182,10 @@ test('R241 ④ one zoom curve, and it is zero before maplibre cuts the globe', (
      and `atmosphere-blend` — and js/geo-engine.js's limb strength — are multiplied by that
      transition. Whatever the air is worth at z11, all of it goes in one zoom level. #R240 held the
      ramp FLAT to z11 and made the step bigger; the curve now reaches 0 AT z11. */
-  const mlb = R('node_modules/maplibre-gl/dist/maplibre-gl-dev.js');
-  assert.match(mlb, /11,\s*'vertical-perspective',\s*\n?\s*12,\s*'mercator'/,
-    'the renderer still transitions across z11→z12 — if this moves, AIR_Z moves with it');
+  /* (maplibre-6-migration) THAT BAND IS MEASURED ON THE RUNNING RENDERER NOW, not read out of 5.24's
+     dist/maplibre-gl-dev.js (6.x ships no such file): tests/maplibre-6-migration.spec.js ④ asks the
+     live globe for its globeness at z10.9, z11.5 and z12.1 — 1, between, 0. If that moves, AIR_Z
+     moves with it. */
 
   const air = /const AIR_Z=\[([^\]]+)\]/.exec(t);
   assert.ok(air, 'AIR_Z is the one zoom curve');
