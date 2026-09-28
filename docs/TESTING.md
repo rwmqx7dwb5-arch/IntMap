@@ -45,7 +45,7 @@ and unchanged resolution and image fallback. These count released resources; the
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**126 measured spec files / 84.7 min** of serial browser time against a ceiling of 84.7 min; and
+**127 measured spec files / 85.5 min** of serial browser time against a ceiling of 85.5 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -66,7 +66,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **120 spec files** — is the whole suite minus core
+**deep** tier — **121 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -261,8 +261,9 @@ all on the camera the Map now composes, or gone), and each failed SILENTLY: a mi
   (found by resolving each call's binding to `_m()` / `new maplibregl.Map`, so a JavaScript `Map`
   called `m` is not mistaken for it) exists on the INSTALLED `maplibre-gl`'s `Map.prototype`; the
   camera internals are reached only through `_cam` / `_tr`; `src/vendor.js` imports the namespace and
-  hands `setWorkerUrl` a Vite-built worker before `window.maplibregl` exists (because the published
-  worker imports a sibling a plain `?url` copy would not ship).
+  hands `setWorkerUrl` the worker the build emits as an entry chunk of the SAME build (received from
+  `virtual:maplibre-gl-worker-url`) before `window.maplibregl` exists, so the renderer and its worker share
+  one `maplibre-gl-shared` chunk instead of shipping it twice.
 * `tests/maplibre-6-migration.spec.js` — the running renderer: the transform the adapter reads IS the
   painter's; `isAnimating()` sees a `flyTo`; the worker is same-origin and tiles a GeoJSON source;
   a point in the air (`coords.projectAltitude`) lands on the pixels MapLibre itself draws for an
@@ -338,9 +339,9 @@ biggest chunk" would be loudest about the one number a default session does not 
 about a hundred kilobytes moving into the entry. `scripts/build-report.mjs` therefore DERIVES the
 split from the graph the bundler (Rolldown, since Vite 8) finished with (the entry chunk of `index.html` plus the transitive
 closure of its static imports = what Vite emits `modulepreload` for) rather than reading it off
-filenames — plus the workers that boot path starts (a `?worker&url` module rendered into an eager
-chunk names its worker asset; MapLibre 6's renderer worker is the one today, and it is fetched and
-compiled before the first tile) — and the budget applies two different rules:
+filenames — plus the workers that boot path starts (a `?worker&url` worker asset, or an emitted entry
+chunk an eager module names, with its closure; MapLibre 6's renderer worker is the emitted-chunk kind
+today, and it is fetched and compiled before the first tile) — and the budget applies two different rules:
 
 * **EAGER — a ratchet in both directions.** Over the ceiling fails as a regression. *Under* it by
   more than a little also fails, and says so: a ceiling with permanent headroom has stopped
@@ -719,7 +720,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **120 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **121 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is

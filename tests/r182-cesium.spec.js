@@ -235,9 +235,9 @@ test('R182 ①a: pan, rotate and pitch answer the way MapLibre answers', async (
   const cs = await mouseSuite(page, 'cesium', 'drag');
   const show = compare(ml, cs);
 
-  /* PAN — the same law, which is MapLibre's globe pan and not "the grabbed point follows the
-     cursor" (maplibre-gl says so itself; see js/cesium-input.js). Cesium used to move 4× too
-     far downwards and to drift in latitude on a horizontal drag. */
+  /* PAN — both engines now drag the globe the same way (MapLibre 6.4's versor: the grabbed point is
+     carried under the cursor, less the twist it drops to keep the bearing — tests/cesium-globe-drag-cesium).
+     Cesium used to move 4× too far downwards and to drift in latitude on a horizontal drag. */
   for (const k of ['panRight', 'panDown', 'panRightFlat']) {
     const want = Math.hypot(ml[k].dLng, ml[k].dLat);
     const got = Math.hypot(cs[k].dLng, cs[k].dLat);

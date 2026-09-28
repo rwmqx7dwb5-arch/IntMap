@@ -9,8 +9,12 @@
  *    ① every method the adapter calls on the renderer's map exists on the installed Map
  *    ② the renderer's camera internals are reached in ONE place (`_cam` / `_tr`), and nothing reads
  *       the members v6 took off the map, writes the hook property, or asks for getMatrixForModel
- *    ③ src/vendor.js imports the namespace (v6 has no default export) and hands MapLibre a built,
- *       self-contained worker before any Map exists — because the published worker imports a sibling
+ *    ③ src/vendor.js imports the namespace (v6 has no default export) and hands MapLibre the worker
+ *       the build emits, before any Map exists — because the published worker imports a sibling
+ *    ④ …and that worker is a chunk of the SAME build, importing the renderer's own shared chunk: the
+ *       placement is asked of the module graph, and the build refuses a worker chunk that would
+ *       evaluate a module outside the worker's graph (dev-notes/2026-09-28-maplibre-shared-worker.md)
+ *    ⑤ scripts/build-report.mjs counts that worker chunk as boot, by the name a module gives it
  *  (the renderer's de-duplication of equal style writes, which js/geo-command-log.js's skip table is
  *   built on, is evaluated on the installed library by tests/r322-checks ① — it read 5.24's bundle text)
  * ==========================================================================*/
@@ -96,32 +100,138 @@ test('② the camera internals are reached in one place, and nothing reads what 
   assert.deepEqual(bad, []);
 });
 
-test('③ src/vendor.js publishes the namespace and a self-contained worker, before any map exists', () => {
+/* the plugin that answers vendor.js's worker import, evaluated rather than read (vite.config.js) */
+const viteCfg = await import('../vite.config.js');
+const workerPlugin = (command) => {
+  const p = viteCfg.maplibreSharedWorker();
+  p.configResolved({ command });
+  return p;
+};
+const PKG_DIR = dirname(require.resolve('maplibre-gl/package.json'));
+const ML_FILE = (f) => join(PKG_DIR, 'dist', f).replace(/\\/g, '/');
+
+test('③ src/vendor.js publishes the namespace and the worker the build emits, before any map exists', async () => {
   assert.equal(ml.default, undefined, 'maplibre-gl 6 has no default export — `import maplibregl from` would bind undefined');
   const ast = parse(R('src/vendor.js'));
-  let ns = null, workerUrl = null, setAt = -1, publishAt = -1;
+  const defaults = new Map();
+  let ns = null, workerArg = null, setAt = -1, publishAt = -1;
   for (const [i, st] of ast.body.entries()) {
-    if (st.type === 'ImportDeclaration' && st.source.value === 'maplibre-gl') {
-      const s = st.specifiers.find((x) => x.type === 'ImportNamespaceSpecifier'); if (s) ns = s.local.name;
-    }
-    if (st.type === 'ImportDeclaration' && /^maplibre-gl\/dist\/maplibre-gl-worker\.mjs\?worker&url$/.test(st.source.value)) {
-      const s = st.specifiers.find((x) => x.type === 'ImportDefaultSpecifier'); if (s) workerUrl = s.local.name;
+    if (st.type === 'ImportDeclaration') {
+      const d = st.specifiers.find((x) => x.type === 'ImportDefaultSpecifier'); if (d) defaults.set(d.local.name, st.source.value);
+      const s = st.specifiers.find((x) => x.type === 'ImportNamespaceSpecifier'); if (s && st.source.value === 'maplibre-gl') ns = s.local.name;
     }
     if (st.type !== 'ExpressionStatement') continue;
     const e = st.expression;
     if (e.type === 'CallExpression' && e.callee.type === 'MemberExpression' && e.callee.property.name === 'setWorkerUrl'
-        && e.callee.object.name === ns && e.arguments[0] && e.arguments[0].name === workerUrl) setAt = i;
+        && e.callee.object.name === ns && e.arguments[0] && e.arguments[0].type === 'Identifier') { setAt = i; workerArg = e.arguments[0].name; }
     if (e.type === 'AssignmentExpression' && e.left.type === 'MemberExpression' && e.left.object.name === 'window'
         && e.left.property.name === 'maplibregl' && e.right.name === ns) publishAt = i;
   }
   assert.ok(ns, 'maplibre-gl is imported as a namespace');
-  assert.ok(workerUrl, 'the worker URL is imported through Vite\'s worker pipeline (?worker&url)');
-  assert.ok(setAt >= 0, 'and handed to setWorkerUrl at module top level');
+  assert.ok(setAt >= 0, 'a worker URL is handed to setWorkerUrl at module top level');
   assert.ok(publishAt > setAt, 'before window.maplibregl — the global every map is constructed from');
-  /* WHY `?worker&url` and not `?url`: the published worker is not self-contained. A plain ?url copies
-     it verbatim, and its first statement imports a file that would not be there. */
-  const pkgDir = dirname(require.resolve('maplibre-gl/package.json'));
-  const workerSrc = readFileSync(join(pkgDir, 'dist', 'maplibre-gl-worker.mjs'), 'utf8');
+  const spec = defaults.get(workerArg);
+  assert.ok(spec, 'the URL setWorkerUrl receives is an import');
+  /* …and that import is the one the build plugin answers — in both modes */
+  const build = workerPlugin('build');
+  const id = build.resolveId(spec);
+  assert.ok(id, `vite.config.js maplibreSharedWorker resolves ${spec}`);
+  const emitted = [];
+  const code = await build.load.call({
+    resolve: async (s) => ({ id: require.resolve(s).replace(/\\/g, '/'), external: false }),
+    emitFile: (o) => { emitted.push(o); return 'REF0'; },
+    error: (m) => { throw new Error(m); },
+  }, id);
+  assert.equal(emitted.length, 1, 'the build emits the worker once');
+  assert.equal(emitted[0].type, 'chunk', 'as a CHUNK of this build — not a separate worker bundle that repeats the shared code');
+  assert.equal(emitted[0].id, ML_FILE('maplibre-gl-worker.mjs'), 'and the chunk is the published worker');
+  assert.match(code, /import\.meta\.ROLLUP_FILE_URL_REF0/, 'the URL is the emitted chunk\'s, hashed with the build');
+  const dev = workerPlugin('serve');
+  assert.match(await dev.load.call({}, dev.resolveId(spec)), /maplibre-gl-worker\.mjs\?worker&url/,
+    '`vite dev` has no chunks: it answers with Vite\'s dev worker URL');
+  /* WHY BUILT and not copied (`?url`): the published worker is not self-contained. A verbatim copy's
+     first statement imports a file that would not be there. */
+  const workerSrc = readFileSync(ML_FILE('maplibre-gl-worker.mjs'), 'utf8');
   const rel = parse(workerSrc).body.filter((s) => s.type === 'ImportDeclaration').map((s) => s.source.value);
   assert.ok(rel.some((v) => v.startsWith('./')), `the published worker imports a sibling (${rel.join(', ')}), which is why it must be BUILT, not copied`);
+});
+
+/* a synthetic module graph with MapLibre 6's shape: the worker and the renderer both import the shared
+   module, the worker's dynamic import() pulls in Vite's preload helper, and the renderer carries the
+   modulepreload polyfill (which touches `document` at top level) */
+function mlGraph() {
+  const W = ML_FILE('maplibre-gl-worker.mjs'), S = ML_FILE('maplibre-gl-shared.mjs'), M = ML_FILE('maplibre-gl.mjs');
+  const PRELOAD = '\0vite/preload-helper.js', POLY = '\0vite/modulepreload-polyfill.js';
+  const infos = { [W]: [S, PRELOAD], [S]: [], [M]: [S], [PRELOAD]: [], [POLY]: [] };
+  const objs = Object.fromEntries(Object.entries(infos).map(([k, v]) => [k, { id: k, importedIds: v }]));
+  return { W, S, M, PRELOAD, POLY, getModuleInfo: (id) => objs[id] || null };
+}
+/* a build-mode plugin that has emitted the worker `g.W` — the specifier is the one vendor.js imports */
+async function armedPlugin(g) {
+  const spec = [...parse(R('src/vendor.js')).body].find((st) => st.type === 'ImportDeclaration' && /worker/.test(st.source.value)).source.value;
+  const p = workerPlugin('build');
+  await p.load.call({ resolve: async () => ({ id: g.W }), emitFile: () => 'REF1', error: (m) => { throw new Error(m); } }, p.resolveId(spec));
+  return p;
+}
+
+test('④ what the worker imports shares ONE chunk with the renderer, and the build refuses a worker chunk that would run anything else', async () => {
+  const g = mlGraph();
+  const p = await armedPlugin(g);
+  /* the placement, evaluated through the real chunk groups with this graph */
+  const groups = viteCfg.default.build.rolldownOptions.output.codeSplitting.groups;
+  const ctx = { getModuleInfo: g.getModuleInfo };
+  const hit = (gr, id) => (typeof gr.test === 'function' ? gr.test(id) : gr.test.test(id));
+  const nameOf = (gr, id) => (typeof gr.name === 'function' ? gr.name(id, ctx) : gr.name);
+  const owner = (id) => groups.filter((gr) => hit(gr, id) && nameOf(gr, id)).sort((a, b) => b.priority - a.priority).map((gr) => nameOf(gr, id))[0];
+  assert.equal(owner(g.S), 'maplibre-gl-shared', 'the shared module is its own chunk');
+  assert.equal(owner(g.PRELOAD), 'maplibre-gl-shared', 'a helper the worker reaches goes with it');
+  assert.equal(owner(g.M), 'maplibre-gl', 'the renderer stays in its chunk');
+  assert.equal(owner(g.POLY), 'maplibre-gl', 'and so does a helper the worker never imports');
+  assert.equal(owner(g.W), undefined, 'the worker itself is its own entry chunk, in no group');
+  /* the refusal, on a finished bundle */
+  const chunk = (fileName, modules, imports, extra = {}) => ({ type: 'chunk', fileName, modules: Object.fromEntries(modules.map((m) => [m, {}])), imports, ...extra });
+  const run = (bundle) => p.generateBundle.call({ getModuleInfo: g.getModuleInfo, error: (m) => { throw new Error(m); } }, {}, bundle);
+  const ok = {
+    w: chunk('assets/maplibre-gl-worker-a.js', [g.W], ['assets/maplibre-gl-shared-b.js'], { isEntry: true, facadeModuleId: g.W }),
+    s: chunk('assets/maplibre-gl-shared-b.js', [g.S, g.PRELOAD], []),
+    r: chunk('assets/maplibre-gl-c.js', [g.M, g.POLY], ['assets/maplibre-gl-shared-b.js']),
+  };
+  assert.doesNotThrow(() => run(ok), 'the shape the build produces is accepted');
+  const merged = { ...ok, s: chunk('assets/maplibre-gl-shared-b.js', [g.S, g.PRELOAD, g.POLY], []) };
+  assert.throws(() => run(merged), /modulepreload-polyfill/, 'a main-thread module in a chunk the worker loads fails the build, by name');
+  const noWorker = { s: ok.s, r: ok.r };
+  assert.throws(() => run(noWorker), /not emitted as a chunk/, 'and so does a build that lost the worker chunk');
+});
+
+test('⑤ build-report counts the emitted worker chunk as boot — named by its PRELIMINARY file name', async () => {
+  const { buildReportPlugin } = await import('../scripts/build-report.mjs');
+  const { mkdtempSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const dir = mkdtempSync(join(tmpdir(), 'mlw-report-'));
+  try {
+    const out = join(dir, 'r.json');
+    const mod = (code) => ({ code, renderedLength: code.length });
+    const chunk = (name, fileName, modules, imports, extra = {}) => ({
+      type: 'chunk', name, fileName, code: Object.values(modules).map((m) => m.code).join('\n'), modules,
+      imports, dynamicImports: [], isEntry: false, isDynamicEntry: false, facadeModuleId: null, viteMetadata: { importedCss: new Set() }, ...extra,
+    });
+    const bundle = (named) => ({
+      'assets/main-a.js': chunk('main', 'assets/main-a.js', { [join(ROOT, 'src/main.js')]: mod('app()') }, ['assets/maplibre-gl-b.js'], { isEntry: true, facadeModuleId: join(ROOT, 'index.html') }),
+      'assets/maplibre-gl-b.js': chunk('maplibre-gl', 'assets/maplibre-gl-b.js', {
+        '\0virtual:maplibre-gl-worker-url': mod(named ? 'var u=new URL("maplibre-gl-worker-!~{01n}~.js",import.meta.url).href;' : 'var u=1;'),
+      }, ['assets/maplibre-gl-shared-c.js']),
+      'assets/maplibre-gl-shared-c.js': chunk('maplibre-gl-shared', 'assets/maplibre-gl-shared-c.js', { [ML_FILE('maplibre-gl-shared.mjs')]: mod('shared()') }, []),
+      'assets/maplibre-gl-worker-d.js': chunk('maplibre-gl-worker', 'assets/maplibre-gl-worker-d.js', { [ML_FILE('maplibre-gl-worker.mjs')]: mod('worker()') },
+        ['assets/maplibre-gl-shared-c.js'], { isEntry: true, facadeModuleId: ML_FILE('maplibre-gl-worker.mjs'), preliminaryFileName: 'assets/maplibre-gl-worker-!~{01n}~.js' }),
+    });
+    buildReportPlugin({ out }).generateBundle({}, bundle(true));
+    const r = JSON.parse(readFileSync(out, 'utf8'));
+    assert.ok(r.eager.chunks.includes('assets/maplibre-gl-worker-d.js'), 'the worker chunk is EAGER');
+    assert.equal(r.eager.chunks.filter((f) => f.includes('shared')).length, 1, 'and the shared chunk it imports is counted once');
+    assert.deepEqual(r.eager.workers.files, ['assets/maplibre-gl-worker-d.js']);
+    assert.equal(r.eager.requests, 4, 'main + renderer + shared + worker');
+    assert.ok(!r.async.chunks.includes('assets/maplibre-gl-worker-d.js'), 'and it is not ASYNC');
+    assert.throws(() => buildReportPlugin({ out }).generateBundle({}, bundle(false)), /no module names/,
+      'an emitted entry that no module names is an error, not a quietly ASYNC chunk');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
