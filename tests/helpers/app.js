@@ -82,6 +82,112 @@ export async function bootPage(page, opts = {}) {
   return page;
 }
 
+/* ══ ⚠⚠⚠ WHATEVER THE LAST TEST LEFT OVER THE MAP, FOUND BY WHAT IT DOES, NOT BY WHAT IT IS CALLED ══
+   MEASURED on the nightly run 36348262163, twice, in two shapes of one defect:
+     · tests/r322.spec.js ② presses #btn-correlate and ends with the Correlation overlay up
+       (`position:fixed; inset:0; z-index:9998`). The next test on that worker,
+       tests/r388-detail.spec.js ①, found a railway line through the renderer, clicked it — and the
+       click landed on the overlay; `#rail-detail` never came. The failure screenshot is the scatter
+       plot, not the map.
+     · tests/r170.spec.js 「Measure ▸ 3-D volume」 read `points: 0`: the right-hand Layers sidebar was
+       still open from an earlier test on the worker, the right-anchored tool panel slides left to
+       make room for it (js/map-ui.js, #R160), and all four clicks landed on the tool panel. Reproduced
+       locally by opening the sidebar in one test and running those clicks in the next: 0 of 4.
+   The reset above closes the things it knows the name of (`_close*Menu/Popup`, #tool-panel), and
+   neither of these has a name there. ⚠ ADDING THE TWO NAMES WOULD FIX TWO REPORTS AND NOT THE NEXT
+   ONE (.agents/rules/no-ad-hoc-hardcoding.md): the app has dozens of panels, and whichever is added
+   next would leak the same way. So the question is asked of the page, as a fact:
+     「which element now receives a click that, at boot, went to the map or its own chrome?」
+   `elementFromPoint` over a grid of the viewport (the #R485 lesson: "visible" is not "on top"); each
+   hit is lifted to its outermost ancestor that does not contain the map canvas, so the answer is
+   one element per floating thing, not one per pixel of it. What was on screen at the first reset —
+   i.e. straight after the boot — is the booted app's own furniture (search pill, view controls,
+   sidebar) and is left alone; anything else is something a test opened.
+   It is closed through ITS OWN ×, the control a person would press, exactly as the #tool-panel line
+   above does — never by hiding it from outside, which would leave the module believing it is open.
+   ⚠ THE ONE CONSTANT, AND WHERE IT COMES FROM. `CLOSE_GLYPH` is the app's close control. Measured on
+   2026-09-28 over js/ and index.html: 133 controls whose whole label is «×», and 0 using ✕, ✖, ⨯ or
+   `&times;`. tests/nightly-state-leaks-checks.test.mjs re-measures that on every run, so the day the
+   app adopts a second glyph this stops being true loudly instead of silently missing panels.
+   Something new over the map that has no «×» is reported once per worker (it is either a leak this
+   cannot close or furniture that arrived after the boot) and then remembered, so the log names it
+   once instead of before every test. */
+const CLOSE_GLYPH = '×';
+const bootCover = new WeakMap();   /* page → JSHandle of the Set of roots on screen at boot */
+
+async function closeLeftOverlays(page) {
+  let base = bootCover.get(page);
+  const first = !base;
+  if (first) {
+    base = await page.evaluateHandle(() => new Set()).catch(() => null);
+    if (!base) return;
+    bootCover.set(page, base);
+  }
+  const res = await page.evaluate(([seen, glyph, first]) => {
+    const canvas = (() => { try { return window.IntMapGeoEngine.render.canvas(); } catch (_) { return null; } })()
+      || document.querySelector('canvas');
+    if (!canvas) return { closed: [], stuck: [] };
+    const roots = () => {
+      const out = new Set();
+      const NX = 24, NY = 14;   /* ~53 × 51 px cells at 1280 × 720: finer than any panel, 336 hit tests */
+      for (let i = 0; i < NX; i++) for (let j = 0; j < NY; j++) {
+        const h = document.elementFromPoint((i + 0.5) * innerWidth / NX, (j + 0.5) * innerHeight / NY);
+        if (!h || h === canvas || h.contains(canvas)) continue;
+        let r = h;
+        while (r.parentElement && !r.parentElement.contains(canvas)) r = r.parentElement;
+        out.add(r);
+      }
+      return out;
+    };
+    const name = (e) => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '')
+      + (typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : '');
+    /* ⚠ THE BOOT'S FURNITURE IS EVERYTHING ON SCREEN, NOT ONLY WHAT THE GRID HAPPENED TO HIT. The
+       first version recorded the grid's hits, and the sidebar's ‹ button — 22 px wide, and it moves
+       with the sidebar — was then reported as a leak the first time a grid point landed on it. A root
+       is by construction a child of one of the canvas's ancestors that does not contain the canvas,
+       so the booted set can be listed exactly: those children that are displayed, not
+       `visibility:hidden`, and inside the viewport. A panel parked off-screen or hidden at boot (the
+       right Layers sidebar is both) is therefore NOT furniture, and is closed when a test leaves it
+       open. */
+    if (first) {
+      for (let a = canvas.parentElement; a; a = a.parentElement) {
+        for (const c of a.children) {
+          if (c.contains(canvas)) continue;
+          const b = c.getBoundingClientRect();
+          if (!c.getClientRects().length || getComputedStyle(c).visibility === 'hidden') continue;
+          if (b.right <= 0 || b.bottom <= 0 || b.left >= innerWidth || b.top >= innerHeight) continue;
+          seen.add(c);
+        }
+      }
+      return { closed: [], stuck: [] };
+    }
+    /* ⚠ PASSES, NOT ONE SWEEP. Measured with this very mechanism: tests/r170 「every Companies
+       figure…」 ends with the market card (#co-detail-ov, a full-viewport scrim) over the company
+       atlas panel (#co-popup). The first grid sees only the scrim; the panel under it is exposed only
+       once the scrim is closed — and a single sweep reported it as «its × did not close it» without
+       ever having pressed it, leaving it open (with its facilities fitted on the map) for the next
+       test. Each pass presses only roots never pressed before, so the loop ends on the first pass
+       that finds nothing new; the ceiling (an estimate, far above the 2 passes measured) only stops
+       a panel that rebuilds itself as a NEW element every time it is closed. */
+    const closed = [], stuck = [], tried = new Set();
+    for (let pass = 0; pass < 16; pass++) {
+      const fresh = [...roots()].filter((r) => !seen.has(r) && !tried.has(r));
+      if (!fresh.length) break;
+      for (const r of fresh) {
+        tried.add(r);
+        const x = [r, ...r.querySelectorAll('button,[role="button"]')].find((b) => b.matches('button,[role="button"]')
+          && (b.textContent || '').trim() === glyph && b.getClientRects().length > 0);
+        if (x) { try { x.click(); } catch (_) { } closed.push(name(r)); } else { seen.add(r); stuck.push(name(r)); }
+      }
+    }
+    /* and ask again: a × that was pressed and did not take its panel away is a fact the log should carry */
+    for (const r of roots()) if (tried.has(r) && !seen.has(r)) { seen.add(r); stuck.push(name(r) + ' (its × did not close it)'); }
+    return { closed, stuck };
+  }, [base, CLOSE_GLYPH, first]).catch(() => ({ closed: [], stuck: [] }));
+  if (res.stuck.length) console.warn('[resetPage] still over the map after the reset, and not closeable by its own ×: ' + res.stuck.join(', '));
+  return res;
+}
+
 /**
  * Put back the view a fresh boot would have, without paying for a boot.
  *
@@ -92,6 +198,9 @@ export async function bootPage(page, opts = {}) {
  */
 export async function resetPage(page) {
   if (!page) return;
+  /* first, so that the camera jump at the end of the next step is the LAST thing to move the camera:
+     closing a panel can move it (see the market card / company atlas note in closeLeftOverlays) */
+  await closeLeftOverlays(page);
   await page.evaluate(() => {
     try { window.IntMapFlightSim && window.IntMapFlightSim.stop && window.IntMapFlightSim.stop(); } catch (_) { }
     try { window.IntMapTilt && window.IntMapTilt.set(false); } catch (_) { }

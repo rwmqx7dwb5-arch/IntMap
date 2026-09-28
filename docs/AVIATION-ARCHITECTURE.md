@@ -582,7 +582,15 @@ localStorage 'intmap_aviation_v2' = '0' | '1'
 ```
 
 既定は **v2**——v1 の provider が消えているため。旧経路は §28 Phase G の巻き戻し期間のために
-**1行も変えずに**残してある。
+**挙動を変えずに**残してある。
+
+足したのは計器だけで、`IntMapPlanes3D.state().refetch = { lastAt, gapMs, busy }` が
+「視野の変化（`moveend`）がいま掃引を 1 本起こすか」を述べる——直前の掃引の開始時刻、それより
+古くなければならない間隔（`planeRefetchGapMs()`＝円の数 × `PLANE_GAP_MS`、下限 1.5 秒。
+`moveend` の処理もこの 1 か所を読む）、同じ空の掃引が走っている最中か。**視野の変化 1 回は
+fix 1 個を約束しない**（走っている掃引に譲る・間隔の内側では要求にならない）ので、
+`tests/r174.spec.js` の軌跡の試験は `moveend` の回数を数えず、これを見て 1 回ずつ促し、
+fix が記録されるのを待つ（経緯は `dev-notes/2026-09-28-r174-track-survives-zoom.md`）。
 
 ---
 

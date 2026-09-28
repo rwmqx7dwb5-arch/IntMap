@@ -85,10 +85,13 @@ test('layer-manifest ②③ the tile browser lists the manifest, and the rows th
   /* ② the right sidebar's tiles come from the manifest now: every tile id is declared, in manifest order */
   const tiles = await page.evaluate(async () => {
     const S = window.IntMapLayerSidebar; if (!S) return null;
-    if (!document.querySelector('.lst-tile[data-lid]')) { try { S.toggle(); } catch (_) {} }
+    /* leave the sidebar as it was found — a spec that toggles blind leaves it OPEN for the next test on
+       this worker (measured: tests/r170's 3-D volume clicks all landed on it, 0/4 points) */
+    const wasOpen = !!document.querySelector('.lst-tile[data-lid]');
+    if (!wasOpen) { try { S.toggle(); } catch (_) {} }
     for (let i = 0; i < 100 && !document.querySelector('.lst-tile[data-lid]'); i++) await new Promise((r) => requestAnimationFrame(r));
     const ids = Array.from(document.querySelectorAll('#layer-sidebar-r .lst-tile[data-lid]')).map((t) => t.dataset.lid);
-    try { S.toggle(); } catch (_) {}
+    if (!wasOpen) { try { S.toggle(); } catch (_) {} }
     return ids;
   });
   expect(tiles && tiles.length, 'the tile browser drew tiles').toBeGreaterThan(100);

@@ -4654,6 +4654,12 @@ window.IntMapModules.dataLayers=function(HOST){
          ceiling has to be above it or the long-run rate would rise with the budget instead of
          staying at the 0.29 requests a second #R186 measured as sustainable. */
       return Math.max(20000,Math.min(600000,Math.round(n*3500))); }
+    /* (#R186) The shortest gap between two VIEW-DRIVEN sweeps: how long one sweep occupies — its circles
+       times their spacing — never under the 1.5 s a one-circle view has always had. Named once, because
+       the moveend handler applies it and IntMapPlanes3D.state().refetch reports it (No silent caps,
+       #R185): a view change inside this gap, or while a sweep of the same sky is still in flight (see
+       fetchPlanes), yields no request of its own — the running sweep publishes that sky. */
+    function planeRefetchGapMs(){ return Math.max(1500,(((_planeCover&&_planeCover.circles)||1)*PLANE_GAP_MS)); }
     function schedulePlanePoll(){ if(!planesTimer) return;    /* the layer is off — nothing to re-arm */
       stopTick(planesTimer); clearTimeout(planesTimer);
       planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },planePollMs()); }
@@ -5755,8 +5761,7 @@ window.IntMapModules.dataLayers=function(HOST){
             try{ refreshTrafficLayer('planes'); }catch(_){}   /* (#R186) re-draw from what we already hold: the 3-D cull is viewport-shaped when the sky is very busy, and the per-aircraft ground offset follows the view */
             updatePlanesZoomHint();                           /* (#R191) a PAN changes the required coverage too, not just a zoom */
             clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{
-              const sweepMs=Math.max(1500,(((_planeCover&&_planeCover.circles)||1)*PLANE_GAP_MS));
-              if(Date.now()-_lastPlaneFetch>sweepMs) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }
+              if(Date.now()-_lastPlaneFetch>planeRefetchGapMs()) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }
         updatePlanesZoomHint();
       } else {
         startShips();
@@ -6588,6 +6593,9 @@ window.IntMapModules.dataLayers=function(HOST){
              and what the render cap left out. No silent caps (#R185). */
           sweep:_planeStats, cover:_planeCover, culled3D:_planes3DCulled, minZoom:PLANES_MIN_ZOOM,
           circleBudget:PLANE_CIRCLE_BUDGET(), maxAircraft:PLANE_MAX_AIRCRAFT, pollMs:planePollMs(), gapMs:PLANE_GAP_MS,
+          /* whether a view change right now would start a sweep of its own (see planeRefetchGapMs):
+             the last sweep's start (epoch ms), the gap it must be older than, and whether one is running */
+          refetch:{ lastAt:_lastPlaneFetch, gapMs:planeRefetchGapMs(), busy:_planeBusy },
           lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
           halfPx:s2.halfPx, glyphHalfPx:s2.glyphHalfPx, thickPx:s2.thickPx,   /* (#R192) same mark = same pixels */
           visible:(()=>{ try{ return !!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
