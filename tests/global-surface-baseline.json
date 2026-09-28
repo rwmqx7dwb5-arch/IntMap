@@ -680,6 +680,7 @@
   "__imAnalysisResearch",
   "__imAnalysisTimeSeries",
   "__imCesium",
+  "__imChunkFailed",
   "__imDemMaxZoom",
   "__imDemStore",
   "__imFireDefaultLayers",
