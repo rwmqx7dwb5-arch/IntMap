@@ -245,7 +245,8 @@ test('R212 ⑬: the news proxies and the wind grid both carry a deadline', () =>
      Pinning the old spelling would have failed the day the guarantee got better. */
   assert.match(pf, /fetchDeadline\(make\(url\),[\s\S]{0,48}PROXY_TIMEOUT_MS[\s\S]{0,48}ctls\[i\]\)/, 'each racer has its own clock');
   assert.match(pf, /ctls\.forEach\(\(c\) => \{ try \{ c\.abort\(\)/, 'and the losers are aborted when one wins');
-  assert.match(read('js/app-body.js'), /import \{ fetchViaProxy \} from '\.\/proxy-fetch\.js'/, 'and the core just imports it');
+  /* the import may name what else the core takes from the router (stalled-fetch-and-surface-gauge: `clockFor`) */
+  assert.match(read('js/app-body.js'), /import \{[^}]*\bfetchViaProxy\b[^}]*\} from '\.\/proxy-fetch\.js'/, 'and the core just imports it');
   /* ⚠⚠ (#R276) THE SECOND HALF OF THIS TEST GUARDED A MECHANISM THAT NO LONGER EXISTS, AND THE
      PROPERTY IT WAS FOR IS NOW SATISFIED MORE STRONGLY. #R212's report was 「Wind(animated)が表示
      されるまでが非常に遅い」, and its answer was a deadline on each of the five chunked Open-Meteo

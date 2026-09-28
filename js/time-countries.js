@@ -16,6 +16,8 @@
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
+import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — it was a hand-written 12 s here */
+import { readWithin } from './fetch-deadline.js';
 export function makeTimeCountries(HOST, CTX) {
   const countryStats=CTX.countryStats, loadCountryData=CTX.loadCountryData, renderStats=CTX.renderStats, searchVal=CTX.searchVal;
   /* ============================================================================
@@ -98,9 +100,8 @@ export function makeTimeCountries(HOST, CTX) {
     async function fetchYear(year){ if(yearCache[year]) return yearCache[year];
       const out={}; FIELDS.forEach(F=>out[F.f]={});
       for(const F of FIELDS){ try{
-        const c=('AbortController' in window)?new AbortController():null, tm=c?setTimeout(()=>{try{c.abort();}catch(_){}}, 12000):null;
-        const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+F.ind+'?format=json&per_page=400&date='+year, c?{signal:c.signal}:undefined);
-        const j=await r.json(); if(tm) clearTimeout(tm);
+        const u='https://api.worldbank.org/v2/country/all/indicator/'+F.ind+'?format=json&per_page=400&date='+year;
+        const j=JSON.parse((await readWithin(u,clockFor(u))).text);
         (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) out[F.f][iso]=+row.value*F.scale; } });
       }catch(_){} }
       if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */

@@ -30,6 +30,8 @@
 import './osm-facilities.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take */
+import { readWithin } from './fetch-deadline.js';
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.earthSky=function(HOST){
@@ -817,8 +819,8 @@ window.IntMapModules.betaPack2=function(HOST){
           /* the pre-#R266 single-year read, kept as the fallback for a build that beats wbLayers up */
           vals=cache['wb_'+key];
           if(!vals){ vals={};
-            try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||''));
-              const j=await r.json(); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
+            try{ const u='https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||'');
+              const j=JSON.parse((await readWithin(u,clockFor(u))).text); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
             }catch(_){}
             if(!Object.keys(vals).length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
             cache['wb_'+key]=vals;

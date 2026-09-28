@@ -11,6 +11,8 @@
  *  enumeration, so a second IntMap-named object for the same feature would offer the planner a
  *  duplicate capability that nothing dispatches.
  * ==========================================================================*/
+import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — it was a hand-written 20 s here */
+import { readWithin } from './fetch-deadline.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.analysisTimeSeries=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -49,13 +51,12 @@ window.IntMapModules.analysisTimeSeries=function(HOST){
       if(_tsCache[key]===undefined){
         let wrapped=null;
         wrapped=(async()=>{
-          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
           try{
-            const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030',c?{signal:c.signal}:undefined);
-            const j=await r.json(); if(tm) clearTimeout(tm);
+            const u='https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030';
+            const j=JSON.parse((await readWithin(u,clockFor(u))).text);
             if(Array.isArray(j)&&j[1]){ const out=j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); if(out.length) return out; }
             if(Array.isArray(j)) return null;
-          }catch(_){ if(tm) clearTimeout(tm); }
+          }catch(_){ /* refused, not JSON, or the clock — the next id in the list, or null */ }
           throw 0;
         })().catch(()=>{ if(_tsCache[key]===wrapped) delete _tsCache[key]; return null; });
         _tsCache[key]=wrapped;

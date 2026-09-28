@@ -14,6 +14,8 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — the three 20 s written here by hand read it now */
+import { readWithin } from './fetch-deadline.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.statsCompare=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -108,18 +110,18 @@ window.IntMapModules.statsCompare=function(HOST){
     function _wbOne(code,id){ const key='wb|'+id+'|'+code;
       if(cache[key]===undefined){
         let wrapped=null;
-        /* 20 s abort — a hung request (WB throttling) must not leak a scheduler slot forever. A NETWORK failure
+        /* a clock — a hung request (WB throttling) must not leak a scheduler slot forever; its length is the World
+           Bank's row in js/proxy-fetch.js `clockFor` (stalled-fetch-and-surface-gauge). A NETWORK failure
            is NOT negative-cached (the entry is dropped so the next render retries); only a real "API answered,
            series is empty" is remembered as null. */
         wrapped=_wbSlot(async()=>{
-          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
           try{
-            const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030',c?{signal:c.signal}:undefined);
-            const j=await r.json(); if(tm) clearTimeout(tm);
+            const u='https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030';
+            const j=JSON.parse((await readWithin(u,clockFor(u))).text);
             if(Array.isArray(j)&&j[1]){ const out=j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); if(out.length) return out; }
             if(Array.isArray(j)) return null;   /* API answered: genuinely no data */
-          }catch(_){ if(tm) clearTimeout(tm); }
-          throw 0;                              /* network/parse failure → retryable */
+          }catch(_){}
+          throw 0;                              /* network/parse failure or the clock → retryable */
         }).catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return null; });
         cache[key]=wrapped;
       }
@@ -168,9 +170,8 @@ window.IntMapModules.statsCompare=function(HOST){
     function _wbLatestOne(code){ const key='wbl|'+code;
       if(cache[key]===undefined){ let wrapped=null;
         wrapped=(async()=>{ try{
-          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
-          const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&mrnev=1&per_page=400',c?{signal:c.signal}:undefined);
-          const j=await r.json(); if(tm) clearTimeout(tm);
+          const u='https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&mrnev=1&per_page=400';
+          const j=JSON.parse((await readWithin(u,clockFor(u))).text);
           if(Array.isArray(j)&&j[1]){ const m={}; j[1].forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:+d.date||0}; }); if(Object.keys(m).length) return m; }
           if(Array.isArray(j)) return {};
         }catch(_){} throw 0; })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return {}; });
@@ -200,9 +201,8 @@ window.IntMapModules.statsCompare=function(HOST){
     function _wbYearOne(code,year){ const key='wby|'+code+'|'+year;
       if(cache[key]===undefined){ let wrapped=null;
         wrapped=(async()=>{ try{
-          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
-          const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&per_page=400&date='+year,c?{signal:c.signal}:undefined);
-          const j=await r.json(); if(tm) clearTimeout(tm);
+          const u='https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&per_page=400&date='+year;
+          const j=JSON.parse((await readWithin(u,clockFor(u))).text);
           if(Array.isArray(j)&&j[1]){ const m={}; j[1].forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:+d.date||year}; }); return m; }
           if(Array.isArray(j)) return {};
         }catch(_){} throw 0; })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return {}; });

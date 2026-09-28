@@ -162,6 +162,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **共有窓口の広さも計器で見る。** `npm run check:surface`（`scripts/global-surface.mjs`）が、
   `js/app-body.js` の `IM_HOST` の項目（getter／setter／後付けの代入）と、`js/`・`src/` が
   `window.*` に代入する公開名を**名前で** `tests/global-surface-baseline.json` と両方向に照合する。
+  コメント・文字列・正規表現リテラルを消すのは acorn の字句解析で（`/` が正規表現か除算かは文法にしか
+  分からない）、読めないファイルは推測せずにそのファイル名で落ちる。
   増えた名前は「新しい結合」で、`DEV-NOTES.md` に理由を書いて `--update` で受け入れる。減った名前は
   「基準が古い」で、同じく `--update` がその縮小の受領証になる。
   ⚠ **行数の天井は撤去した。** `tests/r168` #8 と 20 か所の写しが app shell（8,050 行）・index.html・
@@ -441,7 +443,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る。**読者への質問が成功した時点でターンは終わる**（`stopped:'awaiting_user'`）——同じ返信に並んだ後続の呼びは実行せず `turn_ended` で差し戻し、締めの 1 文のためのモデル呼び出しもしない。**旗は道具（と結果）に立っているので、ループは特定の道具の意味を知らない**。⚠ **同じ呼び出しを 1 ターンで 2 回したら、答えは 1 回**——`js/atlas-turn-results.js` の `callKey(name, args)` で同一性を見て、**成功した**先の結果をそのまま返し「これは今このターンで自分が出した答えである」と添える。同じ仕事かは引数の綴りだけでは決まらないので、結果が名乗る `meta.resultKey`（線・面は**形状**から作り、向きを問わない）が同じなら 2 回目以降は「もう済んでいる、地図には 1 つだけ」と名指す（呼び出し自体は実行するのでラベルや色の変更は反映される。作品の改訂は後継であって反復に数えない）。⚠ **上限ではない**——呼び出し回数の予算も plan も 1 つも変えず、拒否もしない。失敗した呼び出しの**結果**は覚えない（再試行が正しい場合だから）が、**同じ呼びが拒否されたことは覚える**——同一の引数での再拒否は進行ではないので、注記して上の回数に数える |
 | ターンが必ず終わること | `js/atlas-agent.js` ＋ `js/proxy-fetch.js` ＋ `js/fetch-deadline.js` | **回数の上限に加えて時計を持つ。** 1 ツール呼び出しは `toolTimeoutMs`（45 秒）で見切り、Atlas には `tool_timeout` として**機械的に伝える**（中断ではなく報告——次に何をするかは Atlas が決める）。ターン全体は `turnBudgetMs`（180 秒）を超えたら道具を呼ぶのをやめ、**持っているもので回答を書く**。⚠ どちらも**健全なターン（実測およそ 10 秒）の一桁上**に置いた退避線であって、Atlas に与える裁量を減らすものではない（CONSTITUTION.md §5） |
 | 外部証拠の取得 | `js/proxy-fetch.js`（唯一の梯子） | **自前の Edge Function だけ**を段にする（第三者の公開 relay は使わない）。複数あれば**競争**させ、勝った時点で残りを中断する。⚠ **梯子は自分の評決を述べる**——`opts.note` を渡した呼び手には `reason`（`ok` / `refused` / `aborted` / `no-budget`）と `via`（答えた段）が返る。これが無い間、`null` が「どの段も答えなかった」と「答えは来たが中身が無かった」の**両方**を意味していて、読者はその差を知らされなかった（渡さない呼び手の戻り値は変わらない）。⚠ **公開 relay 4 本が生きているかは誰も測っていなかった**——計器は `scripts/probe-relay-ladder.mjs`、実測と警報の条件は [`docs/MONITORING.md`](docs/MONITORING.md)。⚠ **締切は本文を読み終わるまで掛かる**（ヘッダが着いた時点で解除すると、200 を返してから止まった相手を止めるものが無くなる）。呼び出し側は `budgetMs` で**梯子全体の上限**を、`signal` で**停止**を渡す。Atlas の 1 取得 14 秒／証拠集め全体 32 秒／GDELT の梯子 20 秒 |
-| 締切つきの単発取得 | `js/fetch-deadline.js` | `jsonWithin(url, ms, init)`。Nominatim のように relay を要さない相手のための 1 回の取得。**呼び出し側の signal は置き換えず連結する** |
+| 締切つきの単発取得 | `js/fetch-deadline.js` | `jsonWithin(url, ms, init, opts)` と、状態・型・本文を返す `readWithin`。Nominatim や地図の行の取得のように relay を要さない相手のための 1 回の取得。**呼び出し側の signal は置き換えず連結する**。`opts.idle` は本文の塊が届くたびに時計を掛け直す（大きなファイルでは長さではなく**無音**を測る）。何秒かは `js/proxy-fetch.js` の `clockFor(url, via)` が host ごとに答える |
 | Overpass への 1 つの入口 | `js/overpass.js` | `overpassQuery(query, opts)`（`window.IntMapOverpass` でも同じ）。**ミラーの一覧を持つのはこのファイルだけ**で、経路・ドローン・Atlas・施設・川・火山・歴史区分（OpenHistoricalMap）の呼び手は全部ここを通る。予算は問い合わせ自身の `[timeout:N]` ＋ 5 秒で、呼び手は下げられるが上げられない。応答の無いミラーは持ち分（予算÷ミラー数）を過ぎたら**次のミラーを並走**させ、504・429・JSON でない本文・`remark` の runtime error は即座に次へ。全部だめなら `OverpassUnavailable`（各ミラーで何が起きたかを `attempts` に持つ）を投げ、**空の `elements` は正常な答え**として返す——「照合できなかった」と「何も無い」を同じ答えにしない |
 | 証拠集めの予算 | `js/atlas-deadlines.js` | Atlas の 1 取得 14 秒／gather 全体 32 秒／GDELT の梯子 20 秒。締切つきの `settleWithin(jobs, ms)` は**まだ飛んでいる件数**を返し、それが読み手に見える「取得不可」の1行になる。⚠ `js/atlas-console.js` は**縮小のみの行数上限**にあるので、この主題はここに置く（上限を上げるのではなく主題を出す） |
 | 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 11 ツール**（`my_location`、画面そのものを見る `look_at_map`、地図説明を 1 回で描く `compose_map`、時計を動かす `set_time` を含む。⚠ **地図の 3 つの軸——どこ (`map_view`)・何が載るか (`set_layer`)・いつ (`set_time`)——が揃っているのはここ**。時計だけが `find_capability` の向こう側にあった間、「地図を現代に戻す」等の言い回しは検索で **0 件**だった）＋`find_capability`（レジストリの全 146 を検索・返るのは撤去済み 1 を除く **145** から・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 13 本（⚠ **`query_data`（`data.query`）を含む**——目録は `query` を「複数条件の問いのための唯一の行動」と呼び「`analyze` の代わりにこれを使え」と述べながら、手の中にあるのは `research` のほうだった。目録自身の worked example から条件を 1 つ減らした問いが web 調査 2 回・5m10s を使い、`elevM` と `pop` を持つ cities 表に触れなかった）。`ask_user` は `endsTurn`＝**ターンを終える道具**で、旗は**結果にも**載る（`run_capability` が `dialog.ask` を ID で呼ぶ経路では、呼びの名前は `run_capability` だから）。同じ場所で結果に `changedMap` を刻む——**その能力が `map` を生成し、観測器が completed と言ったとき**だけ。監査に削られた回答は `status:'degraded'` と削除件数で返す |
@@ -3685,6 +3687,9 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   `js/layer-rows.js` の `layerInflight`（箱ごとの取得中の登録。成功でも失敗でも settle で外れ、新しい要求が
   古い要求を置き換える）に渡す。2.8 秒後の点検は取得中なら `idle(id)` を待って settle 後に 1 回だけ見て、
   定期の点検は取得中の箱を数えない。遅い行の一覧はどこにも無い——行自身が要求を返す。
+  登録は時計で終わらせないので、**要求の中の取得が自分の期限を持つ**（雨雲レーダー・火災・海底ケーブル・
+  合計特殊出生率の取得は `js/fetch-deadline.js` で読み、秒数は `js/proxy-fetch.js` の `clockFor` が host ごとに
+  答える。期限切れは取得できなかったとして各枝の既存の失敗の経路へ流れる）。
   詳細は `docs/MAP-LAYERS.md` §7.2。
   ⚠ Atlas の `layerCatalog()` はまだ `#layer-dropdown` を歩く。manifest 側の入口は `catalog()`。
   **Active layers** は `_refreshActiveLayers()` がオン中のレイヤーをチップで出し、常に**上部 sticky**の

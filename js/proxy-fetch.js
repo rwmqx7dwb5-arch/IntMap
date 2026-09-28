@@ -18,7 +18,7 @@
  *  (relay-no-data-one-pass) The bounded pass is gone: it re-sent the same request to the same relay —
  *  see race() below.
  *
- *  ⚠ THREE EXPORTS (peekOwnRelay since the boot-probe fix), and everything else is inside the first. tests/r175-checks ③ requires that a js/
+ *  ⚠ FOUR EXPORTS (peekOwnRelay since the boot-probe fix, clockFor since stalled-fetch-and-surface-gauge), and everything else is inside the first. tests/r175-checks ③ requires that a js/
  *  module has no unexported top-level declaration AND no export nobody imports — so the constants
  *  and the helpers live in the closure rather than becoming names the rule would have to police.
  *
@@ -40,7 +40,7 @@
 import { fetchRelayRule, FETCH_RELAY_FUNCTION, ARTICLE_RULE, articleUrlAllowed, looksLikeArticle, ARTICLE_MIN_BYTES } from '../supabase/functions/_shared/fetch-relay-policy.js';
 import { NO_DATA_HEADER } from '../supabase/functions/_shared/relay-guard.js';
 
-export const { fetchViaProxy, ownRelayUrl, peekOwnRelay } = (() => {
+export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
   /* ══ (#R214 / #R216 / own-fetch-relay) HOW THE PUBLIC PROXIES FAILED, KEPT BECAUSE IT IS WHY THEY ARE GONE ══
      「日本語版でニュースが表示されない。ずっと読み込み中。」 Measured FROM THE PAGE (#R188), the two WORLD
      feeds side by side through the public relays this file used to race:
@@ -138,7 +138,17 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay } = (() => {
      are this deadline firing rather than anything about GDELT. The knowledge lives here, in the one
      module that already knows which hosts have their own relay, so no caller has to carry it. */
   const GDELT_DIRECT_MS = 18000;
-  const directMsFor = (u) => (gdeltRelayable(u) ? GDELT_DIRECT_MS : DIRECT_TIMEOUT_MS);
+  /* (stalled-fetch-and-surface-gauge) THE WORLD BANK'S INDICATOR API IS THE SECOND SLOW HOST. Measured
+     2026-09-28, eight reads of `country/all/indicator/…?format=json&per_page=400` (53–61 KB): 0.34 /
+     0.39 / 0.49 / 0.58 / 0.59 / 1.61 / 2.99 s — and 8.23 s for the first read of SP.DYN.TFRT.IN, a cold
+     answer that DIRECT_TIMEOUT_MS would have aborted. The number is the clock js/analysis-timeseries.js
+     had given this host by hand since #R69 (20 s), the only one the app had for it. Every reader of the host takes it
+     from clockFor() now — js/stats-compare.js had three more hand-written 20 s and js/time-countries.js a 12 s, and
+     tests/stalled-fetch-and-surface-gauge-checks ⑦ finds any read of a host with its own row that does not; it lapses if the API's cold
+     answers stop reaching past 6 s, or if the World Bank is ever routed through a relay of ours. */
+  const WORLDBANK_DIRECT_MS = 20000;
+  const worldBank = (u) => /^https:\/\/api\.worldbank\.org\/v2\//.test(String(u || ''));
+  const directMsFor = (u) => (gdeltRelayable(u) ? GDELT_DIRECT_MS : worldBank(u) ? WORLDBANK_DIRECT_MS : DIRECT_TIMEOUT_MS);
 
   /* ⚠⚠⚠ (#R452) THE CLOCK HAS TO COVER THE BODY, AND IT DID NOT. `clearTimeout` ran in a `.finally`
      on the `fetch` promise — i.e. THE MOMENT THE HEADERS ARRIVED — so a relay that answered 200 and
@@ -391,7 +401,24 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay } = (() => {
     return out({ ok: null, state: 'unobserved', status: 200, upstream: note, upstreamAgeMs: age });
   }
 
-  return { fetchViaProxy, ownRelayUrl, peekOwnRelay };
+  /* clockFor(url, via) -> the deadline, in ms, for ONE read of `url` (stalled-fetch-and-surface-gauge)
+     `via` 'direct' (default) — the host itself: directMsFor, the per-host table above;
+           'relay'            — the relay of ours that ownRelayUrl(url) names: the clock this ladder
+                                gives that same relay (gdelt-relay's own, a rule's own, else one racer's).
+     The callers that read a URL themselves (js/data-layers.js — the radar index, the fire probe, the
+     cables, the fertility table) ask here, so a host's clock is stated once, beside the relay table,
+     instead of once per caller. The number is the deadline for the whole exchange, or for the longest
+     silence when the caller reads under js/fetch-deadline.js's idle clock. */
+  function clockFor(url, via) {
+    if (via === 'relay') {
+      if (ownRelay(url)) return OWN_RELAY_TIMEOUT_MS;
+      const mine = proxiesFor(url);
+      return (mine[0] && mine[0].ms) || PROXY_TIMEOUT_MS;
+    }
+    return directMsFor(url);
+  }
+
+  return { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor };
 
   /* the race — each rung asked once */
   async function race(PROXIES, url, okDoc, left, mk) {
