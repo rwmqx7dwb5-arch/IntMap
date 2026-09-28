@@ -1,10 +1,10 @@
 {
   "eager": {
-    "raw": 5365102,
-    "gzip": 1734624,
-    "brotli": 1312705,
-    "requests": 8,
-    "modules": 283,
+    "raw": 4913389,
+    "gzip": 1609758,
+    "brotli": 1214141,
+    "requests": 9,
+    "modules": 284,
     "cssRaw": 356704,
     "cssGzip": 58496
   },
@@ -31,7 +31,7 @@
       "aviation-live": 33309,
       "cesium": 4907686,
       "cesium-engine": 66404,
-      "cesium-input": 14568,
+      "cesium-input": 18222,
       "cesium-layers": 17921,
       "cesium-style": 15645,
       "cesium-vector-tiles": 5674,
@@ -93,8 +93,8 @@
     }
   },
   "dist": {
-    "total": 773330533,
+    "total": 772878820,
     "data": 715643472,
-    "assets": 19379851
+    "assets": 18928138
   }
 }

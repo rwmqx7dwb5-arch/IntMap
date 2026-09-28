@@ -115,10 +115,10 @@ test('R182 ①: the transcribed constants match the installed maplibre-gl', () =
    at z4/lat 20 a 10 px step moved the centre 0.04386°/px in longitude and 0.0413°/px in
    latitude, and panning north raised the reported zoom by +0.0244 over 2.89° of latitude.
    ⚠ (maplibre-6-migration) THOSE NUMBERS ARE 5.24's DRAG. MapLibre 6.4 drags the globe with a versor
-   (versorSetLocationAtPoint) and keeps computeGlobePanCenter for the pan INERTIA only; js/cesium-input.js
-   still drags by this law. What this pins is the transcription of computeGlobePanCenter, which 6.x still
-   ships; the drag's change of feel on the second engine is recorded as open in
-   dev-notes/2026-09-27-maplibre-6-migration.md, not hidden by editing these numbers. */
+   (versorSetLocationAtPoint) and keeps computeGlobePanCenter for the pan INERTIA only. (cesium-globe-drag)
+   js/cesium-input.js now drags by the versor too (globeDrag — tests/cesium-globe-drag-checks) and uses
+   this law for the inertia after release, as 6.x does. What this pins is the transcription of
+   computeGlobePanCenter, which 6.x still ships. */
 test('R182 ②: computeGlobePanCenter reproduces the measured MapLibre pan', () => {
   const { panCentre, zoomAdjust, degPerPx, worldSizeAt } = loadInput()._math;
   const cam = { lng: 10, lat: 20, zoom: 4, bearing: 0 };

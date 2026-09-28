@@ -39,21 +39,19 @@
  *  thing that defines it, rather than two that agree with each other and not
  *  with the renderer.
  *
- *  It matters more than it sounds. MapLibre's globe pan is DELIBERATELY not
- *  "grab a place and drag it" — its own comment on handleMapControlsPan says so
- *  ("we avoid using the grab a place and move it around approach from mercator
- *  here, since it is not a very pleasant way to pan a globe") — so the obvious
- *  implementation, the one that keeps the grabbed point exactly under the
- *  cursor, is the one that would NOT match. Cesium's controller is switched off
+ *  It matters more than it sounds. Up to 5.24 MapLibre's globe pan was
+ *  deliberately NOT "grab a place and drag it" — a fixed degrees-per-pixel law
+ *  (computeGlobePanCenter) — and 6.4 replaced it with exactly that: a versor
+ *  rotation that brings the grabbed place back under the pointer
+ *  (versorSetLocationAtPoint). This file followed (cesium-globe-drag): the drag is
+ *  globeDrag below, and panCentre still answers the pan INERTIA, which is what 6.x
+ *  keeps computeGlobePanCenter for. Measured on both engines along the same paths
+ *  (tests/cesium-globe-drag-cesium.spec.js): before, Cesium let the grabbed place
+ *  slip 3.02° where MapLibre slipped 0.26° (z4, pitch 40) and parked the centre
+ *  5.9° away after a drag over the rim at z1.7. Cesium's controller is switched off
  *  (`enableInputs = false`) rather than re-tuned: its rotate/tilt/zoom are a
  *  different model, and two camera drivers on one pointer is the class of defect
  *  #R172 and #R179 each spent a round on.
- *  ⚠ (MapLibre 6) THAT SENTENCE IS 5.24's. 6.4 moved MapLibre's globe DRAG to a
- *  versor rotation that keeps the grabbed point under the pointer
- *  (versorSetLocationAtPoint); computeGlobePanCenter, which panCentre below
- *  transcribes, now answers only the pan INERTIA. The drag law here was not moved
- *  with it — that is a change of feel on the second engine, not a migration of
- *  the first, and dev-notes/2026-09-27-maplibre-6-migration.md records it as open.
  *
  *  ── AND WHY THE CAMERA IS STILL SET THROUGH setCamera() ─────────────────────
  *  Every gesture here ends in `view.setCamera({center, zoom, bearing, pitch})`.
@@ -91,6 +89,9 @@ window.IntMapCesiumInput=(function(){
     bearing:{ linearity:0.3, deceleration:1000, maxSpeed:360  },
     pitch:  { linearity:0.3, deceleration:1000, maxSpeed:90   } };
   const MAX_VALID_LATITUDE=85.051129;   /* the Mercator limit MapLibre clamps a centre to */
+  const PAN_FALLOFF_BAND=0.1;           /* globe_utils: PAN_FALLOFF_BAND (6.4+) */
+  const DIAL_MIN_RADIUS_PX=20;          /* globe_utils: DIAL_MIN_RADIUS_PIXELS (6.4+) */
+  const PAN_MAX_ANGLE=Math.PI*0.98;     /* globe_utils: PAN_MAX_ANGLE (6.4+) */
   const TILE=512, D2R=Math.PI/180;
 
   /* ══ THE TWO EASINGS ════════════════════════════════════════════════════════
@@ -163,6 +164,134 @@ window.IntMapCesiumInput=(function(){
              lat:clamp(cam.lat+ry*dpp,-MAX_VALID_LATITUDE,MAX_VALID_LATITUDE) };
   }
 
+  /* ══ THE GLOBE DRAG — versorSetLocationAtPoint (MapLibre ≥ 6.4) ═════════════
+     Per pointer move, with the camera as it stood BEFORE the move:
+       from = the place under (anchor − delta),  to = the place under anchor,
+     both through panSurfaceLocation; the globe's orientation quaternion
+     q(centre, bearing) = fromEuler(−lng, −lat, bearing) is multiplied by the
+     rotation that carries `from` onto `to`, and the new centre is read back out of
+     it. The bearing is HELD (fixedBearing), so only the swing is applied and the
+     grabbed place slides by twist × distance from the centre — MapLibre's own
+     slip, which is what "the same feel" has to reproduce, not correct. Within 12°
+     of MAX_VALID_LATITUDE the longitude blends into a dial turned about the pole.
+     Nothing here knows which renderer it serves: `geo` supplies the ray through a
+     pixel in a frame where the planet is the unit sphere, the way back from that
+     sphere to a lng/lat, a screen projection and the centre's pixel. The Cesium
+     side builds it in attach(); tests/cesium-globe-drag-checks builds it from
+     MapLibre's own GlobeTransform and requires the same answer as MapLibre's
+     handleMapControlsPan. */
+  const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  /* raySphereIntersection, taking tMin as unprojectScreenPoint does; null off the planet */
+  function raySphere(o,d){
+    const od=dot3(o,d);
+    const ix=o[0]-d[0]*od, iy=o[1]-d[1]*od, iz=o[2]-d[2]*od;
+    const disc=1-(ix*ix+iy*iy+iz*iz);
+    if(disc<0) return null;
+    const q=-od+(od<0?1:-1)*Math.sqrt(disc);
+    const t0=(dot3(o,o)-1)/q, t1=q;
+    if(Math.max(t0,t1)<0) return null;
+    const t=Math.min(t0,t1);
+    const p=[o[0]+d[0]*t, o[1]+d[1]*t, o[2]+d[2]*t], l=Math.sqrt(dot3(p,p));
+    return l>0?[p[0]/l,p[1]/l,p[2]/l]:null;
+  }
+  /* panSurfaceLocation — the exact hit inside the handover angle, and past it the exact
+     curve continued by a hyperbola matched in value and slope, saturating at PAN_MAX_ANGLE:
+     so a pointer at, or beyond, the planet's edge still aims somewhere on it */
+  function panSurface(o,d){
+    const distance=Math.sqrt(dot3(o,o));
+    if(distance<=1) return raySphere(o,d);
+    const u=[o[0]/distance,o[1]/distance,o[2]/distance];
+    const c=-dot3(d,u);
+    const lat=[d[0]+u[0]*c, d[1]+u[1]*c, d[2]+u[2]*c];
+    const s=Math.sqrt(dot3(lat,lat));
+    if(s<1e-9) return raySphere(o,d);
+    const angle=Math.atan2(s,c);
+    const handover=Math.asin(1/distance)*(1-PAN_FALLOFF_BAND);
+    if(angle<handover) return raySphere(o,d);
+    const sinH=distance*Math.sin(handover);
+    const atH=Math.asin(clamp(sinH,-1,1))-handover;
+    const slope=distance*Math.cos(handover)/Math.sqrt(Math.max(1-sinH*sinH,1e-12))-1;
+    const room=PAN_MAX_ANGLE-atH, excess=angle-handover;
+    const target=clamp(atH+room*(slope*excess)/(room+slope*excess),0,PAN_MAX_ANGLE);
+    const cs=Math.cos(target), sn=Math.sin(target)/s;
+    const v=[u[0]*cs+lat[0]*sn, u[1]*cs+lat[1]*sn, u[2]*cs+lat[2]*sn], l=Math.sqrt(dot3(v,v));
+    return [v[0]/l,v[1]/l,v[2]/l];
+  }
+  /* angularCoordinatesToSurfaceVector — MapLibre's frame: y north, z at lng 0 */
+  const surfVec=(lng,lat)=>{ const a=lng*D2R, b=lat*D2R, l=Math.cos(b);
+    return [Math.sin(a)*l, Math.sin(b), Math.cos(a)*l]; };
+  /* orientationFromLngLatBearing = gl-matrix quat.fromEuler(−lng, −lat, bearing), order zyx */
+  function orientation(lng,lat,bearing){
+    const h=Math.PI/360, x=-lng*h, y=-lat*h, z=bearing*h;
+    const sx=Math.sin(x),cx=Math.cos(x),sy=Math.sin(y),cy=Math.cos(y),sz=Math.sin(z),cz=Math.cos(z);
+    return [sx*cy*cz-cx*sy*sz, cx*sy*cz+sx*cy*sz, cx*cy*sz-sx*sy*cz, cx*cy*cz+sx*sy*sz];
+  }
+  const quatMul=(a,b)=>[a[0]*b[3]+a[3]*b[0]+a[1]*b[2]-a[2]*b[1],
+                        a[1]*b[3]+a[3]*b[1]+a[2]*b[0]-a[0]*b[2],
+                        a[2]*b[3]+a[3]*b[2]+a[0]*b[1]-a[1]*b[0],
+                        a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
+  /* lngLatBearingFromOrientation */
+  function fromOrientation(q){
+    const x=q[0],y=q[1],z=q[2],w=q[3];
+    return { lng:-Math.atan2(2*(w*x+y*z),1-2*(x*x+y*y))/D2R,
+             lat:-Math.asin(clamp(2*(w*y-z*x),-1,1))/D2R,
+             bearing:Math.atan2(2*(w*z+x*y),1-2*(y*y+z*z))/D2R };
+  }
+  /* the swing that carries the place `from` onto `to`, applied to the orientation —
+     including the component swizzle between the two frames, as MapLibre has it */
+  function versorCentre(cam,from,to){
+    const vCur=surfVec(to.lng,to.lat), vTgt=surfVec(from.lng,from.lat);
+    const w=[vTgt[1]*vCur[2]-vTgt[2]*vCur[1], vTgt[2]*vCur[0]-vTgt[0]*vCur[2], vTgt[0]*vCur[1]-vTgt[1]*vCur[0]];
+    const l=Math.sqrt(dot3(w,w));
+    const t=Math.acos(clamp(dot3(vTgt,vCur),-1,1))/2, s=Math.sin(t);
+    /* `quat.fromValues` allocates gl-matrix's default ARRAY_TYPE, a Float32Array, so MapLibre's
+       per-move rotation is single precision — measured 6e-7° of centre per move at z2.5 without
+       the rounding here, which the transcription check (tests/cesium-globe-drag-checks ②) sees */
+    const f=Math.fround;
+    const delta=l?[f((w[1]/l)*s),f((-w[0]/l)*s),f((w[2]/l)*s),f(Math.cos(t))]:[0,0,0,1];
+    return fromOrientation(quatMul(orientation(cam.lng,cam.lat,cam.bearing),delta));
+  }
+  const modDeg=(n,m)=>((n%m)+m)%m;
+  /* fixedBearingLongitude — near the pole the swing's longitude is ill-conditioned, so the
+     pointer's sweep about the pole's own pixel takes over, damped within DIAL_MIN_RADIUS_PX */
+  function fixedBearingLng(cam,x,y,dx,dy,newLng,geo){
+    const poleLat=cam.lat>=0?90:-90;
+    const tRamp=clamp(1-(MAX_VALID_LATITUDE-Math.abs(cam.lat))/12,0,1);
+    const dial=tRamp*tRamp*(3-2*tRamp);
+    const dLngSwing=modDeg(newLng-cam.lng+180,360)-180;
+    let dLngDial=0;
+    if(dial>0){
+      const pole=geo.project(0,poleLat);
+      if(pole&&isFinite(pole.x)&&isFinite(pole.y)){
+        const rx=x-pole.x, ry=y-pole.y;
+        const dTheta=(rx*dy-ry*dx)/Math.max(rx*rx+ry*ry,DIAL_MIN_RADIUS_PX*DIAL_MIN_RADIUS_PX);
+        dLngDial=(poleLat>0?1:-1)*dTheta/D2R;
+      }
+    }
+    return cam.lng+(1-dial)*dLngSwing+dial*dLngDial;
+  }
+  /* handleMapControlsPan: the anchor is the pointer while it is on the planet and the centre's
+     own pixel once it is off it. Writes lng/lat/zoom into `cam` (the zoom by getZoomAdjustment,
+     so the planet keeps its size on screen); false when the geometry gave no answer. */
+  function globeDrag(cam,x,y,dx,dy,geo){
+    let ax=x, ay=y;
+    const here=geo.ray(x,y);
+    if(!(here&&raySphere(here.o,here.d))){ const c=geo.centre(); ax=c.x; ay=c.y; }
+    const r1=geo.ray(ax,ay), r0=geo.ray(ax-dx,ay-dy);
+    const v1=r1&&panSurface(r1.o,r1.d), v0=r0&&panSurface(r0.o,r0.d);
+    if(!v1||!v0) return false;
+    const to=geo.toLngLat(v1), from=geo.toLngLat(v0);
+    if(!to||!from) return false;
+    const n=versorCentre(cam,from,to);
+    if(!isFinite(n.lng)||!isFinite(n.lat)) return false;
+    const lng=fixedBearingLng(cam,ax,ay,dx,dy,n.lng,geo);
+    const oldLat=cam.lat;
+    cam.lng=wrapLng(lng);
+    cam.lat=clamp(n.lat,-MAX_VALID_LATITUDE,MAX_VALID_LATITUDE);
+    cam.zoom+=zoomAdjust(oldLat,cam.lat);
+    return true;
+  }
+
   /* calculateEasing(amount, inertiaDuration, options). MapLibre divides by the raw window and
      lets a zero-length one produce Infinity, which its own clamp then absorbs; a floor of one
      millisecond reaches the same clamp without the intermediate non-finite value. */
@@ -229,6 +358,51 @@ window.IntMapCesiumInput=(function(){
       const ll=view._pickLngLat({x,y});
       return (ll&&isFinite(ll.lng)&&isFinite(ll.lat))?ll:null;
     }
+
+    /* ══ THE PLANET AS globeDrag SEES IT ═══════════════════════════════════════
+       MapLibre's globe is a unit sphere; Cesium's is the WGS84 ellipsoid. Dividing each
+       axis by the ellipsoid's radii maps it onto the unit sphere and maps a straight ray to
+       a straight ray, so the transcription runs unchanged in that space: its exact hit IS
+       pickEllipsoid, its rim falloff meets that hit continuously at the handover, and a
+       surface point comes back to geodetic lng/lat by scaling the axes again.
+       ⚠ The ellipsoid, not `_pickLngLat`: that asks the tessellated mesh, whose chord sags
+       inside the curve at low zoom (see the engine's _centreCarto), and MapLibre's globe
+       drag ignores terrain as well — screenPointToLocation without a terrain argument. */
+    const geo={
+      ray(x,y){
+        try{
+          const r=view._camera.getPickRay(new Cesium.Cartesian2(x,y));
+          if(!r) return null;
+          const R=view._globe.ellipsoid.radii;
+          const d=[r.direction.x/R.x, r.direction.y/R.y, r.direction.z/R.z];
+          const l=Math.hypot(d[0],d[1],d[2]);
+          if(!(l>0)) return null;
+          return { o:[r.origin.x/R.x, r.origin.y/R.y, r.origin.z/R.z], d:[d[0]/l,d[1]/l,d[2]/l] };
+        }catch(_){ return null; }
+      },
+      toLngLat(v){
+        try{
+          const R=view._globe.ellipsoid.radii;
+          const c=Cesium.Cartographic.fromCartesian(new Cesium.Cartesian3(v[0]*R.x,v[1]*R.y,v[2]*R.z),
+                                                    view._globe.ellipsoid);
+          return c?{ lng:c.longitude/D2R, lat:c.latitude/D2R }:null;
+        }catch(_){ return null; }
+      },
+      /* locationToScreenPoint projects through the matrices whether or not the point faces the
+         camera, and the pole-dial needs exactly that (the pole can be over the horizon while the
+         centre is within 12° of it), so project the same way rather than through
+         SceneTransforms, which declines points behind the eye */
+      project(lng,lat){
+        try{
+          const cam=view._camera, p=Cesium.Cartesian3.fromDegrees(lng,lat,0,view._globe.ellipsoid);
+          const vp=Cesium.Matrix4.multiply(cam.frustum.projectionMatrix,cam.viewMatrix,new Cesium.Matrix4());
+          const q=Cesium.Matrix4.multiplyByVector(vp,new Cesium.Cartesian4(p.x,p.y,p.z,1),new Cesium.Cartesian4());
+          if(!q.w) return null;
+          return { x:(q.x/q.w+1)/2*view._canvasW(), y:(1-q.y/q.w)/2*view._canvasH() };
+        }catch(_){ return null; }
+      },
+      centre:()=>centrePt()
+    };
 
     /* ══ setLocationAtPoint, SOLVED RATHER THAN TRANSCRIBED ════════════════════
        MapLibre's is closed form because its transform is a Mercator plane; on an
@@ -404,6 +578,9 @@ window.IntMapCesiumInput=(function(){
       const mag=Math.hypot(px,py);
       if(mag){
         const r=inertiaEase(mag,ms,INERTIA.pan);
+        /* the DRAG is the versor (globeDrag) but the GLIDE after it is not: 6.x's
+           handlePanInertia still turns the recorded pixel deltas into a centre with
+           computeGlobePanCenter, so the two laws meet at the release exactly as MapLibre's do */
         const c=panCentre(from,px*(r.amount/mag),py*(r.amount/mag));
         /* handlePanInertia clamps a glide that would carry the centre past the
            far side of the globe (VerticalPerspectiveCameraHelper) */
@@ -491,10 +668,8 @@ window.IntMapCesiumInput=(function(){
       if(mode==='box'){ drawBox(); return; }
       if(mode==='pan'){
         begin('pan');
-        const oldLat=cam.lat;
-        const c=panCentre(cam,dx,dy);
-        cam.lng=c.lng; cam.lat=c.lat;
-        cam.zoom+=zoomAdjust(oldLat,cam.lat);
+        /* the camera still stands where the last move left it, which is what globeDrag reads */
+        globeDrag(cam,p.x,p.y,dx,dy,geo);
         apply(cam);
         record({ px:dx, py:dy, around:{x:p.x,y:p.y} });
         step(false);
@@ -731,12 +906,14 @@ window.IntMapCesiumInput=(function(){
       let zd=0, mid=null;
 
       if(on.dragPan){
+        /* TouchPanHandler: the delta is the mean over the fingers (the others did not move in
+           this event) and the anchor is the mean of their positions — also the pinch midpoint */
         const n=Math.max(1,pts.size);
+        let mx=0,my=0; for(const q of pts.values()){ mx+=q.x; my+=q.y; }
+        mx/=n; my/=n;
         begin('pan');
-        const oldLat=cam.lat;
-        const c=panCentre(cam,dx/n,dy/n);
-        cam.lng=c.lng; cam.lat=c.lat; cam.zoom+=zoomAdjust(oldLat,cam.lat);
-        record({ px:dx/n, py:dy/n, around:{x,y} });
+        globeDrag(cam,mx,my,dx/n,dy/n,geo);
+        record({ px:dx/n, py:dy/n, around:{x:mx,y:my} });
       }
 
       if(pinch&&pts.has(pinch.ids[0])&&pts.has(pinch.ids[1])){
@@ -867,11 +1044,13 @@ window.IntMapCesiumInput=(function(){
   return { attach,
     _math:{ unitBezier, easeOut, INERTIA_EASING, clamp, lerp, remapSaturate, planetScale,
             zoomAdjust, worldSizeAt, globeRadiusPx, degPerPx, diffAngles, wrapLng,
-            panCentre, inertiaEase, angleDelta, angleWith },
+            panCentre, inertiaEase, angleDelta, angleWith,
+            raySphere, panSurface, orientation, fromOrientation, versorCentre, globeDrag },
     _consts:{ ROTATE_DEG_PER_PX, PITCH_DEG_PER_PX, ROTATE_CENTRE_PX, CLICK_TOLERANCE,
               WHEEL_ZOOM_DELTA, DEFAULT_ZOOM_RATE, WHEEL_ZOOM_RATE, MAX_SCALE_PER_FRAME,
               WHEEL_EASE_MS, WHEEL_TIME_ADJ, TOUCH_ZOOM_RATE, TOUCH_ZOOM_THRESHOLD,
               TOUCH_ROTATE_THRESHOLD, TOUCH_SINGLE_MS, TOUCH_PITCH_MIN_PX,
               KEY_PAN_STEP, KEY_BEARING_STEP, KEY_PITCH_STEP, KEY_EASE_MS, DBLCLICK_EASE_MS,
-              INERTIA_CUTOFF, VELOCITY_WINDOW, INERTIA, MAX_VALID_LATITUDE, TILE } };
+              INERTIA_CUTOFF, VELOCITY_WINDOW, INERTIA, MAX_VALID_LATITUDE, TILE,
+              PAN_FALLOFF_BAND, DIAL_MIN_RADIUS_PX, PAN_MAX_ANGLE } };
 })();

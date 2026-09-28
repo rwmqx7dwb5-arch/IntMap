@@ -45,7 +45,8 @@ data-assets.json                **git の外にあるデータ集合の目録**�
                                 取得は `npm run data:pull`、公開は `npm run data:publish <集合>`（scripts/data-assets.mjs）
 .nvmrc                          Node のバージョン（CI・ローカル共通）
 vite.config.js                  ビルド設定（Vite 8／Rolldown。優先度つきのチャンク group・`resolve.mainFields`・
-                                CSS 最小化器・静的アセットのコピー・prebuild フック）
+                                CSS 最小化器・静的アセットのコピー・prebuild フック・MapLibre の worker を
+                                同じビルドの entry チャンクにして shared を本体と共有させる `maplibreSharedWorker`）
 tsconfig.json                   `npm run check:types`（tsc --noEmit）の設定。checkJs は off で、
                                 `// @ts-check` を持つ js/ ファイルだけが検査される（一覧は持たない）
 types/geo-engine.d.ts           地図エンジンの契約の型: 両アダプタ共通のメンバー・片方だけのメンバー・
@@ -95,8 +96,9 @@ css/
 src/
   main.js                           js/ を index.html と同じ順序で import するエントリ
   vendor.js                         npm 依存を従来と同じグローバル名で再公開し、Supabase クライアントを作る。
-                                    maplibre-gl 6 は namespace で取り、自己完結した worker（`?worker&url`）を
-                                    最初の Map より前に `setWorkerUrl` で渡す
+                                    maplibre-gl 6 は namespace で取り、ビルドが entry チャンクとして出す worker の
+                                    URL（`virtual:maplibre-gl-worker-url`・vite.config.js）を最初の Map より前に
+                                    `setWorkerUrl` で渡す
   locale-boot.js                    import.meta.glob('../js/locales/ui.*.js') で言語をディレクトリから読む（lazy）
   sat-worker.js / sat-worker-client.js      衛星の軌道計算（SGP4/SDP4）をワーカーで回す
   tsunami-worker.js / tsunami-worker-client.js  津波の伝播計算をワーカーで回す
@@ -1417,7 +1419,8 @@ scripts/
                                   eager（index.html のエントリ＋静的 import の推移閉包＝modulepreload
                                   される集合）と async を**導出**し、raw / gzip / brotli とモジュール別の
                                   内訳を `.perf/build-report.json` に書く（追跡対象外）。eager には起動経路が
-                                  `?worker&url` で持つ worker アセット（MapLibre 6 の worker）も入る。
+                                  立ち上げる worker——`?worker&url` の worker アセットと、eager のモジュールが
+                                  名指す emitted entry チャンク（MapLibre 6 の worker）とその閉包——も入る。
                                   ⚠ brotli は**2つの品質**を使う——ゲートが読む eager だけ 11、それ以外は 5。
                                   全部を 11 にするとビルドが 40 秒延びる（Cesium だけで 4.8 MB）。
   perf-budget.mjs                 **起動予算のゲート**（`npm run check:perf`・CI の静的 job）。
@@ -1507,7 +1510,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 120 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 121 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

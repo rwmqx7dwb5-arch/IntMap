@@ -40,7 +40,7 @@
    notes say the same.) Same-origin, so the CSP's `worker-src 'self'` already admits it.
    Set once, here, before any Map exists: MapLibre starts its worker pool with the first Map. */
 import * as maplibregl from 'maplibre-gl';
-import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+import maplibreWorkerUrl from 'virtual:maplibre-gl-worker-url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import mlcontour from 'maplibre-contour';
 /* ══ (#R209) TURF IS IMPORTED BY NAME, NOT AS A NAMESPACE ══════════════════════════════════════

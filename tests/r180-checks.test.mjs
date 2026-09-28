@@ -328,9 +328,17 @@ test('R180 ③: the build keeps Cesium in its own chunk and copies its runtime d
   const { default: cfg } = await import('../vite.config.js');
   const groups = cfg.build.rolldownOptions.output.codeSplitting.groups;
   const hit = (g, id) => (typeof g.test === 'function' ? g.test(id) : g.test.test(id));
-  const owner = (id) => groups.filter((g) => hit(g, id)).sort((a, b) => b.priority - a.priority)[0]?.name;
+  /* ⚠ (MapLibre shared worker) a group's `name` may be a FUNCTION of the module graph — Rolldown calls
+     it with a chunking context, and `null` means "not this group". Read as a string, a function-named
+     group looked like it owned nothing. No graph is handed over here (getModuleInfo answers null), so
+     each group answers for a module nothing has been shown to reach: the most conservative placement. */
+  const ctx = { getModuleInfo: () => null };
+  const nameOf = (g, id) => (typeof g.name === 'function' ? g.name(id, ctx) : g.name);
+  const owner = (id) => groups.filter((g) => hit(g, id) && nameOf(g, id)).sort((a, b) => b.priority - a.priority).map((g) => nameOf(g, id))[0];
   assert.equal(owner('/r/node_modules/cesium/Source/Cesium.js'), 'cesium', 'a chunk of its own');
-  assert.equal(owner('\0vite/preload-helper.js'), 'maplibre-gl', 'the bundler helpers main imports never sit in the lazy chunk');
+  /* the helper lands in one of the renderer's two EAGER chunks — which one depends on whether MapLibre's
+     worker reaches it (tests/maplibre-6-migration-checks ④ evaluates that with a graph) */
+  assert.match(owner('\0vite/preload-helper.js') || '', /^maplibre-gl(-shared)?$/, 'the bundler helpers main imports never sit in the lazy chunk');
   const c = groups.find((g) => g.name === 'cesium');
   assert.ok(c && groups.every((g) => g === c || g.priority > c.priority), 'the lazy engine is the lowest priority');
   assert.match(vite, /CESIUM_DIRS\s*=\s*\['Workers', 'Assets', 'ThirdParty', 'Widgets'\]/,

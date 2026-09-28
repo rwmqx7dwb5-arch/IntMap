@@ -1,4 +1,5 @@
 {
+ "tests/cesium-globe-drag-cesium.spec.js": 49,
  "tests/heal-waits-for-inflight.spec.js": 8,
  "tests/cesium-koppen-and-boot-probe-cesium.spec.js": 57,
  "tests/ui-a11y-polish.spec.js": 15,

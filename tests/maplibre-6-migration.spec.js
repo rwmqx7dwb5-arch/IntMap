@@ -83,13 +83,20 @@ test('② the renderer\'s worker comes from this origin and tiles data', async (
     }
     const f = feats[0];
     m.removeLayer(id); m.removeSource(id);
+    /* what the worker's own static imports resolve to, and the scripts the PAGE itself fetched */
+    const imports = [...src.matchAll(/(?:^|[;}\s])import\s*(?:[\w$*{][^;]*?from\s*)?["']([^"']+)["']/g)].map((x) => new URL(x[1], u).href);
+    const pageLoaded = new Set(performance.getEntriesByType('resource').map((e) => e.name));
     return { sameOrigin: u.origin === location.origin, path: u.pathname, bytes: src.length,
-             importsSibling: /from\s*["']\.\/maplibre-gl-shared/.test(src),
+             imports, importsPageLoaded: imports.filter((x) => pageLoaded.has(x)),
              tiled: feats.length, probe: f && f.properties.probe, nested: f && f.properties.nested };
   });
   expect(r.sameOrigin, 'the worker is ours to serve — the CSP admits worker-src \'self\'').toBe(true);
   expect(r.path).toMatch(/\/assets\/[^/]+\.js$/);
-  expect(r.importsSibling, 'it is self-contained — dist/maplibre-gl-worker.mjs imports a sibling a plain ?url copy would not ship').toBe(false);
+  /* (dev-notes/2026-09-28-maplibre-shared-worker.md) the worker is a chunk of the SAME build: it imports
+     the renderer's shared code instead of carrying a second copy, so every file it imports is one the
+     page has already fetched — the worker's request for it is answered by the HTTP cache */
+  expect(r.imports.length, 'the worker imports the shared code rather than repeating it').toBeGreaterThan(0);
+  expect(r.importsPageLoaded, 'every file the worker imports is one the page itself already loaded').toEqual(r.imports);
   expect(r.tiled, 'a GeoJSON source came back from the worker as tiles').toBeGreaterThan(0);
   expect(r.probe).toBe('yes');
   /* 6.0 carries nested properties through the worker as values (5.x flattened them to JSON strings);

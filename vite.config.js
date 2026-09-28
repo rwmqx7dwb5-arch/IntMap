@@ -347,6 +347,89 @@ function staticallyReached(id, getModuleInfo) {
   return hit;
 }
 
+/* ══ ⚠⚠ (MapLibre 6) ONE COPY OF THE SHARED CODE, FOR THE RENDERER AND FOR ITS WORKER ══════════════════
+   MapLibre 6 publishes three ES modules and says how they fit together (node_modules/maplibre-gl/build/
+   readme.md, and the worker factory in dist/maplibre-gl.mjs): the renderer (maplibre-gl.mjs) and the
+   worker (maplibre-gl-worker.mjs) both import the third, maplibre-gl-shared.mjs, and the renderer starts
+   the worker as a MODULE worker (`new Worker(url, {type:'module'})`). Served that way, the shared code
+   crosses the network once — the worker's `import` of it is answered by the HTTP cache the page filled.
+   The migration first handed the worker to Vite's `?worker&url`, which builds it as a SEPARATE bundle
+   with the shared module copied inside: MEASURED, 516 kB of shared code shipped twice, the boot's
+   brotli +119 kB (dev-notes/2026-09-27-maplibre-6-migration.md §4).
+   So the worker is emitted as one more ENTRY CHUNK OF THIS BUILD (`emitFile({type:'chunk'})`): it sits in
+   the same module graph as the renderer, the bundler gives the modules both of them import one chunk
+   (the `maplibre-gl-shared` group below), and the worker chunk's `import` names that same file. The URL
+   reaches src/vendor.js through `virtual:maplibre-gl-worker-url` (`import.meta.ROLLUP_FILE_URL_*`, hashed
+   with the rest of the build), and vendor.js still hands it to setWorkerUrl before the first Map.
+   ⚠ WHAT GOES IN THE SHARED CHUNK IS ASKED OF THE GRAPH, NOT LISTED: a module is shared iff the worker
+   entry reaches it by static imports (`inWorkerGraph`). That is the property that matters — the worker
+   EVALUATES every module of every chunk it imports, so a chunk it loads must hold nothing but its own
+   graph (the renderer's main-thread code, or Vite's modulepreload polyfill, would run in the worker and
+   touch `document`). generateBundle below proves it on the finished bundle and fails the build if not.
+   ⚠ `vite dev` has no chunks: there the same virtual module answers with Vite's dev worker URL (the
+   file served out of node_modules, which imports its sibling from node_modules — what `?worker&url`
+   has always done in dev). */
+const ML_WORKER_SPEC = 'maplibre-gl/dist/maplibre-gl-worker.mjs';
+const ML_WORKER_URL_ID = 'virtual:maplibre-gl-worker-url';
+/* the resolved id of the worker entry, set by the plugin when it emits the chunk and read by the chunk
+   groups below (they run after the module graph is complete, i.e. after the plugin's load) */
+const mlWorker = { id: null };
+const _workerGraph = new WeakMap();
+function inWorkerGraph(id, getModuleInfo) {
+  const root = mlWorker.id && getModuleInfo(mlWorker.id);
+  if (!root) return false;
+  let set = _workerGraph.get(root);
+  if (!set) {
+    set = new Set();
+    const stack = [mlWorker.id];
+    while (stack.length) {
+      const m = stack.pop();
+      if (set.has(m)) continue;
+      set.add(m);
+      const info = getModuleInfo(m);
+      if (info) for (const d of info.importedIds) stack.push(d);
+    }
+    _workerGraph.set(root, set);
+  }
+  return set.has(id);
+}
+export function maplibreSharedWorker() {
+  const RESOLVED = '\0' + ML_WORKER_URL_ID;
+  let serve = false;
+  return {
+    name: 'intmap-maplibre-shared-worker',
+    configResolved(c) { serve = c.command === 'serve'; },
+    resolveId(id) { return id === ML_WORKER_URL_ID ? RESOLVED : null; },
+    async load(id) {
+      if (id !== RESOLVED) return null;
+      if (serve) return `export { default } from ${JSON.stringify(ML_WORKER_SPEC + '?worker&url')};`;
+      const r = await this.resolve(ML_WORKER_SPEC);
+      if (!r || r.external) this.error(`${ML_WORKER_SPEC} does not resolve — MapLibre would have no worker`);
+      mlWorker.id = r.id;
+      const ref = this.emitFile({ type: 'chunk', id: r.id, name: 'maplibre-gl-worker' });
+      return `export default import.meta.ROLLUP_FILE_URL_${ref};`;
+    },
+    generateBundle(_o, bundle) {
+      if (serve || !mlWorker.id) return;
+      const chunks = Object.values(bundle).filter((o) => o.type === 'chunk');
+      const worker = chunks.find((c) => c.isEntry && c.facadeModuleId === mlWorker.id);
+      if (!worker) { this.error('the MapLibre worker was not emitted as a chunk'); return; }
+      const byName = new Map(chunks.map((c) => [c.fileName, c]));
+      const graph = (m) => this.getModuleInfo(m);
+      const seen = new Set(), q = [worker.fileName], alien = [];
+      while (q.length) {
+        const f = q.shift();
+        if (seen.has(f)) continue;
+        seen.add(f);
+        const c = byName.get(f);
+        for (const id of Object.keys(c.modules)) if (!inWorkerGraph(id, graph)) alien.push(`${id} (in ${f})`);
+        for (const i of c.imports) q.push(i);
+      }
+      if (alien.length) this.error(`the MapLibre worker would evaluate modules it does not import — ${alien.slice(0, 8).join(', ')}`);
+    },
+  };
+}
+
 export default defineConfig({
   root: ROOT,
   base: './',
@@ -451,15 +534,20 @@ export default defineConfig({
                the page (and without this group Rolldown gives its runtime a request of its own).
                The ids are virtual (`\0`-prefixed) and carry no node_modules/ path, which is what
                separates them from a package's own modules.
-               ⚠ (MapLibre 6) THE PACKAGE IS THREE FILES NOW, AND ONLY TWO OF THEM ARE IN THIS CHUNK.
-               6.x is ESM-only: dist/maplibre-gl.mjs imports dist/maplibre-gl-shared.mjs (both land
-               here — 5.x was one UMD file), and dist/maplibre-gl-worker.mjs, which imports the same
-               shared module, is NOT a chunk at all: src/vendor.js imports it with `?worker&url`,
-               Vite builds it into a self-contained asset of its own, and only the tiny URL module
-               sits here. That asset is fetched on every boot, so scripts/build-report.mjs counts it
-               as eager (`eagerWorkers`) — the shared code it repeats is the measured price of the
-               ESM distribution (dev-notes/2026-09-27-maplibre-6-migration.md §perf). */
-            { name: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
+               ⚠ (MapLibre 6) THE PACKAGE IS THREE FILES NOW, AND THEY ARE THREE CHUNKS.
+               6.x is ESM-only: dist/maplibre-gl.mjs (the renderer) and dist/maplibre-gl-worker.mjs
+               both import dist/maplibre-gl-shared.mjs. The worker is an entry chunk of its own
+               (maplibreSharedWorker above), and what it reaches — the shared module, and any helper
+               the bundler injected into it — goes to `maplibre-gl-shared` FIRST (the higher priority),
+               so the renderer and the worker import one file. Everything else of the package, and
+               the bundler's helpers the worker does not use, stays here. The rule is the graph's
+               (`inWorkerGraph`), not a file name; the build fails if the worker's chunks ever hold a
+               module outside its graph. Both chunk names still carry "maplibre-gl" (the #R166
+               stack attribution above reads the name, and a worker stack names its chunk too). */
+            { name: (id, ctx) => (id !== mlWorker.id && inWorkerGraph(id, (m) => ctx.getModuleInfo(m)) ? 'maplibre-gl-shared' : null),
+              debugName: 'maplibre-gl-shared', priority: 5, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
+            { name: (id, ctx) => (inWorkerGraph(id, (m) => ctx.getModuleInfo(m)) ? null : 'maplibre-gl'),
+              debugName: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
             /* ⚠ (#R209) buffer + convex (and their geometry engine) are NOT in the eager geo chunk: the
                app calls them from ONE place (the reachable-area hull in js/sims.js, which awaits
                window.turf.ensureHeavy()), and naming them here would drag them back in with the rest
@@ -526,5 +614,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), buildReportPlugin(), copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [buildStampPlugin(ROOT), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
 });
