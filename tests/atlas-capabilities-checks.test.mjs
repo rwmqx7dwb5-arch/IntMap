@@ -93,7 +93,10 @@ function kernel() {
 test('R318 ①a: every live dispatch spelling resolves to a canonical capability', () => {
   const groups = dispatchGroups(lines('js/atlas-console.js'));
   assert.ok(groups.length >= 110, `only ${groups.length} dispatch groups found — the switch moved and this test would pass on nothing`);
-  const spellings = groups.flatMap((g) => g.names);
+  /* (atlas-one-declaration) a case carries one spelling now; the others reach it through the row that declares them, so the
+     spellings the dispatch answers are the labels plus every declared spelling the dispatch's own resolver sends to one of them */
+  const labels = groups.flatMap((g) => g.names), live = new Set(labels);
+  const spellings = labels.concat(CAPS.all().flatMap((c) => (c.legacy ? c.aliases.filter((a) => a !== c.legacy && live.has(CAPS.dispatchName(a))) : [])));
   assert.ok(spellings.length >= 200, `only ${spellings.length} spellings — the parser is reading the wrong thing`);
   const unresolved = spellings.filter((n) => !CAPS.resolve(n));
   assert.deepEqual(unresolved, [], 'these dispatch spellings belong to no capability');

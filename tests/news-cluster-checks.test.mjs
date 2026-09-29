@@ -426,7 +426,7 @@ test('#R340 ④ a country representative point does not fuse its articles', () =
 /* 綴りのまま: 対象は Atlas カーネル（js/atlas-console.js）の case の中で、ブラウザの Atlas からしか走らない */
 test('#R340 ⑤ #R76\'s relaxed branch no longer exists, and there is ONE grouper', () => {
   const atlas = read('js/atlas-console.js');
-  const evCase = atlas.slice(atlas.indexOf("case 'events': case 'newsEvents': case 'groupNews':"));
+  const evCase = atlas.slice(atlas.indexOf("case 'events':"));
   assert.ok(evCase.startsWith("case 'events'"), 'the events case is gone from js/atlas-console.js');
   /* ⚠ (#R386) END AT THE NEXT CASE, not at `case 'module':`. This used to slice all the way to
      `module` because `events` happened to be the case before it; the moment another case was
@@ -571,7 +571,7 @@ test('#R340 ⑨ the same articles always produce the same events', () => {
 /* 綴りのまま: 対象は Atlas カーネル（js/atlas-console.js）の case の中で、ブラウザの Atlas からしか走らない */
 test('#R340 ⑩ every research.events return carries meta', () => {
   const atlas = read('js/atlas-console.js');
-  const evCase = atlas.slice(atlas.indexOf("case 'events': case 'newsEvents': case 'groupNews':"));
+  const evCase = atlas.slice(atlas.indexOf("case 'events':"));
   const body = evCase.slice(0, evCase.indexOf("case 'module':"));
   const returns = body.match(/return R\(/g) || [];
   assert.ok(returns.length >= 3, `only ${returns.length} returns found in the events case — this check needs rewriting`);

@@ -81,7 +81,8 @@ test('#R171 the tilt ceiling is the RENDERER\'s, never a literal', () => {
   /* ⚠ READ (this half): Atlas's tilt action is a branch of the dispatcher in the booted console */
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it. */
   const atlas = stripComments(R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js'));
-  assert.ok(!/case 'pitch': case 'tilt':[\s\S]{0,400}?Math\.min\(85,tp\)/.test(atlas),
+  assert.match(atlas, /case 'pitch':/, 'the tilt action exists — the probe below is not vacuous (atlas-one-declaration: `tilt` reaches it through the registry)');
+  assert.ok(!/case 'pitch':[\s\S]{0,400}?Math\.min\(85,tp\)/.test(atlas),
     'the Atlas tilt action must not clamp to a literal 85 — it has to honour the chosen ceiling');
   assert.match(atlas, /_cap=_T\?_T\.ceiling\(\):85/, 'Atlas reads the ceiling from IntMapTilt');
 });

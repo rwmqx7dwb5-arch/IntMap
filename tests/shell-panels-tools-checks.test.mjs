@@ -28,6 +28,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { appShell } from './app-source.mjs';
+import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -475,7 +476,8 @@ test('#R170 Atlas can drive the 3-D volume, and the action is in the SYS catalog
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
   const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
-  assert.match(atlas, /case 'volume3d': case 'volume': \{/, 'the dispatch action must exist');
+  assert.match(atlas, /case 'volume3d': \{/, 'the dispatch action must exist');
+  assert.equal(dispatchName('volume'), 'volume3d', '…and `volume` reaches it through its row (atlas-one-declaration)');
   assert.match(atlas, /\{"type":"volume3d","place":str/, 'and be catalogued — an uncatalogued action does not exist to the planner (#R115)');
   assert.match(atlas, /"name":"measure"\|"radius"\|"draw"\|"volume"/, 'the tool action must accept the volume tool too');
 });

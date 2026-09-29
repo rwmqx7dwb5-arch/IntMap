@@ -1,0 +1,881 @@
+{
+ "measured": "2026-09-29 — js/atlas-console.js (and js/atlas-turn-results.js ANSWER_TYPES) at origin/main 6dad1019, before atlas-one-declaration. Read by tests/atlas-one-declaration-checks.test.mjs as the BEFORE of a refactor that may not lose a spelling or a switched layer. It is a photograph: it does not grow with the code.",
+ "dispatchRuns": [
+  [
+   "gloss"
+  ],
+  [
+   "photoLocate",
+   "photoGeolocate",
+   "whereWasThisTaken",
+   "skylineMatch"
+  ],
+  [
+   "compose",
+   "mapCompose",
+   "composeMap",
+   "explainOnMap"
+  ],
+  [
+   "shakemap",
+   "shakeMap",
+   "groundShaking",
+   "intensityMap"
+  ],
+  [
+   "chart",
+   "chartCompose",
+   "plot",
+   "graph"
+  ],
+  [
+   "reset"
+  ],
+  [
+   "layer"
+  ],
+  [
+   "opacity"
+  ],
+  [
+   "projection"
+  ],
+  [
+   "base"
+  ],
+  [
+   "compare"
+  ],
+  [
+   "flyTo"
+  ],
+  [
+   "weather"
+  ],
+  [
+   "brief"
+  ],
+  [
+   "askHere"
+  ],
+  [
+   "query",
+   "crossQuery",
+   "dataQuery"
+  ],
+  [
+   "gis",
+   "gisRun",
+   "spatialOp",
+   "runGisOp"
+  ],
+  [
+   "gisDraw",
+   "drawDataset",
+   "showDataset"
+  ],
+  [
+   "rank"
+  ],
+  [
+   "ratio"
+  ],
+  [
+   "relate"
+  ],
+  [
+   "mapMetric",
+   "choropleth"
+  ],
+  [
+   "theme"
+  ],
+  [
+   "accent",
+   "accentColor",
+   "accentColour"
+  ],
+  [
+   "language"
+  ],
+  [
+   "terrain3d"
+  ],
+  [
+   "grid"
+  ],
+  [
+   "resetNorth",
+   "resetView"
+  ],
+  [
+   "zoom"
+  ],
+  [
+   "bearing",
+   "rotate"
+  ],
+  [
+   "pitch",
+   "tilt"
+  ],
+  [
+   "pan",
+   "move"
+  ],
+  [
+   "tab"
+  ],
+  [
+   "countryInfo"
+  ],
+  [
+   "selectCountry",
+   "country"
+  ],
+  [
+   "timeSeries",
+   "timeseries"
+  ],
+  [
+   "isolate"
+  ],
+  [
+   "los",
+   "lineOfSight"
+  ],
+  [
+   "population",
+   "populationIn",
+   "popIn"
+  ],
+  [
+   "satelliteCompare",
+   "satCompare",
+   "satChange"
+  ],
+  [
+   "layerData",
+   "layerValue",
+   "layerQuery"
+  ],
+  [
+   "volcano",
+   "volcanoCard",
+   "volcanoInfo",
+   "volcanoFilter",
+   "volcanoMode",
+   "volcanoTime"
+  ],
+  [
+   "outbreaks",
+   "diseaseOutbreaks",
+   "outbreakLayer",
+   "epidemics",
+   "whoOutbreaks",
+   "diseaseMap"
+  ],
+  [
+   "heritage",
+   "worldHeritage",
+   "heritageInfo",
+   "heritageFilter"
+  ],
+  [
+   "radiationObserved",
+   "radiationLayer",
+   "doseRate",
+   "gammaDoseRate",
+   "radiationNear",
+   "measuringStations",
+   "doseNear"
+  ],
+  [
+   "object",
+   "mapObject"
+  ],
+  [
+   "isochrone",
+   "reach",
+   "reachability",
+   "reachable",
+   "catchment"
+  ],
+  [
+   "route"
+  ],
+  [
+   "optimizeRoute",
+   "tsp",
+   "multiStop",
+   "optimize",
+   "optimizeStops"
+  ],
+  [
+   "directions",
+   "roadRoute",
+   "navigate",
+   "drivingRoute",
+   "walkingRoute",
+   "transitRoute"
+  ],
+  [
+   "streetview",
+   "streetView",
+   "pano"
+  ],
+  [
+   "radiation",
+   "fallout",
+   "dispersion",
+   "plume",
+   "radiationSim"
+  ],
+  [
+   "flightSim",
+   "flightsim",
+   "flightsimulator",
+   "flysim",
+   "pilot"
+  ],
+  [
+   "runway",
+   "airports"
+  ],
+  [
+   "edu",
+   "learn"
+  ],
+  [
+   "ecmwf",
+   "weatherLayers"
+  ],
+  [
+   "wxModel",
+   "weatherModel",
+   "forecastModel"
+  ],
+  [
+   "railAxis",
+   "railwayAxis",
+   "gaugeAxis"
+  ],
+  [
+   "widgets"
+  ],
+  [
+   "screenshot"
+  ],
+  [
+   "share"
+  ],
+  [
+   "search"
+  ],
+  [
+   "tempUnit"
+  ],
+  [
+   "units"
+  ],
+  [
+   "timeTravel",
+   "setTime",
+   "timeSet"
+  ],
+  [
+   "pin"
+  ],
+  [
+   "tool"
+  ],
+  [
+   "admin1Coverage",
+   "subdivisionsCovered",
+   "regionsCovered"
+  ],
+  [
+   "radius"
+  ],
+  [
+   "volume3d",
+   "volume"
+  ],
+  [
+   "startNavigation",
+   "startNav",
+   "beginNavigation",
+   "guideMe",
+   "driveThere"
+  ],
+  [
+   "stopNavigation",
+   "endNavigation",
+   "stopNav"
+  ],
+  [
+   "navStatus",
+   "howLongLeft",
+   "etaNow",
+   "remaining",
+   "nextTurn",
+   "arrivalTime"
+  ],
+  [
+   "navCamera",
+   "recenter",
+   "overview",
+   "followMe",
+   "northUp"
+  ],
+  [
+   "navVoice",
+   "mute",
+   "unmute",
+   "voiceGuidance"
+  ],
+  [
+   "drone"
+  ],
+  [
+   "measure"
+  ],
+  [
+   "correlate"
+  ],
+  [
+   "settings"
+  ],
+  [
+   "workspace",
+   "windows",
+   "windowMode",
+   "windowWorkspace"
+  ],
+  [
+   "shortcuts",
+   "keyboard",
+   "hotkeys"
+  ],
+  [
+   "objects",
+   "objectList",
+   "manageObjects",
+   "listObjects",
+   "myObjects"
+  ],
+  [
+   "rfCoverage",
+   "coverage",
+   "radioCoverage",
+   "signalCoverage",
+   "reception",
+   "viewshed"
+  ],
+  [
+   "sun",
+   "shadow",
+   "shadows",
+   "sunlight",
+   "sunPosition",
+   "daylight",
+   "insolation"
+  ],
+  [
+   "terrainWater",
+   "waterFlow",
+   "terrainEdit",
+   "watershedSim",
+   "sculpt"
+  ],
+  [
+   "earthquake",
+   "seismic",
+   "quakeSim",
+   "seismicWaves",
+   "earthquakeSim"
+  ],
+  [
+   "sunHours",
+   "shadeHours",
+   "terrainShadow",
+   "solarHours",
+   "insolationYear"
+  ],
+  [
+   "nightSky",
+   "starsFromHere",
+   "skyFromHere",
+   "stargazing",
+   "standHere",
+   "skyStanding"
+  ],
+  [
+   "space",
+   "solarSystem",
+   "planet",
+   "planets",
+   "explore Space"
+  ],
+  [
+   "tsunami",
+   "tsunamiSim",
+   "tsunamiPropagation"
+  ],
+  [
+   "diagnose",
+   "health",
+   "selfCheck",
+   "systemStatus",
+   "status"
+  ],
+  [
+   "undo",
+   "undoTurn",
+   "undoLast",
+   "revertTurn"
+  ],
+  [
+   "clearAll"
+  ],
+  [
+   "outline",
+   "extent",
+   "showExtent"
+  ],
+  [
+   "pandemicRun",
+   "simulatePandemic",
+   "runPandemic",
+   "pandemicSimulate",
+   "outbreakSim"
+  ],
+  [
+   "pandemicDraw",
+   "drawPandemic",
+   "showPandemicDay",
+   "pandemicMap"
+  ],
+  [
+   "playground",
+   "game"
+  ],
+  [
+   "news"
+  ],
+  [
+   "account",
+   "login"
+  ],
+  [
+   "donate"
+  ],
+  [
+   "feedback"
+  ],
+  [
+   "bugReport",
+   "bug"
+  ],
+  [
+   "highlight"
+  ],
+  [
+   "value",
+   "stat",
+   "lookup"
+  ],
+  [
+   "layersOff",
+   "allLayersOff"
+  ],
+  [
+   "clear"
+  ],
+  [
+   "fullscreen"
+  ],
+  [
+   "locate",
+   "myLocation",
+   "whereAmI"
+  ],
+  [
+   "recallAttachment",
+   "recall_attachment",
+   "recallFile",
+   "reopenAttachment"
+  ],
+  [
+   "inspect",
+   "lookAtMap",
+   "seeMap",
+   "viewInspect",
+   "readScreen"
+  ],
+  [
+   "poi",
+   "mapPois",
+   "facilities"
+  ],
+  [
+   "mapReport",
+   "newsMap",
+   "reportMap"
+  ],
+  [
+   "researchMap",
+   "research_map",
+   "situationMap"
+  ],
+  [
+   "missile",
+   "ballistic",
+   "ballisticMissile",
+   "strike",
+   "icbm"
+  ],
+  [
+   "elevationBelow",
+   "belowSeaLevel",
+   "elevationHighlight",
+   "elevationScan"
+  ],
+  [
+   "historicalMap",
+   "historical",
+   "powerMap",
+   "allianceMap"
+  ],
+  [
+   "fly",
+   "flight",
+   "trajectory"
+  ],
+  [
+   "drawLine",
+   "line"
+  ],
+  [
+   "drawPolygon",
+   "polygon"
+  ],
+  [
+   "controls"
+  ],
+  [
+   "ask",
+   "choose",
+   "clarify",
+   "options"
+  ],
+  [
+   "analyze",
+   "research",
+   "synthesize"
+  ],
+  [
+   "engine"
+  ],
+  [
+   "tiltLimit"
+  ],
+  [
+   "eyeAltitude"
+  ],
+  [
+   "nightSide"
+  ],
+  [
+   "windParticles",
+   "windAnimation"
+  ],
+  [
+   "isobars"
+  ],
+  [
+   "baseDisplay"
+  ],
+  [
+   "planeAltitude",
+   "aircraftAltitude"
+  ],
+  [
+   "aircraftTrack",
+   "planeTrack"
+  ],
+  [
+   "satellites",
+   "satellite",
+   "sats",
+   "orbit"
+  ],
+  [
+   "ticker"
+  ],
+  [
+   "compareStats",
+   "compareCountries",
+   "statsCompare"
+  ],
+  [
+   "scoreMap",
+   "customLayer",
+   "evaluate"
+  ],
+  [
+   "explore",
+   "findRelated",
+   "relatedMetrics"
+  ],
+  [
+   "impact",
+   "impactAnalysis",
+   "nearbyCritical"
+  ],
+  [
+   "events",
+   "newsEvents",
+   "groupNews"
+  ],
+  [
+   "newsCategory",
+   "newsFilter",
+   "eventCategory"
+  ],
+  [
+   "module"
+  ],
+  [
+   "monitor"
+  ],
+  [
+   "control"
+  ],
+  [
+   "answer"
+  ]
+ ],
+ "ovl": {
+  "highlight": [
+   "nlq-fill",
+   "nlq-line",
+   "nlq-poly-fill",
+   "nlq-poly-line"
+  ],
+  "choropleth": [
+   "nlq-choro"
+  ],
+  "compare": [
+   "imcmp-fill",
+   "imcmp-line"
+  ],
+  "poi": [
+   "nlq-poi-c",
+   "nlq-poi-t"
+  ],
+  "elevation": [
+   "nlq-elev-fill"
+  ],
+  "historical": [
+   "nlq-fac-fill",
+   "nlq-fac-line"
+  ],
+  "route": [
+   "imroute-cas",
+   "imroute-line",
+   "imroute-pt",
+   "imroute-walk",
+   "imroute-rail",
+   "imroute-transfer",
+   "imroute-wp",
+   "imroute-durlab",
+   "imroute-hit",
+   "imroute-area",
+   "imroute-area-line",
+   "imroute-diff",
+   "imroute-hist"
+  ],
+  "radiation": [
+   "imrad-heat",
+   "imrad-pt",
+   "imrad-srcpt",
+   "imrad-dep"
+  ],
+  "blast": [
+   "nlq-blast-fill",
+   "nlq-blast-line"
+  ],
+  "lines": [
+   "nlq-line"
+  ],
+  "outline": [
+   "pl-outline-fill",
+   "pl-outline-line"
+  ],
+  "shakemap": [
+   "shk-field",
+   "shk-cont",
+   "shk-cont-lbl"
+  ],
+  "outbreaks": [
+   "who-don-halo",
+   "who-don-pt",
+   "who-don-lb"
+  ],
+  "fly": [
+   "nlq-fly-line",
+   "nlq-fly-head"
+  ],
+  "los": [
+   "los-cover",
+   "los-shadow",
+   "los-cover-line",
+   "los-site"
+  ],
+  "isolate": [
+   "iso-mask"
+  ],
+  "pin": [
+   "user-pin-dot",
+   "user-pin-shadow"
+  ],
+  "streetview": [
+   "sv-here-pt",
+   "sv-here-cone"
+  ],
+  "isochrone": [
+   "im-iso-fill",
+   "im-iso-line",
+   "im-iso-ctr"
+  ],
+  "compose": [
+   "atl-compose-line",
+   "atl-compose-dash",
+   "atl-compose-arrow",
+   "atl-compose-c",
+   "atl-compose-hl",
+   "atl-compose-n",
+   "atl-compose-t"
+  ]
+ },
+ "ovlOf": {
+  "highlight": "highlight",
+  "mapMetric": "choropleth",
+  "choropleth": "choropleth",
+  "poi": "poi",
+  "elevationBelow": "elevation",
+  "belowSeaLevel": "elevation",
+  "elevationHighlight": "elevation",
+  "elevationScan": "elevation",
+  "historicalMap": "historical",
+  "historical": "historical",
+  "powerMap": "historical",
+  "allianceMap": "historical",
+  "radiation": "radiation",
+  "fallout": "radiation",
+  "dispersion": "radiation",
+  "plume": "radiation",
+  "radiationSim": "radiation",
+  "directions": "route",
+  "roadRoute": "route",
+  "navigate": "route",
+  "drivingRoute": "route",
+  "walkingRoute": "route",
+  "missile": [
+   "arc",
+   "fly",
+   "blast"
+  ],
+  "ballistic": [
+   "arc",
+   "fly",
+   "blast"
+  ],
+  "ballisticMissile": [
+   "arc",
+   "fly",
+   "blast"
+  ],
+  "strike": [
+   "arc",
+   "fly",
+   "blast"
+  ],
+  "icbm": [
+   "arc",
+   "fly",
+   "blast"
+  ],
+  "fly": "fly",
+  "flight": "fly",
+  "flyTo": null,
+  "flyPath": "fly",
+  "greatCircle": "fly",
+  "los": "los",
+  "lineOfSight": "los",
+  "radarShadow": "los",
+  "viewshed": "los",
+  "isolate": "isolate",
+  "isolateRegion": "isolate",
+  "focus": "isolate",
+  "pin": "pin",
+  "marker": "pin",
+  "locate": "pin",
+  "myLocation": "pin",
+  "whereAmI": "pin",
+  "streetview": "streetview",
+  "streetView": "streetview",
+  "pano": "streetview",
+  "compareStats": "compare",
+  "compareCountries": "compare",
+  "statsCompare": "compare",
+  "drawLine": "lines",
+  "line": "lines",
+  "outline": "outline",
+  "mapReport": "poi",
+  "newsMap": "poi",
+  "reportMap": "poi",
+  "researchMap": "poi",
+  "research_map": "poi",
+  "situationMap": "poi",
+  "events": "poi",
+  "impact": "poi",
+  "runway": "poi",
+  "isochrone": "isochrone",
+  "reach": "isochrone",
+  "reachability": "isochrone",
+  "reachable": "isochrone",
+  "catchment": "isochrone",
+  "compose": "compose",
+  "mapCompose": "compose",
+  "composeMap": "compose",
+  "explainOnMap": "compose",
+  "shakemap": "shakemap",
+  "shakeMap": "shakemap",
+  "groundShaking": "shakemap",
+  "intensityMap": "shakemap",
+  "outbreaks": "outbreaks",
+  "diseaseOutbreaks": "outbreaks",
+  "outbreakLayer": "outbreaks",
+  "epidemics": "outbreaks",
+  "whoOutbreaks": "outbreaks",
+  "diseaseMap": "outbreaks"
+ },
+ "answerTypes": [
+  "mapReport",
+  "newsMap",
+  "reportMap",
+  "researchMap",
+  "research_map",
+  "situationMap",
+  "historicalMap",
+  "historical",
+  "powerMap",
+  "allianceMap",
+  "analyze",
+  "research",
+  "synthesize",
+  "brief"
+ ]
+}

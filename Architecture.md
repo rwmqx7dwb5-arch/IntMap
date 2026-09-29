@@ -464,6 +464,32 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 **「何ができるか」の一覧は 1 つしかない。** `js/atlas-capabilities.js` の表がそれで、
 UI のボタンも Atlas の自然文も、テストも監査も、**同じ能力 ID** を名指す。
 
+**どの能力も宣言は表の 1 行で、ほかは導出する。** 表の 1 行が ID・列 1 の綴り（dispatch の case 名）・別名・
+副作用を持ち、`js/atlas-console.js` はそれを写さずに読む:
+
+- **dispatch の綴り** — `switch(CAPS.dispatchName(a.type))`。case は**列 1 の綴り 1 つだけ**を持ち、別名は
+  その行が宣言しているから同じ case に届く（`dispatchName` / `ofSpelling`。**大文字小文字は区別する**——
+  `switch` がそうだったので、宣言されていない綴りは今までどおり `default` に落ちる）。case の本体は
+  `a.type` を書き換えられずに受け取るので、綴りで分岐する case（`walkingRoute` など）はそのまま動く。
+  会話状態を更新する `updateWctx` も同じ解決器を通る。
+- **地図チップ** — `OVL_OF` は**能力 ID** をキーにし、どの綴りで呼ばれても `CAPS.ofSpelling` で同じ行に着く。
+  チップが切り替えるレイヤーは `_ovlIds(kind)`: kind が効果キー（`map.isochrone`・`map.route`・`map.radiation`・
+  `map.los`・`map.shakemap`・`map.outbreaks`・`panel.compare`・`map.poi`・`map.elevation`・`map.factions`・
+  `map.fly`・`map.ballistic`・`map.compose`）なら、**その効果キーで `render.claim` されたソースを読むスタイル上の
+  レイヤー**——観測器（`ownSurfaces` / `paintNow`）が読むのと同じ事実。claim は各描画元が層を作る関数の頭で
+  自分の能力が宣言する効果キーの下に行う（`js/routing.js`・`js/sims.js`・`js/stats-compare.js`・`js/viewshed.js`・
+  `js/shakemap.js`・`js/outbreaks.js`・`js/map-tools.js` の到達圏・`js/atlas-map-compose.js`・Atlas 自身の描画）。
+  `_OVL` に手で残るのは: 共有ソース `nlq-src` の一部を feature-state で塗るもの（強調・コロプレス・線。claim は
+  ソース単位なので 3 つが一緒に切り替わってしまう）、`js/map-tools.js` の輪郭と孤立化マスク（claim すると
+  `paint` 判定の入力が変わる）、`js/app-body.js` のピン、どのファイルも作らない id を持つストリートビューの行、
+  `js/routing-ops.js` の 2 解析（`map.route` の claim に**足される**）。
+- **回答の族** — `js/atlas-turn-results.js` の `ANSWER_TYPES` は 5 つの能力 ID から綴りを導出する。登録表は
+  依存として注入され（`capabilities`）、無ければ同じ表の**公開しない**複製（`makeAtlasCapabilities({}, { publish: false })`）を使う。
+- **system prompt の順序** — `SYS()` は persona → 中核指示 → 返答形式 → 能力の索引 → 道具 →
+  **最後に返答言語の 1 行**。言語で変わるのはこの 1 行だけなので、その前はどの言語でも同じバイト列になる。
+- 引数の schema（`js/atlas-schemas.js`）は能力 ID をキーにしており、綴りを写していない。引数名は今も
+  dispatch の本体から読み取って書かれた照合の表である。
+
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
 | Capability Registry | `js/atlas-capabilities.js` | **146 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |

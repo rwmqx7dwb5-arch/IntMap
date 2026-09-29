@@ -358,6 +358,7 @@ window.IntMapModules.outbreaks = function (HOST) {
 
     function ensureLayers() {
       const g = GE();
+      try { g.render.claim(SRC, 'map.outbreaks'); } catch (_) { }   /* (atlas-one-declaration) claimed under the effect key its capability declares, so the Atlas chip switches — and the observers see — what this module draws, from this line and not from a copied id list in js/atlas-console.js. No remover is passed: the one undo keeps treating these as it did */
       if (!g.layers.hasSource(SRC)) g.layers.addSource(SRC, { type: 'geojson', data: lastFC });
       if (!g.layers.has(LYR_HALO)) {
         g.layers.add({

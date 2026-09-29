@@ -37,6 +37,7 @@ import * as catalogModule from '../js/atlas-catalog-text.js';
    property on a function and throw, and if it ever stopped throwing it would silently measure a
    prompt with the clauses MISSING. The real module is what keeps this a real measurement. */
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
+import { liftFunction } from './helpers/lift-function.mjs';
 /* (#R406) the tool surface is what SYS() carries now, so the measurement needs the real one */
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
@@ -293,19 +294,26 @@ function plannerPromptSize() {
      BELOW SYS() so the slice above does not include it. Letting the Proxy answer it with '' would
      measure a prompt with the tools missing — the #R318 mistake, one subject later. This is the real
      surface over the real registry, which is what the browser sends. */
-  const TOOLS = makeAtlasToolSurface({ capabilities: makeAtlasCapabilities({}), schemas: makeAtlasSchemas(), runAction: () => {} });
-  const toolJson = (() => { const t = TOOLS.baseTools();
-    return Object.keys(t).map((k) => JSON.stringify({ name: t[k].name, description: t[k].description, parameters: t[k].parameters })).join('\n'); })();
+  /* ⚠ (atlas-one-declaration) AND SO DO THE INDEX AND THE TOOLS THEMSELVES. This used to call `SYS()` with no tools and let
+     the Proxy answer `_capIndex` with '' — so the measured prompt had no capability index at all and an empty [TOOLS] line,
+     2,677 characters under what the browser sends. The browser calls `SYS(_tools)` with `TOOLS.baseTools()`; so does this,
+     and `_capIndex` / `_directCaps` / `_toolBlock` are the shipped function bodies (lifted below) over the real registry. */
+  const CAPS = makeAtlasCapabilities({});
+  const TOOLS = makeAtlasToolSurface({ capabilities: CAPS, schemas: makeAtlasSchemas(), runAction: () => {} });
+  const tools = TOOLS.baseTools();
+  const src = lines.join('\n');
+  const lifted = ['_capIndex', '_directCaps', '_toolBlock'].map((n) => liftFunction(src, n)).join('\n');
   const env = {
     personaPrompt,
     POLICY: makeAtlasPolicy(),
     _DOCS: DOCS,
-    _toolBlock: () => toolJson,
+    CAPS,
+    __baseTools: tools,
     _langLine: () => 'English (write EVERYTHING in English, every sentence — a place, person or organization name in the request, even one written in Han/Chinese or Korean characters, NEVER changes the reply language)',
     controlCatalog: () => 'x'.repeat(3727),
     layerCatalogText: () => 'x'.repeat(3750),
     moduleCatalog: () => 'x'.repeat(1482),
-    Object, String,
+    Object, String, JSON,
   };
   /* ⚠ (atlas-native-tools) SYS() HAS TWO FORMS NOW, and the bound must hold for the LARGER. By default the tools
      travel as the provider's functions and are not pasted into the system text; the one-string
@@ -314,7 +322,8 @@ function plannerPromptSize() {
   const size = (proto) => {
     const stub = new Proxy(Object.assign({}, env, { _aiProto: proto }), { has: () => true, get: (t, k) => (k === Symbol.unscopables ? undefined : (k in t ? t[k] : (typeof k === 'string' ? () => '' : undefined))) });
     /* `new Function` bodies are sloppy-mode, so `with` is available even from this ES module. */
-    return new Function('__stub', 'with(__stub){ ' + lines.slice(s, e + 1).join('\n') + ' return SYS(); }')(stub).length;
+    /* the tools travel IN the stub: it answers every name, so a parameter would be shadowed by its () => '' */
+    return new Function('__stub', 'with(__stub){ ' + lifted + '\n' + lines.slice(s, e + 1).join('\n') + ' return SYS(__baseTools); }')(stub).length;
   };
   const native = size(''), legacy = size('legacy');
   assert.ok(legacy > native, 'the legacy form no longer carries the tool block — the two forms were meant to differ by exactly it');

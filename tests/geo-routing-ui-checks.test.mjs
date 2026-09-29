@@ -870,15 +870,18 @@ describe('§ #R299 · the route panel as a window, selection and closing', () =>
 
   test('R299 ⑧ the Atlas route toggle names every layer the route draws', () => {
     /* 綴りのまま: 対象が js/atlas-console.js の重ね合わせ表で、Atlas は DOM の上でしか組み立たない。 */
+    /* (atlas-one-declaration) the route row is no longer typed: js/routing.js CLAIMS its two sources under map.route, and the
+       chip switches every layer reading them — tests/atlas-one-declaration-checks.test.mjs ④ RUNS the painter and holds the
+       switched set equal to the thirteen this row used to list. What is still read here: the claims, and the two
+       js/routing-ops.js analyses that are added to them by name. */
     const code = noComments(read('js/atlas-console.js'));
-    const m = code.match(/route:\[[^\]]*\]/);
-    assert.ok(m, 'the overlay table still has a route row');
-    /* ⚠ imroute-hit is the one that matters most: leaving it visible is 「the line is gone but it is
-       still clickable」, which is half of the report about a route that will not go away. */
-    for (const id of ['imroute-cas', 'imroute-walk', 'imroute-rail', 'imroute-pt', 'imroute-wp',
-      'imroute-durlab', 'imroute-hit', 'imroute-area', 'imroute-diff', 'imroute-hist']) {
-      assert.ok(m[0].includes(id), 'the toggle covers ' + id);
-    }
+    const m = code.match(/'map\.route':\[[^\]]*\]/);
+    assert.ok(m, 'the overlay table no longer adds routing-ops\' analyses to the route');
+    for (const id of ['imroute-diff', 'imroute-hist']) assert.ok(m[0].includes(id), 'the toggle covers ' + id);
+    assert.match(code, /'routing\.route':'map\.route'/, 'the route chip switches what map.route claimed');
+    const rt = noComments(read('js/routing.js'));
+    assert.match(rt, /render\.claim\(SRC,'map\.route'\)/, 'js/routing.js claims the journey (imroute-hit included: it reads SRC)');
+    assert.match(rt, /render\.claim\(AREA_SRC,'map\.route'\)/, 'js/routing.js claims the drawn keep-out areas'); 
   });
 
   /* ══════════════════════════════════════════════════════════════════════════════════════════════

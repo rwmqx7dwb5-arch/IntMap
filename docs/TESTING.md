@@ -2935,6 +2935,17 @@ node scripts/atlas-capability-audit.mjs --json     # machine-readable: registry 
 `tests/atlas-capabilities-checks.test.mjs` (#R318) feeds each one a fixture with the defect deliberately present and
 asserts that it fails. A check that cannot be made to fail is deleted, not kept.
 
+**A spelling reaches its case through the registry, and the checks ask it that way** (atlas-one-declaration).
+The dispatch switches on `CAPS.dispatchName(a.type)` and each case carries only the capability's column-1
+spelling, so a check about an alias asks the resolver (`tests/helpers/dispatch-spelling.mjs`, or
+`CAPS.dispatchName` where the test already holds a registry) instead of matching a `case '…': case '…':` run.
+`alias-coverage` in the audit counts both directions: every case label belongs to a row, and every spelling
+a row declares resolves to a live case. `tests/atlas-one-declaration-checks.test.mjs` holds the before of
+that refactor as a photograph (`tests/fixtures/atlas-one-declaration-before.json`: the label runs, `_OVL`,
+`OVL_OF` at 6dad1019) and RUNS the resolver, `updateWctx`, `_ovlOf`, `_ovlIds` over the shipped painters and
+claims, and `SYS()` in two languages against it. `tests/helpers/lift-function.mjs` gained `liftLiteral` for
+the `const NAME={…}` tables those checks evaluate.
+
 ### What Atlas can SEE, as distinct from what it can reach (`tests/atlas-capabilities-checks.test.mjs` (#R582))
 
 Twenty questions above ask whether a capability is *reachable*. #R582 measured a different thing and

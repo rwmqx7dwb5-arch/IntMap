@@ -112,8 +112,22 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
         else if (idx === 0 && c.legacy !== n && !c.aliases.includes(n)) bad.push(`${g.line}: '${n}' maps to ${c.id}, which does not list it`);
       });
     });
-    add('alias-coverage', 'every live dispatch spelling belongs to a canonical capability', bad,
-      `${groups.length} dispatch groups · ${groups.reduce((a, g) => a + g.names.length, 0)} spellings`);
+    /* (atlas-one-declaration) AND THE OTHER DIRECTION, WHICH IS WHERE THE ALIASES LIVE NOW. The dispatch switches on
+       `dispatchName(a.type)`, so a case carries one spelling and every other spelling the row declares reaches it through
+       the registry. Asked by CALLING the resolver the dispatch calls, not by reading labels: a declared spelling whose
+       answer is not a live case label is a word the table promises and the dispatch drops. */
+    const live = new Set(groups.flatMap((g) => g.names));
+    let reached = 0;
+    caps.all().forEach((c) => {
+      if (!c.legacy) return;
+      c.aliases.forEach((a) => {
+        const to = typeof caps.dispatchName === 'function' ? caps.dispatchName(a) : a;
+        if (live.has(to)) reached++;
+        else bad.push(`${c.id}: the declared spelling '${a}' resolves to '${to}', which no dispatch case answers`);
+      });
+    });
+    add('alias-coverage', 'every live dispatch spelling belongs to a canonical capability, and every declared spelling reaches a case', bad,
+      `${groups.length} dispatch groups · ${groups.reduce((a, g) => a + g.names.length, 0)} case labels · ${reached} declared spellings reach a case`);
   }
 
   /* ② every capability has an executor */

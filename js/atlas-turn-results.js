@@ -53,6 +53,11 @@
  *  line ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ).
  * ==========================================================================*/
 
+import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (atlas-one-declaration) the table of spellings, when none is injected */
+
+let _ownRegistry = null;
+function ownRegistry() { return _ownRegistry || (_ownRegistry = makeAtlasCapabilities({}, { publish: false })); }
+
 export function makeAtlasTurnResults(deps) {
   return (function () {
     deps = deps || {};
@@ -62,12 +67,16 @@ export function makeAtlasTurnResults(deps) {
       ? deps.norm
       : (s) => String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim();
 
-    /* The families whose results are ANSWERS about a topic — #R159's list, unchanged. */
-    const ANSWER_TYPES = {
-      mapReport: 1, newsMap: 1, reportMap: 1, researchMap: 1, research_map: 1, situationMap: 1,
-      historicalMap: 1, historical: 1, powerMap: 1, allianceMap: 1, analyze: 1, research: 1,
-      synthesize: 1, brief: 1,
-    };
+    /* The families whose results are ANSWERS about a topic — #R159's list, by CAPABILITY. (atlas-one-declaration) It
+       used to be the 14 spellings of these five written out again; every spelling now reaches its row through the
+       registry (`ofSpelling`), so an alias added to a row is an answer family here without a second edit.
+       The registry is INJECTED (`deps.capabilities`, the app's own); a caller with none gets a private, unpublished
+       copy of the same table (js/atlas-capabilities.js `{ publish: false }`) — this module still reads no global. */
+    const CAPS = (deps.capabilities && typeof deps.capabilities.ofSpelling === 'function')
+      ? deps.capabilities : ownRegistry();
+    const ANSWER_CAPS = ['research.mapReport', 'research.situationMap', 'research.historicalMap', 'research.analyze', 'research.brief'];
+    const ANSWER_TYPES = {};
+    ANSWER_CAPS.forEach(function (id) { const c = CAPS.resolve(id); if (c) c.aliases.forEach(function (a) { if (CAPS.ofSpelling(a) === c) ANSWER_TYPES[a] = 1; }); });
 
     /* An argument that is absent, blank or empty says nothing about the operation, so it must not
        change its identity: `{from,to}` and `{from,to,via:[]}` are one journey asked twice. */

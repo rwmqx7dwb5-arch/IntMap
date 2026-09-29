@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -213,7 +214,8 @@ test('R197 space ⑨ the button is bound to the zoom floor, not to a guess about
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
   const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
-  assert.match(atlas, /case 'space': case 'solarSystem': case 'planet':/, 'Atlas can open it too (#R82)');
+  assert.match(atlas, /case 'space':/, 'Atlas can open it too (#R82)');
+  for (const sp of ['solarSystem', 'planet']) assert.equal(dispatchName(sp), 'space', `…under every spelling its row declares (atlas-one-declaration): ${sp}`);
   assert.match(atlas, /SPACE EXPLORER \(planets as globes, and the solar system in time\)/,
     'and the SYS catalogue documents it (#R115)');
 });
