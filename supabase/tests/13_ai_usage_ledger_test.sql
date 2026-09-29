@@ -10,6 +10,11 @@
 begin;
 select no_plan();
 
+-- supabase/seed.sql charges A and B today; this file asserts from a clean day (rolled back at the end)
+delete from public.ai_usage
+ where user_id in ('11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222')
+   and usage_date = current_date;
+
 do $$ begin execute format('grant anon, authenticated, service_role to %I', current_user); exception when others then null; end $$;
 
 create table _cap (k text primary key, v text);
