@@ -135,7 +135,7 @@ window.IntMapModules.companiesUi=function(HOST){
     h+='</div>';
     if(_coCmpMetOpen&&_coCmpMode!=='ts') h+='<div class="scp-metrics">'+_CO_CMP_METS.map(k=>'<button class="scp-m'+(_coCmpMet.has(k)?' on':'')+'" data-cmpmet="'+k+'">'+IntMapSafe.html(_coCmpMetLbl(k))+'</button>').join('')+'</div>';
     h+='<div style="position:relative;margin:6px 0 2px;"><input class="scp-add" id="co-cmp-add" placeholder="'+HOST._coL('Add a company…','企業を追加…','Firma hinzufügen…','Добавить компанию…','Añadir empresa…')+'" autocomplete="off"><div id="co-cmp-list"></div></div>';
-    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px;">'+cos.map((c,i)=>'<span class="scp-chip"><span class="scp-dot" style="background:'+_CO_CMP_PAL[i%_CO_CMP_PAL.length]+'"></span>'+IntMapSafe.html(HOST._coName(c))+' <span class="scp-x" data-cmpx="'+IntMapSafe.html(c.tk)+'">×</span></span>').join('')+'</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px;">'+cos.map((c,i)=>'<span class="scp-chip"><span class="scp-dot" style="background:'+_CO_CMP_PAL[i%_CO_CMP_PAL.length]+'"></span>'+IntMapSafe.html(HOST._coName(c))+' <span class="scp-x" role="button" tabindex="0" aria-label="'+IntMapSafe.html(window.IntMapLang.t(HOST.lang,'Remove','削除','Entfernen','Удалить','Quitar'))+'" data-cmpx="'+IntMapSafe.html(c.tk)+'">×</span></span>').join('')+'</div>';
     if(hy) h+='<div class="stats-timebanner co-banner" style="margin:4px 0 0;"><b>'+hy+(window.IntMapLang.t(HOST.lang,'','年'))+'</b> · '+HOST._coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')+'</div>';
     h+='</div><div id="co-cmp-body"></div>';
     root.innerHTML=h; _coCmpBody(cos); _coCmpWire(cos); }
@@ -158,7 +158,7 @@ window.IntMapModules.companiesUi=function(HOST){
       h+='</div>'; });
     return h||'<div class="co-ts-note">'+HOST._coL('No data for the selected metrics.','選択した指標のデータがありません。','Keine Daten.','Нет данных.','Sin datos.')+'</div>'; }
 
-  function _coCmpTable(cos,met){ const ths=met.map(k=>{ const act=_coCmpSort.key===k, arr=act?(_coCmpSort.dir<0?' ▼':' ▲'):''; return '<th class="scp-th-sort'+(act?' on':'')+'" data-cmpsort="'+k+'" style="cursor:pointer;user-select:none;white-space:nowrap;">'+IntMapSafe.html(_coCmpMetLbl(k))+arr+'</th>'; }).join('');
+  function _coCmpTable(cos,met){ const ths=met.map(k=>{ const act=_coCmpSort.key===k, arr=act?(_coCmpSort.dir<0?' ▼':' ▲'):''; return '<th class="scp-th-sort'+(act?' on':'')+'" tabindex="0" aria-sort="'+(act?(_coCmpSort.dir<0?'descending':'ascending'):'none')+'" data-cmpsort="'+k+'" style="cursor:pointer;user-select:none;white-space:nowrap;">'+IntMapSafe.html(_coCmpMetLbl(k))+arr+'</th>'; }).join('');
     let h='<div class="scp-ttools"><button data-cmpcsv="1">'+HOST._coL('Export CSV','CSV書き出し','CSV-Export','Экспорт CSV','Exportar CSV')+'</button></div><div class="scp-tblwrap"><table class="scp-tbl"><thead><tr><th>'+HOST._coL('Company','企業','Firma','Компания','Empresa')+'</th>'+ths+'</tr></thead><tbody>';
     let rows=cos.slice(); const sk=_coCmpSort.key;   /* (#R147) sort rows by the active metric column, blanks last */
     if(sk&&met.indexOf(sk)>=0){ const d=_coCmpSort.dir; rows.sort((a,b)=>{ const va=_coVal(a,sk),vb=_coVal(b,sk),fa=isFinite(va),fb=isFinite(vb); if(!fa&&!fb) return 0; if(!fa) return 1; if(!fb) return -1; return (va-vb)*d; }); }
@@ -383,7 +383,7 @@ window.IntMapModules.companiesUi=function(HOST){
     const src=r||_coLogoSrc(tk,d);
     if(!src) return mono();
     const step=r?'1':'0';
-    return '<img class="co-logo" alt="" data-dom="'+IntMapSafe.html(d)+'" data-name="'+IntMapSafe.html(nm)+'" data-hue="'+hue+'" data-step="'+step+'" src="'+IntMapSafe.html(src)+'">';
+    return '<img class="co-logo" alt="" data-dom="'+IntMapSafe.html(d)+'" data-name="'+IntMapSafe.html(nm)+'" data-hue="'+hue+'" data-step="'+step+'" src="'+IntMapSafe.html(IntMapSafe.url(src))+'">';
   }
 
   function _coWireLogo(img){ if(!img) return;
@@ -424,7 +424,7 @@ window.IntMapModules.companiesUi=function(HOST){
     const funnel='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>';
     const filterBtn=`<button type="button" class="stats-filter-btn${HOST.coFilterOpen?' on':''}${nAct?' has':''}" onclick="_coSfToggle()" title="${HOST._sfL('Filter by value','値でフィルター','Nach Wert filtern','Фильтр по значению','Filtrar por valor')}">${funnel}${nAct?`<span class="sf-badge">${nAct}</span>`:''}</button>`;   /* (#R152) Countries-parity: filter button now has the same tooltip Countries has */
     const sfPanel=(()=>{ if(!HOST.coFilterOpen) return ''; const opts=(sel)=>_FIND.map(([k,l])=>`<option value="${k}"${sel===k?' selected':''}>${l}</option>`).join('');
-      const rows=HOST.coFilters.map((f,i)=>`<div class="sf-row"><select aria-label="${HOST._sfL('Indicator','指標')}" onchange="_coSfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" aria-label="${HOST._sfL('Comparison','比較')}" onchange="_coSfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${HOST._sfL('value (5B, 100000…)','値（5B, 100000…）','Wert','значение','valor')}" onchange="_coSfSetVal(${i},this.value)"><button type="button" class="sf-x" onclick="_coSfRemove(${i})">×</button></div>`).join('');
+      const rows=HOST.coFilters.map((f,i)=>`<div class="sf-row"><select aria-label="${HOST._sfL('Indicator','指標')}" onchange="_coSfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" aria-label="${HOST._sfL('Comparison','比較')}" onchange="_coSfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${HOST._sfL('value (5B, 100000…)','値（5B, 100000…）','Wert','значение','valor')}" onchange="_coSfSetVal(${i},this.value)"><button aria-label="${window.IntMapLang.t(HOST.lang,'Remove','削除','Entfernen','Удалить','Quitar')}" type="button" class="sf-x" onclick="_coSfRemove(${i})">×</button></div>`).join('');
       return `<div class="stats-filter-panel">${rows||`<div class="sf-empty">${HOST._sfL('No conditions yet.','条件がありません。','Keine Bedingungen.','Нет условий.','Sin condiciones.')}</div>`}<div class="sf-actions"><button type="button" class="sf-add" onclick="_coSfAdd()">+ ${HOST._sfL('Add condition','条件を追加','Bedingung','Условие','Añadir')}</button>${HOST.coFilters.length?`<button type="button" class="sf-clear" onclick="_coSfClear()">${HOST._sfL('Clear','クリア','Löschen','Очистить','Limpiar')}</button>`:''}</div></div>`; })();
     let html=`<div class="stats-toolbar"><select class="stats-sort-sel" aria-label="${HOST._sfL('Sort by','並べ替え')}" onchange="setCoSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${HOST.coSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleCoSortDir()" title="${HOST.t('sortDir')}">${dirLbl}</button>${filterBtn}</div>${sfPanel}`;
     const _hy=(IntMapCompanies.histYear&&IntMapCompanies.histYear())||null;   /* (#R142) time-machine year (null = present) */
@@ -438,7 +438,7 @@ window.IntMapModules.companiesUi=function(HOST){
       const sub=_coSec(c.sec)+(cn?(' / '+(fl?fl+' ':'')+cn):'');
       const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
       const logo=_coLogoInner(c.dom,nm,hue,c.tk);   /* (#R147) cached-logo builder — no flicker; (#R533) ticker joins to the shipped Commons logo */
-      html+=`<div class="stat-row co-row${HOST.coCompareSet.has(c.tk)?' compare-on':''}" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}${_coAsOfChip(c,key)}</div></div>`;
+      html+=`<div class="stat-row co-row${HOST.coCompareSet.has(c.tk)?' compare-on':''}" role="button" tabindex="0" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}${_coAsOfChip(c,key)}</div></div>`;
     });
     const st0=feed.scrollTop;
     feed.innerHTML=html;
@@ -498,6 +498,7 @@ window.IntMapModules.companiesUi=function(HOST){
       `<a class="co-detail-link" href="${IntMapSafe.html(IntMapSafe.url(site)||'#')}" target="_blank" rel="noopener">${IntMapSafe.html(c.dom)} ↗</a></div>`;
     document.body.appendChild(ov);
     const close=()=>{ try{ ov.remove(); }catch(_){} };
+    window.IntMapDialog.open(ov,{ panel:ov.querySelector('.co-detail'), label:nm, close });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
     ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
     const xb=ov.querySelector('.co-detail-x'); if(xb) xb.onclick=close;
     /* (#R146) Compare from the detail (Countries parity): add this company; open the compare view once ≥2 are selected */
@@ -602,7 +603,7 @@ window.IntMapModules.companiesUi=function(HOST){
          gradient over the bare card — that overlay over the white card read as "うっすらグレーの四角いもの".
          The wc-noimg class drops the gradient; the real image (+ its gradient) returns once it lazy-loads. */
       const _cimg=info.img||'';
-      cards+=`<div class="wiki-card" id="card-${info.id}" data-cardfly="${(+info.loc[0])},${(+info.loc[1])}" data-cardlayer="${IntMapSafe.html(info.layerRef||'')}" data-cardid="${IntMapSafe.html(info.id)}">
+      cards+=`<div class="wiki-card" role="button" tabindex="0" id="card-${info.id}" data-cardfly="${(+info.loc[0])},${(+info.loc[1])}" data-cardlayer="${IntMapSafe.html(info.layerRef||'')}" data-cardid="${IntMapSafe.html(info.id)}">
         <div class="wiki-card-img${_cimg?'':' wc-noimg'}" data-type="${info.type||''}"${_cimg?` style="background-image:url('${_cimg}');"`:''}><span class="wiki-card-badge">${dashBadgeLabel(info.badge)}</span></div>
         <div class="wiki-card-content"><h4 class="wiki-card-title">${info.title[HOST.lang]||info.title.en}</h4><p class="wiki-card-body">${info.body[HOST.lang]||info.body.en}</p>${specsHTML}<div class="wiki-card-footer"><a href="${IntMapSafe.html(IntMapSafe.url(info.wiki[HOST.lang]||info.wiki.en)||'#')}" target="_blank" rel="noopener" class="wiki-link" onclick="event.stopPropagation()">${dict.readWiki}</a></div></div></div>`;
     });

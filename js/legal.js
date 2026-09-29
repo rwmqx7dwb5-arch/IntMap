@@ -31,6 +31,8 @@ window.IntMapModules.legal=function(HOST){
     document.getElementById('legal-tab-privacy').onclick=()=>paint('privacy');
     document.getElementById('legal-close-x').onclick=()=>{ lm.style.display='none'; };
     lm.addEventListener('click',(e)=>{ if(e.target===lm) lm.style.display='none'; });
+    /* (a11y-shared-dialog) registered: Escape, Tab trap, focus back. Named by its two tabs — the dialog has no heading of its own */
+    window.IntMapDialog.adopt(lm,{ panel:lm.querySelector('.modal-content'), labelledby:'legal-tab-terms legal-tab-privacy' });
     const lt=document.getElementById('link-terms'); if(lt) lt.onclick=(e)=>{ e.preventDefault(); openLegal('terms'); };
     const lp=document.getElementById('link-privacy'); if(lp) lp.onclick=(e)=>{ e.preventDefault(); openLegal('privacy'); };
   })();

@@ -164,6 +164,7 @@ window.IntMapModules.onboarding=function(HOST){
     ov.appendChild(card);
     ov.addEventListener('click',(e)=>{ if(e.target===ov) close(); });
     (document.body||document.documentElement).appendChild(ov);
+    window.IntMapDialog.open(ov,{ panel:card, close });   /* (a11y-shared-dialog) Escape = «Start exploring», Tab trap, named by its heading */
     /* Fade in — rAF for the smooth case + a setTimeout fallback so the card can NEVER get stuck at
        opacity:0 (rAF is paused while the tab is backgrounded). */
     requestAnimationFrame(()=>{ ov.style.opacity='1'; });

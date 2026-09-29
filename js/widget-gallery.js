@@ -30,7 +30,7 @@ window.IntMapWidgetGallery = (function () {
   var L = WC.L;
 
   var G = {};
-  var sheet = null, lastFocus = null;
+  var sheet = null, dlg = null;
   var query = '', category = 'suggested', selected = null, previewSize = null, draftCfg = null;
 
   /* ── search. Name, description and the definition's own keyword list, in the reader's language,
@@ -78,7 +78,6 @@ window.IntMapWidgetGallery = (function () {
   G.open = function (opts) {
     opts = opts || {};
     if (sheet) G.close();
-    lastFocus = document.activeElement;
     query = ''; category = opts.category || 'suggested'; selected = null; previewSize = null; draftCfg = null;
 
     sheet = el('div', {
@@ -88,7 +87,7 @@ window.IntMapWidgetGallery = (function () {
     });
     /* ⚠ THE SCRIM SWALLOWS THE GESTURE (§8). Without it a drag that starts on the sheet's backdrop
        reaches the map underneath and pans the world out from under an open dialog. */
-    var scrim = el('div', { class: 'wgt-scrim', onpointerdown: function (e) { e.stopPropagation(); }, onclick: function () { G.close(); } });
+    var scrim = el('div', { class: 'wgt-scrim', 'aria-hidden': 'true', onpointerdown: function (e) { e.stopPropagation(); } });
     sheet.appendChild(scrim);
 
     var panel = el('div', { class: 'wgt-sheet-p' });
@@ -120,29 +119,17 @@ window.IntMapWidgetGallery = (function () {
       })));
 
     panel.appendChild(el('div', { class: 'wgt-sheet-body', id: 'wgt-sheet-body' }));
-    document.body.appendChild(sheet);
     renderList();
-    try { search.focus(); } catch (e) {}
-    document.addEventListener('keydown', onKey, true);
+    /* (a11y-shared-dialog) the Esc / Tab-trap / focus-return this sheet used to carry itself is now
+       js/dialog.js — the same contract every dialog in the app registers for (§18). */
+    dlg = window.IntMapDialog.open(sheet, { close: function () { G.close(); }, initialFocus: search, backdrop: scrim });
   };
-  function onKey(e) {
-    if (!sheet) return;
-    if (e.key === 'Escape') { e.preventDefault(); G.close(); return; }
-    if (e.key === 'Tab') {
-      /* focus stays inside the dialog while it is open (§18) */
-      var f = sheet.querySelectorAll('button,input,select,a[href],[tabindex]:not([tabindex="-1"])');
-      if (!f.length) return;
-      var first = f[0], last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
-  }
   G.close = function () {
     if (!sheet) return;
-    document.removeEventListener('keydown', onKey, true);
-    try { sheet.remove(); } catch (e) {}
-    sheet = null;
-    try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (e) {}
+    var s = sheet, h = dlg;
+    sheet = null; dlg = null;
+    try { s.remove(); } catch (e) {}
+    try { if (h) h.close('api'); } catch (e) {}
   };
   G.isOpen = function () { return !!sheet; };
 

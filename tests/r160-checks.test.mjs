@@ -150,7 +150,7 @@ test('R160 (D2) IntMapGeoEngine facade exposes the broadened contract', () => {
      `A().x()` rather than `_adapter.x()` — an additional view has to get the same object, and it
      cannot if the object closes over the engine's own adapter. The claim is unchanged. */
   ok('getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds()', 'camera getters on the facade');
-  ok('zoomTo:(z,o)=>A().zoomTo(z,o), zoomIn:o=>A().zoomIn(o), zoomOut:o=>A().zoomOut(o), stop:()=>A().stop()', 'zoom controls on the facade');
+  ok('zoomTo:(z,o)=>A().zoomTo(z,_calm(o)), zoomIn:o=>A().zoomIn(_calm(o)), zoomOut:o=>A().zoomOut(_calm(o)), stop:()=>A().stop()', 'zoom controls on the facade');   /* (a11y-shared-dialog) _calm = the reduced-motion door */
   ok('setFeatureState:(f,s)=>A().setFeatureState(f,s), removeFeatureState:(f,k)=>A().removeFeatureState(f,k),', 'feature-state on the layers namespace');
   // (#R161) the render namespace gained container/size/setCursor — assert the R160 members only
   ok('render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(),', 'render namespace (resize/repaint/canvas)');

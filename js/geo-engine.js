@@ -2033,14 +2033,19 @@ function _m(){ return window.__imap||null; }
    const _claims=new Map();   /* this view's claimed surfaces — see surfacesDrawn above */
    const _drawWaiters=[];     /* this view's whenCanDraw() callers still waiting — see whenCanDraw below */
    let _looking=null;         /* the layers.witness() pass running now, told every layer id it asks about — see there */
+   /* (a11y-shared-dialog) THE ONE DOOR EVERY CAMERA MOVE GOES THROUGH honours prefers-reduced-motion: the move is
+      made, only not animated (duration 0 = arrive). MapLibre already skips its own animation for that setting —
+      except when a caller passes essential:true (search does) — and the Cesium adapter never read it, so the two
+      engines disagreed. WHETHER and WHERE the camera goes is untouched (CONSTITUTION §3); only how long it takes. */
+   const _calm=(o)=>{ try{ if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Object.assign({},o||{},{duration:0}); }catch(_){} return o; };
    return {
     /* these read the adapter THIS facade is bound to — a sub-view must answer about itself */
     id(){ const a=A(); return a&&a.id; }, capabilities(){ const a=A(); return a&&a.capabilities; },
     can(f){ const a=A(), c=a&&a.capabilities; return !!(c&&c[f]); },
-    camera:{ flyTo:o=>A().flyTo(o), easeTo:o=>A().easeTo(o), jumpTo:o=>A().jumpTo(o), fitBounds:(b,o)=>A().fitBounds(b,o), setPadding:p=>A().setPadding(p), get:()=>A().getCamera(), setProjection:mo=>A().setProjection(mo),
+    camera:{ flyTo:o=>A().flyTo(_calm(o)), easeTo:o=>A().easeTo(_calm(o)), jumpTo:o=>A().jumpTo(o), fitBounds:(b,o)=>A().fitBounds(b,_calm(o)), setPadding:p=>A().setPadding(p), get:()=>A().getCamera(), setProjection:mo=>A().setProjection(mo),
       /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
       getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds(),
-      zoomTo:(z,o)=>A().zoomTo(z,o), zoomIn:o=>A().zoomIn(o), zoomOut:o=>A().zoomOut(o), stop:()=>A().stop(),
+      zoomTo:(z,o)=>A().zoomTo(z,_calm(o)), zoomIn:o=>A().zoomIn(_calm(o)), zoomOut:o=>A().zoomOut(_calm(o)), stop:()=>A().stop(),
       /* (#R172) the camera that would show a box, and the current padding — both read-only */
       forBounds:(b,o)=>A().cameraForBounds?A().cameraForBounds(b,o):null, getPadding:()=>A().getPadding?A().getPadding():null,
       /* (#R171) attitude + tilt limits + the projection spec read-back + the eye's altitude */

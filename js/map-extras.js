@@ -336,7 +336,7 @@ window.IntMapModules.runwaySearch=function(HOST){
         if(!res.length){ list.innerHTML=window.IntMapLang.t(HOST.lang,"No matches","該当なし","Keine Treffer","Совпадений нет","Sin resultados"); return; }
         const shown=res.slice(0,120);
         list.innerHTML=shown.map((r,idx)=>{ const dd=distFmtKm(r._d), len=lenFmt(mode==='airport'?r.maxLen:r.lenM), nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
-          return '<div class="rwy-item" data-idx="'+idx+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
+          return '<div class="rwy-item" role="button" tabindex="0" data-idx="'+idx+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
         list.querySelectorAll('.rwy-item').forEach(it=>{ it.onclick=()=>{ const r=shown[+it.getAttribute('data-idx')]; if(!r) return; GE().camera.flyTo({center:[r.lo,r.la],zoom:Math.max(GE().camera.getZoom(),11)}); showRwyPopup({ name:r.name, apt:r.apt, muni:r.muni, mil:r.mil, len:(mode==='airport'?r.maxLen:r.lenM), n:(mode==='airport'?r.n:0), rwy:(mode==='runway'?r.rwy:''), coords:[r.lo,r.la] }); }; });
       });
     }

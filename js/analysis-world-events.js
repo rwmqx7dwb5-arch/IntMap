@@ -590,7 +590,7 @@ window.IntMapModules.analysisEvents=function(HOST){
       const cards=list.map(e=>{
         const nm=LWE.arr(e.nm), d=LWE.arr(e.ds), tl=EV_LBL[e.tp]?LWE.arr(EV_LBL[e.tp]):e.tp;
         const wiki='https://'+(jp?'ja':'en')+'.wikipedia.org/wiki/'+e.wiki;
-        return '<div class="wiki-card" data-evfly="'+(+e.loc[0])+','+(+e.loc[1])+'" style="cursor:pointer;">'+
+        return '<div class="wiki-card" role="button" tabindex="0" data-evfly="'+(+e.loc[0])+','+(+e.loc[1])+'" style="cursor:pointer;">'+
           '<div class="wiki-card-content"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'+
           '<span style="font-weight:800;font-size:15px;color:var(--primary-color);">'+e.y+'</span>'+
           '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(EV_COLORS[e.tp]||'#007aff')+'22;color:'+(EV_COLORS[e.tp]||'#007aff')+';">'+esc(tl)+'</span></div>'+

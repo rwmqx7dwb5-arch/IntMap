@@ -60,7 +60,7 @@ window.IntMapModules.feedback=function(HOST){
       return modal; }
     function star(n){ return '<button class="fb-star" data-n="'+n+'" style="background:none;border:none;font-size:30px;cursor:pointer;padding:2px 3px;line-height:1;color:'+(n<=rating?'#ffcc00':'rgba(128,128,128,0.45)')+';">'+(n<=rating?'★':'☆')+'</button>'; }
     function renderForm(){ const c=modal.querySelector('#fb-card'); const loggedOut=!(typeof HOST.user!=='undefined'&&HOST.user);
-      c.innerHTML='<button id="fb-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">×</button>'+
+      c.innerHTML='<button id="fb-x" aria-label="'+IntMapSafe.html(window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar'))+'" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">×</button>'+
         '<h3 style="margin:0 0 6px;font-size:17px;">'+(window.IntMapLang.t(HOST.lang,"Send feedback","フィードバックを送る","Feedback senden","Отправить отзыв","Enviar comentarios"))+'</h3>'+
         '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Rate IntMap and tell us what to improve.","IntMapの評価と、ご意見・ご要望をお聞かせください。","Bewerten Sie IntMap und sagen Sie uns, was wir verbessern sollen.","Оцените IntMap и расскажите, что улучшить.","Valore IntMap y díganos qué mejorar."))+'</p>'+
         '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 6px;">'+(window.IntMapLang.t(HOST.lang,"Type","種類","Art","Тип","Tipo"))+'</div>'+
@@ -108,12 +108,14 @@ window.IntMapModules.feedback=function(HOST){
       c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">💙</div>'+
         '<h3 style="margin:0 0 8px;font-size:17px;">'+(window.IntMapLang.t(HOST.lang,"Thank you!","ありがとうございます！","Vielen Dank!","Спасибо!","¡Gracias!"))+'</h3>'+
         '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(window.IntMapLang.t(HOST.lang,"Your high rating means a lot. If you enjoy IntMap, you can support its development — entirely optional.","高い評価をいただき励みになります。もしよろしければ、IntMapの開発・運営をご支援いただけると嬉しいです。","Ihre gute Bewertung bedeutet uns viel. Wenn Ihnen IntMap gefällt, können Sie die Entwicklung unterstützen — ganz freiwillig.","Ваша высокая оценка много значит. Если вам нравится IntMap, вы можете поддержать разработку — полностью по желанию.","Su alta valoración significa mucho. Si disfruta de IntMap, puede apoyar su desarrollo; es totalmente opcional."))+'</p>'+
-        '<a id="fb-donate" data-effect="outward" href="'+window.stripeDonateURL()+'" target="_blank" rel="noopener" style="display:block;padding:12px;border-radius:10px;background:var(--primary-fill);color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:8px;">'+(window.IntMapLang.t(HOST.lang,"Support IntMap","支援する","IntMap unterstützen","Поддержать IntMap","Apoyar IntMap"))+'</a>'+
+        '<a id="fb-donate" data-effect="outward" href="'+IntMapSafe.html(IntMapSafe.url(window.stripeDonateURL()))+'" target="_blank" rel="noopener" style="display:block;padding:12px;border-radius:10px;background:var(--primary-fill);color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:8px;">'+(window.IntMapLang.t(HOST.lang,"Support IntMap","支援する","IntMap unterstützen","Поддержать IntMap","Apoyar IntMap"))+'</a>'+
         '<button id="fb-later" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Maybe later","また今度","Vielleicht später","Может быть, позже","Quizá más tarde"))+'</button></div>';
       c.querySelector('#fb-later').onclick=closeM;
       const dn=c.querySelector('#fb-donate');
       if(dn) dn.addEventListener('click',()=>{ try{ if(typeof HOST.DB!=='undefined'&&HOST.DB&&typeof HOST.user!=='undefined'&&HOST.user){ HOST.DB.from('donations').insert({user_id:HOST.user.id,email:HOST.user.email||null,locale:HOST.lang,source:'feedback_upsell',status:'initiated'}); } }catch(_){} setTimeout(closeM,400); }); }
-    function openM(){ ensure(); rating=0; cat='general'; renderForm(); modal.style.display='flex'; }
+    /* (a11y-shared-dialog) a registered dialog — Escape, a Tab trap, focus back to what opened it (js/dialog.js) */
+    function openM(){ ensure(); rating=0; cat='general'; renderForm(); modal.style.display='flex';
+      window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('#fb-card'), label:window.IntMapLang.t(HOST.lang,"Send feedback","フィードバックを送る","Feedback senden","Отправить отзыв","Enviar comentarios"), close:closeM }); }
     function closeM(){ if(modal) modal.style.display='none'; }
     window._openFeedback=openM;
   })();
@@ -166,7 +168,7 @@ window.IntMapModules.feedback=function(HOST){
       ['other',  LA('Other','その他','Sonstiges','Другое','Otro')]];
     function cats(){ return BUG_CATS.map(([id,tuple])=>[id,L.arr(tuple)]); }
     function renderForm(){ const c=modal.querySelector('#bug-card'); const diag=_imDiag();
-      c.innerHTML='<button id="bug-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">×</button>'+
+      c.innerHTML='<button id="bug-x" aria-label="'+IntMapSafe.html(window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar'))+'" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">×</button>'+
         '<h3 style="margin:0 0 6px;font-size:17px;">🐞 '+(window.IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"))+'</h3>'+
         '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Describe what went wrong — steps to reproduce help a lot.","不具合の内容をできるだけ具体的に教えてください。再現手順があると助かります。","Beschreiben Sie, was schiefgelaufen ist — Schritte zum Nachstellen helfen sehr.","Опишите, что пошло не так — шаги воспроизведения очень помогают.","Describa qué ha fallado; los pasos para reproducirlo ayudan mucho."))+'</p>'+
         '<select id="bug-cat" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 11px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;">'+cats().map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('')+'</select>'+
@@ -201,7 +203,8 @@ window.IntMapModules.feedback=function(HOST){
         '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(sent?(window.IntMapLang.t(HOST.lang,"Thank you — we will look into it.","ご報告ありがとうございます。確認して対応します。","Vielen Dank — wir sehen uns das an.","Спасибо — мы разберёмся.","Gracias; lo revisaremos.")):(window.IntMapLang.t(HOST.lang,"Saved on this device and copied to your clipboard (offline).","オフラインのため端末に保存し、内容をクリップボードにコピーしました。","Auf diesem Gerät gespeichert und in die Zwischenablage kopiert (offline).","Сохранено на этом устройстве и скопировано в буфер обмена (офлайн).","Guardado en este dispositivo y copiado al portapapeles (sin conexión).")))+'</p>'+
         '<button id="bug-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'</button></div>';
       c.querySelector('#bug-done').onclick=close; }
-    function open(){ ensure(); renderForm(); modal.style.display='flex'; }
+    function open(){ ensure(); renderForm(); modal.style.display='flex';
+      window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('#bug-card'), label:window.IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"), close:close }); }
     function close(){ if(modal) modal.style.display='none'; }
     window._openBugReport=open;
   })();

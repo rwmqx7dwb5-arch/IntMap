@@ -59,6 +59,10 @@ import '../js/historical-basemap.js';
    It sits AFTER newsgeo deliberately: tests/r175-checks pins newsgeo as the first feature module,
    and nothing about this file needs to precede it — its consumers all call it lazily. */
 import '../js/wx-source.js';
+/* (a11y-shared-dialog) the ONE dialog registry and the ONE «Enter/Space presses a role=button» listener
+   — window.IntMapDialog, synchronous, no factory. Before every module that shows a modal or wires a
+   pressable row; see js/dialog.js. */
+import '../js/dialog.js';
 import '../js/nominatim-gate.js';   /* (#R489) …and, for the same reason one guarded weather client exists, ONE queue in front of Nominatim. Seven files call that host; two kept private floors and five kept none, so «one request per second» was one per second EACH and fourteen Atlas oblast outlines left as fast as the network took them. EAGER and BEFORE the window-global callers (js/routing.js, js/river-course.js, js/search-geocode.js, js/routing-geocode.js): those reach it as window.IntMapNominatimGate rather than by name (they predate named imports in js/). */
 import '../js/overpass.js';   /* …and ONE Overpass client with a clock (window.IntMapOverpass for the classic-shaped callers) — js/overpass.js */
 /* (#R183) …and the pure "how close should the camera go for THIS kind of place" decision, which

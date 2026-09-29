@@ -989,6 +989,9 @@ client-error-report.js            未処理の例外を IntMap 自身の記録�
 auth-ui.js                        アカウント・認証・Supabase のブート
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する
+dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
+                                  閉じたときのフォーカス復帰、「押せる」の契約（role+tabindex を Enter/Space で押す委譲・makeActionable）、
+                                  検索欄の listbox（矢印キー）。数える側は scripts/keyboard-reach.mjs
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 monitors.js                       Area Monitors IntMapMonitors

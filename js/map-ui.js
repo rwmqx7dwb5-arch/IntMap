@@ -368,7 +368,7 @@ window.IntMapModules.layerRegistry=function(HOST){
        than a silence that can be filled. */
     const _RGT_GIBS_OM={upstreams:[{publisher:'NASA GIBS'},{publisher:'Open-Meteo'}]};
     function context(){ try{ return activeIds().map(id=>{ const s=state(id); if(!s) return null; const bits=[];
-        if(s.time) bits.push('time='+s.time); if(s.source) bits.push('src='+s.source);
+        if(s.time) bits.push('time='+s.time); if(s.source) bits.push('source='+s.source);
         try{ const r=REG[id]; if(r.summary){ const sm=r.summary(); if(sm) bits.push(sm); } }catch(_){}
         return s.label+(bits.length?(' ['+bits.join(' · ')+']'):''); }).filter(Boolean); }catch(_){ return []; } }
     /* ---- first registration set: the layers with REAL live data hooks ---- */
@@ -1133,7 +1133,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         /* ⚠ (#R483) querySelectorAll, not querySelector: a starred layer now has TWO tiles in the same
            host (its own category's, and its copy in 「お気に入り」), and the singular form left the copy
            showing the previous state — a checkbox that disagrees with its own row is #R72's report. */
-        _liveHosts().forEach(h=>{ h.querySelectorAll(sel).forEach(tile=>tile.classList.toggle('on',t2.checked)); }); }catch(_){} });   /* (#R232) every mounted grid, not only the sidebar */
+        _liveHosts().forEach(h=>{ h.querySelectorAll(sel).forEach(tile=>tileOn(tile,t2.checked)); }); }catch(_){} });   /* (#R232) every mounted grid, not only the sidebar */
       /* (#R63) left-style edge toggle button (open AND close, like the left sidebar's chevron) */
       const tg=document.createElement('button'); tg.id='lsr-toggle'; titleKey(tg,'ttlLayersPanel'); tg.innerHTML='<span class="chev"></span>';
       tg.addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
@@ -1173,9 +1173,16 @@ window.IntMapModules.layerSidebar=function(HOST){
       return out; }
     /* (#R309) `asRow` — the "Base map & labels" shape: a full-width switch row with no thumbnail.
        Same element, same dataset, same click path; only the children and the class differ. */
+    /* (a11y-shared-dialog) a tile's ON state has two readers — the accent (class) and a screen reader
+       (aria-checked) — and every writer goes through here so the two cannot disagree (syncTiles and the
+       checkbox listener used to toggle only the class, leaving role=switch rows announcing a stale state) */
+    function tileOn(t,on){ t.classList.toggle('on',!!on); if(t.getAttribute('role')==='switch') t.setAttribute('aria-checked',on?'true':'false'); }
     function tileFor(r,asRow){ const d=document.createElement('div'); d.className='lst-tile'+(asRow?' lst-row':'')+(r.cb.checked?' on':''); d.dataset.lid=r.id; d.dataset.nm=r.name.toLowerCase();
       const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=r.name; nm.title=r.name;
-      if(asRow){ d.setAttribute('role','switch'); d.setAttribute('aria-checked',r.cb.checked?'true':'false'); d.appendChild(nm); }
+      /* both shapes are one switch to a keyboard and a screen reader: Tab reaches it, Space/Enter flips it
+         (js/dialog.js presses a focusable role=switch), and the view does not move (CONSTITUTION §3) */
+      d.setAttribute('role','switch'); d.setAttribute('aria-checked',r.cb.checked?'true':'false'); window.IntMapDialog.makeActionable(d,{label:r.name});
+      if(asRow){ d.appendChild(nm); }
       else{
         const pv=document.createElement('div'); pv.className='lst-prev'; if(r.gk) pv.dataset.gk=r.gk;
         try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.into(pv,r.id,r.name); }catch(_){}
@@ -1212,9 +1219,8 @@ window.IntMapModules.layerSidebar=function(HOST){
           if(cb) r.cb=cb; }
         if(!cb) return;
         cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
-        d.classList.toggle('on',cb.checked);
-        if(asRow) d.setAttribute('aria-checked',cb.checked?'true':'false');   /* (#R309) role=switch has to say so */
-        setTimeout(()=>{ try{ d.classList.toggle('on',cb.checked); if(asRow) d.setAttribute('aria-checked',cb.checked?'true':'false'); }catch(_){} },320);
+        tileOn(d,cb.checked);   /* (#R309) role=switch has to say so — see tileOn */
+        setTimeout(()=>{ try{ tileOn(d,cb.checked); }catch(_){} },320);
       }catch(_){} });
       return d; }
     /* (#R72) collapse state per section title — default OPEN, Others (beta) starts CLOSED ("デフォルト状態では
@@ -1274,7 +1280,7 @@ window.IntMapModules.layerSidebar=function(HOST){
     const LA_MORE=(n)=>String(T('{n} more','その他{n}件','{n} weitere','ещё {n}','{n} más')).replace('{n}',n);
     function modeRows(grid){ ['default','clean','custom'].forEach(m=>{
       const d=document.createElement('div'); d.className='lst-tile lst-row lst-mode'; d.dataset.mode=m;
-      d.setAttribute('role','radio'); d.setAttribute('aria-checked','false');
+      d.setAttribute('role','radio'); d.setAttribute('aria-checked','false'); window.IntMapDialog.makeActionable(d);
       const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=MODE_LBL[m]();
       d.dataset.nm=(MODE_LBL[m]()+' '+m).toLowerCase();
       const sw=document.createElement('span'); sw.className='lst-sw'; sw.appendChild(document.createElement('i'));
@@ -1349,7 +1355,7 @@ window.IntMapModules.layerSidebar=function(HOST){
              beta group still starts closed (#R72/#R101), and both are still remembered per session. */
           if(!(secName in _secClosed)) _secClosed[secName]=(!!r.secBeta || _isBeta(secName));
           const closed=!!_secClosed[secName];
-          const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('role','button'); h.setAttribute('aria-expanded',closed?'false':'true');
+          const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('aria-expanded',closed?'false':'true'); window.IntMapDialog.makeActionable(h);
           const ch=document.createElement('span'); ch.className='lst-chev'; h.appendChild(ch);
           const tt=document.createElement('span'); tt.textContent=secName; h.appendChild(tt);
           root.appendChild(h);
@@ -1382,7 +1388,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         const anchor=Array.from(root.querySelectorAll('.lst-grid')).find(x=>x.querySelector('.lst-mode'))||null;
         if(!(FAV_SEC in _secClosed)) _secClosed[FAV_SEC]=false;
         const closed=!!_secClosed[FAV_SEC];
-        const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('role','button'); h.setAttribute('aria-expanded',closed?'false':'true');
+        const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('aria-expanded',closed?'false':'true'); window.IntMapDialog.makeActionable(h);
         const ch=document.createElement('span'); ch.className='lst-chev'; h.appendChild(ch);
         const tt=document.createElement('span'); tt.textContent=favLabel(); h.appendChild(tt);
         const g=document.createElement('div'); g.className='lst-grid lst-favgrid'+(closed?' closed':'');
@@ -1764,7 +1770,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       if(!(TOOLS_SEC in _secClosed)) _secClosed[TOOLS_SEC]=false;
       const closed=!!_secClosed[TOOLS_SEC];
       const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':'');
-      h.setAttribute('role','button'); h.setAttribute('aria-expanded',closed?'false':'true');
+      h.setAttribute('aria-expanded',closed?'false':'true'); window.IntMapDialog.makeActionable(h);
       /* ⚠ THE CHEVRON IS WHY THE OLD HEADER LIED. It was a bare `.lst-sech` with a `:hover` rule and no
          chevron, no listener and no count — it looked exactly like a category header and did nothing. */
       const cv=document.createElement('span'); cv.className='lst-chev'; h.appendChild(cv);
@@ -1885,7 +1891,7 @@ window.IntMapModules.layerSidebar=function(HOST){
     };
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
     function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
-      const cb=document.getElementById(id); if(cb) t2.classList.toggle('on',!!cb.checked); })); }catch(_){} }
+      const cb=document.getElementById(id); if(cb) tileOn(t2,!!cb.checked); })); }catch(_){} }
     /* ══ (#R255) THE CLEAR BUTTON — ONE IMPLEMENTATION, EVERY MOUNT ════════════════════════════════
        「レイヤー検索欄に入力内容をクリアするボタンを。」 This grid is mounted in at least two places
        (the desktop sidebar and the phone's «Map & layers» sheet) and the classic panel has a search
@@ -2108,7 +2114,7 @@ window.IntMapModules.ticker=function(HOST){
   const fetchData=HOST.fetchData, saveSettings=HOST.saveSettings;
   window.IntMapTicker=(function(){
     const T=window.IntMapLang.pick(()=>HOST.lang);
-    const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const esc=window.IntMapSafe.html;   /* the one encoder (index.html IntMapSafe) — the local copy here did not encode ' */
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
     let bar=null,track=null,built=false,timer=0,mkt=[],news=[];
     /* (#R102) which symbols / items the ticker shows is user-configurable in Settings ("表示銘柄や表示項目を設定から
@@ -2191,7 +2197,7 @@ window.IntMapModules.ticker=function(HOST){
       mkt.forEach(m=>{ if(m.k&&!cfg.syms.has(m.k)) return;   /* (#R102) respect the user's ticker symbol selection */
         const dd=(m.d!=null&&isFinite(m.d))?(' <span class="'+(m.d>=0?'tk-up':'tk-dn')+'">'+(m.d>=0?'▲':'▼')+Math.abs(m.d).toFixed(2)+'%</span>'):''; parts.push('<span class="tk-item"><span class="tk-lbl">'+esc(m.l)+'</span>'+esc(m.v)+dd+'</span>'); });
       /* (#R72) no 📰 emoji on ticker items ("Tickerに📰の絵文字はいらない") */
-      if(cfg.news) news.forEach(n=>{ parts.push('<span class="tk-item">'+(n.u?('<a href="'+esc(n.u)+'" target="_blank" rel="noopener">'+esc(n.t)+'</a>'):esc(n.t))+'</span>'); });
+      if(cfg.news) news.forEach(n=>{ const tkHref=window.IntMapSafe.url(n.u||''); parts.push('<span class="tk-item">'+(tkHref?('<a href="'+esc(tkHref)+'" target="_blank" rel="noopener">'+esc(n.t)+'</a>'):esc(n.t))+'</span>'); });
       if(!parts.length) parts.push('<span class="tk-item tk-lbl">'+T('Loading ticker…','ティッカー読込中…','Ticker lädt…','Загрузка ленты…','Cargando cinta…')+'</span>');
       const html=parts.join('');
       track.innerHTML='<span class="tk-half">'+html+'</span><span class="tk-half" aria-hidden="true">'+html+'</span>';
@@ -2262,7 +2268,7 @@ window.IntMapModules.layerPresets=function(HOST){
       host.innerHTML='<button id="lp-save" class="ai-test-btn" style="width:100%;">💾 <span>'+(window.IntMapLang.t(HOST.lang,"Save current layers as preset","現在のレイヤー構成を保存","Aktuelle Ebenen als Voreinstellung speichern","Сохранить текущие слои как пресет","Guardar las capas actuales como preajuste"))+'</span></button>'+
         (presets.length?('<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">'+presets.map((p,i)=>
           '<div style="display:flex;align-items:center;gap:6px;">'+
-          '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">▶ '+String(p.name).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
+          '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">▶ '+window.IntMapSafe.html(p.name)+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
           '<button data-del="'+i+'" title="'+(window.IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">×</button></div>').join('')+'</div>'):'');
       const sv=host.querySelector('#lp-save');
       if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"No layers are on","表示中のレイヤーがありません","Keine Ebene ist eingeschaltet","Ни один слой не включён","No hay capas activas")); }catch(_){} return; }
@@ -2468,7 +2474,7 @@ window.IntMapModules.labelPopup=function(HOST){
        writes, what the Wikipedia probe and the AI brief are asked about, and what IntMapOutline looks
        the boundary up by — so the two must not be confused: 「大阪府 (Osaka Prefecture)」 is a caption,
        not a query. See `_bothNames` below for what builds it. */
-    function showPopup(lngLat,name,isCountry,opts){ closeReaders(); opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=String(opts.title||name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    function showPopup(lngLat,name,isCountry,opts){ closeReaders(); opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=window.IntMapSafe.html(String(opts.title||name));
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       /* (#R210) 「地名ラベルクリック時のポップアップをすこし小さくして」— one step down across the
@@ -2499,7 +2505,7 @@ window.IntMapModules.labelPopup=function(HOST){
          is upstream's own free text and must not be read as a name IntMap chose. The caller hands
          over FINISHED text in the reader's language: this function owns the placement, not the
          wording, so no ninth string is created here, and a caller that omits it is unchanged. */
-      const subHtml=(opts&&opts.sub)?('<div class="plc-sub" style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin:-4px 0 8px;padding-right:30px;">'+String(opts.sub).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</div>'):'';
+      const subHtml=(opts&&opts.sub)?('<div class="plc-sub" style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin:-4px 0 8px;padding-right:30px;">'+window.IntMapSafe.html(opts.sub)+'</div>'):'';
       const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div>${subHtml}<div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${window.IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}</div></div>`;
       try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline

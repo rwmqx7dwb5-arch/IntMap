@@ -1918,7 +1918,7 @@ window.IntMapModules.terrainWater=function(HOST){
       _ensureCss();
       panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:'+TW_PAD+';background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:'+TW_FS_H+';font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
-        +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;line-height:1;">×</button></div>'
+        +'<button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;line-height:1;">×</button></div>'
         /* ══ ⚠⚠ (#R275) 「ツールは上部にスティックしろ。」 ═══════════════════════════════════════════
            The tool picker was the first thing INSIDE the scroller, so choosing 🧱 堤防・ダム, scrolling
            down to its settings and then wanting ⛏ 削る meant scrolling back up to find the switch —

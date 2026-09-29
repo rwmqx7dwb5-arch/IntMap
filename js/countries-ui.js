@@ -737,7 +737,7 @@ window.IntMapModules.countriesUi=function(HOST){
       const intro=document.getElementById('cp-intro'); if(!intro||!name) return;
       const wl=HOST.lang==='jp'?'ja':HOST.lang==='de'?'de':HOST.lang==='ru'?'ru':HOST.lang==='es'?'es':'en';
       const key=wl+':'+name;
-      const esc=tt=>String(tt==null?'':tt).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const esc=window.IntMapSafe.html;   /* the one encoder (index.html IntMapSafe) */
       const paint=(html)=>{ const i2=document.getElementById('cp-intro'); if(i2&&html) i2.innerHTML=html; };
       if(_cpIntroCache[key]!=null){ paint(_cpIntroCache[key]); return; }   /* re-render flash-free */
       fetch('https://'+wl+'.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(String(name).replace(/ /g,'_')))
@@ -745,9 +745,9 @@ window.IntMapModules.countriesUi=function(HOST){
           if(!j || j.type==='disambiguation'){ _cpIntroCache[key]=''; return; }
           const extract=j.extract||'', img=(j.thumbnail&&j.thumbnail.source)||'', url=(j.content_urls&&j.content_urls.desktop&&j.content_urls.desktop.page)||'';
           if(!extract && !img){ _cpIntroCache[key]=''; return; }
-          const html=(img?'<img src="'+esc(img)+'" alt="" class="cp-intro-img" loading="lazy">':'')
+          const html=(img?'<img src="'+esc(window.IntMapSafe.url(img))+'" alt="" class="cp-intro-img" loading="lazy">':'')
             +(extract?'<p class="cp-intro-text">'+esc(extract)+'</p>':'')
-            +(url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" class="cp-wiki-link">'+HOST.t('readWiki')+'</a>':'');
+            +(url?'<a href="'+esc(window.IntMapSafe.url(url))+'" target="_blank" rel="noopener" class="cp-wiki-link">'+HOST.t('readWiki')+'</a>':'');
           _cpIntroCache[key]=html; paint(html);
         }).catch(()=>{});
     }catch(_){}
@@ -928,7 +928,7 @@ window.IntMapModules.countriesUi=function(HOST){
       const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" data-ccn="${s.code}" title="${String(HOST.cName(s)||'').replace(/"/g,'&quot;')}">${rankHTML}<span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${HOST.cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
+      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${String(HOST.cName(s)||'').replace(/"/g,'&quot;')}">${rankHTML}<span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${HOST.cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{

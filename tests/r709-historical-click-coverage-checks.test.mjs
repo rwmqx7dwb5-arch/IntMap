@@ -69,6 +69,8 @@ function harness({ mount = true, backgroundFirst = false } = {}) {
     navigator: { clipboard: { writeText: text => copied.push(text) } },
     IntMapOutline: { show: name => outlines.push(name), clear: noop },
     IntMapModules: {}, IntMapLang: { t: (_lang, en) => en },
+    /* the page's encoder (index.html defines it before any module runs) — the popup heading goes through it */
+    IntMapSafe: { html: (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';') },
     HOST: { lang: 'en', canDraw: () => true, isMobile: () => false },
     _openBlank: (f) => { blank.push(f); return true; }, active: true,
   };

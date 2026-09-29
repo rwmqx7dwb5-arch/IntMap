@@ -705,8 +705,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(isMobile()) return;
     const ae=document.activeElement, tag=ae&&ae.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(ae&&ae.isContentEditable)) return;
-    const modalOpen=[...document.querySelectorAll('.modal,.lightbox,#compose-modal,#settings-modal')].some(m=>{ const s=getComputedStyle(m); return s.display!=='none'&&s.visibility!=='hidden'; });
-    if(modalOpen) return;
+    /* (a11y-shared-dialog) «is a modal open?» is the dialog registry's answer (js/dialog.js), not a selector list —
+       the list here named two classes no element carried and missed Terms, Sources, Support and Feedback */
+    if(window.IntMapDialog.anyOpen()) return;
     /* (#R62) ESC now TOGGLES the sidebar (open AND close), not close-only. */
     document.getElementById('btn-toggle-sidebar').click();
   });
@@ -1777,7 +1778,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(mob() && !inp.value.trim()){ collapse(); return; }
       doGeocode();
     };
-    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') doGeocode(); });
+    /* Enter searches — unless a result is highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox) */
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')) doGeocode(); });
     /* (#R106) blue only while the field has text — toggle a class the CSS keys off. */
     const _msHas=()=>{ try{ box.classList.toggle('has-text', !!inp.value.trim()); }catch(_){} };
     inp.addEventListener('input',_msHas); _msHas();
@@ -2383,7 +2385,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(cmpOpen){ panel.innerHTML=''; return; }
     if(!coCompareSet.size){ panel.innerHTML=`<div class="scf-empty">${t('coCompareEmpty')}</div>`; return; }
     const items=[...coCompareSet].map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
-    const chips=items.map(c=>`<span class="scb-chip">${IntMapSafe.html(_coName(c))}<button data-cx="${IntMapSafe.html(c.tk)}">×</button></span>`).join('');
+    const chips=items.map(c=>`<span class="scb-chip">${IntMapSafe.html(_coName(c))}<button aria-label="${window.IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cx="${IntMapSafe.html(c.tk)}">×</button></span>`).join('');
     panel.innerHTML=`<div class="scf-head"><span class="scf-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')} (${coCompareSet.size}/10)</span><div style="display:flex;gap:6px;">`+(coCompareSet.size>=2?`<button class="scf-view" data-cv="1">${t('compareView')}</button>`:'')+`<button data-cc="1">${t('compareClear')}</button></div></div><div class="scf-chips">${chips}</div>`;
     panel.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>window._coToggleCompare(b.getAttribute('data-cx')));
     const cv=panel.querySelector('[data-cv]'); if(cv) cv.onclick=()=>window._coShowCompare();
@@ -2438,7 +2440,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!active){ return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
-    const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
+    const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button aria-label="${window.IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button class="scf-view" onclick="_showCompare()">${t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
@@ -2789,7 +2791,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!q || 'auto'.includes(q) || (i18n[currentLang].optLocal||'').toLowerCase().includes(q)) add('auto', i18n[currentLang].optLocal);
     if(!q || 'utc'.includes(q)) add('UTC','UTC');
     zones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(!q || disp.toLowerCase().includes(q) || z.toLowerCase().includes(q)) add(z,disp); });
-    rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option');
+    rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option'); window.IntMapDialog.makeActionable(d);
       d.addEventListener('click',()=>{ _tzSelect(r.v); res.classList.remove('show'); }); res.appendChild(d); });
     if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(window.IntMapLang.t(currentLang,'No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')); res.appendChild(d); }
   }
@@ -2916,6 +2918,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   };
   document.getElementById('settings-close-x').onclick=closeSettings;
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
+  /* (a11y-shared-dialog) the Escape the #R212 note below promised now exists: the registry closes it through
+     closeSettings, so the discard-changes guard still asks; Tab stays inside; focus returns to the gear */
+  window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('.modal-content'), labelledby:'modal-title', close:closeSettings });
 
   /* ===== (#R9/#R10) "Buy me a blueberry" / 開発を支援する =====
      Stripe Payment Links — JPY page for the Japanese UI, USD page for the English UI. The "Continue"
@@ -2938,6 +2943,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
     { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
+    window.IntMapDialog.adopt(bm,{ panel:bm.querySelector('.modal-content'), labelledby:'blueberry-title', close });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
     const go=document.getElementById('blueberry-go'); if(go) go.setAttribute('data-effect','outward');   /* (atlas-outward-effects) its markup is index.html's; the write is wired here */
@@ -3016,7 +3022,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       distHTML2=`<div class="pin-popup-row"><span>${t('ctxDistFrom')}</span><b>${distTXT(km)}</b></div><div class="pin-popup-row"><span>${t('bearing')}</span><b>${brg.toFixed(1)}° ${compassDir(brg)}</b></div>`;
     }
     const pm=pin.meta||{}, pmT=String(pm.title||'').trim(), pmD=String(pm.description||'').trim(), pmS=[String(pm.when||'').trim(),String(pm.source||'').trim()].filter(Boolean).join(' · '), pmU=pm.url?IntMapSafe.url(String(pm.url)):'';   /* ⚠ (#R489) EVERY VALUE HERE IS AN ATLAS-SUPPLIED STRING, so every one reaches innerHTML through IntMapSafe.html and the link through IntMapSafe.url — http(s)/mailto/tel only (index.html). A pin with no meta renders byte-identically to what it always did. */ const pmH=(pmD?`<div style="font-size:11.5px;line-height:1.55;margin:-2px 0 6px;opacity:.9;">${IntMapSafe.html(pmD)}</div>`:'')+(pmS?`<div style="font-size:10.5px;color:var(--text-muted);margin:-3px 0 6px;">${IntMapSafe.html(pmS)}</div>`:'')+(pmU?`<div style="font-size:10.5px;margin:-3px 0 6px;"><a href="${IntMapSafe.html(pmU)}" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;">${window.IntMapLang.t(currentLang,'source','出典','Quelle','источник','fuente')} ↗</a></div>`:'');
-    el.innerHTML=`<button class="pin-popup-close" onclick="window._closePinPopup()">×</button>
+    el.innerHTML=`<button aria-label="${window.IntMapLang.t(currentLang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" class="pin-popup-close" onclick="window._closePinPopup()">×</button>
       <div style="font-weight:600; margin-bottom:6px;">📍 ${pmT?IntMapSafe.html(pmT):`${window.IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}`}</div>${pmH}
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
@@ -3116,6 +3122,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const close=()=>{ try{ URL.revokeObjectURL(url); }catch(_){} window.removeEventListener('mousemove',onMM); window.removeEventListener('mouseup',onMU); ov.remove(); };
       ov.querySelector('#crop-cancel').onclick=()=>{ close(); resolve(null); };
       ov.addEventListener('click',e=>{ if(e.target===ov){ close(); resolve(null); } });
+      window.IntMapDialog.open(ov,{ panel:ov.querySelector('.crop-card'), label:ov.querySelector('.crop-title').textContent, close:()=>ov.querySelector('#crop-cancel').click() });   /* (a11y-shared-dialog) Escape = Cancel */
       ov.querySelector('#crop-ok').onclick=()=>{
         const out=document.createElement('canvas'); out.width=256; out.height=256; const cx=out.getContext('2d');
         const sxp=-tx/scale, syp=-ty/scale, sw=SIZE/scale, sh=SIZE/scale;
@@ -3141,7 +3148,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     GE().layers.setSourceData('community-points',{type:'FeatureCollection',features:feats});
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
-  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeHtml(s){ return window.IntMapSafe.html(s||''); }   /* the one encoder (index.html IntMapSafe); the name stays — it is handed to six modules */
   /* When add-mode is armed, map-click drops a community post pin and opens the compose modal */
   if(GE().hasRenderer()){
     GE().events.on('click',(e)=>{
@@ -3154,6 +3161,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     });
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
+  /* (a11y-shared-dialog) the composer is a registered dialog; Escape is its Cancel (the same discard, no second path) */
+  window.IntMapDialog.adopt(document.getElementById('compose-modal'),{ panel:document.querySelector('#compose-modal .compose-content'), labelledby:'compose-title', close:()=>document.getElementById('compose-cancel').click() });
   document.getElementById('compose-cancel').onclick=()=>{
     document.getElementById('compose-modal').classList.remove('active'); pendingPostLoc=null; composeEditId=null;
     if(currentMode==='community') renderCommunity();
@@ -3412,12 +3421,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const m=document.getElementById('sources-modal'); if(!m) return;
     document.getElementById('sources-title').textContent=t('srcModalTitle'); document.getElementById('sources-sub').textContent=t('srcModalSub');
     const use=(s)=>window.IntMapRefData.useText(s.n,currentLang);
-    const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span><br><a href="${s.u}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join(''); };
+    const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span><br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join(''); };
     paint(); m.style.display='flex';
     window.IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
-    const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }   /* (#R218) folded onto one line: tests/r200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
+    const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); window.IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/r200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
 
   /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
      feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */
@@ -3910,7 +3919,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     return; /* ACLED card retired (#R22) */
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>currentLang==='jp';
-    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const esc=window.IntMapSafe.html;
     const PROX=[x=>x];   /* (own-fetch-relay) the host itself only — this card has been unreachable since #R22, and the public relays it named are gone from the app */
     const KEY='intmap_acled';
     let cred={email:'',key:''}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cred=s; }catch(_){}

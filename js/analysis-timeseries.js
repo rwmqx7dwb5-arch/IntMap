@@ -39,10 +39,11 @@ window.IntMapModules.analysisTimeSeries=function(HOST){
     ];
     let modal=null;
     function ensureModal(){ if(modal) return modal; modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='timeseries-modal';
-      modal.innerHTML='<div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;"><button id="ts-x" type="button" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;line-height:1;cursor:pointer;">×</button><h3 id="ts-title" style="margin:0 0 4px;font-size:18px;"></h3><p id="ts-sub" style="margin:0 0 12px;color:var(--text-muted);font-size:12px;"></p><div id="ts-body"></div></div>';
+      modal.innerHTML='<div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;"><button id="ts-x" type="button" aria-label="'+window.IntMapSafe.html(window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar'))+'" data-i18n-aria="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;line-height:1;cursor:pointer;">×</button><h3 id="ts-title" style="margin:0 0 4px;font-size:18px;"></h3><p id="ts-sub" style="margin:0 0 12px;color:var(--text-muted);font-size:12px;"></p><div id="ts-body"></div></div>';
       document.body.appendChild(modal);
       modal.querySelector('#ts-x').onclick=()=>{ modal.style.display='none'; };
       modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
+      window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('.modal-content'), labelledby:'ts-title' });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
       return modal; }
     /* (#R69) shared-promise cache (re-opening the modal was refetching all 6 series every time) + array ids =
        ordered fallback for series the World Bank retired. */

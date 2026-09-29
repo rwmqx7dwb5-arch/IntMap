@@ -122,12 +122,13 @@ window.IntMapModules.analysisCorrelate=function(HOST){
         +'.corr-note{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;}';
       document.head.appendChild(st); }
     function ensure(){ if(ov)return ov; inject(); ov=document.createElement('div'); ov.id='corr-overlay';
-      ov.innerHTML='<div class="corr-card" role="dialog" aria-modal="true"><div class="corr-head"><h3></h3><button class="corr-x" aria-label="'+tr('Close','閉じる','Schließen','Закрыть','Cerrar')+'">×</button></div>'
+      ov.innerHTML='<div class="corr-card" role="dialog" aria-modal="true" aria-labelledby="corr-h"><div class="corr-head"><h3 id="corr-h"></h3><button class="corr-x" aria-label="'+tr('Close','閉じる','Schließen','Закрыть','Cerrar')+'">×</button></div>'
         +'<div class="corr-pick"><label class="lx"><span></span><select class="corr-sel-x"></select></label><label class="ly"><span></span><select class="corr-sel-y"></select></label></div>'
         +'<div class="corr-svg-wrap"></div><div class="corr-r"></div><div class="corr-note"></div></div>';
       document.body.appendChild(ov);
       ov.addEventListener('click',e=>{ if(e.target===ov) hide(); });
       ov.querySelector('.corr-x').onclick=hide;
+      window.IntMapDialog.adopt(ov,{ panel:ov.querySelector('.corr-card'), close:hide });   /* (a11y-shared-dialog) Escape, Tab trap, focus back */
       /* (#R41) drag the card by its header so the user can shove it aside and watch the map — combined with the
          now-translucent backdrop this answers "機能使ってたら地図が見れない". */
       (function(){ const card=ov.querySelector('.corr-card'), head=ov.querySelector('.corr-head'); let dx=0,dy=0,ox=0,oy=0,drag=false;
@@ -235,7 +236,7 @@ window.IntMapModules.analysisCorrelate=function(HOST){
        become two. */
     const loadFailMsg=()=>tr('Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.');
     function residPill(mx,my,err){ let pill=document.getElementById('corr-resid-pill'); if(!pill){ pill=document.createElement('div'); pill.id='corr-resid-pill'; pill.style.cssText='position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:14px;padding:9px 14px;font-size:11px;box-shadow:var(--shadow);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:stretch;gap:6px;max-width:min(440px,calc(100vw - 24px));'; (document.getElementById('map-container')||document.body).appendChild(pill); }
-      if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+loadFailMsg()+'</span><button style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">×</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
+      if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+loadFailMsg()+'</span><button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">×</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
       /* (#R41) graded diverging legend bar (matches the RdBu fill) + a one-line "what is this" note */
       const grad='linear-gradient(to right,rgb(103,0,31),rgb(178,24,43),rgb(239,138,98),rgb(247,247,247),rgb(103,169,207),rgb(33,102,172),rgb(5,48,97))';
       pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span style="font-weight:600;">'+esc(ml(my))+' '+tr('vs','対','vs','от','vs')+' '+esc(ml(mx))+'</span><button aria-label="'+tr('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;line-height:1;">×</button></div>'

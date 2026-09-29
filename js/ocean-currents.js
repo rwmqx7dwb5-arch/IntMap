@@ -451,7 +451,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
          shows that) and its measured temperature contrast, which is what warm/cold now means. */
       const list=(doc&&doc.named||[]).slice()
         .sort((a,b)=>(b.meanSpeed||0)-(a.meanSpeed||0))
-        .map(c=>'<div class="oc-row" data-en="'+esc(c.en)+'" style="display:flex;justify-content:space-between;gap:8px;padding:2.5px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;cursor:pointer;'
+        .map(c=>'<div class="oc-row" role="button" tabindex="0" data-en="'+esc(c.en)+'" style="display:flex;justify-content:space-between;gap:8px;padding:2.5px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;cursor:pointer;'
           +((picked&&picked===c.en)?'background:rgba(47,127,224,0.14);border-radius:5px;':'')+'">'
           +'<span style="color:'+colOf(c)+';white-space:nowrap;">'+esc(kindWord(c.kind))
           +((c.sstAnomK!=null)?('<span style="opacity:0.72;font-size:10px;"> '+(c.sstAnomK>0?'+':'')+c.sstAnomK.toFixed(1)+'K</span>'):'')+'</span>'

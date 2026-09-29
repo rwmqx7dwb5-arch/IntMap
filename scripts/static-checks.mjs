@@ -648,6 +648,20 @@ try {
   err('fetch-deadline', 'could not run the unbounded-fetch ledger: ' + (e && e.message));
 }
 
+// ── 16. (a11y-shared-dialog) a press no keyboard can reach is not added unseen ──
+// A click handler on a <div>/<span>/<td>/<img>/<li> with no tabindex is out of the Tab order and
+// nothing turns Enter/Space into a press. The way out is a real <button>, or role + tabindex (markup)
+// / window.IntMapDialog.makeActionable(el) (code) — js/dialog.js presses those. This counts the click
+// receivers that resolve to such an element per file from the parser and holds them to
+// tests/keyboard-reach-baseline.json in both directions; the shapes live in scripts/keyboard-reach.mjs.
+// A rule here and not a check:* of its own for the reason given at 15.
+try {
+  const { check: keyboardReachCheck } = await import('./keyboard-reach.mjs');
+  for (const l of keyboardReachCheck().lines) err('keyboard-reach', l);
+} catch (e) {
+  err('keyboard-reach', 'could not run the keyboard-reach ledger: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

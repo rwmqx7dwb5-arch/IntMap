@@ -1258,7 +1258,7 @@ window.IntMapModules.objectList=function(HOST){
         g.forEach(o=>{ const i=_objs.indexOf(o);
           h+='<div class="iol-row" data-i="'+i+'">'
             +'<span class="iol-dot" style="background:'+esc(o.dot||'#888')+';"></span>'
-            +'<span class="iol-name" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">'+esc(o.name)+'</span>'
+            +'<span class="iol-name" role="button" tabindex="0" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">'+esc(o.name)+'</span>'
             +(o.setColor?('<label class="iol-ic" title="'+esc(OL('Color','色','Farbe','Цвет','Color'))+'"><input type="color" value="'+esc(o.color||'#888888')+'" data-act="color"></label>'):'')
             +(o.toggleHide?('<button class="iol-ic" data-act="hide" title="'+esc(OL('Show / hide','表示切替','Ein/Aus','Показать/скрыть','Mostrar/ocultar'))+'">'+(o.hidden?'🙈':'👁')+'</button>'):'')
             +'<button class="iol-ic" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">◎</button>'
@@ -1279,7 +1279,7 @@ window.IntMapModules.objectList=function(HOST){
          defect shape #R243 spent a round on). Measured: 9 px padding + a 16 px × on its default
          line-height made a 37 px band; 4 px padding, a 12.5 px title and `line-height:1` on the two
          buttons (below) make it 25 px, and the head is still the drag handle it always was. */
-      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
+      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
         +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;padding:6px 10px 12px;"></div>';
       document.body.appendChild(panel);
       if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';

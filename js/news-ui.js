@@ -655,6 +655,7 @@ window.IntMapModules.newsUi=function(HOST){
           pub.onclick=openWiki; pub.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWiki(e); } }); } }
       /* Whole card → fly to the map location (replaces the old "Show on map" button) */
       card.onclick=()=>{ if(item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
+      window.IntMapDialog.makeActionable(card);   /* (a11y-shared-dialog) Tab reaches the card, Enter/Space flies — the same click */
       item._cardEl=card; /* lets the translation pass update this title in place */
       feed.appendChild(card);
       /* Pins are populated in bulk by startNews(); no per-batch pin push here. */
@@ -695,8 +696,8 @@ window.IntMapModules.newsUi=function(HOST){
       const bodyHtml=(res.blocks&&res.blocks.length)
         ? res.blocks.map(b=> b.t==='h' ? `<h3>${HOST.escForReader(b.v)}</h3>` : `<p>${HOST.escForReader(b.v)}</p>`).join('')
         : `<p>${window.IntMapLang.t(HOST.lang,'Could not extract text — use “🌐 Web” above to open the page.','本文を自動取得できませんでした。上の「🌐 ページ表示」で元ページを開けます。','Text konnte nicht extrahiert werden — öffne die Seite über „🌐 Web“ oben.','Не удалось извлечь текст — откройте страницу через «🌐 Веб» выше.','No se pudo extraer el texto — abre la página con «🌐 Web» arriba.')}</p>`;
-      const heroHtml=res.hero?`<img class="nrp-hero" src="${HOST.escForReader(IntMapSafe.url(res.hero))}" onerror="this.style.display='none'">`:'';
-      const locHtml=locName?`<span class="nrp-loc" id="nrp-loc">${HOST.escForReader(locName)}</span>`:'';
+      const heroHtml=res.hero?`<img class="nrp-hero" alt="" src="${HOST.escForReader(IntMapSafe.url(res.hero))}" onerror="this.style.display='none'">`:'';
+      const locHtml=locName?`<span class="nrp-loc" id="nrp-loc" role="button" tabindex="0">${HOST.escForReader(locName)}</span>`:'';
       pane.innerHTML=`${readerBar(item,'reader')}
         ${heroHtml}${locHtml}
         <h1 class="nrp-title">${HOST.escForReader(item.title)}</h1>${metaRow}

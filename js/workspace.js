@@ -735,8 +735,7 @@ window.IntMapModules.workspace=function(HOST){
       _escH=(e)=>{ try{ if(!on||e.key!=='Escape'||e.repeat) return;
         const t=e.target; if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable)) return;
         if(document.body.classList.contains('fs-flying')||document.getElementById('fs-setup')||document.getElementById('fs-result')) return;
-        const openModal=[...document.querySelectorAll('.modal-overlay,.modal,#compose-modal,.lightbox')].some(m=>{ try{ const s=getComputedStyle(m); return s.display!=='none'&&s.visibility!=='hidden'; }catch(_){ return false; } });
-        if(openModal) return;
+        if(window.IntMapDialog.anyOpen()) return;   /* (a11y-shared-dialog) the dialog registry, not a second selector list (js/dialog.js) */
         const mw=wraps.map; if(!mw||mw.style.display==='none') return;
         const mx=mw.querySelector('.ws-d-max'); if(mx){ e.preventDefault(); e.stopPropagation(); mx.click(); } }catch(_){} };
       document.addEventListener('keydown',_escH,true);

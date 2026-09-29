@@ -619,10 +619,10 @@ window.IntMapModules.droneNav=function(HOST){
         +row(L('Battery','バッテリー消費','Akku','Батарея','Batería'), st.energyWh.toFixed(1)+' Wh · '+Math.round(st.batteryPct)+' %');
     const vio=!st?'':(st.violations.length
       ? `<div class="dn-vio-h">${L('Conditions not met','飛行条件を満たさない点','Nicht erfüllte Bedingungen','Невыполненные условия','Condiciones no cumplidas')} (${st.violations.length})</div>`
-        +st.violations.map(v=>`<div class="dn-vio dn-${esc(v.severity)}" data-at="${v.at}"><b>${esc(kindLabel(v.kind))}</b> <span class="dn-vio-at">${v.toKm?('· '+v.fromKm.toFixed(2)+'–'+v.toKm.toFixed(2)+' km'):''}</span><br>${esc(v.text)}</div>`).join('')
+        +st.violations.map(v=>`<div class="dn-vio dn-${esc(v.severity)}" role="button" tabindex="0" data-at="${v.at}"><b>${esc(kindLabel(v.kind))}</b> <span class="dn-vio-at">${v.toKm?('· '+v.fromKm.toFixed(2)+'–'+v.toKm.toFixed(2)+' km'):''}</span><br>${esc(v.text)}</div>`).join('')
       : `<div class="dn-ok">✓ ${L('Every condition is met.','すべての飛行条件を満たしています。','Alle Bedingungen erfüllt.','Все условия выполнены.','Se cumplen todas las condiciones.')}</div>`);
     const specRows=SPEC_FIELDS.map(f=>`<label class="dn-spec"><span>${esc(specLabel(f))}</span><input type="number" data-spec="${f.k}" step="${f.step}" min="${f.min}" max="${f.max}" inputmode="decimal" value="${esc(route.spec[f.k])}"><i>${f.unit}</i></label>`).join('');
-    const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button type="button" class="dn-del" data-drop="${esc(r.id)}">×</button></div>`).join('')}</div>`:'';
+    const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button aria-label="${window.IntMapLang.t(HOST.lang,'Delete','削除','Löschen','Удалить','Eliminar')}" type="button" class="dn-del" data-drop="${esc(r.id)}">×</button></div>`).join('')}</div>`:'';
     const ops=opsSection();
 
     p.innerHTML=`<div class="tp-header"><span class="tp-title">🛸 ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>

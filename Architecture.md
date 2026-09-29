@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（928行・92 KB）＋ `css/`（3本）＋ `js/`（326本・14.9 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（928行・92 KB）＋ `css/`（3本）＋ `js/`（327本・14.9 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -3942,6 +3942,37 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
   コード全体から探して 0 件であること、⑦ はアクセント文字が載る灰色の面を規則から見つけて全部測る）と
   `tests/ui-a11y-polish.spec.js` ①（画面上でアクセント色の文字を持つ要素すべてを、合成した背景に
   対して測る。ライトとダーク）。
+- **モーダルは 1 つの契約に登録する——`js/dialog.js` の `window.IntMapDialog`。** 需要に応じて作る面は
+  `open(root, opts)`、ページに居て持ち主が `style.display` や class で出し入れする面は `adopt(root, opts)`。
+  登録された面は、パネルに `role="dialog"`・`aria-modal="true"`・名前（`labelledby`／`label`、無ければ
+  面の最初の見出し）を持ち、**Escape は一番上の面だけを、持ち主の閉じる関数で閉じる**（設定の「変更を
+  破棄しますか」はそのまま訊く）。Tab／Shift+Tab は一番上の面の中を巡り、閉じると開く前に
+  フォーカスがあった所へ戻る（開く前に blur する持ち主のために、ダイアログの外で最後に focus を受けた
+  要素を覚えている）。開閉は**観測**する——登録簿は要素そのものの style／class／hidden と親の子の
+  出入りを見て、`display`／`visibility` で開いているかを判定する（画面外に待機する携帯のシートは
+  持ち主の `isOpen` 述語）。⚠ **「モーダルが開いているか」は `IntMapDialog.anyOpen()` だけが答える。**
+  サイドバーの Esc（`js/app-body.js`）とワークスペースの Esc（`js/workspace.js`）はこれに訊き、
+  選択子の一覧を持たない。一文字のキーボードショートカット（`js/keyboard-shortcuts.js`）もモーダルの
+  背後には届かない（「?」だけはヘルプを開閉する）。登録している面: 設定・支援・規約・出典・投稿・
+  画像の拡大・公開プロフィール・アバターの切り抜き・フィードバック・不具合報告・ショートカットのヘルプ・ウィジェットの
+  追加・AI レポート・時系列・相関・企業の詳細・プレイグラウンドのカード・初回の案内・
+  アカウント（ログイン・アカウント・確認）・携帯の 2 枚のシート。
+- **押せるものはキーボードでも押せる。** クリックで動く `<div>`／`<span>`／`<td>`／`<img>`／`<li>` は、
+  文字列で組むなら `role="button"`（または `option`／`switch`／`radio`…）と `tabindex="0"` を書き、
+  コードで作るなら `IntMapDialog.makeActionable(el)` を通す。Enter／Space を押下に変えるのは
+  `js/dialog.js` の委譲リスナー 1 つで、押下は `el.click()`——**クリックと同じ処理しか起きない**。
+  `aria-sort` を述べる列見出しは、表の見出しのまま並べ替えの操作になる。レイヤー欄のタイルは両方の
+  形とも `role="switch"` で、見た目の `.on` と `aria-checked` は `tileOn()` 1 か所が同時に書く。
+  地名検索の結果は、欄から操作する listbox（`IntMapDialog.listbox`）——↓↑ で行を選び Enter で
+  決める。欄に `aria-activedescendant` がある間、Enter は検索し直さない。
+  門は `check:static` の `keyboard-reach` 規則（`scripts/keyboard-reach.mjs`・台帳
+  `tests/keyboard-reach-baseline.json`）と `tests/a11y-shared-dialog-checks.test.mjs`。
+- **`prefers-reduced-motion: reduce` では、カメラは動くが飛ばない。** `js/geo-engine.js` の facade
+  （`camera.flyTo`／`easeTo`／`fitBounds`／`zoomTo`／`zoomIn`／`zoomOut`）が `duration:0` を渡す——
+  行き先も、動くかどうかも変えない（CONSTITUTION §3）。CSS は各節の transition を止める規則が節の
+  隣にあり、終わらないアニメーション（事件点と検索ピンのパルス）とスクリーンショットの全画面の閃光は
+  `css/intmap.css` 末尾の 1 ブロックが止める。回転する読み込み表示は、作業が続いている唯一の印なので
+  止めない。
 - **携帯の地図の帰属表示のリンクは、見た目の大きさのまま指には 24 × 24 px 以上で当たる。**
   `#map-credit a::after` が文字の中心に `max(100%,24px)` 四方の透明な当たり判定を置き、ピルは
   `overflow:visible`（切り取られた箱は当たり判定も切り取られる。ピルの高さは 23 px）。門は

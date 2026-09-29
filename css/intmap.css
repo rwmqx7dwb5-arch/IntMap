@@ -1613,7 +1613,7 @@
     #ms-btn .ms-ico{ display:none; }
     .map-search-results{ display:none; position:absolute; top:48px; left:0; right:0; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); max-height:280px; overflow-y:auto; }
     .ms-item{ padding:10px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid rgba(128,128,128,0.1); line-height:1.4; }
-    .ms-item:hover{ background:var(--input-bg); }
+    .ms-item:hover, .ms-item.kbd-active{ background:var(--input-bg); }   /* (a11y-shared-dialog) the row the arrow keys are on looks like the row the pointer is on */
     /* (ui-a11y-polish) what the row IS (and, for two rows that read alike, where) — js/search-geocode.js `_paint` */
     .ms-kind{ display:block; margin-top:1px; font-size:11px; line-height:1.3; color:var(--text-muted); }
     .ms-loading{ padding:12px; font-size:12px; color:var(--text-muted); text-align:center; }
@@ -5447,4 +5447,16 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
   .pg-ok, .pg-warn, .pg-err, .pg-badge, .pg-gps{ border:1px solid CanvasText; }
   .pg-cand.pg-selc{ border:1px solid CanvasText; }
   .pg-bar{ background:Highlight; }
+}
+
+/* ══ (a11y-shared-dialog) REDUCED MOTION — THE MOTION THAT NEVER ENDS ══════════════════════════════
+   The section blocks above each quiet their own transitions and stay beside the rules they answer
+   (tests pin them there). This one block answers what none of them did: animation that loops for as
+   long as the element exists — the live-event pulse ring, the searched-place pulse — and the full-screen
+   white flash of a screenshot, which is exactly the kind of flash the setting exists to spare a reader.
+   The state each one marks is still drawn: the dot, the pin and the saved image are unchanged.
+   Spinners are left turning: they are the only sign that work is still in progress. */
+@media (prefers-reduced-motion:reduce){
+  .intel-dot::after, .search-pin .sp-pulse{ animation:none !important; opacity:0 !important; }
+  .screenshot-flash.go{ animation:none !important; }
 }
