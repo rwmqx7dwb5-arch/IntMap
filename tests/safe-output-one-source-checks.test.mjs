@@ -101,8 +101,10 @@ test('③ the news ingest reads RSS markup in an inert document — the live one
   const cache = [...nodes(ast)].find((n) => n.type === 'VariableDeclaration' && n.declarations.some((d) => d.id.name === '_inertDoc'));
   const live = { createElement() { throw new Error('the LIVE document was asked to parse untrusted HTML'); } };
   let madeInert = 0; const parsed = [];
+  /* a fake that does not parse (nor strip): it answers the text of the inputs this test gives it, by lookup */
+  const TEXT_OF = new Map([['<p>A &amp; B<img src=x onerror=alert(1)></p>', 'A & B'], ['<b>C</b>', 'C']]);
   live.implementation = { createHTMLDocument() { madeInert++; return { createElement: () => ({
-    set innerHTML(v) { parsed.push(v); this._t = String(v).replace(/<[^>]*>/g, '').replace(/&amp;/g, '&'); },
+    set innerHTML(v) { parsed.push(v); this._t = TEXT_OF.get(String(v)); },
     get textContent() { return this._t; } }) }; } };
   const stripHTML = new Function('document', feed.slice(cache.start, cache.end) + feed.slice(fn.start, fn.end) + '; return stripHTML;')(live);
   assert.equal(stripHTML('<p>A &amp; B<img src=x onerror=alert(1)></p>'), 'A & B');

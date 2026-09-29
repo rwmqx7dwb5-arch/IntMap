@@ -299,7 +299,8 @@ export function measure(root = ROOT) {
   }
   for (const name of readdirSync(root).filter((n) => n.endsWith('.html'))) {
     const html = readFileSync(join(root, name), 'utf8');
-    const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi; let m;
+    /* an end tag may carry blanks or junk before its `>` (</script >, </script\tfoo>) and still close */
+    const re = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi; let m;
     while ((m = re.exec(html))) {
       if (/\bsrc\s*=/.test(m[1]) || /type\s*=\s*["']?(?:application\/(?:ld\+)?json|importmap|text\/template)/i.test(m[1])) continue;
       const lineOffset = html.slice(0, m.index + m[0].indexOf('>') + 1).split('\n').length - 1;
