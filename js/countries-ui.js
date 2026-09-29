@@ -269,7 +269,7 @@ window.IntMapModules.countriesUi=function(HOST){
   function loadCountryData(){
     if(HOST.countryDataPromise) return HOST.countryDataPromise;
     HOST.countryDataPromise=(async()=>{
-      let grabFail=null;   /* (fetch-deadline-layer) why the last Natural Earth rung failed — read in `finally` below */
+      let grabFail=null, grabErr=null;   /* (fetch-deadline-layer) why the last Natural Earth rung failed — read in `finally` below; (unobserved-is-not-refused) and the error itself, for the classifier */
       try{
         let gj=null;
         /* (#R13) Highest-resolution Natural Earth borders (10 m) so the boundary lines are crisp and
@@ -300,7 +300,7 @@ window.IntMapModules.countriesUi=function(HOST){
            (published by js/fetch-deadline.js with the host table's `clockFor`) and not an import, because this file
            must stay a classic script — several node harnesses run it with `new Function` (tests/shell-data-layers-checks.test.mjs #R453 ⑤). `grabFail` keeps WHY the last rung failed, so a load that
            reached nothing says so (below) instead of looking exactly like a load that is still coming. */
-        const grab=async(f)=>{ try{ const FW=window.IntMapFetchWithin; return await FW.jsonWithin(NE+f,FW.clockFor(NE+f),undefined,{idle:true}); }catch(e){ grabFail=(e&&e.reason)||'network'; } return null; };
+        const grab=async(f)=>{ try{ const FW=window.IntMapFetchWithin; return await FW.jsonWithin(NE+f,FW.clockFor(NE+f),undefined,{idle:true}); }catch(e){ grabFail=(e&&e.reason)||'network'; grabErr=e; } return null; };
         let coarse=true;
         gj=await grab('ne_110m_admin_0_countries.geojson');
         if(!(gj&&gj.features)) gj=await grab('ne_50m_admin_0_countries.geojson');
@@ -550,7 +550,11 @@ window.IntMapModules.countriesUi=function(HOST){
         } else { HOST.countryDataLoaded=false; HOST.countryDataPromise=null;
           /* (fetch-deadline-layer) nothing arrived from any rung — say so; the next click retries (#R40, above). A load
              that the reader's own Stop ended is not a failure to report. */
-          if(grabFail&&grabFail!=='aborted'){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')); }catch(_){} }
+          /* (unobserved-is-not-refused) nothing is kept either way (the promise is cleared above, so the next call reads
+             again); a last rung that ran out of time is said to be late, not to have no data */
+          const FWu=window.IntMapFetchWithin;
+          if(grabFail&&grabFail!=='aborted'&&FWu&&typeof FWu.isUnobserved==='function'&&FWu.isUnobserved(grabErr)){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} }
+          else if(grabFail&&grabFail!=='aborted'){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')); }catch(_){} }
         }
       } }
     )();

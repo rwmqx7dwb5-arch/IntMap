@@ -12,7 +12,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — this read had none */
-import { readWithin } from './fetch-deadline.js';
+import { readWithin, isUnobserved, untilObserved } from './fetch-deadline.js';   /* (unobserved-is-not-refused) a read that ran out of time is not an empty series */
+import { afterTick, tickKey } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.wbLayers=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -52,12 +53,17 @@ window.IntMapModules.wbLayers=function(HOST){
       if(wbSeriesCache[key]) return Promise.resolve(wbSeriesCache[key]);
       const to=new Date().getUTCFullYear()+1;
       /* (stalled-fetch-and-surface-gauge) every year since WB_FROM for every country in one answer — a large body,
-         so the clock measures SILENCE (`idle`: re-armed on every chunk), not the length of the download. A read
-         that stops is `[]`, exactly as a refused one always was. */
-      const one=(c)=>{ const u='https://api.worldbank.org/v2/country/all/indicator/'+c+'?format=json&date='+WB_FROM+':'+to+'&per_page=20000';
-        return readWithin(u,clockFor(u),undefined,{idle:true}).then(r=>JSON.parse(r.text)).then(j=>(j&&j[1])||[]).catch(()=>[]); };
+         so the clock measures SILENCE (`idle`: re-armed on every chunk), not the length of the download.
+         ⚠ (unobserved-is-not-refused) A read that STOPPED is not `[]`. It used to be — so for a summed indicator
+         (UNHCR + UNRWA) one silent half and one answering half made a partial sum that was CACHED as the series,
+         and a wholly silent read painted every country grey («no data»). A refusal or a bad body is still `[]`;
+         a silence re-throws, js/fetch-deadline.js `untilObserved` asks again with the clock doubled, and when the
+         host stayed silent through every retry wbSeries REJECTS — nothing is cached, the next call reads again. */
+      const urlOf=(c)=>'https://api.worldbank.org/v2/country/all/indicator/'+c+'?format=json&date='+WB_FROM+':'+to+'&per_page=20000';
+      const one=(c,scale)=>{ const u=urlOf(c);
+        return readWithin(u,clockFor(u)*scale,undefined,{idle:true}).then(r=>JSON.parse(r.text)).then(j=>(j&&j[1])||[]).catch(e=>{ if(isUnobserved(e)) throw e; return []; }); };
       const codes=Array.isArray(code)?code:[code];
-      return Promise.all(codes.map(one)).then(parts=>{
+      return untilObserved((s)=>Promise.all(codes.map((c)=>one(c,s))),{ base:clockFor(urlOf(codes[0])), wait:(ms)=>afterTick(tickKey('wb-layers:unobserved'),ms) }).then(parts=>{
         const by=Object.create(null);
         parts.forEach(arr=>{ arr.forEach(d=>{ if(!d||d.value==null||!d.countryiso3code) return;
           const y=String(d.date); (by[y]=by[y]||Object.create(null));
@@ -83,6 +89,7 @@ window.IntMapModules.wbLayers=function(HOST){
     }
     function wbFetch(code){ const key=_wbKey(code);
       if(wbCache[key]) return Promise.resolve(wbCache[key]);
+      /* (unobserved-is-not-refused) a silent host hands this caller `{}` as before, but NOTHING is cached — the next call reads again */
       return wbSeries(code).then(()=>wbCache[key]||{}).catch(()=>({})); }
     /* (#R40) expose the WB indicator fetch (cached, latest value per country) so the Correlation/Scatter tool
        can offer the full World-Bank indicator set as axes ("対応する項目を大幅に増やして"). (#R266) `series`
@@ -280,7 +287,11 @@ window.IntMapModules.wbLayers=function(HOST){
        kept because for a survey indicator reported once a decade it is the only mode that fills the
        map — but it is no longer the default, because 「同一年度で比較しないと意味がない」. */
     const wbYear={};
-    function choroOn(L){ L=V(L); ensureGeo(geo=>{ if(!geo) return; wbSeries(L.code).then(S=>{
+    function choroOn(L){ L=V(L); ensureGeo(geo=>{ if(!geo) return;
+      /* (unobserved-is-not-refused) a host silent through every retry is LATE, not empty: say so and paint nothing,
+         rather than a map of grey «no data» countries; nothing was cached, so switching it on again reads again */
+      const LATE={};
+      wbSeries(L.code).catch(e=>{ if(!isUnobserved(e)) throw e; try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return LATE; }).then(S=>{ if(S===LATE) return;
       const key=_wbKey(L.code);
       const year=(wbYear[L.id]!==undefined)?wbYear[L.id]:((S&&S.best)||'');
       let m;

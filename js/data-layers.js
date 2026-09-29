@@ -12,11 +12,11 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the TeleGeography fallback's second rung; (stalled-fetch) and how long one read of a host may take */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
-import { jsonWithin, readWithin } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock — see rvFetch */
+import { jsonWithin, readWithin, untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock — see rvFetch; (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor } from './layer-manifest.js';
@@ -5840,7 +5840,7 @@ window.IntMapModules.dataLayers=function(HOST){
        two net::ERR_FAILED in the console whenever the bundled file missed its clock). The #R190 reason for keeping it
        first — «origins that are allowed to read it» — has no such origin in a browser. It stays as the last rung for a
        build with no relay (ownRelayUrl → ''), where it is the only thing left to try. */
-    async function _cableNet(u){ for(const src of [ownRelayUrl(u), u]){ if(!src) continue; try{ const j=await jsonWithin(src,clockFor(u,src===u?'direct':'relay'),undefined,{idle:true}); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
+    async function _cableNet(u,scale,seen){ for(const src of [ownRelayUrl(u), u]){ if(!src) continue; try{ const j=await jsonWithin(src,clockFor(u,src===u?'direct':'relay')*(scale||1),undefined,{idle:true}); if(j&&j.features){ _cableStore(u,j); return j; } }catch(e){ if(seen&&isUnobserved(e)) seen.unobserved=e; } } return null; }
     /* ══ (#R355) THE ROUTES COME FROM THIS APP'S OWN ORIGIN NOW ═══════════════════════════════════
        「世界中の全海底ケーブルが…実際に海底を通っていると考えられる場所に描画され」
 
@@ -5883,23 +5883,33 @@ window.IntMapModules.dataLayers=function(HOST){
            8 s, since its row carries no clock of its own).
          Lapses if a read of ours or the relay's legitimately goes silent for longer (a cold relay whose
          upstream answers after 8 s — the ladder would then need the relay's own row clock, as gdelt-relay has).
-       A timed-out read is a null here, which is what a refused one always was, so the ladder below is the
-       failure path: kept copy → TeleGeography → the 5 / 15 / 45 s back-off (#R188) → the toast 「Submarine
-       cable data unavailable」, `imAutoOff`, and the request settled.
+       A failed read is a null here and the ladder falls through: kept copy → TeleGeography. When nothing
+       came back, (unobserved-is-not-refused) a rung that timed out makes the answer 「not observed」 and
+       the row asks the whole ladder again with its clocks doubled (rowUntilObserved, up to 8×); only a
+       ladder whose every rung answered takes the 5 / 15 / 45 s back-off (#R188), and either ends in the
+       toast 「Submarine cable data unavailable」, `imAutoOff`, and the request settled.
        ⚠ THE 90 s HORIZON IS NOT THE DOWNLOAD'S BOUND. `BUILD_HORIZON_MS` in addSubcables starts only once
        fetchSubcables() has handed back data, and it bounds the renderer refusing the add. The download
        is bounded by these clocks: per attempt, the two local reads in parallel, then the direct and relay
-       reads — at most one silence each — and four attempts separated by 65 s of back-off. */
-    async function _cableLocal(u){
-      try{ const j=await jsonWithin(u,clockFor(u),{cache:'default'},{idle:true});
+       reads — at most one silence each — and either four attempts separated by 65 s of back-off (every
+       rung answered) or four at 1 / 2 / 4 / 8 × the clocks, paused by the clock each one had (a rung was
+       silent). */
+    async function _cableLocal(u,scale,seen){
+      try{ const j=await jsonWithin(u,clockFor(u)*(scale||1),{cache:'default'},{idle:true});
         /* a truncated or half-written answer is not data — the layer must fall through, not draw a
            fragment and call it the world's cables */
         if(!j||!Array.isArray(j.features)||!j.features.length) return null;
-        _cableStore(u,j); return j; }catch(_){ return null; }
+        _cableStore(u,j); return j; }catch(e){ if(seen&&isUnobserved(e)) seen.unobserved=e; return null; }
     }
-    async function fetchSubcables(){
+    /* (unobserved-is-not-refused) `scale` multiplies every clock of the ladder, and `unobserved` on the
+       answer is the error of a rung whose read ran out of time — set only when no cables came back. A
+       ladder that got nothing is 「refused」 only if every rung it asked ANSWERED; one silent rung (our own
+       origin, under a loaded page) means the answer may have been there, and the row asks again
+       (rowUntilObserved) instead of reporting the data unavailable. */
+    async function fetchSubcables(scale){
+      const seen={unobserved:null};
       /* 1 · this app's own dataset */
-      const [cab,lp]=await Promise.all([_cableLocal(CABLE_LOCAL_URL),_cableLocal(CABLE_LOCAL_LP_URL)]);
+      const [cab,lp]=await Promise.all([_cableLocal(CABLE_LOCAL_URL,scale,seen),_cableLocal(CABLE_LOCAL_LP_URL,scale,seen)]);
       if(cab&&lp) return {cab,lp,from:'local'};
       /* 2 · the kept copy of it */
       const [cKept,lKept]=await Promise.all([_cableCached(CABLE_LOCAL_URL),_cableCached(CABLE_LOCAL_LP_URL)]);
@@ -5914,8 +5924,8 @@ window.IntMapModules.dataLayers=function(HOST){
         return {cab:cCache,lp:lCache,from:'telegeography-cache',fromCache:true};
       }
       /* 4 · the relay chain */
-      const [cNet,lNet]=await Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]);
-      return {cab:cNet,lp:lNet,from:'telegeography',fromCache:false};
+      const [cNet,lNet]=await Promise.all([_cableNet(CABLE_URL,scale,seen),_cableNet(CABLE_LP_URL,scale,seen)]);
+      return {cab:cNet,lp:lNet,from:'telegeography',fromCache:false,unobserved:cNet?null:seen.unobserved};
     }
     layerReads.subcables=fetchSubcables;   /* (fetch-deadline-layer) the preview draws from THIS ladder — see layerReads at the top */
     /* The app — not the user — is switching this box off. Recorded on the element so the session
@@ -5924,6 +5934,36 @@ window.IntMapModules.dataLayers=function(HOST){
       cb.dataset.imAutoOff='1'; cb.checked=false;
       const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');
       const ex=r&&r.querySelector('.lyr-extras'); if(ex) ex.style.display='none'; }
+    /* ══ ⚠⚠ (unobserved-is-not-refused) A ROW WHOSE READ WAS NOT OBSERVED STAYS ON AND ASKS AGAIN ═══════
+       MEASURED (nightly deep tier, run 36493764477): the radar index timed out on a loaded runner, the
+       radar arm — written for a refusal — toasted, UNTICKED the box and never asked again, and
+       tests/restored-layer-before-style.spec.js found `lyr-radar` missing. A deadline says the page read
+       nothing in time, not that the host said no (.agents/rules/one-pass-or-a-reason.md §5), so every
+       row that unticks itself on a failed read goes through THIS instead of deciding for itself:
+         · js/fetch-deadline.js `untilObserved` is the policy — an unobserved failure (`isUnobserved`) is
+           retried with the clock doubled, on js/runtime.js's wheel (`afterTick`); an observed one
+           (status, network refusal, no data) reaches the row's own failure arm exactly as before.
+         · while it waits the box stays ticked, the row says `aria-busy`, and one toast says so; the row's
+           request stays pending, so the self-heal (heal-waits-for-inflight) does not pulse it.
+         · the count is kept on the box (`data-im-unobserved`) — the record §5 asks for.
+         · unticking, or ticking again (a newer generation), ends the wait with reason 'aborted': the
+           newer switch owns the row, and nothing is drawn behind a box that is off (CONSTITUTION §3).
+       Rows that use it: dl-radar (the frame index) and dl-subcables (its whole ladder). */
+    const _unobsGen={};
+    function rowUntilObserved(cbId,read,base){
+      const gen=_unobsGen[cbId]=(_unobsGen[cbId]||0)+1;
+      const box=()=>document.getElementById(cbId);
+      const busy=(on,n)=>{ try{ const c=box(); if(!c) return; if(n) c.dataset.imUnobserved=String(n);
+        const r=c.closest('.lyr-row'); if(r){ if(on) r.setAttribute('aria-busy','true'); else r.removeAttribute('aria-busy'); } }catch(_){} };
+      let told=false;
+      const mine=()=>_unobsGen[cbId]===gen;
+      return untilObserved(read,{ base,
+        wait:(ms)=>afterTick(tickKey('data-layers:unobserved:'+cbId),ms),
+        wanted:()=>{ const c=box(); return !!(c&&c.checked)&&mine(); },
+        onWait:({attempt})=>{ busy(true,attempt);
+          if(!told){ told=true; try{ satToast(window.IntMapLang.t(HOST.lang,'Still waiting for the data — asking again','データの応答を待っています — もう一度問い合わせます')); }catch(_){} } }
+      }).finally(()=>{ if(mine()) busy(false); });
+    }
     let _subcableTries=0;
     /* ⚠ (#R224) THE #R208 OCEAN-CURRENT LAYER LIVED HERE AND IS GONE.
        「海流レイヤー、二つあるなんていうややこしいことするな。統一しろ。」 What stood here was ~100 lines
@@ -5952,7 +5992,8 @@ window.IntMapModules.dataLayers=function(HOST){
     /* (heal-waits-for-inflight) the request addSubcables() returns — ONE across the download, its
        back-off (#R188) and the build ladder (#R355), settled where any of them ends: drawn, given up
        (autoUncheck), or abandoned because the box was unticked. Bounded by those: three back-offs
-       (5 + 15 + 45 s) and the horizon of the ladder itself (BUILD_HORIZON_MS). js/layer-rows.js ④. */
+       (5 + 15 + 45 s) or three unobserved retries (rowUntilObserved), and the horizon of the ladder itself
+       (BUILD_HORIZON_MS). js/layer-rows.js ④. */
     let _subcReq=null,_subcDone=null;
     function _subcRequest(){ if(!_subcReq) _subcReq=new Promise(r=>{ _subcDone=r; }); return _subcReq; }
     function _subcSettle(){ const d=_subcDone; _subcReq=null; _subcDone=null; if(d) d(); }
@@ -5960,14 +6001,21 @@ window.IntMapModules.dataLayers=function(HOST){
       if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); _wireSubcableInfo(); _subcSettle(); return; }
       const req=_subcRequest();
       if(_subcablesLoading) return req; _subcablesLoading=true;
-      fetchSubcables().then(({cab,lp})=>{
+      /* (unobserved-is-not-refused) a ladder that got nothing because a rung was not observed asks again
+         with longer clocks (rowUntilObserved) and keeps the box; 'aborted' = the box was unticked while
+         it waited. The #R188 back-off below is for a ladder whose every rung ANSWERED — after the policy
+         has already asked four times, a fourth silence goes straight to the report, not round again. */
+      rowUntilObserved('dl-subcables',s=>fetchSubcables(s).then(r=>{ if(!r.cab&&r.unobserved) throw r.unobserved; return r; }),clockFor(CABLE_LOCAL_URL))
+        .catch(e=>((e&&e.reason==='aborted')?null:{cab:null,lp:null,silent:isUnobserved(e)})).then(res=>{
         _subcablesLoading=false;
+        if(res===null){ _subcableTries=0; _subcSettle(); return; }
+        const {cab,lp}=res;
         if(!cab){
           /* (#R188) three volunteer proxies all refusing at the same second is a bad minute, not an
              answer. Back off and ask again while the box is still ticked; only a fourth failure is
              reported — and even then as `imAutoOff`, which the session does not record as a choice. */
           const cb=document.getElementById('dl-subcables');
-          if(cb&&cb.checked&&_subcableTries<3){ const wait=[5000,15000,45000][_subcableTries++];
+          if(cb&&cb.checked&&!res.silent&&_subcableTries<3){ const wait=[5000,15000,45000][_subcableTries++];
             setTimeout(()=>{ const c2=document.getElementById('dl-subcables'); if(c2&&c2.checked) addSubcables(); else _subcSettle(); },wait); return; }
           _subcableTries=0; autoUncheck('dl-subcables'); _subcSettle();
           try{ satToast(window.IntMapLang.t(HOST.lang,'Submarine cable data unavailable','海底ケーブルデータを取得できませんでした','Seekabel-Daten nicht verfügbar','Данные о подводных кабелях недоступны','Datos de cables submarinos no disponibles')); }catch(_){} return; }
@@ -6146,9 +6194,11 @@ window.IntMapModules.dataLayers=function(HOST){
        ever said the weather could not be fetched, and (c) every later tick got the SAME dead promise
        back, because `_rvPending` is what a second caller is handed while a read is on its way.
        js/fetch-deadline.js `jsonWithin` is the app's clock for a direct JSON read, and it covers the
-       BODY as well as the headers (#R452). Its deadline rejects like a refusal does, so the existing
-       `.catch` is the failure path: `_rvPending` is cleared (the next request starts a new read), the
-       branch finds no frames, toasts 「Live weather data unavailable」 and unticks the row.
+       BODY as well as the headers (#R452). Its deadline clears `_rvPending` (the next request starts a
+       new read). ⚠ (unobserved-is-not-refused) It no longer reaches the row's failure arm the way a
+       refusal does: the deadline is `isUnobserved`, so the row keeps its box and asks again with a longer
+       clock (rowUntilObserved); only an answer — a status, a refusal, no frames — toasts 「Live weather
+       data unavailable」 and unticks it.
        THE CLOCK is js/proxy-fetch.js `clockFor` — the host read directly, so DIRECT_TIMEOUT_MS (6 s,
        «hosts that answer quickly»), stated once, there.
          · observed 2026-09-28: five reads of the index from a home line, 0.97–1.24 s to the last byte,
@@ -6156,14 +6206,22 @@ window.IntMapModules.dataLayers=function(HOST){
          · lapses if RainViewer's index stops being a sub-kilobyte file answered in about a second (the
            host then needs its own row in proxy-fetch's per-host table, as GDELT and the World Bank have). */
     const RV_INDEX_URL='https://api.rainviewer.com/public/weather-maps.json';
-    function rvFetch(){
+    /* (unobserved-is-not-refused) `scale` multiplies the clock — js/fetch-deadline.js `untilObserved` asks
+       again with it doubled after a read that was not observed — and `_rvWhy` keeps what the last failed
+       read threw, so the row can tell 「nothing was read in time」 from 「RainViewer said no」. The
+       thumbnail (layerReads.radarIndex) still receives the index or null, as before. */
+    let _rvWhy=null;
+    function rvFetch(scale){
       if(_rvData && Date.now()-_rvAt<5*60000) return Promise.resolve(_rvData);
       if(_rvPending) return _rvPending;
-      _rvPending=jsonWithin(RV_INDEX_URL,clockFor(RV_INDEX_URL))
-        .then(j=>{ if(j){ _rvData=j; _rvAt=Date.now(); rvRefreshFrames(); } _rvPending=null; return _rvData; })
-        .catch(()=>{ _rvPending=null; return null; });
+      _rvPending=jsonWithin(RV_INDEX_URL,clockFor(RV_INDEX_URL)*Math.max(1,+scale||1))
+        .then(j=>{ if(j){ _rvData=j; _rvAt=Date.now(); _rvWhy=null; rvRefreshFrames(); } _rvPending=null; return _rvData; })
+        .catch(e=>{ _rvWhy=e||null; _rvPending=null; return null; });
       return _rvPending;
     }
+    /* the row's read: the index, or a throw carrying why there is none */
+    function rvRead(scale){ return rvFetch(scale).then(d=>{ if(d) return d;
+      throw (_rvWhy||Object.assign(new Error('no radar index'),{reason:'empty'})); }); }
     layerReads.radarIndex=rvFetch;   /* (fetch-deadline-layer) the preview reads the frame index through the row's own read */
     function rvRefreshFrames(){
       const r=(_rvData&&_rvData.radar)||{};
@@ -6275,8 +6333,14 @@ window.IntMapModules.dataLayers=function(HOST){
         }
         else if(id==='radar'){
           lgdRadar.style.display='block'; tileLegends();
-          req=whenStyleReady().then(()=>rvFetch()).then(()=>{
-            if(!addRainViewer()){
+          /* (unobserved-is-not-refused) a read that was not observed keeps the box ticked and asks again
+             (rowUntilObserved); only an answer — a status, a refusal, an index with no frames — reaches
+             the failure arm below. 'aborted' = unticked or re-ticked meanwhile: that switch owns the row. */
+          req=whenStyleReady().then(()=>rowUntilObserved('dl-radar',rvRead,clockFor(RV_INDEX_URL)))
+            .then(()=>true,e=>((e&&e.reason==='aborted')?null:false)).then(got=>{
+            if(got===null) return;
+            const on=document.getElementById('dl-radar'); if(!(on&&on.checked)) return;   /* nothing drawn behind a box that is off (CONSTITUTION §3) */
+            if(!got||!addRainViewer()){
               try{ satToast(window.IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
               const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
               lgdRadar.style.display='none'; tileLegends();
@@ -6361,12 +6425,17 @@ window.IntMapModules.dataLayers=function(HOST){
           lgdTfr.style.display='block'; tileLegends();
           /* (#R11) Total fertility rate — fetched live from the World Bank (latest year), cached.
              (stalled-fetch) read under js/proxy-fetch.js `clockFor` — the World Bank's own row there
-             (20 s; its cold answers were measured at up to 8.2 s). A timed-out read lands in the `.catch`
-             that already said 「Could not load fertility data」, and withCountries settles with it. */
+             (20 s; its cold answers were measured at up to 8.2 s). (unobserved-is-not-refused) A timed-out read is asked
+             again with a longer clock (rowUntilObserved); only an answer reaches 「Could not load fertility data」,
+             and a host silent through every retry is said to be late, not empty. withCountries settles with it. */
           req=withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
             const apply=()=>applyChoro('tfr',s=>s.tfr!=null?s.tfr:null);
             if(window._tfrData){ apply(); }
-            else { const u='https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400'; return readWithin(u,clockFor(u)).then(r=>JSON.parse(r.text)).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
+            else { const u='https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400'; return rowUntilObserved('dl-tfr',s=>readWithin(u,clockFor(u)*s).then(r=>JSON.parse(r.text)),clockFor(u)).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(e=>{ if(e&&e.reason==='aborted') return;   /* unticked or re-ticked while it waited — that switch owns the row */
+              /* (unobserved-is-not-refused) silent through every retry: nothing is kept (`_tfrData` stays unset, so the next
+                 switch-on reads again) and the grey «no data» fill is taken down rather than left claiming the world has none */
+              if(isUnobserved(e)){ try{ setVis('tfr-fill',false); }catch(_){} try{ imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
+              try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
         else if(id==='nato'){

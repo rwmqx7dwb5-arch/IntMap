@@ -607,6 +607,18 @@ function adoptEarlyTimers(API) {
 let tickSerial = 0;
 export function tickKey(prefix) { tickSerial++; return prefix + '#' + tickSerial; }
 
+/* (unobserved-is-not-refused) ONE tick, `ms` from now, on the wheel — a Promise, for a caller that awaits
+   a pause (js/fetch-deadline.js `untilObserved`, handed this by js/data-layers.js). The entry removes
+   itself when it fires, so the wheel holds nothing afterwards. Like every entry it does not fire in a
+   hidden tab (opts.whenHidden says otherwise): a retry waits for a reader who can see what it draws.
+   ⚠ the key is the caller's, and keys are global — use tickKey() when more than one can be pending. */
+export function afterTick(key, ms, opts) {
+  return new Promise((res) => {
+    let stop = null, fired = false;
+    stop = everyTick(key, ms, () => { if (fired) return; fired = true; stopTick(stop); res(undefined); }, opts);
+  });
+}
+
 export function stopTick(stop) {
   if (!stop) return;
   if (typeof stop === 'function') { try { stop(); } catch (_) { } return; }

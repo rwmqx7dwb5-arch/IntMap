@@ -31,7 +31,7 @@ import './osm-facilities.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take */
-import { readWithin } from './fetch-deadline.js';
+import { readWithin, isUnobserved } from './fetch-deadline.js';
 window.IntMapModules=window.IntMapModules||{};
 
 /* ══ ⚠ (railways-handover-idempotent) THE BASEMAP-SWAP SELF-HEAL — ONE RULE FOR EVERY PACK IN THIS FILE ══
@@ -831,7 +831,9 @@ window.IntMapModules.betaPack2=function(HOST){
       if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
       const build=async()=>{
         if(!_imCanDraw()){ GE().events.once('idle',build); return; }
-        const S=await (async()=>{ try{ if(window.IntMapWB&&window.IntMapWB.series) return await window.IntMapWB.series(W.ind); }catch(_){} return null; })();
+        /* (unobserved-is-not-refused) `late` = a read ran out of time (the series, or the fallback below) — kept apart from «refused» */
+        let late=null;
+        const S=await (async()=>{ try{ if(window.IntMapWB&&window.IntMapWB.series) return await window.IntMapWB.series(W.ind); }catch(e){ if(isUnobserved(e)) late=e; } return null; })();
         const year=(wbYr[key]!==undefined)?wbYr[key]:((S&&S.best)||'');
         let vals=null;
         if(S&&year&&S.by[year]){ vals={}; const row=S.by[year]; Object.keys(row).forEach(k2=>{ if(k2&&k2.length===3) vals[k2]=row[k2]; }); }
@@ -842,7 +844,11 @@ window.IntMapModules.betaPack2=function(HOST){
           if(!vals){ vals={};
             try{ const u='https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||'');
               const j=JSON.parse((await readWithin(u,clockFor(u))).text); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
-            }catch(_){}
+            }catch(e){ if(isUnobserved(e)) late=e; }
+            /* (unobserved-is-not-refused) A READ THAT RAN OUT OF TIME IS LATE, NOT «COULD NOT LOAD». An empty result is never
+               cached (the refusal branch below returns before the cache line), so the next switch-on reads again either way;
+               what differs is what the reader is told. Late → say so and draw nothing. */
+            if(!Object.keys(vals).length&&late){ try{ imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
             if(!Object.keys(vals).length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
             cache['wb_'+key]=vals;
           }

@@ -4,7 +4,7 @@
  * hands a module its own `fetch` (the `new Function('…','fetch', src)` pattern several tests use)
  * would otherwise be bypassed by them. `fetchWithinFor(fetch)` evaluates the REAL js/fetch-deadline.js
  * source in a scope where `fetch` is the stub, and returns the handle the classic scripts read as
- * `window.IntMapFetchWithin` — { jsonWithin, readWithin, clockFor }, with the real clockFor, assembled
+ * `window.IntMapFetchWithin` — { jsonWithin, readWithin, clockFor, isUnobserved }, with the real clockFor, assembled
  * the way js/app-body.js assembles it (the file itself publishes nothing — see its last comment).
  * `loadWxSource(fetch)` does the same for js/wx-source.js, whose two import lines are removed and
  * their bindings supplied from that evaluation. Nothing in either file is copied here; both are read
@@ -18,11 +18,13 @@ const IMPORTS = /^import [^\n]*\n/gm;
 
 export function fetchWithinFor(fetchImpl) {
   const raw = read('js/fetch-deadline.js');
-  const src = raw.replace(IMPORTS, '').replace(/^export const \{ jsonWithin, readWithin \} =/m, 'const { jsonWithin, readWithin } =');
+  /* every `export` keyword goes, not only the readers' — the file also exports the policy below them
+     (unobserved-is-not-refused: isUnobserved / untilObserved), and a function body cannot hold one */
+  const src = raw.replace(IMPORTS, '').replace(/^export (?=(?:async )?function |const )/gm, '');
   if (!/^const \{ jsonWithin, readWithin \} =/m.test(src)) throw new Error('js/fetch-deadline.js no longer exports { jsonWithin, readWithin } in one statement — update this helper');
   // eslint-disable-next-line no-new-func
-  const { jsonWithin, readWithin } = new Function('fetch', src + '\nreturn { jsonWithin, readWithin };')(fetchImpl);
-  return { jsonWithin, readWithin, clockFor };
+  const { jsonWithin, readWithin, isUnobserved } = new Function('fetch', src + '\nreturn { jsonWithin, readWithin, isUnobserved };')(fetchImpl);
+  return { jsonWithin, readWithin, clockFor, isUnobserved };
 }
 
 export function loadWxSource(fetchImpl, win) {

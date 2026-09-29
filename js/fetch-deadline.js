@@ -38,6 +38,8 @@
  *      (the wait for the headers included) instead of the length of the download. A slow line that
  *      keeps delivering is not a stall; a connection that stops is, at any size.
  *  How long a given URL may take is not decided here — js/proxy-fetch.js `clockFor` says, per host.
+ *  What a caller does when the clock runs out is decided once, below the two readers
+ *  (`isUnobserved`, `untilObserved` — unobserved-is-not-refused).
  */
 export const { jsonWithin, readWithin } = (() => {
   /* An AbortController is standard everywhere IntMap runs; the guard is for the node checks, which
@@ -153,6 +155,66 @@ export const { jsonWithin, readWithin } = (() => {
 
   return { jsonWithin, readWithin };
 })();
+
+/* ══ (unobserved-is-not-refused) «NOTHING WAS OBSERVED» IS NOT «THE HOST SAID NO» ═══════════════════
+   MEASURED (nightly deep tier, run 36493764477, tests/restored-layer-before-style.spec.js): the radar
+   row's frame index timed out under load, and the row's failure arm — written for a refusal — toasted
+   「Live weather data unavailable」, UNTICKED the box and never asked again. The layer was gone for
+   the session because the page had been too busy to read an answer, which is the confusion
+   .agents/rules/one-pass-or-a-reason.md §5 forbids: 「could not observe」 is not 「failed」.
+   Every throw above already carries `reason`; this is the ONE reading of it that a caller branches on,
+   so no caller spells the list of reasons itself.
+     · 'timeout'  — the clock ran out: the host may have answered and nobody was there to read it.
+                    UNOBSERVED.
+     · 'aborted'  — the caller's own Stop. Neither observed nor failed; the caller that stopped knows.
+     · 'network' / 'http' / 'parse' / anything else — an answer (or the platform's refusal) arrived.
+                    OBSERVED: the existing failure arms are right for these. */
+export function isUnobserved(err) { return !!(err && err.reason === 'timeout'); }
+
+/* untilObserved(read, opts) -> the value `read` resolved with
+ *
+ * THE ONE POLICY for a read that a map row waits on. `read(scale)` is called with scale 1, and — only
+ * after an UNOBSERVED failure (isUnobserved) — again with the clock doubled (2, 4, 8): each retry does
+ * something the last one did not (it waits longer before calling the host silent), which is what §5
+ * requires of a retry. An observed failure is re-thrown at once, untouched, so the caller's failure arm
+ * is exactly what it was.
+ *   opts.base    — the caller's clock at scale 1, in ms. The pause before retry n is the clock the
+ *                  failed attempt had (base × its scale): a page too loaded to read an answer gets that
+ *                  long to drain before it is asked to read another, so retries never take more than
+ *                  half the wall time.
+ *   opts.wait    — (ms) => Promise. The scheduler; js/data-layers.js passes js/runtime.js `afterTick`
+ *                  (the one timer wheel). Defaults to setTimeout for a caller with no runtime.
+ *   opts.wanted  — () => boolean, asked before every retry. false ends the loop with reason 'aborted'
+ *                  (the reader unticked the row, or a newer switch-on superseded this one).
+ *   opts.onWait  — ({ attempt, scale, delay, error }) called before each retry: the record of it.
+ * When the last retry is unobserved too, its error is re-thrown with `retries` set — at 8 × the host's
+ * clock of SILENCE (js/fetch-deadline.js counts only time the page could have read a reply in) the host
+ * has been asked four times, which is an observation of its own.
+ *   UNOBSERVED_RETRIES — observation: a 6 s host clock (DIRECT_TIMEOUT_MS) × 8 = 48 s of counted silence,
+ *   longer than the longest main-thread freeze measured on the nightly runner (30 s, the note on the
+ *   clock above). Lapses if a host's answer is legitimately slower than 8 × its row in clockFor — that
+ *   host then needs its own row there, not more retries here. Canonical here. */
+export const UNOBSERVED_RETRIES = 3;
+export async function untilObserved(read, opts) {
+  const o = opts || {};
+  const base = Math.max(0, +o.base || 0);
+  const wait = (typeof o.wait === 'function') ? o.wait : ((ms) => new Promise((res) => setTimeout(res, ms)));
+  for (let attempt = 0; ; attempt++) {
+    const scale = 2 ** attempt;
+    try { return await read(scale); } catch (e) {
+      if (!isUnobserved(e)) throw e;
+      if (attempt >= UNOBSERVED_RETRIES) { try { e.retries = attempt; } catch (_) { /* a frozen error keeps its own shape */ } throw e; }
+      const delay = base * scale;
+      if (typeof o.onWait === 'function') { try { o.onWait({ attempt: attempt + 1, scale: scale * 2, delay, error: e }); } catch (_) { /* a recorder does not decide the read */ } }
+      await wait(delay);
+      if (typeof o.wanted === 'function' && !o.wanted()) {
+        const stop = new Error('no longer wanted');
+        stop.reason = 'aborted'; stop.retries = attempt + 1;
+        throw stop;
+      }
+    }
+  }
+}
 
 /* ══ (fetch-deadline-layer) THE SAME CLOCK FOR THE FILES THAT CANNOT IMPORT IT ════════════════════
    js/countries-ui.js and js/routing-ops.js are run as CLASSIC scripts by the node harnesses (tests/shell-data-layers-checks.test.mjs #R453 ⑤

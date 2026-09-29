@@ -71,13 +71,14 @@ test('R188 default layers: the cable data is kept, and an outage is never saved 
      download is kept, and is served without waiting for the network — and it covers the local
      dataset too. What must never come back is asking a stranger FIRST. */
   assert.match(dl, /return \{cab:cCache,lp:lCache,from:'telegeography-cache',fromCache:true\};/, 'the kept copy answers immediately');
-  assert.match(dl, /const \[cab,lp\]=await Promise\.all\(\[_cableLocal\(CABLE_LOCAL_URL\),_cableLocal\(CABLE_LOCAL_LP_URL\)\]\);/,
+  /* (unobserved-is-not-refused) each read also takes the clock's scale and the ladder's record of a silent rung */
+  assert.match(dl, /const \[cab,lp\]=await Promise\.all\(\[_cableLocal\(CABLE_LOCAL_URL,scale,seen\),_cableLocal\(CABLE_LOCAL_LP_URL,scale,seen\)\]\);/,
     "and this app's own dataset is tried before any of it");
-  assert.ok(dl.indexOf('_cableLocal(CABLE_LOCAL_URL)') < dl.indexOf('_cableCached(CABLE_URL)'),
+  assert.ok(dl.indexOf('_cableLocal(CABLE_LOCAL_URL') < dl.indexOf('_cableCached(CABLE_URL)'),
     'the own-origin dataset must be tried before the kept TeleGeography copy');
   assert.match(dl, /_cableStore\(u,j\); return j;/, 'and a successful local answer is kept too');
   /* retried with backoff before the box is ever touched */
-  assert.match(dl, /if\(cb&&cb\.checked&&_subcableTries<3\)\{ const wait=\[5000,15000,45000\]\[_subcableTries\+\+\];/,
+  assert.match(dl, /if\(cb&&cb\.checked&&!res\.silent&&_subcableTries<3\)\{ const wait=\[5000,15000,45000\]\[_subcableTries\+\+\];/,
     'three backed-off retries before giving up');
   /* and when it does give up, the app marks the untick as ITS OWN */
   assert.match(dl, /function autoUncheck\(id\)\{[\s\S]{0,120}cb\.dataset\.imAutoOff='1';/,
@@ -116,7 +117,7 @@ test('R190 default layers: the cables come through our own origin', async () => 
      uptime, and a stranger on the path. (own-fetch-relay) The relay URL is no longer spelled in this file; it
      is asked of js/proxy-fetch.js, so what is checked is what that router ANSWERS for the two URLs. */
   const dl = read('js/data-layers.js');
-  const net = /async function _cableNet\(u\)\{[^\n]*/.exec(dl);
+  const net = /async function _cableNet\(u,scale,seen\)\{[^\n]*/.exec(dl);
   assert.ok(net, 'the cable fetcher is still one function');
   /* (cable-relay-first) our relay FIRST, the bare URL only for a build with no relay: the bare URL is refused by
      every browser origin (no ACAO), so trying it first was a guaranteed CORS error in production. */

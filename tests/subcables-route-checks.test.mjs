@@ -141,13 +141,13 @@ test('#R355 ② the popup is dynamically imported, so it cannot enter the eager 
 test('#R355 ③ the local dataset is tried before any network source', () => {
   /* ⚠ READ, NOT RUN: fetchSubcables() is renderer wiring inside js/data-layers.js. */
   const at = (s) => { const i = DL.indexOf(s); assert.ok(i > 0, 'missing in js/data-layers.js: ' + s); return i; };
-  const fn = DL.indexOf('async function fetchSubcables()');
+  const fn = DL.indexOf('async function fetchSubcables(');
   assert.ok(fn > 0);
   const body = DL.slice(fn, fn + 2600);
-  const iLocal = body.indexOf('_cableLocal(CABLE_LOCAL_URL)');
+  const iLocal = body.indexOf('_cableLocal(CABLE_LOCAL_URL');
   const iKept = body.indexOf('_cableCached(CABLE_LOCAL_URL)');
   const iTgCache = body.indexOf('_cableCached(CABLE_URL)');
-  const iNet = body.indexOf('_cableNet(CABLE_URL)');
+  const iNet = body.indexOf('_cableNet(CABLE_URL');
   assert.ok(iLocal > 0 && iKept > iLocal && iTgCache > iKept && iNet > iTgCache,
     'fetchSubcables must try: own origin → its kept copy → the kept TeleGeography copy → the relay chain, in that order (§3)');
   at('data/subcables.json'); at('data/subcables-lp.json');

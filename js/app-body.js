@@ -44,7 +44,7 @@ import { gridLayerSpecs } from './grid-style.js';
 import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
 import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, drawn round the water */
 import { fetchViaProxy, clockFor } from './proxy-fetch.js';
-import { readWithin, jsonWithin } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
+import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
 import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
@@ -60,7 +60,7 @@ import { makeTimeCountries } from './time-countries.js';
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
    halves: js/fetch-deadline.js importing js/proxy-fetch.js to publish it put proxy-fetch in a boot request of
    its own (MEASURED eager.requests 9 → 10 — vite.config.js, codeSplitting, has why). Read at call time. */
-window.IntMapFetchWithin = { jsonWithin, readWithin, clockFor };
+window.IntMapFetchWithin = { jsonWithin, readWithin, clockFor, isUnobserved };
 window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R178) THE renderer handle for this file — the same `const GE=()=>window.IntMapGeoEngine` every
      split module already uses. A getter, not the object: the engine is built inside map.on('load'),
