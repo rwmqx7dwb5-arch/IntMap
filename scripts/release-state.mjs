@@ -121,6 +121,7 @@ export const commentsOnly = (diffText) => {
 /** 配備されたファイル木とリポジトリの木を、1 ファイルずつ中身で比べる。
  *  ⚠ 歩くのは**配備された木**である。deploy が束ねるのは import で到達したものだけなので、
  *  リポジトリにしか無いファイル（到達されていない控えなど）は食い違いではない。 */
+const eol = (buf) => buf.toString('utf8').replace(/\r\n/g, '\n');
 export const compareTrees = (deployedDir, repoRoot, git) => {
   const files = walk(deployedDir);
   const same = [], differs = [], missingInRepo = [];
@@ -134,6 +135,11 @@ export const compareTrees = (deployedDir, repoRoot, git) => {
        「一致」として報告された**。「読めなかった」が「同じだ」の証拠として通る形は、
        上流でも自分の道具の中でも同じように壊れる（memory: intmap-one-store-was-asked）。 */
     if (readFileSync(a).equals(readFileSync(b))) { same.push(rel); continue; }
+    /* the same source checked out on Windows (CRLF) and on the CI runner (LF): every line «differs» and
+       nothing does. Measured 2026-09-29: the nightly check said 20 of 20 functions differed, +N/-N on every
+       whole file, while the same comparison on the deploying machine said 20 of 20 matched. The runtime reads
+       the same program either way, so line endings are not a difference — anything else still is. */
+    if (eol(readFileSync(a)) === eol(readFileSync(b))) { same.push(rel); continue; }
     const num = git(['diff', '--no-index', '--numstat', '--', a, b]);
     const [plus, minus] = String(num || '').split(/\s+/);
     const body = git(['diff', '--no-index', '-U0', '--', a, b]);
@@ -151,6 +157,20 @@ export const edgeState = (cmp) =>
       : 'identical';
 
 /* ---------------------------------------------------------------- 実行 */
+
+/* A secret pasted through a terminal carries what the terminal added: Windows PowerShell 5.1 pipes a
+   string to a native command with a trailing CRLF (and may lead with a BOM). Measured 2026-09-29: the
+   Supabase API answered «Format is Authorization: Bearer …» for a token registered that way. The value is
+   normalised once, here, before any `supabase` child process inherits it — and a value that still is not
+   an access token is named by its SHAPE (length, prefix), never by its content. */
+export const normalizeAccessToken = (raw) => String(raw ?? '').replace(/^﻿/, '').trim();
+export const accessTokenShape = (t) => (/^sbp_[0-9a-f]{40}$/.test(t) ? null
+  : `length ${t.length}, starts ${JSON.stringify(t.slice(0, 4))}, expected sbp_ + 40 hex`);
+if (process.env.SUPABASE_ACCESS_TOKEN != null) {
+  process.env.SUPABASE_ACCESS_TOKEN = normalizeAccessToken(process.env.SUPABASE_ACCESS_TOKEN);
+  const bad = process.env.SUPABASE_ACCESS_TOKEN && accessTokenShape(process.env.SUPABASE_ACCESS_TOKEN);
+  if (bad) console.log(`::warning::SUPABASE_ACCESS_TOKEN does not look like an access token (${bad})`);
+}
 
 const ARGS = process.argv.slice(2);
 const flag = (f) => ARGS.includes(f);
