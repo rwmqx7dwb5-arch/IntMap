@@ -156,7 +156,11 @@ test('R208 ②a: the world table is cities1000-scale, gzipped, and says where it
 test('R208 ②b: the client un-gzips it and registers it in slices', () => {
   const gz = read('js/gazetteer.js');
   assert.ok(/gazetteer-world\.json\.gz/.test(gz), 'the client asks for the compressed artefact');
-  assert.ok(/bytes\[0\]===0x1f\s*&&\s*bytes\[1\]===0x8b/.test(gz),
+  /* (data-one-door) the read moved into js/data-door.js, the one reader of data/: the gazetteer asks it
+     by its window name, and the door is what decides from the magic (tests/data-one-door-checks ③ RUNS
+     that decision against an uncompressed body) */
+  assert.ok(/window\.IntMapDataDoor/.test(gz), 'the gazetteer reads the file through the one door');
+  assert.ok(/head\[0\] === 0x1f && head\[1\] === 0x8b/.test(read('js/data-door.js')),
     'it decides from the gzip magic, not from the file name — a host that sets Content-Encoding hands this code plain JSON and the name would be a lie');
   const nc = read('js/news-context.js');
   assert.ok(/function registerSlices\(/.test(nc), 'a `function` declaration, because rebuildGeoIndex is defined above it and calls it (#R200 TDZ)');

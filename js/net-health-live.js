@@ -55,8 +55,10 @@
  *  Regions: IODA's region entities are NETACUITY units carrying a name and a
  *  country, and `data/admin1-world.json.gz` is the first-level index this
  *  repository already ships. So this file asks js/atlas-admin1.js — it does NOT
- *  open the file a third time (js/world-packs.js and js/atlas-admin1.js are the
- *  two that do, and a third reader is a third opinion).
+ *  read the file itself, because a second index would be a second opinion. The
+ *  file is read once per session whoever asks: js/data-door.js hands
+ *  js/atlas-admin1.js and js/world-packs.js the same request and the same parse
+ *  (data-one-door).
  *  ⚠ MEASURED join rate 1,958 / 1,999 = 97.9 %. The 41 that miss are things that
  *  ARE NOT first-level units — villages in Anguilla, municipalities of Åland,
  *  「[Invalid Region (54)]」 placeholders — so they are REFUSED and COUNTED, not

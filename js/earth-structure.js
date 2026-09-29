@@ -127,18 +127,17 @@ window.IntMapEarth = (function () {
   let crust = null, slab = null, tec = null;
   let loading = null, failed = null, ms = 0;
 
-  const url = (f) => { try { return new URL(f, document.baseURI).toString(); } catch (_) { return f; } };
-  async function gunzip(f) {
-    const r = await fetch(url(f));
-    if (!r.ok) throw new Error(f + ': HTTP ' + r.status);
-    if (typeof DecompressionStream !== 'function') throw new Error('DecompressionStream unavailable');
-    return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-  }
-  async function json(f) {
-    const r = await fetch(url(f));
-    if (!r.ok) throw new Error(f + ': HTTP ' + r.status);
-    return r.json();
-  }
+  /* (data-one-door) both through js/data-door.js: the three grids are inflated on another thread and
+     transferred back (measured: slab2.bin.gz was a 67 ms long task on the page at 4× CPU, and none
+     through the door), and the same clock bounds every read. This file is evaluated as a script by
+     its node harness, so it reaches the door by its window name, at call time. */
+  const door = () => {
+    const d = window.IntMapDataDoor;
+    if (!d || typeof d.load !== 'function') throw new Error('data door unavailable');
+    return d;
+  };
+  const gunzip = async (f) => door().load(f, { as: 'arrayBuffer' });
+  const json = async (f) => door().load(f);
 
   function warm() {
     if (crust && slab && tec) return Promise.resolve(true);

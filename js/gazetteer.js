@@ -490,22 +490,18 @@ window.IntMapGazetteer=(function(){
     if(_worldPromise) return _worldPromise;
     _worldPromise=(async()=>{
       try{
-        const r=await fetch(WORLD_URL,{cache:'force-cache'});
-        if(!r.ok) throw new Error('HTTP '+r.status);
         /* (#R208) un-gzip in the browser — but DECIDE FROM THE BYTES, not from the file name.
            ⚠ Whether the body still needs decompressing here depends on the host: a static server
            that labels `.gz` with `Content-Encoding: gzip` (rather than as a gzip-typed body) makes
            the browser decompress it transparently, and this code would then be handed plain JSON
            and fail on it. GitHub Pages does the latter, but "which one does my CDN do" is not a
-           thing to encode as an assumption when the gzip magic number answers it directly. */
-        const bytes=new Uint8Array(await r.arrayBuffer());
-        let text;
-        if(bytes[0]===0x1f&&bytes[1]===0x8b){
-          if(typeof DecompressionStream!=='function') throw new Error('DecompressionStream unavailable');
-          text=await new Response(new Blob([bytes]).stream()
-            .pipeThrough(new DecompressionStream('gzip'))).text();
-        } else { text=new TextDecoder().decode(bytes); }
-        const doc=JSON.parse(text);
+           thing to encode as an assumption when the gzip magic number answers it directly.
+           (data-one-door) That rule — and the inflate and the parse, now on another thread — is
+           js/data-door.js's, the one reader of the shipped data/ files. This file is evaluated as
+           a script by its node harnesses, so it reaches the door by its window name, at call time. */
+        const door=window.IntMapDataDoor;
+        if(!door||typeof door.load!=='function') throw new Error('data door unavailable');
+        const doc=await door.load(WORLD_URL,{cache:'force-cache'});
         /* (#R620) `placeKinds` is the publisher's own description of each feature code, resolved at
            build time because the browser cannot fetch featureCodes_en.txt. `null` on a v2 file. */
         _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length,

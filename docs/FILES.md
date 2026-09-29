@@ -1022,9 +1022,16 @@ proxy-fetch.js                    ACAO を返さない上流を**自前の relay
                                   `clockFor(url, via)` は 1 回の取得の秒数を host ごとに答える（直接／自前 relay 段）
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
                                   `opts.idle` は本文の塊ごとに時計を掛け直す（大きなファイルの無音を測る）。
+                                  `opts.bytes` は本文を `text` でなく `bytes`（ArrayBuffer）で返す（gzip を壊さないため）。
                                   投げる例外は `reason`（timeout／aborted／network／http／parse）を持つ。
                                   import できない classic script 向けの `window.IntMapFetchWithin` は `js/app-body.js` が置く
                                   （このファイルは何も import しない——共通チャンクの循環を作らないため）
+data-door.js                      **同梱データ `data/` を読む唯一の扉** `loadData(url, {as, cache})`（ES import。classic script は window.IntMapDataDoor.load）。
+                                  解決後の URL と形（json／text／arrayBuffer）ごとに Promise を 1 つだけ共有し、読めた値は
+                                  WeakRef で持つ（誰かが持っている間は再取得しない・生の文書を常駐させない）。失敗は保持せず
+                                  次の呼び出しで読み直す。時計は `fetch-deadline.js` の idle 時計＋`clockFor`。gzip は先頭の
+                                  バイトで判定し、展開と parse は Blob Worker（無ければ同じ関数をページで）。例外の `reason` は
+                                  timeout／network／http／parse／unsupported／worker
 overpass.js                       **Overpass の唯一のクライアント** `overpassQuery()`——ミラー一覧を持つ唯一のファイル。
                                   予算は問い合わせ自身の `[timeout:N]`＋本文の余裕、応答の無いミラーは持ち分を過ぎたら
                                   次のミラーを並走させ、観測された失敗は即座に次へ。全滅は `OverpassUnavailable` を投げる

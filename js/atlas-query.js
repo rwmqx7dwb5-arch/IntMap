@@ -52,6 +52,7 @@
  * ==========================================================================*/
 
 import { makeCoastline } from './coastline.js';
+import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
@@ -295,8 +296,10 @@ window.IntMapModules.atlasQuery = function (HOST) {
   let _volc = null;
   async function volcanoRows() {
     if (!_volc) {
-      const url = (() => { try { return new URL('data/volcanoes_gvp.json', (window.IM_HOST && window.IM_HOST.base) || document.baseURI).toString(); } catch (_) { return 'data/volcanoes_gvp.json'; } })();
-      const j = await (D.fetchJSON ? D.fetchJSON(url) : fetch(url).then((r) => r.json()));
+      /* (data-one-door) the same read the volcano layer and the compare map get — js/data-door.js.
+         `D.loadData` is the injection point a check uses to hand the engine a document (#R505: the
+         engine is EVALUATED, not read); the app binds none, so the door answers. */
+      const j = await (D.loadData ? D.loadData('data/volcanoes_gvp.json') : loadData('data/volcanoes_gvp.json'));
       _volc = [];
       /* ⚠⚠ THE KEYS ARE ONE LETTER LONG, AND GUESSING THEM COST A WHOLE TABLE. data/volcanoes_gvp.json
          is written short — `n` name, `c` country, `t` type, `e` elevation (m), `y` the year of the

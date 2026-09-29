@@ -356,7 +356,7 @@ test('R497 ②: js/atlas-query.js reads the keys the file actually has', async (
   await import('../js/atlas-query.js?r497-' + Math.random());
   const API = globalThis.window.IntMapModules.atlasQuery({ lang: 'en', addPin: () => null });
   API.bind({ countryStats: () => ({}), countryName: (s) => s.nameEn,
-    fetchJSON: async (u) => JSON.parse(read('data/' + String(u).split('/data/')[1])) });
+    loadData: async (p) => JSON.parse(read(p)) });   /* (data-one-door) the engine's injection point for data/ reads */
   const all = await API.run({ from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: -20000 }] });
   assert.ok(all.scanned > 1000, 'the volcanoes table is gone, or reads nothing: ' + all.scanned);
   assert.ok(all.matched / all.scanned > 0.95, 'the elevation comes from e: only ' + all.matched + ' of ' + all.scanned + ' rows have one');

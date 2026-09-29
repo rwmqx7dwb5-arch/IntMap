@@ -152,7 +152,7 @@ test('#R288 ② the quiet grey is a unit layer, under the warnings, in the same 
      247 countries in 2.38 MB, fetched once. */
   assert.match(src, /const ADM1_URL='data\/admin1-world\.json\.gz';/, 'the world index is a shipped file');
   assert.match(src, /function askUnitsWorld\(iso\)\{/, 'and askUnits falls to it before geoBoundaries');
-  assert.match(src, /DecompressionStream\('gzip'\)/, 'it is read the way the gazetteer is read');
+  assert.match(src, /loadData\(ADM1_URL\)/, 'it is read the way the gazetteer is read — through js/data-door.js');
   assert.ok(existsSync(resolve(ROOT, 'data/admin1-world.json.gz')), 'and the file is in the repository');
 });
 
@@ -286,7 +286,7 @@ test('R290 ② the world administrative index is a shipped, decodable file', () 
 test('R290 ③ the index is the LAST naming rung, and the unit ladder falls to it', () => {
   const src = WP();
   assert.match(src, /const ADM1_URL='data\/admin1-world\.json\.gz';/);
-  assert.match(src, /DecompressionStream\('gzip'\)/, 'read the way data/gazetteer-world.json.gz is read');
+  assert.match(src, /loadData\(ADM1_URL\)/, 'read the way data/gazetteer-world.json.gz is read — through js/data-door.js');
   /* the placement ladder: its own polygon, the service's own shapes, NUTS, geoBoundaries, THEN this */
   const sh = src.match(/const shapeOfRaw=\(a\)=>\{[\s\S]*?wholeCountryShape\(iso,a\.name\); \};/);
   assert.ok(sh, 'the MeteoAlarm ladder must exist');

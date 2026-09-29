@@ -76,15 +76,11 @@ window.IntMapModules.volcanoIntel=function(HOST){
     if(detailPromise) return detailPromise;
     detailPromise=(async()=>{
       try{
-        const r=await fetch(DETAIL_URL,{cache:'force-cache'});
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const bytes=new Uint8Array(await r.arrayBuffer());
-        let text;
-        if(bytes[0]===0x1f&&bytes[1]===0x8b){
-          if(typeof DecompressionStream!=='function') throw new Error('DecompressionStream unavailable');
-          text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-        } else { text=new TextDecoder().decode(bytes); }
-        detailDoc=JSON.parse(text);
+        /* (data-one-door) the magic-number test, the inflate and the parse are js/data-door.js's now
+           (off the page thread); this file runs as a script, so it asks for the door by name */
+        const d=window.IntMapDataDoor;
+        if(!d||typeof d.load!=='function') throw new Error('data door unavailable');
+        detailDoc=await d.load(DETAIL_URL,{cache:'force-cache'});
       }catch(e){ detailFailed=true; try{ console.warn('[IntMap] volcano detail unavailable —',e.message); }catch(_){} }
       return detailDoc;
     })();

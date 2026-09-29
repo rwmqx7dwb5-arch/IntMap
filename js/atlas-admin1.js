@@ -38,12 +38,14 @@
  *  shipped file, with no browser.
  * ==========================================================================*/
 
+import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
+
 export function makeAtlasAdmin1(deps) {
   return (function () {
     deps = deps || {};
 
     /* ⚠ THE SAME CONSTANT js/world-packs.js USES, and deliberately not a second copy of the loader:
-       both read one shipped file, and if the path ever moves, both must move. tests/atlas-console-observers-checks.test.mjs (#R489) asserts
+       both read one shipped file through js/data-door.js, and if the path ever moves, both must move. tests/atlas-console-observers-checks.test.mjs (#R489) asserts
        the two spellings agree. */
     const ADM1_URL = deps.url || 'data/admin1-world.json.gz';
 
@@ -118,17 +120,15 @@ export function makeAtlasAdmin1(deps) {
     }
 
     /* ══ THE ONE READ ══════════════════════════════════════════════════════════════════════════
-       Same shape as js/world-packs.js's `worldAdm1()`: gzip over fetch, decoded by the platform.
-       ⚠ THE PROMISE IS THE CACHE, so a dozen names asked inside one tick share ONE request — the
+       (data-one-door) js/data-door.js reads the file — the SAME read js/world-packs.js's
+       `worldAdm1()` gets, so the two readers of this file cost one request, one inflate (off the page
+       thread) and one parse between them, where each used to fetch and parse its own copy.
+       ⚠ THE PROMISE IS THE CACHE, so a dozen names asked inside one tick share ONE index build — the
        #R290 lesson about every caller being answered, not just the first. */
     let LOADING = null;
     function rawLoad() {
       if (typeof deps.load === 'function') return Promise.resolve(deps.load(ADM1_URL));
-      if (typeof DecompressionStream !== 'function') return Promise.reject(new Error('DecompressionStream unavailable'));
-      return fetch(ADM1_URL).then((r) => {
-        if (!r.ok || !r.body) throw new Error('admin1 ' + r.status);
-        return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
-      }).then((t) => JSON.parse(t));
+      return loadData(ADM1_URL);
     }
 
     /** load() -> Promise<index>. One request per session, whatever asks and however often. */

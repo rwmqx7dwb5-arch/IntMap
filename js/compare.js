@@ -23,6 +23,7 @@ import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer w
    failure path is the app's toast (`cmpFail`) — the sentence the main map already uses for the same failure. */
 import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
+import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.compare=function(HOST){
   const cmpRead=(u)=>jsonWithin(u,clockFor(u),undefined,{idle:true});   /* (fetch-deadline-layer) see the note at the imports */
@@ -377,7 +378,7 @@ window.IntMapModules.compare=function(HOST){
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       {k:'volc', n:()=>window.IntMapLang.t(HOST.lang,"Volcanoes","火山","Vulkane","Вулканы","Volcanes"), ids:['cmpx-volc'], add(done){
         if(cmap.layers.hasSource('cmpx-volc')){ done&&done(); return; }
-        fetch('data/volcanoes_gvp.json').then(r=>r.json()).then(j=>{ try{
+        loadData('data/volcanoes_gvp.json').then(j=>{ try{   /* (data-one-door) the main map's read, shared — js/data-door.js */
           cmap.layers.addSource('cmpx-volc',{type:'geojson',data:j});
           cmap.layers.add({id:'cmpx-volc',type:'circle',source:'cmpx-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2,6,5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff','circle-stroke-width':0.7,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
