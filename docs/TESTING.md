@@ -1002,6 +1002,18 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   than as a `check:*` of its own because it is static analysis and the gate list has no room.
   Regression: `tests/fetch-deadline-layer-checks.test.mjs` ⑤ (a bare fetch put back into
   `js/wx-source.js` turns it red).
+- **One door for the shipped data** (data-one-door) — `tests/data-one-door-checks.test.mjs` imports
+  and RUNS `js/data-door.js` against a stubbed, counting `fetch` that serves the real `data/` files:
+  two calls in flight make one request; a settled, still-held value is not read again; `http` /
+  `network` / `timeout` reject by name and the next call reads again; the page path's inflate equals
+  node's own gunzip; the door's worker source, run on a real `worker_threads` thread, gives the page
+  path's answer, and a thread that dies rejects as `worker` and the next call runs on the page. The
+  structural half is discovered from `scripts/code-only.mjs` text, not from a file list: nothing in
+  `js/`/`src/` but the door both fetches and inflates gzip (an exception needs a `NOT_YET` row with a
+  reason — empty today — and a row whose file stopped doing it fails), no `data/` file is fetched
+  directly from two files, and no file fetches a `data/*.gz` itself — a direct read being a literal,
+  an inline `new URL('data/…')`, or a name bound to an expression holding a `data/` literal. ⑥
+  evaluates `js/world-packs.js`'s own `worldAdm1` text: a failed read is dropped from its memo.
 - **Presses no keyboard can reach** (`keyboard-reach`, a11y-shared-dialog) —
   `scripts/keyboard-reach.mjs` counts, per file and from the parser, every click receiver in `js/`
   (`onclick =`, `addEventListener('click')`, a delegated handler's `e.target.closest('…')`, a

@@ -41,6 +41,7 @@
  *  · Five languages inline through `L` / `LA` and no third helper (#R353).
  * ==========================================================================*/
 import { RailSchema } from './rail-schema.js';
+import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.railways = function (HOST) {
@@ -152,16 +153,11 @@ window.IntMapModules.railways = function (HOST) {
   let sentDetail = null;            /* the cell set rail-det-src holds and the view is showing (or handing over to) */
 
   /* ── loading ─────────────────────────────────────────────────────────────
-     ⚠ The files are gzip on disk and are un-gzipped HERE, not by the transport:
+     ⚠ The files are gzip on disk and are un-gzipped by the app, not by the transport:
      GitHub Pages serves a `.gz` as an opaque body, and serving it with
      `Content-Encoding` would not be the same thing (js/gazetteer.js §R210). */
-  async function getGz(url) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(url + ' → ' + r.status);
-    if (typeof DecompressionStream !== 'function') throw new Error('DecompressionStream unavailable');
-    const txt = await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
-    return JSON.parse(txt);
-  }
+  /* (data-one-door) …by js/data-door.js, off the page thread, under the same clock as every data/ read */
+  const getGz = (url) => loadData(url);
   /* the files are the compact wire form, not GeoJSON — see js/rail-schema.js */
   const getLines = (url) => getGz(url).then(decodeLines);
   const getPoints = (url) => getGz(url).then(decodePoints);

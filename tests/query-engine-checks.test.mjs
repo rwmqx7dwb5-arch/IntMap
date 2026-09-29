@@ -70,7 +70,7 @@
  *  numeric predicate read it. Only the PRINTING changes.
  *
  *  ⚠ THIS TEST EVALUATES THE SHIPPED ENGINE (#R505). `volcanoRows` reads its data through the
- *  injectable `D.fetchJSON`, so the real table is built from a real GVP-shaped document and the
+ *  injectable `D.loadData` (the app binds none and js/data-door.js answers), so the real table is built from a real GVP-shaped document and the
  *  real `run()` / `answer()` are asked the production question.
  * ==========================================================================*/
 import test from 'node:test';
@@ -248,7 +248,7 @@ const COUNTRY_STATS = {
 
 function engine747() {
   const Q = window.IntMapModules.atlasQuery({ lang: 'en', base: 'https://example.invalid/' });
-  Q.bind({ countryStats: () => COUNTRY_STATS, fetchJSON: async () => GVP, ensureData: async () => {} });
+  Q.bind({ countryStats: () => COUNTRY_STATS, loadData: async () => GVP, ensureData: async () => {} });   /* (data-one-door) the engine's injection point for data/ reads */
   return Q;
 }
 
@@ -285,7 +285,7 @@ test('R747 (4d): "nothing matched" and "this table cannot be asked that" are dif
   const Q = window.IntMapModules.atlasQuery({ lang: 'en', base: 'https://example.invalid/' });
   /* the same table with the country stripped from every row - a table that names no country at all */
   const NAMELESS = { features: GVP.features.map((f) => ({ geometry: f.geometry, properties: Object.assign({}, f.properties, { c: '' }) })) };
-  Q.bind({ countryStats: () => COUNTRY_STATS, fetchJSON: async () => NAMELESS, ensureData: async () => {} });
+  Q.bind({ countryStats: () => COUNTRY_STATS, loadData: async () => NAMELESS, ensureData: async () => {} });
   const r = await Q.run({ from: 'volcanoes', in: { countries: ['ID'] } });
   assert.equal(r.ok, false, 'an inapplicable scope published as a complete 0 is the defect, not the answer');
   assert.equal(r.error, 'scope-unavailable');

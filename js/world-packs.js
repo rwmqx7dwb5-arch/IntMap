@@ -28,6 +28,7 @@
  *  where the difference is a safety claim.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each — see js/data-door.js */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.worldPacks=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
@@ -2733,19 +2734,24 @@ window.IntMapModules.worldPacks=function(HOST){
          (Poland: NUTS 231/234 against 153/234 here), so it is consulted only for what the rungs
          above could not answer. */
       const ADM1_URL='data/admin1-world.json.gz';
-      function worldAdm1(){ return SUBDIV.world||(SUBDIV.world=(function(){
-        if(typeof DecompressionStream!=='function') return Promise.reject(new Error('DecompressionStream unavailable'));
-        return fetch(ADM1_URL).then(r=>{ if(!r.ok||!r.body) throw new Error('admin1 '+r.status);
-          return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text(); })
-          .then(txt=>{ const j=JSON.parse(txt);
+      /* (data-one-door) the read itself is js/data-door.js's: js/atlas-admin1.js reads the same file,
+         and the door hands both of them ONE request, one inflate (off the page thread) and one parse. */
+      function worldAdm1(){
+        if(SUBDIV.world) return SUBDIV.world;
+        const p=SUBDIV.world=loadData(ADM1_URL)
+          .then(j=>{
             const geoms=Object.create(null), names=Object.create(null);
             (j.f||[]).forEach(f=>{ const iso=String(f.i||''); if(!iso||!f.g) return;
               (geoms[iso]=geoms[iso]||[]).push(f.g);
               const m=names[iso]=names[iso]||Object.create(null);
               _alias(f.n).forEach(x=>{ const k=_norm(x); if(k&&!m[k]) m[k]={geometry:f.g}; }); });
             if(!Object.keys(geoms).length) throw new Error('admin1 empty');
-            return {geoms:geoms,names:names,units:(j.f||[]).length,countries:Object.keys(geoms).length}; });
-      })()); }
+            return {geoms:geoms,names:names,units:(j.f||[]).length,countries:Object.keys(geoms).length}; })
+          /* (data-one-door) ⚠ A FAILED READ IS NOT KEPT. This memo used to hold the rejected promise for
+             the session, so askWorldAdm1's `worldAsked=false` re-asked a promise that could only ever
+             reject again, and the door — which does read again after a failure — was never reached. */
+          .catch(e=>{ if(SUBDIV.world===p) SUBDIV.world=null; throw e; });
+        return p; }
       let WORLD=null, worldAsked=false;
       /* ⚠⚠ EVERY CALLER IS ANSWERED, NOT JUST THE FIRST. A dozen countries reach this inside one
          tick; the first starts the download and the rest arrive while it is in flight. An

@@ -14,6 +14,7 @@
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { jsonWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the neighbouring-year prefetch, under a clock — see hbPrefetch */
 import { clockFor } from './proxy-fetch.js';
+import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each — see js/data-door.js */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.betaOverlays=function(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -378,7 +379,7 @@ window.IntMapModules.betaOverlays=function(HOST){
     }
     async function volcLoad(){ if(volcFC){ try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} return; }
       if(volcLoading) return; volcLoading=true;
-      try{ const r=await fetch('data/volcanoes_gvp.json'); const j=await r.json();
+      try{ const j=await loadData('data/volcanoes_gvp.json');
         if(j&&Array.isArray(j.features)){ volcFC=j; try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} volcLegend(); }
       }catch(_){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load volcano data","火山データを読み込めませんでした","Vulkandaten konnten nicht geladen werden","Не удалось загрузить данные о вулканах","No se pudieron cargar los datos de volcanes")); }catch(_){} }
       volcLoading=false; }
@@ -841,7 +842,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       if(whsDoc){ if(!whsFC) whsBuild(); whsPush(); return; }
       if(whsLoading) return; whsLoading=true;
       try{
-        const r=await fetch('data/whc-sites.json'); const j=await r.json();
+        const j=await loadData('data/whc-sites.json');
         if(j&&Array.isArray(j.sites)&&Array.isArray(j.points)){
           whsDoc=j; whsBuild();
           whsPush();
@@ -859,11 +860,8 @@ window.IntMapModules.betaOverlays=function(HOST){
       const lc=whsLocale();
       if(whsDetail&&whsDetailTag===lc) return Promise.resolve(whsDetail);
       if(whsDetailPending&&whsDetailPending.tag===lc) return whsDetailPending.p;
-      if(typeof DecompressionStream!=='function') return Promise.reject(new Error('DecompressionStream unavailable'));
-      const p=fetch('data/whc-detail.'+lc+'.json.gz').then(r=>{
-        if(!r.ok||!r.body) throw new Error('whc detail '+r.status);
-        return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
-      }).then(t=>JSON.parse(t)).then(j=>{ whsDetail=j; whsDetailTag=lc; whsDetailPending=null; return j; })
+      /* (data-one-door) inflated and parsed off the page thread by js/data-door.js */
+      const p=loadData('data/whc-detail.'+lc+'.json.gz').then(j=>{ whsDetail=j; whsDetailTag=lc; whsDetailPending=null; return j; })
         .catch(e=>{ whsDetailPending=null; throw e; });
       whsDetailPending={tag:lc,p}; return p;
     }
@@ -1175,13 +1173,16 @@ window.IntMapModules.betaOverlays=function(HOST){
     async function featuresOf(kind){
       if(kind==='volcanoes'){
         if(volcFC) return volcFC.features;
-        const r=await fetch('data/volcanoes_gvp.json'); const j=await r.json();
+        /* (data-one-door) the same read volcLoad() gets, however the two calls interleave */
+        const j=await loadData('data/volcanoes_gvp.json');
         if(!j||!Array.isArray(j.features)) throw new Error('volcanoes: no features in the document');
         volcFC=j; return volcFC.features;
       }
       if(kind==='heritage'){
         if(whsDoc){ if(!whsFC) whsBuild(); return whsFC.features; }
-        const r=await fetch('data/whc-sites.json'); const j=await r.json();
+        /* (data-one-door) ⚠ THIS ONE NEVER LOOKED AT whsLoading, so a call made while whsLoad() was in
+           flight fetched the document a second time. The door gives it the read already in flight. */
+        const j=await loadData('data/whc-sites.json');
         if(!j||!Array.isArray(j.sites)||!Array.isArray(j.points)) throw new Error('heritage: no sites in the document');
         whsDoc=j; whsBuild(); return whsFC.features;
       }

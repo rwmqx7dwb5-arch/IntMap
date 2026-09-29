@@ -212,11 +212,10 @@ window.IntMapModules.outbreaks = function (HOST) {
     function load() {
       if (loading) return loading;
       loading = (async () => {
-        if (typeof DecompressionStream !== 'function') throw new Error('DecompressionStream unavailable');
-        const r = await fetch(DATA_URL);
-        if (!r.ok || !r.body) throw new Error('who-don ' + r.status);
-        const t = await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
-        const j = JSON.parse(t);
+        /* (data-one-door) js/data-door.js reads and inflates it, off the page thread */
+        const d = window.IntMapDataDoor;
+        if (!d || typeof d.load !== 'function') throw new Error('data door unavailable');
+        const j = await d.load(DATA_URL);
         if (!j || !Array.isArray(j.events)) throw new Error('who-don: not a corpus');
         return j;
       })().then((j) => { corpus = j; err = null; return j; })

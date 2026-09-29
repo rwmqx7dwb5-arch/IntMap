@@ -46,6 +46,8 @@
  *  would have been a global before the bundle, and this file may not reintroduce one.
  * ==========================================================================*/
 
+import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
+
 export function makeCoastline() {
   const FILE = 'data/coastline.json.gz';
   const R_KM = 6371.0088;
@@ -181,17 +183,10 @@ export function makeCoastline() {
     if (loading) return loading;
     loading = (async () => {
       try {
-        const r = await fetch(url(), { cache: 'force-cache' });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const bytes = new Uint8Array(await r.arrayBuffer());
-        let text;
-        /* DECIDE FROM THE BYTES, not from the file name — a host that labels `.gz` with
-           Content-Encoding has already decompressed it (js/gazetteer.js, same reasoning) */
-        if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-          if (typeof DecompressionStream !== 'function') throw new Error('DecompressionStream unavailable');
-          text = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-        } else { text = new TextDecoder().decode(bytes); }
-        return adopt(JSON.parse(text));
+        /* (data-one-door) js/data-door.js reads it: gzip DECIDED FROM THE BYTES (a host that labels
+           `.gz` with Content-Encoding has already decompressed it), inflated and parsed off the page
+           thread, one read however many callers ask */
+        return adopt(await loadData(url(), { cache: 'force-cache' }));
       } catch (e) {
         try { console.warn('[IntMap] coastline unavailable —', e.message); } catch (_) { }
         return false;

@@ -61,6 +61,25 @@ export const { jsonWithin, readWithin } = (() => {
     }
     return out + dec.decode();
   };
+  /* (data-one-door) …and the body as BYTES, for the one reader whose files are not text: js/data-door.js
+     reads the shipped `data/*.gz`, whose gzip body a TextDecoder would corrupt. Same clock, same re-arm
+     per chunk — it is the text reader above with the decode step left out, not a second clock. */
+  const bodyBytes = async (r, rearm) => {
+    const s = r.body;
+    if (!rearm || !s || typeof s.getReader !== 'function') return r.arrayBuffer();
+    const rd = s.getReader(), parts = [];
+    let n = 0;
+    for (;;) {
+      const { done, value } = await rd.read();
+      if (done) break;
+      rearm();
+      parts.push(value); n += value.byteLength;
+    }
+    const out = new Uint8Array(n);
+    let at = 0;
+    for (const p of parts) { out.set(p, at); at += p.byteLength; }
+    return out.buffer;
+  };
 
   /* ══ (fetch-deadline-layer) WHY NOTHING ARRIVED IS PART OF THE ANSWER ══════════════════════════
      Every throw below carries `reason` — 'timeout' | 'aborted' | 'network' | 'http' | 'parse' — and,
@@ -78,6 +97,7 @@ export const { jsonWithin, readWithin } = (() => {
   };
 
   /* readWithin(url, ms, init, opts) -> { ok, status, type, text }
+   *                                   (or `bytes`, an ArrayBuffer, in place of `text` when `opts.bytes`)
    *
    * THROWS on a network refusal or the deadline — «nothing arrived». A non-2xx status is NOT a throw:
    * it is an answer, and a caller that reads the error body (the fire probe does) needs it. */
@@ -128,6 +148,11 @@ export const { jsonWithin, readWithin } = (() => {
       if (idle) arm();   /* the headers are a sign of life too */
       let type = '';
       try { type = String((r.headers && r.headers.get && r.headers.get('content-type')) || ''); } catch (_) { type = ''; }
+      if (opts && opts.bytes) {
+        const bytes = await bodyBytes(r, idle ? arm : null);
+        done = true;
+        return { ok: !!r.ok, status: r.status, type, bytes };
+      }
       const text = await bodyText(r, idle ? arm : null);
       done = true;
       return { ok: !!r.ok, status: r.status, type, text };

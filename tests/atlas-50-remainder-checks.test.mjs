@@ -108,6 +108,7 @@ async function withNetwork(fn) {
 }
 async function realResolver(extraCtx) {
   /* the SHIPPED matcher over the SHIPPED world gazetteer — not a stub standing in for either */
+  await import(pathToFileURL(join(ROOT, 'js/data-door.js')).href);   /* (data-one-door) the gazetteer reads its file through the door, as in the app */
   await import(pathToFileURL(join(ROOT, 'js/gazetteer.js')).href);
   await import(pathToFileURL(join(ROOT, 'js/search-geocode.js')).href);
   await window.IntMapGazetteer.warm();

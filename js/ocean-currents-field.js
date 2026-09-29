@@ -64,11 +64,14 @@ window.IntMapCurrentField = (function () {
      on the wire would be the raw 2 MB. `DecompressionStream` is in every browser that can run this
      app's renderer. A browser without it gets the named currents and no field, which is the same
      "degrade, do not break" the rest of the layer follows. */
+  /* (data-one-door) read through js/data-door.js — inflated off the page thread and transferred back
+     (ocean-currents-months.bin.gz is 2.89 MB), under the same clock as every other data/ read. This file
+     is evaluated as a script by its node harness, so it asks for the door by its window name, at call time. */
   function fetchField(url) {
-    return fetch(url).then((r) => {
-      if (!r.ok) throw new Error('http ' + r.status);
-      if (typeof DecompressionStream !== 'function') throw new Error('DecompressionStream unavailable');
-      return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+    return Promise.resolve().then(() => {
+      const d = window.IntMapDataDoor;
+      if (!d || typeof d.load !== 'function') throw new Error('data door unavailable');
+      return d.load(url, { as: 'arrayBuffer' });
     }).then(parse);
   }
 
