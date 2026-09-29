@@ -456,7 +456,6 @@ window.IntMapModules.wbLayers=function(HOST){
           if(pc[code]&&pc[code].v>0) s.gdppc=pc[code].v;
           if(le&&le[code]&&le[code].v>0) s.lifeExp=le[code].v;
         });
-        window.__statsRefreshed=true;
         try{ if(typeof HOST.mode!=='undefined'&&HOST.mode==='stats'&&typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){}
       }).catch(()=>{});
     }catch(_){} }

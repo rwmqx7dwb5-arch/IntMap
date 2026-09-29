@@ -267,7 +267,6 @@
      scheme guard admits it (http(s)/mailto/tel) — javascript:/data:/vbscript: come back empty. */
   const esc=(s)=>window.IntMapSafe.html(s);
   const safeUrl=(u)=>{ const s=String(u==null?'':u).trim(); return /^[\/.#?]/.test(s)?s:window.IntMapSafe.url(s); };
-  window._admSafeUrl=safeUrl;
   let toastT;
   function toast(msg,kind){ const el=$('toast'); el.textContent=msg; el.className='toast show'+(kind?(' '+kind):''); clearTimeout(toastT); toastT=setTimeout(()=>el.className='toast',3200); }
 

@@ -165,32 +165,6 @@ export function makeAtlasSims(HOST, CTX) {
         try{ const gc=_gcPoint(A,B,f); const dev=_gcKm({lng,lat},gc); if(dev>maxDev) maxDev=dev; }catch(_){}
         pts.push([lng,lat]); alts.push(ballisticAlt(sol,f)); }
       return {pts,alts,Bin,leadDeg,crossRangeKm:maxDev}; }
-    async function ballisticAnimate(A,B,opts){ opts=opts||{}; const km=_gcKm(A,B); if(!isFinite(km)||km<1) return {ok:false,km:0};
-      const sol=ballisticSolve(km); clearFly(); if(!ensureFlyLayers()) return {ok:false,km,sol};
-      const secs=Math.max(8,Math.min(55,+opts.seconds||Math.round(10+km/850)));
-      const N=Math.max(64,Math.min(360,Math.round(km/50))); const track=[]; for(let i=0;i<=N;i++){ const p=_gcPoint(A,B,i/N); track.push([p.lng,p.lat]); }
-      const zBase=Math.max(2.2,8.5-Math.log2(Math.max(1,km/60)));
-      const run={cancel:false}; _flyRun=run; const cancelEvt=()=>{ run.cancel=true; };
-      try{ GE().events.on('mousedown',cancelEvt); GE().events.on('touchstart',cancelEvt); GE().events.on('wheel',cancelEvt); }catch(_){}
-      const fAtTime=tau=>{ let lo=0,hi=1; for(let i=0;i<24;i++){ const mid=(lo+hi)/2; if(ballisticTimeFrac(sol,mid)<tau) lo=mid; else hi=mid; } return (lo+hi)/2; };
-      const t0=performance.now(), dur=secs*1000;
-      try{ GE().camera.jumpTo({center:[A.lng,A.lat],zoom:zBase+0.4,bearing:_gcBearing(A,B),pitch:55}); }catch(_){}
-      await new Promise(res=>{ const frame=now=>{ if(run.cancel){ res(); return; }
-        const tau=Math.min(1,(now-t0)/dur); const f=fAtTime(tau); const pos=_gcPoint(A,B,f); const alt=ballisticAlt(sol,f);
-        const ahead=_gcPoint(A,B,Math.min(1,f+0.01)), brg=_gcBearing(pos,ahead);
-        const z=zBase-3.4*(alt/(sol.apogee||1)), pitch=40+30*(alt/(sol.apogee||1));
-        try{ GE().camera.jumpTo({center:[pos.lng,pos.lat],zoom:Math.max(1.3,z),bearing:brg,pitch:Math.max(0,Math.min(80,pitch))}); }catch(_){}
-        try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
-          {type:'Feature',geometry:{type:'LineString',coordinates:track},properties:{color:'#ff453a'}},
-          {type:'Feature',geometry:{type:'Point',coordinates:[pos.lng,pos.lat]},properties:{}}]}); }catch(_){}
-        if(tau>=1){ res(); return; } requestAnimationFrame(frame); }; requestAnimationFrame(frame); });
-      try{ GE().events.off('mousedown',cancelEvt); GE().events.off('touchstart',cancelEvt); GE().events.off('wheel',cancelEvt); }catch(_){}
-      const cancelled=run.cancel; _flyRun=null;
-      try{ GE().layers.setSourceData('nlq-fly-src',{type:'FeatureCollection',features:[
-        {type:'Feature',geometry:{type:'LineString',coordinates:track},properties:{color:'#ff453a'}},
-        {type:'Feature',geometry:{type:'Point',coordinates:[B.lng,B.lat]},properties:{}}]}); }catch(_){}
-      if(!cancelled){ try{ GE().camera.easeTo({pitch:22,zoom:Math.max(GE().camera.getZoom(),zBase-0.6),duration:900}); }catch(_){} }
-      return {ok:true,km,sol,cancelled}; }
     function ballisticProfileSVG(sol,km){ const W=300,H=124,pL=30,pR=10,pT=12,pB=20, iw=W-pL-pR, ih=H-pT-pB;
       const N=90; let d=''; for(let i=0;i<=N;i++){ const f=i/N, x=pL+f*iw, y=pT+ih-(ballisticAlt(sol,f)/(sol.apogee||1))*ih; d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; }
       const apX=pL+0.5*iw;

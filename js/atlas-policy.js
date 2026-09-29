@@ -172,7 +172,6 @@ export function makeAtlasPolicy() {
     function all() { return core() + sensitiveRequests() + mapWhatYouName() + coordinateProvenance() + turnMechanics(); }
 
     var API = { all, core, sensitiveRequests, mapWhatYouName, coordinateProvenance, turnMechanics };
-    try { window.IntMapAtlasPolicy = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

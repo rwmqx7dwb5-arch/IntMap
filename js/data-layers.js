@@ -102,8 +102,8 @@ window.IntMapBasicLayers=basicLayers();     /* (layer-manifest) …and the whole
    permanently-hidden `#layer-dropdown` registry, so its change handler, its legend, its opacity, its
    entry in the session snapshot and every door Atlas has to it keep working exactly as before. What
    goes is one thing — the row in the layer browser.
-     · `cb-countries` 国境・国情報 — the reader asked for the row to go; Atlas's `countryInfo` action and
-       `window._wsCountryInfo` (the Countries window's own toggle) still raise the overlay.
+     · `cb-countries` 国境・国情報 — the reader asked for the row to go; Atlas's `countryInfo` action still
+       raises the overlay.
      · `dl-contours` 等高線 — 「等高線レイヤーは廃止し、…の凡例内でトグルでオンオフできるように統合」.
        This checkbox is where the state lives; the three elevation legends press it (`_contourSwitch`).
    ⚠ EVERY SWEEP THAT FILES ROWS MUST BE TOLD. `reorganizeLayerPanel`'s `order.push` MOVES an element,
@@ -1189,16 +1189,6 @@ window.IntMapModules.dataLayers=function(HOST){
     function _syncAllDateUI(){ Object.keys(DATED_SPEC).forEach(_syncDateUI); }
     /* the day the app opens on has to be a day these products actually have, too */
     Object.keys(DATED_SPEC).forEach(id=>{ layerDates[id]=_snapLayerDate(id,layerDates[id])||layerDates[id]; });
-    /* (#R298) what bounds the calendars, for Atlas' state context and for the tests. The OPERATING
-       entry points are unchanged: the two calendars, and window.setGlobalLayerDate for the clock. */
-    window.IntMapDatedLayers={
-      ids:()=>Object.keys(DATED_SPEC), spec:id=>DATED_SPEC[id]||null,
-      ranges:id=>(_dateRanges(id)||[]).map(r=>({from:r.from,to:r.to,cadence:r.cadence})),
-      bounds:id=>_dateBounds(id), snap:(id,iso)=>_snapLayerDate(id,iso), step:(id,dir)=>_stepDate(id,dir),
-      date:id=>layerDates[id]||null, asked:id=>_dateAsked[id]||null,
-      set:(id,iso)=>{ const g=_applyLayerDate(id,iso); _syncDateUI(id); try{ _refreshLegendDates(); }catch(_){} return g; },
-      live:id=>!!(_liveDomain[id]&&_liveDomain[id].length), load:id=>{ _ensureDateDomain(id); }
-    };
     /* ══ (#R268 → #R550) THE NIGHT-LIGHTS EPOCH IS THE CLOCK'S, AND IT IS NOT KEPT HERE ══════════
        「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — #R268's
        answer was a two-option <select> and `window._nightsatEpoch` to remember what it said. That is
@@ -2350,8 +2340,6 @@ window.IntMapModules.dataLayers=function(HOST){
     let _natoYear=NATO_YEARS[NATO_YEARS.length-1];   /* default: latest = all current members */
     let _natoStyle='uniform';                        /* (#R289) 'uniform' | 'byYear' */
     function setNatoStyle(k){ if(k!=='uniform'&&k!=='byYear') return; if(k===_natoStyle) return; _natoStyle=k; applyNato(); }
-    window._imNatoStyle=(k)=>{ if(k==null) return _natoStyle; setNatoStyle(k); return _natoStyle; };
-    function natoMemberCount(){ try{ return Object.values(NATO_JOIN).filter(y=>y<=_natoYear).length; }catch(_){ return ''; } }
     function natoLegend(){
       try{
         const el=window._registerLayerOpacity&&window._registerLayerOpacity('nato',LA('NATO members','NATO加盟国','NATO-Mitglieder','Страны НАТО','Países de la OTAN'),['nato-fill','nato-line'],'dl-nato');
@@ -2436,7 +2424,6 @@ window.IntMapModules.dataLayers=function(HOST){
       }catch(e){ console.warn('milSpend choro fail',e); } });
     }
     function setMilMode(k){ if(k!=='gdp'&&k!=='total') return; if(k===milMode) return; milMode=k; applyMilMode(); }
-    window._imMilMode=(k)=>{ if(k==null) return milMode; setMilMode(k); return milMode; };
     function defensePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
     function wireNatoHover(){
       if(_natoHoverWired) return; _natoHoverWired=true;
@@ -2473,7 +2460,6 @@ window.IntMapModules.dataLayers=function(HOST){
     function euFillColor(){ return (_euStyle==='byYear')
       ? yearFillExpr(EU_JOIN_YEARS,yearColors(EU_JOIN_YEARS),'#1c3faa') : '#1c3faa'; }
     function setEuStyle(k){ if(k!=='uniform'&&k!=='byYear') return; if(k===_euStyle) return; _euStyle=k; applyEu(); }
-    window._imEuStyle=(k)=>{ if(k==null) return _euStyle; setEuStyle(k); return _euStyle; };
     function addEu(){
       if(!GE().layers.hasSource('src-eu')) GE().layers.addSource('src-eu',{type:'geojson',data:buildEuFC(),promoteId:'__code'});
       if(!GE().layers.has('eu-fill')) GE().layers.add({id:'eu-fill',type:'fill',source:'src-eu',layout:{visibility:'none'},paint:{'fill-color':euFillColor(),'fill-opacity':opacities.eu!=null?opacities.eu:0.5}},beforeId);
@@ -2560,26 +2546,6 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ if(GE().layers.has('eu-fill')&&GE().layers.getLayout('eu-fill','visibility')==='visible') applyEu(); }catch(_){}
         _syncYearLegend('eu',EU_YEARS,_euYear); }
     }); }catch(_){}
-
-    /* Rimland (#15,#17) — Spykman's coastal crescent as a LAND-only country fill (no sea painted). */
-    const RIMLAND=new Set("GBR IRL FRA ESP PRT ITA NLD BEL DEU DNK NOR HRV ALB MNE GRC TUR SYR LBN ISR JOR IRQ IRN SAU YEM OMN ARE QAT KWT BHR PAK IND BGD LKA MMR THA KHM VNM MYS SGP IDN PHL BRN CHN KOR PRK JPN TWN".split(' '));
-    function addRimland(){
-      if(!GE().layers.has('rimland-fill')) GE().layers.add({id:'rimland-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#0a84ff','fill-opacity':['case',['boolean',['feature-state','rimland'],false],0.30,0]}},beforeId);
-      if(!GE().layers.has('rimland-line')) GE().layers.add({id:'rimland-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#5ab0ff','line-width':['case',['boolean',['feature-state','rimland'],false],1.2,0]}},beforeId);
-    }
-    function applyRimland(){ if(!HOST.countryGeo) return; HOST.countryGeo.features.forEach(f=>{ if(f.id==null) return; const s=countryStats[String(f.id)]; GE().layers.setFeatureState({source:'countries',id:f.id},{rimland:!!(s&&RIMLAND.has(s.code))}); }); }
-    window.imToggleRimland=function(on){ if(on){ withCountries(()=>{ try{ addRimland(); applyRimland(); setVis('rimland-fill',true); setVis('rimland-line',true); }catch(e){ console.warn('rimland fail',e); } }); } else { setVis('rimland-fill',false); setVis('rimland-line',false); } };
-
-    /* Former Soviet Union (#15) — the 15 republics of the USSR as a RED land-only country fill (no sea
-       painted; uses the country polygons directly). Matches on the feature's ISO3 id so every republic
-       fills even if it has no economic stats. */
-    const FSU=new Set("RUS UKR BLR MDA EST LVA LTU GEO ARM AZE KAZ UZB TKM KGZ TJK".split(' '));
-    function addFSU(){
-      if(!GE().layers.has('fsu-fill')) GE().layers.add({id:'fsu-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#e0312e','fill-opacity':['case',['boolean',['feature-state','fsu'],false],0.42,0]}},beforeId);
-      if(!GE().layers.has('fsu-line')) GE().layers.add({id:'fsu-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#ff6b6b','line-width':['case',['boolean',['feature-state','fsu'],false],1.2,0]}},beforeId);
-    }
-    function applyFSU(){ if(!HOST.countryGeo) return; HOST.countryGeo.features.forEach(f=>{ if(f.id==null) return; GE().layers.setFeatureState({source:'countries',id:f.id},{fsu:FSU.has(String(f.id))}); }); }
-    window.imToggleFSU=function(on){ if(on){ withCountries(()=>{ try{ addFSU(); applyFSU(); setVis('fsu-fill',true); setVis('fsu-line',true); }catch(e){ console.warn('fsu fail',e); } }); } else { setVis('fsu-fill',false); setVis('fsu-line',false); } };
 
     /* Sea-level-rise simulator (#24): a color-relief layer over the DEM that floods everything at or
        below the chosen +rise (window._seaLevelM, meters) in blue, leaving higher land transparent so
@@ -3123,46 +3089,6 @@ window.IntMapModules.dataLayers=function(HOST){
         setImg(u||KURL);
       },45);
     };
-    window._refreshKoppenImage_LEGACY=function(){
-      if(!GE().layers.hasSource('src-climate')) return;
-      /* Debounce so rapid multi-class selection coalesces into one rebuild (#12). */
-      clearTimeout(window._koppenRefreshT);
-      window._koppenRefreshT=setTimeout(()=>{
-        /* (#R18) GPU path first — full-res, instant, no allocation. */
-        if(window._koppenGPUOK!==false){
-          const ok=applyKoppenGPUHighlight();
-          if(ok===true){ window._koppenGPUOK=true;
-            /* the GPU recolors the live full-res texture, so the source image stays the plain era PNG */
-            if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
-            try{ if(GE().layers.hasSource('src-climate')) GE().layers.updateImage('src-climate',{url:KURL,coordinates:KCOORDS}); }catch(_){}
-            freeKoppenFull();
-            /* (#R19) The shader path never touches the per-pixel code index / source-copy buffers —
-               drop them (up to ~270 MB desktop / ~80 MB mobile). The canvas fallback rebuilds them
-               on demand, and cursor sampling reads the (kept) work canvas directly. */
-            window._koppenCodeIdx=null; window._koppenSrcData=null;
-            return;
-          }
-          if(ok===false){ window._koppenGPUOK=false; }   /* engine REJECTED raster-color → canvas pipeline below */
-          else { return; }   /* ok===null: layer not added yet — addKoppen re-calls us once it is */
-        }
-        const seq=++window._koppenHLSeq;
-        const setImg=(url)=>{ try{ GE().layers.updateImage('src-climate',{url:url,coordinates:KCOORDS}); }catch(e){} };
-        if(kSelected.size===0){
-          setImg(KURL);
-          if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
-          freeKoppenFull();
-          return;
-        }
-        buildKoppenHighlightFull(kSelected,(url)=>{
-          if(seq!==window._koppenHLSeq){ if(url){ try{ URL.revokeObjectURL(url); }catch(_){} } return; }   /* superseded by a newer selection */
-          if(!url){ /* full-res path unavailable → low-res fallback so highlight still works */
-            const u2=buildKoppenHighlightURL(kSelected); setImg(u2||KURL); return;
-          }
-          const prev=window._koppenHLUrl; setImg(url); window._koppenHLUrl=url;
-          if(prev){ try{ URL.revokeObjectURL(prev); }catch(_){} }
-        });
-      },45);
-    };
     /* Switch the active Köppen era (#R12). Resets the cached sampling canvas + per-pixel code index so
        cursor sampling and class-highlighting reflect the chosen period, then swaps the map image. */
     window.setKoppenPeriod=function(period){
@@ -3449,11 +3375,9 @@ window.IntMapModules.dataLayers=function(HOST){
        elevation layer off would have lines on the map and no legend anywhere to reach the switch in. */
     const CONTOUR_HOSTS=['relief','hillshade','gxrelief'];
     function _contourHostOn(){ try{ return CONTOUR_HOSTS.some(id=>{ const cb=document.getElementById('dl-'+id)||document.getElementById('gx-'+id); return !!(cb&&cb.checked); }); }catch(_){ return false; } }
-    window._imContourHostOn=_contourHostOn;
     function _syncContourSwitches(){ try{ const cb=document.getElementById('dl-contours'); const on=!!(cb&&cb.checked);
       document.querySelectorAll('.dl-ct-sw').forEach(sw=>{ sw.classList.toggle('on',on); sw.setAttribute('aria-checked',on?'true':'false'); });
       document.querySelectorAll('.dl-cd-row').forEach(r=>{ r.style.display=on?'':'none'; }); }catch(_){} }
-    window._imSyncContourSwitches=_syncContourSwitches;
     function ensureContourSwitch(el){ try{
       if(!el || CONTOUR_HOSTS.indexOf(legendIdOf(el))<0) return;
       if(el.querySelector('.dl-ct-row')) return;
@@ -3472,7 +3396,6 @@ window.IntMapModules.dataLayers=function(HOST){
       if(op && op.parentNode===el) el.insertBefore(row, op.nextSibling);
       else { const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row); }
     }catch(_){} }
-    window._ensureContourSwitch=ensureContourSwitch;
     /* ⚠ (#R469) ONE listener for both halves: the switches follow the checkbox whoever pressed it
        (a second legend, Atlas, a restored session), and 等高線 goes off with the LAST of its three
        hosts. `gxrelief` lives in js/layer-packs.js and its box is `gx-gxrelief`, so this is keyed on
@@ -3506,7 +3429,6 @@ window.IntMapModules.dataLayers=function(HOST){
       r.addEventListener('change',()=>{ if(window._setContourDensity) window._setContourDensity(parseFloat(r.value)); });
       try{ const c=document.getElementById('dl-contours'); row.style.display=(c&&c.checked)?'':'none'; }catch(_){}
     }catch(_){} }
-    window._ensureContourDensity=ensureContourDensity;
     /* (#R15c) Generic legend for layers that previously had ONLY an inline opacity slider in the Layers
        panel and no legend of their own (precip, ships, planes, hillshade, contours, day/night).
        Now every opacity lives in a legend, so the Layers panel can drop its inline sliders. The opacity row
@@ -4172,15 +4094,6 @@ window.IntMapModules.dataLayers=function(HOST){
       _av2Starting=false;
       return _av2;
     }
-    /* Aircraft military operator hints (very rough — based on callsign prefixes) */
-    const MILITARY_CALLSIGN_PREFIXES=['RCH','REACH','SAM','EVAC','MUSCLE','HOMR','BLUE','RNGR','NATO','PAT','RFR','SPAR','THUG','SHELL','GRZLY','CLAMP','POPS','HAWG','SLAY','DUKE','LOBO','GUMP','HUSKY','HUNTR','BAND','TYRN','MAGMA','KING','CAMEL'];
-    function classifyAircraft(callsign){
-      if(!callsign) return 'civilian';
-      const c=callsign.trim().toUpperCase();
-      if(MILITARY_CALLSIGN_PREFIXES.some(p=>c.startsWith(p))) return 'military';
-      if(/^[A-Z]{3,4}\d/.test(c)) return 'civilian';
-      return 'civilian';
-    }
     /* Try OpenSky first; if CORS / rate-limit fails, fall back to synthetic civilian + military aircraft so the layer is never empty. */
     const AIRPORTS=[
       [-73.78,40.64,'civilian','JFK'],[-118.41,33.94,'civilian','LAX'],[-87.90,41.98,'civilian','ORD'],[-122.38,37.62,'civilian','SFO'],[-97.04,32.90,'civilian','DFW'],[-80.29,25.79,'civilian','MIA'],[-79.63,43.68,'civilian','YYZ'],[-99.07,19.43,'civilian','MEX'],
@@ -4481,8 +4394,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R19) Military = dbFlags bit 0 ONLY. That bit comes from the curated Mictronics/tar1090
          registration database (per-airframe, not guessed), so it's trustworthy — which is why the
          military/civilian Filter stays. The old callsign-prefix heuristic ("KING", "SHELL", "BLUE"…)
-         mislabeled ordinary airline callsigns as military and is dropped from the live path
-         (classifyAircraft is still used by the clearly-labeled offline synthetic fallback only). */
+         mislabeled ordinary airline callsigns as military and is gone (it had no caller left). */
       const mil=!!((a.dbFlags|0)&1);
       return {
         icao24:(a.hex||'').toUpperCase(), callsign:(a.flight||'').trim(), reg:a.r||'', acType:a.t||'', desc:a.desc||'',
@@ -6317,7 +6229,6 @@ window.IntMapModules.dataLayers=function(HOST){
         }
       }
     }
-    window._rvUpdateLegend=rvUpdateLegend;
     function rvAutoRefresh(){
       if(_rvTimer) return;
       _rvTimer=everyTick('data-layers:rainviewer-frames',240000,()=>{ _rvAt=0; rvFetch().then(()=>{
@@ -6694,7 +6605,6 @@ window.IntMapModules.dataLayers=function(HOST){
       _syncAllDateUI();
       try{ _refreshLegendDates(); }catch(_){}
     };
-    window._trafficFilters=trafficFilters;
     function setLayerOpacity(id,v){ opacities[id]=v;
       if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){
         /* Keep no-data countries gray (0.45) — see addChoro for the "<= 0" reasoning. */

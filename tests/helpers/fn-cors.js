@@ -92,8 +92,9 @@ export function repoCorsContract(root) {
   const base = sharedCorsBase(root) || new Set();
   const out = new Map();
   for (const name of repoFunctionNames(root)) {
-    // ⚠ index.ts ONLY. ai-proxy also carries index.gemini-backup.ts, which is not deployed and
-    //   declares a CORS table of its own — reading the directory would compare a ghost.
+    // ⚠ index.ts ONLY. A function directory can carry a file that is not deployed and declares a
+    //   CORS table of its own (ai-proxy did, until it was removed) — reading the directory would
+    //   compare a ghost.
     // ⚠ (#R345) That discrimination is made by the FILE SYSTEM, so no comment can move it. The
     //   second ghost is inside the live file: a literal table left behind in a comment used to
     //   outrank the corsFor() call below it, because `literal` is tried first. Both reads go

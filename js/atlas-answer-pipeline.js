@@ -206,7 +206,6 @@ export function makeAtlasAnswerPipeline() {
   }
 
     const API = { runStructuredAnswer, auditMeta };
-    try { window.IntMapAnswerPipeline = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

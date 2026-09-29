@@ -21,7 +21,8 @@
  *     provider; atlas-embed takes the caller's day share before the project's.
  *  ⑤ ai-proxy's Anthropic paths attached web search and never said whether it ran, so switching the
  *     provider switched off the page's «external content was read» mark. ⇒ Evaluated, both paths.
- *  ⑥ ai-proxy/index.gemini-backup.ts is an unwired earlier version with none of the bounds. ⇒ Every
+ *  ⑥ ai-proxy/index.gemini-backup.ts was an unwired earlier version with none of the bounds (since
+ *     removed). ⇒ Every
  *     code file in a function directory is reached from its index.ts, or says it is not deployed.
  *
  *  Runner: an Edge Function is evaluated in a child process with Deno.serve captured and fetch stubbed
@@ -433,5 +434,4 @@ test('edge-spend-and-models ⑥ every code file in a function directory is deplo
   assert.ok(REACH.get('ai-proxy').some((x) => x.endsWith('ai-provider.js')));
   assert.ok(REACH.get('monitor-run').some((x) => x.endsWith('logic.mjs')));
   assert.ok(REACH.get('atlas-embed').some((x) => x.endsWith('core.js')));
-  if (existsSync(join(FN, 'ai-proxy/index.gemini-backup.ts'))) assert.ok(marked >= 1, 'the unwired backup is marked');
 });

@@ -312,7 +312,7 @@ for (const [full, rel] of files) {
       hits.push(rec);
       /* ⚠⚠⚠ (#R251) …AND EVERY PAIR OF THE CONTAINER, WITH ITS BYTE OFFSETS, FOR THE REWRITER.
          The finding above is deliberately ONE PER CONTAINER — a five-language row is one thing to
-         fix. But scripts/i18n-pair-apply.mjs has to rewrite EVERY pair, and a container routinely
+         fix. But a rewriter (scripts/i18n-pair-apply.mjs was one; it has since been removed) has to rewrite EVERY pair, and a container routinely
          holds two (`_dc(…, title_en, title_ja, body_en, body_ja, …)`); a rewriter that re-derived
          «which pairs count» would be a second copy of the exemption rules above, and the first
          thing it would get wrong is `@i18n-entity-data`. So the owner of the question answers it. */

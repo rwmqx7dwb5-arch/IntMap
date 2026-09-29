@@ -305,7 +305,6 @@ export function makeAtlasAnswerRender() {
   }
 
     const API = { answerCSS, answerPlainText, citedRecords, renderAnswer, stripModelUrls, demoteUnfetchedLinks, demoteProseLinks };
-    try { window.IntMapAnswerRender = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

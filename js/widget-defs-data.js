@@ -105,7 +105,6 @@ window.IntMapWidgetDefsData = (function () {
     }
     return next();
   }
-  function round2(v) { return Math.round(v * 100) / 100; }
 
   /* ══════════════════════════════════════════════════════════════════════════════════════════════
      WEATHER — one family, two variants, one loader

@@ -182,9 +182,6 @@ window.IntMapModules.space=function(HOST){
     }
     function mTrans(x,y,z){ const o=mIdent(); o[12]=x; o[13]=y; o[14]=z; return o; }
     function mScale(s){ const o=mIdent(); o[0]=o[5]=o[10]=s; return o; }
-    function mRotX(a){ const o=mIdent(), c=Math.cos(a), s=Math.sin(a); o[5]=c; o[6]=s; o[9]=-s; o[10]=c; return o; }
-    function mRotY(a){ const o=mIdent(), c=Math.cos(a), s=Math.sin(a); o[0]=c; o[2]=-s; o[8]=s; o[10]=c; return o; }
-    function mRotZ(a){ const o=mIdent(), c=Math.cos(a), s=Math.sin(a); o[0]=c; o[1]=s; o[4]=-s; o[5]=c; return o; }
     const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
     const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
     const norm=(a)=>{ const l=Math.hypot(a[0],a[1],a[2])||1; return [a[0]/l,a[1]/l,a[2]/l]; };

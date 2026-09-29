@@ -87,12 +87,6 @@ window.IntMapModules.correlate=function(HOST){
     /* the overlay, the 62 metrics, the regression and the residual map are in js/analysis-correlate.js */
     function open(){ _impl().then(I=>{ if(I) I.open(); }); }
     window.IntMapCorrelate={open};
-    /* (#R322) the residual-colour refresh is a READER, not a door: it repaints only when the residual
-       fill is ALREADY on the map, which cannot be true before js/analysis-correlate.js has run — and
-       that module replaces this global with its own the moment it does. Keeping the name here means it
-       never disappears from window, and "there is nothing to repaint" is the same answer it gave
-       before the panel had been opened. It must not fetch: a style reload is not a request for a panel. */
-    window._refreshResidualColors=()=>{};
     const btnLbl=()=>tr('Correlation / scatter','相関・散布図','Korrelation / Streudiagramm','Корреляция / диаграмма','Correlación / dispersión');
     /* ⚠ THE BUTTON IS BUILT AT BOOT and it always was: #btn-correlate is a row of the Layers panel,
        and js/data-layers.js's reorganizeLayerPanel() MOVES it rather than creating it. Deferring this

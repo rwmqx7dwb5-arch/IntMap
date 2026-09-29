@@ -373,7 +373,6 @@ window.IntMapModules.aiCore=function(HOST){
     if(j==null) return {text:'',meta:null,citations:[],callId,turnId:String((opts&&opts.turnId)||''),task:String((opts&&opts.task)||'free_text')};
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
     if(typeof j.glossUsed==='number') aiSetGlossUsage(j.glossUsed, j.glossLimit);   /* (#R491) the gloss lane names its own numbers; the question mirror above never sees them */
-    try{ window._aiLastCharged=(j&&typeof j.charged==='boolean')?j.charged:null; }catch(_){}   /* (#R318) did THIS call consume a use */
     const meta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null;
     const citations=(j&&typeof j==='object'&&Array.isArray(j.citations))?j.citations:[];
     /* (#R114/#R131) still mirror to the globals for the many existing readers, but the ENVELOPE is authoritative per call. */

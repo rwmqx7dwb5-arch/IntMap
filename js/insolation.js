@@ -343,7 +343,6 @@ window.IntMapModules.insolation=function(HOST){
       if(_last){ try{ paint(_last.g,_last.mask); return _shadowOp; }catch(_){} }
       try{ if(GE().layers.has(LYR)) GE().layers.setPaint(LYR,'raster-opacity',_rasterOp()); }catch(_){}
       return _shadowOp; }
-    function shadowOpacity(){ return _shadowOp; }
     return { shade, dayShadow, clear, horizon, analyse, dayAt, sunPos, dni, setShadowOpacity,
       isPainted:()=>painted,
       state:()=>({ painted, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z}:null, last:lastShade }) };

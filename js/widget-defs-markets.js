@@ -14,7 +14,7 @@
  *  ⚠ AND `requestKey` IS THE UNIT OF WORK. `markets:crypto` is one string however many cards want
  *  it; a set of coins is SORTED into its key, so {btc,eth} and {eth,btc} are the same question.
  * ==========================================================================*/
-window.IntMapWidgetDefsMarkets = (function () {
+(function () {
   'use strict';
 
   var WC = window.IntMapWidgetCore;

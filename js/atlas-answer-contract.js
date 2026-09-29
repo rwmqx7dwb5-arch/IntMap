@@ -347,7 +347,6 @@ export function makeAtlasAnswerContract() {
   }
 
     const API = { ANSWER_SCHEMA, BASES, CLAIM_TYPES, CONFIDENCE, CONTRACT_VERSION, DIMENSIONS, IMPORTANCE, TEMPORAL_MODES, UNIT_CLASSES, answerContractRules, claimById, normalizeAnswer, numericTokens, referencedClaimIds, renderedTexts, unitClass };
-    try { window.IntMapAnswerContract = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

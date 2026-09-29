@@ -4475,7 +4475,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        bubble is still working」 that this file's cancel scan and js/atlas-turn-continuity.js both read.
        The three names below are the same three this file called before, so no call site changed. */
     const PROG=makeAtlasProgress(HOST,{L,esc,capabilities:()=>CAPS,schemas:()=>SCHEMAS});   /* (#R725) the schemas say which argument is the SUBJECT and which is a setting — production measured the hand-written key list showing nothing at all */
-    function stageDots(k){ return PROG.stageHtml(k); } function setStage(el,k){ return PROG.setStage(el,k); }
+    function stageDots(k){ return PROG.stageHtml(k); } 
     const _pend=(b,k)=>{ try{ PROG.open(b); PROG.watch(EXEC); PROG.phase(b,k); }catch(_){} return b; };   /* a pending reply: the trace above it, the live word inside it */
     /* (#R159) ── COMPOSITE-ANSWER INTEGRATION ─────────────────────────────────────────────────────────────────
        One request must produce ONE final answer — not the first (failed) analysis and the repaired analysis stacked

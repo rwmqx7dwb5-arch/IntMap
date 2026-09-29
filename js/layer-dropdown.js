@@ -77,8 +77,6 @@ export function makeLayerDropdown(HOST, CTX) {
   /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */
   function _lyrGroupItems(header){ const out=[]; let el=header.nextElementSibling;
     while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ out.push(el); el=el.nextElementSibling; } return out; }
-  function _layerGroupToggle(header){ const collapsed=header.classList.toggle('lyr-collapsed'); header.dataset.userToggled='1';
-    _lyrGroupItems(header).forEach(el=>{ el.style.display=collapsed?'none':''; }); }
   function _collapseGroup(header){ if(header.classList.contains('lyr-collapsed')) return; header.classList.add('lyr-collapsed');
     _lyrGroupItems(header).forEach(el=>{ el.style.display='none'; }); }
   /* (#R18) Mobile shows EVERY group expanded. If groups were collapsed on desktop and the layout then

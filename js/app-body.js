@@ -1189,25 +1189,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  /* (#R8b) Catmull-Rom densifier → polylines render as natural CURVES through their control points
-     instead of straight chords (the user: "線が直線的すぎる"). Returns the input unchanged for paths that
-     cross the antimeridian (|Δlng|>170), so seam-spanning routes are never smeared across the globe. */
-  window.smoothGeoPath=function(pts,segs){
-    if(!pts||pts.length<3) return pts;
-    for(let i=1;i<pts.length;i++){ if(Math.abs(pts[i][0]-pts[i-1][0])>170) return pts; }
-    segs=segs||14; const out=[]; const P=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
-    for(let i=0;i<pts.length-1;i++){ const p0=P(i-1),p1=P(i),p2=P(i+1),p3=P(i+2);
-      for(let t=0;t<segs;t++){ const s=t/segs,s2=s*s,s3=s2*s;
-        out.push([ 0.5*((2*p1[0])+(-p0[0]+p2[0])*s+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*s2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*s3),
-                   0.5*((2*p1[1])+(-p0[1]+p2[1])*s+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*s2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*s3) ]); } }
-    out.push(pts[pts.length-1]); return out;
-  };
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  /* (#R225) `refreshGeoLabels` re-emitted the geo sources so their on-map labels followed the
-     language; there are no geo sources. ⚠ `triggerLayerHover` KEEPS ITS NAME — js/companies-ui.js and
+  /* (#R225) there are no geo sources any more. ⚠ `triggerLayerHover` KEEPS ITS NAME — js/companies-ui.js and
      js/news-ui.js call it from inline handlers with a `layerRef` that is now always empty, and the
      early return was always the answer for that. It no longer drives a layer family that is gone. */
-  window.refreshGeoLabels=function(){};
   window.triggerLayerHover=function(k,h){ if(!k) return; if(h) forceHoverLayers.add(k); else forceHoverLayers.delete(k); };
 
   let countryGeo=null, countryStats={}, countryDataLoaded=false, countryDataPromise=null;
@@ -1980,7 +1965,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const IM_TIP=window.IntMapModules.mapTooltip();
   function ensureMapTooltip(){ return IM_TIP.ensureMapTooltip(); }
   function positionTooltip(point){ return IM_TIP.positionTooltip(point); }
-  function setMapTooltipHTML(el,html){ return IM_TIP.setMapTooltipHTML(el,html); }
   let newsFeatures=[], dashFeatures=[];
   /* (#R32) Is the current UI/map dark? The news band must FLIP color by theme — a dark pill is invisible on
      the dark map ("ダークモードでは視認性が悪い"). */
@@ -2123,7 +2107,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(tb) tb.onclick=()=>{ try{ if(!aiGate()) return; aiTranslateTitles(); }catch(_){} };
     aiButtonSyncers.push(function(){ const b=document.getElementById('ai-translate-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
   })();
-  function openAISettingsOrToast(){ try{ imToast(t('aiNoKey')); }catch(_){} }
 
   /* ===== News pin location =====
      (#R430) The client-side AI locator that used to sit here is GONE along with #ai-geocode-btn.
@@ -2131,9 +2114,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      user-facing "AI-locate" button. The markup went away in #R29 when location moved server-side,
      so this handler had been binding itself to null ever since. Event-mode locations now come from
      news-ingest's `locate` step; article mode uses the deterministic js/newsgeo.js (no network).
-     ⚠ aiReaffirmLoc() below has had NO caller since then either (measured #R430). It is left in
-     place rather than removed, because removing it was not part of the requested change. */
-  function aiReaffirmLoc(a){ applyPinMode(a); }
+     aiReaffirmLoc(), which had NO caller since then either (measured #R430), has been removed. */
 
   /* (#R29) Hide anything older than 72h from the live feed — the server also deletes >72h rows, this is
      the matching client guard (covers the live-RSS fallback + any stale cache). Saved/bookmarked items
@@ -2270,15 +2251,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   };
   window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#countries-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }catch(_){} };
   window._showCompare=function(){   /* (#R311) the tray's 「view comparison」 button — the main door into js/stats-compare.js */ if(compareSet.size<2) return; window.IntMapLazy.need('statsCompare').then(()=>{ try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.open([...compareSet]); }catch(_){} }); };
-  window._hideCompare=function(){ renderStats(searchVal()); };
-  window._backToStats=function(){ renderStats(searchVal()); };
   /* (#R79b) Countries has its OWN search box in workspace mode (the shared #search-input lives in the News
      window). Read from it there; fall back to the shared search in the normal tabbed sidebar. */
   function _countriesSearchVal(){ try{ const ci=document.getElementById('countries-search-input'); if(document.body.classList.contains('ws-mode')&&ci) return ci.value.trim().toLowerCase(); }catch(_){} return searchVal(); }
   window._wsRenderCountries=function(){ try{ const q=_countriesSearchVal(); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ renderStats(q); }catch(_){} }); } renderStats(q); }catch(_){} };
-  /* (#R79d) toggle the map's Country-info layer (cb-countries → country-fill/line) with the Countries window,
-     so closing the window clears the "countries selected" state visible on the map. Mirrors _setCountriesInfo. */
-  window._wsCountryInfo=function(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==!!on){ cb.checked=!!on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} };
   (function(){ const ci=document.getElementById('countries-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderStats(ci.value.trim().toLowerCase()); }catch(_){} }); })();
   /* (#R153) Companies filter box (workspace-mode Companies window) — mirrors _countriesSearchVal + its input wiring so
      companies can be filtered by name/ticker/sector in ws-mode (previously renderCompanies got '' and nothing filtered). */
@@ -2654,7 +2630,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        オンされるのは今後はなしで」). The Countries tab still loads the country DATA it needs for its rows/compare,
        but the MAP's Countries(info) overlay (cb-countries) is now fully manual — it is neither auto-enabled on
        entering the tab nor auto-disabled on leaving it. The checkbox in the Layers panel still works as always. */
-    function _setCountriesInfo(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
   /* (#R238) the dock's glue is in js/window-manager.js beside the mechanism (`wireDock`) — which is also what keeps the glue beside the mechanism rather than in the shell. */
   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるように」 — the Layers button, the palette and Atlas, one command (the module is lazy) */
   IntMapOS.register('sim.seismic', (ctx)=>window.IntMapLazy.need('seismic').then(()=>{ try{ return !!(window.IntMapSeismic&&window.IntMapSeismic.open(((ctx&&ctx.params)||{}).at||{})); }catch(_){ return false; } }),
@@ -2948,7 +2923,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
     const go=document.getElementById('blueberry-go'); if(go) go.setAttribute('data-effect','outward');   /* (atlas-outward-effects) its markup is index.html's; the write is wired here */
     if(go) go.addEventListener('click', ()=>{ try{ if(typeof DB!=='undefined' && DB && typeof currentUser!=='undefined' && currentUser){ DB.from('donations').insert({ user_id:currentUser.id, email:currentUser.email||null, locale:currentLang, source:'support_button', status:'initiated' }); } }catch(_){} });
-    window._openBlueberry=open;
   })();
 
   /* (#R167) moved to js/feedback.js — see Architecture.md §3.1. */
@@ -3041,8 +3015,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window._measureFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(toolMode!=='measure') setTool('measure'); measurePoints=[[p.lng,p.lat]]; refreshTool(); updateToolPanel(); _closePinPopup(); };
   /* Radius from this pin (#54) — fixed center, tune radius/color in the tool panel. */
   window._radiusFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; try{ window._radiusFromPoint(p.lng,p.lat); }catch(_){} _closePinPopup(); };
-  /* #17 — open the azimuthal-equidistant viewer centerd on this pin (true distances/bearings from it). */
-  window._azimuthalFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(window.ProjView) window.ProjView.open('azimuthal',[p.lng,p.lat]); };
 
   document.addEventListener('click',(e)=>{ const m=document.getElementById('ctx-menu'); if(m&&!m.contains(e.target)) m.style.display='none'; });
 
@@ -3068,7 +3040,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let communityPosts=[];   /* cache; the source of truth is Supabase (loadCommunity) */
   let communityAddArmed=false; /* When true, the next map click creates a post here */
   let pendingPostLoc=null;
-  function saveCommunity(){ /* community now lives in Supabase; nothing to persist locally */ }
   let pendingImg='', communitySort='hot';
   /* ---- Community v2 UI state ---- */
   let commCaps=null;                 /* detected schema capabilities (graceful degradation) */
@@ -3265,7 +3236,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R155) Render the signed-in user's passkeys into #acct-passkeys (management list).
      Defensive about the exact SDK return/param shape (Beta API) so a shape change degrades
      gracefully instead of throwing. */
-  window._imOpenSetPassword=_openSetPassword;
   /* Account avatar (#28) — chosen emoji icon, persisted locally. */
   window.imGetAvatar=function(){ try{ return localStorage.getItem('intmap_avatar')||'👤'; }catch(_){ return '👤'; } };
   window.imGetAvatarImg=function(){ try{ return localStorage.getItem('intmap_avatar_img')||''; }catch(_){ return ''; } };
@@ -3436,7 +3406,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const updateNewsCountryLabel=()=>{ try{ NS().syncCountryLabel(); }catch(_){} };
   const renderNewsSourceChecks=()=>{ try{ NS().render(); }catch(_){} };
   const updateNewsSourceLabel=()=>{ try{ NS().syncLabel(); }catch(_){} };
-  window._populateNewsSources=renderNewsSourceChecks;
 
   /* ---------- Wire the new Settings controls (open → fill, Apply → commit+save) ---------- */
   { const open=document.getElementById('btn-open-settings');
@@ -3626,7 +3595,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.IntMapModules.earthSky(IM_HOST);
 
   /* ===== (#R11) Land cover & earth science: ESA WorldCover 2021 (WMTS raster), RESOLVE/WWF Ecoregions
-     2017 (PMTiles vector), and tectonic plates (real polygons + boundaries). Self-contained. ===== */
+     2017 (self-hosted GeoJSON), and tectonic plates (real polygons + boundaries). Self-contained. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.landCover(IM_HOST);
 
@@ -3805,8 +3774,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Windy-style color scales per variable. We lazy-load the UMD build, register the protocol once, and
      add each variable as a raster (or vector contours for isobars) BETWEEN the basemap and the labels via
      beforeId. Hourly time selection comes from latest.json's valid_times; the active valid-time is shown.
-     Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Exposes
-     window.toggleWeatherLayer(id, visible) + per-layer opacity. ===== */
+     Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Per-layer
+     toggle + opacity. ===== */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
   window.IntMapModules.weatherEC(IM_HOST);
 

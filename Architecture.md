@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（931行・92 KB）＋ `css/`（3本）＋ `js/`（327本・14.9 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（930行・92 KB）＋ `css/`（3本）＋ `js/`（327本・14.9 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -185,6 +185,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   分からない）、読めないファイルは推測せずにそのファイル名で落ちる。
   増えた名前は「新しい結合」で、`DEV-NOTES.md` に理由を書いて `--update` で受け入れる。減った名前は
   「基準が古い」で、同じく `--update` がその縮小の受領証になる。
+  **公開名には読み手が要る。** 同じゲートが、代入以外に読み手を 1 つも持たない公開名を `unread` として
+  基準に名前で持ち、両方向に照合する。読み手とは `js/`・`src/`・`tests/`・`scripts/`・トップの HTML の
+  コード（コメントは消し、文字列は残す——`onclick="_x()"` は読み手）での出現と、`Object.keys(window)` を
+  正規表現で絞って列挙するコード（Atlas のモジュール目録など。ソースから発見し、目録が要求する入口を
+  公開元ファイルが定義していれば読まれている扱い）。コンソール専用の診断は `unread` に残る。
   ⚠ **行数の天井は撤去した。** `tests/r168` #8 と 20 か所の写しが app shell（8,050 行）・index.html・
   `js/atlas-console.js`・`js/app-body.js`・`js/widgets.js` に持っていた行数の上限は、
   1 行に複数の `import` や `case` を畳ませただけで、初期配信量も結合の広さも測っていなかった。
@@ -5237,7 +5242,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   idle 後に **10 m**（252 コード）へ差し替える（`js/countries-ui.js`）。差し替えた瞬間から
   `codeAtPoint` は 252 コードを答えるので、**行を作らない enrichment だけのアップグレードは
   「幾何は答えるのに表が知らない」コードを 75 件生む**——そしてそれを読む約25か所（choropleth の
-  ホバーと塗り値・NATO/EU・`applyRimland`・データセンター詳細・時代境界の解決・ニュースの国名
+  ホバーと塗り値・NATO/EU・データセンター詳細・時代境界の解決・ニュースの国名
   フォールバック・シルエットクイズ・Atlas の5経路・`resolveCountryId` 自身）は**すべて未知コードを
   黙って読み飛ばす**ので、計器は何も言わない。
   ⚠ **不変条件: `countryGeo` の全 id は `countryStats` に行を持つ。** 両ループは行の構築を
@@ -5671,8 +5676,7 @@ supabase db diff --schema public             # driftゼロ確認
   ⚠ **新しい CDN ホストを CSP に足さない。** 実行時依存は npm から取り `src/vendor.js` が再公開する
   （§1.1）。現在残っている 7 つは、その方針より前からある計測・地図・タイル系のタグである。
   ⚠ **他 origin から読む `<script>` は、実行時に挿入するものも含めて Subresource Integrity で固定する。**
-  `unpkg.com` に残る 2 本——ECMWF タイル SDK（`js/wx-ecmwf.js`、`@openmeteo/weather-map-layer`）と
-  PMTiles（`js/layer-packs.js`。呼び出し元は無い）——は `integrity`（その版のファイルの sha384）と
+  `unpkg.com` に残る 1 本——ECMWF タイル SDK（`js/wx-ecmwf.js`、`@openmeteo/weather-map-layer`）——は `integrity`（その版のファイルの sha384）と
   `crossOrigin='anonymous'` を持ち、CDN が別のバイトを返せばブラウザが実行を拒む。SDK を同梱しないのは
   GPL-2.0 だから（`docs/SECURITY-ARCHITECTURE.md` §6）。固定できないもの（Street View の JSONP・
   gtag.js・Clarity——配信元が中身を変える前提）は `scripts/runtime-scripts.mjs` の `UNPINNABLE` に

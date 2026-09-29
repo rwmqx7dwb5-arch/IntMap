@@ -1453,6 +1453,7 @@ scripts/
   global-surface.mjs              **共有窓口の広さのゲート**（`npm run check:surface`）。`IM_HOST` の項目と
                                   `js/`・`src/` が `window.*` に代入する公開名を**名前で**
                                   `tests/global-surface-baseline.json` と両方向に照合する。行数の天井の代わり。
+                                  読み手の無い公開名（`unread`・`unreadPublications`）も名前で照合する。
                                   コメント・文字列・正規表現を消すのは acorn の字句解析（`codeOnly` を export）。
   export-readers.mjs              **export に読み手が居るか**の導出（`tests/r175-checks` ③ が読む）。読み手は
                                   `js/`・`src/`・`scripts/`・`tests/` の名前付き import・namespace・

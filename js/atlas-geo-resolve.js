@@ -308,7 +308,6 @@ export function makeAtlasGeoResolve(HOST, CTX) {
     function _selfLocSeed(f){ try{ const lng=+f.lng, lat=+f.lat; if(!isFinite(lng)||!isFinite(lat)) return null;
       _selfLocCache={lng,lat,acc:+f.acc||0,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; _selfLocT=Date.now();
       return _selfLocCache; }catch(_){ return null; } }
-    window._imSelfLoc=_selfLoc;
     /* (#R413) an explicit coordinate, written the way every map app writes one ("34.7016, 135.4959").
        Atlas obtains the reader's position as two numbers and must be able to HAND THEM BACK to any
        capability that takes a place — otherwise the fact it just obtained is only usable through a

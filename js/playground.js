@@ -92,7 +92,6 @@ window.IntMapModules.playground=function(HOST){
       n.innerHTML='<b style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:'+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';">'+(window.IntMapLang.t(HOST.lang,"Breaking","速報","Eilmeldung","Срочно","Última hora"))+'</b><br>'+html;
       host.appendChild(n); requestAnimationFrame(()=>{ n.style.opacity='1'; n.style.transform='none'; }); setTimeout(()=>{ n.style.opacity='0'; n.style.transform='translateY(-8px)'; setTimeout(()=>n.remove(),350); }, 5200);
     }
-    window._pgNews=pgNews;
 
     /* (#R754) pir/pig/bboxOf/cName moved to js/pandemic-world.js — imported above. Two games read
        them and the world builder is their third reader; one statement beats three copies. */

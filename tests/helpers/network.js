@@ -98,7 +98,7 @@ const BENIGN_CONSOLE = [
    understands (js/dash-extended.js, js/sat-proto.js). It was caught only by an accident of spelling:
    `imapsat` contains no "tile", "glyph" or "sprite", so `/load.*(tile|…)/` — which is here for
    MapLibre reacting to a blocked HOST — happened not to match it. MEASURED: the identical leak
-   through `pmtiles://` (one of the seven protocols this app registers) reads as
+   through `pmtiles://` (a scheme the app could register then; its loader has since been removed) reads as
    「Loading the image 'pmtiles://…」 and WAS classified benign by that same pattern.
    Nothing legitimate is lost by refusing the whole class: the hermetic policy blocks hosts, which
    produces `net::ERR_FAILED`, never a CSP refusal. A CSP violation always means the page asked for

@@ -1,8 +1,8 @@
 /* vendored-runtime-scripts — a script the served site pulls from another origin is pinned or excused.
  *
  * The defect: #R175 moved the seven CDN <script> tags into the bundle, and two loaders that insert a
- * <script> at RUNTIME (js/wx-ecmwf.js — the ECMWF tile SDK; js/layer-packs.js — the PMTiles plugin)
- * went on running unpkg code on this origin without Subresource Integrity. The gate is
+ * <script> at RUNTIME (js/wx-ecmwf.js — the ECMWF tile SDK; js/layer-packs.js — the PMTiles plugin,
+ * since removed with the loader nothing called) went on running unpkg code on this origin without Subresource Integrity. The gate is
  * scripts/runtime-scripts.mjs, run by `npm run check:static`. Every mutation below is applied to the
  * REAL served files in memory, so each case proves the gate turns red on the tree as it is today.
  */
@@ -31,9 +31,9 @@ test('① the tree as it is: every cross-origin script is pinned or declared', (
   assert.deepEqual(problems(FILES), []);
 });
 
-test('② the two runtime loaders carry a well-formed pin and crossOrigin', () => {
+test('② the runtime loader carries a well-formed pin and crossOrigin', () => {
   const { sites } = runtimeScriptProblems(FILES);
-  for (const rel of ['js/wx-ecmwf.js', 'js/layer-packs.js']) {
+  for (const rel of ['js/wx-ecmwf.js']) {
     const ext = sites.filter((s) => s.rel === rel && s.src && s.src.some((c) => /^https?:\/\//.test(c.value || '')));
     assert.ok(ext.length >= 1, `${rel}: the external <script> site is found`);
     for (const s of ext) {
@@ -67,11 +67,6 @@ test('⑤ one URL losing its own pin in the array is caught, not covered by its 
     return t.slice(0, i) + "integrity: 'not-a-hash-'" + t.slice(t.indexOf("'", i + 12) + 1);
   });
   assert.ok(problems(f).some((p) => p.startsWith('js/wx-ecmwf.js') && /unpkg\.com/.test(p)));
-});
-
-test('⑥ the dead PMTiles loader: unpinning it turns the gate red', () => {
-  const f = withFile('js/layer-packs.js', (t) => t.replace(/s\.integrity='sha384-[^']+';\s*/, ''));
-  assert.ok(problems(f).some((p) => p.startsWith('js/layer-packs.js') && /without a pinned integrity/.test(p)));
 });
 
 test('⑦ a NEW loader in any served file, in any form, is caught', () => {

@@ -74,7 +74,6 @@ export function makeCoastLine(CTX) {
     } else draw();
   });
   window.ensureCoastLayer = ensureCoastLayer;
-  window._applyCoast = applyCoast;
   window._imCoastReassert = draw;   /* the `ofm` sourcedata hook in js/app-body.js calls this */
   /* ⚠ (#R289) THE WIND LAYER TURNS THIS ON ONCE, AND «ONCE» IS THE WHOLE DESIGN. 「風レイヤーオン時
      はデフォルトでオン」 is a DEFAULT, not a coupling: re-asserting it every time the wind is

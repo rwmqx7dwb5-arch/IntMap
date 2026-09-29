@@ -112,10 +112,6 @@ window.IntMapRouteCards = (function () {
       return (off == null || !isFinite(+off)) ? null : +off;
     } catch (e) { return null; }
   }
-  function offLabel(off) {
-    var s = off < 0 ? '-' : '+', a = Math.abs(off), h = Math.floor(a), m = Math.round((a - h) * 60);
-    return 'UTC' + s + (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
-  }
   function clock(when, o, ll) {
     o = use(o);
     try {
