@@ -11,6 +11,7 @@
  *    probe) and must equal the integer tests/z-layers-baseline.json recorded before the layers were
  *    named — the painting order did not move.
  *  ④ the single-key shortcut switch: off, «l» does not press the Layers button; on, it does.
+ *  ⑤ in the narrow desktop layout (body.ms-narrow) the open search results are not clipped by the pill.
  *  tests/map-a11y-structure-checks.test.mjs carries the halves that need no browser.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
@@ -115,6 +116,30 @@ test.describe('map-a11y-structure', () => {
     await set('on');
     await page.keyboard.press('l');
     await expect.poll(() => page.evaluate(() => window.__layersPressed)).toBe(1);
+    });
+    await test.step('⑤ the narrow desktop layout does not clip the search results it opens', async () => {
+    /* (search-results-clipped) body.ms-narrow collapses the pill sideways (#R65) and did it with
+       overflow:hidden, which also cut off the results panel hanging below it: measured in production
+       2026-09-30 at this viewport with both side panels open, «Tokyo» returned 12 results and
+       elementFromPoint found none. Checked in this boot rather than a new one — it is the same
+       stacking-and-painting question as ③, at the same viewport. */
+    const r = await page.evaluate(() => {
+      document.body.classList.add('ms-narrow');
+      const box = document.getElementById('map-search');
+      const res = document.getElementById('ms-results');
+      res.innerHTML = '<div>Tokyo</div><div>Tokyo Station</div><div>Tokyo Bay</div>';
+      res.style.display = 'block';
+      const b = res.getBoundingClientRect(), p = box.getBoundingClientRect();
+      const hit = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(20, b.height / 2));
+      const out = { hit: !!hit && res.contains(hit), resH: b.height, pillW: p.width,
+                    maxW: parseFloat(getComputedStyle(box).maxWidth), ox: getComputedStyle(box).overflowX };
+      res.style.display = ''; res.innerHTML = ''; document.body.classList.remove('ms-narrow');
+      return out;
+    });
+    expect(r.resH, 'the results panel has height').toBeGreaterThan(0);
+    expect(r.hit, 'the middle of the open results panel is the results panel, not what is behind it').toBe(true);
+    expect(r.ox, 'the pill still clips sideways').toBe('clip');
+    expect(r.pillW).toBeLessThanOrEqual(r.maxW + 0.5);
     });
   });
 });
