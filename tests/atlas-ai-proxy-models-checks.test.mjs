@@ -109,7 +109,9 @@ test('R722 ① every read of the request model/provider sits behind the server-s
   assert.match(op.slice(0, 400), /if \(!isDev\) return json\(\{ error: "not_found" \}, 404\);/);
 
   /* and the whole grant is decided from the immutable account id, not from an address or a plan. */
-  assert.match(PROXY, /const isDev = devIds\.includes\(String\(user\.id \|\| ""\)\.toLowerCase\(\)\)/);
+  /* (ai-one-ledger) decided in _shared/ai-ledger.js accountFor (shared with monitor-run), from the id */
+  assert.match(PROXY, /const isDev = account\.isDev;/);
+  assert.match(CODE('supabase/functions/_shared/ai-ledger.js'), /const isDev = devUserIds\(env\)\.includes\(id\.toLowerCase\(\)\)/);
 });
 
 /* ── ② the names come from the providers ──────────────────────────────────────────────────── */
@@ -304,7 +306,7 @@ test('R736 ④: a withdrawn model is not OFFERED, is not BLOCKED, and is named e
 test('R147 #13 free AI quota is 10/day on the client and server', () => {
   /* kept as a spelling: supabase/functions/ai-proxy/index.ts is Deno TypeScript node cannot import, and js/ai-core.js / js/app-body.js run only in the signed-in page */
   assert.match(html, /const AI_FREE_DAILY\s*=\s*10\b/, 'client AI_FREE_DAILY=10');
-  assert.match(aiproxy, /free:\s*10\b/, 'server PLAN_LIMITS.free=10');
+  assert.match(RAW('supabase/functions/_shared/ai-ledger.js'), /free:\s*10\b/, 'server PLAN_LIMITS.free=10 (ai-one-ledger: _shared/ai-ledger.js, shared with monitor-run)');
   assert.ok(!/up to 30 uses per day/.test(html), 'no stale "30 uses per day" copy');
   assert.ok(!/1日30回/.test(html), 'no stale JP "1日30回"');
 });

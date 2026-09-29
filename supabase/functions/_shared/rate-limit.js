@@ -158,12 +158,36 @@ export function makeLimiter({ db }) {
        the relay's own readerPerMin; the environment only moves it. */
 export const READERS_PER_ADDRESS = 10;
 
-/* The caller, as routing-relay has always identified it: the first address in x-forwarded-for.
-   ⚠ A REQUEST WITH NONE SHARES ONE BUCKET — an unidentifiable caller is throttled with everyone
+/* ══ (ai-one-ledger) WHO THE CALLER IS, DECIDED IN ONE PLACE ══════════════════════════════════════
+   callerKey(req, verifiedUid) → the bucket key.
+     · an ACCOUNT, when the function has verified one: "uid:<uuid>". An account is the identity a
+       signed-in caller cannot change by changing networks, and it is the identity every other
+       per-reader number here is kept by (the AI allowance, the embedding share). Readers behind one
+       office / school / carrier NAT stop sharing a bucket the moment they are signed in.
+     · otherwise the ADDRESS, as routing-relay has always identified it: the first address in
+       x-forwarded-for (callerAddress below).
+   ⚠ `verifiedUid` MUST come from the Auth server (auth.getUser / /auth/v1/user), never from the JWT's
+   own `sub` read without verification: an unverified claim is a string the caller chose, and a key
+   the caller chooses is a fresh bucket per request. A value that is not a UUID is ignored — the key
+   falls back to the address rather than trusting a malformed id.
+   ⚠ THE KEYLESS RELAYS STILL KEY BY ADDRESS. They run with verify_jwt = false and serve signed-out
+   readers; verifying a JWT on each of their requests would add an Auth round trip to every live
+   layer's poll. Only the functions that already verify the caller (atlas-embed today) pass a uid.
+   The address itself: measured 2026-09-26 against production (routing-relay's note), a forged
+   x-forwarded-for did NOT buy a fresh bucket — the platform puts the real client address first.
+   ⚠ A REQUEST WITH NO ADDRESS SHARES ONE BUCKET — an unidentifiable caller is throttled with everyone
    else rather than exempt. */
-export function callerKey(req) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function callerAddress(req) {
   const xff = (req && req.headers && req.headers.get("x-forwarded-for")) || "";
   return xff.split(",")[0].trim() || "unknown";
+}
+export function callerKey(req, verifiedUid) {
+  const uid = String(verifiedUid || "").trim();
+  if (UUID_RE.test(uid)) return "uid:" + uid.toLowerCase();
+  /* an address never takes an account's key: a header value that spells one is not an address */
+  const addr = callerAddress(req);
+  return /^uid:/i.test(addr) ? "unknown" : addr;
 }
 
 function envPositive(env, name, fallback) {
@@ -190,6 +214,7 @@ export async function callerGate(req, cors, o) {
   const perMin = callerCapacity(scope, opts.readerPerMin, env);
   const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
   if (!db.configured) return null;
+  /* by address: no relay behind this gate verifies its caller (see callerKey) */
   const r = await makeLimiter({ db }).take(scope + ":ip", callerKey(req), {
     capacity: perMin, refillPerSec: perMin / 60, cost: 1, onUnavailable: "allow",
   });

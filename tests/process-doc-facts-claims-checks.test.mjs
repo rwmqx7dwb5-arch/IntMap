@@ -212,8 +212,10 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
 /* ── ⑤ ai-proxy の散文が、20 行下の定数と一致する ─────────────────────────────────── */
 test('R500 ⑤ ai-proxy says the free quota its own PLAN_LIMITS grants', () => {
   const src = rd('supabase/functions/ai-proxy/index.ts');
-  const limits = src.match(/const PLAN_LIMITS[^=]*=\s*\{([^}]*)\}/);
-  assert.ok(limits, 'ai-proxy no longer declares PLAN_LIMITS — that constant is the 正本 for every quota');
+  /* (ai-one-ledger) PLAN_LIMITS moved to _shared/ai-ledger.js when monitor-run began charging the same
+     allowance; the prose in ai-proxy's header is still held to it */
+  const limits = rd('supabase/functions/_shared/ai-ledger.js').match(/const PLAN_LIMITS[^=]*=\s*(?:Object\.freeze\()?\{([^}]*)\}/);
+  assert.ok(limits, '_shared/ai-ledger.js no longer declares PLAN_LIMITS — that constant is the 正本 for every quota');
   const free = limits[1].match(/free:\s*([\d_]+)/);
   assert.ok(free, 'PLAN_LIMITS no longer names a `free` plan');
   const n = Number(free[1].replace(/_/g, ''));

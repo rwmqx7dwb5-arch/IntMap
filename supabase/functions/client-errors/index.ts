@@ -33,7 +33,7 @@
 //  parses every committed .ts as plain JavaScript.
 // ============================================================================
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerAddress } from "../_shared/rate-limit.js";
 import {
   MAX,
   MAX_PER_REQUEST,
@@ -101,7 +101,7 @@ function say(cors, body, status) {
    x-forwarded-for shares one bucket with every other such request — the failure direction of an
    unidentifiable caller is «throttled with everyone else», the rule routing-relay states. */
 export async function callerKey(req, secret) {
-  const addr = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
+  const addr = callerAddress(req);   /* (ai-one-ledger) the address, read where every function reads it */
   const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(secret || "no-secret")),
     { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const d = new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(addr)));

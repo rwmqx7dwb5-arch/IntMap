@@ -839,6 +839,9 @@ inputRequest kind `choice`）を返す。何も押していないので、観測
 reasoning も含めて、モデルが出したとおりに再送）→ 末尾に**手ごとに変わるもの**（呼び出し後の地図状態・添付台帳・
 撮ったフレーム）。system（人格・方針・索引）と道具の一覧も**ターン中は同一**なので、各手は前の手の入力の
 **末尾に足すだけ**になり、provider の prompt cache が先頭を保持する（`prompt_cache_key` は system＋道具から導く）。
+Anthropic は印を付けた先頭しかキャッシュしないので、Anthropic 経路は**道具の末尾と system の末尾**に
+`cache_control: {type:"ephemeral"}` を付ける（`_shared/ai-usage.js` の `withPromptCache`。印は最大 4 個・
+モデルが読む中身は同一）。命中したかは台帳の `cached_read_tokens` / `cache_write_tokens` で読める。
 `store:false` は変えていない。道具は provider の関数として宣言され、返ってきた `function_call` が id つきで実行される。
 ⚠ **予算は文字数の `.slice` ではなく item 単位で配る**（`INPUT_BUDGET`：全体 240,000・1 item 48,000）。
 超えたら ①**古い会話から**丸ごと落とし、落としたことを **1 つの item が述べる** ②それでも超えたら
@@ -1784,6 +1787,21 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   1日上限の 429 `{error:"limit"}` とは**別の文言**を出す。
   プロバイダ失敗の払い戻しは `refund_ai_turn` が**charge とターンの両方**を解放する。
   ⚠ **決定論的な操作（`IntMapOS.execute()` だけで終わる依頼）は AI 枠を一切使わない。**
+- **⚠ 利用者の代わりに AI を呼ぶ経路は、全部 1 つの台帳を通る。** プラン表（`PLAN_LIMITS`）・
+  アカウントの解決（`profiles.plan` と `DEV_USER_IDS`）・台帳の 4 つの扉（`consume_ai_turn` /
+  `refund_ai_turn` / `settle_ai_turn` / `record_ai_usage`）は `supabase/functions/_shared/ai-ledger.js`
+  にあり、`ai-proxy` と `monitor-run` の「今すぐ実行」が同じものを呼ぶ。「今すぐ実行」は
+  **AI の段に達したときだけ**、その回の run id をターン鍵に 1 回ぶん消費する（変化が無い回・AI 未設定の回は
+  消費しない）。枠を使い切っていれば**プロバイダに 1 本も送らず**、測ったもの（snapshot・diff・証拠）を
+  保ったまま run を `quota_exceeded` で閉じる。台帳が答えなければ `ai-proxy` と同じく fail-closed。
+  定期実行（cron）は**消費しない**（変えていない。論点は開発記録 ai-one-ledger）。
+- **⚠ 費用も同じ台帳に載る。** プロバイダの応答が述べる使用量を `_shared/ai-usage.js` の
+  `normalizeUsage` が 3 社共通の形 `{input, cached_read, cache_write, output}` にし（`input` は
+  キャッシュ読み・書きを**含まない**全額の入力）、1 リクエストで読んだ全応答（フォールバック・再試行・
+  後で空として拒んだ応答も）を足して `record_ai_usage` が `ai_usage`（アカウント×日。消えない記録）と
+  生きている `ai_turns` 行（アカウント×ターン）に加える。`count`（枠）には触れない——開発者の呼び出し
+  （枠を消費しない）も費用としては記録される。使用量を述べなかった応答は 0 ではなく
+  `unmetered_calls` として数える。定期実行の費用は監視の所有者の行に載る（枠は消費しない）。
 - **⚠ 用語グロス（回答文の語句の解説）は「別の枠」で動く。** 回答の中の語句を選んで訊く操作は、
   Atlas への質問とは費用の桁が違う（短い prompt・出力 700 token・ツールなし・web 検索なし）。
   これを質問と同じ枠に載せると、free の 10 回では**1 つの回答を読む間に 3 語調べたら質問が
@@ -1953,7 +1971,8 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   秘密は `x-news-ingest-secret` **ヘッダのみ**・**定数時間比較**・POST のみ。
   ⚠ `current_news` と `refresh-news` には触れない（別の表に書く）。
 - **`monitor-run`** … Area Monitors の定期実行（`--no-verify-jwt` ＋ 自前の fail-closed 認証、
-  `MONITOR_SECRET`）。
+  `MONITOR_SECRET`）。利用者の「今すぐ実行」（JWT）は、AI の段に達したとき `ai-proxy` と同じ
+  AI 枠を `_shared/ai-ledger.js` 経由で消費する（上の「1 つの台帳」）。
 - **`delete-account`** … 呼出ユーザ自身のアカウントと全データを**ハード削除**する
   （`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。所有テーブルを**外部キーから発見**し、
   **1トランザクション**で削除し、**削除後に数え直して**から Auth ユーザーを消す。
@@ -1973,7 +1992,11 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   プロジェクト全体 1 分・プロジェクト全体 1 日。IP 別の 2 つは fail-open で拒否は 429 `rate_limit`、全体の 2 つは
   fail-closed（DB が答えなければ有料呼び出しをしない・503 `limiter_unavailable`）、拒否は 429
   `spend_ceiling`。上限は `ROUTING_RELAY_GLOBAL_PER_MIN` / `_PER_DAY` / `ROUTING_RELAY_PER_IP_PER_DAY` で意図して動かす（既定は
-  Mapbox の無料枠の内側）。呼び出し元は `_shared/rate-limit.js` の `callerKey`（全 relay で 1 つ）。
+  Mapbox の無料枠の内側）。呼び出し元は `_shared/rate-limit.js` の `callerKey`（全関数で 1 つ）。
+  `callerKey(req, verifiedUid)` は、関数が Auth サーバーで**検証済みの**アカウントを渡したときは
+  `uid:<uuid>`、そうでなければ `x-forwarded-for` の先頭のアドレスを鍵にする（検証していない JWT の
+  `sub` は渡さない——呼び手が選べる文字列は要求ごとの新しいバケツになる）。現在 uid を渡すのは
+  `atlas-embed` で、無認証の relay（`verify_jwt = false`）はアドレスのまま。
 - **`sv-cov`** … ストリートビュー・カバレッジ svv タイルの **ACAO 付与プロキシ**（秘密なし）。
   **厳格 allowlist**（`mts0-3.google.com/vt?…lyrs=svv` ＋ 整数 x/y/z のみ・空タイルは透明 PNG）
   ＝オープンプロキシではない。
@@ -5532,7 +5555,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（31本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（32本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持 ＋ 能力ベクトル ＋ SECURITY DEFINER 関数を `anon` が呼べるのは `anon` に効く RLS が呼ぶものだけ ＋ 出自の固定＝SECURITY DEFINER の search_path に呼び手が CREATE できる schema が無い・公開バケットに一覧用の SELECT ポリシーが無い・コミュニティ投稿の著者名と投稿時刻は DB が書く・INSERT は列単位 grant）。
@@ -5636,11 +5659,13 @@ supabase db diff --schema public             # driftゼロ確認
 ### 17.2 認証・認可
 
 - **ai-proxy** ＝ `verify_jwt` ＋ 明示的なユーザー検証（未ログイン 401）・プラン別1日上限を
-  `increment_ai_usage` で原子的に消費・入力上限を**本文を読む前に**適用・鍵/prompt/JWT は非ログ。
+  `consume_ai_turn`（ターンごとに 1 回 `increment_ai_usage`）で原子的に消費・入力上限を**本文を読む前に**
+  適用・鍵/prompt/JWT は非ログ。
   ⚠ **上流の本文と例外文言は応答にもログにも出さない。**
 - **refresh-news** ＝ **fail-closed**。`REFRESH_SECRET` 未設定なら全リクエスト拒否（公開実行しない）。
   秘密は `x-refresh-secret` **ヘッダのみ**・**定数時間比較**・POST のみ。
-- **monitor-run** ＝ 同型の fail-closed（`x-monitor-secret`）。ユーザーの「今すぐ実行」は JWT ＋ 所有権照合。
+- **monitor-run** ＝ 同型の fail-closed（`x-monitor-secret`）。ユーザーの「今すぐ実行」は JWT ＋ 所有権照合
+  ＋ AI の段では `ai-proxy` と同じ AI 枠の消費（`_shared/ai-ledger.js`）。
 - **delete-account** ＝ `verify_jwt` ＋ 関数内検証 ＋ `confirm:"DELETE"`。**1トランザクション**で
   所有行を削除し、**削除後に数え直して**残っていれば raise（fail-closed）。Auth ユーザーの削除はその後だけ。
 - **無認証中継**は `_shared/relay-guard.js` を共有する（本数と一覧は §6.2。ここには書き写さない）。
