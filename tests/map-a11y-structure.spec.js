@@ -141,5 +141,36 @@ test.describe('map-a11y-structure', () => {
     expect(r.ox, 'the pill still clips sideways').toBe('clip');
     expect(r.pillW).toBeLessThanOrEqual(r.maxW + 0.5);
     });
+    await test.step('⑥ pressing a search result keeps it in front until the press is released', async () => {
+    /* (front-mark-outer-context) the front-most mark went to the innermost positioned element under
+       the pointer — #ms-results — whose z-index cannot leave the fixed, z-indexed pill it sits in. The
+       pointerdown set im-float-front, a legend (1100) rose over the pill (1002), and the pointerup
+       landed on the legend: measured in production 2026-09-30, a click on a result chose nothing.
+       A real pointerdown is dispatched through the capture-phase handler, then the point is asked again. */
+    const r = await page.evaluate(() => {
+      document.body.classList.add('ms-narrow');
+      const res = document.getElementById('ms-results');
+      res.innerHTML = '<div class="ms-item">Tokyo</div><div class="ms-item">Tokyo Bay</div>';
+      res.style.display = 'block';
+      /* a floating panel that sits in the band where the pill is, as the Köppen legend did */
+      const leg = document.createElement('div');
+      leg.id = 'probe-legend';
+      const it = res.querySelector('.ms-item'), b = it.getBoundingClientRect();
+      leg.style.cssText = 'position:fixed;z-index:1100;left:' + (b.left - 10) + 'px;top:' + (b.top - 10) + 'px;width:' + (b.width + 20) + 'px;height:' + (b.height + 20) + 'px;background:#888';
+      document.body.appendChild(leg);
+      const x = b.left + b.width / 2, y = b.top + b.height / 2;
+      const before = document.elementFromPoint(x, y);
+      it.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, clientX: x, clientY: y }));
+      const after = document.elementFromPoint(x, y);
+      const out = { beforeIsLegend: before === leg, afterIsItem: !!after && it.contains(after),
+                    marked: document.getElementById('map-search').classList.contains('im-front') };
+      leg.remove(); res.style.display = ''; res.innerHTML = '';
+      document.body.classList.remove('ms-narrow', 'im-float-front');
+      document.querySelectorAll('.im-front').forEach((n) => n.classList.remove('im-front'));
+      return out;
+    });
+    expect(r.marked, 'the mark is on the pill that stands in the band, not on the list trapped inside it').toBe(true);
+    expect(r.afterIsItem, 'after the press, the pressed result is what is under the pointer').toBe(true);
+    });
   });
 });
