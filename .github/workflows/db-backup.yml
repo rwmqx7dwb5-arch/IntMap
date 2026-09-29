@@ -64,6 +64,16 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: node scripts/db-login-url.mjs
 
+      # pg_dump refuses a server newer than itself (measured 2026-09-29: server 17.6, the runner's client
+      # 16.15 → «aborting because of server version mismatch»). Ask the server its major and install that
+      # client from the PGDG repository the runner already carries — no version written here.
+      - name: pg_dump matching the server
+        run: |
+          major=$(psql "$DB_URL" -tAc 'show server_version_num' | tr -d '[:space:]' | cut -c1-2)
+          echo "server major: $major"
+          sudo apt-get install -y "postgresql-client-$major"
+          echo "/usr/lib/postgresql/$major/bin" >> "$GITHUB_PATH"
+
       - name: Dump + encrypt + checksum
         env:
           GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
