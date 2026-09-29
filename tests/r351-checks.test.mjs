@@ -420,7 +420,8 @@ test('⑯ news-ingest is fail-closed, deadline-bounded, and touches neither curr
   /* ⚠ refresh-news は AbortSignal を 1 つも持っていない。こちらは期限つきで取りに行く。 */
   assert.match(fn, /fetchGuarded/, 'feeds must be fetched through the shared bounds (deadline/bytes/type)');
   assert.match(fn, /budget\.left\(\)/, 'no wall-clock budget: a slow run would be killed mid-write');
-  assert.match(fn, /AbortSignal\.timeout/, 'the LLM call needs a deadline of its own');
+  /* (edge-spend-and-models) the deadline is the shared door's timeoutMs now, still capped by the budget */
+  assert.match(fn, /AbortSignal\.timeout|callProvider\(cfg, [A-Z_]+, user, Math\.min\(\d+, budget\.left\(\)\)\)/, 'the LLM call needs a deadline of its own');
   /* article mode の経路に触れない。 */
   assert.ok(!fn.includes('current_news'), 'news-ingest must not read or write current_news');
   /* 第二の地点解析を作らない・第二のクラスタリングを作らない。 */

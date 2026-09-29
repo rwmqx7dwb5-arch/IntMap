@@ -29,8 +29,9 @@
 //            # AI geocoding reuses the SAME server-held key/provider as ai-proxy:
 //            supabase secrets set AI_PROVIDER=anthropic        (anthropic | openai | gemini)
 //            supabase secrets set ANTHROPIC_API_KEY=sk-ant-... (or OPENAI_API_KEY / GEMINI_API_KEY)
-//            supabase secrets set AI_MODEL=claude-3-5-haiku-latest   (optional override)
+//            supabase secrets set AI_MODEL=...                 (optional override; default _shared/ai-provider.js PROVIDER_DEFAULT_MODEL)
 //            supabase secrets set NEWS_AI=off                  (optional kill-switch → dictionary only)
+//            supabase secrets set REFRESH_NEWS_GLOBAL_PER_DAY=<n>   (optional — moves the project-wide ceiling below)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 //  Run supabase_news_setup.sql once to create/extend current_news (incl. the
 //  analyzed_by column) + the pg_cron schedule.
@@ -46,6 +47,11 @@ import "../_shared/newsgeo.js";
    failure; edit js/atlas-persona.js and run `node scripts/sync-atlas-persona.mjs`. */
 import { personaPrompt } from "../_shared/atlas-persona.js";
 import { NEWS_GEO_RULES } from "../_shared/news-geo-prompt.js";
+/* (edge-spend-and-models) The model table, the one door to a paid provider, the project-wide ceiling
+   and the failure that carries a status and a length instead of the provider's body. */
+import {
+  PROVIDER_DEFAULT_MODEL, providerFetch, providerFail, bodyLength, spendCeiling, scheduleCeiling,
+} from "../_shared/ai-provider.js";
 // deno-lint-ignore no-explicit-any
 const NEWSGEO: any = (globalThis as any).IntMapNewsGeo || null;
 
@@ -75,6 +81,29 @@ const EDITIONS: { lang: "en" | "jp"; topics: { topic: string; q: string }[] }[] 
 ];
 const TOPIC_PATH: Record<string, string> = { world: "WORLD", business: "BUSINESS" };
 const MAX_ITEMS = 150;
+/* The AI locator's cost bound per run: at most AI_CAP new articles per AI edition, AI_BATCH per request.
+   (edge-spend-and-models) Lifted out of the handler so the ceiling below is computed from the same
+   numbers the loop obeys, rather than from a copy of them. */
+const AI_CAP = 120;                                 // max NEW articles AI-located per lang per run (cost bound)
+const AI_BATCH = 15;
+const AI_LANGS: string[] = ["en", "jp"];            // the editions the AI locates; the rest keep the dictionary
+/* (edge-spend-and-models) THE PROJECT-WIDE CEILING on provider requests from this function — a fence
+   on the invoice (_shared/ai-provider.js says why, and how it fails). THE NUMBER is the schedule's:
+     · RUNS_PER_DAY = 72 — pg_cron job «intmap-refresh-news», every 20 minutes, in migration
+       20260925090000_cron_jobs_as_code.sql; tests/edge-spend-and-models-checks fails if they disagree.
+     · a run sends at most ceil(AI_CAP / AI_BATCH) requests per AI edition (no retry on this path).
+   ⇒ 72 × 2 × 8 = 1,152 a day from the schedule, doubled by scheduleCeiling for hand-run refreshes.
+   Observation 2026-09-29: the busiest of the last four days AI-located 770 articles (public.current_news,
+   analyzed_by='ai'), i.e. about 52 requests — a runaway, not a busy news day, is what meets this. */
+const RUNS_PER_DAY = 72;
+const CEILING = spendCeiling({
+  fn: "refresh-news",
+  perDay: scheduleCeiling(RUNS_PER_DAY, EDITIONS.filter((e) => AI_LANGS.includes(e.lang)).length * Math.ceil(AI_CAP / AI_BATCH)),
+  env: (k: string) => Deno.env.get(k) || "",
+});
+/* Read by tests/edge-spend-and-models-checks, which evaluates this module (Deno.serve stubbed) and
+   holds `schedule` to the cron migration. */
+export const SPEND = { ceiling: CEILING, schedule: [{ job: "intmap-refresh-news", runsPerDay: RUNS_PER_DAY }] };
 
 // ---- Scoring model (identical to the old client-side analyzeContext) ----
 const TYPE_SCORE: Record<string, number> = { flashpoint: 5, city: 2, country: 0, region: 0 };
@@ -421,9 +450,11 @@ function aiProviderConfig(): { provider: string; key: string; model: string } | 
     else if (Deno.env.get("OPENAI_API_KEY")) provider = "openai";
     else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
   }
-  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna" }; }   /* (#R148) default Luna (Terra/4o-mini have no access on this project) */
-  else if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || "gemini-2.0-flash" }; }
-  else if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || "claude-3-5-haiku-latest" }; }
+  /* (edge-spend-and-models) the default is the shared table's (it used to be spelled here, as Luna —
+     #R148, when Terra answered 403 — and had drifted from ai-proxy's for the other two providers). */
+  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || Deno.env.get("OPENAI_MODEL") || PROVIDER_DEFAULT_MODEL.openai }; }
+  else if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || PROVIDER_DEFAULT_MODEL.gemini }; }
+  else if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || PROVIDER_DEFAULT_MODEL.anthropic }; }
   return null;
 }
 
@@ -446,11 +477,11 @@ async function callProvider(cfg: { provider: string; key: string; model: string 
     // … use 'max_completion_tokens'") → every geocode 400'd → news fell back to the dictionary (ai:0).
     // Use /v1/responses with reasoning.effort:"low" (cheap) + a budget that leaves room for reasoning
     // tokens, exactly like ai-proxy. Verified 200 + valid JSON for this project's key.
-    const r = await fetch("https://api.openai.com/v1/responses", {
+    const r = await providerFetch("https://api.openai.com/v1/responses", {
       method: "POST", headers: { "Authorization": `Bearer ${cfg.key}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model: cfg.model, instructions: sys, input: [{ role: "user", content: [{ type: "input_text", text: user }] }], max_output_tokens: 3000, reasoning: { effort: "low" }, store: false }),
-    });
-    if (!r.ok) throw new Error("openai " + r.status);
+    }, { ceiling: CEILING });
+    if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json();
     if (typeof j?.output_text === "string" && j.output_text) return j.output_text;
     const arr: unknown[] = Array.isArray(j?.output) ? j.output : [];
@@ -460,20 +491,20 @@ async function callProvider(cfg: { provider: string; key: string; model: string 
       .map((p: { text?: string }) => p.text || "").join("");
   }
   if (cfg.provider === "gemini") {
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
+    const r = await providerFetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
       method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: user }] }], systemInstruction: { parts: [{ text: sys }] }, generationConfig: { temperature: 0, maxOutputTokens: 1500 } }),
-    });
-    if (!r.ok) throw new Error("gemini " + r.status);
+    }, { ceiling: CEILING });
+    if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json(); const c = j?.candidates?.[0];
     return (c?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");
   }
   // anthropic (default)
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
+  const r = await providerFetch("https://api.anthropic.com/v1/messages", {
     method: "POST", headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({ model: cfg.model, max_tokens: 1500, system: sys, messages: [{ role: "user", content: user }] }),
-  });
-  if (!r.ok) throw new Error("anthropic " + r.status);
+  }, { ceiling: CEILING });
+  if (!r.ok) throw providerFail(r.status, await bodyLength(r));
   const j = await r.json(); return (j?.content || []).map((b: { text?: string }) => b.text || "").join("");
 }
 
@@ -567,8 +598,7 @@ Deno.serve(async (req) => {
   const CUTOFF_MS = 72 * 3600 * 1000;                 // 72-hour display/storage window (#R29)
   const cutoffISO = new Date(Date.now() - CUTOFF_MS).toISOString();
   const aiCfg = aiProviderConfig();                   // null → AI off / not configured → dictionary only
-  const AI_CAP = 120;                                 // max NEW articles AI-located per lang per run (cost bound)
-  const AI_BATCH = 15;
+  /* AI_CAP / AI_BATCH / AI_LANGS are module constants (above), shared with the ceiling. */
   const counts: Record<string, { total: number; ai: number; dict: number; reused: number }> = {};
 
   for (const ed of EDITIONS) {
@@ -648,7 +678,7 @@ Deno.serve(async (req) => {
     // 3) AI is PRIMARY for en/jp — analyse EVERY not-yet-AI-located article (dictionary result is
     //    overridden when the AI returns a place). Capped per run; the rest stay on the dictionary
     //    fallback and get AI-located on a later run. Other languages keep the dictionary only.
-    if (aiCfg && (ed.lang === "en" || ed.lang === "jp")) {
+    if (aiCfg && AI_LANGS.includes(ed.lang)) {
       const todo = rows.map((r, i) => ({ i, title: r.title, desc: r._desc as string }))
         .filter((x) => rows[x.i].analyzed_by !== "ai").slice(0, AI_CAP);
       for (let i = 0; i < todo.length; i += AI_BATCH) {

@@ -19,6 +19,9 @@ import { appSource } from './app-source.mjs';
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const aiproxy = readFileSync(new URL('supabase/functions/ai-proxy/index.ts', root), 'utf8');
+/* (edge-spend-and-models) the model table moved to _shared/ai-provider.js, which ai-proxy imports —
+   the constants are read where they are now declared. */
+const models = readFileSync(new URL('supabase/functions/_shared/ai-provider.js', root), 'utf8');
 
 test('R151 #1 Companies compare shows the Countries-parity empty hint', () => {
   // i18n key present in all five languages of the single i18n object
@@ -99,8 +102,9 @@ test('R151 #8 Street View ON auto-shows coverage (restored on close)', () => {
 test('R151 #9 Atlas model = GPT-5.6 Terra (Luna only as model-not-found fallback)', () => {
   /* (#R722) the ids moved out of this check — see tests/r147 ⑨ and tests/r722 ⑦ for why. What R151
      is about is that the fallback is reached ONLY by model_not_found, and that survives any model. */
-  assert.match(aiproxy, /const OPENAI_DEFAULT_MODEL = "[^"]+";/, 'ai-proxy has a default model');
-  assert.match(aiproxy, /const FALLBACK_CHAIN = \["/, 'ai-proxy has a fallback chain');
+  assert.match(models, /const OPENAI_DEFAULT_MODEL = "[^"]+";/, 'ai-proxy has a default model');
+  assert.match(models, /const FALLBACK_CHAIN = \["/, 'ai-proxy has a fallback chain');
+  assert.match(aiproxy, /OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL[\s\S]*?from "\.\.\/_shared\/ai-provider\.js"/, 'ai-proxy reads them from the shared table');
   assert.match(aiproxy, /model_not_found\|does not have access to model/, 'fallback only on model-not-found');
 });
 

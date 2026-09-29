@@ -26,6 +26,7 @@
 //            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
 //            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 Gemini grounding, default OFF)
 //            supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        (if AI_PROVIDER=anthropic)
+//            supabase secrets set AI_PROXY_GLOBAL_PER_DAY=<n>         (optional — moves the project-wide ceiling, GLOBAL_PER_DAY below)
 //  (SUPABASE_URL, SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY are injected.)
 //
 // ----------------------------------------------------------------------------
@@ -83,7 +84,14 @@ import { createClient } from "@supabase/supabase-js";   // pinned in this functi
 /* (#R801) The bounded reader and the bounded fetch every keyless relay already uses. The request
    body and the provider's answer are read through them so a byte ceiling and a deadline hold WHILE
    the bytes arrive, not after they have all been buffered. */
-import { readCapped, fetchBounded, RelayError } from "../_shared/relay-guard.js";
+import { readCapped, RelayError } from "../_shared/relay-guard.js";
+/* (edge-spend-and-models) The model table, the provider-answer ceilings and the one door to a paid
+   provider are shared with every other function that holds a provider key — see that file's header
+   for what was found when each of them lived here and in four other places. */
+import {
+  OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, PROVIDER_TIMEOUT_MS,
+  providerFetch, ProviderFail, spendCeiling,
+} from "../_shared/ai-provider.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -131,6 +139,34 @@ const TURN_TTL_S = 900;
 const MAX_TURN_KEY = 120;   /* (#R101) free 10→30/day; (#R147) 30→10/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
+/* ══ (edge-spend-and-models) THE PROJECT-WIDE CEILING — a fence on the invoice, not on Atlas ══════
+   Everything above bounds ONE ACCOUNT: PLAN_LIMITS a day of turns, TURN_MAX_CALLS the calls one turn
+   may carry. Nothing bounded the PROJECT, and an account costs nothing to make
+   (config.toml: enable_signup, no confirmation) — so N accounts were N times the bill with no N.
+   This is the ceiling on the whole: every request this function sends to a provider takes one unit
+   from `ai-proxy:global:day` (_shared/ai-provider.js → public.relay_take) before it is sent —
+   fallback steps, retries and the developer's own calls included, because each is a request on the
+   same invoice. It FAILS CLOSED: a limiter that cannot be consulted cannot say the invoice is bounded.
+   ⚠ IT IS NOT A LIMIT ON WHAT ATLAS MAY DO (CONSTITUTION.md §5). TURN_MAX_CALLS, the plans and every
+   capability are unchanged; a reader meets this only on a day the project as a whole has spent many
+   times what it has ever spent, and is refunded the use (the provider-failure path refunds).
+   THE NUMBER (no-ad-hoc-hardcoding §4):
+     · Observation — the production ledger read 2026-09-29 (public.ai_turns, public.ai_usage): the
+       busiest recorded day is 2026-09-17 with 114 provider calls in 43 charged turns; on no recorded
+       day did more than two accounts use AI; 56 accounts exist. The developer account is exempt from
+       the ledger, so its calls are not in those numbers — the margin below is what covers them (a
+       production probe session of the #R742 kind is a few hundred calls).
+     · 3000 is ~26× the busiest recorded day, and the whole plan maximum of ~16 free accounts
+       (10 turns × TURN_MAX_CALLS 12 + the 60 glosses = 180 requests an account a day).
+     · Expires the first time a reader meets `provider_quota` with meta.ceiling = "project_day" on a
+       day that was readers — then AI_PROXY_GLOBAL_PER_DAY moves it without a deploy. It is not a
+       statement of price (the provider bills by token, and this counts requests).
+     · Canonical place: THIS constant; the environment may move it, never define it. */
+const GLOBAL_PER_DAY = 3000;
+const CEILING = spendCeiling({ fn: "ai-proxy", perDay: GLOBAL_PER_DAY, env: (k: string) => Deno.env.get(k) || "" });
+/* Read by tests/edge-spend-and-models-checks, which evaluates this module (Deno.serve stubbed). */
+export const SPEND = { ceiling: CEILING, schedule: [] };
+
 /* (#R722) OpenAI model = GPT-5.6 SOL, with Terra as the fallback, on the user's instruction.
    ⚠ WHAT "THE MODEL IS X" MEANT BEFORE THIS ROUND, MEASURED. #R150 set AI_MODEL=gpt-5.6-terra and
    this constant with it — and on 2026-09-15, asking OpenAI with this project's own key, BOTH
@@ -145,8 +181,9 @@ const DEFAULT_LIMIT = PLAN_LIMITS.free;
    account too (the developer's "Server default" IS this value; js/ai-core.js paints it by name).
    ⚠ THE SECRET STILL WINS OVER THIS CONSTANT (`AI_MODEL`, read below), so the two were set together:
    #R722 measured what happens when they disagree — the setting named a model that had not run in
-   months. Both say gpt-5.6-terra as of 2026-09-15. */
-const OPENAI_DEFAULT_MODEL = "gpt-5.6-terra";
+   months. Both say gpt-5.6-terra as of 2026-09-15.
+   (edge-spend-and-models) The constant is _shared/ai-provider.js's OPENAI_DEFAULT_MODEL now — one
+   table for every function that calls a model, imported above. */
 /* (#R722) …and what answers when it cannot, IN ORDER: sol → terra → luna. One fallback was enough
    while the only way to lose a model was to lose access to it; this project has now measured two
    models 403 at the same time (sol and terra, 2026-09-15), and a single fallback in that state is a
@@ -154,16 +191,15 @@ const OPENAI_DEFAULT_MODEL = "gpt-5.6-terra";
    already in it resumes from where it sits, so the walk terminates at the end of the array and
    needs no separate recursion guard. ⚠ ORDER IS THE POLICY: newest first, oldest-and-known-good
    last. Luna is last because it is the model this project has never lost access to. */
-const FALLBACK_CHAIN = ["gpt-5.6-sol", "gpt-5.6-luna"];   /* (#R736) terra → sol → luna: the policy above is unchanged (newest first, oldest-and-known-good last), only the head of the ladder moved */
+/* (#R736) terra → sol → luna: the policy above is unchanged (newest first, oldest-and-known-good
+   last), only the head of the ladder moved. FALLBACK_CHAIN is _shared/ai-provider.js's. */
 const FALLBACK_MODEL = FALLBACK_CHAIN[0];   /* the first step — named for the documents that state it */
 /* (#R722) ...and the DEFAULTS for the other two providers, which used to be written inline at the one
    place that read them. They are read twice now - by the call and by the model list - and a default
-   that two readers each spell for themselves is the #R515 shape. */
-const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
-  openai: OPENAI_DEFAULT_MODEL,
-  gemini: "gemini-3.5-flash",
-  anthropic: "claude-3-5-haiku-latest",
-};
+   that two readers each spell for themselves is the #R515 shape.
+   (edge-spend-and-models) …and five FUNCTIONS each spelling it for themselves was the same shape one
+   level up: four background jobs said gemini-2.0-flash while this file said gemini-3.5-flash.
+   PROVIDER_DEFAULT_MODEL is _shared/ai-provider.js's, read here and by those four. */
 const PROVIDERS = Object.keys(PROVIDER_DEFAULT_MODEL);
 /* A provider id and a model id, as the upstreams spell them. NOT an allow-list of model names: the
    names are discovered from each provider's own catalogue (listModels below), because a hand-kept
@@ -796,31 +832,29 @@ function filesBlock(files: FilePart[]): string {
   return out.join("\n");
 }
 
-// (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit (which
-// terminates it with an opaque 546 the client can't parse). Abort each provider call well before that so it fails
-// as a clean, classified 503 instead. 45s is generous for Gemini "low" yet safe for a MALFORMED retry (2×45<limit).
-const PROVIDER_TIMEOUT_MS = 55_000;
-/* (#R801) THE CEILING ON WHAT A PROVIDER MAY SEND BACK. The largest answer this function asks for is
-   MAX_TOKENS of text (a few hundred KB as JSON) plus hosted web-search citations; 16 MiB is two
-   orders of magnitude above that and one order below the isolate's memory, so a provider that
-   streams an endless body costs this function the cap, not the isolate. It expires if a task starts
-   asking for binary output (images, audio), which none does today. */
-const PROVIDER_MAX_BYTES = 16 * 1024 * 1024;
-/* (#R801) The deadline used to be cleared the moment `fetch` resolved — i.e. when the HEADERS had
-   arrived — and the body was then read by the caller with no leash at all. fetchBounded keeps the
-   signal armed until the last byte is in and caps the bytes, then hands back a Response built from
-   what it read, so `r.ok` / `r.status` / `r.json()` / `r.text()` at the call sites are unchanged. */
-async function fetchWithTimeout(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS): Promise<Response> {
+/* (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit
+   (an opaque 546); (#R801) the deadline covers the body as well as the headers, and the answer has a
+   byte ceiling. Both numbers and the request itself are _shared/ai-provider.js's (PROVIDER_TIMEOUT_MS,
+   PROVIDER_MAX_BYTES, providerFetch) — this used to be a private copy, one of three.
+   What remains HERE is only the translation into this file's own failure type, because the callers
+   below decide on ProviderError's fields (the OpenAI path retries a web call on meta.timeout, the
+   Gemini path retries a 5xx on meta.providerStatus), and the ceiling that every request takes from. */
+async function providerCall(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS): Promise<Response> {
   try {
-    return await fetchBounded(url, init, { timeoutMs: ms, maxBytes: PROVIDER_MAX_BYTES });
+    return await providerFetch(url, init, { ceiling: CEILING, timeoutMs: ms });
   } catch (e) {
-    const code = e instanceof RelayError ? e.code : "";
-    const aborted = code === "upstream_timeout";
+    const code = e instanceof ProviderFail ? e.code : "";
+    /* The project-wide ceiling said no. `provider_quota` is the code the page already explains as
+       «a quota that is separate from your IntMap free uses» — which is exactly this — and it is not
+       retryable today. meta.ceiling names which quota it was, for the log and the panel. */
+    if (code === "spend_ceiling") throw new ProviderError("provider_quota", "The project-wide daily AI ceiling was reached. Please try again later.", 503, false, { ceiling: "project_day" });
+    if (code === "limiter_unavailable") throw new ProviderError("provider_unavailable", "The usage ceiling could not be checked — please try again.", 503, true, { ceiling: "unavailable" });
+    const aborted = code === "timeout";
     /* ⚠ NOT `+ e.message`. A transport failure's message names the host it was resolving, the TLS
        state it got to and this file's own internals; the caller can act on «timed out» and «could not
        be reached», and nothing more specific is theirs. */
-    const why = aborted ? "The AI provider timed out." : code === "upstream_too_large" ? "The AI provider's answer was too large." : "Could not reach the AI provider.";
-    throw new ProviderError("provider_unavailable", why, 503, true, { timeout: aborted, tooLarge: code === "upstream_too_large" });
+    const why = aborted ? "The AI provider timed out." : code === "too_large" ? "The AI provider's answer was too large." : "Could not reach the AI provider.";
+    throw new ProviderError("provider_unavailable", why, 503, true, { timeout: aborted, tooLarge: code === "too_large" });
   }
 }
 
@@ -895,7 +929,42 @@ function classifyGemini(status: number, bodyText: string, finishReason: string, 
    was 403ing, and nothing on screen ever said so). A field that says "sol" because we asked for sol
    cannot detect the case it exists to detect. All three providers echo the model that ran; that is
    what `served` carries, and meta reports both. */
-async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string }> {
+/* ══ (edge-spend-and-models) WHAT ANTHROPIC'S HOSTED SEARCH ACTUALLY DID ═══════════════════════════
+   Both Anthropic paths attach web_search_20250305 when the caller asks for the web — and neither
+   said whether it ran. The OpenAI path has returned webAttached / webUsed / webSearches since #R114,
+   and the page reads webUsed as «a page the reader never saw was in front of the model»
+   (js/atlas-agent.js → turn.externalContentSeen, which decides whether an action needs the reader's
+   confirmation). Switching AI_PROVIDER to anthropic therefore silently turned that mark off: a turn
+   that had read the web looked like one that had not.
+   The same facts, read from Anthropic's answer (Messages API, server tools):
+     · a `server_tool_use` block named web_search is one search the model issued (OpenAI's
+       `web_search_call` item), and usage.server_tool_use.web_search_requests is the provider's own
+       count of them — the larger of the two is taken, so neither a missing block nor a missing usage
+       field can make a search disappear;
+     · a text block's `citations` of type web_search_result_location are the pages it cited
+       (OpenAI's url_citation annotations), deduplicated on the address as that path does. */
+// deno-lint-ignore no-explicit-any
+function anthropicWeb(j: any, attached: boolean): { webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] } {
+  const blocks: Array<Record<string, unknown>> = Array.isArray(j?.content) ? j.content : [];
+  const issued = blocks.filter((b) => b && b.type === "server_tool_use" && b.name === "web_search").length;
+  const reported = Number(j?.usage?.server_tool_use?.web_search_requests);
+  const webCount = Math.max(issued, Number.isFinite(reported) ? reported : 0);
+  const citations: WebCitation[] = [];
+  const seen = new Set<string>();
+  for (const b of blocks) {
+    if (!b || b.type !== "text" || !Array.isArray(b.citations)) continue;
+    for (const c of b.citations as Array<Record<string, unknown>>) {
+      if (!c || c.type !== "web_search_result_location" || typeof c.url !== "string" || !c.url) continue;
+      const k = c.url.replace(/[#?].*$/, "");
+      if (seen.has(k)) continue;
+      seen.add(k);
+      citations.push({ url: c.url, title: String(c.title || "") });
+    }
+  }
+  return { webAttached: attached, webUsed: webCount > 0, webCount, citations };
+}
+
+async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
   /* (#R540) documents → attached text → the user's prompt. The question is asked ABOUT material the
@@ -908,7 +977,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   if (system) body.system = system;
   // Anthropic has a NATIVE web-search tool; unlike Gemini it is safe to attach on demand.
   if (web) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
-  const r = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
+  const r = await providerCall("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(body),
@@ -921,7 +990,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   const text = (j.content && j.content.map((b: { text?: string }) => b.text || "").join("")) || "";
   const finishReason = String(j?.stop_reason || "");
   if (!text) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
-  return { text, finishReason, served: String(j?.model || "") };
+  return { text, finishReason, served: String(j?.model || ""), ...anthropicWeb(j, web) };
 }
 
 /* ══ (atlas-native-tools) THE TURN, IN ANTHROPIC'S NATIVE SHAPE — tool_use / tool_result ══════════════════════
@@ -931,7 +1000,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
    alternates roles and opens with the user, so consecutive same-role items are merged and a
    conversation that opens mid-way is said to. No JSON mode here (the instruction states the final
    shape, and the client reads a prose final as the answer — as it always did on this provider). */
-async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[] }> {
+async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[]; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
   const attached = filesBlock(files);
   const msgs: { role: string; content: unknown[] }[] = [];
   const add = (role: string, block: unknown) => {
@@ -960,7 +1029,7 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
   if (system) body.system = system;
   if (tools.length) body.tools = tools;
   if (turn.toolChoice === "none" && turn.tools.length) body.tool_choice = { type: "none" };
-  const r = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
+  const r = await providerCall("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(body),
@@ -975,7 +1044,7 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
   }
   const finishReason = String(j?.stop_reason || "");
   if (!text && !output.some((it) => it.type === "function_call")) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
-  return { text, finishReason, served: String(j?.model || ""), output };
+  return { text, finishReason, served: String(j?.model || ""), output, ...anthropicWeb(j, web) };
 }
 
 async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = ""): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
@@ -1049,7 +1118,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     }
     return b;
   };
-  const post = (body: Record<string, unknown>, ms: number) => fetchWithTimeout("https://api.openai.com/v1/responses", {
+  const post = (body: Record<string, unknown>, ms: number) => providerCall("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
     body: JSON.stringify(body),
@@ -1231,7 +1300,7 @@ async function callGemini(model: string, key: string, prompt: string, system: st
   if (system) body.systemInstruction = { parts: [{ text: system }] };
   if (attachSearch) body.tools = [{ google_search: {} }];
 
-  const r = await fetchWithTimeout(
+  const r = await providerCall(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
   );
@@ -1331,7 +1400,7 @@ async function callGeminiTurn(model: string, key: string, turn: TurnReq, system:
     body.tools = [{ functionDeclarations: turn.tools.map((t) => { const f = fnParameters(t); return { name: t.name, description: f.description, parametersJsonSchema: f.parameters }; }) }];
     if (turn.toolChoice === "none") body.toolConfig = { functionCallingConfig: { mode: "NONE" } };
   }
-  const r = await fetchWithTimeout(
+  const r = await providerCall(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
   );
@@ -1371,7 +1440,9 @@ async function callGeminiTurn(model: string, key: string, turn: TurnReq, system:
        "does not have access to model". So the list is shown as the list it is, and a pick the
        project cannot reach comes back as the provider's own 403 (see noFallbackForPick at the call
        site) - an error the developer can read, rather than a silent substitution.
-   A provider whose key is unset is reported unavailable rather than guessed at. */
+   A provider whose key is unset is reported unavailable rather than guessed at.
+   (edge-spend-and-models) A listing carries the key, so it goes through the same door as a call and
+   takes one unit of the project ceiling — three per catalogue, developer only. */
 async function listModels(): Promise<{ provider: string; models: string[]; available: boolean; note?: string }[]> {
   const out: { provider: string; models: string[]; available: boolean; note?: string }[] = [];
   const keep = (id: string) => MODEL_ID_OK.test(id) && !WITHDRAWN_MODELS.has(id);
@@ -1379,7 +1450,7 @@ async function listModels(): Promise<{ provider: string; models: string[]; avail
   if (!oa) out.push({ provider: "openai", models: [], available: false, note: "no key" });
   else {
     try {
-      const r = await fetch("https://api.openai.com/v1/models", { headers: { authorization: `Bearer ${oa}` } });
+      const r = await providerCall("https://api.openai.com/v1/models", { headers: { authorization: `Bearer ${oa}` } }, 15_000);
       const j = await r.json();
       const ids = (Array.isArray(j?.data) ? j.data : []).map((m: { id?: string }) => String(m?.id || "")).filter(keep);
       out.push({ provider: "openai", models: ids.sort(), available: r.ok, note: r.ok ? undefined : "list " + r.status });
@@ -1391,7 +1462,7 @@ async function listModels(): Promise<{ provider: string; models: string[]; avail
     try {
       /* (#R801) The key travels in the header the generateContent call already uses, not in the
          query string, where upstream access logs and any intermediary would keep it. */
-      const r = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } }, 15_000);
+      const r = await providerCall("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } }, 15_000);
       const j = await r.json();
       const ids = (Array.isArray(j?.models) ? j.models : [])
         .filter((m: { supportedGenerationMethods?: string[] }) => (m?.supportedGenerationMethods || []).includes("generateContent"))
@@ -1404,7 +1475,7 @@ async function listModels(): Promise<{ provider: string; models: string[]; avail
   if (!ak) out.push({ provider: "anthropic", models: [], available: false, note: "no key" });
   else {
     try {
-      const r = await fetch("https://api.anthropic.com/v1/models?limit=100", { headers: { "x-api-key": ak, "anthropic-version": "2023-06-01" } });
+      const r = await providerCall("https://api.anthropic.com/v1/models?limit=100", { headers: { "x-api-key": ak, "anthropic-version": "2023-06-01" } }, 15_000);
       const j = await r.json();
       const ids = (Array.isArray(j?.data) ? j.data : []).map((m: { id?: string }) => String(m?.id || "")).filter(keep);
       out.push({ provider: "anthropic", models: ids.sort(), available: r.ok, note: r.ok ? undefined : "list " + r.status });

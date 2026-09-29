@@ -1847,6 +1847,27 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ⚠ **選んだモデルはフォールバックしない**——黙って別のモデルが答えると、試したはずのモデルと
   画面が言うモデルが食い違う。403 をそのまま返す。
   ⚠ **無人の cron（ニュース取込み・WHO・監視）は口座を持たないので `AI_MODEL` のまま。**
+- **既定モデルの表は 1 本**（`supabase/functions/_shared/ai-provider.js` の `PROVIDER_DEFAULT_MODEL`。
+  OpenAI の行が上の定数そのもの・Gemini・Anthropic は軽量モデル）。チャットのモデルを呼ぶ 5 本
+  （`ai-proxy`・`monitor-run`・`news-ingest`・`refresh-news`・`who-don`）がここを読み、関数の中に
+  モデル名を書かない。優先順位は **関数別の secret（`MONITOR_AI_MODEL` / `NEWS_GEO_MODEL` /
+  `WHO_DON_MODEL` …）→ `AI_MODEL` → この表**。無人の job は 403/404 のとき `FALLBACK_CHAIN` の
+  最後の段（このプロジェクトが一度も失っていないモデル）へ 1 回だけ落ちる。
+  ⚠ 以前は 5 本がそれぞれ書き、`ai-proxy` 以外の 4 本は古い id のまま離れていた。
+- **有料の提供元へは扉が 1 つだけ**（`_shared/ai-provider.js` の `providerFetch`）。提供元の鍵を
+  読む 6 本（上の 5 本と `atlas-embed`）は、提供元のホストへこれ以外の経路で要求を出さない。扉は
+  ① 送る前に **その関数のプロジェクト全体の 1 日の天井** `<関数名>:global:day`
+  （`public.relay_rate_buckets`・`relay_take`）から 1 要求 1 単位を取り、**DB が答えなければ送らない**
+  （fail-closed）、② 天井（またはそれが発行した受領証）を持たない呼び出しと提供元以外のホストを拒み、
+  ③ 期限は本文の最後のバイトまで・答えにはバイト上限（`fetchBounded`）、④ 失敗は**状態と長さだけ**を
+  運び（`providerFail`）、**提供元のエラー本文を運ばない**。
+  1 日の数は各関数が定数の横に観測と失効条件を書いて持ち、`<関数名大文字>_GLOBAL_PER_DAY` で deploy なしに
+  動かせる。定期実行の 3 本（`monitor-run`・`refresh-news`・`news-ingest`）の数は **pg_cron の予定表から
+  導く**（1 日の回数 × 1 回が送りうる最大 × 2＝手で走らせる分）——予定表が migration で変わると
+  `tests/edge-spend-and-models-checks.test.mjs` が落ちる。
+  ⚠ **これは請求の柵であって Atlas の柵ではない**（`CONSTITUTION.md` §5）——ターンの上限も能力も変えない。
+  `ai-proxy` で天井に当たった読者は使用回数を払い戻され、`provider_quota`（`meta.ceiling:"project_day"`・
+  503。429 は読者自身の枠専用）を受け取る。
 - **障害耐性** — 400 は**フォールバック階段**（tool_choice 解除 → **schema → json_object** →
   JSON モード解除 → ツール解除）で降格する。
   Web 付き呼び出しは長めの期限を持ち、空応答（推論が予算を食い切った場合）は予算を増やして1回再試行する。
@@ -1859,6 +1880,11 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 - **Web 検索は本物のときだけそう言う。** `webMode:"required"` は検索を強制し、応答に含まれる検索呼び出しの
   件数から `webUsed` / `webSearches` を返す。クライアントは**実際に検索した時だけ**
   「ライブWeb検索」と表示する。
+  Anthropic 経路（1 文字列の呼び出しとターンの両方）も同じ意味の値を返す——検索の回数は
+  `server_tool_use`（名前 `web_search`）の数と `usage.server_tool_use.web_search_requests` の大きい方、
+  引用は本文の `web_search_result_location`。⚠ 以前は検索を付けても返さなかったので、
+  `AI_PROVIDER` を切り替えると「外部の内容を読んだ」印（`js/atlas-agent.js` の `externalContentSeen`）が
+  立たなくなっていた。
 - **ニュース地点解析AI** — `refresh-news` が同じ鍵・同じ `AI_PROVIDER` 規約でサーバー側実行する
   （**利用者の枠は消費しない**＝運用者の鍵）。
 
@@ -1899,8 +1925,11 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   全能力との余弦類似度を返し、`op:"seed"` は能力の説明文を埋めて `atlas_capability_seed` で 1 文で保存する
   （鍵のカタログ SHA-256 は受け取った本文から計算し直す）。未知のカタログへの検索は**問い合わせを埋める前に**
   `catalog_unknown` を返す。問い合わせは保存しない。支出は `_shared/rate-limit.js` の共有バケツ
-  （利用者ごと 1 分・利用者ごとの seed 1 時間・プロジェクト全体 1 日。全部 fail-closed）。
-  秘密は `OPENAI_API_KEY`（ai-proxy と同じ）・任意で `ATLAS_EMBED_MODEL` / `ATLAS_EMBED_GLOBAL_PER_DAY`。
+  （利用者ごと 1 分・利用者ごとの seed 1 時間・**利用者ごとの 1 日の取り分**・プロジェクト全体 1 日。
+  全部 fail-closed）。取り分は全体の 1 日 ÷ `READERS_PER_ADDRESS`——それが無い間は 1 つの口座が
+  seed だけで全体の 1 日を約 13 時間で使い切れた（全員の能力検索が綴りだけに落ちる）。
+  秘密は `OPENAI_API_KEY`（ai-proxy と同じ）・任意で `ATLAS_EMBED_MODEL` / `ATLAS_EMBED_GLOBAL_PER_DAY` /
+  `ATLAS_EMBED_PER_USER_PER_DAY`。
   ⚠ 403/404 は `model_unavailable` と述べる——この鍵が埋め込みモデルに届かなかった実測が `news-ingest` にある。
 - **`refresh-news`** … ニュース取得＋AI地点解析＋書き込み（§4.1）。`--no-verify-jwt` で公開だが
   **fail-closed**：`REFRESH_SECRET` 未設定なら全リクエストを拒否する。秘密は `x-refresh-secret`
@@ -2148,7 +2177,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 `fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
 `ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、**残り14本は無認証**。
 `ai-proxy`・`monitor-run`・`client-errors` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
-POST をヘッダではなく**本文の最後のバイトまで**同じ期限と上限で読む）で、URL allowlist の側ではない。
+POST をヘッダではなく**本文の最後のバイトまで**同じ期限と上限で読む——提供者への要求では `_shared/ai-provider.js` の扉の中で使う）で、URL allowlist の側ではない。
 ⚠ **リダイレクトは手で辿る**（`followRedirects`）。`redirect:"follow"` は最初の 1 ホップにしか allowlist を訊いていなかったので、
 各ホップを同じ https オリジンか、呼び出し側が渡した `allowRedirect(next, from)` で検査し、上限は 3 ホップ（`MAX_REDIRECTS`）。
 共有しているのは、URL allowlist（相手先 URL を呼び出し側が名指す中継だけ）、**GET 限定**、**期限**（`AbortSignal.timeout`）、
@@ -2161,6 +2190,9 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
 - 自動注入: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - AI: `AI_PROVIDER`（anthropic|openai|gemini）, `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` /
   `GEMINI_API_KEY`, `AI_MODEL`（任意）
+- プロジェクト全体の 1 日の天井（任意・どれも正の整数。既定は各関数の定数）: `AI_PROXY_GLOBAL_PER_DAY`,
+  `MONITOR_RUN_GLOBAL_PER_DAY`, `NEWS_INGEST_GLOBAL_PER_DAY`, `REFRESH_NEWS_GLOBAL_PER_DAY`,
+  `WHO_DON_GLOBAL_PER_DAY`, `ATLAS_EMBED_GLOBAL_PER_DAY`（§5「有料の提供元へは扉が 1 つだけ」）
 - refresh-news: `REFRESH_SECRET`（**必須**。未設定なら関数は全リクエストを拒否する）,
   `NEWS_AI=off`（任意・AI を止めて辞書だけにする kill-switch）
 - news-ingest: `NEWS_INGEST_SECRET`（**必須**）, `NEWS_GEO_AI=off`（任意・AI 地点解析の kill-switch）,

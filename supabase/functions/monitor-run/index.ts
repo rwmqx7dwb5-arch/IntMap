@@ -27,8 +27,10 @@
 //  Deploy:   supabase functions deploy monitor-run --no-verify-jwt --project-ref vpekfwdpurzejrrmacac
 //  Secrets:  supabase secrets set MONITOR_SECRET=<random>          (REQUIRED — fail-closed)
 //            # AI reuses the SAME server-held key/provider as ai-proxy:
-//            supabase secrets set AI_PROVIDER=openai   AI_MODEL=gpt-5.6-luna   OPENAI_API_KEY=sk-...
+//            supabase secrets set AI_PROVIDER=openai   OPENAI_API_KEY=sk-...
+//            (the model: MONITOR_AI_MODEL, else AI_MODEL, else _shared/ai-provider.js PROVIDER_DEFAULT_MODEL)
 //            supabase secrets set MONITOR_AI=off        (optional kill-switch → mechanical only)
+//            supabase secrets set MONITOR_RUN_GLOBAL_PER_DAY=<n>   (optional — moves the project-wide ceiling below)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 // ============================================================================
 
@@ -45,7 +47,12 @@ import { personaPrompt } from "../_shared/atlas-persona.js";
 /* (#R801) The bounded reader/fetch the relays use: the request body is read under a ceiling and
    only AFTER the caller is known, and the provider's answer is read under the same deadline as its
    headers (the timer here used to be cleared when the headers arrived). */
-import { readCapped, fetchBounded, RelayError } from "../_shared/relay-guard.js";
+import { readCapped } from "../_shared/relay-guard.js";
+/* (edge-spend-and-models) The model table, the one door to a paid provider, the project-wide ceiling
+   and the failure that carries a status and a length instead of the provider's body. */
+import {
+  PROVIDER_DEFAULT_MODEL, providerFetch, providerFail, bodyLength, spendCeiling, scheduleCeiling,
+} from "../_shared/ai-provider.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -74,6 +81,28 @@ const KEEP_RUNS_PER_MONITOR = RETAIN_RUNS;
 const RETAIN_SEEN_DAYS = 45;
 const MAX_SEEN_WINDOW_DAYS = 30;  // the largest window the UI/DB actually supports
 
+/* (edge-spend-and-models) THE PROJECT-WIDE CEILING on provider requests from this function — a fence
+   on the invoice, not on what a report may say (_shared/ai-provider.js says why, and how it fails).
+   THE NUMBER is this function's own schedule, not a guess:
+     · CRON_TICKS_PER_DAY = 144 — pg_cron job `intmap-monitor-run`, every 10 minutes, in migration
+       20260925090000_cron_jobs_as_code.sql. tests/edge-spend-and-models-checks reads that migration
+       and fails if the two disagree, which is this number's expiry.
+     · REQUESTS_PER_REPORT = 2 — callAI sends one request, and on a 400 one more without JSON mode.
+     · each tick claims at most CLAIM_LIMIT monitors.
+   ⇒ the schedule alone can ask 144 × 5 × 2 = 1,440 a day; scheduleCeiling doubles that for the
+   readers' «Run now» (SCHEDULE_HEADROOM, whose estimate and expiry are written there).
+   Observation 2026-09-29: production has 0 area monitors, so no day has come near it. */
+const CRON_TICKS_PER_DAY = 144;
+const REQUESTS_PER_REPORT = 2;
+const CEILING = spendCeiling({
+  fn: "monitor-run",
+  perDay: scheduleCeiling(CRON_TICKS_PER_DAY, CLAIM_LIMIT * REQUESTS_PER_REPORT),
+  env: (k: string) => Deno.env.get(k) || "",
+});
+/* Read by tests/edge-spend-and-models-checks, which evaluates this module (Deno.serve stubbed) and
+   holds `schedule` to the cron migration. */
+export const SPEND = { ceiling: CEILING, schedule: [{ job: "intmap-monitor-run", runsPerDay: CRON_TICKS_PER_DAY }] };
+
 // (#R138-style) constant-time compare so MONITOR_SECRET can't be recovered byte-by-byte.
 function timingSafeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
@@ -99,20 +128,21 @@ function aiProviderConfig(): { provider: string; key: string; model: string } | 
     else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
   }
   const model = Deno.env.get("MONITOR_AI_MODEL") || Deno.env.get("AI_MODEL") || "";
-  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: model || "gpt-5.6-luna" }; }   /* (#R148) default Luna (Terra 403 / 4o-mini no-access on this project) */
-  else if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: model || "claude-3-5-haiku-latest" }; }
-  else if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: model || "gemini-2.0-flash" }; }
+  /* (edge-spend-and-models) the default is the shared table's. It used to be spelled here — Luna
+     (#R148, when Terra answered 403), claude-3-5-haiku-latest and gemini-2.0-flash — and had drifted
+     from ai-proxy's; Terra has been reachable since 2026-09-15 and AI_MODEL already named it. */
+  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: model || PROVIDER_DEFAULT_MODEL.openai }; }
+  else if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: model || PROVIDER_DEFAULT_MODEL.anthropic }; }
+  else if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: model || PROVIDER_DEFAULT_MODEL.gemini }; }
   return null;
 }
 
-/* (#R801) One deadline over headers AND body, one byte ceiling. The ceiling is the same
-   PROVIDER_MAX_BYTES as ai-proxy's (a report is a few KB of JSON; 16 MiB is two orders above any
-   answer and one below the isolate) — held equal by tests/r801-security-audit-checks.test.mjs. */
-const PROVIDER_MAX_BYTES = 16 * 1024 * 1024;
-async function fetchWithTimeout(url: string, init: RequestInit, ms = 55_000): Promise<Response> {
-  try { return await fetchBounded(url, init, { timeoutMs: ms, maxBytes: PROVIDER_MAX_BYTES }); }
-  catch (e) { throw new Error("provider " + (e instanceof RelayError ? e.code : "unreachable")); }
-}
+/* (#R801) One deadline over headers AND body, one byte ceiling — (edge-spend-and-models) now the
+   shared door's (_shared/ai-provider.js providerFetch), which also takes a unit of CEILING before it
+   sends anything. This used to be a private copy of ai-proxy's, held equal to it by a test. A refusal
+   or a transport failure throws ProviderFail, whose message is a code ("provider spend_ceiling",
+   "provider timeout") — that is what reaches error_detail, and it names no host and no body. */
+const toProvider = (url: string, init: RequestInit) => providerFetch(url, init, { ceiling: CEILING });
 /* (#R801) A caller-supplied body has one field and no business being larger than a few hundred
    bytes; 64 KiB leaves room for any client that wraps it and refuses the rest before parsing. */
 const MAX_BODY_BYTES = 64 * 1024;
@@ -147,12 +177,14 @@ async function callAI(cfg: { provider: string; key: string; model: string }, use
       ...(jsonMode ? { text: { format: { type: "json_object" } } } : {}),
       store: false,
     });
-    const post = (b: Record<string, unknown>) => fetchWithTimeout("https://api.openai.com/v1/responses", {
+    const post = (b: Record<string, unknown>) => toProvider("https://api.openai.com/v1/responses", {
       method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.key }, body: JSON.stringify(b),
     });
     let r = await post(build(true));
     if (!r.ok && r.status === 400) r = await post(build(false));   // (#R141) degrade: drop JSON mode on a 400
-    if (!r.ok) throw new Error("openai " + r.status + " " + (await r.text().catch(() => "")).slice(0, 200));
+    /* ⚠ (edge-spend-and-models) NOT the body. It went to monitor_runs.error_detail, which the monitor's
+       owner reads; a provider error body can echo the request or name the account. A status and a length. */
+    if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json();
     if (typeof j?.output_text === "string" && j.output_text) return j.output_text;
     const parts = (Array.isArray(j?.output) ? j.output : [])
@@ -163,20 +195,20 @@ async function callAI(cfg: { provider: string; key: string; model: string }, use
     return parts.join("");
   }
   if (cfg.provider === "gemini") {
-    const r = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {
+    const r = await toProvider("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {
       method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: userMsg }] }], systemInstruction: { parts: [{ text: AI_SYS }] }, generationConfig: { maxOutputTokens: 3200, responseMimeType: "application/json", thinkingConfig: { thinkingLevel: "low" } } }),
     });
-    if (!r.ok) throw new Error("gemini " + r.status + " " + (await r.text().catch(() => "")).slice(0, 200));
+    if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json();
     return (j?.candidates?.[0]?.content?.parts || []).filter((p: { thought?: boolean }) => p?.thought !== true).map((p: { text?: string }) => p.text || "").join("");
   }
   // anthropic
-  const r = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
+  const r = await toProvider("https://api.anthropic.com/v1/messages", {
     method: "POST", headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({ model: cfg.model, max_tokens: 3200, system: AI_SYS, messages: [{ role: "user", content: userMsg }] }),
   });
-  if (!r.ok) throw new Error("anthropic " + r.status + " " + (await r.text().catch(() => "")).slice(0, 200));
+  if (!r.ok) throw providerFail(r.status, await bodyLength(r));
   const j = await r.json();
   return (j?.content || []).map((b: { text?: string }) => b.text || "").join("");
 }

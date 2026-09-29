@@ -133,11 +133,14 @@ test('R801 ④ request bodies: ai-proxy reads through the capped reader, monitor
   assert.ok(getUser > 0 && readBody > getUser, 'monitor-run must verify the caller before it reads the body');
   assert.doesNotMatch(mon, /message: claimErr\.message/, 'the database error text must not reach the caller');
   assert.doesNotMatch(mon, /error_detail: String\(\(e as Error\)\?\.message/, 'an exception message must not be stored where the owner reads it');
-  /* the provider ceiling is ONE number in two files */
-  const a = proxy.match(/const PROVIDER_MAX_BYTES = ([^;]+);/);
-  const b = mon.match(/const PROVIDER_MAX_BYTES = ([^;]+);/);
-  assert.ok(a && b, 'PROVIDER_MAX_BYTES is missing from one of the two');
-  assert.equal(a[1].trim(), b[1].trim(), 'ai-proxy and monitor-run must cap the provider answer at the same size');
+  /* the provider ceiling is ONE number — (edge-spend-and-models) now literally one: the shared door's.
+     Neither function declares its own, and both reach the provider through _shared/ai-provider.js
+     (tests/edge-spend-and-models-checks ② holds every keyed function to the door). */
+  for (const [name, src] of [['ai-proxy', proxy], ['monitor-run', mon]]) {
+    assert.doesNotMatch(src, /const PROVIDER_MAX_BYTES =/, name + ' declares a provider ceiling of its own again');
+    assert.match(src, /from "\.\.\/_shared\/ai-provider\.js"/, name + ' does not use the shared door');
+  }
+  assert.match(codeOnly(read('supabase/functions/_shared/ai-provider.js')), /export const PROVIDER_MAX_BYTES = 16 \* 1024 \* 1024;/);
 });
 
 test('R801 ⑤ no Edge Function carries the Gemini key in a query string', () => {
