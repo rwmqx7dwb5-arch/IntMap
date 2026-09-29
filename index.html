@@ -47,7 +47,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
 window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which build this page is. ⚠ NOT TYPED BY HAND ANY MORE: the build writes it (scripts/build-stamp.mjs, `<commit time>Z-<sha>`), the same value as INTMAP_BUILD below — both used to be bumped by hand every round and were forgotten (R171 through #R172/#R173; #R756) */
 </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" id="im-viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>/* Page zoom is the reader's (WCAG 1.4.4); both map canvases are touch-action:none. iOS/iPadOS WebKit alone gets maximum-scale: there it cannot forbid a pinch and only caps the focus zoom of fields under 16 px (Architecture.md §9.0). */
+  (function(){ try{ var n=navigator, ua=n.userAgent||''; if(!(/iPhone|iPod|iPad/.test(ua) || (/Macintosh/.test(ua) && (n.maxTouchPoints||0) > 1))) return;
+    var m=document.getElementById('im-viewport'); if(m) m.setAttribute('content', m.getAttribute('content')+', maximum-scale=1.0'); }catch(_){} })();</script>
   <!-- (#R16) Never let a stale copy of this document persist (the "先祖返り" after a crash). -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">

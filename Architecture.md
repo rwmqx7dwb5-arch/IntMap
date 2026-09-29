@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（928行・92 KB）＋ `css/`（3本）＋ `js/`（327本・14.9 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（931行・92 KB）＋ `css/`（3本）＋ `js/`（327本・14.9 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -4418,6 +4418,22 @@ DOM のクロージャの中にある数は検査が届かない（`scatterCases
   何も返さない）。
 
 ## 9. モバイル対応の構造
+
+### 9.0 ページの拡大は読者のもの（viewport）
+
+`index.html` の viewport は `width=device-width, initial-scale=1.0, viewport-fit=cover` で、
+**`user-scalable=no` も `maximum-scale` も持たない**——読者はパネルや文字をピンチで拡大できる（WCAG 1.4.4）。
+
+- **地図のピンチは地図のもの。** MapLibre のキャンバス（`.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan`）と
+  Cesium のキャンバス（`css/intmap.css` の `.cesium-widget canvas`）が `touch-action:none` を宣言するので、
+  地図の上で始まったピンチはページではなく地図を拡大する。パネルの上のピンチがページを拡大する。
+- ⚠ **iOS/iPadOS の WebKit だけは `maximum-scale=1.0` を足す**（meta 直後の inline script）。その
+  エンジンは 2 つの鍵を読者のピンチには効かせず（iOS 10 以降）、`maximum-scale` を**文字が 16px 未満の
+  入力欄にフォーカスしたときの自動拡大の上限**にだけ使う。携帯の起動直後で入力欄 60 個のうち 39 個が
+  10.5〜14px なので、上限が無いと検索欄や日付欄をタップするたびにページが拡大される。
+  iPadOS 13 以降の iPad は UA が "Macintosh" なので、`maxTouchPoints` で Mac と分ける。
+- 検査は `tests/pinch-zoom-allowed-checks.test.mjs`（inline script をエンジンごとの UA で実行して結果の
+  viewport を確かめる）。
 
 
 ### 8.6 レイヤー欄の Tools 帯 (`#layer-tools`) は読者のパネルへ運ばれる
