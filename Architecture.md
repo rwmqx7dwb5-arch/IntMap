@@ -5656,11 +5656,23 @@ supabase db diff --schema public             # driftゼロ確認
   session replay も作られない。`gtag()` / `clarity()` の queue shim は定義されたままなので、
   呼ぶ側があっても落ちない（黙って配列に溜まる）。
   ⚠ **止まっている理由はタグの不具合ではなく、実装と文書の対応が無かったこと。** `js/legal-text.js` の
-  「4. 第三者 / Third parties」は 9 言語で数十社を挙げているのに、**実際に Cookie を置き DOM 再生を
+  「4. 第三者 / Third parties」は英語と日本語で数十社を挙げているのに、**実際に Cookie を置き DOM 再生を
   録っている 2 社だけを名指していない**。だから戻しかたも 1 か所ではなく 2 つを束ねてある——
   `tests/r502-checks.test.mjs` が**フラグと本文を結んでおり**、`js/legal-text.js` に
   `Google Analytics` と `Clarity` を書かないまま `true` に戻すとゲートが赤くなる。
   auth 復帰 URL に対する防御は 1 行も消していない（`docs/SECURITY-ARCHITECTURE.md` §7）。
+- **ブラウザが通信しうるホストは台帳にあり、プライバシー §4 と照合される。**
+  `scripts/outbound-hosts.mjs` が `js/`・`src/`・配信する `*.html`・`sw.js`・`css/` の文字列と
+  テンプレートのリテラルからホストを発見し（コメントは数えない・`+` で組み立てた URL も 1 本）、
+  `scripts/outbound-hosts.json` がホストごとに**何を取りに行き、何を送るか**と、それを述べる
+  `js/legal-text.js` §4 の語句を **en と jp の両方**で持つ。`npm run check:datagov`（規則
+  `outbound-disclosed`）が、台帳に無いホスト・§4 に無い語句・コードがもう要求しない行・
+  スイッチが `true` になった眠っている送信先（上の GA / Clarity）を落とす。
+  利用者のデータを運ぶ送信先は 2 つを特に正確に述べる: 記事リーダーの 1 段目
+  **Jina AI Reader（`r.jina.ai`）には記事の URL**、パスワードの漏えい確認
+  **Pwned Passwords（`api.pwnedpasswords.com`）には SHA-1 の先頭 5 文字だけ**（照合はブラウザ内）。
+  ⚠ ホスト全体が実行時の式で決まる URL（OSRM の `'https://'+prof[0]` 等）は発見できず、
+  門が件数と場所を note として印字する。正本 [`docs/DATA-GOVERNANCE.md`](docs/DATA-GOVERNANCE.md) §4.3。
 - ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN ホストが入っている**
   （`unpkg.com` / `maps.googleapis.com` / `www.googletagmanager.com` / `www.google-analytics.com` /
   `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。

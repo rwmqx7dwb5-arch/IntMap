@@ -1,0 +1,1696 @@
+{
+  "note": "Every host the browser code can request (discovered by scripts/outbound-hosts.mjs from string and template literals — never from comments), with what it is asked for, what it is SENT, and the words of Privacy §4 (js/legal-text.js, en AND jp) that say so. A host that is only ever a link carries `link` with the reason instead. `npm run check:datagov` (rule outbound-disclosed) fails on a requested host missing here, on disclosure words absent from either language, and on a row whose host the code no longer requests. This is a statement of fact about the code, not an exemption: adding a row without the policy saying it is impossible.",
+  "sendsCodes": "nothing | coordinates | area | query-text | url | identifier | credential-prefix | content | page-visit (scripts/outbound-hosts.mjs SENDS)",
+  "hosts": [
+    {
+      "host": "*.basemaps.cartocdn.com",
+      "what": "CARTO basemap raster tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn (and the CARTO API key IntMap uses)"
+      },
+      "disclosure": {
+        "en": "CARTO",
+        "jp": "CARTO"
+      }
+    },
+    {
+      "host": "*.wikipedia.org",
+      "what": "Wikipedia REST summaries and search in the reader’s language",
+      "sends": {
+        "code": "query-text",
+        "detail": "the place or topic name"
+      },
+      "disclosure": {
+        "en": "Wikipedia/Wikimedia (article checks and summaries",
+        "jp": "Wikipedia/Wikimedia（記事の有無チェック"
+      }
+    },
+    {
+      "host": "a.basemaps.cartocdn.com",
+      "what": "CARTO basemap tiles (preconnect hint in index.html)",
+      "sends": {
+        "code": "area",
+        "detail": "a connection is opened early; the tiles then carry z/x/y"
+      },
+      "disclosure": {
+        "en": "CARTO",
+        "jp": "CARTO"
+      }
+    },
+    {
+      "host": "a.tiles.openrailwaymap.org",
+      "what": "OpenRailwayMap tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "OpenRailwayMap",
+        "jp": "OpenRailwayMap"
+      }
+    },
+    {
+      "host": "abci.ai",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "air-quality-api.open-meteo.com",
+      "what": "Open-Meteo air quality at a point",
+      "sends": {
+        "code": "coordinates",
+        "detail": "latitude/longitude of the point asked about"
+      },
+      "disclosure": {
+        "en": "elevation/weather APIs (Open-Meteo",
+        "jp": "標高・気象API（Open-Meteo"
+      }
+    },
+    {
+      "host": "akipress.com",
+      "what": "an article URL inside the central-Asia evaluation fixture (IntMapAtlasQA.centralAsiaFixture)",
+      "link": "fixture data: rendered as a source link card by the answer renderer, never fetched by the page"
+    },
+    {
+      "host": "api-v2.oec.world",
+      "what": "OEC trade data (Tesseract)",
+      "sends": {
+        "code": "identifier",
+        "detail": "cube, year and country codes"
+      },
+      "disclosure": {
+        "en": "Observatory of Economic Complexity",
+        "jp": "Observatory of Economic Complexity"
+      }
+    },
+    {
+      "host": "api.airplanes.live",
+      "what": "airplanes.live point query — only on the original aircraft path (?aviation=v1 / intmap_aviation_v2=0)",
+      "sends": {
+        "code": "coordinates",
+        "detail": "centres of the circles covering the map area in view"
+      },
+      "disclosure": {
+        "en": "airplanes.live",
+        "jp": "airplanes.live"
+      }
+    },
+    {
+      "host": "api.alternative.me",
+      "what": "alternative.me Fear & Greed index",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "alternative.me",
+        "jp": "alternative.me"
+      }
+    },
+    {
+      "host": "api.coingecko.com",
+      "what": "CoinGecko crypto prices",
+      "sends": {
+        "code": "nothing",
+        "detail": "coin ids"
+      },
+      "disclosure": {
+        "en": "CoinGecko",
+        "jp": "CoinGecko"
+      }
+    },
+    {
+      "host": "api.frankfurter.dev",
+      "what": "Frankfurter (ECB) exchange rates for the industry web",
+      "sends": {
+        "code": "nothing",
+        "detail": "the base currency"
+      },
+      "disclosure": {
+        "en": "api.frankfurter.dev",
+        "jp": "api.frankfurter.dev"
+      }
+    },
+    {
+      "host": "api.fxratesapi.com",
+      "what": "fxratesapi exchange rates (fallback)",
+      "sends": {
+        "code": "nothing",
+        "detail": "the base currency"
+      },
+      "disclosure": {
+        "en": "fxratesapi",
+        "jp": "fxratesapi"
+      }
+    },
+    {
+      "host": "api.gdeltproject.org",
+      "what": "GDELT DOC news search",
+      "sends": {
+        "code": "query-text",
+        "detail": "place names or keywords from the question"
+      },
+      "disclosure": {
+        "en": "GDELT (the worldwide news search",
+        "jp": "GDELT（Atlasのブリーフ"
+      }
+    },
+    {
+      "host": "api.gold-api.com",
+      "what": "gold-api metal prices",
+      "sends": {
+        "code": "nothing",
+        "detail": "the metal symbol"
+      },
+      "disclosure": {
+        "en": "gold-api",
+        "jp": "gold-api"
+      }
+    },
+    {
+      "host": "api.ioda.inetintel.cc.gatech.edu",
+      "what": "IODA internet-outage signals",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "api.ioda.inetintel.cc.gatech.edu",
+        "jp": "api.ioda.inetintel.cc.gatech.edu"
+      }
+    },
+    {
+      "host": "api.mapbox.com",
+      "what": "Mapbox satellite tiles — only with the reader's own key",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y and the reader's own access token"
+      },
+      "disclosure": {
+        "en": "Mapbox or Sentinel Hub",
+        "jp": "Mapbox または Sentinel Hub"
+      }
+    },
+    {
+      "host": "api.met.no",
+      "what": "MET Norway locationforecast (fallback) and MetAlerts warnings",
+      "sends": {
+        "code": "coordinates",
+        "detail": "latitude/longitude of the point (forecast); the warnings request carries nothing"
+      },
+      "disclosure": {
+        "en": "MET Norway",
+        "jp": "MET Norway"
+      }
+    },
+    {
+      "host": "api.open-meteo.com",
+      "what": "Open-Meteo forecast and elevation at a point",
+      "sends": {
+        "code": "coordinates",
+        "detail": "latitude/longitude of the point asked about"
+      },
+      "disclosure": {
+        "en": "elevation/weather APIs (Open-Meteo",
+        "jp": "標高・気象API（Open-Meteo"
+      }
+    },
+    {
+      "host": "api.opentopodata.org",
+      "what": "Open Topo Data GEBCO depth at a clicked point",
+      "sends": {
+        "code": "coordinates",
+        "detail": "the clicked point"
+      },
+      "disclosure": {
+        "en": "api.opentopodata.org",
+        "jp": "api.opentopodata.org"
+      }
+    },
+    {
+      "host": "api.planespotters.net",
+      "what": "Planespotters.net aircraft photo lookup",
+      "sends": {
+        "code": "identifier",
+        "detail": "the aircraft's ICAO 24-bit address"
+      },
+      "disclosure": {
+        "en": "Planespotters.net",
+        "jp": "Planespotters.net"
+      }
+    },
+    {
+      "host": "api.pwnedpasswords.com",
+      "what": "Have I Been Pwned — Pwned Passwords range API (breach check of a new password)",
+      "sends": {
+        "code": "credential-prefix",
+        "detail": "the first 5 hex characters of the password's SHA-1 (k-anonymity); the match against the returned suffixes is made in the browser"
+      },
+      "disclosure": {
+        "en": "sends only the first five characters of that hash",
+        "jp": "そのハッシュの先頭5文字だけ"
+      }
+    },
+    {
+      "host": "api.rainviewer.com",
+      "what": "RainViewer radar frame index",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "RainViewer",
+        "jp": "RainViewer"
+      }
+    },
+    {
+      "host": "api.tfl.gov.uk",
+      "what": "Transport for London JamCam list",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "Transport for London (TfL JamCams)",
+        "jp": "Transport for London（TfL JamCams）"
+      }
+    },
+    {
+      "host": "api.transitous.org",
+      "what": "Transitous / MOTIS public-transit itineraries",
+      "sends": {
+        "code": "coordinates",
+        "detail": "origin and destination coordinates and time"
+      },
+      "disclosure": {
+        "en": "api.transitous.org",
+        "jp": "api.transitous.org"
+      }
+    },
+    {
+      "host": "api.weather.bom.gov.au",
+      "what": "Australian Bureau of Meteorology warnings",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "the Australian Bureau of Meteorology",
+        "jp": "オーストラリア気象局"
+      }
+    },
+    {
+      "host": "api.weather.gc.ca",
+      "what": "Environment and Climate Change Canada alerts",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "Environment and Climate Change Canada",
+        "jp": "カナダ環境・気候変動省"
+      }
+    },
+    {
+      "host": "api.weather.gov",
+      "what": "US NWS active alerts",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "the US National Weather Service",
+        "jp": "米国立気象局"
+      }
+    },
+    {
+      "host": "api.wheretheiss.at",
+      "what": "ISS position widget",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "wheretheiss.at",
+        "jp": "wheretheiss.at"
+      }
+    },
+    {
+      "host": "api.wikimedia.org",
+      "what": "Wikimedia feed (on this day / today's featured article) for the sidebar widget",
+      "sends": {
+        "code": "nothing",
+        "detail": "the reader's language and today's date"
+      },
+      "disclosure": {
+        "en": "Wikimedia's on-this-day and featured-article feeds",
+        "jp": "Wikimedia の「今日は何の日」と「今日の記事」のフィード"
+      }
+    },
+    {
+      "host": "api.worldbank.org",
+      "what": "World Bank indicators",
+      "sends": {
+        "code": "identifier",
+        "detail": "country, indicator and year codes"
+      },
+      "disclosure": {
+        "en": "statistics APIs (World Bank, IMF DataMapper",
+        "jp": "統計データAPI（世界銀行・IMF DataMapper"
+      }
+    },
+    {
+      "host": "api.worldpop.org",
+      "what": "WorldPop zonal population statistics",
+      "sends": {
+        "code": "area",
+        "detail": "the polygon of the drawn area"
+      },
+      "disclosure": {
+        "en": "api.worldpop.org",
+        "jp": "api.worldpop.org"
+      }
+    },
+    {
+      "host": "apiprevmet3.inmet.gov.br",
+      "what": "Brazil INMET active warnings",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "Brazil's INMET",
+        "jp": "ブラジル INMET"
+      }
+    },
+    {
+      "host": "archive-api.open-meteo.com",
+      "what": "ERA5 reanalysis weather for a past date (radiation dispersion)",
+      "sends": {
+        "code": "coordinates",
+        "detail": "grid of points around the release site and the date range"
+      },
+      "disclosure": {
+        "en": "archive-api.open-meteo.com",
+        "jp": "archive-api.open-meteo.com"
+      }
+    },
+    {
+      "host": "atlas.ripe.net",
+      "what": "RIPE Atlas probe list",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "atlas.ripe.net",
+        "jp": "atlas.ripe.net"
+      }
+    },
+    {
+      "host": "aws.amazon.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "b.basemaps.cartocdn.com",
+      "what": "CARTO basemap tiles (preconnect hint in index.html)",
+      "sends": {
+        "code": "area",
+        "detail": "a connection is opened early; the tiles then carry z/x/y"
+      },
+      "disclosure": {
+        "en": "CARTO",
+        "jp": "CARTO"
+      }
+    },
+    {
+      "host": "b.tiles.openrailwaymap.org",
+      "what": "OpenRailwayMap tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "OpenRailwayMap",
+        "jp": "OpenRailwayMap"
+      }
+    },
+    {
+      "host": "c.tiles.openrailwaymap.org",
+      "what": "OpenRailwayMap tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "OpenRailwayMap",
+        "jp": "OpenRailwayMap"
+      }
+    },
+    {
+      "host": "carto.com",
+      "what": "CARTO attribution link",
+      "link": "passed to carto-basemap.js's a(href, text), which builds an <a href> in the map attribution"
+    },
+    {
+      "host": "cdn.jsdelivr.net",
+      "what": "jsDelivr CDN: open datasets from GitHub (Natural Earth, time zones, OpenTrafficCamMap, Japanese municipalities, Taiwan towns) and the Open-Meteo weather-map layer fallback",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "the jsDelivr CDN",
+        "jp": "jsDelivr CDN"
+      }
+    },
+    {
+      "host": "celestrak.org",
+      "what": "CelesTrak orbital elements",
+      "sends": {
+        "code": "identifier",
+        "detail": "the catalogue group name"
+      },
+      "disclosure": {
+        "en": "celestrak.org",
+        "jp": "celestrak.org"
+      }
+    },
+    {
+      "host": "cloud.google.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "cwwp2.dot.ca.gov",
+      "what": "Caltrans CCTV status lists",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "Caltrans",
+        "jp": "Caltrans"
+      }
+    },
+    {
+      "host": "cyrusone.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "data.weather.gov.hk",
+      "what": "Hong Kong Observatory warning summary",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "the Hong Kong Observatory",
+        "jp": "香港天文台"
+      }
+    },
+    {
+      "host": "datacenters.atmeta.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "datacenters.microsoft.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "date.nager.at",
+      "what": "Nager.Date public holidays widget",
+      "sends": {
+        "code": "identifier",
+        "detail": "the country code chosen in the widget"
+      },
+      "disclosure": {
+        "en": "Nager.Date",
+        "jp": "Nager.Date"
+      }
+    },
+    {
+      "host": "davidmegginson.github.io",
+      "what": "OurAirports CSV (airports layer)",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "OurAirports",
+        "jp": "OurAirports"
+      }
+    },
+    {
+      "host": "deepstatemap.live",
+      "what": "DeepStateMap Ukraine frontline",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "DeepStateMap",
+        "jp": "DeepStateMap"
+      }
+    },
+    {
+      "host": "donate.stripe.com",
+      "what": "Stripe donation pages",
+      "link": "the Donate button opens it when the reader clicks it (a navigation); the page never requests it"
+    },
+    {
+      "host": "earthquake.usgs.gov",
+      "what": "USGS earthquake feeds (and ShakeMap)",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "USGS (earthquake feeds)",
+        "jp": "USGS（地震データの取得）"
+      }
+    },
+    {
+      "host": "elevation-tiles-prod.s3.amazonaws.com",
+      "what": "AWS Terrain Tiles (Mapzen terrarium DEM)",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the analysed area"
+      },
+      "disclosure": {
+        "en": "terrarium",
+        "jp": "terrarium"
+      }
+    },
+    {
+      "host": "elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com",
+      "what": "AWS Terrain Tiles (Mapzen terrarium DEM), dual-stack endpoint",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the analysed area"
+      },
+      "disclosure": {
+        "en": "terrarium",
+        "jp": "terrarium"
+      }
+    },
+    {
+      "host": "elevation-tiles-prod.s3.us-east-1.amazonaws.com",
+      "what": "AWS Terrain Tiles (Mapzen terrarium DEM), regional endpoint",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the analysed area"
+      },
+      "disclosure": {
+        "en": "terrarium",
+        "jp": "terrarium"
+      }
+    },
+    {
+      "host": "en.wikipedia.org",
+      "what": "English Wikipedia summaries and language links",
+      "sends": {
+        "code": "query-text",
+        "detail": "the place or topic name"
+      },
+      "disclosure": {
+        "en": "Wikipedia/Wikimedia (article checks and summaries",
+        "jp": "Wikipedia/Wikimedia（記事の有無チェック"
+      }
+    },
+    {
+      "host": "euractiv.com",
+      "what": "an article URL inside the central-Asia evaluation fixture (IntMapAtlasQA.centralAsiaFixture)",
+      "link": "fixture data: rendered as a source link card by the answer renderer, never fetched by the page"
+    },
+    {
+      "host": "eurohpc-ju.europa.eu",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "flagcdn.com",
+      "what": "flag images",
+      "sends": {
+        "code": "identifier",
+        "detail": "the country's two-letter code in the image path"
+      },
+      "disclosure": {
+        "en": "flagcdn.com",
+        "jp": "flagcdn.com"
+      }
+    },
+    {
+      "host": "fonts.googleapis.com",
+      "what": "Google Fonts stylesheet (Noto Sans JP/SC/TC)",
+      "sends": {
+        "code": "page-visit",
+        "detail": "the ordinary request: IP address, browser, the requesting page"
+      },
+      "disclosure": {
+        "en": "fonts.googleapis.com and fonts.gstatic.com",
+        "jp": "fonts.googleapis.com と fonts.gstatic.com"
+      }
+    },
+    {
+      "host": "fonts.gstatic.com",
+      "what": "Google Fonts font files",
+      "sends": {
+        "code": "page-visit",
+        "detail": "the ordinary request: IP address, browser, the requesting page"
+      },
+      "disclosure": {
+        "en": "fonts.googleapis.com and fonts.gstatic.com",
+        "jp": "fonts.googleapis.com と fonts.gstatic.com"
+      }
+    },
+    {
+      "host": "fonts.openmaptiles.org",
+      "what": "OpenMapTiles glyphs for the comparison map",
+      "sends": {
+        "code": "nothing",
+        "detail": "font stack and glyph range"
+      },
+      "disclosure": {
+        "en": "OpenMapTiles",
+        "jp": "OpenMapTiles"
+      }
+    },
+    {
+      "host": "gaez-services.fao.org",
+      "what": "FAO GAEZ crop-suitability ImageServer",
+      "sends": {
+        "code": "area",
+        "detail": "the bbox and size of the image asked for"
+      },
+      "disclosure": {
+        "en": "FAO GAEZ",
+        "jp": "FAO GAEZ"
+      }
+    },
+    {
+      "host": "geo.datav.aliyun.com",
+      "what": "Alibaba Cloud DataV China boundaries (via relay when available, else direct)",
+      "sends": {
+        "code": "identifier",
+        "detail": "the Chinese administrative code of the area"
+      },
+      "disclosure": {
+        "en": "Alibaba Cloud DataV",
+        "jp": "Alibaba Cloud DataV"
+      }
+    },
+    {
+      "host": "geo.vliz.be",
+      "what": "Marine Regions (VLIZ) EEZ boundaries WMS",
+      "sends": {
+        "code": "area",
+        "detail": "the bbox of each tile"
+      },
+      "disclosure": {
+        "en": "VLIZ",
+        "jp": "VLIZ"
+      }
+    },
+    {
+      "host": "geocoding-api.open-meteo.com",
+      "what": "Open-Meteo geocoding (place-name search)",
+      "sends": {
+        "code": "query-text",
+        "detail": "the place name typed"
+      },
+      "disclosure": {
+        "en": "geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot)",
+        "jp": "地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot"
+      }
+    },
+    {
+      "host": "gibs.earthdata.nasa.gov",
+      "what": "NASA GIBS imagery tiles and WMS",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y or bbox, layer and date"
+      },
+      "disclosure": {
+        "en": "NASA GIBS",
+        "jp": "NASA GIBS"
+      }
+    },
+    {
+      "host": "gisco-services.ec.europa.eu",
+      "what": "Eurostat GISCO NUTS boundaries for European warning regions",
+      "sends": {
+        "code": "nothing",
+        "detail": "the NUTS file path"
+      },
+      "disclosure": {
+        "en": "Eurostat GISCO",
+        "jp": "Eurostat GISCO"
+      }
+    },
+    {
+      "host": "github.com",
+      "what": "IntMap's own repository URL",
+      "link": "text inside the Api-User-Agent header value sent to the Wikidata Query Service; never requested"
+    },
+    {
+      "host": "hacker-news.firebaseio.com",
+      "what": "Hacker News top stories widget",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "Hacker News",
+        "jp": "Hacker News"
+      }
+    },
+    {
+      "host": "ix.br",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "ja.wikipedia.org",
+      "what": "Japanese Wikipedia article links on reference places",
+      "link": "a {en, jp} article link opened by the reader; the summaries are fetched as *.wikipedia.org"
+    },
+    {
+      "host": "ll.thespacedevs.com",
+      "what": "The Space Devs upcoming launches widget",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "The Space Devs",
+        "jp": "The Space Devs"
+      }
+    },
+    {
+      "host": "maps.dwd.de",
+      "what": "DWD warnings (WFS)",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "Germany's DWD",
+        "jp": "ドイツ DWD"
+      }
+    },
+    {
+      "host": "maps.google.com",
+      "what": "Google Street View embed (iframe)",
+      "sends": {
+        "code": "coordinates",
+        "detail": "the chosen point and heading"
+      },
+      "disclosure": {
+        "en": "embedded Street View and its coverage overlay (Google",
+        "jp": "ストリートビューの埋め込みとカバレッジ（Google"
+      }
+    },
+    {
+      "host": "maps.googleapis.com",
+      "what": "Google GeoPhotoService single-image search (Street View coverage at a point)",
+      "sends": {
+        "code": "coordinates",
+        "detail": "the chosen point"
+      },
+      "disclosure": {
+        "en": "embedded Street View and its coverage overlay (Google",
+        "jp": "ストリートビューの埋め込みとカバレッジ（Google"
+      }
+    },
+    {
+      "host": "mapservices.weather.noaa.gov",
+      "what": "NOAA NWS reference map boundaries (zones/counties) for warning areas",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "boundaries those warnings refer to, from NOAA",
+        "jp": "区域の境界を NOAA"
+      }
+    },
+    {
+      "host": "marine-api.open-meteo.com",
+      "what": "Open-Meteo sea-surface temperature and waves at a point",
+      "sends": {
+        "code": "coordinates",
+        "detail": "latitude/longitude of the point(s) asked about"
+      },
+      "disclosure": {
+        "en": "elevation/weather APIs (Open-Meteo",
+        "jp": "標高・気象API（Open-Meteo"
+      }
+    },
+    {
+      "host": "media.githubusercontent.com",
+      "what": "geoBoundaries files served by GitHub LFS",
+      "sends": {
+        "code": "identifier",
+        "detail": "the country code in the file path"
+      },
+      "disclosure": {
+        "en": "administrative-boundary data (geoBoundaries via GitHub",
+        "jp": "行政境界データ（geoBoundaries／GitHub"
+      }
+    },
+    {
+      "host": "mempool.space",
+      "what": "mempool.space Bitcoin block height and fees widget",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "mempool.space",
+        "jp": "mempool.space"
+      }
+    },
+    {
+      "host": "mghydro.com",
+      "what": "Global Watersheds delineation",
+      "sends": {
+        "code": "coordinates",
+        "detail": "the river end point's coordinates"
+      },
+      "disclosure": {
+        "en": "mghydro.com",
+        "jp": "mghydro.com"
+      }
+    },
+    {
+      "host": "mistral.ai",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "mts*.google.com",
+      "what": "Google Street View coverage tiles (mts0-mts3)",
+      "sends": {
+        "code": "area",
+        "detail": "tile x/y/z around the chosen point"
+      },
+      "disclosure": {
+        "en": "Google's Street-View coverage tiles (mts.google.com)",
+        "jp": "ストリートビュー・カバレッジ・タイル（mts.google.com）"
+      }
+    },
+    {
+      "host": "nebius.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "news.google.com",
+      "what": "Google News RSS: headlines by topic and search",
+      "sends": {
+        "code": "query-text",
+        "detail": "the search words / place or topic name, plus language and region codes"
+      },
+      "disclosure": {
+        "en": "Google News RSS as the search term",
+        "jp": "Google News RSSに送信されます"
+      }
+    },
+    {
+      "host": "news.ycombinator.com",
+      "what": "Hacker News discussion page",
+      "link": "the widget item's href when the story has no URL of its own"
+    },
+    {
+      "host": "nominatim.openstreetmap.org",
+      "what": "OpenStreetMap Nominatim geocoding",
+      "sends": {
+        "code": "query-text",
+        "detail": "the place name / clicked label / river names"
+      },
+      "disclosure": {
+        "en": "OpenStreetMap Nominatim",
+        "jp": "OpenStreetMap Nominatim"
+      }
+    },
+    {
+      "host": "nvidianews.nvidia.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "open.er-api.com",
+      "what": "ER-API exchange rates",
+      "sends": {
+        "code": "nothing",
+        "detail": "the base currency"
+      },
+      "disclosure": {
+        "en": "ER-API",
+        "jp": "ER-API"
+      }
+    },
+    {
+      "host": "openai.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "openfreemap.org",
+      "what": "OpenFreeMap attribution link",
+      "link": "passed to carto-basemap.js's a(href, text), which builds an <a href> in the map attribution"
+    },
+    {
+      "host": "openmaptiles.org",
+      "what": "OpenMapTiles attribution link",
+      "link": "passed to carto-basemap.js's a(href, text), which builds an <a href> in the map attribution"
+    },
+    {
+      "host": "openmeteo.s3.amazonaws.com",
+      "what": "Open-Meteo model fields on AWS Open Data (wind field, forecast layers)",
+      "sends": {
+        "code": "nothing",
+        "detail": "only the file and byte range"
+      },
+      "disclosure": {
+        "en": "openmeteo.s3.amazonaws.com",
+        "jp": "openmeteo.s3.amazonaws.com"
+      }
+    },
+    {
+      "host": "ourworldindata.org",
+      "what": "Our World in Data grapher CSV",
+      "sends": {
+        "code": "identifier",
+        "detail": "the dataset slug"
+      },
+      "disclosure": {
+        "en": "Our World in Data",
+        "jp": "Our World in Data"
+      }
+    },
+    {
+      "host": "overpass-api.de",
+      "what": "OpenStreetMap Overpass API",
+      "sends": {
+        "code": "area",
+        "detail": "the query: bounding area / route corridor and feature types"
+      },
+      "disclosure": {
+        "en": "overpass-api.de",
+        "jp": "overpass-api.de"
+      }
+    },
+    {
+      "host": "overpass-api.openhistoricalmap.org",
+      "what": "OpenHistoricalMap's Overpass for a past year's road/rail network",
+      "sends": {
+        "code": "area",
+        "detail": "the query: bounding area and the year"
+      },
+      "disclosure": {
+        "en": "overpass-api.openhistoricalmap.org",
+        "jp": "overpass-api.openhistoricalmap.org"
+      }
+    },
+    {
+      "host": "overpass.kumi.systems",
+      "what": "Overpass API public mirror (fallback)",
+      "sends": {
+        "code": "area",
+        "detail": "the query: bounding area / route corridor and feature types"
+      },
+      "disclosure": {
+        "en": "overpass.kumi.systems",
+        "jp": "overpass.kumi.systems"
+      }
+    },
+    {
+      "host": "overpass.private.coffee",
+      "what": "Overpass API public mirror (fallback)",
+      "sends": {
+        "code": "area",
+        "detail": "the query: bounding area / route corridor and feature types"
+      },
+      "disclosure": {
+        "en": "overpass.private.coffee",
+        "jp": "overpass.private.coffee"
+      }
+    },
+    {
+      "host": "photon.komoot.io",
+      "what": "Photon (Komoot) geocoding",
+      "sends": {
+        "code": "query-text",
+        "detail": "the text searched"
+      },
+      "disclosure": {
+        "en": "Photon/Komoot",
+        "jp": "Photon/Komoot"
+      }
+    },
+    {
+      "host": "pleiades.stoa.org",
+      "what": "Pleiades place pages",
+      "link": "the place's source link in its popup and the provenance URL; the bundled data/hist-places.json is what is read"
+    },
+    {
+      "host": "query.wikidata.org",
+      "what": "Wikidata Query Service (facility mapping, incumbents, industry web)",
+      "sends": {
+        "code": "query-text",
+        "detail": "the SPARQL query: facility type and country code or search area"
+      },
+      "disclosure": {
+        "en": "the Wikidata Query Service",
+        "jp": "Wikidataクエリサービス"
+      }
+    },
+    {
+      "host": "query1.finance.yahoo.com",
+      "what": "Yahoo Finance chart/spark (share prices)",
+      "sends": {
+        "code": "identifier",
+        "detail": "ticker symbols"
+      },
+      "disclosure": {
+        "en": "Yahoo Finance",
+        "jp": "Yahoo Finance"
+      }
+    },
+    {
+      "host": "r.jina.ai",
+      "what": "Jina AI Reader: plain-text version of a news article (first rung of the article reader)",
+      "sends": {
+        "code": "url",
+        "detail": "the article's URL"
+      },
+      "disclosure": {
+        "en": "first asks Jina AI's reader service (r.jina.ai)",
+        "jp": "Jina AI の読み取りサービス（r.jina.ai）"
+      }
+    },
+    {
+      "host": "rackcentre.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "raw.githubusercontent.com",
+      "what": "GitHub raw files: aourednik historical basemaps, fraxen tectonic plates",
+      "sends": {
+        "code": "nothing",
+        "detail": "the file path (a year for historical basemaps)"
+      },
+      "disclosure": {
+        "en": "raw.githubusercontent.com",
+        "jp": "raw.githubusercontent.com"
+      }
+    },
+    {
+      "host": "s3.amazonaws.com",
+      "what": "AWS Terrain Tiles (Mapzen terrarium DEM), path-style",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the analysed area"
+      },
+      "disclosure": {
+        "en": "terrarium",
+        "jp": "terrarium"
+      }
+    },
+    {
+      "host": "s3.dualstack.us-east-1.amazonaws.com",
+      "what": "AWS Terrain Tiles (Mapzen terrarium DEM), dual-stack endpoint",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the analysed area"
+      },
+      "disclosure": {
+        "en": "terrarium",
+        "jp": "terrarium"
+      }
+    },
+    {
+      "host": "server.arcgisonline.com",
+      "what": "Esri World Imagery / reference / hillshade tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "Esri, NASA GIBS and EOX",
+        "jp": "Esri・NASA GIBS・EOX"
+      }
+    },
+    {
+      "host": "services.arcgis.com",
+      "what": "USGS volcano hazard zones on Esri ArcGIS Online (FeatureServer query)",
+      "sends": {
+        "code": "nothing",
+        "detail": "a fixed query (where=1=1)"
+      },
+      "disclosure": {
+        "en": "volcano hazard zones hosted on Esri's ArcGIS Online",
+        "jp": "Esri の ArcGIS Online 上で公開されている火山ハザード区域"
+      }
+    },
+    {
+      "host": "services.arcgisonline.com",
+      "what": "Esri World Imagery / reference / hillshade tiles (second host)",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "Esri, NASA GIBS and EOX",
+        "jp": "Esri・NASA GIBS・EOX"
+      }
+    },
+    {
+      "host": "services.global.ntt",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "services.sentinel-hub.com",
+      "what": "Sentinel Hub WMTS — only with the reader's own instance id",
+      "sends": {
+        "code": "area",
+        "detail": "tile row/col and the reader's own instance id"
+      },
+      "disclosure": {
+        "en": "Mapbox or Sentinel Hub",
+        "jp": "Mapbox または Sentinel Hub"
+      }
+    },
+    {
+      "host": "services.swpc.noaa.gov",
+      "what": "NOAA SWPC aurora (OVATION) and planetary Kp index",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "NOAA Space Weather Prediction Center",
+        "jp": "NOAA Space Weather Prediction Center"
+      }
+    },
+    {
+      "host": "stat.ripe.net",
+      "what": "RIPEstat country routing statistics",
+      "sends": {
+        "code": "identifier",
+        "detail": "the two-letter ISO code of the clicked country"
+      },
+      "disclosure": {
+        "en": "stat.ripe.net",
+        "jp": "stat.ripe.net"
+      }
+    },
+    {
+      "host": "tie.digitraffic.fi",
+      "what": "Digitraffic weather-camera stations",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "Digitraffic",
+        "jp": "Digitraffic"
+      }
+    },
+    {
+      "host": "tilecache.rainviewer.com",
+      "what": "RainViewer radar tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y and frame time"
+      },
+      "disclosure": {
+        "en": "RainViewer",
+        "jp": "RainViewer"
+      }
+    },
+    {
+      "host": "tiles.maps.eox.at",
+      "what": "EOX Sentinel-2 cloudless tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y and year"
+      },
+      "disclosure": {
+        "en": "NASA GIBS and EOX",
+        "jp": "NASA GIBS・EOX"
+      }
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "what": "OpenFreeMap vector tiles and glyphs (the base map)",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "tiles.openfreemap.org",
+        "jp": "tiles.openfreemap.org"
+      }
+    },
+    {
+      "host": "tiles.openseamap.org",
+      "what": "OpenSeaMap seamark tiles",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "OpenSeaMap",
+        "jp": "OpenSeaMap"
+      }
+    },
+    {
+      "host": "top500.org",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "unpkg.com",
+      "what": "unpkg CDN: PMTiles reader and the Open-Meteo weather-map layer",
+      "sends": {
+        "code": "nothing",
+        "detail": "the package path"
+      },
+      "disclosure": {
+        "en": "unpkg.com",
+        "jp": "unpkg.com"
+      }
+    },
+    {
+      "host": "upload.wikimedia.org",
+      "what": "Wikimedia Commons images (company logos, Köppen fallback map)",
+      "sends": {
+        "code": "nothing",
+        "detail": "the image path"
+      },
+      "disclosure": {
+        "en": "upload.wikimedia.org",
+        "jp": "upload.wikimedia.org"
+      }
+    },
+    {
+      "host": "valhalla1.openstreetmap.de",
+      "what": "Valhalla routing and isochrones",
+      "sends": {
+        "code": "coordinates",
+        "detail": "origin/destination coordinates, minutes, avoid-area polygon"
+      },
+      "disclosure": {
+        "en": "valhalla1.openstreetmap.de",
+        "jp": "valhalla1.openstreetmap.de"
+      }
+    },
+    {
+      "host": "volcano.si.edu",
+      "what": "Smithsonian GVP weekly report link and volcano photographs",
+      "sends": {
+        "code": "nothing",
+        "detail": "the photo path"
+      },
+      "disclosure": {
+        "en": "volcano.si.edu",
+        "jp": "volcano.si.edu"
+      }
+    },
+    {
+      "host": "volcanoes.usgs.gov",
+      "what": "USGS HANS volcano notices",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "USGS volcano notices",
+        "jp": "USGS の火山情報"
+      }
+    },
+    {
+      "host": "vpekfwdpurzejrrmacac.supabase.co",
+      "what": "IntMap's own backend: auth, database (REST/RPC), storage and every Edge Function (news-relay, fetch-relay, quotes-relay, ais-feed, aviation-feed, ai-proxy, atlas-embed, client-errors …)",
+      "sends": {
+        "code": "content",
+        "detail": "account credentials at sign-in; posts, comments and saved items; the map area for the ship/aircraft snapshots; the text given to the AI features; URLs handed to the relays"
+      },
+      "disclosure": {
+        "en": "Supabase (database/auth/hosting/server-side processing)",
+        "jp": "Supabase（DB/認証/ホスティング/サーバー処理）"
+      }
+    },
+    {
+      "host": "vtiles.openhistoricalmap.org",
+      "what": "OpenHistoricalMap vector tiles (historical boundaries)",
+      "sends": {
+        "code": "area",
+        "detail": "tile z/x/y of the map area drawn"
+      },
+      "disclosure": {
+        "en": "OpenHistoricalMap",
+        "jp": "OpenHistoricalMap"
+      }
+    },
+    {
+      "host": "weathercam.digitraffic.fi",
+      "what": "Digitraffic weather-camera images",
+      "sends": {
+        "code": "nothing",
+        "detail": "the camera id"
+      },
+      "disclosure": {
+        "en": "Digitraffic",
+        "jp": "Digitraffic"
+      }
+    },
+    {
+      "host": "wmts.terrascope.be",
+      "what": "ESA WorldCover tiles via Terrascope WMTS",
+      "sends": {
+        "code": "area",
+        "detail": "tile row/col of the map area drawn"
+      },
+      "disclosure": {
+        "en": "Terrascope",
+        "jp": "Terrascope"
+      }
+    },
+    {
+      "host": "www.aboutamazon.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.africadatacentres.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.alibabacloud.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.ams-ix.net",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.apple.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.ascenty.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.clarity.ms",
+      "what": "Microsoft Clarity tag (session replay)",
+      "sends": {
+        "code": "page-visit",
+        "detail": "page URL and DOM replay"
+      },
+      "dormant": {
+        "switch": "INTMAP_ANALYTICS",
+        "why": "inserted only when window.INTMAP_ANALYTICS is true; tests/r502-checks.test.mjs requires the policy to name it on that day"
+      }
+    },
+    {
+      "host": "www.coreweave.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.crusoe.ai",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.de-cix.net",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.digitalrealty.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.equinix.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.esri.com",
+      "what": "Esri attribution link",
+      "link": "passed to carto-basemap.js's a(href, text), which builds an <a href> in the map attribution"
+    },
+    {
+      "host": "www.g42.ai",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.geoboundaries.org",
+      "what": "geoBoundaries API (metadata)",
+      "sends": {
+        "code": "identifier",
+        "detail": "the ISO3 country code"
+      },
+      "disclosure": {
+        "en": "administrative-boundary data (geoBoundaries via GitHub",
+        "jp": "行政境界データ（geoBoundaries／GitHub"
+      }
+    },
+    {
+      "host": "www.google.com",
+      "what": "Google favicon service (s2/favicons)",
+      "sends": {
+        "code": "identifier",
+        "detail": "the domain name of a cited site or of a company without a Commons logo"
+      },
+      "disclosure": {
+        "en": "favicon fetching (Google",
+        "jp": "ファビコン取得（Google"
+      }
+    },
+    {
+      "host": "www.googletagmanager.com",
+      "what": "Google Analytics (gtag) loader",
+      "sends": {
+        "code": "page-visit",
+        "detail": "page location/referrer with auth parameters scrubbed"
+      },
+      "dormant": {
+        "switch": "INTMAP_ANALYTICS",
+        "why": "inserted only when window.INTMAP_ANALYTICS is true; tests/r502-checks.test.mjs requires the policy to name it on that day"
+      }
+    },
+    {
+      "host": "www.gov.uk",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.hkix.net",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.huaweicloud.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.ibm.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.imf.org",
+      "what": "IMF DataMapper indicators",
+      "sends": {
+        "code": "identifier",
+        "detail": "indicator and country codes"
+      },
+      "disclosure": {
+        "en": "IMF DataMapper",
+        "jp": "IMF DataMapper"
+      }
+    },
+    {
+      "host": "www.jma.go.jp",
+      "what": "JMA volcanic warnings, weather-warning areas and forecast-area boundaries",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself (area code in path for sub-areas)"
+      },
+      "disclosure": {
+        "en": "the Japan Meteorological Agency",
+        "jp": "気象庁"
+      }
+    },
+    {
+      "host": "www.jpnap.net",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.kinx.net",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.kionetworks.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.msk-ix.ru",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.navercloudcorp.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.nmc.cn",
+      "what": "China NMC warnings — read through IntMap's fetch-relay (the relay receives the URL)",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself (to our relay)"
+      },
+      "disclosure": {
+        "en": "China's National Meteorological Centre read through our fetch-relay",
+        "jp": "中国中央気象台の警報は当方の fetch-relay 経由で読みます"
+      }
+    },
+    {
+      "host": "www.nscale.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.nscc.sg",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.openstreetmap.org",
+      "what": "OpenStreetMap copyright and object links",
+      "link": "carto-basemap.js's attribution a(href, text) and a data-centre record's OSM object link (<a href> in the popup)"
+    },
+    {
+      "host": "www.oracle.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.rferl.org",
+      "what": "an article URL inside the central-Asia evaluation fixture (IntMapAtlasQA.centralAsiaFixture)",
+      "link": "fixture data: rendered as a source link card by the answer renderer, never fetched by the page"
+    },
+    {
+      "host": "www.sakura.ad.jp",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.sktelecom.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.softbank.jp",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.submarinecablemap.com",
+      "what": "TeleGeography submarine cables and landing points",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "TeleGeography's submarine cable map",
+        "jp": "TeleGeography の海底ケーブル地図"
+      }
+    },
+    {
+      "host": "www.telehouse.net",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.tencentcloud.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.teraco.co.za",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.tesla.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.westinbldg.com",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.who.int",
+      "what": "WHO Disease Outbreak News API",
+      "sends": {
+        "code": "nothing",
+        "detail": "the request itself"
+      },
+      "disclosure": {
+        "en": "www.who.int",
+        "jp": "www.who.int"
+      }
+    },
+    {
+      "host": "www.wikidata.org",
+      "what": "Wikidata entity pages",
+      "link": "entity links in Atlas answers and the industry web's stated source; the queries go to query.wikidata.org"
+    },
+    {
+      "host": "www.youtube-nocookie.com",
+      "what": "YouTube privacy-enhanced embed for a live camera",
+      "sends": {
+        "code": "identifier",
+        "detail": "the video id"
+      },
+      "disclosure": {
+        "en": "youtube-nocookie.com",
+        "jp": "youtube-nocookie.com"
+      }
+    },
+    {
+      "host": "x.ai",
+      "what": "data-centre source citation",
+      "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    }
+  ]
+}
