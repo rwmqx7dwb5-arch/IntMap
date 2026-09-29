@@ -234,7 +234,7 @@ test('#R384 ② the caveat’s class belongs to the caveat alone, and is not hid
   const hits = (DL.match(new RegExp(CLASS, 'g')) || []).length;
   assert.equal(hits, 3, CLASS + ' appears ' + hits + ' times in js/data-layers.js (rule, div, and the comment naming it)');
   /* no rule anywhere hides it */
-  const rule = new RegExp('\.' + CLASS + '[^{]*\{([^}]*)\}', 'g');
+  const rule = new RegExp('\\.' + CLASS + '[^{]*\\{([^}]*)\\}', 'g');
   for (const m of DL.matchAll(rule)) assert.ok(!/display\s*:\s*none/.test(m[1]), 'a rule for .' + CLASS + ' sets display:none');
 });
 

@@ -374,7 +374,7 @@ test('#R255 ④ the raise fires on wheel and focus too, and cannot lift the map 
   assert.match(mu, /addEventListener\('focusin'/, 'typing inside a panel does not raise it');
   assert.match(mu, /_NOT_PANEL=/, 'the map shell is not excluded from panelOf');
   ['#map', '#map-container', '.operation-room'].forEach((sel) =>
-    assert.ok(new RegExp(sel.replace('.', '\\.').replace('#', '#')).test(mu.match(/_NOT_PANEL='([^']*)'/)[1]),
+    assert.ok(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(mu.match(/_NOT_PANEL='([^']*)'/)[1]),
       `${sel} is a positioned ancestor and would be marked .im-front — lifting the whole map over the sidebar`));
 });
 }

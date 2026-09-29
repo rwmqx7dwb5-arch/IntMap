@@ -1187,7 +1187,7 @@ test('R344 ① 座標を1つも持たない図形は「図形」ではない —
 
   /* THE PREDICATE, RUN. `geomBox` is taken out of the shipped file and executed, so this is a
      statement about the code that ships rather than about a regex over it (#R317). */
-  const box = new Function('_stash', 'return ' + declSource(s, 'geomBox').replace(/^function /, 'function '))(
+  const box = new Function('_stash', 'return ' + declSource(s, 'geomBox'))(
     (o, k, v) => { try { Object.defineProperty(o, k, { value: v, configurable: true }); } catch (_) { o[k] = v; } return v; });
   assert.equal(box({ type: 'Polygon', coordinates: [] }), null, 'an empty Polygon has no box');
   assert.equal(box({ type: 'MultiPolygon', coordinates: [] }), null, 'an empty MultiPolygon has no box');

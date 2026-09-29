@@ -26,6 +26,7 @@ import { auditRoster, inventories, sharedRoster } from '../scripts/shared-roster
 import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
 import { withTreeLock } from './helpers/gate-lock.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
+const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -92,7 +93,7 @@ const dropOneName = (body) => {
   const inv = inventories(body).find((i) => i.names.length && i.names.every((n) => roster.includes(n)));
   if (!inv) return null;
   const victim = inv.names[inv.names.length - 1];
-  const n = victim.replace(/\./g, '\\.');
+  const n = escapeRe(victim);
   const SEP = '[ \\t\\r\\n]*[/,・][ \\t\\r\\n]*';
   for (const re of [new RegExp(SEP + '`?' + n + '`?'), new RegExp('`?' + n + '`?' + SEP)]) {
     if (re.test(inv.text)) return body.replace(inv.text, () => inv.text.replace(re, () => ''));
@@ -325,7 +326,7 @@ test('R694 ① every name, dropped from every roster, is named by edge-shared', 
     for (const victim of ROSTER) {
       /* その名前だけを名簿から消す。区切りは文書ごとに違う（`/`・`・`・`,`）ので、
          綴りではなく「名前と、その隣の区切り1つ」を落とす */
-      const n = victim.replace(/\./g, '\\.');
+      const n = escapeRe(victim);
       const SEP = '[ \\t\\r\\n]*[/,・][ \\t\\r\\n]*';
       const cut = [new RegExp(SEP + '`?' + n + '`?'), new RegExp('`?' + n + '`?' + SEP)]
         .find((re) => re.test(inv.text));
@@ -407,7 +408,7 @@ test('R694 ⑤ the _shared roster may be line-wrapped at ANY of its names', asyn
       for (const name of ROSTER) {
         /* 名簿の中の `name` の直前で改行する（先頭の1本は元から行頭なので飛ばす） */
         const inv = inventories(originalBytes).find((i) => i.names.some((n) => ROSTER.includes(n)));
-        const re = new RegExp('[ \\t\\r\\n]*/[ \\t\\r\\n]*(`?' + name.replace(/\./g, '\\.') + '`?)');
+        const re = new RegExp('[ \\t\\r\\n]*/[ \\t\\r\\n]*(`?' + escapeRe(name) + '`?)');
         if (!re.test(inv.text)) continue;
         const wrapped = inv.text.replace(re, (_m, g1) => ' /' + nl + g1);
         writeFileSync(join(ROOT, P), originalBytes.replace(inv.text, () => wrapped));
@@ -431,7 +432,7 @@ test('R694 ⑥ arch-files is still RED for the defects it exists to catch', asyn
     try {
       /* (a) js/ の段から実在のモジュールの記述を消す → 「§3 が説明していない」 */
       const victim = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).sort()[0];
-      const line = new RegExp('^[ \\t]*' + victim.replace(/\./g, '\\.') + '\\b[^\\r\\n]*\\r?\\n', 'm');
+      const line = new RegExp('^[ \\t]*' + escapeRe(victim) + '\\b[^\\r\\n]*\\r?\\n', 'm');
       assert.ok(line.test(originalBytes), `${victim} is not described on a line of its own — pick another victim`);
       writeFileSync(join(ROOT, P), originalBytes.replace(line, () => ''));
       let r = archGate();
@@ -460,7 +461,7 @@ test('R694 ⑦ describing a js/ module in the supabase block does not count as d
     assert.equal(archGate().code, 0, 'check:archfiles must be green before this means anything');
     try {
       const victim = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).sort()[0];
-      const line = new RegExp('^[ \\t]*' + victim.replace(/\./g, '\\.') + '\\b[^\\r\\n]*\\r?\\n', 'm');
+      const line = new RegExp('^[ \\t]*' + escapeRe(victim) + '\\b[^\\r\\n]*\\r?\\n', 'm');
       /* js/ の段から消し、supabase の段（§3.12）へ移す */
       const moved = originalBytes.replace(line, () => '')
         .replace(/^(  seed\.sql[^\r\n]*\r?\n)/m, (m) => m + victim + '      よそへ移した記述\n');
