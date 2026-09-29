@@ -37,6 +37,10 @@ import { check, bareFetches, LEDGER } from '../scripts/fetch-deadlines.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const settle = async () => { for (let i = 0; i < 8; i++) await new Promise((r) => setImmediate(r)); };
+/* The clock in js/fetch-deadline.js is a chain of steps (it counts the host's silence, not the page's own
+   freezes), and node's mock timers do not run a timer scheduled from inside the same tick() — so time is
+   advanced one millisecond at a time, which is also how it passes in a browser. */
+const advance = (t, ms) => { for (let left = ms; left > 0; left -= 1) t.mock.timers.tick(1); };
 const URL_OM = 'https://api.open-meteo.com/v1/forecast?latitude=35.680&longitude=139.760&current=temperature_2m';
 
 /* a host that accepts the connection and never answers — it ends only when the caller aborts */
@@ -77,11 +81,11 @@ test('① a stalled shared read ends at the host\'s deadline for every waiter, l
   assert.ok(host.calls[0].signal, 'the read carries no signal — nothing can end it');
 
   let ended = false; a.then(() => { ended = true; });
-  t.mock.timers.tick(ms - 1);
+  advance(t, ms - 1);
   await settle();
   assert.equal(ended, false, 'the read ended before its deadline');
 
-  t.mock.timers.tick(1);
+  advance(t, 1);
   await settle();
   assert.equal(host.calls[0].signal.aborted, true, 'the deadline passed and the read was not aborted');
   assert.equal(await a, null);
@@ -183,7 +187,7 @@ test('③ the clock names what it throws: timeout, aborted, network, http, parse
 
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const q = readWithin('https://x.invalid/', 500);
-  t.mock.timers.tick(500);
+  advance(t, 500);
   assert.equal(await reasonOf(q), 'timeout');
 });
 
@@ -280,4 +284,31 @@ test('⑤ (cont.) the gate goes red when a bare fetch is added to a real file, a
     assert.equal(stale.ok, false);
     assert.match(stale.lines.join('\n'), /lower the ledger/);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+/* ── ⑥ the clock counts the host's silence, not this page's own freeze ─────────────────────────────
+   Measured on the nightly deep tier (tests/restored-layer-before-style.spec.js): a tab restoring
+   many layers froze its main thread for seconds while RainViewer had already answered in < 3 s; the
+   single setTimeout(6000) fired the moment the thread came back, before the reply queued behind it,
+   and the radar row was switched off as 「the host did not answer」. Here the host answers at 150 ms,
+   the deadline is 100 ms, and the page freezes for 400 ms right after asking: the reply must win.
+   A host that really stays silent must still end at the deadline. */
+test('⑥ a freeze of the page is not charged to the host; real silence still ends at the deadline', async (t) => {
+  const real = globalThis.fetch;
+  t.after(() => { globalThis.fetch = real; });
+  globalThis.fetch = (u, init) => new Promise((resolve, reject) => {
+    const id = setTimeout(() => resolve({ ok: true, status: 200, headers: { get: () => 'application/json' }, text: () => Promise.resolve('{"v":1}') }), 150);
+    init && init.signal && init.signal.addEventListener('abort', () => { clearTimeout(id); const e = new Error('aborted'); e.name = 'AbortError'; reject(e); });
+  });
+  const p = jsonWithin('https://x.invalid/frozen', 100);
+  const until = Date.now() + 400; while (Date.now() < until) { /* the page is frozen */ }
+  assert.deepEqual(await p, { v: 1 }, 'the page\'s own freeze was reported as the host\'s silence');
+
+  globalThis.fetch = (u, init) => new Promise((resolve, reject) => {
+    init && init.signal && init.signal.addEventListener('abort', () => { const e = new Error('aborted'); e.name = 'AbortError'; reject(e); });
+  });
+  const t0 = Date.now();
+  const e = await readWithin('https://x.invalid/silent', 200).catch((x) => x);
+  assert.equal(e && e.reason, 'timeout', 'a host that never answers was not ended');
+  assert.ok(Date.now() - t0 < 2000, 'a silent host was waited on far past its deadline');
 });

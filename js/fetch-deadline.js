@@ -88,8 +88,36 @@ export const { jsonWithin, readWithin } = (() => {
     const outer = (init && init.signal) || null;
     const relay = () => { try { c && c.abort(); } catch (_) { /* already done */ } };
     if (outer && c) { if (outer.aborted) relay(); else { try { outer.addEventListener('abort', relay); } catch (_) { /* no listener support */ } } }
-    let timedOut = false, t = null;
-    const arm = () => { if (t) clearTimeout(t); t = (c && ms > 0) ? setTimeout(() => { timedOut = true; relay(); }, ms) : null; };
+    /* ══ (fetch-deadline-layer) THE CLOCK COUNTS THE HOST'S SILENCE, NOT THIS PAGE'S OWN STALL ══════
+       MEASURED (nightly deep tier, tests/restored-layer-before-style.spec.js, 2026-09-28/29): a tab
+       restoring many layers froze its own main thread for 3.8–30 s while RainViewer answered in
+       0.2–2.9 s. One `setTimeout(ms)` fires the moment the thread comes back — before the response
+       that has been sitting in the queue — so a 6 s deadline reported 「the host did not answer」 and
+       the radar row was switched off. The deadline measured the READER, which is exactly what
+       .agents/rules/one-pass-or-a-reason.md §2 ① forbids (an observer that reports success as failure).
+       So the clock is a count of steps of at most STEP_MS, each credited with exactly its own length
+       when its timer runs: a frozen stretch delays the next step and so counts as one step, however
+       long it was, and time the page could not have observed a reply in is never charged to the host.
+       (Counting timer runs rather than reading a wall clock is also what lets a test drive it with
+       mocked timers.) If the LAST step was itself delayed by a freeze, one more step is
+       taken instead of aborting, so a reply queued behind the freeze is read first. Cost: one timer per step per request in
+       flight. Side effect, intended: a background tab (timers throttled to ~1 s) waits longer before
+       calling a host silent.
+       STEP_MS — observation: the freezes above are seconds long and every clock in clockFor is
+       ≥ 1,500 ms, so 250 ms keeps ≥ 6 steps per deadline. Invalid if a clock under ~1 s appears (the
+       step then shrinks to ms/4 on its own). Canonical here; nothing else uses it. */
+    const STEP_MS = 250;
+    let timedOut = false, t = null, silent = 0, done = false;
+    const step = Math.max(1, Math.min(STEP_MS, ms / 4));
+    const now = () => ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now());
+    const next = () => { const d = Math.min(step, ms - silent), at = now(); t = setTimeout(() => tick(d, at), d); };
+    const tick = (d, at) => {
+      silent += d;
+      if (silent < ms) { next(); return; }
+      if (now() - at > 2 * d + 50) { silent -= d; next(); return; }   /* the last step was a freeze, not silence */
+      t = null; if (!done) { timedOut = true; relay(); }
+    };
+    const arm = () => { if (t) clearTimeout(t); t = null; silent = 0; if (c && ms > 0) next(); };
     arm();
     try {
       const opt = Object.assign({}, init || {});
@@ -100,8 +128,10 @@ export const { jsonWithin, readWithin } = (() => {
       let type = '';
       try { type = String((r.headers && r.headers.get && r.headers.get('content-type')) || ''); } catch (_) { type = ''; }
       const text = await bodyText(r, idle ? arm : null);
+      done = true;
       return { ok: !!r.ok, status: r.status, type, text };
     } catch (e) {
+      done = true;
       if (timedOut) throw failed(new Error('deadline ' + ms + 'ms'), 'timeout');
       throw failed(e, ((outer && outer.aborted) || (e && e.name === 'AbortError')) ? 'aborted' : 'network');
     } finally {

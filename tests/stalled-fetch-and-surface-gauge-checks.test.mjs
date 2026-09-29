@@ -128,12 +128,14 @@ test('① a stalled frame index ends at its deadline, takes the failure path, le
   const shared = R.rvFetch();
   assert.equal(host.calls.length, 1, 'a second caller started a second read of an index already on its way');
 
-  t.mock.timers.tick(R.deadline - 1);
+  /* the clock is a chain of steps (js/fetch-deadline.js counts the host's silence, not the page's own
+     freezes) and node's mock timers do not run a timer scheduled from inside the same tick() */
+  for (let i = 0; i < R.deadline - 1; i++) t.mock.timers.tick(1);
   await settle();
   assert.equal(F.has('dl-radar'), true, 'the read ended before its deadline');
   assert.deepEqual(R.toasts, []);
 
-  t.mock.timers.tick(1);
+  t.mock.timers.tick(1);   /* the last millisecond */
   await settle();
   assert.equal(host.calls[0].signal.aborted, true, 'the deadline passed and the read was not aborted');
   assert.equal(await shared, null, 'the shared read did not end when its deadline did');
