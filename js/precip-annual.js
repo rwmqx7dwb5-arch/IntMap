@@ -27,7 +27,8 @@
  *  read the picture at all: it reads data/precip-mm.png, an 8-bit log(mm) grid, so a number never
  *  comes from a colour.
  * ==========================================================================*/
-import { jsonWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the two manifests, under a clock — see manifests() */
+import { jsonWithin, isUnobserved, untilObserved } from './fetch-deadline.js';   /* (fetch-deadline-layer) the two manifests, under a clock — see manifests(); (unobserved-is-not-refused) and what a silent read means */
+import { afterTick, tickKey } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.precipAnnual = function (HOST) {
@@ -61,14 +62,22 @@ window.IntMapModules.precipAnnual = function (HOST) {
   /* (fetch-deadline-layer) Every drawing and every readout starts here, so a manifest read with no end held the row, its
      legend and the point readout for the session, and a refused one was the same silent `false` as a slow one. The reads
      are js/fetch-deadline.js `jsonWithin` under our own origin's clock (js/proxy-fetch.js `clockFor`), and a read that
-     got nothing is said once per attempt by the layer that asked (paint(), below) and kept as `manifestFail` for state(). */
-  let manifestFail = null;
+     got nothing is said once per attempt by the layer that asked (paint(), below) and kept as `manifestFail` for state().
+     (unobserved-is-not-refused) A read that ran out of time is asked again with the clock doubled (js/fetch-deadline.js
+     `untilObserved`, paused on js/runtime.js's wheel) while the row is on; only an answer, or a silence through every
+     retry, reaches paint(). Nothing is kept from a failed attempt (`mm`/`yr` stay unset), so the next switch-on reads
+     again. One attempt is shared by its callers (paint and ensureVals ask together). */
+  let manifestFail = null, manifestErr = null, manifestP = null;
   function manifests() {
     if (mm && yr) return Promise.resolve(true);
-    const read = (f) => { const u = url(f); return jsonWithin(u, clockFor(u)); };
-    return Promise.all([read('data/precip-mm.json'), read('data/precip-year.json')])
-      .then(([a, b]) => { mm = a; yr = b; manifestFail = null; return true; })
-      .catch((e) => { manifestFail = (e && e.reason) || 'network'; return false; });
+    if (manifestP) return manifestP;
+    const read = (f, s) => { const u = url(f); return jsonWithin(u, clockFor(u) * s); };
+    manifestP = untilObserved((s) => Promise.all([read('data/precip-mm.json', s), read('data/precip-year.json', s)]),
+      { base: clockFor(url('data/precip-mm.json')), wait: (ms) => afterTick(tickKey('precip-annual:unobserved'), ms), wanted: () => on })
+      .then(([a, b]) => { mm = a; yr = b; manifestFail = null; manifestErr = null; return true; })
+      .catch((e) => { manifestFail = (e && e.reason) || 'network'; manifestErr = e; return false; })
+      .finally(() => { manifestP = null; });
+    return manifestP;
   }
 
   /* the log encoding both rasters share, decoded exactly the way the builders wrote it */
@@ -148,6 +157,8 @@ window.IntMapModules.precipAnnual = function (HOST) {
   function paint() {
     if (!on) { setVis(false); return; }
     manifests().then((ok) => {
+      if (!ok && manifestFail === 'aborted') return;   /* switched off while it waited — nothing to say */
+      if (!ok && isUnobserved(manifestErr)) { legend(); try { HOST.imToast(window.IntMapLang.t(HOST.lang, 'The data did not arrive in time — try again', 'データが時間内に届きませんでした — もう一度お試しください')); } catch (_) { } return; }
       if (!ok) { legend(); try { HOST.imToast(window.IntMapLang.t(HOST.lang, 'Could not load — toggle again later.', '取得できませんでした — 後でもう一度オンにしてください。', 'Laden fehlgeschlagen — später erneut einschalten.', 'Не удалось загрузить — включите позже ещё раз.', 'No se pudo cargar; vuelva a activarlo más tarde.')); } catch (_) { } return; }   /* (fetch-deadline-layer) the reader is told that nothing came; state().manifestFail says why */
       if (year === CLIM) { if (ensure(climURL())) { setVis(true); try { window._raiseLabelLayers && window._raiseLabelLayers(); } catch (_) { } } else { GE().events.once('idle', paint); } legend(); return; }
       loadYear(year).then((got) => {

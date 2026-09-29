@@ -161,16 +161,31 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
      upstream's explicit «there is nothing for this question» (relay-guard.js noData). That is an
      ANSWER: it rejects with `noData` so no rung treats it as a document and no rung asks again. */
   const noDataError = () => Object.assign(new Error('no-data'), { noData: true });
+  /* (unobserved-is-not-refused) what this throws carries the same `reason` js/fetch-deadline.js puts on
+     its own throws — 'timeout' when THIS clock fired, 'aborted' when a caller's controller did, 'http'
+     (with `status`) for a refusal, 'network' otherwise — so js/fetch-deadline.js `isUnobserved` reads
+     either. Nothing here branches on it yet: the ladder below treats every rung's failure alike, and
+     what it reports is the note's `reason`. */
   const fetchDeadline = (u, ms, ctl) => {
     const c = ctl || new AbortController();
-    const t = setTimeout(() => { try { c.abort(); } catch (_) { /* already done */ } }, ms);
+    let fired = false;
+    const t = setTimeout(() => { fired = true; try { c.abort(); } catch (_) { /* already done */ } }, ms);
+    const tag = (e, reason, extra) => {
+      const err = (e && typeof e === 'object') ? e : new Error(String(e));
+      try { if (!err.reason) { err.reason = reason; if (extra) Object.assign(err, extra); } } catch (_) { /* a frozen error keeps its own shape */ }
+      return err;
+    };
     return fetch(u, { signal: c.signal })
       .then((r) => {
         let nd = false;
         try { nd = !!(r.headers && typeof r.headers.get === 'function' && r.headers.get(NO_DATA_HEADER)); } catch (_) { nd = false; }
         if (nd) throw noDataError();
-        if (!r.ok) throw new Error('bad status ' + r.status);
+        if (!r.ok) throw tag(new Error('bad status ' + r.status), 'http', { status: r.status });
         return r.text();
+      })
+      .catch((e) => {
+        if (e && e.noData) throw e;
+        throw tag(e, fired ? 'timeout' : ((e && e.name === 'AbortError') ? 'aborted' : 'network'));
       })
       .finally(() => clearTimeout(t));
   };

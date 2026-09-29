@@ -218,9 +218,9 @@ test('R266 ⑧: annual precipitation is a measured field, and its grid is read f
   assert.ok(!/const\s+(VAL_W|W)\s*=\s*\d{3,}/.test(s), 'the grid is hard-coded here instead of read from the manifest');
   /* (fetch-deadline-layer) the manifests are read under js/fetch-deadline.js's clock now — read(f) is
      jsonWithin(url(f), clockFor(url(f))) in the same file; what this pins is that BOTH come from the data files */
-  assert.match(s, /read\('data\/precip-mm\.json'\)/);
-  assert.match(s, /read\('data\/precip-year\.json'\)/);
-  assert.match(s, /const read = \(f\) => \{ const u = url\(f\); return jsonWithin\(u, clockFor\(u\)\); \};/);
+  assert.match(s, /read\('data\/precip-mm\.json'[,)]/);   /* (unobserved-is-not-refused) the read may also take the clock's scale */
+  assert.match(s, /read\('data\/precip-year\.json'[,)]/);
+  assert.match(s, /const read = \(f, s\) => \{ const u = url\(f\); return jsonWithin\(u, clockFor\(u\) \* s\); \};/);
   assert.match(s, /GE\(\)\.layers\.updateImage\(SRC/, 'the image source is repointed off-contract');
 
   const mm = json('data/precip-mm.json');

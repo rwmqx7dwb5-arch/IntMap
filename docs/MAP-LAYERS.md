@@ -732,17 +732,40 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   終わらない取得は揺すっても直らない——`rvFetch` は取得中の同じ要求を返すので、揺すり直しは同じ要求に繋がるだけ。
   だから**取得が自分の終わりを持つ**。行の要求になる取得は全部 `js/fetch-deadline.js`（本文まで覆う時計）で読み、
   **何秒かは `js/proxy-fetch.js` の `clockFor(url, via)` が host ごとに答える**（直接読む相手は `DIRECT_TIMEOUT_MS`
-  6 秒、GDELT 18 秒、World Bank 20 秒。自前の relay 段はその relay を梯子が走らせる時計）。期限切れは拒否と同じく
-  各枝の既存の失敗の経路へ流れ、要求が settle するので登録からも外れる:
+  6 秒、GDELT 18 秒、World Bank 20 秒。自前の relay 段はその relay を梯子が走らせる時計）。
+  **⚠ 期限切れは拒否ではない（unobserved-is-not-refused）。** 期限切れは「このページが時間内に何も読めなかった」
+  であって「相手が断った」ではない（`.agents/rules/one-pass-or-a-reason.md` §5）。夜間の deep tier（run
+  36493764477）では、負荷の高い runner で索引が期限切れになり、拒否のために書かれた失敗の腕が箱を外して二度と
+  読まず、`tests/restored-layer-before-style.spec.js` が `lyr-radar` の欠落を見つけていた。判定は
+  `js/fetch-deadline.js` の **`isUnobserved(err)` の 1 つ**（`reason==='timeout'` だけが真。`aborted`・`network`・
+  `http`・`parse` は偽）で、方針は同じファイルの **`untilObserved(read, opts)` の 1 つ**:
+  観測されなかった失敗は**時計を 2 倍にして**読み直し（1→2→4→8 倍。毎回前回と違うことをする）、その前に
+  **失敗した試みの時計と同じだけ**待つ（待ちは `js/runtime.js` の `afterTick`＝タイマーホイールの 1 回。隠れた
+  タブでは進まない）。観測された失敗（状態・拒否・データ無し）は**その場で**従来の失敗の腕へ渡す。8 倍でも
+  沈黙なら（`UNOBSERVED_RETRIES`＝3 回の再試行の後）それを観測として失敗の腕へ渡す。
+  行の側は `js/data-layers.js` の **`rowUntilObserved(箱, read, 基準の時計)`** が 1 か所で持つ——待つあいだ
+  **箱は ON のまま**、行に `aria-busy`、トーストを 1 回（「データの応答を待っています — もう一度問い合わせます」）、
+  回数を箱の `data-im-unobserved` に残し、要求は settle しないので自己修復が行を揺すらない。箱を外す、または
+  もう一度入れる（新しい世代）と待ちは `aborted` で終わり、**OFF の箱の後ろには何も描かない**（CONSTITUTION §3）。
+  各枝の扱い:
   - **雨雲レーダー**（RainViewer の索引・6 秒。実測 0.97〜1.24 秒・818 B）——共有の要求が空になり（次の要求は
-    新しく読む）、「Live weather data unavailable」を出して箱を外す。
+    新しく読む）、`rowUntilObserved('dl-radar', rvRead, …)` が読み直す。状態・拒否・コマ無しの索引だけが
+    「Live weather data unavailable」を出して箱を外す。
   - **火災**（`_thermalLayersFor` の GIBS WMS 探り・6 秒。実測 1.19〜1.35 秒）——`readWithin` が状態・型・
     ServiceException の本文を時計の中で読む。期限切れは拒否と同じく「今の一覧のまま描いてみる」。
   - **海底ケーブル**（`_cableLocal` / `_cableNet`）——2.2 MB のファイルなので**無音の長さ**を測る時計（`idle`。
-    本文の塊が届くたびに掛け直す）。同一オリジンと TeleGeography 直は 6 秒、cable-geo relay は 8 秒。期限切れは
-    null＝保存した写し → TeleGeography → 5/15/45 秒の後退 →「Submarine cable data unavailable」と `imAutoOff`。
+    本文の塊が届くたびに掛け直す）。同一オリジンと TeleGeography 直は 6 秒、cable-geo relay は 8 秒。失敗した読みは
+    null＝保存した写し → TeleGeography と落ちていき、何も得られなかったとき、**どれか 1 段でも期限切れなら**
+    梯子全体を `rowUntilObserved('dl-subcables', …)` が時計を倍にして読み直す（全段が答えて断ったときだけ
+    5/15/45 秒の後退）。どちらも尽きたら「Submarine cable data unavailable」と `imAutoOff`。
     ⚠ `addSubcables` の 90 秒の地平線は**取得の後**の構築の梯子の上限で、取得の上限ではない。
-  - **合計特殊出生率**（World Bank・20 秒。実測 0.34〜8.23 秒）——既存の「Could not load fertility data」。
+  - **合計特殊出生率**（World Bank・20 秒。実測 0.34〜8.23 秒）——`rowUntilObserved('dl-tfr', …)`。答え（状態・拒否）は
+    既存の「Could not load fertility data」、沈黙が再試行を尽くしたら灰色の「データ無し」塗りを下ろして
+    「The data did not arrive in time — try again」（何も保存しないので次の ON で読み直す）。
+  - **箱を持たない読み**も同じ判定を使う: `js/wb-layers.js` の `wbSeries`（沈黙は投げ直して再試行、尽きたら
+    reject して cache しない——合算の指標の半分だけを系列として保存していた）、`js/precip-annual.js` の
+    `manifests()`（行が ON のあいだ再試行・呼び手で共有）、`js/layer-packs.js` の単年の World Bank 読みと
+    `js/countries-ui.js`（`window.IntMapFetchWithin.isUnobserved` で分類し、遅れたと述べる）。
   ⚠ 他の枝が同じ形を持たないことは、下の `tests/stalled-fetch-and-surface-gauge-checks.test.mjs` ④ が
   `toggleLayer` の全枝について何も返さない相手と模擬時計で確かめている（枝の一覧は関数から読む）。
 
@@ -757,9 +780,13 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 `tests/heal-waits-for-inflight-checks.test.mjs`（登録・点検・`toggleLayer` の全枝・`withCountries` を実際に評価）と
 `tests/heal-waits-for-inflight.spec.js`（RainViewer の索引を点検より遅く返し、揺すり 0 件・中断タイル 0 枚）。
 止まった取得は `tests/stalled-fetch-and-surface-gauge-checks.test.mjs`——①（出荷された `rvFetch` と `toggleLayer` を
-実際の `jsonWithin` と登録で評価し、期限で失敗の経路・登録の解除・次の要求での新しい取得を確かめる）と
+実際の `jsonWithin` と登録で評価し、最初の期限では箱が ON・登録中のまま再試行が時計を倍にして走ること、
+沈黙が全再試行を通したときだけ失敗の経路・登録の解除に届くこと、次の要求での新しい取得を確かめる）と
 ④（`toggleLayer` の全枝を、それが届くレイヤーの閉包の宣言ごと評価し、何も返さない相手に対して各枝の要求が
-終わること、4 つの枝の期限切れが既存の失敗の経路に届くことを確かめる。素の `fetch` に戻すと 4 つとも赤）。
+終わること、4 つの枝の期限切れが既存の失敗の経路に届くこと——レーダーとケーブルは再試行を尽くした後——を
+確かめる。素の `fetch` に戻すと 4 つとも赤）。判定と方針そのものは `tests/unobserved-is-not-refused-checks.test.mjs`
+（`isUnobserved` の分類・`untilObserved` の倍の時計と記録・観測された失敗は 1 回で返ること・`afterTick`・
+出荷されたレーダーの枝を期限切れ／404／待機中の OFF で評価）。
 
 `#layer-dropdown` という要素は残っていて、それは UI ではなくレジストリである——行を作るのは今も各モジュールの
 `buildUI()` で（ハンドラ・凡例・スライダーを持つのは行の持ち主）、**状態**（チェック）は今もその箱にある。

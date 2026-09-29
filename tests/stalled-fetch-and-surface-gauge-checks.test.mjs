@@ -7,6 +7,11 @@
  *     toasted, and every later tick handed the SAME dead promise back (`_rvPending` is shared).
  *     The shipped rvFetch, its state and toggleLayer are lifted and RUN against the real
  *     js/fetch-deadline.js, the real js/layer-rows.js registry and a host that never answers.
+ *     (unobserved-is-not-refused) A deadline is not a refusal any more: the row keeps its box and asks
+ *     again with the clock doubled (rowUntilObserved → untilObserved, on js/runtime.js's wheel), so ①
+ *     walks the whole policy — still ticked and still in flight after the first clock, a second read
+ *     after the pause — and only a host silent through all of it reaches the failure arm and leaves
+ *     the registry. The request still ends; it ends later, and not on the page's own slowness.
  *  ② scripts/global-surface.mjs (check:surface) blanked comments and strings with a character loop
  *     that did not know regular-expression literals. `/named '([^']+)'/` in js/data-layers.js has
  *     three quotes, so the «string» it opened ran on into code and hid every `window.X =` after it.
@@ -18,6 +23,7 @@
  *     running every declaration of the layer closure it reaches (found by the parser), against a
  *     host that never answers and a mocked clock — each request a row hands the registry must end,
  *     and the four reads clocked this round (radar, fire probe, cables, fertility) must land in their
+ *     (radar and cables: after the unobserved policy has asked four times — unobserved-is-not-refused)
  *     branch's existing failure path. Mutated back to a bare `fetch`, each of the four goes red.
  *  ⑤ js/fetch-deadline.js's idle clock bounds SILENCE: a body still arriving outlives it, a body that
  *     stopped is cut one clock after its last chunk.
@@ -33,7 +39,8 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly as stripComments } from '../scripts/code-only.mjs';
 import { codeOnly, windowPublications } from '../scripts/global-surface.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
-import { jsonWithin, readWithin } from '../js/fetch-deadline.js';
+import { jsonWithin, readWithin, untilObserved, isUnobserved, UNOBSERVED_RETRIES } from '../js/fetch-deadline.js';
+import { afterTick, tickKey, stopEarlyTimers } from '../js/runtime.js';
 import { clockFor, ownRelayUrl } from '../js/proxy-fetch.js';
 import { inFlight } from '../js/layer-rows.js';
 
@@ -49,7 +56,9 @@ const RV_STATE = (() => {
   assert.ok(a >= 0 && b > a, 'the radar state was not found above rvFetch');
   return DL.slice(a, b);
 })();
-const RV_FNS = ['rvFetch', 'rvRefreshFrames', 'rvTiles', 'addRainViewer', 'toggleLayer'].map((n) => liftFunction(DL, n)).join('\n');
+const RV_FNS = ['rvFetch', 'rvRead', 'rowUntilObserved', 'rvRefreshFrames', 'rvTiles', 'addRainViewer', 'toggleLayer'].map((n) => liftFunction(DL, n)).join('\n');
+/* (unobserved-is-not-refused) the generation register rowUntilObserved keeps, as declared */
+const UNOBS_STATE = (() => { const m = /const _unobsGen=\{\};/.exec(DL); assert.ok(m, '_unobsGen was not found'); return m[0]; })();
 
 function inert() {
   const memo = new Map();
@@ -66,11 +75,12 @@ function inert() {
 
 function rig() {
   const toasts = [];
-  const row = { removed: [], classList: { remove: (c) => row.removed.push(c) } };
-  const cb = { id: 'dl-radar', checked: true, closest: () => row };
+  const row = { removed: [], attrs: {}, classList: { remove: (c) => row.removed.push(c) }, setAttribute(k, v) { row.attrs[k] = v; }, removeAttribute(k) { delete row.attrs[k]; } };
+  const cb = { id: 'dl-radar', checked: true, dataset: {}, closest: () => row };
   const lgdRadar = { style: { display: '' }, querySelector: () => null };
   const over = {
     jsonWithin, clockFor,                          /* the real clock, and the real per-host table */
+    untilObserved, afterTick, tickKey,             /* the real policy, on the real wheel's one-shot */
     whenStyleReady: () => Promise.resolve(),
     satToast: (m) => toasts.push(m),
     tileLegends: () => {},
@@ -87,7 +97,7 @@ function rig() {
     set: (t, k, v) => { t[k] = v; return true; },
   });
   /* eslint-disable no-new-func */
-  const fns = new Function('scope', 'with (scope) { ' + RV_STATE + '\n' + RV_FNS
+  const fns = new Function('scope', 'with (scope) { ' + UNOBS_STATE + '\n' + RV_STATE + '\n' + RV_FNS
     + '\nreturn { rvFetch, toggleLayer, deadline: clockFor(RV_INDEX_URL) }; }')(scope);
   return { ...fns, toasts, cb, row, lgdRadar };
 }
@@ -111,7 +121,8 @@ test('① a stalled frame index ends at its deadline, takes the failure path, le
   const realFetch = globalThis.fetch;
   globalThis.fetch = host.fetch;
   t.after(() => { globalThis.fetch = realFetch; });
-  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  t.after(() => { stopEarlyTimers(); });
 
   const R = rig();
   assert.ok(Number.isFinite(R.deadline) && R.deadline > 0, 'rvFetch has no deadline of its own');
@@ -139,7 +150,23 @@ test('① a stalled frame index ends at its deadline, takes the failure path, le
   await settle();
   assert.equal(host.calls[0].signal.aborted, true, 'the deadline passed and the read was not aborted');
   assert.equal(await shared, null, 'the shared read did not end when its deadline did');
-  assert.deepEqual(R.toasts, ['Live weather data unavailable'], 'a read that never came back was not reported to the reader');
+  /* (unobserved-is-not-refused) …and that is NOT a refusal: still ticked, still in flight, told once */
+  const WAITING = 'Still waiting for the data — asking again';
+  assert.deepEqual(R.toasts, [WAITING], 'a read that ran out of time was reported as the data being unavailable');
+  assert.equal(R.cb.checked, true, 'the box was unticked because nothing was read in time');
+  assert.equal(R.row.attrs['aria-busy'], 'true');
+  assert.equal(F.has('dl-radar'), true, 'the row left the registry while it was still being asked — the self-heal would pulse it');
+  /* the policy: a pause as long as the failed clock, then a read with the clock doubled — every retry
+     differs from the last; the host stays silent through all of them */
+  const run = async (ms) => { for (let i = 0; i < ms; i++) { t.mock.timers.tick(1); if (i % 250 === 249) await settle(); } await settle(); };
+  for (let k = 1; k <= UNOBSERVED_RETRIES; k++) {
+    await run(R.deadline * 2 ** (k - 1));   /* the pause */
+    assert.equal(host.calls.length, 1 + k, 'retry ' + k + ' was not made');
+    assert.equal(R.cb.dataset.imUnobserved, String(k), 'the retry is not recorded on the box');
+    await run(R.deadline * 2 ** k);         /* its doubled clock */
+    assert.equal(host.calls[k].signal.aborted, true, 'retry ' + k + ' outlived its clock');
+  }
+  assert.deepEqual(R.toasts, [WAITING, 'Live weather data unavailable'], 'a host silent through every retry was not reported to the reader');
   assert.equal(R.cb.checked, false, 'the row stayed ticked over a layer that cannot draw');
   assert.deepEqual(R.row.removed, ['on']);
   assert.equal(R.lgdRadar.style.display, 'none');
@@ -149,15 +176,17 @@ test('① a stalled frame index ends at its deadline, takes the failure path, le
   R.cb.checked = true;
   F.track('dl-radar', R.toggleLayer('radar', true));
   await settle();
-  assert.equal(host.calls.length, 2, 'the next request was handed the dead read instead of starting a new one');
+  const N = 2 + UNOBSERVED_RETRIES;
+  assert.equal(host.calls.length, N, 'the next request was handed the dead read instead of starting a new one');
   const index = { host: 'https://tilecache.rainviewer.com', radar: { past: [{ time: 1, path: '/v2/radar/1' }], nowcast: [] } };
-  host.calls[1].answer({ ok: true, status: 200, text: async () => JSON.stringify(index) });
+  host.calls[N - 1].answer({ ok: true, status: 200, text: async () => JSON.stringify(index) });
   await settle();
-  assert.deepEqual(R.toasts, ['Live weather data unavailable'], 'an index that arrived in time was reported as unavailable');
+  assert.deepEqual(R.toasts, [WAITING, 'Live weather data unavailable'], 'an index that arrived in time was reported as unavailable');
   assert.equal(R.cb.checked, true);
   assert.equal(F.has('dl-radar'), false);
   assert.equal(await R.rvFetch(), await R.rvFetch(), 'the arrived index is not the one handed back');
-  assert.equal(host.calls.length, 2, 'a fresh index was read again inside its five minutes');
+  assert.equal(host.calls.length, N, 'a fresh index was read again inside its five minutes');
+  assert.equal(R.row.attrs['aria-busy'], undefined, 'the busy mark outlived the wait');
 });
 
 /* ── ② codeOnly and regular-expression literals ────────────────────────────────────────────────── */
@@ -350,12 +379,15 @@ function layerEnv() {
   /* a global THIS FILE publishes is not published yet — its setup code does not run in the rig, and a
      stand-in there would answer `if (window._tfrData)` with «already have it», so the branch would never
      ask the network at all. A global some other module publishes is a stand-in that answers at once. */
-  const win = new Proxy({ IntMapLang: lang, SUPABASE_URL: 'https://relay.invalid' }, {
+  /* (unobserved-is-not-refused) no runtime register: js/runtime.js afterTick arms its own timer (mocked below)
+     instead of handing the pause to a stand-in that never calls back */
+  const win = new Proxy({ IntMapLang: lang, SUPABASE_URL: 'https://relay.invalid', IntMapRuntime: undefined }, {
     get: (t, k) => (k in t ? t[k] : ((typeof k === 'symbol' || k === 'then' || OWN_GLOBALS.has(k)) ? undefined : answering())),
     set: (t, k, v) => { t[k] = v; return true; },
   });
   const over = {
     jsonWithin, readWithin, clockFor, ownRelayUrl,
+    untilObserved, isUnobserved, afterTick, tickKey,   /* (unobserved-is-not-refused) the real policy and the wheel's one-shot */
     GE: () => engine, HOST: { lang: 'en', countryGeo: {}, canDraw: () => true },
     loadCountryData: () => Promise.resolve(), countryStats: {},
     satToast: (m) => toasts.push(m), imToast: (m) => toasts.push(m),
@@ -374,7 +406,7 @@ function layerEnv() {
 
 test('④ every asynchronous branch of toggleLayer settles against a host that never answers — the reads carry their own clocks', async (t) => {
   const realFetch = globalThis.fetch, hadWindow = 'window' in globalThis, realWindow = globalThis.window;
-  t.after(() => { globalThis.fetch = realFetch; if (hadWindow) globalThis.window = realWindow; else delete globalThis.window; });
+  t.after(() => { globalThis.fetch = realFetch; if (hadWindow) globalThis.window = realWindow; else delete globalThis.window; stopEarlyTimers(); });
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
   const CAP_S = 3600;   /* mocked seconds — a cap on this test's loop, not a claim about any layer */
   const networked = {}, stuck = [];
@@ -398,10 +430,14 @@ test('④ every asynchronous branch of toggleLayer settles against a host that n
   /* the rig must actually reach the reads it is about — the four this round clocked */
   for (const id of ['radar', 'thermal', 'subcables', 'tfr']) assert.ok(networked[id], `${id}: the rig did not reach its network read`);
   /* …and each timed-out read landed in the failure path its branch already had */
-  assert.deepEqual(networked.radar.toasts, ['Live weather data unavailable']);
+  /* (unobserved-is-not-refused) radar and cables: told once that they are still waiting, asked again with
+     the clock doubled, and reported only when the host was silent through every retry */
+  const WAITING = 'Still waiting for the data — asking again';
+  assert.deepEqual(networked.radar.toasts, [WAITING, 'Live weather data unavailable']);
+  assert.equal(networked.radar.calls, 1 + UNOBSERVED_RETRIES, 'the radar row did not ask again after an unobserved read');
   assert.equal(networked.radar.unticked, true);
-  assert.deepEqual(networked.tfr.toasts, ['Could not load fertility data']);
-  assert.deepEqual(networked.subcables.toasts, ['Submarine cable data unavailable']);
+  assert.deepEqual(networked.tfr.toasts, [WAITING, 'The data did not arrive in time — try again'], 'the fertility row: a silent host is late, not «could not load» (unobserved-is-not-refused)');
+  assert.deepEqual(networked.subcables.toasts, [WAITING, 'Submarine cable data unavailable']);
   assert.equal(networked.subcables.unticked, true);
   assert.ok(networked.thermal.added.some((x) => /^src-thermal-/.test(String(x))), 'a timed-out fire probe no longer lets the layer try to draw');
   t.diagnostic(JSON.stringify(Object.fromEntries(Object.entries(networked).map(([k, v]) => [k, v.calls + ' reads, settled at ' + v.seconds + ' s']))));
@@ -473,6 +509,11 @@ test('⑥ clockFor answers per host from js/proxy-fetch.js — the World Bank ou
    URL argument begins with such a host must not be a bare fetch, and a jsonWithin/readWithin of it must
    take its clock from clockFor() rather than from a number written beside the call. */
 const DEFAULT_CLOCK = clockFor('https://clock.invalid/');
+/* (unobserved-is-not-refused) `clockFor(u) * scale` is still the host's clock: js/fetch-deadline.js
+   `untilObserved` hands a read the multiple (1, 2, 4, 8) after a silence. A LITERAL multiplier is a
+   number written beside the call, which is what this rule refuses. */
+const fromClockFor = (c) => !!c && ((c.type === 'CallExpression' && c.callee.type === 'Identifier' && c.callee.name === 'clockFor')
+  || (c.type === 'BinaryExpression' && c.operator === '*' && fromClockFor(c.left) && c.right.type !== 'Literal'));
 const urlPrefix = (n) => {
   if (!n) return null;
   if (n.type === 'Literal' && typeof n.value === 'string') return n.value;
@@ -528,7 +569,7 @@ function clockedHostReads(root) {
             out.reads.push(at);
             const clock = n.arguments[1];
             if (name === 'fetch') out.problems.push(`${at} reads ${hosts[0].slice(0, 48)} with a bare fetch — no clock at all`);
-            else if (!(clock && clock.type === 'CallExpression' && calleeName(clock.callee) === 'clockFor')) out.problems.push(`${at} reads ${hosts[0].slice(0, 48)} under a clock that is not clockFor()`);
+            else if (!fromClockFor(clock)) out.problems.push(`${at} reads ${hosts[0].slice(0, 48)} under a clock that is not clockFor()`);
           }
         }
         for (const k of Object.keys(n)) if (!['type', 'start', 'end', 'loc'].includes(k)) walk(n[k], s);
