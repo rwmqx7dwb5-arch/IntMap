@@ -1783,7 +1783,13 @@
          ("つぶれて押せない" / "かぶる"). It anchors left+right (no centering) and stretches between. */
       body.ms-hide .map-search{ display:none !important; }   /* (#R66) no usable map strip → no pill */
       body.ms-narrow .map-search{ position:fixed; z-index:calc(var(--z-controls) + 2); top:var(--ms-top,78px); left:var(--ms-left,14px); right:var(--ms-right,290px);
-        width:auto; transform:none; min-width:0; overflow:hidden;
+        width:auto; transform:none; min-width:0;
+        /* (search-results-clipped) clip ACROSS only. The collapse #R65 asks for is horizontal; a plain
+           overflow:hidden also cut off .map-search-results, which hangs BELOW the 35 px pill (top:48px),
+           so in this layout a search answered with nothing visible (measured in production 2026-09-30,
+           1280x800 with both side panels open: 12 results, none on screen). overflow-x:clip does not turn
+           the other axis into a scroller the way hidden does, so the panel below stays visible. */
+        overflow-x:clip; overflow-y:visible;
         /* (#R65) never wider than the anchors allow — a degenerate layout collapses instead of overflowing
            across the in-flow right sidebar */
         max-width:calc(100vw - var(--ms-left,14px) - var(--ms-right,290px)); }
