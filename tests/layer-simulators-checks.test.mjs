@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -153,7 +154,7 @@ test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own s
      panel for a hand-off to land in the wrong state of — what is left to assert is that nothing in
      js/sims.js reaches for it, which is the same defect stated where it can still occur. */
   const sims = read('js/sims.js');
-  const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');   /* (#R296) 21st round: a check for a removed name must not match the comment that explains the removal */
+  const code = (s) => codeOnly(s);   /* (#R296) 21st round: a check for a removed name must not match the comment that explains the removal */
   assert.doesNotMatch(code(sims), /IntMapDisaster/, 'nothing hands off to a disaster panel any more');
 });
 }
@@ -322,7 +323,7 @@ test('R212 ⑨: one epicenter control, and sub-sea-level LAND is painted', () =>
   /* ⚠ (#R218) the segment gained an OFF state — 「もう一度クリックしたら選択解除されるように」 — so the
      handler is now a toggle. The claim this line makes is unchanged and still checked: pressing it ON
      both sets the click mode AND arms the pick, in that order, from the one control. */
-  assert.match(s.replace(/\/\*[\s\S]*?\*\//g, ''), /\.sq-cm-epi'\)[\s\S]{0,400}setClickMode\('epi'\);\s*startPick\(\)/,
+  assert.match(codeOnly(s), /\.sq-cm-epi'\)[\s\S]{0,400}setClickMode\('epi'\);\s*startPick\(\)/,
     'the one segment both sets the click mode and arms the pick');
   assert.match(s, /if\(clickMode==='epi'\) setClickMode\('none'\)/, '…and a second press turns it off');
   /* the land test is the MASK plus a depth bound, not the sign of the elevation */

@@ -28,13 +28,13 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const require = createRequire(import.meta.url);
 const TSC = join(dirname(require.resolve('typescript/package.json')), 'bin', 'tsc');
 
 /* a comment-free view of a declaration file, so prose that mentions a member is not a member */
-function stripComments(src) { return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, ''); }
 function interfaceBody(src, name) {
   const s = stripComments(src);
   const at = s.search(new RegExp('interface\\s+' + name + '\\b[^{]*\\{'));

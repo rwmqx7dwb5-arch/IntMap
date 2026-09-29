@@ -25,6 +25,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { lf, readLF } from '../scripts/eol.mjs';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -60,7 +61,6 @@ function seedScripts(origin, entry = 'scripts/worktree.mjs') {
 {
 
 const read = (p) => readLF(resolve(ROOT, p));
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑦ THE IDENTIFIER A SESSION IS GIVEN IS ONE NOBODY ELSE HOLDS ─────────────────────────────
    The round number was taken three times (#R288, #R289 and once before), each costing a rebase and

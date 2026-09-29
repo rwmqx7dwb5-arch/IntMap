@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R220 — from tests/r220-checks.test.mjs (3 of its 14 tests) ════════ */
 {
@@ -51,7 +52,7 @@ test('r220 ③ every mark on the current plate has a casing under it', () => {
      field is re-strided for a new view. The invariant is unchanged: every setVis names ALL. */
   assert.ok((OCEAN.match(/setVis\(ALL,/g) || []).length >= 2, 'and so does every setVis');
   assert.ok(!/setVis\(\[/.test(OCEAN.replace(/`setVis\(\[[^`]*`/g, '')), 'no setVis carries its own hand-written list');
-  assert.ok(!/setVis\(\[FLOW,LINE,HEAD,LBL\]/.test(OCEAN.replace(/\/\*[\s\S]*?\*\//g, '')),
+  assert.ok(!/setVis\(\[FLOW,LINE,HEAD,LBL\]/.test(codeOnly(OCEAN)),
     'no partial list survives in the program (the note that records it may name it)');
 });
 

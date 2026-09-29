@@ -17,6 +17,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CORPUS } from '../tests/newsgeo-corpus.mjs';
 import { HOLDOUT } from '../tests/newsgeo-holdout.mjs';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* (#R162) The legacy gazetteer arrays no longer all live in index.html: _BUILTIN_GZ and
@@ -32,17 +33,18 @@ const HTML = readFileSync(join(ROOT, 'index.html'), 'utf8') + '\n' +
 function pullArray(name) {
   const at = HTML.indexOf('const ' + name + '=[');
   if (at < 0) throw new Error('array not found in the app source: ' + name);
-  let i = HTML.indexOf('[', at), depth = 0, end = -1, inStr = null;
-  for (let p = i; p < HTML.length; p++) {
-    const ch = HTML[p];
+  const i = HTML.indexOf('[', at);
+  /* comments must be gone BEFORE quote handling — an apostrophe inside a prose comment ("don't")
+     would otherwise open a bogus string. The shared reader blanks them with the offsets kept
+     (scripts/code-only.mjs), so an index into `code` is an index into HTML. */
+  const code = codeOnly(HTML.slice(i), { offsets: true });
+  let depth = 0, end = -1, inStr = null;
+  for (let p = 0; p < code.length; p++) {
+    const ch = code[p];
     if (inStr) { if (ch === '\\') p++; else if (ch === inStr) inStr = null; continue; }
-    /* comments must be skipped BEFORE quote handling — an apostrophe inside a
-       prose comment ("don't") would otherwise open a bogus string. */
-    if (ch === '/' && HTML[p + 1] === '*') { const e = HTML.indexOf('*/', p + 2); p = (e < 0 ? HTML.length : e + 1); continue; }
-    if (ch === '/' && HTML[p + 1] === '/') { const e = HTML.indexOf('\n', p); p = (e < 0 ? HTML.length : e); continue; }
     if (ch === "'" || ch === '"' || ch === '`') { inStr = ch; continue; }
     if (ch === '[') depth++;
-    else if (ch === ']') { depth--; if (!depth) { end = p; break; } }
+    else if (ch === ']') { depth--; if (!depth) { end = i + p; break; } }
   }
   if (end < 0) throw new Error('unbalanced array: ' + name);
   return JSON.parse(JSON.stringify(new Function('return ' + HTML.slice(i, end + 1))()));

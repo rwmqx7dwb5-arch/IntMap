@@ -45,7 +45,6 @@ const rd = (p) => readLF(path.join(ROOT, p));
 /* ⚠ 注釈の中の語で検査してはならない。「current_news を触らない」と**書いてある**ことを
  *   「触らない」の証拠にすると、その注釈を消しただけで検査が動く。見るのはコードだけ
  *   （#R285 の codeOnly と同じ形）。 */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* 本番 registry と同じ形（`domains` は `www.` 付きで入っている）。 */
 const SOURCES = [
@@ -517,7 +516,6 @@ test('#R351 ⑱ the stages exist and are individually runnable', () => {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readLF(path.join(ROOT, p));
 /* 注釈の中の語を証拠にしない（#R285 の codeOnly と同じ形）。 */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 const INGEST = 'supabase/functions/news-ingest/index.ts';
 const SHARED = 'supabase/functions/_shared/news-ingest.js';
@@ -912,21 +910,10 @@ test('#R405 ④ Google のリンク一覧は content 側に入っていても捨
  *  migration を読む道具。⚠ `--` の除去は**文字列リテラルの中では止める**——
  *  除去する側が壊れると、以下の検査は「何も書いていない SQL」を見て静かに緑になる。
  * ────────────────────────────────────────────────────────────────────────── */
-function stripSqlComments(sql) {
-  let out = '', inStr = false;
-  for (let i = 0; i < sql.length; i++) {
-    const c = sql[i];
-    if (inStr) {
-      out += c;
-      if (c === "'") { if (sql[i + 1] === "'") out += sql[++i]; else inStr = false; }
-      continue;
-    }
-    if (c === "'") { inStr = true; out += c; continue; }
-    if (c === '-' && sql[i + 1] === '-') { while (i < sql.length && sql[i] !== '\n') i++; out += '\n'; continue; }
-    out += c;
-  }
-  return out;
-}
+/* (test-code-only-one) the shared reader's SQL mode: `--` AND block comments, stopping at '…' —
+   the scanner that stood here knew only `--`, and the cron.job check below had to strip the block
+   comments a second time with the JS regex to stop answering its own explanation. */
+const stripSqlComments = (sql) => codeOnly(sql, { lang: 'sql' });
 function statements(sql) {
   const src = stripSqlComments(sql);
   const out = [];
@@ -1092,17 +1079,17 @@ test('#R405 ⑯ cron を触る migration は cron.job を直接 UPDATE しない
   const dir = path.join(ROOT, "supabase", "migrations");
   const offenders = [];
   for (const f of fs.readdirSync(dir).filter((n) => n.endsWith(".sql"))) {
-    /* ⚠ **散文に当たらせない。** stripSqlComments が外すのは行コメントだけなので、
-       この規則の理由を説明したブロックコメントの中の «update cron.job» に検査が答えて
-       しまう（このリポジトリで 13 回目の形）。⇒ ブロックコメントも先に外す。 */
-    const sql = stripSqlComments(readLF(path.join(dir, f))).replace(/\/\*[\s\S]*?\*\//g, " ");
+    /* ⚠ **散文に当たらせない。** 行コメントだけを外すと、この規則の理由を説明した
+       ブロックコメントの中の «update cron.job» に検査が答えてしまう（このリポジトリで 13 回目の形）。
+       ⇒ ブロックコメントも外す——共有の SQL 読み（codeOnly の lang:'sql'）は両方を外す。 */
+    const sql = stripSqlComments(readLF(path.join(dir, f)));
     /* `update cron.job …` と `insert into cron.job …` / `delete from cron.job …` */
     if (/\b(?:update|delete\s+from|insert\s+into)\s+cron\.job\b/i.test(sql)) offenders.push(f);
   }
   assert.deepEqual(offenders, [],
     "cron.job を直接書き換える migration は本番で permission denied になる: " + offenders.join(", "));
   /* このラウンドの migration が、実際に使ってよい関数のほうを呼んでいること。 */
-  const mine = stripSqlComments(rd(MIGRATION)).replace(/\/\*[\s\S]*?\*\//g, " ");
+  const mine = stripSqlComments(rd(MIGRATION));
   assert.match(mine, /perform\s+cron\.schedule\(/, "cron.schedule を呼んでいない");
   assert.match(mine, /perform\s+cron\.unschedule\(/, "古い job を外していない");
 });
@@ -1283,7 +1270,7 @@ test('#R386 ⑤ Phase C の migration は public.is_admin() を呼ばず、admin
 
 /* 綴りのまま: 対象は SQL migration で Node からは評価できない（適用と実行は supabase db reset / test db の仕事） */
 test('#R386 ⑤b 運用者は「どの記事がどの Event に属するか」だけを直せる', () => {
-  const sql = codeOnly(rd('supabase/migrations/20260824090000_news_events_phase_c.sql'));
+  const sql = codeOnly(rd('supabase/migrations/20260824090000_news_events_phase_c.sql'), { lang: 'sql' });
   /* 上流が何と言ったかと、機械が何を根拠に判定したかは書き換えさせない。 */
   assert.ok(!/update\s+public\.news_articles\b(?![^;]*embedding)/i.test(sql),
     'no operator path may rewrite an article');

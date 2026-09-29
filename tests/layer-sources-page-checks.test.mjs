@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -80,7 +81,7 @@ test('R215 ⑦: sources.html explains the data, not the build', () => {
     /* ⚠ block comments stripped first: a locale file has a MAINTAINER's header that names the file
        the registry lives in, and a maintainer's note is not something a reader is shown. The subject
        here is the reader-facing strings (#R216's own convention for "this must not appear"). */
-    const body = read(`js/locales/pages.${l}.js`).replace(/\/\*[\s\S]*?\*\//g, '');
+    const body = codeOnly(read(`js/locales/pages.${l}.js`));
     assert.equal(/reference-data\.js/.test(body), false, `no source filename is shown to a reader (${l})`);
     assert.equal(/登録簿/.test(body), false, `no internal vocabulary for the list (${l})`);
     assert.equal(/二重に持たない|single source of truth/.test(body), false, `no maintenance argument (${l})`);

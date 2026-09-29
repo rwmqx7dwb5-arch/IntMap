@@ -36,14 +36,13 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { auditLines, catalogueText, dispatchCapabilities } from '../scripts/atlas-catalog.mjs';
 import { readLF } from '../scripts/eol.mjs';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { appSource } from './app-source.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* (#R278) its own comment stripper, kept: it leaves string literals in place, which ⑤/⑥ read */
-const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const ATLAS = () => read('js/atlas-console.js');
 const TOOLS = () => stripComments(read('js/map-tools.js'));
 const src = (p) => codeOnly(readLF(join(ROOT, p)));   /* (#R726's reader) */

@@ -27,7 +27,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = pathToFileURL(ROOT + '/');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 /* comments in this project carry the reasoning, so a check that greps them proves nothing */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const code = (p) => codeOnly(read(p));
 test('R227 ① the app draws the limb, and the renderer\'s own atmosphere is off where it does', () => {
   /* ⚠ READ, NOT RUN: the limb is a WebGL custom layer and the ownership gate reads the live renderer (globeness, eye altitude). */
   const layer = code('js/limb-layer.js');

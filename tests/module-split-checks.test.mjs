@@ -25,6 +25,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const root = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -34,26 +35,7 @@ const html = appShell(root);
 
 /* Blank out comments and string/template literals so identifier scanning reads CODE only — the
    module headers document the rewrites in prose, which would otherwise register as violations. */
-function code(src) {
-  let out = '', i = 0, inBlock = false;
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; out += '  '; i += 2; } else { out += c === '\n' ? '\n' : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; out += '  '; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== '\n') { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === '\\') { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === '\n' ? '\n' : ' '; i++;
-      }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function code(src) { return codeOnly(src, { literals: 'blank' }); }
 
 /* file -> the factories it defines */
 const MOVED = {

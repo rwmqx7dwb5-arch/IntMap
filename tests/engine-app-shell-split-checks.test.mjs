@@ -34,6 +34,7 @@ import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync } from 'node:fs';
 import * as acorn from 'acorn';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const root = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -47,26 +48,7 @@ const lf = html.replace(/\r\n/g, '\n');   // index.html is CRLF in the working t
 const INDEX_FILE = rd('index.html').replace(/\r\n/g, '\n');
 
 /* Blank comments + string/template literals so identifier scanning reads CODE only. */
-function code(src) {
-  let out = '', i = 0, inBlock = false;
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; out += '  '; i += 2; } else { out += c === '\n' ? '\n' : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; out += '  '; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== '\n') { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === '\\') { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === '\n' ? '\n' : ' '; i++;
-      }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function code(src) { return codeOnly(src, { literals: 'blank' }); }
 
 /* factory -> { file, the const index.html binds it to, the names index.html keeps a shim for }.
    The order of this object is the order the eleven calls must appear in — one block, right after

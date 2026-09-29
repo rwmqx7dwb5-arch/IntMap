@@ -27,6 +27,7 @@ import vm from 'node:vm';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { asClassicScript } from './app-source.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -218,7 +219,7 @@ test('R208 ⑤d: it borrows the catalogue, the ephemeris, the DEM and the clock'
   assert.ok(/window\.IntMapTerrain/.test(src), 'the terrain from js/map-extras.js');
   /* ⚠ the clock is asked with when(); #R200 recorded that the other spelling does not exist. Comments
      stripped first — this file NAMES the wrong spelling in order to warn about it. */
-  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const code = codeOnly(src);
   assert.ok(/IntMapTime[\s\S]{0,80}when\(\)/.test(code), 'the master clock is asked with when()');
   assert.ok(!/IntMapTime\.now\b/.test(code), '…and never with the spelling that does not exist');
   /* the two reasons a star is not drawn are counted APART */

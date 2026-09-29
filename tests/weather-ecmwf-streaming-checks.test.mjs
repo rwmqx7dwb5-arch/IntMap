@@ -51,7 +51,6 @@ afterEach(() => {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* comments carry this round's own prose, and prose about a rule is not the rule */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1 ');
 /* the body of a named function, by brace matching — never by a character count (#R283/#R306) */
 function fnBody(src, name) {
   /* ⚠ the OPENING PAREN is part of the name, or `load` finds `loadSDK` */
@@ -341,7 +340,6 @@ test('R310 ⑦ the field is the same field — same model, same band, same colou
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(join(ROOT, p));
 /* comments carry this round's own prose, and prose about a rule is not the rule */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1 ');
 /* the body of a named function, by brace matching — never by a character count (#R283/#R306) */
 function fnBody(src, name) {
   /* ⚠ the OPENING PAREN is part of the name, or `warm` would find `warmReadout` */
@@ -499,7 +497,6 @@ test('R314 ⑤ the layer rows warm on pointer arrival and on focus', () => {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(join(ROOT, p));
 /* this round's own prose names every mechanism it describes; prose about a rule is not the rule */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1 ');
 /* the body of a named function, by brace matching — never by a character count (#R283/#R306) */
 function fnBody(src, name) {
   /* ⚠ the OPENING PAREN is part of the name, or `omUrl` would find `omUrlOfSomethingElse` */

@@ -24,11 +24,10 @@ import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { readLF } from '../scripts/eol.mjs';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const R = (f) => readFileSync(path.join(ROOT, f), 'utf8');
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ─── the projection (#R171 → #R172) ─────────────────────────────────────────────────────────── */
 

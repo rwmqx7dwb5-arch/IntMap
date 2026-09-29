@@ -18,6 +18,7 @@ import vm from 'node:vm';
 import { gunzipSync } from 'node:zlib';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { uiLocale, uiLocaleCodes } from './helpers/layer-locale-tables.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -326,7 +327,6 @@ const json = (p) => JSON.parse(read(p));
 /* ⚠ (#R267) COUNT IN CODE, NOT IN COMMENTS. This file's own prose names the strings it checks for,
    which is how an audit ends up catching itself (nine rounds and counting). Comments are stripped
    before any «does X still exist» question is asked. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ④ the sparse facility layers ──────────────────────────────────────────────────────────── */
 test('R268 ④ the live facility query is merged with the shipped snapshot, never substituted', () => {
@@ -490,7 +490,6 @@ test('R268 ⑪ the hovered point reports the precipitation the layer is drawing'
  *  explanation of the defect, and this round's own notes quote `.tp-prog.indet`, `wp-trade-pt`,
  *  `toDataURL` and `layers.hasImage` in prose.
  * ==========================================================================*/
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ② THE BORDERS EVERY COUNTRY LAYER DRAWS ─────────────────────────────────────────────────── */
 test('#R254 ② a country choropleth gets the 10 m outline without the Countries tab', () => {

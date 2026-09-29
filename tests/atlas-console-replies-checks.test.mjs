@@ -22,6 +22,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { execFileSync } from 'node:child_process';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -50,7 +51,6 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
  * ==========================================================================*/
 
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const ATLAS = () => codeOnly(read('js/atlas-console.js'));
 
 /* The analyze reply is built by appending to `html`; what OPENS it is whatever sits between the
@@ -158,7 +158,7 @@ test('R279 (4) the other reply headers are untouched', () => {
  * ==========================================================================*/
 
 const read = (p) => readLF(resolve(ROOT, p));
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ══════════════════════════════════════════════════════════════════════════
    ① the wind legend's particle switch

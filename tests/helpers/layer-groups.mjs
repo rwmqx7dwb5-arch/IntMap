@@ -26,13 +26,11 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as M from '../../js/layer-manifest.js';
+import { codeOnly } from '../../scripts/code-only.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const SRC = readFileSync(resolve(ROOT, 'js/data-layers.js'), 'utf8')
-  /* the comments in this file QUOTE ids that were moved or deleted, so they have to go before the
-     literal is read — otherwise a shelf's history counts as its contents */
-  .replace(/\/\*[\s\S]*?\*\//g, ' ');
+const SRC = codeOnly(readFileSync(resolve(ROOT, 'js/data-layers.js'), 'utf8'));
 
 /** every shelf, in panel order: `[key, ids, namedCount]` — the manifest's view, which is what
     reorganizeLayerPanel reads (the check below makes sure it still does) */

@@ -19,6 +19,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -27,7 +28,6 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* (#R296 — the round's own account of why these checks exist heads its other half, in tests/shell-weather-packs-routing-checks.test.mjs) */
 {
 /* comments out, so an assertion about code cannot be satisfied by prose about code */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
 /* ═══ ① THE BOARD TILES ITSELF ═══════════════════════════════════════════════════════════════
    「自動でウィジェットを敷き詰めてくれない。」 MEASURED on the default board at 2 columns: an S card
@@ -221,9 +221,7 @@ const read = (p) => readLF(join(ROOT, p));
    forbidden spelling must look at CODE. `code()` strips block and line comments (and the strings
    that would confuse them) before the search. This is the fifteenth time this project has been bitten
    by a check hitting its own comment; doing it in one helper is the answer that keeps working. */
-const code = (p) => read(p)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/.*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 const PLATFORM = [
   'js/widget-core.js', 'js/widget-store.js', 'js/widget-scheduler.js', 'js/widget-render.js',

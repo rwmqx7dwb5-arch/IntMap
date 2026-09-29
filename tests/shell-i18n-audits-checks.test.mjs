@@ -21,7 +21,7 @@ import path from 'node:path';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { dominantEol, joinLines, normaliseEol, readLF, splitLines } from '../scripts/eol.mjs';
 import { scanSource } from '../scripts/i18n-attr-audit.mjs';
 import { audit, classifier, codes, tableOf } from '../scripts/i18n-dead-key-audit.mjs';
@@ -117,7 +117,6 @@ const R = read;
 /* ⚠ THE 15th TIME A CHECK READ ITS OWN NOTE. The comment that EXPLAINS the defect spells the
    defect out, so a raw search finds the explanation and calls it the disease. Strip comments
    before asking whether the CODE still holds a string. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ① THE CHECK FIRES — the three lines, exactly as they shipped ════════════════════════════ */
 
@@ -228,7 +227,6 @@ test('R459 ④ a finding inside a multi-line template names the line the attribu
  *  explanation of the defect, #R248 being the most recent.
  * ==========================================================================*/
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const json = (f, ...a) => JSON.parse(execFileSync(process.execPath,
   [join(ROOT, 'scripts', f), '--json', ...a], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
 

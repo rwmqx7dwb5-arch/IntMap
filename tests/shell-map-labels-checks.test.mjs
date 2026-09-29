@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { asClassicScript } from './app-source.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -64,7 +65,6 @@ function typography(tag) {
  *  explanation of the defect. (This file's own prose names `neighborhood` and `--card-bg`.)
  * ==========================================================================*/
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ③ THE CLASSES THE TILES ACTUALLY SHIP ───────────────────────────────────────────────────── */
 /* spelling kept: browser script (js/place-labels.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -843,7 +843,6 @@ for(const [global,years] of [['__HISTB',[1840,1850]],['__CSHAPES',[1890,1900]]])
 /* ═══════════════════════ #R253 · from r253-checks.test.mjs ═══════════════════════ */
 /* (#R253 — the round's own account of why these checks exist heads its other half, in tests/shell-panels-tools-checks.test.mjs) */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ③ THE COPY BUTTON SAYS WHAT IT COPIES ──────────────────────────────────────────────────── */
 /* spelling kept: browser script (js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -959,7 +958,7 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
 {
 /* the comments in this project carry the reasoning, and several of them QUOTE the spellings that
    were replaced — a check that greps them proves nothing (23 rounds of exactly that) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* the body of a named function declaration, brace-balanced (#R228 / #R307) */
 function fnBody(src, name) {

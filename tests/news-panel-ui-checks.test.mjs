@@ -17,6 +17,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R239 — from tests/r239-checks.test.mjs (5 of its 16 tests) ════════ */
 {
@@ -31,7 +32,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* (#R208/#R215) comments quote the instruction, and the instruction contains the very strings these
    tests look for — so every syntax check reads the file with its comments stripped. */
-const code = (p) => R(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(R(p));
 const run = (f, ...a) => execFileSync(process.execPath, [join(ROOT, 'scripts', f), ...a],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 
@@ -126,7 +127,6 @@ test('#R239 ② the ✕ stays, the drag affordance does not', () => {
  * ==========================================================================*/
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readLF(resolve(ROOT, p));
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
@@ -193,7 +193,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* ⚠ comments are stripped before every claim about code — this project has now written a test
    that matched its own explanation nineteen times (see #R288 ⑪ this round for the twentieth). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));

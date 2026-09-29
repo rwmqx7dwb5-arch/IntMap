@@ -29,6 +29,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MIG_DIR = join(ROOT, 'supabase/migrations');
@@ -253,7 +254,7 @@ const STATE = replay();
 
 /* ── the columns the client sends, read from the two insert paths ────────────────────────── */
 function clientInsertColumns(rel, table) {
-  const src = read(rel).replace(/\/\*[\s\S]*?\*\//g, '');
+  const src = codeOnly(read(rel));
   const at = src.indexOf(`.from('${table}').insert(`);
   assert.ok(at > 0, `${rel} no longer inserts into ${table} — re-read the client before trusting ④`);
   const argName = (/\.insert\((\w+)\)/.exec(src.slice(at)) || [])[1];
@@ -306,7 +307,7 @@ test('③ a community insert is stamped by a BEFORE INSERT row trigger that read
     const stamped = trs.some((t) => {
       const f = [...STATE.fns].find(([k]) => k === t.fn + '()');
       if (!f) return false;
-      const body = f[1].body.replace(/--[^\n]*/g, '').toLowerCase();
+      const body = codeOnly(f[1].body, { lang: 'sql' }).toLowerCase();
       const assign = (col) => { const a = new RegExp(`\\bnew\\.${col}\\s*:=\\s*([\\s\\S]*?);`).exec(body); return a ? a[1] : null; };
       const name = assign('author_name'), created = assign('created_at');
       if (!name || !created) return false;

@@ -43,6 +43,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import { SPELLINGS } from '../js/data-governance.js';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const LEDGER = 'scripts/outbound-hosts.json';
@@ -240,7 +241,7 @@ const LINK_REL_NAMES = /^(canonical|alternate|author|license|me|help|search|book
 
 function scanHtml(file, html, out) {
   const line = lineIndex(html);
-  const blank = html.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, ' '));
+  const blank = codeOnly(html, { lang: 'html', offsets: true });
   const scripts = [];
   /* <script> elements by position, the way the HTML tokenizer ends them: the body stops at the first
      `</script` whatever follows it (a regex for the end tag is always one spelling short). */
@@ -287,7 +288,7 @@ function scanHtml(file, html, out) {
 /* ── CSS: url(…) and @import are fetched ────────────────────────────────────────────────────── */
 function scanCss(file, css, out) {
   const line = lineIndex(css);
-  const blank = css.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '));
+  const blank = codeOnly(css, { lang: 'css', offsets: true });
   for (const m of blank.matchAll(/(?:url\(\s*["']?|@import\s+["'])([^"')\s]+)/gi)) {
     for (const u of urlsIn(m[1])) out.push({ host: u.host, dynamic: u.dynamic, file, line: line(m.index), link: null });
   }

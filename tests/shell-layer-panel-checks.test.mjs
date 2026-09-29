@@ -22,7 +22,7 @@ import path from 'node:path';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code, codeOnly as nocomment } from '../scripts/code-only.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -31,7 +31,6 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ═══════════════════════ #R252 · from r252-checks.test.mjs ═══════════════════════ */
 /* (#R252 — the round's own account of why these checks exist heads its other half, in tests/shell-map-labels-checks.test.mjs) */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ② ONE BACKGROUND, TWO ELEMENTS ──────────────────────────────────────────────────────────── */
 /* spelling kept: browser script (js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -56,7 +55,6 @@ test('#R252 ② the Active-layers bar reads the layer sidebar’s own background
 /* (#R296 — the round's own account of why these checks exist heads its other half, in tests/shell-weather-packs-routing-checks.test.mjs) */
 {
 /* comments out, so an assertion about code cannot be satisfied by prose about code */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
 /* ═══ ⑦ THE CLASSIC DROPDOWN CANNOT BE SHOWN ═════════════════════════════════════════════════
    「レイヤー選択欄はclassic dropdownを完全削除。（右サイドバー形式に一本化し、設定から該当項目を削除。）」
@@ -149,7 +147,6 @@ test('R296 ⑧ nothing lost a feature when four rows were removed', () => {
  * ==========================================================================*/
 {
 const read = (f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-const nocomment = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');
 
 /* ── ① the command ─────────────────────────────────────────────────────────────────────────── */
 /* spelling kept: browser script (js/app-body.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -215,7 +212,7 @@ test('R666 ④: "open the pandemic simulator" does not answer with the hub on a 
 
 /* the comments in this project carry the reasoning, and several of them QUOTE the spellings that
    were replaced — a check that greps them proves nothing (23 rounds of exactly that) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* the body of a named function declaration, brace-balanced (#R228 / #R307) */
 function fnBody(src, name) {
@@ -522,7 +519,6 @@ test('R483 ③ タイルの★と classic 行の★は、どちらも棚に「�
  * ==========================================================================*/
 {
 const read = (f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-const nocomment = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');
 
 /* ── ① every simulation the kernel knows has a row in the list the reader sees ─────────────── */
 /* spelling kept: browser script (js/app-body.js, js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -783,21 +779,7 @@ test('R408 ①d: 自分の見積りを書き直した — コメントの数が�
 
 /* コメントを外してから読む。⚠ この回の調査用スクリプトは最初これを忘れ、散文の中の
    「#R280's shape」のアポストロフィを引用符と読んで、存在しないファクトリを3件報告した。 */
-function stripComments(src) {
-  let out = '', i = 0; const n = src.length;
-  while (i < n) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; out += ' '; continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = e < 0 ? n : e; continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += c; i++;
-      while (i < n) { if (src[i] === '\\') { out += src.slice(i, i + 2); i += 2; continue; } out += src[i]; if (src[i] === q) { i++; break; } i++; }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function stripComments(src) { return codeOnly(src); }
 
 /* ── ⑥ (#R408 追記) THE BOOT GATE IS ONLY SHUT IF EVERY WAY IN RESPECTS IT ────────────────────
    #R408 shut the boot path inside js/layer-previews.js and PRODUCTION STILL DOWNLOADED THE PICTURES:

@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import * as LM from '../js/layer-manifest.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -225,8 +226,7 @@ test('#R565 ⑦ …and the module carries no vocabulary of its own', () => {
      file has an opinion about which instruments exist — and the one added upstream next month is
      the one that disappears. (Comments are prose ABOUT the source and are excluded, which is why
      this reads the code only.) */
-  const src = read('js/net-health-live.js')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const src = codeOnly(read('js/net-health-live.js'));
   for (const word of ['ping-slash24', 'merit-nt', 'gtr', 'upstream-delay', 'mozilla', 'bgp']) {
     assert.equal(src.includes(word), false, `js/net-health-live.js spells the instrument «${word}»`);
   }

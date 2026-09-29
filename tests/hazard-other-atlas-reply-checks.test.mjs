@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -43,9 +44,7 @@ const ROOT = new URL('../', import.meta.url);
 /* ⚠ COMMENTS ARE STRIPPED BEFORE EVERY NEGATIVE CHECK. #R231 hit this five times and #R208/#R229
    before it: a note that QUOTES the thing it says was removed makes "it is gone" fail. Match syntax,
    never prose. */
-const noJs = (s) => String(s)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const noJs = (s) => codeOnly(String(s));
 
 /* ── ⑤ Atlas ─────────────────────────────────────────────────────────────────────────────────── */
 test('R232 Atlas: the place name is printed once, not twice', () => {

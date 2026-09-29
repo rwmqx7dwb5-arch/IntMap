@@ -1014,6 +1014,15 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   directly from two files, and no file fetches a `data/*.gz` itself — a direct read being a literal,
   an inline `new URL('data/…')`, or a name bound to an expression holding a `data/` literal. ⑥
   evaluates `js/world-packs.js`'s own `worldAdm1` text: a failed read is dropped from its memo.
+- **A comment stripper that is not the shared one** (`comment-stripper`, test-code-only-one) —
+  `scripts/comment-strippers.mjs` reads every `.js`/`.mjs`/`.cjs` under `tests/` and `scripts/` from
+  the parser and finds a stripper by what it DOES, not what it is called: a `.replace()` whose
+  pattern is a comment-matching regex literal (block, line, HTML, SQL), a hand-written loop that
+  compares against a comment opener, an acorn `onComment` that uses the comment's offsets, a
+  `.filter()` that drops comment lines. The sites that remain are held per file to
+  `scripts/comment-strippers-ledger.json` in both directions (`--write` lowers it); `kept` rows say
+  why. The way out is always `codeOnly` from `scripts/code-only.mjs` (see «the source-reading
+  instruments» below). Regression: `tests/test-code-only-one-checks.test.mjs`.
 - **Presses no keyboard can reach** (`keyboard-reach`, a11y-shared-dialog) —
   `scripts/keyboard-reach.mjs` counts, per file and from the parser, every click receiver in `js/`
   (`onclick =`, `addEventListener('click')`, a delegated handler's `e.target.closest('…')`, a
@@ -3266,6 +3275,30 @@ literals, template literals and regular expressions exactly as they are — a UR
 and lives in ONE module so the tenth occurrence cannot be a new copy of it.
 `tests/r345-checks.test.mjs` holds the rule and proves each clause with a fixture carrying the
 defect, in both directions.
+
+**The source-reading instruments — one of each.** (test-code-only-one) The tenth occurrence did
+arrive as copies: 635 comment-stripping sites in 170 files under `tests/` and `scripts/`, most of
+them the regex pair `r345` ⑧ shows deleting a call. They were copies because `codeOnly` answered
+only one question; it now answers each of theirs as an option, and `npm run check:static`
+(`comment-stripper`, above) finds a new copy by its shape.
+
+| You need | Write |
+|---|---|
+| JS/TS code without comments (strings, templates, regexes untouched) | `codeOnly(src)` |
+| …with every index and line number still pointing into the file | `codeOnly(src, { offsets: true })` |
+| …and without the words inside string/template/regex literals either | `codeOnly(src, { literals: 'blank' })` |
+| …decided by the grammar, not the scanner (throws if acorn cannot read it) | `codeOnly(src, { parser: 'acorn', literals: 'blank' })` |
+| CSS (block comments only — `url(//cdn…)` and `calc(100% / 3)` are not comments or regexes) | `codeOnly(css, { lang: 'css' })` |
+| HTML markup (`<!-- -->` only) | `codeOnly(html, { lang: 'html' })` |
+| SQL (`--` and block comments, stopping at `'…'`) | `codeOnly(sql, { lang: 'sql' })` |
+| An AST | `parseSource(src)` / `walkSource(src, visitors)` from `tests/helpers/ast.mjs` |
+
+⚠ **Pick the `lang` from what the input IS, not from the helper's name.** Five files handed
+`css/intmap.css` to a JS comment reader — four through a local copy, two through `codeOnly` itself;
+the JS reading of CSS eats `//` inside `url()`, and the scanner treats a `/` after `%` or `(` as a
+regex. ⚠ A wrapper named after the import is a
+recursion: `function codeOnly(s) { return codeOnly(String(s)); }` blew the stack in one file during
+this migration. Import it; don't wrap it under its own name.
 
 **And ask the question through a door the OLD code can answer too.** A regression check earns its
 name by failing on the code before the fix — but a check written entirely against a new API fails

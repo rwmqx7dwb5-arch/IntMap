@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -85,7 +86,7 @@ test('R191 seismic: Japanese defaults to the JMA scale, and a chosen scale latch
 {
 /* ⚠ block comments are stripped before a "this string must NOT appear" test — a comment that
    explains a defect otherwise trips the check for the defect (#R216's own note). */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '');
+const code = (p) => codeOnly(read(p));
 test('#R218 ⑧ both seismic click modes turn off when pressed again, and an unarmed map is not claimed', () => {
   const s = code('js/seismic.js');
   assert.match(s, /if\(clickMode==='epi'\) setClickMode\('none'\)/, 'the epicentre segment has no off state');
@@ -148,9 +149,7 @@ const ROOT = new URL('../', import.meta.url);
 /* ⚠ COMMENTS ARE STRIPPED BEFORE EVERY NEGATIVE CHECK. #R231 hit this five times and #R208/#R229
    before it: a note that QUOTES the thing it says was removed makes "it is gone" fail. Match syntax,
    never prose. */
-const noJs = (s) => String(s)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const noJs = (s) => codeOnly(String(s));
 
 test('R232 seismic + tsunami: the method folds away, the warning does not', () => {
   /* ⚠ (#R245) the SENTENCE is the reader's, not this test's — 「これは文言を整えて」 reworded the
@@ -189,7 +188,7 @@ test('R234 seismic panel: no ✏ / 🌎 / ◎ / ◇, and no idle sentence', () =
   /* ⚠ COMMENTS STRIPPED FIRST. This project's most repeated self-inflicted failure is a check
      matching the prose that describes it (#R208, #R215, #R231, #R232 — 'コメントを剥いで構文で照合').
      The note beside the button necessarily QUOTES the instruction that removed the glyph. */
-  const s = read('js/seismic.js').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+  const s = codeOnly(read('js/seismic.js'));
   for (const g of ['✏', '🌎']) assert.ok(!s.includes(g), 'the ' + g + ' is gone from the panel');
   assert.doesNotMatch(s, /"sq-cm-epi" style="'\+SEG\(clickMode==='epi'\)\+'">◎ /, 'the ◎ is off the button');
   assert.doesNotMatch(s, /"sq-cm-sta" style="'\+SEG\(clickMode==='station'\)\+'">◇ /, 'the ◇ is off the button');
@@ -328,7 +327,6 @@ test('R234 seismic panel: one type scale, and grey only on the window chrome', (
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234 — SEVEN rounds of a check hitting its own explanation). Strip the
    comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 1 · 「無感」 was three different answers wearing one label ──────────────────────────────── */
 test('R235 seismic table: "not felt" is the ground, not the model running out of range', () => {
@@ -381,7 +379,6 @@ test('R235 seismic table: the chip is the published colour, square and unbolded'
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234/#R235 — EIGHT rounds of a check hitting its own explanation).
    Strip the comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 4 · the rupture area comes first, and the hypocentre goes on it ─────────────────────────── */
 test('R236 seismic: draw / hypocentre / place sit in ONE row, rupture area first', () => {
@@ -454,7 +451,6 @@ test('R236 seismic: with a rupture drawn, a hypocentre outside it is refused', (
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap #R235 hit eight
    times and #R236 hit once more. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 4 · the intensity chip is one size ─────────────────────────────────────────────────────────
    「各地の表内のJMA 7やMMI IVなどの背景の四角は、震度階級ごとに大きさをそろえるように。」 */
@@ -526,7 +522,6 @@ test('R237 seismic: the panel is a stack of titled cards, and its sheet is not i
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap that has now been
    hit nine times across #R208…#R237. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 6 · ⑥ the source is built in numbered steps, and the instruction is not printed twice ──────── */
 test('R238 panel: the three source controls are a step list, not a segmented track', () => {
@@ -589,7 +584,6 @@ test('R238 chips: the width is measured at run time, not a constant in the marku
 {
 const R = read;
 /* comments out, so a claim in prose can never satisfy a check about code (#R166) */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ③ THE PANEL FLOW ══════════════════════════════════════════════════════════════════════════ */
 test('R240 ③ the simulator opens with nothing armed, and the verb is pinned below the scroller', () => {
@@ -648,7 +642,6 @@ test('R240 ③ the intensity chip is one width PER SCALE', () => {
     [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 const R = read;
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ⑤⑥ THE TABLE ══════════════════════════════════════════════════════════════════════════════ */
 
@@ -704,7 +697,6 @@ test('R241 ⑥ the places table scrolls sideways inside its own card', () => {
     prose could contain ([[intmap-recurring-lessons]] E, eight rounds running). */
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ④ the quake panel: one Advanced fold, no tick track ──────────────────────────────────────── */
 test('R242 ④ there is exactly one 詳細設定 and the ✓ track is gone', () => {
@@ -776,7 +768,6 @@ test('R242 ④ the transport is a player and the tsunami hand-off is the loud th
     Comments are stripped before matching wherever a test looks for a fragment that this file's own
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑤ the earthquake panel ───────────────────────────────────────────────────────────────────── */
 test('R243 ⑤ a loaded earthquake hides the source and parameter cards, keeping the intensity scale', () => {
@@ -826,7 +817,7 @@ test('R243 ⑤ the transport is a labelled cluster and the tsunami button carrie
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ══ ① THE SEISMIC PANEL DRAWS DIFFERENT CARDS IN DIFFERENT STATES, SO NO WIRING MAY ASSUME ONE ═══
    #R243 stopped rendering cards ② and ③ for a loaded earthquake and left `panel.querySelector('.sq-fdraw').onclick = …`
@@ -893,22 +884,7 @@ test('r244 ⑭ the 詳細設定 fold is inset like every other row in its card',
     quotes the strings it forbids — [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 /* comments out, string literals kept — the same helper every round since #R208 */
-const code = (p) => {
-  const src = read(p);
-  let out = '', i = 0;
-  while (i < src.length) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = (e < 0 ? src.length : e + 2); continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = (e < 0 ? src.length : e); continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; let j = i + 1;
-      while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; }
-      out += src.slice(i, j + 1); i = j + 1; continue;
-    }
-    out += c; i++;
-  }
-  return out;
-};
+const code = (p) => codeOnly(read(p));
 
 /* ── ① the pinned footer is PINNED: it is a sibling of .sq-body, not a child ────────────────────
    「ポップアップ時に震度分布を計算が下部スティックになっていない。」 Card 1 opened three boxes and

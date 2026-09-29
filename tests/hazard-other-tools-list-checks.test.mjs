@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import * as LM from '../js/layer-manifest.js';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -79,7 +80,6 @@ test('R211 share: the simulators register by their lazy-module name, and a pendi
     prose could contain ([[intmap-recurring-lessons]] E, eight rounds running). */
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑤ the seismic simulator is reachable from the Layers panel ───────────────────────────────── */
 test('R242 ⑤ the Layers panel opens the seismic simulator through the OS action', () => {
@@ -96,7 +96,6 @@ test('R242 ⑤ the Layers panel opens the seismic simulator through the OS actio
     Comments are stripped before matching wherever a test looks for a fragment that this file's own
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑥ the simulator is reachable from the Layers panel a reader actually opens ────────────────── */
 test('R243 ⑥ the tile browser carries a Tools row that runs the OS action', () => {
@@ -138,7 +137,7 @@ test('R258 ⑨b: 地震波シミュレーター is 地震シミュレーター i
      record of what it was asked is not a label the app shows anybody. */
   const files = ['js/app-body.js', 'js/data-layers.js', 'js/map-ui.js', 'js/tool-panel.js', 'js/seismic.js'];
   files.forEach((f) => {
-    const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '');
+    const code = codeOnly(read(f));
     assert.ok(!/Seismic wave simulator|地震波シミュレータ/.test(code), f + ' no longer names the old title');
   });
   ['fr', 'ko', 'zh', 'zh-hans'].forEach((c) => {

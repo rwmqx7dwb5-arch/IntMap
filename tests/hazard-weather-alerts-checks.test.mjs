@@ -15,6 +15,7 @@ import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { assertUnreadNeverGreys } from './wash-tier.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -34,7 +35,6 @@ const read = (p) => readLF(join(ROOT, p));
     literals this round happened to write. */
 {
 /* ⚠ (#R267) count in CODE, not in comments — this file's own prose names the things it checks for */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 
 /* the table, parsed out of the source so the test reads what the app reads */
@@ -296,7 +296,6 @@ test('R269 ④ the relay gives a slow upstream a real budget and one retry', () 
     with its comments stripped — the prose that RECORDS a removal is not evidence against it. That
     is #R266's own lesson, and it has cost this repo a round twice. */
 {
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 
 /* ── ① one country, one national service, and no global event feed ─────────────────────────── */
@@ -523,7 +522,6 @@ test('R273 the refresh interval is a named bound and every feed is graded agains
 {
 /* comments are prose about the code and must never satisfy an assertion ABOUT the code — the
    「自分の検査が自分のコメントに当たる」 shape this project has paid for thirteen times (#R274). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const RELAY = () => codeOnly(read('supabase/functions/alerts-relay/index.ts'));
 

@@ -690,7 +690,6 @@ test('R266 ⑩: the long legends fold, and the developer-facing failure text is 
 /* ⚠ (#R267) COUNT IN CODE, NOT IN COMMENTS. This file's own prose names the strings it checks for,
    which is how an audit ends up catching itself (nine rounds and counting). Comments are stripped
    before any «does X still exist» question is asked. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑤ the legend title took a string where a name table was wanted ────────────────────────── */
 test('R268 ⑤ a legend name that is a bare string is one name, not one letter per language', () => {

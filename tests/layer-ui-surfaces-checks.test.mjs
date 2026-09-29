@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { codeOnly as code } from '../scripts/code-only.mjs';
 import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
@@ -103,11 +104,10 @@ test('R188 widgets: every card is translucent glass, tint included', () => {
 {
 /* 綴りのまま残した検査の理由: 対象が CSS・HTML・文書・設定ファイルで、そのテキスト自体が出荷物である・js/onboarding.js・js/sims.js・js/map-ui.js は DOM に閉じたファクトリで node では組み立てられない */
 /* (#R254) the round's header note is kept with its largest block, in tests/layer-packs-rasters-checks.test.mjs */
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① THE BAR LOOKS LIKE EVERY OTHER BAR ────────────────────────────────────────────────────── */
 test('#R254 ① the population progress bar has no UI of its own, because its fraction is real', () => {
-  const css = code(read('css/intmap.css'));
+  const css = code(read('css/intmap.css'), { lang: 'css' });
   assert.doesNotMatch(css, /\.tp-prog\.indet/, 'the indeterminate rule is back — this bar must look like every other bar');
   assert.doesNotMatch(css, /@keyframes\s+imProgSweep/, 'the sweep keyframes are back');
   assert.doesNotMatch(css, /--prog-sweep\s*:/, 'the sweep token is back; there is one progress-bar token because there is one bar');
@@ -130,7 +130,7 @@ test('#R254 ① the population progress bar has no UI of its own, because its fr
 
 /* ── ⑧ WHO IS IN FRONT ───────────────────────────────────────────────────────────────────────── */
 test('#R254 ⑧ the panel under the pointer is named, so a popup with no z-index can come forward', () => {
-  const css = code(read('css/intmap.css'));
+  const css = code(read('css/intmap.css'), { lang: 'css' });
   const m = /\.im-front\{\s*z-index:([^;!}]+?)\s*!important/.exec(css);
   assert.ok(m, 'nothing raises the panel being used — a MapLibre popup has z-index:auto and can never beat the sidebar');
   const z = zResolve(m[1], zTokens(css));   /* (map-a11y-structure) a named layer, resolved */

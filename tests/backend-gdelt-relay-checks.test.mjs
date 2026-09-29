@@ -34,6 +34,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -120,7 +121,7 @@ const REFUSED = () => jsonRes('{"error":"rate limited"}', 429);
 
 /* ⚠ (#R345) a comment that describes the defect is not the defect — the relay explains at length what
    used to be missing, so its source is read with the comments blanked */
-const RELAY_CODE = src('supabase/functions/gdelt-relay/index.ts').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+const RELAY_CODE = codeOnly(src('supabase/functions/gdelt-relay/index.ts'));
 
 /* ⚠ READ, NOT RUN (on purpose): every `x-intmap-…` header the function SETS anywhere, taken from the
    source rather than from a list this test keeps — including the stale / fresh branches that need a

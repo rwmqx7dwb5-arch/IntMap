@@ -43,6 +43,7 @@ import { join, relative, extname, dirname, resolve as resolvePath } from 'node:p
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
+import { codeOnly } from './code-only.mjs';
 
 /* ── the declarations. Each one must still be TRUE — a declaration that matches nothing is an error
       (the site it excused has gone, so the excuse is now a hole waiting for the next site). ──── */
@@ -164,7 +165,7 @@ function parseJs(text) {
 }
 function htmlParts(text) {
   const scripts = [], tags = [];
-  const noComments = text.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, ' '));
+  const noComments = codeOnly(text, { lang: 'html', offsets: true });
   for (const m of noComments.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
     const attrs = m[1];
     const line = noComments.slice(0, m.index).split('\n').length;

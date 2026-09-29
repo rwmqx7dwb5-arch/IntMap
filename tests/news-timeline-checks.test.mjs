@@ -35,7 +35,6 @@ import { codeOnly } from '../scripts/code-only.mjs';
  * ==========================================================================*/
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readLF(resolve(ROOT, p));
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
@@ -155,7 +154,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* ⚠ comments are stripped before every claim about code — this project has now written a test
    that matched its own explanation nineteen times (see #R288 ⑪ this round for the twentieth). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
@@ -242,7 +240,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(resolve(ROOT, p));
 /* comments in this project QUOTE the spellings they replaced, so a check that greps the raw file
    proves nothing — every source assertion reads the code with the comments taken out (#R313) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const code = (p) => codeOnly(read(p));
 
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -827,7 +825,7 @@ test('R421 #9 the stepper is wired to the module that owns the dates', () => {
   // ⚠ DATA, not prose — a comment may name a date as an example; a second LIST of them is the drift
   // this forbids. A copied index would show up as YYYYMMDD literals or as a reach into the bundle.
   assert.ok(
-    !/\b(?:18|19|20)\d{6}\b/.test(NT.replace(/\/\*[\s\S]*?\*\//g, '')),
+    !/\b(?:18|19|20)\d{6}\b/.test(codeOnly(NT)),
     'the timeline must not hold border dates of its own (no YYYYMMDD literals outside comments)',
   );
   assert.ok(!/__CSHAPES|csBounds/.test(NT), 'and it must not reach into the bundle directly');

@@ -16,6 +16,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { installWindow, isolate, read } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R743 · the surface Atlas is handed   (was tests/r743-gis-atlas-surface-checks.test.mjs)
@@ -1084,7 +1085,7 @@ describe('§ #R763 · meaning carried across ops', () => {
     const body = src.slice(at, at + 2200);
     /* ⚠ 測るのはコードであって註ではない（註は prefix の話をしてよい）。この関数が別の op の
        引数を読んだり、名前を組み立て直したりしていないことだけを測る。 */
-    const code = body.replace(/\/\*[\s\S]*?\*\//g, '');
+    const code = codeOnly(body);
     assert.ok(!/params\.prefix|prefix \+/.test(code), 'fieldStatements が prefix を自分で解釈している（別の op の引数を推測している）');
   });
 

@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R337 — from tests/r337-checks.test.mjs (5 of its 9 tests) ════════ */
 {
@@ -42,7 +43,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(resolve(ROOT, p));
 /* comments in this project QUOTE the spellings they replaced, so a check that greps the raw file
    proves nothing — every source assertion reads the code with the comments taken out (#R313) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const code = (p) => codeOnly(read(p));
 
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -17,6 +17,7 @@ import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { entries, latestEntry, renderIndex } from '../scripts/dev-notes.mjs';
+import { codeOnly as codeOnlyOf } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -33,7 +34,7 @@ test('R208 ④a: the shared app is worker-scoped, and says why', () => {
      affordance that already exists rather than making either file grow a running statement. */
   assert.ok(/#tool-panel \.tp-close/.test(h), 'the reset closes the tool through the panel button');
   /* comments stripped first: the header explains the trap by naming it */
-  const codeOnly = h.replace(/\/\*[\s\S]*?\*\//g, '');
+  const codeOnly = codeOnlyOf(h);
   assert.ok(!/IM_HOST\.exitTool/.test(codeOnly),
     'and NOT through IM_HOST, which is a module-local const in js/app-body.js — calling that from ' +
     'a test is the silent no-op #R205 is about, and it cost two runs of r171 to spot');

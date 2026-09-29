@@ -31,6 +31,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -269,7 +270,7 @@ test('R568 ⑩: the annual dose is an integral over decay and weathering, not a 
   /* the console must not still be extrapolating */
   /* ⚠ guard the CODE, not the prose: the comment above the fix quotes the removed expression on
      purpose, and a grep that cannot tell those apart would forbid explaining the bug. */
-  const con = read('js/atlas-console.js').replace(/\/\*[\s\S]*?\*\//g, '');
+  const con = codeOnly(read('js/atlas-console.js'));
   assert.equal(/annualMSv/.test(con), false, 'the «this rate holds for a year» helper is gone from the answer code');
   assert.match(con, /r\.firstYearMSv/, '…and what the answer prints is the model’s integral');
 });

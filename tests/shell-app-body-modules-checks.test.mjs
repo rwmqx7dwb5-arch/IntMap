@@ -22,6 +22,7 @@ import { CARRIED_NAMES, LAZY_NAMES } from '../js/lazy-modules.js';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 import * as acorn from 'acorn';
 import { appShell, appSource, bootGuardKnows, lazyFiles, publishedGlobals } from './app-source.mjs';
+import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -305,26 +306,7 @@ const html = appShell(root);
 const app = appSource(root);
 
 /* Strip comments and string literals so identifier scanning is not fooled by prose or data. */
-function code(src) {
-  let out = '', i = 0, inBlock = false;
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; i += 2; } else { out += c === '\n' ? '\n' : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== '\n') { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === '\\') { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === '\n' ? '\n' : ' '; i++;
-      }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function code(src) { return codeOnly(src, { literals: 'blank' }); }
 const HTML_CODE = code(html);
 
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
@@ -538,9 +520,6 @@ const ADAPTERS = new Set(['geo-engine.js', 'cesium-engine.js']);
 const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && !ADAPTERS.has(f));
 
 /* strip /* … *\/ and // comments so "the code says X" is never satisfied by prose about X */
-function stripComments(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
-}
 
 /* spelling kept: page markup / inline script (index.html) — only a browser document runs it. */
 test('#R170 canDraw() is declared in index.html as a hoisted function and exposed to modules', () => {
@@ -645,26 +624,7 @@ const html = appShell(root);
 /* Blank out comments and string/template literals so identifier scanning reads CODE only — the
    module headers document the rewrites in prose ("currentLang -> HOST.lang"), which would otherwise
    register as the very violation the scan is looking for. */
-function code(src) {
-  let out = '', i = 0, inBlock = false;
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; out += '  '; i += 2; } else { out += c === '\n' ? '\n' : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; out += '  '; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== '\n') { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === '\\') { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === '\n' ? '\n' : ' '; i++;
-      }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function code(src) { return codeOnly(src, { literals: 'blank' }); }
 
 /* file -> the factories it defines */
 /* (#R209) the js/ files that are no longer in the entry's list because they are fetched on demand —
@@ -864,21 +824,7 @@ function listFrom(src, name) {
 
 /* コメントを外してから読む。⚠ この回の調査用スクリプトは最初これを忘れ、散文の中の
    「#R280's shape」のアポストロフィを引用符と読んで、存在しないファクトリを3件報告した。 */
-function stripComments(src) {
-  let out = '', i = 0; const n = src.length;
-  while (i < n) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; out += ' '; continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = e < 0 ? n : e; continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += c; i++;
-      while (i < n) { if (src[i] === '\\') { out += src.slice(i, i + 2); i += 2; continue; } out += src[i]; if (src[i] === q) { i++; break; } i++; }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function stripComments(src) { return codeOnly(src); }
 
 /* eager とは「src/main.js の import の推移閉包に居る」こと。⚠ 直接の import だけを見ると
    `facilities` を取り落とす——js/osm-facilities.js を import しているのは js/layer-packs.js である。

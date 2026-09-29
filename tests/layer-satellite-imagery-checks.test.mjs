@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { isBenign } from './helpers/network.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -53,7 +54,6 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
  *  expressions these checks require to be absent.
  * ==========================================================================*/
 const read = (p) => readLF(resolve(ROOT, p));
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* the message Chromium logged, verbatim, for one of the twenty tiles */
 const CSP_MESSAGE = "Loading the image 'imapsat://2/0/2' violates the following Content Security "

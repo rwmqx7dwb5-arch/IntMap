@@ -18,9 +18,9 @@ import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { appShell } from './app-source.mjs';
 import { makeCameraMath } from '../js/camera-math.js';
+import { codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const R = (f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 /* (#R175) "the page" is index.html + src/main.js + js/app-body.js (+ js/geo-engine.js) */
 const INDEX = appShell(new URL('../', import.meta.url));
 /* (#R322) the pure camera GEOMETRY is its own file, deliberately NOT part of the shell text */

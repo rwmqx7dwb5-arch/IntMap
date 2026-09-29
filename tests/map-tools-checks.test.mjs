@@ -17,13 +17,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { appSource } from './app-source.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
-const noJs = (s) => String(s)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const noJs = (s) => codeOnly(String(s));
 /* ⚠ WHY THESE READ THE SOURCE. Each of these tools is DOM + renderer code inside a map-host module
    (popups, compass, contour source rebuild, draw panel, flight sim, locate badge); none runs
    without the map. What is pinned is the rule or handler each round wrote. */

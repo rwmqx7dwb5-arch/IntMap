@@ -17,6 +17,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { until } from './helpers/wx-ecmwf-page.mjs';
 import { ROOT, isolate, read } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R298 · flat projection, the Atlas message tools   (was tests/r298-checks.test.mjs, in part)
@@ -103,7 +104,7 @@ describe('§ #R299 · NUL bytes, the corner catch, point picking, the inset', ()
 
   /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
      This project has paid for that twenty-four times; ask the question of the text that RUNS. */
-  const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const noComments = (src) => codeOnly(src);
 
   /* ── ⓪ no file in this repository may carry a NUL byte ───────────────────────────────────────
      #R298 ⑨ found `js/routing-geocode.js` holding a raw 0x00: ripgrep classifies such a file as

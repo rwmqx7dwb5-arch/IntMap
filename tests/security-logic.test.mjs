@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { codeOnly as codeOnlyOf } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -31,11 +32,10 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    `/\*[\s\S]*?\*\/` OPENS on the `/*` inside `https://*.supabase.co` — a CSP host pattern in
    admin.html's <meta> — and closed 12,076 characters later on the first real comment terminator,
    swallowing the SDK <script> tag that this file then reported as missing. So: HTML comments first,
-   and a block comment may not begin immediately after a `/` or a `:`, which is what a URL looks like. */
-const codeOnly = (s) => s
-  .replace(/<!--[\s\S]*?-->/g, ' ')
-  .replace(/(^|[^:/])\/\*[\s\S]*?\*\//g, '$1 ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+   and a block comment may not begin immediately after a `/` or a `:`, which is what a URL looks like.
+   (test-code-only-one) Both halves are now the shared reader's: HTML comments first, then the JS
+   reading, which never opens a comment inside a quoted attribute or string in the first place. */
+const codeOnly = (s) => codeOnlyOf(codeOnlyOf(s, { lang: 'html' }));
 const refreshNews = read('supabase/functions/refresh-news/index.ts');
 const aiProxy = read('supabase/functions/ai-proxy/index.ts');
 const relayGuard = read('supabase/functions/_shared/relay-guard.js');
@@ -138,7 +138,7 @@ test('ai-proxy bounds the REQUEST, not just the parsed fields', () => {
      refuses a declared content-length up front and cancels an undeclared one at the ceiling. The
      old req.arrayBuffer() + byteLength > MAX was a check on what had already been buffered. */
   assert.match(aiProxy, /readCapped\(req, MAX_BODY_BYTES\)/, 'the request body is not read through the capped reader');
-  assert.doesNotMatch(aiProxy.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''), /req\.(arrayBuffer|json|text)\(\)/, 'the body is read unbounded somewhere');
+  assert.doesNotMatch(codeOnlyOf(aiProxy), /req\.(arrayBuffer|json|text)\(\)/, 'the body is read unbounded somewhere');
   const guard = readFileSync(join(ROOT, 'supabase/functions/_shared/relay-guard.js'), 'utf8');
   assert.match(guard, /export async function readCapped/, 'readCapped is not exported for the functions that need it');
   assert.match(guard, /content-length[\s\S]{0,200}maxBytes[\s\S]{0,900}reader\.cancel\(\)/, 'readCapped does not refuse up front and cancel mid-stream');

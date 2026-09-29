@@ -17,6 +17,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -31,7 +32,6 @@ const read = (p) => readLF(join(ROOT, p));
     prose could contain ([[intmap-recurring-lessons]] E, eight rounds running). */
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑦ the typeface, both surfaces ────────────────────────────────────────────────────────────── */
 test('R242 ⑦ the UI reads one font variable, set per language', () => {
@@ -89,7 +89,6 @@ test('R242 ⑨ a news band reserves the box it will actually occupy', () => {
     Comments are stripped before matching wherever a test looks for a fragment that this file's own
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const node = (...a) => execFileSync(process.execPath, a.map((x) => (x.startsWith('-') ? x : join(ROOT, x))), { cwd: ROOT, encoding: 'utf8' });
 
 /* ── ① the map's own letters sit on the baseline ──────────────────────────────────────────────── */
@@ -129,7 +128,6 @@ test('R243 ① the builder writes `top` as the distance to the TOP of the box', 
 {
 /* ⚠ comments are stripped before matching — this file's own prose quotes the instruction, and a
    negative check that reads its own comment is [[intmap-recurring-lessons]] E, eight rounds running. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /* ── ① THE GLYPH ORIGIN ───────────────────────────────────────────────────────────────────────
    The reported defect was 「ニュースピンの帯から文字位置がずれてはみ出ている」 and the cause was one

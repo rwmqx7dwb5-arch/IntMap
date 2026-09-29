@@ -20,13 +20,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './wd.mjs';
+import { codeOnly } from '../code-only.mjs';
 
 /** Parse the curated RAW table out of js/companies.js. Derived, never copied. */
 export function curatedRows() {
   const src = readFileSync(join(ROOT, 'js', 'companies.js'), 'utf8');
   const m = /const RAW=\[([\s\S]*?)\n\s*\];/.exec(src);
   if (!m) throw new Error('js/companies.js: RAW table not found — the parser and the file have drifted');
-  const body = m[1].replace(/\/\*[\s\S]*?\*\//g, '');
+  const body = codeOnly(m[1]);
   let rows;
   try { rows = JSON.parse('[' + body.replace(/,\s*$/, '') + ']'.replace(/^/, '')); } catch (_) { rows = null; }
   if (!rows) {

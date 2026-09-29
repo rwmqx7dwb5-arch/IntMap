@@ -65,7 +65,6 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
  * ==========================================================================*/
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 

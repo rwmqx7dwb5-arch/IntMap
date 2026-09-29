@@ -20,6 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeOnly as code } from './code-only.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JS = path.join(ROOT, 'js');
@@ -28,7 +29,6 @@ const ok = (m) => console.log('  ok    ' + m);
 const no = (m) => { bad++; console.log('  FAIL  ' + m); };
 
 /* strip block and line comments: a sentence ABOUT the wait is documentation, not a second one */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /* ── ① the one place ─────────────────────────────────────────────────────── */
 const engine = code(fs.readFileSync(path.join(JS, 'geo-engine.js'), 'utf8'));

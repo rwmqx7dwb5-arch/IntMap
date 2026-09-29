@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { makeAtlasCatalogText } from '../js/atlas-catalog-text.js';
 import { byKey } from './helpers/layer-groups.mjs';
 import { uiLocale, langCodes } from './helpers/layer-locale-tables.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -220,8 +221,7 @@ test('R215 ⑩a: the camera ceiling reaches past everything the scene draws', ()
 
 test('R215 ⑩b: the satellite list is ordered by a real comparator', () => {
   const sp = read('js/space.js');
-  const fn = sp.slice(sp.indexOf('function moonList()'), sp.indexOf('function moonList()') + 1600)
-    .replace(/\/\*[\s\S]*?\*\//g, '');   /* the prose deliberately NAMES the old shape */
+  const fn = codeOnly(sp.slice(sp.indexOf('function moonList()'), sp.indexOf('function moonList()') + 1600));   /* the prose deliberately NAMES the old shape */
   assert.equal(/b\.rKm/.test(fn), false,
     '`rKm` is the PLANET’s radius — comparing it with a satellite’s `radiusKm` is not an ordering');
   assert.match(fn, /\(b\.radiusKm\|\|0\)-\(a\.radiusKm\|\|0\)/, 'biggest first, on one field');

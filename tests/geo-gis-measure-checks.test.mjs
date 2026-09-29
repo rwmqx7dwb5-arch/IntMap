@@ -15,6 +15,7 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { installWindow, isolate, read } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R783 · the ground reference and the error envelope   (was tests/r783-crs-precision-checks.test.mjs)
@@ -1233,7 +1234,7 @@ describe('§ #R764 · sphere vs ellipsoid distance error', () => {
        同じ数だったなら、この file は何も測っていない。 */
     assert.notEqual(R * 1000, WGS84_A);
     const src = read('js/gis-geometry.js');
-    assert.ok(!/6371/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')),
+    assert.ok(!/6371/.test(codeOnly(src)),
       'js/gis-geometry.js が半径を自分で書いている（js/geodesy.js の 1 か所から来るはず）');
   });
 

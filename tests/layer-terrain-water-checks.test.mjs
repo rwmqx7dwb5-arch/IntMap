@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { uiLocale } from './helpers/layer-locale-tables.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -137,7 +138,6 @@ test('R190 water: a course under 0 m on land keeps going, and edits re-trace it'
 /* ⚠ (#R267) COUNT IN CODE, NOT IN COMMENTS. This file's own prose names the strings it checks for,
    which is how an audit ends up catching itself (nine rounds and counting). Comments are stripped
    before any «does X still exist» question is asked. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① 地形をリセット did nothing at all ───────────────────────────────────────────────────── */
 test('R268 ① the terrain reset is ONE function, and it marks the ground dirty', () => {
@@ -195,7 +195,6 @@ test('R268 ③ the sculpt tint can be turned off, and only the tint', () => {
 /* (#R271) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ (#R267) read CODE, not comments — this file's own prose names the things it checks for, and a
    check that matches its own explanation is the failure this project has paid for eleven times. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑤ one column in the terrain & water panel ──────────────────────────────────────────────── */
 test('R271 ⑤ the panel’s scrollbar width is measured and given to the panes that do not scroll', () => {
@@ -243,7 +242,6 @@ test('R271 ⑥ placing a source extends the basin instead of rebuilding the grid
 {
 /* 綴りのまま残した検査の理由: js/terrain-water.js はパネル DOM・DEM タイル・キャンバスを前提に組み立てるファクトリで node では組み立てられない */
 /* (#R277) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const TW = () => codeOnly(read('js/terrain-water.js'));
 
 /* ── ① the tool strip is ONE ROW, pinned, and everything else scrolls ───────────────────────────
@@ -307,7 +305,6 @@ test('R277 ② the one-shot source has exactly two numbers, and they are differe
 {
 /* 綴りのまま残した検査の理由: js/terrain-water.js はパネル DOM・DEM タイル・キャンバスを前提に組み立てるファクトリで node では組み立てられない */
 /* (#R284) the round's header note is kept with its largest block, in tests/layer-weather-ecmwf-checks.test.mjs */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const TW = () => codeOnly(read('js/terrain-water.js'));
 
 /* ── ⑤ 「ここに水」 → 「水源」 ─────────────────────────────────────────────────────────────── */

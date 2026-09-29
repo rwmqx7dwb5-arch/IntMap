@@ -52,6 +52,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appSource } from './app-source.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -73,27 +74,7 @@ const TR = makeAtlasTurnResults();
 /* ⚠ CODE, NOT PROSE. Comments and string bodies become spaces so a check cannot go red on the very
    comment that explains it — the self-hit this repository has now made more than a dozen times
    (memory/intmap-recurring-lessons.md). Same helper as tests/r413-checks.test.mjs. */
-function code(src) {
-  let out = '', i = 0, inBlock = false;
-  const NL = String.fromCharCode(10), BS = String.fromCharCode(92);
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; out += '  '; i += 2; } else { out += c === NL ? NL : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; out += '  '; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== NL) { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === BS) { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === NL ? NL : ' '; i++;
-      }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function code(src) { return codeOnly(src, { literals: 'blank' }); }
 
 const CONSOLE_SRC = rd('js/atlas-console.js');
 

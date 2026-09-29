@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -150,7 +151,7 @@ test('R543 ⑤: the renderer writes no colour of its own and rolls no number tab
      command IS 'M'. So assert the shape such a table actually has: a division by a power of ten
      concatenated to a unit letter, which is exactly what the four existing charts do and what
      #R492 recorded as the defect. */
-  const code = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  const code = codeOnly(src);
   assert.ok(!/1e(3|6|9|12)\)/.test(code), 'no /1e9 magnitude division');
   assert.ok(!/\+\s*'(k|M|B|T)'/.test(code), "no unit letter concatenated onto a scaled number");
   assert.match(code, /Intl\.NumberFormat|IntMapWidgetCore/, '…and the formatting it does use is Intl in the app locale');

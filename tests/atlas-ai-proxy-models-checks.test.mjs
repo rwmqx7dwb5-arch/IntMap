@@ -281,7 +281,7 @@ test('R736 ④: a withdrawn model is not OFFERED, is not BLOCKED, and is named e
   /* ⚠ MEASURED ON THE CODE, NOT ON THE PROSE — two comments narrate the 2026-09-15 measurement that
      found this id answering 200, and a check that counted those would fail the sentence explaining it
      (#R621: strip the comments before measuring). */
-  const bare = PROXY_RAW.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const bare = codeOnly(PROXY_RAW);
   assert.equal((bare.match(/gpt-6-astra/g) || []).length, 1, 'the withdrawn id is spelled more than once in the code');
 
   /* applied where the picker's options are built … */

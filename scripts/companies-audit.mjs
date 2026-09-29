@@ -24,6 +24,7 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'data', 'companies');
@@ -82,7 +83,7 @@ function main() {
   const cur = readFileSync(join(ROOT, 'js', 'companies.js'), 'utf8');
   const rawM = /const RAW=\[([\s\S]*?)\n\s*\];/.exec(cur);
   const curatedTickers = rawM
-    ? [...rawM[1].replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/\[\s*'([^']+)'/g)].map((m) => m[1])
+    ? [...codeOnly(rawM[1]).matchAll(/\[\s*'([^']+)'/g)].map((m) => m[1])
     : [];
   const shippedTickers = new Set(rows.map((r) => r.tk).filter(Boolean));
   /* a curated row may be COLLAPSED into another when both name the same company

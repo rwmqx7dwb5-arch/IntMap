@@ -14,6 +14,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -88,7 +89,7 @@ test('R212 ⑬: the news proxies and the wind grid both carry a deadline', () =>
 test('R215 ⑥: a snapshot always carries an analysis object, and the renderer does not assume', () => {
   const nu = read('js/news-ui.js');
   assert.match(nu, /function snapAnalysis/, 'there is one place that shapes a snapshot’s analysis');
-  const code = nu.replace(/\/\*[\s\S]*?\*\//g, '');   /* the prose still NAMES the old shape, on purpose */
+  const code = codeOnly(nu);   /* the prose still NAMES the old shape, on purpose */
   assert.equal(/analysis:\s*null/.test(code), false, 'nothing writes a null analysis any more — that is what threw');
   /* merge() must normalise records written by an OLDER build, or the fix never reaches existing stars */
   const merge = nu.slice(nu.indexOf('merge(feed,links)'), nu.indexOf('merge(feed,links)') + 700);
@@ -120,7 +121,7 @@ const read = (p) => (p === 'js/i18n.js'
 /* ⚠ a comment that DESCRIBES a defect is not the defect. Two checks below assert that a string does
    NOT appear in a file, and both files explain in prose why it must not — so they are read with the
    block comments taken out, or the note about the bug would trip the test for the bug. */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const code = (p) => codeOnly(read(p));
 
 /* ── ① the news relay: our own origin first, and the URL allow-list is real ────────────
    ⚠ (#R533) THIS TEST USED TO PIN FOUR SPELLINGS, AND ALL FOUR WERE HOW IT HAPPENED TO BE WRITTEN.

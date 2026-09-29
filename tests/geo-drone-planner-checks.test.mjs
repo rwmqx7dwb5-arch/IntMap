@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { appShell } from './app-source.mjs';
 import { isolate } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R174 · the drone planner   (was tests/r174-checks.test.mjs, in part)
@@ -41,7 +42,7 @@ describe('§ #R174 · the drone planner', () => {
     : readFileSync(new URL('../' + p, import.meta.url), 'utf8'));
   /* comments are prose here — every one of these files documents its own traps at length, and a naive
      substring search would happily match the explanation of a bug instead of the code that fixes it */
-  const stripComments = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
+  const stripComments = s => codeOnly(s);
 
   /* ─── 6. the drone planner ─────────────────────────────────────────────────────────────────── */
 

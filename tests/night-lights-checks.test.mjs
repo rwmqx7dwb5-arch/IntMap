@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ⚠ the Atlas state module is RUN here too, the way tests/r534-checks.test.mjs runs it — that
    round's whole defect was a last line that printed the key instead of the value, and only
@@ -33,7 +34,6 @@ const { makeAtlasState } = await import('../js/atlas-state.js');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 /* comments are where the argument lives, so a check that greps for behaviour must not read them */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /* ── the shipped module, in a box with a clock it can move ─────────────────────────────────── */
 function clockStub() {

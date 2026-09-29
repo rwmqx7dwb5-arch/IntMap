@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -58,7 +59,7 @@ test('R202 ③e the space HUD shows both scales and takes any multiplier', () =>
 {
 /* ⚠ block comments are stripped before a "this string must NOT appear" test — a comment that
    explains a defect otherwise trips the check for the defect (#R216's own note). */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '');
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑥ space: the Moon's orbit, the moons that were inside their planet, six switches ────── */
 test('#R218 ⑥ the orbit pass walks the list the BODIES are drawn from, so the Moon is in it', () => {
@@ -127,7 +128,7 @@ test('R223 ⑨ the sheet drag writes the property the stylesheet reads', () => {
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ⑨ 「Stand and look upは視界部分とパネル部分が重ならないように。視界部分のほうを画面の上側に。」
    The two boxes are bands that cannot intersect — and as of #R245 that is a FLEX COLUMN rather than a
@@ -153,22 +154,7 @@ test('r244 ⑨ the standing sky view and its panel are disjoint bands', () => {
     quotes the strings it forbids — [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 /* comments out, string literals kept — the same helper every round since #R208 */
-const code = (p) => {
-  const src = read(p);
-  let out = '', i = 0;
-  while (i < src.length) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = (e < 0 ? src.length : e + 2); continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = (e < 0 ? src.length : e); continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; let j = i + 1;
-      while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; }
-      out += src.slice(i, j + 1); i = j + 1; continue;
-    }
-    out += c; i++;
-  }
-  return out;
-};
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑦ the standing sky view tiles the screen ───────────────────────────────────────────────────
    「Stand and look upはパネル部分をもう少しパネルの領域範囲を整理して。」 A constant split (#R244's
@@ -192,7 +178,6 @@ test('r245 ⑦ the standing view is two flex bands and three columns of controls
    (layer-manifest) which layers exist, and their facts */
 {
 /* comments carry the reasoning and quote the very strings under test — strip them first */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 /* ── ⑥ one night-sky entry, both views ───────────────────────────────────────────────────────── */
 test('#R255 ⑥ the two night-sky menu items became one, and the in-panel switch stays', () => {

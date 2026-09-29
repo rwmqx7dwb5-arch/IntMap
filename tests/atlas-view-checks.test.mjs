@@ -39,6 +39,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeViewGround } from '../js/atlas-view-ground.js';
 import { makeAtlasAnswerRender } from '../js/atlas-answer-render.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const _saved = { document: globalThis.document };
 after(() => { globalThis.document = _saved.document; });
@@ -47,7 +48,6 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const lines = (p) => read(p).split(/\r?\n/);
 /* comments carry the reasoning and quote the very code they explain; a check that reads them is
    reading prose. Every assertion below runs on the stripped source. */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');

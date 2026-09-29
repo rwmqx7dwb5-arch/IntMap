@@ -21,6 +21,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { withTreeLock } from './helpers/gate-lock.mjs';
 import { allSpecs, coreNames, fixedCoreNames, changedSpecs, tierSpecs, isDeep, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
+import { codeOnly as noComments } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -313,7 +314,6 @@ test('R304 ⑦ worktree.mjs status reports the nightly, and cannot break a sessi
 /* (#R305) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-five times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑯ the report file that is no longer in the repository is not claimed to be ──────────────
    「USGS.能登.pdf は不要なため削除してください。」 The file ledger is a statement about what is here. */

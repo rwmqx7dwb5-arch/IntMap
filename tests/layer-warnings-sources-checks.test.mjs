@@ -28,7 +28,6 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* 綴りのまま残した検査の理由: js/world-packs.js は DOM・MapLibre・各機関への fetch に閉じた 1 つのファクトリで node では組み立てられない（切り出して実行できる関数は実行している）。supabase/functions/<名前>/index.ts は Deno.serve の中で上流を読む Edge Function で、ここでは起動しない（起動して測る検査は tests/layer-ais-ships-checks の #R510 ⑨⑩⑪） */
 /* (#R266) the round's header note is kept with its largest block, in tests/layer-packs-rasters-checks.test.mjs */
 /* (#R273) the prose that records why something went is not evidence that it is still there */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 test('R266 ⑥: the warnings layer covers the G7 and China with their own services', () => {
   const s = read('js/world-packs.js');
@@ -113,7 +112,6 @@ test('R266 ⑭: the alert relay is an allow-list, not an open proxy', () => {
 /* ⚠ (#R267) COUNT IN CODE, NOT IN COMMENTS. This file's own prose names the strings it checks for,
    which is how an audit ends up catching itself (nine rounds and counting). Comments are stripped
    before any «does X still exist» question is asked. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑨ warnings: more services, grouped, and actually re-read ──────────────────────────────── */
 test('R268 ⑨ three more national services are wired, and each is loaded and reported', () => {
@@ -187,7 +185,6 @@ test('R212 ④: "nothing in force" is only said when that feed actually answered
 /* (#R271) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ (#R267) read CODE, not comments — this file's own prose names the things it checks for, and a
    check that matches its own explanation is the failure this project has paid for eleven times. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ② the two services that answer a browser directly, with geometry ───────────────────────── */
 test('R271 ② Germany and Norway are read from their own service', () => {
@@ -234,7 +231,6 @@ test('R271 ② the Philippines is read from PAGASA, at its provinces', () => {
 {
 /* 綴りのまま残した検査の理由: js/world-packs.js は DOM・MapLibre・各機関への fetch に閉じた 1 つのファクトリで node では組み立てられない（切り出して実行できる関数は実行している）。supabase/functions/<名前>/index.ts は Deno.serve の中で上流を読む Edge Function で、ここでは起動しない（起動して測る検査は tests/layer-ais-ships-checks の #R510 ⑨⑩⑪） */
 /* (#R277) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 
 /* ── ⑦ 「警報名は設定言語で書け」 ────────────────────────────────────────────────────────────────
@@ -356,7 +352,6 @@ test('R277 ⑪ hail, 山洪, a bare “Fire” and the awareness_type codes all 
 {
 /* 綴りのまま残した検査の理由: js/world-packs.js は DOM・MapLibre・各機関への fetch に閉じた 1 つのファクトリで node では組み立てられない（切り出して実行できる関数は実行している） */
 /* (#R284) the round's header note is kept with its largest block, in tests/layer-weather-ecmwf-checks.test.mjs */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 const WP = () => codeOnly(read('js/world-packs.js'));
 

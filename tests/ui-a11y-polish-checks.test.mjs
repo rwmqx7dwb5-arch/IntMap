@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
@@ -117,7 +118,7 @@ for (const lang of ['en', 'jp']) {
 }
 
 /* ══ ② CONTRAST, COMPUTED FROM THE STYLESHEET ═══════════════════════════════════════════════════════ */
-const CSS = readFileSync(join(ROOT, 'css/intmap.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const CSS = codeOnly(readFileSync(join(ROOT, 'css/intmap.css'), 'utf8'), { lang: 'css' });
 /** every style rule in the sheet, @media bodies included: [{ sel, decl:{prop:value} }] */
 function rules(src) {
   const out = []; let i = 0;

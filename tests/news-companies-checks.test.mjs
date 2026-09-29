@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 import path, { join } from 'node:path';
 import { readFileSync, existsSync, readdirSync, statSync, globSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 /* ════════ #R354 — from tests/r354-checks.test.mjs ════════ */
 {
@@ -43,23 +44,7 @@ const rd = (p) => readFileSync(path.join(ROOT, p), 'utf8');
    forbidden contains `wdt:P749*`, and the note explaining that "Data centre" must
    not come back contains "Data centre". A check that reads comments is measuring
    the explanation, not the implementation. */
-const code = (p) => {
-  const src = rd(p);
-  let out = String();
-  for (let i = 0; i < src.length; i++) {
-    if (src[i] === '/' && src[i + 1] === '*') {
-      const e = src.indexOf('*/', i + 2);
-      i = (e < 0 ? src.length : e + 1);
-      out += ' ';
-      continue;
-    }
-    out += src[i];
-  }
-  return out.split('\n').filter((l) => {
-    const t = l.trim();
-    return t.slice(0, 2) !== '//' && t.slice(0, 1) !== '*';
-  }).join('\n');
-};
+const code = (p) => codeOnly(rd(p));
 const DATA = path.join(ROOT, 'data', 'companies');
 const PROFILES = path.join(DATA, 'profiles');
 const hasData = existsSync(path.join(DATA, 'index.json'));
@@ -92,7 +77,7 @@ test('#R354 ② the 190-row curated table is still the one source of the live-ma
   const src = rd('js/companies.js');
   const m = /const RAW=\[([\s\S]*?)\n\s*\];/.exec(src);
   assert.ok(m, 'js/companies.js: the RAW table is gone or has changed shape');
-  const rows = Function('"use strict";return ([' + m[1].replace(/\/\*[\s\S]*?\*\//g, '') + '])')();
+  const rows = Function('"use strict";return ([' + codeOnly(m[1]) + '])')();
   assert.ok(rows.length >= 190, 'the curated table shrank to ' + rows.length + ' rows (was 190)');
   for (const r of rows) assert.equal(r.length, 12, 'a curated row is not 12 fields: ' + JSON.stringify(r).slice(0, 90));
   /* the pipeline PARSES this table rather than copying it — a second copy is the failure mode */
@@ -371,7 +356,6 @@ test('#R354 ⑱ a padding the renderer refuses backs off instead of cancelling t
  * ==========================================================================*/
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
-const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 /* ── ① no shipped code REQUESTS the dead host ─────────────────────────────────────────────────
    Over the whole of js/, not over the one file that had it: #R429's lesson is that a check written

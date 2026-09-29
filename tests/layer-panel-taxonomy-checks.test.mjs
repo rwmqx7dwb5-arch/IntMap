@@ -15,7 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import * as LM from '../js/layer-manifest.js';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { GROUPS, named as namedOf, rest as restOf, publishedList, byKey, OTHERS_IDS } from './helpers/layer-groups.mjs';
 import { uiLocale, uiLocaleCodes } from './helpers/layer-locale-tables.mjs';
 
@@ -69,7 +69,7 @@ test('R187 sea level: the default opacity is 60 %', () => {
 /* (on the import of '../js/layer-manifest.js') */ /* (layer-manifest) the registry's facts */
 /* the comments here carry the reasoning and QUOTE the spellings that were replaced, so a grep over
    the raw file proves nothing — 24 rounds of exactly that ([[intmap-recurring-lessons]]) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 const DLC = code('js/data-layers.js');
 const MU = read('js/map-ui.js');
 const MUC = code('js/map-ui.js');
@@ -532,7 +532,6 @@ test('R268 ⑩ the four moved rows are on their new shelf, and no id is on two',
 /* 綴りのまま残した検査の理由: js/data-layers.js は DOM・MapLibre・fetch に閉じた Layers パネル全体のファクトリで node では組み立てられない */
 /* (#R254) the round's header note is kept with its largest block, in tests/layer-packs-rasters-checks.test.mjs */
 /* (on the import of '../js/layer-manifest.js') */ /* (layer-manifest) which layers exist, and their facts */
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑦ THE TAXONOMY ──────────────────────────────────────────────────────────────────────────── */
 test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is promoted', () => {
@@ -639,7 +638,6 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
 /* (#R271) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ (#R267) read CODE, not comments — this file's own prose names the things it checks for, and a
    check that matches its own explanation is the failure this project has paid for eleven times. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑦ the taxonomy ─────────────────────────────────────────────────────────────────────────── */
 test('R271 ⑦ every layer id is in exactly one group, and the moved rows are where they were sent', () => {

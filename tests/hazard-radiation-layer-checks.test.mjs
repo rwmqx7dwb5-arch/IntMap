@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import * as LM from '../js/layer-manifest.js';
 import { makeRadiationObs } from '../js/radiation-obs-core.js';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -233,9 +234,7 @@ test('#R585 ④ nothing in the shipped tree fetches EURDEP', () => {
       /* comments are stripped first: a comment cannot fetch anything, and the REASON EURDEP is
          excluded has to be allowed to live next to the code that excludes it. Without this the
          check would make the explanation unwriteable, which is how a rule loses its why. */
-      const src = read(rel)
-        .replace(/\/\*[\s\S]*?\*\//g, ' ')
-        .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+      const src = codeOnly(read(rel));
       for (const m of src.matchAll(/https?:\/\/[^\s'"`)]+/g)) {
         if (/eurdep|remap\.jrc|remon\.jrc|redata\.jrc/i.test(m[0])) bad.push(rel + ' → ' + m[0]);
       }
@@ -381,9 +380,7 @@ test('#R621 the layer only reaches for renderer members the shipped engine actua
   /* ⚠ COMMENTS ARE STRIPPED FIRST, and the first run of this check is why: it flagged `GE().popup`
      out of the very comment that explains the defect. A rule whose own explanation trips it is a
      rule you end up deleting the explanation for — the same lesson the EURDEP check learned. */
-  const src = read('js/radiation-layer.js')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const src = codeOnly(read('js/radiation-layer.js'));
   const bad = [];
   const call = new RegExp('GE\\(\\)\\.([A-Za-z_$][\\w$]*)(?:\\.([A-Za-z_$][\\w$]*))?', 'g');
   for (const m of src.matchAll(call)) {
@@ -449,7 +446,7 @@ function hiddenClasses() {
   /* ⚠ comments are stripped first: a rule's selector text runs from the previous `}`, so it picks
      up whatever comment sits above it and a bare-class match then never fires. The first run of
      this check reported that .country-popup was not hidden — on the very stylesheet that hides it. */
-  const css = read('css/intmap.css').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const css = codeOnly(read('css/intmap.css'), { lang: 'css' });
   const out = new Set();
   for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const body = m[2];
@@ -470,9 +467,7 @@ test('#R672 the station popup is not built out of a class the stylesheet hides',
   assert.ok(hidden.size > 3, `only ${hidden.size} hidden classes were found in css/intmap.css — the scan is wrong, not the layer`);
   assert.ok(hidden.has('country-popup'), 'the scan no longer sees .country-popup as hidden — it is the class this round exists for, so the check has gone blind');
 
-  const src = read('js/radiation-layer.js')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const src = codeOnly(read('js/radiation-layer.js'));
   const bad = [];
   /* every class= this file writes into markup */
   for (const m of src.matchAll(/class="([^"]+)"/g)) {
@@ -694,7 +689,7 @@ test('#R797 ⑤ near() answers from the data, nearest first, in kilometres', asy
 test('#R797 ⑥ js/radiation-layer.js is the browser entry over the core, not a second copy', () => {
   const layer = read('js/radiation-layer.js');
   assert.match(layer, /import \{ makeRadiationObs \} from '\.\/radiation-obs-core\.js'/, 'the layer imports the core by name');
-  const code = layer.replace(/\/\*[\s\S]*?\*\//g, '');
+  const code = codeOnly(layer);
   assert.ok(!/function refRows\(|function toFC\(|function near\(|function chunked\(/.test(code), 'the data functions exist once, in the core');
   /* the layer's ONLY fetch is the dependency it hands the core (scopeFetch); every other request goes through the core */
   const lines = code.split(/\r?\n/);

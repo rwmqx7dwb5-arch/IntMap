@@ -29,6 +29,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { appShell } from './app-source.mjs';
 import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
+import { codeOnly as code, codeOnly as noComments, codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -107,7 +108,6 @@ test('R231 screenshot: both layers are drawn into the container box, and capture
 /* ═══════════════════════ #R252 · from r252-checks.test.mjs ═══════════════════════ */
 /* (#R252 — the round's own account of why these checks exist heads its other half, in tests/shell-map-labels-checks.test.mjs) */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① THE PROGRESS BAR IS NOT A GRID CELL ───────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
@@ -123,7 +123,7 @@ test('#R252 ① the WorldPop progress bar is inserted after the action ROW, not 
   /* the shape that made it a cell is still true of the markup, so the property above is load-bearing */
   assert.match(tp, /<div class="rad-actions">.*id="tp-pop-btn"/s,
     '#tp-pop-btn is expected to live inside .rad-actions — if that changed, re-derive this check');
-  assert.match(code(read('css/intmap.css')), /\.rad-actions\{[^}]*display:grid/,
+  assert.match(code(read('css/intmap.css'), { lang: 'css' }), /\.rad-actions\{[^}]*display:grid/,
     '.rad-actions is no longer a grid — the reason the anchor matters is gone, re-read this check');
 
   /* a reused box starts from zero rather than showing the previous run’s full bar */
@@ -157,7 +157,7 @@ test('#R252 ⑧ the seismic panel’s default box clears the coord readout and t
     'the default box is not re-applied on open — collapsing the sidebar later would bring the overlap back');
 
   /* the obstacles, as MEASURED at 1100×800 */
-  const css = code(read('css/intmap.css'));
+  const css = code(read('css/intmap.css'), { lang: 'css' });
   /* ⚠⚠ (#R488) THIS ASSERTION WAS GREEN WHILE THE RULE WAS DEAD. #R485 wrapped #map-container in
      `.map-column`, so `.sidebar.collapsed ~ .map-container` — a SIBLING combinator — stopped matching
      anything and the handle stayed 400 px out in the middle of the map with the sidebar shut. The
@@ -208,7 +208,6 @@ test('R296 ⑨ the surviving simulator can be opened, and invents no numbers', (
 {
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-four times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
  *  「地点を選ばないといけない系のツール、押したら勝手に地図中心を選択しているものとして結果を出すのを
@@ -381,9 +380,6 @@ const R = (f) => (String(f).endsWith('js/i18n.js')
 const INDEX = appShell(new URL('../', import.meta.url));
 
 /* strip /* … *\/ and // comments so "the code says X" is never satisfied by prose about X */
-function stripComments(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
-}
 
 /* spelling kept: browser script (js/flight-sim.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('#R170 flight sim: airborne start is the default and the globe is forced', () => {
@@ -658,7 +654,6 @@ test('#R221 ⑦ the landscape deck does not cross the middle of the screen', () 
  *  Regular`, and #R252's own notes are still in the files being read.)
  * ==========================================================================*/
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① THE SWEEP ────────────────────────────────────────────────────────────────────────────────
    ⚠ (#R254) THIS CHECK GUARDED A MODE THAT NO LONGER EXISTS. #R253 measured that the indeterminate
@@ -742,7 +737,6 @@ test('#R253 ⑥ a newly loaded earthquake starts at t = 0, and its unload button
 /* ═══════════════════════ #R249 · from r249-checks.test.mjs ═══════════════════════ */
 /* (#R249 — the round's own account of why these checks exist heads its other half, in tests/shell-i18n-audits-checks.test.mjs) */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① ONE PICTURE, ONE CELL ────────────────────────────────────────────────────────────────── */
 /* spelling kept: browser script (js/seismic.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */

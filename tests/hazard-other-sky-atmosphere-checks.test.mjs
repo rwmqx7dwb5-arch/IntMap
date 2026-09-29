@@ -15,6 +15,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -92,7 +93,7 @@ test('R202 ①e no arrangement of camera, Sun and view direction returns NaN', (
 {
 /* ⚠ block comments are stripped before a "this string must NOT appear" test — a comment that
    explains a defect otherwise trips the check for the defect (#R216's own note). */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '');
+const code = (p) => codeOnly(read(p));
 
 /* ── ④ the sky: ozone is present, published, and only changes what it should ────────────── */
 test('#R218 ④ ozone is in the optical depth of BOTH rays, and absorbs only', async () => {
@@ -230,7 +231,6 @@ test('R234 atmosphere: the limb handover is asked every frame, not only at the s
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234/#R235 — EIGHT rounds of a check hitting its own explanation).
    Strip the comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 3 · the limb hands the rim back unless it is actually painting ───────────────────────────── */
 test('R236 limb: a layer that cannot draw is removed and reported as a refusal', () => {
@@ -265,7 +265,6 @@ test('R236 limb: the watchdog revokes on EVIDENCE (map frames), never on a timeo
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap #R235 hit eight
    times and #R236 hit once more. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 1 · the atmosphere is drawn over the disc, not only beside it ──────────────────────────────
    「そもそも前まであったものがない」 — measured, the air over the daylight side of the globe had
@@ -327,7 +326,6 @@ test('R237 limb: ownership is decided by globeness, not by the eye crossing 100 
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap that has now been
    hit nine times across #R208…#R237. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 1 · ⑤ the band that was removed is back, and nothing else was moved to compensate ───────────
    「ちげーよ Maplibre固有の大気じゃねーよ だからふざけんな 一度つけてんのに勝手に外すな」
@@ -376,7 +374,6 @@ test('R238 sky: the rim is still gated on globeness, not on the eye height', () 
 {
 const R = read;
 /* comments out, so a claim in prose can never satisfy a check about code (#R166) */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ① THE ATMOSPHERE — «off» must not mean «no sun» ═══════════════════════════════════════════
    maplibre's globe atmosphere takes u_sun_pos from style.light and from nowhere else, so handing
@@ -422,7 +419,6 @@ test('R240 ① with the day/night side off the Sun is aimed at the camera, never
     [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 const R = read;
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ④ THE AIR ═════════════════════════════════════════════════════════════════════════════════ */
 

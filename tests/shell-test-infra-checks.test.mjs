@@ -27,6 +27,7 @@ import * as LM from '../js/layer-manifest.js';
 import { lf, readLF, sameText } from '../scripts/eol.mjs';
 import { allSpecs, CORE_ALWAYS, coreNames, fixedCoreNames, isDeep, tierSpecs } from '../scripts/tiers.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -240,21 +241,7 @@ function walk(dir, out = []) {
 /* ⚠ COMMENTS ARE NOT FIXTURES. Every one of these files explains itself at length, and the
    explanations quote the very dates they are about — including this file. A scanner that reads
    the prose measures the prose. Strings are KEPT: a fixture date is a string. */
-function codeOf(src) {
-  let out = '', i = 0, mode = null, q = null;
-  while (i < src.length) {
-    const c = src[i], d = src[i + 1];
-    if (mode === 'line') { if (c === '\n') { mode = null; out += c; } else out += ' '; i++; continue; }
-    if (mode === 'block') { if (c === '*' && d === '/') { mode = null; out += '  '; i += 2; continue; }
-      out += (c === '\n' ? '\n' : ' '); i++; continue; }
-    if (q) { out += c; if (c === '\\') { out += src[i + 1] || ''; i += 2; continue; } if (c === q) q = null; i++; continue; }
-    if (c === '/' && d === '/') { mode = 'line'; out += '  '; i += 2; continue; }
-    if (c === '/' && d === '*') { mode = 'block'; out += '  '; i += 2; continue; }
-    if (c === '"' || c === "'" || c === '`') { q = c; out += c; i++; continue; }
-    out += c; i++;
-  }
-  return out;
-}
+function codeOf(src) { return codeOnly(src, { offsets: true }); }
 
 const ISO_DT = /(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/g;
       /* a moment, not a year */
@@ -382,7 +369,6 @@ test('#R700 ③ 観測: which test fixtures are already older than the product�
 {
 /* ⚠ DELIBERATELY NOT NORMALISED: this file is the one that has to be able to tell the two apart. */
 const raw = read;
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① the defect, the fix, and the line that is still required ─────────────────────────────────
    A miniature of tests/r261-checks ③, built here rather than read from js/terrain-water.js so that

@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
 import { installSafe } from './helpers/safe-html.mjs';
+import { codeOnly as code, codeOnly as noComments } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -57,7 +58,6 @@ function routeCards(offsetAt) {
 // ============================================================================
 {
 /* comments out, so an assertion about code cannot be satisfied by prose about code */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
 /* ═══ ③ THE CURRENT-LOCATION BUTTON HAS A CALLER ═════════════════════════════════════════════
    「経路機能は現在地を地点に楽に選べるように。」 `useHere` was written in #R291 and never pressed. */
@@ -201,7 +201,6 @@ test('R296 ⑫ the selected route card holds its own detail, and a step press is
 {
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-four times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => noComments(read('js/world-packs.js'));
 
 /* ── ① the bulletin's own municipality list outranks its region row ──────────────────────────

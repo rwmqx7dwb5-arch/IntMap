@@ -20,6 +20,7 @@ import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 import { deadExports } from '../scripts/export-readers.mjs';
 import { jsReachability } from '../scripts/js-reachability.mjs';
 import { appShell, appSource, bootGuardKnows, lazyModules, publishedGlobals } from './app-source.mjs';
+import { codeOnly, codeOnly as noComments } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -50,26 +51,7 @@ const rd = read;
 const html = appShell(root);
 
 /* Blank out comments and string/template literals so identifier scanning reads CODE only. */
-function code(src) {
-  let out = '', i = 0, inBlock = false;
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; out += '  '; i += 2; } else { out += c === '\n' ? '\n' : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; out += '  '; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== '\n') { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === '\\') { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === '\n' ? '\n' : ' '; i++;
-      }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function code(src) { return codeOnly(src, { literals: 'blank' }); }
 
 /* The six modules this round extracted. `global` is set when index.html assigns the factory's
    return value; the bare-IIFE modules publish their own window.* surface from inside the body.
@@ -475,7 +457,7 @@ test('R184 #1: every new module is in the import graph, the factory guard and ap
 test('R184 #5: the new modules parse and keep the CSS rule', () => {
   /* comments blanked, because every one of these files SAYS "this file adds no <style>" in its
      header and the naive scan then reports the promise as the violation */
-  const decomment = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const decomment = (s) => codeOnly(s);
   const FILES = ['js/satellite-detail.js', 'js/drone-ops.js', 'js/routing-ops.js'];
   for (const f of FILES) {
     const src = rd(f);
@@ -517,7 +499,6 @@ test('R184 #5: the new modules parse and keep the CSS rule', () => {
 const rootURL = new URL('../', import.meta.url);
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that two dozen times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① THE LOADER'S TABLES ARE READABLE, AND THEY AGREE WITH THEMSELVES ───────────────────────
    Everything the two rewritten specs assert rests on this derivation working. If a round rewrote

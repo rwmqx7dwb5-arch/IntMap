@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
 import { makeAtlasCatalogText } from '../js/atlas-catalog-text.js';
 import { makeAtlasSchemas } from '../js/atlas-schemas.js';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as noComments } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -352,7 +352,6 @@ test('R439 ⑧ the legend’s model picker is contained by the legend', () => {
  *  file would fail on the sentence explaining the fix. That is the fifteenth time.
  *  ⚠ EVERY DELETION CHECK ALSO COUNTS WHAT MUST SURVIVE, so a fix that goes too far is red too.
  * ==========================================================================*/
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
 
@@ -511,7 +510,6 @@ test('R297 ⑦ the wind legend is capped at 30 m/s and the top tick carries a +'
 /* (#R305) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-five times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WX = () => noComments(read('js/weather.js'));
 const EC = () => noComments(read('js/wx-ecmwf.js'));
 
@@ -633,7 +631,7 @@ test('R305 ⑫ the tile SDK and the archive get a name resolution hint', () => {
 /* (#R307) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* the comments in this project carry the reasoning, and several of them QUOTE the spellings that
    were replaced — a check that greps them proves nothing */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* the body of a named function declaration, brace-balanced (the #R228 helper, and the answer to
    #R306's ⚠ about character-counted windows: ask the BODY, not a byte range around a name) */

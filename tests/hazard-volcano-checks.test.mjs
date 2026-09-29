@@ -18,6 +18,7 @@ import { gunzipSync } from 'node:zlib';
 import { LAZY_NAMES } from '../js/lazy-modules.js';
 import { readLF } from '../scripts/eol.mjs';
 import { asClassicScript } from './app-source.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -267,7 +268,7 @@ test('#R353 ⑧ no file writes the volcano count as a literal', () => {
   for (const [name, src] of Object.entries(files)) {
     /* the header comments describe the round and may cite the measurement; the check is on CODE, so
        strip block comments first and then look for a count literal next to a volcano word. */
-    const code = src.replace(/\/\*[\s\S]*?\*\//g, '');
+    const code = codeOnly(src);
     assert.equal(/1[,.]?215/.test(code), false, name + ' still writes 1,215 as a count');
     assert.equal(/1[,.]?214/.test(code), false, name + ' hardcodes the Holocene count — read it from the file');
     assert.equal(/1[,.]?218/.test(code), false, name + ' hardcodes the current total — read it from the file');
@@ -294,7 +295,7 @@ test('#R353 ⑨ volcanoIntel and volcanoLayers are lazy, with a file, a factory 
   /* ⚠ AND THEY MUST NOT ALSO BE EAGER. #R340 found the opposite check («git grep says nothing
      imports it») resting on a premise that was not true; this asserts the entry graph directly. */
   const main = readLF(join(ROOT, 'src', 'main.js'));
-  const imports = main.replace(/\/\*[\s\S]*?\*\//g, '');
+  const imports = codeOnly(main);
   assert.equal(/import\s+'\.\.\/js\/volcano-intel\.js'/.test(imports), false, 'volcano-intel is imported eagerly');
   assert.equal(/import\s+'\.\.\/js\/volcano-layers\.js'/.test(imports), false, 'volcano-layers is imported eagerly');
   assert.ok(LAZY_NAMES.includes('volcanoIntel') && LAZY_NAMES.includes('volcanoLayers'), 'the boot guard does not know them (its list is the registry\'s — #R798)');
@@ -320,8 +321,7 @@ test('#R353 ⑩ volcano-feed is declared, guarded, and relays exactly the two CO
      CODE. ⚠ Comments are stripped first: the function's header carries the measurement table that
      NAMES all six upstreams and says which of them sends the header, and reading that as "it fetches
      them" would make the check fail for saying the right thing. */
-  const fnCode = fn.split(/\r?\n/).filter((l) => !/^\s*\/\//.test(l)).join('\n')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const fnCode = codeOnly(fn);
   for (const direct of ['volcanoes.usgs.gov', 'www.jma.go.jp', 'services.arcgis.com', 'earthquake.usgs.gov']) {
     assert.equal(fnCode.includes(direct), false, direct + ' is relayed although it answers with CORS');
   }
@@ -335,7 +335,7 @@ test('#R353 ⑩ volcano-feed is declared, guarded, and relays exactly the two CO
    absence everywhere else. This is a weak, source-level assertion — it cannot prove intent — but it
    catches the one shape that would break the promise: a radius drawn around a volcano. */
 test('#R353 ⑪ nothing in the volcano modules draws a modelled hazard radius', () => {
-  const code = (LAYERS + INTEL).replace(/\/\*[\s\S]*?\*\//g, '');
+  const code = codeOnly(LAYERS + INTEL);
   for (const shape of ['circle-radius-km', 'hazardCircle', 'reachKm', 'modelledZone']) {
     assert.equal(code.includes(shape), false, 'a modelled hazard shape (' + shape + ') appeared');
   }
@@ -486,7 +486,7 @@ test('#R353 ⑫ the status ladder keeps each agency\'s own vocabulary', () => {
 const { readLF } = await import('../scripts/eol.mjs');
 const rd = read;
 /* ⚠ an assertion about what the code DOES may not read the comments (#R427). */
-const code = (p) => rd(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+const code = (p) => codeOnly(rd(p));
 
 const LAYER = JSON.parse(readLF(join(ROOT, 'data', 'volcanoes_gvp.json')));
 const DETAIL = JSON.parse(gunzipSync(readFileSync(join(ROOT, 'data', 'volcano-detail.json.gz'))).toString('utf8'));

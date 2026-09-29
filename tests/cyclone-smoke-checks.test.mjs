@@ -73,12 +73,12 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { separablePair, readPixel } from './helpers/wind-ramp.js';
 import { findEye, wallLevels, describeEye } from './helpers/cyclone-eye.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* ⚠ a DELIBERATELY simple comment stripper, not scripts/code-only.mjs: ⑦/⑨ below find the cyclone
    test by its TITLE, which is a string literal — a stripper that blanks strings would hide it. */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══════════════════════════ #R460 · which point is the eye ══════════════════════════ */
 const FX = JSON.parse(read('tests/fixtures/r460-cyclone-boxes.json'));

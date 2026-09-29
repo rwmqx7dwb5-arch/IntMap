@@ -18,13 +18,13 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sharedIds, isLayer } from '../js/layer-manifest.js';
 import { holdUntilDrawable } from '../js/layer-rows.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 await import('../js/geo-engine.js');
 const ENGINE = window.IntMapGeoEngine;
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 const flush = async () => { for (let i = 0; i < 5; i++) await Promise.resolve(); };
 
 /* an adapter whose style is parsed when the test says so, and which fires what the test fires */

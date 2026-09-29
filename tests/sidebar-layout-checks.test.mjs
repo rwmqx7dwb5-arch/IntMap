@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { appSource } from './app-source.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
@@ -151,7 +152,7 @@ test('R154 #9 Right sidebar resizable + smaller default', () => {
    perfectly good occurrence of the very word this asserts is gone. Assert about what RUNS. */
 test('R155 / R296: no stored value can select a layer panel, because there is only one', () => {
   /* spelling kept — sidebar geometry is CSS + shell DOM handlers; whether the map moves is a browser measurement */
-  const code = index.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1 ');
+  const code = codeOnly(index);
   assert.doesNotMatch(code, /layerPanelSet/, 'the explicit-choice flag is gone from the settings round trip');
   assert.doesNotMatch(code, /layerPanel:\s*window\.imLayerPanel/, 'and the value is no longer saved');
 });

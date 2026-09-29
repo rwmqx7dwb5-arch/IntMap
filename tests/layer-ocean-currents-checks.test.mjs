@@ -12,6 +12,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ══════════ from tests/r216-checks.test.mjs — 3 of its 23 test(s) ══════════ */
 {
@@ -31,7 +32,7 @@ const read = (p) => (p === 'js/i18n.js'
 /* ⚠ a comment that DESCRIBES a defect is not the defect. Two checks below assert that a string does
    NOT appear in a file, and both files explain in prose why it must not — so they are read with the
    block comments taken out, or the note about the bug would trip the test for the bug. */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑪ ocean currents: measured, never a shipped table ──────────────────────────────── */
 /* ⚠ (#R218) THIS LAYER WAS REPLACED, ON PURPOSE, AND THESE TESTS WERE UPDATED WITH IT.

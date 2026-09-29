@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { npmTestRunsScript } from './helpers/ci-reach.mjs';
 import { execFileSync } from 'node:child_process';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R220 — from tests/r220-checks.test.mjs (1 of its 14 tests) ════════ */
 {
@@ -70,7 +71,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* (#R208/#R215) comments quote the instruction, and the instruction contains the very strings these
    tests look for — so every syntax check reads the file with its comments stripped. */
-const code = (p) => R(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(R(p));
 const run = (f, ...a) => execFileSync(process.execPath, [join(ROOT, 'scripts', f), ...a],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 

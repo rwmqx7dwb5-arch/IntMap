@@ -27,6 +27,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { shapeOf } from '../scripts/i18n-helpers.mjs';
 import * as acorn from 'acorn';
 import * as OpenCC from 'opencc-js';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -60,7 +61,7 @@ function langRegistry() {
  * ==========================================================================*/
 {
 /* whole-line // comments */
-const noHtml = (p) => read(p).replace(/<!--[\s\S]*?-->/g, ' ');
+const noHtml = (p) => codeOnly(read(p), { lang: 'html' });
 
 /* ── ⑥ the reading pages come back to the map you left ──────────────────────────────────────── */
 /* spelling kept: page markup / inline script (sources.html, science.html) — only a browser document runs it. */
@@ -592,7 +593,6 @@ const R = read;
 /* ⚠ THE 15th TIME A CHECK READ ITS OWN NOTE. The comment that EXPLAINS the defect spells the
    defect out, so a raw search finds the explanation and calls it the disease. Strip comments
    before asking whether the CODE still holds a string. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ③ BOTH WRITERS OF THE ★, AND THE KEY THAT SURVIVES A LANGUAGE SWITCH ════════════════════ */
 
