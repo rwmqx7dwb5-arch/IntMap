@@ -361,7 +361,7 @@ test('R276 ⑪ every Open-Meteo request goes through IntMapWx', () => {
      this round; pinning js/atlas-console.js would have gone red on a move that changed nothing
      about what the rule protects — the #R429 shape, one round later. */
   for (const f of ['js/sims.js', 'js/atlas-deadlines.js'])
-    assert.match(codeOnly(read(f)), /window\.IntMapWx\.isOpenMeteo\(url\)\) return await window\.IntMapWx\.guardedJSON\(url,\s*\d+\)/,
+    assert.match(codeOnly(read(f)), /window\.IntMapWx\.isOpenMeteo\(url\)\) return await window\.IntMapWx\.guardedJSON\(url,\s*\d+(?:,\s*\{[^}]*\})?\)/,   /* (fetch-deadline-layer) a third argument — the turn signal and the note — may follow */
       f + ' routes its shared loader through the guard');
 });
 

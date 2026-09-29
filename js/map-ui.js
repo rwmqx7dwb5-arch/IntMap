@@ -19,7 +19,8 @@
  * ==========================================================================*/
 import { everyTick, stopTick, tickKey } from './runtime.js';
 import { sharedIds, LAYERS, BASE, HIDDEN, BETA } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
-import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung */
+import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung; (fetch-deadline-layer) and each rung's clock */
+import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
 
 window.IntMapModules=window.IntMapModules||{};
 /* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
@@ -2133,8 +2134,12 @@ window.IntMapModules.ticker=function(HOST){
        different addresses. That is how the FX endpoint's 61 calls a day disappeared. A relay's own
        status stays ambiguous (it may be the relay that is busy), so only rung 0 stops the descent. */
     const PEER_REFUSED=new Set([400,401,403,404,410,429,451]);
-    async function fjson(url){ const R=rungs(url); for(let i=0;i<R.length;i++){ try{ const u=R[i]; if(!u) continue; const r=await fetch(u); if(r&&r.ok) return await r.json(); if(i===0&&r&&PEER_REFUSED.has(r.status)) return null; }catch(_){} } return null; }
-    async function ftext(url){ for(const u of rungs(url)){ try{ if(!u) continue; const r=await fetch(u); if(r&&r.ok) return await r.text(); }catch(_){} } return null; }
+    /* (fetch-deadline-layer) EACH RUNG UNDER ITS OWN CLOCK. The ticker awaits its sources one after another, so one bare
+       fetch to a host that stopped answering froze every item after it — and every later refresh queued behind it — for
+       the session. The host is read under its direct clock and our relay under the relay's (js/proxy-fetch.js clockFor);
+       a status is still an answer (readWithin does not throw on one), so PEER_REFUSED keeps stopping the descent. */
+    async function fjson(url){ const R=rungs(url); for(let i=0;i<R.length;i++){ try{ const u=R[i]; if(!u) continue; const r=await readWithin(u,clockFor(url,i===0?'direct':'relay')); if(r.ok) return JSON.parse(r.text); if(i===0&&PEER_REFUSED.has(r.status)) return null; }catch(_){} } return null; }
+    async function ftext(url){ const R=rungs(url); for(let i=0;i<R.length;i++){ try{ const u=R[i]; if(!u) continue; const r=await readWithin(u,clockFor(url,i===0?'direct':'relay')); if(r.ok) return r.text; }catch(_){} } return null; }
     function css(){ const st=document.createElement('style');
       /* (#R65) DETERMINISTIC column layout — no height calc at all: body becomes a flex column, the app shell
          takes the remaining space and the bar its fixed 30px row BELOW it. There is no arithmetic (dvh/scaling

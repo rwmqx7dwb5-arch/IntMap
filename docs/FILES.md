@@ -1013,7 +1013,10 @@ proxy-fetch.js                    ACAO を返さない上流を**自前の relay
                                   `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる。
                                   `clockFor(url, via)` は 1 回の取得の秒数を host ごとに答える（直接／自前 relay 段）
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
-                                  `opts.idle` は本文の塊ごとに時計を掛け直す（大きなファイルの無音を測る）
+                                  `opts.idle` は本文の塊ごとに時計を掛け直す（大きなファイルの無音を測る）。
+                                  投げる例外は `reason`（timeout／aborted／network／http／parse）を持つ。
+                                  import できない classic script 向けの `window.IntMapFetchWithin` は `js/app-body.js` が置く
+                                  （このファイルは何も import しない——共通チャンクの循環を作らないため）
 overpass.js                       **Overpass の唯一のクライアント** `overpassQuery()`——ミラー一覧を持つ唯一のファイル。
                                   予算は問い合わせ自身の `[timeout:N]`＋本文の余裕、応答の無いミラーは持ち分を過ぎたら
                                   次のミラーを並走させ、観測された失敗は即座に次へ。全滅は `OverpassUnavailable` を投げる
@@ -1437,6 +1440,10 @@ scripts/
   typecheck.mjs                   **型検査のゲート**（`npm run check:types`）。同梱の typescript で
                                   `tsc --noEmit -p tsconfig.json` を走らせ、その終了コードを返す。typescript が
                                   入っていなければ「`npm install` が要る」と言って落ちる（退行と区別するため）
+  fetch-deadlines.mjs             **期限の無い `fetch()` の台帳**（`npm run check:static` の `fetch-deadline` 規則）。
+                                  `js/`・`src/` の大域 `fetch(` で options に `signal` の無いものをファイルごとに
+                                  構文木から数え、`tests/fetch-deadline-baseline.json` と両方向に照合する。
+                                  `--update` で台帳を書き直す。除外は理由の文つきの `EXEMPT` だけ
   global-surface.mjs              **共有窓口の広さのゲート**（`npm run check:surface`）。`IM_HOST` の項目と
                                   `js/`・`src/` が `window.*` に代入する公開名を**名前で**
                                   `tests/global-surface-baseline.json` と両方向に照合する。行数の天井の代わり。
@@ -1556,6 +1563,8 @@ tests/
                                   訊いていたが、その距離は見え方を順序づけない（出荷中の風の表で実測、
                                   順序が逆になる対がある）。閾値は表からではなく**観測者から**採る
                                   ——ΔE00 は 1.0 が JND、2 以上が一目で分かる帯
+  helpers/load-wx-source.mjs      `fetchWithinFor(fetch)`＝本物の `js/fetch-deadline.js` を stub の fetch のスコープで評価した
+                                  readers に `clockFor` を足した組（app-body と同じ組み方）。`loadWxSource(fetch)`＝出荷中の `js/wx-source.js` を同じ時計で評価する
   helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
                                   prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
                                   コードだけ——コメントの中の `corsFor()` は契約ではない

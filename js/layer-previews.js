@@ -7,8 +7,9 @@
  *  declaration, so passing them by value is exactly what the closure saw.
  *      window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);
  * ========================================================================== */
-import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the cable preview's second rung; (stalled-fetch-and-surface-gauge) and how long one read of a host may take */
-import { readWithin } from './fetch-deadline.js';
+import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take. (fetch-deadline-layer) The relay URL it also gave the cable preview is the layer's business now — see layerReads below */
+import { readWithin, jsonWithin } from './fetch-deadline.js';
+import { layerReads } from './data-layers.js';   /* (fetch-deadline-layer) the cable and radar rows' OWN reads — a preview draws what its layer would, fetched the way its layer fetches it */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     /* (#R71) quality pass ("画像の縦横比が引き延ばされ…クオリティも低い"): canvases are now WEB-MERCATOR
@@ -131,7 +132,9 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'beta-dl-rail':'preview_railways.png'
     };
     let _radar=null;
-    function radarURL(){ if(_radar!==null) return Promise.resolve(_radar); return fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{ const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null; const t4=tXY(4,8,50); _radar=p?((j.host||'https://tilecache.rainviewer.com')+p+'/256/4/'+t4.x+'/'+t4.y+'/2/1_1.png'):''; return _radar; }).catch(()=>{ _radar=''; return ''; }); }
+    /* (fetch-deadline-layer) the frame index through the radar row's own read (js/data-layers.js rvFetch — its clock, its
+       five-minute cache, and one request for the row and the thumbnail together). null = the index could not be read. */
+    function radarURL(){ if(_radar!==null) return Promise.resolve(_radar); const rd=layerReads.radarIndex; return (rd?rd():Promise.resolve(null)).then(j=>{ const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null; const t4=tXY(4,8,50); _radar=p?((j.host||'https://tilecache.rainviewer.com')+p+'/256/4/'+t4.x+'/'+t4.y+'/2/1_1.png'):''; return _radar; }).catch(()=>{ _radar=''; return ''; }); }
     /* ---- canvas helpers (web-mercator mini world, 2× backing store) ---- */
     const _MY=1.5850;   /* mercator y at ±72.5° */
     /* (#R72) optional VIEW crop for canvas painters — setView([W,S,E,N]) makes X/Y project that region instead
@@ -300,7 +303,8 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
         if(cosz<0) ctx.fillRect(px,py,2,2); } }
       ctx.fillStyle='#ffd60a'; ctx.beginPath(); ctx.arc(X(((sunLng+540)%360)-180),Y(Math.max(-56,Math.min(74,decl))),3.4,0,7); ctx.fill();
       return c.toDataURL('image/png'); }
-    function quakes(){ return fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').then(r=>r.json()).then(j=>{
+    const QUAKES_WEEK='https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson';   /* (fetch-deadline-layer) one feed, two thumbnails, read under the host's clock */
+    function quakes(){ return jsonWithin(QUAKES_WEEK,clockFor(QUAKES_WEEK),undefined,{idle:true}).then(j=>{
         const b=base(null); if(!b) return null; const {c,ctx}=b;
         ((j&&j.features)||[]).slice(0,220).forEach(f=>{ try{ const co=f.geometry.coordinates, m=(f.properties&&f.properties.mag)||3;
           ctx.beginPath(); ctx.arc(X(co[0]),Y(co[1]),Math.max(1.2,(m-2)*1.15),0,7); ctx.fillStyle='rgba(255,69,58,0.8)'; ctx.fill(); }catch(_){} });
@@ -552,13 +556,15 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     function imgLoad(url){ return new Promise(res=>{ try{ const im=new Image(); im.crossOrigin='anonymous';
       im.onload=()=>res(im); im.onerror=()=>res(null); im.src=url; }catch(_){ res(null); } }); }
     const REAL={
-      'l9-dl-aurora':()=>fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json').then(r=>r.json()).then(j=>{
+      /* (fetch-deadline-layer) under the host's clock. ⚠ The aurora ROW reads this file in js/layer-packs.js with a fetch of its
+         own; that file is outside this round, so the two are still two reads of one URL — recorded in dev-notes, not hidden. */
+      'l9-dl-aurora':()=>{ const u='https://services.swpc.noaa.gov/json/ovation_aurora_latest.json'; return jsonWithin(u,clockFor(u),undefined,{idle:true}).then(j=>{
         const co=j&&j.coordinates; if(!co||!co.length) return null;
         const b=base(null,'#060b16'); if(!b) return null; const {c,ctx}=b;
         for(let i=0;i<co.length;i++){ const p=co[i]; const prob=+p[2]; if(!(prob>=10)) continue;
           const lon=((+p[0]+180)%360)-180, lat=+p[1]; if(Math.abs(lat)>72.4) continue;
           const x=X(lon),y=Y(lat); ctx.fillStyle='rgba(60,255,140,'+Math.min(0.9,prob/55).toFixed(2)+')'; ctx.fillRect(x-1,y-1,2.4,2.4); }
-        return c.toDataURL('image/png'); }).catch(()=>null),
+        return c.toDataURL('image/png'); }).catch(()=>null); },
       'dl-thermal':()=>{ const day=new Date(Date.now()-864e5).toISOString().slice(0,10); const M=20037508.34;
         const url='https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All&CRS=EPSG:3857&BBOX='+(-M)+','+(-M)+','+M+','+M+'&WIDTH=512&HEIGHT=512&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+day;
         return imgLoad(url).then(im=>{ if(!im) return null; const b=base(null,'#0a121f'); if(!b) return null; const {c,ctx}=b;
@@ -578,9 +584,12 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
           g.addColorStop(0,'rgba(255,110,40,0.34)'); g.addColorStop(1,'rgba(255,110,40,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,11,0,7); ctx.fill(); });
         ctx.globalCompositeOperation='source-over';
         return Promise.resolve(c.toDataURL('image/png')); },
-      'dl-subcables':()=>(async()=>{ /* (own-fetch-relay) the same two rungs the layer itself has: the host, then our cable-geo relay */
-        const u0='https://www.submarinecablemap.com/api/v3/cable/cable-geo.json';
-        for(const src of [u0, ownRelayUrl(u0)]){ if(!src) continue; try{ const r=await fetch(src); if(!r.ok) continue; const j=await r.json(); if(j&&j.features) return j; }catch(_){} } return null; })().then(j=>{
+      /* ⚠ (fetch-deadline-layer) NOT A LADDER OF ITS OWN ANY MORE. This entry used to say 「the same two rungs the layer itself
+         has: the host, then our cable-geo relay」 — and by the time it was read the layer had the relay FIRST (cable-relay-first),
+         the bundled routes before either, and a clock on every read, while this copy asked the host first with a bare fetch.
+         The comment was true when written; the copy is what made it false. It calls the row's own ladder now
+         (js/data-layers.js fetchSubcables, through layerReads), so the thumbnail is the routes the layer draws. */
+      'dl-subcables':()=>{ const rd=layerReads.subcables; return (rd?rd():Promise.resolve(null)).then(r=>{ const j=r&&r.cab;
         const fs=(j&&j.features)||[]; if(!fs.length) return null;
         const b=base(); if(!b) return null; const {c,ctx}=b; ctx.lineWidth=0.65; ctx.globalAlpha=0.9;
         fs.forEach(f=>{ const gm=f.geometry; if(!gm) return; const col=(f.properties&&f.properties.color)||'#ffd60a';
@@ -588,7 +597,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
             cs.forEach(p=>{ const x=X(p[0]),y=Y(p[1]); if(!started){ ctx.moveTo(x,y); started=true; } else { if(Math.abs(x-px0)>W/2){ ctx.moveTo(x,y); } else ctx.lineTo(x,y); } px0=x; });
             ctx.strokeStyle=col; ctx.stroke(); };
           if(gm.type==='LineString') seg(gm.coordinates); else if(gm.type==='MultiLineString') gm.coordinates.forEach(seg); });
-        ctx.globalAlpha=1; return c.toDataURL('image/png'); }).catch(()=>null),
+        ctx.globalAlpha=1; return c.toDataURL('image/png'); }).catch(()=>null); },
       'cb-roads':()=>{ const z=7,t=tXY(z,-118.35,34.1);   /* real Esri road cartography — LA freeway network */
         const u=x2=>'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/'+z+'/'+t.y+'/'+x2;
         return Promise.all([imgLoad(u(t.x)),imgLoad(u(t.x+1))]).then(ims=>{ if(!ims[0]||!ims[1]) return null;
@@ -618,7 +627,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     const _EUSET=new Set('BEL FRA DEU ITA LUX NLD DNK IRL GRC ESP PRT AUT FIN SWE CYP CZE EST HUN LVA LTU MLT POL SVK SVN BGR ROU HRV'.split(' '));
     REAL['dl-eu']=()=>_bmShot(3,-8,48,false,ctx=>{ drawLand(ctx,cd=>_EUSET.has(cd)?'rgba(30,92,224,0.5)':null,'rgba(30,92,224,0.85)'); });
     REAL['beta-dl-volc2']=()=>_bmShot(2,150,22,false,ctx=>{ ctx.fillStyle='#ff5a2c'; ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=0.6; VOLC.forEach(p=>{ const x=X(p[0]),y=Y(p[1]); if(x<-6||x>W+6||y<-6||y>H+6) return; ctx.beginPath(); ctx.moveTo(x,y-3.4); ctx.lineTo(x-3,y+2.4); ctx.lineTo(x+3,y+2.4); ctx.closePath(); ctx.fill(); ctx.stroke(); }); });
-    REAL['bx-eq']=()=>fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').then(r=>r.json()).then(j=>{ const fs=(j&&j.features)||[]; return _bmShot(1,0,16,true,ctx=>{ fs.slice(0,320).forEach(f=>{ try{ const co=f.geometry.coordinates, m=(f.properties&&f.properties.mag)||3; const x=X(co[0]),y=Y(co[1]); ctx.beginPath(); ctx.arc(x,y,Math.max(1.1,(m-2)*1.1),0,7); ctx.fillStyle='rgba(255,69,58,0.85)'; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=0.4; ctx.stroke(); }catch(_){} }); }); }).catch(()=>null);
+    REAL['bx-eq']=()=>jsonWithin(QUAKES_WEEK,clockFor(QUAKES_WEEK),undefined,{idle:true}).then(j=>{ const fs=(j&&j.features)||[]; return _bmShot(1,0,16,true,ctx=>{ fs.slice(0,320).forEach(f=>{ try{ const co=f.geometry.coordinates, m=(f.properties&&f.properties.mag)||3; const x=X(co[0]),y=Y(co[1]); ctx.beginPath(); ctx.arc(x,y,Math.max(1.1,(m-2)*1.1),0,7); ctx.fillStyle='rgba(255,69,58,0.85)'; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=0.4; ctx.stroke(); }catch(_){} }); }); }).catch(()=>null);
     REAL['dl-tz']=()=>_bmShot(1,0,18,false,ctx=>{ ctx.strokeStyle='rgba(90,150,230,0.55)'; ctx.lineWidth=0.8; for(let lg=-165;lg<=165;lg+=15){ const x=X(lg); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); } ctx.font='700 8px sans-serif'; ctx.textAlign='center'; [['-9',-135],['-6',-90],['-3',-45],['0',0],['+3',45],['+6',90],['+9',135]].forEach(z2=>{ const x=X(z2[1]); ctx.fillStyle='rgba(8,16,28,0.72)'; ctx.fillRect(x-8,3,16,10); ctx.fillStyle='#cfe0ff'; ctx.fillText(z2[0],x,11); }); ctx.textAlign='left'; });
     REAL['beta-dl-histb']=()=>_bmShot(3,14,48,true,ctx=>{ drawLand(ctx,()=>'rgba(0,0,0,0)','rgba(226,184,96,0.9)'); });
     REAL['dl-sealevel']=()=>_bmShot(5,4.9,52.2,false,ctx=>{ ctx.fillStyle='rgba(46,138,236,0.4)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#0a3d67'; ctx.font='700 11px sans-serif'; ctx.fillText('+2 m',8,16); });

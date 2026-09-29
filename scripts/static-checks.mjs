@@ -633,6 +633,21 @@ try {
   err('runtime-scripts', 'could not run the cross-origin script check: ' + (e && e.message));
 }
 
+// ── 15. (fetch-deadline-layer) a request that cannot end is not added unseen ──
+// A `fetch()` with no signal against a host that has stopped answering is permanent, and whatever
+// awaits it — a layer row, a shared in-flight entry, an Atlas turn — inherits that. The app's way
+// out is js/fetch-deadline.js (readWithin/jsonWithin) under js/proxy-fetch.js clockFor. This counts
+// the bare calls per file from the parser and holds them to tests/fetch-deadline-baseline.json in
+// both directions; the rule, what counts as bounded and the EXEMPT table (a reason per row) live in
+// scripts/fetch-deadlines.mjs. It is a rule here and not a check:* of its own because the gate list
+// in .agents/rules/execution-strategy.md has no room for another line, and this is static analysis.
+try {
+  const { check: fetchDeadlineCheck } = await import('./fetch-deadlines.mjs');
+  for (const l of fetchDeadlineCheck().lines) err('fetch-deadline', l);
+} catch (e) {
+  err('fetch-deadline', 'could not run the unbounded-fetch ledger: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

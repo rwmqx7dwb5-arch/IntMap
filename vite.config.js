@@ -507,7 +507,21 @@ export default defineConfig({
            Groups with a `priority` are the Rolldown way to say "this module belongs HERE even if
            a lower group depends on it": a higher group takes its modules (and their dependencies)
            first, and a lower group cannot take them back. The order below is therefore the rule —
-           helpers and the renderer, then the two eager libraries, then the lazy engine last. */
+           helpers and the renderer, then the two eager libraries, then the lazy engine last.
+           ⚠ (fetch-deadline-layer) THE UNNAMED EAGER MODULES REACH main BY A MERGE, AND THE MERGE
+           REFUSES CYCLES. An app module that main AND some lazy chunk import is first given a common
+           chunk of its own; Rolldown's chunkOptimization (mergeCommonChunks, default on) then folds it
+           into main "when it does not create a circular chunk dependency" (its own documentation).
+           MEASURED with `experimental.chunkOptimization: false`: 8 such chunks — js/fetch-deadline.js,
+           js/proxy-fetch.js, atlas-capabilities, atlas-persona, lifted-projection, nominatim-gate,
+           runtime, ui.en — and eager.requests 17. With the default, all folded back except ONE:
+           when js/fetch-deadline.js gained `import { clockFor } from './proxy-fetch.js'`, proxy-fetch
+           stayed out (requests 9 → 10, modules unchanged at 284) while fetch-deadline went in. It is
+           the only one of the eight that imported another of them, and folding the imported one
+           first would make main → fetch-deadline → main a cycle. Turning off either optimisation
+           alone leaves both out (11). So a static import between two modules that are each shared
+           with lazy chunks costs every session a request; the fix was to remove that edge (js/app-body.js,
+           in main alone, assembles what needed both), not to name a group here. */
         codeSplitting: {
           groups: [
             /* MapLibre is by far the largest dependency and it changes on its own release cadence, so

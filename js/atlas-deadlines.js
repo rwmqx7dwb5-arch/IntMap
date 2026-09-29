@@ -133,7 +133,10 @@ export function makeFetchJSON(turnSignal) {
   return async function _fetchJSON(url, budgetMs, note) {
     /* (#R276) …except Open-Meteo: CORS-open and rate-limited, so it goes through the app's ONE
        guarded client (js/wx-source.js), which owns its cache, its dedupe and its 429 breaker. */
-    try { if (window.IntMapWx && window.IntMapWx.isOpenMeteo(url)) return await window.IntMapWx.guardedJSON(url, 300000); } catch (_) { /* fall through to the ladder */ }
+    /* (fetch-deadline-layer) the turn's Stop and the caller's note reach the guard too: the guard's read has a clock
+       of its own now, a Stop ends THIS turn's wait without cancelling another caller's copy of the same read, and the
+       note says 'timeout' / 'http' / 'refused' / 'aborted' instead of the bare null it used to give the ladder's readers. */
+    try { if (window.IntMapWx && window.IntMapWx.isOpenMeteo(url)) return await window.IntMapWx.guardedJSON(url, 300000, { signal: (typeof turnSignal === 'function') ? turnSignal() : undefined, note }); } catch (_) { /* fall through to the ladder */ }
     const txt = await fetchViaProxy(url, {
       as: 'json', direct: true,
       budgetMs: (budgetMs || ATLAS_BUDGETS.EVIDENCE_BUDGET_MS),

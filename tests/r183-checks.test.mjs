@@ -10,23 +10,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { loadWxSource } from './helpers/load-wx-source.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
 
-/* ── js/wx-source.js — evaluated against a stub window, the way #R180/#R182 test their modules ── */
-function loadWx(fetchImpl) {
-  const store = {};
-  const win = {
-    localStorage: {
-      getItem: (k) => (k in store ? store[k] : null),
-      setItem: (k, v) => { store[k] = String(v); },
-      removeItem: (k) => { delete store[k]; }
-    }
-  };
-  const fn = new Function('window', 'localStorage', 'fetch', read('js/wx-source.js') + '\nreturn window.IntMapWx;');
-  return fn(win, win.localStorage, fetchImpl);
-}
+/* ── js/wx-source.js — evaluated against a stub window, the way #R180/#R182 test their modules ──
+   (fetch-deadline-layer) through tests/helpers/load-wx-source.mjs, because the file now imports the
+   clock its reads run under; the stub fetch still reaches every read it makes. */
+const loadWx = (fetchImpl) => loadWxSource(fetchImpl);
 // Match the HOST, not a substring: `url.includes('open-meteo.com')` also matches
 // https://evil.example/?x=open-meteo.com, which is the defect CodeQL flags as
 // js/incomplete-url-substring-sanitization — and the same shape was in wx-source.js's own

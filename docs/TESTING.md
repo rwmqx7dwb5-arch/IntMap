@@ -970,6 +970,17 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   that no pinned `<script>` consumes fails, whatever form the loader takes — and the files are
   discovered (root pages, `js/`, `src/`, `vite.config.js`'s `STATIC_ASSETS`). Regression and
   mutation cases: `tests/vendored-runtime-scripts-checks.test.mjs`.
+- **Requests with no end** (`fetch-deadline`, fetch-deadline-layer) — `scripts/fetch-deadlines.mjs`
+  counts, per file and from the parser, every global `fetch(` in `js/` and `src/` whose options
+  carry no `signal`, and holds the counts to `tests/fetch-deadline-baseline.json` **in both
+  directions**: a file with more than its ledger fails (read it through `js/fetch-deadline.js`
+  `readWithin`/`jsonWithin` under `js/proxy-fetch.js` `clockFor`, or give it a signal), and a file
+  with fewer fails until the ledger is lowered with `node scripts/fetch-deadlines.mjs --update`.
+  Per file, because a total lets a new unbounded read hide behind one that was fixed. The only other
+  way out is a row in its `EXEMPT` table, and every row must carry a reason. It lives here rather
+  than as a `check:*` of its own because it is static analysis and the gate list has no room.
+  Regression: `tests/fetch-deadline-layer-checks.test.mjs` ⑤ (a bare fetch put back into
+  `js/wx-source.js` turns it red).
 - **Test discovery** (#R529, `scripts/static-checks.mjs`) — `test:checks` is
   `node --test "tests/**/*.test.mjs"`, so the runner finds the files itself and a file cannot be
   left out of a list that no longer exists. Until #R529 it **was** a list: one hand-written literal
