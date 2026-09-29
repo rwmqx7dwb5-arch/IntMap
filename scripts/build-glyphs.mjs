@@ -51,7 +51,7 @@ const STACK = 'Inter Regular';
 
 /* The ranges the app redirects. Latin, Latin-Ext, IPA, Greek, Cyrillic and the punctuation /
    symbol blocks a place name or a legend actually uses. Keep in step with GLYPH_RANGES in
-   js/app-body.js — tests/r242-checks asserts the two lists are identical. */
+   js/app-body.js — tests/hazard-seismic-panel-checks.test.mjs (#R242) asserts the two lists are identical. */
 export const RANGES = [0, 256, 512, 768, 1024, 1280, 7680, 8192, 8448, 8704];
 
 const SIZE = 24, BUFFER = 3, RADIUS = 8, CUTOFF = 0.25;
@@ -245,7 +245,7 @@ function buildRange(font, start, fallback) {
        letter. MEASURED at 24 px: H and L got top 0 instead of 18, x got 0 instead of 14, the hyphen
        got 6 instead of 9. A cap therefore sank 18 px, an x-height letter 14 and a hyphen 3 — which
        on screen is a line of type where the capitals sit low and the hyphens float. Exactly 「ガタガタ」.
-       ⚠ tests/r243-checks asserts this against the font, so the metric cannot silently drift again. */
+       ⚠ tests/hazard-other-dock-window-checks.test.mjs (#R243) asserts this against the font, so the metric cannot silently drift again. */
     /* ══ ⚠⚠⚠ (#R247) …AND `top` IS NOT MEASURED FROM THE BASELINE — IT IS 27 UNITS ABOVE IT ═════════
        「ニュースピンの帯から文字位置がずれてはみ出ている。」
 

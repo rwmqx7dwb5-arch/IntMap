@@ -255,7 +255,7 @@ window.IntMapModules.searchGeocode=function(HOST){
          (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
       .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; if(!_agrees(R,q,{name:p.name}))return;   /* (#R802) */ const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country},within:[p.admin2,p.admin3,p.admin4]}); }); }).catch(()=>{});
     /* (#R489) …behind the app's ONE one-a-second Nominatim floor (js/nominatim-gate.js), reached
-       through `window` because this file may contain no top-level declarations (tests/r175 #4).
+       through `window` because this file may contain no top-level declarations (tests/layer-boot-graph-checks.test.mjs (#R175) #4).
        ⚠ IT QUEUES RATHER THAN DROPPING. #R298 measured what dropping does to a typed search — every
        keystroke inside the window answered 「[]」 — and the two parallel geocoders beside this one
        keep answering meanwhile, so the card is never empty while this waits. The 5 s AbortController
@@ -440,7 +440,7 @@ window.IntMapModules.searchGeocode=function(HOST){
     }catch(_){}
   }
   /* (#R183) The framing decision itself lives in js/place-framing.js — it is pure (no map, no HOST,
-     no renderer), this factory's body may contain only declarations (tests/r169-checks #4), and the
+     no renderer), this factory's body may contain only declarations (tests/engine-app-shell-split-checks.test.mjs (#R169) #4), and the
      app-body shim contract pins exactly this return list. */
   return { doGeocode, localFuzzyPlaces };
 };

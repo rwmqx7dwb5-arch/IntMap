@@ -39,7 +39,7 @@
  *      appears — which is the whole difference from `_STAGE_OF`, whose knowledge was a list.
  *    · THE WORD COMES FROM THE CAPABILITY'S OWN CATEGORY (column 4 of the registry table), not from
  *      a list of spellings. There are fourteen categories and the registry is the one that says
- *      which; `tests/r723-atlas-progress-ui-checks.test.mjs` ② fails if any category the registry
+ *      which; `tests/atlas-progress-checks.test.mjs (#R723)` ② fails if any category the registry
  *      uses has no word here, so the 109 silent capabilities cannot come back one capability at a
  *      time. ⚠ The words themselves are IntMap's own prose and cannot be derived from anything —
  *      what is derived is the SET OF KEYS, and that is what the gate measures.
@@ -86,7 +86,7 @@ export function makeAtlasProgress(HOST, deps) {
      A turn is not only operations. Waiting for the planner, reading an attached image and
      re-checking a claim are things Atlas really does, and no capability id names them — so they
      are named here and nowhere else. `think` is the one a pending reply opens with.
-     ⚠ INSIDE THE FACTORY, NOT AT MODULE LEVEL (tests/r175 ③): a constant at the top of a module
+     ⚠ INSIDE THE FACTORY, NOT AT MODULE LEVEL (tests/layer-boot-graph-checks.test.mjs #R175 ③): a constant at the top of a module
      is state every importer shares, and an export nothing imports by name is dead code. There is
      also no second list of the CATEGORY keys here — `categoryWords()` reads the table itself, and
      a hand-kept copy of those keys would be the duplicate source of truth this round removes. */
@@ -375,7 +375,7 @@ export function makeAtlasProgress(HOST, deps) {
     /* ⚠ NOR IS THE ACTION'S OWN `type` STRIPPED HERE ANY MORE. Twenty-one schemas declare a property
        literally named `type` and every one of them is an enum, so the rule above already refuses it —
        a second guard for the same case is the duplicate this round is removing, not extra safety.
-       `tests/r725-atlas-trace-detail-checks.test.mjs` ⑤ measures that invariant against the whole
+       `tests/atlas-progress-checks.test.mjs (#R725)` ⑤ measures that invariant against the whole
        registry, so the day a schema declares `type` as free text the gate says so instead of the
        trace quietly showing the reader the name of an action. */
     return key ? String(a[key]).slice(0, 48) : '';

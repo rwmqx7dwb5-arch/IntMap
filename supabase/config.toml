@@ -241,7 +241,7 @@ verify_jwt = false
 # of a public map layer. The function's own deploy line names no --no-verify-jwt either, so nothing
 # outside production's current state said otherwise. OFF because the dose-rate layer is offered to
 # signed-out readers exactly as it is to signed-in ones, and no user data reaches it. From here
-# tests/r801-edge-config-checks.test.mjs counts every [functions.*] block and requires the key.
+# tests/process-database-checks.test.mjs (#R801) counts every [functions.*] block and requires the key.
 verify_jwt = false
 
 # who-don (#R650) holds the ONE field WHO does not publish as a field. Pathogen, country, onset and

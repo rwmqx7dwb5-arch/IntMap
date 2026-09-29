@@ -18,7 +18,7 @@
  *  any record's label.
  *
  *  It sits outside js/atlas-console.js because of #R199's rule: the kernel is under a shrink-only
- *  ceiling (tests/r318 ⑨b), so a subject moves OUT and the ceiling is never raised. The bodies
+ *  ceiling (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b), so a subject moves OUT and the ceiling is never raised. The bodies
  *  below are the kernel's own text, verbatim; everything they read from its closure arrives
  *  through `CTX` under the ORIGINAL names.
  * ==========================================================================*/
@@ -36,11 +36,11 @@
 export function makeAtlasMetrics(HOST, CTX) {
   const LA=CTX.LA, lx=CTX.lx, L=CTX.L, esc=CTX.esc, warn=CTX.warn, R=CTX.R;
   /* ⚠⚠ IT LIVES INSIDE THE FACTORY, not at module scope, because two invariants meet here:
-     tests/r199 ① requires the kernel to name this module in an import with ONE binding, and
-     tests/r175 ③ requires every export to be imported BY NAME and forbids an unexported top-level
+     tests/atlas-console-kernel-checks.test.mjs #R199 ① requires the kernel to name this module in an import with ONE binding, and
+     tests/layer-boot-graph-checks.test.mjs #R175 ③ requires every export to be imported BY NAME and forbids an unexported top-level
      declaration. A module-scope `export const` satisfies neither once the kernel takes it from the
      factory return instead of the import line. Inside the factory it is still ONE definition, it
-     still travels with the return set tests/r199 ② holds to the destructuring, and nothing else in
+     still travels with the return set tests/atlas-console-kernel-checks.test.mjs #R199 ② holds to the destructuring, and nothing else in
      js/ has a second copy of the question. */
   const isRankableCountry = s => !!(s && s.sov !== false && s.nameEn);
     /* metric catalog → countryStats keys */

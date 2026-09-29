@@ -931,7 +931,7 @@ export function makeGisProject() {
        so that a producer of partial results keys them against the same five axes instead of inventing a
        sixth vocabulary. */
     /* ⚠ THE FIELD IS `reason`, NOT `why`, AND THE DIFFERENCE IS REAL. Every `why` this file returns is
-       a REFUSAL A READER IS SHOWN — the header lists them, and tests/r729-gis-core-checks ④ measures
+       a REFUSAL A READER IS SHOWN — the header lists them, and tests/geo-gis-datasets-checks.test.mjs #R729 ④ measures
        that each has a sentence in js/gis-panel.js. 「鍵を作れなかった」 refuses nobody: the run happens
        exactly as it would have, and nothing about it reaches a panel. Spelling it `why` would put five
        codes into the reader-facing vocabulary that no reader can ever be shown, which makes that gate's

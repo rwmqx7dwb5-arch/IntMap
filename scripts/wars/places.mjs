@@ -28,7 +28,7 @@
 /* ⚠ (#R519) THE NEW THEATRES ARRIVE AS THEIR OWN FILES, and this one stays the merge point. Four
    wars were written at once, in four checkouts; one shared table would have meant four authors
    editing one file, which is the thing .agents/rules/execution-strategy.md §3 forbids. The export
-   is unchanged — tests/r381 ④ still compares THIS object against every anchor data/wars.json
+   is unchanged — tests/history-wars-checks.test.mjs #R381 ④ still compares THIS object against every anchor data/wars.json
    quotes — so nothing downstream learns that the table is now assembled rather than typed. */
 import { PLACES_KOREA } from './places-korea.mjs';
 import { PLACES_VIETNAM } from './places-vietnam.mjs';

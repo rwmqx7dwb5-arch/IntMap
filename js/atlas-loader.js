@@ -23,7 +23,7 @@
  *  ⚠ `hint()` is for a hover or a press: it starts the fetch before the click resolves, so the panel
  *  opens as immediately as it did when it was in the bundle.
  *
- *  ⚠ IT IS ITS OWN FILE BECAUSE js/app-body.js HAS A LINE CEILING (tests/r200-checks ⑤, 4,400) whose
+ *  ⚠ IT IS ITS OWN FILE BECAUSE js/app-body.js HAS A LINE CEILING (tests/shell-app-body-modules-checks.test.mjs #R200 ⑤, 4,400) whose
  *  whole point is that a new subject goes to a new file (#R199/#R200). This is a new subject.
  * ==========================================================================*/
 window.IntMapAtlas = (function () {

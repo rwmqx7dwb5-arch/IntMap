@@ -31,7 +31,7 @@
  *  MapLibre does", so every constant and every formula below is transcribed from
  *  the MapLibre build this project already ships (node_modules/maplibre-gl,
  *  pinned exactly since #R158; transcribed from 5.24.0 and re-checked against
- *  6.x — tests/r182-checks reads each constant out of the installed library,
+ *  6.x — tests/engine-cesium-input-checks.test.mjs (#R182) reads each constant out of the installed library,
  *  and the one algorithm 6.x changed that is transcribed here, the inertia
  *  velocity, follows it) — from the handler classes themselves, not from
  *  a description of them, and each is cited at its use site. That is the

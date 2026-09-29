@@ -27,17 +27,17 @@
  *  ⚠ IT DOES NOT FETCH ANYTHING AND IT CANNOT SEE THE NETWORK. Callers keep their own deadlines
  *  (js/fetch-deadline.js), their own headers and their own parsing; this file hands out the slot.
  *
- *  ⚠ ONE EXPORTED OBJECT, NOT SIX EXPORTED FUNCTIONS, and the state is inside it. tests/r175 ③
+ *  ⚠ ONE EXPORTED OBJECT, NOT SIX EXPORTED FUNCTIONS, and the state is inside it. tests/layer-boot-graph-checks.test.mjs #R175 ③
  *  forbids an unexported top-level declaration, and module-level `let last` is exactly that — while
  *  a factory that each caller ran would give every caller its own counter, which is the defect this
  *  file removes. A single frozen instance is both: nothing is declared at the top level but the
  *  export, and there is only ever one of it.
  *
  *  ⚠ NO DOM, NO NETWORK, NO GLOBALS BEYOND THE PUBLISH, AND THE CLOCK IS INJECTABLE — so
- *  tests/r489-checks.test.mjs drives the real module with no browser and without waiting real
+ *  tests/atlas-console-observers-checks.test.mjs (#R489) drives the real module with no browser and without waiting real
  *  seconds. The `window` publish exists because js/routing.js, js/river-course.js,
  *  js/search-geocode.js and js/routing-geocode.js may contain no top-level declarations
- *  (tests/r175-checks #4) and so cannot `import` — it is the SAME object the importers get.
+ *  (tests/layer-boot-graph-checks.test.mjs (#R175) #4) and so cannot `import` — it is the SAME object the importers get.
  * ==========================================================================*/
 
 export const NominatimGate = (function () {

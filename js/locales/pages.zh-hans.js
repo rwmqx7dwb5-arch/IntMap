@@ -7,7 +7,7 @@
  *  table first (its own reviewed choices), then OpenCC twp→cn for the orthography itself (#R251 —
  *  the 440-pair map it replaced covered 439 of the 1,529 characters in use). Fix a string in
  *  pages.zh-hant.js and re-run the script; editing
- *  this file directly is undone by the next run, and tests/r224-checks.test.mjs fails if the two
+ *  this file directly is undone by the next run, and tests/i18n-reader-shapes-checks.test.mjs (#R224 ④) fails if the two
  *  ever disagree.
  *
  *      node scripts/zh-hans.mjs

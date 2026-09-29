@@ -18,7 +18,7 @@
  *  (relay-no-data-one-pass) The bounded pass is gone: it re-sent the same request to the same relay —
  *  see race() below.
  *
- *  ⚠ FOUR EXPORTS (peekOwnRelay since the boot-probe fix, clockFor since stalled-fetch-and-surface-gauge), and everything else is inside the first. tests/r175-checks ③ requires that a js/
+ *  ⚠ FOUR EXPORTS (peekOwnRelay since the boot-probe fix, clockFor since stalled-fetch-and-surface-gauge), and everything else is inside the first. tests/layer-boot-graph-checks.test.mjs #R175 ③ requires that a js/
  *  module has no unexported top-level declaration AND no export nobody imports — so the constants
  *  and the helpers live in the closure rather than becoming names the rule would have to police.
  *

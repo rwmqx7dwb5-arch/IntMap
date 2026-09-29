@@ -37,10 +37,10 @@
  *  map, or what the places mean. It makes the thing Atlas decided cheap enough to actually do.
  *
  *  ⚠ NO DOM AT CONSTRUCTION, NO NETWORK OF ITS OWN, NO GLOBALS READ. `GE`, `geocode`, `ledger`,
- *  `dispatch` are injected, so tests/r511-checks.test.mjs drives THIS module with a scripted
+ *  `dispatch` are injected, so tests/atlas-agent-loop-checks.test.mjs (#R511) drives THIS module with a scripted
  *  geocoder and a fake engine and asserts the resolution order, the honesty of `unplaced`, and the
  *  prose linking — the js/atlas-agent.js pattern. The subject is its own file because
- *  js/atlas-console.js has a shrink-only line ceiling (tests/r318 ⓑ) with no room left.
+ *  js/atlas-console.js has a shrink-only line ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) with no room left.
  * ==========================================================================*/
 
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
@@ -176,7 +176,7 @@ export function makeAtlasMapCompose(deps) {
       try { g = GE(); } catch (_) { g = null; }
       if (!g || !g.layers) return false;
       try {
-        /* the literal, not `SRC`: tests/r397 ② finds «where a source is created» by grepping `addSource('<id>'` */
+        /* the literal, not `SRC`: tests/atlas-console-observers-checks.test.mjs #R397 ② finds «where a source is created» by grepping `addSource('<id>'` */
         if (!g.layers.hasSource('atl-compose-src')) g.layers.addSource('atl-compose-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         if (g.layers.has('atl-compose-c')) return true;
         /* ⚠ AT THE TOP OF THE STACK, JUST UNDER THE READER'S OWN PINS. The first draft borrowed the POI

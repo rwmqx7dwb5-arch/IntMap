@@ -114,7 +114,7 @@ IntMap には放射線に関するものが 2 つあり、混ぜてはならな�
 | 2,000 nSv/h | **RIVM が公表している「安全地域へも通報」の閾値** |
 
 **失効条件**: いずれかの provider が別の行動閾値を公表したら、この段はその時点で誤りになる。
-**正本**: この表と `js/radiation-obs-core.js` の `RAMP`（レイヤーは `obs.ramp()` で読む）。`tests/r585-checks.test.mjs` が両者の一致を測る。
+**正本**: この表と `js/radiation-obs-core.js` の `RAMP`（レイヤーは `obs.ramp()` で読む）。`tests/hazard-radiation-layer-checks.test.mjs` (#R585) が両者の一致を測る。
 
 ⚠ **50–200 nSv/h は警告ではない。** 地球上のほぼ全ての健全な観測局がこの帯に入る。
 

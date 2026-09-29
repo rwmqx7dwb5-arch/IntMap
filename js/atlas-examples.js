@@ -66,7 +66,7 @@
  *  ⚠ THE TAIL IS NOT DELETED. It is what a country the tables know almost nothing about still gets,
  *  and its four sentences are real questions with live translations. What changed is that it can no
  *  longer take three of the four slots from a country the tables DO know something about — which is
- *  the property tests/r337-checks.test.mjs measures, by running this module's own chooser over a
+ *  the property tests/news-country-starter-chips-checks.test.mjs (#R337) measures, by running this module's own chooser over a
  *  synthetic world rather than by reading the wording back out of this file.
  *
  *  Lifted out of js/atlas-console.js in #R309 because that file is at #R199's 5,300-line ceiling and
@@ -973,7 +973,7 @@ export function makeAtlasExamples(HOST, CTX) {
        always-true questions weights of 2 to 5. That is low enough to lose to a WORLD EXTREME and
        not low enough to lose to an ordinary fact — so a country with one distinguishing feature
        was handed one question about it and three about nothing in particular. Measured on the
-       synthetic world in tests/r337-checks: every single-fact shape took THREE of its four from
+       synthetic world in tests/news-country-starter-chips-checks.test.mjs (#R337): every single-fact shape took THREE of its four from
        the tail, which is 「まだほぼ定型文みたいなものしかない」 with a number on it.
        → the tail can no longer displace an eligible specific candidate, whatever the weights say.
        It fills what is left, in its own order, and for a country the pool knows four real things
@@ -991,7 +991,7 @@ export function makeAtlasExamples(HOST, CTX) {
        returns undefined in Chromium and 「東アジア」 in Node; all 22 codes fail in ja/en/ko/de (0/22 each);
        `of('JP')` still answers 「日本」 and `of('419')` answers 「ラテンアメリカ」. V8's region table carries
        COUNTRIES, not the M49 macro-regions — so every reader saw 「モンゴル国はEastern Asiaの他の国と…」
-       exactly as before, while `tests/r313b` ② measured Node's ICU and stayed green for ever.
+       exactly as before, while `tests/atlas-examples-checks.test.mjs (#R313b)` ② measured Node's ICU and stayed green for ever.
        ⚠⚠⚠ THAT IS THE DEFECT OF 追記1 ONE LEVEL DOWN: an instrument that measures a DIFFERENT RUNTIME
        from the one that ships. 追記1 caught a gate that measured templates instead of values; this one
        caught a gate that measured Node instead of the browser.

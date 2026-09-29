@@ -85,7 +85,7 @@
  *    node scripts/build-country-facts.mjs --check    re-derive and compare with the committed file
  *
  *  ⚠ NOT IN `npm test`. It needs the network (jsDelivr + IANA); the committed file is validated
- *  OFFLINE by tests/r453-checks.test.mjs, and that the rows actually REACH THE SCREEN is
+ *  OFFLINE by tests/shell-data-layers-checks.test.mjs (#R453), and that the rows actually REACH THE SCREEN is
  *  tests/r424.spec.js. Three different questions, three different places.
  * ==========================================================================*/
 import fs from 'node:fs';
@@ -164,7 +164,7 @@ async function grabText(url) {
 }
 
 /* the code js/countries-ui.js derives for a Natural Earth feature — copied deliberately, and
-   tests/r453-checks.test.mjs ② compares this rule with the one the app uses. */
+   tests/shell-data-layers-checks.test.mjs #R453 ② compares this rule with the one the app uses. */
 function neCode(p) {
   const c = (p.ISO_A3_EH && p.ISO_A3_EH !== '-99') ? p.ISO_A3_EH
     : ((p.ISO_A3 && p.ISO_A3 !== '-99') ? p.ISO_A3 : (p.ADM0_A3 || ''));
@@ -287,7 +287,7 @@ async function build() {
     /* ⚠ THE ABSENCE IS DECLARED RATHER THAN LEFT AS AN ABSENCE — the whole point of the round.
        A code here has a row and no `tz` because the IANA database assigns it no zone (Kosovo has
        no XK entry in zone.tab or zone1970.tab; Heard & McDonald is uninhabited), NOT because the
-       build dropped it. tests/r453-checks.test.mjs ⑤ holds the two apart. */
+       build dropped it. tests/shell-data-layers-checks.test.mjs #R453 ⑤ holds the two apart. */
     withoutTimezone: Object.keys(countries).filter((k) => !countries[k].tz).sort(),
     countries,
   };

@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------------------
  *  「IntMap統一時間機能を、これよりChronosという名称に。」 The one master clock the whole app
  *  runs on. It was declared inside js/app-body.js's DOMContentLoaded closure; naming it is what
- *  made it a subject, and a subject gets its own file (tests/r168 #8 — the shell's ceiling comes
+ *  made it a subject, and a subject gets its own file (tests/news-module-split-checks.test.mjs (#R168) #8 — the shell's ceiling comes
  *  DOWN, never up, and this round adds to the shell).
  *
  *  ⚠ NOTHING ABOUT IT CHANGED IN THE MOVE. The body below is #R94's, word for word, with two
@@ -62,7 +62,7 @@ window.IntMapTime=(function(){
      `const YMIN = HS.FLOOR` evaluated here reads `undefined` and falls back to 1 — the floor
      would be silently wrong, every deep-time subsystem would be clamped, and nothing would
      throw. Reordering the two imports would fix this one site and leave the shape (the app
-     shell's order is load-bearing and tests/r175-checks exists because of it); reading the
+     shell's order is load-bearing and tests/layer-boot-graph-checks.test.mjs (#R175) exists because of it); reading the
      value at CALL time removes the ordering question instead of answering it. Every caller of
      `ymin()` runs long after both modules have evaluated. */
   const ymin=()=>{ try{ const v=window.IntMapHistScale&&window.IntMapHistScale.FLOOR;

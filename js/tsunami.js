@@ -126,7 +126,7 @@ window.IntMapModules.tsunami=function(HOST){
        yielded row by row. On a GLOBAL grid that is 921,600 cells and there is no reason for any of it to
        be on the page: the worker already owns the integration, so it now owns the model. This file keeps
        the panel, the picture and the reading of the result — nothing that is arithmetic about elasticity.
-       The published verification case travels with the code: tests/r197-checks.test.mjs RUNS okadaUz from
+       The published verification case travels with the code: tests/hazard-tsunami-checks.test.mjs (#R197) RUNS okadaUz from
        the worker against Okada Table 2 rather than asserting on its text. */
 
     /* ---- building the model ---------------------------------------------------------------------- */

@@ -433,7 +433,7 @@ try {
     /* (#R341) …and the FIFTH: a WORKER in src/ importing a js/ module — reached by
        `new Worker(new URL(…, import.meta.url))` rather than by an import statement, so it is not in
        src/main.js's graph, while what IT imports is every bit as alive as what main.js imports.
-       ⚠ ALL FIVE FORMS NOW COME FROM scripts/js-reachability.mjs, which tests/r175-checks.test.mjs
+       ⚠ ALL FIVE FORMS NOW COME FROM scripts/js-reachability.mjs, which tests/layer-boot-graph-checks.test.mjs (#R175)
        reads too. They used to be written out twice and the copies drifted the moment this fifth
        form appeared — the #R318 shape. */
     const REACH = jsReachability(ROOT, ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel)).map((x) => x.rel.slice(3)));
@@ -569,7 +569,7 @@ try {
 
 // ── 10. (#R529) a file of tests the runner will never look at ──
 // `test:checks` used to be one hand-written literal naming all 292 files, and this slot held the
-// comparison between that literal and the disk — #R301, after tests/r210 and tests/r211 were found
+// comparison between that literal and the disk — #R301, after tests/shell-data-layers-checks.test.mjs (#R210) and tests/hazard-terrain-water-checks.test.mjs (#R211) were found
 // never to have run at all, then #R385 and #R390 as the literal found two further ways to be wrong.
 // #R529 deleted the literal instead: `node --test "tests/**/*.test.mjs"` discovers the files itself,
 // so «in the list» and «not in the list» stopped being states a file can be in, and the three
@@ -594,7 +594,7 @@ for (const f of ALL) {
 // A round's own files used to be named for the round and nothing else, and a round number is not
 // a name: every parallel session takes «the next free number» from the same scan and takes it
 // again whenever origin/main moves. #R671 measured seven renumberings in one round and an add/add
-// conflict on tests/r568-checks.test.mjs whose markers were committed, leaving a whole file of
+// conflict on tests/r568-checks.test.mjs (since regrouped into tests/radiation-plume-checks.test.mjs) whose markers were committed, leaving a whole file of
 // regressions unparseable. (2026-09-25) New files carry no round number at all — they are named
 // for their slug — and the existing r<N>… files are history. The rule, the two legacy numbers and
 // why they are numbers rather than a list of spellings all live in scripts/round-names.mjs; the

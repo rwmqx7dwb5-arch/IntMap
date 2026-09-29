@@ -572,7 +572,7 @@ async function checkUpstream() {
    Its two neighbours already guard their CLI for exactly this reason and say so in the same words
    (scripts/build-cshapes.mjs: «a value has to be readable without also starting a 26 MB rebuild»;
    scripts/build-border-coast.mjs, #R695). This one had no guard and a DEFAULT branch, so the
-   moment tests/r707-chronos-upstream-checks imported `upstreamGap`, `node --test` rebuilt
+   moment tests/process-hist-eras-upstream-checks.test.mjs (#R707) imported `upstreamGap`, `node --test` rebuilt
    data/hist-eras.js — 10.6 MB — as a side effect of an import. MEASURED #R707: the bundle was
    rewritten during the first run of that test file.
    ⚠ THE DANGER IS NOT THE WASTED MINUTE. `npm test` runs files in parallel (scripts/test-parallel.mjs)

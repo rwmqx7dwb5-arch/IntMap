@@ -48,7 +48,7 @@
 import { QUAKE_EVENTS, ruptureRing, momentOf, fetchRuptureRing } from './seismic-events.js';
 /* (#R263) …and the three modules this round's physics lives in. They are imported HERE, by their one
    consumer, rather than eagerly from src/main.js — which is where the first draft put them until the
-   shell's line budget (tests/r168 #8) refused, with two lines of headroom left. The budget was right
+   shell's line budget (tests/news-module-split-checks.test.mjs (#R168) #8) refused, with two lines of headroom left. The budget was right
    and the refusal improved the design: js/seismic.js is lazy, so these three now land in ITS chunk
    instead of the boot bundle, and the dependency is stated where it is actually used.
      js/seismic-site.js       window.IntMapSiteAmp   — A(f), the quarter-wavelength site term
@@ -1246,7 +1246,7 @@ window.IntMapModules.seismic=function(HOST){
          `exp(log a + f·(log b − log a))` identically, to within a rounding of the last bit.
          ⚠ Same nodes, same spacing, same log-interpolation: the ANSWER is unchanged. Measured on the
          shipped tables: max relative difference against the old form 2.4e−16 over 10⁵ radii, i.e. one
-         unit in the last place. tests/r218-checks ③ re-runs that comparison. */
+         unit in the last place. tests/hazard-other-geometry-kernel-checks.test.mjs #R218 ③ re-runs that comparison. */
       const lOut=new Float64Array(n), lA0=new Float64Array(n);
       for(let i=0;i<n;i++){ lOut[i]=Math.log(out[i]); lA0[i]=Math.log(a0s[i]); }
       const lr0=Math.log(r0), kIx=(n-1)/(Math.log(r1)-lr0||1);
@@ -2701,7 +2701,7 @@ window.IntMapModules.seismic=function(HOST){
 
     /* The radius at which MMI falls through each integer — the spatial answer to 「推定震度」.
        ⚠ (#R190) These are QUOTED NUMBERS, like the table, so they live inside MMI_CALIB_KM and not
-       inside the painting limit. Splitting the two constants moved this by accident and tests/r176 ⑤
+       inside the painting limit. Splitting the two constants moved this by accident and tests/seismic-sim-checks.test.mjs #R176 ⑤
        caught it immediately (a ring at 1,129 km against its "stay inside the model's stated range"
        assertion). The painted field may reach further BECAUSE it is labelled an extrapolation on
        screen; a number in a list carries no such label, so it does not go there. */
@@ -2940,7 +2940,7 @@ window.IntMapModules.seismic=function(HOST){
        a small-angle approximation of the union. The two agree only along the strike (Δb = 0 or 180°)
        and diverge most across it; at Δb = 90° the old form returns `off·0 + r` for a point whose
        circle the ray reaches at √(r² − off²). So this is a correction at every scale, and the
-       spherical form is checked against the planar union — not against the old line — in tests/r235. */
+       spherical form is checked against the planar union — not against the old line — in tests/hazard-seismic-wavefront-checks.test.mjs (#R235). */
     /* ⚠ `rFor(k, b)` TAKES THE RAY BEARING AS WELL AS THE SOURCE POINT. The first cut passed only
        `k`, and `k.phi` is the bearing OF THAT SOURCE POINT from the hypocentre — not the direction
        the front is travelling in. Any radius that depends on direction (the surface-wave path
@@ -3462,7 +3462,7 @@ window.IntMapModules.seismic=function(HOST){
         /* the card: one topic, hairlines inside it, nothing between it and the next but space */
         '.sq-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:12px;overflow:hidden;}',
         /* ⚠ FS_S, not a literal 11px. #R234 replaced NINE drifting sizes with three constants and
-           tests/r234 checks that no fourth one appears — a sheet that writes its own number is how
+           tests/hazard-seismic-panel-checks.test.mjs (#R234) checks that no fourth one appears — a sheet that writes its own number is how
            the drift starts again, and the check caught exactly that in the first cut of this round. */
         '.sq-cap{font-size:'+FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 3px 5px;}',
         /* ⚠ NOT --text-muted. #R234: 「必須ではない限り灰色を使わないように」 — a caption is text the
@@ -4727,7 +4727,7 @@ window.IntMapModules.seismic=function(HOST){
            `_chipW()` renders every label EITHER SCALE CAN PRINT into a detached span carrying this
            chip's exact font declarations, takes the widest, and caches it against the font and size
            it measured for. So the boxes are equal by construction rather than by a constant that was
-           true once, a new scale needs no edit here, and tests/r238 checks the RELATION (all chips
+           true once, a new scale needs no edit here, and tests/hazard-seismic-wavefront-checks.test.mjs (#R238) checks the RELATION (all chips
            one width) instead of the number. */
         return '<span style="display:inline-block;box-sizing:border-box;width:'+cw+'px;padding:3px 4px;'
           +'text-align:center;border-radius:0;background:'+col
@@ -4762,7 +4762,7 @@ window.IntMapModules.seismic=function(HOST){
          ⚠ WHAT STAYS is what the reader has to ACT on or would otherwise MISREAD, and there are two:
          the 「設定を変更しました。▶ を押すと…」 instruction, and the two ⚠ lines that say the painted
          field is NOT what it looks like — 「標高タイルが届かず一様地盤」 and 「この範囲では地形が粗く
-         一様地盤」. Those are the #R190/#R221 contract (tests/r189-checks: 「an unusable site term is
+         一様地盤」. Those are the #R190/#R221 contract (tests/hazard-other-session-defaults-checks.test.mjs (#R189): 「an unusable site term is
          declared, not hidden」): without them a distance-only ring pattern is indistinguishable from a
          terrain solution, which is the one way this panel can lie. They appear only in the failure
          cases; the normal case — the line the instruction quotes — now says nothing at all. */
@@ -5160,7 +5160,7 @@ window.IntMapModules.seismic=function(HOST){
         +'box-shadow:0 0 0 0 var(--primary-color);animation:sqhPulse 1.8s ease-out infinite;}'
         +'@keyframes sqhPulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,0.55);}70%{box-shadow:0 0 0 9px rgba(10,132,255,0);}100%{box-shadow:0 0 0 0 rgba(10,132,255,0);}}'
         +'#sq-hud .sqh-txt{flex:1 1 auto;min-width:0;}'
-        /* ⚠ (#R239) ONE TYPE SCALE. #R234's rule (and tests/r234-checks) is that this panel has three
+        /* ⚠ (#R239) ONE TYPE SCALE. #R234's rule (and tests/hazard-seismic-panel-checks.test.mjs (#R234)) is that this panel has three
            sizes — FS / FS_S / FS_H — and no raw px anywhere else; the HUD is part of the panel even
            though it is drawn on the map, so it interpolates the same three constants. */
         +'#sq-hud .sqh-t{display:block;font-size:'+FS_H+';font-weight:700;color:var(--text-main);line-height:1.25;}'

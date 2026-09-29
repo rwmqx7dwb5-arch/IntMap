@@ -30,7 +30,7 @@
  * makeAtlasHighlight() -> { highlightCode, highlightLang }
  *
  * ⚠ EVERY DECLARATION BELOW LIVES INSIDE THIS FACTORY, and that is a rule of the repository rather
- * than a preference: tests/r175-checks ③ fails any js/ module that leaves an unexported name at the
+ * than a preference: tests/layer-boot-graph-checks.test.mjs #R175 ③ fails any js/ module that leaves an unexported name at the
  * top level, because a module-scope binding nothing exports is invisible to the import graph and to
  * every instrument that walks it. The compiled-grammar cache therefore lives per factory, which is
  * what we want anyway — js/atlas-reply.js builds one and keeps it.

@@ -29,7 +29,7 @@ import { policyActors } from './pandemic-model.js';
    Explorer uses them too — but they are what turns a Natural Earth feature into a row of the world,
    and one statement of each beats the copy each caller would otherwise keep. */
 export function pig(x,y,g){
-  /* the ray cast against ONE ring — nested in its only caller (tests/r175-checks ③: an unexported
+  /* the ray cast against ONE ring — nested in its only caller (tests/layer-boot-graph-checks.test.mjs #R175 ③: an unexported
      top-level declaration fails, and an export no js/ module imports fails as dead code). */
   const pir=(px,py,r)=>{let i,j,c=false;for(i=0,j=r.length-1;i<r.length;j=i++){const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1];if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/((yj-yi)||1e-12)+xi))c=!c;}return c;};
   if(!g)return false;const ps=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[]);for(const poly of ps){if(poly&&poly.length&&pir(x,y,poly[0])){let h=false;for(let k=1;k<poly.length;k++){if(pir(x,y,poly[k])){h=true;break;}}if(!h)return true;}}return false;}
@@ -97,7 +97,7 @@ export function resolveStatsRow(cs, props){ const s=cs||{}; const p=props||{}; c
    France's. Sorting once per country and walking as far as the dots need is both cheaper and
    lossless. */
 /* ⚠⚠⚠ (#R754) MODULE-PRIVATE STATE, ATTACHED TO window — one of the three answers
-   tests/r175-checks ③ names («wrapped, exported, or attached to window»), and the only one that
+   tests/layer-boot-graph-checks.test.mjs #R175 ③ names («wrapped, exported, or attached to window»), and the only one that
    fits. The four table caches and the world memo must outlive a call and be shared by every
    caller, so they cannot be wrapped in a function; and exporting them would be a dead export,
    which the same test fails on its second assertion. ⚠ THE `__im` PREFIX MEANS PRIVATE: this bag
@@ -137,7 +137,7 @@ export function placesFor(iso2){ return (window.__imPW.plByIso&&iso2)?window.__i
    null means «there is no world to simulate» — country geometry never arrived, or every row was
    refused for want of a measured population. The caller says so; this does not toast. */
 export function buildPandemicWorld(deps){
-  /* ⚠ THE THREE TABLES THIS IS THE ONLY CALLER OF LIVE INSIDE IT. tests/r175-checks ③ fails an
+  /* ⚠ THE THREE TABLES THIS IS THE ONLY CALLER OF LIVE INSIDE IT. tests/layer-boot-graph-checks.test.mjs #R175 ③ fails an
      unexported top-level declaration, and an export no js/ module imports fails as dead code —
      so a loader with exactly one caller belongs in that caller. Their caches are on window
      (see the bag above), so nesting costs nothing across calls. */
@@ -162,7 +162,7 @@ export function buildPandemicWorld(deps){
       .catch(e=>{ window.__imPW.airP=null; try{ console.error('[IntMap] airport capacity unavailable: '+((e&&e.message)||e)); }catch(_){} return null; });
     return window.__imPW.airP;
   }
-  /* ⚠ NESTED IN ITS ONLY CALLER. tests/r175-checks ③ fails an unexported top-level
+  /* ⚠ NESTED IN ITS ONLY CALLER. tests/layer-boot-graph-checks.test.mjs #R175 ③ fails an unexported top-level
      declaration, and exporting a helper nothing else imports fails its second assertion as a
      dead export — so a private helper with one caller lives inside that caller. */
   function makeWorld(w){
@@ -316,7 +316,7 @@ export function buildPandemicWorld(deps){
            「Antarcticaが国境を封鎖。」 was not a labelling slip: the engine really was giving a
            continent with no government a border policy, a lockdown and a traffic multiplier that
            the importation loop then obeyed. ⚠ THE RULE ITSELF IS `policyActors` IN
-           js/pandemic-model.js — pure, exported and measured by tests/r675-pandemic-checks against
+           js/pandemic-model.js — pure, exported and measured by tests/hazard-pandemic-model-checks.test.mjs (#R675) against
            the real data/country-facts.json. A rule that only existed inside a DOM closure is a rule
            no test can reach (#R505), and this one decides whether a place may have a government. */
         const a=policyActors(world,!!factsT);
@@ -358,7 +358,7 @@ export function buildPandemicWorld(deps){
    ⚠ THE GAZETTEER IS ALREADY SHIPPED — data/gazetteer-world.json.gz, the same table the case dots
    are placed against. No new upstream, and no network call this module did not already make. */
 export function resolveOrigin(w, q) {
-  /* ⚠ NESTED IN ITS ONLY CALLER. tests/r175-checks ③ fails an unexported top-level
+  /* ⚠ NESTED IN ITS ONLY CALLER. tests/layer-boot-graph-checks.test.mjs #R175 ③ fails an unexported top-level
      declaration, and exporting a helper nothing else imports fails its second assertion as a
      dead export — so a private helper with one caller lives inside that caller. */
   /* Every gazetteer row whose name IS the query, most populous first. ⚠ ONE MATCHER, so the single
@@ -385,7 +385,7 @@ export function resolveOrigin(w, q) {
 
   /* The most populous match, or null. ⚠ IT IS THE HEAD OF THE CANDIDATE LIST, not a second walk
      of the same rows: two definitions of «matches» is the duplication this round is fixing one
-     level up, and tests/r754-pandemic-atlas-checks ⑪ measures that there is exactly one. */
+     level up, and tests/atlas-pandemic-checks.test.mjs #R754 ⑪ measures that there is exactly one. */
   function gazetteerPoint(query) { const c = gazetteerCandidates(query); return c.length ? c[0] : null; }
   const Q = q || {};
   const lng = +Q.lng, lat = +Q.lat;

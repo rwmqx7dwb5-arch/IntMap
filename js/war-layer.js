@@ -519,7 +519,7 @@ window.IntMapModules.warLayer = function (HOST) {
     /* ⚠ (#R409) THE PLAYBACK TIMER IS ON THE WHEEL, NOT A RAW `setInterval`. #R408 moved «does a
        hidden tab tick?» inside js/runtime.js precisely so that no caller carries its own copy of
        the predicate — the first draft here had `if (document.hidden) return;` in the callback,
-       which is that copy, and `tests/r408-checks ②a` names the file and the line.
+       which is that copy, and `tests/shell-runtime-checks.test.mjs #R408 ②a` names the file and the line.
        ⚠ THE KEY CARRIES THE WAR ID. Keys are global to the wheel and a second `everyTick` under the
        same key REPLACES the first — with both rows playing, one key would leave WW1 and WW2 fighting
        over one timer. */
@@ -809,7 +809,7 @@ window.IntMapModules.warLayer = function (HOST) {
   }
 
   /* ⚠ THE FACADE IS BY WAR ID. `toggle(id, want)` rather than `toggle(want)` — js/war-fronts.js and
-     tests/r209 ③ both reach it here, and the id is what tells two identical layers apart. */
+     tests/atlas-console-kernel-checks.test.mjs #R209 ③ both reach it here, and the id is what tells two identical layers apart. */
   window.__imWarFronts = {
     toggle: (id, want) => inst(id).toggle(want),
     isOn: (id) => (insts.has(id) ? insts.get(id).isOn() : false),

@@ -145,7 +145,7 @@ window.IntMapModules.space=function(HOST){
        orbit radius — visually still a dot, which is the true-scale complaint the mode is supposed to
        answer. Doubling-and-a-bit is bounded by #R203's constraint, not by taste: the Moon must clear
        the Earth at PERIGEE, i.e. moonSep(356,500) > (rEarth + rMoon)·1.5, and MOON_K moves with it
-       (0.30 → 0.42) so the margin is kept rather than spent. tests/r203-checks ③ re-derives that
+       (0.30 → 0.42) so the margin is kept rather than spent. tests/shell-sky-space-checks.test.mjs #R203 ③ re-derives that
        inequality from these constants, so a future nudge that breaks it fails the build.
        Body ORDER and within-family ratios are untouched — this is one multiplier on every radius. */
     const POS_P=0.42, POS_K=26, RAD_K=0.12;
@@ -1038,7 +1038,7 @@ window.IntMapModules.space=function(HOST){
          still near one end of its orbit and jittered — and the ORBIT LINE, drawn by sampling this same
          function over one period, collapsed to that same short arc. The Moon itself was never affected
          because it comes from ELP-2000 and never passes through here.
-         ⚠ tests/r219-checks ① runs this: one period of Io sweeps 360° and its radius stays between
+         ⚠ tests/engine-space-checks.test.mjs #R219 ① runs this: one period of Io sweeps 360° and its radius stays between
          a(1−e) and a(1+e). A unit error that survived three rounds does not get to survive on a
          comment. */
       const ecc=E.kepler(M,m.e);

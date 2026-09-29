@@ -18,7 +18,7 @@
  *  ⚠ A DECLARED VERSION IS A CLAIM, AND A CLAIM NEEDS A KEEPER. A hand-maintained number drifts the
  *  first time somebody edits a kernel and forgets it, and a drifted one is WORSE than none: it tells
  *  a reader 「同じエンジンです」 about an engine that has changed. So this file records the hash of
- *  each kernel beside the version it was declaring, and tests/r749-gis-raster-pipeline-checks fails
+ *  each kernel beside the version it was declaring, and tests/shell-gis-upload-raster-checks.test.mjs (#R749) fails
  *  when the code moved and the version did not.
  *
  *  ⚠⚠⚠ AND #R752 FOUND THE KEEPER ITSELF WAS A HAND-WRITTEN LIST — the exact shape
@@ -128,7 +128,7 @@ export const KERNELS = {
      reach) cannot change a recipe that predates them. What moved is which of two answers — a
      number or a named refusal — a replayed step produces, and a reader comparing two loads is
      entitled to know that. */
-  'js/gis-ops.js': { version: 'ops-9', sha256: '694ecec48d30e267b648f92ea8d9946c6fbdb8d5aacbb356047253a1c8bad52e' },
+  'js/gis-ops.js': { version: 'ops-9', sha256: 'e331e5a3e2780f1404c30870afa6e478104e2c4a80b568a48ea492350997a050' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -150,7 +150,7 @@ export const KERNELS = {
      HASH ONLY once more (deps-runtime-majors): the header paragraph about where polygon-clipping's
      bytes arrive was re-measured after Turf 7 (it is its own async chunk now) and says so. Comment
      text only — the dynamic import and every statement are unchanged. */
-  'js/gis-geometry.js': { version: 'geom-2', sha256: '01df1d718c6c72daf3f221e6210bf182a40102a599addf95e432aa6b57b4d9e6' },
+  'js/gis-geometry.js': { version: 'geom-2', sha256: '03c88d0c8d457dbc726094e3396a0a8a26bb3c7355a4284a62881c819d669ec2' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
@@ -162,7 +162,7 @@ export const KERNELS = {
   /* (#R759) HASH ONLY AGAIN, AND THE CHOICE IS THE INTERESTING PART. `diff` now runs its pixel loop
      on the GIS worker when its caller hands over a door — a different THREAD, not a different answer:
      there is one implementation of the per-pixel rule (the job function), both arms call it, and
-     tests/r759-gis-worker-checks measures the two outputs byte for byte against an independently
+     tests/geo-gis-cancellation-checks.test.mjs (#R759) measures the two outputs byte for byte against an independently
      written fixture over NaN, infinities, declared sentinels and bands that declare none. A saved
      recipe replays to the same grid whether or not this browser has workers, which is exactly the
      condition for leaving the version where it is. */
@@ -199,7 +199,7 @@ export const KERNELS = {
      has to ASK (`footprint:"exact"`), and the aggregation, the void rule, the apportioning and
      the mode tie-break are the same code deciding the same way. A recipe that names no footprint
      replays through the box, bit for bit. */
-  'js/gis-raster.js': { version: 'raster-4', sha256: 'aaa2b5ed1d11fc252450c96fb593c61c77783095fa8a3d5c4722c4b6d22df3e7' },
+  'js/gis-raster.js': { version: 'raster-4', sha256: '91525f982f62e7b54807407c4d3841be33ca9d21e53230f3bf3bf46f26e97a15' },
   /* (#R774) A FIRST DECLARATION. js/gis-units.js decides whether two quantities may be combined and
      what the conversion is; every caller above asks it, so a change to the table or to the
      expression walk changes what a replayed recipe answers or refuses. */
@@ -214,19 +214,19 @@ export const KERNELS = {
      a ratio of — and publishes `specFields` so the supplying side and the panel read one list.
      It is carried, never resolved here: this kernel knows nothing about datasets. Measured: all
      nine aggregation methods answer the same verdict for the same quantity as before. */
-  'js/gis-units.js': { version: 'units-2', sha256: '4dd61ad054350399e1bc8ebc9bf5e2edef59fff79dd65bb73eeebc33673b80dc' },
+  'js/gis-units.js': { version: 'units-2', sha256: '8977ce65f4cb7978736a49d14280fbf3c60ac5af4958ff134e8f08b8f2d5869b' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
     /* (#R783) HASH ONLY: the inverse mapping and the areal footprint boxes may now be computed in the
      GIS worker in budget-sized row blocks. One implementation (invAt / boxOf) runs on both threads,
-     and tests/r783-worker-budget-checks measures the blocked grid, the unblocked grid and the grid
+     and tests/history-gis-warp-worker-budget-checks.test.mjs (#R783) measures the blocked grid, the unblocked grid and the grid
      of a declined door byte for byte. Not one pixel changes. */
   /* (#R819) HASH ONLY, AND THE THING NOT RAISED IS WORTH NAMING. The round gave this file a
      memory budget it reports against, a sink that writes the output a window at a time instead
      of holding the whole grid, and an exact-footprint road with a stated tolerance. All three
      are reached only by a caller that states them; a recipe that states none takes the same
      path. ⚠ Measured against #R783 ① — six methods, on-thread and off — byte for byte. */
-  'js/gis-warp.js': { version: 'warp-1', sha256: '753a54f4663d408351e7116427e21a261e94b875d281e667df5c315ef553f6dc' },
+  'js/gis-warp.js': { version: 'warp-1', sha256: '3dc35d986515ebadc369e693f775c93381bb991d7abbee4a62c5b6c4e66394db' },
     /* (#R783) HASH ONLY: every function in FUNCS now declares what it does to a unit (keeps /
      dimensionless / no-unit / changes) so js/gis-units.js can ASK instead of guessing. The
      evaluator is untouched — the same expression over the same rows returns the same numbers. */
@@ -234,7 +234,7 @@ export const KERNELS = {
      SAME function rather than a copy of the rules, and `portable()` answers before a run whether
      a tree can travel. The parser, the numeric coercion and every function are the same bytes in
      a closure; the tests evaluate one expression on both sides and require identity. */
-  'js/gis-expr.js': { version: 'expr-1', sha256: '34056037d1e3e752e55f27893ffb258ae2741384b88b9c6e2f90594346e03b5d' },
+  'js/gis-expr.js': { version: 'expr-1', sha256: 'e046c9d1c9d0862816793e095a3633662db2c065ee5b51638b5cafaf2a0ccc3f' },
   /* (#R819) HASH ONLY, AND THE CHOICE IS DELIBERATE. The index can now build tiers instead of one
      grid, and it keeps counters (candidates / delivered / retained) so a caller can see what the
      prefilter saved. ⚠ A DIFFERENT CANDIDATE SET IS NOT A DIFFERENT ANSWER: every road hands the
@@ -242,7 +242,7 @@ export const KERNELS = {
      an unindexed sweep of the same data, and the default grid against a digest taken from the
      PREVIOUS version of this file. ⚠ If a tier ever dropped a true pair, this would be a raised
      version and a defect — which is why the falsification is measured rather than argued. */
-  'js/gis-index.js': { version: 'index-1', sha256: '2ce629635a75f9fdc10db14e73454f46c845212971a1b7464a55452e211aef4e' },
+  'js/gis-index.js': { version: 'index-1', sha256: '2b30c8888536ca03369682edb0d23baad162c31b35cbbdeac42db8e9dcb582b8' },
   /* (#R756) crs-1 -> crs-2: a refusal became an answer. The azimuthal equidistant plane was
      implemented and unreachable (it holds no EPSG code, and `measure` takes its plane as text), so
      `planeSpec()` now reads the spellings out of the PLANES table itself -- 'aeqd:<lon0>,<lat0>'
@@ -254,7 +254,7 @@ export const KERNELS = {
      crs-2 had no way to state one. The measurement behind it: EPSG:3857 area is +311% at 60°N and
      +10744% at 84°N; the datum term nobody had measured is +0.449% at the equator on this app's own
      sphere; and `exact: true` was a claim about a surface's OWN datum, not about the ground. */
-  'js/gis-crs.js': { version: 'crs-3', sha256: 'de3d3e94602c3e3ef56e5ebd80ee96df08b3b9fd90714e392cab6bb16342e469' },
+  'js/gis-crs.js': { version: 'crs-3', sha256: 'dd306fe9a1f2424ed8518d95c24b14bf6cc200ede37e1067f6510e01eaa3efa9' },
 };
 
 /* ⚠ THE OTHER HALF, AND IT IS THE HALF THAT MAKES THE FIRST ONE A RULE. A GIS module that is not a

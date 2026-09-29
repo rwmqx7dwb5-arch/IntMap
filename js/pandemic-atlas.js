@@ -38,7 +38,7 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
      it off a global would be a second source of truth for the reader's language, and the one this
      module invented would be the one that went stale.
      ⚠⚠ AND IT RESOLVES THROUGH js/lang-registry.js, never through a five-positional helper of this
-     module's own (tests/r221 ①). A module that re-grows one returns `undefined` for the sixth
+     module's own (tests/shell-i18n-locales-checks.test.mjs #R221 ①). A module that re-grows one returns `undefined` for the sixth
      language the day a sixth is added — which is the entire reason the registry exists. Bound
      lazily because this file is behind a lazy door and `pick` wants a live getter, not a value. */
   let _pick = null;

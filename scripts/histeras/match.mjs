@@ -9,7 +9,7 @@
  *  no answer.
  *
  *  Everything here is pure — census row in, verdict out, no network, no clock, no globals — so
- *  tests/r686-histeras-names-checks.test.mjs EVALUATES it rather than reading it (#R505).
+ *  tests/history-era-names-checks.test.mjs (#R686) EVALUATES it rather than reading it (#R505).
  * ==========================================================================*/
 import { rowDistance } from './census.mjs';
 

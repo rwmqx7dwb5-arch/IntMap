@@ -561,7 +561,7 @@ async function makeNew(slug) {
   console.log('\n  作業ディレクトリ（以降の編集は全部この中で）:');
   console.log('    ' + dir);
   /* (#R674, then without numbers) …AND THE NAMES THIS WORK'S FILES MUST CARRY. MEASURED in #R671:
-     two sessions both created tests/r568-checks.test.mjs from the same «next free number», git
+     two sessions both created tests/r568-checks.test.mjs (since regrouped into tests/radiation-plume-checks.test.mjs) from the same «next free number», git
      raised an add/add conflict, and the automation committed the markers — the file stopped parsing
      and a whole file of regressions was gone. The slug was just refused if anything holds it, so
      these names are this session's alone. `check:static` (round-name) refuses a new numbered one. */

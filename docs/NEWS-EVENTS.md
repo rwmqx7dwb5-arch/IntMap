@@ -536,7 +536,7 @@ merge redirect と split 履歴は消さない。
 ⚠ この表は `CONSTITUTION.md` §5 の改訂を伴う。改訂の理由は `DECISIONS.md` に記録する。
 
 **実装 (#R351)**: `news-ingest` の `prune` 段。数字の正本は
-`supabase/functions/_shared/news-ingest.js` の `RETENTION`（`tests/r351-checks ⑭` が
+`supabase/functions/_shared/news-ingest.js` の `RETENTION`（`tests/news-ingest-checks.test.mjs #R351 ⑭` が
 この表と突き合わせる）。⚠ Event が消えるのは **3 つとも当てはまらないとき**だけ——
 ★保存されている / merge の行き先である / 自身が merged。**merge の redirect を消すと、
 古い ID から新しい ID へ辿る道が無くなる。**
@@ -787,9 +787,9 @@ NPR 79 字 / France 24 133 字 = 0.59）。⚠ 母数は薄い（**526 組中 1 
   「いま読んでいる」ではなく **「読み手が持ち込んだ」**と名乗る——workspace mode では
   本当に画面に在るので、そちらは今までどおり「いま読んでいる」。
 
-検査: `tests/r451-checks.test.mjs`（道が 1 か所から出ること・寿命の規則を**実際に走らせる**）と
+検査: `tests/news-reader-checks.test.mjs` (#R451)（道が 1 か所から出ること・寿命の規則を**実際に走らせる**）と
 `tests/r435.spec.js` ④（タブ列が 0×0 であること・道が視野に在って押せること・押すと Atlas が
-その記事を読めること）、`tests/r776-reader-atlas-arrival-checks.test.mjs`（チップを**実際に評価して**
+その記事を読めること）、`tests/news-reader-checks.test.mjs` (#R776)（チップを**実際に評価して**
 主題ごとに違うこと・`{p}` がどの言語でも埋まること・到着の組み立てが 1 か所しか無いこと・
 橋の書き手が**全員**——一覧ではなく発見して数える——`kind` を書くこと）。
 
@@ -874,7 +874,7 @@ Event 経路はそこで答えを持たない（§2 の決定 2 と §8）。
 ## 12.1 運用 — `news-ingest` (#R351)
 
 **Edge Function 1 本**（`supabase/functions/news-ingest/`）。論理は
-`_shared/news-ingest.js`（サーバー専用。`tests/r351-checks ⑮` が `js/` と `src/` からの参照を禁じる）。
+`_shared/news-ingest.js`（サーバー専用。`tests/news-ingest-checks.test.mjs #R351 ⑮` が `js/` と `src/` からの参照を禁じる）。
 
 | 段 | すること | 実測 |
 |---|---|---|
@@ -930,7 +930,7 @@ AI に掛ける）で `assign` より**前**（Event は AI の座標で組ま�
   間隔を伸ばすと安くなるのは、**1 時間のあいだに代表見出しが 2 度変わっても 1 回しか払わない**からで、
   翻訳そのものの単価が下がるわけではない。上限 80 件/run は 1 日 1,920 件分なので、
   実測の Event 生成量（約 620 件/日）に対して backlog は残らない。
-- ⚠ `current_news` と `refresh-news` には触れない（`tests/r351-checks ⑯` が押さえる）。
+- ⚠ `current_news` と `refresh-news` には触れない（`tests/news-ingest-checks.test.mjs #R351 ⑯` が押さえる）。
 
 ---
 

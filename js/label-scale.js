@@ -8,7 +8,7 @@
  *  it is a relation between EVERY piece of text the map draws and a reference that lives somewhere
  *  else. Thirty independent literals cannot hold that relation; they can only happen to satisfy it
  *  on the day they are written. So the sizes come from ONE ladder here, and
- *  `tests/r198-checks.test.mjs` re-derives the relation from this file on every commit.
+ *  `tests/labels-stack-and-scale-checks.test.mjs (#R198)` re-derives the relation from this file on every commit.
  *
  *  ── THE TWO LADDERS ─────────────────────────────────────────────────────────────────────────
  *  `PLACE` is the 地名ラベル: the settlement / country / admin-1 names, i.e. the layer group behind
@@ -44,14 +44,14 @@ window.IntMapLabelScale=(function(){
      differences) and moved BOTH of them to `place('country')`, which is the whole point of that
      request. Nothing has asked for this curve since. It is left in place rather than deleted because
      removing a shipped key is a reduction (AGENTS.md §3-1); the check in
-     tests/r707-chronos-unnamed-checks.test.mjs is what stops a SECOND unreachable key appearing
+     tests/chronos-unnamed-shapes-checks.test.mjs (#R707) is what stops a SECOND unreachable key appearing
      quietly beside it. */
   const PLACE={
     /* ⚠ (#R210) country is the ONE class that went back UP, and it is a later instruction rather
        than a drift: 「国名ラベルと地名ラベルで大きさの差が少ないから、国名ラベルを大きくして差を出して
        視認性を高めて」. At z4 a country now reads 17 px against a city's 10.2 (was 13 vs 10.2), and
        at z7 — where `ofm-country` stops drawing — 17 against 11.6 (was 13 vs 11.6). Every other
-       class still honours #R198's 「全体的に…下げた」, and tests/r198-checks ①c states the exemption
+       class still honours #R198's 「全体的に…下げた」, and tests/labels-stack-and-scale-checks.test.mjs #R198 ①c states the exemption
        by name so the next round cannot mistake it for a regression. */
     country:[[1,12],[4,17]],
     admin1 :[[4,9.5],[7,11.5]],
@@ -60,7 +60,7 @@ window.IntMapLabelScale=(function(){
     era    :[[1,8.5],[4,12]]
   };
   /* The pointwise MAXIMUM of the curves above — at any zoom, the biggest a place name can be.
-     tests/r198-checks.test.mjs re-derives it from PLACE, so raising a class past this fails the
+     tests/labels-stack-and-scale-checks.test.mjs (#R198) re-derives it from PLACE, so raising a class past this fails the
      build rather than quietly making the relation false.
 
      ⚠ WHY THE MAXIMUM AND NOT THE MINIMUM — the one thing this file cannot promise. Binding the

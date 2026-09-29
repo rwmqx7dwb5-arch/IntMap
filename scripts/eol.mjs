@@ -15,7 +15,7 @@
  *  #R282 each recorded it and moved on, which is three rounds spent re-diagnosing
  *  one defect:
  *
- *    · tests/r261-checks ③ required the brace of `sources.forEach(sc=>{` to be
+ *    · tests/hazard-terrain-water-checks.test.mjs #R261 ③ required the brace of `sources.forEach(sc=>{` to be
  *      followed IMMEDIATELY by a line break. On a CRLF working copy a carriage
  *      return sits in between, so the pattern could not match — red on Windows and
  *      green in CI ever since #R275 gave the assertion this shape (at #R267 it read
@@ -32,7 +32,7 @@
  *  ⚠ THIS NORMALISES; IT DOES NOT RELAX. The only thing dropped is a carriage
  *  return that precedes a line break. A pattern that demands a line break still
  *  demands one, and two texts that differ by a single character are still
- *  different — tests/r283-checks asserts BOTH directions, because a comparison
+ *  different — tests/shell-test-infra-checks.test.mjs (#R283) asserts BOTH directions, because a comparison
  *  that answers «the same» to everything is exactly how this would be «fixed» by
  *  weakening it.
  * ==========================================================================*/

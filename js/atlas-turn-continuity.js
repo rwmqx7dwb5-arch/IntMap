@@ -50,11 +50,11 @@
  *  js/atlas-agent.js, where the loop is.
  *
  *  ⚠ IT IS ITS OWN FILE BECAUSE js/atlas-console.js HAS A SHRINK-ONLY LINE CEILING
- *  (tests/r318-checks.test.mjs ⑨b, 4,910 — it shipped at 4,909). #R199's rule: the kernel shrinks
+ *  (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b, 4,910 — it shipped at 4,909). #R199's rule: the kernel shrinks
  *  by MOVING, and a new subject goes to a new file. This is a new subject.
  *
  *  ⚠ NO NETWORK, NO GLOBALS, AND THE DOM ONLY THROUGH WHAT IS PASSED IN — so
- *  tests/r419-checks.test.mjs drives THIS module, the one the browser runs, with no browser.
+ *  tests/atlas-turn-checks.test.mjs (#R419) drives THIS module, the one the browser runs, with no browser.
  * ==========================================================================*/
 
 export function makeAtlasTurnContinuity() {

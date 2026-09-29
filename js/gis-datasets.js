@@ -906,7 +906,7 @@ export function makeGisDatasets() {
       return s;
     }
     /* ⚠ THE CODES THIS LAYER CAN ANSWER WITH, DECLARED (#R738). Every refusal here reaches a reader
-       through js/gis-panel.js, and tests/r729-gis-core-checks ④ measures that each one has a sentence
+       through js/gis-panel.js, and tests/geo-gis-datasets-checks.test.mjs #R729 ④ measures that each one has a sentence
        — by SCANNING the sources for the spellings it knows (`why:'…'`, `fail('…')`). These go through
        no(), so the scan found FOUR of the twenty-five and the gate was green over the rest. A scan
        sees the spellings it was taught; a declaration states the fact. no() refusing an undeclared

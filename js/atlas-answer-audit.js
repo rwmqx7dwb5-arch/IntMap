@@ -26,7 +26,7 @@
  *  `verdict()`. A finding is a finding: it reaches the developer trace and it reaches Atlas, and
  *  Atlas decides. Nothing in this file edits, deletes or re-asks an answer.
  *
- *  Pure over (envelope, registry, ctx). tests/r334-checks.test.mjs mutates a correct answer one
+ *  Pure over (envelope, registry, ctx). tests/news-cluster-checks.test.mjs (#R334) mutates a correct answer one
  *  field at a time and asserts each mutation lands on its own code — a gate never seen red proves
  *  nothing (#R318 ②).
  * ==========================================================================*/
@@ -47,7 +47,7 @@ export function makeAtlasAnswerAudit() {
        EXIST): this asks whether what the lead says is about what was asked.
 
        ⚠⚠⚠ BOTH ARE WARNINGS, AND THAT IS A MEASURED DECISION, NOT TIMIDITY. The request was that a
-       peripheral answer 「失敗として再計画」. Written as an `error` it fired on tests/r350's own curated
+       peripheral answer 「失敗として再計画」. Written as an `error` it fired on tests/atlas-answer-audit-checks.test.mjs (#R350)'s own curated
        CORRECT answer: the question is 「中華人民共和国は世界有数の経済規模。実際に支えているのは何？」 and
        the answer is 「需要面では最終消費が最大で、規模そのものを可能にしているのは製造能力・供給網…」 —
        a good answer that reuses NONE of the question's nouns, because the question's nouns are a
@@ -432,7 +432,7 @@ export function makeAtlasAnswerAudit() {
     if (String(lead.text || '').trim()) {
       if (!leadClaims.some((c) => c.importance === 'primary')) push('lead.not_primary', 'directAnswer cites no primary claim');
       /* (#R397) …and the lead has to be about what was asked. */
-      /* (#R397) ⚠ TWO LITERAL push() CALLS, NOT A TERNARY ARGUMENT. tests/r350 ④b enumerates the
+      /* (#R397) ⚠ TWO LITERAL push() CALLS, NOT A TERNARY ARGUMENT. tests/atlas-answer-audit-checks.test.mjs #R350 ④b enumerates the
          raisable codes by matching `push('<code>'` in this file's source, so a computed code is
          declared-but-unraisable as far as that gate can see — and it said so. */
       const qa = questionAddressed(env);

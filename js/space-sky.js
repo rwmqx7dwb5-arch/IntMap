@@ -35,7 +35,7 @@
  *
  *  and is confirmed by MapLibre's own atmosphere code, whose getSunPos() puts the light direction
  *  through Rz(roll)·Rx(−pitch)·Rz(bearing)·Rx(lat)·Ry(−lng) — the same chain with the translations
- *  dropped, which is precisely the "at infinity" case. tests/r186 does not take that on trust: it
+ *  dropped, which is precisely the "at infinity" case. tests/shell-sky-space-checks.test.mjs (#R186) does not take that on trust: it
  *  runs the SAME code path with the translations restored and compares it to map.project() over a
  *  grid of bearings, pitches and zooms.
  *
@@ -226,7 +226,7 @@ window.IntMapSky=(function(){
      sphereVec(ra−gmst, dec) is one 3×3 matrix applied to a precomputed vector: nine multiplies a
      star instead of four transcendentals plus five rotations.
 
-     ⚠ NOT TAKEN ON TRUST. tests/r187 builds this matrix and compares it to projectDirection() over a
+     ⚠ NOT TAKEN ON TRUST. tests/layer-globe-rendering-checks.test.mjs (#R187) builds this matrix and compares it to projectDirection() over a
      grid of camera states and sky directions; if the two ever disagree the fast path is wrong. */
   function viewMatrix(F,gmst){
     const rows=[[1,0,0],[0,1,0],[0,0,1]];

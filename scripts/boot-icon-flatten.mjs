@@ -28,7 +28,7 @@
  *    which is the whole reason a per-pixel pass is needed rather than a CSS colour underneath.
  *
  *  ⚠ IT IS IDEMPOTENT. After a run F is (0,0,0), so `src − 0·(1−L)` is the identity and running it
- *  again changes nothing. tests/r231-checks.test.mjs asserts the shipped file's property directly
+ *  again changes nothing. tests/shell-i18n-locales-checks.test.mjs (#R231) asserts the shipped file's property directly
  *  (its border pixels ARE #000000) rather than re-running the encoder, because a byte comparison
  *  would be asserting the zlib version rather than the picture.
  *

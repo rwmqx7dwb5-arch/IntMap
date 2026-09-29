@@ -10,7 +10,7 @@
  *  This module is PURE: it takes a geocoder result and returns a framing decision. It touches no
  *  map, no renderer, no HOST. That is not incidental — it is why it is a file of its own rather
  *  than a block inside js/search-geocode.js:
- *    · that factory's body may contain only DECLARATIONS (the property tests/r169-checks #4 pins,
+ *    · that factory's body may contain only DECLARATIONS (the property tests/engine-app-shell-split-checks.test.mjs (#R169) #4 pins,
  *      and the reason all eleven split factories can be constructed early), and publishing a global
  *      from inside it is a statement that RUNS;
  *    · its return list is the app-body shim contract, which pins exactly two names;

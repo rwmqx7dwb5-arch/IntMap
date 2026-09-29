@@ -185,7 +185,7 @@ window.IntMapModules.volcanoLayers=function(HOST){
   const HAZ_URL='https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/Volcano_Hazard_Zones/FeatureServer/0/query'
     +'?where=1%3D1&outFields=Volcano,Hazard&outSR=4326&f=geojson';
   /* USGS zone name → the GVP volcano number(s) this map places it on. Checked against
-     data/volcanoes_gvp.json by tests/r353-checks.test.mjs.
+     data/volcanoes_gvp.json by tests/hazard-volcano-checks.test.mjs (#R353).
      ⚠ (#R432) ONE ZONE MAY COVER MORE THAN ONE GVP VOLCANO, and «Long Valley Volcanic Region» is
      the one that does. #R353 placed it on Mono-Inyo Craters because that was its Holocene entry —
      GVP's own «Long Valley» (323822) is in the Pleistocene catalog and this map did not carry it.

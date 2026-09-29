@@ -32,7 +32,7 @@
  *  an error the reader is shown — it is a typed rejection handed straight back to Atlas, which
  *  fixes it. The reader sees one answer, once, at the end.
  *
- *  ⚠ NO DOM, NO NETWORK, NO GLOBALS. `model` and `execute` are injected, so tests/r406-agent.test.mjs
+ *  ⚠ NO DOM, NO NETWORK, NO GLOBALS. `model` and `execute` are injected, so tests/atlas-agent-loop-checks.test.mjs (#R406)
  *  drives THIS module — the one the browser runs — against a scripted model with no browser and no
  *  key. That is the js/atlas-answer-pipeline.js pattern and it is the reason the E2E matrix in this
  *  round is not a second architecture.
@@ -801,7 +801,7 @@ export function makeAtlasAgent() {
            `ask_user` was an ordinary tool: it rendered a picker into the reader's bubble, returned
            {ok:true}, and the loop went round again — so a turn could ask, ask a second time, and
            then go and do the work anyway. Measured on 「ここから大阪駅まで行きたい。」 (the reported
-           transcript, reproduced in tests/r419-checks.test.mjs ①): two live question cards and a
+           transcript, reproduced in tests/atlas-turn-checks.test.mjs #R419 ①): two live question cards and a
            finished route, all in the same bubble, the questions already moot by the time they
            appeared. And because the card was live WHILE the turn was still running, answering one
            superseded that turn — three answers, three 「停止しました」, three turns thrown away.
@@ -1089,7 +1089,7 @@ export function makeAtlasAgent() {
     /**
      * readReply(data, text, parseJSON) -> {text, toolCalls}
      * The one place the envelope is turned into a step. Kept here rather than in js/atlas-console.js
-     * so tests/r406-agent.test.mjs checks the parsing the browser actually uses.
+     * so tests/atlas-agent-loop-checks.test.mjs (#R406) checks the parsing the browser actually uses.
      */
     function readReply(data, text, parseJSON, meta, output) {
       const d = (data && typeof data === 'object') ? data : null;
@@ -1125,7 +1125,7 @@ export function makeAtlasAgent() {
          opens a JSON object and names the turn schema's own keys is refused as prose, so the caller's
          degrade path runs instead (the mechanical results stay on screen; nothing is invented). */
       const prose = d ? '' : String(text || '');
-      /* no regular expression here — this loop matches no pattern against a reply (tests/r663 ③); the
+      /* no regular expression here — this loop matches no pattern against a reply (tests/atlas-agent-loop-checks.test.mjs #R663 ③); the
          shape is read with indexOf on the schema's own quoted keys */
       const opens = prose.trimStart().charAt(0) === '{';
       const machine = opens && ['"tool_calls"', '"turn"', '"final_text"', '"answer_mode"', '"arguments_json"'].some(function (k) { return prose.indexOf(k) >= 0; });

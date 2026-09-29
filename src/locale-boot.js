@@ -8,7 +8,7 @@
  *  should speak it too — same rule, same directory, no registration either.) There is no row to add,
  *  no import line to write, no picker to edit and no launch-screen table to remember: the glob below
  *  IS the list, js/lang-registry.js derives the label / tag / pill from the code, and
- *  tests/r232-checks.test.mjs fails if any of that stops being true.
+ *  tests/hazard-other-ui-chrome-checks.test.mjs (#R232) fails if any of that stops being true.
  *
  *  ══ …AND IT MADE EVERY SESSION 422 kB LIGHTER ══════════════════════════════════════════════
  *  「デスクトップ・モバイルともに起動をより高速に。」「起動の遅さは初期JavaScript量が原因と断定できます。」

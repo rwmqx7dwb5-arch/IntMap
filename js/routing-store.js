@@ -17,7 +17,7 @@
  *  ══ WHAT IS IN HERE AND WHAT IS NOT ════════════════════════════════════════════════════════════
  *  Everything the three surfaces have to agree about, and NOTHING that draws. No DOM, no renderer,
  *  no fetch — which is what lets every transition below be verified in Node
- *  (tests/r291-checks.test.mjs) instead of through a browser.
+ *  (tests/geo-routing-ui-checks.test.mjs (#R291)) instead of through a browser.
  *
  *  ⚠ THE UNCOMMITTED TEXT IS PART OF THE STATE, and separate from the resolved place.
  *  #R126's rule — «the moment the text is EDITED the previously-selected place is invalid» — was

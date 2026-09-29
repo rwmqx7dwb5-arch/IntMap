@@ -9,8 +9,8 @@
  *  it. The CSS is here too: the kernel owns the one <style>, so this exports the rules and the
  *  kernel concatenates them where they stood.
  *
- *  ⚠ ITS OWN FILE BECAUSE js/atlas-console.js HAS A LINE CEILING (tests/r199-checks ⑤,
- *  tests/r200-checks ⑤, tests/r278-checks ⑦: under 5,300, and it follows the floor DOWN). The rule
+ *  ⚠ ITS OWN FILE BECAUSE js/atlas-console.js HAS A LINE CEILING (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤,
+ *  tests/shell-app-body-modules-checks.test.mjs #R200 ⑤, tests/atlas-dispatch-checks.test.mjs #R278 ⑦: under 5,300, and it follows the floor DOWN). The rule
  *  the kernel writes down beside that ceiling is that «a feature moves out, never that the ceiling
  *  moves up», so a whole subject left — the bar, its styles and the editor together. A real ES
  *  module exactly like js/atlas-attach.js: nothing registers it on window.IntMapModules and nothing

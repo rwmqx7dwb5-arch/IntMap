@@ -20,24 +20,40 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 ## What runs
 
-`tests/r710-historical-identity-checks.test.mjs` executes the historical resolver with and without
+### Where a regression check lives — one file per subject, the round in the title
+
+**This is the rule (正本).** Node regression checks are kept in subject files,
+`tests/<subject>-checks.test.mjs` — one file per subject (a module, a layer, a gate), never one file
+per round. **The round a check came from is the leading `#R<N>` (or `R<N>`) of the test's own title**
+— `test('#R170 canDraw() is declared …')`, `test('R320 ②: doControl answers ambiguous_target …')` —
+so a record in `dev-notes/` leads to its checks by searching the titles, not the file names. New work
+adds its checks to the subject file they belong to, or starts a new `<slug>-checks.test.mjs` when no
+subject fits ([`.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) §4),
+with the round or slug at the front of each title. A check that has to read another test file finds
+it by **what it declares** (the files whose titles carry `#R175 ③`, say), not by a path — the path is
+the thing that moves when checks are regrouped.
+Measured 2026-09-29: the 512 round-numbered node files (`tests/r<N>…test.mjs`) were regrouped this way
+into subject files; the `r<N>` names that remain (nine node files and the Playwright specs) are
+history, counted by `LEGACY_NUMBERED_COUNT` in `scripts/round-names.mjs` (see *Static checks* below).
+
+`tests/history-era-borders-checks.test.mjs` (#R710) executes the historical resolver with and without
 translations, with two different present-day countries beneath one historical territory, with QID
 translations and CShapes identifiers, and with the former-state registry. It also derives every
 distinct name from the shipped era snapshots and verifies that a missing translation cannot replace
 that identity with the present-day statistical carrier. This census is a regression test population,
 not a count of production failures.
 
-`tests/r710-boundary-precision-checks.test.mjs` checks geometry-only refinement, preservation of
+`tests/history-boundary-precision-checks.test.mjs` (#R710) checks geometry-only refinement, preservation of
 feature identity and corrected shapes, and the precision metadata. The source simplification target
 is separate from historical survey accuracy. Refinement must preserve polygon components and holes;
 adding interpolated vertices is not evidence of greater accuracy.
 
 Memory lifecycle regressions execute the actual function bodies with controlled resource owners:
-`tests/r708-legend-clock-lifecycle-checks.test.mjs` keeps the entire clock range reachable with constant DOM
+`tests/layer-legends-checks.test.mjs` (#R708) keeps the entire clock range reachable with constant DOM
 and one subscription across legend rebuilds;
-`tests/r708-playground-lifecycle-checks.test.mjs` exercises every answer-map closing path;
-`tests/r708-dem-lifecycle-checks.test.mjs` checks independent terrain caches, late requests and view teardown;
-`tests/r708-koppen-lifecycle-checks.test.mjs` checks obsolete image/bitmap completion, immediate canvas release,
+`tests/playground-guess-map-checks.test.mjs` (#R708) exercises every answer-map closing path;
+`tests/engine-cesium-rendering-checks.test.mjs` (#R708) checks independent terrain caches, late requests and view teardown;
+`tests/layer-koppen-checks.test.mjs` (#R708) checks obsolete image/bitmap completion, immediate canvas release,
 and unchanged resolution and image fallback. These count released resources; they do not claim device RSS savings.
 
 
@@ -50,19 +66,19 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
 > ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
-> `tests/r505-checks.test.mjs` ① は 13 本すべての `supabase/functions/*/index.ts` を
+> `tests/process-edge-function-evaluation-checks.test.mjs` #R505 ① は 13 本すべての `supabase/functions/*/index.ts` を
 > **Node 24 の素の `.ts` `import()` で実際に評価する**（関数ごとに子プロセス、`Deno` だけ stub、
 > 一覧はディレクトリから発見）。#R504 は `const` を、それが読む `const` の 45 行**上**に置いて
 > 出荷し、**本番の全リクエストが 500 `WORKER_ERROR`** になった——それでも `check:static`・
 > `npm test` 3,136 本・CI は全部緑だった。**構文を読む検査は、順序を見ない。**
 
 > ⚠ **(#R520) もう1本、ソースを読むかわりに「取り出して走らせる」検査がある。**
-> `tests/r520-checks.test.mjs` は出荷される `js/time-borders.js`（module ではなく IIFE）から
+> `tests/history-era-display-checks.test.mjs` (#R520) は出荷される `js/time-borders.js`（module ではなく IIFE）から
 > `_labelFC` とその補助関数を**文字列のまま `vm` に取り出して評価し**、同梱の `data/cshapes.js` から
 > 組み立てた本物のスナップショットに当てる。主張は「1国につきラベル1個」「1国も落ちない」
 > 「全アンカーが自国の陸の上（**検査側に独立に書いた point-in-polygon で**訊く）」。
 > 直前まで `imtb-lbl` / `imtb-lbl2` は国境ポリゴンから描かれていて**外環1つにつき1ラベル**
-> （1900 年で 151 か国＝1,583 環）だったが、`tests/r309`（宣言の突き合わせ）も `tests/r410`
+> （1900 年で 151 か国＝1,583 環）だったが、`tests/shell-map-labels-checks.test.mjs` (#R309)（宣言の突き合わせ）も `tests/history-countries-registry-checks.test.mjs` (#R410)
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
@@ -210,7 +226,7 @@ own stable port in 4174–4373. `PORT` in the environment still wins when you wa
 
 **(#R415) …and a test that starts its own server asks the operating system, not the calendar.** The
 rule above covers the ONE dev server Playwright runs; a Node check that spawns `scripts/serve.mjs`
-for itself is a second question, and `tests/r208-checks.test.mjs` ⑩ answered it with `4188` (and
+for itself is a second question, and `tests/backend-serve-and-build-checks.test.mjs` #R208 ⑩ answered it with `4188` (and
 `4189` for its path-traversal half) — numbers picked when it was written, and therefore the same
 numbers in every checkout on the machine. Measured 2026-08-24 with forty-two worktrees live: the
 second session to reach it found 4188 already LISTENING, the spawn died of `EADDRINUSE`, and fifteen
@@ -220,7 +236,7 @@ the browser half at the same time, so that number is the one this run's own dev 
 
 So a test spawns with **`--port 0`** and reads the port back:
 `serve.mjs`'s ready line names the port it actually **bound**, never the one it was asked for, so
-`[serve] IntMap static server on http://127.0.0.1:<port>/` is the answer. **`tests/r415-checks.test.mjs`
+`[serve] IntMap static server on http://127.0.0.1:<port>/` is the answer. **`tests/suite-hygiene-checks.test.mjs` (#R415)
 ① is the gate**: it walks every file under `tests/` and fails on a port a test picked for itself —
 `--port <n>`, `PORT=<n>` in a spawned server's environment, `.listen(<n>)`, or a loopback URL with a
 literal port. There is no exemption list.
@@ -318,7 +334,7 @@ all on the camera the Map now composes, or gone), and each failed SILENTLY: a mi
 * The specs that need the renderer's camera (`tests/r177`, `r178`, `r179`, `r203`) reach it through
   `tests/helpers/camera-ruler.js`'s `__mlCam()` / `__mlTr()`, which THROW when the internal moves
   again — under 6.x the old `m.transformCameraUpdate == null` passed vacuously.
-* `tests/r182-checks`, `r230-checks` and `r322-checks` read 5.24's `dist/maplibre-gl-dev.js`, which 6.x
+* `tests/engine-cesium-input-checks.test.mjs` (#R182), `tests/shell-tiles-perf-checks.test.mjs` (#R230) and `tests/command-census-checks.test.mjs` (#R322) read 5.24's `dist/maplibre-gl-dev.js`, which 6.x
   does not ship — r322 ① then PASSED WITHOUT LOOKING behind its `existsSync` guard. They now evaluate
   the installed library (handler instances, `getMaxParallelImageRequests()`, `Style.prototype`'s setters
   and `GeoJSONSource.prototype.setData` on stand-ins) and, for the constants that live only in a
@@ -361,10 +377,10 @@ node scripts/global-surface.mjs             # report
 node scripts/global-surface.mjs --update    # accept the tree as the new baseline
 ```
 
-**Companions retired to properties in the same round.** `tests/r175-checks` ③ no longer forbids an
+**Companions retired to properties in the same round.** `tests/layer-boot-graph-checks.test.mjs` #R175 ③ no longer forbids an
 unexported top-level declaration in js/ — `scripts/check-split-scope.mjs` measures the hazard that
 rule stood for (a free identifier that resolves to nothing), and `scripts/export-readers.mjs` measures
-"every export has a reader" with readers in js/, src/, scripts/ and tests/. `tests/r168-checks` #1–#3
+"every export has a reader" with readers in js/, src/, scripts/ and tests/. `tests/news-module-split-checks.test.mjs` (#R168) #1–#3
 read the shell with a parser: each factory instantiated once after the map exists, each shim a hoisted
 declaration that forwards `this` and every argument, and nothing evaluated before a factory touching a
 name it provides.
@@ -401,7 +417,7 @@ today, and it is fetched and compiled before the first tile) — and the budget 
 
 ⚠ **`requests` and `modules` are counts, not bytes, and are matched exactly.** A byte-sized slack
 swallows them whole — `6 > 6 + 2048` is false for every value a count can take — so both rows would
-have sat in the table looking gated while being incapable of failing. `tests/r311-checks.test.mjs`
+have sat in the table looking gated while being incapable of failing. `tests/perf-startup-and-cache-checks.test.mjs` (#R311)
 drives `judge()` with synthetic numbers and requires an error from a regression, from an improvement
 that leaves the ceiling behind, and from a ±1 change in each count.
 
@@ -571,7 +587,7 @@ Four things it does that no earlier instrument here did:
 
 * **Self time, not inclusive time.** `Map._render` calls `Painter.render`, which calls `texImage2D`.
   A one-entry-per-nesting-level stack pauses the parent's accumulator on enter, so the buckets are a
-  real decomposition and can be compared against the total. `tests/r387-checks ①` pins every bucket
+  real decomposition and can be compared against the total. `tests/process-mobile-trace-instruments-checks.test.mjs #R387 ①` pins every bucket
   of a synthetic frame to the millisecond.
 * **A long-task equivalent that exists in WebKit.** Safari has never shipped the `longtask` entry
   type — `frame-profile.mjs`'s observer is inside a `catch` that silently produces no number there.
@@ -723,7 +739,7 @@ what RUNS at boot instead of by feature: the shell keeps the registrations, the 
 listeners, five implementations went behind the loader, and the rule is intact — a module may be
 deferred only when nothing a reader can see depends on it having run.)
 
-* `tests/r209-checks.test.mjs` — source level: none of them is still in `src/main.js`, every
+* `tests/atlas-console-kernel-checks.test.mjs` (#R209) — source level: none of them is still in `src/main.js`, every
   dynamic specifier is a literal (nothing else is visible to `scripts/static-checks.mjs`), every
   entry point awaits the loader, and every `turf.<name>` the source calls is on the object
   `src/vendor.js` publishes — or is brought by one of its `ensure<X>()` loaders (read out of the
@@ -748,7 +764,7 @@ If you add a module to the loader, add ONE entry to `LAZY_REGISTRY` in `js/lazy-
 The deterministic news-geolocation engine is measured, not eyeballed. `tests/newsgeo-corpus.mjs` is the
 labelled development set (weights were tuned against it) and `tests/newsgeo-holdout.mjs` was written after
 the engine was finished and is scored once, so it is the honest generalisation number. Both are asserted
-by `tests/r161-checks.test.mjs` #12.
+by `tests/news-geo-checks.test.mjs` (#R161) #12.
 
 ```bash
 node scripts/newsgeo-eval.mjs           # per-class accuracy, old locator vs new
@@ -838,7 +854,7 @@ says which of a run's failures `main` already has.
   the test says so as a skip rather than passing).
 - **④ the memory index over the host's LINE limit** is reported as over even under the character
   ceiling (measured: 203 lines against 200 — the host dropped 3 — while `--check` said green).
-  `tests/r703-memory-index-ceiling-checks.test.mjs` ⑦⑧ run the CLI on it.
+  `tests/process-agent-memory-and-codex-checks.test.mjs` #R703 ⑦⑧ run the CLI on it.
 - **⑤ a stamp nobody moved.** The anti-stale guard in `index.html` is evaluated in a `vm`: a device
   that saw a newer build and is served an older one reloads; a newer build replaces an older or a
   legacy `YYYY-MM-DD-R<n>` value; a page with the unfilled token purges nothing; and the page's ES5
@@ -1005,11 +1021,11 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   left out of a list that no longer exists. Until #R529 it **was** a list: one hand-written literal
   in `package.json` naming all 292 files, and a `tests/*.test.mjs` left out of it was not a weaker
   test, it was **not a test** — it never ran, so it never failed and never passed. Measured in
-  #R301, `tests/r210-checks.test.mjs` and `tests/r211-checks.test.mjs` had never once been
+  #R301, `tests/shell-data-layers-checks.test.mjs` (#R210) and `tests/hazard-terrain-water-checks.test.mjs` (#R211) had never once been
   executed, and when they finally were, **five of r211's twelve tests failed**, the earliest of
   them broken by #R212 ninety rounds before anybody saw it. Two more guards were then stacked on
   the literal rather than on the hazard: #R385 compared the list against **itself** after it named
-  `tests/r356-checks.test.mjs` twice for twenty-two green rounds, and #R390 read the **source**
+  `tests/weather-models-checks.test.mjs` (#R356) twice for twenty-two green rounds, and #R390 read the **source**
   instead of the name after `security-logic.mjs` — 31 tests hand-named in #R138 — was
   dropped from the literal for three rounds with every gate in the repository green. #R529 removed
   the literal, and all three guards went with it.
@@ -1026,18 +1042,19 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   every parallel session took «the next free number» from the same scan, so the scan handed the
   same one to everybody who ran it before the others pushed. Measured in #R671 — renumbered
   **seven** times while a second session in the same window was renumbered four — two sessions both
-  created `tests/r568-checks.test.mjs`, git raised an **add/add** conflict, the landing automation
+  created `r568-checks.test.mjs` (since regrouped into `tests/radiation-plume-checks.test.mjs`), git raised an **add/add** conflict, the landing automation
   swallowed it (a pipe took `$?` from `tail`, #R420 again) and committed the markers; the file then
   failed to parse and **every test in it stopped running**. #R674 required «number + subject»; the
   number still moved and still had to be re-taken before every push, so it was removed as a name
   altogether. The slug is claimed where it is chosen: `new` refuses a slug held by a branch, a
   worktree, a test file or a record, and `git worktree add -b feat/<slug>` refuses the second
   session outright (`tests/process-without-round-numbers-checks.test.mjs` ①).
-  The **631** existing `r<N>…` files (bare and subject-bearing alike) are history and stay; they
-  are pinned by two numbers rather than by a list of 631 spellings, because a list would have to be
+  The **121** remaining `r<N>…` files (bare and subject-bearing alike; 631 when the rule landed on
+  2026-09-25, before the node checks were regrouped by subject on 2026-09-29) are history and stay; they
+  are pinned by two numbers rather than by a list of spellings, because a list would have to be
   edited to admit the next and that edit is the one being prevented. `LEGACY_NUMBERED_COUNT` only
   goes **down** (and says so if it is left too high after a rename), and
-  `LEGACY_NUMBERED_MAX_ROUND` (**808**, measured 2026-09-25) fails any numbered name above it — with
+  `LEGACY_NUMBERED_MAX_ROUND` (**783**, measured 2026-09-29) fails any numbered name above it — with
   or without a subject. Either number alone is evadable — add one *and* rename a legacy one and the
   count holds; reuse an unused low number and the maximum holds — together they are not.
   The rule itself, including the memory files outside this repository that no gate can reach, is
@@ -1179,9 +1196,9 @@ The wiring between the two products, and the four steps that stayed manual, are 
 - 英語を 1 つも運ばないこと（英語は上流のもの）
 - **分類器が「上流の説明文」と呼んだ綴りに `scripts/histnames/prose-text.mjs` の行が無ければ
   ビルドが落ちる**——手書きの表が古くなれない仕組みはこれ（実測: 1 行消すとビルドが落ち、
-  `tests/r695-histnames-checks ⑤` も落ちる）
+  `tests/history-era-names-checks.test.mjs #R695 ⑤` も落ちる）
 
-規則そのものは `tests/r695-histnames-checks.test.mjs` が**評価して**測る（8 件）:
+規則そのものは `tests/history-era-names-checks.test.mjs` (#R695) が**評価して**測る（8 件）:
 3 記録が 1 つの census 行の形になること・**記録自身が書いた名前が必ず勝つ**（`js/time-borders.js`
 を node で実体化して `hnFor` を**呼ぶ**。綴りを固定しない #R488）・表が名指すのは記録が描くものだけ・
 **説明文かどうかは尺度で決まる**（`Guanches` と `Malak malak` は名前、`Savanna hunter-gatherers`
@@ -1234,7 +1251,7 @@ The wiring between the two products, and the four steps that stayed manual, are 
 `AGENTS.md` §3-1 の承認事項と読んだが、§3-1 が要求を出すのは**機能を削る・狭める**ときであって、
 ライセンスを名乗ることは足す側である。⚠ **綴りは 2 か所に無い**——`--check` はビルド自身の `LICENCE`
 値を読むので、上流の条件が変わったときに束だけが古い条件を主張することはない。
-**規則は事実のほうに付けてある**（`tests/r717-hist-fidelity-checks.test.mjs` ③）: `data/` を走査し、
+**規則は事実のほうに付けてある**（`tests/chronos-claims-checks.test.mjs` #R717 ③）: `data/` を走査し、
 **`src` を top-level に持つ束はすべて、その中でライセンスを名乗ること**を要求する。歴史の 6 束のうち
 名乗っていなかったのはここだけで、しかも**表示が再配布の条件になっている唯一の束**だった
 （他は CC0 / GPL-3.0 で、義務が無くても名乗っていた）。
@@ -1254,7 +1271,7 @@ hide from, the `check:*` scripts `package.json` itself declares, and it requires
 reached by `.github/workflows/ci.yml` (since gate-parity-and-shards, only CI counts: `npm test` runs every
 declared gate by construction, so it can no longer vouch for one). It found exactly one: of the eighteen
 declared gates, `check:bordercoast` (below) was named in both instruction tables and run by nothing
-— `npm test` reached only the one-in-eight sample inside `tests/r531-checks.test.mjs`, while
+— `npm test` reached only the one-in-eight sample inside `tests/history-border-coast-checks.test.mjs` (#R531), while
 `scripts/build-border-coast.mjs` had been telling itself in its own source that CI ran the whole
 thing. #R628 gave CI the step that makes that sentence true: the exhaustive form below, every ring
 of the four bundles re-derived, offline, in half a minute. ⚠ **The rule drops ci.yml's comment
@@ -1292,10 +1309,10 @@ measures how contested an era was, not how much of the world a record holds.
 **The residuals, stated rather than implied**:
 
 1. A file that has drifted from the upstream source still passes. Only a rebuild can catch that, and
-   a rebuild needs the network. `tests/r518-checks.test.mjs` narrows it from the other side — it
+   a rebuild needs the network. `tests/history-era-borders-checks.test.mjs` (#R518) narrows it from the other side — it
    names six polities that exist *only* inside #R518's window (the Confederate States, the Two
    Sicilies, the Papal States, Prussia, Hanover, Russian America), and
-   `tests/r690-histborders-deep-checks.test.mjs` names seven more that only the widened band can
+   `tests/history-era-borders-checks.test.mjs` (#R690) names seven more that only the widened band can
    show (the Holy Roman Empire, the Kingdom of Great Britain, the Republic of Venice,
    Poland-Lithuania with its three partitions as three separate dated records, the Mughal Empire,
    Qing, the Ottoman Empire). A record that quietly reverted to the modern world fails even though
@@ -1333,7 +1350,7 @@ internal consistency is not geographic accuracy.
 1900 年のフランスの輪郭にある 40 km の弦は海の上をまっすぐ横切りながら、上の門の条件を
 **全部満たしていた**。
 
-`tests/r531-checks.test.mjs`（8 本）が同じ束から独立に測る——報告された辺
+`tests/history-border-coast-checks.test.mjs` (#R531)（8 本）が同じ束から独立に測る——報告された辺
 `[3.547,43.32] → [3.965,43.541]` が記録に存在し、かつ**描かれない**こと／描かれる長さのうち
 水上にあるのは **1% 未満**であること（ゼロではない: 北緯 49 度線やアラスカ条約線は本物の
 境界で、水を渡る）／run の構造／そして #R505 と #R520 の作法どおり、出荷される
@@ -1352,7 +1369,7 @@ internal consistency is not geographic accuracy.
 移した（可視性は式を読むのではなく**切替盤を評価**して確かめ、破線は literal ではなく
 `ref-admin1` の値と**照合**する）。
 
-`tests/r669-checks.test.mjs`（13 本）は、区分をクリックしたときの輪郭が**上流の原寸**であること
+`tests/ohm-rings-checks.test.mjs` (#R669)（13 本）は、区分をクリックしたときの輪郭が**上流の原寸**であること
 そのものを測る。8 本は `js/ohm-rings.js` を **vm で評価して**問う——順序も向きもばらばらな member の
 way が 1 本のリングに閉じるか／内側のリングが**穴**になり第2の多角形にならないか／`outer` / `inner`
 以外の role が面に入らないか／**面積の下限がビルドのものであってクリックのものではない**こと
@@ -1380,7 +1397,7 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 - **各ファイルが、自分のファイル名が示す global だけを名乗ること。** ⚠ これは実際に起きた事故で、
   #R604 が `--global` を渡し忘れて `data/hist-admin2.js` が `window.__HISTADM1=` を名乗り、
   **読み込んだ瞬間に第1級の記録を第2級で置き換えた**（同梱データの、自分についての主張が全部正しく
-  名前だけ間違ったファイル）。`tests/r604-checks ⑦` が出荷物の側から見ているが、**名前を選ぶのは
+  名前だけ間違ったファイル）。`tests/history-admin-tiers-checks.test.mjs #R604 ⑦` が出荷物の側から見ているが、**名前を選ぶのは
   build なので、build の門もこれを見る。**
 - `v` / `src`（上流名と **CC0**）／`built`（ISO 日付）／`since`／`tolerance` が名乗りどおりであること
 - **名前が示す層だけを持つこと**——`hist-admin<N>.js` は `admin_level` 2N+1 と 2N+2。ファイルが
@@ -1427,7 +1444,7 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 ⚠ **残る危険を、含みではなく明示で**: **上流から乖離した束でも通る。** 乖離を捕まえられるのは
 再取得だけで、再取得には CI が持てない量のネットワークが要る（`check:histborders` と同じ形の残余で、
 `check:bordercoast` / `check:wars` のように再導出できる門とはここが違う）。そして「形は正しく、
-場所が違う」区分は、この門にも `tests/r680-histadmin-gate-checks.test.mjs` にも見えない（#R146）。
+場所が違う」区分は、この門にも `tests/history-admin-coverage-gate-checks.test.mjs` (#R680) にも見えない（#R146）。
 もう 1 つ、**名前の無い単位が 3 件ある**（OHM relation 2698257・2735085・2735454）。これは天井として
 扱っている——`NAMELESS_MAX = 3`・**下向きにしか動かない**（`scripts/test-budget.mjs` と同じ作法）。
 3 件の id を門に書けば `.agents/rules/no-ad-hoc-hardcoding.md` が禁じる事例ごとの記述になり、
@@ -1439,7 +1456,7 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 精密な輪郭）を測る。
 
 ⚠ **この束は「無防備だった」のではない。** #R711 以降
-`tests/r711-boundary-quality-data-checks.test.mjs` が `check()` を**関数として import して走らせていた**ので、
+`tests/history-boundary-precision-checks.test.mjs` (#R711) が `check()` を**関数として import して走らせていた**ので、
 `npm test` は 409 MB を読んでいた。欠けていたのは**宣言された `check:*`** であり、それは体裁の問題ではない——
 **呼ばれていない門を探す 3 規則（`gate-callers`・`gate-lists`・`ci-gates`）はどれも
 package.json が宣言した `check:*` を母集合にする**ので、**自分の `--check` を自分だけで持っている
@@ -1598,7 +1615,7 @@ whose universe is discovered from data/」と述べていたが、実測で **`b
 列が 10 で span が順序どおり・月日が実在すること／**全行に英語名がある**こと／そして
 **「1つの国は丸ごと読者に見えるか、1件も見えないか」**——これは同梱の `data/admin1-world.json.gz` から
 **再導出して**照合する（利用者の指摘「ある国家でも、一部にあっても全体にはなかったりする」を
-規則にしたものなので、門が破れることを確かめられなければ意味がない。`tests/r719-histmap-coverage-checks ⑤`
+規則にしたものなので、門が破れることを確かめられなければ意味がない。`tests/history-admin-coverage-gate-checks.test.mjs #R719 ⑤`
 が実際に 1 単位を落として赤くなることを測る）。⚠ **識別子は ISO 3166-2 とは限らない**——ISO を持たない
 Natural Earth の単位は出典自身の代替コード（末尾が `~`）で数え、識別子を 1 つも持たない単位を含む国は
 束に入っていてはならない。
@@ -1624,7 +1641,7 @@ Seven files, one per subject, all `node --test`; what each measures is measured 
 code where that is possible (a stubbed `fetch`, a real `DecompressionStream`, the real capability
 table), and by reading it only where the fact is a spelling.
 
-- **`tests/r801-security-audit-checks.test.mjs`** — `_shared/relay-guard.js` evaluated: `fetchBounded`
+- **`tests/backend-edge-hardening-checks.test.mjs` (#R801)** — `_shared/relay-guard.js` evaluated: `fetchBounded`
   times out on a body that arrives after the headers, cuts a streamed body at the byte ceiling, and
   refuses a redirected POST; `followRedirects` follows same-origin https hops, refuses a different
   host / scheme / port and a loop past `MAX_REDIRECTS`, and hands the hop to the caller's
@@ -1635,38 +1652,38 @@ table), and by reading it only where the fact is a spelling.
   ledger migration refunds with one `DELETE … RETURNING` guarded by `succeeded`; and ⑦ reads
   `node_modules/cesium` for the evaluation that still requires `'unsafe-eval'` — the day it is gone
   the test demands the directive be removed.
-- **`tests/r801-relay-spend-checks.test.mjs`** — routing-relay's in-memory limiter is evaluated with
+- **`tests/geo-routing-relay-checks.test.mjs` (#R801)** — routing-relay's in-memory limiter is evaluated with
   10,000 identities at one instant and must hold `RATE_MAX_KEYS` (it used to hold all 10,000); the
   handler is run with a stubbed RPC and a stubbed upstream: the three `relay_take` calls happen
   **before** the Mapbox fetch, a refused project bucket answers `429 spend_ceiling` without calling
   Mapbox, an unreachable limiter answers `503` without calling Mapbox, `probe` and invalid requests
   never reach the RPC. The migration's `relay_take` is SECURITY DEFINER, `search_path=''`,
   service_role only.
-- **`tests/r801-attach-bounds-checks.test.mjs`** — `ATL_FILE` evaluated with real streams: a gzip whose
+- **`tests/atlas-attach-checks.test.mjs` (#R801)** — `ATL_FILE` evaluated with real streams: a gzip whose
   inflated size exceeds `inflatedPerEntry` is cut at the ceiling (the tap on `DecompressionStream`
   shows one chunk past it, not 256 MB); a ZIP whose central directory under-declares `usize` is
   still refused by the measured output; a cell reference of `ZZZZZZ1` does not walk a sparse array
   (19 ms where the old parser threw `Invalid array length` after 10.6 s); the equalities the
   `LIMITS` object cannot state about itself (`inflatedPerEntry = readBytes`,
   `sheetCells = textPerFile`) are held here.
-- **`tests/r801-edge-config-checks.test.mjs`** — every `[functions.*]` block in `supabase/config.toml`
+- **`tests/process-database-checks.test.mjs` (#R801)** — every `[functions.*]` block in `supabase/config.toml`
   states `verify_jwt` (counted over the blocks, and the blocks over `supabase/functions/*/index.ts`);
   `db.yml` carries no `|| true` on the drift step and propagates the exit code; the database path
   list exists once, in the scope step, and no trigger filters on paths, so the job is present on
   every PR and can be a required check (#R793 landed the trigger change first, in the same shape).
-- **`tests/r801-atlas-confirm-checks.test.mjs`** / **`tests/r801-atlas-boundary-checks.test.mjs`** /
-  **`tests/r801-relay-input-checks.test.mjs`** — see their own headers: the confirm column of the
+- **`tests/atlas-capabilities-checks.test.mjs` (#R801)** / **`tests/atlas-console-boundary-checks.test.mjs` (#R801)** /
+  **`tests/hazard-other-edge-relay-input-checks.test.mjs` (#R801)** — see their own headers: the confirm column of the
   capability table as a property (external risk and model-input reads are never `none`), the data
   boundary around observed content in the model prompt and the kernel's confirm step, and the input
   rules of the public relays (bbox range, same-host links, closed query keys, a malformed `%`).
 
-### `tests/r731-atlas-repeat-checks.test.mjs` (#R731)
+### `tests/atlas-agent-repeat-checks.test.mjs` (#R731)
 
 3 本。本物の surface とレジストリの上で `runTurn` を走らせ、同じ呼び出しを返し続けるモデルに対してターンが
 `repeated_calls` で止まり、道具は 1 回しか走らず、強制最終手が 1 回だけ訊かれ、モデル呼び出しが 4 回以下であること／
 違う呼び出しを挟む手は数えず、ターンが普通に `answered` で終わること／console が空の最終文に 1 文を書く経路と
 `maxRepeatSteps` の値を測る。
-### `tests/r732-gis-geometry-crs-checks.test.mjs` (#R732)
+### `tests/geo-gis-geometry-checks.test.mjs` (#R732)
 
 9 本。**幾何カーネル・座標変換・地図のレイヤーとの橋**が主張していることを測る（正本
 [`GIS-CORE.md`](GIS-CORE.md)・骨格は `Architecture.md` §7.3e）。r729 と同じく、`js/geodesy.js` を
@@ -1694,7 +1711,7 @@ table), and by reading it only where the fact is a spelling.
 `clip-window-crosses-antimeridian`）はここの ② ③ ④ に**「拒否ではなく仕事」として**引き継いだ**。
 拒否が実装になったときに測るのをやめると、拒否を消したラウンドが見るのをやめたラウンドになる。
 
-### `tests/r735-gis-raster-time-checks.test.mjs` (#R735)
+### `tests/geo-gis-datasets-checks.test.mjs` (#R735)
 
 11 本。**数値ラスター・時刻の契約・空間索引・止められる処理**が主張していることを測る（正本
 [`GIS-CORE.md`](GIS-CORE.md) §1.4・§1.5・§2.6、骨格は `Architecture.md` §7.3e）。r729 / r732 と同じ
@@ -1736,11 +1753,11 @@ boot——本物の `js/geodesy.js` をブラウザと同じように評価し�
   実際に描かれ、走っている焼き込みが再描画をまたいで止められること。そして `data.query` の**引数
   スキーマ**に `spatial` が在ること（#R732 は evaluator と目録に書いて、**模型が見る一覧に書かなかった**）。
 
-### `tests/r749-gis-raster-pipeline-checks.test.mjs` (#R749)
+### `tests/shell-gis-upload-raster-checks.test.mjs` (#R749)
 
 13 本。**格子は計算できたが、見ることができなかった**——その配管を端から端まで測る。
 本物の `js/map-ui.js` の upload closure を、**記録する描画器**と stub の document に対して評価する
-（`tests/r738-gis-style-checks` と同じ boot）。
+（`tests/shell-gis-upload-style-checks.test.mjs` (#R738) と同じ boot）。
 
 - ① 格子は**エンジン自身の動的画像**に載る（geojson source も 3 レイヤーも作らない）
 - ② ⚠ **行はエンジンに訊く。** stub の `imageRowLatitudes` は**どんな等間隔の歩き方でも出ない
@@ -1762,13 +1779,13 @@ boot——本物の `js/geodesy.js` をブラウザと同じように評価し�
   module は互いの `affine` の形が違い、**両方とも自分の検査では緑**のまま、落とされた
   GeoTIFF はその継ぎ目で断られていた
 
-⚠ **付随して分かったこと（#R749）**——`tests/r231-checks` の zh / zh-hans の inline 被覆は
+⚠ **付随して分かったこと（#R749）**——`tests/shell-i18n-locales-checks.test.mjs` (#R231) の zh / zh-hans の inline 被覆は
 **百分率の文字列を `/100\.0%/` で照合する**ので、`6299/6300 = 99.98%` は「100.0%」に丸められて通る。
 その陰に **#R743 で入った未訳の 1 文字列が 1 ラウンド隠れていた**（今回 40 件増えて分母が動いた瞬間に出た）。
 ⚠ **閾値は動かしていない**——直したのは欠けのほうである。丸めが「ほぼ 100%」を「100%」と読ませる構造は
 残っており、件数（`6339/6339`）で述べれば消える。
 
-### `tests/r749-gis-geotiff-checks.test.mjs` (#R749)
+### `tests/geo-gis-geotiff-checks.test.mjs` (#R749)
 
 17 本。⚠ **検査用の TIFF は検査側のライターがバイトから組み立てる**（実装の関数を 1 つも使わない）。
 II と MM が同じ配列を返す／strip と tile が一致／4 つの圧縮が無圧縮と一致／predictor 2 が効いている
@@ -1776,7 +1793,7 @@ II と MM が同じ配列を返す／strip と tile が一致／4 つの圧縮�
 地理参照の無い TIFF と BigTIFF が名前で断られる／`refusals()` がソースの拒否と**同一集合**であること／
 `read()` が呼ばれるまで画素を展開しないこと／ctx による中止。
 
-### `tests/r749-gis-warp-checks.test.mjs` (#R749)
+### `tests/geo-gis-raster-checks.test.mjs` (#R749)
 
 11 本。⚠ **参照は warp の外**（前方 affine の定義・`js/geodesy.js` の半径から書き下した haversine）。
 恒等 warp が 1 画素も動かさない／EPSG:32654 の往復が四隅と中央で一致／90° 回転 affine の転置が全画素
@@ -1784,7 +1801,7 @@ II と MM が同じ配列を返す／strip と tile が一致／4 つの圧縮�
 `align` の規則未指定・不明・`grids-disjoint`／`categorical` の拒否と、整数だけでは推測しないこと／
 **70°N で出力画素の実距離を測地で測る**／中止と進捗／CRS 未申告と壊れた affine の拒否。
 
-### `tests/r749-gis-persistence-checks.test.mjs` (#R749)
+### `tests/geo-gis-project-checks.test.mjs` (#R749)
 
 7 本。⚠ **不変条件は「到達した答え」ではなく「元の欠陥」で書く**。宣言した型と単位が保存と再読み込みを
 **越えて失われない**／読み手や出典が述べた単位が**利用者の宣言として復元されない**／いまのデータで
@@ -1792,7 +1809,7 @@ II と MM が同じ配列を返す／strip と tile が一致／4 つの圧縮�
 `engineChanged` に出る／**測れなかった（null）ときに「同じ」と報告しない**／古い
 `RECORD_VERSION` のレコードに**今の版が代入されない**／取り消し履歴は保存されない。
 
-### `tests/r749-gis-sources-checks.test.mjs` (#R749)
+### `tests/geo-gis-sources-checks.test.mjs` (#R749)
 
 9 本。上限で切った取得が `all` と名乗らない／画面外を捨てている供給元が `all` と名乗らない／
 **全世界の bbox を渡しても、タイルしか持たない供給元は `all` にならない**（この層が作られた理由）／
@@ -1800,7 +1817,7 @@ II と MM が同じ配列を返す／strip と tile が一致／4 つの圧縮�
 同じ値を返す（参照は素の `sampleAt` ループ）／オフのレイヤーは**空の成功ではなく** `layer-not-visible`／
 `list()` が手書きの一覧ではない。
 
-### `tests/r729-gis-core-checks.test.mjs` (#R729)
+### `tests/geo-gis-datasets-checks.test.mjs` (#R729)
 
 7 本。**データセットと処理の基盤**（正本 [`GIS-CORE.md`](GIS-CORE.md)）が主張していることを測る。
 ⚠ ④ の母集合は #R735 で `js/gis-raster.js` を含むようになった——`js/gis-ops.js` は格子カーネルの拒否を
@@ -1822,7 +1839,7 @@ II と MM が同じ配列を返す／strip と tile が一致／4 つの圧縮�
 - ④ **返しうる拒否コードに、全部 9 言語の文がある**——⚠ **両側を構文から集める**。
   `js/gis-ops.js` / `js/gis-project.js` / `js/gis-core.js` / `js/gis-layers.js` /
   `js/gis-raster.js` / `js/gis-expr.js` / `js/gis-datasets.js` / **`js/gis-sources.js`**（#R749）が返す集合と
-  `js/gis-panel.js` が文を持つ集合を突き合わせる（`tests/r576-checks` ⑩ と同じ形）。検査に一覧を
+  `js/gis-panel.js` が文を持つ集合を突き合わせる（`tests/file-import-checks.test.mjs` #R576 ⑩ と同じ形）。検査に一覧を
   書くと、次に増えた 1 件が黙って落ちる。実際に**綴りが 2 つに割れていた 1 件**をこれが出した。
 - ⑤ **保存は本体とレシピを分ける**——取り込みは features ごと、処理は**段だけ**。入力が先に書かれる。
   `setParams` で半径を 5→10 km にすると面積が 4 倍になり、レシピが**新しい半径**を持つ。
@@ -1833,21 +1850,21 @@ II と MM が同じ配列を返す／strip と tile が一致／4 つの圧縮�
   読者が分析結果を描くたびに「ファイルが出典」を名乗るデータセットが増える。`js/gis-core.js` が
   レンダラに直接触らないこと、`sourceCrs` を名乗るのが**仕様が WGS 84 を固定する 3 形式**だけで
   あることも同じ検査が測る。
-### `tests/r728-atlas-final-shape-checks.test.mjs` (#R728)
+### `tests/atlas-capabilities-checks.test.mjs` (#R728)
 
 3 本。ISS の 3 通りの問いで `search()` が返す行が 12 以下で先頭が `layers.satellites` であること／
 `readReply` が turn schema の鍵を持つ JSON 形の文を空にし、散文と parse 済みの返答は従来どおりであること／
 偽の衛星モジュール（5°・62°・20° の 3 通過）で `satelliteFacts` が 3 本を列挙し掠めに印を付け、カタログが
 「通過モードは無い」と言うこと。
 
-### `tests/r727-atlas-find-checks.test.mjs` (#R727)
+### `tests/atlas-capabilities-checks.test.mjs` (#R727)
 
 5 本。レジストリにカタログ文を束ねて `search()` を**実際に走らせ**、ISS の 5 通りの問い（日本語・英語）で
 `layers.satellites` が 1 位になること／頻出語で最長ブロックが勝たないこと（`min(1, 2/df)`）／Latin 語が語として
 照合されること（«iss» は «missile» に無い）／正確な別名（100 点）が文書得点（天井 30）を越えられないこと／
 空振りの文が「持っている id で直接呼べ」と言うことを測る。
 
-### `tests/r726-atlas-eval-checks.test.mjs` (#R726)
+### `tests/atlas-dispatch-checks.test.mjs` (#R726)
 
 16 本。本番の Atlas に 14 問を投げて読者として読んだ結果から出た欠陥を、**モジュールを node で評価して**測る:
 回答契約の `heading` が ATX 記号を剥がすこと／本文からの地名抽出が改行をまたがないこと／本文由来の 1 語候補は
@@ -1858,7 +1875,7 @@ dispatch の 4 か所に揃い `find_capability` で届くこと／`mechanical()
 `find` の空振りが探索を終わらせる文であること／衛星・天気・経路の結果が事実を運ぶこと／過去年のハイライトが
 era の面を使うこと／状態記述が勢力図・era 政体・天気／衛星カードを述べること／人格に `workspace` 節があり
 internal 呼び出しには載らないこと／`map.clear` が `clear` 観測器で、消すものが無ければ `already_clear` になること。
-### `tests/r725-atlas-trace-detail-checks.test.mjs` (#R725)
+### `tests/atlas-progress-checks.test.mjs` (#R725)
 
 5 本。作業一覧の**引数の欄**が、能力自身の宣言から来ることを測る。⚠ **本番が見つけた欠陥**
 ——#R723 の欄は `a.name || a.place || a.country || …` という**11 個のキー名の一覧**で、
@@ -1879,7 +1896,7 @@ internal 呼び出しには載らないこと／`map.clear` が `clear` 観測�
 未知の id を推測する／空白を通す／宣言された型を無視する）。**うち 2 つは最初生き延びた**
 ——④ は差の出る 1 件を測っていなかったから、②は数を数として渡していたから。
 
-### `tests/r753-account-menu.spec.js` ＋ `tests/r753-account-menu-checks.test.mjs` (#R753)
+### `tests/r753-account-menu.spec.js` ＋ `tests/shell-account-checks.test.mjs` (#R753)
 
 6 本＋3 本。**アカウントのボタンとアカウントメニュー**。⚠ **このパネルのログイン後の半分は、
 これまで一度も試験されていなかった**——`tests/r168.spec.js` は自分の頭でそう書いている
@@ -1915,7 +1932,7 @@ checks 側（node）は、ブラウザに言えない 2 つだけを述べる: *
 ——`HOST.aiUsageSummary` は `HOST.aiUsage` を部分文字列として含むので、素朴な包含検査は
 この回が依拠している呼び出しそのものを禁じてしまう。
 
-### `tests/r746-atlas-clock-rounding-checks.test.mjs` (#R746)
+### `tests/atlas-progress-checks.test.mjs` (#R746)
 
 3 本。**作業一覧が印字する所要時間**を測る。本番で見出しの時計が `1m58s → 1m59s → **1m60s**
 → 2m00s` と数えていた（分と秒を別々に丸めていたので、毎分 0.5 秒だけ必ず起きる）。
@@ -1925,9 +1942,9 @@ checks 側（node）は、ブラウザに言えない 2 つだけを述べる: *
 - ③ **時計が逆走しない**——① ② はどちらも**列**を見ないので、境界で戻る時計を見逃す。
 
 ⚠ `fmtMs` は private のままで、`Date.now()` を動かして `done()` に塗らせる
-（**読者の画面が塗られるのと同じ経路**。検査のためだけの export は `tests/r175` ③ が禁じる）。
+（**読者の画面が塗られるのと同じ経路**。検査のためだけの export は `tests/layer-boot-graph-checks.test.mjs` #R175 ③ が禁じる）。
 
-### `tests/r744-atlas-trace-head-checks.test.mjs` (#R744)
+### `tests/atlas-progress-checks.test.mjs` (#R744)
 
 6 本。**進行表示が 1 種類であること**を測る。#R723 の一覧は自分の見出し（「Working」＋ターンの
 合計時間）を持ち、**同じターンについて泡の中のシマーも同時に出ていた**——本番の実測は
@@ -1948,7 +1965,7 @@ checks 側（node）は、ブラウザに言えない 2 つだけを述べる: *
   アニメーションが 0% から再開する＝文字を比べる検査には見えない欠陥）。
 - ⑥ **詳細は見出しの後ろにあり、その見出しが開く**——見出しの markup と折り畳みの CSS。
 
-### `tests/r723-atlas-progress-ui-checks.test.mjs` (#R723)
+### `tests/atlas-progress-checks.test.mjs` (#R723)
 
 5 本。**Atlas が回答中に読者へ何を見せているか**を測る。⚠ **ソースを読まずモジュールを評価する**
 （#R505）——測っている欠陥のうち 3 つは**順序の**欠陥（何がいつ消え、いつ戻り、いつ外れるか）で、
@@ -2017,7 +2034,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
   紀元前の数 % は「区分が無い」だけでなく「その年に描かれている政体がほとんど無い」ことも意味する。
   年をまたいで割合を比べるときは、分母が同じ記録から来ているかを先に見ること。
 
-### `tests/r730-histfidelity-checks.test.mjs` (#R730)
+### `tests/history-fidelity-checks.test.mjs` (#R730)
 
 7 本。**どれも直した姿ではなく、元の欠陥に対して書いてある**——各本が古い挙動を置き直し、門が
 気づくことを測る: 出荷した 3 層に**誰にも帰せない下限から描かれる行が 1 行も無い**こと／令制国が
@@ -2049,7 +2066,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 | `gis-cache-checks` | 7 | 条件が 1 つも動いていない問いが**二度計算されない**こと／**5 つの条件を 1 つずつ動かす**と別の答えになること（⚠ 対照つき——同じ鎖 2 本は**同じ鍵**になるので「常に違う」では通らない）／切れば #R783 の経路と答えに戻ること／**引いた記録が食い違えば捨てて op が走る**こと |
 | `gis-runtime-checks` | 12 | 同じ id を使う 2 つのジョブが互いの数を答えないこと——⚠ **2 つの本物の realm**（worker thread）で測る。プロセス内の「別 runtime のつもり」は、この検査自身の帳簿を測ることになる／片方を終えてももう片方が動くこと／解放時に飛んでいた呼びが**必ず決着する**こと／単一 runtime の経路が #R783 のままであること／**`scope-conflict` が守っているものを守り続ける**こと |
 
-### `tests/r782-draw-slider-coarsens-checks.test.mjs` (#R782)
+### `tests/drawing-tools-and-objects-checks.test.mjs` (#R782)
 
 5 本。**モジュールを評価して測る**（#R505）——Draw の「解像度」スライダーが何をするかは走っている
 関数の性質で、ソースの綴りではない。①**描かれる線が、スライダーが残した折れ線と頂点単位で一致する**
@@ -2060,7 +2077,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 札が「平滑化」と言っていないこと。⚠ **4 本が変更前のビルドで赤くなることを確かめてある**（④ は
 不変の契約なので緑のまま）。
 
-### `tests/r719-histmap-coverage-checks.test.mjs` (#R719)
+### `tests/history-admin-coverage-gate-checks.test.mjs` (#R719)
 
 9 本。門の側は**壊して鳴るかを測る**（合成の root を作って `--check` を走らせる。#R680 の仕掛け）:
 階層の admin_level が**集合として**不整合なら落ちる（重複・穴）／1 階層 1 レベルは通る／
@@ -2069,7 +2086,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 **捕捉の細かさ**だけが残っている（線を面積の追跡より細かく採ること）——⑧ が測っていた
 Catmull–Rom スプラインは #R782 が撤去した。
 
-`tests/r575-checks.test.mjs`（13 本）はパンデミック・シミュレーターの**数理そのもの**を測る——
+`tests/hazard-pandemic-model-checks.test.mjs` (#R575)（13 本）はパンデミック・シミュレーターの**数理そのもの**を測る——
 外部監査が挙げた 12 の性質を、ソースを読むのではなく **engine を node で走らせて**確かめる:
 人口保存（各国・毎 step・`S+E+I+R+V+D = 初期人口`）／**再生速度から独立**（engine の中に `speed`
 という語が無いこと、および 1 回で 400 日回した状態と 50 日を 8 回回した状態が完全一致すること）／
@@ -2083,7 +2100,7 @@ Catmull–Rom スプラインは #R782 が撤去した。
 試行なので、1 つの種で 900 日なら**3 回に 2 回しか起きない**——`seen > 0` は落ちるまでコイン投げに
 勝ち続けていただけで、行き先の抽選が変わった瞬間に落ちた。測っている性質は 1 つも緩めていない。
 
-`tests/r682-hist-eras-note-checks.test.mjs`（7 本）は、歴史国境レイヤーが「いま何を描いているか」を
+`tests/history-era-display-checks.test.mjs` (#R682)（7 本）は、歴史国境レイヤーが「いま何を描いているか」を
 述べる文を測る。⚠ **ソースを読まず、モジュールを評価する**（#R505）——`js/time-borders.js` を `vm` の
 文脈に載せ、同梱の `data/hist-eras.js` を `window.__HISTERAS` として渡し、時計を実在の年へ動かして
 `note()` / `coverage()` / `typeNote()` に訊く。そうしないと測れないのがこの回の性質だから:
@@ -2097,7 +2114,7 @@ Catmull–Rom スプラインは #R782 が撤去した。
 ⚠ `js/map-ui.js` が `opts.sub` を実際に描くかはこの検査の外（描画の事実なので、ビルド済みの本番で
 実測した）。⚠ vm の realm が違うので配列の `deepEqual` は原型で落ちる——`.length` で測る。
 
-`tests/r678-pandemic-p1-checks.test.mjs`（10 本）は、シミュレーターの**入力**を測る——
+`tests/hazard-pandemic-model-checks.test.mjs` (#R678)（10 本）は、シミュレーターの**入力**を測る——
 症例の点をどこへ置くか、次にどの国へ届くか、その国に何ができるか、画面の数がどこから来たか。
 3 本は**この回が測定によって決めたこと**を後の編集が黙って戻せないように置いてある:
 ① **重みが等しい／無いアンカーは、置換前の丸投げ巡回と 1 点も違わない配置になる**（最大剰余法＋巡回。
@@ -2148,13 +2165,13 @@ viewport に入るまで**ポーリング**し、入らなかった扉は `reach
 （[[intmap-co-designed-reader-cannot-falsify]]）。実測: `_placeLayerTools` を `return;` で潰すと
 **①②③ すべてが単独実行で赤くなる**（`-g` を使わないと①しか赤く見えない）。
 
-`tests/r766-gis-entrance-checks.test.mjs`（4 本・147 ms）は**ソースが答えられることだけ**を測る
+`tests/shell-layer-panel-checks.test.mjs` (#R766)（4 本・147 ms）は**ソースが答えられることだけ**を測る
 ——運んだノードが捨てられる前に救い出されているか（**順序**）・二重の扉の判定が宣言からの計算の
 ままか・`data-os-act` が実在するコマンドを名乗っているか・帯を動かす各経路のあとに再配置が走るか。
 ⚠ **到達可能性そのものはここでは測らない**——ソースを読むことは、この欠陥が 3 ラウンド生き延びた
 方法そのものである。
 
-`tests/r670-checks.test.mjs`（3 本）は**到達可能性の正本**を測る。#R666 は
+`tests/shell-layer-panel-checks.test.mjs` (#R670)（3 本）は**到達可能性の正本**を測る。#R666 は
 「LayersのToolsからアクセスできるように」に `#layer-tools` へのボタンで答えたが、そこは
 **クラシックのドロップダウンの中**で、既定の読者には `display:none` の祖先の下で `0×0` だった
 （本番実測。ボタンも OS アクションも正しく届いていて、**帯だけが描かれていなかった**）。
@@ -2162,11 +2179,11 @@ viewport に入るまで**ポーリング**し、入らなかった扉は `reach
 ——**手で書いた一覧は、そこに足されなかったものに気づけない**。この検査は一覧を持たず、
 **登録済みの `sim.*` コマンドを数え上げて**、そのすべてが `js/map-ui.js` の行を持つことを要求する。
 
-`tests/r666-checks.test.mjs`（4 本）は**入口**を測る——`sim.pandemic` が OS アクションであること、
+`tests/shell-layer-panel-checks.test.mjs` (#R666)（4 本）は**入口**を測る——`sim.pandemic` が OS アクションであること、
 Layers ▸ Tools がその行を持ちコマンド経由で押すこと、`#btn-playground`（**どこも作っていない id**）
 への配線が消えたこと、Atlas が**モードを選ぶ前に**モジュールを取りに行くこと。
 
-`tests/r666-model.test.mjs`（10 本）は**数値そのもの**を測る。2 通目の外部監査が挙げた 4 件は
+`tests/hazard-pandemic-model-checks.test.mjs` (#R666)（10 本）は**数値そのもの**を測る。2 通目の外部監査が挙げた 4 件は
 **すべて実測で確認された**もので、engine を走らせて確かめる: **平均潜伏日数・平均感染日数が設定値と
 一致する**こと（以前はインフルエンザの潜伏 1 日が 2.31 日・麻疹の 11 日が 12.03 日）／**実現する R₀ が
 設定した R₀ と一致する**こと（以前は 1.4 が 1.66・12 が 13.40。「1 未満なら減る」型の検査では見えない）
@@ -2177,7 +2194,7 @@ Layers ▸ Tools がその行を持ちコマンド経由で押すこと、`#btn-
 **有病率の足切り無しに小さな流行も出国でき、出国者の数が感染者の数とともに増える**こと／
 `data/airports.json` と `data/country-facts.json` が閉じていること。
 
-`tests/r689-chronos-coverage-checks.test.mjs`（8 本）は、#R679 が「数で残した」歴史都市名の穴と、
+`tests/history-cities-checks.test.mjs` (#R689)（8 本）は、#R679 が「数で残した」歴史都市名の穴と、
 その回が**書き留めておいて払わなかった**帰属表示を測る。①②は `LIC()` を**評価**して、
 ライセンスが「attribution を言わない」「credit を負うのに払う行を名指さない」「負わないのに
 名指す」宣言を拒むこと、そして**その宣言が自分の直列化を往復できる**ことを見る（最初の版は
@@ -2196,7 +2213,7 @@ Layers ▸ Tools がその行を持ちコマンド経由で押すこと、`#btn-
 ヴォルゴグラードの 1700 年で測る。⑧は OpenHistoricalMap がもたらした被覆（AD 1000–1499 が
 106 → 388 span）と、**その上流の span がすべて開始年を言う**ことを見る。
 
-`tests/r695-histadmin-names-checks.test.mjs`（10 本）は、行政区分の単位が**読者の言語で読めるか**を
+`tests/history-admin-build-checks.test.mjs` (#R695)（10 本）は、行政区分の単位が**読者の言語で読めるか**を
 測る。①〜⑤は判定規則を**評価**する（`scripts/histadmin/names.mjs` は DOM もネットワークも時計も
 持たない）——①違う名前を述べる単位が同じ Wikidata 項目を名乗っているなら**誰もそのラベルを
 受け取らない**（Q724＝Maine を *Devonshire County* が名乗っている）／②同じ単位が時代ごとに
@@ -2211,7 +2228,7 @@ Wikidata の裸の `zh` が**簡体側**であること（IntMap の `zh` は繁
 出荷言語で読めること**。⚠ 天井の数そのものは門（`check:histadmin`）の側にあり、ここでは
 繰り返さない——1 つの事実に正本を 2 つ作らないため。
 
-`tests/r673-checks.test.mjs`（11 本）は 3 通目の外部監査が挙げた 9 件を測る。どれも「模型が単純
+`tests/hazard-pandemic-model-checks.test.mjs` (#R673)（11 本）は 3 通目の外部監査が挙げた 9 件を測る。どれも「模型が単純
 すぎる」ではなく、**同じプログラムの 2 か所が同じ問いに違う答えを返していた**箇所である:
 到達していない国でも**免疫が減衰し接種が進む**こと（以前は 1 つの `if (!seeded) continue` が感染の
 算術と一緒にそれも飛ばし、**旅行者が着いた日がその国の公衆衛生の開始日**だった）／未到達国に配らない
@@ -2233,7 +2250,7 @@ Wikidata の裸の `zh` が**簡体側**であること（IntMap の `zh` は繁
 DOM のクロージャの中にあったから外部監査に見つかり 11 ラウンドの検査に見つからなかったので、
 `scatterCases()` と同じ理由で外へ出した。
 
-⚠ **`tests/r666-model.test.mjs` ⑦ は、それ自身が構造として無効だった。** `seed(i, cases)` が
+⚠ **`tests/hazard-pandemic-model-checks.test.mjs` #R666 ⑦ は、それ自身が構造として無効だった。** `seed(i, cases)` が
 `fromShare` に `null` を**固定で**渡していたので、`inject` の `if (fromShare) mixShare(…)` は
 **一度も走らなかった**——株の割合を手で置き、種を播き、割合が変わっていないことを主張する検査は、
 何も触らなければ必ず通る。#R666 の欠陥を実装に戻しても**緑のままだった**。`fromShare` は公開
@@ -2257,7 +2274,7 @@ DOM のクロージャの中にあったから外部監査に見つかり 11 ラ
 印がレイヤーへ**届いているか**。#R531 以前は `imtb-line` に幾何があるかを測る spec が 1 本も
 無かったので、**線の source が空でも全部緑**だった。
 
-## 放射性物質の拡散モデル — `tests/r576-checks.test.mjs`（12 本・#R576）
+## 放射性物質の拡散モデル — `tests/file-import-checks.test.mjs`（12 本・#R576）
 
 ⚠ **10 本は、模擬の気象場を組んでモデルを実際に走らせて測る。** 外部からの講評が挙げた 10 点は
 どれも「印字された数が、それを知る手段を持っていたか」の話なので、**ソース文字列の一致では
@@ -2363,10 +2380,10 @@ reader here for this list; adding a rule means adding a row.
 | `histadmin-inforce` | a cell of the in-force table in `docs/MAP-LAYERS.md` is not what that tier holds in force on that year — re-derived with the builder’s own probe |
 
 The last six of the #R403 batch are described below, after the Edge Function rules they grew out of.
-The final three arrived in #R500; `tests/r500-checks.test.mjs` is what proves they actually go red,
+The final three arrived in #R500; `tests/process-doc-facts-claims-checks.test.mjs` is what proves they actually go red,
 and — as with `deep-tier-when` (#R407) — that test file is the only path by which they reach CI,
 because the static job does not run `check:docs`. The last two rows arrived in #R628 and
-`tests/r628-checks.test.mjs` (six tests) is theirs, for the same reason and by the same method —
+`tests/process-doc-facts-sweep-checks.test.mjs` (#R628) (six tests) is theirs, for the same reason and by the same method —
 mutation under the tree lock, with `--rule` so a mutation costs one rule's runtime rather than the
 whole file's.
 
@@ -2419,7 +2436,7 @@ whole file's.
   16.2 と書く）。差は 4.8% で、この規則が捕まえた drift はどれも桁が違う（10.4 → 11.1・16.2 → 19.4・
   25.4 → 30.5）。**どちらかに統一するのは文章の変更なので、指示なしには行っていない**（`AGENTS.md` §3-2）。
 
-⚠ **(#R694) `edge-shared` is now proved by `tests/r694-shared-roster-facts-checks.test.mjs`, and
+⚠ **(#R694) `edge-shared` is now proved by `tests/process-doc-facts-edge-counts-checks.test.mjs`, and
 NOT through this script.** One run of `doc-facts.mjs` is ~7.5 s, so the sweep that actually matters
 — *every* name in `_shared/`, dropped from *every* roster, is caught and named — would have been
 four minutes and therefore would never have been written. The judgement was moved into
@@ -2542,7 +2559,7 @@ quantity — what noun phrase it modifies, and what that phrase refers to — ra
 sitting beside it. That is a separate piece of machinery, not another entry in a table, and it is
 the only honest way to widen further.
 
-`tests/r701-histb-count-lang-independent-checks.test.mjs` is what proves the widened rule actually
+`tests/process-doc-facts-histb-count-checks.test.mjs` (#R701) is what proves the widened rule actually
 goes red — twelve mutations, including one per non-English language, both directions of the grouped
 number, and the green-tree baseline that proves the widening added no false claim. ⚠ **That file
 had to assemble its unit nouns from parts**: the sweep now reads it too, so a mutation table that
@@ -2607,7 +2624,7 @@ rule of this shape:
   what made a passage an inventory. What does is that the mention is of the **directory** rather than
   of a file inside it — `_shared/newsgeo.js`（＝ブラウザの `js/newsgeo.js` と1バイト同一） is a true
   sentence about one file, and reading its bracket as a roster calls it ten names short.
-- **(#R694) A mutation anchored on a spelling measures last year's spelling.** `tests/r399-checks` ①
+- **(#R694) A mutation anchored on a spelling measures last year's spelling.** `tests/process-doc-facts-edge-counts-checks.test.mjs` #R399 ①
   pinned the literal roster text, so **adding two files — correctly, to every document — turned CI
   red** because the anchor was no longer in the tree (the #R488 / #R530 shape). Mutations are now
   written as the **breakage**: read the real directory, drop one name from whatever the document
@@ -2619,7 +2636,7 @@ rule of this shape:
   shaped 「Edge Function の名簿（**N 本**の名前…）」 with N **one short** of the seventeen that
   exist, and the gate was green, because 「の」 had been deliberately kept **out** of the set
   (「… の 1 本」 is partitive). Restoring that N today still leaves the old needle green —
-  `tests/r699-doc-claim-needles-checks` ① carries the sentence verbatim and runs both needles over
+  `tests/process-doc-facts-claims-checks.test.mjs` #R699 ① carries the sentence verbatim and runs both needles over
   it, which is what makes this a fix rather than a restatement. (⚠ The sentence is **not** written
   out here: this document is inside the sweep, and a document that spells out the defect it
   describes reports itself as wrong — the self-hit `scripts/doc-facts.mjs`'s own header warns about.) Sentences outside the set were not judged wrong and not
@@ -2648,7 +2665,7 @@ What it still does not read, written down rather than papered over:
   that names the subject, comes back as `unlinked` and is checked like any other claim instead of
   joining the ~460 quantities in the documents that have nothing to do with the subject.
 
-`tests/r399-checks` proves each half goes red, including that the `6.2` in a section heading is read
+`tests/process-doc-facts-edge-counts-checks.test.mjs` (#R399) proves each half goes red, including that the `6.2` in a section heading is read
 as an address and not as a quantity.
 
 ### ⚠ The same shape in the sibling rules — measured, and four claims were wrong
@@ -2685,7 +2702,7 @@ written residual rather than a sweep that cries wolf.
 `(\d+) countries over (\w+) feeds` out of `README.md` and used only the first group, so the
 spelled-out feed count beside it would have passed at **any** number of feeds. Seeing a claim and
 judging it are two different things, and the distance between them here was one unused capture
-group. `tests/r699-doc-claim-needles-checks` ⑪ now walks every needle in that rule and requires
+group. `tests/process-doc-facts-claims-checks.test.mjs` #R699 ⑪ now walks every needle in that rule and requires
 each group it takes to be read.
 
 **Still open** (measured, not fixed): `histb-count` reaches only the English and Japanese
@@ -2707,7 +2724,7 @@ one is, while `docs/FILES.md` two files away still carried the reachable count o
  before (138 at the time, and wrong by then). The rule printed 「10 stated
 size(s)」 and none of the four was among them. This is the `alerts` capture group one step
 earlier: there a number was taken and never read; here it was never taken. Both halves of that
-sentence are read and compared now, and `tests/r699-doc-claim-needles-checks` ⑫ mutates the
+sentence are read and compared now, and `tests/process-doc-facts-claims-checks.test.mjs` #R699 ⑫ mutates the
 sentence back to what shipped **and** forbids a count from returning to the pattern.
 
 **A needle that matches nothing reports green.** `languages` required 「対応 UI 言語は」 with
@@ -2732,8 +2749,8 @@ A rule whose green line carries no number cannot distinguish 「nothing disagree
 reached nothing」 — the #R694 failure, which printed a roster of eleven while passing a document
 that listed nine. `node scripts/doc-facts.mjs` (without `--check`) prints every rule's green line,
 so the list is **read off the gate**, never kept by hand here.
-`tests/r699-doc-claim-needles-checks` ⑧ holds the half that a list cannot: every rule that can
-`fail()` must also `ok()`, because `tests/r274-checks` ① derives the roster of rules from the `ok()`
+`tests/process-doc-facts-claims-checks.test.mjs` #R699 ⑧ holds the half that a list cannot: every rule that can
+`fail()` must also `ok()`, because `tests/process-doc-facts-sweep-checks.test.mjs` #R274 ① derives the roster of rules from the `ok()`
 side alone, and `scan` and `sql-path` — which only ever failed — sat outside the one test whose
 whole point is 「a rule that does not run cannot fail」. Deriving a universe from one of its two
 sides is the same defect as the separator set above: the answer is bounded by where you looked.
@@ -2756,7 +2773,7 @@ claim across two lines. That is not hypothetical — the hand-grep that opened #
 `tests/r337.spec.js` outright (`…run nightly and after` / `every merge…`), and the rule's very first
 run found it.
 
-`tests/r407-checks` proves each half goes red, by mutation: four prose sites reverted to the stale
+`tests/process-doc-facts-deep-tier-when-checks.test.mjs` (#R407) proves each half goes red, by mutation: four prose sites reverted to the stale
 wording (one of them wrapped), the gate itself gaining `push` and losing `schedule`, the 正本 going
 silent **three** ways, and a sweep whose needle matches nothing — which must **fail**, because an
 empty sweep otherwise passes everything.
@@ -2776,13 +2793,13 @@ check:docs` passes no `--rule`.
 Mutation tests run this script once per mutation *while holding the tree lock*
 (`tests/helpers/gate-lock.mjs`). MEASURED #R407: a full run is **11.0 s**, of which
 `scripts/i18n-pair-audit.mjs` as a subprocess is **10.0 s** and every other rule together is under
-one second. The first draft of `tests/r407-checks` did fifteen full runs, held the lock for over two
-minutes, and **timed out `tests/r399-checks` and `tests/r274-checks` at their 180 s limit** — a new
+one second. The first draft of `tests/process-doc-facts-deep-tier-when-checks.test.mjs` (#R407) did fifteen full runs, held the lock for over two
+minutes, and **timed out `tests/process-doc-facts-edge-counts-checks.test.mjs` (#R399) and `tests/process-doc-facts-sweep-checks.test.mjs` (#R274) at their 180 s limit** — a new
 round's test file made two older ones fail without touching them. With `--rule` the same mutation
 costs ~1.3 s and the whole file is ~18 s.
 
 ⚠ A `--rule` name that matches nothing **exits 2**, because a typo would otherwise exit 0 and let
-every mutation above prove nothing. `tests/r407-checks` ⑥ asserts that, for the same reason the
+every mutation above prove nothing. `tests/process-doc-facts-deep-tier-when-checks.test.mjs` #R407 ⑥ asserts that, for the same reason the
 rest of the file exists.
 
 ### Tests that break the tree on purpose, and the lock they share (`tests/helpers/gate-lock.mjs`)
@@ -2838,11 +2855,11 @@ directory, so two waiters that both judged the same dead lock cannot both delete
 would otherwise let the second one delete the live lock the first had just taken.
 
 ⚠⚠ **The diagnostic used to point the wrong way, and that cost more than the bug.** When a mutation
-test found its gate red under the lock, `tests/r403-checks` sampled `git status --porcelain` **after
+test found its gate red under the lock, `tests/process-doc-facts-instruction-docs-checks.test.mjs` (#R403) sampled `git status --porcelain` **after
 the gate had returned** and told the reader that a clean tree means the gate itself is wrong. But
 the interfering write is made *and put back* inside the gate run — that is what a mutation test is —
 so the sample printed `(clean)` in exactly the case it existed to catch. Measured on CI run
-34389623083, on a branch that touched none of this: `tests/r403 ①` reported `tests/r399 ②`'s
+34389623083, on a branch that touched none of this: `tests/process-doc-facts-instruction-docs-checks.test.mjs #R403 ①` reported `tests/process-doc-facts-edge-counts-checks.test.mjs #R399 ②`'s
 deliberate "Architecture.md no longer states how many Edge Functions there are" as its own failure.
 `tests/helpers/gate-precondition.mjs` now asks the **lock** instead of the tree — every writer takes
 it, so a hold that survived intact means nobody else was inside, and a hold that did not says so
@@ -2850,7 +2867,7 @@ outright — and it names the one case it still cannot see (a writer that mutate
 the gate run *without* taking the lock) rather than quietly excluding it.
 
 ⚠ **A local full-suite run is not a trustworthy instrument while other sessions are working.** Under
-that contention it measures the machine, not the change — `tests/r274 ③` was measured anywhere from
+that contention it measures the machine, not the change — `tests/process-doc-facts-sweep-checks.test.mjs #R274 ③` was measured anywhere from
 21 s to 380 s on one tree. Run the affected files together for a decisive local answer, and let CI,
 which is isolated, measure the whole gate.
 
@@ -2859,7 +2876,7 @@ there all along; neither was reachable while holds were few and long:
 
 - **Liveness has to be the pid, not the clock.** The helper used to reclaim any lock whose mtime was
   older than a timeout. Under load a legitimate holder exceeds any such timeout — measured,
-  `tests/r399 ①` held it for 208 s — and the waiter then deletes a *live* holder's lock and starts
+  `tests/process-doc-facts-edge-counts-checks.test.mjs #R399 ①` held it for 208 s — and the waiter then deletes a *live* holder's lock and starts
   writing the same files. That is exactly the two-writers-at-once the lock exists to prevent, and it
   surfaces as "the restore left the tree failing" in whichever file is unlucky, which reads exactly
   like a real regression. A heartbeat would not fix it: the callbacks run gates through
@@ -2876,7 +2893,7 @@ what "restored" means — this file, these bytes — while a green gate only say
 it costs another gate run inside the lock. Cheaper and stricter at once.
 
 ⚠ **Do not kill a suite mid-mutation.** The restore lives in a `finally`; killing the process skips
-it and leaves the tree broken. Measured: an interrupted run left `tests/r280`'s CSP probe in
+it and leaves the tree broken. Measured: an interrupted run left `tests/doc-facts-legal-pages-checks.test.mjs` (#R280)'s CSP probe in
 `Architecture.md`, and the next `check:docs` failed on `csp` for a reason that had nothing to do
 with the change being made.
 
@@ -2915,10 +2932,10 @@ node scripts/atlas-capability-audit.mjs --json     # machine-readable: registry 
 ```
 
 ⚠ **A green gate nobody has seen go red is not evidence.** Every check takes its inputs as data, and
-`tests/r318-checks.test.mjs` feeds each one a fixture with the defect deliberately present and
+`tests/atlas-capabilities-checks.test.mjs` (#R318) feeds each one a fixture with the defect deliberately present and
 asserts that it fails. A check that cannot be made to fail is deleted, not kept.
 
-### What Atlas can SEE, as distinct from what it can reach (`tests/r582-checks.test.mjs`)
+### What Atlas can SEE, as distinct from what it can reach (`tests/atlas-capabilities-checks.test.mjs` (#R582))
 
 Twenty questions above ask whether a capability is *reachable*. #R582 measured a different thing and
 found it at zero: whether Atlas is shown that the capability **exists**, at the moment it decides what
@@ -3004,7 +3021,7 @@ So the pair of points is **chosen**: the storm finder's own two points whenever 
 otherwise the calmest and the strongest point on the same screen, ranked by the footprint bound the
 claim itself names. If no pair separates, the test **prints why in m/s and withholds only that
 third claim** — it is not a `test.skip`, and the two per-pixel verdicts still run. The decision is
-`separablePair()` in `tests/helpers/wind-ramp.js`, and `tests/r458-checks.test.mjs` puts it through
+`separablePair()` in `tests/helpers/wind-ramp.js`, and `tests/cyclone-smoke-checks.test.mjs` (#R458) puts it through
 the overlap the deployed page cannot be made to reproduce on demand.
 
 ### The point the cyclone test calls "the eye" (#R460)
@@ -3036,7 +3053,7 @@ of 101 hours and is a whole storm wrong in the rest — after landfall the calme
 inland behind the terrain, 223 km away at 2026-08-27T23:00Z. "The nearest calm point to the peak"
 sits 30 km away but at a median 16.52 m/s, which is the inner edge of the eyewall.
 
-`tests/r460-checks.test.mjs` runs that decision over two recorded production lattices
+`tests/cyclone-smoke-checks.test.mjs` (#R460) runs that decision over two recorded production lattices
 (`tests/fixtures/r460-cyclone-boxes.json`) plus the fields the live page cannot be made to show —
 a ring with a gap, a band with no ring at all, a hole in the field. Replacing the rule with the box
 minimum turns 6 of its 9 checks red.
@@ -3064,13 +3081,13 @@ This is the third time the same test has recorded this defect: #R276 追記 (「
 monotone along this ramp」), #R382 (「distance-to-an-entry does not order speeds」), and this. Each
 time the repair was to stop inventing the quantity and read it out of the thing the claim is about
 — the field, in those two, and the **observer**, here. The claim is now CIEDE2000
-(`tests/helpers/colour-difference.js`), and `tests/r382-checks.test.mjs` — which carried a second
+(`tests/helpers/colour-difference.js`), and `tests/weather-wind-pixel-checks.test.mjs` (#R382) — which carried a second
 copy of the same line — asks it the same way.
 
 ⚠ **The bound does not come from the ramp, on purpose.** 「further apart than the table's own finest
 step」 is tempting because it writes no constant down, and it is worthless: reduce the ramp's
 contrast and the step shrinks with it, so the bound follows the defect down and an unreadable map
-clears it. `tests/r487-checks.test.mjs` ⑤ builds exactly that map and watches the derived bound pass
+clears it. `tests/weather-wind-pixel-checks.test.mjs` #R487 ⑤ builds exactly that map and watches the derived bound pass
 it. The threshold is the observer's instead — ΔE00 is scaled so **1.0 is one just-noticeable
 difference**, and above **2** is the band visible *at a glance*, which is how a map is read.
 
@@ -3126,7 +3143,7 @@ function allows; the ambiguity guard; `_shared` never counted as a function), in
 assertion that the production-side test still exists — a check that deletes itself is
 indistinguishable from one that passes.
 
-## Bundled data whose upstream stopped maintaining a column (`tests/r567-checks.test.mjs`)
+## Bundled data whose upstream stopped maintaining a column (`tests/layer-world-heritage-checks.test.mjs` (#R567))
 
 A snapshot of somebody else's dataset can be checked for shape — every index resolves, every
 row has a name — and that is worth doing, but it cannot catch the failure that actually costs
@@ -3147,7 +3164,7 @@ Two of the other seven are the same kind of question rather than a spelling:
   a build that read only the first of each row would produce exactly as many points as rows.
   The test requires more points than properties and at least one property drawn as several —
   neither of which names a number.
-- **The category vocabulary must stay in the data.** `tests/r567-checks.test.mjs` ⑦ parses
+- **The category vocabulary must stay in the data.** `tests/layer-world-heritage-checks.test.mjs` #R567 ⑦ parses
   `js/beta-overlays.js` with acorn and requires every occurrence of a category name to be either
   a lookup-table key or a member of a translation tuple. A comparison, a filter or a paint ladder
   that spells one out is the #R515 shape — the layer would stop reading `whsDoc.categories`, and
@@ -3169,7 +3186,7 @@ source-level check that asserts something about a file's **content** must theref
 content, not the bytes: use `readLF` / `sameText` from **`scripts/eol.mjs`**, never a bare
 `readFileSync(p, 'utf8')` feeding a pattern that names a line break. Two checks did the latter
 and were red on every local run and green in CI, which is worse than no check at all — a
-failure list that is always red is a failure list nobody reads. `tests/r283-checks.test.mjs`
+failure list that is always red is a failure list nobody reads. `tests/shell-test-infra-checks.test.mjs` (#R283)
 holds the rule, and it fails on **both** platforms if a raw byte read comes back.
 
 ⚠ **There is exactly one question where the carriage return is the subject, not noise in front of
@@ -3191,7 +3208,7 @@ endings it came with instead of being re-punctuated wholesale. Deciding one term
 file (`src.includes('\r\n') ? '\r\n' : '\n'`) is what `scripts/i18n-dead-key-codemod.mjs` did, and
 on a generated file with an LF header in front of a CRLF body it counted 6,272 lines where acorn
 counted 6,286: a crash past the desync, and a silently wrong line read before it.
-`tests/r548-checks.test.mjs` holds that rule and **evaluates** the scripts rather than reading
+`tests/shell-i18n-audits-checks.test.mjs` (#R548) holds that rule and **evaluates** the scripts rather than reading
 them, because the broken and the fixed spelling are nearly the same text.
 
 **…nor on the prose around the code.** A source-level check that looks for a CALL must read
@@ -3210,7 +3227,7 @@ defect, in both directions.
 **And ask the question through a door the OLD code can answer too.** A regression check earns its
 name by failing on the code before the fix — but a check written entirely against a new API fails
 on the old code because the API is missing, which proves nothing about the defect. The DEM tile
-store (`tests/r671-dem-store-checks.test.mjs`) had three defects that were all orderings — the trim ran
+store (`tests/hazard-dem-tile-store-checks.test.mjs` (#R671)) had three defects that were all orderings — the trim ran
 before the insert, the completion path never ran it, and nothing bounded how many requests were
 outstanding — so the checks EXECUTE `js/map-readout.js`'s factory in a `vm` against a fake `Image`
 the test fires by hand. Two of the measurements deliberately avoid the new statistics function:
@@ -3288,7 +3305,7 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   `public` pins a `search_path` without `public` in it (counted over `pg_proc`); anon cannot file
   feedback or a bug report as an existing user and A cannot file as B; an author may update a post's
   body and `edited_at` but not `created_at`, `author_name` or `user_id`.
-- **`tests/r507-checks.test.mjs`** (`node --test`, #R507) — the source-side pair: the migrations
+- **`tests/process-database-checks.test.mjs`** (`node --test`, #R507) — the source-side pair: the migrations
   end with `profiles_public` as a table, the drop of the old view is guarded on `relkind` so the
   migration stays re-runnable, only `SELECT` is ever granted, the PostgREST schema reload sits
   **outside** the transaction — and the class-level gate, that **any** view a migration leaves
@@ -3300,7 +3317,7 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   `display_name` stays editable; also asserts the least-privilege column/table grants, the no
   world-readable-profiles invariant, that monitor results are unforgeable at the grant layer, and
   the public-write length caps. (This is the case vanilla CI could not otherwise reproduce.)
-- **`tests/r155-checks.test.mjs`** (`node --test`, #R155) — source regression guards over
+- **`tests/auth-security-checks.test.mjs`** (`node --test`, #R155) — source regression guards over
   `index.html` + `admin.html`: passkeys wired, `delete-account` called with `confirm`, reset/
   change/logout-all present, HIBP k-anonymity sends only a 5-char prefix, GA `page_location`
   sanitized, admin CSP present + **no** public sign-up + re-auth gate, and **behavioural** XSS
@@ -3349,9 +3366,9 @@ long place names must survive `html()` unchanged.
 - **座標 `0,0`**——「値が無い」をギニア湾の一点として書いたもの
 
 `--report` は指示書 §14 の形のカバレッジ表を出す（`--all` で全社）。
-回帰は `tests/r354-checks.test.mjs`。
+回帰は `tests/news-companies-checks.test.mjs` (#R354)。
 
-## 時限式の fixture — `tests/r700-stale-fixture-checks.test.mjs` (#R700)
+## 時限式の fixture — `tests/shell-test-infra-checks.test.mjs` (#R700)
 
 **nightly の deep tier が 1 日で 5 本（#R402/#R405/#R416/#R435/#R455）を落とし、5 本とも製品の
 退行ではなかった。** どれも route で差し替えたニュースの行に `2026-08-24` という**絶対時刻**を
@@ -3391,28 +3408,28 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 
 ### Chronos の収録と精度
 
-`tests/r711-historical-city-identity-checks.test.mjs` は実際の歴史都市名モジュールと出荷データを
+`tests/history-cities-checks.test.mjs` (#R711) は実際の歴史都市名モジュールと出荷データを
 使い、近隣の町名が都市全体の名称を置き換えないことを照会・ポップアップ解決・描画式で検証する。
 正しい町域の旧名は保持する。生成時の対応キーも出典の名称証拠と照合する。
 
-`tests/r711-label-visibility-checks.test.mjs` は出荷するラベル定義を実行し、国名・地方区分名が
+`tests/history-era-display-checks.test.mjs` (#R711) は出荷するラベル定義を実行し、国名・地方区分名が
 拡大側のズーム上限だけで消えないことと、通常の衝突判定が保持されることを検証する。
 これは常に全名称が画面に収まるという検査ではない。実画面の再現結果は開発記録に記載する。
 
-`tests/r711-boundary-quality-checks.test.mjs` は、出典と異なる補正形状を詳細線で上書きしないこと、
+`tests/history-boundary-precision-checks.test.mjs` (#R711) は、出典と異なる補正形状を詳細線で上書きしないこと、
 島と穴の保持、表示範囲による取得、読込失敗時の元の線の維持を検査する。
 同梱詳細データは `scripts/build-border-detail.mjs --check` で、形状指紋・内容ハッシュ・
 座標範囲・断片の境界箱・出典relation ID・件数と容量・余分なファイルをオフライン検査する。
 容量は配信するLF改行に正規化して測り、Windowsのcheckout変換をデータ増加と混同しない。
-`tests/r711-boundary-quality-data-checks.test.mjs` はLFとCRLFの両方、および不正な容量記録を検査する。
+`tests/history-boundary-precision-checks.test.mjs` (#R711) はLFとCRLFの両方、および不正な容量記録を検査する。
 キャッシュ原典がある環境では同生成器の `--check-source` で各島・穴との対応も照合する。
 合計リング数の一致だけでは、失われた穴を別の増えた穴が相殺できるため十分ではない。
-`tests/r711-boundary-country-refresh-checks.test.mjs` は実際の国境モジュールを実行し、
+`tests/shell-map-labels-checks.test.mjs` (#R711) は実際の国境モジュールを実行し、
 詳細線到着時に線が再設定され、現在の領域や日付が変わらないことを測る。
-`tests/r700-seam-density-checks.test.mjs` は、切替日前後の描画座標がその日に有効な
+`tests/history-era-borders-checks.test.mjs` (#R700) は、切替日前後の描画座標がその日に有効な
 原典レコードと一致することを検査する。密度と辺長中央値の変化率が一致することは要求しない。
 
-`tests/r709-historical-places-source-checks.test.mjs` は、Pleiades の固定した出典記録を生成器の
+`tests/history-places-checks.test.mjs` (#R709) は、Pleiades の固定した出典記録を生成器の
 `compile()` で実際に変換し、配信する `data/hist-places.json` と完全一致することを測る。
 既存の都市名変更との出典ID重複、権利・集落型・座標・名称期間の条件、原綴り・転写・言語コード・
 疑問符の保持も検査する。Runtime を評価して実データの年代別表示、1 BCE と天文年 0 の対応、
@@ -3422,17 +3439,17 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 手動の再生成確認は `node scripts/build-hist-places.mjs --check`。出典の期間や代表点を正しく運ぶ検査であり、
 古代の創建・廃絶年や実際の遺跡位置の正しさを保証する検査ではない。
 
-`tests/r712-historical-coverage-fidelity-checks.test.mjs` は、現代名がある歴史地点も取り込み、
+`tests/history-places-checks.test.mjs` (#R712) は、現代名がある歴史地点も取り込み、
 適格な全出典IDが都市名変更・独立地点のどちらか一方へ届くことを検査する。
-`tests/r712-historical-detail-refresh-checks.test.mjs` は、行政詳細線の部分再生成で国境の
+`tests/history-boundary-precision-checks.test.mjs` (#R712) は、行政詳細線の部分再生成で国境の
 索引・容量・参照中の断片を保持し、精度や出典条件が異なる索引の混在を拒否することを検査する。
-`tests/r712-historical-city-recovery-checks.test.mjs` は、HTTP・ネットワーク・JSON・空記録の
+`tests/history-cities-checks.test.mjs` (#R712) は、HTTP・ネットワーク・JSON・空記録の
 取得失敗後の復旧、並行取得の共有、成功キャッシュ、再描画からの再入を実行して検査する。
-`tests/r712-historical-ring-topology-checks.test.mjs` は、凹形の本土と島・真正な穴・穴の中の島・
-出典の内外役割を検証する。`tests/r712-historical-topology-build-checks.test.mjs` は、原典再現と
+`tests/ohm-rings-checks.test.mjs` (#R712) は、凹形の本土と島・真正な穴・穴の中の島・
+出典の内外役割を検証する。`tests/history-admin-build-checks.test.mjs` (#R712) は、原典再現と
 座標多重集合を条件とする再分類、補正済み形状の保持、外環消失時に穴を陸地化しないことを測る。
 
-`tests/r717-hist-fidelity-checks.test.mjs` は、**歴史地図が読者に何を主張しているか**を 4 本で測る。
+`tests/chronos-claims-checks.test.mjs` (#R717) は、**歴史地図が読者に何を主張しているか**を 4 本で測る。
 ① **散文の規則が `js/` と `scripts/` に届いていること**——`js/` に間違った枚数を**書いて**
 `--rule=chronos-sheets` を走らせ、**落第すること**と、**落第の理由がその主張であること**を要求する
 （母集合が縮んだ日にこの 1 本だけが赤くなる）。数詞は**数字と英語の語の両方**で植える——正本は
@@ -3444,13 +3461,13 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 ④ **1885/1886 の継ぎ目**（主権国家の記録と OHM の記録の交代で政体が 3 割落ちること）について
 `Architecture.md` が述べる数を、**両方の束から導き直して**照合する。⚠ **数は検査の中に書いていない**。
 
-`tests/r714-hist-river-names-checks.test.mjs` は、**一致が争点ではない**ことを測る。`score()` を
+`tests/history-era-names-checks.test.mjs` (#R714) は、**一致が争点ではない**ことを測る。`score()` を
 評価して、空間・時間・綴りのすべてが完全に一致する候補でも、種類が地図の描くものでなければ
 `not-a-place` として拒まれることを要求し、`decide()` で同点の解消も測る。さらに**広い根
 （landform / body of water）が宣言されていないこと**と、**その根が消したはずの島嶼国家の行が
 出荷物に実在すること**を測る。川 1 本の名前を一覧で直す検査ではない。
 
-`tests/r713-hist-coverage-checks.test.mjs` は、**同じ問いを 1 つのストアにしか出していなかった 2 か所**を測る。
+`tests/history-era-names-checks.test.mjs` (#R713) は、**同じ問いを 1 つのストアにしか出していなかった 2 か所**を測る。
 ① OHM の集落掃引について、`coordOf()` を**実際に評価して**どの element 種別から座標を取り出せるかを決め、
 取り出せる種別が `OHM_PLACE_KINDS`（掃引が訊く種別）に入っていることを要求する。綴りの一致ではなく
 両側からの計測なので、クエリと受け側が片方だけ編集されても落ちる。`place` の絞り込みが
@@ -3462,7 +3479,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 **両側とも出荷バイトから導いて**測る（検査の中に書いた数は検査されている数ではない）。
 これは**名前が届く割合の検査であって、歴史的な名称そのものの正しさの証明ではない**。
 
-`tests/r709-historical-click-coverage-checks.test.mjs` は、GeoEngine の排他的所有者と説明用 fallback の
+`tests/history-click-ownership-checks.test.mjs` (#R709) は、GeoEngine の排他的所有者と説明用 fallback の
 区別、歴史地名を背景面が塞がないこと、共有した出典リーダーのクリック経路を実行して検査する。
 個別の歴史地名を例外一覧へ加える検査ではなく、同じ登録経路を使う次の地物にも適用される規則を測る。
 
@@ -3497,25 +3514,25 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   アイコンだけのボタンは**名前を与えられない**こと。⚠ 誤った名前は名前が無いことより悪い
   （Atlas は `aria-label` を handle にして UI を引く）。
 
-`tests/r740-isochrone-verdict-checks.test.mjs` は、**成功した仕事を「何も起きなかった」と報告しないこと**を
+`tests/atlas-capabilities-verdict-checks.test.mjs` (#R740) は、**成功した仕事を「何も起きなかった」と報告しないこと**を
 測る（#R740 §5b）。出荷している `makeAtlasCapabilities()` からレジストリを作り、`observe` / `verify` を
 **実際に評価する**——同じ到達圏を描き直しても `not_rendered` にならないこと、空なら今までどおり
 `not_rendered` であること、カメラが既に名指された視界になっているなら失敗ではないコードで完了すること、
 そして**行き先が申告されていないときは推測せず** `no_change` のままであること。
 ⚠ 汎用の `paint` verifier が従来どおりであることも同じファイルが測る（到達圏だけが別扱いであることを固定する）。
 
-`tests/r740-legend-stack-checks.test.mjs` は、`tileLegends()` を lift して**組んだ DOM に対して実行**し、
+`tests/layer-legends-checks.test.mjs` (#R740) は、`tileLegends()` を lift して**組んだ DOM に対して実行**し、
 本番で観測した構成（容器 900px・高さ 106/337/303/252 の 4 枚）で**どの凡例も容器の外に出ず、どの 2 枚も
 重ならない**ことを測る。1〜2 枚のときは従来どおり左端の 1 列に積まれること、`data-dragged` の凡例が
 1 バイトも動かされないことも同じファイルが測る。
 
-`tests/r741-repeat-and-metric-names-checks.test.mjs` は、**出荷しているモジュールを実際に動かして**
+`tests/atlas-agent-repeat-checks.test.mjs` (#R741) は、**出荷しているモジュールを実際に動かして**
 ① 指標の名前の**一意な一部**がその指標に解決すること（`life` → `lifeExp`）と、2 つ以上に当たる語は
 解決しないこと、② **拒否された呼びを同じ引数で出し直す手が `maxRepeatSteps` に数えられる**こと、
 ③ 違う引数を含む手は 1 つも数えられないこと（取り上げていないこと）を測る。
 ループは本物の `runTurn()` に「常に拒否する能力」を渡して回す。
 
-### `tests/r762-handoff-removal-checks.test.mjs` (#R762)
+### `tests/process-agent-context-checks.test.mjs` (#R762)
 
 **撤去した機構が戻っていないこと**を測る。#R762 は ChatGPT の発話を GitHub issue #225 経由で
 エージェントのやることリストに変える経路（`handoff.mjs` / `handoff-inbox.mjs` / `GPT-HANDOFF/`）を
@@ -3533,10 +3550,10 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 - ④ `scripts/codex-setup.mjs` の `OUTSIDE_ROOTS` が 2 件であること（handoff のカーソル置き場が
   3 件目だった）。散文が「四つが追随する」と述べたままになっていないこと
 
-### `tests/r759-gis-pipeline-checks.test.mjs` (#R759)
+### `tests/atlas-gis-checks.test.mjs` (#R759)
 
 **取得 → 演算 → 説明が 1 本に通っていること**を、本物の `js/gis-*.js` を動かして測る
-（`tests/r743-gis-atlas-surface-checks` と同じ boot に `js/gis-raster.js` と `js/gis-expr.js` を足したもの。
+（`tests/geo-gis-ops-checks.test.mjs` (#R743) と同じ boot に `js/gis-raster.js` と `js/gis-expr.js` を足したもの。
 地図は**何を訊かれたかを記録する** stub で、返す記録は本物のレジストリが作る）。
 
 - ① **取得条件の一覧が 2 つ無いこと**——`js/gis-atlas.js` は `acquireFields()` を呼び、欄名を並べた
@@ -3560,7 +3577,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 - ⑫ **時点の宣言が冪等**であること——`declareTime` が自分で作ったミリ秒を読み直せず、時点を述べた
   格子を処理するたびに時点が消えていた（誰にも告げられずに）
 
-### `tests/r775-atlas-eval-checks.test.mjs` (#R775)
+### `tests/atlas-console-eval-checks.test.mjs` (#R775)
 
 **本番で Atlas に 55 問投げて見つけた、全門が緑のまま出荷されていた 6 つ**を固定する。
 ⚠ 測っているのは「直したか」ではなく「**その欠陥を生んだ構造が残っていないか**」。
@@ -3581,8 +3598,8 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   （最下部近傍の判定と短い返答の振る舞い）。⚠ **手で上へスクロールした読者を引き戻さない**こと
 - ⑥ **操作を 1 件も行わずに死んだターンは、質問を入力欄に戻す**こと。
   ⚠ **途中まで進んだターンは戻さない**・**読者が打ちかけた文を上書きしない**・**勝手に再送しない**こと
-- ⚠ `js/atlas-console.js` の行数天井（`tests/r318` ⓑ）をこの回が越えていないこと
-### `tests/r774-gis-units-checks.test.mjs` (#R774)
+- ⚠ `js/atlas-console.js` の行数天井（`tests/atlas-capabilities-checks.test.mjs` (#R318) ⓑ）をこの回が越えていないこと
+### `tests/geo-gis-units-checks.test.mjs` (#R774)
 
 **単位の違う 2 つの量を引き算してはならない。** 出荷されていたビルドで `1000 m − 1 km → 999`、
 `10 °C − 283.15 K → −273.15` がどちらも `ok:true` だった（どちらも本当は 0）。⚠ 測っているのは
@@ -3604,7 +3621,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 - ⑧ **`js/gis-units.js` が載っていなければ、この回の前と同じ答えに戻る**（載っていないモジュールが
   黙って「合っている」と言わない）
 
-### `tests/r774-gis-seam-area-checks.test.mjs` (#R774)
+### `tests/geo-gis-geometry-checks.test.mjs` (#R774)
 
 **日付変更線を跨ぐ面について、内外判定と面積が同じ形を意味すること。** 出荷時は同じ 1 つの
 多角形を `pointInPolygon` が幅 2° の帯と読み、`areaKm2` が 4,426,211 km²（**179 倍**）と読んでいた。
@@ -3617,14 +3634,14 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   ⚠ **幾何カーネルが無ければ `null`**——持っていない巻き直しで測ったとは言わない
 - ④ **巻き直しの正本がひとつ**であること（`js/gis-ops.js` に 2 つ目の 360° ループが生えていない）
 
-### `tests/r774-gis-time-checks.test.mjs` (#R774)
+### `tests/geo-gis-datasets-checks.test.mjs` (#R774)
 
 **存在しない暦日と、終わりが始まりより前の期間を受理しないこと。** `2026-02-30` が
 `2026-03-02` として、`{start:2026-09-17, end:2020-01-01}` が `timeRefused:null` として通っていた。
 裸の年・BC・`YYYY-MM`・時刻つき・ゾーンつきが壊れていないこと、`interval` の逆転した行が
 `readable` に数えられず件数が読者に届くこと、新しい拒否コードが**宣言されている**こと。
 
-### `tests/r774-gis-geotiff-unit-checks.test.mjs` (#R774)
+### `tests/geo-gis-export-checks.test.mjs` (#R774)
 
 **バンドの単位が外部 GIS へ届くこと。** IntMap は `role="unit"` と書き、GDAL は `role="unittype"` を
 読む——**IntMap で書いて IntMap で読む往復では永久に露見しない**
@@ -3632,14 +3649,14 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 走査し、42112 の `<Item>` を独自パーサで読んで `role` を照合する。読み手が `role` に依存していない
 ことも測る（`unittype` を同じ長さの別語に潰しても単位が読めること）。
 
-### `tests/r774-gis-probe-checks.test.mjs` (#R774)
+### `tests/geo-gis-sources-checks.test.mjs` (#R774)
 
 **表示状態が取得の答えを変えないこと。** 北東の 1 画素だけが値を持つ場は、レイヤーが ON でも OFF
 でも同じ答えを返す。⚠ 測っているのは**答え**であって、プローブの点の数ではない（点を増やすのは
 直っていない）。「訊けなかった」（`layer-not-visible`）と「そこには値が無い」
 （`layer-values-all-missing`）が別の事実として届くこと。
 
-### `tests/r765-gis-analysis-manifest-checks.test.mjs` (#R765)
+### `tests/geo-gis-project-checks.test.mjs` (#R765)
 
 **「作業を再開できる」と「その結果をもう一度出せる」は別のこと**を測る。⚠ 測っているのは
 **幸せな欄が埋まっていること**ではなく、**このアプリが自分の答えについて知らないことを、
@@ -3660,7 +3677,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   ⚠ 取らないと決めたことが「取れなかった」として報告されないこと
 - ⑥ 版が公表され、文書がこの口と `gaps` を述べていること。知らない id が名前を付けて断られること
 
-### `tests/r765-gis-external-reader-checks.test.mjs` (#R765)
+### `tests/geo-gis-export-checks.test.mjs` (#R765)
 
 **「書き出せた」を、自分以外の読み手で確かめる。** #R756 の往復検査は 3 形式とも既存の読み手で
 読み返しており、それは正しい第一段で、限界がある——**一緒に作られた書き手と読み手は、他の誰にも
@@ -3683,7 +3700,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   **通ってしまった**（[[intmap-claim-needle-is-an-inclusion-list]]）。いまは**その節の中の、
   その主張**を見る
 
-### `tests/r764-gis-scale-and-precision-checks.test.mjs` (#R764)
+### `tests/geo-gis-raster-checks.test.mjs` (#R764)
 
 **境界の画素をどう数えるか**と、**止められること**を測る。⚠ 1 画素だけの格子を使い、辺を整数に
 取ってあるので、**期待される重みは読者が手で確かめられる比**（緯度帯が同じなら面積は Δλ に比例する）
@@ -3704,7 +3721,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   いたのがこの回の欠陥そのものなので、文を読んで確かめることはしない。
   ⚠ `ctx` を渡さない呼び手が待たされないことも測る（2 つ目の実装を作っていないこと）
 
-### `tests/r764-gis-error-domain-checks.test.mjs` (#R764)
+### `tests/geo-gis-measure-checks.test.mjs` (#R764)
 
 **球面近似はどこまで信用してよいのか**を、推測ではなく実測で定める。⚠ **参照は測る対象の外にある**
 ——WGS-84 楕円体上の Vincenty 逆解法を**このテストの中に別途実装**して突き合わせる（カーネルから
@@ -3721,7 +3738,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 - ② 半径がアプリに 1 つしかないこと（`js/gis-geometry.js` が自分で 6371 と書いていないこと）、
   そして**文書が測った範囲をそのまま述べている**こと
 
-### `tests/r763-gis-raw-data-contract-checks.test.mjs` (#R763)
+### `tests/geo-gis-sources-checks.test.mjs` (#R763)
 
 **表示用の値ではなく、原データが解析へ流れること**を測る。⚠ **実測された欠陥は「欄が無い」ではない**
 ——点の標本を実装している **18 行のうち、数を返すものが 0 行だった**（どれも値を丸めて単位を連結して
@@ -3746,7 +3763,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   扉が今までどおり `supplier-is-async` で断ること。両方の扉が**同じ要求を組み立てる**こと
 - ⑨ この回が足した拒否コードが**宣言され、読者への文（en+jp）を持つ**こと
 
-### `tests/r763-gis-meaning-across-ops-checks.test.mjs` (#R763)
+### `tests/geo-gis-ops-checks.test.mjs` (#R763)
 
 **演算を通っても、時点・単位・失敗が落ちないこと**を測る。⚠ **読むのは登録された記録**であって、
 ターンの返り値ではない——返り値の経路は最初から動いていて、**だから誰も気づかなかった**。
@@ -3761,7 +3778,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   と `from`（op の id）を持つこと。入力が沈黙していても述べられること。⚠ **何も落とさなかった run が
   落としたと述べない**こと。理由の語彙が `js/gis-sources.js` の 1 つであること
 
-### `tests/r759-gis-worker-checks.test.mjs` (#R759)
+### `tests/geo-gis-cancellation-checks.test.mjs` (#R759)
 
 **「Worker が在ること」と「普段の分析が Worker で走ること」は別**を測る。Node には `Worker` も
 `Blob` も無いので、**本物のプロトコル（`{type:'run'|'progress'|'done'}`）だけを実装した偽の口**を
@@ -3774,7 +3791,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   止めたあとに主スレッドで走り直さないこと
 - ③ Worker が無い／塞がれている／死んだときに主スレッドで完走し、**理由が結果に残る**こと
 - ④ **登録されているが誰も呼ばないジョブの数**——実体（`jobNames()`）から数え上げ、増えていないこと
-### `tests/r760-atlas-verdict-checks.test.mjs` (#R760)
+### `tests/atlas-agent-repeat-checks.test.mjs` (#R760)
 
 19 本。**判定・反復・ターン台帳**。出荷している `makeAtlasCapabilities()` / `runTurn()` と状態モジュールを
 **実際に評価する**（#R505）——ソースを読む検査は、どの経路が先に立つかを見られない。
@@ -3792,7 +3809,7 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 - **監査の所見は `auditNote` に乗り、`unverified` を立てない**こと（2 つの事実に 1 つの綴りを
   使わない）。
 
-### `tests/r760-admin1-coverage-checks.test.mjs` (#R760)
+### `tests/atlas-admin1-checks.test.mjs` (#R760)
 
 8 本。**形が覆う第一級行政区分**（`js/atlas-admin1.js` の `coveredBy`）。同梱の索引を実際に読んで測る。
 

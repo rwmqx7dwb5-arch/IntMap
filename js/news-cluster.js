@@ -63,7 +63,7 @@ import {
 
 /**
  * The browser-side adapter over the shared grouper.
- * ⚠ A factory rather than bare exports: tests/r175 ③ forbids an UNEXPORTED
+ * ⚠ A factory rather than bare exports: tests/layer-boot-graph-checks.test.mjs #R175 ③ forbids an UNEXPORTED
  * top-level declaration in any js/ module and fails any export that no js/ module
  * imports by name. One exported factory satisfies both, and it is the shape the
  * other split-out modules use (makeAtlasReply, makeAtlasGeoResolve, …).
@@ -180,7 +180,7 @@ export function makeNewsCluster() {
   return {
     EVENT_RULES: EVENT_RULES, groupNewsEvents: groupNewsEvents,
     newsSubject: newsSubject, isRepresentative: isRepresentative,
-    /* re-exported so tests/r340-checks measures THE SHIPPED functions, not copies */
+    /* re-exported so tests/news-cluster-checks.test.mjs (#R340) measures THE SHIPPED functions, not copies */
     DEFAULTS: DEFAULTS, clusterArticles: clusterArticles, tokenise: tokenise, jaccard: jaccard,
     containment: containment, geoClass: geoClass, pairVerdict: pairVerdict, kindOf: kindOf,
   };

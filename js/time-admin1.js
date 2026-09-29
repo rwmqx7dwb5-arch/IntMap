@@ -183,7 +183,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        Geometry-only refinement preserves labels, validity intervals and corrected shapes.
        On the cached Izu record, the maximum source-to-outline deviation fell from
        1,895.5 m to 416.2 m (58 to 127 vertices). These measurements expire when the
-       source or build settings change; tests/r700-admin-tier-checks.test.mjs verifies
+       source or build settings change; tests/history-admin-tiers-checks.test.mjs (#R700) verifies
        the shipped bytes and targets, and r710-boundary-precision checks preservation.
 
        The tile layer remains the primary line: unknown/live states hide both bundle
@@ -804,7 +804,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
 
     /* ══ (#R530) THE SWITCHBOARD — WHICH SET OF SUBDIVISIONS IS ON SCREEN ══════════════════════
        ⚠ IT LIVES HERE, NOT IN js/app-body.js, AND THAT IS NOT A STYLE CHOICE. The app shell has a
-       LINE BUDGET (tests/r168 #8, and r350 ⑨c and r479 ⑧ hold copies of the same number): six files
+       LINE BUDGET (tests/news-module-split-checks.test.mjs (#R168) #8, and r350 ⑨c and r479 ⑧ hold copies of the same number): six files
        may total 8,050 lines. It also belongs here on the merits — the module that draws the era
        units is the right owner of the rule that decides whether they or the live ones are shown.
        app-body keeps one call and one hand-back.

@@ -19,7 +19,7 @@
 
 **「どこで／何が／どれほど危険か／情報は新鮮か」の4つに答える**（`js/world-packs.js`）。
 **その機関が発令した単位で塗る。** 世界の事象フィード（GDACS）は**完全に撤廃されている**——
-コードは1行も残っておらず、`tests/r273-checks.test.mjs` が**書かれていた構文**で不在を確認する。
+コードは1行も残っておらず、`tests/hazard-weather-alerts-checks.test.mjs` (#R273) が**書かれていた構文**で不在を確認する。
 撤廃したからこそ、**未対応国を「静かな国」に見せない**仕組みが要る（下の3状態）。
 
 自前フィードは **13本**（下表の 12 か国 ＋ MeteoAlarm）で、MeteoAlarm が EUMETNET の残り 35 か国を運ぶ。
@@ -127,7 +127,7 @@
   2つの主張は**見た目として排他**でなければならない。
   ⚠⚠ **その線は<b>縁取りを持つ</b>**（`hatchCanvas()`：薄色の太い線を先に、濃い線をその上に）。
   単色の中間灰色は明るい基図では読めても、衛星画像とダークテーマではほとんど見えない。
-  縁取りは線に付くだけなので**隙間は完全に透明のまま**——`tests/r293 ②` が被覆率を計算する。
+  縁取りは線に付くだけなので**隙間は完全に透明のまま**——`tests/weather-warnings-checks.test.mjs #R293 ②` が被覆率を計算する。
   ⚠⚠ **凡例の見本はこのタイルそのもの**（`hatchSwatch()` が `toDataURL()` を読む）。
   「斜線塗がなんなのか分かるように、凡例に追加しろ」に対する行は**両モードの凡例に**あり、
   手書きの `repeating-linear-gradient` は**1つも残っていない**（かつては数値の違う2つがあった）。
@@ -438,7 +438,7 @@
   ② **IntMap 換算** … 読み手が指定した5色——**灰（発令なし）・黄（注意）・赤（警戒)・紫（危険）・
   黒（緊急）**。値は IntMap 自身のもの（iOS 系統色）で気象庁の表の写しではないが、**並びは同じ**
   になる。パネルは「IntMap 独自の換算であり、同じ段でも国どうしの危険度が等しいという意味ではない」
-  と明示する。⚠ 色の**名前**は `tests/r293 ①` が色相と明度を計算して検査する（定数を信じない）。
+  と明示する。⚠ 色の**名前**は `tests/weather-warnings-checks.test.mjs #R293 ①` が色相と明度を計算して検査する（定数を信じない）。
   地物は `colA`（公式）と `colN`（換算）の**両方**を持つので、切替は**再取得ではなく塗り替え**。
 - ⚠⚠⚠ **災害名は読み手の言語で書く。** 実測、1つの画面に「Thunderstormwarning」（墺）・「ORAGE」
   （象牙海岸）・「STARKES GEWITTER」（独）・「Mye regn」（諾）・「Baixa Umidade」（伯）・「降雨」（台）・
@@ -463,7 +463,7 @@
   （fr《Haïl》/ ko《하일》/ 中文《哈伊勒》）。**欠落も未翻訳も無いまま、地図が都市名を災害として
   印字する**ところだった。同じ理由で `Wind` / `Fog` / `Snow` / `Heavy rain` / `Thunderstorm` も
   他の呼び出しに使われていたので、災害側は `Strong wind` / `Dense fog` / `Heavy snow` /
-  `Heavy rainfall` / `Thunderstorms` という**自分の鍵**を持つ。`tests/r277 ⑩` が
+  `Heavy rainfall` / `Thunderstorms` という**自分の鍵**を持つ。`tests/layer-warnings-sources-checks.test.mjs #R277 ⑩` が
   「1つの英語の鍵が2つの意味を持たないこと」を検査する。
 - **種別は地図の上に文字で出る。** 区域は災害名を持ち、同じ区域に複数出ていれば `+N`。
   z5 未満は短縮形、以上は正式名。⚠ **`text-field` に `['step',['zoom'],['get',…]]` は書けない**
@@ -804,7 +804,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 規約:
 
 - ⚠ **1つの id は1つのグループにしか書けない。** `order.push` は要素を**移動**させるので、2箇所に書くと
-  最後のグループにしか出ない。`tests/r271-checks.test.mjs` が全 id の一意性を検査する。
+  最後のグループにしか出ない。`tests/layer-warnings-drawing-checks.test.mjs` (#R271) が全 id の一意性を検査する。
 - ⚠ **全グループキーは9言語すべてに見出しを持つ**こと（同テストが検査する）。
 - ⚠ **行が0のグループはキーを残す**（保存済みセッションや共有リンクが名指しできる。描画はされない）。
 - ⚠ **`lyrGrpOthers` のキーは変えない。** `js/map-ui.js`（タイルのベータ判定）と `js/layer-dropdown.js`
@@ -897,7 +897,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   `on` が、生成される箱の `checked` と `window.IntMapDefaultOn` の両方を決める（layer-manifest までは `index.html` の
   `checked` と `js/data-layers.js` の一覧の2か所で1つの編集だった）。片方だけだと**両方向とも無症状で壊れた**: `checked` だけなら線は出るが `IntMapBaseDisplay.matches()` が
   食い違い**起動 400 ms 後に基本表示が毎回「カスタム」へ降格**し、id だけなら boot dispatcher が
-  点いていない箱に `change` を投げないので**何も描かれない**（#R34）。`tests/r476-checks` ① が
+  点いていない箱に `change` を投げないので**何も描かれない**（#R34）。`tests/layer-panel-taxonomy-checks.test.mjs` #R476 ① が
   **両方向を導出して**照合する（#R225 ⑤ はリスト→markup の一方向しか歩いていなかった）。
   ⚠ **届くのは初回訪問者だけ。** 保存済みセッションには id が無く、復元の off-sweep はそれを
   「読み手が消した」と読む（#R186/#R225）。既存利用者へ届かせる手当ては `defv` の世代を上げること
@@ -920,7 +920,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   在るものを動かし、無いものを置いていくので、**線だけを一覧に書くと線は上がらず、対が割れる**
   ——`borders-only-casing` は #R210 以来ずっと割れており、上の実測では 13 層離れていた。
   ⚠ **国境と海岸線が同じ地物の上を走るときは国境が勝つ**（一覧では海岸線の対を国境の対より前に
-  置く＝あとから描かれるのが国境）。⚠ 門は `tests/r477-checks`（①〜⑤・一覧と
+  置く＝あとから描かれるのが国境）。⚠ 門は `tests/labels-stack-and-scale-checks.test.mjs` (#R477)（①〜⑤・一覧と
   `js/data-layers.js` の `BASE` の**両方を解析**して照合、写しを持たない）、
   `tests/smoke.spec.js` ㉑（**最上段に層を1枚足して自己修復を実際に走らせる**）、
   `tests/prod-smoke.spec.js`（**本番の実ラスタの上に本当に載っているか**）。
@@ -1192,7 +1192,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 - ⚠ **閉じる × は U+00D7 ひとつに統一する。** 実測 `measureText` 16px で **U+2715 は Inter・Noto Sans JP・
   system-ui・sans-serif・Arial の全部で 13.07px**（＝どれも持たず記号フォント落ち）、**U+00D7 は
   10.59/16.00/10.95/16.00/9.34**（＝Inter が持っている）。定義は `window.IntMapClearGlyph()` ただ1つで、
-  `tests/r273-checks.test.mjs` が js/ と css/ の**全ファイル**を掃く。位置は**それが属する入力欄の矩形**から
+  `tests/hazard-weather-alerts-checks.test.mjs` (#R273) が js/ と css/ の**全ファイル**を掃く。位置は**それが属する入力欄の矩形**から
   決める（`top:50%` は位置指定の祖先に解決されるため、包み箱と入力欄の高さが違うとずれる）。
 
 ### 7.7 レイヤー個別の注意
@@ -1205,7 +1205,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   ——「1,273 件」と言いながら 1,270 件しか描かない状態を作らない。
   ⚠ **区分（Cultural / Natural / Mixed）の語彙はデータ側にある。** 色も訳語もその語をキーにした
   表で、`whsDoc.categories` を歩いて塗り分けを組む。知らない区分が増えても**地図から消えず**、
-  ユネスコ自身の語で名乗る（`tests/r567-checks.test.mjs` ⑦ が acorn で「比較や絞り込みに
+  ユネスコ自身の語で名乗る（`tests/layer-world-heritage-checks.test.mjs` #R567 ⑦ が acorn で「比較や絞り込みに
   区分名が現れていないこと」を測る）。
   ⚠⚠⚠ **「いま危機遺産か」はユネスコのフィードから採っていない。**同フィードの `danger` 列は
   2014 年以降更新されておらず、パルミラ（2013）・サナア（2015）・キーウ（2023）・オデーサ（2023）が
@@ -1216,7 +1216,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   **同じデータで手動 `setData` を 1 回**呼ぶと 4 秒で切り替わった）。⇒ 書き手を `whsPush()` 1 本に
   し、1 tick を 1 回へまとめる。**「呼ぶ回数を減らす」ではなく「書き手を 1 つにする」**
   ——頼む側は全員正しく、同じ tick に他の誰かが頼むかを知らないだけだから。
-  `tests/r571-checks.test.mjs` が「whs-src に書く場所は 1 か所か」を acorn で数える。
+  `tests/world-heritage-source-checks.test.mjs` (#R571) が「whs-src に書く場所は 1 か所か」を acorn で数える。
   ⚠ **名称は「読者の BCP-47 タグがファイルの locales にあるとき」だけその言語で出す。**先頭 2 文字が
   一致するから当てる、はしない（`js/lang-registry.js` #R223）——ユネスコは繁体字版を公表していないので、
   繁体字の読者には英語名が出る。
@@ -1232,7 +1232,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   レユニオンとギアナを含むので、描かれているものの外接矩形は地球規模になり中心が大西洋になった）。
   `arrive()`（レイヤーを ON にした・セッション1回）に加えて `goTo()`（**読者が凡例の国セレクタを操作した**）
   があり、後者は毎回動く。**どちらの扉も `js/layer-home.js` の中にあり**、レイヤー側に `fitBounds` は無い
-  （#R313 の規則。`tests/r588-checks.test.mjs` ③ が測る）。
+  （#R313 の規則。`tests/history-elections-checks.test.mjs` #R588 ③ が測る）。
   ⚠ **米大統領選（`dl-uselect`・`js/us-elections.js`）は別のレイヤーで、統合されていない。** 1789年からの
   60回は、選挙区も議席も一般投票も持たない年を含み、この契約では表現できない。政治カテゴリに並んでいる。
 
@@ -1241,7 +1241,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   過去は `imta-line`（同梱の日付つき区分・`js/time-admin1.js`）。**規則は国境線とまったく同じ**で、
   可視性を決めるのは `window._applyAdmin1()` ただ1つ（`window._applyBorders()` の双子）。
   ⚠ **その関数は `js/app-body.js` ではなく `js/time-admin1.js` にある**——app-shell 6本には合計行数の
-  予算があり（`tests/r168-checks` #8。`r350` ⑨c と `r479` ⑧ が同じ数の写しを持つ）、余白は1行だった。
+  予算があり（`tests/news-module-split-checks.test.mjs` (#R168) #8。`r350` ⑨c と `r479` ⑧ が同じ数の写しを持つ）、余白は1行だった。
   ⚠ **現代の区分「名」`ofm-admin1` の可視性もこの関数が書く。** `applyLabelLang` も書くが、あれは
   `styledata`・地名表示・言語変更で走り**時計では走らない**ので、任せると Now への復帰で州境だけが
   先に戻る（実測 0.8〜2.9 秒の差）。同じ2つの入力から同じ規則を書くので持ち主は増えていない。
@@ -1307,7 +1307,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   2.06e-6 で一致（1日の**始まり**にすると全件が半日ずれ、**発足当日だけ描かれない**）。
   年になり得ない `*_decdate`（実測 106,173 件中 3,080 件が |v|<1 か 1e151 以上）は
   **「日付が無い」として扱う**——素直に比較すると**全時代から消える**。算術の正本は
-  `js/hist-scale.js`（DOM も地図も触らないので `tests/r604-checks` が**評価**できる）。
+  `js/hist-scale.js`（DOM も地図も触らないので `tests/history-chronos-clock-checks.test.mjs` (#R604) が**評価**できる）。
 - ⚠⚠ **束は消えていないし、死んでもいない。** タイルが届かない読者のための**予備の線**
   （`imta-line` / `imta2-line`。タイルが実際に描いていることを `queryRenderedFeatures` で
   確かめてから初めて隠す——「要求した」ではなく「描いている」で切り替える）であり、
@@ -1337,7 +1337,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   増やさないので、順序も可視性も既存の規則のまま。取得に失敗したら粗い形が残る（消さない）。
   memo は 24 件で打ち切る。
   ⚠ **relation → 多角形の規則は `js/ohm-rings.js` ただ1本**（`window.IntMapOhmRings`）で、この
-  クリック経路と `scripts/build-hist-admin1.mjs` が**同じ実装**を使う（`tests/r669-checks.test.mjs`
+  クリック経路と `scripts/build-hist-admin1.mjs` が**同じ実装**を使う（`tests/ohm-rings-checks.test.mjs` (#R669)
   が vm で**評価**できるよう、DOM もネットワークも時計も触らない）。`_eraGeom` は `{geo, refine}` を
   返し、`IntMapOutline.show` が `ctx.refine` を受ける（`js/map-tools.js`）。
   関係の `outer` / `inner` を環の連結後も保持する。島と穴は外接矩形だけでは判定せず、
@@ -1378,7 +1378,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   **22,691件／rings 23,416**）。
   生成対象の既定下限は `js/hist-scale.js` の `FLOOR` を読み、`--since` は明示的な範囲指定として残す。紀元前に終了した記録も、出典が有効な期間と形状を持つ限り収録する。⚠ **`--global` は出力ファイル名から導く**——渡し忘れると
   `data/hist-admin2.js` が `window.__HISTADM1=` を名乗り、**第1級の記録を無言で置き換える**
-  （実測。`tests/r604-checks` ⑦ が出荷物の側でも測る）。
+  （実測。`tests/history-admin-tiers-checks.test.mjs` #R604 ⑦ が出荷物の側でも測る）。
   OHM の終了日は排他的（`start <= date < end`）。ただし日精度の原文で開始日と終了日が同じ記録は、国境生成器と同じく当日一日の記録として保持し、`normalization: single-day` を残す。逆転した原期間は採用しない。日精度はその日、月・年精度はその期間の次の開始を終了境界とする。`dateSemantics` と relation ID ごとの `dates` が元の `raw`・`precision`・不確実性修飾を保持し、描画 Feature にも渡す。元資料の日付が正しいことをこの正規化が保証するわけではなく、AHCB など元資料と OHM 取込値の差は残る。
   ⚠⚠⚠ **(#R695) 単位の名前は上流のタグだけでは足りず、束は「読めない地図」を出していた。**
   第2級 22,691 件（#R695 の実測時は 22,708 件）のうち **20,357 件がどの言語の `name:<言語>` も持たず**（日本語 0.5%・英語 6.5%）、
@@ -1835,7 +1835,7 @@ DWD ICON（約 13 km・5 日）**。**選択はレイヤーごと**（`js/weathe
 ⚠⚠⚠ **レンダラ SDK の `getColorScale()` は知らない変数に気温のスケールを返す**（`?? temperature`）。
 実測: live 変数 857 のうち **212 がその分岐**、うち **52 は気温ではない**（大気質全種・海流の u/v・
 海面高度・降雪・天気コード・うねり方向 2 つ）。出荷するレイヤーがこの分岐に落ちてよいのは
-**そのレイヤー自身が `kind:'temp'` と言っているときだけ**で、`tests/r356-checks.test.mjs ⑧` が
+**そのレイヤー自身が `kind:'temp'` と言っているときだけ**で、`tests/weather-models-checks.test.mjs #R356 ⑧` が
 SDK のバージョンを固定した実測 fixture と突き合わせている。
 
 ⚠⚠⚠ **`.om` の単位と配色表の単位は、同じとは限らない。** 実測（出荷 8 変数・生きた場を 1 点ずつ）:
@@ -2067,7 +2067,7 @@ Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウ�
   ⚠ **区切り値は再標本化の刻みに<b>載せる</b>**（0.1 hPa / 0.02 mm / 0.05 °C）。`rampFrom` は
   固定刻みで再標本化するので、刻みに載っていない区切り値は**地図が一度も塗らない色**であり、
   #R284 の「色はそのまま」が近似になる。実測: 載せ替えの代償は最大 0.8/255、
-  得るものは**全区切り値が自分の色にぴたりと落ちること**（`tests/r439-checks ①b` が実行して確かめる）。
+  得るものは**全区切り値が自分の色にぴたりと落ちること**（`tests/layer-weather-ecmwf-checks.test.mjs #R439 ①b` が実行して確かめる）。
   ⚠ 3 つとも**全域 α=255**（Windy 自身の表が `opaque:true`）。降水量は 0 mm でも
   `rgb(111,111,111)` の灰を**塗る**——Windy の雨オーバーレイがそうであり、それが
   「RGB レベルで対応」の中身である。透明度は凡例のスライダーで従来どおり変えられる。
@@ -2599,7 +2599,7 @@ WW2 しか開かない利用者は残り5本の source を1つも払わない。
 1950 年 6 月 25 日にもう北側にある。
 
 これはビルドの監査では見えない。`scripts/build-wars.mjs` が問うのは「記録が自分自身と整合するか」で、
-このとき記録は整合しているから。**だから検査は出荷された幾何に問う**——`tests/r519-checks` ⑥ が、
+このとき記録は整合しているから。**だから検査は出荷された幾何に問う**——`tests/history-wars-checks.test.mjs` #R519 ⑥ が、
 1950-06-25 の開城とソウルを `WarGeom.factionAt` で解決し、**同じ勢力に落ちること**を要求する。
 記録側の対処は、開戦日から 38 度線を `cuts: [731, 732]` の戦線として持つこと（実測でこの線は
 両方の朝鮮を問題なく切る）。
@@ -2678,8 +2678,8 @@ Release の asset を持ち、`npm run data:pull` がチェックアウトの外
 史料の精度は上がらないため、形状を捏造しない。より詳細なOHMやCShapesの形状を粗くして
 出典間の見た目を揃えることもしない。1689年の切替点はOHMの被覆から導出される。
 
-`tests/r700-seam-density-checks.test.mjs` は同じ地域・年代の形状密度を再測定する。
-`tests/r710-boundary-precision-checks.test.mjs` は幾何更新時の身元保持と補正保護を検証する。
+`tests/history-era-borders-checks.test.mjs` (#R700) は同じ地域・年代の形状密度を再測定する。
+`tests/history-boundary-precision-checks.test.mjs` (#R710) は幾何更新時の身元保持と補正保護を検証する。
 出典間の差が一定以上残ることを合格条件にすると、将来の精度改善そのものが不合格になるため、
 差の大きさを維持する条件は設けない。
 ### 7.14 波（海況） — `js/waves.js` / `js/waves-gl.js` / `js/waves-palette.js`
@@ -2731,7 +2731,7 @@ Release の asset を持ち、`npm run data:pull` がチェックアウトの外
 - **配色は byte 単位で同一。** 12 ストップ・0〜12 m・1024 段。実測 2026-09-09、windy.com
   （バンドル v51.2.1）の `W.colors.waves` を読んで取った 12 個の数から組み直し、
   **1024/1024 一致・最大差 0**。Windy 側の LUT の FNV-1a/32 = `96000495` を
-  `tests/r577-checks.test.mjs ①` が固定しているので、上流が配色を変えれば**黙って離れるのではなく赤くなる**
+  `tests/layer-waves-checks.test.mjs #R577 ①` が固定しているので、上流が配色を変えれば**黙って離れるのではなく赤くなる**
   （そのときの赤は「上流が変わった」であって「壊した」ではない）。
   ⚠ **sRGB で素直に線形補間すると最大 11.52/255 ずれる**（平均 1.11 なので目では通る）。
   Windy は **YCbCr で補間し、彩度長を両端の彩度長を結ぶ線へ再スケール**し、最後に **×256 して四捨五入**する。

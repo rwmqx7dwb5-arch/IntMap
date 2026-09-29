@@ -29,7 +29,7 @@
  *
  *  ⚠ CSS は引用符付き文字列の連結で書く。CONSTITUTION §2 が名指す罠は「バッククォート」ではなく
  *  「テンプレートリテラルの中の CSS」なので、この file はテンプレートリテラルを 1 つも持たない
- *  ——終端させるものが無ければ、終端事故も起きない。tests/r492 ⑥b が構文木でそれを見ている。
+ *  ——終端させるものが無ければ、終端事故も起きない。tests/atlas-annotate-checks.test.mjs #R492 ⑥b が構文木でそれを見ている。
  * ==========================================================================*/
 /* ── 見た目 — 印そのものと、ホバー（と、タップ）で出る一枚 ────────────────────
    ⚠ 唯一 factory の外にある部品。js/atlas-styles.js が要るのはこの文字列だけで、語彙も走査も要らない。
@@ -56,7 +56,7 @@ export const ATLAS_ANNOTATE_CSS = ''
   + '.atl-antip-d{margin-top:3px;font-size:11.5px;color:var(--text-muted);}'
   + '@media(max-width:768px){.atl-antip{font-size:13.5px;max-width:min(320px,92vw);}.atl-antip-t{font-size:15px;}.atl-antip-d{font-size:12.5px;}}';
 
-/** ⚠ ONE FACTORY, because a js/ module may hold no unexported top-level declaration (tests/r175 ③)
+/** ⚠ ONE FACTORY, because a js/ module may hold no unexported top-level declaration (tests/layer-boot-graph-checks.test.mjs #R175 ③)
  *  and no export that nothing imports by name. The lexicon, the glossary, the compiled regexes and
  *  the walk are all private to this call; js/atlas-reply.js makes it once, inside makeAtlasReply.
  *  ⚠ The stylesheet stays OUTSIDE it — js/atlas-styles.js needs the string, not the machinery. */

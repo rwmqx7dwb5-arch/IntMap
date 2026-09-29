@@ -14,7 +14,7 @@
  *  SAFE FOR THE SAME MECHANICAL REASON AS THE js/ FILES: the block is a SINGLE expression statement
  *  with no top-level declaration of its own — every `let`/`function` in it is already inside the
  *  arrow function — so nothing it defines was ever a global, and module scope takes nothing away.
- *  (An AST sweep asserts this in tests/r175-checks.test.mjs.) It is imported LAST by src/main.js, and
+ *  (An AST sweep asserts this in tests/layer-boot-graph-checks.test.mjs (#R175).) It is imported LAST by src/main.js, and
  *  a type="module" script runs before DOMContentLoaded fires, so the listener below is still
  *  registered in time — the same guarantee the inline tag had.
  * ==========================================================================*/
@@ -218,7 +218,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      writes THROUGH the host (`HOST.radiusKm=v` runs the setter, which assigns the closure variable),
      so index.html code and module code keep reading the same live value. Every RW member is a
      `get x(){…}, set x(v){ x=v; }` pair on ONE line; everything else stays getter-only.
-     tests/r165-checks.test.mjs pins the RW list to exactly these five. */
+     tests/atlas-console-kernel-checks.test.mjs (#R165) pins the RW list to exactly these five. */
   const IM_HOST={
     /* mutable UI / session state */
     get lang(){ return currentLang; },              get user(){ return currentUser; },
@@ -271,7 +271,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* ── (#R165) members added for the Atlas-kernel split (js/atlas-console.js). ── */
     /* READ-WRITE — the console's Atlas actions assign these five (theme/units/radius/measure state).
      * The closure variable stays the single source of truth; `HOST.x=v` writes it through the
-     * setter. Get+set pairs on ONE line each; the RW list is pinned by tests/r165-checks.test.mjs. */
+     * setter. Get+set pairs on ONE line each; the RW list is pinned by tests/atlas-console-kernel-checks.test.mjs (#R165). */
     get measurePoints(){ return measurePoints; },   set measurePoints(v){ measurePoints=v; },   get measureReading(){ return measureReading; },
     get radiusColor(){ return radiusColor; },       set radiusColor(v){ radiusColor=v; },
     get radiusKm(){ return radiusKm; },             set radiusKm(v){ radiusKm=v; },
@@ -301,7 +301,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* READ-WRITE — the Playground hub (js/playground.js) takes the whole screen over: entering World
      * Explorer clears the active sidebar tab and hides the satellite controller, so it assigns both.
      * `mode` already has its live getter above with the rest of the mutable state; this is its write
-     * half. The RW list (now seven) is pinned by tests/r165-checks.test.mjs. */
+     * half. The RW list (now seven) is pinned by tests/atlas-console-kernel-checks.test.mjs (#R165). */
     set mode(v){ currentMode=v; },
     get satPanelDismissed(){ return satPanelDismissed; }, set satPanelDismissed(v){ satPanelDismissed=v; },
     /* mutable — reassigned at runtime (layer toggles rebind namesOn/bordersOn; rebuildGeoIndex
@@ -321,7 +321,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      * (a different day is a different set of articles), and js/dash-extended.js assigns the
      * IndexedDB-cached card list back into extendedDashDB on a cold start. Both variables stay
      * declared in index.html as the single source of truth; the RW list (now ten) is pinned by
-     * tests/r165-checks.test.mjs. globalData and newsFeatures already have their live getters above
+     * tests/atlas-console-kernel-checks.test.mjs (#R165). globalData and newsFeatures already have their live getters above
      * with the rest of the mutable state, so these two lines are only their write halves. */
     set globalData(v){ globalData=v; },             set newsFeatures(v){ newsFeatures=v; },
     get extendedDashDB(){ return extendedDashDB; }, set extendedDashDB(v){ extendedDashDB=v; },
@@ -340,7 +340,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      *  country loader latches its promise, the tool panel writes the live tool/radius state, auth
      *  replaces currentUser on every session change, the community feed owns its filters. The
      *  variables stay declared here as the single source of truth; the owner of each member is
-     *  pinned by tests/r165-checks.test.mjs — widened in #R168 to an owner SET, because bookmarks
+     *  pinned by tests/atlas-console-kernel-checks.test.mjs (#R165) — widened in #R168 to an owner SET, because bookmarks
      *  and the radius/measure state genuinely have two writers each. */
     get _coTimeDeb(){ return _coTimeDeb; }, set _coTimeDeb(v){ _coTimeDeb=v; },
     get _coTimeWired(){ return _coTimeWired; }, set _coTimeWired(v){ _coTimeWired=v; },
@@ -415,7 +415,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      * owns its open/current article, the community board owns its post cache and compose draft, and
      * the readout/graticule owns the cursor + grid + measure state. The variable itself stays
      * declared in index.html as the single source of truth; `HOST.x=v` runs the setter, so
-     * index.html and the module always read the same live value. Pinned by tests/r165-checks.test.mjs. */
+     * index.html and the module always read the same live value. Pinned by tests/atlas-console-kernel-checks.test.mjs (#R165). */
     get _crLat(){ return _crLat; }, set _crLat(v){ _crLat=v; },
     get _crLng(){ return _crLng; }, set _crLng(v){ _crLng=v; },
     get _elevSeq(){ return _elevSeq; }, set _elevSeq(v){ _elevSeq=v; },
@@ -615,7 +615,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      EN/JP branches, so German/Russian users got English answers ("AI Briefがドイツ語・ロシア語では英語になる").
      Appended to the SYSTEM prompt of the free-TEXT generators ONLY — never the JSON geocoders (place names
      must stay canonical) nor the connectivity test. Harmless/​reinforcing for EN/JP. */
-  function _aiLangName(){ return IM_AI._aiLangName.apply(this,arguments); } function _aiLangLine(){ return IM_AI._aiLangLine.apply(this,arguments); } window._aiLangLine=_aiLangLine;   /* (#R318) both moved to js/ai-core.js — the instruction that names the reply language belongs with the transport that carries it, and the app shell has no line to spare (tests/r168 #8 — a line ceiling retired in #R795). ⚠ `_aiLangName` used to tell THREE of the nine languages to answer in English; js/lang-registry.js `englishName()` says why. */
+  function _aiLangName(){ return IM_AI._aiLangName.apply(this,arguments); } function _aiLangLine(){ return IM_AI._aiLangLine.apply(this,arguments); } window._aiLangLine=_aiLangLine;   /* (#R318) both moved to js/ai-core.js — the instruction that names the reply language belongs with the transport that carries it, and the app shell has no line to spare (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795). ⚠ `_aiLangName` used to tell THREE of the nine languages to answer in English; js/lang-registry.js `englishName()` says why. */
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
   window.aiRenderSettings=aiRenderSettings;
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
@@ -675,7 +675,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      as it already does for mobile.
      ⚠ The key is `intmap_session2`. Exactly one place WRITES it — the persistence block further down
      this file — and this is the second of two early readers (#R122 already reads the layer list the
-     same way). tests/r195-checks.test.mjs pins all three literals together: a typo here would fail
+     same way). tests/process-map-shell-source-lines-checks.test.mjs (#R195) pins all three literals together: a typo here would fail
      as "the sidebar state was never saved", with nothing in the console to say otherwise. */
   const _sessUI=(()=>{ try{ const s=JSON.parse(localStorage.getItem('intmap_session2')||'null');
       return { left:(s&&typeof s.sbOpen==='boolean')?s.sbOpen:null,
@@ -1011,7 +1011,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function wireCommList(){ return IM_COMMUNITY.wireCommList.apply(this,arguments); }
   /* ── (#R169) EIGHTH SPLIT — eleven more SUBJECT modules (Architecture.md §3.1 #R169).
    *  Same shape as the #R168 block above: each factory only DECLARES (verified statement-by-statement
-   *  with a parser — see tests/r169-checks.test.mjs), so instantiating them all here, once `map`
+   *  with a parser — see tests/engine-app-shell-split-checks.test.mjs (#R169)), so instantiating them all here, once `map`
    *  exists, cannot run app code early. Every name index.html still calls keeps a hoisted `function`
    *  shim, so call sites textually above this line behave exactly as before. */
   const IM_SAT=window.IntMapModules.satellite(IM_HOST);
@@ -1049,7 +1049,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function aiSetBtnBusy(){ return IM_AI.aiSetBtnBusy.apply(this,arguments); }
   function aiSyncFeatureButtons(){ return IM_AI.aiSyncFeatureButtons.apply(this,arguments); }
   function aiToast(){ return IM_AI.aiToast.apply(this,arguments); }
-  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); } function aiUsageSummary(){ return IM_AI.aiUsageSummary.apply(this,arguments); }   /* (#R753) these two share a line with their neighbour on purpose: the app SHELL is line-budgeted (tests/r168 #8 — a line ceiling retired in #R795) and a bridge is not code */
+  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); } function aiUsageSummary(){ return IM_AI.aiUsageSummary.apply(this,arguments); }   /* (#R753) these two share a line with their neighbour on purpose: the app SHELL is line-budgeted (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) and a bridge is not code */
   function aiUsesLeft(){ return IM_AI.aiUsesLeft.apply(this,arguments); }
   function aiVisionReady(){ return IM_AI.aiVisionReady.apply(this,arguments); }
   function aiWaitMapIdle(){ return IM_AI.aiWaitMapIdle.apply(this,arguments); }
@@ -1108,7 +1108,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function updateCoord(){ return IM_READOUT.updateCoord.apply(this,arguments); }
   function updateLayerReadout(){ return IM_READOUT.updateLayerReadout.apply(this,arguments); }
   function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); } function demTilePoints(){ return IM_READOUT.demTilePoints.apply(this,arguments); } function releaseDEMHold(){ return IM_READOUT.releaseDEMHold.apply(this,arguments); }   /* (#R221) one point per DEM TILE, and the pin the intensity field holds them with */
-  function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); } function demVoidStats(){ return IM_READOUT.demVoidStats.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames; (#R265) …and the holes in the published elevation data, counted (the shell has a line budget — tests/r168 #8 — a line ceiling retired in #R795) */
+  function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); } function demVoidStats(){ return IM_READOUT.demVoidStats.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames; (#R265) …and the holes in the published elevation data, counted (the shell has a line budget — tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) */
   const IM_ELEVPROF=window.IntMapModules.elevationProfile(IM_HOST);
   function _openProfilePanel(){ return IM_ELEVPROF._openProfilePanel.apply(this,arguments); }
 
@@ -1210,7 +1210,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ const cp=document.getElementById('country-popup'); if(cp&&cp.style.display==='block'&&window._cpCurrent){ const s=countryStats[window._cpCurrent.code]; const body=document.getElementById('cp-body'); if(s&&body) body.innerHTML=topBtns()+renderCountryDetailBody(s); } }catch(_){}
       try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(); }catch(_){}
       try{ if(GE().layers.has('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
-    }catch(_){} }  function _reapplyPPP(){ if(_pppLast) _mergePPP(_pppLast.pc,_pppLast.tot); }   /* (#R375) js/countries-ui.js adds rows to this table long after the merge ran; they need the same figures. Replays the KEPT payload — never a second copy of the merge. ⚠ ON THIS LINE because tests/r168 #8 — a line ceiling retired in #R795 budgets the app shell at 8,000 lines and it was at 7,999; the WHY lives at the call site, which is not in the shell. */
+    }catch(_){} }  function _reapplyPPP(){ if(_pppLast) _mergePPP(_pppLast.pc,_pppLast.tot); }   /* (#R375) js/countries-ui.js adds rows to this table long after the merge ran; they need the same figures. Replays the KEPT payload — never a second copy of the merge. ⚠ ON THIS LINE because tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 budgets the app shell at 8,000 lines and it was at 7,999; the WHY lives at the call site, which is not in the shell. */
   function loadGdpPPP(){
     if(gdpPPPPromise) return gdpPPPPromise;
     gdpPPPPromise=(async()=>{
@@ -1347,7 +1347,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ══ (#R196) MOVED VERBATIM TO js/geodesy.js ════════════════════════════════════
      111 lines of antimeridian / pole-safe geometry — the seam clipping, the polar caps, the geodesic
      disk and the feature sanitiser. It reads nothing from this scope, so the move needed no handover
-     at all, and tests/r196-checks.test.mjs proves the 111 lines are byte-identical to what was here.
+     at all, and tests/shell-panels-tools-checks.test.mjs (#R196) proves the 111 lines are byte-identical to what was here.
      ⚠ Re-bound under the ORIGINAL names below: IM_HOST publishes five of them and js/tool-panel.js,
      js/seismic.js, js/dash-extended.js and js/atlas-console.js read them through it. */
   /* ⚠ HOISTED FUNCTION DECLARATIONS, NOT `const`. Five of these six are bound AT FACTORY TIME by
@@ -1355,7 +1355,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      a factory can run before a `const` further down this closure is initialised — which is exactly
      #R167's dead-zone rule and #R189's silent total loss. Written as declarations they are defined
      from the first line of the closure, like every other IM_HOST function. (Caught by
-     tests/r167-checks.test.mjs #5 on the first attempt, which is what that test is for.) */
+     tests/module-split-checks.test.mjs (#R167) #5 on the first attempt, which is what that test is for.) */
   function _gcRingUnwrapped(){ return window.IntMapGeodesy._gcRingUnwrapped.apply(null,arguments); }
   function _splitPolyToWindows(){ return window.IntMapGeodesy._splitPolyToWindows.apply(null,arguments); }
   function _splitLineToWindows(){ return window.IntMapGeodesy._splitLineToWindows.apply(null,arguments); }
@@ -1628,7 +1628,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         /* concurrently, not after: this is the whole speed-up */
         try{ window.__imFireDefaultLayers&&window.__imFireDefaultLayers(); }catch(_){}
         window.__imBoot.set(88,'layers-fired');
-        /* ⚠ (#R190) THE ENDING NAMES ARE A CONTRACT, NOT A LABEL. tests/r186 asserts that exactly ONE
+        /* ⚠ (#R190) THE ENDING NAMES ARE A CONTRACT, NOT A LABEL. tests/shell-sky-space-checks.test.mjs (#R186) asserts that exactly ONE
            of `idle` / `timeout` / `no-renderer` is recorded — "a launch screen that lifts without
            saying why is the failure mode", in its own words. The first draft here invented
            `idle-timeout` and `layers-timeout`, which are outside that vocabulary, so on a runner slow
@@ -2437,7 +2437,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      fallback all live there, with the measurements that made them necessary. */
   /* Time-travel state: when newsDate is set (not null), feed URLs gain after:/before: qualifiers */
   let newsDate=null;
-  function ymdISO(d){ return window.IntMapHistScale.ymd(d); }   /* (#R679) ONE owner — the second copy broke below year 0 (js/hist-scale.js `ymd`). ⚠ A HOISTED DECLARATION, not a const: js/news-timeline.js binds `HOST.ymdISO` at FACTORY time (tests/r167 ⑤'s dead-zone rule) */
+  function ymdISO(d){ return window.IntMapHistScale.ymd(d); }   /* (#R679) ONE owner — the second copy broke below year 0 (js/hist-scale.js `ymd`). ⚠ A HOISTED DECLARATION, not a const: js/news-timeline.js binds `HOST.ymdISO` at FACTORY time (tests/module-split-checks.test.mjs #R167 ⑤'s dead-zone rule) */
 
   /* (#R289) THE KERNEL MOVED TO js/chronos.js — 「IntMap統一時間機能を、これよりChronosという名称に」,
      and a thing with a name is a subject, which gets its own file. What stays here is the ONE thing it used
@@ -2554,7 +2554,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     OS._bindCatalog=function(fn){ if(typeof fn==='function') OS.catalog=fn; };
     OS.ready=function(){ return !!_dispatch; };
     return OS;
-  })();  try{ installCapabilityKernel(window.IntMapOS, IM_HOST, { GE:()=>window.IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas capability registry not installed',e); }catch(_){} }   /* (#R318) execute() and the rest of the capability kernel — js/atlas-executor.js holds the eleven steps AND the reason they are not written out here (the app-shell budget, tests/r168 #8 — a line ceiling retired in #R795). ⚠ the lifecycle goes to `emit`, not into the 200-entry syscall ring: one operation emits four to six events and would flush the command log it shares. */
+  })();  try{ installCapabilityKernel(window.IntMapOS, IM_HOST, { GE:()=>window.IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas capability registry not installed',e); }catch(_){} }   /* (#R318) execute() and the rest of the capability kernel — js/atlas-executor.js holds the eleven steps AND the reason they are not written out here (the app-shell budget, tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795). ⚠ the lifecycle goes to `emit`, not into the 200-entry syscall ring: one operation emits four to six events and would flush the command log it shares. */
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
   /* ══ (#R243) 「自動で左サイドバーをあける動作もやれ」 — one action, not a second mechanism ═══════
      js/window-manager.js has to open this column when a panel arrives in it while the dock mode is
@@ -2634,7 +2634,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるように」 — the Layers button, the palette and Atlas, one command (the module is lazy) */
   IntMapOS.register('sim.seismic', (ctx)=>window.IntMapLazy.need('seismic').then(()=>{ try{ return !!(window.IntMapSeismic&&window.IntMapSeismic.open(((ctx&&ctx.params)||{}).at||{})); }catch(_){ return false; } }),
     {label:'Earthquake simulator', btn:'btn-seismic-sim', group:'sim'});
-  IntMapOS.register('sim.pandemic', ()=>window.IntMapLazy.need('playground').then(()=>{ try{ if(typeof window._pgPandemic!=='function') return false; window._pgPandemic(); return true; }catch(_){ return false; } }), {label:'Pandemic Simulator', btn:'btn-pandemic-sim', group:'sim'});   /* (#R666) 「LayersのToolsからアクセスできるように。」 — same shape as the line above and the same reason: the Tools button, the palette and Atlas press ONE command instead of three copies of one open sequence. Why, and what the dead `#btn-playground` listener that stood below used to be, is in tests/r666-checks.test.mjs ①③ and DEV-NOTES #R666. ⚠ the app shell is at its #R168 line budget, which is why this is one line. */
+  IntMapOS.register('sim.pandemic', ()=>window.IntMapLazy.need('playground').then(()=>{ try{ if(typeof window._pgPandemic!=='function') return false; window._pgPandemic(); return true; }catch(_){ return false; } }), {label:'Pandemic Simulator', btn:'btn-pandemic-sim', group:'sim'});   /* (#R666) 「LayersのToolsからアクセスできるように。」 — same shape as the line above and the same reason: the Tools button, the palette and Atlas press ONE command instead of three copies of one open sequence. Why, and what the dead `#btn-playground` listener that stood below used to be, is in tests/shell-layer-panel-checks.test.mjs #R666 ①③ and DEV-NOTES #R666. ⚠ the app shell is at its #R168 line budget, which is why this is one line. */
   const applyDockMode=IM_HOST.applyDockMode=IM_WINMGR.wireDock({ setMode, renderUI, saveSettings, clearMode:()=>{ currentMode=null; }, mode:()=>currentMode });   IM_HOST.dockRefresh=()=>{ try{ return IM_WINMGR.dockRefresh(); }catch(_){ return 0; } };   IM_HOST.dockedCount=()=>{ try{ return IM_WINMGR.dockedCount(); }catch(_){ return 0; } };   /* (#R242) the empty line is a readout of this */
   function setMode(mode,btnId){
     /* ⚠ (#R435) A TAB OR SCOPE GESTURE LEAVES THE READING SURFACE. Without this the reader pane stayed
@@ -3365,7 +3365,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R299) moved to js/sidebar-style.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. It carries the frosted mode's
      camera inset with it; the note that explains why frosted needs one and solid does not is in that file. */
-  /* ⚠ (#R167's DEAD-ZONE RULE, caught by tests/r167 #5 the moment this moved) js/mobile-ui.js binds
+  /* ⚠ (#R167's DEAD-ZONE RULE, caught by tests/module-split-checks.test.mjs (#R167) #5 the moment this moved) js/mobile-ui.js binds
      `applySidebarStyle` AT FACTORY TIME, so the name has to be a HOISTED declaration — a `const`
      assigned here would have been `undefined` for every factory that ran above this line. The body
      is in the module; the name stays a function. */
@@ -3396,7 +3396,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     window.IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
-    const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); window.IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/r200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
+    const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); window.IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
 
   /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
      feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */
@@ -3619,7 +3619,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  window.IntMapModules.usElections(IM_HOST); window.IntMapModules.warFronts(IM_HOST); window.IntMapModules.netHealth(IM_HOST); window.IntMapModules.elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/r168 #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
+  window.IntMapModules.usElections(IM_HOST); window.IntMapModules.warFronts(IM_HOST); window.IntMapModules.netHealth(IM_HOST); window.IntMapModules.elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
@@ -4108,7 +4108,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      INSTRUCTION (「以下のレイヤーは削除」) — seven remain and the list lives in js/layer-packs.js. */
   window.IntMapModules.gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/r168 #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ window.IntMapModules.precipAnnual(IM_HOST); window.IntMapModules.outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
+  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ window.IntMapModules.precipAnnual(IM_HOST); window.IntMapModules.outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical

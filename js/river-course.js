@@ -49,7 +49,7 @@
  *  return a different "Main" on the other side of the world, so a candidate course is only accepted
  *  when its geometry comes within NEAR_KM of the click.
  *
- *  Everything above `course()` is pure — no DOM, no renderer, no app state — so tests/r217-checks
+ *  Everything above `course()` is pure — no DOM, no renderer, no app state — so tests/layer-place-labels-rivers-checks.test.mjs (#R217)
  *  runs it in Node against real OpenStreetMap tag bags.
  * ==========================================================================*/
 window.IntMapRiverCourse=(function(){
@@ -203,7 +203,7 @@ window.IntMapRiverCourse=(function(){
   async function _nominatim(name,anchors){
     try{
       /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js. Reached through `window`
-         because this file may contain no top-level declarations (tests/r175-checks #4), and it is
+         because this file may contain no top-level declarations (tests/layer-boot-graph-checks.test.mjs (#R175) #4), and it is
          the SAME module instance the ES-module callers import, so the counter really is shared. */
       const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();
       const r=await fetch(NOMINATIM+'?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(name),{headers:{Accept:'application/json'}});

@@ -15,12 +15,12 @@ import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and with th
  *
  *  Everything the block used to read from the console's closure arrives through `CTX` (and the app's
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
- *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
+ *  tests/atlas-console-kernel-checks.test.mjs (#R199) re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 /* ⚠ THE ONE RULE FOR «WHICH STRINGS ARE THIS NOMINATIM FEATURE'S NAMES»: its own `name`, the first
    segment of display_name (the localised label) and every name:* / alt_name / official_name / int_name
    in `namedetails`. `ref`, `brand` and `operator` are not names. A property of the factory (this module
-   exports exactly one declaration — tests/r199 ①) because js/atlas-verify.js's strict geocoder needs the same answer — a copy there is how two geocoders
+   exports exactly one declaration — tests/atlas-console-kernel-checks.test.mjs #R199 ①) because js/atlas-verify.js's strict geocoder needs the same answer — a copy there is how two geocoders
    start disagreeing about the same feature (#R515). */
 makeAtlasGeoResolve.featureNames = function featureNames(o){ const NAME_KEY_RE=/^(name|name:[a-z_-]+|alt_name|alt_name:[a-z_-]+|official_name|official_name:[a-z_-]+|int_name|short_name|old_name|loc_name|nat_name|reg_name)$/i;
   const out=[]; const add=v=>{ if(typeof v==='string'&&v.trim()) out.push(v); };
@@ -44,7 +44,7 @@ makeAtlasGeoResolve.featureNames = function featureNames(o){ const NAME_KEY_RE=/
    ⚠ HERE AND NOT IN js/atlas-console.js BECAUSE THE RULE IS ABOUT IDENTITY, NOT ABOUT ONE CALLER.
    Six dispatches share the resolver that lacked it, and a copy of the rule beside each of them is the
    shape .agents/rules/no-ad-hoc-hardcoding.md §2.3 names. A property of the factory rather than a
-   second `export`, for the reason `featureNames` above gives (tests/r199 ①).
+   second `export`, for the reason `featureNames` above gives (tests/atlas-console-kernel-checks.test.mjs #R199 ①).
    ⚠ NOT #R157/#R158's AUTO-RESCUE, WHICH IS ITS MIRROR IMAGE. That forbids CORRECTING a wrong ISO3
    from a name — Atlas decides identity and code must not overrule it. This ACCEPTS a right one. */
 makeAtlasGeoResolve.countryByIdentifier = function countryByIdentifier(store, q) {
@@ -97,7 +97,7 @@ makeAtlasGeoResolve.looksLikeCountryIdentifier = function looksLikeCountryIdenti
    keys inside a closure only the Atlas kernel can build. The store now owns how its own keys are
    spelled, and the expression is the one `_lnorm` has always evaluated.
    ⚠ AN IIFE, NOT A RUN OF TOP-LEVEL `const`s: no js/ module may hold an unexported top-level
-   declaration (tests/r175 ③ — it is the property that made the sixty <script> tags into modules
+   declaration (tests/layer-boot-graph-checks.test.mjs #R175 ③ — it is the property that made the sixty <script> tags into modules
    without changing one name resolution), so the rules live in a closure and the factory below
    rebinds the six it uses under their ORIGINAL names, the way every other #R199 hand-off does. */
 makeAtlasGeoResolve.placeRules = (function(){
@@ -239,7 +239,7 @@ makeAtlasGeoResolve.placeRules = (function(){
     function regionBox(place){ const raw=_rkey(place); const k=REGION_ALIASES[raw]||REGION_ALIASES[_rnorm(place)]||_rnorm(place); const b=REGION_BBOX[k]; if(!b) return null; return {box:[[b[0],b[1]],[b[2],b[3]]], lng:(b[0]+b[2])/2, lat:(b[1]+b[3])/2, name:place.trim(), region:true}; }
 
     /* ⚠ THE SURFACE THE OTHER TWO DOORS READ. A property of the factory rather than a second
-       `export` (tests/r199 ①), and published on `window` just below at MODULE EVALUATION so that a
+       `export` (tests/atlas-console-kernel-checks.test.mjs #R199 ①), and published on `window` just below at MODULE EVALUATION so that a
        reader which reaches it by name and a reader which reaches it off the global get the same
        object — js/nominatim-gate.js's shape, for js/nominatim-gate.js's reason. `namesakeOk` is
        offered but belongs to the confirming door; see its own note above. */
@@ -271,7 +271,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
        and `placeExtent()` calls the second up to THREE times in a file — so a host that had stopped
        answering stopped the turn. 8 s is well above Nominatim's own answer time for every query this
        file builds; past it, the caller's existing 「no extent / no coordinate」 branch is the truth.
-       ⚠ It sits BELOW the CTX rebinds because tests/r199 ② requires those to be the first statement. */
+       ⚠ It sits BELOW the CTX rebinds because tests/atlas-console-kernel-checks.test.mjs #R199 ② requires those to be the first statement. */
     const NOMINATIM_TIMEOUT_MS = 8000;
     /* (#R44) deictic references → the place Atlas last touched, else the current map centre. */
     const DEIXIS_RE=/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|この場所|同じ場所)$/i;
@@ -285,7 +285,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
        deixis branch below and came back as the map centre, silently. AGENTS.md §3.5 has required nine
        languages for every reader-facing string for dozens of rounds; a phrase the reader TYPES is one.
        ⚠ IT IS A TABLE, NOT A PATTERN, so the coverage can be MEASURED, and it is KEYED BY INTMAP'S
-       OWN LANGUAGE CODES — the ones js/locales/ui.<code>.js is named for — so tests/r413-checks
+       OWN LANGUAGE CODES — the ones js/locales/ui.<code>.js is named for — so tests/atlas-geo-resolve-checks.test.mjs (#R413)
        reads the shipped set off the directory and requires a key for each. A hand-written list of
        "the languages we support" is the exact shape #R399 found lying. Every spelling the old
        expression accepted is still here. */
@@ -839,10 +839,10 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       '«{n}» no se pudo resolver como lugar. Indica el punto como lng/lat o nombra un lugar conocido.').split('{n}').join(e);
   }
 
-  /* ⚠ (#R413) THIS SET IS NOT A CONVENIENCE — tests/r199-checks ② requires it to be EXACTLY what
+  /* ⚠ (#R413) THIS SET IS NOT A CONVENIENCE — tests/atlas-console-kernel-checks.test.mjs #R199 ② requires it to be EXACTLY what
      js/atlas-console.js destructures, because a name in one and not the other is a silent
      `undefined`. So `SELFLOC_WORDS`, `SELFLOC_RE` and `_coordPlace` are NOT exported for the test's
-     benefit: tests/r413-checks reaches them the way the app does, through `geocode()`. */
+     benefit: tests/atlas-geo-resolve-checks.test.mjs (#R413) reaches them the way the app does, through `geocode()`. */
 
   /* ---- (#R43) name → country code (for time-series / isolate / select). EN/JP names from countryStats, else
    geocode + point-in-polygon over the country geometry so DE/RU/ES names resolve too.

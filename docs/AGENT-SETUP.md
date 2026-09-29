@@ -310,7 +310,7 @@ node scripts/agent-memory.mjs             # hook が渡すもの（先頭に場�
 ```bash
 npm run check:agents     # AGENTS.md の余白・CLAUDE.md の import・生成物と .agents/ の一致
 npm run check:docs       # 文書どうしの事実の突き合わせ
-node --test tests/r503-checks.test.mjs
+node --test tests/process-agent-context-checks.test.mjs
 ```
 
 `check:agents` が落ちる典型は 3 つ——**天井に当たった**（§1）、

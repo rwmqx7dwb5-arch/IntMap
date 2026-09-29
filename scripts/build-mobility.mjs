@@ -71,7 +71,7 @@
  *    node scripts/build-mobility.mjs --check    fetch, derive, compare with the committed file
  *
  *  ⚠ NOT IN `npm test`. It needs the network, like build-airports.mjs and build-country-facts.mjs.
- *  The committed file is validated OFFLINE by tests/r678-pandemic-p1-checks.test.mjs, which also
+ *  The committed file is validated OFFLINE by tests/hazard-pandemic-model-checks.test.mjs (#R678), which also
  *  RUNS the model to check the routes actually reach the outbreak.
  *
  *  SOURCES

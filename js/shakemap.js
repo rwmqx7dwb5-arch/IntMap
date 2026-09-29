@@ -523,7 +523,7 @@ window.IntMapModules.shakeMap = function (HOST) {
 
   /* ── the Atlas capability (map.shakemap) ─────────────────────────────────
      ⚠ THIS LIVES HERE AND NOT IN js/atlas-console.js because that file is at its
-     line ceiling (tests/r318 ⓑ, 4,910) — the dispatch there is ONE line that
+     line ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ, 4,910) — the dispatch there is ONE line that
      lazy-loads this module and calls in. */
   const FDSN = 'https://earthquake.usgs.gov/fdsnws/event/1/query';
   /* Resolve an event when the caller has a description instead of an id. USGS's

@@ -23,7 +23,7 @@
  *  hours would make a saved filter forget itself. Absent selections are re-listed with no count.
  *
  *  Lives here rather than in js/app-body.js because of standing instruction 13 — new functionality
- *  goes in its own file, and the core only ever shrinks (tests/r200-checks ⑤).
+ *  goes in its own file, and the core only ever shrinks (tests/shell-app-body-modules-checks.test.mjs #R200 ⑤).
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.newsSources=function(HOST,DEPS){

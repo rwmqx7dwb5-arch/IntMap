@@ -30,12 +30,12 @@
  *  and MapLibre draws the gradient down to its own horizon colour. The limb seen from space is still
  *  MapLibre's own shader (`atmosphere-blend`); this does not touch it.
  *
- *  ⚠ ONE EXPORT, AND EVERYTHING ELSE INSIDE IT. tests/r175-checks ③ is the invariant the whole Vite
+ *  ⚠ ONE EXPORT, AND EVERYTHING ELSE INSIDE IT. tests/layer-boot-graph-checks.test.mjs #R175 ③ is the invariant the whole Vite
  *  migration rests on: a js/ module may have no unexported top-level declaration, because such a name
  *  would have been a global before the bundle. So the constants and the march live inside the
  *  function rather than beside it. It is called on a theme apply, on camera settle and on the clock —
  *  a handful of times a second at the very most — so re-entering the closure costs nothing that can
- *  be measured, and pure arithmetic is what lets tests/r202-checks.test.mjs run it in Node.
+ *  be measured, and pure arithmetic is what lets tests/hazard-other-sky-atmosphere-checks.test.mjs (#R202) run it in Node.
  * ==========================================================================*/
 
 /**
@@ -86,7 +86,7 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
      local noon reads [85,112,130] at the top of the frame (test-results/r202/sky-cesium-noonLow.png).
      The model at 55° with the exposure above returns [88,115,149] for that camera and instant —
      three counts on red, three on green, and bluer on the last channel, which is the whole of the
-     fit. tests/r202-checks ①d keeps a later tweak from walking away from that measurement. */
+     fit. tests/hazard-other-sky-atmosphere-checks.test.mjs #R202 ①d keeps a later tweak from walking away from that measurement. */
   const SKY_ELEV = 55;
 
   /** distance from `o` along unit `d` to the shell of radius R, or -1 when the ray misses it */
@@ -130,7 +130,7 @@ export function skyColour(sunElevDeg, camAltM, relAzDeg, viewElevDeg) {
      that the per-call cost is two interpolations.
      ⚠ ISOTROPIC PHASE, 1/4π, in both terms — using pR/pM here would be double-counting the direction
      that the multiple bounces are precisely what destroys.
-     ⚠ It is attached to the exported function rather than declared beside it: tests/r175-checks ③
+     ⚠ It is attached to the exported function rather than declared beside it: tests/layer-boot-graph-checks.test.mjs #R175 ③
      forbids an unexported top-level declaration in js/ (it would have been a global before the bundle). */
   const MS_H = [0, 500, 1500, 3000, 5000, 8000, 12000, 17000, 23000, 30000, 40000, 50000, 62000, 75000, 88000, 99000];
   const MS_E = 24, MS_E0 = -25, MS_E1 = 90;      /* sun elevation samples, −25° … 90° */

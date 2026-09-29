@@ -373,7 +373,7 @@ export function makeAtlasToolSurface(deps) {
            to ask and keep going — the defect this fixes, arriving through the other door. */
         endsTurn: (ok && built.cap && ENDS_TURN(built.cap.id)) ? true : undefined,
         /* (#R801) the registry's column 11, stamped on the result the way `endsTurn` is: the loop
-           reads a flag on the result, never a capability's name (tests/r511 ⑩, r663 ⑥) */
+           reads a flag on the result, never a capability's name (tests/atlas-agent-loop-checks.test.mjs #R511 ⑩, r663 ⑥) */
         ingests: (built.cap && built.cap.ingests === 'external') ? 'external' : undefined,
         /* ⚠⚠⚠ (#732) WHAT THE CALL DID, AS THE CAPABILITY STATES IT. `meta.resultKey` is the identity a case
            declares for its own work (#R441 — 「ここから」 and the coordinates it resolved to are one start),

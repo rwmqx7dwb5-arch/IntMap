@@ -26,11 +26,11 @@
  *  from nvkelso/natural-earth-vector); 258 of 258 features declared ISO_A2, ISO_A3 and ISO_N3 when
  *  measured on production 2026-09-15.
  *  Expires when: the border store stops being Natural Earth Admin-0, or stops declaring those
- *  columns. tests/r742-atlas-identifier-checks.test.mjs measures that rather than trusting it.
+ *  columns. tests/atlas-country-ids-checks.test.mjs (#R742) measures that rather than trusting it.
  *  Canonical: this file. The alpha-3 set with a real feature stays `_hlValidCodeSet` below.
  *
  *  ⚠ ONE ENTRY POINT. A `js/` module may hold nothing at top level that it does not export, and may
- *  export nothing that `js/` does not import by name (tests/r175-checks ③) — so the index, the
+ *  export nothing that `js/` does not import by name (tests/layer-boot-graph-checks.test.mjs #R175 ③) — so the index, the
  *  column list and the token shape live INSIDE the factory and are reached through what it returns.
  *  A second export existing only so a test could import it would be exactly the dead code that rule
  *  is there to stop.
@@ -38,7 +38,7 @@
 
 /* makeHighlightTargets({geo, resolveCountrySync}) — the reader that turns what the model chose into
    validated country codes. It moved here WHOLE from js/atlas-console.js in #R742: it is pure given
-   its two collaborators, and the kernel's line ceiling (tests/r318-checks ⑨b) is a shrink-only
+   its two collaborators, and the kernel's line ceiling (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b) is a shrink-only
    budget, so a reading that grows belongs outside it. `geo` is the border-store getter,
    `resolveCountrySync` the console's own country resolver (reported as a candidate, never applied). */
 export function makeHighlightTargets(deps) {

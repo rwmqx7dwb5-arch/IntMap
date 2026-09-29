@@ -26,7 +26,7 @@
  *  「simulation time と wall-clock navigation timeは明確に区別してください。」 IntMap has a history
  *  clock (window.IntMapTime) that the whole app follows, and a reader who has set it to 1950 is
  *  still driving home in 2026. So NOTHING in navigation reads IntMapTime. Route PLANNING may follow
- *  Chronos (that is js/routing-time.js's job); navigation may not, and tests/r347-checks.test.mjs
+ *  Chronos (that is js/routing-time.js's job); navigation may not, and tests/geo-navigation-checks.test.mjs (#R347)
  *  asserts that no js/navigation*.js file names it.
  *
  *  ⚠ THERE ARE STILL TWO CLOCKS IN HERE, AND THEY ARE NOT INTERCHANGEABLE — see the note in

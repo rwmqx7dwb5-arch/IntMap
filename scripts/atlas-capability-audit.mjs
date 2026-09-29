@@ -19,7 +19,7 @@
  *      node scripts/atlas-capability-audit.mjs --json     # the machine-readable audit (§2)
  *
  *  ⚠ A GREEN GATE NOBODY HAS SEEN GO RED IS NOT EVIDENCE. Every check below takes its inputs as
- *  DATA, and tests/r318-checks.test.mjs feeds each one a fixture with the defect deliberately
+ *  DATA, and tests/atlas-capabilities-checks.test.mjs (#R318) feeds each one a fixture with the defect deliberately
  *  present and asserts that it fails. A check that cannot be made to fail is deleted, not kept.
  * ==========================================================================*/
 import fs from 'node:fs';

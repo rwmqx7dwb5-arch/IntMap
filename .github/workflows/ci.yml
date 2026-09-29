@@ -47,7 +47,7 @@ jobs:
   # them by measured cost, so a gate added tomorrow lands on a shard by itself — a hand-written list of
   # «which gate is on which machine» is the shape .agents/rules/no-ad-hoc-hardcoding.md §1 forbids, and
   # its failure mode is the worst one available: the new gate never runs and CI stays green.
-  # `--check` asserts the bins are a PARTITION of the declared set; tests/r771-… evaluates it.
+  # `--check` asserts the bins are a PARTITION of the declared set; tests/process-worktree-status-checks.test.mjs (#R771)… evaluates it.
   #
   # ⚠ AND ONE SHARD DOES NOT STOP AT ITS FIRST RED. It runs its whole bin and reports every failure
   # together, which is what turns 「引っかかったら数時間」 into one round trip.
@@ -114,7 +114,7 @@ jobs:
       - run: node scripts/build-hist-eras.mjs --check-upstream
 
   # ⚠⚠⚠ (#R783) THE ONE CLAIM THIS REPOSITORY COULD NOT MAKE ABOUT ITS OWN EXPORTS. The round-trip
-  # in tests/r756 reads a written file back with THIS repository's own reader, and two readers that
+  # in #R756 (旧 tests/r756-*、tests/geo-gis-*-checks.test.mjs へ統合) reads a written file back with THIS repository's own reader, and two readers that
   # were designed together cannot falsify each other — docs/GIS-CORE.md said so itself («it passing
   # and QGIS opening it are different things»). So the writers are now read by GDAL: rasterio,
   # pyogrio and rio-cogeo arrive as wheels that carry GDAL and PROJ, so nothing here needs the
@@ -152,7 +152,7 @@ jobs:
   # of them — a human habit, on one machine, with CRLF line endings. `check:docs` in particular is
   # the gate that compares every document against the tree, and #R399 rebuilt it after six
   # documents drifted; this round found the round procedure itself stale for three more rounds.
-  # It was not literally unenforced — tests/r399-checks and tests/r403-checks run doc-facts as a
+  # It was not literally unenforced — tests/process-doc-facts-edge-counts-checks.test.mjs (#R399) and tests/process-doc-facts-instruction-docs-checks.test.mjs (#R403) run doc-facts as a
   # subprocess and assert exit 0, so `test:checks` (now its own job, #R586) already turned red on drift — but it
   # surfaced as an unrelated-looking test failure rather than as "a document is wrong".
   # MEASURED before adding: all five are green on a clean origin/main under LF, contact no
@@ -188,7 +188,7 @@ jobs:
   # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
   # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
   # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
-  # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 56,141 rings, offline;
+  # one-in-eight sample of it (tests/history-border-coast-checks.test.mjs (#R531)). Full re-derivation of 56,141 rings, offline;
   # MEASURED 49 s on this machine (2026-09-11), which is why the sampled form existed and why it is not enough.
   # (#R680) …AND THE TWO BIGGEST BUNDLES OF ALL, which had no gate of any kind. hist-admin1 +
   # hist-admin2 are 25.4 MB of shipped first- and second-level subdivisions; the map draws every
@@ -320,8 +320,8 @@ jobs:
       # hand (`node scripts/checks-shards.mjs --update`), as gate-timings do: the ledger decides
       # BALANCE only, so drift costs seconds, never coverage.
       # ⚠ THE FILE IS WRITTEN OUTSIDE THE CHECKOUT ($RUNNER_TEMP). The reporter holds it open, empty,
-      # for the whole run; inside the tree it was an invalid JSON file for check:static (tests/r394 ②b)
-      # and an untracked file for the clean-tree assertions (tests/r674 ⑦) that run in this same job.
+      # for the whole run; inside the tree it was an invalid JSON file for check:static (tests/news-ingest-checks.test.mjs #R394 ②b)
+      # and an untracked file for the clean-tree assertions (tests/process-round-naming-checks.test.mjs #R674 ⑦) that run in this same job.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: ${{ !cancelled() }}
         with:

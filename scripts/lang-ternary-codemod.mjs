@@ -37,7 +37,7 @@
  *  and becomes argument 1, then each code's value in LANGS order.
  *
  *  ⚠ IT IS IDEMPOTENT and safe to re-run: a rewritten site is a CallExpression and no longer matches.
- *  `--check` exits non-zero if any convertible chain is left, which is what tests/r231-checks asserts.
+ *  `--check` exits non-zero if any convertible chain is left, which is what tests/shell-i18n-locales-checks.test.mjs (#R231) asserts.
  * ==========================================================================*/
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -96,7 +96,7 @@ function langTest(node, src) {
    entry decide what a geocoder is asked for. Values of this shape are handled by `locale()` (when
    they are region tags) or left for a human (when they are bare codes), never by `t()`. */
 const CODEISH = /^[a-z]{2}(-[A-Za-z]{2,4})?$/;
-/* ⚠ …AND NEITHER IS A BARE IDENTIFIER. Caught by tests/r191-checks on the first run of this tool:
+/* ⚠ …AND NEITHER IS A BARE IDENTIFIER. Caught by tests/hazard-other-aircraft-layer-checks.test.mjs (#R191) on the first run of this tool:
    js/seismic.js chooses between the two INTENSITY SCALES with `lang==='jp'?'jma':'mmi'`, and neither
    'jma' nor 'mmi' is code-shaped by the rule above (both are three letters). Rewritten as a
    translation, a future entry in a locale file's `inline` table would decide which seismic scale the

@@ -27,7 +27,7 @@
    the ones above it at IMPORT time (`var WC = window.IntMapWidgetCore;`), so this list is
    load-bearing: the core publishes the registry the definitions register into, and every
    definition must be registered before the layout tries to draw a board out of them.
-   ⚠ A bare sibling import is the reachability form tests/r175 ③ recognises — these files
+   ⚠ A bare sibling import is the reachability form tests/layer-boot-graph-checks.test.mjs #R175 ③ recognises — these files
    publish themselves on `window` and export nothing, so there is no name to import. */
 import './widget-core.js';
 import './widget-store.js';

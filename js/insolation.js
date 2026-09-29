@@ -185,7 +185,7 @@ window.IntMapModules.insolation=function(HOST){
        area you are looking at」, not a guess about a place nobody chose.
        ⚠ Taking it away would have forced a point on a product that does not need one, which is the
        other half of the same instruction (「最初に地点選ぶ必要のないものまで全部最初に選ばせようとするな」),
-       and it broke `tests/r176 ⑥` — that test shades Mt Fuji from the view and nothing else. */
+       and it broke `tests/sim-tools-wiring-checks.test.mjs #R176 ⑥` — that test shades Mt Fuji from the view and nothing else. */
     const _sunAt=(o)=>{ const a=o&&o.at; if(a&&isFinite(a.lng)&&isFinite(a.lat)) return { lat:+a.lat, lng:+a.lng };
       try{ const c=GE().camera.getCenter(); return { lat:c.lat, lng:c.lng }; }catch(_){ return { lat:0, lng:0 }; } };
     /* The terrain shadow for one moment. */

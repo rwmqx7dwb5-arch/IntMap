@@ -73,7 +73,7 @@
  *  `detail.expected` what would have been accepted — so a panel can write one sentence the reader
  *  can act on instead of 「式が不正です」.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③): an unexported top-level declaration in js/
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③): an unexported top-level declaration in js/
  *  would be a global before the bundle, and this file may not reintroduce one.
  * ==========================================================================*/
 
@@ -121,7 +121,7 @@ export function makeGisExpr() {
     /* ── errors: one shape, thrown internally, never escaping ─────────────────────────────────── */
 
     /* ⚠ THE CODES THIS KERNEL CAN ANSWER WITH, DECLARED (#R738). js/gis-ops.js hands these back to the
-       reader verbatim through `compute`, and tests/r729-gis-core-checks ④ measures that every code
+       reader verbatim through `compute`, and tests/geo-gis-datasets-checks.test.mjs #R729 ④ measures that every code
        that can reach a reader has a sentence in js/gis-panel.js — by SCANNING the sources. A scan
        finds the spellings it was taught (`why:'…'`, `fail('…')`); these are raised through a
        constructor, so the scan would have found none of them and the gate would have been green over
@@ -705,7 +705,7 @@ export function makeGisExpr() {
          ② IS IT THIS KERNEL'S. An unknown function name or a wrong argument count is a refusal the
             worker would have raised on the first row of forty thousand; raised here it costs nothing.
        ⚠ THE CODES ARE THE NINE THIS KERNEL ALREADY DECLARES. A tenth would be a refusal with no
-       sentence beside it (tests/r729-gis-core-checks ④ measures exactly that), and the facts already
+       sentence beside it (tests/geo-gis-datasets-checks.test.mjs #R729 ④ measures exactly that), and the facts already
        have names: a tree this kernel cannot read is `expr-bad-ast`, whatever made it unreadable.
        ⚠ NODE_SLOTS IS THE ONE PLACE THE SHAPE OF A NODE IS WRITTEN DOWN, and an EXTRA property is
        refused rather than ignored: structured clone carries every own property, so a tree with

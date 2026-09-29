@@ -733,7 +733,7 @@ window.IntMapModules.outbreaks = function (HOST) {
     } catch (_) { }
 
     /* ══ THE ATLAS ENTRY POINT ════════════════════════════════════════════════════════════════════
-       js/atlas-console.js dispatches ONE line to here (that file is at its line ceiling, tests/r318
+       js/atlas-console.js dispatches ONE line to here (that file is at its line ceiling, tests/atlas-capabilities-checks.test.mjs (#R318)
        ⓑ), so the body of the capability lives with the layer it operates — the same arrangement
        js/shakemap.js has. ⚠ IT ANSWERS FROM WHAT IS ACTUALLY DRAWN: every number below is counted
        out of `shown`, which is the same array the circles are built from, so the reply and the map

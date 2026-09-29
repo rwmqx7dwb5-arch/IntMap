@@ -47,10 +47,10 @@
  *  what the last one drew. What changes is that the reader is shown one route once, which is what
  *  the app actually did.
  *
- *  ⚠ NO DOM, NO NETWORK, NO GLOBALS — `norm` is injected — so tests/r441-checks.test.mjs drives
+ *  ⚠ NO DOM, NO NETWORK, NO GLOBALS — `norm` is injected — so tests/atlas-console-observers-checks.test.mjs (#R441) drives
  *  THIS module, the one the browser runs, with no browser. That is the js/atlas-turn-continuity.js
  *  pattern, and it is also why the subject is its own file: js/atlas-console.js has a shrink-only
- *  line ceiling (tests/r318-checks.test.mjs ⓑ).
+ *  line ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ).
  * ==========================================================================*/
 
 export function makeAtlasTurnResults(deps) {

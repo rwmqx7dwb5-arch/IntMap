@@ -11,7 +11,7 @@
  *
  *  Everything the block used to read from the console's closure arrives through `CTX` (and the app's
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
- *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
+ *  tests/atlas-console-kernel-checks.test.mjs (#R199) re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 export function makeAtlasSims(HOST, CTX) {
   const GE=CTX.GE, L=CTX.L, _fetchJSON=CTX._fetchJSON, diskFillPolys=CTX.diskFillPolys, geo=CTX.geo;

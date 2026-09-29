@@ -32,7 +32,7 @@ window.IntMapModules=window.IntMapModules||{};
        U+2715   Inter 13.07 · Noto Sans JP 13.07 · system-ui 13.07 · sans-serif 13.07 · Arial 13.07
        U+00D7   Inter 10.59 · Noto Sans JP 16.00 · system-ui 10.95 · sans-serif 16.00 · Arial  9.34
 
-   ⚠ THE TWO CODE POINTS ARE NAMED HERE RATHER THAN TYPED. tests/r273 sweeps every js/ and css/
+   ⚠ THE TWO CODE POINTS ARE NAMED HERE RATHER THAN TYPED. tests/hazard-weather-alerts-checks.test.mjs (#R273) sweeps every js/ and css/
    file for U+2715 and would find this note if it spelled the character out — the shape #R266
    recorded as 「自分の検査が自分のコメントに当たった」, for the ninth time.
 
@@ -551,7 +551,7 @@ window.IntMapModules.layerRegistry=function(HOST){
        arrays come from parsed GeoJSON and are never edited in place; a changed length is caught anyway.) */
     const _bbCache=new WeakMap();
     /* ⚠ A SHAPE WITH ONE UNUSABLE COORDINATE GETS NO BOX AT ALL — `{bad:1}`, and the old full walk decides.
-       MEASURED by tests/r577 ① against the naive walk: a ring containing [NaN,NaN] (or [null,null], which
+       MEASURED by tests/layer-waves-checks.test.mjs #R577 ① against the naive walk: a ring containing [NaN,NaN] (or [null,null], which
        JSON.parse produces from a truncated file) breaks the "a closed ring crosses a ray an even number of
        times" identity the rejection rests on — the NaN edges silently drop out of the count, so such a ring
        CAN report "inside" for a point far outside the box its finite vertices span. Refusing to box it is
@@ -773,7 +773,7 @@ window.IntMapModules.layerSidebar=function(HOST){
        the machinery neither raises nor demotes on account of it. Asked of the LAYOUT (#R253) rather
        than of a list of dialog ids, so every later overlay inherits the answer for free.
        ⚠ `_FRONT_Z` IS THE SAME NUMBER as `.im-front` in css/intmap.css. Two files stating one fact
-       is the shape this project keeps paying for, so tests/r508-checks.test.mjs reads both and
+       is the shape this project keeps paying for, so tests/shell-css-surface-checks.test.mjs (#R508) reads both and
        refuses a build where they have drifted. */
     const _FRONT_Z=2650;
     /* strictly ABOVE the band: a panel that currently carries the mark computes to exactly _FRONT_Z
@@ -1455,7 +1455,7 @@ window.IntMapModules.layerSidebar=function(HOST){
        belong, exactly as #R243 put the earthquake simulator there.
        ⚠ EACH IS AN `IntMapOS` ACTION, REGISTERED HERE. #R242's rule is that a feature has one door
        and every UI presses the same one; the registration lives beside the row that needs it because
-       js/app-body.js is at the tests/r200 ⑤ line ceiling (4,400) with 22 lines of headroom, and the
+       js/app-body.js is at the tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ line ceiling (4,400) with 22 lines of headroom, and the
        standing lesson from #R253 ⑥ / #R254 ⑨ is that a dependency goes to the CONSUMER.
        ⚠ A TOOL OPENED FROM A LIST HAS NO POINT UNDER THE CURSOR. The right-click menu hands each of
        these the coordinate it was opened on; from here there is none, so (#R298) a row that CANNOT
@@ -2027,7 +2027,7 @@ window.IntMapModules.layerSidebar=function(HOST){
              has not been built yet, and on a first visit it never has — so opening here put a
              full tile build in front of whatever boot was still doing. That is #R208's own
              finding («譲り方が同優先度だと背景処理がアプリ起動と競走して勝つ»), and it showed up
-             as tests/r170's fresh-profile test failing on a GPU-less CI runner while passing
+             as tests/shell-panels-tools-checks.test.mjs (#R170)'s fresh-profile test failing on a GPU-less CI runner while passing
              three times out of three locally. A RESTORED session is different: the grid was
              pre-built by the idle callback above, so open() is cheap and immediate is right.
              The 3 s timeout means the panel always appears, idle or not. */
@@ -3350,7 +3350,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
          so each sentence says what is wrong with THEIR file and, where the reader can act, what to
          do about it. ⚠ Where several codes send the reader to the same action they share a sentence
          and carry their own detail — the shape 'crs-unsupported' above already uses — but every code
-         is named, and tests/r749-gis-raster-pipeline-checks ⑪ reads the two modules' own refusal
+         is named, and tests/shell-gis-upload-raster-checks.test.mjs #R749 ⑪ reads the two modules' own refusal
          sets and fails on any that is not. */
       if(why==='not-tiff') return window.IntMapLang.t(HOST.lang,"This file is not a TIFF","このファイルは TIFF ではありません");
       /* ⚠ (#R756) 「これは BigTIFF です」 WAS THE WHOLE SENTENCE, AND IT STOPPED BEING TRUE. BigTIFF is
@@ -3495,7 +3495,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
         /* ⚠ EVEN A GRID THAT IS ALREADY IN DEGREES GOES THROUGH, when what it carries is a FILE's
            affine rather than the registry's {west,north,pixelLng,pixelLat}: the warp is where the
            two shapes are reconciled, and a second conversion written here would be the copy this
-           project keeps removing. An identity warp moves no pixel (tests/r749-gis-warp ①). */
+           project keeps removing. An identity warp moves no pixel (tests/geo-gis-raster-checks.test.mjs #R749 ①). */
         const out=await window.IntMapGisWarp.to4326(Object.assign({},g,{crs:code}),{method:'nearest'});
         if(!out.ok){ toast(reasonText(out.why,out.detail)); return null; }
         converted=out.report; g=out.grid;
@@ -3610,7 +3610,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
     /* (#R88) expose remove so the universal Object List can delete an uploaded layer.
        (#R738) find/style/styleOf/styleReason/classify are the attribute-colouring face: `find` because
        a caller that holds a DATASET id has no other way to reach the drawn layer, and `classify`
-       because the classifier is the part worth measuring on its own (tests/r737-…). */
+       because the classifier is the part worth measuring on its own (tests/atlas-geo-resolve-checks.test.mjs (#R737)…). */
     /* (#R749) addRaster/classifyRaster join them for the same reason classify did: the classifier is
        the part worth measuring on its own, and js/gis-core.js needs a door for a grid. */
     window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, addRaster, remove:removeItem,

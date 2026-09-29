@@ -770,7 +770,7 @@ function check() {
      missing code, so each deferred unit must really be covered by the record it was deferred to:
      its outline's own interior points are tested against data/hist-admin{1,2,3}.js. */
   /* ⚠ THE GEOMETRY HALF RUNS WHERE THE RECORD IS, AND SAYS WHICH HALF RAN. The bundles it reads are
-     82 MB, so a synthetic world (tests/r719-histmap-coverage-checks) holds the outline set and this
+     82 MB, so a synthetic world (tests/history-admin-coverage-gate-checks.test.mjs (#R719)) holds the outline set and this
      record and nothing else — the same split build-hist-kuni.mjs states for its raster. */
   const recFiles = fs.readdirSync(path.join(ROOT, 'data')).filter((n) => /^hist-admin[0-9]\.js$/.test(n));
   if (defer.size && !recFiles.length) console.log('· ' + defer.size + ' deferred unit(s) not verified against the record — data/hist-admin*.js is not on disk');

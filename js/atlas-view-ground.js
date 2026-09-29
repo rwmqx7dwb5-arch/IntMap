@@ -40,7 +40,7 @@
  * ==========================================================================*/
 
 /* ⚠ ONE EXPORTED FACTORY, EVERYTHING ELSE NESTED — the shape js/atlas-evidence.js and
-   js/atlas-answer-audit.js already use, and the shape tests/r175-checks ③ requires: a js/ module may
+   js/atlas-answer-audit.js already use, and the shape tests/layer-boot-graph-checks.test.mjs #R175 ③ requires: a js/ module may
    have NO unexported top-level declaration (it would have been a global) and NO export that nobody
    imports by name (it would be dead). A bag of six exports would have had to satisfy the second rule
    six times over, so the door is one function and the pieces come back on its return value. */

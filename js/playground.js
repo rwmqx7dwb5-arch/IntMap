@@ -231,7 +231,7 @@ window.IntMapModules.playground=function(HOST){
        re-importation produced PEOPLE FROM NOTHING, a run ended while a million were still incubating,
        and the printed attack rate FELL whenever immunity waned. None of it was reachable by a test.
        ⚠ `speed` BELONGS TO setTimeout AND TO NOTHING ELSE. It decides how often step() is called.
-       It must never reach a probability again — tests/r575-checks.test.mjs ⑬ watches this file for it. */
+       It must never reach a probability again — tests/hazard-pandemic-model-checks.test.mjs #R575 ⑬ watches this file for it. */
     /* ⚠ EVERY USER-FACING STRING BELOW IS WRITTEN OUT AS window.IntMapLang.t(HOST.lang, …), and a
        local alias for it would be a defect, not a tidy-up: scripts/i18n-audit.mjs extracts LITERAL
        call sites, so a renamed helper takes its strings out of the census entirely — the total stops
@@ -389,7 +389,7 @@ window.IntMapModules.playground=function(HOST){
            ONLY statement of them anywhere, so a caller that was not this screen (the Atlas capability;
            a test) had to write a third. `defaultPandemicParams` is that statement now and this screen
            reads it like everyone else. Measured equal on all 5 presets × 2 scenarios before the copy
-           was removed, and tests/r754-pandemic-atlas-checks keeps measuring it. */
+           was removed, and tests/atlas-pandemic-checks.test.mjs (#R754) keeps measuring it. */
 
         let model=null, day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', perDotNow=0;
         function preset(){ return PANDEMIC_PRESETS[presetKey]; }
@@ -545,7 +545,7 @@ window.IntMapModules.playground=function(HOST){
              Cumulative deaths are a different quantity and belong to a different layer; they are
              still what `sev` DARKENS a live dot by, which is a property of the outbreak there. */
           /* ⚠ (#R673) THE COUNT AND THE SIGNATURE ARE `caseDotPlan` / `dotSignature` IN
-             js/pandemic-model.js — pure, exported, and measured by tests/r673-checks. They lived
+             js/pandemic-model.js — pure, exported, and measured by tests/hazard-pandemic-model-checks.test.mjs (#R673). They lived
              here, which is why an audit found both of their defects and no test did (#R505). */
           for(let i=0;i<N;i++){ const plan=caseDotPlan(model.active(i),perDot,PG_DOTCAP); if(!plan) continue;
             const pool=poolFor(i,plan.k); if(!pool.length) continue;

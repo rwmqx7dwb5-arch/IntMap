@@ -248,7 +248,7 @@ async function spendOk(key) {
   return null;
 }
 
-/* Exported for tests/r801-relay-spend-checks.test.mjs, which evaluates this module (with
+/* Exported for tests/geo-routing-relay-checks.test.mjs (#R801), which evaluates this module (with
    Deno.serve stubbed) rather than reading it — the Map's bound is a property of running code. */
 export { rateOk, buckets, RATE_MAX_KEYS, RATE_PER_MIN, GLOBAL_PER_MIN, GLOBAL_PER_DAY, PER_IP_PER_DAY };
 

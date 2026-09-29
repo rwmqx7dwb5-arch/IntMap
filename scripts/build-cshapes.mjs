@@ -532,7 +532,7 @@ function fail(bad) {
   process.exitCode = 1;
 }
 
-/* ⚠ THE CLI RUNS ONLY WHEN THIS FILE IS THE ONE NODE WAS ASKED TO RUN. tests/r700-cshapes-checks
+/* ⚠ THE CLI RUNS ONLY WHEN THIS FILE IS THE ONE NODE WAS ASKED TO RUN. tests/history-cshapes-gate-checks.test.mjs (#R700)
    imports LICENCE and CITATION from here — the licence is a value, and a value has to be readable
    without also starting a 26 MB rebuild. */
 const arg = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)

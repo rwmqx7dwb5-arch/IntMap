@@ -214,7 +214,7 @@ export function makeGisAtlas(core) {
        NOT written here is any VALUE: every one of them is asked of the supplier that states it. */
     /* ⚠⚠⚠ (#729) EVERY FACET, NOT A CHOSEN PAIR. This was written as
        `GOVERNED_SUBJECTS = ['rights','freshness']` and filtered FACETS by it — which is a SECOND LIST
-       of a vocabulary that already exists, the exact thing tests/r759 ① measures this file for and
+       of a vocabulary that already exists, the exact thing tests/atlas-gis-checks.test.mjs #R759 ① measures this file for and
        the shape #R747's `targets` used to wipe out all five production answers. There is also no
        fact behind the pair: a layer's registration may state where its data came from
        (`origin.*`), what was measured in it (`integrity.*`) and which upstream wins (`precedence.*`)
@@ -256,7 +256,7 @@ export function makeGisAtlas(core) {
       ...GOVERNANCE_SLOTS,
     ];
     /* ⚠ THE SUBJECTS ARE THE SLOTS' OWN PREFIXES, NOT A SECOND LIST. Writing them out would be a
-       list that can lose a subject the slots gained — the drift tests/r759 ① measures for the
+       list that can lose a subject the slots gained — the drift tests/atlas-gis-checks.test.mjs #R759 ① measures for the
        acquisition vocabulary, in a new place. Order is first appearance above. */
     const PREFETCH_SUBJECTS = PREFETCH_SLOTS.map((s) => s.slice(0, s.indexOf('.')))
       .filter((s, i, a) => a.indexOf(s) === i);
@@ -884,7 +884,7 @@ export function makeGisAtlas(core) {
          ⚠ THE FIELDS ARE THE SCHEMA'S. js/atlas-schemas.js declares what `map.drawDataset` accepts;
          a field this reader takes that the schema does not declare is unreachable, and a field the
          schema declares that this reader drops is silently ignored — [[intmap-two-readers-one-field-list]]
-         measured both halves of that in production. tests/r752-gis-core-checks measures the pair. */
+         measured both halves of that in production. tests/atlas-gis-checks.test.mjs (#R752) measures the pair. */
       const d = core.draw(r.id, { band: a.band, spec: a.spec || null });
       if (!d.ok) return fail(d.why, Object.assign({ id: r.id }, d.detail || {}));
       return {

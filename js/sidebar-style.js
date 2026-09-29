@@ -20,7 +20,7 @@
  *
  *  Lifted verbatim out of js/app-body.js: every line below is byte-identical to what was there,
  *  because index.html + src/* + js/app-body.js + js/geo-engine.js + js/lazy-modules.js is a BUDGETED
- *  shell (tests/r168 #8) and the rule that budget states is 「a feature moves out, never that the
+ *  shell (tests/news-module-split-checks.test.mjs (#R168) #8) and the rule that budget states is 「a feature moves out, never that the
  *  ceiling moves up」. It is a REAL ES module: nothing registers it on window.IntMapModules, nothing
  *  in src/main.js orders it, and js/app-body.js reaches it only through a static `import`.
  * ==========================================================================*/

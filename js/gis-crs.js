@@ -80,7 +80,7 @@
  *         two-implementations-one-contract shape this project keeps paying for.
  *      ⚠ THAT IS A SECOND OPINION ABOUT EPSG:3857, and it is one on purpose: the door above moves a
  *      file INTO degrees, this builds a surface to MEASURE on. The two must agree, and 「must agree」
- *      is a thing to be measured — tests/r752 puts forward() against fromWgs84() rather than this
+ *      is a thing to be measured — tests/atlas-gis-checks.test.mjs (#R752) puts forward() against fromWgs84() rather than this
  *      comment asserting it.
  *    · it STATES WHERE IT MAY BE USED. A UTM zone is six degrees wide; an area measured two zones
  *      away is not refused by any arithmetic, it is simply wrong, and that is the silent-wrong-answer
@@ -113,7 +113,7 @@
  *  from the surface as projection × datum, and a road — not a cap — where a caller's stated tolerance
  *  cannot be met: areaOnGround / lengthOnGround measure on the ground with no plane in the way.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③) and window.* is read at CALL time, so this
  *  module loads in Node with no DOM: ready() resolves false and every entry point answers `null` /
  *  a named refusal instead of throwing. looksProjected() needs no library at all — it is
  *  arithmetic on the numbers in the file — so it answers before and after ready() alike.
@@ -1384,7 +1384,7 @@ export function makeGisCrs() {
 
          · `areaScale` has travelled with every area since #R752 — but it is measured against the
            plane's OWN DATUM, and two of the four planes are drawn on a SPHERE while the ground is an
-           ellipsoid. MEASURED (the table is in tests/r783-crs-precision-checks): that unstated datum
+           ellipsoid. MEASURED (the table is in tests/geo-gis-measure-checks.test.mjs (#R783)): that unstated datum
            term is +0.45% at the equator and −0.89% at the pole for the app's own sphere, and ~0.67%
            for EPSG:3857 — whose code is defined on a sphere of the WGS 84 semi-major axis while being
            fed ellipsoidal latitudes. buildWebMercator() says so in a comment; nothing measured it.
@@ -1399,7 +1399,7 @@ export function makeGisCrs() {
           area of a graticule quadrangle, and Vincenty's inverse for a geodesic. Neither goes through
           forward(), which is the whole point — [[intmap-co-designed-reader-cannot-falsify]]: a
           reference built out of the thing it measures cannot fail. ⚠ AND THE REFERENCE IS ITSELF
-          FALSIFIED FROM OUTSIDE THIS FILE: tests/r783 integrates M(φ)·N(φ)·cos φ by Gauss-Legendre
+          FALSIFIED FROM OUTSIDE THIS FILE: tests/geo-gis-measure-checks.test.mjs (#R783) integrates M(φ)·N(φ)·cos φ by Gauss-Legendre
           over the same box and puts the closed form against it, and puts Vincenty against an
           equatorial arc (a·Δλ, exact by the definition of the ellipsoid) and against its own
           quadrature of the meridian.
@@ -1524,7 +1524,7 @@ export function makeGisCrs() {
        roots of P₅ and the weights their closed forms, so they are COMPUTED here and a reader can
        check them against the polynomial rather than against somebody's afternoon
        (.agents/rules/no-ad-hoc-hardcoding.md §1 forbids the embedded list, not the constant). The
-       weights sum to 2 by construction, which tests/r783 measures. */
+       weights sum to 2 by construction, which tests/geo-gis-measure-checks.test.mjs (#R783) measures. */
     const GL_K = Math.sqrt(10 / 7), GL_S70 = Math.sqrt(70);
     const GL_X = Object.freeze([0,
       -(1 / 3) * Math.sqrt(5 - 2 * GL_K), (1 / 3) * Math.sqrt(5 - 2 * GL_K),
@@ -1560,7 +1560,7 @@ export function makeGisCrs() {
     /* A ring's area ON THE GROUND. ⚠ This is a DIFFERENT SURFACE from js/gis-ops.js areaKm2 rather
        than a second implementation of it: that one is the sphere the app draws on, this one is the
        ellipsoid, and the two disagree by exactly the datum term ② measures. There is deliberately no
-       second spherical area road here. Exact for a graticule quadrangle — tests/r783 puts it against
+       second spherical area road here. Exact for a graticule quadrangle — tests/geo-gis-measure-checks.test.mjs (#R783) puts it against
        quadAreaM2 and against an independent double quadrature. */
     function ringGroundAreaM2(ring) {
       const n = (ring && ring.length) || 0;
@@ -1580,7 +1580,7 @@ export function makeGisCrs() {
 
     /* What each ground road is worth, stated where it is measured rather than in prose. ⚠ Every
        number here is an OBSERVATION with an expiry (.agents/rules/no-ad-hoc-hardcoding.md §4), and
-       tests/r783 is the observer: it measures these very figures, so a drift between the arithmetic
+       tests/geo-gis-measure-checks.test.mjs (#R783) is the observer: it measures these very figures, so a drift between the arithmetic
        and what this declaration says about it is a red test rather than a stale sentence. */
     const GROUND_ACCURACY = Object.freeze({
       area: Object.freeze({
@@ -1740,7 +1740,7 @@ export function makeGisCrs() {
        short by O(h²), so (4·A₂ₙ − Aₙ)/3 removes that term and the sequence then settles in three or
        four doublings instead of never: MEASURED, the plain sequence over a whole UTM zone was still
        at 1.2e-9 after 512 steps per side (16,000 projections) and improving, while the extrapolation
-       is inside 1e-12 by 64. The exponent is the shape's, not a fitted parameter — tests/r783 ⑨ puts
+       is inside 1e-12 by 64. The exponent is the shape's, not a fitted parameter — tests/geo-gis-measure-checks.test.mjs #R783 ⑨ puts
        the extrapolated value against the INTEGRAL of this plane's own Jacobian over the same
        quadrangle (∫∫ areaScale·h_λ·h_φ, twenty-node Gauss-Legendre, no polygon anywhere in it) and
        they agree to better than 1e-7 over five plane-and-box combinations. */
@@ -2039,7 +2039,7 @@ export function makeGisCrs() {
       return [
         /* ⚠ `certifiable: false` for the ground is not a gap: it is the reference, and certifying it
            against itself is the co-designed reader this whole section exists to avoid. What stands
-           in for it is `accuracy`, which tests/r783 measures from outside. */
+           in for it is `accuracy`, which tests/geo-gis-measure-checks.test.mjs (#R783) measures from outside. */
         { name: SURFACE.ground, edge: EDGE_RULE.ellipsoid, datum: 'WGS84', isGround: true, certifiable: false, measures: ['area', 'length'], how: { area: 'authalic-integral', length: 'vincenty-inverse' }, accuracy: GROUND_ACCURACY, call: { area: 'areaOnGround', length: 'lengthOnGround' } },
         { name: SURFACE.sphere, edge: EDGE_RULE.sphere, datum: 'sphere', isGround: false, certifiable: true, measures: ['area', 'length'], how: { area: 'spherical-excess', length: 'great-circle' }, accuracy: null, call: { area: 'ops.measure', length: 'ops.measure' } },
         { name: SURFACE.plane, edge: EDGE_RULE[SURFACE.plane], datum: 'per-plane', isGround: false, certifiable: true, measures: ['area', 'length'], how: { area: 'shoelace', length: 'straight-line' }, accuracy: null, call: { area: 'areaOn', length: 'lengthOn' } },

@@ -34,7 +34,7 @@
  *
  *  ⚠ これは **CI のゲートではない**（`npm test` に入れない）。3 面とも資格情報とネットワークを
  *  必要とし、CI のチェックアウトは detached な PR ref なので「main と一致しない」が正常な状態
- *  になる。CI が証明できることは `tests/r745-arch-review-followup-checks.test.mjs` が別に測る。
+ *  になる。CI が証明できることは `tests/process-release-state-checks.test.mjs (#R745)` が別に測る。
  *  ⚠ ただし **nightly の読み手はある**: `.github/workflows/supabase-deploy.yml` の drift job が
  *  main のチェックアウトで `--edge --db --check` を走らせ、exit 1（食い違い）も exit 2（測れない）も赤にする。
  *  ⚠ **「測れなかった」を「一致している」の代わりにしない。** 取得に失敗した面は `unknown` と

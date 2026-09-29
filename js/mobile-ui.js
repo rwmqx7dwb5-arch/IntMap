@@ -443,7 +443,7 @@ window.IntMapModules.layoutReflow=function(HOST){
            its container's full width) nothing ever re-measures, because the watcher is now on. MEASURED:
            1500x900 stayed anchored with both collision tests false, since the stale half was ~455 not 199.
            A stuck layout at a width that was never in trouble is a worse failure than the one being fixed.
-           So the number is written here, and `tests/r484-checks` ② DERIVES it from the `.map-search` rule
+           So the number is written here, and `tests/chrome-overlap-checks.test.mjs (#R484)` ② DERIVES it from the `.map-search` rule
            in css/intmap.css (380 content + 16 padding + 2 border) and fails if the two ever disagree —
            which is the thing #R25 had no way to notice. */
         const half=199, margin=14;

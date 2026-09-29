@@ -319,7 +319,7 @@ window.IntMapHistCities = (function () {
      js/place-labels.js asks, because this is the one `text-field` it writes with MapLibre's
      `{validate:false}`: every piece of it is generated here from a fixed shape, and that shape is
      run through the style validator itself (`validateStyleMin`) and MapLibre's own parser by
-     tests/hist-city-label-epoch-checks.test.mjs, tests/r427-checks.test.mjs and others, at dates
+     tests/hist-city-label-epoch-checks.test.mjs, tests/history-cities-checks.test.mjs (#R427) and others, at dates
      chosen from the record. Validation parses the expression (~0.9 MB on 1916-07-01) a second time on
      every real change — about half of what a change cost, measured — and what it would catch is
      caught there instead. */

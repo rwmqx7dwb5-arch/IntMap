@@ -33,7 +33,7 @@
  *  correct reading of the prompt. `askReading` reads the surface itself now (`surfaceText` below).
  *
  *  ⚠ ITS OWN FILE FOR THE REASON js/atlas-gloss.js AND js/atlas-msg-tools.js ARE: js/atlas-console.js
- *  is under a shrink-only line ceiling (tests/r318 ⑨b — under 4,908, and it was sitting ONE line
+ *  is under a shrink-only line ceiling (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b — under 4,908, and it was sitting ONE line
  *  below it), and the rule beside that ceiling is that «a feature moves out, never that the ceiling
  *  moves up». Measured: writing this inside the kernel put it at 4,964 and five checks went red.
  * ==========================================================================*/
@@ -54,7 +54,7 @@ export const makeAtlasReading = (HOST, D) => {
 
   /* The arrival bubble: a head that names the subject, one line saying what Atlas is holding, up to
      three starters, and a field to ask in the reader's own words. ⚠ The chip markup exists ONCE —
-     tests/r776 ③ measures that, because a second copy is how the two «Ask Atlas» buttons came to
+     tests/news-reader-checks.test.mjs #R776 ③ measures that, because a second copy is how the two «Ask Atlas» buttons came to
      disagree in the first place.
 
      ⚠⚠⚠ (#R783) TWO THINGS THE ARRIVAL OWED THE READER AND DID NOT PAY.
@@ -110,7 +110,7 @@ export const makeAtlasReading = (HOST, D) => {
      usefully be asked about, and an item that has none of them must not be offered a question about
      one. ⚠ The substitution runs on the PICKED string, so it lands in whichever language the reader
      is in — doing it to the English argument alone would leave 「{p} を地図で見せて」 on screen for
-     eight of the nine (tests/r776 ②). */
+     eight of the nine (tests/news-reader-checks.test.mjs #R776 ②). */
   function readingStarters(rd) {
     const ev = rd.kind === 'event', place = String(rd.place || '').trim().slice(0, 60), out = [];
     out.push(ev ? L('Explain the background of this event', 'この出来事の背景を説明して', 'Erkläre den Hintergrund dieses Ereignisses', 'Объясни предысторию этого события', 'Explica el trasfondo de este suceso')

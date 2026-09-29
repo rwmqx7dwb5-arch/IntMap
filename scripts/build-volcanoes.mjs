@@ -364,7 +364,7 @@ async function main() {
     built: layer.built,
     attribution: ATTRIBUTION,
     /* (#R440) the file states its own size, so nothing downstream has to count it — or, worse,
-       quote a number measured somewhere else. tests/r353-checks ② walks every row and demands
+       quote a number measured somewhere else. tests/hazard-volcano-checks.test.mjs #R353 ② walks every row and demands
        these two agree with the walk. */
     eruptions: wroteEruptions,
     eruptionsWithVei: wroteVei,

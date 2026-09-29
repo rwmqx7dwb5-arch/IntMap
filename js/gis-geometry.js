@@ -82,7 +82,7 @@
  *  otherwise. ⚠ 「道路そのものからの距離」 is this, and it is the thing an ops/Atlas path that had
  *  replaced a line by its bounding-box centre could not answer at all.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③) and window.* is read at CALL time, so this
  *  module loads in Node with no DOM: ready() resolves false and every entry point answers
  *  `null` / `clipper-unavailable` instead of throwing.
  *

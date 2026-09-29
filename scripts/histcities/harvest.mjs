@@ -812,7 +812,7 @@ function ohmDoubts(t, end) {
    The node sweep and the area sweep are two queries because OHM's node count needs tiling and its
    area count does not — but they must ask about the SAME kind of place, and the receiver must be
    able to read a coordinate from every kind either one can return. `OHM_PLACE_KINDS` is what
-   tests/r713-hist-coverage-checks.test.mjs measures `coordOf` against, so the defect this round
+   tests/history-era-names-checks.test.mjs (#R713) measures `coordOf` against, so the defect this round
    fixed — a receiver reading `el.center`, which only a way or a relation has, while the only
    query asked for nodes — cannot come back by one of the two halves being edited alone. */
 export const OHM_PLACE = '^(city|town|village|hamlet)$';
@@ -1034,7 +1034,7 @@ function resolveKeys(rows) {
        the areas this round began asking for brought in «St. John, Kansas (1879-)», where the
        bracket is the mapper telling a human which St. John and for which years. The row's bare
        «St. John» is a candidate on the same row and earns its own guard, so preferring the plain
-       spelling costs nothing and keeps `tests/r427-checks ⑪` — which refuses a key the homonym
+       spelling costs nothing and keeps `tests/history-cities-checks.test.mjs #R427 ⑪` — which refuses a key the homonym
        index cannot resolve — measuring something real.
        ⚠⚠⚠ AND IT MUST NEVER EMPTY A ROW. Measured: applying it unconditionally dropped
        «Khowa (Elliot)» — a row that SHIPS TODAY whose only candidate carries a bracket — and a

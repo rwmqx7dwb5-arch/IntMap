@@ -6,7 +6,7 @@
  *  «the next free number» from the same scan (max+1 over DEV-NOTES, branches, worktrees, tests),
  *  so the scan handed the SAME number to every session that ran it before the others pushed.
  *
- *  MEASURED in #R671: two sessions both created tests/r568-checks.test.mjs, git raised an
+ *  MEASURED in #R671: two sessions both created tests/r568-checks.test.mjs (since regrouped into tests/radiation-plume-checks.test.mjs), git raised an
  *  add/add conflict, the landing automation swallowed it (a pipe took $? from `tail`, #R420
  *  again) and committed the markers. The file then failed to parse — SyntaxError — and every
  *  test in it stopped running. That round was renumbered SEVEN times (R560→…→R671); a second
@@ -26,7 +26,7 @@
  *  squash merge writes into the subject) is the identifier nobody else can hold.
  *
  *  ⚠ THE EXISTING r<N>… FILES ARE HISTORY AND STAY WHERE THEY ARE. They are held by two numbers,
- *    not by a list of 631 spellings (a list would have to be EDITED to admit the next one, which is
+ *    not by a list of spellings (a list would have to be EDITED to admit the next one, which is
  *    exactly what this exists to stop — .agents/rules/no-ad-hoc-hardcoding.md §1):
  *      · LEGACY_NUMBERED_COUNT     — how many exist. It only goes DOWN; adding one raises it.
  *      · LEGACY_NUMBERED_MAX_ROUND — the highest number among them. Any number above it was
@@ -39,13 +39,15 @@
  *  LANDED MAY STILL ADD ONE (r809-…); rebased onto this it goes red here and the fix is to rename
  *  it to its slug — not to raise these numbers. They move DOWN when a round renames legacy files,
  *  and the third clause below says so rather than going quiet.
+ *  2026-09-29: the node regression checks were regrouped by subject (512 r<N>…test.mjs files into
+ *  tests/<subject>-checks.test.mjs), which lowered these to 121 (9 .test.mjs + 112 .spec.js) and r783.
  *
  *  正本 (the rule itself, memory files included): .agents/skills/intmap-round/SKILL.md §4
  *  What this measures: docs/TESTING.md, Static checks.
  * ==========================================================================*/
 
-export const LEGACY_NUMBERED_COUNT = 631;
-export const LEGACY_NUMBERED_MAX_ROUND = 808;
+export const LEGACY_NUMBERED_COUNT = 121;
+export const LEGACY_NUMBERED_MAX_ROUND = 783;
 
 /* A test artefact under tests/: whatever the name says, then the runner's suffix.
    `.test.mjs` is what the node runner discovers by name; `.spec.js` is Playwright's. */
@@ -102,7 +104,7 @@ export function roundNameProblems(basenames) {
    ⚠ THE PRODUCER AND THE JUDGE SHARE ONE DEFINITION. `scripts/worktree.mjs new` prints these, and
    roundNameProblems() above judges what ends up on disk — if those were two spellings of the same
    convention, the tool could hand out a name its own gate rejects, which is #R536's shape.
-   tests/r674-round-naming-checks.test.mjs feeds one to the other. */
+   tests/process-round-naming-checks.test.mjs (#R674) feeds one to the other. */
 export const artefactNames = (slug) => ({
   checks: `tests/${slug}-checks.test.mjs`,
   spec: `tests/${slug}.spec.js`,

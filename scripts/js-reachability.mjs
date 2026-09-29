@@ -2,10 +2,10 @@
  *  IntMap · which js/ modules are reachable, derived ONCE  (#R341)
  * ----------------------------------------------------------------------------
  *  Two things ask "is this js/ module dead code, i.e. does this feature silently not exist?" —
- *  scripts/static-checks.mjs (§8, the split-integrity check) and tests/r175-checks.test.mjs (③).
+ *  scripts/static-checks.mjs (§8, the split-integrity check) and tests/layer-boot-graph-checks.test.mjs (#R175) (③).
  *  Until this round they each carried their own copy of the answer, and the copies drifted the
  *  moment a new FORM of reachability appeared: #R341 added a worker in src/ that imports js/
- *  modules, taught static-checks about it, and tests/r175 went red on two files that are demonstrably
+ *  modules, taught static-checks about it, and tests/layer-boot-graph-checks.test.mjs (#R175) went red on two files that are demonstrably
  *  alive. That is the #R318 shape — two lists of the same fact, and no two of them agreeing.
  *
  *  So the derivation lives here and both read it. Adding a sixth form is one edit, in one place.

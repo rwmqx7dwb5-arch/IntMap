@@ -591,7 +591,7 @@ export function makeAtlasState(HOST) {
        no counterpart line — viewport, routing, deviceLocation, pendingOperations,
        capabilityAvailability, simulations — reach the model through toPrompt's JSON.» They did not.
        `toPrompt` is defined above and its ONLY callers in the whole repository are
-       tests/r318-checks.test.mjs and tests/r318.spec.js; the production path is
+       tests/atlas-capabilities-checks.test.mjs (#R318) and tests/r318.spec.js; the production path is
        js/atlas-console.js's `stateContext()`, which calls `renderPrompt` and nothing else. So six of
        the fifteen sections — including the route the reader is looking at and the operations still
        running — reached the model as ZERO BYTES, while a comment here said they arrived.
@@ -626,7 +626,7 @@ export function makeAtlasState(HOST) {
        PARAMETER, and a parameter is truthy for free — js/viewshed.js:745 publishes obsH 2,
        rangeKm 60 and k 1.3333 while its panel is shut, so a truthiness rule would restate this very
        falsehood in a new shape. A module that begins asserting presence under a THIRD name belongs
-       here, and tests/r534-checks.test.mjs reads the provider to make that loud instead of silent. */
+       here, and tests/atlas-state-checks.test.mjs (#R534) reads the provider to make that loud instead of silent. */
     var SIM_PRESENT = ['open', 'painted'];
     API.renderPrompt = function (snap, opts) {
       snap = snap || {};
@@ -760,8 +760,8 @@ export function makeAtlasState(HOST) {
          Atlas every turn (CONSTITUTION.md §5).
          ⚠⚠⚠ AND IT IS SAID ONLY WHEN THE MAP PUBLISHED ITS STATE. `snap.atlas` absent means nobody
          answered, which is a DIFFERENT fact from 「the map is empty」 — the same distinction #R768 drew
-         between 「it did not work」 and 「I could not see whether it worked」, and the one tests/r413 ③ and
-         tests/r534 ①b already hold this file to: a section nobody published stays silent. */
+         between 「it did not work」 and 「I could not see whether it worked」, and the one tests/atlas-geo-resolve-checks.test.mjs #R413 ③ and
+         tests/atlas-state-checks.test.mjs #R534 ①b already hold this file to: a section nobody published stays silent. */
       var _drawn = drawnKeys(snap.atlas);   /* ⚠ the SAME rule the ledger uses — a second list of kinds here would be free to disagree with it */
       if (_drawn && !Object.keys(_drawn).length)
         lines.push('The map carries NO Atlas drawing right now - no highlight, shading, pins, polygons, lines, radius or measurement. There is nothing to clear.');

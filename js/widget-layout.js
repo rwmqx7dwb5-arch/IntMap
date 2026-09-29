@@ -833,7 +833,7 @@ window.IntMapWidgetLayout = (function () {
   B.el = function () { return board; };
   B.grid = function () { return grid; };
   B.cols = function () { return cols; };
-  /* (#R296) the tiling, exposed so `tests/r296 ①` can put an S in front of four Ms and assert that
+  /* (#R296) the tiling, exposed so `tests/shell-widgets-checks.test.mjs #R296 ①` can put an S in front of four Ms and assert that
      no cell is left empty — the defect was a HOLE, so the check has to be able to see cells. */
   B.packOrder = packOrder;
   B.cards = function () { return cards; };

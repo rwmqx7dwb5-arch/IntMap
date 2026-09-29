@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  Desktop keyboard shortcuts — modifier-free, ignored while typing — and the five-language
  *  cheat-sheet `?` opens. One of them cycles the theme, which is the single place this file writes
- *  host state (through IM_HOST's accessor pair, and listed as an owner in tests/r165-checks).
+ *  host state (through IM_HOST's accessor pair, and listed as an owner in tests/atlas-console-kernel-checks.test.mjs (#R165)).
  *
  *  Lifted verbatim out of js/app-body.js (#R200, second pass): 74 of its 76 lines are
  *  byte-identical, and the 2 that are not are all #R165's rule — a closure value

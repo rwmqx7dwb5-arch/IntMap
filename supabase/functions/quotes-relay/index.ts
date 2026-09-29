@@ -51,7 +51,7 @@ const RANGE_RE = /^[0-9]{1,2}(?:d|mo|y)$|^ytd$|^max$/;
 const INTERVAL_RE = /^[0-9]{1,3}(?:m|h|d|wk|mo)$/;
 /* Yahoo's own stated ceiling for /v8/finance/spark, measured 2026-09-07: 24 symbols answer 400 with
    "Number of symbols needs to be less than or equal to 20", 20 answer 200. js/companies.js batches
-   to exactly this number (SPARK_MAX_SYMBOLS) — tests/r533-checks.test.mjs ⑧ holds the two together.
+   to exactly this number (SPARK_MAX_SYMBOLS) — tests/news-companies-checks.test.mjs #R533 ⑧ holds the two together.
    Accepting more here would only spend a round trip to collect the upstream's 400. */
 const SPARK_MAX_SYMBOLS = 20;
 
@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
 
 /* Yahoo's own «nothing here» — a 400 or 404 whose body is the v8 error envelope. Returns
    { code } or null. Read from the bytes the guard already capped; nothing of it is relayed but the
-   code. Declared below Deno.serve (a hoisted declaration): tests/r533-checks ⑦ evaluates everything
+   code. Declared below Deno.serve (a hoisted declaration): tests/news-companies-checks.test.mjs #R533 ⑦ evaluates everything
    ABOVE Deno.serve as the allow-list, and this is not part of it. */
 function noDataEnvelope(r) {
   if (r.status !== 400 && r.status !== 404) return null;

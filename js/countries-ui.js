@@ -26,10 +26,10 @@
    CLDR's 「米国」) — and English falls back to `nameEn`, which carries Natural Earth's long forms.
    ⚠ ONE INSTANCE PER LANGUAGE, built lazily: constructing a DisplayNames costs about a millisecond
    and this is called once per row of a 200-row list on every re-sort.
-   ⚠ IT LIVES HERE, NOT IN js/app-body.js: tests/r168 #8 budgets the app shell at 8,200 lines and the
+   ⚠ IT LIVES HERE, NOT IN js/app-body.js: tests/news-module-split-checks.test.mjs (#R168) #8 budgets the app shell at 8,200 lines and the
    rule it states is that the ceiling follows the floor DOWN. A new mechanism goes where its feature
    is. `window._imCldrRegion` is the whole surface app-body reaches for. */
-/* ⚠ the cache hangs off the function itself — tests/r175 ③ refuses an unexported top-level
+/* ⚠ the cache hangs off the function itself — tests/layer-boot-graph-checks.test.mjs #R175 ③ refuses an unexported top-level
    declaration in js/, and this file has exactly one thing to publish. */
 window._imCldrRegion=function(a2,lang){
   try{
@@ -78,10 +78,10 @@ window._imCldrRegion=function(a2,lang){
    `_regionName` closes over `HOST.lang` while Atlas has a language of its own — hence `lang` as an
    argument, exactly like `window._imCldrRegion` above.
    ⚠⚠ AND IT IS A `window.` PUBLICATION RATHER THAN A NAMED `export`, WHICH WAS MEASURED, NOT
-   ASSUMED. tests/r175 ③ allows either («wrapped, exported, or attached to window»), and the export
+   ASSUMED. tests/layer-boot-graph-checks.test.mjs #R175 ③ allows either («wrapped, exported, or attached to window»), and the export
    is the more checkable of the two — but FOUR harnesses run THIS FILE as a classic script through
-   `new Function(src)` to exercise the real `_mkStat` and the real upgrade pass (tests/r375 ①–⑦,
-   tests/r392, tests/r423 ①–③, tests/r337). One `export` keyword is a SyntaxError to all of them:
+   `new Function(src)` to exercise the real `_mkStat` and the real upgrade pass (tests/news-countries-checks.test.mjs #R375 ①–⑦,
+   tests/atlas-examples-checks.test.mjs (#R392), tests/news-countries-checks.test.mjs #R423 ①–③, tests/news-country-starter-chips-checks.test.mjs (#R337)). One `export` keyword is a SyntaxError to all of them:
    16 tests went red on a file whose behaviour had not changed. `window.` is what this file already
    does for the same reason, one helper up.
    ⚠ `IntMapLang.t(lang, …)` IS `pick()` with the language as argument one (js/lang-registry.js §t)
@@ -154,7 +154,7 @@ window._imSubregionName=function(sub,lang){
    «no answer» must not be the same value. So the outcome is a VALUE now — `state` is
    'idle' | 'loading' | 'ready' | 'failed' — a failure is logged rather than swallowed, a failed
    load is NOT recorded as «tried» so the next card retries it, and the checks look at the ROWS
-   ON THE SCREEN rather than at whether the code compiles: tests/r453-checks.test.mjs runs this
+   ON THE SCREEN rather than at whether the code compiles: tests/shell-data-layers-checks.test.mjs (#R453) runs this
    very file and reads the card's HTML, and the tail of tests/r424.spec.js reads it in a browser.
 
    ⚠ THE FACTS ARE SHIPPED, NOT FETCHED. A land border, a capital and a standard-time offset move
@@ -183,7 +183,7 @@ window.IntMapCountryFacts=(function(){
       .catch(function(e){
         /* ⚠ THE FAILURE IS RECORDED, NOT DISCARDED — and the promise is released so the next card
            retries. A permanent failure is then visible three ways: `state`, the console, and the
-           rows tests/r453-checks.test.mjs ⑥⑧ look for. */
+           rows tests/shell-data-layers-checks.test.mjs #R453 ⑥⑧ look for. */
         S.state='failed'; S.error=String((e&&e.message)||e); TABLE=null; P=null;
         try{ console.error('[IntMap] country facts unavailable ('+FACTS_URL+'): '+S.error); }catch(_){}
         return null;
@@ -197,7 +197,7 @@ window.IntMapCountryFacts=(function(){
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
   /* (#R251) the seven continent names the country table carries in `region`, as calls.
-     ⚠ BUILT ON FIRST USE, NOT AT FACTORY LEVEL. tests/r168 #4 holds this repo to «a factory body
+     ⚠ BUILT ON FIRST USE, NOT AT FACTORY LEVEL. tests/news-module-split-checks.test.mjs (#R168) #4 holds this repo to «a factory body
      does nothing while it runs» — a module factory may DECLARE, never CALL — and both
      `IntMapLang.pick()` and `LA(…)` are calls. Lazy also means the table is built after the
      registry exists, which is the ordering every other module relies on. */
@@ -234,7 +234,7 @@ window.IntMapModules.countriesUi=function(HOST){
               ne_50m / ne_10m put Maldives, Mauritius, Seychelles, Saint Helena, BIOT, South
               Georgia, Heard & McDonald and Clipperton there as well.
 
-           ⚠ AND THE TABLE IS NO LONGER THE ONLY THING HOLDING THIS. tests/r424-checks ① reads
+           ⚠ AND THE TABLE IS NO LONGER THE ONLY THING HOLDING THIS. tests/news-countries-checks.test.mjs #R424 ① reads
            js/history.js's own `region:` literals and fails if one is not a key here, so a state
            added later cannot introduce an untranslated region quietly; ② holds Natural Earth's
            eight. The way this defect was born is the way it is now caught. */
@@ -298,7 +298,7 @@ window.IntMapModules.countriesUi=function(HOST){
            session, with nothing on screen. The read is js/fetch-deadline.js `jsonWithin` under the host's clock, idle, so it
            bounds a silence and not the 4.3 MB file's length. ⚠ Reached through `window.IntMapFetchWithin`
            (published by js/fetch-deadline.js with the host table's `clockFor`) and not an import, because this file
-           must stay a classic script — several node harnesses run it with `new Function` (tests/r453 ⑤). `grabFail` keeps WHY the last rung failed, so a load that
+           must stay a classic script — several node harnesses run it with `new Function` (tests/shell-data-layers-checks.test.mjs #R453 ⑤). `grabFail` keeps WHY the last rung failed, so a load that
            reached nothing says so (below) instead of looking exactly like a load that is still coming. */
         const grab=async(f)=>{ try{ const FW=window.IntMapFetchWithin; return await FW.jsonWithin(NE+f,FW.clockFor(NE+f),undefined,{idle:true}); }catch(e){ grabFail=(e&&e.reason)||'network'; } return null; };
         let coarse=true;
@@ -367,7 +367,7 @@ window.IntMapModules.countriesUi=function(HOST){
                ranking (js/atlas-console.js «top N by X»), the Atlas starter chips (js/atlas-examples.js)
                and the era-label name map (js/time-borders.js `tagSame`) — while the map drew «Norway»
                the whole time. One `sov` flag, six readers, and nothing compared what is DRAWN with what
-               is LISTED; tests/r423-checks.test.mjs is that comparison, and the R423 step of
+               is LISTED; tests/news-countries-checks.test.mjs (#R423) is that comparison, and the R423 step of
                tests/r410.spec.js makes it again against the rendered DOM.
 
                ⚠ THIS IS NOT A SPECIAL CASE FOR NORWAY AND IT DOES NOT WEAKEN #R23. Counted over both

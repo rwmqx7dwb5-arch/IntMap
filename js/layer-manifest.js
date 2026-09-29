@@ -313,7 +313,7 @@ export const SHELVES = [
        refuse to do. The new wars fold exactly where ww1 folds. */
     /* (#R588) `elect` (national parliamentary elections) is the FIRST row after the six the
        reader named, not the fifth. ⚠ IT WAS WRITTEN NEXT TO `uselect` FIRST — a reader who has
-       found one election map is looking for the other — and tests/r469 ④ was right to refuse
+       found one election map is looking for the other — and tests/layer-panel-taxonomy-checks.test.mjs #R469 ④ was right to refuse
        it: the 6 is how many ids the reader listed BY HAND, so inserting inside that run does
        not «add a row», it silently DEMOTES 第二次世界大戦 out of what the panel shows unfolded.
        #R519 left the same number alone for the same reason when it added four wars. This row

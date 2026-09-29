@@ -1342,7 +1342,7 @@ window.IntMapModules.weatherEC=function(HOST){
        gusts and forecast precipitation are all fields a reader is reading FOR the weather system
        in them, and the streaks are what make the system legible (a low is a spiral, a front is a
        shear line). Temperature is not — it is read as a value at a place — so `ec-temp` KEEPS
-       DEFAULT OFF, which is also what tests/r337 fixed and what a reader who never ticked it has
+       DEFAULT OFF, which is also what tests/news-country-starter-chips-checks.test.mjs (#R337) fixed and what a reader who never ticked it has
        been getting since #R337.
        ⚠ THE STORED VALUE STILL WINS BOTH WAYS. The default only decides what happens when the key
        is ABSENT, so a reader who ticked a box (or unticked one) keeps their answer: `'1'` is on,

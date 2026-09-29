@@ -1195,7 +1195,7 @@ window.IntMapModules.worldPacks=function(HOST){
          it was supposed to survive. `layers()` below declares the FILL and the country wash; the
          outline and the hazard's own name are the answer and stay — the same rule #R205 wrote for a
          plate label, which is what `_opacityOpaqueText` does for the symbol half.
-         ⚠ KEEP THIS NOTE OUTSIDE THE CALL: tests/r212 ② matches `makePanel('…', …)` within 560
+         ⚠ KEEP THIS NOTE OUTSIDE THE CALL: tests/layer-world-packs-checks.test.mjs #R212 ② matches `makePanel('…', …)` within 560
          characters to check every family passes a row id, and a comment inside the argument list
          pushes the closing brace past that window. */
       const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
@@ -1361,7 +1361,7 @@ window.IntMapModules.worldPacks=function(HOST){
          and over the dark theme. So each diagonal now carries its own light halo — the same trick
          the hazard labels beside it already use — and it reads on any ground WITHOUT the sheet
          coming back: the gaps are still exactly transparent, which is the property #R290 measured
-         and `tests/r293` re-measures.
+         and `tests/weather-warnings-checks.test.mjs (#R293)` re-measures.
          ⚠ ONE DECLARATION, TWO SURFACES. `hatchCanvas()` is what the map draws AND what the legend
          swatch is a picture of — #R270 is the round that paid for a key disagreeing with the thing
          it names, and a hand-written `repeating-linear-gradient` beside this is exactly that bug
@@ -1609,7 +1609,7 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ This is not a second source for those countries — 「ソースは一国一ソース」 holds: the NWS IS
          their national weather service, by treaty and by office. A country listed here never asks
          the WMO register (`loadSWICMeta` only wires members with no feed).
-         ⚠ And it is checked rather than declared: tests/r284 asserts every ISO here is one the
+         ⚠ And it is checked rather than declared: tests/layer-weather-ecmwf-checks.test.mjs (#R284) asserts every ISO here is one the
          NWS's own UGC prefixes cover. */
       const ALSO={ nws:['PRI','VIR','GUM','MNP','ASM','PLW','FSM','MHL'] };
       Object.keys(ALSO).forEach(f=>{ ALSO[f].forEach(c=>{ if(!FEEDS[c]) FEEDS[c]=f; }); });
@@ -2123,7 +2123,7 @@ window.IntMapModules.worldPacks=function(HOST){
          make any answer newer; it would only multiply requests EUMETNET has to serve. */
       /* (#R297) …and a full cycle has to come round inside the relay's edge cache, which #R297
          halved to 30 s for 「更新が遅すぎる」: 35 countries / (6 × 6) is one tick, i.e. 20 s.
-         `tests/r277 ⑧` computes that from the two ends and fails if the cycle outruns the cache. */
+         `tests/layer-warnings-sources-checks.test.mjs #R277 ⑧` computes that from the two ends and fails if the cycle outruns the cache. */
       const MA_SLOTS=6;
       /* ══ ⚠⚠⚠ (#R275) 「更新が遅すぎる。リアルタイムにと言っている。」 (2回目) ═══════════════════════
          #R273 answered this by halving the tick — 60 s to 30 s — and the tick was never what was
@@ -6679,7 +6679,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const g=encodeURIComponent(JSON.stringify({x:lng,y:lat,spatialReference:{wkid:4326}}));
           /* ⚠⚠⚠ (#R301) AN UNCHECKED RESPONSE HERE IS NOT A SILENT 「—」 — IT IS A FALSE READING.
              This was the only fetch in the file with no status test, and the miss was invisible
-             because tests/r211-checks.test.mjs — which asserts #R183's rule for this file — was
+             because tests/hazard-terrain-water-checks.test.mjs (#R211) — which asserts #R183's rule for this file — was
              never added to `test:checks` and so has never once run. Without the two guards below
              an outage arrives as `j.value == null` and the next line prints 「no cultivation
              recorded in this cell」: a server error reported to the reader as a measured fact

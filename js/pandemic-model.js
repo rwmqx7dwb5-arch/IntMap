@@ -21,7 +21,7 @@
  *
  *  So the engine is a separate file, and it is pure: no DOM, no window, no map, no clock, no
  *  Math.random. It takes countries + parameters + a seed and returns a state machine that node can
- *  step ten thousand times in a test (tests/r575-checks.test.mjs asserts the twelve properties the
+ *  step ten thousand times in a test (tests/hazard-pandemic-model-checks.test.mjs (#R575) asserts the twelve properties the
  *  audit asked for, population conservation and speed-invariance first).
  *
  *  ⚠ THE UNITS OF `speed` ARE WALL-CLOCK MILLISECONDS AND NOTHING ELSE. There is no `speed` in this
@@ -60,7 +60,7 @@
    from? Each entry is now `{ for, name }`, where `for` is A FIELD OF THIS PRESET — so the
    attribution is checkable against the object it is attached to rather than being prose, and the
    UI can also work out which parameters have NO named source and say so. Some do not. That is a
-   fact about this preset table and the reader is entitled to it (tests/r678-pandemic-p1-checks ⑦).
+   fact about this preset table and the reader is entitled to it (tests/hazard-pandemic-model-checks.test.mjs #R678 ⑦).
    ⚠ `for` IS A KEY, NOT A LABEL. This file is pure and has no language; js/playground.js turns
    the key into words in nine of them. */
 export const PANDEMIC_PRESETS = {
@@ -198,7 +198,7 @@ export const PANDEMIC_PRESETS = {
    statement of covid's R₀ and one of the two would go stale; writing 'transmission.r0' makes it a
    POINTER at the one that already exists, so a revised preset moves the default with it.
    `from: null` means the default is the literal in `default`, and `P` above is where that same
-   literal lives — the two are asserted equal by tests/r754-pandemic-atlas-checks.
+   literal lives — the two are asserted equal by tests/atlas-pandemic-checks.test.mjs (#R754).
 
    ⚠ EVERY KEY HERE IS READ BY `P`, AND EVERY `inp.<key>` `P` READS IS HERE. That is a measurable
    statement about this file rather than a promise about it, and the test measures it. */
@@ -235,7 +235,7 @@ export const PANDEMIC_PARAMS = {
      them, so `freshParams` never set them and nothing ever noticed they were missing from the list.
      That is the failure mode of a hand-written list (.agents/rules/no-ad-hoc-hardcoding.md §2.4): it
      cannot notice what was not added to it. The closure of this table over `P` is now MEASURED
-     rather than asserted — tests/r754-pandemic-atlas-checks parses the `inp.<key>` reads out of this
+     rather than asserted — tests/atlas-pandemic-checks.test.mjs (#R754) parses the `inp.<key>` reads out of this
      file and requires the two sets to be equal in both directions. */
   vaccineEfficacy:          { kind: 'number', min: 0,   max: 100, step: 1,    scale: 0.01, unit: '%',      from: 'vaccine.efficacyInfection' },
   vaccineMonths:            { kind: 'number', min: 0,   max: 120, step: 1,    scale: 1,    unit: 'mo',     from: 'vaccine.waningMonths' },
@@ -255,7 +255,7 @@ export function paramBounds(key) {
   const s = d.scale || 1;
   /* 0.1 * 0.01 is 0.001000000000000000020816681711721685, and a bound printed like that is a bound
      nobody can read. Twelve significant digits is past any step this table declares.
-     ⚠ NESTED, NOT TOP-LEVEL: tests/r175-checks ③ fails an unexported top-level declaration, and
+     ⚠ NESTED, NOT TOP-LEVEL: tests/layer-boot-graph-checks.test.mjs #R175 ③ fails an unexported top-level declaration, and
      exporting a helper with one caller would fail its second assertion as a dead export. */
   const round1 = (v) => +(+v).toPrecision(12);
   return { min: round1(d.min * s), max: round1(d.max * s), step: round1(d.step * s) };
@@ -278,7 +278,7 @@ export function paramBounds(key) {
 
    ⚠⚠ THIS IS THE PRIMARY, AND `defaultPandemicParams` IS A PROJECTION OF IT. It was the other way
    round, with a shared `presetField` helper between them — but a helper with two callers can be
-   neither nested nor exported (tests/r175-checks ③ fails an unexported top-level declaration, and
+   neither nested nor exported (tests/layer-boot-graph-checks.test.mjs #R175 ③ fails an unexported top-level declaration, and
    fails an export no js/ module imports as dead code). Inverting costs nothing and buys the thing
    this project keeps asking for: the value and the ATTRIBUTION of the value are computed in one
    place, so they cannot disagree. A default whose origin string is wrong is the exact defect §6
@@ -327,7 +327,7 @@ export function describePandemicParams(presetKey, scenario, given) {
        [[intmap-data-must-not-claim-an-author-it-lacks]], the round that found 67,622 translations
        claimed by nobody. Silence is reported AS silence: the value is what the engine reads an
        absent field as, and the reader can see that nobody said it. Measured by
-       tests/r754-pandemic-atlas-checks ③ in both directions.
+       tests/atlas-pandemic-checks.test.mjs #R754 ③ in both directions.
        ⚠ The third origin is #R673's: a real-world-only field in a naive run is not a default at
        all, it is the scenario's definition («nobody is immune to a novel pathogen»), and saying
        «default» about it would attribute to this file a choice the scenario made. */
@@ -508,7 +508,7 @@ export function createPandemicModel(cfg) {
 
      The older note, kept because it is still the reason this is a blend and not a replacement, by what
      it does to real rows. MEASURED on the 177-country world at 0.5, the qualitative facts it
-     exists to produce are the ones distance alone gets wrong: see tests/r678-pandemic-p1-checks.
+     exists to produce are the ones distance alone gets wrong: see tests/hazard-pandemic-model-checks.test.mjs (#R678).
      ⚠ IT APPLIES PER ORIGIN. A country the route table has no outbound row for keeps the pure
      distance kernel — «not in a 2014 table» must not read as «flies nowhere» (#R262 again). */
   const ROUTE_MIX = 0.35;
@@ -1089,7 +1089,7 @@ export function createPandemicModel(cfg) {
      110 m Natural Earth scale, 252 at 10 m), so the matrix is at most 64 000 doubles — built once
      and read every day, which is the right way round for something that never changes.
      ⚠ IT IS SEED-INDEPENDENT AND CONFIG-INDEPENDENT. Two runs with the same world have the same
-     matrix, so `same seed is the same world` (tests/r575-checks ⑧) still means what it said. */
+     matrix, so `same seed is the same world` (tests/hazard-pandemic-model-checks.test.mjs #R575 ⑧) still means what it said. */
   const MOB_CUM = new Float64Array(N > 1 ? N * N : 0);
   const travel = new Float64Array(N);
   let mobilityFrom = 'population';
@@ -1585,7 +1585,7 @@ export function createPandemicModel(cfg) {
     get ended() { return ended; },
     get worldPop() { return worldPop; },
     /* ⚠ (#R673) `fromShare` IS PART OF THE SIGNATURE, so that the variant mix an arrival carries is
-       reachable from a test. It was not, and tests/r666-model ⑦ — the one test that exists to hold
+       reachable from a test. It was not, and tests/hazard-pandemic-model-checks.test.mjs #R666 ⑦ — the one test that exists to hold
        `mixShare` to the fix that named it — called `seed()`, which passed a hard-coded `null`. The
        test set a share by hand, seeded, and asserted the share was unchanged: TRUE BY CONSTRUCTION,
        because the function it was measuring never ran. Restoring the #R666 defect underneath it
@@ -1798,14 +1798,14 @@ export function scatterCases(n, anchors, span, rnd, accept) {
    one government reacting to its own prevalence and happens as often as there are governments.
    The first is worth stopping for. The second is a LIST — it belongs in a list.
 
-   ⚠ THIS TABLE IS THE VOCABULARY, AND tests/r675-pandemic-checks HOLDS IT TO THE EMITTERS: every
+   ⚠ THIS TABLE IS THE VOCABULARY, AND tests/hazard-pandemic-model-checks.test.mjs (#R675) HOLDS IT TO THE EMITTERS: every
    `events.push({ t: … })` literal in this file must have a row here, and every row here must be
    emitted somewhere. A new event kind that forgets to declare itself would otherwise default to
    whatever the `||` on the lookup happened to say, which is how a routine event ends up back in
    the middle of the map. */
 /* ⚠ THE TABLE LIVES INSIDE THE FUNCTION THAT READS IT. Every other constant in this module does
    too (`BORDER_STATES`, `VAX_RATE_MAX`, `MAX_DEPARTURES` …): a module-private top-level declaration
-   is the one shape tests/r175-checks ③ forbids outright, because it is what used to be a global.
+   is the one shape tests/layer-boot-graph-checks.test.mjs #R175 ③ forbids outright, because it is what used to be a global.
    Eleven keys rebuilt per call, and events are counted in hundreds per run, not per frame.
    ⚠ AN UNDECLARED KIND ANSWERS `null` RATHER THAN GUESSING. That is what lets a test say «every
    kind this engine emits is declared» without being handed the list of keys to compare against —
@@ -1845,7 +1845,7 @@ export function eventKind(t) {
 export function summariseEnsemble(runs) {
   /* ⚠ NESTED, NOT TOP-LEVEL AND NOT EXPORTED. `summariseEnsemble` is the surface, and everything
      worth holding this function to is visible through it; an export whose only importer is a test is
-     dead code to the program, and a module-private top-level declaration is what tests/r175-checks ③
+     dead code to the program, and a module-private top-level declaration is what tests/layer-boot-graph-checks.test.mjs #R175 ③
      forbids. Both readings point the same way — measure the thing a reader can reach. */
   function quantile(sorted, p) {
     const n = sorted.length;

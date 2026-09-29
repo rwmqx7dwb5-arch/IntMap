@@ -8,7 +8,7 @@
  *  one thing — five values have to agree for "the map is flat" to be true — and standing two thousand
  *  lines apart is how #R298 found a second entrance that set one of them and none of the other four.
  *
- *  ⚠ ITS OWN FILE BECAUSE THE APP SHELL HAS A LINE CEILING (tests/r168 #8 — index.html + src/main.js
+ *  ⚠ ITS OWN FILE BECAUSE THE APP SHELL HAS A LINE CEILING (tests/news-module-split-checks.test.mjs (#R168) #8 — index.html + src/main.js
  *  + src/vendor.js + js/app-body.js + js/geo-engine.js + js/lazy-modules.js, under 8,200 lines). That
  *  test writes the rule down beside the number: «a ceiling raised once and never lowered stops
  *  asserting anything at all». So a round that adds to the shell pays by moving a whole SUBJECT out,

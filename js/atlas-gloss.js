@@ -30,7 +30,7 @@
  *  reply is a different question — the whole point is that the answer depends on the passage.
  *
  *  ⚠ ITS OWN FILE FOR THE REASON js/atlas-msg-tools.js IS: js/atlas-console.js is under a
- *  shrink-only line ceiling (tests/r278 ⑦ — under 5,300), and the rule beside that ceiling is that
+ *  shrink-only line ceiling (tests/atlas-dispatch-checks.test.mjs #R278 ⑦ — under 5,300), and the rule beside that ceiling is that
  *  «a feature moves out, never that the ceiling moves up». The CSS is exported the same way, because
  *  the kernel owns the one <style> element.
  * ==========================================================================*/
@@ -92,9 +92,9 @@ export function makeAtlasGloss(HOST, CTX) {
   /* ══ THE THREE PURE ONES ══════════════════════════════════════════════════════════════════════
      They decide what the model is SHOWN, which is the whole quality of the card: the sentence the
      phrase sits in, the passage clipped around it, and the phrase itself.
-     ⚠ NOT `export`ed: nothing in js/ would import them and tests/r175 ③ is right that an export
+     ⚠ NOT `export`ed: nothing in js/ would import them and tests/layer-boot-graph-checks.test.mjs #R175 ③ is right that an export
      nothing imports is dead code. The factory returns them under `text` — the same three functions it
-     uses itself — so tests/r491-checks drives the shipped ones rather than a copy. */
+     uses itself — so tests/atlas-gloss-checks.test.mjs (#R491) drives the shipped ones rather than a copy. */
 
   /** Collapse whitespace — a selection dragged across a line break carries the break. */
   function glossTidy(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
@@ -431,7 +431,7 @@ export function makeAtlasGloss(HOST, CTX) {
      `{"type":"gloss","term":str}` — the SAME card the reader raises by right-clicking a phrase, so
      no capability is reachable only through a gesture (CONSTITUTION.md / Atlas is the control plane).
      ⚠ THE WHOLE BODY IS HERE AND NOT IN THE SWITCH. js/atlas-console.js is at its shrink-only
-     ceiling (tests/r318 ⑨b, tests/r419 ⑨d), so the case line is one line and this is what it calls.
+     ceiling (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b, tests/atlas-turn-checks.test.mjs #R419 ⑨d), so the case line is one line and this is what it calls.
      The result helpers arrive through CTX because they are the kernel's, not this file's. */
   function dispatch(a) {
     const R = CTX.R, note = CTX.note, warn = CTX.warn;
@@ -444,6 +444,6 @@ export function makeAtlasGloss(HOST, CTX) {
   }
 
   /* `text` is the three pure functions this file decides context with — returned so the gate can
-     drive the SHIPPED ones (tests/r491-checks ①–③) rather than a copy of them. */
+     drive the SHIPPED ones (tests/atlas-gloss-checks.test.mjs #R491 ①–③) rather than a copy of them. */
   return { wire, open, dispatch, close: closeCard, text: { tidy: glossTidy, sentence: glossSentence, passage: glossPassage }, _cacheSize: () => CACHE.size };
 }

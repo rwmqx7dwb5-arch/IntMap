@@ -630,7 +630,7 @@ export function makeGisUnits() {
     const KERNEL_VERSION = 'units-2';
     /* ⚠ ONLY THE CODES THAT LEAVE HERE AS `ok:false`. The `quantity-*` and `summing-*` codes below
        are VERDICTS a caller reads and reports in its own words — they are not this kernel refusing an
-       op, and declaring them here would tell tests/r729 ④ to look for a sentence in js/gis-panel.js
+       op, and declaring them here would tell tests/geo-gis-datasets-checks.test.mjs #R729 ④ to look for a sentence in js/gis-panel.js
        for a refusal js/gis-ops.js never hands back. */
     const REFUSALS = ['unit-mismatch'];
 

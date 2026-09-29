@@ -13,7 +13,7 @@
  *
  *  Everything the block used to read from the console's closure arrives through `CTX` (and the app's
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
- *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
+ *  tests/atlas-console-kernel-checks.test.mjs (#R199) re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { makeAtlasAnnotate } from './atlas-annotate.js';   /* (#R492) the in-reply unit / clock / abbreviation notes — js/atlas-annotate.js */
@@ -23,7 +23,7 @@ import { makeAtlasHighlight } from './atlas-highlight.js';  /* (#R494) code-bloc
 export function makeAtlasReply(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc, fitTo=CTX.fitTo, fmtVal=CTX.fmtVal, highlight=CTX.highlight, note=CTX.note, warn=CTX.warn;
   /* (#R492) the in-reply notes. ⚠ MADE HERE, not at module scope: a js/ module may hold no unexported
-     top-level declaration (tests/r175 ③), so the lexicon and the compiled regexes live inside the factory. */
+     top-level declaration (tests/layer-boot-graph-checks.test.mjs #R175 ③), so the lexicon and the compiled regexes live inside the factory. */
   const { annotateAtlasHTML, annotateAtlasText, annotateOptions, wireAtlasAnnotations } = makeAtlasAnnotate();
   const _atlMd=makeAtlasMarkdown({ esc });   /* (#R494) built once per reply pipeline; it holds no state between calls */
   const { highlightCode }=makeAtlasHighlight();   /* (#R494) …and one grammar cache with it */
@@ -436,7 +436,7 @@ export function makeAtlasReply(HOST, CTX) {
        bubble that already reads 「Research: X」. Drop the FIRST non-blank line when, with markdown and
        punctuation stripped, it is nothing but that name; anything else is content and is kept.
        Here rather than at the call site because this file IS the reply text pipeline, and because
-       js/atlas-console.js has a line ceiling (tests/r199-checks ⑤). */
+       js/atlas-console.js has a line ceiling (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤). */
     function dropLeadTitle(text, name){ try{
       const key=(s)=>String(s||'').replace(/[*_#`>\s]/g,'').replace(/[:：・.,、。()（）"'“”「」]/g,'').toLowerCase();
       const want=key(name); if(!want) return text;

@@ -89,7 +89,7 @@ window.IntMapModules.satellitesLive=function(HOST){
      a guard that can never fire costs nothing and a missing one is a TypeError in a live layer.
 
      It lives INSIDE the factory, not at the top of the file, and that is not a style choice: no js/
-     module may have a TOP-LEVEL declaration (tests/r175-checks — an AST sweep finding zero of them
+     module may have a TOP-LEVEL declaration (tests/layer-boot-graph-checks.test.mjs (#R175) — an AST sweep finding zero of them
      across every file is precisely what made the ESM conversion incapable of changing a name
      resolution). A `let SAT` at file scope broke that invariant, and the check caught it. The
      factory is instantiated exactly once, so the closure holds the same single instance the file

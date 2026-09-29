@@ -89,7 +89,7 @@ window.IntMapModules.newsUi=function(HOST){
       savedAt:Date.now(), fromSnapshot:true };
     snapWrite(o); }
   function snapForget(link){ const o=snapAll(); if(link in o){ delete o[link]; snapWrite(o); } }
-  /* WARN (#R210) PUBLISHED FROM A FUNCTION, NOT FROM THE FACTORY BODY. tests/r168-checks #4
+  /* WARN (#R210) PUBLISHED FROM A FUNCTION, NOT FROM THE FACTORY BODY. tests/news-module-split-checks.test.mjs (#R168) #4
      requires that a factory body only DECLARES — an assignment here would run the moment the
      factory is instantiated, which is the #R167 dead-zone trap this project has paid for twice.
      renderUI() and appendNewsBatch() both call it and both are idempotent, so the global exists
@@ -494,7 +494,7 @@ window.IntMapModules.newsUi=function(HOST){
     }catch(_){}
   }
   function renderUI(){ publishSaved();
-    /* (#R242) ⚠ published from HERE, not at factory level: tests/r168 #4 requires this file to only
+    /* (#R242) ⚠ published from HERE, not at factory level: tests/news-module-split-checks.test.mjs (#R168) #4 requires this file to only
        DECLARE while it runs. js/window-manager.js calls it whenever the docked count changes. */
     window._dockEmptyRender=_dockEmptyRender;
     const feed=document.getElementById('live-news-feed'),

@@ -182,7 +182,7 @@ server’s copy names a different entry. So:
   one feature dying after a release, with that prompt on screen, is this and is cured by the reload.
 - **The post-deploy smoke cannot see this failure.** Playwright starts from a cold profile with an
   empty HTTP cache, so it always gets the fresh document. A green post-deploy run says nothing
-  about readers holding a warm cache — the regression tests for that are `tests/r465-checks.test.mjs`.
+  about readers holding a warm cache — the regression tests for that are `tests/shell-index-document-checks.test.mjs` (#R465).
 - **When verifying a deploy by hand, a hard reload hides it.** Load the site normally first if what
   you want to know is what a returning reader gets.
 ## 本番はいま、どの組み合わせで走っているか（**3 面まとめて**）

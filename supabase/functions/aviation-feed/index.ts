@@ -164,7 +164,7 @@ const READ_BURST = 6;
    temporal dead zone, so evaluating this module threw ReferenceError before Deno.serve was ever
    reached and EVERY request answered 500 WORKER_ERROR. Nothing caught it: the file parses
    (check:static reads syntax, not order), and #R504's own thirteen checks read the source as TEXT.
-   The gate that catches it now actually EVALUATES this constant block — tests/r505 ①. */
+   The gate that catches it now actually EVALUATES this constant block — tests/process-edge-function-evaluation-checks.test.mjs #R505 ①. */
 const SWEEP_TILES_MAX = READ_BURST;
 /* (#R801) the bucket itself now lives in _shared/read-budget.js, because ais-feed needed the same
    one and a second copy of the arithmetic is how two feeds drift apart. Its clock is still seeded

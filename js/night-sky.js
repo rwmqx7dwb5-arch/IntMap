@@ -844,7 +844,7 @@ window.IntMapNightSky = (function () {
     horizon = null; horizonErr = null; skyCache = null;
     /* (#R214) the caller may ask for either view; anything else leaves the last one in place.
        ⚠ THE SPELLINGS ARE RESOLVED HERE, not at the Atlas call site. js/atlas-console.js is at the
-       #R199 line ceiling that tests/r200 ⑤ ratchets, and «what counts as asking for the standing
+       #R199 line ceiling that tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ ratchets, and «what counts as asking for the standing
        view» is a fact about this view — so it belongs to the file that owns it, and every other
        door (the right-click item, a test, a share link) gets the same vocabulary for free. */
     const asked = (ll.mode || ll.view || (ll.stand === true ? 'stand' : ll.stand === false ? 'dome' : ''));

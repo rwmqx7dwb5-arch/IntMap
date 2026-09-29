@@ -10,7 +10,7 @@
  *  arrive through HOST, because a moved module that inherits a closure name silently skips a whole
  *  branch instead of failing (scripts/check-split-scope.mjs, #R162).
  *
- *  WHY IT LEFT THE SHELL. tests/r168 #8 and tests/r479 ⑧ budget the app shell — index.html +
+ *  WHY IT LEFT THE SHELL. tests/news-module-split-checks.test.mjs (#R168) #8 and tests/carto-basemap-checks.test.mjs #R479 ⑧ budget the app shell — index.html +
  *  src/main.js + src/vendor.js + js/app-body.js + js/geo-engine.js + js/lazy-modules.js — and on
  *  origin/main it stood at 8,049 lines against a ceiling of 8,050. #R498 made the input path cheaper
  *  and that cost the shell 124 lines. The rule #R194/#R195/#R196 set is that the ceiling follows the

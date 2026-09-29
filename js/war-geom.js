@@ -7,7 +7,7 @@
  *      · scripts/build-wars.mjs imports it to prove each curated line really cuts the country it
  *        claims to cut, and that named cities land under the side the record says held them;
  *      · js/war-fronts.js imports it to paint that same cut in the browser.
- *  One implementation, two callers, name-checked by tests/r175-checks ③. A second copy could drift,
+ *  One implementation, two callers, name-checked by tests/layer-boot-graph-checks.test.mjs #R175 ③. A second copy could drift,
  *  and the way it would drift is invisible: a fill that says Kharkov was German on a date when the
  *  line beside it runs sixty kilometres to the west.
  *
@@ -32,7 +32,7 @@
  *  over one country at one moment the error is far below the precision the source lines carry.
  * ==========================================================================*/
 
-/* ⚠ (#R349) ONE EXPORT, AND THAT IS A RULE OF THIS DIRECTORY, NOT A STYLE CHOICE. tests/r175-checks ③
+/* ⚠ (#R349) ONE EXPORT, AND THAT IS A RULE OF THIS DIRECTORY, NOT A STYLE CHOICE. tests/layer-boot-graph-checks.test.mjs #R175 ③
    fails any top-level declaration in js/ that is not exported AND imported somewhere by name — the
    property that lets these files be bundled without changing a single name resolution. Half of what
    is below (`segX`, `pathSlice`, `ringSlice`, `clean`) is private arithmetic that nothing outside

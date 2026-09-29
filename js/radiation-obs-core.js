@@ -28,7 +28,7 @@
  *  rather than painted (the shape #R708 hand-wrote four times and js/runtime.js owns since #R789).
  *
  *  THE RAMP is here because it is a fact about the data, not the map: docs/RADIATION.md holds the
- *  same table in prose and tests/r585-checks measures that the two agree.
+ *  same table in prose and tests/hazard-radiation-layer-checks.test.mjs (#R585) measures that the two agree.
  * ==========================================================================*/
 export function makeRadiationObs(deps) {
   const D = deps || {};
@@ -48,7 +48,7 @@ export function makeRadiationObs(deps) {
        · 2000      — RIVM's published threshold for also notifying the safety region.
      EXPIRY: if a provider republishes a different action threshold, this ramp is wrong and the
      step it came from must move with it. CANONICAL: docs/RADIATION.md holds the same table in
-     prose, and tests/r585-checks.test.mjs measures that the two agree.
+     prose, and tests/hazard-radiation-layer-checks.test.mjs (#R585) measures that the two agree.
      ⚠ The colours run cool→hot but 50–200 is NOT a warning: almost every healthy station on earth
      sits inside it. The legend says so in words, because a red-ish dot with no sentence beside it
      is how a normal Tuesday gets read as an accident. */

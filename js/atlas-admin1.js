@@ -34,7 +34,7 @@
  *  does not hold returns a miss, and the caller's existing ladder runs exactly as before.
  *
  *  ⚠ NO DOM AND NO GLOBALS, and the single network read is injectable (`deps.load`), so
- *  tests/r489-checks.test.mjs drives THIS module — the one the browser runs — against the REAL
+ *  tests/atlas-console-observers-checks.test.mjs (#R489) drives THIS module — the one the browser runs — against the REAL
  *  shipped file, with no browser.
  * ==========================================================================*/
 
@@ -43,7 +43,7 @@ export function makeAtlasAdmin1(deps) {
     deps = deps || {};
 
     /* ⚠ THE SAME CONSTANT js/world-packs.js USES, and deliberately not a second copy of the loader:
-       both read one shipped file, and if the path ever moves, both must move. tests/r489 asserts
+       both read one shipped file, and if the path ever moves, both must move. tests/atlas-console-observers-checks.test.mjs (#R489) asserts
        the two spellings agree. */
     const ADM1_URL = deps.url || 'data/admin1-world.json.gz';
 
@@ -476,7 +476,7 @@ export function makeAtlasAdmin1(deps) {
      * ⚠ THE BBOX SIEVE MUST NEVER ERR INWARD (#R743: a prefilter that drops a real hit is invisible
      * to any test that only compares indexed runs against each other). It is a pure rectangle
      * overlap on the bbox the index derived FROM THE RING ITSELF, so every shape it rejects is one
-     * whose coordinates cannot reach the query; tests/r760 measures that against a sieve-free scan.
+     * whose coordinates cannot reach the query; tests/atlas-admin1-checks.test.mjs (#R760) measures that against a sieve-free scan.
      */
     async function coveredBy(geo, opts) {
       const o = opts || {};

@@ -305,7 +305,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
          empty name and a null elevation while the row COUNT looked right (measured on production:
          「coastKm >= 300」 answered 127 volcanoes, all of them nameless).
          ⚠ A missing VALUE is visible; a missing NAME on a row that still counts is not — which is
-         why tests/r497-checks asserts the values and not the shape. */
+         why tests/atlas-query-checks.test.mjs (#R497) asserts the values and not the shape. */
       for (const f of ((j && j.features) || [])) {
         const c = f.geometry && f.geometry.coordinates; if (!c) continue;
         const p = f.properties || {};

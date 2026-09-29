@@ -296,7 +296,7 @@ export function reachesTranslation(n, ctx) {
    a regression check FIRE. A check that can only assert «the repo is at zero» is indistinguishable
    from a check that passed for the wrong reason: it was green for 216 rounds while
    `tg.title='Layers'` shipped, because zero was all the instrument could ever say. Handed the three
-   defect lines as they were WRITTEN, this returns 3 — see tests/r459-checks.test.mjs. */
+   defect lines as they were WRITTEN, this returns 3 — see tests/shell-i18n-audits-checks.test.mjs (#R459). */
 export function scanSource(src, rel = '(source)', ctx = null) {
   const out = [];
   let ast;
@@ -358,7 +358,7 @@ export { findings };
 
 /* ── run directly: the list ──────────────────────────────────────────────────────────────────────
    ⚠ (#R459) GUARDED, because this file now EXPORTS the scanner it used to only run. An unguarded
-   `process.exit(0)` at module scope kills whatever imports it — tests/r459-checks.test.mjs proves
+   `process.exit(0)` at module scope kills whatever imports it — tests/shell-i18n-audits-checks.test.mjs (#R459) proves
    the widened universe by feeding this scanner a source of its own, and an import that exits is not
    a thing a test can call. Same shape as scripts/i18n-helpers.mjs's own tail. */
 if (process.argv[1] && process.argv[1].endsWith('i18n-attr-audit.mjs')) {

@@ -122,7 +122,7 @@
  *  `analysis:true` is refused a population the camera decides (`renderer-view-dependent`), which is
  *  judged from coverage.reason and not from a list of ids.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③) and window.* is read at CALL time, so this
  *  module imports in Node with no DOM and refuses by name instead of throwing.
  * ==========================================================================*/
 

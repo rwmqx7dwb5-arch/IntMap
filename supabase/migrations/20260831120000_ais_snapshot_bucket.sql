@@ -9,7 +9,7 @@
 --  ⚠ TWO MIME TYPES, AND THE FUNCTION MUST SEND ONE OF THEM. The aviation bucket allows only
 --  application/octet-stream, so #R504's honest `application/json` upload was refused with HTTP 415
 --  and the write silently never happened while every other path looked healthy (#R505). The ship
---  snapshot IS json, so json is declared — and tests/r510 compares this list against the
+--  snapshot IS json, so json is declared — and tests/layer-ais-ships-checks.test.mjs (#R510) compares this list against the
 --  content-type the function actually sends, because the two facts live in different files.
 --
 --  ⚠ NOTHING PRIVATE GOES IN THIS BUCKET. It holds one file: positions of vessels that are already

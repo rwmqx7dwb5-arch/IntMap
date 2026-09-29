@@ -19,7 +19,7 @@
  *
  *  ⚠ WHY THIS IS A SEPARATE FILE FROM js/space.js. js/space.js is the RENDERER — a WebGL context, a
  *  camera and a frame loop. Everything here is arithmetic on a date, has no canvas, and is the part
- *  that has to be verifiable without a browser (tests/r213-checks.test.mjs re-runs the propagation
+ *  that has to be verifiable without a browser (tests/engine-space-checks.test.mjs (#R213) re-runs the propagation
  *  against published positions). Keeping them apart is also what keeps js/space.js under the #R200
  *  line ceiling.
  *

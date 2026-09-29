@@ -56,7 +56,7 @@
  *  Kept separate from doc-facts.mjs for the reason #R694 gave: one run of that script is
  *  ~7.5 s, so the sweep that proves this rule — every phrasing, in both directions — could
  *  never be written against it. Against this module it is milliseconds, and
- *  `tests/r699-doc-claim-needles-checks.test.mjs` writes exactly that sweep, importing this
+ *  `tests/process-doc-facts-claims-checks.test.mjs (#R699)` writes exactly that sweep, importing this
  *  function rather than restating the rule (.agents/rules/no-ad-hoc-hardcoding.md §2.3).
  * ==========================================================================*/
 

@@ -261,7 +261,7 @@ async function ensureBucket(): Promise<void> {
         /* ⚠ BOTH TYPES, AND THE WRITE BELOW MUST BE ONE OF THEM. #R505's aviation bucket allows
            only octet-stream, so an honest `application/json` upload was refused with 415 and the
            write silently never happened while everything else looked fine. Declared here and
-           checked against what is actually sent by tests/r507. */
+           checked against what is actually sent by tests/process-database-checks.test.mjs (#R507). */
         allowed_mime_types: ["application/json", "application/octet-stream"],
       }),
       signal: AbortSignal.timeout(8000),

@@ -52,7 +52,7 @@
  *  «how much of the globe does this record speak about», not true union area — which is precisely
  *  why the reference has to be a record that does not overlap itself.
  *  The derived floor is written into the bundle as `window[0]`; js/time-borders.js's HB_MIN is a
- *  COPY that tests/r690-histborders-deep-checks.test.mjs holds equal to it.
+ *  COPY that tests/history-era-borders-checks.test.mjs (#R690) holds equal to it.
  *
  *  ══ ⚠ THE ROLES ON THE MEMBERS ARE NOT DECORATION ══════════════════════════════════════════════
  *  Measured on the download: 8,769 of the 8,782 relation members carry role `subarea` — an

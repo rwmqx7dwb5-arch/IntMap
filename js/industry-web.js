@@ -14,7 +14,7 @@
  *  WIKIDATA, through its public SPARQL endpoint (query.wikidata.org). CORS was measured from a real
  *  cross-origin request before anything was wired — `access-control-allow-origin: *` — which is the
  *  #R212 rule (a Node check is not the browser's answer; this one was checked with an Origin header
- *  and is re-checked from the page by tests/r213).
+ *  and is re-checked from the page by tests/engine-space-checks.test.mjs (#R213)).
  *
  *  The NODES are companies with property P452 (industry) = the chosen industry, that also have a
  *  headquarters (P159) with coordinates (P625). The EDGES are Wikidata's own ownership statements:

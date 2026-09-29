@@ -2657,7 +2657,7 @@ window.IntMapCesiumEngine=(function(){
 
   /* ── shared helpers (no Cesium needed) ─────────────────────────────────────── */
   /* every one of these is INSIDE the IIFE on purpose: js/ has zero top-level
-     declarations by design (#R169, re-verified by tests/r175-checks.test.mjs on
+     declarations by design (#R169, re-verified by tests/layer-boot-graph-checks.test.mjs (#R175) on
      every commit) — that property is what made the #R175 conversion to ES modules
      incapable of changing a name resolution, and it holds for new files too. */
   function wrapLng(v){ return ((v+180)%360+360)%360-180; }

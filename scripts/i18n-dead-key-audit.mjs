@@ -98,7 +98,7 @@ export function tableOf(code, name) {
 
 /* ── ② everything that ships, as text ─────────────────────────────────────────────────────────
    Cached like scripts/i18n-helpers.mjs `parseAll()`: the corpus is ~300 files and the parse half
-   is 52,000 strings, and tests/r450-checks.test.mjs asks six questions of it in one process. */
+   is 52,000 strings, and tests/shell-i18n-audits-checks.test.mjs (#R450) asks six questions of it in one process. */
 let _text = null;
 export function shippedText() {
   if (_text) return _text;
@@ -208,7 +208,7 @@ function dynamicArgs() {
 /* ⚠ THE VERDICT IS ITS OWN FUNCTION so a test can put a string in front of it. An instrument whose
    only entry point is «run it over the repository» can be asserted to say zero and never asserted
    to be capable of saying anything else, which is the same green as a check that cannot fire
-   ([[intmap-r399-lessons]]). tests/r450-checks.test.mjs hands it a nonce, a string that is live
+   ([[intmap-r399-lessons]]). tests/shell-i18n-audits-checks.test.mjs (#R450) hands it a nonce, a string that is live
    ONLY through the lazy wrapper shapeOf() cannot see, and one an assembled argument can reach. */
 export function classifier() {
   const corpus = shippedText();
@@ -256,7 +256,7 @@ export function audit() {
      question as the tables they feed.
      ⚠⚠ THERE ARE TWO STAGING DIRECTORIES, AND THE FIRST DRAFT OF THIS ONLY KNEW ABOUT ONE.
      scripts/zh/*.json is the authored Traditional translation that scripts/build-ui-zh.mjs merges
-     back into js/locales/ui.zh.js, and tests/r223 ⑩ asserts that it is the REBUILDABLE source of
+     back into js/locales/ui.zh.js, and tests/hazard-other-i18n-registry-checks.test.mjs #R223 ⑩ asserts that it is the REBUILDABLE source of
      that file. It keys the inline table by the English string like the others and the keyed table
      by «ui:<name>», so a dead `ui:` row is invisible to a scan that only strips nothing. Leaving
      it out would have made this gate true of one half of the resurrection paths. */

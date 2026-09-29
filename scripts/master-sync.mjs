@@ -32,7 +32,7 @@
  *
  *  ⚠ --check IS AN END-OF-TASK GATE, NOT A CI GATE, and deliberately not in `npm test`: on a CI
  *  runner the checkout is a detached PR ref and «behind origin/main» is the normal, correct state.
- *  What CI can prove about this rule is proved in tests/r282-checks.test.mjs instead.
+ *  What CI can prove about this rule is proved in tests/process-master-sync-checks.test.mjs (#R282) instead.
  *  ⚠ IT NEVER TAKES A BRANCH AWAY FROM ANOTHER SESSION (AGENTS.md §6). The master is «main, at
  *  origin/main», not a workspace: --sync only ever fast-forwards main, never checks out anything,
  *  and never writes over an uncommitted change. Anything else is reported and left as it was.

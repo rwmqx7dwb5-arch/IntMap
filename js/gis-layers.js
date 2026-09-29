@@ -64,7 +64,7 @@
  *  anything that arrived otherwise before it could reach a source. So this is the one origin in the
  *  app where 「what arrived」 is known rather than declared by the file.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③) and window.* is read at CALL time, so this
  *  module imports in Node with no DOM: sources() is empty and every entry point refuses by name
  *  instead of throwing.
  * ==========================================================================*/
@@ -565,7 +565,7 @@ export function makeGisLayers() {
        handed to that one implementation and the drawn/undrawn difference shrinks to where the rows
        came from (.agents/rules/no-ad-hoc-hardcoding.md §2-3: the judgement is配られる, not copied).
        ⚠ THE DECLARATION AND THE IMPLEMENTATION ARE ONE FACT NOW, and that is the invariant
-       tests/r783-gis-fetch-contract-checks measures: the same request answered from the document and
+       tests/geo-gis-sources-checks.test.mjs (#R783) measures: the same request answered from the document and
        from the renderer returns the same ids, the same count and the same continuation. */
     function pageOf(key, all, q) {
       const asked = {

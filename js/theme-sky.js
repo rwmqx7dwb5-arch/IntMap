@@ -15,10 +15,10 @@
  *  a closure value that app-body REASSIGNS at runtime must be read through IM_HOST's live accessor,
  *  never captured when this factory ran. Those are userTheme (read AND written), currentMapType →
  *  HOST.mapType, namesOn, bordersOn, satActive, satPanelDismissed. Everything else — every function —
- *  arrives through CTX under its original name. tests/r199-checks.test.mjs enumerates both sets.
+ *  arrives through CTX under its original name. tests/atlas-console-kernel-checks.test.mjs (#R199) enumerates both sets.
  *
  *  (#R202) It also imports js/sky-model.js — the scattering integral that decides `sky-color`. That
- *  file is pure arithmetic with no DOM and no renderer, so tests/r202-checks.test.mjs runs it in Node.
+ *  file is pure arithmetic with no DOM and no renderer, so tests/hazard-other-sky-atmosphere-checks.test.mjs (#R202) runs it in Node.
  * ==========================================================================*/
 import { skyColour, limbViewElev, sunOpticalDepth, skyModelTables } from './sky-model.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
@@ -28,7 +28,7 @@ import { everyTick, stopTick } from './runtime.js';
    but the whole point of that layer is that it marches THIS model — same coefficients, same ozone
    tent, same multiple-scattering table. So the tables and the sun-ray integral are put on the window
    from the one file that already imports them, and js/geo-engine.js hands them to the layer.
-   ⚠ A `window.X` that nothing assigns is the #R162 trap; tests/r227-checks holds both ends. */
+   ⚠ A `window.X` that nothing assigns is the #R162 trap; tests/sky-atmosphere-checks.test.mjs (#R227) holds both ends. */
 window.IntMapSkyModel = { tables: skyModelTables, sunOpticalDepth };
 export function makeThemeSky(HOST, CTX) {
   const GE=CTX.GE, applyLabelLang=CTX.applyLabelLang, canDraw=CTX.canDraw, ensurePlaceLabels=CTX.ensurePlaceLabels, mapLabelsViaVector=CTX.mapLabelsViaVector, satRefreshReadout=CTX.satRefreshReadout, satRenderController=CTX.satRenderController;
@@ -151,7 +151,7 @@ export function makeThemeSky(HOST, CTX) {
          there is no `now()`. (`const now=()=>new Date()` is a PRIVATE helper inside that IIFE.) So
          `if(T&&T.now)` was false on every build since #R196 and the sun was aimed by the wall clock
          no matter where the time machine stood. Four files carried the same line; all four are fixed,
-         and tests/r200-checks derives the real surface from js/app-body.js so this cannot come back.
+         and tests/shell-app-body-modules-checks.test.mjs (#R200) derives the real surface from js/app-body.js so this cannot come back.
          `when()` is the one to call: it returns the travelled instant, or now when the clock is live. */
       let ms=Date.now(); try{ const T=window.IntMapTime; if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; } }catch(_){}
       const s=S.sunPosition(ms), g=S.gmstDeg(ms);
@@ -167,7 +167,7 @@ export function makeThemeSky(HOST, CTX) {
   /* ⚠ …and the FLIGHT SIMULATOR owns the sky outright while it runs. It sets its own cockpit sky in
      start() and restores whatever was there in stop(), so anything this function does in between is
      both wrong and destructive: measured, a basemap switch during a flight cleared the sim's
-     `sky-color` to undefined (tests/r174 «the renderer's own sky is what a cockpit sees»). A window
+     `sky-color` to undefined (tests/geo-drone-planner-checks.test.mjs (#R174) «the renderer's own sky is what a cockpit sees»). A window
      with a pilot in it is a more specific request than "the satellite view has an atmosphere". */
   function _skyIsOwnedElsewhere(){
     try{ const FS=window.IntMapFlightSim; if(FS&&FS.active&&FS.active()) return true; }catch(_){}
@@ -678,7 +678,7 @@ export function makeThemeSky(HOST, CTX) {
      `mix(bgL, bgL·T + L, 1)` = `bgL·T + L`, the composite itself, i.e. the air that is actually
      there, drawn. There is no longer a number here for a later round to sweep, and the two ways this
      could be wrong are both structural and both testable: the model (js/sky-model.js) and the march
-     (js/limb-layer.js). ⚠ tests/r238 pins the RELATION — that the rim is brighter than the inner
+     (js/limb-layer.js). ⚠ tests/hazard-seismic-wavefront-checks.test.mjs (#R238) pins the RELATION — that the rim is brighter than the inner
      disc by more than maplibre's own pass managed — not the number.
 
      ⚠ ONE ANSWER FOR ALL THREE BASEMAPS, and that is a PROPERTY OF THE COMPOSITE rather than a
@@ -1098,12 +1098,12 @@ export function makeThemeSky(HOST, CTX) {
      with no HOST, and it has to be able to ask for the light to be re-decided when the day/night
      setting is flipped on an engine that lights its own globe — the alternative is setting the light
      behind the back of the one function that knows the Sun simulator and the flight sim can own it.
-     The first version published it beside the `makeThemeSky` call in js/app-body.js and tests/r200
+     The first version published it beside the `makeThemeSky` call in js/app-body.js and tests/shell-app-body-modules-checks.test.mjs (#R200)
      ⑤ caught that immediately: eight lines took that file from 4,398 to 4,406 against a 4,400
      ceiling. The ratchet is standing instruction 13 with teeth, and the answer it forces is the right
      one anyway — the object belongs to the file that builds it.
      ⚠ A `window.X` that nothing assigns is the #R162 trap: every caller is inside a try/catch, so a
-     missing assignment removes the feature in silence. tests/r214-checks ⑤ holds both ends. */
+     missing assignment removes the feature in silence. tests/sky-atmosphere-checks.test.mjs #R214 ⑤ holds both ends. */
   window.IntMapThemeSky = { applyTheme, _applySkyAtmosphere, _skyFollowCamera };
   return { applyTheme, _applySkyAtmosphere, _skyFollowCamera };
 }

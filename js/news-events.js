@@ -199,7 +199,7 @@ window.IntMapModules.newsEvents = function (HOST) {
   /* ── サーバーが書いた統合文（`news_events.summary`）───────────────────────
      ⚠ 決定論の抽出では作れないもの——**複数の媒体が別々に書いた文を 1 つの説明に
        まとめること**——だけを、取り込みの `summarise` 段（サーバー側）が LLM で作る。
-       ⚠ その関数の名前をここに綴らない。`tests/r351-checks ⑮` は「js/ と src/ にその綴りが
+       ⚠ その関数の名前をここに綴らない。`tests/news-ingest-checks.test.mjs #R351 ⑮` は「js/ と src/ にその綴りが
          1 つも無い」で**サーバー専用**を守っており、散文の言及と import を区別しない。
          区別させる方向に検査を緩めるより、こちらが名前を呼ばないほうが安い。
        返答は**1 文ごとに根拠の断片を言わせ、サーバー側でそれが原文に在ることを確かめて
@@ -545,7 +545,7 @@ window.IntMapModules.newsEvents = function (HOST) {
            **`AI` という語が 1 言語にも入っていなかった**——隠すつもりが無いことと、隠れていない
            ことは別である（[[intmap-r485-lessons]] と同じ形）。いま注記は `AI` を明示し、
            畳まれた `<details>` の下ではなく**段落の直下**に出る。
-           tests/r502-checks.test.mjs ③④ が、9 言語すべてでその語が在ることを見ている。 */
+           tests/shell-index-document-checks.test.mjs #R502 ③④ が、9 言語すべてでその語が在ることを見ている。 */
       if (ev.synthesis) {
         html += '<div class="ev-syn">';
         for (const l of ev.synthesis.lines) {

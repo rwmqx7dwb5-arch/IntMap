@@ -265,7 +265,7 @@ export function makeAtlasAnswerRender() {
 
   /* demoteProseLinks(html, planCites, records) -> html
      The whole rule in one call, so js/atlas-console.js needs a line rather than a block: that file is
-     shrink-only (tests/r419 ⑨d / r511 ⑨) and «the kernel shrinks by moving» is the standing answer.
+     shrink-only (tests/atlas-turn-checks.test.mjs #R419 ⑨d / r511 ⑨) and «the kernel shrinks by moving» is the standing answer.
      `planCites` are the planner call's own citations and `records` the compose records this reply drew
      — together, every host THIS TURN actually retrieved, and nothing else. */
   function demoteProseLinks(html, planCites, records) {

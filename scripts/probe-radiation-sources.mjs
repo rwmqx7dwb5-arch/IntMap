@@ -8,7 +8,7 @@
 //
 //  It is deliberately NOT part of `npm test`: every mode here talks to six governments' servers, and
 //  a test suite that does that is a test suite that fails when somebody else's certificate expires.
-//  tests/r585-radiation-sources.test.mjs runs the same parsers against captured fixtures instead.
+//  tests/hazard-radiation-sources-checks.test.mjs (#R585) runs the same parsers against captured fixtures instead.
 //
 //    node scripts/probe-radiation-sources.mjs --latest     every provider's latest(), end to end
 //    node scripts/probe-radiation-sources.mjs --epa        re-derive the RadNet station list, diff it

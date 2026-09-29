@@ -222,7 +222,7 @@ window.IntMapModules.routingOps=function(HOST){
        awaiting it) for ever. The read has the host's clock now, and a failure is recorded as `quakesErr` — the
        same field elevation and borders already carry — and said out loud. An empty feed is still [].
        ⚠ The clock is reached through `window.IntMapFetchWithin` (js/fetch-deadline.js), not an import: this file is
-       parsed as a classic script by tests/r184 #5. */
+       parsed as a classic script by tests/layer-space-satellites-checks.test.mjs (#R184) #5. */
     let quakes=[], quakesErr=null;
     try{
       const QU='https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';

@@ -17,7 +17,7 @@
  *  the layer is BORN; what decides where it lives is js/label-occlusion.js's STACK, re-asserted on
  *  every idle. This file shipped without an entry there for four rounds, so the coastline sat under
  *  every opaque data raster while the border it is a copy of sat above them. Adding a line here now
- *  means adding it there too — tests/r477-checks ① derives that from js/data-layers.js's own map and
+ *  means adding it there too — tests/labels-stack-and-scale-checks.test.mjs #R477 ① derives that from js/data-layers.js's own map and
  *  fails if the two files ever disagree again.
  *
  *  ⚠ THE TILE SEAMS DO NOT SHOW, AND THAT WAS MEASURED RATHER THAN HOPED. Stroking a polygon
@@ -31,7 +31,7 @@
  *  water — and a hotel pool at z17 is not that; a dock basin is.
  *
  *  ⚠ A NAMED EXPORT, imported by js/app-body.js, for js/wheel-zoom.js's reason: the shell has a
- *  line ceiling whose whole point is that a subject goes to its own file (tests/r168 #8), and a
+ *  line ceiling whose whole point is that a subject goes to its own file (tests/news-module-split-checks.test.mjs (#R168) #8), and a
  *  named binding is checkable where a window registration is not.
  * ==========================================================================*/
 export function makeCoastLine(CTX) {

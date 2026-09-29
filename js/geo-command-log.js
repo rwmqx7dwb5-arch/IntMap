@@ -2,7 +2,7 @@
  *  IntMap · THE RENDERER COMMAND CENSUS — how many of them say nothing new  (#R322)
  * ----------------------------------------------------------------------------
  *  Lifted out of js/geo-engine.js, and the reason is a ceiling rather than tidiness:
- *  tests/r168-checks.test.mjs holds the SHELL — index.html plus the five files the whole program
+ *  tests/news-module-split-checks.test.mjs (#R168) holds the SHELL — index.html plus the five files the whole program
  *  passes through — under 8,200 lines, and that ceiling only ever goes DOWN. Adding the census to
  *  the adapter put the shell at 8,535. The check says what to do about that in its own words:
  *  「a subject moves out instead」, which is what #R313 did with the Atlas stylesheet.
@@ -220,7 +220,7 @@ function _contentSig(d) {
 
 /* ══ THE DECISION, SO THE ADAPTER'S METHODS STAY ONE-LINERS ═══════════════════════════════════
    js/geo-engine.js is part of the SHELL, and the shell has a line ceiling that only ever goes down
-   (tests/r168-checks.test.mjs). Inlining «compare, tally, time, maybe skip» five times put it 118
+   (tests/news-module-split-checks.test.mjs (#R168)). Inlining «compare, tally, time, maybe skip» five times put it 118
    lines over. It is also the same four steps five times, which is a second reason to write it once.
 
    `skipProp` answers 「may this call be skipped」 for a layer property — paint, layout or filter. It

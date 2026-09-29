@@ -13,7 +13,7 @@
  *  the assembler is OUTSIDE js/: tests and outside programs import `makeGisRuntime` from
  *  js/gis-core.js in Node (docs/GIS-CORE.md §5.8), while the browser reaches the same assembly
  *  through window.IntMapModules.gisCore. A module whose only readers are outside the bundle has no
- *  line inside it that names what it publishes — and tests/r175-checks ③ measures exactly that:
+ *  line inside it that names what it publishes — and tests/layer-boot-graph-checks.test.mjs #R175 ③ measures exactly that:
  *  every export of a js/ module must be imported BY NAME from js/, or it is dead code. The honest
  *  way to hold that property is not to hide the export; it is to give it a real reader. So the two
  *  halves read each other, and each one's export is named by the other:
@@ -75,7 +75,7 @@
 
 import { mountGis } from './gis-core.js';
 /* ══ ⚠ ONE TOP-LEVEL BINDING, AND THE REST OF THE FILE INSIDE IT ═════════════════════════════
-   tests/r175-checks ③ is the property the bundling rests on: a js/ module may hold NO unexported
+   tests/layer-boot-graph-checks.test.mjs #R175 ③ is the property the bundling rests on: a js/ module may hold NO unexported
    top-level declaration, because a classic script's top-level `const`/`function` was a global and
    this file is loaded inside the `gisCore` chunk beside fifteen kernels that resolve each other by
    global name. The assembler is seven bindings (EXTERNALS, liveScope, planScope, applyExternals,

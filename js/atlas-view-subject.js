@@ -528,7 +528,7 @@ export function makeAtlasViewSubject(CTX) {
       });
     } catch (_) { return null; }
   }
-  /* ⚠ (#R455) NO NAME IS LIFTED OUT OF A FEATURE HERE, AND `tests/r392 ③` IS RIGHT TO FORBID IT.
+  /* ⚠ (#R455) NO NAME IS LIFTED OUT OF A FEATURE HERE, AND `tests/atlas-examples-checks.test.mjs #R392 ③` IS RIGHT TO FORBID IT.
      The first draft of this round pulled `properties.name || properties.title` off the first
      volcano and the first news point, so a chip could say WHICH volcano — and that is #R313 追記's
      defect exactly: an upstream English (or English+Japanese) noun dropped into a sentence the

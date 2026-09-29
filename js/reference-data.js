@@ -369,7 +369,7 @@ window.IntMapRefData=(function(){
        AND place, and a least-cost path over the sea floor everywhere else. Every one of these is
        named here because the map now carries their data. */
     /* ⚠ THE NAME IS THE KEY. `js/locales/pages.<code>.js` describes every row by its `n`, and
-       tests/r218-checks ⑤ requires all nine — so renaming a row is renaming it in nine files. */
+       tests/hazard-other-i18n-registry-checks.test.mjs #R218 ⑤ requires all nine — so renaming a row is renaming it in nine files. */
     {n:'TeleGeography Submarine Cable Map',u:'https://www.submarinecablemap.com/',lic:'CC BY-SA 4.0',credit:true},
     /* ══ (#R565) THE INTERNET ITSELF, AS A THING THAT CAN BE MEASURED ═══════════════════════════
        The cables above are the plant; these three are the observation of whether traffic is moving

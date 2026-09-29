@@ -86,13 +86,13 @@ export function installAtlasKernel(OS, HOST, deps) {
   OS.__atlasKernel = { caps: caps, results: results, state: state, exec: exec };
   return OS.__atlasKernel;
 
-  /* ⚠ NESTED, AND NOT EXPORTED. tests/r175 ③ forbids an unexported top-level declaration and
+  /* ⚠ NESTED, AND NOT EXPORTED. tests/layer-boot-graph-checks.test.mjs #R175 ③ forbids an unexported top-level declaration and
      forbids an export nothing imports by name, and this factory is both — the ONE door is
      installAtlasKernel. Two callers building two executors would also give them separate
      operation registries and separate conflict locks: two kernels, which is the disagreement
      this round exists to end. It is hoisted, so the call above reaches it. */
 /* ⚠ NOT EXPORTED. `installAtlasKernel` above is the only door — an export nothing imports by
-   name is dead code by tests/r175 ③, and two callers building two executors would give them
+   name is dead code by tests/layer-boot-graph-checks.test.mjs #R175 ③, and two callers building two executors would give them
    separate operation registries and separate conflict locks. Tests reach it the same way the
    app does: install a kernel on a bare object and read `.exec`. */
 function makeAtlasExecutor(HOST, CTX) {
@@ -480,7 +480,7 @@ function makeAtlasExecutor(HOST, CTX) {
           /* ══ ⚠⚠⚠ (#R493) …AND THE CASE'S `exec` DIED THE SAME DEATH, ONE FIELD OVER ═══════════
              js/atlas-results.js's `toLegacy` reads the mechanical block back out of `observed.exec`
              — and the only function that ever put it there is `fromLegacy`, which the app never
-             calls (measured: its three call sites are all inside tests/r318-checks.test.mjs). The
+             calls (measured: its three call sites are all inside tests/atlas-capabilities-checks.test.mjs (#R318)). The
              live path is this one, and `observed` here is composed from the before/after snapshots
              and the VERIFIER'S observation; no observer in js/atlas-capabilities.js sets `exec`. So
              `toLegacy` never set it, `a.__exec` was null, `_runOne` handed js/atlas-toolsurface.js
@@ -490,7 +490,7 @@ function makeAtlasExecutor(HOST, CTX) {
              WHY THIS WAS UNUSABLE: js/atlas-toolsurface.js forwards `res.exec` and nothing else, so
              the note reaches the READER while the turn that located them learned only ok:true», and
              it fixed the locate case to return {lat,lng,accuracyM,provenance}. That block has never
-             once arrived. tests/r413 asserts the SPELLING of the line in the dispatch — true, and
+             once arrived. tests/atlas-geo-resolve-checks.test.mjs (#R413) asserts the SPELLING of the line in the dispatch — true, and
              silent about whether the value survives the executor (#R488's shape exactly: a check
              that pins a spelling cannot notice a dead rule).
              ⚠ AFTER `Object.assign(…, verdict)` ABOVE, NOT INSIDE THE COMPOSITION IT REPLACES. A

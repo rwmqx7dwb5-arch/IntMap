@@ -23,7 +23,7 @@
  *  This helper does not hand back a Response for exactly that reason: it reads the body itself,
  *  inside the same clock, and hands back the parsed value.
  *
- *  ⚠ TWO EXPORTS, ONE CLOCK — tests/r175-checks ③ requires that a js/ module has no unexported
+ *  ⚠ TWO EXPORTS, ONE CLOCK — tests/layer-boot-graph-checks.test.mjs #R175 ③ requires that a js/ module has no unexported
  *  top-level declaration and no export nobody imports, so both readers come out of one closure.
  *
  *  ══ (stalled-fetch-and-surface-gauge) THE SAME CLOCK FOR A LAYER'S OWN READS ═════════════════════
@@ -155,8 +155,8 @@ export const { jsonWithin, readWithin } = (() => {
 })();
 
 /* ══ (fetch-deadline-layer) THE SAME CLOCK FOR THE FILES THAT CANNOT IMPORT IT ════════════════════
-   js/countries-ui.js and js/routing-ops.js are run as CLASSIC scripts by the node harnesses (tests/r453 ⑤
-   and the loader harnesses of tests/r375 / r423 execute them with `new Function`; tests/r184 #5 parses
+   js/countries-ui.js and js/routing-ops.js are run as CLASSIC scripts by the node harnesses (tests/shell-data-layers-checks.test.mjs #R453 ⑤
+   and the loader harnesses of tests/news-countries-checks.test.mjs (#R375) / r423 execute them with `new Function`; tests/layer-space-satellites-checks.test.mjs (#R184) #5 parses
    routing-ops as a script), so an `import` line is not open to them — and both held a read with no end
    (the Natural Earth loader, the earthquakes along a route). They reach this module the way classic
    scripts reach js/nominatim-gate.js: through one window name, `window.IntMapFetchWithin`, carrying the

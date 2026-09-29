@@ -186,7 +186,7 @@ window.IntMapModules.aiCore=function(HOST){
   }
   /* ══ (#R318) WHICH LANGUAGE THE MODEL MUST ANSWER IN — moved here from js/app-body.js ═══════
      It belongs with the transport: every prompt this file sends carries it, and the app shell it
-     used to live in has no line to spare (tests/r168 #8). ⚠ IT USED TO TELL THREE OF THE NINE
+     used to live in has no line to spare (tests/news-module-split-checks.test.mjs (#R168) #8). ⚠ IT USED TO TELL THREE OF THE NINE
      LANGUAGES TO ANSWER IN ENGLISH — `t()` is positional for five and falls back to the locale's
      inline table for the rest, where 'English' is correctly translated (zh 英文) or absent (fr/ko),
      so the instruction «Write your ENTIRE response in <name> only» named the wrong language. The
@@ -483,7 +483,7 @@ window.IntMapModules.aiCore=function(HOST){
   function aiRenderSettings(){
     const wrap=document.getElementById('ai-settings-body'); if(!wrap) return;
     /* ⚠ (#R466) wired HERE, not at factory level: this file's factory only ever DECLARES
-       (tests/r169 #4). The first paint is also the first moment there is anything to repaint. */
+       (tests/engine-app-shell-split-checks.test.mjs (#R169) #4). The first paint is also the first moment there is anything to repaint. */
     if(!aiRenderSettings._lang){ aiRenderSettings._lang=1; try{ window.addEventListener('intmap-lang',()=>{ try{ aiRenderSettings(); }catch(_){} }); }catch(_){} }
     const jp=aiJP();
     /* (#R34) DEV = UNLIMITED — check this FIRST. It used to sit BELOW the "not logged in" early-return, so a

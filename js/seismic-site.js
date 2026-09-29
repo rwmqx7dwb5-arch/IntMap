@@ -32,7 +32,7 @@
  *  construction rather than a calibration. The top thirty metres of the profile below is a single
  *  layer at exactly Vs30 — which is what Vs30 MEANS, the travel-time average over 30 m — so for every
  *  f whose quarter wavelength is 30 m or less, β̄ = Vs30 and ρ̄ = ρ(Vs30), and A(f) is
- *  √(ρ_src·β_src/(ρ·Vs30)) to the last bit. tests/r263-checks ② asserts that against the old
+ *  √(ρ_src·β_src/(ρ·Vs30)) to the last bit. tests/hazard-seismic-source-checks.test.mjs #R263 ② asserts that against the old
  *  expression. Everything this file adds happens BELOW that frequency.
  *
  *  ══ WHERE THE PROFILE BELOW 30 m COMES FROM ═════════════════════════════════════════════════════
@@ -50,7 +50,7 @@
  *  coarse as CRUST1.0 is. The manifest says so and so does the panel.
  *
  *  ⚠ PURE ARITHMETIC — no DOM, no renderer, no fetch, no app state. That is what lets
- *  tests/r263-checks verify it in Node against published profiles instead of against a screenshot,
+ *  tests/hazard-seismic-source-checks.test.mjs (#R263) verify it in Node against published profiles instead of against a screenshot,
  *  the same contract js/fault-geometry.js states.
  * ==========================================================================*/
 window.IntMapSiteAmp = (function () {
@@ -67,7 +67,7 @@ window.IntMapSiteAmp = (function () {
     return 1800 + (v - 180) / (1500 - 180) * (2600 - 1800);
   }
   /* …and the scalar amplification the model used before this file existed. This is the f → ∞ limit
-     of ampSpectrum() below, and tests/r263-checks ② is the assertion that it still is. */
+     of ampSpectrum() below, and tests/hazard-seismic-source-checks.test.mjs #R263 ② is the assertion that it still is. */
   function ampScalar(vs30, rhoSrc, betaSrc) {
     const v = Math.max(150, Math.min(1500, +vs30 || 760));
     return Math.sqrt(((rhoSrc || DEF_RHO_SRC) * (betaSrc || DEF_BETA_SRC)) / (rhoOfVs30(v) * v));

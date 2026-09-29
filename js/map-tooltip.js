@@ -5,7 +5,7 @@
  *  the clamps, the flip-below rule and the --tip-ax arrow offset are the #R175 text, and their
  *  comment came with them.
  *
- *  WHY IT LEFT THE SHELL. tests/r168 #8 budgets the app shell -- index.html + src/main.js +
+ *  WHY IT LEFT THE SHELL. tests/news-module-split-checks.test.mjs (#R168) #8 budgets the app shell -- index.html + src/main.js +
  *  src/vendor.js + js/app-body.js + js/geo-engine.js -- at 8,200 lines, and #R195/#R196 set the
  *  rule that the ceiling follows the floor DOWN and is never raised to let a change through.
  *  This round made the hover path cheaper (a ResizeObserver instead of a forced layout on every
@@ -91,7 +91,7 @@ window.IntMapModules.mapTooltip=function(){
   }
   /* ⚠ (#R499) ONE PLACE THAT DECIDES WHETHER THE TOOLTIP IS SHOWN, for the same reason #R311 gave
      for the markup: thirty-seven sites across eight files wrote `el.style.display='block'` on every
-     mousemove and `'none'` on every mouseleave, unconditionally. tests/r499-checks ③ is what keeps
+     mousemove and `'none'` on every mouseleave, unconditionally. tests/layer-pointer-performance-checks.test.mjs #R499 ③ is what keeps
      the thirty-eighth from being written, because #R498 measured what happens to an optimisation
      that is merely available: `setMapTooltipHTML` had ONE adopter out of eight files. */
   /* ⚠ the guard reads the INLINE declaration rather than a remembered copy: `el.style.display` is a

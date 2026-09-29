@@ -21,7 +21,7 @@
  *  js/lang-registry.js the same way).
  *
  *  ⚠ NOTHING IN HERE TOUCHES THE DOM, THE MAP, THE NETWORK OR THE CLOCK. That is
- *  what lets tests/r669-checks.test.mjs EVALUATE it instead of reading it
+ *  what lets tests/ohm-rings-checks.test.mjs (#R669) EVALUATE it instead of reading it
  *  (#R505: a check that reads source cannot see what a function returns), and it
  *  is the property to keep.
  * ==========================================================================*/
