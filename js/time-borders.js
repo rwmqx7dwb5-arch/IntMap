@@ -1638,50 +1638,34 @@ window.IntMapModules.timeBorders=function(HOST){
     }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
-    (function warm(){ const pf=()=>{ bcLoad(); hnLoad();   /* (#R531) 85 KB of marks, beside the 5.5 MB it marks */
+    (function warm(){ const pf=()=>{ bcLoad(); hnLoad();   /* (#R531) the marks and the names, beside the bundle they mark */
       csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
-        /* (#R679) warming means the BUNDLE now — one 10.6 MB file instead of 53 cross-origin
+        /* (#R679) warming means the BUNDLE now — one file instead of 53 cross-origin
            requests through two public proxies. The per-year walk stays for the case where that
            file is the thing that failed. */
         erLoad().then(d=>{ if(d) return;
           let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); }); };
-      /* (#R122) load the CShapes bundle EAGERLY (was idle-gated up to 6 s) so the FIRST time-travel doesn't block on
-         parsing it — the reported "年代を変えてから国境が出るまで遅い". A short delay keeps it off the critical boot path.
-         ══ (#R192) …EXCEPT 900 ms IS NOT OFF THE BOOT PATH ═══════════════════════════════════════════
-         「起動時の読み込みをもっと早く。」 Measured on a cold load: data/cshapes.js is 5.6 MB and it
-         started at 1,243 ms — while the first satellite tiles, the Köppen raster and the country
-         borders were still arriving, and it is a <script>, so the main thread also PARSES 5.5 MB of
-         literal at whatever moment that lands. It was the largest single item on the boot path and
-         nothing on screen was waiting for it.
-         It is still eager, and #R122's reason still holds — the first time-travel must not block on
-         it — but it now waits for the browser to say the main thread is FREE (requestIdleCallback,
-         with a 6 s ceiling so a permanently busy page still gets it, and a floor of the map's own
-         first idle). On Data Saver or 2G it is not prefetched at all: there the 5.5 MB is a real cost
-         and the time machine can fetch it when it is actually opened. */
-      /* ══ (#R201) …AND A PHONE IS THE SAME CASE AS DATA SAVER ═══════════════════════════════════
-         「モバイル版で、衛星画像が圧倒的に重い」. Measured on a 390×844 session: the page pulls ~20 MB, of
-         which the map tiles are ~1.5 MB — and 5.5 MB of the rest is THIS file, prefetched at t≈5 s,
-         while the satellite tiles the user is looking at are still arriving over the same connection.
-         The imagery is not heavy; it is queued behind things nothing on screen is waiting for.
-         The rule this line already applied to Data Saver and 2G now covers phones for the same
-         reason and with the same guarantee: the time machine still loads the bundle the first time it
-         is opened (csLoad() below is what actually draws), so nothing is lost — only the speculative
-         copy for a feature that has not been asked for. */
-      const go=()=>{ try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
-          if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
-        /* ⚠ (#R668) …AND THE TEST HAD TO BE ASKED OF THE DEVICE FOR THAT TO HOLD. `HOST.isMobile` is
-           a 768 px media query, so the 390×844 session measured above stops matching the moment it is
-           rotated (844 px) and the 5.5 MB speculative bundle is prefetched again — on the phone the
-           paragraph was written about, while its satellite tiles are still queued. The Data Saver
-           line above it does ask a property of the connection; this one now asks a property of the
-           device, through the one owner (js/mem-budget.js), with `HOST.isMobile` kept as the fallback
-           for the boot window before `_imPhoneClass` exists. */
-        try{ if(window.IntMapMemBudget.deviceIsPhone(HOST.isMobile)) return; }
-        catch(_){ try{ if(HOST.isMobile&&HOST.isMobile()) return; }catch(__){} }
-        if(typeof requestIdleCallback==='function') requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,2500); };
-      let started=false; const once=()=>{ if(started) return; started=true; go(); };
-      try{ GE().events.once('idle',()=>setTimeout(once,400)); }catch(_){}
-      setTimeout(once,4000); })();
+      /* (#R122) the bundle is loaded AHEAD of the first time-travel so that journey does not block on
+         parsing it — the reported "年代を変えてから国境が出るまで遅い".
+         (#R192) …but not on the boot path: it is a <script>, so the main thread PARSES the whole
+         literal at whatever moment it lands, and it waits for the browser to say the thread is FREE
+         (requestIdleCallback, with a 6 s ceiling so a permanently busy page still gets it).
+         (#R192/#R201/#R668) …and not at all where a speculative copy is dear — Data Saver, 2G, or a
+         phone, whose connection is the one its visible tiles are queued on. That rule is answered in
+         ONE place (js/mem-budget.js `maySpeculate`), which js/time-admin1.js asks too. csLoad() in the
+         subscriber above is what actually draws, so a withheld head start loses nothing.
+         ══ AND THE HEAD START WAITS FOR THE READER TO HEAD SOMEWHERE ═════════════════════════════
+         「歴史機能に触れなくても起動直後に約 55 MB の歴史データを先読みして main thread で parse する」
+         Until 2026-09-29 this ran at the map's first idle on EVERY desktop session: data/cshapes.js was
+         fetched and parsed for readers who never touched a year (its size then, and why the old
+         「5.5 MB」 notes here were wrong by more than double, is in
+         dev-notes/2026-09-29-history-prefetch-on-demand.md). The head start is now
+         bought at the reader's first intent to leave the present — the Chronos button pressed or
+         focused, a year control touched, or the clock set to a past year by anybody (Atlas, a link,
+         a restored session): js/chronos.js `IntMapTime.onIntent`. */
+      try{ window.IntMapTime.onIntent(()=>{
+        try{ if(!window.IntMapMemBudget.maySpeculate(HOST.isMobile)) return; }catch(_){ return; }   /* no owner to ask = no speculative copy; the real load still runs */
+        if(typeof requestIdleCallback==='function') requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,2500); }); }catch(_){} })();
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
@@ -2063,8 +2047,8 @@ window.IntMapModules.timeBorders=function(HOST){
        「実際の国境変更日にスナップ」. The year slider stays the coarse control; these let the reader
        step onto the exact days the world changed, which is the only way the dense stretches are
        reachable at all — no amount of drag precision lands on 1920-10-28 in a 176-year slider.
-       Async because the answer lives in the 5.5 MB bundle, which is warmed at idle and may not be
-       parsed yet; every one of these resolves to `null` rather than throwing if it never loads. */
+       Async because the answer lives in the CShapes bundle, which is warmed only once the reader
+       heads for the past (`warm` above) and may not be parsed yet; every one of these resolves to `null` rather than throwing if it never loads. */
     /* ⚠ (#R695) THIS HAD TWO YEAR-ZERO TRAPS IN ONE LINE, and both only fire once the list reaches
        below year 1 — which is what this round does by putting the era years in it.
          · `Math.floor(k/100)%100` on a NEGATIVE key gives a negative month (−1229989899 → −99).

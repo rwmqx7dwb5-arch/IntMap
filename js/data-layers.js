@@ -601,7 +601,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const min=opts.min??1960, thisYear=new Date().getFullYear();
       const max=Math.min(opts.max||(thisYear-1),thisYear-1);
       let row=el.querySelector('.dl-clockrow');
-      if(!row){ row=document.createElement('div'); row.className='dl-clockrow';
+      if(!row){ row=document.createElement('div'); row.className='dl-clockrow'; row.setAttribute('data-time-intent','');   /* touching the year = leaving the present (js/chronos.js intent) */
         row.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
         /* A year is a number, not one DOM node per year. The master clock reaches deep
            prehistory; enumerating it made two hidden legends allocate 250,000 options. */

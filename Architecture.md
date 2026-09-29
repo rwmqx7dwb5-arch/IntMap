@@ -2774,6 +2774,22 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 
 ### 7.4 Chronos（統一時間）と「年」
 
+- **歴史データは起動時に読まない。読むのは「過去へ行こうとしている」ときだけ。** 国境の束
+  （`data/cshapes.js`・印 `data/border-coast.js`・名前 `data/histnames.json`。失敗時は `data/hist-eras.js`）と
+  第 1 層の歴史的行政区分（`data/hist-admin1.js` と穴埋め `data/hist-kuni.js`・`data/hist-admin-fill.js`）の
+  **先読み**は、`window.IntMapTime.onIntent(fn)`（`js/chronos.js`）が呼ばれてから始まる。
+  意図は 1 回だけ立ち、あとから購読した者には即座に届く（読み込み順で先読みの有無が決まらないため）。
+  立てるのは ⑴ **時計そのもの**——`set` が**今年より前の年**を受けたとき（Atlas・共有リンク・セッション
+  復元・パネルのどの操作もここを通る。未来〔予報・潮汐〕と今年の中は数えない）と、⑵ **時代 UI**——
+  `data-time-intent` を宣言した要素（Chronos ボタン `#ntl-toggle`、凡例の年の行 `.dl-clockrow`）の中での
+  最初の `pointerdown`／`focusin`（カーネルは文書に 1 本の capture リスナを置くだけで、コントロールを名指さない）。
+  `IntMapTime.intended()` が誰がいつ立てたかを返す。
+- **先読みしてよいかは 1 か所が答える**：`window.IntMapMemBudget.maySpeculate(旧テスト)`
+  （`js/mem-budget.js`）。Data Saver・2G（`slow-2g` を含む）・**携帯（端末で訊く `deviceIsPhone`）**では
+  意図のあとでも先読みしない。意図のあとの先読みも `requestIdleCallback`（上限つき）で main thread の空きを待つ。
+  ⚠ これは**先読み**の規則であって、実際に年を変えたときの読み込み（`IntMapTime.on` の購読者）は
+  全端末で従来どおり走る——先読みを控えて失うのは初回の待ちだけで、描画は失わない。
+  ⚠ 第 2 層以下（`data/hist-admin2.js` ほか）は先読みしない（描かれるのはそのズームに達してから）。
 - 地名クリックの優先順位はエンジンの登録情報で判定する。`events.onLayer` の第4引数
   `{ownership:'fallback'}` は、他の地物や地名に譲る領域説明用。`clickLayers()` は全登録、
   `clickLayers({ownersOnly:true})` は優先権を持つ登録を返す。無名歴史領域の説明はfallbackで、

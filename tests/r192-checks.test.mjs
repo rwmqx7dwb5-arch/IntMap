@@ -220,12 +220,17 @@ test('R192 imagery: the tile pipeline is a worker, with the main thread kept as 
 });
 
 /* ── 6 · the boot path ───────────────────────────────────────────────────────────────────────── */
-test('R192 startup: the 5.5 MB history bundle waits for an idle main thread', () => {
+test('R192 startup: the history bundle waits for an idle main thread', () => {
   const s = read('js/time-borders.js');
+  /* (2026-09-29) the warm-up now starts at the reader's intent (js/chronos.js `onIntent`) rather
+     than at boot — the same two claims hold there, and tests/history-prefetch-on-demand-checks
+     RUNS the block to prove them; these are the spellings of the same facts. */
   assert.match(s, /if\(typeof requestIdleCallback==='function'\) requestIdleCallback\(pf,\{timeout:6000\}\); else setTimeout\(pf,2500\);/,
     'it is prefetched when the thread is free, with a ceiling');
-  assert.match(s, /if\(c&&\(c\.saveData===true\|\|\/\(\^\|-\)2g\$\/\.test\(c\.effectiveType\|\|''\)\)\) return;/,
-    'and not at all on Data Saver or 2G');
+  assert.match(s, /if\(!window\.IntMapMemBudget\.maySpeculate\(HOST\.isMobile\)\) return;/,
+    'and not at all on Data Saver or 2G (the one owner of that rule: js/mem-budget.js maySpeculate)');
+  assert.match(read('js/mem-budget.js'), /c\.saveData === true \|\| \/\(\^\|-\)2g\$\/\.test\(c\.effectiveType \|\| ''\)/,
+    'the owner still says Data Saver and 2G');
   assert.doesNotMatch(s, /setTimeout\(pf,900\);/, 'the 900 ms timer is gone');
   const idx = read('index.html');
   ['https://a.basemaps.cartocdn.com', 'https://tiles.openfreemap.org', 'https://server.arcgisonline.com']

@@ -267,11 +267,14 @@ test('⑪ the clock is read as an INSTANT, and the debounce is the country side\
   assert.match(TA, /e\.when/, 'the whole instant, not e.year');
 });
 
-test('⑫ the 6.5 MB bundle is not on the boot path, and not fetched on a phone at all', () => {
-  /* the same rule and the same reasons as data/cshapes.js (#R192/#R201). */
+test('⑫ the first-tier bundle is not on the boot path, and not fetched on a phone at all', () => {
+  /* the same rule and the same reasons as data/cshapes.js (#R192/#R201). (2026-09-29) The warm-up
+     starts at the reader's intent (js/chronos.js `onIntent`) and the Data Saver / 2G / phone rule is
+     answered by its one owner (js/mem-budget.js `maySpeculate`); the run-it proof of both is
+     tests/history-prefetch-on-demand-checks.test.mjs. */
   assert.match(TA, /requestIdleCallback/, 'warmed at idle');
-  assert.match(TA, /saveData|effectiveType/, 'skipped on Data Saver / 2G');
-  assert.match(TA, /HOST\.isMobile/, 'skipped on a phone');
+  assert.match(TA, /IntMapTime\.onIntent\(/, 'and only once the reader heads for the past');
+  assert.match(TA, /IntMapMemBudget\.maySpeculate\(HOST\.isMobile\)/, 'skipped on Data Saver / 2G / a phone');
   /* ⚠ NAMING IT IN A COMMENT IS NOT IMPORTING IT. The claim is that no module graph pulls the
      6.5 MB literal into a chunk — so the test is for an import STATEMENT, not for the string. */
   const importsIt = src => /\bimport\s*\(?\s*['"][^'"]*hist-admin1/.test(src) || /\bfrom\s*['"][^'"]*hist-admin1/.test(src);

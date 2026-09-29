@@ -129,7 +129,13 @@ window.IntMapTime=(function(){
     if(nd && isNaN(nd.getTime())) return OS;
     if(nd){ const floor=atUTC(ymin(),0,1); if(nd<floor) nd=floor;
       if(!opts.allowFuture){ const n=now(); if(nd.getTime()>n.getTime()) nd=null; } }   /* future → live */
-    _when=nd; return broadcast(opts.source), OS; };
+    _when=nd;
+    /* a past YEAR is the strongest intent there is — Atlas, a share link, a restored session and every
+       control in the panel all arrive here, so none of them has to remember to say so separately.
+       Future instants (the forecast, the tides) and «earlier this year» are not a journey into the
+       past and do not count. */
+    if(nd&&nd.getFullYear()<now().getFullYear()) OS.intent('clock:'+(opts.source||'api'));
+    return broadcast(opts.source), OS; };
   OS.setYear=function(y,opts){ y=Math.round(+y); if(!(y>=ymin())) return OS;
     const n=now(); if(y>=n.getFullYear()) return OS.setNow(opts);
     return OS.set(atUTC(y,5,15,12,0,0), opts); };   /* mid-June noon UTC: neutral season/terminator */
@@ -137,5 +143,39 @@ window.IntMapTime=(function(){
     if(days<=0) return OS.setNow(opts);
     const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-days); return OS.set(d,opts); };
   OS.setNow=function(opts){ _when=null; return broadcast((opts||{}).source), OS; };
+  /* ══ THE READER'S INTENT TO LEAVE THE PRESENT — one signal, fired once ══════════════════════════
+     「歴史機能に触れなくても起動直後に約 55 MB の歴史データを先読みして main thread で parse する」のを
+     やめる. Measured 2026-09-29 on a desktop boot: the historical border module warmed data/cshapes.js
+     (and, had it failed, data/hist-eras.js) and the historical subdivision module warmed
+     data/hist-admin1.js with its three companions, at the map's first idle — for every session, whether
+     or not the reader ever touched a year. The byte counts are in dev-notes/2026-09-29-history-prefetch-on-demand.md (they move with every
+     rebuild of those files; this note does not copy them).
+     The head start those warm-ups bought (#R122: the first journey must not wait on a parse) is kept,
+     but it is now bought when the reader shows they are going somewhere: `intent()` is the moment,
+     `onIntent(fn)` is who wants to know.
+       · WHO FIRES IT: the clock itself, the first time it is set to a past year (above), and the time
+         UI — any element that declares `data-time-intent` fires it on the reader's first pointerdown or
+         focus inside it (the listener below), which is earlier than the first year change by the
+         length of a click. The UI declares; this file does not name any control.
+       · WHO LISTENS: whatever has a speculative copy to make. Deciding WHETHER to make it on this
+         device and connection is not this file's question (js/mem-budget.js `maySpeculate`).
+     ⚠ ONCE, AND LATE SUBSCRIBERS ARE NOT LEFT OUT. A module that subscribes after the intent has
+     already fired is called at once — otherwise the order of two imports would decide whether a
+     bundle is warmed, which is the shape `ymin()` above exists to avoid. */
+  let _intent=null; const intentSubs=[];
+  OS.intent=function(source){ if(_intent) return OS;
+    _intent={ source:String(source||'ui'), at:Date.now() };
+    const fs=intentSubs.splice(0); fs.forEach(f=>{ try{ f(_intent); }catch(_){} });
+    try{ if(typeof document!=='undefined'){ document.removeEventListener('pointerdown',_onIntentEvent,true); document.removeEventListener('focusin',_onIntentEvent,true); } }catch(_){}
+    return OS; };
+  OS.intended=()=>_intent?{ source:_intent.source, at:_intent.at }:null;
+  OS.onIntent=function(fn){ if(typeof fn!=='function') return ()=>{};
+    if(_intent){ try{ fn(_intent); }catch(_){} return ()=>{}; }
+    intentSubs.push(fn); return ()=>{ const i=intentSubs.indexOf(fn); if(i>=0) intentSubs.splice(i,1); }; };
+  /** @param {Event} ev */
+  function _onIntentEvent(ev){ try{ const t=/** @type {any} */ (ev.target);
+    if(t&&typeof t.closest==='function'&&t.closest('[data-time-intent]')) OS.intent('ui:'+ev.type); }catch(_){} }
+  try{ if(typeof document!=='undefined'&&document.addEventListener){
+    document.addEventListener('pointerdown',_onIntentEvent,true); document.addEventListener('focusin',_onIntentEvent,true); } }catch(_){}
   return OS;
 })();

@@ -246,8 +246,12 @@ test('r201 ④b the seed the suite boots with lives in exactly one place', () =>
 
 test('r201 ⑤ the two multi-megabyte prefetches take the phone into account', () => {
   const TB = read('js/time-borders.js');
-  assert.ok(/if\(HOST\.isMobile&&HOST\.isMobile\(\)\) return;/.test(TB),
-    'the 5.5 MB CShapes bundle is not prefetched on a phone (the time machine still loads it)');
+  /* (2026-09-29) the phone half of the rule is answered once, in js/mem-budget.js `maySpeculate`
+     (by the DEVICE, with the width test as the boot-window fallback), and the CShapes warm-up asks it. */
+  assert.ok(/if\(!window\.IntMapMemBudget\.maySpeculate\(HOST\.isMobile\)\) return;/.test(TB),
+    'the CShapes bundle is not prefetched on a phone (the time machine still loads it)');
+  assert.match(read('js/mem-budget.js'), /function maySpeculate\(fallback\) \{[\s\S]{0,120}return !deviceIsPhone\(fallback\);/,
+    'and the owner answers «phone» from the device');
   const CU = read('js/countries-ui.js');
   assert.ok(/if\(HOST\.isMobile&&HOST\.isMobile\(\)\) slow=true;/.test(CU),
     'the 4.3 MB 10 m geometry takes the Data-Saver schedule on a phone — deferred, never dropped');
