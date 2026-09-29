@@ -1230,16 +1230,20 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全20本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（31本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（32本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定。14本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳。15本）
   functions/<name>/index.ts       Edge Functions（20本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
-                                  fetch-relay-policy.js）
+                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js）
+                                  ⚠ ai-ledger.js は AI 枠の**唯一の台帳の扉**（プラン表・アカウント解決・
+                                  consume/refund/settle/record。ai-proxy と monitor-run が共有）、
+                                  ai-usage.js は 3 社の使用量を 1 つの形にする純関数と Anthropic の
+                                  prompt cache の印（ai-one-ledger）
                                   ⚠ fetch-relay-policy.js も**ブラウザが import する**（js/proxy-fetch.js。
                                   許可表の写しを作らない・own-fetch-relay）
                                   ⚠ client-error-shape.js は**ブラウザも import する**

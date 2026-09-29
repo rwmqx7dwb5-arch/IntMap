@@ -7,15 +7,18 @@
 //
 //    1. Verifies the JWT and resolves the user  (login REQUIRED → 401 if not).
 //    2. Looks up the user's plan + daily quota   (free = 10/day; easily tiered).
-//       ⚠ THE NUMBER IS PLAN_LIMITS BELOW, NOT THIS LINE. It read «30/day» for the whole of the
-//       time #R147 had already moved free to 10 — a header that restates a constant twenty lines
-//       above it is a second copy, and the copy is the one a reader meets first.
-//    3. Atomically consumes one use for today    (increment_ai_usage RPC).
+//       ⚠ THE NUMBER IS PLAN_LIMITS IN _shared/ai-ledger.js, NOT THIS LINE. It read «30/day» for the
+//       whole of the time #R147 had already moved free to 10 — a header that restates a constant is
+//       a second copy, and the copy is the one a reader meets first.
+//    3. Atomically consumes one use for today    (consume_ai_turn RPC, which charges increment_ai_usage
+//       once per turn — through _shared/ai-ledger.js, the door monitor-run's «Run now» charges through too).
 //       → over quota returns 429 {error:"limit", used, limit}.
 //    4. Calls the provider with a SERVER-HELD key (model fixed here — the user
 //       never sees a key or a model picker).
 //    5. Returns { text, used, limit, remaining, charged, meta } (+ `output` for a protocol-2 turn, atlas-native-tools). On a provider failure the
 //       consumed slot is refunded so a failed call never costs the user a use.
+//    6. (ai-one-ledger) Records what the provider answers COST — input / cached read / cache write /
+//       output tokens, normalised by _shared/ai-usage.js — in the same ledger (record_ai_usage).
 //
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
@@ -85,6 +88,11 @@ import { createClient } from "@supabase/supabase-js";   // pinned in this functi
    body and the provider's answer are read through them so a byte ceiling and a deadline hold WHILE
    the bytes arrive, not after they have all been buffered. */
 import { readCapped, RelayError } from "../_shared/relay-guard.js";
+/* (ai-one-ledger) The plan table, the account and the turn ledger's doors (shared with monitor-run,
+   which charges the same allowance), and what a provider answer cost (one shape for three providers,
+   plus the Anthropic prompt-cache breakpoints). */
+import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable } from "../_shared/ai-ledger.js";
+import { usageMeter, withPromptCache } from "../_shared/ai-usage.js";
 /* (edge-spend-and-models) The model table, the provider-answer ceilings and the one door to a paid
    provider are shared with every other function that holds a provider key — see that file's header
    for what was found when each of them lived here and in four other places. */
@@ -104,8 +112,9 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-// ---- Plan → daily free-use limit. Extend here for future paid tiers. --------
-const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };
+/* ---- Plan → daily free-use limit: PLAN_LIMITS in _shared/ai-ledger.js (ai-one-ledger). It lived here
+   until a second caller (monitor-run's «Run now») had to charge the same allowance — one table, read
+   by both, rather than a copy in each. */
 /* == (#R491) THE TERM GLOSS IS A SEPARATE LANE, NOT A BIGGER ALLOWANCE =========================
    Selecting a phrase inside an Atlas answer and asking what it means is a different kind of call
    from asking Atlas a question: a short prompt, ~700 tokens out, no tools and no web search. Put
@@ -136,8 +145,7 @@ const MAX_GLOSS_PROMPT = 8_000;   // the selection + the sentence around it + th
    Atlas how much thinking one answer is allowed. */
 const TURN_MAX_CALLS = 12;
 const TURN_TTL_S = 900;
-const MAX_TURN_KEY = 120;   /* (#R101) free 10→30/day; (#R147) 30→10/day */
-const DEFAULT_LIMIT = PLAN_LIMITS.free;
+const MAX_TURN_KEY = 120;
 
 /* ══ (edge-spend-and-models) THE PROJECT-WIDE CEILING — a fence on the invoice, not on Atlas ══════
    Everything above bounds ONE ACCOUNT: PLAN_LIMITS a day of turns, TURN_MAX_CALLS the calls one turn
@@ -964,7 +972,7 @@ function anthropicWeb(j: any, attached: boolean): { webAttached: boolean; webUse
   return { webAttached: attached, webUsed: webCount > 0, webCount, citations };
 }
 
-async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter): Promise<{ text: string; finishReason: string; served?: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
   /* (#R540) documents → attached text → the user's prompt. The question is asked ABOUT material the
@@ -977,16 +985,18 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   if (system) body.system = system;
   // Anthropic has a NATIVE web-search tool; unlike Gemini it is safe to attach on demand.
   if (web) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
+  /* (ai-one-ledger) the system prompt (and the web tool) end in a cache breakpoint — _shared/ai-usage.js */
   const r = await providerCall("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(withPromptCache(body)),
   });
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);
     throw classifyGemini(r.status, t, "", "");   // same status→code mapping applies to Anthropic
   }
   const j = await r.json();
+  meter?.add("anthropic", j);
   const text = (j.content && j.content.map((b: { text?: string }) => b.text || "").join("")) || "";
   const finishReason = String(j?.stop_reason || "");
   if (!text) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
@@ -1000,7 +1010,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
    alternates roles and opens with the user, so consecutive same-role items are merged and a
    conversation that opens mid-way is said to. No JSON mode here (the instruction states the final
    shape, and the client reads a prose final as the answer — as it always did on this provider). */
-async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[]; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[]; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
   const attached = filesBlock(files);
   const msgs: { role: string; content: unknown[] }[] = [];
   const add = (role: string, block: unknown) => {
@@ -1029,13 +1039,19 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
   if (system) body.system = system;
   if (tools.length) body.tools = tools;
   if (turn.toolChoice === "none" && turn.tools.length) body.tool_choice = { type: "none" };
+  /* (ai-one-ledger) THE FIXED PREFIX IS CACHED. The functions and the instructions are the same on every
+     call of one turn (up to TURN_MAX_CALLS of them) and, for the same page, on every turn; Anthropic
+     re-bills that prefix in full unless the request marks it (no cache_control was sent before this).
+     Breakpoints at the end of the tools and of the system prompt — _shared/ai-usage.js withPromptCache
+     says why these two and why this changes nothing the model reads. */
   const r = await providerCall("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(withPromptCache(body)),
   });
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 400), "", "");
   const j = await r.json();
+  meter?.add("anthropic", j);
   const output: TurnItem[] = [];
   let text = "";
   for (const b of (Array.isArray(j?.content) ? j.content : [])) {
@@ -1047,7 +1063,7 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
   return { text, finishReason, served: String(j?.model || ""), output, ...anthropicWeb(j, web) };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = ""): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -1187,7 +1203,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (nextModel && (r.status === 403 || r.status === 404) &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: nextModel, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat, turn, cacheKey);
+      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat, turn, cacheKey, meter);
     }
     const pe = classifyGemini(r.status, t, "", "");
     /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written
@@ -1201,6 +1217,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     throw pe;
   }
   const j = await r.json();
+  meter?.add("openai", j);
   // deno-lint-ignore no-explicit-any
   const outputArr: any[] = Array.isArray(j?.output) ? j.output : [];
   // deno-lint-ignore no-explicit-any
@@ -1265,7 +1282,14 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations, schemaAttached: usedJson === "schema", served: String(j?.model || ""), output };
 }
 
+/* (ai-one-ledger) One request's usage meter (_shared/ai-usage.js usageMeter). Every provider answer
+   this request READS is added to it the moment its body is parsed — before any check that may still
+   throw — so a fallback step, a retry or an answer later refused as empty is counted too: each of
+   them was a request on the same invoice. */
+type Meter = { add(provider: string, answer: unknown): unknown };
+
 interface GeminiOpts {
+  meter?: Meter;
   maxTokens: number;
   web: boolean;
   searchEnabled: boolean;
@@ -1311,6 +1335,7 @@ async function callGemini(model: string, key: string, prompt: string, system: st
   }
 
   const j = await r.json();
+  opts.meter?.add("gemini", j);
   const c = j?.candidates?.[0];
   const finishReason = String(c?.finishReason || "NO_CANDIDATE");
   const blockReason = String(j?.promptFeedback?.blockReason || "");
@@ -1370,7 +1395,7 @@ async function geminiRetry<T>(call: () => Promise<T>): Promise<T> {
      · function declarations cannot be combined with JSON mode or with Google Search grounding on this
        endpoint, so a turn carries neither: the final shape is stated by the instruction, and the
        client reads a prose final as the answer (as it always did when JSON mode was dropped). */
-async function callGeminiTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], maxTokens: number): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string; output: TurnItem[] }> {
+async function callGeminiTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], maxTokens: number, meter?: Meter): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string; output: TurnItem[] }> {
   const attached = filesBlock(files);
   const nameOf: Record<string, string> = {};
   const contents: { role: string; parts: unknown[] }[] = [];
@@ -1406,6 +1431,7 @@ async function callGeminiTurn(model: string, key: string, turn: TurnReq, system:
   );
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 1500), "", "");
   const j = await r.json();
+  meter?.add("gemini", j);
   const c = j?.candidates?.[0];
   const finishReason = String(c?.finishReason || "NO_CANDIDATE");
   const blockReason = String(j?.promptFeedback?.blockReason || "");
@@ -1504,12 +1530,8 @@ Deno.serve(async (req) => {
   // Service-role client for the quota table + plan lookup.
   const db = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  // 2) Plan → limit.
-  let plan = "free";
-  try {
-    const { data: prof } = await db.from("profiles").select("plan").eq("id", user.id).maybeSingle();
-    if (prof && typeof prof.plan === "string" && prof.plan) plan = prof.plan;
-  } catch (_) { /* profiles.plan may not exist yet → default free */ }
+  // 2) Plan → limit. (ai-one-ledger) Resolved by _shared/ai-ledger.js accountFor — profiles.plan, then
+  //    the developer override below — so monitor-run's «Run now» resolves the SAME account the same way.
   /* (#R31/#R32) Developer override → UNLIMITED AI, quota never consumed ("AI機能の使用は無制限に").
      ⚠ IT IS A USER ID NOW, AND THE ID LIVES IN A SECRET RATHER THAN IN THIS FILE. The rule used to be
      a hard-coded e-mail address compiled into a PUBLIC repository, which is three separate problems:
@@ -1522,11 +1544,12 @@ Deno.serve(async (req) => {
      (`supabase secrets set DEV_USER_IDS=<uuid>`), so the RIGHTS are unchanged — the same account is
      still exempt from consumption and still resolves to plan "unlimited" — while the address is gone
      from the tree and the grant can be moved or withdrawn without touching code. `profiles.plan`
-     carries the same grant in the database, so the two agree even if the secret is ever unset. */
-  const devIds = (Deno.env.get("DEV_USER_IDS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
-  const isDev = devIds.includes(String(user.id || "").toLowerCase());
-  if (isDev) plan = "unlimited";
-  const limit = PLAN_LIMITS[plan] ?? DEFAULT_LIMIT;
+     carries the same grant in the database, so the two agree even if the secret is ever unset.
+     (ai-one-ledger) The rule itself is _shared/ai-ledger.js devUserIds now — unchanged, moved. */
+  const account = await accountFor(db, user.id, (k: string) => Deno.env.get(k) || "");
+  const isDev = account.isDev;
+  const plan = account.plan;
+  const limit = account.limit;
 
   /* (#R318) The turn key travels in a HEADER, not in the JSON body, because the body has not been
      read yet at this point and must not be: consumption happens before parsing precisely so an
@@ -1558,24 +1581,22 @@ Deno.serve(async (req) => {
       return json({ error: "quota_unavailable", message: "The usage counter is unavailable - please try again." }, 500);
     }
   } else if (!isDev) try {
-    const { data: dec, error } = await db.rpc("consume_ai_turn", {
-      p_user: user.id, p_limit: limit, p_turn: turnId,
-      p_max_calls: TURN_MAX_CALLS, p_ttl_seconds: TURN_TTL_S,
-    });
-    if (error) throw error;
-    const row = Array.isArray(dec) ? dec[0] : dec;
-    used = row?.used ?? 0;
-    charged = !!row?.charged;
-    if (!row?.allowed) {
+    /* (ai-one-ledger) through the shared door (_shared/ai-ledger.js openTurn → consume_ai_turn), with
+       THIS function's turn bounds — the same door monitor-run's «Run now» charges through. */
+    const row = await openTurn(db, account, { turn: turnId, maxCalls: TURN_MAX_CALLS, ttlSeconds: TURN_TTL_S });
+    used = row.used;
+    charged = row.charged;
+    if (!row.allowed) {
       /* Two different 429s, and the client must be able to tell them apart: one means "come back
          tomorrow", the other means "this one request has asked enough times". */
-      const reason = String(row?.reason || "limit");
-      if (reason === "turn_calls") return json({ error: "turn_calls", used, limit, calls: row?.calls ?? 0 }, 429);
+      if (row.reason === "turn_calls") return json({ error: "turn_calls", used, limit, calls: row.calls }, 429);
       return json({ error: "limit", used, limit }, 429);
     }
-  } catch (_e) {
+  } catch (e) {
     /* ⚠ NOT the database error. `String(e.message)` from a PostgREST/RPC failure names the schema,
-       the function signature and sometimes the row that tripped a constraint. */
+       the function signature and sometimes the row that tripped a constraint — openTurn throws a
+       LedgerUnavailable that carries none of it. */
+    if (!(e instanceof LedgerUnavailable)) try { console.error("ai-proxy ledger", String((e as Error)?.name || "")); } catch (_) { /* ignore */ }
     return json({ error: "quota_unavailable", message: "The usage counter is unavailable — please try again." }, 500);
   }
   /* ⚠ (#R318) A REFUND RELEASES THE CHARGE **AND** THE TURN. Refunding the use while leaving the
@@ -1591,7 +1612,7 @@ Deno.serve(async (req) => {
     if (isDev || !charged) return;
     try {
       if (isGloss) await db.rpc("refund_ai_gloss", { p_user: user.id });
-      else await db.rpc("refund_ai_turn", { p_user: user.id, p_turn: turnId });
+      else await refundTurn(db, account, turnId);
       charged = false;
     } catch (_) { /* best-effort */ }
   };
@@ -1599,8 +1620,14 @@ Deno.serve(async (req) => {
      later failure under this turn key — from this call or another — can refund it. */
   const settle = async () => {
     if (isDev || isGloss || !turnId) return;
-    try { await db.rpc("settle_ai_turn", { p_user: user.id, p_turn: turnId }); } catch (_) { /* best-effort: the refund guard in the proxy still holds */ }
+    await settleTurn(db, account, turnId);   /* best-effort: the refund guard in the proxy still holds */
   };
+  /* (ai-one-ledger) WHAT THIS REQUEST COST. Every provider answer read below is added to `meter`; the
+     total is written to the same ledger once the request is over, answered or failed — a failure the
+     provider billed was still a cost (a refund returns the reader's use, not the provider's tokens).
+     The gloss lane is recorded too, as account-day totals (it has no turn row). */
+  const meter = usageMeter();
+  const record = () => recordUsage(db, user.id, isGloss ? "" : turnId, meter.total());
 
   // Parse the request body.
   // (#R113) `task` + `webMode` let the proxy configure output budget, JSON mode and
@@ -1831,13 +1858,13 @@ Deno.serve(async (req) => {
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat, turnReq, cacheKey);
+        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat, turnReq, cacheKey, meter);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey);
+          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey, meter);
         } else {
           throw e;
         }
@@ -1848,13 +1875,13 @@ Deno.serve(async (req) => {
       if (turnReq) {
         /* (atlas-native-tools) the same MALFORMED rule as below, in the turn's terms: once more with calling turned
            off (the declarations stay — the conversation names them), so the model answers in words */
-        try { out = await geminiRetry(() => callGeminiTurn(model, key, turnReq, system, imgs, files, docs, maxTokens)); }
+        try { out = await geminiRetry(() => callGeminiTurn(model, key, turnReq, system, imgs, files, docs, maxTokens, meter)); }
         catch (e) {
           if (!(e instanceof ProviderError && e.code === "provider_malformed")) throw e;
-          out = await callGeminiTurn(model, key, { ...turnReq, toolChoice: "none" }, system, imgs, files, docs, maxTokens);
+          out = await callGeminiTurn(model, key, { ...turnReq, toolChoice: "none" }, system, imgs, files, docs, maxTokens, meter);
         }
       } else try {
-        out = await callGeminiRetry(model, key, prompt, system, imgs, files, docs, { maxTokens, web, searchEnabled, wantJson, responseSchema });
+        out = await callGeminiRetry(model, key, prompt, system, imgs, files, docs, { meter, maxTokens, web, searchEnabled, wantJson, responseSchema });
       } catch (e) {
         // (#R113) MALFORMED_FUNCTION_CALL → retry ONCE with tools stripped, a hardened
         // "do not call functions" system suffix, and JSON mode forced. No further retries.
@@ -1863,12 +1890,12 @@ Deno.serve(async (req) => {
             "No web-search or function-calling tool is attached to this request. Do NOT call tools or functions. " +
             "The action/type names in the instructions are plain JSON string values, not callable functions. " +
             "Return the final answer directly" + (wantJson ? " as valid JSON." : ".");
-          out = await callGemini(model, key, prompt, hardened, imgs, files, docs, { maxTokens, web: false, searchEnabled: false, wantJson, responseSchema, noTools: true });
+          out = await callGemini(model, key, prompt, hardened, imgs, files, docs, { meter, maxTokens, web: false, searchEnabled: false, wantJson, responseSchema, noTools: true });
         } else if (e instanceof ProviderError && responseSchema && e.meta && e.meta.providerStatus === 400) {
           // (#R113) A 400 while a responseSchema was attached is most likely a schema-dialect rejection by this
           // model — retry ONCE without the schema. responseMimeType:"application/json" still forces valid JSON,
           // and the prompt + client-side validation enforce the shape, so map_report keeps working either way.
-          out = await callGemini(model, key, prompt, system, imgs, files, docs, { maxTokens, web, searchEnabled, wantJson, responseSchema: undefined });
+          out = await callGemini(model, key, prompt, system, imgs, files, docs, { meter, maxTokens, web, searchEnabled, wantJson, responseSchema: undefined });
         } else {
           throw e;
         }
@@ -1876,8 +1903,8 @@ Deno.serve(async (req) => {
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "ANTHROPIC_API_KEY not set", 502, false, {});
-      out = turnReq ? await callAnthropicTurn(model, key, turnReq, system, imgs, files, docs, web, maxTokens)
-        : await callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens);
+      out = turnReq ? await callAnthropicTurn(model, key, turnReq, system, imgs, files, docs, web, maxTokens, meter)
+        : await callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens, meter);
     }
     // (#R350) 5a) A structured answer that will not parse is a TYPED failure, refunded like any
     // other provider failure — the client must never be handed prose it cannot audit.
@@ -1885,6 +1912,7 @@ Deno.serve(async (req) => {
       throw new ProviderError("invalid_structured_output", "The answer did not arrive in the required shape.", 502, true, {});
     }
     // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
+    await record();   // (ai-one-ledger) what it cost — off the answer's path where the platform allows (EdgeRuntime.waitUntil)
     await settle();
     return json({
       text: out.text,
@@ -1921,6 +1949,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)
+    await record();   // (ai-one-ledger) …but what the provider billed before failing is still a cost, and is recorded
     if (e instanceof ProviderError) {
       // Non-sensitive telemetry only (no prompt / key / JWT).
       try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }

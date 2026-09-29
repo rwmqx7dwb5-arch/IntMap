@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { junitFiles, failuresFrom, body, TITLE } from '../scripts/deep-alarm.mjs';
 import { entries, checkNotes, allNotesText } from '../scripts/dev-notes.mjs';
 import { readLF } from '../scripts/eol.mjs';
+import { withTreeLock } from './helpers/gate-lock.mjs';
 import { allSpecs, coreNames, fixedCoreNames, changedSpecs, tierSpecs, isDeep, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 
@@ -39,7 +40,7 @@ const read = (p) => readLF(resolve(ROOT, p));
    normalise what it reads: it writes the same text back to restore the file).
    ⚠ BOTH DIRECTIONS, for #R283's reason: a widener that matched everything would pass the first
    half and is exactly how this would be "fixed" by weakening it. */
-test('R286 ⑥: r280 ②\'s anchor follows the checkout\'s line endings and relaxes nothing else', () => {
+test('R286 ⑥: r280 ②\'s anchor follows the checkout\'s line endings and relaxes nothing else', async () => {
   const m = /const anchorRe = (\(s\) => new RegExp\([\s\S]*?\));\n/.exec(read('tests/doc-facts-legal-pages-checks.test.mjs'));
   assert.ok(m, 'tests/doc-facts-legal-pages-checks.test.mjs (#R280) still builds its anchors through one named helper');
   const anchorRe = new Function(`return (${m[1]});`)();
@@ -57,7 +58,9 @@ test('R286 ⑥: r280 ②\'s anchor follows the checkout\'s line endings and rela
   assert.equal(anchorRe('x$y').test('x$y'), true, 'and a dollar sign is a dollar sign');
 
   /* …and it finds the real anchor in the real file, whichever way this machine checked it out */
-  const raw = readFileSync(resolve(ROOT, 'privacy.html'), 'utf8');
+  /* read under the tree lock: tests/doc-facts-legal-pages-checks.test.mjs mutates privacy.html in place
+     while holding it, and an unlocked read saw the mutant (PR #817 CI, 2026-09-30) */
+  const raw = await withTreeLock(() => readFileSync(resolve(ROOT, 'privacy.html'), 'utf8'));
   assert.equal(anchorRe(anchor).test(raw), true,
     'privacy.html still loads the one copy of the policy text, on this checkout');
 });

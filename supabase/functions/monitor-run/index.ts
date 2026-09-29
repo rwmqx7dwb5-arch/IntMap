@@ -12,6 +12,12 @@
 //   2. USER  — the UI's "Run now" POSTs with the user's JWT + {monitorId}. We
 //              verify the JWT, confirm the monitor belongs to that user, enforce
 //              a short manual-run cooldown, then run just that one.
+//              (ai-one-ledger) If that run reaches the AI step, it is charged to
+//              the reader's AI allowance through the SAME ledger ai-proxy uses
+//              (_shared/ai-ledger.js → consume_ai_turn); over the allowance the run
+//              keeps its data and ends `quota_exceeded` without a report.
+//   Every run that reaches the provider records what it cost (tokens) on the
+//   monitor owner's ledger row — the scheduled ones too, which are NOT charged.
 //
 //  PER-MONITOR PIPELINE (the core rule: CODE decides "changed?", AI only explains)
 //    collect (news from current_news within the geometry) → normalize + dedup →
@@ -53,6 +59,11 @@ import { readCapped } from "../_shared/relay-guard.js";
 import {
   PROVIDER_DEFAULT_MODEL, providerFetch, providerFail, bodyLength, spendCeiling, scheduleCeiling,
 } from "../_shared/ai-provider.js";
+/* (ai-one-ledger) The reader's AI allowance and the record of what a call cost — the same ledger, the
+   same doors and the same plan table ai-proxy uses, so «Run now» cannot be a second, uncounted way
+   to spend the server's key. */
+import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable } from "../_shared/ai-ledger.js";
+import { usageMeter } from "../_shared/ai-usage.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -162,7 +173,10 @@ const AI_SYS =
   "Return ONLY JSON: {\"severity\":string,\"headline\":string,\"summary\":string,\"changes\":[{\"claim\":string,\"evidence_ids\":[string]}]," +
   "\"unchanged\":[string],\"data_gaps\":[string],\"limitations\":[string]}. No prose, no code fences.";
 
-async function callAI(cfg: { provider: string; key: string; model: string }, userMsg: string): Promise<string> {
+/* (ai-one-ledger) `meter` receives every provider answer this call reads (both requests of the 400
+   degrade included) — _shared/ai-usage.js normalises the three providers' usage blocks. */
+type Meter = { add(provider: string, answer: unknown): unknown };
+async function callAI(cfg: { provider: string; key: string; model: string }, userMsg: string, meter?: Meter): Promise<string> {
   if (cfg.provider === "openai") {
     // GPT-5.6 (Terra) via the Responses API. NOTE: OpenAI's json_object validator requires the word
     // "json" in the INPUT messages (not `instructions`); the user message carries it. A 400 still
@@ -186,6 +200,7 @@ async function callAI(cfg: { provider: string; key: string; model: string }, use
        owner reads; a provider error body can echo the request or name the account. A status and a length. */
     if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json();
+    meter?.add("openai", j);
     if (typeof j?.output_text === "string" && j.output_text) return j.output_text;
     const parts = (Array.isArray(j?.output) ? j.output : [])
       .filter((it: { type?: string }) => it?.type === "message")
@@ -201,6 +216,7 @@ async function callAI(cfg: { provider: string; key: string; model: string }, use
     });
     if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json();
+    meter?.add("gemini", j);
     return (j?.candidates?.[0]?.content?.parts || []).filter((p: { thought?: boolean }) => p?.thought !== true).map((p: { text?: string }) => p.text || "").join("");
   }
   // anthropic
@@ -210,6 +226,7 @@ async function callAI(cfg: { provider: string; key: string; model: string }, use
   });
   if (!r.ok) throw providerFail(r.status, await bodyLength(r));
   const j = await r.json();
+  meter?.add("anthropic", j);
   return (j?.content || []).map((b: { text?: string }) => b.text || "").join("");
 }
 
@@ -282,7 +299,15 @@ async function releaseLock(db: DB, monId: string, monitor: Record<string, unknow
 //  + monitor-meta writes go through atomic RPCs (monitor_finalize /
 //  monitor_commit_report) so they either all land or all roll back.
 // ---------------------------------------------------------------------------
-async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: { provider: string; key: string; model: string } | null, trigger: string, nowMs: number) {
+/* (ai-one-ledger) `charge` is the account whose AI allowance this run spends, or null when it spends
+   none. «Run now» passes the verified caller (who owns the monitor — monitor_claim_one checked it);
+   the schedule passes null: a scheduled report is not charged, as before this change — see
+   dev-notes/2026-09-29-ai-one-ledger.md for why that is left open rather than decided here. */
+type Account = { id: string; plan: string; isDev: boolean; limit: number };
+/* One manual run is one turn of the ledger: its provider requests (the JSON-mode request and its
+   400 degrade) are ONE use. The key is the run's own id, so it is never replayed. */
+const MONITOR_TURN_TTL_S = 900;
+async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: { provider: string; key: string; model: string } | null, trigger: string, nowMs: number, charge: Account | null = null) {
   const start = nowMs;
   const monId = monitor.id as string;
   const userId = monitor.user_id as string;
@@ -319,6 +344,9 @@ async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: {
     }
     return true;
   };
+  /* (ai-one-ledger) set once a manual run has charged the reader's allowance, so an exception after
+     that point gives the use back (the catch below) exactly as a provider failure does */
+  let releaseUse: () => Promise<void> = async () => {};
 
   try {
     if (monitor.enabled === false) {
@@ -474,9 +502,44 @@ async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: {
       // OpenAI's json_object mode requires the literal word "json" in the input message.
       "Respond with ONLY a single JSON object: {severity, changes:[{claim, evidence_ids}]}. Each claim MUST cite ids from the evidence.";
 
+    /* (ai-one-ledger) 6b) A MANUAL RUN SPENDS THE READER'S AI ALLOWANCE — the one ai-proxy spends.
+       Asked HERE, at the only point a provider request is about to be made: a run that finds no
+       change, or has no AI configured, costs the reader nothing, exactly as a question never sent
+       costs nothing. Over the allowance the run keeps everything it measured (snapshot, diff,
+       evidence, ledger) and says so in its status; a ledger that cannot be consulted fails CLOSED,
+       as ai-proxy's does. */
+    const turnKey = charge ? "monitor:" + runId : "";
+    let charged = false;
+    if (charge) {
+      let gate: { allowed: boolean; charged: boolean; reason: string } | null = null;
+      try { gate = await openTurn(db, charge, { turn: turnKey, maxCalls: 1, ttlSeconds: MONITOR_TURN_TTL_S }); }
+      catch (e) { if (!(e instanceof LedgerUnavailable)) throw e; gate = null; }
+      if (!gate || !gate.allowed) {
+        const over = !!gate;
+        await finalize({ status: over ? "quota_exceeded" : "ai_failed", sources_ok: okSources, sources_failed: failSources, snapshot, diff: diffOut, change_score: changeScore,
+                         report_generated: false, ai_used: false, ai_skip_reason: over ? "ai_quota_" + (gate!.reason || "limit") : "ai_quota_unavailable",
+                         error_category: over ? "quota_exceeded" : "quota_unavailable",
+                         error_detail: over ? "the account's daily AI allowance is used up" : "the AI usage counter is unavailable",
+                         retryable: true, evidence_count: evRows.length },
+                       { ...monMeta(), last_status: over ? "quota_exceeded" : "ai_failed" });
+        await prune(db, monId);
+        return over ? "quota_exceeded" : "ai_failed";
+      }
+      charged = gate.charged;
+    }
+    /* settle once a report exists; give the use back when none could be made (ai-proxy's rule: a
+       failed provider call never costs the reader a use) */
+    const settleUse = async () => { if (charge && charged) await settleTurn(db, charge, turnKey); };
+    const refundUse = async () => { if (charge && charged) { await refundTurn(db, charge, turnKey); charged = false; } };
+    releaseUse = refundUse;
+
+    const meter = usageMeter();
     let aiText = "", aiOk = false, aiErr = "";
-    try { aiText = await callAI(aiCfg!, userMsg); aiOk = !!aiText; }
+    try { aiText = await callAI(aiCfg!, userMsg, meter); aiOk = !!aiText; }
     catch (e) { aiErr = String((e as Error)?.message || e).slice(0, 160); }
+    /* what the provider answers cost, on the OWNER's ledger row — charged or not (a scheduled run
+       spends no use, but it is still on the invoice) */
+    await recordUsage(db, userId, turnKey, meter.total());
 
     const parsed = aiOk ? parseJson(aiText) : null;
     const valid = parsed ? validateClaims(parsed, validKeys, evByKey) : { ok: false, claims: [], severity: null, changePoints: [], invalidRefs: [] };
@@ -487,6 +550,7 @@ async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: {
                        report_generated: false, ai_used: true, ai_provider: aiCfg!.provider, ai_model: aiCfg!.model,
                        error_category: "ai_failed", error_detail: (aiErr || "AI output had no evidence-grounded claim").slice(0, 200), retryable: true, evidence_count: evRows.length },
                      { ...monMeta(), last_status: "ai_failed" });
+      await refundUse();
       await prune(db, monId);
       return "ai_failed";
     }
@@ -514,10 +578,12 @@ async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: {
                        report_generated: false, ai_used: true, ai_provider: aiCfg!.provider, ai_model: aiCfg!.model,
                        error_category: "report_write_failed", error_detail: String(commitErr?.message || "report commit failed").slice(0, 200), retryable: true, evidence_count: evRows.length },
                      { ...monMeta(), last_status: "internal_error" });
+      await refundUse();   // no report reached the reader, so the run did not cost them a use
       await prune(db, monId);
       return "report_failed";
     }
 
+    await settleUse();
     await prune(db, monId);
     return baseStatus + "+report";
   } catch (e) {
@@ -525,6 +591,7 @@ async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: {
        message can carry the database's or the provider's own wording. The owner gets the class of
        failure, the log gets the wording. */
     try { console.error("monitor-run internal_error", String((e as Error)?.message || e).slice(0, 300)); } catch (_) { /* ignore */ }
+    await releaseUse();
     const ok = await finalize({ status: "internal_error", error_category: "internal_error", error_detail: "internal_error", retryable: true },
                               { ...monMeta(), last_status: "internal_error" });
     if (!ok) await releaseLock(db, monId, monitor, intervalMin, nowISO, "internal_error");
@@ -641,7 +708,9 @@ Deno.serve(async (req) => {
     return json({ error: reason, message: msgFor[reason] || msgFor.unavailable }, statusFor[reason] || 409);
   }
 
-  const status = await processMonitor(db, claim.monitor, aiCfg, "manual", Date.now());
+  /* (ai-one-ledger) the verified caller's account — resolved the way ai-proxy resolves it */
+  const account = await accountFor(db, user.id, (k: string) => Deno.env.get(k) || "");
+  const status = await processMonitor(db, claim.monitor, aiCfg, "manual", Date.now(), account);
   return json({ ok: true, mode: "manual", monitorId, status });
  } catch (topErr) {
   try { console.error("monitor-run UNCAUGHT", String((topErr as Error)?.message || topErr).slice(0, 200)); } catch (_) { /* */ }

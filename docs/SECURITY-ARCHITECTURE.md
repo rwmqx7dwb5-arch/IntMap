@@ -21,7 +21,7 @@ the data flow, an Edge Function, or the auth model changes.
 | Per-user private data (`favorites`, `user_prefs`, `donations`/`feedback`/`bug_reports` PII, `ai_usage`) | Postgres | **RLS** + column grants + SECURITY DEFINER RPCs |
 | Admin capability + billing (`profiles.is_admin`/`is_pro`/`plan`/`email`) | Postgres | RLS (`is_admin()`) + column grant + **`tg_profiles_guard_privcols` BEFORE-UPDATE trigger** (grant-independent freeze, #R155) — no self-escalation of admin or billing plan |
 | Provider API keys (AI, etc.) | Edge Function env (server only) | Never sent to the browser; never logged |
-| AI spend / quota | `ai_usage` + `ai-proxy` (per account); `relay_rate_buckets` `<fn>:global:day` (per project) | JWT-gated proxy + atomic RPC; fail-closed scheduler secrets; **a project-wide daily ceiling in every function that holds a provider key** (§5, «Spend ceilings») |
+| AI spend / quota | `ai_usage` + `ai-proxy` and `monitor-run`'s «Run now», through one ledger (`_shared/ai-ledger.js`) (per account); `relay_rate_buckets` `<fn>:global:day` (per project) | JWT-gated proxy + atomic RPC; fail-closed scheduler secrets; **a project-wide daily ceiling in every function that holds a provider key** (§5, «Spend ceilings») |
 | Integrity of what every visitor sees | `index.html` render paths | **XSS output-encoding** (`window.IntMapSafe`) + CSP |
 
 **Adversaries considered:** an anonymous internet user; a *logged-in* user attacking other
@@ -127,7 +127,15 @@ flowchart LR
     SELECT policy: `/storage/v1/object/public/…` does not consult RLS, so such a policy only let anyone
     with the publishable key enumerate object names. Nothing in `js/` or `supabase/functions/` lists them.
 - **AuthZ — AI quota:** `ai_usage` is writable **only** by the SECURITY DEFINER RPCs
-  `increment_ai_usage` / `refund_ai_usage`, whose EXECUTE is granted to `service_role` only.
+  `increment_ai_usage` / `refund_ai_usage` (and, for its cost columns only, `record_ai_usage`), whose
+  EXECUTE is granted to `service_role` only.
+  ⚠ **(ai-one-ledger) Every path that calls a model on a reader's behalf spends the same allowance.**
+  `monitor-run`'s «Run now» used to call the provider on the server's key without touching it — one
+  free account's five monitors could start 600 manual runs an hour (30 s cooldown each), bounded only by
+  the project-wide ceiling. It now charges `consume_ai_turn` through `_shared/ai-ledger.js` (the plan
+  table and the account resolution ai-proxy uses) at the moment a run reaches the AI step, sends
+  nothing to the provider when the allowance is spent (run ends `quota_exceeded`, data kept), and fails
+  closed when the ledger does not answer. Scheduled runs are not charged (unchanged).
   The term-gloss lane has the identical shape in its own table (`ai_gloss_usage`,
   `consume_ai_gloss` / `refund_ai_gloss`).
   ⚠ **Which lane pays is declared in a header (`x-intmap-lane`) and is therefore not trusted.**
@@ -245,7 +253,7 @@ flag that lives in a comment is not configuration. All twenty are declared there
 `fetch-relay` own-fetch-relay).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `fetch-relay-policy.js`) that the CLI bundles into the functions that import it.
+`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -398,7 +406,10 @@ is measured in production, not here — if it does not, the rule refuses everyth
 `fetch-relay`, `gdelt-relay`, `news-relay`, `quotes-relay`, `radiation-feed`, `sv-cov`,
 `volcano-feed` and `who-don` (its public GET) takes one from `<name>:ip` in
 `public.relay_rate_buckets` through `callerGate()` (`_shared/rate-limit.js`), keyed by the caller's
-address (MEASURED 2026-09-26 against production: requests carrying a forged `x-forwarded-for`
+address — the key is decided by one function, `callerKey(req, verifiedUid)`, which uses `uid:<uuid>` when
+the function has verified the account with the Auth server (atlas-embed) and never an unverified JWT
+`sub` (a caller-chosen string would be a fresh bucket per request); these relays verify nobody and so
+key by address (MEASURED 2026-09-26 against production: requests carrying a forged `x-forwarded-for`
 drained the same bucket as the caller's plain ones — the platform puts the real client address first,
 so a forged header does not buy a fresh bucket): capacity = the most a single reader's page asks of that relay in a minute (declared in
 the relay, read from its client's timers — an estimate) × `READERS_PER_ADDRESS` (10, an estimate

@@ -3305,6 +3305,13 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   `public` pins a `search_path` without `public` in it (counted over `pg_proc`); anon cannot file
   feedback or a bug report as an existing user and A cannot file as B; an author may update a post's
   body and `edited_at` but not `created_at`, `author_name` or `user_id`.
+- **`supabase/tests/13_ai_usage_ledger_test.sql`** (pgTAP, ai-one-ledger) — the six cost columns exist
+  on `ai_usage` and `ai_turns`; `record_ai_usage` adds two requests of one turn to both rows and never
+  changes `count`; zero calls write nothing and negatives read as 0; an account not charged today gets
+  a row with `count` 0; only service_role may call it. Its source-side pair is
+  `tests/ai-one-ledger-checks.test.mjs`, which EVALUATES `ai-proxy` and `monitor-run` (usage
+  normalisation, the Anthropic cache breakpoints, «Run now» charging the reader's allowance, the
+  bucket key).
 - **`tests/process-database-checks.test.mjs`** (`node --test`, #R507) — the source-side pair: the migrations
   end with `profiles_public` as a table, the drop of the old view is guarded on `relkind` so the
   migration stays re-runnable, only `SELECT` is ever granted, the PostgREST schema reload sits

@@ -43,7 +43,7 @@
 // ============================================================================
 
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerKey, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
 /* (edge-spend-and-models) the project-wide ceiling and the one door to the provider, shared with
    every other function that holds a provider key */
 import { spendCeiling, providerFetch, ProviderFail } from "../_shared/ai-provider.js";
@@ -176,6 +176,9 @@ Deno.serve(async (req) => {
 
     const uid = await callerId(req, url, anon);
     if (!uid) return fail("signed_out", 401);
+    /* (ai-one-ledger) the bucket key, decided where every function's is (_shared/rate-limit.js
+       callerKey): the account, because the Auth server has just verified it */
+    const who = callerKey(req, uid);
 
     const key = Deno.env.get("OPENAI_API_KEY") || "";
     if (!key) return fail("unconfigured", 503);
@@ -194,7 +197,7 @@ Deno.serve(async (req) => {
     /* The caller's share of the day, then the project's day. Both in units (a search 1, a seed one per
        document). Returns { receipt } to carry on, or { code } to refuse with. */
     const ceiling = async (cost) => {
-      const mine = await limiter.take("atlas-embed:user:day", uid, {
+      const mine = await limiter.take("atlas-embed:user:day", who, {
         capacity: PER_USER_PER_DAY, refillPerSec: PER_USER_PER_DAY / 86400, cost, onUnavailable: "deny",
       });
       if (mine.source !== "db") return { code: "limiter_unavailable" };
@@ -215,7 +218,7 @@ Deno.serve(async (req) => {
     if (op === "search") {
       const p = parseSearch(body);
       if (!p.ok) return fail(p.code, 400);
-      const u = await limiter.take("atlas-embed:user", uid, {
+      const u = await limiter.take("atlas-embed:user", who, {
         capacity: PER_USER_PER_MIN, refillPerSec: PER_USER_PER_MIN / 60, cost: 1, onUnavailable: "deny",
       });
       if (u.source !== "db") return fail("limiter_unavailable", 503);
@@ -245,7 +248,7 @@ Deno.serve(async (req) => {
       /* ⚠ IDEMPOTENT BEFORE IT IS CHARGED. Two tabs that find the same catalogue unknown both send
          it; the second must be told «stored», not billed and not refused. */
       if (have === p.entries.length) return json({ state: "ok", stored: have, already: true, model });
-      const s = await limiter.take("atlas-embed:seed", uid, {
+      const s = await limiter.take("atlas-embed:seed", who, {
         capacity: SEED_PER_USER_PER_HOUR, refillPerSec: SEED_PER_USER_PER_HOUR / 3600, cost: 1, onUnavailable: "deny",
       });
       if (s.source !== "db") return fail("limiter_unavailable", 503);

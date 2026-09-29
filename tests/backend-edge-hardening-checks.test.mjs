@@ -117,13 +117,17 @@ test('R801 ③ ai-proxy settles the turn before answering and refunds only the c
   const proxy = codeOnly(read('supabase/functions/ai-proxy/index.ts'));
   const settleDef = proxy.indexOf('const settle = async');
   assert.ok(settleDef > 0, 'no settle() in ai-proxy');
-  assert.match(proxy, /db\.rpc\("settle_ai_turn"/, 'settle_ai_turn is never called');
+  /* (ai-one-ledger) the ledger's doors are _shared/ai-ledger.js's, shared with monitor-run's «Run now» */
+  const ledger = codeOnly(read('supabase/functions/_shared/ai-ledger.js'));
+  assert.match(proxy, /settleTurn\(db, account, turnId\)/, 'settle() does not go through the ledger door');
+  assert.match(ledger, /db\.rpc\("settle_ai_turn"/, 'settle_ai_turn is never called');
   const settleCall = proxy.indexOf('await settle();');
   assert.ok(settleCall > 0, 'settle() is never awaited');
   assert.match(proxy.slice(settleCall, settleCall + 80), /await settle\(\);\s*return json\(\{/, 'settle() must run at the success return, immediately before the answer leaves');
   const refund = proxy.slice(proxy.indexOf('const refund = async'), proxy.indexOf('const settle = async'));
   assert.match(refund, /if \(isDev \|\| !charged\) return;/, 'a call that did not charge must not ask for a refund');
-  assert.match(refund, /refund_ai_turn/, 'the turn is still released with the charge (#R318)');
+  assert.match(refund, /refundTurn\(db, account, turnId\)/, 'the turn is still released with the charge (#R318)');
+  assert.match(ledger, /db\.rpc\("refund_ai_turn"/, 'refundTurn does not release the turn');
 });
 
 /* ⚠ READ, NOT RUN: "no unbounded body read anywhere in the function" is a claim about every path of
