@@ -5894,7 +5894,7 @@ window.IntMapModules.dataLayers=function(HOST){
           for ever: one bad afternoon for corsproxy.io became a permanent 「片方しかつかない」.
           The box is now marked `imAutoOff` when the app is the one unticking it, the session keeps
           wanting it (js/app-body.js), and it is retried with backoff before giving up at all. */
-    const _CABLE_CACHE='intmap-subcables-v1';
+    const _CABLE_CACHE='intmap-page-subcables-v1';   /* `intmap-page-` = the page owns it; sw.js keeps every such cache across deploys */
     async function _cableCached(u){ try{ if(!self.caches) return null;
         const c=await caches.open(_CABLE_CACHE); const r=await c.match(u); if(!r) return null;
         const j=await r.json(); return (j&&j.features)?j:null; }catch(_){ return null; } }
@@ -5946,7 +5946,7 @@ window.IntMapModules.dataLayers=function(HOST){
             page loaded, this loads.
          2. the Cache API copy of (1) — written on every success, so a second visit paints with no
             network at all, and an offline start still paints. (The service worker deliberately
-            keeps `intmap-subcables-*` across deploys; see sw.js.)
+            keeps every `intmap-page-*` cache across deploys; see sw.js.)
          3. the Cache API copy of the TeleGeography answer — what #R188 put there. Every browser that
             has ever shown this layer still has one.
          4. the TeleGeography relay chain — #R190's Edge Function (the volunteer proxies behind it went in own-fetch-relay).

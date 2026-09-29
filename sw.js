@@ -30,6 +30,10 @@
  *  全端末で次の訪問に自動で流れる）、**placeholder は保存しない**、**保存に時刻を書いて期限を持たせる**
  *  （期限切れはまず古い方を返してから裏で取り直す＝再訪の速さは一切失わない）。 */
 const CACHE = 'intmap-tiles-v2';
+/* A cache whose name starts with this belongs to the page (js/), which writes and expires it itself;
+   activate never deletes it. Every other name but CACHE is this worker's past or a stranger's. */
+const PAGE_CACHE_PREFIX = 'intmap-page-';
+const keepOnActivate = (name) => name === CACHE || String(name).startsWith(PAGE_CACHE_PREFIX);
 /* (#R178) 4000 → 12000. The cap is what makes a REVISIT free, and 4000 was set before the DEM
    reached terrarium's native z15 (#R20) and before 3-D became a normal way to use the app: one
    tilted city view at z15 is already several hundred DEM tiles on top of its imagery, so a session
@@ -209,8 +213,15 @@ self.addEventListener('activate', (e) => {
     // hosted path). (#R189) 'intmap-subcables-v1' is written by PAGE JS as the offline copy of the
     // submarine-cable GeoJSON (#R188) — deleting it here on every deploy silently re-created the
     // 「片方しかつかない」 outage window this SW was never meant to own. Keep page-owned intmap-* caches.
+    // ⚠ OWNERSHIP IS READ FROM THE NAME, NOT FROM A LIST OF EXCEPTIONS. #R189 excepted the one page
+    // cache it had been told about (`intmap-subcables-`); the three written later by js/world-packs.js
+    // (NWS zones, SWIC regions, geoBoundaries) were never added and were wiped on every deploy — the same
+    // outage window #R189 closed, re-opened three times by an exception list nobody extends. Every cache
+    // the PAGE owns is now named `intmap-page-…` (PAGE_CACHE_PREFIX); anything else that is not this
+    // worker's current cache is purged as before. tests/sw-cache-names-owned-checks.test.mjs discovers
+    // every `caches.open` in the page and evaluates this handler against them.
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE && !/^intmap-subcables-/.test(k)).map((k) => caches.delete(k)));
+    await Promise.all(keys.filter((k) => !keepOnActivate(k)).map((k) => caches.delete(k)));
     await self.clients.claim();
   })());
 });

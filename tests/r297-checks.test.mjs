@@ -169,7 +169,7 @@ test('R297 ⑨ clicking a country opens that country’s key, and a publish cann
 /* ── ⑩ the shape library survives the session ─────────────────────────────────────────────────── */
 test('R297 ⑩ the WMO shape library is cached, merged and applied before anything is asked for', () => {
   const s = read('js/world-packs.js');
-  assert.match(s, /const SWIC_GEO_CACHE='intmap-swicgeo-v1';/);
+  assert.match(s, /const SWIC_GEO_CACHE='intmap-page-swicgeo-v1';/);
   assert.match(s, /async function swicGeoCached\(mid\)/);
   assert.match(s, /async function swicGeoStore\(mid,areas\)/);
   assert.match(s, /function warmSwicGeo\(iso\)/);
