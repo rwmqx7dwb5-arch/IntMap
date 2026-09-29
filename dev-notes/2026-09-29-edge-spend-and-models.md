@@ -79,4 +79,4 @@ date: 2026-09-29
 - **配備が要る**: `_shared/` を変えたので**全 20 関数**（`scripts/supabase-deploy.mjs` の規則）。
 - **`ai_usage.count` の負の値**の是正（行の修復と、`refund_ai_usage` が 0 未満にしない制約）は別の作業。
 - 天井は「多数の口座で使い切られると、その日は全員が AI を使えない」形で残る（請求は有界）。
-  完全に閉じるには口座の作成に費用を持たせる製品判断が要る（`docs/SECURITY-ARCHITECTURE.md` §8 の 13）。
+  完全に閉じるには口座の作成に費用を持たせる製品判断が要る（`docs/SECURITY-ARCHITECTURE.md` §8 の 14）。
