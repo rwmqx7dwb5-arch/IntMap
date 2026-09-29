@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 
+const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
 
 // every `caches.open(<expr>)` in the page's code, with <expr> resolved to the string it names
@@ -26,7 +27,7 @@ function pageCacheNames() {
         const arg = m[1];
         let name = /^['"`]([^'"`]+)['"`]$/.exec(arg)?.[1];
         if (!name && /^[A-Za-z_$][\w$]*$/.test(arg)) {
-          name = new RegExp(`\\b(?:const|let|var)\\s+${arg.replace(/\$/g, '\\$')}\\s*=\\s*['"\`]([^'"\`]+)['"\`]`).exec(src)?.[1];
+          name = new RegExp(`\\b(?:const|let|var)\\s+${escapeRe(arg)}\\s*=\\s*['"\`]([^'"\`]+)['"\`]`).exec(src)?.[1];
         }
         out.push({ file, arg, name });
       }
