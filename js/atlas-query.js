@@ -52,6 +52,9 @@
  * ==========================================================================*/
 
 import { makeCoastline } from './coastline.js';
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
+import './safe-html.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.atlasQuery = function (HOST) {
@@ -1392,7 +1395,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
      the map. ⚠ The METHOD BLOCK IS NOT DECORATION: rule ② is that no column appears without the
      dataset it came from, and rule ① that every cap that bit is printed. A result that hides either
      is the 「一部の推論が事実として記載されている」 failure with a table drawn around it. */
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = (s) => globalThis.IntMapSafe.html(s);
   function fmt(c, v) {
     if (v == null) return '—';
     /* ⚠ (#R620) THE COLUMN'S OWN FORMATTER RUNS FIRST, for text columns too. It used to be reached

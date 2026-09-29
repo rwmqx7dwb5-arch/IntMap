@@ -47,6 +47,9 @@
  * ==========================================================================*/
 import './waves-palette.js';
 import './waves-gl.js';
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
+import './safe-html.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.waves = function (HOST) {
@@ -86,7 +89,7 @@ window.IntMapModules.waves = function (HOST) {
   let renderer = null, box = null, wired = Object.create(null), paintSeq = 0, watching = false;
 
   const EC = () => { try { return ENG() && ENG().model(st.modelId || null); } catch (_) { return null; } };
-  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const esc = (s) => globalThis.IntMapSafe.html(s);
 
   /* ── can this be drawn at all, right now ─────────────────────────────────────────────────────
      Three separate questions, because the reader can act on two of them and only one of them is

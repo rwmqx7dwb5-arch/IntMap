@@ -50,11 +50,8 @@ window.IntMapSourcesList = (function () {
     for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][1].test(t)) return GROUPS[i][0];
     return 'other';
   }
-  function esc(v) {
-    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
-    });
-  }
+  /* the one encoder — sources.html loads js/safe-html.js before this file (safe-output-single-module) */
+  function esc(v) { return window.IntMapSafe.html(v); }
   /* ⚠ (#R246) ONE IMPLEMENTATION, and it is the registry's: js/reference-data.js `useText` already
      resolves a description with a per-KEY fallback to English — the same rule the prose above uses
      (js/page-i18n.js `pick`) — and the in-app Sources dialog calls exactly that. A copy here would be
@@ -99,7 +96,7 @@ window.IntMapSourcesList = (function () {
       rows.forEach(function (s) {
         out += '<div class="pg-srcitem"><b>' + esc(s.n) + '</b>'
              + '<div class="pg-use">' + esc(useText(s, lang)) + '</div>'
-             + '<a class="pg-u" href="' + esc(s.u) + '" target="_blank" rel="noopener">' + esc(s.u) + '</a></div>';
+             + '<a class="pg-u" href="' + esc(window.IntMapSafe.url(s.u)) + '" target="_blank" rel="noopener">' + esc(s.u) + '</a></div>';
       });
     });
     host.innerHTML = out || ('<p class="pg-empty">' + esc(P.pick('sources', 'noMatch')) + '</p>');

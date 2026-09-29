@@ -964,7 +964,7 @@ window.IntMapModules.volcanoIntel=function(HOST){
       for(const v of vona.slice(0,4)){
         h+='<div class="volc-vona"><div class="volc-vona-h">'+S(term('usgs',v.color_code)+' / '+term('usgs',v.alert_level)+' · '+String(v.sent_utc||'').slice(0,16)+' UTC')+'</div>'
           +'<div class="volc-vona-b">'+S(v.synopsis_complete||'')+'</div>'
-          +(v.vona_url?'<a class="volc-link" target="_blank" rel="noopener" href="'+S(v.vona_url)+'">'+S(L('Read the notice','原文を読む','Meldung lesen','Читать уведомление','Leer el aviso'))+'</a>':'')
+          +(window.IntMapSafe.url(v.vona_url||'')?'<a class="volc-link" target="_blank" rel="noopener" href="'+S(window.IntMapSafe.url(v.vona_url))+'">'+S(L('Read the notice','原文を読む','Meldung lesen','Читать уведомление','Leer el aviso'))+'</a>':'')
           +'</div>';
       }
       h+=proseNote('en');

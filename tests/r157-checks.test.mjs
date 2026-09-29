@@ -89,7 +89,8 @@ test('R157 #4 image-only: no fabricated user text; default instruction only at t
   assert.match(html, /\(q\?\('The user says: '\+q\+'\\n\\n'\):\('\[No text was typed — default instruction\] '\+_imgDefault/,
     '_visionPrompt supplies the default ONLY when q is empty (hidden, at the API boundary)');
   // the user bubble is built from esc(q) (empty for an image-only send) + the thumbnails — no default text baked in
-  assert.match(html, /imgs\.map\(u=>'<img src="'\+esc\(u\)/, 'user bubble shows the image thumbnails');
+  /* (safe-output-single-module) …through the one scheme guard: a thumbnail is a data:image and nothing else */
+  assert.match(html, /imgs\.map\(u=>'<img src="'\+esc\(IntMapSafe\.url\(u,\{allowData:true\}\)\)/, 'user bubble shows the image thumbnails');
 });
 
 test('R157 #5 IntMapAtlasDebug exposes the new pure spine', () => {

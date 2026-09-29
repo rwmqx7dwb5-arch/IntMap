@@ -42,6 +42,10 @@
  * `esc` is the app's own HTML escaper, injected rather than imported so this module has the same
  * shape as the rest of the Atlas reply pipeline and stays trivially testable from node.
  */
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app. */
+import './safe-html.js';
+
 export function makeAtlasMarkdown(CTX) {
   const esc = CTX.esc;
 
@@ -234,10 +238,10 @@ export function makeAtlasMarkdown(CTX) {
        a string arrives. The bare-URL rule below already excluded the quote; this one now does too, and
        both go through `esc()` so a URL can never write past its own attribute (tests/r801-atlas-boundary-checks). */
     s = s.replace(/\[([^\]\n]{1,160})\]\((https?:[^)\s"'<>]{4,400})\)/g,
-      (m, t, u) => put('<a href="' + esc(u) + '" class="atl-a" target="_blank" rel="noopener">' + esc(t) + '</a>'));
+      (m, t, u) => put('<a href="' + esc(globalThis.IntMapSafe.url(u)) + '" class="atl-a" target="_blank" rel="noopener">' + esc(t) + '</a>'));
     /* (#R79g) bare urls too — the leading-char guard skips one already inside an href="…" */
     s = s.replace(/(^|[^"'=>/])(https?:\/\/[^\s<>)"'）】]{4,400})/g,
-      (m, pre, u) => pre + put('<a href="' + esc(u) + '" class="atl-a atl-a-url" target="_blank" rel="noopener">' + esc(u) + '</a>'));
+      (m, pre, u) => pre + put('<a href="' + esc(globalThis.IntMapSafe.url(u)) + '" class="atl-a atl-a-url" target="_blank" rel="noopener">' + esc(u) + '</a>'));
     /* (#R159) inline **bold** → plain: an Atlas reply body carries no bold */
     s = s.replace(/\*\*([^*\n]+?)\*\*/g, '$1');
     /* (#R156) *italic* — guarded so `**`, a bullet and `2 * 3` cannot misfire */

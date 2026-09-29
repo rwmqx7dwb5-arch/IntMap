@@ -43,6 +43,9 @@ export const STATIC_ASSETS = [
      admin.html is copied verbatim, so a plain <script src> in it resolves against dist/ and the file has
      to be there. Without it the import button says so and refuses, rather than falling back to anything. */
   'js/admin-literal.js',
+  /* (safe-output-single-module) …and the app's ONE output encoder, which admin.html and sources.html load
+     with a plain <script src> (the app itself bundles the same file through src/main.js). */
+  'js/safe-html.js',
   /* (#R211) the transparency page — what every simulation COMPUTES, as opposed to where its data
      came from (that is the in-app Sources dialog). It is static markup with one inline script and
      no imports, so it is copied rather than bundled: passing it through Rollup would produce a

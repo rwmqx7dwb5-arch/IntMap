@@ -43,13 +43,16 @@
  *  js/atlas-console.js has a shrink-only line ceiling (tests/r318 ⓑ) with no room left.
  * ==========================================================================*/
 
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
+import './safe-html.js';
+
 export function makeAtlasMapCompose(deps) {
   return (function () {
     deps = deps || {};
     const GE = deps.GE;                       /* () => the geo engine (js/geo-engine.js) */
     const L = (typeof deps.L === 'function') ? deps.L : ((a) => a);
-    const esc = (typeof deps.esc === 'function') ? deps.esc
-      : ((s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]));
+    const esc = (typeof deps.esc === 'function') ? deps.esc : ((s) => globalThis.IntMapSafe.html(s));
     const geocode = deps.geocode;             /* async (query) -> {lng,lat,name,bbox?} | null */
     /* ⚠ (#R515) THE GAZETTEER IS A SHORTCUT, NOT THE AUTHORITY ON WHAT A NAME MEANS.
        js/atlas-geo-resolve.js's geoVerify — one web-search-grounded question per name, cached,

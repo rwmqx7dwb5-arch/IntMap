@@ -247,6 +247,9 @@
      js/admin-literal.js is the data-literal PARSER the starter-dataset import uses instead of eval. -->
 <script src="vendor/supabase-js.js"></script>
 <script src="./js/admin-literal.js"></script>
+<!-- (safe-output-single-module) the app's ONE output encoder, window.IntMapSafe — the same file src/main.js imports,
+     so this console no longer keeps an escaper and a URL allow-list of its own. -->
+<script src="./js/safe-html.js"></script>
 <script>
   window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
   window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
@@ -257,13 +260,13 @@
 <script>
 (function(){
   const $=(id)=>document.getElementById(id);
-  /* (#R155 SEC) hardened HTML escaper — now also escapes the single quote (the old one missed it),
-     matching the main app's window.IntMapSafe.html. Every user-supplied string in this console is
-     rendered through esc(). */
-  const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  /* (#R155 SEC) URL scheme allow-list (http/https/mailto or a relative/anchor path only) — rejects
-     javascript:/data:/vbscript: so any future href/src built from admin-editable data stays safe. */
-  const safeUrl=(u)=>{ try{ const s=String(u==null?'':u).trim(); if(!s) return ''; if(/^(https?:|mailto:)/i.test(s)) return s; if(/^[\/.#?]/.test(s)) return s; return ''; }catch(_){ return ''; } };
+  /* (#R155 SEC → safe-output-single-module) the HTML escaper and the URL scheme allow-list are the app's
+     own, window.IntMapSafe (js/safe-html.js, loaded above) — this console used to keep copies of both.
+     Every user-supplied string here is rendered through esc(); every href/src through safeUrl(): a
+     same-origin relative/anchor path (no scheme to decide) as before, anything else only if the app's
+     scheme guard admits it (http(s)/mailto/tel) — javascript:/data:/vbscript: come back empty. */
+  const esc=(s)=>window.IntMapSafe.html(s);
+  const safeUrl=(u)=>{ const s=String(u==null?'':u).trim(); return /^[\/.#?]/.test(s)?s:window.IntMapSafe.url(s); };
   window._admSafeUrl=safeUrl;
   let toastT;
   function toast(msg,kind){ const el=$('toast'); el.textContent=msg; el.className='toast show'+(kind?(' '+kind):''); clearTimeout(toastT); toastT=setTimeout(()=>el.className='toast',3200); }
@@ -455,12 +458,12 @@
         +(e.manual_lock?' · LOCKED':'')+(e.reviewed_at?' · reviewed':'')+'</div>'
         +'<div style="margin-top:7px;">';
       for(const m of mem){
-        const u=safeUrl(m.canonical_url);
+        const artHref=safeUrl(m.canonical_url);
         h+='<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:12px;">'
           +'<input type="checkbox" data-art="'+esc(m.id)+'" data-from="'+esc(e.id)+'" style="margin-top:2px;">'
           +'<span style="flex:1;min-width:0;"><b>'+esc(m.source_id)+'</b> · '+esc(m.title)
           +' <span class="muted">('+esc(m._by||'?')+(m._score==null?'':(' '+m._score))+')</span>'
-          +(u?(' <a href="'+esc(u)+'" target="_blank" rel="noopener">↗</a>'):'')+'</span></label>';
+          +(artHref?(' <a href="'+esc(artHref)+'" target="_blank" rel="noopener">↗</a>'):'')+'</span></label>';
       }
       h+='</div>'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">'

@@ -1025,6 +1025,9 @@ overpass.js                       **Overpass の唯一のクライアント** `o
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
+safe-html.js                      **出力の無害化の唯一の正本** `window.IntMapSafe`＝{html, esc, url, text}。アプリ
+                                  （src/main.js）・sources.html・admin.html・ES module（import）・Node の検査が同じ
+                                  ファイルを読む。他の場所の独自エスケープは scripts/safe-output.mjs の台帳が数える
 ```
 
 ### 3.11 `data/`

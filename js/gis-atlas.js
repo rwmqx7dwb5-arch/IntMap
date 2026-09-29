@@ -33,6 +33,9 @@
    gate and the reader-visible credits use: a second spelling of 「licence」 here is precisely how the
    three worlds that file's header measures came to disagree. */
 import { FACETS, account } from './data-governance.js';
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
+import './safe-html.js';
 
 export function makeGisAtlas(core) {
   return (function () {
@@ -75,9 +78,7 @@ export function makeGisAtlas(core) {
       return en;
     }
 
-    function esc(s) {
-      return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    }
+    const esc = (s) => globalThis.IntMapSafe.html(s);
 
     /* ⚠ THE STATS ARE PRINTED AS THE RUNNER WROTE THEM, key and all — the same decision
        js/gis-panel.js statsText made and for the same reason: a sentence per statistic would be a

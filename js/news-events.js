@@ -658,16 +658,16 @@ window.IntMapModules.newsEvents = function (HOST) {
     for (const m of rows) {
       const dup = famSeen.has(m.family);
       famSeen.add(m.family);
-      const u = U(m.url);
+      const covHref = U(m.url);
       html += '<div class="ev-cov' + (dup ? ' dup' : '') + '">' +
         '<div class="ev-cov-h"><span class="ev-cov-src">' + S(m.sourceName) + '</span>' +
         (m.family === firstFam && !dup ? '<span class="ev-badge first">' + S(L('First', '初報', 'Zuerst', 'Первым', 'Primero')) + '</span>' : '') +
         (dup ? '<span class="ev-badge dup">' + S(L('Same group', '同系列', 'Gleiche Gruppe', 'Та же группа', 'Mismo grupo')) + '</span>' : '') +
         '<span class="ev-cov-at">' + S(fmt(m.publishedAt)) + '</span></div>' +
-        (u ? '<a class="ev-cov-t" href="' + u + '" target="_blank" rel="noopener">' + S(m.title) + '</a>'
+        (covHref ? '<a class="ev-cov-t" href="' + covHref + '" target="_blank" rel="noopener">' + S(m.title) + '</a>'
            : '<div class="ev-cov-t">' + S(m.title) + '</div>') +
         /* 見出しがリンクであることは見て分かりにくいので、明示の導線も置く。 */
-        (u ? '<a class="ev-cov-read" href="' + u + '" target="_blank" rel="noopener">' +
+        (covHref ? '<a class="ev-cov-read" href="' + covHref + '" target="_blank" rel="noopener">' +
           S(L('Read at {s} ↗', '{s} で読む ↗', 'Bei {s} lesen ↗', 'Читать на {s} ↗', 'Leer en {s} ↗').replace('{s}', m.sourceName)) + '</a>' : '') +
         '</div>';
     }

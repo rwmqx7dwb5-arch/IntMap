@@ -35,14 +35,14 @@
  * every instrument that walks it. The compiled-grammar cache therefore lives per factory, which is
  * what we want anyway — js/atlas-reply.js builds one and keeps it.
  */
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
+import './safe-html.js';
+
 export function makeAtlasHighlight() {
-  /* the same five characters js/atlas-console.js's esc() handles — kept local so this module has no
-     dependency to inject and cannot be handed a caller's weaker escaper by accident */
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  /* the project's one encoder, imported rather than injected — so this module still cannot be handed a
+     caller's weaker escaper by accident, and no longer carries a copy of the right one */
+  const esc = (s) => globalThis.IntMapSafe.html(s);
 
   const BT = String.fromCharCode(96);   /* a back-tick, spelled so no reader of this file has to wonder whether it terminates something (CONSTITUTION §2) */
 

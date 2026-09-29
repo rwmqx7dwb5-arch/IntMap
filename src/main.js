@@ -36,6 +36,12 @@ import '../js/geo-engine.js';
 import '../js/engine-select.js';
 
 import '../js/newsgeo.js';
+/* (safe-output-single-module) THE OUTPUT ENCODER, window.IntMapSafe — as early as the pinned first three
+   allow, and before every module that renders. It used to be index.html's first <head> script; it is a
+   file now so that sources.html, admin.html and the modules Node evaluates read the SAME body instead of
+   keeping copies. Neither the three slots above nor anything they import touches IntMapSafe
+   (tests/safe-output-single-module-checks measures that), and no inline script in index.html does. */
+import '../js/safe-html.js';
 /* (client-error-log) …and, as early as the pinned first three allow, the error reporter: an exception thrown by
    any module evaluated after this line, or by the app at any later time, reaches IntMap's own record
    (public.client_errors) instead of nowhere — the Sentry loader it replaces never had a DSN. */

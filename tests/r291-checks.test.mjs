@@ -14,6 +14,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { installSafe } from './helpers/safe-html.mjs';   /* (safe-output-single-module) the real encoder, handed to the window */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
@@ -52,6 +53,7 @@ function makeWindow() {
     pickArgs() { return function () { return Array.prototype.slice.call(arguments); }; },
     locale(l, d) { return ({ en: 'en-GB', jp: 'ja-JP', de: 'de-DE', ru: 'ru-RU', es: 'es-ES' })[l] || d || 'en'; },
   };
+  installSafe(w);   /* js/routing-cards.js escapes through window.IntMapSafe — the shipped one, not a stub */
   return w;
 }
 function load(w, ...files) {

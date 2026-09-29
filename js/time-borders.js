@@ -2254,7 +2254,7 @@ window.IntMapModules.timeBorders=function(HOST){
     /* the card itself. `plc-popup` is the app's popup skin (js/map-ui.js owns the CSS), so this
        looks like every other popup on the map without a style of its own. */
     function _openBlank(f,lngLat){ try{
-      const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const esc=(s)=>window.IntMapSafe.html(s);   /* the one encoder (js/safe-html.js) */
       const n=blankNote(f);
       const body=n.lines.map(t=>'<div style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin-top:5px;">'+esc(t)+'</div>').join('');
       const html='<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);padding-right:30px;line-height:1.35;">'+esc(n.title)+'</div>'+body+'</div>';

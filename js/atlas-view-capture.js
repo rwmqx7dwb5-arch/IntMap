@@ -58,6 +58,10 @@
  */
 import { makeViewGround } from './atlas-view-ground.js';   /* (#R589) the measurements that turn a picture into an answerable question — and the sentence that says when it is not one */
 
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app. */
+import './safe-html.js';
+
 export function makeViewCapture(deps) {
   deps = deps || {};
   var GE = deps.GE, L = deps.L, esc = deps.esc, snapshot = deps.snapshot, waitIdle = deps.waitIdle;
@@ -323,7 +327,7 @@ export function makeViewCapture(deps) {
          red» should show the half it means. It is small on purpose: evidence, not a second map. */
       var capTxt = L('Atlas looked at the map', 'Atlas が地図を見ました', 'Atlas hat auf die Karte geschaut', 'Atlas посмотрел на карту', 'Atlas miró el mapa')
         + ((inc === 'map') ? (' · ' + L('map only', '地図のみ', 'nur Karte', 'только карта', 'solo el mapa')) : '');
-      var html = '<div class="atl-viewframe"><img src="' + esc(url) + '" alt="' + esc(capTxt) + '" loading="lazy">'
+      var html = '<div class="atl-viewframe"><img src="' + esc(globalThis.IntMapSafe.url(url, { allowData: true })) + '" alt="' + esc(capTxt) + '" loading="lazy">'
         + '<div class="atl-viewframe-cap">' + esc(capTxt) + (facts.reason ? (' — ' + esc(facts.reason)) : '') + '</div></div>';
       return { ok: true, html: html, facts: facts };
     }

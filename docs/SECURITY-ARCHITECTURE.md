@@ -162,7 +162,7 @@ Because the boot code is still inline (§6) and the app holds the session token 
 `localStorage`, **correct output-encoding at every sink is the primary XSS defense** (CSP is
 secondary — see §6). The app IS built (Vite, since #R175) and what ships is `dist/`, but that
 changes nothing here: a bundled sink is exactly as exploitable as an inline one. All untrusted text now routes through one canonical, dependency-free,
-globally-defined helper, `window.IntMapSafe` (defined in the first `<head>` script):
+globally-defined helper, `window.IntMapSafe`, whose one body is the file `js/safe-html.js`:
 
 - `IntMapSafe.html(s)` — escapes `& < > " '`; safe in HTML **text** and single/double-quoted
   **attribute** contexts.
@@ -175,6 +175,19 @@ globally-defined helper, `window.IntMapSafe` (defined in the first `<head>` scri
   `datacenters`, `osm-facilities`, `company-panel`, `monitors`, `news-events`) wrote `url()` alone,
   reachable from OSM `website` tags and feed URLs — the rule was fixed on the helper, where every
   caller gets it, rather than on nine call sites.
+- `IntMapSafe.text(s)` — the text of an HTML fragment (entities decoded, tags dropped), parsed in an
+  inert document (below).
+
+**One file, every reader.** `js/safe-html.js` is a classic script that publishes one global (the
+`js/admin-literal.js` shape), so it is loaded the same way everywhere: `src/main.js` imports it right
+after the three pinned slots (none of which, nor anything they import, touches `IntMapSafe`; no inline
+script in `index.html` does), `sources.html` and `admin.html` load it with `<script src>` before the
+script that renders (`vite.config.js` copies it for them), an ES module that needs it does
+`import './safe-html.js'` and reads `globalThis.IntMapSafe` — which works in Node as well — and a Node
+check that evaluates a classic file with a `window` of its own hands that window the real object
+(`tests/helpers/safe-html.mjs`), never a copy or an identity stub. Until safe-output-single-module the
+body was inline in `index.html`'s first `<head>` script, which no module and neither static page could
+reach, so each of them kept an escaper of its own.
 
 **One encoder, not one per file.** A local `esc` is a one-line delegate to `IntMapSafe.html`, never
 a copy. MEASURED 2026-09-29: 48 files carried 49 copies of their own, and they differed — five did not
@@ -182,7 +195,8 @@ encode `"` (an attribute value could be closed from the data), one deleted `<>&`
 them, one defaulted to the identity function. HTML that is parsed only to read its **text** (the news
 ingest's RSS `description`) is parsed in `document.implementation.createHTMLDocument()`: an element of
 the LIVE document fetches `<img src=x>` and fires its `onerror` even when it is never attached; a
-document without a browsing context fetches and runs nothing and yields the same text.
+document without a browsing context fetches and runs nothing and yields the same text. That parse is
+`IntMapSafe.text`; `js/news-feed.js`'s `stripHTML` delegates to it.
 
 **The gate** is `scripts/safe-output.mjs`, one rule of `npm run check:static`. It counts three shapes by
 their form (AST), never by a helper's name: a function that outputs both `'&amp;'` and `'&lt;'`; a
@@ -192,9 +206,9 @@ fixes the scheme, or a builder in the same file that only returns such constants
 `scripts/safe-output-ledger.json` holds what remains per file: more fails, fewer fails until the ledger
 is lowered (`node scripts/safe-output.mjs --write`). `kept` entries are XML writers (GeoTIFF PAM
 metadata, GPX/KML) — another grammar, written to a file — and each carries its reason.
-⚠ Modules that are evaluated in Node by their tests (no `window.IntMapSafe` there) and `sources.html`
-(which does not load it) still hold their copies in `pending`; they need the canonical encoder to become
-importable from a module, which is a change to `index.html`.
+⚠ What remains in `pending` (measured 2026-09-29, after the encoder became a file): 8 escapers and
+7 href/src values in `js/app-body.js`, `js/map-ui.js`, `js/countries-ui.js`, `js/data-layers.js`,
+`js/companies-ui.js` and `js/feedback.js` — the ledger names each; nothing blocks them any more.
 
 **Sinks hardened this round** (all were confirmed reachable from attacker-controlled data):
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <!-- (#R138/#R272 SECURITY) CSP. The PRIMARY XSS defence is output-encoding at every sink (window.IntMapSafe, below); this is defence-in-depth.
+  <!-- (#R138/#R272 SECURITY) CSP. The PRIMARY XSS defence is output-encoding at every sink (window.IntMapSafe, js/safe-html.js); this is defence-in-depth.
        ⚠ (#R272) it used to name FIVE directives with no `default-src` — a directive that is absent with nothing to fall back on is not "permissive",
        it is ABSENT. Fourteen now, each explained with its measurement in docs/SECURITY-ARCHITECTURE.md §6. ⚠ `frame-ancestors` is IGNORED in a
        <meta> policy, so it is deliberately absent rather than written and silently inert (§6/§8). -->
@@ -69,29 +69,11 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     window.addEventListener('error',function(e){ push('error', e&&e.message, e&&e.filename?((e.filename||'').split('/').pop()+':'+e.lineno):''); });
     window.addEventListener('unhandledrejection',function(e){ var r=e&&e.reason; push('promise', (r&&(r.message||r))||'unhandledrejection'); });
   })();
-  /* (#R138 SECURITY) Canonical output-encoding helpers — the single source of truth for neutralising
-     UNTRUSTED text before it reaches the DOM. Every value that originates outside our own code
-     (community posts/profiles, news RSS titles/publishers, OSM/Nominatim place names, OSM-editable
-     webcam URLs, GeoJSON properties, AI output, external-API bodies, the URL hash) is HOSTILE and must
-     pass through here. Tiny, dependency-free and defined FIRST so it is global to every later render
-     path (window.IntMapSafe survives IIFE scoping, unlike the ~15 local esc() closures it complements).
-       IntMapSafe.html(s)            → escape & < > " '  → safe in HTML TEXT and single/double-quoted ATTRS
-       IntMapSafe.url(s,{allowData}) → allow ONLY http(s)/mailto/tel (+ optional data:image, NEVER svg);
-                                       javascript:/vbscript:/data:text/html/… → '' (or opts.fallback)
-     url() also %-encodes " ' < > ` and blanks, so its result is inert in a quoted attr by itself. */
-  (function(){
-    var MAP={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
-    function html(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return MAP[c];}); }  function inert(s){ return s.replace(/[\t\n\r]/g,'').replace(/["'<>`\x00-\x20\x7f]/g,function(c){return '%'+('0'+c.charCodeAt(0).toString(16).toUpperCase()).slice(-2);}); }
-    function url(s,opt){
-      opt=opt||{}; s=String(s==null?'':s).trim();
-      /* strip whitespace/control chars before the scheme test so "java\tscript:" or a leading \x01 can't sneak a scheme through */
-      var probe=s.replace(/[\x00-\x20\xa0]+/g,'').toLowerCase();
-      if(/^(?:https?:|mailto:|tel:)/.test(probe)) return inert(s);
-      if(opt.allowData && /^data:image\/(?!svg\b)[a-z0-9.+-]+[;,]/.test(probe)) return inert(s);
-      return (opt.fallback!=null?opt.fallback:'');
-    }
-    window.IntMapSafe={ html:html, esc:html, url:url };
-  })();
+  /* (#R138 SECURITY) The canonical output encoder, window.IntMapSafe = { html, esc, url, text }, lives in ONE
+     file now: js/safe-html.js (src/main.js imports it before any module that renders; sources.html and
+     admin.html load the same file). It used to be defined inline here, which is why nothing a Node test
+     evaluates, and neither static page, could reach it — each kept an escaper of its own. No inline
+     script in this page uses it. docs/SECURITY-ARCHITECTURE.md §4. */
   /* (client-error-log) The Sentry loader that stood here is gone: no DSN was ever configured, so it returned on
      its first line for every visit and nothing any reader's browser threw was recorded anywhere.
      Uncaught exceptions now go to IntMap's own record — js/client-error-report.js (imported by

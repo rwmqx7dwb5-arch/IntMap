@@ -63,8 +63,9 @@ test.beforeAll(async ({ browser }) => {
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  // IntMapSafe is defined in the FIRST head script, so it is ready almost immediately;
-  // still wait for it explicitly so a regression that removes/moves it fails loudly.
+  // IntMapSafe is js/safe-html.js, imported by src/main.js right after the three pinned slots, so it is
+  // ready as soon as the module graph starts; still wait for it explicitly so a regression that
+  // removes/moves it fails loudly.
   await page.waitForFunction(() => typeof window.IntMapSafe === 'object' && !!window.IntMapSafe.html, null, { timeout: 45_000 });
 });
 
@@ -125,6 +126,18 @@ test('IntMapSafe.url() blocks dangerous schemes', async () => {
 test('IntMapSafe.url() allows safe schemes unchanged', async () => {
   const allowed = await page.evaluate((urls) => urls.map((u) => window.IntMapSafe.url(u)), URL_ALLOW);
   expect(allowed).toEqual(URL_ALLOW);
+});
+
+/* (safe-output-single-module) text() reads the text of third-party markup (the news ingest's RSS
+   description) in an INERT document: in the real browser nothing in it is fetched or run. */
+test('IntMapSafe.text() yields the text and runs nothing in the markup', async () => {
+  const r = await page.evaluate(async () => {
+    window.__imTextProbe = 0;
+    const t = window.IntMapSafe.text('<p>A &amp; B<img src="data:," onerror="window.__imTextProbe++"></p><svg onload="window.__imTextProbe++"></svg>');
+    await new Promise((res) => setTimeout(res, 300));
+    return { t, fired: window.__imTextProbe };
+  });
+  expect(r).toEqual({ t: 'A & B', fired: 0 });
 });
 
 test('i18n: escaping preserves JP/DE/RU/ES/emoji/accents intact', async () => {

@@ -61,7 +61,7 @@
       var el = document.getElementById('map-credit');
       if (!el) return;
       var a = function (href, text) {
-        return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
+        return '<a href="' + window.IntMapSafe.url(href) + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
       };
       var sat = !!(document.getElementById('btn-view-sat') || {}).classList &&
         document.getElementById('btn-view-sat').classList.contains('active');

@@ -907,7 +907,8 @@ window.IntMapModules.betaOverlays=function(HOST){
       whsDetailLoad().then(j=>{
         const d=j&&j.sites&&j.sites[String(s.id)]; if(!d) return;
         let html=head(d);
-        if(d.img) html+='<img src="'+SF(d.img)+'" alt="" loading="lazy" style="width:100%;border-radius:8px;margin-top:8px;display:block;">';
+        const dImg=window.IntMapSafe.url(d.img||'');   /* the one scheme guard (js/safe-html.js): http(s) only */
+        if(dImg) html+='<img src="'+SF(dImg)+'" alt="" loading="lazy" style="width:100%;border-radius:8px;margin-top:8px;display:block;">';
         if(d.d) html+='<div style="font-size:12px;color:var(--text-main);margin-top:8px;line-height:1.5;max-height:190px;overflow:auto;">'+SF(d.d)+'</div>';
         html+='<div style="margin-top:8px;"><a href="https://whc.unesco.org/'+SF(seg)+'/list/'+SF(s.id)
           +'/" target="_blank" rel="noopener" style="font-size:12px;">'+SF(L('UNESCO page','ユネスコの解説ページ','UNESCO-Seite','Страница ЮНЕСКО','Página de la UNESCO'))+' ↗</a></div>';
