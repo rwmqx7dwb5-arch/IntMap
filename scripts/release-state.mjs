@@ -121,9 +121,7 @@ export const commentsOnly = (diffText) => {
 /** 配備されたファイル木とリポジトリの木を、1 ファイルずつ中身で比べる。
  *  ⚠ 歩くのは**配備された木**である。deploy が束ねるのは import で到達したものだけなので、
  *  リポジトリにしか無いファイル（到達されていない控えなど）は食い違いではない。 */
-const eol = (buf) => buf.toString('utf8').replace(/
-/g, '
-');
+const eol = (buf) => buf.toString('utf8').replace(/\r\n/g, '\n');
 export const compareTrees = (deployedDir, repoRoot, git) => {
   const files = walk(deployedDir);
   const same = [], differs = [], missingInRepo = [];
