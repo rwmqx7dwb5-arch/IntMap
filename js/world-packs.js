@@ -3132,7 +3132,7 @@ window.IntMapModules.worldPacks=function(HOST){
       const NWS_REF='https://mapservices.weather.noaa.gov/static/rest/services/nws_reference_maps/nws_reference_map/MapServer/';
       const NWS_OFF=0.004;                  /* ≈440 m, stated rather than silent */
       const NWS_BATCH=110;                  /* ids per query — the service's own maxRecordCount is 2000 */
-      const NWS_GEO_CACHE='intmap-nwszone-v1';
+      const NWS_GEO_CACHE='intmap-page-nwszone-v1';   /* `intmap-page-` = kept by sw.js across deploys */
       const NWS_GEO_TTL=180*24*3600e3;      /* the NWS revises the zone set about twice a year */
       const nwsGeo=Object.create(null);     /* 'z|f|c:UGC' → {g,n}, or 0 once the register has answered without it */
       let nwsGeoWarm=false, nwsGeoBusy=false, nwsGeoDirty=false, nwsGeoFailAt=0;
@@ -3628,7 +3628,7 @@ window.IntMapModules.worldPacks=function(HOST){
            fresh read is still made, and the two are MERGED — so the library only ever grows.
          ⚠ IT IS NOT A CACHE OF THE WARNINGS. Only `{name → geometry}` is stored; `swicData` (what
          is in force) is never cached and is re-read on the rotation as before. */
-      const SWIC_GEO_CACHE='intmap-swicgeo-v1';
+      const SWIC_GEO_CACHE='intmap-page-swicgeo-v1';   /* `intmap-page-` = kept by sw.js across deploys */
       const SWIC_GEO_TTL=7*24*3600e3;      /* a warning region is not redrawn weekly */
       async function swicGeoCached(mid){ try{ if(!self.caches) return null;
         const c=await caches.open(SWIC_GEO_CACHE); const r=await c.match('swicgeo/'+mid); if(!r) return null;
@@ -3753,7 +3753,7 @@ window.IntMapModules.worldPacks=function(HOST){
              on every visit. Cached under `intmap-bnd-v1`, a second session pays nothing for them.
          ⚠ THE CACHE IS KEYED ON THE URL AND HAS NO TTL ON PURPOSE: geoBoundaries publishes a NEW
          release path when a boundary set changes, so a stale entry is a stale URL nobody asks for. */
-      const BND_CACHE='intmap-bnd-v1';
+      const BND_CACHE='intmap-page-bnd-v1';   /* `intmap-page-` = kept by sw.js across deploys */
       async function bndCached(u){ try{ if(!self.caches) return null;
         const c=await caches.open(BND_CACHE); const r=await c.match(u); if(!r) return null;
         const j=await r.json(); return (j&&j.features)?j:null; }catch(_){ return null; } }

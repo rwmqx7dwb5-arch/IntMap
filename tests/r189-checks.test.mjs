@@ -33,8 +33,9 @@ test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable 
   assert.match(body, /if\(!\(\+s\.defv>=190\)\) \(window\.IntMapDefaultLayers\|\|\[\]\)\.forEach/,
     'a session from an older generation gets the default-on ids back once');
   const sw = read('sw.js');
-  assert.match(sw, /!\/\^intmap-subcables-\/\.test\(k\)/,
-    'the SW activate purge spares the page-owned cable cache');
+  /* the SW activate purge spares the page-owned cable cache — now by the page-owned name prefix, and
+     EVALUATED against every cache the page opens in tests/sw-cache-names-owned-checks.test.mjs */
+  assert.match(sw, /const PAGE_CACHE_PREFIX = 'intmap-page-';/, 'the SW keeps every intmap-page-* cache');
   const dl = read('js/data-layers.js');
   /* the build() give-up path is no longer silent */
   assert.match(dl, /console\.warn\('addSubcables',e\); autoUncheck\('dl-subcables'\);/,

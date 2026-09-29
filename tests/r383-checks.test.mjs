@@ -169,7 +169,7 @@ test('R383 ② the UGC zone codes are resolved against the NWS’s own reference
     'the server-side generalisation is declared and no coarser than ~550 m');
 
   /* the answers are kept, like every other boundary set in this file */
-  assert.match(code, /const NWS_GEO_CACHE='intmap-nwszone-v1';/);
+  assert.match(code, /const NWS_GEO_CACHE='intmap-page-nwszone-v1';/);
   assert.match(code, /await c\.put\('nwszone\/all',new Response\(JSON\.stringify\(\{at:Date\.now\(\),by:by\}\),/);
   assert.match(code, /await nwsGeoLoad\(\);/, 'the stored index is read before the feed is');
 
