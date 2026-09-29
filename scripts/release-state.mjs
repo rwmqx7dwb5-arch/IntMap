@@ -152,6 +152,20 @@ export const edgeState = (cmp) =>
 
 /* ---------------------------------------------------------------- 実行 */
 
+/* A secret pasted through a terminal carries what the terminal added: Windows PowerShell 5.1 pipes a
+   string to a native command with a trailing CRLF (and may lead with a BOM). Measured 2026-09-29: the
+   Supabase API answered «Format is Authorization: Bearer …» for a token registered that way. The value is
+   normalised once, here, before any `supabase` child process inherits it — and a value that still is not
+   an access token is named by its SHAPE (length, prefix), never by its content. */
+export const normalizeAccessToken = (raw) => String(raw ?? '').replace(/^﻿/, '').trim();
+export const accessTokenShape = (t) => (/^sbp_[0-9a-f]{40}$/.test(t) ? null
+  : `length ${t.length}, starts ${JSON.stringify(t.slice(0, 4))}, expected sbp_ + 40 hex`);
+if (process.env.SUPABASE_ACCESS_TOKEN != null) {
+  process.env.SUPABASE_ACCESS_TOKEN = normalizeAccessToken(process.env.SUPABASE_ACCESS_TOKEN);
+  const bad = process.env.SUPABASE_ACCESS_TOKEN && accessTokenShape(process.env.SUPABASE_ACCESS_TOKEN);
+  if (bad) console.log(`::warning::SUPABASE_ACCESS_TOKEN does not look like an access token (${bad})`);
+}
+
 const ARGS = process.argv.slice(2);
 const flag = (f) => ARGS.includes(f);
 const valueOf = (f) => { const i = ARGS.indexOf(f); return i >= 0 ? ARGS[i + 1] : null; };
