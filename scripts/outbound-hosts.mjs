@@ -242,7 +242,23 @@ function scanHtml(file, html, out) {
   const line = lineIndex(html);
   const blank = html.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, ' '));
   const scripts = [];
-  for (const m of blank.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+  /* <script> elements by position, the way the HTML tokenizer ends them: the body stops at the first
+     `</script` whatever follows it (a regex for the end tag is always one spelling short). */
+  const lower = blank.toLowerCase();
+  const scriptEls = [];
+  for (let at = lower.indexOf('<script'); at >= 0; at = lower.indexOf('<script', at + 1)) {
+    if (/[\w-]/.test(lower[at + 7] || '')) continue;
+    const openEnd = lower.indexOf('>', at);
+    if (openEnd < 0) break;
+    const close = lower.indexOf('</script', openEnd + 1);
+    const bodyEnd = close < 0 ? blank.length : close;
+    const closeEnd = close < 0 ? blank.length : (lower.indexOf('>', close) < 0 ? blank.length : lower.indexOf('>', close) + 1);
+    const m = [blank.slice(at, closeEnd), blank.slice(at + 7, openEnd), blank.slice(openEnd + 1, bodyEnd)];
+    m.index = at;
+    scriptEls.push(m);
+    at = closeEnd - 1;
+  }
+  for (const m of scriptEls) {
     const type = (/\btype\s*=\s*["']?([^"'\s>]+)/i.exec(m[1]) || [])[1] || '';
     const body0 = m.index + m[0].indexOf('>') + 1;
     scripts.push([m.index, m.index + m[0].length]);
