@@ -42,7 +42,7 @@
  *  «longitude prune» would discard the real nearest coast. Bands are visited nearest-first and the
  *  search stops as soon as the band's own floor exceeds the best distance found.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③): an unexported top-level declaration in js/
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③): an unexported top-level declaration in js/
  *  would have been a global before the bundle, and this file may not reintroduce one.
  * ==========================================================================*/
 

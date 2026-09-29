@@ -4,7 +4,7 @@
  *  The news timeline under the map: year / date / time modes, the scrubber, and the "synced"
  *  badge that ties it to the master clock (window.IntMapTime).
  *  WRITES two host members — moving the clock REPLACES the news arrays, so globalData and
- *  newsFeatures are read-write here (see tests/r165-checks.test.mjs for the RW contract).
+ *  newsFeatures are read-write here (see tests/atlas-console-kernel-checks.test.mjs (#R165) for the RW contract).
  * ==========================================================================*/
 
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */

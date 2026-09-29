@@ -241,13 +241,16 @@ test('③ a floor, a character count, and a tool\'s output are not ceilings', ()
 });
 
 test('③ mutation: re-inserting each retired ceiling into its own file is caught; the repository has none', () => {
-  /* the five sites this round retired, put back — using each file's own helpers — must each be seen */
+  /* the five sites this round retired, put back — using each file's own helpers — must each be seen.
+     The files are the topic files that now carry those rounds' checks (#R291 → geo-routing-ui,
+     #R199 → atlas-console-kernel, #R200 → shell-app-body-modules, #R278 → atlas-dispatch,
+     #R350 → atlas-answer-audit). */
   const probes = [
-    ['tests/r291-checks.test.mjs', "\ntest('probe', () => { const body = read('js/app-body.js'); assert.ok(body.split('\\n').length <= 4400); });\n"],
-    ['tests/r199-checks.test.mjs', "\ntest('probe', () => { const n = (p) => read(p).split('\\n').length; const body = n('js/app-body.js'); assert.ok(body < 5_200); });\n"],
-    ['tests/r200-checks.test.mjs', "\ntest('probe', () => { const n = (p) => read(p).split('\\n').length; const body = n('js/app-body.js'); assert.ok(body < 4_400); });\n"],
-    ['tests/r278-checks.test.mjs', "\ntest('probe', () => { const n = ATLAS().split(/\\r?\\n/).length; assert.ok(n < 5300); });\n"],
-    ['tests/r350-checks.test.mjs', "\ntest('probe', () => { const n = read('js/atlas-console.js').split(/\\r?\\n/).length; assert.ok(n < 5300); });\n"],
+    ['tests/geo-routing-ui-checks.test.mjs', "\ntest('probe', () => { const body = read('js/app-body.js'); assert.ok(body.split('\\n').length <= 4400); });\n"],
+    ['tests/atlas-console-kernel-checks.test.mjs', "\ntest('probe', () => { const n = (p) => read(p).split('\\n').length; const body = n('js/app-body.js'); assert.ok(body < 5_200); });\n"],
+    ['tests/shell-app-body-modules-checks.test.mjs', "\ntest('probe', () => { const n = (p) => read(p).split('\\n').length; const body = n('js/app-body.js'); assert.ok(body < 4_400); });\n"],
+    ['tests/atlas-dispatch-checks.test.mjs', "\ntest('probe', () => { const n = ATLAS().split(/\\r?\\n/).length; assert.ok(n < 5300); });\n"],
+    ['tests/atlas-answer-audit-checks.test.mjs', "\ntest('probe', () => { const n = read('js/atlas-console.js').split(/\\r?\\n/).length; assert.ok(n < 5300); });\n"],
   ];
   for (const [rel, probe] of probes) {
     const file = join(ROOT, rel);

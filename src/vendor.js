@@ -7,7 +7,7 @@
  *  and moved since only through package.json), bundled by Vite — and this file re-publishes exactly the
  *  globals those tags used to define, so not one call site changes. Each line names the package's
  *  MAJOR version only: the exact version is package.json's and package-lock.json's to state, and a
- *  copy of it here went stale on every patch bump (tests/r175-checks compares each major with
+ *  copy of it here went stale on every patch bump (tests/layer-boot-graph-checks.test.mjs (#R175) compares each major with
  *  package.json, so a major bump still has to be written here):
  *
  *      maplibre-gl@6             → window.maplibregl     (a namespace object — v6 has no default export)
@@ -61,7 +61,7 @@ import mlcontour from 'maplibre-contour';
 
    ⚠ AND THE LIST IS CHECKED, NOT TRUSTED. `turf.somethingElse(…)` would now be `undefined is not a
    function` at runtime instead of working — precisely the silent-hole shape this project keeps
-   paying for — so tests/r209-checks.test.mjs sweeps js/ and src/ for every `turf.<name>` the source
+   paying for — so tests/atlas-console-kernel-checks.test.mjs (#R209) sweeps js/ and src/ for every `turf.<name>` the source
    contains and fails if one of them is missing from this object. Add a call, add it here. */
 import along from '@turf/along';
 import area from '@turf/area';
@@ -143,7 +143,7 @@ window.topojson = topojson;
       dashboard's WebAuthn relying-party is configured, so it never breaks password auth (#R155).
       ⚠ (supabase-js 2.117) the flag is now IGNORED — auth-js enables passkeys by default and keeps the
       option only so existing code compiles (its own type says so; removed at the next major). It stays
-      written because tests/r175-checks pins these options verbatim, and saying it does nothing is
+      written because tests/layer-boot-graph-checks.test.mjs (#R175) pins these options verbatim, and saying it does nothing is
       truer than a silent removal. What decides whether a passkey control is SHOWN is js/auth-ui.js
       (_passkeysAvailable / _pkFailure), which feature-detects the SDK and withdraws the controls on
       an origin the project's relying party refuses.

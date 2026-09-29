@@ -544,7 +544,7 @@ test('R297 ⑨ clicking a country opens that country’s key, and a publish cann
 /* ── ⑩ the shape library survives the session ─────────────────────────────────────────────────── */
 test('R297 ⑩ the WMO shape library is cached, merged and applied before anything is asked for', () => {
   const s = read('js/world-packs.js');
-  assert.match(s, /const SWIC_GEO_CACHE='intmap-swicgeo-v1';/);
+  assert.match(s, /const SWIC_GEO_CACHE='intmap-page-swicgeo-v1';/);
   assert.match(s, /async function swicGeoCached\(mid\)/);
   assert.match(s, /async function swicGeoStore\(mid,areas\)/);
   assert.match(s, /function warmSwicGeo\(iso\)/);
@@ -878,7 +878,7 @@ test('R306 ③ identity and proximity still use the cheap centroid', () => {
    red on every Windows checkout while CI stayed green. #R283 wrote this lesson for two other tests;
    this is the third. */
 test('R306 ④ the view-pass check is asked of the function, not of a byte count', () => {
-  const t = read('tests/r293-checks.test.mjs');
+  const t = read('tests/weather-warnings-checks.test.mjs'); /* #R293 ⑥ lives there now */
   assert.match(t, /function askUnitsInView\\\(\\\)\\\{\[\\s\\S\]\{0,1200\}\?upgradeUnitsInView/,
     'the relation is pinned to the function body');
   assert.ok(!/askUnitsInView\[\\s\\S\]\{0,600\}upgradeUnitsInView/.test(t),
@@ -1409,7 +1409,7 @@ test('R383 ② the UGC zone codes are resolved against the NWS’s own reference
     'the server-side generalisation is declared and no coarser than ~550 m');
 
   /* the answers are kept, like every other boundary set in this file */
-  assert.match(code, /const NWS_GEO_CACHE='intmap-nwszone-v1';/);
+  assert.match(code, /const NWS_GEO_CACHE='intmap-page-nwszone-v1';/);
   assert.match(code, /await c\.put\('nwszone\/all',new Response\(JSON\.stringify\(\{at:Date\.now\(\),by:by\}\),/);
   assert.match(code, /await nwsGeoLoad\(\);/, 'the stored index is read before the feed is');
 

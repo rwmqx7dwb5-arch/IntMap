@@ -40,8 +40,8 @@ const read = (p) => readLF(resolve(ROOT, p));
    ⚠ BOTH DIRECTIONS, for #R283's reason: a widener that matched everything would pass the first
    half and is exactly how this would be "fixed" by weakening it. */
 test('R286 ⑥: r280 ②\'s anchor follows the checkout\'s line endings and relaxes nothing else', () => {
-  const m = /const anchorRe = (\(s\) => new RegExp\([\s\S]*?\));\n/.exec(read('tests/r280-checks.test.mjs'));
-  assert.ok(m, 'tests/r280-checks.test.mjs still builds its anchors through one named helper');
+  const m = /const anchorRe = (\(s\) => new RegExp\([\s\S]*?\));\n/.exec(read('tests/doc-facts-legal-pages-checks.test.mjs'));
+  assert.ok(m, 'tests/doc-facts-legal-pages-checks.test.mjs (#R280) still builds its anchors through one named helper');
   const anchorRe = new Function(`return (${m[1]});`)();
 
   const anchor = '<script src="./js/legal-text.js"></script>\n';

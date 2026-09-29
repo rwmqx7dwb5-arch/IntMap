@@ -37,7 +37,7 @@ import { requireData } from './data-assets.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
 /* (#R407) `--rule=<name>` narrows the report to ONE rule and skips any rule that has to shell out
-   for its facts. It exists for the mutation tests: tests/r399-checks and tests/r407-checks run this
+   for its facts. It exists for the mutation tests: tests/process-doc-facts-edge-counts-checks.test.mjs (#R399) and tests/process-doc-facts-deep-tier-when-checks.test.mjs (#R407) run this
    script once per mutation WHILE HOLDING THE TREE LOCK, and at eleven seconds a run a dozen
    mutations hold it for two minutes and starve the other files that need it. MEASURED #R407: the
    full run is 11.0 s, of which `i18n-pair-audit` as a subprocess is 10.0 s and every other rule
@@ -101,7 +101,7 @@ const EXCLUDED = [
   [/^CLAUDE\.local\.md$/, 'machine-local and untracked — the credentials file (.gitignore)'],
 ];
 /* ⚠ TRACKED IS NOT THE SAME AS PRESENT, and the difference is the document being written RIGHT NOW.
-   MEASURED (#R628, by tests/r274-checks ③): the first version of this asked git only for tracked
+   MEASURED (#R628, by tests/process-doc-facts-sweep-checks.test.mjs #R274 ③): the first version of this asked git only for tracked
    files, so a `.md` added this round — the one the round is most likely to get wrong — was invisible
    to the gate until it was committed. The negative probe that exists to prove the sweep can fail
    sat in `docs/` and the sweep reported all-green. Ask for both halves: what git tracks, and what
@@ -150,7 +150,7 @@ for (const must of ['.agents/skills/intmap-round/SKILL.md', '.agents/rules/execu
   if (!BODY.has(must)) fail('scan', `${must} was not scanned — the instruction documents are inside the sweep now`);
 }
 if (AGENT_DOCS.length < 3) fail('scan', `only ${AGENT_DOCS.length} instruction document(s) under .agents/ were read`);
-/* (#R699) …and it says so on a green run, so that the roster `tests/r274-checks` ① derives can
+/* (#R699) …and it says so on a green run, so that the roster `tests/process-doc-facts-sweep-checks.test.mjs (#R274)` ① derives can
    see it at all — see the note on `sql-path` below. */
 ok('scan', `${PROSE_DOCS.length} prose + ${AGENT_DOCS.length} instruction documents reached`);
 
@@ -208,7 +208,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
  *  ⚠ AND IT MUST NOT CATCH ITSELF — the header's warning applies here. The needles are built
  *    from parts and the examples above are quoted with their WRONG numbers, so this comment is
  *    not a copy of the claim it checks. `docs/TESTING.md` describes the rule in prose for the
- *    same reason. tests/r399-checks ① proves each half goes red. */
+ *    same reason. tests/process-doc-facts-edge-counts-checks.test.mjs #R399 ① proves each half goes red. */
 {
   const dir = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name !== '_shared').map((d) => d.name).sort();
@@ -270,7 +270,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
    *  alone, the same escape rule 2b gives the `_shared` inventories.
    *
    *  ⚠ AND IT MUST NOT CATCH ITSELF — no run of three function names appears in this comment,
-   *    and docs/TESTING.md describes the rule without spelling the roster out. tests/r403-checks
+   *    and docs/TESTING.md describes the rule without spelling the roster out. tests/process-doc-facts-instruction-docs-checks.test.mjs (#R403)
    *    ①② mutate a roster in both directions and prove each half goes red. */
   {
     const NAME = new RegExp('(?<![A-Za-z0-9-])(' + dir.join('|') + ')(?![A-Za-z0-9-])', 'g');
@@ -325,7 +325,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
      said 「Edge Function の名簿（**16 本**の名前…）」 while there were seventeen, and the gate was
      green, because 「の」 was deliberately kept out of the set (it makes 「… の 1 本」 partitive).
      Putting 16 back today still leaves the old needle green — proved in
-     `tests/r699-doc-claim-needles-checks.test.mjs`. Sentences outside the set were not judged
+     `tests/process-doc-facts-claims-checks.test.mjs (#R699)`. Sentences outside the set were not judged
      wrong and not judged right: they were never looked at, and the report said 「7 stated counts,
      all 17」 about the ones that happened to fit. Same shape as the 260-character window #R694
      took out of the `_shared/` gate — a property of the NEEDLE deciding the rule's coverage.
@@ -381,7 +381,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
          was caught and dropping nine of TEN was not.
      One run of this script is ~7.5 s, so a sweep of «every name, dropped from every roster»
      could never be written against it. Against the module it is milliseconds, and
-     `tests/r694-shared-roster-facts-checks.test.mjs` writes exactly that sweep — importing the
+     `tests/process-doc-facts-edge-counts-checks.test.mjs (#R694)` writes exactly that sweep — importing the
      same function rather than restating the rule (.agents/rules/no-ad-hoc-hardcoding.md §2.3). */
   {
     const shared = sharedRoster(ROOT);
@@ -426,7 +426,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
     }
   });
   /* ⚠ (#R699) THIS RULE HAD NO `ok()`, AND THAT PUT IT OUTSIDE THE TEST THAT WATCHES THE RULES.
-     `tests/r274-checks` ① derives the roster of rules from this file's own `ok('…')` calls —
+     `tests/process-doc-facts-sweep-checks.test.mjs (#R274)` ① derives the roster of rules from this file's own `ok('…')` calls —
      #R403 replaced a hand-typed list of twelve with that derivation for exactly the right
      reason — but a rule that can only FAIL never appears in it, so「a rule that does not run
      cannot fail」was never asserted for this one or for `scan`. Deriving the universe from one
@@ -738,7 +738,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
   const hits = [];
   const archLines = ARCH.split('\n');
   archLines.forEach((l, i) => {
-    /* a round citation, not a file name: `tests/r271-checks.test.mjs` is lower-case and is a path.
+    /* a round citation, not a file name: `tests/r783-format-compat-checks.test.mjs` is lower-case and is a path.
        ⚠ ANY NUMBER OF DIGITS. This read `R\d{1,3}` followed by «not a digit», so `R1000` — the
        first four-digit round — matched nothing at all: `R100` is followed by `0`. The history-only
        rule would have gone quiet the day the numbers reached four digits.
@@ -1157,7 +1157,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
    both deep jobs. The two places that were right — package.json's `//test:deep` and
    docs/TESTING.md — were right for no enforced reason.
 
-   ⚠ AND THE GATE ITSELF WAS GUARDED THE WHOLE TIME. tests/r207-checks ⑫ has asserted that `if:`
+   ⚠ AND THE GATE ITSELF WAS GUARDED THE WHOLE TIME. tests/shell-test-infra-checks.test.mjs #R207 ⑫ has asserted that `if:`
    since the round that wrote it: schedule and dispatch present, `push` absent. It passed on every
    one of those 200 rounds. What nobody held to it was the PROSE — so the half a machine reads was
    correct and the half a person reads was not, and only the person acts on it.
@@ -1182,7 +1182,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
    the precaution the header of this file describes, and the reason arm A does not catch itself.
    ⚠ ARM A IS A NEEDLE AND NEEDLES ARE INCOMPLETE. Prose that puts a whole clause between the
    nightly and the claim slips past it; arm B is the half that cannot be phrased around, because it
-   reads the gate and demands an answer. tests/r407-checks proves both halves go red.
+   reads the gate and demands an answer. tests/process-doc-facts-deep-tier-when-checks.test.mjs (#R407) proves both halves go red.
 
    Cost, measured: 48 candidate files / 747 kB, of which the scan is 38 ms — the ~1.2 s this rule
    adds is almost entirely the `git grep` process spawn on Windows. */
@@ -1257,7 +1257,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
       const T = BODY.get(TDOC) || '';
       const MARK = '**Where it runs.**';
       /* ⚠ THE ANCHOR MUST BE UNIQUE, AND THIS IS NOT PEDANTRY — the first version of this rule took
-         `indexOf`, and when tests/r407-checks blanked the real paragraph the rule quietly latched
+         `indexOf`, and when tests/process-doc-facts-deep-tier-when-checks.test.mjs (#R407) blanked the real paragraph the rule quietly latched
          onto a SECOND copy further down the file and reported something else entirely. A 正本 with
          two copies is not a 正本 (AGENTS.md §9), and `.indexOf` on a duplicated anchor is the same
          defect #R399 found in `.match()`: it answers for the file with its first hit. */
@@ -2743,7 +2743,7 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
   const ci = rd('.github/workflows/ci.yml').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
   /* ⚠ (gate-parity-and-shards) `npm test` IS NOT COUNTED AS A CALLER. Since it discovers its gates from
      package.json it runs every declared gate by construction, so «npm test runs it» carries no
-     information — counting it made this rule accept a gate CI had stopped running (tests/r628 ③ blanks
+     information — counting it made this rule accept a gate CI had stopped running (tests/process-doc-facts-sweep-checks.test.mjs #R628 ③ blanks
      the shard step and must see the orphan). Only what ci.yml executes is a caller here; that npm test
      runs every gate is held by tests/gate-parity-and-shards-checks.test.mjs ①. */
   const gates = Object.keys(pkg).filter((k) => /^check:/.test(k));

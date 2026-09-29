@@ -120,7 +120,7 @@ window.IntMapModules.radiation=function(HOST){
        produces sits below 0.5 (the near-misses are same-country plants sharing a city name). 0.55 is
        between those two populations. EXPIRY: if the registry gains sites whose names differ only by
        a unit number, this floor stops separating them and the match needs the number, not a lower
-       floor. CANONICAL: this constant and tests/r585-npp-checks.test.mjs. */
+       floor. CANONICAL: this constant and tests/radiation-plume-checks.test.mjs (#R585). */
     const NPP_FLOOR=0.55;
     /* ⚠ AN AMBIGUOUS NAME IS NOT A MATCH, AND IT IS NOT A MISS EITHER. 「福島原発」 names Fukushima
        Daiichi and Fukushima Daini equally well; a scorer that silently returns whichever sorted

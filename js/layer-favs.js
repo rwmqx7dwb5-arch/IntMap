@@ -11,7 +11,7 @@
  *  which is what lets the body below stay word-for-word what it was.
  *
  *  It is a REAL ES module: nothing registers it on window.IntMapModules, nothing in src/main.js orders
- *  it, and js/app-body.js reaches it only through a static `import`. tests/r200-checks.test.mjs derives
+ *  it, and js/app-body.js reaches it only through a static `import`. tests/shell-app-body-modules-checks.test.mjs (#R200) derives
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/

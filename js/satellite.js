@@ -20,7 +20,7 @@ window.IntMapModules.satellite=function(HOST){
   const satHasKey=(p)=>p.tier==='free' || (HOST.imIsPro() && !!(HOST.satKeys[p.keyName]&&String(HOST.satKeys[p.keyName]).trim()));
   const satMaxDay=()=>new Date().toISOString().slice(0,10);
   /* (#R246) the provider names are tuples held as data — see IntMapLang.pickArgs(). ⚠ BUILT ON FIRST
-     USE, not at factory level: tests/r169 #4 requires a factory body to DECLARE and never to run. */
+     USE, not at factory level: tests/engine-app-shell-split-checks.test.mjs (#R169) #4 requires a factory body to DECLARE and never to run. */
   let _LS=null; const LS=()=>(_LS||(_LS=window.IntMapLang.pick(()=>HOST.lang)));
   function satMsg(key,p){ return String(HOST.t(key)||'').replace('{provider}',(p&&(LS().arr(p.name)||p.short))||''); }
   function satCaptureLabel(p){ if(!p) return ''; if(!p.dated) return HOST.t('satLatest'); if(p.dateMode==='year') return HOST.satState.year+' '+HOST.t('satMosaicSuffix'); return HOST.satState.day; }
@@ -161,7 +161,7 @@ window.IntMapModules.satellite=function(HOST){
   function satRenderKeyInputs(){
     const wrap=document.getElementById('sat-keys-list'); if(!wrap) return;
     /* ⚠ (#R466) wired HERE, not at factory level: this file's factory only ever DECLARES
-       (tests/r169 #4 — that is what makes calling it early safe), and the first paint is also the
+       (tests/engine-app-shell-split-checks.test.mjs (#R169) #4 — that is what makes calling it early safe), and the first paint is also the
        first moment there is anything for a relabel to rewrite. */
     if(!satRenderKeyInputs._lang){ satRenderKeyInputs._lang=1; try{ window.addEventListener('intmap-lang',satRelabelKeyInputs); }catch(_){} }
     /* Only Pro users may register their own (paid) satellite imagery providers. */

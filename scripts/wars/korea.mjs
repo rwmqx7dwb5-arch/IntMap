@@ -178,7 +178,7 @@ const KOREA = {
            without cutting would hand the reader the line that ENDED the war as the border it BEGAN
            on: Ongjin and Kaesong, in the Republic of Korea until 1951, already northern. The parallel
            is not the border in the base map, so it has to be drawn as a front that divides both
-           polygons. tests/r519-checks ⑥ is what asks. */
+           polygons. tests/history-wars-checks.test.mjs #R519 ⑥ is what asks. */
         { d: '1950-06-25', cuts: [731, 732],
           note: L('The 38th parallel — the four sectors the Korean People’s Army crossed at dawn', '38度線——朝鮮人民軍が未明に越えた四つの正面', 'Der 38. Breitengrad — die vier Abschnitte, an denen die Koreanische Volksarmee im Morgengrauen angriff', '38-я параллель — четыре участка, где Корейская народная армия перешла границу на рассвете', 'El paralelo 38: los cuatro sectores que el Ejército Popular de Corea cruzó al amanecer', '三八線——朝鮮人民軍拂曉越過的四個地段', '三八线——朝鲜人民军拂晓越过的四个地段', 'Le 38e parallèle — les quatre secteurs franchis à l’aube par l’Armée populaire de Corée', '38선 — 조선인민군이 새벽에 넘은 네 개의 정면'),
           pts: ['Ongjin', 'Kaesong', 'Pocheon', 'Chuncheon', 'Yangyang'] },
@@ -205,7 +205,7 @@ const KOREA = {
            without cutting would hand the reader the line that ENDED the war as the border it BEGAN
            on: Ongjin and Kaesong, in the Republic of Korea until 1951, already northern. The parallel
            is not the border in the base map, so it has to be drawn as a front that divides both
-           polygons. tests/r519-checks ⑥ is what asks. */
+           polygons. tests/history-wars-checks.test.mjs #R519 ⑥ is what asks. */
         { d: '1950-10-01', cuts: [731, 732],
           note: L('The front is back where it began; the ROK 3rd Division crosses the parallel at Yangyang', '戦線は出発点に戻った。韓国軍第3師団が襄陽で38度線を越える', 'Die Front steht wieder am Ausgangspunkt; die 3. südkoreanische Division überschreitet bei Yangyang den Breitengrad', 'Фронт вернулся туда, откуда начался; 3-я южнокорейская дивизия переходит параллель у Янъяна', 'El frente ha vuelto a donde empezó; la 3.ª División surcoreana cruza el paralelo en Yangyang', '戰線回到起點；韓國軍第3師團在襄陽越過三八線', '战线回到起点；韩国军第3师团在襄阳越过三八线', 'Le front est revenu à son point de départ ; la 3e division sud-coréenne franchit le parallèle à Yangyang', '전선이 출발점으로 돌아왔다. 국군 제3사단이 양양에서 38선을 넘는다'),
           pts: ['Ongjin', 'Kaesong', 'Pocheon', 'Chuncheon', 'Yangyang'] },

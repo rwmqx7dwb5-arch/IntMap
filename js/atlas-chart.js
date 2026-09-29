@@ -38,7 +38,7 @@
  *  ══ ⚠ WHY THIS FILE EXPORTS NOTHING ═══════════════════════════════════════════════════════════
  *  A lazily-loaded module registers its factory on `window.IntMapModules` and exports no name, the
  *  way js/atlas-query.js does. The alternative fails a real invariant rather than a style rule:
- *  tests/r175 ③ requires every `export` in js/ to be imported BY NAME by some other js/ module, and
+ *  tests/layer-boot-graph-checks.test.mjs #R175 ③ requires every `export` in js/ to be imported BY NAME by some other js/ module, and
  *  the only file that could do that here is js/atlas-console.js — whose static import would fold
  *  this whole module back into its chunk, which is the 4,901-byte ceiling this round went out of
  *  its way to stay under. So the door is the registration, and a node check reaches the factory

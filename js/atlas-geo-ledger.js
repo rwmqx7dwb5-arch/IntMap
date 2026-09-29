@@ -29,9 +29,9 @@
  *  Atlas spends its authority on the question instead of on the same fourteen lookups twice.
  *
  *  ⚠ NO DOM, NO NETWORK, NO GLOBALS — the `window` publish is in a try/catch — so
- *  tests/r489-checks.test.mjs drives THIS module, the one the browser runs, with no browser. That
+ *  tests/atlas-console-observers-checks.test.mjs (#R489) drives THIS module, the one the browser runs, with no browser. That
  *  is the js/atlas-turn-continuity.js and js/atlas-turn-results.js pattern, and it is also why the
- *  subject is its own file: js/atlas-console.js has a shrink-only line ceiling (tests/r318 ⓑ).
+ *  subject is its own file: js/atlas-console.js has a shrink-only line ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ).
  * ==========================================================================*/
 
 export function makeAtlasGeoLedger(deps) {

@@ -415,10 +415,21 @@ test('R283 ①: CRLF bytes defeat a newline-anchored pattern, and the content do
  *  readFileSync — the same defect this round diagnosed, written fresh thirty rounds later, red
  *  on every Windows run and green in CI from the day it was committed. Adding a file here is
  *  what stops it being un-fixed again; it is NOT what finds the next one. */
-/* spelling kept: the claim is about the text of tests/r261-checks.test.mjs, tests/r232-checks.test.mjs itself. */
+/* spelling kept: the claim is about the text of the test files that carry #R261, #R232 and #R313 themselves. */
 test('R283 ②: the source-level checks that broke read their files as content', () => {
-  for (const f of ['tests/r261-checks.test.mjs', 'tests/r232-checks.test.mjs',
-                   'tests/r313-checks.test.mjs']) {
+  /* FOUND BY WHAT THEY CONTAIN, NOT BY NAME: #R261's, #R232's and #R313's checks left their
+     tests/r<N>-checks.test.mjs files when the suite was regrouped by topic (2026-09-29); every test
+     file that now declares one of their tests is held to the same reader. */
+  const carrying = (round) => readdirSync(join(ROOT, 'tests')).filter((f) => f.endsWith('.test.mjs'))
+    .filter((f) => new RegExp("\\btest\\(\\s*['`]#?" + round + '\\b').test(raw('tests/' + f)))
+    .map((f) => 'tests/' + f);
+  const files = [];
+  for (const round of ['R261', 'R232', 'R313']) {
+    const got = carrying(round);
+    assert.ok(got.length >= 1, `no test file carries a ${round} test any more — this check is reading nothing`);
+    files.push(...got);
+  }
+  for (const f of new Set(files)) {
     const src = codeOnly(raw(f));
     assert.match(src, /import \{ readLF \} from '\.\.\/scripts\/eol\.mjs';/,
       f + ': the reader comes from the one place that knows about line endings');

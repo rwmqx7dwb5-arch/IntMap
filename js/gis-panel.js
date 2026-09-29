@@ -105,7 +105,7 @@ export function makeGisPanel(HOST) {
       if (!exportPending && !exportFailed) {
         exportPending = true;
         /* ⚠ THE SPELLING IS `(await import(…)).NAME`, not `.then(m => m.NAME())`.
-           tests/r175-checks ③ reads a dynamic import as an import OF A NAME only in that shape, and
+           tests/layer-boot-graph-checks.test.mjs #R175 ③ reads a dynamic import as an import OF A NAME only in that shape, and
            js/screenshot.js and js/geo-import.js already use it — a second spelling here would make
            the export read as dead code while it is being called. ⚠ その検査は散文の中の import も
            本物として読むので、ここに例を「書いて」はならない（書いた結果、存在しないモジュールを
@@ -350,7 +350,7 @@ export function makeGisPanel(HOST) {
          when a switched-off supplier returned nothing, and js/gis-layers.js translates it back to the
          older spelling at the door a reader actually reaches — but the code can arrive here directly
          from the acquisition layer too, and a refusal with no sentence is the defect
-         tests/r729-gis-core-checks ④ exists for. The reader's action is the same in both: turn the
+         tests/geo-gis-datasets-checks.test.mjs #R729 ④ exists for. The reader's action is the same in both: turn the
          layer on. */
       if (code === 'layer-not-visible') return window.IntMapLang.t(HOST.lang, 'That layer is switched off, so it answered with nothing — turn it on and try again', 'そのレイヤーは表示がオフなので、何も返しませんでした。オンにしてからもう一度お試しください') + par(d.layer || d.id);
       if (code === 'layer-not-sampling') return window.IntMapLang.t(HOST.lang, 'That layer is switched off, so it has no values to give — turn it on first', 'そのレイヤーは表示されていないため、渡せる値がありません。先に表示してください', 'Diese Ebene ist ausgeschaltet und hat daher keine Werte — schalten Sie sie zuerst ein', 'Слой выключен, поэтому значений нет — сначала включите его', 'Esa capa está apagada, así que no tiene valores — actívala primero') + par(d.id);
@@ -374,7 +374,7 @@ export function makeGisPanel(HOST) {
          ⚠ THESE COME BACK VERBATIM. js/gis-ops.js hands the kernel's refusal on rather than rewriting
          it, for the same reason js/gis-project.js keeps an op's code: the reason a grid could not be
          read is the only sentence that tells the reader what to change. So they reach this panel, and
-         tests/r729-gis-core-checks ④ scans that file for exactly that. */
+         tests/geo-gis-datasets-checks.test.mjs #R729 ④ scans that file for exactly that. */
       if (code === 'raster-unavailable') return window.IntMapLang.t(HOST.lang, 'The grid module is not loaded, so this step was not run at all', '格子計算の部品が読み込まれていないため、この処理は実行されていません', 'Das Raster-Modul ist nicht geladen, daher lief dieser Schritt gar nicht', 'Модуль сетки не загружен, поэтому шаг вообще не выполнялся', 'El módulo de rejilla no está cargado, así que este paso no se ejecutó');
       if (code === 'input-kind') return window.IntMapLang.t(HOST.lang, 'This step needs the other kind of data in that slot — features where it was given a grid, or the other way round', 'この処理はその入力に別の種類のデータを必要とします（地物のところに格子、またはその逆）', 'Dieser Schritt braucht in diesem Feld die andere Datenart — Objekte statt Raster oder umgekehrt', 'Этому шагу нужен другой вид данных в этом входе — объекты вместо сетки или наоборот', 'Este paso necesita el otro tipo de datos en esa entrada — objetos donde recibió una rejilla, o al revés') + par(d.expected ? (d.expected + ' ≠ ' + d.kind) : null);
       if (code === 'unknown-band') return window.IntMapLang.t(HOST.lang, 'That grid has no band of that name', 'その名前のバンドは、その格子にありません', 'Dieses Raster hat kein Band dieses Namens', 'В этой сетке нет полосы с таким именем', 'Esa rejilla no tiene ninguna banda con ese nombre') + par(d.band);
@@ -439,7 +439,7 @@ export function makeGisPanel(HOST) {
 
       /* ══ (#R819) js/gis-geometry.js — THE SHAPE ENGINE'S OWN VOCABULARY ════════════════════════
          ⚠ THESE SENTENCES WERE MISSING WHILE THE GATE WAS GREEN, and the reason is the one this
-         repository keeps recording: tests/r729-gis-core-checks ④ read eight files, and the engine
+         repository keeps recording: tests/geo-gis-datasets-checks.test.mjs #R729 ④ read eight files, and the engine
          that actually refuses `coverage`, `union`, `buffer` and `relate` was not one of them.
          js/gis-ops.js hands this kernel's refusal back VERBATIM — on purpose, because 「どの図形の
          どこが計算できなかったか」 is the only sentence that tells the reader what to change, and a
@@ -473,9 +473,9 @@ export function makeGisPanel(HOST) {
       if (code === 'sample-cell-invalid') return window.IntMapLang.t(HOST.lang, 'The cell given is not a shape this step can read an area out of — a box needs four numbers in order, a ring needs at least three positions that enclose ground', '指定されたセルは、面積を読み取れる形になっていません。矩形なら順序どおりの4つの数、環なら面を囲む3つ以上の座標が必要です') + par([d.method, d.form, (d.forms || []).join(' / ')].filter((x) => x != null && x !== '').join(' · '));
 
       /* ══ (#R819) js/gis-warp.js — THE RESAMPLER, WHICH IS ALSO AN ANALYSIS STEP ════════════════
-         ⚠ THE OLD NOTE IN tests/r729-gis-core-checks ④ SAID THIS FILE SURFACES THROUGH THE IMPORT
+         ⚠ THE OLD NOTE IN tests/geo-gis-datasets-checks.test.mjs #R729 ④ SAID THIS FILE SURFACES THROUGH THE IMPORT
          PATH, AND THAT WAS HALF THE TRUTH: js/map-ui.js words what `to4326` returns when a file is
-         read, and it is measured there (tests/r749-gis-raster-pipeline-checks ⑪). But `resample` and
+         read, and it is measured there (tests/shell-gis-upload-raster-checks.test.mjs #R749 ⑪). But `resample` and
          `mosaic` are STEPS ON THIS PANEL, and js/gis-ops.js hands this kernel's refusal back
          verbatim exactly as it does the grid kernel's — so the same codes arrive on this screen with
          no sentence at all. Two readers, one vocabulary: the import path keeps its wording, and this

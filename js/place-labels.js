@@ -33,8 +33,8 @@ window.IntMapModules.placeLabels=function(HOST){
      those can fire before the layers are built; at that moment the copies were still null and the
      repaint fell back to ONE FLAT COLOUR — the defect this round was told to fix, reintroduced by
      its own fix. They are pure data (no DOM, no renderer), so they live out here where both
-     readers can always see them. Declarations only, so tests/r169-checks #4 still holds.
-     ⚠ Caught by tests/r211.spec ③, which asserts the paint is an EXPRESSION and not a string.
+     readers can always see them. Declarations only, so tests/engine-app-shell-split-checks.test.mjs (#R169) #4 still holds.
+     ⚠ Caught by tests/hazard-terrain-water-checks.test.mjs (#R211).spec ③, which asserts the paint is an EXPRESSION and not a string.
    */
   const POI_TIER=['match',['get','class'],
     /* 1 — the things a person navigates by */
@@ -61,7 +61,7 @@ window.IntMapModules.placeLabels=function(HOST){
      /* ⚠ (#R211) 'office' MOVED UP to tier 2 (a company's premises is what 「企業名が出ない」 is about).
         It must appear in exactly ONE branch: a `match` with a repeated label fails MapLibre's style
         validation with «Branch labels must be unique», addLayer THROWS, and the whole label stack
-        stops existing. tests/smoke caught it; tests/r211-checks now re-derives uniqueness. */
+        stops existing. tests/smoke caught it; tests/hazard-terrain-water-checks.test.mjs (#R211) now re-derives uniqueness. */
      'ice_cream','restaurant','cafe','fast_food','bar','beer','atm','parking','toilets','pitch',
      'basketball','running','yoga'],3,
     /* 4 — street furniture: real, useful up close, and never worth a landmark's place */
@@ -135,8 +135,8 @@ window.IntMapModules.placeLabels=function(HOST){
        render straight from the tiles (#R67): no pinning, no refinement, nothing to hop.
        ⚠ It lives here rather than in js/app-body.js because this file is the index's only reader and
        that one has a line ceiling whose whole point is that a subject goes to its own file
-       (tests/r168 #8, and [[intmap-recurring-lessons]] K — the ceiling comes DOWN, never up).
-       ⚠ It is installed from inside a FUNCTION because the factory body may only DECLARE (tests/r169
+       (tests/news-module-split-checks.test.mjs (#R168) #8, and [[intmap-recurring-lessons]] K — the ceiling comes DOWN, never up).
+       ⚠ It is installed from inside a FUNCTION because the factory body may only DECLARE (tests/engine-app-shell-split-checks.test.mjs (#R169)
        #4); `ensurePlaceLabels` is re-run on every styledata, and re-assigning is idempotent. */
     try{ window._imLabelStats=(dump)=>{ const o={water:HOST._stabIdx.water.size};
       if(dump==='peaks'){ try{ o.z=+GE().camera.getZoom().toFixed(2); o.c=[+GE().camera.getCenter().lng.toFixed(6),+GE().camera.getCenter().lat.toFixed(6)];
@@ -452,7 +452,7 @@ window.IntMapModules.placeLabels=function(HOST){
      both `name:zh-Hant` and `name:zh` costs nothing and catches whichever the extract has. A code
      with no entry falls back to the international name, which is what the old `else` did — but now it
      is the DEFAULT of a lookup rather than the fate of every language after the fifth.
-     ⚠ A NEW LANGUAGE ADDS ONE ROW HERE, and tests/r242 fails if the registry knows a code this table
+     ⚠ A NEW LANGUAGE ADDS ONE ROW HERE, and tests/hazard-seismic-panel-checks.test.mjs (#R242) fails if the registry knows a code this table
      does not. */
   const OSM_LANG={ en:['name:en'], jp:['name:ja'], de:['name:de'], ru:['name:ru'], es:['name:es'],
                    fr:['name:fr'], ko:['name:ko'], zh:['name:zh-Hant','name:zh'], 'zh-hans':['name:zh-Hans','name:zh'] };
@@ -587,7 +587,7 @@ window.IntMapModules.placeLabels=function(HOST){
      five columns falls to its inline table rather than to English. `mode==='en'|'local'` are the
      reader's explicit 「英語で」/「現地表記で」 choices and stay English here (the gazetteer has no
      endonym column). */
-  let _seaL=null;   /* ⚠ built on first use: tests/r169 #4 requires this file to only DECLARE while it runs */
+  let _seaL=null;   /* ⚠ built on first use: tests/engine-app-shell-split-checks.test.mjs (#R169) #4 requires this file to only DECLARE while it runs */
   function _seaFC(mode){
     if(!_seaL){ _seaL=window.IntMapLang.pick(()=>HOST.lang); window.IntMapOsmNameKeys=OSM_NAME_KEYS; }
     const S=window.SEA_LABELS||[]; const raw=(mode==='en'||mode==='local');

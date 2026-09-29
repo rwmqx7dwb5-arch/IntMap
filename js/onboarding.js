@@ -139,7 +139,7 @@ window.IntMapModules.onboarding=function(HOST){
                /* ⚠ (#R380 → #R604) 1900 → 1850 → AD 1: the clock's floor has moved twice, and this line,
                   which is the first thing a new reader is told about the time machine, named the old one
                   both times. It states the KERNEL's reach (js/chronos.js YMIN), so it must not be edited
-                  to match any one data source — tests/r380-checks ① compares it with the kernel. */
+                  to match any one data source — tests/history-chronos-clock-checks.test.mjs #R380 ① compares it with the kernel. */
                LA('3D terrain, real imagery, and time travel back to AD 1','3D地形と実写衛星画像、西暦1年までの時間旅行','3D-Gelände, echte Satellitenbilder und Zeitreisen zurück bis ins Jahr 1','3D-рельеф, реальные снимки и путешествие во времени вплоть до 1 года н. э.','Relieve 3D, imágenes reales y viaje en el tiempo hasta el año 1')],
       ['chart',LA('Atlas AI & country data','Atlas AI・国データ','Atlas-KI & Länderdaten','Atlas ИИ и данные по странам','Atlas IA y datos por país'),
                LA('Ask in plain language, compare countries, even fly a jet','自然言語で操作、国どうしを比較、フライトシミュレーターも','In normaler Sprache steuern, Länder vergleichen, Flugsimulator','Спрашивайте обычным языком, сравнивайте страны и даже летайте','Pregunta en lenguaje natural, compara países e incluso pilota un avión')]

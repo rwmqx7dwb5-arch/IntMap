@@ -7,7 +7,7 @@
 //
 //   `--port 0` (or PORT=0) asks the operating system for a free port; the ready line below names
 //   the port that was actually bound, so a caller that cannot know a free number in advance can
-//   read it back off stdout. See tests/r208-checks.test.mjs ⑩ and #R415.
+//   read it back off stdout. See tests/backend-serve-and-build-checks.test.mjs #R208 ⑩ and #R415.
 //
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';

@@ -386,7 +386,7 @@ window.IntMapModules.timeBorders=function(HOST){
        answering, exactly as it did for the whole era before #R518.
        ⚠ HB_MIN BELOW IS A COPY OF THAT DERIVED FLOOR, and the only reason it is spelled here at all
        is that `go()` has to decide whether to inject a 13 MB bundle BEFORE it can read the bundle's
-       own window. tests/r690-histborders-deep-checks.test.mjs holds the two equal; the bundle is the
+       own window. tests/history-era-borders-checks.test.mjs (#R690) holds the two equal; the bundle is the
        canonical one. */
     const HB_MIN=1689, HB_MAX=1885;
     let _hbD=null,_hbP=null,_hbBnd=null; const _hbGeom=new Map();
@@ -790,7 +790,7 @@ window.IntMapModules.timeBorders=function(HOST){
        to any one sheet, and no polity in any bundle reaching five labels.
        EXPIRES when a bundle starts carrying territories BETWEEN those two sizes that belong to the
        other class — which is why the gate re-measures the two classes rather than this number
-       (tests/r707-chronos-labelplacement-checks.test.mjs).
+       (tests/shell-map-labels-checks.test.mjs (#R707)).
        CANONICAL: here. Nothing else in the app asks this question. */
     const _LBL_MIN_KM2=250000;
     /* signed distance from a point to a polygon's edges — positive inside, negative outside (the ray
@@ -1488,7 +1488,7 @@ window.IntMapModules.timeBorders=function(HOST){
          (#R410) FOR THE YEAR BEING DRAWN, rather than to whatever rename happens to be standing in countryStats. */
       /* ⚠ (#R410) EVERY CODE `IntMapHistId` CAN RENAME MUST BE IN HERE, or the map keeps the modern name for a
          country the Countries list has already renamed. KOR and ETH were missing — measured at 1939, «Ethiopia»
-         on the map against «Ethiopian Empire» in the list. tests/r410-checks ② compares the two tables, so the
+         on the map against «Ethiopian Empire» in the list. tests/history-countries-registry-checks.test.mjs #R410 ② compares the two tables, so the
          next identity added to js/history.js cannot silently miss the labels. (KOR is covered by the Korean
          former states for every year it has an entry, so it changes nothing today; it is here because a table
          that is right only by coincidence is the thing that check exists to stop.) */
@@ -1847,7 +1847,7 @@ window.IntMapModules.timeBorders=function(HOST){
        only because nothing was asked before 1900. Each bound below is now the polity's OWN start date (or
        1850 where it began earlier), and the eras that ran between 1850 and 1900 are spans of their own.
        ⚠⚠ (#R380) THAT SWEEP REACHED 36 OF THE 51 ROWS, AND THE CHECK THAT NAMED IT ONLY ASKED ABOUT 20.
-       `tests/r349-checks ④` is called «no era span still opens at 1900 just because the window used to» and
+       `tests/history-era-borders-checks.test.mjs #R349 ④` is called «no era span still opens at 1900 just because the window used to» and
        it was green while FIFTEEN still did — because it spot-checks a hand-written list of codes instead of
        reading the table. Measured on the shipped bundle: 1875 British Guiana, Dutch Surinam, the Gambia,
        Sierra Leone, Mauritius, the Maldives, Fiji, Cape Verde, Portuguese Guinea, Spanish Guinea, Portuguese
@@ -2260,7 +2260,7 @@ window.IntMapModules.timeBorders=function(HOST){
        them in one order (IntMapHistStates.STATES 19, _VANISHED 8, _ERA_LOC 242, _COLONIZER 26)
        and nothing outside this closure could ask it anything, so «which era names does the table
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
-       here so tests/r686-histeras-names-checks.test.mjs can hold the bundled table and this one
+       here so tests/history-era-names-checks.test.mjs (#R686) can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
     return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */

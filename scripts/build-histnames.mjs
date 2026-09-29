@@ -124,7 +124,7 @@ async function fetchAll() {
     const articles = await articlesFor(silent, log, ns);
     process.stderr.write('\n  ' + articles.size + ' of them resolve to an article with a Wikidata item\n');
     /* ⚠⚠⚠ AND THEY ARE NOT WRITTEN INTO `byName`. #R700 gave the base lane its own file for
-       exactly this reason and tests/r700-era-gloss-checks ⑥ measures it: `byName` is the set of
+       exactly this reason and tests/history-era-names-checks.test.mjs #R700 ⑥ measures it: `byName` is the set of
        answers WIKIDATA gave, and `isProse` asks it 「does Wikidata carry an item for this string?」
        to tell a name from a sentence. Folding a second store into it answers that question for
        strings it was never asked about — measured, 16 descriptions flipped to 「has an item」 and

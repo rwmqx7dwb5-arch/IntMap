@@ -18,14 +18,14 @@
  *
  *  ⚠ (#R254/#R311) THE DATA-CENTER LAYER IS NOT IMPORTED AT ALL ANY MORE. #R254 moved the import
  *  out of src/main.js and put it here, beside the consumer, because the shell (index.html +
- *  src/main.js + js/app-body.js + …) is BUDGETED at 8,200 lines by tests/r168 #8. #R311 removed the
+ *  src/main.js + js/app-body.js + …) is BUDGETED at 8,200 lines by tests/news-module-split-checks.test.mjs (#R168) #8. #R311 removed the
  *  import from here too: 66 kB of curated table, Overpass client and detail card was downloaded by
  *  every session for a row most of them never tick. The row below is unchanged — `dcToggle` is the
  *  one door into that layer, and it now awaits `IntMapLazy.need('dataCenters')` before delegating,
  *  so nothing about WHAT the row does changed, only WHEN the code behind it arrives.
  * ==========================================================================*/
 /* (#R255) the four surveyed-facility layers (js/osm-facilities.js): the
-   shell's line budget is a real check (tests/r168 #8) and an import belongs beside a consumer
+   shell's line budget is a real check (tests/news-module-split-checks.test.mjs (#R168) #8) and an import belongs beside a consumer
    rather than in src/main.js. This file is where the extra layer rows those four sit beside live. */
 import './osm-facilities.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
@@ -207,7 +207,7 @@ window.IntMapModules.landCover=function(HOST){
      owner (js/mem-budget.js); this is a one-line delegation to it, with this closure's own
      `isMobile` as the fallback for the boot window before js/app-body.js has published
      `_imPhoneClass`. ⚠ It lives INSIDE the factory because js/ may hold no unexported top-level
-     declaration — such a name would have been a global before the bundle (tests/r175 ③). */
+     declaration — such a name would have been a global before the bundle (tests/layer-boot-graph-checks.test.mjs #R175 ③). */
   const _phoneDev=()=>{ try{ return !!window.IntMapMemBudget.deviceIsPhone(isMobile); }
     catch(_){ try{ return typeof isMobile==='function'&&isMobile(); }catch(__){ return false; } } };
   (function(){
@@ -260,7 +260,7 @@ window.IntMapModules.landCover=function(HOST){
            z4 — for a label that names a continent-sized object. `sub(1)` is the top of that tier
            (8.3 → 11.4 px), and it is the ceiling rather than a preference: #R198's instruction
            「地名ラベル以外のテキストは地名ラベルよりも小さめに」 is what js/label-scale.js exists to keep
-           true, and tests/r198-checks re-derives it, so anything above this would be undoing that
+           true, and tests/labels-stack-and-scale-checks.test.mjs (#R198) re-derives it, so anything above this would be undoing that
            round to satisfy this one. What is NOT capped is weight and contrast, and that is where the
            rest of the legibility comes from: Bold (the openfreemap glyph server serves the stack —
            checked, 200) with a wider, darker halo reads considerably larger at the same px.
@@ -513,7 +513,7 @@ window.IntMapModules.betaPack2=function(HOST){
      owner (js/mem-budget.js); this is a one-line delegation to it, with this closure's own
      `isMobile` as the fallback for the boot window before js/app-body.js has published
      `_imPhoneClass`. ⚠ It lives INSIDE the factory because js/ may hold no unexported top-level
-     declaration — such a name would have been a global before the bundle (tests/r175 ③). */
+     declaration — such a name would have been a global before the bundle (tests/layer-boot-graph-checks.test.mjs #R175 ③). */
   const _phoneDev=()=>{ try{ return !!window.IntMapMemBudget.deviceIsPhone(isMobile); }
     catch(_){ try{ return typeof isMobile==='function'&&isMobile(); }catch(__){ return false; } } };
   (function(){
@@ -1556,7 +1556,7 @@ window.IntMapModules.timeZones=function(HOST){
        reader who chose 「地図の中心の標準時」, i.e. the option silently gave them their own device
        clock — and the fallback was written to be silent, so nothing said so.
        → ONE object with all five members, assigned once. The #R204 assignment below now EXTENDS
-       this one instead of replacing it, and `tests/r290` counts the members so a third assignment
+       this one instead of replacing it, and `tests/weather-warnings-checks.test.mjs (#R290)` counts the members so a third assignment
        cannot quietly win again. */
     try{ window.IntMapTimeZones=Object.assign(window.IntMapTimeZones||{},{
       ensure:function(){ if(geo) return Promise.resolve(true);

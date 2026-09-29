@@ -5,7 +5,7 @@
  *  ⚠ UNKEYED TILES DO NOT FAIL. They come back HTTP 200 with an "API KEY REQUIRED" watermark
  *  burned into the picture, so no status check, error handler or console listener can notice —
  *  measured: dark_all/6/33/21.png is 200 both ways and only the pixels differ (bright pixels
- *  946 → 0). That is why the gate for this is a SPELLING ban in tests/r479-checks.test.mjs ②
+ *  946 → 0). That is why the gate for this is a SPELLING ban in tests/carto-basemap-checks.test.mjs #R479 ②
  *  rather than anything measured at runtime.
  *
  *  ⚠ THE KEY IS PUBLIC ON PURPOSE, exactly like SUPABASE_ANON_KEY in src/vendor.js. A static
@@ -14,7 +14,7 @@
  *  a foreign Referer gets the same unwatermarked tile). Free to 5,000,000 tile requests a
  *  calendar month across raster and vector. Rotating it is the one line below and nothing else.
  *
- *  ⚠ THIS FILE IS DELIBERATELY NOT PART OF THE APP SHELL (tests/r168 #8 / tests/r350 ⑨c budget
+ *  ⚠ THIS FILE IS DELIBERATELY NOT PART OF THE APP SHELL (tests/news-module-split-checks.test.mjs (#R168) #8 / tests/atlas-answer-audit-checks.test.mjs #R350 ⑨c budget
  *  index.html + src/main.js + src/vendor.js + js/app-body.js + js/geo-engine.js +
  *  js/lazy-modules.js). The key, the builders and the credit are one self-contained concern, and
  *  keeping them here is also where the vector migration will land when CARTO retires raster.
@@ -54,7 +54,7 @@
      caller can hand it a stale answer: js/app-body.js sets that class at the top of the same
      command that calls this at the bottom.
      ⚠ IT SURVIVES CAPTURE MODE deliberately. body.capture-mode hides the other HUD furniture
-     (tests/r232), but a screenshot of the map is exactly the artefact the attribution has to
+     (tests/hazard-other-ui-chrome-checks.test.mjs (#R232)), but a screenshot of the map is exactly the artefact the attribution has to
      travel with, so .map-credit is not in that rule. */
   window.IntMapCartoCredit = function () {
     try {

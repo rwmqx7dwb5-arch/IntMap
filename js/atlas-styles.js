@@ -171,7 +171,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
          ⚠ NOT scoped to #atlas-panel — the same classes render in the sidebar tab and the workspace
          window, exactly as the #R156 code/math/table rules above are not scoped.
          ⚠ #R154's 「見出しを色分けするのはやめる」 and #R159's 「返答のテキストは太字にしない」 live
-         here now, and this is the line the gates in tests/r153/r154-checks read:
+         here now, and this is the line the gates in tests/companies-ui-checks.test.mjs (#R153)/r154-checks read:
          HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR. Every level is weight 600 in
          --text-main; nothing below may introduce a hue, and #R159's 600 is never raised to 750/800. */
       +'.atl-md{font-size:14px;line-height:1.62;}'

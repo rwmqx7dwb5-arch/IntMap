@@ -6,7 +6,7 @@
  *  このファイルはその間を埋める側の**論理だけ**を持つ——HTTP も DB も Deno も知らない。
  *
  *  ⚠ これもサーバー専用である。news-cluster.js と同じ理由でブラウザのバンドルに入れない
- *    (docs/NEWS-EVENTS.md §12・tests/r351-checks ⑫ が js/ と src/ からの参照を禁じる)。
+ *    (docs/NEWS-EVENTS.md §12・tests/news-ingest-checks.test.mjs #R351 ⑫ が js/ と src/ からの参照を禁じる)。
  *
  *  ⚠⚠ **「そのフィードから来た」は「その媒体が書いた」ではない。**
  *    実測 (#R334): CNN の World RSS 29 件のうち **6 件が CNN の記事ではなかった**
@@ -1113,7 +1113,7 @@ export function retentionCutoffs(nowMs) {
  * 生の項目を news_articles の行にする。捨てるべきものは null と理由を返す。
  * geo は呼び出し側が渡す（Edge Function は IntMapNewsGeo、評価スクリプトも同じもの）。
  * ⚠ **第二の地点解析を作らない**——`_shared/newsgeo.js` は `js/newsgeo.js` と 1 バイト同一で、
- *   同一性ゲートが 2 か所ある (scripts/static-checks.mjs §7 / tests/r161)。
+ *   同一性ゲートが 2 か所ある (scripts/static-checks.mjs §7 / tests/news-geo-checks.test.mjs (#R161))。
  */
 export async function toArticleRow(item, feed, registry, geo) {
   const norm = normaliseUrl(item.link);

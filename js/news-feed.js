@@ -239,7 +239,7 @@ window.IntMapModules.newsFeed=function(HOST){
      `js/lazy-modules.js` and docs/NEWS-EVENTS.md §12 both promise that the Event module does not
      arrive until the News surface is opened. It did. `js/app-body.js` called this on boot, and the
      branch below reached `need('newsEvents')` unconditionally, so the chunk came down on every cold
-     load — measured by tests/r209 ①, whose whole subject is «nothing is fetched without a gesture
+     load — measured by tests/atlas-console-kernel-checks.test.mjs #R209 ①, whose whole subject is «nothing is fetched without a gesture
      except the Atlas kernel». The declaration is the one that was right, so the boot call and the
      three-minute timer now say `{background:true}` and stop here.
      ⚠ MOVING THE need() CALL ALONE WOULD HAVE COST MORE THAN IT SAVED. The Event branch RETURNS on

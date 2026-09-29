@@ -7,7 +7,7 @@
 --  bucket that replaces it as the accounting boundary. This file asserts the
 --  ARITHMETIC (allow up to capacity, refuse past it, refill with time) and the
 --  SURFACE (SECURITY DEFINER, pinned search_path, service_role only, a table no
---  client role can touch) — the two halves tests/r801-relay-spend-checks.test.mjs
+--  client role can touch) — the two halves tests/geo-routing-relay-checks.test.mjs (#R801)
 --  cannot evaluate without a Postgres.
 -- ============================================================================
 begin;

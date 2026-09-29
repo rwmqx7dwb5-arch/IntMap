@@ -1194,7 +1194,7 @@ async function main() {
     built: new Date().toISOString().slice(0, 10),
     source: src.name + (windEpochs ? ' + ' + WIND_SOURCE.name : '') + (sstEpochs ? ' + ' + SST_SOURCE.name : ''),
     sourceId: src.id, sourceKind: windEpochs ? 'geostrophic+ekman' : src.kind,
-    /* ⚠ THE LICENCE HAS TO BE IN THE STRING, not only in the source name (tests/r208 ⑧a). All three
+    /* ⚠ THE LICENCE HAS TO BE IN THE STRING, not only in the source name (tests/data-ocean-currents-checks.test.mjs #R208 ⑧a). All three
        products are U.S. Government works in the public domain, and the sentence that says which part
        of the geometry is measured and which part is editorial is the other half of the same promise. */
     attribution: 'Ocean surface currents: ' + src.name + '. ' + (windEpochs ? WIND_SOURCE.name + '. ' : '')

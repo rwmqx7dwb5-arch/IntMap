@@ -48,7 +48,7 @@ GVP の WFS（`webservices.volcano.si.edu`）は 6 つの feature type を出す
 噴火の行は 11,089 件すべてが降りてくるが、同梱されるのはそのうち §3 が述べる分だけ。
 ⚠ **この宣言は座数にしか適用されていなかった。** 同じラウンドで噴火の件数が 14 か所に書き写され、
 そのすべてが上流の数だった（#R440）。今は噴火の側にも 3 つの門がある——
-`tests/r353-checks ②`（ファイルの記載と実体）・`⑭`（コメントと出荷文字列に書かせない）・
+`tests/hazard-volcano-checks.test.mjs #R353 ②`（ファイルの記載と実体）・`⑭`（コメントと出荷文字列に書かせない）・
 `npm run check:docs` の `volcano-eruptions`（現行文書の数をファイルから引き直す）。
 
 ### 2.1 同梱カタログは「完新世だけ」ではない——観測機関が語っている座を足す
@@ -151,7 +151,7 @@ gzip は**バイト列の先頭で判定**して `DecompressionStream` で解く
 - **地図はそれを含む GVP の点を着色する**
 
 表の右辺は、`data/volcanoes_gvp.json` の**国が Japan の 105 件**と突き合わせてある。
-`tests/r353-checks.test.mjs` ④ が毎コミット再確認する——カタログ改訂で番号が消えたら、
+`tests/hazard-volcano-checks.test.mjs` #R353 ④ が毎コミット再確認する——カタログ改訂で番号が消えたら、
 **日本の警戒レベルが黙って地図から落ちるのではなく、ビルドが落ちる。**
 
 ---
@@ -263,7 +263,7 @@ Bulletin の本文中にしかない。だからカードは、出典を示せ�
 ⚠ **未知の値は原文にフォールバックする。** カタログの語彙は門で守れるが、ライブフィードの語彙は
 守れない（USGS は明日、観測所を1つ増やせる）ので、そこでの正しい答えは**機関が言った言葉そのもの**。
 
-⚠⚠⚠ **要求はデータから導出する。** `tests/r395-checks.test.mjs` ① は
+⚠⚠⚠ **要求はデータから導出する。** `tests/volcano-card-checks.test.mjs` #R395 ① は
 `data/volcanoes_gvp.json` と `data/volcano-detail.json.gz` を読んで**カードが印字しうる値を数え上げ**、
 それぞれに行があることを要求する。手で保つ表は「自分に何が足りないか」を言えない（#R335）ので、
 **スミソニアンがカタログを改訂して28個目の火山型が現れたら、英語で出荷されるのではなくビルドが落ちる。**
@@ -366,8 +366,8 @@ HTML を返し（CORS も無い）、機械可読で権威のある全球フィ�
 | `scripts/i18n/r395-a.json` | 分類語 256 件の fr / ko / 繁體中文（`scripts/i18n-apply-inline.mjs` が locale へ流し込み、簡体は生成） |
 | `supabase/functions/volcano-feed` | ACAO を返さない2本の中継＋サーバー側解析（§4③・§5.1） |
 | `supabase/functions/_shared/volcano-parse.js` | その解析の正本。`node --test` から実応答で検査できるようにここに置いてある |
-| `tests/r353-checks.test.mjs` | 同梱データ・2つの結合表・2つの解析器・遅延読み込み・中継の境界（12件） |
-| `tests/r395-checks.test.mjs` | **語彙の網羅をデータから導出**・9言語ぶんの行・散文が訳されていないこと・監視フィード・ハザード名の単一実装・絞り込みと時計・Atlas の3一覧・簡体の語彙と鍵（11件） |
+| `tests/hazard-volcano-checks.test.mjs` (#R353) | 同梱データ・2つの結合表・2つの解析器・遅延読み込み・中継の境界（12件） |
+| `tests/volcano-card-checks.test.mjs` (#R395) | **語彙の網羅をデータから導出**・9言語ぶんの行・散文が訳されていないこと・監視フィード・ハザード名の単一実装・絞り込みと時計・Atlas の3一覧・簡体の語彙と鍵（11件） |
 | `tests/r353.spec.js` | **毎プッシュの門**。ネットワークが1本も答えなくても真である2件 |
 | `tests/r353-live.spec.js` | **夜間**。実際の上流に対する3件 |
 
@@ -383,4 +383,4 @@ HTML を返し（CORS も無い）、機械可読で権威のある全球フィ�
 
 ⚠ **`js/volcano-intel.js` と `js/volcano-layers.js` は load-on-demand**（`js/lazy-modules.js`）。
 火山をクリックするまで、あるいは3つのオーバーレイのどれかを ON にするまで**1バイトも取得しない**。
-`tests/r353-checks.test.mjs` ⑨ が、遅延であることと eager 側に入っていないことの両方を主張する。
+`tests/hazard-volcano-checks.test.mjs` #R353 ⑨ が、遅延であることと eager 側に入っていないことの両方を主張する。

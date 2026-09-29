@@ -2,7 +2,7 @@
  *  IntMap · THE APP'S TEXT — which face draws it, and how wide it comes out   (#R242)
  * ----------------------------------------------------------------------------
  *  Three answers to one subject, all of which used to sit inline in js/app-body.js and none of which
- *  belongs to the shell (tests/r168 #8 and tests/r200 ⑤ budget that file; the rule is that a feature
+ *  belongs to the shell (tests/news-module-split-checks.test.mjs (#R168) #8 and tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ budget that file; the rule is that a feature
  *  moves OUT, never that the ceiling moves up).
  *
  *  ① WHICH FACE.  「IntMap内のすべての文字は…Latin/Cyrillic → Inter、日本語 → Noto Sans JP、
@@ -39,7 +39,7 @@
  *  ③ THE FLAGS, which are text too — see `installFlagFont` at the bottom.
  * ==========================================================================*/
 window.IntMapMapTypography = (function () {
-  /* the ranges scripts/build-glyphs.mjs emits. ⚠ tests/r242-checks asserts this list is identical to
+  /* the ranges scripts/build-glyphs.mjs emits. ⚠ tests/hazard-seismic-panel-checks.test.mjs (#R242) asserts this list is identical to
      that script's RANGES — one list, two readers ([[intmap-recurring-lessons]] G). */
   const GLYPH_RANGES = [0, 256, 512, 768, 1024, 1280, 7680, 8192, 8448, 8704];
   const GLYPH_STACK = 'Inter Regular';

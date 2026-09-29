@@ -47,7 +47,7 @@
  *  snowfall, weather codes, two of the three swell directions. Shipping one of them as a
  *  layer would put a degrees-Celsius ramp under PM2.5 and nothing would have failed.
  *  `usesFallbackScale()` names that condition exactly (by comparing against a variable that
- *  cannot exist), so `tests/r356-checks.test.mjs` can require that a layer lands on the
+ *  cannot exist), so `tests/weather-models-checks.test.mjs (#R356)` can require that a layer lands on the
  *  fallback if and only if the layer itself says it is a temperature field.
  * ==========================================================================*/
 (function () {
@@ -282,7 +282,7 @@
      know is INDISTINGUISHABLE from one it maps to temperature — unless you ask it about a
      variable that cannot exist and compare. That answer is exact rather than heuristic:
      it is the fallback branch itself. A caller that gets `true` for a field that is not a
-     temperature has to supply its own scale, and `tests/r356-checks.test.mjs` requires it. */
+     temperature has to supply its own scale, and `tests/weather-models-checks.test.mjs (#R356)` requires it. */
   function usesFallbackScale(sdk, variable, scales) {
     if (!sdk || !sdk.getColorScale) return false;
     try {

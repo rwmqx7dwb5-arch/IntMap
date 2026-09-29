@@ -24,7 +24,7 @@
  *  ⚠ THE ROW COUNT IS A CONTRACT WITH js/gazetteer.js. `PHONE_ROWS` here must be >= that file's
  *  MOBILE_CAP, or a phone would silently know fewer places than the code says it does. This script
  *  READS the constant out of js/gazetteer.js rather than repeating it, and fails loudly if it
- *  cannot find it — tests/r217-checks.test.mjs re-checks the built artefact against the same
+ *  cannot find it — tests/layer-place-labels-rivers-checks.test.mjs (#R217) re-checks the built artefact against the same
  *  constant on every commit.
  *
  *  It takes no network: everything it needs is the artefact scripts/build-gazetteer.mjs already

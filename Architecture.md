@@ -27,7 +27,7 @@
 - 数字（行数・KB・件数など）を書くときは**その場で実測した値**にする。実測できる主要な数字は
   `npm run check:docs` がこのファイルと実体の一致を毎回検査する。
 - 実装を変えたら、この仕様書も同じコミットで更新すること。
-- `tests/r175-checks.test.mjs` のような**ファイル名**に含まれる番号は履歴参照ではない。
+- `tests/r783-format-compat-checks.test.mjs` のような**ファイル名**に含まれる番号は履歴参照ではない。
 
 ---
 
@@ -111,7 +111,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - `js/*.js` は **`src/main.js` が index.html と同じ順序で `import`** する。安全な根拠は、
   **全ファイルにトップレベル宣言が1つも無い**ことを AST で確認していること（module のトップレベル
   `const`/`function` は private、classic script のそれは global。宣言が無ければ名前解決は1つも変わらない）。
-  `tests/r175-checks.test.mjs` が毎回再検証する。
+  `tests/layer-boot-graph-checks.test.mjs` が毎回再検証する。
 - **実行時依存は npm から取る**（CDN の浮動タグは使わない）。`src/vendor.js` が
   `maplibregl` / `turf` / `topojson` / `mlcontour` / `supabase` / `sb` を同じグローバル名で
   再公開するので、呼び出し側は1行も変わらない。KaTeX と html2canvas は動的 import で別チャンク。
@@ -154,7 +154,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   「API KEY REQUIRED」の透かしを焼いた PNG が返るので、状態コードもエラーハンドラも鳴らない。
   URL を組み立てる口は `window.cartoTileURL()` / `window.cartoTiles()` の2つだけで、
   `js/app-body.js` / `js/compare.js` / `js/playground.js` / `js/layer-previews.js` は
-  ホスト名を綴らない（`tests/r479-checks.test.mjs` ② が綴りそのものを禁じる）。
+  ホスト名を綴らない（`tests/carto-basemap-checks.test.mjs` ② が綴りそのものを禁じる）。
   ⚠ **`src/vendor.js` ではなく専用ファイルなのは、基図の鍵と URL 組み立てが 1 か所に閉じるため**
   （かつては app shell の行数予算がその理由だった。行数の天井は撤去され、shell の広さは
   `npm run check:surface` が `IM_HOST` の項目と `window.*` の公開名で測る——この節の下）。
@@ -190,7 +190,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   コード（コメントは消し、文字列は残す——`onclick="_x()"` は読み手）での出現と、`Object.keys(window)` を
   正規表現で絞って列挙するコード（Atlas のモジュール目録など。ソースから発見し、目録が要求する入口を
   公開元ファイルが定義していれば読まれている扱い）。コンソール専用の診断は `unread` に残る。
-  ⚠ **行数の天井は撤去した。** `tests/r168` #8 と 20 か所の写しが app shell（8,050 行）・index.html・
+  ⚠ **行数の天井は撤去した。** かつての `tests/r168` #8 と 20 か所の写しが app shell（8,050 行）・index.html・
   `js/atlas-console.js`・`js/app-body.js`・`js/widgets.js` に持っていた行数の上限は、
   1 行に複数の `import` や `case` を畳ませただけで、初期配信量も結合の広さも測っていなかった。
   初期配信量は上の `check:perf`、結合の広さはこの `check:surface` が測る。
@@ -388,7 +388,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **Cesium は設定で選べる第2エンジン**（設定 ▸ 地図の動作 ▸ 地図エンジン。Atlas の `engine`
   アクションからも切替可）。カバー範囲はベクタタイルを含めて MapLibre と同等。
   - `js/cesium-style.js` — style 言語の**解釈器**（式・フィルタ・色・旧 stops 形式）。
-    **純粋**（Cesium も DOM も参照しない）ので `tests/r180-checks.test.mjs` が Node で直接検証する。
+    **純粋**（Cesium も DOM も参照しない）ので `tests/engine-cesium-rendering-checks.test.mjs` が Node で直接検証する。
   - `js/cesium-layers.js` — プロバイダ＋描画。raster は `ImageryLayer`（brightness/contrast/saturation/hue が
     ネイティブ）、fill/line/circle/symbol/fill-extrusion はエンティティ、heatmap/hillshade/color-relief は
     同じ DEM から計算したラスタ、terrain は**同じ terrarium タイル**から `HeightmapTerrainData`。
@@ -404,7 +404,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     タイルを GeoJSON にする。要るタイル集合は**今の視界が覆うタイル集合**で決める。
   - `js/cesium-input.js` — **操作は MapLibre の操作**。8ジェスチャ（pan / rotate / pitch / wheel /
     box zoom / 矢印キー / ctrl ドラッグ / shift ドラッグ）の定数と式は同梱の `node_modules/maplibre-gl`
-    のハンドラ実装そのものから取っており、`tests/r182-checks.test.mjs` が両者を突き合わせる
+    のハンドラ実装そのものから取っており、`tests/engine-cesium-input-checks.test.mjs` が両者を突き合わせる
     （＝依存を上げて操作感が変わると落ちる。定数は入っている版を評価するか、版が同梱する `src/` の宣言から読む）。
     慣性の速度は 6 系の方式（離した瞬間までの直近 60 ms・先頭の記録は区間の始点だけ）。
     **globe のドラッグ**は MapLibre 6.4 以降の `versorSetLocationAtPoint` の写し（`globeDrag`）：移動 1 回ごとに
@@ -426,7 +426,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     （maplibre-contour は MapLibre の名前空間を要求する）。呼び出し側は既存のフォールバックを取る。
   - **能力の表は3つあり、突き合わされている**：`MAPLIBRE_CAPS`（`js/geo-engine.js`）・
     `CESIUM_CONTRACT.capabilities`（同）・`CESIUM_CAPS`（`js/cesium-engine.js`）。
-    `tests/r323-checks.test.mjs` が3つを **AST から読んで**比べる——**3表は同じキー集合**を持ち、
+    `tests/engine-capability-contract-checks.test.mjs` が3つを **AST から読んで**比べる——**3表は同じキー集合**を持ち、
     **Cesium の2表は値まで一致**し、**宣言だけの契約はアダプタが拒む能力を主張できない**
     （`solid3d` がその形：契約が true を返すと `js/volume3d.js` の `canSolid()` が
     フォールバックを失う）。⚠ ファイル全体への正規表現では、同じ綴りがどちらの表にあるのか
@@ -488,7 +488,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 ダウンロードの宣言サイズであって機数ではない）。⚠ 隠れたフィルタではない——「カタログが持つより少なく描く無言の 2 つ目の道」は意図的に置かない。カタログが製品の認める道で、返答がその名前と機数を述べる |
 | 数字の図の合成 | `js/atlas-chart.js` | **`chart.compose`（tool 名 `chart`）は「数字で説明する」という 1 つの行為を 1 回の呼び出しにしたもの。** line / bar / scatter / timeline を **HTML 文字列**で返し、返答本文へそのまま入る（`_atlCompose` が本文を毎回組み直すので、描画後に DOM を触る装飾は次の操作で消える）。⚠ **出所 (`source`) を宣言しないグラフは拒む**——グラフは主張が取り得る最も信じられやすい形なので、根拠を必ず伴わせる。⚠ **線と散布は実点 3・棒は名前つき 2・年表は日付つき 2 件**を下回ると、薄く描くのではなく**拒んで理由を返す**（`js/widget-render.js` の「与えられていない傾向は描かない」と同じ規律・同じ数）。数でない値は落とし、**何件落としたかを caption に明記する**（黙って通った行だけを描かない）。目盛りは 1/2/2.5/5×10^k の nice-number で、`js/` にある唯一の目盛り生成器。数の整形は `Intl` のみ（ロケールに訊く）。色は `--chart-cat-1..10` の CSS 変数だけを書き、この層は色を 1 つも知らない＝ダークモードは token の入れ替えで済む。描いた点・棒・出来事には `data-mark` を刻み、**観測器は「描いたと言っているか」ではなく「実際に成果物へ何個入ったか」を数える**——空の図を `ok` で返せば `not_rendered`。遅延ロード（`atlasChart`）で、起動グラフには入らない |
 | 回答が描かれた視点 | `js/atlas-answer-view.js` | **その回答が地図を描いたときの視点を、あとから戻せるようにする層。** 重ね描きのスナップショットとそれを描き直すチップは以前から存在し、図形は戻せていた。**どのスナップショットも「視点」を持っていなかった**——カメラの位置と、この製品では何より**時計**。1950 年についての回答の図形が 2026 年の基図の上に描き直されるのは、その回答の地図ではなく別の主張である。撮るのは `IntMapAtlasState.snapshot({only:[camera,time,activeLayers]})` そのもので（私有の読み手を作らないので状態ブロックと食い違わない）、返答バブルが既に持っていた `__ovlSnap` の隣に置く。⚠ **カメラ・時計・基図・投影は正確に戻し、レイヤーは点けるだけで消さない**——後から読者が点けたレイヤーを消すのは、画面に何も出ないまま読者の作業を壊すことであり、しかもカメラと違って取り消す手段が見えない。代わりに `extraLayers` として報告する。⚠ できなかったことは `skipped` に理由つきで残し、成功に数えない。ボタンは `.atl-msgt`（バブルの**兄弟**）に置く——本文は `_atlCompose` が毎回組み直すので、本文の中に置いた操作子は次のツール呼び出しで消える |
-| 起きた地震の地震動 | `js/shakemap.js` | **`map.shakemap`（1つの地震の ShakeMap）は「マグニチュード」と「土地の上で実際に起きたこと」を分ける能力。** USGS の ShakeMap 製品から**等値線**（`cont_<指標>.json`）と**低解像度の格子**（`coverage_<指標>_low_res.covjson`）だけを取り、`grid.xml`（1イベント 10.2〜28.4 MB・実測）は使わない。⚠ **指標の一覧・表示名・色・等値線の刻み・面を塗ってよいかは、すべて製品が持っている**——この app は指標名も色表も1つも書かない（面を塗るのは `preferredPalette` を配っている指標だけ＝実測では MMI）。⚠ **等値線は `pctg`／`cms`、格子は `ln(g)`／`ln(cm/s)`** なので、数値は covjson が自分で宣言した記号に従って戻し、知らない記号は拒む。⚠ **画像は Mercator へ再標本化する**（CoverageJSON は緯度に線形、`image` source は4隅を Web Mercator に写す）。`action:"exposure"` は震度の格子を**地名辞典の各都市で標本化**して「MMI いくつ以上だった都市と、その都市の人口」を返す——**人口ラスタではない**ので、その但し書きは数と一緒に必ず出る。描画元は `shk-cont-src` で `paintNow()` がそれを数え、`state().painted` が「線だけ」と「面もある」を区別する。⚠ **本体がここにあるのは `js/atlas-console.js` に1行の余白も無いから**（`tests/r318` ⓑ） |
+| 起きた地震の地震動 | `js/shakemap.js` | **`map.shakemap`（1つの地震の ShakeMap）は「マグニチュード」と「土地の上で実際に起きたこと」を分ける能力。** USGS の ShakeMap 製品から**等値線**（`cont_<指標>.json`）と**低解像度の格子**（`coverage_<指標>_low_res.covjson`）だけを取り、`grid.xml`（1イベント 10.2〜28.4 MB・実測）は使わない。⚠ **指標の一覧・表示名・色・等値線の刻み・面を塗ってよいかは、すべて製品が持っている**——この app は指標名も色表も1つも書かない（面を塗るのは `preferredPalette` を配っている指標だけ＝実測では MMI）。⚠ **等値線は `pctg`／`cms`、格子は `ln(g)`／`ln(cm/s)`** なので、数値は covjson が自分で宣言した記号に従って戻し、知らない記号は拒む。⚠ **画像は Mercator へ再標本化する**（CoverageJSON は緯度に線形、`image` source は4隅を Web Mercator に写す）。`action:"exposure"` は震度の格子を**地名辞典の各都市で標本化**して「MMI いくつ以上だった都市と、その都市の人口」を返す——**人口ラスタではない**ので、その但し書きは数と一緒に必ず出る。描画元は `shk-cont-src` で `paintNow()` がそれを数え、`state().painted` が「線だけ」と「面もある」を区別する。⚠ **本体がここにあるのは `js/atlas-console.js` に1行の余白も無いから**（`tests/atlas-capabilities-checks.test.mjs` ⓑ） |
 | **Atlas の目** | `js/atlas-view-capture.js` | **`view.inspect`（tool 名 `look_at_map`）が返すのは事実ではなく絵。** 読者がいま見ている画面を撮り、**次のモデル呼び出しに画像として添付**する。`include:"screen"`（既定）は地図＋凡例・スケール・マーカー・ニュース帯・時間バー（操作系は隠す）＝**凡例や帯についての問いに答えられる唯一の絵**、`include:"map"` はレンダラのフレームだけ（html2canvas を取りに行かないぶん安い）。⚠ **撮る処理は screenshot ボタンのものと同一の 1 本**——「読者が見ているもの」の答えが 2 つある状態を作らない。⚠ **画素は transcript に載せない**：`js/atlas-agent.js` は tool の結果を**プロンプト本文の JSON** として戻すので、data URL をそこに置くと画像ではなく数十万文字の base64 になる。台帳が画素を持ち、transcript には bbox・中心・zoom・bearing・pitch・base・投影・ON のレイヤー・Chronos 時刻という**その瞬間の機械値**だけが載る（＝**数値は状態から、見え方は画像から**）。1 呼び出しに載せるのは**直近 3 枚**（ai-proxy の `MAX_IMAGES`＝4）で、落とした枚数は**明示する**。撮った絵は**読者にも縮小版で見せる**（タップで拡大） |
 | **Atlas の目が見たものの裏づけ** | `js/atlas-view-ground.js` | **絵だけでは「これなに」に答えられない。** `look_at_map` は長らく画像とカメラの数値だけを渡していて、**世界について何ひとつ渡していなかった**——だから 355,000 m² の物流倉庫が、フレームの端でたまたま読めたラベル 1 枚から「八田フランテ館」と名付けられた。この層が渡すのは 2 つ: ①**レンダラが実際に描いたラベル**（中心に近い順・無料）と②**フレームに重なる OSM の名前付き地物**（Overpass。`cover`＝フレームの何割を占めるか、`inView`＝その地物の何割が画面内か）。⚠ **順位は尺度であって一覧ではない**——タグ許可表を持たず、OSM のタグをそのまま渡して**判断は Atlas に返す**（`.agents/rules/no-ad-hoc-hardcoding.md` §2.2）。⚠ **見つからなかったことは、空欄ではなく文として書く**——空の枠は「知らされていない」と「そこには無い」を区別できず、それがまさに作話を許した状態。⚠ **座標の桁数もここが決める**（添付した絵の 1 画素より細かく。以前は全 zoom で小数 2 桁＝1.1 km 四方で、建物を指し示すことが原理的に不可能だった） |
 | 早く終わったターンが残すもの | `js/atlas-turn-continuity.js` | ①**訊いた質問を会話の記録へ 1 行として残す**（選択肢付き。`did:` の一覧＝260 字で切られる側には入れない）。②**中止の印は「考え中の点」だけを置き換える**——ターンが既に描いたものは残る。点まで届かなかった bubble だけを丸ごと置き換える |
@@ -700,7 +700,7 @@ documenting している形）が、まさにそれで消えていた。
 レイヤー配列を読み、`cameraNow()` は `getCenter()` が返す `{lng,lat}` を**オブジェクトとして**読み、
 不定なら `null` を返す（NaN を返すと `JSON.stringify` が `null` に潰し、**動いたカメラが動いていない
 ことになる**）。申告された（claim された）ソースは**アプリが実際に `addSource` する名前**でなければならず、
-`tests/r397-checks.test.mjs` が js/ の全 `claim(` を**生成側のソースから導出して**照合する。
+`tests/atlas-console-observers-checks.test.mjs` が js/ の全 `claim(` を**生成側のソースから導出して**照合する。
 
 **取り消し（`map.undo`）はターン単位の 1 つの仕組みである——能力ごとの undo は持たない。**
 `js/atlas-state.js` の `registerRestorer(name, {capture, restore, same?})` に、地図の状態を持つ
@@ -1352,7 +1352,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
   静的アセット（Köppen ラスタ・国旗 webfont・`sw.js`・`data/`・`admin.html`・
   `science.html` / `sources.html` / `privacy.html` / `terms.html`）が横に並ぶ。
   `vite.config.js` の `STATIC_ASSETS` が「束ね器を通さずそのまま配るファイル」の**明示リスト**で、
-  `tests/r175-checks.test.mjs` が、参照されているのにリストに無いアセットで落ちる。
+  `tests/layer-boot-graph-checks.test.mjs` が、参照されているのにリストに無いアセットで落ちる。
 - **`js/`** — アプリ本体。`js/app-body.js` が中核（`IM_HOST`）で、他は主題ごとのモジュール
   （地図の表面／データレイヤー／ニュース／Atlas と AI／分析とシミュレーション／宇宙／シェルと
   アカウント）。ファイル単位の役割は `docs/FILES.md` §3.3〜§3.10。
@@ -1493,7 +1493,7 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 （KI / ИИ / IA）を明示**し、**畳まれた `<details>`（各文の根拠になった原文）の上**、段落の直下に出る。
 1 文ごとの引用元の媒体名と、照合に使った原文の断片は従来どおり同じブロックの中にあり、
 引用元の媒体がいまの構成記事に無ければ統合文そのものを出さない。
-`tests/r502-checks.test.mjs` が 9 言語すべての語と、注記が `<details>` より前に在ることを検査する。
+`tests/shell-index-document-checks.test.mjs` が 9 言語すべての語と、注記が `<details>` より前に在ることを検査する。
 両方の半分——起動時は降りてこない／開けば降りてきてカードになる——を `tests/r402.spec.js` が
 本物のブラウザで測る。
 `HOST.globalData` に**記事モードと同じ形の項目**を入れ、`_event` にだけ出来事固有の事実を足す
@@ -2125,7 +2125,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   `?feed=ash` は国際 SIGMET（`aviationweather.gov`）のうち**火山灰（`hazard:"VA"`）だけ**。
   ⚠ **上流の解析はサーバー側で行う**——ブラウザが受け取るのは **GVP 火山番号で引ける行**であって
   XML ではない（RSS の `<guid>` が `#vn_282110` の形で番号を持つ。名前で突き合わせない）。
-  解析の正本は `_shared/volcano-parse.js` で、`tests/r353-checks.test.mjs` が**捕獲した実応答**で検査する。
+  解析の正本は `_shared/volcano-parse.js` で、`tests/hazard-volcano-checks.test.mjs` が**捕獲した実応答**で検査する。
   ⚠ **火山灰が0件は正常な答えであって失敗ではない**——応答の `read`（読んだ SIGMET の総数）が
   「何も出ていない」と「読めなかった」を分ける。キャッシュは灰 15 秒・週報 1 時間。
   ⚠ **残り4本の火山データ源（USGS HANS・気象庁・USGS ハザード域 ArcGIS・USGS 地震）は
@@ -2415,7 +2415,7 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
 - ⚠ **レンダラ SDK の `getColorScale()` は知らない変数に<b>気温のスケールを返す</b>**（`?? temperature`）。
   実測: live 変数 857 のうち 212 がその分岐に落ち、うち **52 は気温ではない**（大気質全種・海流・
   海面高度・降雪・天気コード）。**出荷するレイヤーは `kind:'temp'` のときだけこの分岐に落ちてよい**
-  ——`tests/r356-checks.test.mjs ⑧` がバージョン固定の実測 fixture と突き合わせている。
+  ——`tests/weather-models-checks.test.mjs ⑧` がバージョン固定の実測 fixture と突き合わせている。
 - ⚠⚠⚠ **`.om` が入れている単位と、その変数の配色表の単位は、同じとは限らない。**
   `pressure_msl` は **Pa** で届き、SDK の `pressure` 配色表は **hPa** で書かれている（出荷 8 変数で
   食い違うのはこれ 1 つ。気温 °C・露点 °C・風 m/s・雲量 %・降水 mm・CAPE J/kg は一致する）。
@@ -2463,7 +2463,7 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
 - **塗り分けの軸は6つ＋線種**（軌間／電化方式／最高速度／複線・単線／旅客・貨物／運行状態／線種）。
   バケットと色、そして配信の符号器は **`js/rail-schema.js` 1本**にあり、**ビルド
   (`scripts/rail/build.mjs`) とブラウザの両方が同じファイルを import する**——凡例と地図で色が
-  食い違う余地を作らない。⚠ **export は名前空間 1 本**（`RailSchema`）。`tests/r175 ③` は js/ の
+  食い違う余地を作らない。⚠ **export は名前空間 1 本**（`RailSchema`）。`tests/layer-boot-graph-checks.test.mjs ③` は js/ の
   export が js/ から名前で import されることを要求するので、個別 export はブラウザが使わないぶんが
   「死んだコード」になる（`js/war-geom.js` と同じ形）。
 - ⚠ **どの軸にも「OSM に記載なし」のバケットがあり、その灰色はどの回答の色とも一致しない。**
@@ -2549,7 +2549,7 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
   小数点として読む（ヨーロッパ式）。見出し行の有無も、1 行目と本文の数値の出方を比べて決める。
 
 **拒否は文でなくコードで返る。** `js/geo-import.js` は `{ok:false, why:'shapefile'}` のように答え、
-9 言語の文面は `js/map-ui.js` の `reasonText()` が持つ。⚠ `tests/r576-checks.test.mjs` ⑩ が両方を
+9 言語の文面は `js/map-ui.js` の `reasonText()` が持つ。⚠ `tests/file-import-checks.test.mjs` ⑩ が両方を
 **構文解析して**「返しうるコード」と「文を持つコード」の集合が一致することを測るので、コードだけ
 足して文を書き忘れると赤くなる。⚠ **PMTiles はまだ読めない**——「有効な GeoJSON ではありません」
 とは言わず、何のファイルであるかを**名指して**断る。
@@ -2938,7 +2938,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ——実測 12,895〜14,660 deg²——その最小からCShapes 自身のばらつき 1 つ分を引いた値を下限とし、
   記録がそれを覆う年だけを残す（1688 年は 9,371 deg²、1689 年は 11,314 deg²）。導出した値は束の
   `window[0]` に書かれ、`js/time-borders.js` の `HB_MIN` はその**写し**にすぎない（門は
-  `tests/r690-histborders-deep-checks.test.mjs`）。政体名は OHM の `name:xx` から
+  `tests/history-era-borders-checks.test.mjs`）。政体名は OHM の `name:xx` から
   **9言語**ぶんポリゴンに載って運ばれ（`_i18n`）、`tagSame` が `_eraLocName` より先にそれを読む——
   英語名を照合して訳す仕組みは Kurhessen も Rupert's Land も訳せないから。
 - ⚠ **クリックの答えは、押した政体のもの**（`resolveHist`）。この関数は統計の出どころを得るために
@@ -3093,7 +3093,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ⚠ 以前は手書き表が**どれか 1 言語でも**答える名前を名前表から丸ごと除外しており、
   `Japan`・`China`・`France`・`Mexico`・`Egypt` など**読者が最も出会う綴り**が、日本語読者には
   届きフランス語・韓国語・中国語読者には英語のまま出ていた。
-  ⚠ **到達率の数をここに書き写さない。** 正本は `tests/r716-hist-coverage-checks.test.mjs` の `FLOOR`——
+  ⚠ **到達率の数をここに書き写さない。** 正本は `tests/history-cshapes-gate-checks.test.mjs` の `FLOOR`——
   **出荷している解決器そのものを評価して**言語ごとに数え、下向きには動かない。
   散文が写した数は必ず実体から離れるので、測る場所と述べる場所を 1 つにしてある。
 
@@ -3432,7 +3432,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   検査は `tests/hist-city-label-epoch-checks.test.mjs`（記録から選んだ境目の両側で、移動してきた
   モジュールの式が新規に作った式とバイト同一・同じエポックでは同一の配列・MapLibre の評価器で
   全都市が記録の規則どおり・MapLibre のスタイル検証器 `validateStyleMin` を通る・`built` はその式だけを指す）、
-  `tests/r427-checks.test.mjs` ④（式の形: どの分岐も位置で問い、落ちる先は通常のラベル）と
+  `tests/history-cities-checks.test.mjs` ④（式の形: どの分岐も位置で問い、落ちる先は通常のラベル）と
   `tests/hist-city-label-epoch.spec.js`（実アプリで書き込み回数と `{validate:false}` を数える）。
 - ⚠⚠⚠ **どの都市を改名するかは、綴りではなく綴り＋位置で決まる。**
   各行は**ガード半径**（`data/hist-cities.json` の `g`・メートル）を持ち、`match` の各分岐は
@@ -3514,7 +3514,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ⚠ **生成器は、2つのコード体系が食い違い始めたら止まる。** Natural Earth の 252 と mledoze の
   250 の差（NE 側 13・ISO 側 11・コソボは別名で解決）は**宣言**されていて、実測と一致しなければ
   ビルドが失敗する——黙って何か国か足りないファイルを書くのが、このラウンドが消した欠陥の形。
-  検査は `tests/r453-checks.test.mjs`（出荷される module を Node で実行してカードの HTML を読む）と
+  検査は `tests/shell-data-layers-checks.test.mjs`（出荷される module を Node で実行してカードの HTML を読む）と
   `tests/r424.spec.js` の末尾（ブラウザで同じ3行）。
 - ⚠ **国名の下のサブ行（`.stat-sub` ＝ `region / capital`）の region は、産地が2つある。**
   一覧の行と、行をダブルクリックして開く国詳細カードの Region 行は、どちらも
@@ -3527,7 +3527,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
     · **`js/history.js` の `STATES` が持つ準大陸の語彙** ＝ `Eurasia` / `Middle East` /
       `South Asia` / `Southeast Asia` / `East Asia`。大陸は1つも含まない。
   ⚠ **表に無い値は生の英語のまま9言語で出る**（`_regionName()` は引数をそのまま返す）ので、
-  `tests/r424-checks.test.mjs` ①② が「`js/history.js` が宣言する `region:` の literal 全部」と
+  `tests/news-countries-checks.test.mjs` ①② が「`js/history.js` が宣言する `region:` の literal 全部」と
   「Natural Earth の8種」の両方が鍵になっていることを検査し、④ が `js/lang-registry.js` と
   4本の inline 表を**実行して** 9言語ぶんの解決結果を確かめる。
   ⚠ **首都は地名なので訳さない**——現代の行は `CAPITAL[code]`（«Washington, D.C.»）、歴史の行は
@@ -3541,11 +3541,11 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   フォールバック行そのものが消えている**——上の同梱データの項を見ること。
   ⚠ **表は1本で、読み手が2つある。** `js/atlas-examples.js` の starter chip の `{sub}` は
   `window._imSubregionName(…)` で**同じ表**を読む。同じ語彙の写しを面ごとに持つと、直るのは
-  片方だけになる。`tests/r424-checks.test.mjs` ⑩ が `js/*.js` を数えて、この24語を宣言する
+  片方だけになる。`tests/news-countries-checks.test.mjs` ⑩ が `js/*.js` を数えて、この24語を宣言する
   ファイルが**ちょうど1本**であることを検査する。
   ⚠ **`export` ではなく `window` で渡す。** `js/countries-ui.js` は複数の検査ハーネスが
   `new Function(src)` で**素のスクリプトとして実行**して、本物の `_mkStat` と 10 m 昇格パスを
-  合成 feature に対して走らせる（`tests/r375` ①〜⑦・`tests/r423` ①〜③ など）。`export` を1語
+  合成 feature に対して走らせる（`tests/news-countries-checks.test.mjs` の該当する検査など）。`export` を1語
   足すとそれらが全部 SyntaxError になる。同じファイルの `window._imCldrRegion` が同じ理由で
   window に載っている。⑩ がこの性質（script として parse できること）を直接検査する。
   ⚠ **2欄が同じ語になったら1つに畳む**。`North America`/`Northern America`・`South America`/
@@ -3558,7 +3558,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   **行の順序・id・色見本・名前・IntMapOS のラベルを書く場所は `ROWS` ただ1つ**で、測定側
   `js/net-health-live.js` は凡例の見出しをそこから読む。⚠ **観測網の正本はその `PROVIDERS` 表**
   ——どの計器が存在するかは**上流の応答の `datasource` から発見**するので、このアプリは計器名を
-  1つも書いていない（`tests/r565-checks.test.mjs` ⑦ がそれを測る）。⚠ **中継を1本も足していない**
+  1つも書いていない（`tests/layer-net-health-checks.test.mjs` ⑦ がそれを測る）。⚠ **中継を1本も足していない**
   ——3つの観測網はすべて読者のブラウザが直接読み、当方は保存も再配布もしない（RIPE の規約が
   再配布を禁じているので、これは性能ではなく条件の話）。⚠ **上流は打ち間違いと「障害ゼロ」に
   同じ応答（200／`data:[]`）を返す**ので、範囲は `/entities/query` が実体を返したときにだけ使い、
@@ -3773,8 +3773,8 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   「無制限」のときは仰角欄が 0〜360° を受け付け、180° 超は方位を反転した等価な視線に解決される。
 - **画面下の2つの隅は1つの余白を共有する。** 座標・標高の常時表示（`.coord-readout`・左下）と
   Chronos（`.news-timeline`・右下）は、どちらも地図コンテナの隅から **6px**。
-  ⚠ **数が2か所にある以上、片方だけ動かせる**ので、`tests/r504-checks` ⑪ が**2つが等しいこと**を
-  検査する（`tests/r252` ⑥ と `tests/r485` ⑤ は左下の値そのものを錨にしている）。
+  ⚠ **数が2か所にある以上、片方だけ動かせる**ので、`tests/shell-css-surface-checks.test.mjs` ⑪ が**2つが等しいこと**を
+  検査する（`tests/shell-map-input-checks.test.mjs` ⑥ と `tests/shell-css-surface-checks.test.mjs` ⑤ は左下の値そのものを錨にしている）。
   右パネルが開いているときの退避量（`--lsr-w` への加算）も、各要素**自身の**隅の余白に一致する。
   Chronos の字は**時計**（文字盤・4方位の目盛り・長短の針・軸受け）で、方位環と同じ作りをしている。
 - **ポップアップ類**：国情報カード（`country-info`）、国詳細（`country-popup`）、ピン／地名ポップアップ、
@@ -4149,14 +4149,14 @@ DOM のクロージャの中にある数は検査が届かない（`scatterCases
   （平均 `1/p`）なので、段あたりの日次確率は連続時間のハザード `1 − e^(−段数/T)` ではなく
   **`p = 段数 / T`**。**段数もその一部**で、1 日に 2 段は進めない以上、2 段では平均 2 日未満を表現
   できない——**2 日未満の期間は 1 段**にする（インフルエンザの潜伏 1 日）。指定した **R₀ もそのまま
-  実現する**（`tests/r666-model.test.mjs` ①② が 5 プリセットすべてを走らせて測る）。
+  実現する**（`tests/hazard-pandemic-model-checks.test.mjs` ①② が 5 プリセットすべてを走らせて測る）。
 - ⚠ **「n 人がそれぞれ確率 p で動く」は二項分布で引く**（BINV の逆関数法）。Poisson 近似は p が
   小さいときだけ正しく、`p` が 1 に近い遷移（潜伏 1 日＝ `p=1`）では**確実に起きることを 6 割の
   確率にしていた**。期待値が 30 人以上の遷移は期待値そのものを使う（大数の法則が済んでいる）ので、
   **小さな流行はひとりでに消えることがある**。
 - **乱数は種を取る**（mulberry32）。同じ種・同じ設定なら**同じ流行**が再現する。詳細設定で種を
   指定できる。⚠ **再生速度（×1〜×8）は `setTimeout` の間隔だけを変える。** 疫学の確率に
-  再生速度が入ってはならない（`tests/r575-checks.test.mjs` ② が engine の中に `speed` という語が
+  再生速度が入ってはならない（`tests/hazard-pandemic-model-checks.test.mjs` ② が engine の中に `speed` という語が
   無いことまで測る）。
 - **人口は保存する。** `S+SV+E+I+R+V+D` は各国の初期人口に等しく、`invariant()` がそれを毎 step
   検査できる。国際的な再流入も**必ず現地の未感染者から取る**——⚠ **`S` と `SV` の両方から、
@@ -4378,7 +4378,7 @@ DOM のクロージャの中にある数は検査が届かない（`scatterCases
   ⚠ **以前は全部がトーストだった**ので、1 日に動く政府の数だけカードが縦に積み上がり、
   **地図に最も見るものがある瞬間に地図が最も隠れていた**（実測 12 枚）。宣言の無い種類は
   `routine` に落ちる——間違えたときの代償が非対称だから。
-  ⚠ **語彙は閉じている**: `tests/r675-pandemic-checks.test.mjs` ① が、engine が実際に
+  ⚠ **語彙は閉じている**: `tests/hazard-pandemic-model-checks.test.mjs` ① が、engine が実際に
   `events.push` する種類がすべて `eventKind()` に宣言されていることを突き合わせる（宣言の無い種類は `null` を返すので、鍵の一覧を検査に手渡さずに測れる）。
 - **政策は地図の上の状態として描く**（`pg-policy-ring` / `pg-policy-lock`）。入国規制の段階が
   リングの色（黄→橙→赤）、ロックダウンの強さが青い芯の濃さ。国ごとの塗り分けではなく
@@ -4505,7 +4505,7 @@ observer の次の配達を待てないときに言う。
 
 **周期処理は全部この timer 登録簿を通る。** `js/` に生の `setInterval` は無く（唯一の例外は
 `js/runtime.js` 自身のフォールバック）、**30 ファイル・43 本**が `everyTick(key, ms, fn, opts)` /
-`stopTick(stop)` を import して登録する。`tests/r408-checks.test.mjs` ②が両方向で測る——生の
+`stopTick(stop)` を import して登録する。`tests/shell-runtime-checks.test.mjs` ②が両方向で測る——生の
 `setInterval` が1つでもあれば落ち、**この登録簿の利用者が減っても落ちる**（「使われていない機構」に
 戻せない）。
 
@@ -4642,7 +4642,7 @@ disconnect／close を持つもの、または関数）で**登録したもの�
 - **上限は 2 つある。** 常駐の `_DEM_CACHE_MAX`（`js/app-body.js`・携帯 140／それ以外 560）と、
   ビルドが**留めてよい**上限 `_DEM_LEASE_MAX`（携帯 608／それ以外 2,112）。後者は震度分布 1 枚が
   留める作業集合（`js/seismic.js` の `TILE_BUDGET` ＋ `TILE_BUDGET_FAR`）と同じ数で、
-  `tests/r671-dem-store-checks.test.mjs` が両者を突き合わせる。
+  `tests/hazard-dem-tile-store-checks.test.mjs` が両者を突き合わせる。
 - **上限は状態が変わるたびに適用される**——**挿入したあとに**（前ではない）、そして**完了したあとにも**。
   追い出しは **ready から**行い、in flight のものは他に出せるものが無いときだけ落とす
   （落としても即座には何も解放されず、取り直しの往復だけが増えるから）。
@@ -4990,7 +4990,7 @@ grep する検査は綴りを固定して**規則が呼ばれなくなった日�
 本番のフランス語・韓国語で `placeholder="Display name"` / `"Password"` がそのまま出ていた。
 ⇒ **読み手に見える文字列は、計器が証明できる綴り**（`window.IntMapLang.t(HOST.lang, …)` など）
 **で書く。** 遅延ラッパそのものは factory の規則（factory の本体で `const x=f()` は「宣言」では
-ない・`tests/r168-checks ④`）から来ているので消せない——だから**綴りのほうを選ぶ**。
+ない・`tests/news-module-split-checks.test.mjs` #4）から来ているので消せない——だから**綴りのほうを選ぶ**。
 
 だから問いを**弱くして健全にする**——「その鍵は出荷される木のどこかに書かれているか」。
 `js/lang-registry.js` は `pick()` の第0引数と `t()` の第1引数を**無加工で**添字にする
@@ -5072,7 +5072,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   ⚠ 中文の別名は**字体タグだけ**（zh-Hant / zh-TW / zh-HK / zh-MO）。素の `zh`・`zh-CN` は簡体が多い。
 - 読み物2ページ（`sources.html` / `science.html`）はバンドラが無いので、`scripts/i18n-langs.mjs` が
   `js/locales/_langs.js`（`window.IntMapLangCodes` と `window.IntMapLangBeta`）を生成し、
-  `prebuild` で毎ビルド更新する。`tests/r232-checks.test.mjs` がディレクトリと生成物の一致を検査する。
+  `prebuild` で毎ビルド更新する。`tests/hazard-other-ui-chrome-checks.test.mjs` がディレクトリと生成物の一致を検査する。
 - **(beta) 表記は測って付く**：同スクリプトが inline テーブルの被覆率を計算し、98% 未満なら beta。
   埋まれば誰も気づかなくても自動で外れる。**現在 `IntMapLangBeta` は空＝beta の言語は無い。**
   明示 label（中文2行）は常に優先される。
@@ -5095,7 +5095,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   ⚠ **字体が両方で同じ語は、表に書かない限り台湾語のまま簡体字の読者に届く**——`tw` は字体だけを
   変換するので、`社群`（大陸は `社区`）・`紐西蘭`（`新西蘭`）・`金鑰`（`密鑰`）・`義大利`（`意大利`）
   のような語は、**字体を見る検査には完全に正しく見えたまま**素通りする。
-  網羅性の門は `tests/r356-checks.test.mjs ①`（表の左辺が生成物に1つも残っていないこと）。
+  網羅性の門は `tests/weather-models-checks.test.mjs ①`（表の左辺が生成物に1つも残っていないこと）。
   ⚠ **左辺に置いてよいのは、この文書の中で語義が1つしかない語だけ**——`擷取`（截取／抓取）や
   `向量`（矢量／向量）のように2つの意味で使われている語は、丸ごと置換すると片方を壊す。
   ⚠ **語彙の掃引に OpenCC `twp` を pipeline の中で使ってはならない**（`WORDS` が直した大陸語を
@@ -5113,7 +5113,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   `format` なら 2 行目を小さくできるが、`js/cesium-style.js` が **UNSUPPORTED と名指している演算子**で、
   Cesium エンジンは同じ layout を読む（`js/cesium-layers.js`）——選べば片方のエンジンで無言で消える。
   書体は変更不要（`placeFont()` が読者の鍵を持つ瓦に渡すスタックの末尾が汎 Han 面なので、2 行目も
-  同じスタックで描ける）。検査は `tests/r772-label-lang-bilingual-checks.test.mjs`（MapLibre 自身の
+  同じスタックで描ける）。検査は `tests/shell-map-labels-checks.test.mjs`（MapLibre 自身の
   評価器で描かれる文字列を測る）。
 - ⚠ **`name:ja` が在ることと、それが日本語名であることは別**。上流（OSM）には、地名の**意味**を
   漢字に訳した値が入っていることがある（`Barış`→`平和`、`Yüreğir`→`良癖`）。`js/place-labels.js` は
@@ -5166,7 +5166,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 掃引が書いた名前には `data-imname` の印が付き、言語が変わると**その印の付いたものだけ**を
 取り返してから掃き直す（他所が意図して書いた `aria-label` は触らない）。
 
-ゲートは2本。`tests/r466-checks.test.mjs` が「塗る側が全部聞いているか」を綴りと実行の両方で、
+ゲートは2本。`tests/news-settings-language-checks.test.mjs` が「塗る側が全部聞いているか」を綴りと実行の両方で、
 `tests/r466.spec.js` が本物のブラウザで **「設定を開き直しても1文字も変わらないこと」**——
 この形の欠陥の定義そのもの——を測る。
 
@@ -5248,7 +5248,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   ⚠ **不変条件: `countryGeo` の全 id は `countryStats` に行を持つ。** 両ループは行の構築を
   `_mkStat()` 1本に通し、粗いファイルに無かったコードはアップグレードが**行を作る**（既存行は
   in-place で enrich するだけ——後から走る PPP・指標補完・時代機械の書き込みを捨てないため）。
-  `tests/r375-checks.test.mjs` が、粗いファイルと細かいファイルを実際に食わせて出荷ローダを走らせ、
+  `tests/news-countries-checks.test.mjs` が、粗いファイルと細かいファイルを実際に食わせて出荷ローダを走らせ、
   この一致を検査する。
   ⚠⚠⚠ **国の身元は 3 つの綴りで書かれ、解決器はその 3 つを受け付ける。** `countryStats` は
   **ISO 3166-1 alpha-3 を鍵**にし、各行は同じ標準の他の 2 形——`a2`（alpha-2）と `ccn3`（numeric）——を
@@ -5268,7 +5268,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   ⚠ union を枠に使うと 252 コードのうち **32 が枠を失う**（実測：25 が OUTLIER 規則で拒否され
   `country` zoom 4.4、7 が「巨大」で zoom 3.2）。`js/search-geocode.js` はこの箱に `homeExtent` の
   印を付け、`js/place-framing.js` はその印があるとき OUTLIER 判定を飛ばす——もう刈ってある箱に
-  外れ値の推測を当てないため。`tests/r426-checks.test.mjs` が同梱の CShapes 181 件を全件歩いて
+  外れ値の推測を当てないため。`tests/place-framing-checks.test.mjs` が同梱の CShapes 181 件を全件歩いて
   「地球の有り得ない割合を占める枠は 1 つも無い」を検査する。
   ⚠ **後から作られた行は「現在の値」を持って現れる。** アップグレードは起動から 3〜15 秒後に走るので、
   そのとき時計が過去にあれば、新しい行だけが**その年ではなく現在**を語る。世界銀行の下限 1960 年より
@@ -5321,7 +5321,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   南パタゴニア氷原・キプロス緩衝地帯）なので、TYPE を上位に置いても**各縮尺で判定が動くのは 1 件だけ**。
   ⚠ **不変条件: 地図が「国」として描くものは、Countries 一覧に行がある。** 「国」は名前の一覧では
   なく **Natural Earth 自身の `TYPE`**（`Sovereign country` / `Country`）から導く。
-  `tests/r423-checks.test.mjs` が TYPE × FCLASS の全組合せを出荷ローダに食わせてこれを検査し、
+  `tests/news-countries-checks.test.mjs` が TYPE × FCLASS の全組合せを出荷ローダに食わせてこれを検査し、
   `tests/r410.spec.js` の Countries 一覧ステップが**実際の DOM の行**と `countryGeo` を突き合わせる。
 - **失敗したフィードと、止まったフィードは違う。** 止まったフィードは全部の計器が「成功」を報告する。
   年齢を必ず測って印字する（§7.1）。
@@ -5450,7 +5450,7 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 
 - `INTMAP_BUILD` ＝ 現行ビルド識別子（診断と Bug Report に露出する）。
   ⚠ **`index.html` にビルド印は2つある**（`window.__imBuild` と `window.INTMAP_BUILD`）。
-  `tests/r169-checks.test.mjs` が同じラウンドを名乗ることを検査し、`tests/r207-checks.test.mjs` が
+  `tests/engine-app-shell-split-checks.test.mjs` が同じラウンドを名乗ることを検査し、`tests/shell-panels-tools-checks.test.mjs` が
   **`DEV-NOTES.md` の最新ラウンド見出しと一致すること**を検査する。**毎ラウンド両方上げる。**
 - **エラーの記録**は自前（外部アカウント不要）。`js/client-error-report.js` が `error` / `unhandledrejection` を
   拾い、洗ってから Edge Function `client-errors` へ送り、`client_errors` 表に**欠陥ごとに回数を足して**貯める。
@@ -5658,7 +5658,7 @@ supabase db diff --schema public             # driftゼロ確認
   ⚠ **止まっている理由はタグの不具合ではなく、実装と文書の対応が無かったこと。** `js/legal-text.js` の
   「4. 第三者 / Third parties」は 9 言語で数十社を挙げているのに、**実際に Cookie を置き DOM 再生を
   録っている 2 社だけを名指していない**。だから戻しかたも 1 か所ではなく 2 つを束ねてある——
-  `tests/r502-checks.test.mjs` が**フラグと本文を結んでおり**、`js/legal-text.js` に
+  `tests/shell-index-document-checks.test.mjs` が**フラグと本文を結んでおり**、`js/legal-text.js` に
   `Google Analytics` と `Clarity` を書かないまま `true` に戻すとゲートが赤くなる。
   auth 復帰 URL に対する防御は 1 行も消していない（`docs/SECURITY-ARCHITECTURE.md` §7）。
 - ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN ホストが入っている**
@@ -5669,7 +5669,7 @@ supabase db diff --schema public             # driftゼロ確認
   ⚠ **`'unsafe-eval'` を外せるかは実測済み**（2026-09-18・`securitypolicyviolation` を最初のバイトから記録）:
   MapLibre だけなら違反 0 件。**Cesium は同梱の knockout が読み込み時に `(0,eval)("this")` を評価する**ので
   `'wasm-unsafe-eval'` に替えても 3-D エンジンが起動しない。外せる条件は Cesium が eval を要らなくなること
-  で、`tests/r801-security-audit-checks.test.mjs` ⑦ が `node_modules/cesium` をその条件で測り、要らなくなった
+  で、`tests/backend-edge-hardening-checks.test.mjs` ⑦ が `node_modules/cesium` をその条件で測り、要らなくなった
   日に「外せ」と赤くなる。
   ⚠ **`admin.html` はそのどちらも持たない**（SDK 同梱＋データリテラル・パーサ）。
   `tests/security-logic.test.mjs` が admin 側に `'unsafe-eval'` が戻らないことを毎回検査する。

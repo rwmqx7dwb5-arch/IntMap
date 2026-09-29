@@ -34,7 +34,7 @@
  *  ask it, and answered `no_change` instead, which reads as 「your move did not take effect」.
  *
  *  ⚠ NO IMPORTS, NO HOST, NO GLOBALS OF ITS OWN. Everything it needs arrives in the options object,
- *  so tests/r493-checks.test.mjs can read this file's surface without a browser.
+ *  so tests/atlas-view-checks.test.mjs (#R493) can read this file's surface without a browser.
  *
  *  ⚠ AND THE FRAME LEDGER IS HERE TOO, NOT IN js/atlas-console.js. That file is under #R199's
  *  SHRINK-ONLY ceiling (4,910 lines, one line of headroom when #R419 measured it), and the rule is
@@ -49,7 +49,7 @@
  * deps: { GE, L, esc, snapshot(), waitIdle(ms) } — all injected, so nothing here reaches a global.
  * The screenshot button needs only `GE` and `waitIdle`; the rest is the ledger's.
  *
- * ⚠ ONE EXPORT, AND THAT IS A RULE RATHER THAN A TASTE. tests/r175-checks ③ requires every named
+ * ⚠ ONE EXPORT, AND THAT IS A RULE RATHER THAN A TASTE. tests/layer-boot-graph-checks.test.mjs #R175 ③ requires every named
  * export in js/ to be imported BY NAME somewhere — a dead export is dead code. js/screenshot.js
  * reaches this module with a DYNAMIC import (it rides the eager bundle, and the capture must not),
  * and a dynamic import satisfies nothing that check can see. So the module has exactly one door,
@@ -88,7 +88,7 @@ export function makeViewCapture(deps) {
    * (it must survive its own flash + download), so it opts out and this does not fight it.
    */
   async function captureCanvas(o) {
-    /* ⚠ DECLARED INSIDE, NOT AT THE TOP OF THE FILE. tests/r175-checks ③ allows a top-level
+    /* ⚠ DECLARED INSIDE, NOT AT THE TOP OF THE FILE. tests/layer-boot-graph-checks.test.mjs #R175 ③ allows a top-level
        declaration in js/ only when it is exported AND imported by name; a private helper is exactly
        what that rule forbids — the same reason js/atlas-attach.js keeps its opener's closer inside it.
        Read the renderer's frame, composited with the two animated-wind 2D canvases that draw beside it
@@ -204,7 +204,7 @@ export function makeViewCapture(deps) {
        than that in a turn — look, move, look again is the point — so the MOST RECENT frames are the
        ones attached and `promptBlock()` says plainly which earlier ones were not. A silent drop reads
        to the model as «you were shown all of them», which is the one thing it must not believe.
-       tests/r493-checks.test.mjs reads this number and the server's out of the two files. */
+       tests/atlas-view-checks.test.mjs (#R493) reads this number and the server's out of the two files. */
     var SENT = 3;
     var frames = [];
 

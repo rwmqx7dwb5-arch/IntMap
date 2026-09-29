@@ -69,7 +69,7 @@ window.IntMapSpaceEvents=(function(){
     /* ⚠ 0.998340, NOT 1.29. Verified numerically before it was believed: with this coefficient the
        umbral magnitudes come out 0.117 / −0.077 / 1.17 / 0.95 for 2023-10-28, 2024-03-25, 2025-03-14
        and 2026-08-28 against the published 0.122 / penumbral / 1.178 / 0.9297 — and the first draft,
-       which used 1.29, called every one of them total. tests/r212-checks.test.mjs re-derives them. */
+       which used 1.29, called every one of them total. tests/layer-world-packs-checks.test.mjs (#R212) re-derives them. */
     return { penumbra:1.02*(0.998340*par+parS+semiS), umbra:1.02*(0.998340*par+parS-semiS),
              moonSemi:0.2725*par, parallax:par, sunSemi:semiS, moonDistKm:dKm };
   }

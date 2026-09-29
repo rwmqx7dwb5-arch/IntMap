@@ -29,7 +29,7 @@
  *  `finalUrl` apart rather than overwriting one with another — «where the model said it came from»,
  *  «what we compare for identity» and «where a redirect actually landed» are three different facts.
  *
- *  Pure over its inputs and free of the DOM, so tests/r334-checks.test.mjs can hand it a registry
+ *  Pure over its inputs and free of the DOM, so tests/news-cluster-checks.test.mjs (#R334) can hand it a registry
  *  that is wrong on purpose and watch it say so.
  * ==========================================================================*/
 

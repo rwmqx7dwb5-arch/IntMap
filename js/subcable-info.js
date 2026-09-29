@@ -7,7 +7,7 @@
  *  `lyr-subcables`, `lyr-subcables-glow` or `lyr-subcables-pts` is read here, let
  *  alone written; there is no hover glow, no hit-target layer, no width change.
  *  The brief's §2 and §13 are explicit that the cable graphic stays exactly as it
- *  is, and tests/r355-checks.test.mjs asserts every one of those properties
+ *  is, and tests/subcables-route-checks.test.mjs (#R355) asserts every one of those properties
  *  against a recorded baseline so a change here cannot reach them by accident.
  *
  *  ── HOW A HAIRLINE IS MADE EASY TO HIT WITHOUT MAKING IT THICKER (§13) ────

@@ -10,7 +10,7 @@
  *
  *  Neither touches the DOM, the renderer, the network or the clock. Every number below is reached
  *  from arguments alone, which is what lets the whole of navigation's hard half be verified in Node
- *  (tests/r347-checks.test.mjs) instead of by driving a car.
+ *  (tests/geo-navigation-checks.test.mjs (#R347)) instead of by driving a car.
  *
  *  ══ WHY A LOCAL PLANE AND NOT HAVERSINE ════════════════════════════════════════════════════════
  *  Projecting a point onto a segment needs a dot product, and a dot product needs a plane. Haversine
@@ -366,7 +366,7 @@ window.IntMapNavMatch = (function () {
       if (hRaw == null && moved > Math.max(3, slack)) hRaw = bearing(st.lng, st.lat, out.lng, out.lat);
       var minV = isFinite(+opts.headingMinSpeed) ? +opts.headingMinSpeed : 1.0;
       /* ⚠ THE GATE READS THE INSTANTANEOUS SPEED, NOT THE SMOOTHED ONE. Measured while writing
-         tests/r347-checks ⑦: a car doing 12 m/s that stops dead still has a SMOOTHED speed of ~9 m/s
+         tests/geo-navigation-checks.test.mjs #R347 ⑦: a car doing 12 m/s that stops dead still has a SMOOTHED speed of ~9 m/s
          one second later (τ=4 s), so a gate on `out.speed` stays open — and the 270° heading a
          stationary receiver invents then swings the puck from 90° to 19° while the car has not
          moved. The device's own `speed` is the honest answer to «am I moving right now»; the

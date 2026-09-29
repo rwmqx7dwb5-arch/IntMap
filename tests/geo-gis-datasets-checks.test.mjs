@@ -244,8 +244,8 @@ describe('§ #R729 · the GIS core (registry, chain, refusals, project, query)',
      read. */
   const NOT_READ_BY_THIS_PANEL = {
     'js/gis-panel.js': 'this IS the wording side — its own codes are the sentences being measured',
-    'js/gis-crs.js': 'its codes surface through js/geo-import.js; tests/r576-checks ⑩ measures them against js/map-ui.js',
-    'js/gis-geotiff.js': 'a reader of bytes on the IMPORT path; tests/r749-gis-raster-pipeline-checks ⑪ measures its codes against js/map-ui.js',
+    'js/gis-crs.js': 'its codes surface through js/geo-import.js; #R576 ⑩ in tests/file-import-checks.test.mjs measures them against js/map-ui.js',
+    'js/gis-geotiff.js': 'a reader of bytes on the IMPORT path; #R749 ⑪ in tests/shell-gis-upload-raster-checks.test.mjs measures its codes against js/map-ui.js',
     'js/gis-shapefile.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes',
     'js/gis-geopackage.js': 'a reader of bytes on the IMPORT path, reached through js/geo-import.js; js/map-ui.js words its codes',
     'js/gis-atlas.js': 'the Atlas-facing surface — its refusals answer the MODEL in the turn result, not this panel, which never calls it',

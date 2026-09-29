@@ -27,7 +27,7 @@
 ⚠ **この表は説明であって、実装が持つ一覧ではない。** 信号の名前は応答の `datasource` として届き、
 凡例の選択肢は**その応答から組み立てられる**（`js/net-health-live.js` の `signalsOf`）。
 上流が計器を 1 つ足せばここに現れ、やめれば消える。**`js/net-health-live.js` は計器名を 1 つも書いていない**
-——`tests/r565-checks.test.mjs` ⑦ がそれを測っている。
+——`tests/layer-net-health-checks.test.mjs` #R565 ⑦ がそれを測っている。
 
 ---
 
@@ -115,7 +115,7 @@ Cloudflare だけがそれを API で返しており、それには中継と鍵�
 - 供給者ごとに「最後に何をしたか」（`ok` / `unreachable` / `unsupported_scope` / 件数）を持ち、
   **`report()` の答えに同梱する**。誰が測ったかを言わない障害の答えは、答えではない。
 
-`tests/r565-checks.test.mjs` ① ② が、この 2 つの状態が**区別可能であること**を測っている
+`tests/layer-net-health-checks.test.mjs` #R565 ① ② が、この 2 つの状態が**区別可能であること**を測っている
 （片方でも欠けると赤くなることを変異試験で確認済み）。
 
 ---

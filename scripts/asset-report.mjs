@@ -158,7 +158,7 @@ const ALLOW = {
        asking — and interpolating across the handover would invent vertices no record holds
        (CONSTITUTION「偽物・ハリボテ禁止」). The tolerance therefore stays at 0.012°, and the step is
        STATED rather than hidden: docs/MAP-LAYERS.md §7.13 carries the measurement, and
-       tests/r700-seam-density-checks.test.mjs holds the property behind it (the step sits ON the
+       tests/history-era-borders-checks.test.mjs (#R700) holds the property behind it (the step sits ON the
        record boundary, and moving our simplification on one side alone changes its size or its sign).
        ⚠ ITS POSITION IS NOT CHOSEN EITHER: 1689 is derived from coverage by
        scripts/build-hist-borders.mjs, so the step moves down the moment OHM fills in below it. */

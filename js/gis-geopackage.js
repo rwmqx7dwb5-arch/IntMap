@@ -82,7 +82,7 @@ export function makeGisGeopackage() {
       0x6d, 0x61, 0x74, 0x20, 0x33, 0x00];                       /* "SQLite format 3\0" */
 
     /* ⚠ THE CODES THIS DECODER CAN ANSWER WITH, DECLARED (#R738). js/geo-import.js hands these back
-       to js/map-ui.js verbatim, and tests/r576-checks ⑩ measures that every refusal a reader can be
+       to js/map-ui.js verbatim, and tests/file-import-checks.test.mjs #R576 ⑩ measures that every refusal a reader can be
        shown has a sentence of its own — by parsing js/geo-import.js for `why` literals. A code that
        arrives through a pass-through appears in no literal there, so the gate would have been green
        over fifteen wordless refusals. bad() refusing an undeclared code is what keeps this list from

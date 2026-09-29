@@ -729,14 +729,10 @@ test('R320 ②: doControl answers ambiguous_target instead of pressing one of se
     assert.equal(exact.presses, 1);
     assert.equal(word.presses, 0);
   });
-  /* and the kernel has to be able to read it.
-     read, not run: RUN, the control verifier answers `failed` for the result doControl really returns
-     (`ok:false` with meta.code 'ambiguous_target') — its `raw.ok === false` branch stands first, so the
-     `needs_input` branch below it is reached only by an `ok:true` result that nothing produces.
-     Found while consolidating (2026-09-29) and reported, not changed here; the claim is kept as it was
-     written so that it is not silently lost. */
-  assert.match(read('js/atlas-capabilities.js'), /raw\.meta\.code === 'ambiguous_target'/,
-    'the control verifier no longer turns an ambiguous match into needs_input');
+  /* and the kernel has to be able to read it — for every capability, in js/atlas-executor.js; that it
+     really answers needs_input is EVALUATED in tests/atlas-ambiguous-is-not-failure-checks.test.mjs */
+  assert.match(read('js/atlas-executor.js'), /raw\.meta\.code === 'ambiguous_target'/,
+    'the kernel no longer turns an ambiguous match into needs_input');
 });
 
 /* ── ③ a subsystem that has not loaded is not a missing subsystem ───────────────────────────── */
@@ -1143,7 +1139,7 @@ test('R475 ②: no test pins the capability registry to an integer, and this che
   assert.equal(pinnedRegistrySizes(inline).length, 1, 'the scanner cannot see the pin written inline');
   assert.equal(pinnedRegistrySizes(nodeSide).length, 1, 'the scanner cannot see the node spelling of the same pin');
   assert.deepEqual(pinnedRegistrySizes(floor), [],
-    'the sweep is condemning ratchets — tests/r406-checks ④ is a floor, not a pin');
+    'the sweep is condemning ratchets — the #R406 ④ check in this file is a floor, not a pin');
 
   const offenders = [];
   for (const f of readdirSync(join(ROOT, 'tests')).filter((n) => /\.(spec\.js|test\.mjs)$/.test(n))) {

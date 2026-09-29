@@ -44,7 +44,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-/* ⚠ (#R372) THE PARSE IS NOT THIS FILE'S. #R239's rule — pinned by tests/r241 ① — is that the one
+/* ⚠ (#R372) THE PARSE IS NOT THIS FILE'S. #R239's rule — pinned by tests/hazard-other-i18n-shape-audit-checks.test.mjs #R241 ① — is that the one
    gate holds no parser of its own; scripts/i18n-helpers.mjs already parses every file in js/ ONCE
    for this whole family of instruments, and `deadDash` below reads that syntax tree rather than
    growing a second reader of JavaScript here. */

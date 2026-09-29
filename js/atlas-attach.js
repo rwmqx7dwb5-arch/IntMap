@@ -20,8 +20,8 @@
  *  and how big is it — which need no closure at all and were the last of that subject still in the
  *  kernel.
  *
- *  ⚠ ITS OWN FILE BECAUSE js/atlas-console.js HAS A LINE CEILING (tests/r199-checks ⑤,
- *  tests/r200-checks ⑤: under 5,300, and it follows the floor DOWN). A new subject goes to a new
+ *  ⚠ ITS OWN FILE BECAUSE js/atlas-console.js HAS A LINE CEILING (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤,
+ *  tests/shell-app-body-modules-checks.test.mjs #R200 ⑤: under 5,300, and it follows the floor DOWN). A new subject goes to a new
  *  file — that ceiling exists precisely so 「中心部がまだ巨大」 cannot come back one feature at a time.
  *  A real ES module: nothing registers it on window.IntMapModules and nothing orders it in
  *  src/main.js; js/atlas-console.js names it in an `import`, so the bundler resolves the binding.
@@ -45,13 +45,13 @@ export function attachLightbox(chatEl, closeLabel, fileStrings) {
     try { node = ATTACH_VIEW.render(rec, { L: L, fmtBytes: atlFmtBytes }); } catch (_) { return; }
     _open(null, closeLabel, node);
   }
-  /* ⚠ NOT EXPORTED, AND NOT TOP-LEVEL EITHER. tests/r175-checks ③ allows a top-level declaration in
+  /* ⚠ NOT EXPORTED, AND NOT TOP-LEVEL EITHER. tests/layer-boot-graph-checks.test.mjs #R175 ③ allows a top-level declaration in
      js/ only when it is exported AND imported by name — a private helper is exactly what that rule
      forbids — so both the opener and its closer live inside the one thing this module publishes.
      Open `src` full-screen; `closeLabel` is the × button's accessible name, already localised. */
   function _open(src, closeLabel, node) {
     if (!src && !node) return;
-    /* ⚠ `close` IS DECLARED HERE, NOT AT THE TOP OF THE FILE. tests/r175-checks ③ allows a top-level
+    /* ⚠ `close` IS DECLARED HERE, NOT AT THE TOP OF THE FILE. tests/layer-boot-graph-checks.test.mjs #R175 ③ allows a top-level
        declaration in js/ only when it is exported AND imported by name; a private helper is exactly
        what that rule forbids, so the only closing logic lives inside the function that opens. */
     const close = (fromPop) => {
@@ -178,7 +178,7 @@ export function attachLightbox(chatEl, closeLabel, fileStrings) {
        the answer. It is a picture in the chat like any other, so it opens in the same viewer — a
        340-pixel thumbnail of a map is a thing you have to be able to enlarge. ⚠ THE SELECTOR IS THE
        WHOLE BINDING: a class renamed on one side and not here fails SILENTLY (the click simply does
-       nothing), which is why tests/r493-checks.test.mjs reads both spellings out of the sources. */
+       nothing), which is why tests/atlas-view-checks.test.mjs (#R493) reads both spellings out of the sources. */
     const im = e.target && e.target.closest && e.target.closest('.atl-imgrow-in img, .atl-viewframe img, .atl-thumb img');   /* (#R773) `.atl-thumb img` は送る前のサムネ——送ってから開けるものは、送る前にも開ける */
     if (im && im.src) { e.preventDefault(); e.stopPropagation(); _open(im.src, (typeof closeLabel === 'function') ? closeLabel() : closeLabel); return; }
     /* (#R773) そして非画像の添付。⚠ チップの × は「外す」ボタンであって「開く」ではないので、
@@ -231,12 +231,12 @@ export const LIGHTBOX_CSS =
  *  is told what happened instead of being read a list of what is allowed.
  *
  *  Pure enough to evaluate outside a browser: the only capability it cannot supply itself is the
- *  image encoder (canvas), which the caller injects — tests/r540 drives every other path for real
+ *  image encoder (canvas), which the caller injects — tests/atlas-attach-checks.test.mjs (#R540) drives every other path for real
  *  rather than reading this source for spellings (#R505).
  * ==========================================================================================*/
 export const ATL_FILE = (function () {
   /* ⚠ THE CLIENT'S HALF OF A BOUND THE SERVER ALSO ENFORCES. supabase/functions/ai-proxy holds the
-     same numbers because it cannot trust these; tests/r540 ⑤ holds the two equal rather than
+     same numbers because it cannot trust these; tests/atlas-attach-checks.test.mjs #R540 ⑤ holds the two equal rather than
      trusting that someone edited both (#R504 — "そろえた" is not two copies of a number, it is a
      check that the two are equal). Provenance of each: see ai-proxy's ATTACHMENT BOUNDS block. */
   const LIMITS = Object.freeze({
@@ -256,7 +256,7 @@ export const ATL_FILE = (function () {
        · inflatedPerEntry — one part (or the gzip member) may become no more than an uncompressed
          drop is already allowed to be. An entry larger than this would have been refused had it
          arrived as a plain file, so the container gets no wider door than the file did. Equal to
-         readBytes — tests/r801 holds the two equal rather than trusting the copy (#R504); ⚠ NOT
+         readBytes — tests/atlas-attach-checks.test.mjs (#R801) holds the two equal rather than trusting the copy (#R504); ⚠ NOT
          derived from textPerFile, because zipOpen/gunzip are shared with js/geo-import.js (#R576),
          whose shapefile sets and rasters are read whole.
        · inflatedTotal — one container's parts, summed. Estimate, not observation: the attach path
@@ -271,7 +271,7 @@ export const ATL_FILE = (function () {
        grows. sheetCells bounds the WORK per sheet: every cell after the first in a row costs at
        least one character of output (its tab), and the sheet's text is cut at textPerFile
        characters — so cells past that many can never be shown, and reading them is work whose
-       product is discarded. Equal to textPerFile, and tests/r801 holds it so. */
+       product is discarded. Equal to textPerFile, and tests/atlas-attach-checks.test.mjs (#R801) holds it so. */
     sheetCols: 16384, sheetCells: 120000,
   });
   const DOC_MIME = 'application/pdf';

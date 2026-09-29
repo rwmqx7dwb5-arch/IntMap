@@ -12,14 +12,14 @@
  *
  *  Everything the block used to read from the console's closure arrives through `CTX` (and the app's
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
- *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
+ *  tests/atlas-console-kernel-checks.test.mjs (#R199) re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a clock — see the file header there */
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and behind the app's ONE one-a-second floor — js/nominatim-gate.js */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* for its `featureNames` — the ONE rule for a Nominatim feature's names */
 
 export function makeAtlasVerify(HOST, CTX) {
-  const L=CTX.L, esc=CTX.esc;   /* ⚠ tests/r199 ② requires the CTX rebinds to be the factory's FIRST statement */
+  const L=CTX.L, esc=CTX.esc;   /* ⚠ tests/atlas-console-kernel-checks.test.mjs #R199 ② requires the CTX rebinds to be the factory's FIRST statement */
   const featureNames=makeAtlasGeoResolve.featureNames;   /* the ONE rule for a Nominatim feature's names — js/atlas-geo-resolve.js */
   /* (#R452) ONE geocode, and the whole pinning pass that awaits up to 24 of them in a file. Nominatim
      answers a client it has had enough of by not answering; without these two numbers the mapping
@@ -332,7 +332,7 @@ export function makeAtlasVerify(HOST, CTX) {
        `_atlExtractPlaces`, `_atlGeocodeStrict`, `_atlNameOk`, `_atlMappingVerdict`,
        `_atlMappingNoteHtml`, `_atlAuditSources` — so the console was reaching back across the seam
        for every one of them, and because js/atlas-console.js has a SHRINK-ONLY line ceiling
-       (tests/r199 ⑤ and the stricter tests/r318 ⑨b, «must stay below 5,270»). #R397 adds a subject
+       (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤ and the stricter tests/atlas-capabilities-checks.test.mjs #R318 ⑨b, «must stay below 5,270»). #R397 adds a subject
        to the shell, so the shell gives one up: the same trade #R199, #R313 and #R318 each made.
 
        The five that could not come are passed in: `geocode` (the region resolver's, not this file's

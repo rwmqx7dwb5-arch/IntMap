@@ -48,7 +48,7 @@
  *  ([[intmap-two-readers-one-field-list]]).
  * ========================================================================== */
 
-/* ⚠⚠⚠ ONE EXPORTED TOP-LEVEL BINDING, AND THE WHOLE FILE INSIDE IT. tests/r175 ③ is the property
+/* ⚠⚠⚠ ONE EXPORTED TOP-LEVEL BINDING, AND THE WHOLE FILE INSIDE IT. tests/layer-boot-graph-checks.test.mjs #R175 ③ is the property
    the bundling rests on: a js/ module may hold NO unexported top-level declaration, because a
    classic script's top-level `const`/`function` was a global and these files are still loaded as
    chunks beside kernels that resolve each other by global name. This module has module-private

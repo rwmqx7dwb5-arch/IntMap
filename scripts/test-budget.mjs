@@ -187,8 +187,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ⚠ AND IT WAS PAID OUT OF THE SPEC TWICE BEFORE IT WAS PAID OUT OF THE CEILING.
      · The first draft read Atlas' state sentence IN THE BROWSER, which means loading the 1 MB Atlas
        kernel: body 19.2 / 24.6 / 29.3 s over three runs. The same claim is now made by RUNNING
-       js/atlas-state.js in Node (tests/r550-checks.test.mjs ⑦b/⑦c, on the harness
-       tests/r534-checks.test.mjs established) — a STRONGER check, because it evaluates the provider
+       js/atlas-state.js in Node (tests/night-lights-checks.test.mjs #R550 ⑦b/⑦c, on the harness
+       tests/atlas-state-checks.test.mjs (#R534) established) — a STRONGER check, because it evaluates the provider
        as well as the renderer, at no browser cost at all.
      · The second draft WAITED FOR NASA. Body 12.6 / 20.7 / 39.3 s, and back-to-back runs made GIBS
        answer 429 Too Many Requests, so the spec failed on the service's mood rather than on this
@@ -309,7 +309,7 @@ const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s
    tests/r510.spec.js, the ship layer's gate half: switch the layer on WITHOUT a key, see the relay
    asked for the viewport box and its answer drawn, and no toast. The relay is routed (a canned wire
    body), so a push cannot go red because a feed had a bad afternoon; the relay ITSELF is exercised by
-   tests/r510-checks.test.mjs ⑨⑩⑪ with its upstreams stubbed. Measured the way #R405/#R416 measured
+   tests/layer-ais-ships-checks.test.mjs #R510 ⑨⑩⑪ with its upstreams stubbed. Measured the way #R405/#R416 measured
    theirs — warm server, one worker, worker-scoped page, the reporter's own test-body duration —
    756 ms, entered as 1. The core ceiling did not move: this file replaces tests/r508.spec.js as
    `currentRoundSpec()` (3 -> 1) and the gate is 26 s of entries against BUDGET_S = 28, so the core
@@ -352,7 +352,7 @@ const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s
    as well as in the ledger because this file's own message is «never raise it»; #R410, #R451, #R405,
    #R530 and #R545 are the precedents for saying so plainly. tests/r531.spec.js is the gate half of
    «the historical border is not drawn out at sea» — the marks in data/border-coast.js are re-derived
-   exhaustively by tests/r531-checks.test.mjs, and the one thing that cannot be asked of a file is
+   exhaustively by tests/history-border-coast-checks.test.mjs (#R531), and the one thing that cannot be asked of a file is
    whether those marks REACH the layer; before this round nothing measured whether `imtb-line` had any
    geometry at all, so an empty line source was green. Measured the way #R405/#R416/#R510 measured
    theirs — warm server, one worker, the reporter's own test-body durations — 3.44 s + 0.55 s, entered
@@ -489,7 +489,7 @@ const TOTAL_BUDGET_S = 5147;            /* — 4859 (main) + 21 (#R736: tests/r7
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum
    shows was missing: #R372 stopped the boot fetch correctly and the News tab then said
    「Loading articles...」 for ever, and PRODUCTION was the first detector (0 requests after the click,
-   IntMapNewsEvents undefined). tests/r372-checks ⑬⑮ hold the source shape; only a browser can hold
+   IntMapNewsEvents undefined). tests/news-feed-audit-checks.test.mjs #R372 ⑬⑮ hold the source shape; only a browser can hold
    「one click and the module is there, the list is events, and cards are drawn」.
      · MEASURED HERE, serial, one worker, server already up, both tests passing: 4.5 s + 3.6 s = 8.1 s.
        CALIBRATED THE WAY #R347 DID rather than copied: tests/r209.spec.js measured 21.2 s in the same
@@ -542,7 +542,7 @@ const TOTAL_BUDGET_S = 5147;            /* — 4859 (main) + 21 (#R736: tests/r7
      · the spec no longer opens a second page (`app.freshPage()`): tests/r209.spec.js ① already
        asserts «not in the boot bundle» for every deferred module, and #R347 put both of its
        modules in that list, so it was a whole boot for a fact already covered;
-     · the source-level half of that check moved to tests/r347-checks.test.mjs ㋕ (Node, free);
+     · the source-level half of that check moved to tests/geo-navigation-checks.test.mjs (#R347) ㋕ (Node, free);
      · six route requests to the public OSRM demo became one (the file is serial, the page is
        worker-scoped, so the first plan is reused — also politer to a server that asks for at
        most one request a second);

@@ -14,7 +14,7 @@
  *  Migration runs on every load (v4 present → no-op; v4 absent → build from v3). It is written so
  *  that running it twice produces a byte-identical result: instance ids come FROM the old `u` and
  *  are only invented when one is missing, and `createdAt` is derived from position when unknown
- *  rather than from Date.now(). tests/r292-checks asserts the fixed point.
+ *  rather than from Date.now(). tests/shell-widgets-checks.test.mjs (#R292) asserts the fixed point.
  *
  *  ══ ⚠ THE DEFAULT BOARD IS SEEDED ONLY INTO AN EMPTY ONE ═══════════════════════════════════════
  *  The old code seeded «Clock · FX · Featured layer · Random country · On this day» behind a flag

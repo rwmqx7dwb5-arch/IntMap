@@ -5,7 +5,7 @@
  *
  *  ══ ⚠ IT IS A PURE FUNCTION OF (STACK, CONTEXT). NOTHING HERE IS RANDOM ═══════════════════════
  *  §14 forbids "a shuffle with a nice name", and the only way to make that claim checkable is for
- *  the choice to be DETERMINISTIC given the same inputs — which is what lets tests/r292-checks
+ *  the choice to be DETERMINISTIC given the same inputs — which is what lets tests/shell-widgets-checks.test.mjs (#R292)
  *  assert, for a hand-built context, exactly which card comes first and why. `score()` returns the
  *  reason alongside the number, so 「なぜ表示されたか」 is answered from the same computation that
  *  made the decision rather than from a second guess about it.

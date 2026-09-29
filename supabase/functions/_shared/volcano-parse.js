@@ -4,7 +4,7 @@
 //  The parsing half of supabase/functions/volcano-feed. It lives here, beside the function that uses
 //  it, for one reason: a regex scraper of somebody else's feed is exactly the kind of code that is
 //  believed rather than tested, and a module that only exists inside `Deno.serve` cannot be run by
-//  `node --test`. tests/r353-checks.test.mjs imports THIS file and runs it over captured answers
+//  `node --test`. tests/hazard-volcano-checks.test.mjs (#R353) imports THIS file and runs it over captured answers
 //  from both upstreams (tests/fixtures/volcano-weekly.xml, tests/fixtures/volcano-isigmet.json), so
 //  "the join key is read out of <guid>" and "an ash area keeps its flight levels" are assertions
 //  rather than comments.

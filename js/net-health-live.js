@@ -80,7 +80,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
 
   /* ── the sources ─────────────────────────────────────────────────────────────────────────────
      ⚠ `licence` and `host` are NOT decoration. js/legal-text.js §4 tells the reader which hosts
-     their browser contacts and js/reference-data.js credits the source; tests/r565-checks.test.mjs
+     their browser contacts and js/reference-data.js credits the source; tests/layer-net-health-checks.test.mjs (#R565)
      holds this table against both, so a provider cannot be added here and stay uncredited.
      `transport:'direct'` means the reader's own browser fetches it and IntMap stores nothing —
      which is also what makes RIPE's no-redistribution term satisfiable. */
@@ -525,7 +525,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
     await render();
   }
 
-  /* ⚠ THE WHEEL, NOT A RAW INTERVAL (tests/r408 ②a). A bare setInterval keeps polling two feeds
+  /* ⚠ THE WHEEL, NOT A RAW INTERVAL (tests/shell-runtime-checks.test.mjs #R408 ②a). A bare setInterval keeps polling two feeds
      every five minutes in a tab nobody is looking at — and this one has no reason to: a reading
      missed while the tab was hidden is replaced by the next one the moment the tab is visible
      again, which is exactly the case js/runtime.js's default (pause when hidden) is for. */
@@ -591,7 +591,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
     providers: () => PROVIDERS.map((p) => ({ id: p.id, host: p.host, transport: p.transport, key: p.key, yields: p.yields.slice(), name: p.name(), licence: p.licence, url: p.url, last: STATUS[p.id] })),
     report: report,
     /* the pieces that make a claim about the world, reachable with no browser attached so
-       tests/r565-checks.test.mjs can drive THE SHIPPED ONES rather than copies of them */
+       tests/layer-net-health-checks.test.mjs (#R565) can drive THE SHIPPED ONES rather than copies of them */
     _deficit: deficit, _cc: ccOf, _signalsOf: signalsOf, _iso2: iso2, _worstBy: worstBy,
     /* ⚠ THE TWO SENTENCES THE READER ACTUALLY READS. Both were, for one build, silently empty:
        they were built with pickArgs() and .replace() threw, and each was the last statement of its

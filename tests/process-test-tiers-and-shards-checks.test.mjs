@@ -667,7 +667,13 @@ test('R771 (10) doc-facts asks the planner, and goes red when the shard step dis
    this project has now done more than twenty times. What is checkable is the shape of what
    REPLACED them: a construct that reads the repository cannot be satisfied by a literal. */
 test('#R301 ⑤ the revived r211 derives its assertions instead of pinning spellings', () => {
-  const r211 = read('tests/r211-checks.test.mjs');
+  /* FOUND BY WHAT IT CONTAINS, NOT BY ITS NAME: #R211's checks left tests/r211-checks.test.mjs when
+     the suite was regrouped by topic (2026-09-29) and are now spread over several files, so the text
+     asked about is every test file that declares an #R211 test. */
+  const r211Files = readdirSync(join(ROOT, 'tests')).filter((f) => f.endsWith('.test.mjs'))
+    .filter((f) => /\btest\(\s*['`]#?R211\b/.test(read('tests/' + f)));
+  assert.ok(r211Files.length >= 1, 'no test file carries an #R211 test any more — this check is reading nothing');
+  const r211 = r211Files.map((f) => read('tests/' + f)).join('\n');
   assert.match(r211, /\[\.\.\.code\.matchAll\(\/\\bfetch\\\(\/g\)\]/,
     'the fetch guard is swept over every call site rather than four named throws');
   assert.match(r211, /readdirSync\(new URL\('\.\.\/js\/locales\//,

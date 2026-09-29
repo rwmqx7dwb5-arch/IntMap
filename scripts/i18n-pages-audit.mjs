@@ -187,7 +187,7 @@ function main() {
        is sliced out of a .js that git checks out with CRLF on Windows — and concatenating them wrote
        a locale file with two line-ending conventions in it. scripts/i18n-dead-key-codemod.mjs
        crashed on exactly such a file; the nine js/locales/pages.*.js this shape has already written
-       are why tests/r548-checks.test.mjs measures the SHAPE and not one script. */
+       are why tests/shell-i18n-audits-checks.test.mjs (#R548) measures the SHAPE and not one script. */
     const head = `/* ============================================================================\n`
       + ` *  IntMap · Reading pages — ${html}   (template written by scripts/i18n-pages-audit.mjs)\n`
       + ` * ----------------------------------------------------------------------------\n`

@@ -28,7 +28,7 @@ import { testFiles, planShards, parseShard } from './checks-shards.mjs';
    list is how `npm test` and CI stop running the same thing (#R166). */
 export const GLOB = 'tests/**/*.test.mjs';
 
-/* A probe seam, and the only reason it exists: tests/r586-checks.test.mjs has to watch this runner
+/* A probe seam, and the only reason it exists: tests/process-test-tiers-and-shards-checks.test.mjs (#R586) has to watch this runner
    shard something, and sharding the real suite three times to find out would cost half an hour. It
    points the runner at a handful of throwaway files instead. Nothing in the product reads it. */
 const glob = process.env.IM_CHECKS_GLOB || GLOB;
@@ -56,8 +56,8 @@ function main() {
   const timings = takeFlag(argv, '--timings');
   /* ⚠ THE TIMINGS FILE MUST LIVE OUTSIDE THE CHECKOUT. The reporter opens it at the start and writes
      it at the end, so for the whole run it is an EMPTY .json inside the tree — which check:static
-     reads as invalid JSON (tests/r394 ②b) and the clean-tree assertions read as an untracked file
-     (tests/r674 ⑦). Measured on the first CI run of gate-parity-and-shards. Refused, not relocated:
+     reads as invalid JSON (tests/news-ingest-checks.test.mjs #R394 ②b) and the clean-tree assertions read as an untracked file
+     (tests/process-round-naming-checks.test.mjs #R674 ⑦). Measured on the first CI run of gate-parity-and-shards. Refused, not relocated:
      a path the caller named and this runner silently moved would be a file nobody finds. */
   if (timings != null) {
     const inTree = relative(ROOT, resolve(shardSpec != null ? ROOT : process.cwd(), timings));

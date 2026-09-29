@@ -40,7 +40,7 @@ window.IntMapModules.maddison=function(){
    were left reading `name.en` / `name.jp`, and on an array those are `undefined`; js/countries-ui.js
    `renderStats` keeps a row only `if (s.nameEn && …)`. So the rename WROTE UNDEFINED OVER THE NAME OF
    THE ROW IT WAS RENAMING and the row silently left the list.
-   MEASURED by loading this file with a stub window (tests/r380-checks ⑨): at 1860 `histId.apply()`
+   MEASURED by loading this file with a stub window (tests/history-countries-registry-checks.test.mjs #R380 ⑨): at 1860 `histId.apply()`
    left FRA.nameEn and CHN.nameEn undefined, and `agg(AUH, 1875).nameEn` was undefined — so travelling
    removed France, the United Kingdom, China, Portugal, Brazil, Persia, Siam, the Dutch East Indies and
    Ethiopia from the Countries tab along with EVERY former state, which is the entire feature.
@@ -134,7 +134,7 @@ window.IntMapModules.histStates=function(countryStats){
            three are drawn again. One day either way is a day the map draws a country the list will not list.
            Taking the
            bound off the file the MAP reads is what stops the list and the map switching on different days —
-           the failure #R410 spent a round on. tests/r425-checks ② re-derives both dates from that file, so
+           the failure #R410 spent a round on. tests/history-countries-registry-checks.test.mjs #R425 ② re-derives both dates from that file, so
            an invented date cannot pass.
            ⚠ NOT EVERY SUCCESSOR WANTS ONE, AND MOLDOVA IS THE REASON. CShapes has no Moldova before
            1991-08-25: Bessarabia was ROMANIAN until 1940, so Moldova was not a sovereign state in 1938

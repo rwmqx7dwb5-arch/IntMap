@@ -12,7 +12,7 @@ window.IntMapModules.mapReadout=function(HOST){
   /* (#R251) the module's language helper. It used to be bound INSIDE `tropicLabel()` only, so the
      tsunami readout below — which this round moved off a private two-language helper — referenced a
      free identifier; scripts/static-checks.mjs `split-scope` caught that before a browser did.
-     ⚠ LAZY, because tests/r169 #4 holds this repo to «a factory body does nothing while it runs» —
+     ⚠ LAZY, because tests/engine-app-shell-split-checks.test.mjs (#R169) #4 holds this repo to «a factory body does nothing while it runs» —
      a module factory may DECLARE, never CALL, and `IntMapLang.pick()` is a call. Binding on first
      use also means it is bound after the registry exists, which is the ordering every module here
      already relies on. */
@@ -263,7 +263,7 @@ window.IntMapModules.mapReadout=function(HOST){
      fmtWindSpeed / IntMapCompass.point) — nothing here decides what a chip says.
 
      ⚠ ABSENCE IS DETACHMENT, NOT `display:none`. A chip that is not in the row must not be in the
-     DOM: a hidden span would still be in `el.textContent` (which tests/r171.spec reads to prove the
+     DOM: a hidden span would still be in `el.textContent` (which tests/engine-volume3d-checks.test.mjs (#R171).spec reads to prove the
      Eye chip is up) and would still be counted by any structural selector a later round writes.
      `_crOrder` moves the chips in and out, so the element holds exactly what `innerHTML` left.
      ⚠ AND THE TEXT IS A TEXT NODE, NOT MARKUP. Audited, every producer: `HOST.lastElev` is
@@ -471,7 +471,7 @@ window.IntMapModules.mapReadout=function(HOST){
      js/seismic.js TILE_BUDGET (480 / 1,600, the main field) plus TILE_BUDGET_FAR (128 / 512, the
      far annulus) — two windows out of one lease. Granting less would refuse the field tiles it has
      already decided it needs, and it would paint the concentric rings #R221 was about.
-     ⚠ EXPIRES if either of those budgets moves. tests/r671-dem-store-checks ⑨ re-derives this from them, so
+     ⚠ EXPIRES if either of those budgets moves. tests/hazard-dem-tile-store-checks.test.mjs #R671 ⑨ re-derives this from them, so
      the two files cannot drift apart. */
   const DEM_TILE_BYTES=65536*4;      /* one decoded tile: 256×256 Float32. EXACT, not an estimate */
   const _demHold=new Map();          /* key → how many live leases pin it */
@@ -499,7 +499,7 @@ window.IntMapModules.mapReadout=function(HOST){
      _DEM_CACHE_MAX it sits with. It has to be at least as large as the working set the intensity
      field pins (js/seismic.js TILE_BUDGET + TILE_BUDGET_FAR — the two windows of one build share one
      lease), or the field would be refused tiles it needs and paint the concentric rings #R221 was
-     about; tests/r671-dem-store-checks re-derives it from those two numbers so the pair cannot drift apart.
+     about; tests/hazard-dem-tile-store-checks.test.mjs (#R671) re-derives it from those two numbers so the pair cannot drift apart.
      ⚠ Absent or zero means NO PIN IS GRANTED, which is the honest reading of "this shell does not
      publish a ceiling" — not "pin as much as you like". */
   const _demLeaseMax=()=>{ const v=+HOST._DEM_LEASE_MAX; return (v>0)?v:0; };
@@ -992,7 +992,7 @@ window.IntMapModules.mapReadout=function(HOST){
      cursor is actually over — ONCE per variable and valid time, for the latitude band on screen,
      which is the same ~1.6 MB read the wind already makes. `field` is emitted when it lands and
      the readout re-renders, so the number appears without a second hover. */
-  /* ⚠ SUBSCRIBED FROM INSIDE, NOT AT FACTORY LEVEL. `tests/r169 #4` requires that a factory body
+  /* ⚠ SUBSCRIBED FROM INSIDE, NOT AT FACTORY LEVEL. `tests/engine-app-shell-split-checks.test.mjs (#R169) #4` requires that a factory body
      only DECLARES — a statement that runs while the factory runs takes its side effect with it and
      reads closure state in the #R167 dead zone. The hook is attached the first time a reader
      hovers over an ECMWF layer, which is the first moment it can matter. */

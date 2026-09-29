@@ -12,7 +12,7 @@
  *  the wrong pin. A drifted codec makes the encoder and the decoder disagree about a byte offset,
  *  and every aircraft in the world lands somewhere plausible and wrong; a drifted model makes the
  *  server and the browser disagree about what `military` or `onGround` means, so the filter
- *  disagrees with the colour. tests/r341-checks.test.mjs round-trips the MIRRORED copies against
+ *  disagrees with the colour. tests/backend-aviation-checks.test.mjs (#R341) round-trips the MIRRORED copies against
  *  each other for that reason — this script proves they are the same text, the test proves the
  *  text is a working codec.
  *

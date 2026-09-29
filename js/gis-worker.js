@@ -126,7 +126,7 @@
  *  NaN as well. The two files then agree about the same pixel; they would not if this one only
  *  checked NaN.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③): an unexported top-level declaration in js/
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③): an unexported top-level declaration in js/
  *  would have been a global before the bundle, and this file may not reintroduce one.
  *
  *  ⚠ REFUSALS ARE CODES, NOT SENTENCES (docs/GIS-CORE.md §2.2) — { ok:false, why, detail } — the
@@ -632,7 +632,7 @@ export function makeGisWorker() {
        helped by three more threads finishing arithmetic nobody will read.
        ⚠ `run` IS AN OPTION BECAUSE THE SCHEDULER IS NOT WELDED TO THIS POOL. In the product it is
        this module's `run` (the default). Node speaks the same three-message protocol over
-       worker_threads — tests/r759-gis-worker-checks built exactly that door — and a scheduler that
+       worker_threads — tests/geo-gis-cancellation-checks.test.mjs (#R759) built exactly that door — and a scheduler that
        could only be exercised through a Blob would be a scheduler measured by nobody. */
     async function runBlocks(job, plan, opts) {
       const o = opts || {};

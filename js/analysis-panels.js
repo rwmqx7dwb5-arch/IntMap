@@ -41,7 +41,7 @@ window.IntMapModules.timeSeries=function(HOST){
        yet" is a machine for producing it. js/lazy-modules.js records and console.errors every
        failure; this says it on the screen the user is looking at, because a button that does
        nothing at all tells them nothing at all. ⚠ The pair below is spelled out once per factory
-       because a js/ module may hold no top-level declaration (tests/r175-checks ③) — the same reason
+       because a js/ module may hold no top-level declaration (tests/layer-boot-graph-checks.test.mjs #R175 ③) — the same reason
        GE / esc / jp are already written five times in this file. */
     function _lazyFail(){ const m=window.IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisTimeSeries: '+m); }catch(__){} } }

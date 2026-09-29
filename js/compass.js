@@ -26,7 +26,7 @@
  *  already paid for a key collision of exactly that shape (LA('Hail', …) put a Saudi city into the
  *  disaster table). A bearing name is also not a UI string a translator should be asked to guess
  *  at: it is a fixed convention per language. So all nine tables are written out, and
- *  tests/r289-checks.test.mjs holds them to the invariants that make them a compass at all —
+ *  tests/shell-data-layers-checks.test.mjs (#R289) holds them to the invariants that make them a compass at all —
  *  sixteen entries, all distinct, and the eight-point set being every other one of them.
  *
  *  ══ THE CONVENTIONS, AND WHY THEY DIFFER ════════════════════════════════════════════════════

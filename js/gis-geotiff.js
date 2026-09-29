@@ -306,7 +306,7 @@ export function makeGisGeotiff() {
       /* ⚠ `resident` is how the layers above know the bytes are ALL here: the synchronous read(i)
          and the eager Deflate pass are legal only then. It is deliberately not reachable from the
          returned grid — a grid that held the file would be the 「開いただけで展開する」 shape §7
-         exists to avoid, measured by tests/r749-gis-geotiff-checks.test.mjs ⑨. */
+         exists to avoid, measured by tests/geo-gis-geotiff-checks.test.mjs #R749 ⑨. */
       return {
         size: u.byteLength, ranged: false, resident: u, requests: 1,
         url: null, wholeFile: false, rangeSupported: null,

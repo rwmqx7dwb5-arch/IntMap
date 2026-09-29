@@ -110,7 +110,7 @@ view では「箱の中で最も古い機体の齢」を運んでいた。本番
 指示書 §22.2 は「取得元の観測時刻・IntMap が受け取った時刻・クライアントが描画した時刻」を
 区別できることを要求している。**1つのヘッダに2つの事実を入れると、その区別が消える。**
 
-⚠ **チャンネルを足すときは両方を書くこと。** `tests/r352-checks ⑤` が `binResponse()` の呼び出しを
+⚠ **チャンネルを足すときは両方を書くこと。** `tests/aviation-feed-checks.test.mjs #R352 ⑤` が `binResponse()` の呼び出しを
 すべて数え上げ、`ageMs` と `oldestMs` の**両方を名乗らない呼び出しがあれば落ちる**。
 ⚠ **新しいヘッダは `Access-Control-Expose-Headers` にも足すこと**——無いとブラウザは
 エラーも警告も出さずに `null` を読む（#R341 で ODbL の表記が一度も出なかった原因）。
@@ -215,7 +215,7 @@ IntMap がその bbox を出したときのカメラ緯度は 35.68°——つ�
 `STATE.asked` は **2° セル**（250 nm タイルの約半分）で、`readSerial` が**読み終えたタイルを
 その場で**刻む——視野チャンネルと格子掃引の**両方**が同じ台帳に書く。
 
-⚠ **効果は「10 回のポーリングが買う空の広さ」で測れる**（`tests/r434-checks.test.mjs` ⑤、
+⚠ **効果は「10 回のポーリングが買う空の広さ」で測れる**（`tests/aviation-feed-checks.test.mjs` #R434 ⑤、
 実際の `tilesForBbox` と実際の並べ替えを、アプリが本当に出す日本 z3 の bbox に対して回す）:
 **同じ4区画 → 24 区画**。冷えた台帳では並べ替えが同点なので、**最初の1回は今までどおり
 視野の中心**（狭い視野は候補が4枚しかないので、そもそも何も変わらない）。
@@ -265,7 +265,7 @@ isolate をよく配る（§4.2）ので、空の台帳のままだと**冷え�
 Storage は許可外の content-type を **415 で拒否する**。最初の実装は正直に `application/json` を送っており、
 **書き込みだけが毎回失敗して、他は全部正常に見える**状態になっていた（#R341 と同じ形）。
 bucket を広げるには DB のパスワードで migration を当てる必要がある＝人の手が要るので、
-誰も読まないラベルのためにそれを求めない。`tests/r504-checks` ③b が migration と関数を突き合わせる。
+誰も読まないラベルのためにそれを求めない。`tests/shell-data-layers-checks.test.mjs` #R504 ③b が migration と関数を突き合わせる。
 
 ⇒ `aviation/sweep.json`。cursor・`last`・`miss`・台帳・`readAt` を JSON で持ち、hydrate で読み、
 60 秒に1回だけ書く。**格子の長さ `n` を一緒に置き、一致しなければ捨てる**——タイル #412 が同じ空で
@@ -312,7 +312,7 @@ module を評価した瞬間に `Cannot access 'READ_BURST' before initializatio
 `Deno.serve` に一度も到達しない。**`check:static`・`npm test` 3,136 本・CI・#R504 自身の 13 本、
 どれも緑だった**——この repo の Edge Function 検査は全部**ソースを読む**検査で、
 **本体を評価する**検査がゼロだったから。
-⇒ `tests/r505-checks.test.mjs` ① が、13 本すべてを **Node 24 の素の `.ts` import で実際に評価する**
+⇒ `tests/process-edge-function-evaluation-checks.test.mjs` #R505 ① が、13 本すべてを **Node 24 の素の `.ts` import で実際に評価する**
 （関数ごとに子プロセス・`Deno` だけ stub・一覧はディレクトリから発見）。
 
 #### ⚠ #R506 — 軌跡と、視野チャンネルの計器
@@ -364,7 +364,7 @@ track を始め直す**。
 サーバーが**既に持っている**集合から、広い視野の一部が捨てられていた——上流を1回も読まずに
 戻せる分である。⚠ **同じ述語は2箇所にあった**（最初の収集と、古い箱がタイルを待ったあとの
 再収集）。後者こそ広い視野が通る経路なので、片方だけ直すと効かない。いまは
-`collectBox()` 1本で、`tests/r411-checks.test.mjs ①c` が本数を数えている。
+`collectBox()` 1本で、`tests/aircraft-mark-checks.test.mjs #R411 ①c` が本数を数えている。
 
 ---
 

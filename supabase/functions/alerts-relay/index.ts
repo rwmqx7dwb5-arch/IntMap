@@ -236,7 +236,7 @@ const SEV = { Extreme: 3, Severe: 2, Moderate: 1, Minor: 1, Unknown: 1 };
    NOT dropped: a feed that stops publishing its clock must not silently empty the map (MEASURED
    the same minute: `noExpires = 0` across all 34 members, so this is a guard, not a path).
    ⚠ AND NOTHING IS HIDDEN. The two counts come back with the summary beside `green`, the app
-   prints them, and `tests/r383` holds the relay to reporting them — 「黙って切った一覧は完全な一覧
+   prints them, and `tests/layer-warnings-sources-checks.test.mjs (#R383)` holds the relay to reporting them — 「黙って切った一覧は完全な一覧
    に見える」 (#R320) is the rule this obeys.
    ⚠ 「NOT YET IN FORCE」 IS ITS OWN ANSWER, NOT A WARNING. MeteoAlarm's own site has a 「tomorrow」
    tab; this map has one present tense, shared with the JMA, the NWS, the ECCC and the CMA, all of
@@ -413,7 +413,7 @@ const PH_FEED = "https://publicalert.pagasa.dost.gov.ph/feeds/";
 const PH_MAX = 24;                    /* CAP files fetched per refresh; `capTotal` states the real number */
 /* ⚠ (#R269's rule) FORTY-FIVE SECONDS, NOT TWENTY — a budget shorter than the upstream's bad days
    turns an available feed into 「取得不可」 at random. The CAP files are fetched in parallel, so this
-   is a per-request ceiling rather than a sum, and tests/r269 ④ holds every upstream fetch to it. */
+   is a per-request ceiling rather than a sum, and tests/hazard-weather-alerts-checks.test.mjs #R269 ④ holds every upstream fetch to it. */
 const PH_PAR = /philippine area of responsibility/i;
 
 function xmlAll(src, tag) {

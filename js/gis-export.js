@@ -417,7 +417,7 @@ export function makeGisExport() {
       let lonCol = null, latCol = null, wktCol = null;
       if (anyGeometry) {
         if (asPoints) {
-          /* the spellings js/geo-import.js scores highest — see tests/r576-checks ① */
+          /* the spellings js/geo-import.js scores highest — see tests/file-import-checks.test.mjs #R576 ① */
           lonCol = freeName('longitude', cols.concat(added)); added.push(lonCol);
           latCol = freeName('latitude', cols.concat(added)); added.push(latCol);
         } else {
@@ -898,7 +898,7 @@ export function makeGisExport() {
          ⚠ IT COULD NOT BE CAUGHT BY READING THE FILE BACK, because js/gis-geotiff.js keys on `name`
          and ignores `role` — writer and reader agreed about a file no one else could open
          ([[intmap-co-designed-reader-cannot-falsify]]). The reader stays as it is; what measures this
-         is tests/r774-gis-geotiff-unit-checks, which parses the emitted bytes with a parser of its
+         is tests/geo-gis-export-checks.test.mjs (#R774), which parses the emitted bytes with a parser of its
          own. ⚠ Failing condition for this constant: GDAL renaming the role, which would also break
          every file GDAL itself has written since the item was introduced. */
       const items = [];

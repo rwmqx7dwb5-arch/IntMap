@@ -108,7 +108,7 @@ PR を作ったら、その **PR 番号**が一意の識別子になる（squash
 ⚠ **迷ったら上げる。** 節約のために判断を曇らせた瞬間に、節約は目的を失う。
 
 ⚠ **この表と昇格条件は `.agents/rules/` には置けない。** あちらは 1 ファイル 6144 バイトの天井を
-持ち（`tests/r295-checks.test.mjs` ⑥・毎セッションが払うから）、`execution-strategy.md` は
+持ち（`tests/process-agent-context-checks.test.mjs` #R295 ⑥・毎セッションが払うから）、`execution-strategy.md` は
 **余白 8 バイト**で埋まっている。検査自身が「detail は agent か skill へ移せ」と述べている。
 
 ---
@@ -176,7 +176,7 @@ pr: 123            # 分かれば。PR を作ってから足してよい（無�
 `worktree.mjs` は以前「次の空きラウンド番号」を配っていた。**走査した全セッションが同じ番号を得る**
 ので、改番は例外ではなく定常状態だった（#R671 は 7 回、同じ時期の別セッションは 4 回）。実測された被害:
 
-- `tests/r568-checks.test.mjs` を **2 セッションが両方新規作成**し、git が add/add を立て、
+- `r568-checks.test.mjs`（いまは `tests/radiation-plume-checks.test.mjs` に統合）を **2 セッションが両方新規作成**し、git が add/add を立て、
   着地の自動化がそれを取り込んで**衝突マーカーごと commit**した（`… | tail -4` が `$?` を
   `tail` のものにしていた・#R420 の再演）。ファイルは `SyntaxError` で**1 本も走らなくなった**。
 - memory の `intmap-r<N>-lessons.md` を改番のたびに rename していて、**別セッションのファイルに

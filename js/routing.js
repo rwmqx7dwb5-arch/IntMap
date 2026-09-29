@@ -840,7 +840,7 @@ window.IntMapModules.routing=function(HOST){
       try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language='+(window.IntMapLang.locale(HOST.lang,"en"))); const j=await r.json();
         const cs=(j&&j.results||[]).map(g=>({lng:+g.longitude,lat:+g.latitude,pop:+g.population||0,name:g.name+(g.admin1?(', '+g.admin1):'')+(g.country?(', '+g.country):'')}));
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
-      try{ const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();   /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js (reached through `window`: no top-level declarations here, tests/r175-checks #4) */
+      try{ const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();   /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js (reached through `window`: no top-level declarations here, tests/layer-boot-graph-checks.test.mjs (#R175) #4) */
         const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q)); const j=await r.json();
         const cs=(j||[]).map(x=>({lng:+x.lon,lat:+x.lat,pop:+x.importance*1e6||0,name:(x.display_name||q).split(',').slice(0,2).join(', ')}));
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
@@ -1042,7 +1042,7 @@ window.IntMapModules.routing=function(HOST){
        OUT OF THIS FILE. The panel used to reach into the closure; now it asks. `route`, `clear`,
        `selectAlt`, `selectStep`, `maneuver`, `stationLL`, `geoNear`, `exportRoute`, `_routeExport`
        and `hasRoute` are UNCHANGED names with unchanged meanings — js/atlas-console.js, js/map-tools.js
-       and tests/r163 / r184-routing call them and must keep working. */
+       and tests/news-module-split-checks.test.mjs (#R163) / r184-routing call them and must keep working. */
     /* ══ (#R291) THE SHARE LINK ═════════════════════════════════════════════════════════════════
        Registered with the app's OWN share registry (js/map-ui.js `IntMapShareState`), so a route
        travels in the same `#…&s=` parameter as every simulator's state and there is no second URL

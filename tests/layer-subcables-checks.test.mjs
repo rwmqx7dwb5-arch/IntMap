@@ -64,7 +64,7 @@ test('R188 default layers: the cable data is kept, and an outage is never saved 
     'both layers still start on');
   /* measured: the direct fetch is `TypeError: Failed to fetch` every time (no ACAO), so this layer
      has ALWAYS come through a volunteer CORS proxy — which is the whole asymmetry with Köppen. */
-  assert.match(dl, /const _CABLE_CACHE='intmap-subcables-v1';/, 'a successful download must be kept');
+  assert.match(dl, /const _CABLE_CACHE='intmap-page-subcables-v1';/, 'a successful download must be kept');
   assert.match(dl, /async function _cableCached\(u\)\{/, 'and served before the network on the next visit');
   /* ⚠ (#R354) THE ROUTES COME FROM THIS APP'S OWN ORIGIN NOW, and the kept TeleGeography copy is a
      fallback BEHIND that rather than the first answer. #R188's claim survives whole — a successful

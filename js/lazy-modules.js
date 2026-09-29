@@ -31,7 +31,7 @@
  *      file js/app-body.js imports with a line-anchored `import … from './y.js';`. That is why this
  *      file is a NAMED sibling of app-body.js rather than something app-body import()s: the `mount`
  *      calls in the registry entries are the ones the gate reads.
- *   3. `tests/r175-checks.test.mjs` requires every named export to be reached by name from somewhere
+ *   3. `tests/layer-boot-graph-checks.test.mjs (#R175)` requires every named export to be reached by name from somewhere
  *      (js/, src/, scripts/ or tests/ — scripts/export-readers.mjs). `makeLazyModules` is imported by
  *      app-body.js; LAZY_NAMES / CARRIED_NAMES by src/main.js; LAZY_REGISTRY by the tests that used
  *      to regex two files for the same facts. (The ban on top-level declarations went with #R795.)
@@ -58,7 +58,7 @@
  *  owns), `fetchModule` (a `case` with its literal import), `mount` (a `case` with its factory
  *  call), `ALSO` (what must arrive with it), `SELF_PUBLISHING` (no factory) — plus a sixth row in
  *  src/main.js's LAZY_FACTORIES for the boot guard. Adding a module meant editing four to six places
- *  that had to agree, and tests/r209 ③ / r304 ② existed to catch the day they did not. Now each
+ *  that had to agree, and tests/atlas-console-kernel-checks.test.mjs #R209 ③ / r304 ② existed to catch the day they did not. Now each
  *  module is ONE entry and every list is derived from it: the loader reads it here, the boot guard
  *  imports LAZY_NAMES, and the tests read the same object rather than a regex over two files.
  *
@@ -137,7 +137,7 @@ export const CARRIED_NAMES = Object.freeze(['aircraftPoints']);
  *    «check your connection» is right), and the one question is NOT spent, so the next failure asks.
  *  ⚠ ONE question per tab: a boot hint and a click can fail the same chunk several times in a
  *  second (measured: 3 events for one module), and each would otherwise fetch the document. */
-/*  ⚠ Arrow CONSTANTS, not function declarations: tests/r209 ② holds this file to every top-level
+/*  ⚠ Arrow CONSTANTS, not function declarations: tests/atlas-console-kernel-checks.test.mjs #R209 ② holds this file to every top-level
  *  statement exported and ONE exported function — the factory the shell calls (makeLazyModules).
  *  These two are the loader's failure policy, read by that factory and by the tests, not by the shell. */
 /** @type {(mine: string, servedHtml: string) => 'new-build'|'same-build'} */

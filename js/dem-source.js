@@ -20,7 +20,7 @@
  *  ⚠ AND IT IS ASKED OF THE POINTER, NOT THE VIEWPORT WIDTH — #R225's rule. «Can this device afford
  *  the finest mesh» is a question about the machine, so a landscape phone is still a phone (#R232).
  *
- *  ⚠ ONE EXPORT AND EVERYTHING INSIDE IT — tests/r175-checks ③ forbids an unexported top-level
+ *  ⚠ ONE EXPORT AND EVERYTHING INSIDE IT — tests/layer-boot-graph-checks.test.mjs #R175 ③ forbids an unexported top-level
  *  declaration in js/, because such a name would have been a global before the bundle.
  * ==========================================================================*/
 

@@ -451,7 +451,7 @@ hist-scale.js                     深い時間の**算術**だけを持つ純関
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
                                   OpenHistoricalMap が書く10進年（実測 103,093 件に当てて決めた「その日の中点」）
                                   ②`ohmFilter()`/`inForce()`＝その瞬間にどの境界を描くか（式と述語の2つの読み手が
-                                  同じ答えを返すことを tests/r604-checks ④ が測る）③`rail`＝Chronos の年スライダーの
+                                  同じ答えを返すことを tests/history-admin-tiers-checks.test.mjs #R604 ④ が測る）③`rail`＝Chronos の年スライダーの
                                   位置↔年（区分線形。折れ点は記録密度の実測）
 ohm-rings.js                      OpenHistoricalMap の relation を多角形にする**唯一の持ち主**
                                   window.IntMapOhmRings。①`ringsOf()`＝member の way を、順序も向きも
@@ -460,7 +460,7 @@ ohm-rings.js                      OpenHistoricalMap の relation を多角形に
                                   小片こそが押された単位かもしれない（下限を渡すのは束のビルドだけ）。
                                   DOM もネットワークも時計も触らない純関数なので、ブラウザのクリック
                                   経路（js/map-ui.js の `_eraGeom`）と scripts/build-hist-admin1.mjs が
-                                  **同じ 1 本**を使い、tests/r669-checks.test.mjs が**評価**できる
+                                  **同じ 1 本**を使い、tests/ohm-rings-checks.test.mjs (#R669) が**評価**できる
 label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す＋メモリ圧の見張り
                                   （⚠ その見張りは #R668 まで `isMobile()`＝幅で「携帯か」を訊いていたので、
                                   横向きの iPhone には**設置すらされていなかった**）
@@ -680,7 +680,7 @@ ai-core.js                        Atlas の AI 通信・利用枠・設定
 atlas-country-ids.js              境界データが宣言している国の識別子を読む唯一の場所（#R742）。ISO の alpha-3／alpha-2／numeric-3 を
                                   同じ識別子の別表記として読み、FIPS 等の別体系は列で除く（Germany の FIPS は "GM"、ISO alpha-2 の
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
-                                  具体地名の解決器へ落とす。検査は tests/r742-atlas-identifier-checks.test.mjs。
+                                  具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
                                   146 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
@@ -770,7 +770,7 @@ atlas-view-ground.js              **見たものの裏づけ**（#R589）— `lo
                                   タグをそのまま渡し、判断は Atlas に返す。**見つからなかったことは文として書く**
                                   （空欄は「知らされていない」と「そこには無い」を区別できない）。座標の桁数もここが決める
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
-                                  **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
+                                  **入口は `makeViewCapture(deps)` の1つだけ**（tests/layer-boot-graph-checks.test.mjs #R175 ③ が
                                   「動的 import でしか届かない export は死んだ export」と見るため）。
                                   `captureCanvas` は screenshot.js が #R200 から撮ってきたのと**同じ**絵
                                   （WebGL を render tick 内で読む／#R231 の1座標系／DOM オーバーレイ合成）で、
@@ -951,7 +951,7 @@ mobile-map-input.js               **指が地図に届く経路 1 面**——長
                                   ヘア／中心の座標・標高・レイヤー値の読み出し／「地点を追加」ピル。
                                   `js/app-body.js` から**まるごと**出したもので、幾何（#R16 の「シートに
                                   覆われていない領域の中心」・#R12 の視覚中心の unproject・12 px / 550 ms の
-                                  閾値）は本文そのまま。⚠ 出した理由は `tests/r168 #8` / `tests/r479 ⑧` の
+                                  閾値）は本文そのまま。⚠ 出した理由は `tests/r168 #8` / `tests/carto-basemap-checks.test.mjs #R479 ⑧` の
                                   shell 予算——**天井は上げず、同量以上を外へ出す**（#R195/#R196 の規則）。
                                   ⚠ **マウント点は2つ**（`longPress()` は地図イベント配線から、
                                   `crosshair()` はブロックが在った位置から）——どちらもリスナーの登録順が
@@ -1271,7 +1271,7 @@ scripts/
                                   （下の ⚠ を見よ）。以前は行頭の綴りで見分けて控除表で引いていた
   shared-roster.mjs               `supabase/functions/_shared/` の目録を名乗る一節を見つけ、実体と
                                   照合する**唯一の実装**（#R694）。`doc-facts.mjs` の `edge-shared`
-                                  と `tests/r694-shared-roster-facts-checks` が**同じ関数**を使う
+                                  と `tests/process-doc-facts-edge-counts-checks.test.mjs` (#R694) が**同じ関数**を使う
                                   ——規則を書き写すと規則が2つになる
   doc-claims.mjs                  散文の中の数量が**何を数えているか**を、名詞修飾連鎖を左に歩いて
                                   答える（#R699）。`doc-facts.mjs` はこれに訊く。以前は主題と数を
@@ -1329,7 +1329,7 @@ scripts/
                                   先頭採用も無い）。⚠ ダッシュ・アポストロフィの字種違いは導出した
                                   異綴りでも訊く（上流は `Denmark-Norway`・Wikidata は `Denmark–Norway`）
   histeras/match.mjs              **純粋**な採否の規則——地理と年代で照合し、決め手が無ければ**拒む**。
-                                  `tests/r686-histeras-names-checks.test.mjs` が**評価**する
+                                  `tests/history-era-names-checks.test.mjs` (#R686) が**評価**する
   histeras/time-borders.mjs       `js/time-borders.js` を node で実体化する足場（手書きの名前表が
                                   何に答えるかを、ソースを読まずに**訊く**ため）
   histeras/coverage.mjs           手書きの表と束の表が、言語ごとに何件ずつ答えているかを印字する
@@ -1340,7 +1340,7 @@ scripts/
                                   （`name:en` → `name:latin` → `name_int` → `name`）に落とす。判定基準と、
                                   なぜ規則ではなく一覧なのかはスクリプト冒頭。⚠ **門にはしていない**
                                   （Overpass が要るので CI に置けない）。不変条件は
-                                  `tests/r691-osm-ja-name-overrides-checks.test.mjs` が基準を評価して測る
+                                  `tests/place-labels-osm-ja-checks.test.mjs` (#R691) が基準を評価して測る
   build-hist-borders.mjs          OpenHistoricalMap の `admin_level=2` 境界関係 → `data/hist-borders.js`（1689–1885。
                                   **下限は導出**——記録が `data/cshapes.js` と同じだけの陸地を覆う年まで）。
                                   ⚠ **`--check` は再生成しない**——ビルドには CI に置けない約 400 MB の Overpass 応答が
@@ -1412,7 +1412,7 @@ scripts/
                                   ⚠ **名前を 1 つも手で書かない**——関数の名簿は `supabase/functions/` の実体、
                                   project ref は `src/vendor.js`、Pages の URL は `origin` の remote から導く。
                                   ⚠ `npm test` には入れない（本番と資格情報が要る）。CI が証明できることは
-                                  `tests/r745-arch-review-followup-checks.test.mjs`。
+                                  `tests/process-release-state-checks.test.mjs` (#R745)。
   worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`AGENTS.md` §6 が
                                   手作業で求めていた工程——branch・OneDrive 外の worktree・`node_modules` の
                                   junction・preview 設定——を 1 コマンドにする。原本の場所は `master-sync.mjs` と
@@ -1455,7 +1455,7 @@ scripts/
                                   `tests/global-surface-baseline.json` と両方向に照合する。行数の天井の代わり。
                                   読み手の無い公開名（`unread`・`unreadPublications`）も名前で照合する。
                                   コメント・文字列・正規表現を消すのは acorn の字句解析（`codeOnly` を export）。
-  export-readers.mjs              **export に読み手が居るか**の導出（`tests/r175-checks` ③ が読む）。読み手は
+  export-readers.mjs              **export に読み手が居るか**の導出（`tests/layer-boot-graph-checks.test.mjs` #R175 ③ が読む）。読み手は
                                   `js/`・`src/`・`scripts/`・`tests/` の名前付き import・namespace・
                                   dynamic import の 3 形。
   mobile-trace.mjs                **2つのエンジンで1本のトレースを取る計器**（ゲートではない）。
@@ -1501,7 +1501,7 @@ scripts/
                                   `npx vite build --minify false --outDir dist-dev` と `--dist dist-dev`。
   trace-probe.js                  上の**ページ側の計器**（`addInitScript` で最初のスクリプトより前に入る）。
                                   ⚠ **アプリではない**——`js/` も `src/` も import しない
-                                  （`tests/r387-checks ⑤` が出荷経路への混入を落とす）。
+                                  （`tests/process-mobile-trace-instruments-checks.test.mjs #R387 ⑤` が出荷経路への混入を落とす）。
                                   入れ子を差し引いた **self time** で placement / render / mapRender /
                                   texUpload / bufUpload / decode / workerPost / workerRecv を数え、
                                   **MessageChannel の ping ループ**で `longtask` 観測器を持たない
@@ -1625,7 +1625,7 @@ tests/
 
 - **メンバーは全て getter。** ⑴ **LIVE**：手順3の可変値が常に現在値になる。
   ⑵ **LAZY**：getter の本体は読まれるまで評価されないので、まだ定義されていない関数を掴まない。
-- **RW メンバーは明示的に一覧を固定**する（`tests/r165-checks.test.mjs`）。増やすときはその一覧も直す。
+- **RW メンバーは明示的に一覧を固定**する（`tests/atlas-console-kernel-checks.test.mjs` (#R165)）。増やすときはその一覧も直す。
 
 ### 「いつ取りに行くか」という第2の軸
 
@@ -1643,7 +1643,7 @@ tests/
 
 - `scripts/check-split-scope.mjs` … acorn で、手順3・7・9の不変条件を検査する。
 - `scripts/static-checks.mjs` … 未読込のモジュール／呼ばれていないファクトリ／移設元の残骸を検査する。
-- `tests/r162-checks.test.mjs` / `tests/r163-checks.test.mjs` / `tests/r165-checks.test.mjs` …
+- `tests/shell-app-body-modules-checks.test.mjs` (#R162) / `tests/news-module-split-checks.test.mjs` (#R163) / `tests/atlas-console-kernel-checks.test.mjs` (#R165) …
   ホストメンバーと RW 一覧を固定する。
 - `tests/app-source.mjs` … 文字列一致の回帰テスト群が `index.html` だけでなく `css/` ＋ `js/` も読む。
 - `tests/r163.spec.js` … **実ブラウザで実際に動かす**。静的検査だけでは束縛の誤りを捕まえられない。

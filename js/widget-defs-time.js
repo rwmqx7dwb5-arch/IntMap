@@ -9,7 +9,7 @@
  *  Not one layout at three font sizes. The digital clock at S is the time; at M it is the time with
  *  its date and zone; at L it is a table of the reader's cities with each one's day/night state and
  *  offset from here. The progress family at L stops being a bar at all and becomes the day, the
- *  week and the year on one axis. tests/r292-checks asserts, per family, that the three renderers
+ *  week and the year on one axis. tests/shell-widgets-checks.test.mjs (#R292) asserts, per family, that the three renderers
  *  emit different information elements — a CSS-only difference fails it.
  * ==========================================================================*/
 (function () {

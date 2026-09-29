@@ -46,7 +46,7 @@
 import { ATL_FILE } from './atlas-attach.js';
 
 /* ⚠ ONE EXPORTED BINDING, EVERYTHING ELSE INSIDE IT — the shape js/atlas-attach.js uses and the
-   one tests/r175 ③ enforces across js/: an UNEXPORTED top-level declaration in a file that used to
+   one tests/layer-boot-graph-checks.test.mjs #R175 ③ enforces across js/: an UNEXPORTED top-level declaration in a file that used to
    be a classic script would have been a global, so none of these files has one. Nothing below is
    reachable except through GEO_IMPORT. */
 export const GEO_IMPORT = (function () {

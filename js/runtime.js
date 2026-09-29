@@ -48,7 +48,7 @@
  *  the "機能数が数倍になっても地図操作経路の処理量が増えない" property, held mechanically rather
  *  than by everyone remembering to unsubscribe.
  *
- *  (#R795 lifted tests/r175 ③'s ban on unexported top-level declarations; the shape below —
+ *  (#R795 lifted tests/layer-boot-graph-checks.test.mjs #R175 ③'s ban on unexported top-level declarations; the shape below —
  *  one export wrapping one closure — is kept because the registers ARE one instance, not because
  *  a rule requires it. The early-timer memo below is an ordinary module-scope Map now.)
  * ==========================================================================*/
@@ -514,7 +514,7 @@
       capabilities: () => Array.from(CAPS.keys()),
       stateOf: (n) => { const c = CAPS.get(n); return c ? c.state : null; },
       generationOf: (n) => { const c = CAPS.get(n); return c ? c.gen : null; },
-      /* what the instrument reads — js/perf-hud.js and tests/r234. Counts, not opinions. */
+      /* what the instrument reads — js/perf-hud.js and tests/hazard-seismic-panel-checks.test.mjs (#R234). Counts, not opinions. */
       stats: () => ({
         reads: READ.size, writes: WRITE.size, camera: CAM.size, timers: TIMERS.size,
         capabilities: CAPS.size, suspended: SUSPENDED.size,
@@ -537,7 +537,7 @@
  *  `setInterval`s. It had ZERO callers, and there were FORTY-THREE raw `setInterval`s in js/ — so
  *  the register built to make hidden-tab wake-ups exact was, in practice, one more thing that was
  *  true only on paper. (#R394 is the same shape: a column naming which mechanism decided, written
- *  unconditionally by a mechanism that never ran.) A gate now measures it: tests/r408-checks ②.
+ *  unconditionally by a mechanism that never ran.) A gate now measures it: tests/shell-runtime-checks.test.mjs #R408 ②.
  *
  *  Two exported names rather than "call window.IntMapRuntime.every yourself", for two reasons:
  *   1. `window.IntMapRuntime` does not exist until js/app-body.js builds it, and TWO of the sites
@@ -583,7 +583,7 @@ export function everyTick(key, ms, fn, opts) {
   };
 }
 /* the timers that armed themselves before the register existed — key → {ms, fn, opts, h}. A module-scope
-   Map since #R795 (it hung off the function while tests/r175 ③ forbade a top-level declaration). */
+   Map since #R795 (it hung off the function while tests/layer-boot-graph-checks.test.mjs #R175 ③ forbade a top-level declaration). */
 const PENDING_TICKS = new Map();
 /* give back every timer armed before a register existed — a headless caller (a test, a script) that
    mounted no runtime is otherwise left with a raw interval holding its process open */

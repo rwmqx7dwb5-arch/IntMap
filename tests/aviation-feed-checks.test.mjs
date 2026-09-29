@@ -429,7 +429,7 @@ test('R434 ⑥ the viewport spends the burst budget once per VIEW_STALE_S, for t
   assert.match(body, /const grant = worthIt \? takeTokens\(ranked\.length, now\) : 0;/,
     'the ceiling is global, and it is the same bucket the lattice sweep draws from');
   assert.ok(!/const spaced = /.test(FEED),
-    'the old per-45-s spacing is gone — see tests/r504-checks.test.mjs ④');
+    'the old per-45-s spacing is gone — see #R504 ④ in tests/shell-data-layers-checks.test.mjs');
   assert.match(body, /const spent = ranked\.slice\(0, grant\);/,
     'and the read is over what was granted, not over what was ranked');
   assert.match(body, /STATE\.viewReadAt = now;\n\s*await once\(/,

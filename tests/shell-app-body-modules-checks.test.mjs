@@ -208,12 +208,12 @@ test('R200 ③: the values app-body REASSIGNS are read live off IM_HOST, never c
     assert.match(CORE, new RegExp(`get ${k}\\(\\)\\{ return \\w+; \\}`), `IM_HOST still owns ${k} behind a live getter`);
   }
   /* …and only ONE of the ten writes host state: the `t` shortcut cycles light → dark → auto. It goes
-     through IM_HOST's accessor pair and is named as an owner in tests/r165-checks.test.mjs, which is
+     through IM_HOST's accessor pair and is named as an owner in tests/atlas-console-kernel-checks.test.mjs (#R165's checks), which is
      the audit for written members. Every other module was chosen so nothing but reads crosses the cut. */
   for (const [rel] of MODULES) {
     if (rel === 'js/keyboard-shortcuts.js') {
       assert.match(read(rel), /HOST\.userTheme=nx/, 'the theme shortcut writes through the accessor pair');
-      assert.match(read('tests/r165-checks.test.mjs'), /'theme-sky\.js', 'keyboard-shortcuts\.js'\]/,
+      assert.match(read('tests/atlas-console-kernel-checks.test.mjs'), /'theme-sky\.js', 'keyboard-shortcuts\.js'\]/,
         '…and the RW contract names it as an owner');
       continue;
     }

@@ -455,7 +455,7 @@ window.IntMapModules.windowManager=function(HOST){
       if(on){ _feedWatch(true); _armReveal(); }   /* (#R243) …and the column's own membership — see `_dockEmptySync` */
       /* ⚠ (#R239b) THIS PAIR STAYS ADJACENT — the observer is armed BEFORE the first pass, or a legend
          that was already on when the mode was switched on can never be found again (it is in
-         #docked-feed, not under the map container, and a legend is not in `__winReg`). tests/r239
+         #docked-feed, not under the map container, and a legend is not in `__winReg`). tests/news-i18n-gate-checks.test.mjs (#R239)
          matches the two lines together for exactly that reason, so anything new goes ABOVE them. */
       if(on) _dockWatch(true);
       if(on){ _dockables().forEach(_dockOne); }
@@ -653,7 +653,7 @@ window.IntMapModules.windowManager=function(HOST){
      Three things, and only three: the tab exists while the setting is on, the panels are re-parented
      above, and leaving the mode while the dock tab is open has to leave the reader somewhere. It
      lives in this file — beside the mechanism it drives — rather than in js/app-body.js, and that is
-     not only tidiness: tests/r168 #8 budgets the app SHELL (index.html + src/main.js + src/vendor.js
+     not only tidiness: tests/news-module-split-checks.test.mjs (#R168) #8 budgets the app SHELL (index.html + src/main.js + src/vendor.js
      + js/app-body.js + js/geo-engine.js) at 8,200 lines and the first cut of this feature put it at
      8,232. ⚠ The rule that test states is that THE CEILING FOLLOWS THE FLOOR DOWN, never the other
      way, so the answer to a shell over its budget is to move a feature out of the shell — which is

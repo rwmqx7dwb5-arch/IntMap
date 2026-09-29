@@ -132,7 +132,7 @@
  *  rounded into classes (`values-not-integer`). Producing a plausible number from inputs that do not
  *  support it is the ハリボテ CONSTITUTION.md forbids.
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) — an unexported top-level declaration in js/
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③) — an unexported top-level declaration in js/
  *  would be a global before the bundle, and this file may not reintroduce one.
  * ==========================================================================*/
 
@@ -168,7 +168,7 @@ export function makeGisRaster() {
        where B was missing and states `nodata:null` — `missing()` reads NaN as missing whatever the
        band declares, so not one cell changes its verdict.
        ⚠ WITH NO js/gis-units.js PUBLISHED nothing is refused and nothing is converted: this kernel
-       boots with no window at all (tests/r735), and a build without the unit module is one that
+       boots with no window at all (tests/geo-gis-datasets-checks.test.mjs (#R735)), and a build without the unit module is one that
        cannot answer the question rather than one where the answer is 「合っている」. */
     function commensurate(A, B) {
       const U = unitKernel();
@@ -1423,14 +1423,14 @@ export function makeGisRaster() {
        NOT AGREE ABOUT WHO OWNS THE LOOP. In the worker the loop belongs to the job — there is no
        frame to yield to and no signal to read, the whole thread is the unit of cancellation. On this
        thread the loop belongs to `paced`, which is what makes the walk let go between two pixels and
-       report `done`/`total` in PIXELS (#R756, and tests/r756 ② measures both numbers). So the job
+       report `done`/`total` in PIXELS (#R756, and tests/geo-gis-cancellation-checks.test.mjs #R756 ② measures both numbers). So the job
        hands its rule out to a runner that owns its own pacing, and `diffHere` below walks with THIS
        function rather than with a second one. The door answers a function, which is not structured-
        cloneable — a worker asked for it would report `result-not-transferable`, by name — and no
        caller sends it there: it is the main thread's door into the job, and `diff` is its only user.
 
        ⚠ THE MISSING RULE IS `missing()`'s, NOT A SECOND ONE. The text below cannot call it (see the
-       contract above), so tests/r759 ① runs both over the same values — NaN, ±Infinity, the declared
+       contract above), so #R759 ① (旧 tests/r759-*、tests/atlas-gis-checks.test.mjs と tests/geo-gis-cancellation-checks.test.mjs へ統合) runs both over the same values — NaN, ±Infinity, the declared
        sentinel, a grid with no sentinel — and fails if they classify one pixel differently. An
        assertion in a comment is what would rot; a measurement is what does not. */
     function gridDiffJob(p, ctx) {
@@ -1485,7 +1485,7 @@ export function makeGisRaster() {
        `window.*` for the things it ASKS QUESTIONS OF (a radius, a point-in-polygon verdict); a second
        thread is not a question, it is a RUNNER the caller chooses for a particular call, and a kernel
        that reached for `window.IntMapGisWorker` itself would decide for every caller at once and
-       would stop being the DOM-free module #R575 requires (tests/r735 boots it with no window at
+       would stop being the DOM-free module #R575 requires (tests/geo-gis-datasets-checks.test.mjs (#R735) boots it with no window at
        all). So the door is `opts.worker`, and a caller that hands none gets exactly the walk it got
        before this round — same arithmetic, same thread, byte for byte. */
     /* ⚠ THREE ANSWERS, NOT TWO: no door was offered (null — nothing to report, and the result keeps

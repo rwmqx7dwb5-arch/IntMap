@@ -31,7 +31,7 @@
  *  can be in flight while the panel is idle. `beginReroute()` hands out an id; `acceptReroute(id)`
  *  is false for every id but the newest.
  *
- *  Pure: no DOM, no renderer, no fetch, no `navigator`. Verified in Node (tests/r347-checks.test.mjs).
+ *  Pure: no DOM, no renderer, no fetch, no `navigator`. Verified in Node (tests/geo-navigation-checks.test.mjs (#R347)).
  * ==========================================================================*/
 window.IntMapNavStore = (function () {
   'use strict';

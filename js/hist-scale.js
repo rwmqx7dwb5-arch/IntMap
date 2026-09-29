@@ -17,7 +17,7 @@
  *    · WHICH YEAR the reader actually asked for (`rail` → slider position ⇄ year).
  *  Get any of the three wrong by a little and the map is confidently wrong about
  *  a century, silently, in a way no screenshot shows. They are here so
- *  tests/r604-checks.test.mjs can EVALUATE them (#R505: a check that reads source
+ *  tests/history-chronos-clock-checks.test.mjs (#R604) can EVALUATE them (#R505: a check that reads source
  *  cannot see what a function returns) rather than re-implement them, which would
  *  be a second copy of the rule and therefore a second answer.
  *
@@ -428,7 +428,7 @@ window.IntMapHistScale = (function () {
      ARGUED: sweeping all 1,001 positions and asking which snapshot each one lands
      on reaches ALL 53. A rail can be beautifully even and still leave a snapshot
      with no position that selects it, which for a round about coverage is the whole
-     game. tests/r679-chronos-deep-time-checks.test.mjs asserts that, not the shape.
+     game. tests/history-chronos-clock-checks.test.mjs (#R679) asserts that, not the shape.
      ⚠ MORE RAIL WHERE THERE IS MORE TO SEE, and upstreams own feature counts say
      that is the right direction: 157 features in bc123000, 138 in bc3000, 163 in
      bc1000, 233 in bc100, 442 in bc1 (all fetched and counted 2026-09-10).

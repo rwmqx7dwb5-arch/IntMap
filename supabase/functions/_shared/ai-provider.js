@@ -42,7 +42,7 @@ import { makeLimiter, restRpcClient } from "./rate-limit.js";
    as before — this table is only what answers when both are unset.
 
    (#R736) OpenAI = GPT-5.6 Terra, on the user's instruction, for every reader and the developer
-   account. The AI_MODEL secret is set to the same id (2026-09-15); tests/r722 ⑦ holds this constant
+   account. The AI_MODEL secret is set to the same id (2026-09-15); tests/atlas-ai-proxy-models-checks.test.mjs #R722 ⑦ holds this constant
    and Architecture.md to each other, and atlas-native-tools ⑦ holds it to ai-proxy's deploy header.
    (edge-spend-and-models) The other two rows used to be ai-proxy's alone (gemini-3.5-flash,
    claude-3-5-haiku-latest) while the four background functions spelled older ids. Anthropic's row is

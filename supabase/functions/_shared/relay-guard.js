@@ -51,7 +51,7 @@ export function corsFor(extraAllowHeaders) {
    a period with no data today will not gain data by being asked again.
    ⚠ A RELAY THAT USES THIS EXPOSES THE HEADER ITSELF, in its own CORS object — a custom response
    header is invisible to cross-origin script unless exposed, and corsFor() deliberately exposes
-   nothing (tests/r468-checks ③: each relay names what it publishes). */
+   nothing (tests/backend-gdelt-relay-checks.test.mjs #R468 ③: each relay names what it publishes). */
 export const NO_DATA_HEADER = "x-intmap-no-data";
 export function noData(cors, upstream, cacheControl) {
   const u = upstream || {};

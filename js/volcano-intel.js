@@ -99,7 +99,7 @@ window.IntMapModules.volcanoIntel=function(HOST){
      JMA names its unit in Japanese and gives it a JMA volcano code; nothing in either feed carries a
      GVP number. This table is the join, keyed on JMA's own name because the name is what JMA prints
      and what a Japanese reader recognises. Every right-hand value was checked against the 105 GVP
-     entries whose Country is Japan (data/volcanoes_gvp.json); tests/r353-checks.test.mjs re-checks
+     entries whose Country is Japan (data/volcanoes_gvp.json); tests/hazard-volcano-checks.test.mjs (#R353) re-checks
      all of them on every commit, so a catalog revision that retires a number fails the build rather
      than silently dropping a country's alert levels.
      ⚠ MANY-TO-ONE IS CORRECT HERE. 桜島 and 若尊 are both inside GVP's Aira; 樽前山 and 恵庭岳 are both
@@ -154,7 +154,7 @@ window.IntMapModules.volcanoIntel=function(HOST){
 
      ⚠ THEY ARE CLOSED SETS, WHICH IS WHY THIS IS TRANSLATABLE AT ALL. Measured against the shipped
      files: 27 volcano types, 10 rocks, 10 tectonic settings, 7 landforms, 1 epoch, 5 inclusion
-     bases, 25 dating methods, 19 regions and 116 subregions. `tests/r395-checks.test.mjs` derives
+     bases, 25 dating methods, 19 regions and 116 subregions. `tests/volcano-card-checks.test.mjs (#R395)` derives
      that requirement FROM data/volcanoes_gvp.json and data/volcano-detail.json.gz rather than from a
      list somebody maintains here, so a Smithsonian catalog revision that introduces a 28th type
      fails the build instead of silently printing English (#R335's rule: a hand-kept table cannot say

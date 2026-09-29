@@ -102,7 +102,7 @@ window.IntMapModules.terrainWater=function(HOST){
        ⚠ (#R265) THE CHÉZY-LIKE BULK SPEED FACTOR IS GONE. `v = K·√S` with K = 40 was a number with
        no source, and it was a DIFFERENT friction law from the one the grid runs on. Both halves use
        Manning at js/water-dynamics.js's n now, and (#R267) the model itself is that one solver.
-       ⚠⚠ THE OLD NAME IS DELIBERATELY NOT WRITTEN HERE. tests/r265 ⑥ asserts the identifier is gone
+       ⚠⚠ THE OLD NAME IS DELIBERATELY NOT WRITTEN HERE. tests/terrain-water-checks.test.mjs #R265 ⑥ asserts the identifier is gone
        from this file, and a specimen of it in prose is an occurrence — [[intmap-recurring-lessons]]
        «自分の検査が自分のコメントに当たる», which this project has now paid for nine times.
        ⚠⚠⚠ (#R277) AND IT IS `pourRate`. This used to be a SECOND state (`flowM3s`) holding the
@@ -272,7 +272,7 @@ window.IntMapModules.terrainWater=function(HOST){
          What was left on screen was a dashed box with no explanation attached to it, which is the
          report. The boundary is still reported in words (the panel's cell size and grid dimensions),
          and the rebuild still happens; only the unexplained object is gone.
-         ⚠ Asserted as an ABSENCE in tests/r187-checks and tests/r186.spec so it cannot return by
+         ⚠ Asserted as an ABSENCE in tests/layer-globe-rendering-checks.test.mjs (#R187) and tests/shell-sky-space-checks.test.mjs (#R186).spec so it cannot return by
          accident — the same way #R187's deleted guide line is pinned. */
       /* ══ (#R187) THE WATER GOES THERE — IT IS NOT A LINE POINTING AT WHERE THE WATER WOULD GO ═════
          「（追記：一本の補助線はいらない。余計な機能を追加するな。）」
@@ -824,7 +824,7 @@ window.IntMapModules.terrainWater=function(HOST){
         cells.sort((a,b)=>surf[a]-surf[b]);
         /* ⚠ (#R186) A SINGLE CELL 40 cm DEEP IS NOT A 湛水域. Raising the grid from 256 to 384 cells
            made every one-cell dip in the DEM's own roughness qualify as a depression — caught by
-           tests/r176 «flat ground has no basin», which measured a 1-cell "basin" of 993 m³ and
+           tests/sim-tools-wiring-checks.test.mjs (#R176) «flat ground has no basin», which measured a 1-cell "basin" of 993 m³ and
            0.43 m on ground that is flat. Nothing is lost by declining to register these: a cell with
            no lower neighbour still routes through the flood's own `parent` link, which is what that
            link is for. A pond is either WIDE (three cells or more) or DEEP (a metre or more). */
@@ -1715,7 +1715,7 @@ window.IntMapModules.terrainWater=function(HOST){
        simulation's, so its controls belong to the panel and not to a pointer mode: the footer
        carries the transport, the speed and the elapsed clock in every mode.
        ⚠ Every class name the handlers bind to is unchanged, and `.tw-foot` is still a SIBLING of
-       `.tw-body` closed in the order it is opened (tests/r255 asserts its parent is the panel — the
+       `.tw-body` closed in the order it is opened (tests/hazard-terrain-water-checks.test.mjs (#R255) asserts its parent is the panel — the
        one unbalanced `</div>` that broke #R245's pinned footer). */
     /* ══ ⚠⚠⚠ (#R275) THIS PANEL IS A LEGEND-SIZED BOX, AND IT WAS NOT SIZED LIKE ONE ═════════
        「地形編集・水流で地形のポップアップのUI、他の凡例やポップアップに比べて内部要素のサイズが大きすぎる。」
@@ -1940,7 +1940,7 @@ window.IntMapModules.terrainWater=function(HOST){
            ⚠ (#R245) THE DOM PARENTAGE IS THE THING TO GET RIGHT, NOT THE CSS. That round's pinned
            footer failed on ONE unbalanced `</div>` — `innerHTML` accepts it silently and the browser
            re-parents the footer inside the scroller, where `position:sticky` is a no-op. Body and
-           footer are siblings here, closed in the order they are opened, and tests/r255 asserts that
+           footer are siblings here, closed in the order they are opened, and tests/hazard-terrain-water-checks.test.mjs (#R255) asserts that
            `.tw-foot`'s parent is the panel itself. */
         +'<div class="tw-body" style="padding:'+TW_PAD+';display:flex;flex-direction:column;gap:'+TW_GAP+';flex:1 1 auto;min-height:0;overflow-y:auto;">'
         /* ① whatever the pinned tool above is set by */

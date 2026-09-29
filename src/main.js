@@ -9,7 +9,7 @@
  *  `window` / IM_HOST — the discipline the #R162–#R169 splits established. A module's top-level
  *  `const`/`function` is module-PRIVATE where a classic script's is global, so having none of either is
  *  exactly the property that makes this conversion incapable of changing a single name resolution.
- *  tests/r175-checks.test.mjs re-runs that sweep on every commit, so it cannot quietly stop being true.
+ *  tests/layer-boot-graph-checks.test.mjs (#R175) re-runs that sweep on every commit, so it cannot quietly stop being true.
  *
  *  ORDER IS LOAD-BEARING — several files call factories an earlier file registered on
  *  window.IntMapModules — and the same test pins this list against index.html's own module-check list.
@@ -49,14 +49,14 @@ import '../js/client-error-report.js';
 import '../js/mem-budget.js';   /* (#R669) …and, before anything that decodes an elevation tile, the ONE owner of how many of them this device may hold. Five stores kept five hand-written ceilings for the same 262,144-byte tile and four of them never asked what device they were on (about 600 MB authorised on a phone), and it is also where 「携帯か」 is answered for the thirty-nine cost decisions that used to ask the viewport width. No DOM and no `window`, so the photo-search worker imports the same file and the two cannot disagree. */
 /* (#R479) CARTO's key, the two tile-URL builders and the basemap credit. Anywhere before
    js/app-body.js works (it builds tile URLs at map setup); the first three slots and the last one
-   are pinned by tests/r175-checks, so it sits here among the feature modules. */
+   are pinned by tests/layer-boot-graph-checks.test.mjs (#R175), so it sits here among the feature modules. */
 import '../js/carto-basemap.js';
 import '../js/historical-basemap.js';
 /* (#R183) The one guarded weather/UV client, imported before anything that could ask it for a
    number. js/wx-source.js publishes window.IntMapWx synchronously (no factory), so it costs nothing
    here and guarantees the widget board, the point-weather popup and every other reader share one
    circuit breaker rather than each re-hammering a dead quota.
-   It sits AFTER newsgeo deliberately: tests/r175-checks pins newsgeo as the first feature module,
+   It sits AFTER newsgeo deliberately: tests/layer-boot-graph-checks.test.mjs (#R175) pins newsgeo as the first feature module,
    and nothing about this file needs to precede it — its consumers all call it lazily. */
 import '../js/wx-source.js';
 /* (a11y-shared-dialog) the ONE dialog registry and the ONE «Enter/Space presses a role=button» listener
@@ -67,7 +67,7 @@ import '../js/nominatim-gate.js';   /* (#R489) …and, for the same reason one g
 import '../js/overpass.js';   /* …and ONE Overpass client with a clock (window.IntMapOverpass for the classic-shaped callers) — js/overpass.js */
 /* (#R183) …and the pure "how close should the camera go for THIS kind of place" decision, which
    js/search-geocode.js consults from gotoPlace. Its own file because that factory's body may
-   contain only declarations (tests/r169-checks #4) and because being map-free is what lets the
+   contain only declarations (tests/engine-app-shell-split-checks.test.mjs (#R169) #4) and because being map-free is what lets the
    whole table be tested without a browser. */
 import '../js/place-framing.js';
 /* (#R426) …and the other half of that decision, which had been folded into js/countries-ui.js as a
@@ -94,7 +94,7 @@ import '../js/compass.js';
    is strictly earlier than the closure it used to live in. See js/chronos.js. */
 import '../js/chronos.js';
 import '../js/hist-scale.js';
-import '../js/ohm-rings.js';   /* (#R604) …and the deep-time ARITHMETIC the clock and the Chronos panel both read: decimal years, the OpenHistoricalMap date filter, the year rail. No DOM, no map, no clock, so tests/r604-checks can evaluate it — which is the whole reason it is not three helpers inside its two readers (#R570). (#R669) js/ohm-rings.js rides it for the same reason: it is the ONE owner of «an OpenHistoricalMap relation, as a polygon» — the click highlight assembles upstream geometry with it and scripts/build-hist-admin1.mjs evaluates the same file rather than carrying a second copy. */
+import '../js/ohm-rings.js';   /* (#R604) …and the deep-time ARITHMETIC the clock and the Chronos panel both read: decimal years, the OpenHistoricalMap date filter, the year rail. No DOM, no map, no clock, so tests/history-chronos-clock-checks.test.mjs (#R604) can evaluate it — which is the whole reason it is not three helpers inside its two readers (#R570). (#R669) js/ohm-rings.js rides it for the same reason: it is the ONE owner of «an OpenHistoricalMap relation, as a polygon» — the click highlight assembles upstream geometry with it and scripts/build-hist-admin1.mjs evaluates the same file rather than carrying a second copy. */
 import '../js/layer-home.js';   /* (#R313) the SET of layers allowed to move the camera on a toggle — CONSTITUTION §3's one exception, and the one table that holds it */
 /* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
    「今後IntMapの設定言語を追加するのが、1発で終わるように。」
@@ -185,7 +185,7 @@ import '../js/river-course.js';
 /* (#R218) the streamline integrator — bilinear sampling of a lon/lat vector field, RK4 on the unit
    direction, and the evenly-spaced-seed rule. Pure arithmetic in its own file for the same reason as
    the line above: js/ocean-currents.js is its only caller today, and a numerical method that decides
-   what the map draws must be runnable in a test without a renderer (tests/r218-checks). */
+   what the map draws must be runnable in a test without a renderer (tests/hazard-other-geometry-kernel-checks.test.mjs (#R218)). */
 import '../js/streamline.js';
 import '../js/map-ui.js';
 import '../js/map-tools.js';
@@ -343,7 +343,7 @@ import '../js/night-side.js';
 /* (#R197) THE SPACE EXPLORER, in two files for the two different kinds of thing it is.
    js/ephemeris.js is arithmetic — the JPL approximate elements, the truncated ELP-2000/82 Moon and
    the IAU rotational elements. No DOM, no renderer, no app state, so it is verified in Node
-   (tests/r197-space.test.mjs) against an independent solar series, against Kepler's third law, and
+   (tests/space-ephemeris-checks.test.mjs (#R197)) against an independent solar series, against Kepler's third law, and
    against the Moon's own libration.
    js/space.js is the view: its own WebGL sphere renderer, the body list, the clock and the two
    scales. It registers a factory and allocates NOTHING — no context, no texture, no star catalogue —
@@ -365,7 +365,7 @@ import '../js/space-events.js';
 import '../js/space-bodies.js';
 /* (#R219) the distance ladder out of the solar system — published radii from the Kuiper cliff to the
    particle horizon, so «zoom out past the planets» has a measured object on every step instead of an
-   empty claim. Pure data + arithmetic, verified in Node (tests/r219-checks). */
+   empty claim. Pure data + arithmetic, verified in Node (tests/engine-space-checks.test.mjs (#R219)). */
 import '../js/space-cosmos.js';
 import '../js/space.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
@@ -405,7 +405,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
   'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'outbreaks', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule; the line ceiling was retired in #R795); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
+  'oceanCurrents', 'outbreaks', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule; the line ceiling was retired in #R795); why, in DEV-NOTES #R408. tests/shell-app-body-modules-checks.test.mjs #R408 ④ derives the comparison now, so a fifth cannot sit here unread. */
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These files are not in the import list above: they are fetched by js/lazy-modules.js the

@@ -26,7 +26,7 @@
       "lang": "jp",
       "text": "東京から大阪までの鉄道ルートを引いて、所要時間と距離を教えて。",
       "sendable": true,
-      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §2 (and tests/r802-atlas-50-eval-checks.test.mjs ①)", "text": "verbatim" },
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §2 (and tests/atlas-console-eval-checks.test.mjs #R802 ①)", "text": "verbatim" },
       "recordedDefect": { "operations": 0, "findCapability": 8, "ms": 45000, "stopped": "step_budget" },
       "expect": {
         "reach": ["routing.route"],
@@ -57,7 +57,7 @@
       "lang": "jp",
       "text": "東京の今日の天気と、今後3日間の予報を教えて。地図にも出して。",
       "sendable": true,
-      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §2 (and tests/r802-atlas-50-eval-checks.test.mjs ①)", "text": "verbatim" },
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §2 (and tests/atlas-console-eval-checks.test.mjs #R802 ①)", "text": "verbatim" },
       "recordedDefect": { "operations": 0, "note": "data.weather never reached; temperature and precipitation layers painted, then 「数値を確認できませんでした」" },
       "expect": {
         "reach": ["data.weather"],
@@ -138,7 +138,7 @@
       "lang": "en",
       "text": "Show the top 10 countries by GDP per capita as a choropleth, and tell me which of them are NOT in the top 10 by total GDP.",
       "sendable": true,
-      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §8 (and tests/r802-atlas-50-eval-checks.test.mjs ⑧)", "text": "verbatim" },
+      "source": { "round": "R802", "where": "DEV-NOTES.md R802 §8 (and tests/atlas-console-eval-checks.test.mjs #R802 ⑧)", "text": "verbatim" },
       "recordedDefect": { "cut": true, "reply": "I'm comparing the two rankings now.", "note": "both tables and the choropleth were drawn; the asked comparison was never stated" },
       "expect": {
         "requireReply": true,
@@ -156,7 +156,7 @@
       "lang": "jp",
       "text": "日本の令制国を1750年の地図に描いて",
       "sendable": true,
-      "source": { "round": "R802", "where": "tests/r802-atlas-50-eval-checks.test.mjs ④ (DEV-NOTES.md R802 §3 names the turn as 「令制国 1750 年」)", "text": "quoted in the round's check" },
+      "source": { "round": "R802", "where": "tests/atlas-console-eval-checks.test.mjs #R802 ④ (DEV-NOTES.md R802 §3 names the turn as 「令制国 1750 年」)", "text": "quoted in the round's check" },
       "recordedDefect": { "capability": "research.situationMap", "calls": 7, "ms": 556000, "note": "ok and not_rendered returned ALTERNATELY for the same subject; the last operation cleared every pin" },
       "expect": {},
       "unset": {
@@ -168,7 +168,7 @@
       "lang": "jp",
       "text": "1914年のヨーロッパの国境",
       "sendable": true,
-      "source": { "round": "R802", "where": "tests/r802-atlas-50-eval-checks.test.mjs ④ (DEV-NOTES.md R802 §3 names the turn as 「1914 年のヨーロッパ」)", "text": "quoted in the round's check" },
+      "source": { "round": "R802", "where": "tests/atlas-console-eval-checks.test.mjs #R802 ④ (DEV-NOTES.md R802 §3 names the turn as 「1914 年のヨーロッパ」)", "text": "quoted in the round's check" },
       "recordedDefect": { "capability": "research.situationMap", "calls": 6, "ms": 415000 },
       "expect": {},
       "unset": {
@@ -180,7 +180,7 @@
       "lang": "en",
       "text": "Draw the 200 nautical mile EEZ around Iceland",
       "sendable": true,
-      "source": { "round": "R802", "where": "tests/r802-atlas-50-eval-checks.test.mjs ④ (DEV-NOTES.md R802 §3)", "text": "quoted in the round's check" },
+      "source": { "round": "R802", "where": "tests/atlas-console-eval-checks.test.mjs #R802 ④ (DEV-NOTES.md R802 §3)", "text": "quoted in the round's check" },
       "recordedDefect": { "capability": "research.analyze", "calls": 5, "ms": 411000 },
       "expect": {},
       "unset": {

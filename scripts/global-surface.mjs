@@ -9,7 +9,7 @@
  *                 683 names in all).
  *  Neither is a line count. A feature that moves out of the shell but keeps every HOST getter it
  *  read and publishes one more window global has not become independent — it has moved. This is
- *  the instrument that says so, and it replaces the line ceilings tests/r168 #8 (and twenty copies)
+ *  the instrument that says so, and it replaces the line ceilings tests/news-module-split-checks.test.mjs (#R168) #8 (and twenty copies)
  *  held from #R168 to #R795: those measured the shell's LENGTH and produced folded import lines;
  *  this measures the shell's REACH.
  *

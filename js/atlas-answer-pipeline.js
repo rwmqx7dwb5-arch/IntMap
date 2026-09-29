@@ -47,7 +47,7 @@
  *  prose. `degrade` was not enforcing that. It was only deleting text.
  *
  *  ⚠ NOTHING HERE TOUCHES THE DOM AND NOTHING HERE CALLS THE NETWORK DIRECTLY. `ask` is injected,
- *  so tests/r472-checks.test.mjs runs the whole pipeline against a scripted model with no browser
+ *  so tests/atlas-answer-audit-checks.test.mjs (#R472) runs the whole pipeline against a scripted model with no browser
  *  and no key.
  * ==========================================================================*/
 

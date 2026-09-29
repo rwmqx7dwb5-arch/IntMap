@@ -11,7 +11,7 @@
  *
  *  Everything the block used to read from the console's closure arrives through `CTX` (and the app's
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
- *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
+ *  tests/atlas-console-kernel-checks.test.mjs (#R199) re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 export function makeAtlasControls(HOST, CTX) {
@@ -391,7 +391,7 @@ export function makeAtlasControls(HOST, CTX) {
      single thing docs/RADIATION.md forbids, so the observations arrive under their own heading with
      their own caveat, never folded into the model's numbers.
      ⚠ IT LIVES HERE, NOT IN THE DISPATCH, because js/atlas-console.js is shrink-only at 4,910 lines
-     (tests/r419-checks ⑨d, tests/r511-checks ⑨) and #R199's rule is that the kernel shrinks by
+     (tests/atlas-turn-checks.test.mjs #R419 ⑨d, tests/atlas-agent-loop-checks.test.mjs #R511 ⑨) and #R199's rule is that the kernel shrinks by
      MOVING. Returns a STRING and touches no DOM, so the caller stays one line. */
   async function radiationChain(ll){
     let out='';

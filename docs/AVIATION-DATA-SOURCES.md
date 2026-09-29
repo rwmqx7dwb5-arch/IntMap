@@ -108,7 +108,7 @@ GET https://api.airplanes.live/v2/point/50.040/8.570/250
 - 正式な飛行計画（airway / waypoint）
 
 ⇒ `js/aviation-model.js` の `PROVIDER_FIELDS` は、どの provider についても
-`route:false` / `schedule:false` を宣言している。`tests/r341-checks.test.mjs ⑧` が
+`route:false` / `schedule:false` を宣言している。`tests/backend-aviation-checks.test.mjs #R341 ⑧` が
 **全 provider について**それを検査するので、将来 provider を足しても
 「持っていない情報を持っているふりをする」ことはできない。
 
@@ -137,4 +137,4 @@ GET https://api.airplanes.live/v2/point/50.040/8.570/250
    `providerName()` に足す。鍵が要るなら**環境変数だけ**から読む。
 3. **この文書の §1 の表に、実測値と実測日を書いて足す。**
 4. 利用規約・ライセンス・出典表記を `js/locales/pages.*.js`（9言語）に反映する。
-5. `tests/r341-checks.test.mjs` に正規化の検査を足す。
+5. `tests/backend-aviation-checks.test.mjs` (#R341) に正規化の検査を足す。

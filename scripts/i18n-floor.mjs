@@ -13,7 +13,7 @@
  *  The alternative — a check that greps the audit for the words «lost» and «floor» — is #R488
  *  exactly: it would pin the SPELLING of a rule and stay green the day the rule stops running
  *  (#R505: source-reading checks cannot see evaluation). So the comparison is a pure function with
- *  no I/O, the gate calls it on what it measured, and tests/r700-lang-policy-checks.test.mjs calls
+ *  no I/O, the gate calls it on what it measured, and tests/process-language-policy-checks.test.mjs (#R700) calls
  *  it on synthetic pairs. One rule, two callers, no copy.
  * ==========================================================================*/
 

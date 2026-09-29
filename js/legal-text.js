@@ -32,7 +32,7 @@ window.IntMapLegalText = (function () {
      not from Open-Meteo's own CDN any more — that host was retired upstream and its successor refuses
      every Referer but Open-Meteo's own. Same keyless range requests, same CC BY 4.0, still no
      coordinates and nothing about the user; what changed is WHO SERVES THE BYTES, and a policy that
-     names the recipient has to name the real one. tests/r514-checks.test.mjs ties the hostname in
+     names the recipient has to name the real one. tests/weather-models-checks.test.mjs (#R514) ties the hostname in
      both languages to the one js/wx-models.js actually reads from. */
   /* (#R533) Privacy §4: THE COMPANY-LOGO THIRD PARTY IS GONE, AND WHAT REPLACED IT SENDS LESS.
      Clearbit's Logo API shut down 2025-12-08 (logo.clearbit.com resolves on no public resolver;

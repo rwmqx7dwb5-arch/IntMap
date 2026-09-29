@@ -21,7 +21,7 @@
  *  travel time as a radius is the classic error and would put the horizon 3.4× too close.
  *
  *  ⚠ THE RADII ARE THE DATA. Everything else — how a shell is drawn, when it is labelled — belongs to
- *  the caller. This file is pure arithmetic so `tests/r219-checks` can run it in Node.
+ *  the caller. This file is pure arithmetic so `tests/engine-space-checks.test.mjs (#R219)` can run it in Node.
  * ==========================================================================*/
 (function (root) {
   'use strict';

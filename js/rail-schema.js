@@ -15,7 +15,7 @@
  *  before it is ever asked to produce a number.
  * ==========================================================================*/
 /* ⚠ ONE EXPORT, A NAMESPACE — the shape js/war-geom.js uses and for the same reason. Every name below
-   is needed by scripts/rail/*.mjs and only a third of them by the browser, and tests/r175 ③ requires
+   is needed by scripts/rail/*.mjs and only a third of them by the browser, and tests/layer-boot-graph-checks.test.mjs #R175 ③ requires
    that every export of a js/ module be imported BY NAME by another js/ module: twenty individually
    exported helpers would be twenty names it calls dead. Wrapping them keeps the build and the layer
    reading one file — which is the whole point of the file — without making the module gate lie. */

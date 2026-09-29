@@ -8,7 +8,7 @@
  *  renderer. The header inside the first block is that story; it moved here with the code.
  *
  *  ⚠ WHY IT IS ITS OWN FILE NOW. Not tidiness: js/geo-engine.js is part of the SHELL, and
- *  tests/r168-checks.test.mjs holds the shell under a line ceiling that only ever goes DOWN. #R322
+ *  tests/news-module-split-checks.test.mjs (#R168) holds the shell under a line ceiling that only ever goes DOWN. #R322
  *  added the renderer-command census to the adapter and put the shell over. That check states the
  *  remedy in its own words — 「a subject moves out instead」 — and names the precedents: #R195 took
  *  the satellite protocol out (259 lines), #R196 the antimeridian geodesy (111) and the tile
@@ -21,7 +21,7 @@
  *  itself whether a camera is reachable (`maplibregl.LngLat` + `applyConstrain`) — it stays in the
  *  adapter and is passed in here as the `guard` argument, exactly as it was before.
  * ==========================================================================*/
-/* ⚠ ONE EXPORTED DECLARATION, AND EVERYTHING ELSE INSIDE IT. tests/r175-checks ③ fails an */
+/* ⚠ ONE EXPORTED DECLARATION, AND EVERYTHING ELSE INSIDE IT. tests/layer-boot-graph-checks.test.mjs #R175 ③ fails an */
 /*    unexported top-level declaration in js/ (it would have been a global in a classic script) and */
 /*    equally fails an export nothing imports by name. The projection helpers here — gmX, glatOf, */
 /*    grotY, GEO_YLO … — are neither: they are private to this geometry. A factory answers both, */

@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  One job: turn a significant wave height in metres into a colour, byte for byte the same colour
  *  Windy shows for that height. Nothing here fetches, draws, or knows what a map is, so the claim
- *  「同一の色」 is checkable by `node --test` without a browser — see tests/r577-checks.test.mjs ①.
+ *  「同一の色」 is checkable by `node --test` without a browser — see tests/layer-waves-checks.test.mjs #R577 ①.
  *
  *  ── WHY THE STOPS ARE THESE NUMBERS ──────────────────────────────────────────────────────────────
  *  MEASURED 2026-09-09 by opening windy.com (bundle v51.2.1) and reading `W.colors.waves`, which is

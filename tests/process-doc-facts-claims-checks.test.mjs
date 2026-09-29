@@ -465,7 +465,7 @@ test('#R699 ⑧ every rule that can fail also reports itself on a green run', ()
   assert.ok(fails.size >= 20, `only ${fails.size} rule ids were read out of the gate — the derivation is not reaching it`);
   const silent = [...fails].filter((r) => !oks.has(r)).sort();
   assert.deepEqual(silent, [],
-    `these rules can fail but never say they ran, so tests/r274-checks ① cannot see them: ${silent.join(', ')}`);
+    `these rules can fail but never say they ran, so #R274 ① (tests/process-doc-facts-sweep-checks.test.mjs) cannot see them: ${silent.join(', ')}`);
 });
 
 /* ── ⑨ the same shape in the sibling rules, and the four claims that were wrong ──────────── */

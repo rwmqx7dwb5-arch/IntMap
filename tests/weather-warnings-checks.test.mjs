@@ -680,7 +680,7 @@ test('R293 ⑤ boundary sets are cached, gated, and ADM2 is earned rather than a
   assert.match(s, /const GB_MAX=2;/, 'and the gate is one number');
   assert.equal((s.match(/gbInflight\+\+/g) || []).length, 2, 'both callers take from the same budget');
   /* ③ boundaries are cached — they are not news */
-  assert.match(s, /const BND_CACHE='intmap-bnd-v1';/);
+  assert.match(s, /const BND_CACHE='intmap-page-bnd-v1';/);
   assert.match(s, /async function bndJSON\(u\)\{ const hit=await bndCached\(u\); if\(hit\) return hit;/);
   /* ⚠ (#R297) the Eurostat urls are built from a base constant now (a finer generalisation was
      added for 「境界線解像度が低すぎる」, and two literals would have been two places to change), so

@@ -8,7 +8,7 @@
  *  translation of those strings — for the overwhelming majority of them it is the SAME sentence in a
  *  different orthography, and a hand-made second copy would start drifting from the first the day
  *  after it shipped. So the Simplified file is DERIVED, the derivation is this file, and
- *  tests/r224-checks.test.mjs re-runs it and fails if the committed output is not what it produces.
+ *  tests/perf-startup-and-cache-checks.test.mjs (#R224) re-runs it and fails if the committed output is not what it produces.
  *  A string fixed in ui.zh.js is therefore fixed in both, or the build says so.
  *
  *  ⚠ BUT A CHARACTER MAP ALONE IS NOT SIMPLIFIED CHINESE, which is why 「語彙の置換」 was the answer:
@@ -224,7 +224,7 @@ export const WORDS = [
    Taiwanese TERMS into mainland ones — and the WORD table below has already done exactly that, in
    Traditional characters. Running both turned 檔案 into 文件 (the table, correctly) and then 文件
    into 文档 (OpenCC, reading our mainland word as a Taiwanese one). MEASURED: 「十年時光回溯檔案」
-   came out as 「十年时光回溯文档」, and tests/r224 ④ caught it. One layer owns the vocabulary, the
+   came out as 「十年时光回溯文档」, and tests/i18n-reader-shapes-checks.test.mjs #R224 ④ caught it. One layer owns the vocabulary, the
    other owns the orthography.
 
    ⚠ THE WORD TABLE ABOVE STILL RUNS FIRST, AND STILL WINS. Those are this project's own choices
@@ -259,7 +259,7 @@ const HEAD = `/* ===============================================================
  *  table first (its own reviewed choices), then OpenCC twp→cn for the orthography itself (#R251 —
  *  the 440-pair map it replaced covered 439 of the 1,529 characters in use). Fix a string in
  *  ui.zh.js and re-run the script; editing
- *  this file directly is undone by the next run, and tests/r224-checks.test.mjs fails if the two
+ *  this file directly is undone by the next run, and tests/i18n-reader-shapes-checks.test.mjs (#R224 ④) fails if the two
  *  ever disagree.
  *
  *      node scripts/zh-hans.mjs
@@ -280,7 +280,7 @@ const HEAD = `/* ===============================================================
    stray lone CR of its own, from a different tool; it is NOT this script's to swallow). So the
    header adopts the body's dominant ending and the body is copied through untouched: the
    derivation introduces no terminator its source does not already use, which is the property
-   tests/r548-checks.test.mjs measures. */
+   tests/shell-i18n-audits-checks.test.mjs (#R548) measures. */
 export function build(job) {
   const src = readFileSync(resolve(ROOT, job.src), 'utf8');
   /* the body starts at the define() call — the header above replaces the source file's own */
@@ -317,9 +317,9 @@ export function build(job) {
   return normaliseEol(head, dominantEol(body)) + body;
 }
 
-/* ⚠ (#R548) THE REWRITE IS NO LONGER A TOP-LEVEL SIDE EFFECT — tests/r548-checks.test.mjs drives
+/* ⚠ (#R548) THE REWRITE IS NO LONGER A TOP-LEVEL SIDE EFFECT — tests/shell-i18n-audits-checks.test.mjs (#R548) drives
    `build()` on a synthetic CRLF source, and importing this file must not rewrite two locales to do
-   it. tests/r335 reads the tables out of the AST for its own reasons and is unaffected. */
+   it. tests/shell-i18n-locales-checks.test.mjs (#R335) reads the tables out of the AST for its own reasons and is unaffected. */
 const IS_MAIN = (() => { try { return resolve(process.argv[1] || '') === fileURLToPath(import.meta.url); } catch { return false; } })();
 
 const CHECK = process.argv.includes('--check');

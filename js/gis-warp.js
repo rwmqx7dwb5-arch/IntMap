@@ -116,7 +116,7 @@
  *  (`report.footprint.latAxis`); `opts.areaTolerance` turns that measurement into a promise.
  *
  *  ⚠ REFUSALS ARE CODES, NOT SENTENCES (docs/GIS-CORE.md §2.2) — `{ ok:false, why, detail }`, and the
- *  nine languages live at the call site. ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③), and
+ *  nine languages live at the call site. ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③), and
  *  window.* is read at CALL time, so this module loads in Node with no DOM and answers
  *  `raster-unavailable` / `crs-unavailable` by name instead of throwing.
  * ==========================================================================*/
@@ -309,7 +309,7 @@ export function makeGisWarp() {
        two owners (.agents/rules/no-ad-hoc-hardcoding.md §2-3). These take everything they need.
        ⚠ AND THEY ARE NOT A SECOND SPELLING OF THE INVERSE: `makeInverse` below calls this one, so
        the pixel coordinate this thread computes and the pixel coordinate the worker computes come
-       out of the same bytes. tests/r783 measures the two outputs byte for byte. */
+       out of the same bytes. #R783 (旧 tests/r783-*、tests/geo-gis-*-checks.test.mjs へ統合) measures the two outputs byte for byte. */
     function invAt(A, det, x, y) {
       const dx = x - A[0], dy = y - A[3];
       return [(A[5] * dx - A[2] * dy) / det, (-A[4] * dx + A[1] * dy) / det];
@@ -1172,7 +1172,7 @@ export function makeGisWarp() {
         /* ⚠ (#R783) THE OTHER THREAD FOUND THIS PIXEL'S POSITION, AND WITH THE SAME ARITHMETIC: the
            job ran `invAt` and `boxOf` — the very functions the arm below calls — from their own
            source text, over the same affine and the same pixel centres (js/gis-worker.js
-           `provide`). So this arm READS two numbers where the other computes them, and tests/r783
+           `provide`). So this arm READS two numbers where the other computes them, and #R783 (旧 tests/r783-*、tests/geo-gis-*-checks.test.mjs へ統合)
            measures the two grids byte for byte rather than trusting that sentence. */
         if (geom) {
           const j = k - geomBase;

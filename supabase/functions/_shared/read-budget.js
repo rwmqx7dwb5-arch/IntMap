@@ -17,7 +17,7 @@
 //  this function will ask upstream per unit time», which is what a request amplifier needs bounded;
 //  it is not a per-caller quota (that is _shared/rate-limit.js, which lives in the database).
 //
-//  The arithmetic is unchanged from #R504 and tests/r801-relay-input-checks runs it: an empty bucket
+//  The arithmetic is unchanged from #R504 and tests/hazard-other-edge-relay-input-checks.test.mjs (#R801) runs it: an empty bucket
 //  grants floor(elapsed · rate), a day of quiet still fills only `burst`, and the long-run average
 //  never exceeds `rate`.
 //

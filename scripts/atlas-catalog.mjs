@@ -71,7 +71,7 @@ export function catalogueText(lines) {
      stood inline are in js/atlas-catalog-text.js, byte for byte, each tagged with the capabilities
      it documents. The question this file asks — "is every dispatch case described to the planner?"
      — is unchanged; WHERE the description lives is not. The blocks are read as TEXT so this stays
-     synchronous and so tests/r278 ① can keep feeding it a synthetic file: a fixture with no
+     synchronous and so tests/atlas-dispatch-checks.test.mjs #R278 ① can keep feeding it a synthetic file: a fixture with no
      `_DOCS.text(` call gets nothing appended and behaves exactly as it did before.
      ⚠ The richer question — is it EXECUTABLE, OBSERVED and VERIFIED — is
      scripts/atlas-capability-audit.mjs. This one is deliberately still the narrow one. */
@@ -81,7 +81,7 @@ export function catalogueText(lines) {
      calls find_capability. The question this file asks is UNCHANGED — is every dispatch case
      described somewhere Atlas can reach it — so the corpus is SYS() plus the tool surface plus the
      blocks that surface serves. ⚠ Both additions are conditional on the real markers being present,
-     so tests/r278 ① keeps feeding it a synthetic file and keeps getting the old behaviour. */
+     so tests/atlas-dispatch-checks.test.mjs #R278 ① keeps feeding it a synthetic file and keeps getting the old behaviour. */
   let corpus = body;
   if (/_toolBlock\(/.test(body)) {
     try { corpus += '\n' + fs.readFileSync(path.join(ROOT, 'js/atlas-toolsurface.js'), 'utf8'); } catch { /* absent in a fixture */ }
@@ -123,7 +123,7 @@ export function auditLines(lines, { minCaps = 50 } = {}) {
 
 export function audit() { return auditLines(readAtlas()); }
 
-/* CLI only when run directly — tests/r278-checks.test.mjs imports the functions above. */
+/* CLI only when run directly — tests/atlas-dispatch-checks.test.mjs (#R278) imports the functions above. */
 const IS_MAIN = (() => { try { return path.resolve(process.argv[1] || '') === fileURLToPath(import.meta.url); } catch { return false; } })();
 if (IS_MAIN) main();
 

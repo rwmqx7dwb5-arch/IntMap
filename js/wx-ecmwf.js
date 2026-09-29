@@ -662,7 +662,7 @@ import './wx-models.js';
      tiles. MEASURED: 12 → 4 at the opening view.
      ⚠ THE TWO NUMBERS ARE ONE DECISION. `tile_size` here and `tileSize` on every raster source in
      js/weather.js must be the same, or the map is drawn at half or double resolution — which is why
-     this is exported as `TILE_PX` rather than written down twice (tests/r325-checks.test.mjs).
+     this is exported as `TILE_PX` rather than written down twice (tests/weather-ecmwf-streaming-checks.test.mjs (#R325)).
      ⚠ NOT 2048: a tile is an RGBA texture, so 1024 is 4 MB of GPU memory each and 2048 would be 16.
      ⚠ `tile_size` IS NOT PART OF THE STATE KEY (the SDK's `DATA_RELEVANT_PARAMS` is `['variable']`),
      so this changes what is DRAWN and nothing about what is read or cached.
@@ -1520,7 +1520,7 @@ import './wx-models.js';
   /* ══ ⚠⚠⚠ (#R664) THE TICKET BELONGS TO THE READ, NOT TO THE CALL ═══════════════════════════════
      THE FIRST SWITCH-ON OF A LAYER AFTER A PAGE LOAD FAILED — reported from production three times
      out of three for the wave layer, and reproduced here against this very module with the browser
-     and the SDK stubbed and nothing else (tests/r664-checks.test.mjs):
+     and the SDK stubbed and nothing else (tests/hazard-waves-layer-read-checks.test.mjs (#R664)):
 
          0 ms      load(wave_height) — the switch-on. `ready()` starts the 340 kB SDK download.
          300 ms    load(wave_height) — A SECOND CALL FOR THE SAME THING, from a second paint.

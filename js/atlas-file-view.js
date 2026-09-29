@@ -27,7 +27,7 @@
 
 /* ⚠ (#R773) 会話 1 本ぶんの台帳はここの主題ではない（別ファイル）。ここが通しているのは
    js/atlas-console.js に import 1 行ぶんの余白も無いから——あの中心部は shrink-only で、
-   新しい主題はファイルごと外へ出し、入口だけをまとめる（tests/r419 ⑨ / r511 / r667）。 */
+   新しい主題はファイルごと外へ出し、入口だけをまとめる（tests/atlas-turn-checks.test.mjs #R419 ⑨ / r511 / r667）。 */
 import { ATTACH_LOG } from './atlas-attach-log.js';
 export { ATTACH_LOG };
 
@@ -226,7 +226,7 @@ export const ATTACH_VIEW = (function () {
   return { render: render, asTable: asTable, prettyJson: prettyJson, cells: cells, FOLD_CHARS: FOLD_CHARS, FOLD_ROWS: FOLD_ROWS };
 })();
 
-/** ビューアの文。⚠ js/atlas-console.js は行の天井を持つ（tests/r318 ⑤ ほか）ので、主題ごと
+/** ビューアの文。⚠ js/atlas-console.js は行の天井を持つ（tests/atlas-capabilities-checks.test.mjs #R318 ⑤ ほか）ので、主題ごと
  *  こちらに置く——「この画面が何を見せているのか」を述べる文は、その画面を組むコードの隣に在る。
  *  `L` は console の 5 言語ヘルパをそのまま受け取る（訳を 2 か所に持たない）。 */
 export function attachViewStrings(L) {

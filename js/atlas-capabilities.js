@@ -333,7 +333,7 @@ export function makeAtlasCapabilities(HOST) {
          would loosen what «the reader gave me something to work on» means for every other capability
          that targets text. What refuses an argument-less call is `required:['name']` in
          js/atlas-schemas.js, enforced on what Atlas sends by js/atlas-toolsurface.js, exactly as for
-         data.coverage above (#R760). tests/r783-capability-reachable-checks.test.mjs ①/② measure
+         data.coverage above (#R760). tests/atlas-capabilities-checks.test.mjs #R783 ①/② measure
          both halves of that for all 145 rows rather than for these two. */
       /* ⚠ (#R801) WHAT LEAVES, TO WHOM: a file the reader attached in an EARLIER turn, back into
          the MODEL's next input — column 8 'explicit' (js/atlas-executor.js 4b). */
@@ -380,7 +380,7 @@ export function makeAtlasCapabilities(HOST) {
          five-disagreeing-lists failure this file exists to end. `data.layerValues` already answers
          «how many volcanoes are on screen» and these two do not overlap it: one opens the record for
          a NAMED volcano, the other narrows the catalog to a question.
-         ⚠ THESE ROWS SIT ABOVE `dialog.answer` ON PURPOSE — tests/r347-checks ㉒ reads the `lazy`
+         ⚠ THESE ROWS SIT ABOVE `dialog.answer` ON PURPOSE — tests/geo-navigation-checks.test.mjs #R347 ㉒ reads the `lazy`
          column with a regex that only matches rows ending in a comma, and the last row has none, so
          a row appended after it would never have its lazy module checked. */
       ['data.volcano',               'volcano',        'volcanoCard,volcanoInfo',                                     'data',    'panel',   'panel.volcano',          'panel',               'session', 'none',   'text',     'volcanoIntel'],
@@ -505,7 +505,7 @@ export function makeAtlasCapabilities(HOST) {
        ⚠ THE LESSON IS THE GUARD, NOT THE SPELLING. `GE().layers.list ? … : null` and
        `catch (_) { return -1 }` are both written as caution and both convert "this name is wrong"
        into a plausible reading. Every façade name below is now checked by
-       tests/r397-checks.test.mjs against the façade's own source, so a rename breaks a test instead
+       tests/atlas-console-observers-checks.test.mjs (#R397) against the façade's own source, so a rename breaks a test instead
        of blinding the verifier. */
     function visibleLayerIds() {
       var out = [];
@@ -968,7 +968,7 @@ export function makeAtlasCapabilities(HOST) {
              sample (see it above) — which is also the honest moment to take it, and it keeps this
              function SYNCHRONOUS. An earlier draft of this round made `verify` async instead and so
              changed the contract of every camera capability (flyTo, bearing, pitch, resetNorth) for a
-             fact none of them decides; twelve tests in tests/r740-isochrone-verdict-checks.test.mjs
+             fact none of them decides; twelve tests in tests/atlas-capabilities-verdict-checks.test.mjs (#R740)
              said so, and they were right.
              ⚠ THE READING MAY ONLY WEAKEN A CLAIM. `null` — an engine that cannot answer, or that
              threw — leaves the verdict exactly as it was. Nothing is ever DOWNgraded to a failure on
@@ -1969,7 +1969,7 @@ export function makeAtlasCapabilities(HOST) {
        capability those words name — out of sight below, and the turn that wanted a rail route called
        find_capability eight times and ran nothing at all.
        ⚠ THE HINT STILL SCORES. It is the only home this file has for the Korean, Russian, Spanish and
-       French spellings of «route» (tests/r318 ⑦d asks for all nine), and removing it would make those
+       French spellings of «route» (tests/atlas-capabilities-checks.test.mjs #R318 ⑦d asks for all nine), and removing it would make those
        requests match nothing — CONSTITUTION.md §5: the defect is the ORDERING, so the ordering is what
        changes. The parts are reported separately and `search` sorts by SELF first: what the request
        said about THIS capability — its own aliases, its own id, the stretch of the catalogue written
@@ -2041,7 +2041,7 @@ export function makeAtlasCapabilities(HOST) {
        says why). It is about WHAT A HINT IS EVIDENCE OF: the category. While nothing in that category
        has been named by the request, «the whole category» is the honest answer and it is returned in
        full — that is what carries 「오사카 경로」, «itinéraire vers Osaka», «маршрут до Осаки», whose
-       scripts VERB_TERMS is the only home for, and tests/r318 ⑦d and tests/r413 ⑦ hold it there. The
+       scripts VERB_TERMS is the only home for, and tests/atlas-capabilities-checks.test.mjs #R318 ⑦d and tests/atlas-geo-resolve-checks.test.mjs #R413 ⑦ hold it there. The
        moment one capability in the category IS named, the others are saying nothing about this request
        and they are not candidates. When that leaves nothing at all, find_capability falls to its
        「Nothing matched this wording … Rephrasing this search will not find more.」 — which is what
@@ -2383,7 +2383,7 @@ export function makeAtlasCapabilities(HOST) {
        ⚠ AND IT IS DERIVED. It is the table above, not a list anyone maintains. A capability added to
        the table is in the prompt on the next turn; a hand-written list would be the failure this
        file's own header describes («A list that a human must remember to update is a list that will
-       be wrong»), which is .agents/rules/no-ad-hoc-hardcoding.md §2.4. tests/r582-checks.test.mjs
+       be wrong»), which is .agents/rules/no-ad-hoc-hardcoding.md §2.4. tests/atlas-capabilities-checks.test.mjs (#R582)
        derives the expected set from the registry rather than naming it, so no capability can be
        added to IntMap without appearing here. */
     /* ⚠⚠⚠ (#R733) THE SENTENCE WAS FALSE ABOUT NINE OF ITS OWN ENTRIES, AND THE FALSEHOOD COST THE

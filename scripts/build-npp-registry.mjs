@@ -48,7 +48,7 @@
  *  world-statistics pages answer 403 behind a Cloudflare interstitial. Wikidata
  *  has no PRIS identifier property either (searched the property labels for
  *  "iaea"/"pris": nothing). So `pris` stays null until a machine-readable route
- *  exists, and the count cross-check lives in tests/r585-npp-checks.test.mjs.
+ *  exists, and the count cross-check lives in tests/radiation-plume-checks.test.mjs (#R585).
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
@@ -226,7 +226,7 @@ say('  ', reactorClasses.size, 'classes are a kind of nuclear reactor');
    Keyed by ISO 3166-1 alpha-2 because that is what a shipped record carries as
    its `country`; the map is shipped (out.officialLangs) so a consumer that meets
    the label key `uk` on a plant can tell provenance from noise, and so
-   tests/r585-npp-checks.test.mjs can check a label code against the country it
+   tests/radiation-plume-checks.test.mjs (#R585) can check a label code against the country it
    claims to come from without restating any of this. */
 const official = new Map();
 for (const b of await sparql(`SELECT DISTINCT ?iso ?code WHERE {
@@ -479,7 +479,7 @@ for (const [q, n] of unseenState) say('   ⚠ unmapped P5817 value', q, '×', n,
    No.2 — 47 such groups). Two pins at one point are one pin the reader cannot
    click, so a point carries one record. 0.001° is ~110 m, which is inside the
    footprint of a single site and far below the spacing of two distinct ones; it
-   is the same window tests/r585-npp-checks.test.mjs measures.
+   is the same window tests/radiation-plume-checks.test.mjs (#R585) measures.
 
    Nothing is deleted: the record kept is the WHOLE (a member that is P361 "part
    of" another member of the same group is a component and steps aside), then the
@@ -540,7 +540,7 @@ for (const r of plants) tally[r.status] = (tally[r.status] || 0) + 1;
 say('status:', JSON.stringify(tally));
 say('with units:', plants.filter((r) => r.units != null).length, ' with netMW:', plants.filter((r) => r.netMW != null).length,
     ' with country:', plants.filter((r) => r.country).length, ' with operator:', plants.filter((r) => r.operator).length);
-/* The census the naming block and tests/r585-npp-checks.test.mjs ⑦ are read
+/* The census the naming block and tests/radiation-plume-checks.test.mjs #R585 ⑦ are read
    against: how many sites can be NAMED in each language the product is read in,
    and how many spellings beyond those labels the ledger carries. */
 const byLang = {};
@@ -552,7 +552,7 @@ const aliases = plants.reduce((n, r) => n + ((r.alias || []).length), 0);
 say('nameable in:', Object.entries(byLang).sort((a, b) => b[1] - a[1]).map(([k, n]) => k + ' ' + n).join('  '), ' of', plants.length);
 say('aliases:', aliases, 'over', plants.filter((r) => (r.alias || []).length).length, 'sites (max',
     plants.reduce((m, r) => Math.max(m, (r.alias || []).length), 0) + ')');
-/* The census tests/r585-npp-checks.test.mjs ⑩ is read against: of the sites
+/* The census tests/radiation-plume-checks.test.mjs #R585 ⑩ is read against: of the sites
    whose country declares an official language, how many can be named in it —
    i.e. how much of the ledger holds the name the place is known by at home.
    Codes are compared by their BASE subtag, exactly as ⑩ compares them, so the

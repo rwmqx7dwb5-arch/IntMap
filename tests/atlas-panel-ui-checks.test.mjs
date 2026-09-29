@@ -19,7 +19,7 @@ const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js
 const CSS = atlasPanelCSS();
 test('R149 #5/#6 send button arrow solid black when idle; bigger stop square', () => {
   /* kept as a spelling: the stop square, the choice button and the toggle rows are markup built inside js/atlas-console.js’s closure, which needs the page */
-  assert.match(CSS, /\.atl-go\.idle\{background:#fff;box-shadow:0 1px 4px rgba\(0,0,0,0\.12\);color:#111;border-color:rgba\(0,0,0,0\.08\);\}/, 'idle icon is #111 on white (R156 added a border; active/busy are accent — see r156-checks)');
+  assert.match(CSS, /\.atl-go\.idle\{background:#fff;box-shadow:0 1px 4px rgba\(0,0,0,0\.12\);color:#111;border-color:rgba\(0,0,0,0\.08\);\}/, 'idle icon is #111 on white (R156 added a border; active/busy are accent — see the #R156 checks)');
   assert.ok(!/\.atl-go\.idle\{[^}]*rgba\(120,120,128,0\.75\)/.test(CSS), 'old faded idle colour removed');
   assert.match(html, /_GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4\.25" y="4\.25" width="15\.5" height="15\.5"/, 'stop square slightly smaller (R150 17.5→15.5)');
 });

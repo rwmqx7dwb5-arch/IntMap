@@ -126,7 +126,7 @@ try:after-delimiter:len40:hex | open | sent | （切られない）             
 ⚠ **content-type は `application/json`、bucket の `allowed_mime_types` にも json が入っている。**
 航空側の bucket は octet-stream しか許しておらず、#R504 の正直な `application/json` は
 **415 で拒否され、書き込みだけが毎回黙って失敗した**（#R505）。この2つの事実は別ファイルに住むので、
-`tests/r510` が migration と関数を突き合わせる。
+`tests/layer-ais-ships-checks.test.mjs` (#R510) が migration と関数を突き合わせる。
 ⚠ **Storage は存在しない bucket への PUT に HTTP 400 + `NoSuchBucket` を返す**（404 ではない）。
 404 だけを見る再試行は一度も発火しない。
 

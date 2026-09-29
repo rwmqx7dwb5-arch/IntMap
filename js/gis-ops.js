@@ -49,7 +49,7 @@
  *  note on ringAreaKm2 for the measurement that forced the window it reads a ring in (a polar buffer
  *  whose area came back as the rest of the planet).
  *
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③): an unexported top-level declaration in js/
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③): an unexported top-level declaration in js/
  *  would have been a global before the bundle, and this file may not reintroduce one.
  *
  *  ⚠ window.IntMapData AND window.IntMapGeodesy ARE READ AT CALL TIME, NOT IMPORTED. This module is
@@ -355,7 +355,7 @@ export function makeGisOps() {
        and never reached GG.distanceKm at all. 「Erring outward is the only direction a prefilter may
        err」 was the right rule, written by the code that broke it.
 
-       ⚠ AND NEITHER PATH COULD SEE IT. tests/r735-gis-raster-time-checks measures the indexed
+       ⚠ AND NEITHER PATH COULD SEE IT. tests/geo-gis-datasets-checks.test.mjs (#R735) measures the indexed
        source against the unindexed walk — and both of them called this one function with the same
        number. An agreement between two readers of one wrong rule is not a measurement of the rule.
 
@@ -1449,7 +1449,7 @@ export function makeGisOps() {
        build without it is slower and answers the same thing, so a missing kernel must not become a
        refusal. ⚠ The FALLBACK IS THE OLD WALK, and both paths hand the same candidate set to the same
        predicate — an index that dropped a true pair would make a count quietly smaller, which is why
-       tests/r735-gis-raster-time-checks measures the two against each other. */
+       tests/geo-gis-datasets-checks.test.mjs (#R735) measures the two against each other. */
     function candidateSource(members) {
       const IX = indexKernel();
       if (IX && typeof IX.build === 'function' && typeof IX.queryEach === 'function') {
@@ -3455,7 +3455,7 @@ export function makeGisOps() {
        computes the whole expression on this thread — the reader gets their grid, and a `stats.worker`
        note saying which thread answered. js/gis-raster.js's `diff` says the same word about the same
        fact and for the same reason does not spell it as a `why:` either: a refusal code is something
-       js/gis-panel.js owes a sentence to (tests/r729-gis-core-checks ④), and nobody is owed a
+       js/gis-panel.js owes a sentence to (tests/geo-gis-datasets-checks.test.mjs #R729 ④), and nobody is owed a
        sentence for a run that succeeded. */
     const CARRIED_ANSWER_BAD = 'worker-answer-malformed';
 
@@ -4035,7 +4035,7 @@ export function makeGisOps() {
        ⚠⚠⚠ THE DEFECT, MEASURED BEFORE THIS WAS WRITTEN. js/gis-geometry.js grew a door to the other
        thread (`worker.install` / `ready` / `request`) and js/gis-worker.js grew the intake that
        dispatches it — and NOTHING IN js/ EVER BUILT A PAYLOAD FOR EITHER. The geometry job was a
-       registered job with no caller, which is the exact state tests/r759-gis-worker-checks ④ exists
+       registered job with no caller, which is the exact state tests/geo-gis-cancellation-checks.test.mjs #R759 ④ exists
        for: 「Worker が在る」 と 「普段の分析が Worker で走る」 は別である.
 
        WHY THIS OP AND NOT ANOTHER. Only three operations can be carried at all — the ones a kernel
@@ -5370,7 +5370,7 @@ export function makeGisOps() {
              a clash on the PREFIXED name. Dropping the entry here would strip the unit off a column
              that is still in the answer. js/gis-datasets.js applies statements by looking up the
              output's own column names, so an entry for a column the output does not have is never
-             read, and inventing one is what ⑥ of tests/r759 measures. */
+             read, and inventing one is what #R759 ⑥ in tests/atlas-gis-checks.test.mjs measures. */
           if (!Object.prototype.hasOwnProperty.call(out, to)) {
             const e = { unit: src.unit, unitStated: src.unitStated, unitFrom: src.unitFrom, unitRenamedFrom: r.name };
             /* (#R819) 接頭辞は改名であり、改名された列は同じ量である——単位について上の註が述べて
@@ -5515,7 +5515,7 @@ export function makeGisOps() {
         rasterDiff: () => runRasterDiff(ds[0], ds[1], params, R, ctx),
         /* (#R752) the grid family the review of #R749 named as missing, and the two geometry-quality
            ops. Each is one line here for the reason the table exists at all: DECL and RUN are keyed
-           by the same ids, so tests/r732 ① catches a declared op with no runner. */
+           by the same ids, so tests/geo-gis-geometry-checks.test.mjs #R732 ① catches a declared op with no runner. */
         /* (#R819) `step` も渡る。窓ごとの結果を結果キャッシュの鍵で置くには、その段が何であるか
            ——op・入力・parameter——が要る（js/gis-project.js cache.keyFor の 5 軸）。 */
         resample: () => runResample(ds[0], ds[1], params, ctx, step),
@@ -5666,7 +5666,7 @@ export function makeGisOps() {
        reports 「同じ」「違う」「測れなかった」 as three states rather than assuming the first.
 
        ⚠ THIS NUMBER IS A CLAIM, AND A CLAIM NEEDS A KEEPER. A hand-maintained version drifts the
-       first time someone edits the kernel and forgets it — so tests/r749-gis-raster-pipeline-checks
+       first time someone edits the kernel and forgets it — so tests/shell-gis-upload-raster-checks.test.mjs (#R749)
        holds the sha256 of this file beside the version it declared, and fails when the bytes moved
        and the version did not. Raise it whenever an edit here can change an ANSWER (a different
        result, a different refusal); a comment or a rename moves the hash, and the recorded hash is

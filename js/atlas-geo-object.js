@@ -49,7 +49,7 @@
  *  deliberately outside it, and `describesUserPoint()` is the single predicate every prompt builder
  *  asks before it writes a coordinate into a sentence.
  *
- *  Pure: no DOM, no globals, no network — so tests/r397-checks.test.mjs can hand it wrong inputs and
+ *  Pure: no DOM, no globals, no network — so tests/atlas-console-observers-checks.test.mjs (#R397) can hand it wrong inputs and
  *  watch it refuse. Consumed by js/atlas-answer-contract.js and js/atlas-console.js.
  * ==========================================================================*/
 

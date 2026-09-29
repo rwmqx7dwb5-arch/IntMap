@@ -21,7 +21,7 @@
  *  global, at call time. It is pure: no DOM, no fetch, no table of sources.
  *
  *  ⚠ WHY ONE LAZY ENTRY AND NOT SEVEN. js/lazy-modules.js is part of the app SHELL, and the shell
- *  has a line budget (tests/r168-checks ⑧) with single-digit headroom most rounds — four entries is
+ *  has a line budget (tests/news-module-split-checks.test.mjs #R168 ⑧) with single-digit headroom most rounds — four entries is
  *  twelve lines in three tables. It is also not a real choice: the registry with no ops is a list
  *  nothing can act on, and the ops with no registry have nowhere to put their output. There is no
  *  session that wants one of the nine.
@@ -58,7 +58,7 @@
  *  ⚠ WHY THE ASSEMBLER IS A SECOND FILE. Its reader is outside js/: a Node caller imports
  *  `makeGisRuntime` from THIS file (docs/GIS-CORE.md §5.8), while the browser comes in through
  *  window.IntMapModules.gisCore below. An export no js/ module names is dead code by
- *  tests/r175-checks ③ — and the answer to that is a real reader, not a hidden export. So the
+ *  tests/layer-boot-graph-checks.test.mjs #R175 ③ — and the answer to that is a real reader, not a hidden export. So the
  *  mounting order and the assembler are two files that import each other by name: this one reads
  *  `makeGisRuntime` (to re-export it, and to build the browser door out of it), and
  *  js/gis-runtime.js reads `mountGis`. The cycle is evaluation-safe because neither half CALLS the
@@ -108,7 +108,7 @@ import { makeGisPanel } from './gis-panel.js';
 import { makeGisRuntime } from './gis-runtime.js';
 export { makeGisRuntime };
 /* ══ ⚠ (#R783) ONE TOP-LEVEL BINDING, AND THE REST OF THE FILE INSIDE IT ═════════════════════
-   tests/r175-checks ③ is the property the bundling rests on: a js/ module may hold NO unexported
+   tests/layer-boot-graph-checks.test.mjs #R175 ③ is the property the bundling rests on: a js/ module may hold NO unexported
    top-level declaration, because a classic script's top-level `const`/`function` was a global and
    this file is still loaded as the `gisCore` chunk beside fifteen kernels that resolve each other
    by global name. What is inside this closure is `mount` and `shellEntry` — module-private in

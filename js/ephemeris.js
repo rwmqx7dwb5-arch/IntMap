@@ -47,7 +47,7 @@
  *  propagates it with THIS file's own `kepler`. Nothing here changed and nothing here guesses: the
  *  moons arrive as data, with their epoch and their reference plane attached, or they do not arrive.
  *
- *  ── HOW IT IS CHECKED (tests/r197-space.test.mjs) ───────────────────────────────────────────────
+ *  ── HOW IT IS CHECKED (tests/space-ephemeris-checks.test.mjs (#R197)) ───────────────────────────────────────────────
  *  Not by comparing the code to itself:
  *    · the Sun's geocentric right ascension and declination derived from THIS file's Earth are
  *      compared against js/space-sky.js's independent USNO series (#R186), which was itself verified
@@ -291,7 +291,7 @@ window.IntMapEphemeris=(function(){
      ⚠ HOW MUCH OF THIS IS CHECKED, AND HOW. Two of these rows can be verified from inside this app
      and the rest cannot, so the situation is written down rather than implied:
        · EARTH — W + 90° is the Greenwich hour angle from the J2000 equinox, and js/space-sky.js
-         carries an independent GMST series (#R186). tests/r197-space.test.mjs compares them.
+         carries an independent GMST series (#R186). tests/space-ephemeris-checks.test.mjs (#R197) compares them.
        · THE MOON — it is tidally locked, so the sub-Earth point must sit within the libration
          envelope of ±8° of longitude 0 at every instant, for centuries. That tests α₀, δ₀ and W₀
          together, and nothing but the right values passes it.

@@ -60,7 +60,7 @@ const WRITE = process.argv.includes('--write');
    actually had, so the rebuilt file keeps the endings it came with instead of being re-punctuated
    by whichever one the guess landed on.
 
-   ⚠ IT IS EXPORTED so tests/r548-checks.test.mjs can hand it a synthetic mixed-ending locale and
+   ⚠ IT IS EXPORTED so tests/shell-i18n-audits-checks.test.mjs (#R548) can hand it a synthetic mixed-ending locale and
    watch it not throw. A check that read this file's TEXT would have passed on the broken version
    ([[intmap-edge-function-must-be-evaluated]]); this one evaluates it. */
 export function cutDeadRows(src, dead, label = 'source') {

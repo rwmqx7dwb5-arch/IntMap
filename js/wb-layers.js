@@ -406,7 +406,7 @@ window.IntMapModules.wbLayers=function(HOST){
        mode that is showing. Without `modes` here, `V()` had nothing to resolve and `bxLabel`
        returned the empty string: MEASURED in the browser, the CO₂ row rendered with a blank label
        and nothing else was wrong, which is exactly the kind of silence this project keeps paying
-       for. tests/r289 ④ now measures the label rather than the mechanism. */
+       for. tests/shell-data-layers-checks.test.mjs #R289 ④ now measures the label rather than the mechanism. */
     const ALL=WB.map(L=>({id:L.id,n:L.n,modes:L.modes,on:()=>choroOn(L),off:()=>choroOff(L)}))
       .concat([{id:'eq',n:LA('Earthquakes (live + history)','地震（ライブ＋過去）','Erdbeben (live + Verlauf)','Землетрясения (онлайн + история)','Terremotos (en vivo + histórico)'),on:eqOn,off:eqOff},
                {id:'heat',n:LA('Heat of Attention','注目度ヒートマップ','Aufmerksamkeits-Heatmap','Карта внимания','Mapa de calor de atención'),on:heatOn,off:heatOff}]);

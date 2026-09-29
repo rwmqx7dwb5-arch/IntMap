@@ -759,7 +759,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
            `dl-sats` left the eager set this round (IMG now answers them before REAL is reached),
            so the eager figure is two lower than whatever #R408 meant by 33. The gate below does
            not read these two, which is precisely why they were free to drift — see the note on
-           `tests/r408 ①d`.
+           `tests/shell-layer-panel-checks.test.mjs #R408 ①d`.
 
        ⚠ The fix is NOT an IntersectionObserver. #R72 tried that and #R73 had to undo it: tiles
        registered while the panel was off-screen never got a second look and sat on their gradient

@@ -9,7 +9,7 @@
  *  bundler — so this script writes the same list out as one generated global they can load.
  *
  *  ⚠ IT IS GENERATED, NOT MAINTAINED, WHICH IS THE WHOLE POINT. `npm run build` runs it (package.json
- *  `prebuild`), and tests/r232-checks.test.mjs regenerates it and fails if the committed copy differs
+ *  `prebuild`), and tests/hazard-other-ui-chrome-checks.test.mjs (#R232) regenerates it and fails if the committed copy differs
  *  — so a language added to js/locales/ reaches the reading pages whether or not anybody remembered
  *  this file exists. #R231 shipped 「読み物ページに中国語が一度も届いていなかった」 precisely because
  *  the equivalent list was a literal somebody had to remember.

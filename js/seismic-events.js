@@ -33,7 +33,7 @@
    event names below were bare five-element arrays: complete for the positional five and English for
    fr / ko / zh / zh-Hans for ever, because an array literal is not a call and no instrument could
    put the ten names into the inline universe.
-   ⚠ WRAPPED IN AN IIFE, NOT DECLARED AT TOP LEVEL. tests/r175 ③ refuses an unexported top-level
+   ⚠ WRAPPED IN AN IIFE, NOT DECLARED AT TOP LEVEL. tests/layer-boot-graph-checks.test.mjs #R175 ③ refuses an unexported top-level
    declaration in js/ — the module's surface is what it exports — so the helper lives inside the
    expression that needs it.
    ⚠ AND GUARDED, like js/space-cosmos.js's: this is an ES module that others import, so it can
@@ -335,7 +335,7 @@ export function fetchRuptureRing(ev, fetchImpl) {
      published corners — including their depth ordinates, which are read before this runs — are
      untouched, and a ring that is already fine (Kahramanmaraş's bent trace, Wenchuan's 15 points)
      passes through unchanged.
-     ⚠ NESTED, not a module-level helper: tests/r175 ③ forbids an unexported top-level declaration
+     ⚠ NESTED, not a module-level helper: tests/layer-boot-graph-checks.test.mjs #R175 ③ forbids an unexported top-level declaration
      and an export nothing imports, and this has exactly one caller. */
   const densifyRing = (ring, maxKm) => {
     const D = Math.PI / 180, RE = 6371.0088, lim = Math.max(5, +maxKm || 50);
@@ -365,7 +365,7 @@ export function fetchRuptureRing(ev, fetchImpl) {
     }
     return out;
   };
-  /* ⚠ the memo hangs off the function, not off a module-level `const`: tests/r175 ③ forbids an
+  /* ⚠ the memo hangs off the function, not off a module-level `const`: tests/layer-boot-graph-checks.test.mjs #R175 ③ forbids an
      UNEXPORTED top-level declaration in js/, and exporting a cache would be exporting an internal. */
   const cache = fetchRuptureRing._cache || (fetchRuptureRing._cache = Object.create(null));
   const id = ev && ev.usgs;

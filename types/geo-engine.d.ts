@@ -50,7 +50,7 @@ export interface CameraState { center: LngLat; zoom: number; bearing: number; pi
 
 /**
  * What an engine says it can do. The three tables (MAPLIBRE_CAPS, CESIUM_CONTRACT.capabilities,
- * CESIUM_CAPS) are also compared as key sets by tests/r323-checks.test.mjs; this type makes a key
+ * CESIUM_CAPS) are also compared as key sets by tests/engine-capability-contract-checks.test.mjs (#R323); this type makes a key
  * that exists in one table and not the others a compile error too.
  */
 export interface GeoEngineCapabilities {

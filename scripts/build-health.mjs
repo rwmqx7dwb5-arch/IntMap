@@ -55,7 +55,7 @@
  *    node scripts/build-health.mjs --check    fetch, derive, compare with the committed file
  *
  *  ⚠ NOT IN `npm test`. It needs the network. The committed file is validated OFFLINE by
- *  tests/r678-pandemic-p1-checks.test.mjs.
+ *  tests/hazard-pandemic-model-checks.test.mjs (#R678).
  *
  *  SOURCES
  *    · WHO Global Health Observatory (CC BY-NC-SA 3.0 IGO) — https://ghoapi.azureedge.net/api/

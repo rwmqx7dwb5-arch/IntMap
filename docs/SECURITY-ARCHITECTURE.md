@@ -580,7 +580,7 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   ⚠ **They were stopped because the privacy text named neither of them** — not because the tags
   were faulty. `js/legal-text.js` §4 lists dozens of third parties in nine languages and omitted
   the only two that set a cookie and record a DOM replay; §5 says "Cookies & local storage — used
-  for your session and preferences" and nothing about measurement. `tests/r502-checks.test.mjs ④`
+  for your session and preferences" and nothing about measurement. `tests/shell-index-document-checks.test.mjs #R502 ④`
   ties the switch to that text: setting it back to `true` without naming **Google Analytics** and
   **Clarity** in `js/legal-text.js` turns the gate red. Turning measurement back on and disclosing
   it are therefore one action, not two.
@@ -603,7 +603,7 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    the MapLibre engine raises **zero** violations without `'unsafe-eval'`; Cesium raises one at
    load — its bundled knockout evaluates `(0,eval)("this")` — and `'wasm-unsafe-eval'` alone
    leaves the 3-D engine on the splash screen. So the directive stays exactly as long as Cesium
-   needs it, and `tests/r801-security-audit-checks.test.mjs` ⑦ reads `node_modules/cesium` for
+   needs it, and `tests/backend-edge-hardening-checks.test.mjs` #R801 ⑦ reads `node_modules/cesium` for
    that need and turns red the day it is gone. Mitigated by output-encoding
    (§4). ⚠ **Not removable by moving the remaining inline event attributes**, which is why they
    were only moved where a *value* was being interpolated into one (see §11.4).
@@ -852,7 +852,7 @@ profiles guard trigger, so a non-admin who signs in is bounced by `gate()`). Add
 (`connect-src` locked to self + `*.supabase.co`; `object-src 'none'`; `base-uri`/`form-action 'self'`),
 hardened the local escaper to also escape the single quote, added a `safeUrl()` scheme allow-list,
 and a **re-authentication ("sudo") gate** before the destructive starter-dataset import. Behavioural
-XSS tests for `esc()`/`safeUrl()` live in `tests/r155-checks.test.mjs`.
+XSS tests for `esc()`/`safeUrl()` live in `tests/auth-security-checks.test.mjs` (#R155).
 
 ---
 

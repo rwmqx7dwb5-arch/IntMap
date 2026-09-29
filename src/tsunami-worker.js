@@ -112,7 +112,7 @@ let abort = 0;
 /* ══ OKADA (1985) — the vertical surface displacement of one rectangular dislocation ═══════════════
    Moved here from js/tsunami.js in #R197 so the whole model is built off the main thread. Unchanged
    from #R192, which verified it against the published test case (L=3, W=2, d=4, δ=70°, observation
-   (2,3): dip-slip uz = −3.5639e−2 against Okada's −3.564e−2 — tests/r197-checks.test.mjs runs that
+   (2,3): dip-slip uz = −3.5639e−2 against Okada's −3.564e−2 — tests/hazard-tsunami-checks.test.mjs (#R197) runs that
    case against THIS file rather than asserting on its text).
    ⚠ arctan OF A RATIO, not atan2 — see the note inside. */
 /* ══ ⚠ (#R223) THE SAME FORMULA, WITHOUT THE WORK IT WAS REPEATING ══════════════════════════════════
@@ -128,7 +128,7 @@ let abort = 0;
    None of that is the physics; all of it is per-call overhead. The arithmetic that remains is
    identical, in the same order, so the answer is unchanged to the last bit — the published test case
    (L=3, W=2, d=4, δ=70°, at (2,3) → −3.5639e−2) is re-run against THIS file by
-   tests/r197-checks.test.mjs, and #R223 adds a direct old-form/new-form comparison over a grid.
+   tests/hazard-tsunami-checks.test.mjs (#R197), and #R223 adds a direct old-form/new-form comparison over a grid.
    ⚠ THE DIP MEMO IS A SINGLE SLOT, not a map: every call in a run shares one dip, so a one-entry
    cache hits every time and can never grow. */
 let _okDip = NaN, _okSd = 0, _okCd = 0, _okCdS = 1, _okVert = false, _ok2cdS = 0;
@@ -225,7 +225,7 @@ function rupturePlane(rp, refLat) {
    honest while giving the peaked centre and the soft edges an inversion recovers. */
 const SUB_S = 8, SUB_W = 3;
 /* ⚠ √sin, NOT sin. Transcribing this into the worker for #R197 I wrote a plain raised sine, which is
-   a different — narrower — slip distribution, and tests/r193-checks.test.mjs caught it by recomputing
+   a different — narrower — slip distribution, and tests/hazard-tsunami-checks.test.mjs (#R193) caught it by recomputing
    the taper independently. The published form this module was verified with is the square root of the
    raised sine, and the clamp keeps the endpoints off the zeros. */
 function taper(s){ return Math.sqrt(Math.sin(Math.PI*Math.max(0.001,Math.min(0.999,s)))); }
@@ -455,7 +455,7 @@ function run(m) {
   };
   /* (#R202) how far the cell average is taken, and how finely — see the block in the loop below.
      ⚠ SUB_N = 3 IS WHERE IT CONVERGES, and that was measured rather than assumed. The worker was run
-     in Node over a flat 4,000 m ocean (the harness tests/r197-checks.test.mjs already uses) at three
+     in Node over a flat 4,000 m ocean (the harness tests/hazard-tsunami-checks.test.mjs (#R197) already uses) at three
      magnitudes, varying only the quadrature; the number is the model's own reported amplitude, m:
 
          Mw 7.5   1×1 0.9117   3×3 0.7516   5×5 0.7430   7×7 0.7406
@@ -840,7 +840,7 @@ function run(m) {
   };
 }
 
-/* ⚠ GUARDED so Node can load this file and call run()/okadaUz() directly — tests/r197-checks.test.mjs
+/* ⚠ GUARDED so Node can load this file and call run()/okadaUz() directly — tests/hazard-tsunami-checks.test.mjs (#R197)
    verifies Okada against the published case and integrates a small analytic basin without a browser. */
 const onMsg = (ev) => {
   const m = ev.data || {};

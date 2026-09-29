@@ -360,7 +360,7 @@ export function detailPolys(el, tolerance, decimals, raw = sourcePolys(el)) {
    admin_level 7 ALONE, because level 8 is 23,922 relations and would roughly double the 82 MB the
    first two tiers ship (#R713's delivery budget, paid for the cheaper half). Under the old rule a
    tier that ships one level was a FAILURE — the gate would have refused a lawful bundle, the same
-   shape as the `>= 8` floor #R719 found in tests/r476-checks ①.
+   shape as the `>= 8` floor #R719 found in tests/layer-panel-taxonomy-checks.test.mjs #R476 ①.
    What the arithmetic was actually protecting is #R604's accident — a bundle written under another
    bundle's name — and that is a property of the SET, checked in `levelPartition` below: the tiers'
    level sets are disjoint, each tier's levels are above the previous tier's, and together they run
@@ -507,7 +507,7 @@ function check() {
     /* ⚠ (#R604) THE FILE MUST NAME ITSELF. Building the deeper tier without `--global` wrote
        `window.__HISTADM1=` into data/hist-admin2.js — 15 MB whose every assertion about itself was
        true and whose name was wrong, replacing the first tier's record the moment it loaded.
-       tests/r604-checks ⑦ watches this from the shipped side; the build's own gate watches it too,
+       tests/history-admin-tiers-checks.test.mjs #R604 ⑦ watches this from the shipped side; the build's own gate watches it too,
        because the build is where the name is chosen. */
     const named = Object.keys(w).filter(k => /^__HISTADM/.test(k));
     if (named.length !== 1 || named[0] !== t.global) {
@@ -868,7 +868,7 @@ async function refreshDates() {
          were measured. The row count the run saw is stated instead, and topologyErrors() reads it. */
       const gone = d.feats.length - keep.length;
       if (d.topology) d.topology.removedAfterRun = (d.topology.removedAfterRun || 0) + gone;
-      /* ⚠ `precision.refined + retained` is asserted against the row count (tests/r710), and unlike
+      /* ⚠ `precision.refined + retained` is asserted against the row count (#R710 — 旧 tests/r710-*、tests/history-boundary-precision-checks.test.mjs と tests/history-era-borders-checks.test.mjs へ統合), and unlike
          the topology ledger this one IS re-derivable: a row that leaves was simplified at the build
          target like every other, so it leaves `refined` (or `retained` if that is where it sat).
          The gate caught this too — 4,839 against 4,837 rows. */

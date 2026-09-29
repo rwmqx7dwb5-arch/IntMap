@@ -19,7 +19,7 @@
  *  they all say the same thing, and where they do not, NOBODY gets the label.
  *
  *  Everything here is pure — rows in, verdict out; no network, no filesystem, no globals — so
- *  tests/r695-histadmin-names-checks.test.mjs evaluates it rather than reading it (#R505).
+ *  tests/history-admin-build-checks.test.mjs (#R695) evaluates it rather than reading it (#R505).
  * ==========================================================================*/
 
 export const REFUSE = {

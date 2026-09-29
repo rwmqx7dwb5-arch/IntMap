@@ -56,7 +56,7 @@ window.IntMapDefaultLayers=defaultLayers();   /* (layer-manifest) the manifest's
    because this list is not what ticks it — js/app-body.js only dispatches `change` for boxes that are
    ALREADY ticked (#R34), and js/data-layers.js's IntMapBaseDisplay.matches() compares the live ticks
    against defOn(). Half the edit is silent both ways: the tick alone drops 基本表示 to 「カスタム」 400 ms
-   after every boot, the id alone paints nothing. tests/r476-checks ① holds the two sides equal, in BOTH
+   after every boot, the id alone paints nothing. tests/layer-panel-taxonomy-checks.test.mjs #R476 ① holds the two sides equal, in BOTH
    directions — the html→list direction had no gate at all until this round.
    ⚠ (layer-manifest) AND NOW IT IS ONE FIELD. The box is no longer markup: js/layer-rows.js writes it from
    js/layer-manifest.js, whose `on` both ticks it and puts the id in this list (defaultOn() below).
@@ -86,7 +86,7 @@ window.IntMapDefaultOn=defaultOn();   /* (layer-manifest) every `on` row of the 
    added here are ordinary async layers that DO want the re-assert. Same ids, different rule.
    ⚠ BOTH halves are on `window`, not module-level `const`s. This file is a module (#R175), so a
    top-level binding would be private to it and invisible to js/widget-core.js — and
-   tests/r175-checks.test.mjs fails the whole shape on sight, which is how that was caught here. */
+   tests/layer-boot-graph-checks.test.mjs (#R175) fails the whole shape on sight, which is how that was caught here. */
 /* ⚠⚠ (#R469) TWO ROWS LEFT THIS LIST, IN OPPOSITE DIRECTIONS — see `IntMapHiddenLayerRows` below.
      · `cb-countries` 国境・国情報 — 「レイヤー行だけ隠す」. It is no longer a row anywhere, so it is no
        longer a member of the always-on block; and it is NOT subtracted from the counters either,
@@ -2236,7 +2236,7 @@ window.IntMapModules.dataLayers=function(HOST){
        one, which is the signature of a continuous ramp: two waves that could be confused are
        neighbours in time, and no two distant waves ever are. It is still an order of magnitude
        above the 2.3 JND and roughly twice the 12.8 of the viridis sampling both of these replace.
-       `tests/r293` asserts the monotone red→purple sweep AND re-computes the separation. */
+       `tests/weather-warnings-checks.test.mjs (#R293)` asserts the monotone red→purple sweep AND re-computes the separation. */
     const _WAVEPAL=['#cf0032','#ea4a1c','#fa8b00','#f2c200','#c9df00','#5fbb46','#00a878','#0096bf','#2f66cf','#5a3cc4','#902fa6'];
     function _mixHex(a,b,t){ const p=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
       const A=p(a),B=p(b),o=A.map((v,i)=>Math.round(v+(B[i]-v)*t));
@@ -3203,7 +3203,7 @@ window.IntMapModules.dataLayers=function(HOST){
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
       /* (#R189) the default-on dispatcher fires synthetic changes up to 2.6 s after boot — if the
-         legend element is not in the DOM at that moment (measured: tests/r151 removes it between
+         legend element is not in the DOM at that moment (measured: tests/atlas-shell-ui-checks.test.mjs (#R151) removes it between
          ticks), this wrote innerHTML on null and the whole change handler died uncaught */
       if(!lg) return;
       const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${window.IntMapLang.t(HOST.lang,'Clear selection','選択解除','Auswahl aufheben','Снять выделение','Quitar selección')}</button>`:'';
@@ -4328,7 +4328,7 @@ window.IntMapModules.dataLayers=function(HOST){
            half a step, so the block needs one more column to cover its own edges — but ONLY when
            there are offset rows to cover and more than one column to offset. Adding it
            unconditionally made a close-in view ask for TWO requests where one has always been
-           enough, which tests/r186 caught at z6.2 (`close.circles` 1 → 2). One circle for a small
+           enough, which tests/shell-sky-space-checks.test.mjs (#R186) caught at z6.2 (`close.circles` 1 → 2). One circle for a small
            view is not a detail: it is the 20-second refresh that view has always had. */
         if(wantX>1&&wantY>1) wantX++;
       }catch(_){} }
@@ -4434,7 +4434,7 @@ window.IntMapModules.dataLayers=function(HOST){
          stale sweep cannot publish into a layer that has moved on — but using it to abort on every
          new request threw away work that had already been done: on a slow machine each sweep took
          longer than the gap between two moveends, so every one was killed by the next and the
-         positions it had collected were lost. tests/r174 measured that as an aircraft track with 2
+         positions it had collected were lost. tests/geo-drone-planner-checks.test.mjs (#R174) measured that as an aircraft track with 2
          legs where five fixes had been fed to it. Skipping is right and abandoning is not: the
          running sweep is about to publish the same view, and the next poll covers anything newer. */
       /* ⚠ (#R188) …UNLESS THE CAMERA HAS LEFT THAT SKY ALTOGETHER. #R186's rule was right for a
@@ -4961,7 +4961,7 @@ window.IntMapModules.dataLayers=function(HOST){
        would look for the aeroplane somewhere it is not" — is the reason this exists, and making the
        flat glyph the default (see planes3D) is exactly the case it had never been asked about:
        `pickPlane` began with `if(!planes3D) return null`, so with 2-D restored, clicking an aircraft
-       would have selected nothing, opened no detail card and drawn no track. Found by tests/r175,
+       would have selected nothing, opened no detail card and drawn no track. Found by tests/layer-boot-graph-checks.test.mjs (#R175),
        which is about the card and not about 3-D at all. */
     function _planeDrawAlt(d){
       if(!planes3D||d.onGround) return 0;
@@ -5167,7 +5167,7 @@ window.IntMapModules.dataLayers=function(HOST){
        at the ceiling: blue 255 needs 1.075 of a channel under the globe, so it stays at 245 there.
        Measured result — globe rgb(30,144,245), Mercator rgb(30,144,255) against the glyph's
        rgb(30,144,255): two channels exact instead of none, and the third as close as the renderer
-       can be asked to go. tests/r191 pins the constants against live pixels. */
+       can be asked to go. tests/hazard-other-aircraft-layer-checks.test.mjs (#R191) pins the constants against live pixels. */
     const _FE_AMBIENT=0.03;                                   /* the shader's fixed ambient term */
     const _FE_DIR_GLOBE=0.933, _FE_DIR_MERC=1.0;              /* measured roof `directional`, per projection */
     const _FE_Z0=11.5, _FE_Z1=13;                             /* the globe→Mercator transition band */
@@ -5334,7 +5334,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* maxAlt is THE AIRCRAFT'S ALTITUDE and is read off `acAlt`, never off a part's extrusion base:
          #R183/#R185's parts were deliberately offset ABOVE the aircraft, so a max over the features'
          `alt` returned the base of the tallest TAIL FIN — at z9 that is +0.19 × half, about 485 m, so
-         a jet at 36,000 ft reported 11,458 m instead of 10,973 m. Caught by tests/r172, r173 and
+         a jet at 36,000 ft reported 11,458 m instead of 10,973 m. Caught by tests/engine-volume3d-checks.test.mjs (#R172), r173 and
          r174, all three of which are really the same assertion. */
       _planes3DStats={ features:feats.length, aircraft:bodies.length,
         lifted:bodies.filter(f=>(+f.properties.acAlt||0)>0).length,
@@ -5685,7 +5685,7 @@ window.IntMapModules.dataLayers=function(HOST){
            number of circles times their spacing — and NOT a fraction of the poll interval. The first
            version used planePollMs()/4, which is 5 s even for a ONE-circle sweep whose floor is 20 s
            for a quite different reason; that quietly tripled the close-in refetch gap from the 1.5 s
-           it had always been, and tests/r174 caught it exactly (a track that accumulated 2 legs over
+           it had always been, and tests/geo-drone-planner-checks.test.mjs (#R174) caught it exactly (a track that accumulated 2 legs over
            five moveends instead of 5). One circle is 1.5 s, as before; sixteen circles is 19 s, which
            is the time those sixteen requests actually occupy. */
         if(!_planesMove){ _planesMove=()=>{ if(planesLayerOn()){

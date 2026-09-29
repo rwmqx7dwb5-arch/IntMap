@@ -50,7 +50,7 @@
  *  ⚠ A CELL WITH NO BED IS NOT A CELL. `z` carries NaN where the elevation data has a hole (#R265's
  *  DEM fix in js/map-readout.js); a face touching one is closed rather than given a fictional head.
  *
- *  ⚠ NO RENDERER, NO DOM, AND ONE `window` ASSIGNMENT — so tests/r265-checks can run the physics in
+ *  ⚠ NO RENDERER, NO DOM, AND ONE `window` ASSIGNMENT — so tests/terrain-water-checks.test.mjs (#R265) can run the physics in
  *  Node, where a dam break down a plane has a front speed to check against.
  *
  *  ══ ⚠⚠⚠ (#R267) THE LATTICE GROWS, BECAUSE THE RIVER DOES ═══════════════════════════════════════

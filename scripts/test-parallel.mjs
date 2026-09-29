@@ -303,7 +303,7 @@ if (process.argv.includes('--planned')) {
 /* ⚠⚠ (#R716) …and the EIGHTH, for the LARGEST SHIPPED SURFACE IN THE REPOSITORY — but for a
    DIFFERENT reason than the seven above it. data/border-detail/ (its file count and bytes: data-assets.json; the refined
    outlines drawn when the reader zooms in on all three OHM records) was NOT unguarded: since
-   #R711 tests/r711-boundary-quality-data-checks.test.mjs has imported check() and run it, so
+   #R711 tests/history-boundary-precision-checks.test.mjs (#R711) has imported check() and run it, so
    `npm test` already read the bytes. What it lacked was a DECLARED gate, and that is not a
    formality — the three rules that hunt for gates nothing calls (`gate-callers`, `gate-lists`,
    `ci-gates`) all take package.json's check:* scripts as their universe, so a generator that

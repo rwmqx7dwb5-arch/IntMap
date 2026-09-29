@@ -142,8 +142,13 @@ describe('§ #R299 · frames per time, overtaken reads, the staircase', () => {
        back, and count the reads the page's SDK was asked for. */
     const { calls, ENG } = await coldWxModel({ sdkMs: 5, readMs: 5 });
     const M = ENG.model('ecmwf_wam025');
-    await M.meta();
-    const i = M.index();
+    const meta = await M.meta();
+    /* the walk below needs three consecutive hours (i, i+1, i+2). index() is the valid time NEAREST
+       the wall clock, so in the second half of any hour it is one further along — and taking it as
+       is made this check red for half of every hour (the fixture's axis is only four hours long). */
+    const n = meta.validTimes.length;
+    assert.ok(n >= 3, 'the fixture offers three consecutive hours to walk: ' + n);
+    const i = Math.min(M.index(), n - 3);
     assert.ok((await M.load('wave_height', i, null)).data, 'the hour the reader is on is read');
     assert.ok((await M.load('wave_height', i + 1, null)).data, 'the next hour is read');
     const mine = () => M.heldFrames().filter((f) => f.variable === 'wave_height');

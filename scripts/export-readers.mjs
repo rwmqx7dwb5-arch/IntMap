@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · which exports of js/ have a reader, derived ONCE  (#R795)
  * ----------------------------------------------------------------------------
- *  tests/r175-checks ③ used to ask two questions of every js/ module:
+ *  tests/layer-boot-graph-checks.test.mjs #R175 ③ used to ask two questions of every js/ module:
  *    (a) "does it have an UNEXPORTED top-level declaration?"  — forbidden
  *    (b) "is every export imported BY NAME from another js/ file?" — else dead
  *

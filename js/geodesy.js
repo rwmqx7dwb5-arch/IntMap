@@ -8,7 +8,7 @@
  *  split provable — the block moves BYTE FOR BYTE, and because it reads nothing from its old scope
  *  there is no free reference to hand over (the failure #R194 measured and scripts/check-split-scope.mjs
  *  now gates). It is also the first piece of the shell that can be tested WITHOUT a browser at all,
- *  which is why tests/r196-checks.test.mjs can assert the antimeridian behaviour in Node.
+ *  which is why tests/shell-panels-tools-checks.test.mjs (#R196) can assert the antimeridian behaviour in Node.
  *
  *  MEASURED SURFACE — the four counts #R195 established before claiming a theme is separable:
  *    public names 1 (window.IntMapGeodesy) · registrations 0 · flags 0 · free references to the shell 0.

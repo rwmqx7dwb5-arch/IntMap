@@ -118,7 +118,7 @@ const fmt = (k, n) => { const t = String(k).trim(); return (t === 'requests' || 
    Exported so a test can drive it with synthetic numbers. A gate that is only ever exercised by
    the tree it guards has never been shown to FAIL, and this project has shipped several checks
    that were green because they asserted nothing (#R301 found two suites that had never run at
-   all). tests/r311-checks.test.mjs feeds this both a regression and an improvement and requires
+   all). tests/perf-startup-and-cache-checks.test.mjs (#R311) feeds this both a regression and an improvement and requires
    an error from each. */
 export function judge(m, b) {
   const errors = [], notes = [], rows = [];
@@ -182,7 +182,7 @@ function main() {
   return 0;
 }
 
-/* ⚠ guarded: tests/r311-checks.test.mjs imports judge() from this file, and an unguarded CLI would
+/* ⚠ guarded: tests/perf-startup-and-cache-checks.test.mjs (#R311) imports judge() from this file, and an unguarded CLI would
    then run the whole gate — against whatever dist/ happened to be on disk — as a side effect of the
    import. Same shape as scripts/build-report.mjs. */
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {

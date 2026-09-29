@@ -207,7 +207,7 @@ const PROVIDERS = Object.keys(PROVIDER_DEFAULT_MODEL);
 const MODEL_ID_OK = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,79}$/;
 /* (#R736) THE ONE THING THE PICKER IS ALLOWED TO SAY THAT THE PROVIDER DID NOT — A WITHDRAWAL.
    `listModels` discovers the catalogue and may name no model (the paragraph above it says why, and
-   tests/r722 ② holds it to that), so the owner's decision not to OFFER a model lives here instead,
+   tests/atlas-ai-proxy-models-checks.test.mjs #R722 ② holds it to that), so the owner's decision not to OFFER a model lives here instead,
    next to the other model constants, as one named set. The owner asked for gpt-6-astra not to be
    offered (2026-09-15).
    ⚠ IT IS NOT A CAPABILITY BOUNDARY. The proxy still calls whatever model id it is given, so nothing
@@ -275,7 +275,7 @@ const IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"
    EXPIRES WHEN: a provider moves its request ceiling, or a second document format becomes readable
    by all three — then these numbers and DOC_MIME are re-measured, not extended case by case.
    CANONICAL: here. The client holds the same numbers in js/atlas-attach.js `ATL_FILE.LIMITS`
-   (images/files/docs, textPerFile/textTotal, docBytes/docsBytes) and tests/r540 asserts the two are
+   (images/files/docs, textPerFile/textTotal, docBytes/docsBytes) and tests/atlas-attach-checks.test.mjs (#R540) asserts the two are
    EQUAL rather than re-stating either — a client that trims to a wider bound than the server
    enforces is precisely how an attachment gets cut silently again. */
 const MAX_FILES = 8;                             // text attachments in ONE request
@@ -675,7 +675,7 @@ const MAP_REPORT_SCHEMA = {
 /* ══ (#R350) THE ANSWER ENVELOPE — the shape an ANALYSIS must arrive in ═══════════════════════════
    ⚠ THE SERVER OWNS IT, LIKE MAP_REPORT_SCHEMA, and js/atlas-answer-contract.js holds the copy the
    client validates and renders against. Two copies of one fact is exactly what this repository does
-   not allow to drift, so tests/r334-checks.test.mjs compares them field by field and fails when they
+   not allow to drift, so tests/news-cluster-checks.test.mjs (#R334) compares them field by field and fails when they
    disagree — the same rule #R323 applied to the three capability tables.
 
    ⚠ THERE IS NO url FIELD ANYWHERE IN IT. That is not an omission: the model has nowhere to put a
@@ -683,7 +683,7 @@ const MAP_REPORT_SCHEMA = {
    evidence registry (js/atlas-evidence.js). */
 // (#R397) `places[].geoId` is how a coordinate CODE already resolved survives into the answer without
 // the model inventing one. There are still no lat/lng fields and there must not be. The mirror of this
-// literal is ANSWER_SCHEMA in js/atlas-answer-contract.js, and tests/r350 ①a JSON.parses THIS ONE to
+// literal is ANSWER_SCHEMA in js/atlas-answer-contract.js, and tests/atlas-answer-audit-checks.test.mjs #R350 ①a JSON.parses THIS ONE to
 // compare them — so nothing inside the braces below may carry a comment, however useful. Notes go here.
 const ANSWER_SCHEMA = {
   type: "OBJECT",

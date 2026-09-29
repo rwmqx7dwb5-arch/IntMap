@@ -112,7 +112,7 @@
  *  the predicate is the caller's, passed in and called, never reimplemented.
  *  ⚠ NO DEPENDENCIES. Pure arithmetic on numbers: no geometry kernel, no registry, no DOM. It is
  *  loadable in Node, and it publishes only if a `window` exists.
- *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③): an unexported top-level declaration in js/
+ *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/layer-boot-graph-checks.test.mjs #R175 ③): an unexported top-level declaration in js/
  *  would be a global before the bundle.
  * ==========================================================================*/
 

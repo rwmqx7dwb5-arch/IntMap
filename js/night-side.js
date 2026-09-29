@@ -432,8 +432,8 @@ window.IntMapNightSide=(function(){
      request, no arithmetic — the check below is a zoom comparison on moveend. */
   /* ⚠ (#R196) NOTHING THIS MODULE DOES HAPPENS INSIDE A GESTURE. `consider` is called from `moveend`,
      which is the busiest moment in the app: the renderer is uploading tiles, every other layer is
-     reacting, and two tests measure exactly that window — tests/r170 gives a freshly ticked layer
-     1,500 ms to paint, and tests/r186's aircraft sweep zooms out and then has ten seconds to observe
+     reacting, and two tests measure exactly that window — tests/shell-panels-tools-checks.test.mjs (#R170) gives a freshly ticked layer
+     1,500 ms to paint, and tests/shell-sky-space-checks.test.mjs (#R186)'s aircraft sweep zooms out and then has ten seconds to observe
      a re-plan. Building a source and a layer there is work in the wrong place even when it is small,
      so the whole build is deferred to the first IDLE after the camera settles. The effect is only
      visible at whole-Earth zooms, where nobody is waiting on a frame; the cost of being a moment late

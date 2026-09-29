@@ -300,11 +300,11 @@ test('R224 ① the tile cache is versioned, refuses placeholders and expires', a
   const cur = [...(await (async () => { await SW.dispatch('fetch', { request: { method: 'GET', url: TILE('server.arcgisonline.com') } }); return SW.stores.keys(); })())];
   assert.equal(cur.length, 1, 'one tile cache is written to');
   const current = cur[0];
-  SW.cacheOf('intmap-tiles-v1'); SW.cacheOf('intmap-subcables-v1');
+  SW.cacheOf('intmap-tiles-v1'); SW.cacheOf('intmap-page-subcables-v1');
   await SW.dispatch('activate', {});
   assert.ok(!SW.stores.has('intmap-tiles-v1'), 'a poisoned v1 tile cache must be purged on activate');
   assert.ok(SW.stores.has(current), 'the current tile cache survives activate');
-  assert.ok(SW.stores.has('intmap-subcables-v1'), 'a page-owned intmap-* cache is not this worker’s to delete (#R189)');
+  assert.ok(SW.stores.has('intmap-page-subcables-v1'), 'a page-owned intmap-* cache is not this worker’s to delete (#R189)');
   assert.notEqual(current, 'intmap-tiles-v1', 'the tile cache is not the v1 every old browser holds');
 
   /* a 200-with-no-imagery is never stored — the same size js/sat-proto.js uses — and only on imagery hosts */

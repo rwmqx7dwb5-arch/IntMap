@@ -346,7 +346,7 @@ function build() {
 /* ── --check: re-derive and compare, offline ──────────────────────────────────────────────────── */
 /* ⚠ (#R564) `--sample N` RE-DERIVES EVERY Nth RING INSTEAD OF ALL OF THEM, and it exists because
    this round took the marked population from 4,830 rings to 25,516. The exhaustive run is what
-   `npm run check:bordercoast` does in CI; the copy inside `npm test` (tests/r531-checks ①) samples,
+   `npm run check:bordercoast` does in CI; the copy inside `npm test` (tests/history-border-coast-checks.test.mjs #R531 ①) samples,
    so the suite pays about what it paid before. Sampling changes only HOW MANY rings are re-derived
    — the shape checks below still walk every entry, and a wrong mark anywhere is still a wrong mark
    the CI gate fails on. Without the flag the check is exhaustive, so the default cannot rot. */

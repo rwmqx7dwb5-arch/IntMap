@@ -1726,7 +1726,7 @@ window.IntMapModules.flightSim=function(HOST){
        swaps `window.countryGeo` for the 10 m collection once it arrives (#R195's note puts that at
        4-10 s). The two disagree about every bay narrower than the coarse file can resolve, and the
        answer here was decided once, on the first physics frame, and then kept for the whole flight.
-       MEASURED at 138.66°E 35.05°N — Suruga Bay, where tests/r173 spawns: 110 m (177 features) puts
+       MEASURED at 138.66°E 35.05°N — Suruga Bay, where tests/engine-flight-sim-checks.test.mjs (#R173) spawns: 110 m (177 features) puts
        the point INSIDE Japan, 10 m (258 features) puts it in the SEA. The simulator therefore ran
        the entire flight believing it was over land, so #R152's sea-surface floor never engaged, the
        physics ground stayed the DEM's BATHYMETRY (measured −994 m), and the aeroplane could be flown

@@ -30,8 +30,8 @@
  *  `turnBudgetMs` (the whole turn) — because that is the layer that owns the loop. Naming them here
  *  as well would be two homes for one number, and the day they disagreed the wrong one would win.
  *
- *  ⚠ This file exists because js/atlas-console.js is under a SHRINK-ONLY line ceiling (tests/r199 ⑤,
- *  tests/r318 ⑨b, tests/r419 ⑨d). The rule #R199 wrote is that a subject moves OUT, never that the
+ *  ⚠ This file exists because js/atlas-console.js is under a SHRINK-ONLY line ceiling (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤,
+ *  tests/atlas-capabilities-checks.test.mjs #R318 ⑨b, tests/atlas-turn-checks.test.mjs #R419 ⑨d). The rule #R199 wrote is that a subject moves OUT, never that the
  *  ceiling moves up — so the clocks, the bounded gather and the evidence fetcher live here.
  * ==========================================================================*/
 import { fetchViaProxy } from './proxy-fetch.js';   /* the app's ONE relay ladder */

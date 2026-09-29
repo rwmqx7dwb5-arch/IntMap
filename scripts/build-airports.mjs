@@ -39,7 +39,7 @@
  *    node scripts/build-airports.mjs --check    fetch, derive, compare with the committed file
  *
  *  ⚠ NOT IN `npm test`. It needs the network. The committed file is validated OFFLINE by
- *  tests/r666-checks.test.mjs, and that the weighting actually reaches the outbreak is measured in
+ *  tests/shell-layer-panel-checks.test.mjs (#R666), and that the weighting actually reaches the outbreak is measured in
  *  the same file by RUNNING the model.
  *
  *  SOURCES

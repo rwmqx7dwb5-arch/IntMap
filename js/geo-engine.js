@@ -39,7 +39,7 @@ import { makeClickOwnership } from './click-ownership.js';
    escape hatch returns the live MapLibre map for the many features not yet generalised (deliberately not forced). ===== */
 window.IntMapGeoEngine=(function(){
   /* (#R322) the two modules this file was split into are FACTORIES, so nothing sits at the top
-     level of either (tests/r175-checks ③). Destructured once, here, so every call site below reads
+     level of either (tests/layer-boot-graph-checks.test.mjs #R175 ③). Destructured once, here, so every call site below reads
      exactly as it did when the code lived in this file.
      ⚠ ONE census for the whole engine — CMD is the single policy every view shares. The TALLIES
      are per adapter (makeCommandLog, below), which is the half that must not be shared. */
@@ -66,7 +66,7 @@ function _m(){ return window.__imap||null; }
          isAnimating() read «not animating» for every flyTo.
      So every read of them goes through these two, and nothing else in this file names `_camera`.
      Both answer null rather than throwing when the internal is gone, and eyePivotDiag() and the
-     contract tests (tests/maplibre-6-migration-checks, tests/r179.spec) SAY so — a renamed internal
+     contract tests (tests/maplibre-6-migration-checks, tests/seam-coupling-and-camera-checks.test.mjs (#R179).spec) SAY so — a renamed internal
      must fail a test, not quietly turn a feature off (#R162). The transform is re-read on every
      call, never cached: a projection change REPLACES it (Camera.migrateProjection). */
   function _cam(m){ try{ const c=m&&m._camera; return (c&&typeof c==='object')?c:null; }catch(_){ return null; } }
@@ -334,7 +334,7 @@ function _m(){ return window.__imap||null; }
      getter for its map rather than closing over one. */
   /* (#R322) the renderer command census — the comparisons, the switches and the tally live in
      js/geo-command-log.js. They moved there because the shell has a line ceiling and this file is
-     part of it (tests/r168-checks.test.mjs); nothing in that module names the renderer, so the
+     part of it (tests/news-module-split-checks.test.mjs (#R168)); nothing in that module names the renderer, so the
      coupling gate is untouched. See its header for what is measured and what ships switched on. */
   /** @returns {import('../types/geo-engine').MapLibreAdapter} */ function makeMapLibreAdapter(_m){
   /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
@@ -549,7 +549,7 @@ function _m(){ return window.__imap||null; }
      started at, so past ~95° its eye (radius √(1 + 2·dg·cos p + dg²)) drops inside the planet.
      MEASURED on globe z6 Tokyo, before this branch: the check rewrote the proposal from pitch 96 to
      95.21 on the first frame past 93°, the hook then held the eye of that rewritten camera, and the
-     viewpoint slid 1,223 km while the drag continued (tests/r179 globe z6/z9/Tromsø).
+     viewpoint slid 1,223 km while the drag continued (tests/seam-coupling-and-camera-checks.test.mjs (#R179) globe z6/z9/Tromsø).
      The repair is the same one, in the sphere's own degree of freedom: the hook holds the eye by
      spending the ZOOM and walking the centre (the target elevation is inert on a sphere — MapLibre
      says so itself), so the camera this engine is about to produce is the hook's own solve, pitch
@@ -691,7 +691,7 @@ function _m(){ return window.__imap||null; }
        differently. Cesium overrides it to null: it has a real SkyBox and needs no help.
        The rotation chain the sky code applies to this is the renderer's own — Transform._calcMatrices
        builds Rz(roll)·Rx(−pitch)·Rz(bearing)·Rx(lat)·Ry(−lng) for the globe, and the atmosphere
-       shader's getSunPos() applies exactly the same chain to the light direction. tests/r186 checks
+       shader's getSunPos() applies exactly the same chain to the light direction. tests/shell-sky-space-checks.test.mjs (#R186) checks
        the reconstruction against map.project() rather than trusting that reading. */
     viewFrame(){ const m=_m(); if(!m) return null;
       try{ const t=_tr(m); if(!t) return null;
@@ -878,7 +878,7 @@ function _m(){ return window.__imap||null; }
           /* ⚠ ONLY WHEN THE HORIZON IS IN THE PICTURE — AND THIS IS NOT A TASTE JUDGEMENT, IT IS A
              REGRESSION THIS ROUND CAUSED AND CAUGHT. The far plane is an input to `getBounds()` as
              well as to what is drawn, so stretching it at pitch 0 widened the bounds — and
-             js/terrain-water.js FITS ITS MODEL TO THE BOUNDS. tests/r176 «a levee drawn on flat
+             js/terrain-water.js FITS ITS MODEL TO THE BOUNDS. tests/sim-tools-wiring-checks.test.mjs (#R176) «a levee drawn on flat
              ground creates a basin that holds water» went from 4 m of water to 0.077 m, because the
              same four million cubic metres were being spread over a far bigger grid. It passes on
              main and failed here, which is the whole of the attribution.
@@ -1245,7 +1245,7 @@ function _m(){ return window.__imap||null; }
       if((CMD.on||CMD.skip.sourceData)&&skipData(_cmd,id,s,data,opts,_sd)) return;
       /* ⚠⚠ (#R344) {add,remove} INSTEAD OF THE WHOLE COLLECTION, when the caller can identify its
          own features. `data` stays the truth — a source that never took a `diffable` whole write, an
-         adapter without `updateData`, or a throw all fall back to it. See tests/r344-checks.mjs. */
+         adapter without `updateData`, or a throw all fall back to it. See tests/layer-warnings-drawing-checks.test.mjs (#R344).mjs. */
       const _d=(opts&&opts.diff&&_sd.diff[id]&&s.updateData
         &&((opts.diff.add?opts.diff.add.length:0)+(opts.diff.remove?opts.diff.remove.length:0)))?opts.diff:null;
       if(_d){ const _td=t0(); try{ s.updateData(_d); _cmd.diffed('sourceData'); t1(_cmd,'sourceData',_td); return; }catch(_){} }
@@ -1441,7 +1441,7 @@ function _m(){ return window.__imap||null; }
       }
       return { on:CMD.on, detail:CMD.detail, phase:CMD.phase, skip:Object.assign({},CMD.skip) };
     },
-    sceneStats(){ const m=_m(); if(!m) return null;   /* ⚠⚠ (#R671) counts WITHOUT copying the style, and a `tiles` that answers null rather than 0 when the tile holder is neither of the two below (5.x tileManagers · ≤4.x sourceCaches). The measurements, and why each one is shaped this way, are in js/perf-hud.js's header — the shell has a line ceiling (tests/r168 #8 — a line ceiling retired in #R795) and this file is in it. */
+    sceneStats(){ const m=_m(); if(!m) return null;   /* ⚠⚠ (#R671) counts WITHOUT copying the style, and a `tiles` that answers null rather than 0 when the tile holder is neither of the two below (5.x tileManagers · ≤4.x sourceCaches). The measurements, and why each one is shaped this way, are in js/perf-hud.js's header — the shell has a line ceiling (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) and this file is in it. */
       try{ const S=m.style||{}; let tiles=null,held=null,srcN=null,tvia='unknown';
         for(const [own,live,cache] of [[S.tileManagers,(c)=>c._inViewTiles&&c._inViewTiles._tiles,(c)=>c._outOfViewCache&&c._outOfViewCache.order],[S.sourceCaches,(c)=>c._tiles,(c)=>c._cache&&c._cache.order]]){
           if(!own) continue; const keys=Object.keys(own); tiles=0; held=0; srcN=keys.length; tvia='private';
@@ -1978,7 +1978,7 @@ function _m(){ return window.__imap||null; }
      js/volume3d.js keeps its documented fallback), and `orbit3d` was absent altogether while
      addOrbit/setOrbit/removeOrbit have shipped since #R202 — so contracts().cesium.capabilities
      .orbit3d read `undefined`, which a caller cannot tell apart from «this engine cannot».
-     tests/r323-checks parses all three capability tables and compares them as key sets and as
+     tests/engine-capability-contract-checks.test.mjs (#R323) parses all three capability tables and compares them as key sets and as
      values; a whole-file regex cannot, because two of the three live in THIS file. */
   /** @type {import('../types/geo-engine').DeclaredContract} */ const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
     /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its

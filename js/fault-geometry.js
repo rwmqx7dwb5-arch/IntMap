@@ -49,7 +49,7 @@
  *  「一貫して再計算」 has to mean. Every override records itself, and `auto` says which of the five
  *  numbers the reader is still letting the model choose.
  *
- *  ⚠ PURE ARITHMETIC — no DOM, no renderer, no app state. That is what lets tests/r224-checks verify
+ *  ⚠ PURE ARITHMETIC — no DOM, no renderer, no app state. That is what lets tests/perf-startup-and-cache-checks.test.mjs (#R224) verify
  *  it in Node against published earthquakes instead of against a screenshot.
  * ==========================================================================*/
 window.IntMapFaultGeom = (function () {

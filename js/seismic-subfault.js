@@ -36,7 +36,7 @@
  *
  *  ② MOMENT IS CONSERVED, EXACTLY. The slip field is normalised so Σ μ·Aᵢ·Dᵢ = M₀ to the last bit,
  *     whatever the roughness did. That is the standing requirement 「総モーメントを保存した」 and it
- *     is asserted rather than assumed — tests/r263-checks ⑤ re-adds the subfault moments.
+ *     is asserted rather than assumed — tests/hazard-seismic-source-checks.test.mjs #R263 ⑤ re-adds the subfault moments.
  *
  *  ③ RUPTURE TIME — the tear runs out from the hypocentre across the plane at Vr, so subfault i
  *     starts at |rᵢ − r_hypo| / Vr measured ON THE FAULT, not through the ground. Vr is the same
@@ -53,7 +53,7 @@
  *     subfault source duration from below: a subfault cannot radiate for less time than it slips.
  *
  *  ⚠ PURE ARITHMETIC — no DOM, no renderer, no fetch, no app state, and no dependency on
- *  js/seismic.js. That is what lets tests/r263-checks verify moment conservation, the asperity
+ *  js/seismic.js. That is what lets tests/hazard-seismic-source-checks.test.mjs (#R263) verify moment conservation, the asperity
  *  fraction and the rupture-time field in Node, the same contract js/fault-geometry.js states.
  * ==========================================================================*/
 window.IntMapSubfault = (function () {
@@ -164,7 +164,7 @@ window.IntMapSubfault = (function () {
        catalogue whose epicentre sits off its own published rectangle) then put the start of the tear
        off the fault. Every subfault's rupture time is measured from that point, so instead of one
        end breaking at t = 0 the WHOLE fault broke late and nearly simultaneously — which silently
-       removes the directivity this file exists to produce. Caught by tests/r263-checks ③. */
+       removes the directivity this file exists to produce. Caught by tests/hazard-seismic-source-checks.test.mjs #R263 ③. */
     const u0 = Math.max(-L / 2, Math.min(L / 2, dxKm * sa + dyKm * ca));
     const zH = isFinite(f.hypoDepthKm) ? +f.hypoDepthKm : (zTop + W * sinD / 2);
     const w0 = Math.max(0, Math.min(W, sinD > 1e-3 ? (zH - zTop) / sinD : W / 2)) - W / 2;
@@ -200,7 +200,7 @@ window.IntMapSubfault = (function () {
     }
 
     /* the asperity statistic ① is calibrated against, measured on the field that was actually built
-       — so a reader (and tests/r263-checks) can see whether the calibration held for this rupture */
+       — so a reader (and tests/hazard-seismic-source-checks.test.mjs (#R263)) can see whether the calibration held for this rupture */
     const meanSlip = M0 / (mu * areaKm2 * 1e6 * subs.length);
     let asp = 0; for (const s of subs) if (s.slipM >= ASPERITY_RATIO * meanSlip) asp++;
 

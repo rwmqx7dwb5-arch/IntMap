@@ -490,7 +490,7 @@ window.IntMapModules.toolPanel=function(HOST){
      Factory scope rather than inside showContextMenu, because the menu is a singleton and so is the
      bottom sheet it clamps against: a per-open cache would be re-warmed on every right-click and the
      `--sheet-cover` key would be re-read from a computed style each time. See the ⚠ box on place(). */
-  /* ⚠ built on first use, not here: tests/r168 #4 requires a factory body to DECLARE and call
+  /* ⚠ built on first use, not here: tests/news-module-split-checks.test.mjs (#R168) #4 requires a factory body to DECLARE and call
      nothing while it runs (a factory that works at construction time makes the module's cost a
      property of being imported). One MediaQueryList for the life of the page either way. */
   let _mq, _cover=null, _coverKey=null;

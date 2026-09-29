@@ -49,7 +49,7 @@ const read = (p) => { try { return readFileSync(join(ROOT, p), 'utf8'); } catch 
 /* ── the reader-facing documents, and what wires each one ──────────────────────────────────────
    ⚠ A LIST OF DOCUMENTS IS NOT A LIST OF NAMES TO MAINTAIN: it is every .html a reader can open,
    and the two that are deliberately excluded say so with a reason. A new reader-facing page that
-   is not added here is caught by tests/r249-checks ③, which enumerates *.html from disk. */
+   is not added here is caught by tests/shell-i18n-audits-checks.test.mjs #R249 ③, which enumerates *.html from disk. */
 const DOCS = [
   /* ⚠ index.html is wired by the REGISTRY, not by the app shell: js/lang-registry.js already owns
      `lang` and the keyed table, and js/app-body.js has a line ceiling that only ever comes down

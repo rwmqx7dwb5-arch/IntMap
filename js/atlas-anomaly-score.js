@@ -40,7 +40,7 @@
  *
  *  Pure: no DOM, no globals, no network, no clock (the caller passes `nowMs`, because a module that
  *  reads the clock cannot be tested and #R380 found rows whose age was computed against the wrong
- *  one). tests/r397-checks.test.mjs feeds it a deliberately quake-heavy day.
+ *  one). tests/atlas-console-observers-checks.test.mjs (#R397) feeds it a deliberately quake-heavy day.
  * ==========================================================================*/
 
 export function makeAtlasAnomalyScore() {

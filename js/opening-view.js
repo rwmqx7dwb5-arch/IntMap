@@ -28,7 +28,7 @@
  *  map is being CREATED, long before any of that module exists.
  * ==========================================================================*/
 
-/* ⚠ ONE EXPORT, AND EVERY CONSTANT INSIDE IT. `tests/r175-checks ③` holds js/ modules to two
+/* ⚠ ONE EXPORT, AND EVERY CONSTANT INSIDE IT. `tests/layer-boot-graph-checks.test.mjs #R175 ③` holds js/ modules to two
    rules at once — no unexported top-level declaration, and no export that nothing imports by name —
    and a module of small pure helpers satisfies both only as a single object (#R202 wrote this down
    after js/sky-model.js hit it). */
