@@ -22,10 +22,12 @@ test.beforeAll(async ({ browser }) => {
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  await page.waitForFunction(
-    (g) => g.every((k) => typeof window[k] !== 'undefined') && !!(window.__CSHAPES && window.__CSHAPES.rings),
-    CRITICAL_GLOBALS, { timeout: 45_000 },
-  );
+  await page.waitForFunction((g) => g.every((k) => typeof window[k] !== 'undefined'), CRITICAL_GLOBALS, { timeout: 45_000 });
+  /* The CShapes bundle is no longer warmed at boot: it waits for the reader to head for the past
+     (js/chronos.js IntMapTime.onIntent — dev-notes/2026-09-29-history-prefetch-on-demand.md). This
+     file reads it, so it says so the way the Chronos button does, then waits for the bundle. */
+  await page.evaluate(() => window.IntMapTime.intent('test:reads-cshapes'));
+  await page.waitForFunction(() => !!(window.__CSHAPES && window.__CSHAPES.rings), null, { timeout: 60_000 });
   await page.waitForTimeout(1500);
 });
 

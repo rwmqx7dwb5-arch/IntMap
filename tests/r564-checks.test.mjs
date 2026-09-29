@@ -169,7 +169,7 @@ test('⑤ the deeper bundle is not on the boot path and is not warmed', () => {
   assert.ok(!/hist-admin2\.js/.test(rd('src/main.js')), 'data/hist-admin2.js is imported by the shell');
   const warm = liftFunction(TA, 'warm');
   assert.ok(warm.includes('T1.load()') && !warm.includes('T2.load()'),
-    'the idle warm-up fetches the deeper tier — 10 MB speculatively, for a tier that is not drawn yet');
+    'the warm-up fetches the deeper tier — speculatively, for a tier that is not drawn yet');
 });
 
 /* ── ⑥ the two lists of layer ids agree ───────────────────────────────────────────────────────── */

@@ -138,6 +138,33 @@
     try { return typeof fallback === 'function' ? !!fallback() : !!fallback; } catch (_) { return false; }
   }
 
+  /* ══ MAY THIS DEVICE FETCH SOMETHING NOBODY HAS ASKED FOR YET? ════════════════════════════════
+     A speculative copy — a bundle fetched ahead of the feature that draws it — is worth its bytes
+     only where the bytes are cheap. Two facts make them dear, and both were already the rule:
+       · the CONNECTION says so: Data Saver, or an effective type of 2g (#R192 — the history bundle
+         then; the same line guarded the gazetteer warm-up, #R193);
+       · the DEVICE is a phone: its connection is the one the tiles the reader is looking at are
+         queued on (#R201), and «phone» is `deviceIsPhone`, never a width (#R668).
+     ⚠ WHY IT IS ANSWERED HERE. The history border file and the historical subdivision file each
+     carried their own copy of both lines, word for word; a rule written twice is a rule that drifts
+     (the header of `deviceIsPhone` above measured three such copies losing a clause). This is the one
+     place the question is answered, and a caller that wants the speculative copy asks it.
+     ⚠ It answers «may I fetch AHEAD», never «may I fetch». The real load a feature does when it is
+     used runs on every device and connection; only the head start is withheld.
+     `fallback` has the meaning it has for `deviceIsPhone`: the caller's old width test, for the boot
+     window before the page has published `_imPhoneClass`. */
+  function connectionIsMetered() {
+    try {
+      const n = G.navigator;
+      const c = n && (n.connection || n.mozConnection || n.webkitConnection);
+      return !!(c && (c.saveData === true || /(^|-)2g$/.test(c.effectiveType || '')));
+    } catch (_) { return false; }
+  }
+  function maySpeculate(fallback) {
+    if (connectionIsMetered()) return false;
+    return !deviceIsPhone(fallback);
+  }
+
   /* ── the answer a store asks for ─────────────────────────────────────────────────────────────
      `demTiles('cesium')` → how many decoded tiles that store may hold ON THIS DEVICE. */
   function demTiles(name) {
@@ -183,7 +210,7 @@
 
   G.IntMapMemBudget = {
     DEM_TILE_BYTES, BUDGET_BYTES, SHARE, MIN_TILES,
-    adopt, isPhone, deviceIsPhone, demTiles,
+    adopt, isPhone, deviceIsPhone, connectionIsMetered, maySpeculate, demTiles,
     register, relieve, heldBytes, stores,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : self);

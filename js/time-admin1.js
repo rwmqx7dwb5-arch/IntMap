@@ -924,29 +924,27 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       if (gone && _imCanDraw()) setTimeout(() => { for (const t of TIERS) t.reassert(); _applyNow(); }, 160);
     });
 
-    /* ── warm the bundle at idle, and NOT on a phone or Data Saver ──────────
-       The same rule and the same reasons as data/cshapes.js (#R192/#R201): it is a
-       speculative copy for a feature that has not been asked for, and on a phone it
-       queues in front of the tiles the reader is actually looking at. `load()` below
-       is what draws, so nothing is lost by skipping it — only the head start.
-       ⚠ ONLY THE FIRST TIER IS WARMED. The deeper one is 15.5 MB and is not drawn until the reader
-       has zoomed past z6, so warming it would be a speculative copy of a speculative copy. */
+    /* ── warm the first tier when the reader heads for the past, and NOT on a phone or Data Saver ──
+       The same rule and the same reasons as data/cshapes.js (js/time-borders.js `warm`): it is a
+       speculative copy for a feature that has not been asked for, and on a phone it queues in front
+       of the tiles the reader is actually looking at (#R192/#R201; «phone» asks the DEVICE, #R669).
+       Both halves of that rule are answered in ONE place, js/mem-budget.js `maySpeculate` — this
+       file used to carry its own word-for-word copy. `load()` below is what draws, so nothing is
+       lost by skipping it — only the head start.
+       ⚠ (2026-09-29) NOT AT BOOT. This ran at the map's first idle on every desktop session and put
+       the largest file the app ships through the main thread's parser for readers who never touched
+       a year. It now waits for js/chronos.js `IntMapTime.onIntent` — the Chronos button, a year
+       control, or the clock set to a past year — and then for an idle thread, as before.
+       ⚠ ONLY THE FIRST TIER IS WARMED. The deeper one is not drawn until the reader has zoomed past
+       its own minimum zoom, so warming it would be a speculative copy of a speculative copy. */
     (function warm() {
       const pf = () => { T1.load().catch(() => {}); };
-      const start = () => {
-        try { const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-          if (c && (c.saveData === true || /(^|-)2g$/.test(c.effectiveType || ''))) return; } catch (_) {}
-        /* ⚠ (#R669) the phone half of that rule is a question about the DEVICE, and `HOST.isMobile`
-           is a 768 px media query: a phone held sideways is 844 px, answers "desktop", and warms the
-           first tier anyway — the speculative copy this block exists to withhold, on the device it
-           exists to withhold it from. One owner (js/mem-budget.js); `HOST.isMobile` stays as the
-           fallback for the boot window before the shell has published `_imPhoneClass`. */
-        try { if (window.IntMapMemBudget.deviceIsPhone(HOST.isMobile)) return; } catch (_) { try { if (HOST.isMobile && HOST.isMobile()) return; } catch (__) {} }
-        if (typeof requestIdleCallback === 'function') requestIdleCallback(pf, { timeout: 8000 }); else setTimeout(pf, 3500);
-      };
-      let started = false; const once = () => { if (started) return; started = true; start(); };
-      try { GE().events.once('idle', () => setTimeout(once, 900)); } catch (_) {}
-      setTimeout(once, 6000);
+      try {
+        window.IntMapTime.onIntent(() => {
+          try { if (!window.IntMapMemBudget.maySpeculate(HOST.isMobile)) return; } catch (_) { return; }
+          if (typeof requestIdleCallback === 'function') requestIdleCallback(pf, { timeout: 8000 }); else setTimeout(pf, 3500);
+        });
+      } catch (_) {}
     })();
 
     /* ── what the reader (and Atlas) can ask ───────────────────────────────
