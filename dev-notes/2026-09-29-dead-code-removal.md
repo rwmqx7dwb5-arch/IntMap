@@ -105,3 +105,11 @@ Rimland / 旧ソ連の塗りは #R225 で行が消えてから UI からも Atla
   消えたのは対象の 1 件だけ。⑥（このローダ専用の変異）は対象ごと消した。
 - 「プロトコルは 7 つ」（js/dash-extended.js・tests/helpers/network.js）——**否定**。数えると
   `imapsat`・`om`・DEM（`imapterr`）・world-base・`imapcrop` の **5 つ**。pmtiles を入れても 6 で、7 は前から誤り。
+
+## 追補: ACLED ブロックも撤去した（i18n の床を理由つきで下げた）
+
+- 最初は残した。`tests/r164-checks` #2 が「`renderUI` は実行時に再代入される」を要求し、その唯一の再代入がこの到達不能なブロックの中にあったから。だがその検査のコメント自身が「死んだコードの中」と書いており、**主張は実行時に一度も真でなかった**（綴りが在ることを見ていただけ）。r164 は `renderUI` だけを「再代入が無くてもゲッターは正しい」と理由つきで扱い、ゲッターの要求は保った。
+- `js/app-body.js` の `return; /* ACLED card retired (#R22) */` で始まる IIFE（94 行）を撤去。`window.IntMapACLED` は一度も代入されていなかった。
+- その中の `L(…)` の訳（de/es/ru の位置引数 12 行、fr/ko/zh/zh-hans の inline 9 行）と、どのファイルも名指さなくなった 7 キー・28 行（`scripts/i18n-dead-key-codemod.mjs --write`、`scripts/i18n/r243-a.json` の 7 行）が消えた。**どれも到達不能なコードの文で、読者が一度も見られなかったもの**なので、`tests/i18n-coverage-floor.json` を `scripts/i18n-audit.mjs --update-floor` で下げた（CONSTITUTION.md §0-3 の「読者が既に持っているもの」には当たらない）。衝突の許可表から、もう衝突しない `'Loading…'` を外した（門の指示）。
+- `tests/keyboard-reach-baseline.json` を `node scripts/keyboard-reach.mjs --update` で下げた（ACLED の click 受け手 2 個が消えた）。
+- 以降、`api.acleddata.com` はコードのどこにも無い。
