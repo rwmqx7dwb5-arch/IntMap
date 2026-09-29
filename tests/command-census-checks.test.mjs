@@ -28,15 +28,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 /* ⚠ comments in this repository QUOTE the spellings they replaced, so a raw grep proves nothing —
    the mistake has been made eight times (see #R313's note). Everything below reads `code()`. */
-function code(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
-}
 
 /* Lift one function out of a file and make it callable. This is what turns 「the guard is written」
    into 「the guard behaves」 — the difference #R301 found between a check and a test. */

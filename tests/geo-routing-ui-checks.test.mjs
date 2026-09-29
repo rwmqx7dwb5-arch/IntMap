@@ -20,6 +20,7 @@ import { installSafe } from './helpers/safe-html.mjs';
 import { until } from './helpers/wx-ecmwf-page.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { ROOT, isolate, read } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -52,9 +53,7 @@ describe('§ #R291 · the route store and panel', () => {
      the checks below hit it on their first run: `<style>` matched 「this file adds no <style>」,
      `max="2025"` matched 「max="2025"の固定値を廃止し」, `.rp-close').onclick` matched the sentence
      describing the handler that was deleted). So the negative checks read a comment-free copy. */
-  const bare = (p) => read(p)
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .split('\n').map((l) => l.replace(/(^|[^:'"\\`])\/\/.*$/, '$1')).join('\n');
+  const bare = (p) => codeOnly(read(p));
 
   /* ── the browser shim these four modules need, and nothing more ─────────────────────────────────
      `pick` / `t` reproduce js/lang-registry.js's positional rule for the five languages the call
@@ -829,7 +828,7 @@ describe('§ #R299 · the route panel as a window, selection and closing', () =>
 
   /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
      This project has paid for that twenty-four times; ask the question of the text that RUNS. */
-  const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const noComments = (src) => codeOnly(src);
 
   test('R299 ⑦ minimising banks the size before it takes it away', () => {
     /* 綴りのまま: 対象は描画エンジンか DOM の上で組み立てられる closure の中にあり、Node で呼べる扉が無い（最小化ボタンと MutationObserver）。 */

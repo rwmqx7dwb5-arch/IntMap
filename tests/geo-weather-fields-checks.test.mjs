@@ -15,6 +15,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 import { isolate, read } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R298 · the first read, the colour field, dated layers   (was tests/r298-checks.test.mjs, in part)
@@ -132,7 +133,7 @@ describe('§ #R299 · frames per time, overtaken reads, the staircase', () => {
 
   /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
      This project has paid for that twenty-four times; ask the question of the text that RUNS. */
-  const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const noComments = (src) => codeOnly(src);
 
   /* ── ⑥ the wind reaches the SAME picture with less waiting and less traffic ────────────────── */
   test('R299 ⑥ a frame is kept per TIME, not one per variable — a step back costs nothing', async () => {

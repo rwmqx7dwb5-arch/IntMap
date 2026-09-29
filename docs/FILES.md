@@ -1548,11 +1548,17 @@ scripts/
                                   LineTerminatorSequence で割り、各行が自分の終端子を持つ
                                   ⚠ **例外は `crlfBytes` 1 つ**——「読み手に何バイト渡るか」だけは
                                   復帰文字が主題そのものなので、正規化せず最悪値を数える（#R718）
-  code-only.mjs                   ソース検査は**散文ではなくコード**を読む。行／ブロックのコメントだけを
-                                  外し、文字列・テンプレート・正規表現リテラルは1文字も変えない。
-                                  ⚠ **写しを作らない**——`atlas-capability-audit.mjs` と
-                                  `tests/helpers/fn-cors.js` は両方ここから import する
-                                  （`tests/r345-checks ⑩` が2本目の定義を落とす）
+  code-only.mjs                   ソース検査は**散文ではなくコード**を読む**唯一の**器具。既定は行／ブロックの
+                                  コメントだけを外し、文字列・テンプレート・正規表現リテラルは1文字も変えない。
+                                  写しが訊いていた問いは全部オプション: `lang`（js / css / html / sql）・
+                                  `offsets`（同じ長さ＝位置と行番号がそのまま）・`literals:'blank'`（リテラルも空白に）・
+                                  `parser:'acorn'`（文法の答え。読めなければ throw）。使い方は `docs/TESTING.md`。
+                                  ⚠ **写しを作らない**——`tests/r345-checks ⑩` と下の `comment-stripper` 規則が落とす
+  comment-strippers.mjs           **コメント剥がしの写しの台帳**（`npm run check:static` の `comment-stripper` 規則）。
+                                  `tests/`・`scripts/` を構文木で読み、名前ではなく**形**（コメントの正規表現を
+                                  `.replace` する・開き記号を比べるループ・offset を使う `onComment`・コメント行を
+                                  落とす `filter`）で見つけ、`comment-strippers-ledger.json` と両方向に照合する。
+                                  `kept` は理由の文つき（正本そのもの・r345 の標本・stalled-fetch の変異体）。`--write` で下げる
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
@@ -1606,6 +1612,8 @@ tests/
                                   ——ΔE00 は 1.0 が JND、2 以上が一目で分かる帯
   helpers/load-wx-source.mjs      `fetchWithinFor(fetch)`＝本物の `js/fetch-deadline.js` を stub の fetch のスコープで評価した
                                   readers に `clockFor` を足した組（app-body と同じ組み方）。`loadWxSource(fetch)`＝出荷中の `js/wx-source.js` を同じ時計で評価する
+  helpers/ast.mjs                 検査がソースを**構文木で**読むときの設定を 1 か所に: `parseSource`（acorn・最新構文・
+                                  locations・module で読めなければ classic script・読めなければ throw）と `walkSource`
   helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
                                   prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
                                   コードだけ——コメントの中の `corsFor()` は契約ではない

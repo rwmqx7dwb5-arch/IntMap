@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R356 — from tests/r356-checks.test.mjs ════════ */
 {
@@ -38,7 +39,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(resolve(ROOT, p));
 /* comments are prose ABOUT the code and must never satisfy an assertion about the code — the
    「自分の検査が自分のコメントに当たる」 shape this project has now paid for ten times (#R320). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const MDL = () => read('js/wx-models.js');
 const EC = () => read('js/wx-ecmwf.js');
 const WX = () => read('js/weather.js');
@@ -375,7 +375,6 @@ test('R356 ⑫ a layer that can read three models is not labelled with one of th
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(resolve(ROOT, p));
 /* comments are prose ABOUT the code and must never satisfy an assertion about the code (#R320) */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* Load js/wx-models.js the way the browser does (the same harness tests/weather-models-checks.test.mjs #R356 uses). */
 function registry() {

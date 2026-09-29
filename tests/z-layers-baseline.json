@@ -1,6 +1,6 @@
 {
  "//": "written by scripts/z-layers.mjs --update — bare z-index numbers per file (ratcheted both ways) and every z-index of css/intmap.css resolved, in order (any change fails); held by check:static",
- "total": 144,
+ "total": 147,
  "literals": {
   "css/pages.css": 1,
   "js/analysis-correlate.js": 2,
@@ -47,6 +47,7 @@
   "js/weather.js": 1,
   "js/widget-layout.js": 1,
   "js/workspace.js": 11,
+  "admin.html": 3,
   "index.html": 5
  },
  "stack": [

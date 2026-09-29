@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -65,7 +66,6 @@ test('R235 i18n: the positional five have no site left in English', async () => 
 {
 const R = read;
 /* comments out, so a claim in prose can never satisfy a check about code (#R166) */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ⑤ THE SIXTH TRANSLATION SURFACE ═══════════════════════════════════════════════════════════
    The five instruments #R239 bound together all measure «how much of the table does this language
@@ -93,7 +93,6 @@ test('R240 ⑤ every user-visible attribute carries a translation key, and the g
     prose could contain ([[intmap-recurring-lessons]] E, eight rounds running). */
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑩ the ninth translation surface is measured and printed ──────────────────────────────────── */
 test('R242 ⑩ the gate reports the helper-ternary gap rather than hiding it', () => {
@@ -111,7 +110,6 @@ test('R242 ⑩ the gate reports the helper-ternary gap rather than hiding it', (
     Comments are stripped before matching wherever a test looks for a fragment that this file's own
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const node = (...a) => execFileSync(process.execPath, a.map((x) => (x.startsWith('-') ? x : join(ROOT, x))), { cwd: ROOT, encoding: 'utf8' });
 
 /* ── ⑨ the translation gates ──────────────────────────────────────────────────────────────────── */
@@ -157,7 +155,7 @@ test('R243 ⑨ one dictionary, six columns, and every row complete', () => {
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ══ ⑬ THE ELEVENTH SHAPE IS MEASURED, AND THE INSTRUMENT CANNOT BE QUIETLY DELETED ═══════════════
    A tuple of translations keyed by LANGUAGE CODE — `{en:'Tibet',jp:'チベット',…}` read as

@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R239 — from tests/r239-checks.test.mjs (7 of its 16 tests) ════════ */
 {
@@ -29,7 +30,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* (#R208/#R215) comments quote the instruction, and the instruction contains the very strings these
    tests look for — so every syntax check reads the file with its comments stripped. */
-const code = (p) => R(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(R(p));
 const run = (f, ...a) => execFileSync(process.execPath, [join(ROOT, 'scripts', f), ...a],
   { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 /* (tests-by-topic) ① and ④ below both ask the SAME audit of the SAME tree, and each run costs

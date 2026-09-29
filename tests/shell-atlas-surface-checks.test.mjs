@@ -17,7 +17,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code, codeOnly as noComments } from '../scripts/code-only.mjs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 
@@ -33,11 +33,9 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    and `{timeout:2000}` are all named in the note that says they are gone. #R208 and #R229 hit exactly
    this ("a check whose regex matches its own comment"), so the rule is now a helper: strip comments,
    then match syntax. */
-const noJs = (p) => read(p)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')                       /* block comments */
-  .replace(/^[ \t]*\/\/.*$/gm, ' ');
+const noJs = (p) => codeOnly(read(p));
                        /* whole-line // comments */
-const noHtml = (p) => read(p).replace(/<!--[\s\S]*?-->/g, ' ');
+const noHtml = (p) => codeOnly(read(p), { lang: 'html' });
 
 /* ── ⑤ Monitors is withdrawn, and every route with it ───────────────────────────────────────── */
 /* spelling kept: page markup / inline script (index.html) — only a browser document runs it. */
@@ -103,7 +101,6 @@ test('R231 AI research: the leading place-name line is asked against AND removed
 /* (#R296 — the round's own account of why these checks exist heads its other half, in tests/shell-weather-packs-routing-checks.test.mjs) */
 {
 /* comments out, so an assertion about code cannot be satisfied by prose about code */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
 /* ═══ ⑩ THE ATLAS ROUTE REPLY ════════════════════════════════════════════════════════════════ */
 /* spelling kept: browser script (js/atlas-console.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -183,7 +180,6 @@ test('R296 ⑪ a reader’s own message can be copied, by the same button', () =
 {
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-four times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑭ Atlas hands over the point it resolved, instead of throwing it away ───────────────────
    `case 'sun'` geocoded the place in the sentence, flew to it, and then called `open()` with no
@@ -207,7 +203,7 @@ test('R302 ⑭ Atlas passes the coordinate it resolved, and asks when it has non
 {
 /* the comments in this project carry the reasoning, and several of them QUOTE the spellings that
    were replaced — a check that greps them proves nothing (23 rounds of exactly that) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* the body of a named function declaration, brace-balanced (#R228 / #R307) */
 function fnBody(src, name) {
@@ -318,13 +314,13 @@ test('R483 ④ ユーザー吹き出しは半透明・縁あり・blur ありで
   assert.match(b, /-webkit-backdrop-filter:saturate\(var\(--glass-sat/, 'with the -webkit- twin every real blur in this app carries');
 
   /* ⚠ Atlas タブの塗りは分けたまま——依頼は吹き出しについてのものだった */
-  const cssSrc = codeOnly(read('css/intmap.css'));
+  const cssSrc = codeOnly(read('css/intmap.css'), { lang: 'css' });
   assert.match(cssSrc, /--atlas-grad:linear-gradient/, 'the tab keeps its own opaque token');
 });
 
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R483 ④ ガラスのトークンは light と dark の両方で定義されている', () => {
-  const css = codeOnly(read('css/intmap.css'));
+  const css = codeOnly(read('css/intmap.css'), { lang: 'css' });
   const root = /:root\{([\s\S]*?)\n\s*\}/.exec(css);
   assert.ok(root, 'the light :root block parses');
   const dark = /\[data-theme="dark"\]\{([\s\S]*?)\n\s*\}/.exec(css);

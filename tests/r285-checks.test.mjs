@@ -38,6 +38,7 @@ import * as catalogModule from '../js/atlas-catalog-text.js';
    prompt with the clauses MISSING. The real module is what keeps this a real measurement. */
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 /* (#R406) the tool surface is what SYS() carries now, so the measurement needs the real one */
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
@@ -47,7 +48,6 @@ const ATLAS_PERSONA = personaPrompt.spec;   /* the specification hangs off the s
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* Every file that builds an Atlas system prompt. The generated mirror is deliberately absent: it
    IS a second copy, by construction, and scripts/sync-atlas-persona.mjs owns it. */

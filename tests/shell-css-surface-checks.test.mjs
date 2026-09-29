@@ -21,7 +21,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,7 +40,7 @@ function cssRule(src, selector, mustContain) {
   /* ⚠ comments FIRST: a selector group is "everything since the last brace", so the long note above
      `.m-scrim` was being read as part of its selector and nothing matched. Same reason `code()`
      exists for the JS files. */
-  const flat = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  const flat = codeOnly(src, { lang: 'css' });
   const re = /([^{}]+)\{([^{}]*)\}/g;
   let m;
   while ((m = re.exec(flat))) {
@@ -114,7 +114,7 @@ test('R231 quality: the round changed no rendering setting', () => {
   /* 「見た目ゼロ変更のみ」 — the two levers named in the brief were NOT taken, and this records that
      so a later round cannot take them by accident and call it a #R231 follow-up. */
   const app = flat('js/app-body.js');
-  assert.ok(!/glass-motion|render-scale/.test(app.replace(/\/\*[\s\S]*?\*\//g, ' ')), 'the two withdrawn quality-reducers stay withdrawn (#R229)');
+  assert.ok(!/glass-motion|render-scale/.test(codeOnly(app)), 'the two withdrawn quality-reducers stay withdrawn (#R229)');
   const css = read('css/intmap.css');
   const blurs = (css.match(/backdrop-filter:/g) || []).length;
   assert.ok(blurs > 40, 'the frosted material is untouched — a round that thins it must say so here');
@@ -178,7 +178,7 @@ test('R485 ① the credit sits outside the map container, in the map column', ()
 /* ── ② the column is a flex column and the map yields the strip's height ─────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R485 ② the map column is a flex column and the map gives up the row', () => {
-  const css = codeOnly(read('css/intmap.css'));
+  const css = codeOnly(read('css/intmap.css'), { lang: 'css' });
   assert.match(css, /\.map-column\{[^}]*display:flex[^}]*\}/, 'the column is a flex container');
   assert.match(css, /\.map-column\{[^}]*flex-direction:column[^}]*\}/, 'stacked vertically');
   assert.match(css, /\.map-column > \.map-container\{[^}]*flex:1 1 auto[^}]*\}/,
@@ -190,7 +190,7 @@ test('R485 ② the map column is a flex column and the map gives up the row', ()
 /* ── ③ the strip is a row, not an overlay ───────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R485 ③ the base .map-credit rule is layout, not position', () => {
-  const css = codeOnly(read('css/intmap.css'));
+  const css = codeOnly(read('css/intmap.css'), { lang: 'css' });
   const base = /\n\s*\.map-credit\{([^}]*)\}/.exec(css);
   assert.ok(base, 'the base rule exists');
   assert.ok(!/position:absolute|position:fixed/.test(base[1]),
@@ -218,7 +218,7 @@ test('R485 ③ the base .map-credit rule is layout, not position', () => {
 /* ── ④ capture mode still does not take the attribution away ─────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R485 ④ the attribution survives capture mode', () => {
-  const css = codeOnly(read('css/intmap.css'));
+  const css = codeOnly(read('css/intmap.css'), { lang: 'css' });
   assert.ok(!/body\.capture-mode[^{]*\.map-credit/.test(css),
     'a screenshot of the map is exactly the artefact the attribution has to travel with');
 });
@@ -226,7 +226,7 @@ test('R485 ④ the attribution survives capture mode', () => {
 /* ── ⑤ the transient HUD did NOT move ────────────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R485 ⑤ nothing else in the map column was moved to make room', () => {
-  const css = codeOnly(read('css/intmap.css'));
+  const css = codeOnly(read('css/intmap.css'), { lang: 'css' });
   /* (#R504) moved 9 → 6 on request; the POINT of the assertion is unchanged — this round's strip
      did not move it, and tests/r252 ⑥ still pins the same pair of numbers. */
   assert.match(css, /\.coord-readout\{[^}]*bottom:6px; left:6px/,
@@ -256,7 +256,6 @@ test('R485 ⑤ nothing else in the map column was moved to make room', () => {
  *  in js/map-ui.js quotes `.im-front`, `2650` and `#legal-modal` while explaining the defect.
  * ==========================================================================*/
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① ONE NUMBER, TWO FILES ─────────────────────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
@@ -458,12 +457,11 @@ test('#R221 ⑥ the gesture-time glass suppression is gone (#R229) and stays gon
 /* ═══════════════════════ #R253 · from r253-checks.test.mjs ═══════════════════════ */
 /* (#R253 — the round's own account of why these checks exist heads its other half, in tests/shell-panels-tools-checks.test.mjs) */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ④ THE OPEN SIDEBAR IS IN FRONT ─────────────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('#R253 ④ an open sidebar out-ranks the floating panels, and the pointer moves that rank', () => {
-  const css = code(read('css/intmap.css'));
+  const css = code(read('css/intmap.css'), { lang: 'css' });
   const m = /body:not\(\.im-float-front\)\s*\.sidebar,\s*body:not\(\.im-float-front\)\s*#layer-sidebar-r\{\s*z-index:([^;}]+)/.exec(css);
   assert.ok(m, 'the front-most band for the two sidebars is gone');
   const z = zResolve(m[1], zTokens(read('css/intmap.css')));   /* (map-a11y-structure) a named layer, resolved */
@@ -498,7 +496,7 @@ test('#R253 ④ an open sidebar out-ranks the floating panels, and the pointer m
    would have lost it to a check that assumed the author kept a selector and its declarations on one
    line. Split the stylesheet into real rules and ask each rule about itself. */
 function cssRules(src, fromJs) {
-  const flat = src.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const flat = codeOnly(src, { lang: 'css' });
   const out = [];
   const re = /([^{}]+)\{([^{}]*)\}/g;
   let m;

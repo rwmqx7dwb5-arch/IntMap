@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 import { entryIndexFor, colourFor, indicesPainted, speedsPainted, nearestEntry, readPixel, explain } from './helpers/wind-ramp.js';
 import { deltaE00, VISIBLE_AT_A_GLANCE, deltaE00Lab, labFromRgb } from './helpers/colour-difference.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* (tests-by-topic) tests/helpers/wx-ecmwf-page.mjs `coldWxModel` installs a page as globalThis.window /
    document / fetch and leaves it there. When each round was its own file that ended with the process;
@@ -66,7 +67,6 @@ afterEach(() => {
  * ==========================================================================*/
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ⚠⚠⚠ (#R664) THE TICKET MOVED, SO THIS CHECK STOPPED READING THE SOURCE ═══════════════════════
    Until #R664 the supersession rule below was asserted as a SPELLING — `var mine = ++seq`, `if
@@ -426,7 +426,6 @@ test('#R287 ⑧ the coalesced time event drops the frame without cancelling the 
  * ==========================================================================*/
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── the shipped anchors, as DATA (no code is executed out of the source file) ────────────────
    ⚠ line-ending agnostic on purpose (#R283): sliced by name, never by a literal newline.

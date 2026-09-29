@@ -26,6 +26,7 @@ import * as LM from '../js/layer-manifest.js';
 import { OpeningView } from '../js/opening-view.js';
 import { appShell } from './app-source.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';
+import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -78,7 +79,7 @@ test('R206 ① the light launch mark carries the launch screen’s own colour, i
 /* ═══════════════════════ #R231 · from r231-checks.test.mjs ═══════════════════════ */
 /* (#R231 — the round's own account of why these checks exist heads its other half, in tests/shell-i18n-locales-checks.test.mjs) */
 {
-const noCss = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const noCss = (p) => codeOnly(read(p), { lang: 'css' });
 
 /* ── ① the launch mark's field IS the launch screen ─────────────────────────────────────────── */
 test('R231 launch screen: the dark mark is flattened onto the dark screen colour', () => {
@@ -266,9 +267,6 @@ const ADAPTERS = new Set(['geo-engine.js', 'cesium-engine.js']);
 const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && !ADAPTERS.has(f));
 
 /* strip /* … *\/ and // comments so "the code says X" is never satisfied by prose about X */
-function stripComments(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
-}
 
 /* ---------------------------------------------------------------- requested defaults */
 

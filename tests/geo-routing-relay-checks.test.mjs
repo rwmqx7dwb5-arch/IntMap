@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R801 · the relay spend   (was tests/r801-relay-spend-checks.test.mjs)
@@ -99,7 +100,7 @@ test('R801 ① the idle sweep still runs first, and an evicted caller starts a f
 
 /* ── ② migration の文面 ─────────────────────────────────────────────────────────────────── */
 const MIG = 'supabase/migrations/20260918100000_r801_relay_rate_limit.sql';
-const stripSql = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
+const stripSql = (s) => codeOnly(s, { lang: 'sql' });
 
 test('R801 ② relay_take is SECURITY DEFINER, pins search_path, and is executable by service_role only', () => {
   const sql = stripSql(src(MIG));

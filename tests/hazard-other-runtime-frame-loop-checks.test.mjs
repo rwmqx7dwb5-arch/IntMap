@@ -15,6 +15,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -108,7 +109,6 @@ test('R234 runtime: the eight private per-camera rAFs are gone from the follower
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234/#R235 — EIGHT rounds of a check hitting its own explanation).
    Strip the comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── the harness: the four globals js/runtime.js reaches for, and a hand-cranked rAF ──────────── */
 function withRuntime(run) {

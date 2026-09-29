@@ -17,6 +17,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -405,7 +406,7 @@ test('R191 seismic: the ground-motion chain names its models and uses their numb
 {
 /* ⚠ block comments are stripped before a "this string must NOT appear" test — a comment that
    explains a defect otherwise trips the check for the defect (#R216's own note). */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '');
+const code = (p) => codeOnly(read(p));
 
 /* ── ③ the seismic profile: the fast index gives the OLD answer ─────────────────────────── */
 test('#R218 ③ the closed-form profile index reproduces the binary search it replaced', () => {
@@ -664,7 +665,6 @@ test('R234 rupture rings: great-circle vertices, sampled in proportion to the fa
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234 — SEVEN rounds of a check hitting its own explanation). Strip the
    comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 6 · the published rupture outline, and its fallback ────────────────────────────────────── */
 test('R235 rupture: the outline is fetched from the published finite-fault model', async () => {
@@ -754,7 +754,7 @@ test('R236 seismic: the 2024 Noto Peninsula earthquake is in the catalogue, from
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ⑮ the published finite-fault outline is sampled like the rectangle it replaced */
 test('r244 ⑮ the published rupture ring is densified along great circles', async () => {

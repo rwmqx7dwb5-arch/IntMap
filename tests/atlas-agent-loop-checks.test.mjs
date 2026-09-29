@@ -21,6 +21,7 @@ import { makeAtlasAgent } from '../js/atlas-agent.js';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the sections below (each used to declare its own copy) */
 const R = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -1198,7 +1199,7 @@ test('R663 ⑧: a refusal reaches Atlas as the sentence IntMap wrote, not as the
   assert.match(out.message, /震源はどこですか/, 'the reason the reader was given is the reason Atlas is given');
   assert.ok(!/<div|class=/.test(out.message), 'as text, not as markup');
   /* ⚠ and it is ONE reading for every case: nothing here knows which capability refused */
-  const surf = R('js/atlas-toolsurface.js').replace(/\/\*[\s\S]*?\*\//g, '');   /* the CODE, not the comments that record the measurement */
+  const surf = codeOnly(R('js/atlas-toolsurface.js'));   /* the CODE, not the comments that record the measurement */
   assert.ok(!/sim\.tsunami|震源/.test(surf), 'no capability and no sentence is named in the surface');
   /* the same reading serves a case that refuses for an entirely different reason */
   const other = await exec({ name: 'run_capability', arguments: { id: 'sim.nightSky', args: { lat: 1, lng: 1 } } });

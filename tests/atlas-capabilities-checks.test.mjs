@@ -59,7 +59,6 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const lines = (p) => read(p).split(/\r?\n/);
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
@@ -603,7 +602,6 @@ test('R318 ⑨f: the prompt state is trimmed by whole sections, and says which i
  * ==========================================================================*/
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { auditWith } = await import('../scripts/atlas-capability-audit.mjs');
@@ -844,10 +842,8 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const exists = (p) => fs.existsSync(path.join(ROOT, p));
 
 /* Comments are not code. #R345 counted a check that matched its own explanatory paragraph, and it
-   has happened twelve times since; strip them before asking whether the tree does something. */
-function codeOnly(src) {
-  return String(src).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:'"\\])\/\/[^\n]*/g, '$1 ');
-}
+   has happened twelve times since; strip them before asking whether the tree does something —
+   with the shared reader imported at the top of this file (scripts/code-only.mjs). */
 
 const CONSOLE_SRC = read('js/atlas-console.js');
 const CONSOLE_CODE = codeOnly(CONSOLE_SRC);

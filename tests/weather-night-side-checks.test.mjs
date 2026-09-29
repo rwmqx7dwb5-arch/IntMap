@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import fs, { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path, { join, dirname } from 'node:path';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R220 — from tests/r220-checks.test.mjs (6 of its 14 tests) ════════ */
 {
@@ -117,7 +118,7 @@ test('r220 ⑦ the sky model adds multiple scattering, and it brightens twilight
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 /* comments in this project carry the reasoning, so a check that greps them proves nothing */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const code = (p) => codeOnly(read(p));
 
 /* the body of a named function declaration, brace-balanced — so these checks are about WHERE a call
    sits, not about the file containing the word somewhere */

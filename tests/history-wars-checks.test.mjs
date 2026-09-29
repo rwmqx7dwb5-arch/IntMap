@@ -29,12 +29,12 @@ import { WarGeom } from '../js/war-geom.js';
 import * as LM from '../js/layer-manifest.js';   /* the Layers taxonomy (layer manifest) */
 import { byKey } from './helpers/layer-groups.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
 const raw = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* comments are prose: a rule asserted only inside a comment block asserts nothing */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 const wars = JSON.parse(raw('data/wars.json'));
 const WARS = wars;

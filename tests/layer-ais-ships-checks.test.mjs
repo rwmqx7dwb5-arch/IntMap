@@ -15,6 +15,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -54,10 +55,6 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const rd = read;
 const FN = 'supabase/functions/ais-feed/index.ts';
 
-function codeOnly(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .split('\n').map((l) => l.replace(/(^|[^:])\/\/.*$/, '$1')).join('\n');
-}
 
 /* ── ① the fourteenth function evaluates ───────────────────────────────────────────────────── */
 test('R510 ① the ship relay’s module body actually evaluates', () => {

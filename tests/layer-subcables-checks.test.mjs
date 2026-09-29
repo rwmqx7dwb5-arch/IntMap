@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { publishedList } from './helpers/layer-groups.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -136,7 +137,7 @@ test('R190 default layers: the cables come through our own origin', async () => 
         'the router sends ' + u + ' to cable-geo');
     }
   } finally { globalThis.window = realWindow; }
-  assert.doesNotMatch(dl.replace(/\/\*[\s\S]*?\*\//g, ''), /corsproxy\.io|allorigins\.win|codetabs\.com/,
+  assert.doesNotMatch(codeOnly(dl), /corsproxy\.io|allorigins\.win|codetabs\.com/,
     'no volunteer proxy is left behind our relay (own-fetch-relay)');
 
   /* the stored sessions written while that dependency existed are healed once */

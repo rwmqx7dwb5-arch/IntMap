@@ -16,6 +16,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -41,7 +42,6 @@ const read = (p) => readLF(join(ROOT, p));
     [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 const R = read;
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ① TRANSLATION — the seventh shape, and the instrument that stops it returning ═════════════ */
 
@@ -111,7 +111,6 @@ test('R241 ① the seventh surface is a line in the ONE gate, not a seventh inst
 {
 /* ⚠ comments are stripped before matching — this file's own prose quotes the instruction, and a
    negative check that reads its own comment is [[intmap-recurring-lessons]] E, eight rounds running. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const json = (script, ...args) => JSON.parse(execFileSync(process.execPath,
   [path.join(ROOT, 'scripts', script), '--json', ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
 
@@ -152,7 +151,6 @@ test('r247 ⑤ the helper-ternary audit counts container arms, and the count is 
     [[intmap-recurring-lessons]] E has caught nine rounds writing a check that trips on its own
     explanation of the defect. */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const json = (f, ...a) => JSON.parse(execFileSync(process.execPath,
   [join(ROOT, 'scripts', f), '--json', ...a], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
 

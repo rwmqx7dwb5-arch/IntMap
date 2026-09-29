@@ -15,7 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
@@ -227,7 +227,7 @@ const read = (p) => (p === 'js/i18n.js'
 /* ⚠ a comment that DESCRIBES a defect is not the defect. Two checks below assert that a string does
    NOT appear in a file, and both files explain in prose why it must not — so they are read with the
    block comments taken out, or the note about the bug would trip the test for the bug. */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const code = (p) => codeOnly(read(p));
 
 /* ── ② closing a world-data legend must stay closed ──────────────────────────────────── */
 test('#R216 ② makePanel.claim() cannot re-open a panel the user closed', () => {
@@ -295,7 +295,6 @@ test('#R216 ⑥ tides get a date field and playback, and no clock of their own',
 {
 /* 綴りのまま残した検査の理由: js/world-packs.js は DOM・MapLibre・各機関への fetch に閉じた 1 つのファクトリで node では組み立てられない（切り出して実行できる関数は実行している） */
 /* (#R254) the round's header note is kept with its largest block, in tests/layer-packs-rasters-checks.test.mjs */
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑤ THE TRADE LAYER ───────────────────────────────────────────────────────────────────────── */
 test('#R254 ⑤ the trade arrowheads exist, the pins do not, and the arrows have a switch', () => {

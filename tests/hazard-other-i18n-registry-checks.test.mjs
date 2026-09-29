@@ -21,6 +21,7 @@ import vm from 'node:vm';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -108,7 +109,7 @@ test('R211 spelling: the sweep left every data contract and every other language
 {
 /* ⚠ block comments are stripped before a "this string must NOT appear" test — a comment that
    explains a defect otherwise trips the check for the defect (#R216's own note). */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '');
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑤ the reading pages: one file per language, and every language complete ─────────────── */
 test('#R218 ⑤ each language is exactly one file, and js/page-i18n.js lists them all', () => {
@@ -280,10 +281,8 @@ const R = (p) => join(new URL('.', ROOT).pathname.replace(/^\/([A-Za-z]:)/, '$1'
 /* ⚠ COMMENTS ARE STRIPPED BEFORE EVERY NEGATIVE CHECK. #R231 hit this five times and #R208/#R229
    before it: a note that QUOTES the thing it says was removed makes "it is gone" fail. Match syntax,
    never prose. */
-const noJs = (s) => String(s)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
-const noHtml = (s) => String(s).replace(/<!--[\s\S]*?-->/g, ' ');
+const noJs = (s) => codeOnly(String(s));
+const noHtml = (s) => codeOnly(String(s), { lang: 'html' });
 
 /* ── ① adding a language is ONE FILE ─────────────────────────────────────────────────────────── */
 test('R232 i18n: the locale directory IS the language list, and the generated copy follows it', () => {
@@ -393,7 +392,6 @@ test('R232 startup: only English is eager, and the boot barrier waits for the re
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234/#R235 — EIGHT rounds of a check hitting its own explanation).
    Strip the comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 4b · the DE/RU/ES gaps the positional audit could not see ───────────────────────────────── */
 test('R236 i18n: t(…) call sites do not leave a language slot empty', () => {
@@ -445,7 +443,6 @@ test('R236 i18n: the Köppen criteria are given in all five languages', () => {
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap #R235 hit eight
    times and #R236 hit once more. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 6 · the shape the positional audit cannot see ──────────────────────────────────────────────
    #R236 found three strings that were English in de/ru/es while the audit reported 100 %. It reads
@@ -492,7 +489,6 @@ test('R237 i18n: the two-branch audit exists and is honest about being a heurist
 {
 const R = read;
 /* comments out, so a claim in prose can never satisfy a check about code (#R166) */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 test('R240 ⑤ a country is named in the reader’s language, from CLDR rather than a table', () => {
   const cu = code(R('js/countries-ui.js'));
@@ -521,7 +517,6 @@ test('R240 ⑤ a country is named in the reader’s language, from CLDR rather t
     prose could contain ([[intmap-recurring-lessons]] E, eight rounds running). */
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑥ the place-label language is a table, and it covers every language ──────────────────────── */
 test('R242 ⑥ every language the registry knows has an OSM name key', () => {
@@ -546,7 +541,6 @@ test('R242 ⑥ every language the registry knows has an OSM name key', () => {
 {
 /* ⚠ comments are stripped before matching — this file's own prose quotes the instruction, and a
    negative check that reads its own comment is [[intmap-recurring-lessons]] E, eight rounds running. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /* ⚠ AND THE THREE PLACES IT WAS ARE FIXED AT THE ROOT, not translated in place: two of them were not
    UI text at all but DATA that has a per-language answer, and a table would have had to be extended

@@ -66,6 +66,7 @@ import path, { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCALES = path.join(ROOT, 'js', 'locales');
@@ -74,10 +75,8 @@ const { readLF } = await import('../scripts/eol.mjs');
 
 /* ⚠ COMMENTS ARE STRIPPED BEFORE EVERY NEGATIVE CHECK — #R208/#R229/#R231/#R232 all hit the same
    trap: a note that QUOTES the thing it says was removed makes "it is gone" fail. Match syntax. */
-const noJs = (s) => String(s)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
-const noHtml = (s) => String(s).replace(/<!--[\s\S]*?-->/g, ' ');
+const noJs = (s) => codeOnly(String(s));
+const noHtml = (s) => codeOnly(String(s), { lang: 'html' });
 /* every keyed UI table on disk (#R233) */
 const UI_FILES = readdirSync(LOCALES).filter((f) => /^ui\.[A-Za-z0-9-]+\.js$/.test(f));
 

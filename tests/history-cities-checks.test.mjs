@@ -30,6 +30,7 @@ import { LIC } from '../scripts/histcities/lang.mjs';
 import { loadRecord } from '../scripts/histcities-record.mjs';
 import { pageCodes, pageDoc } from '../scripts/i18n-pages-audit.mjs';
 import { coordOf, OHM_PLACE_KINDS, OHM_PLACE } from '../scripts/histcities/harvest.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -40,7 +41,7 @@ const RECORD = DATA;
 /* ⚠ AN ASSERTION ABOUT WHAT THE CODE DOES MAY NOT READ THE COMMENTS. Both files below EXPLAIN in
    prose why they do not do a thing, and a bare `includes()` finds the explanation and calls it the
    deed — which is [[intmap-recurring-lessons]]: a spelling is not a mechanism. */
-const code = (p) => rd(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+const code = (p) => codeOnly(rd(p));
 const LANGS = ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko'];
 
 const byId = new Map(DATA.cities.map((c) => [c.id, c]));
@@ -760,8 +761,7 @@ test('R713 ① both sweeps ask about the same kind of place, spelled once', () =
   assert.match(OHM_PLACE, /hamlet/);
   /* ⚠ SPELLING, ON PURPOSE: «spelled ONCE» is itself the claim — a second copy of the filter is a
      second answer (#R536) — and it is counted over the harvest script's code. */
-  const src = readFileSync(join(ROOT, 'scripts/histcities/harvest.mjs'), 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');   /* ⚠ #R621: strip comments first */
+  const src = codeOnly(readFileSync(join(ROOT, 'scripts/histcities/harvest.mjs'), 'utf8'));   /* ⚠ #R621: strip comments first */
   const spelled = src.split(OHM_PLACE).length - 1;
   assert.equal(spelled, 1,
     'the place filter is spelled ' + spelled + ' times outside comments; it belongs in OHM_PLACE '

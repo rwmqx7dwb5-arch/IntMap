@@ -15,6 +15,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -31,7 +32,6 @@ const read = (p) => readLF(join(ROOT, p));
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap that has now been
    hit nine times across #R208…#R237. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 8 · ④ the dock — every floating thing, and only the floating things ────────────────────────── */
 test('R238 dock: membership is the window registry plus map-level legends', () => {
@@ -111,7 +111,6 @@ test('R238 i18n: the dock strings are present in all nine languages', () => {
 {
 const R = read;
 /* comments out, so a claim in prose can never satisfy a check about code (#R166) */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ④ THE DOCK ════════════════════════════════════════════════════════════════════════════════ */
 test('R240 ④ a docked panel expands, arrives open, and runs edge to edge on a phone', () => {
@@ -190,7 +189,6 @@ test('R241 ③ the docked column on a phone has a scrollbar again', () => {
     prose could contain ([[intmap-recurring-lessons]] E, eight rounds running). */
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① Atlas is never docked, and it says so where the panel is born ──────────────────────────── */
 test('R242 ① the Atlas panel opts out of the dock at creation, not at settings time', () => {
@@ -252,7 +250,6 @@ test('R242 ③ #docked-feed reserves the scrollbar width on a phone', () => {
     Comments are stripped before matching wherever a test looks for a fragment that this file's own
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ② a docked panel is placed by the column, not by the rule that floats it over a phone's map ─ */
 test('R243 ② the dock geometry reset is scoped to #docked-feed, so it outranks the float rules', () => {
@@ -306,7 +303,7 @@ test('R243 ④ the docked count is read off #docked-feed and the feed is watched
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ⑫ 「全凡例はパネルにいくように。（パネル設定時）」 — a second, independent path into the same sweep,
    so the column cannot depend on one MutationObserver having been armed at the right moment. */
@@ -326,22 +323,7 @@ test('r244 ⑫ a layer toggle re-runs the dock sweep', () => {
     quotes the strings it forbids — [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 /* comments out, string literals kept — the same helper every round since #R208 */
-const code = (p) => {
-  const src = read(p);
-  let out = '', i = 0;
-  while (i < src.length) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = (e < 0 ? src.length : e + 2); continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = (e < 0 ? src.length : e); continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; let j = i + 1;
-      while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; }
-      out += src.slice(i, j + 1); i = j + 1; continue;
-    }
-    out += c; i++;
-  }
-  return out;
-};
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑤ the dock watch cannot go stale ───────────────────────────────────────────────────────────
    「ケッペンの気候区分レイヤの凡例はパネルにいかない。全凡例はパネルにいくように。」 The flag saying
@@ -365,7 +347,6 @@ test('r245 ⑤ the dock observer owns its own watched set', () => {
    (layer-manifest) which layers exist, and their facts */
 {
 /* comments carry the reasoning and quote the very strings under test — strip them first */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 /* ── ④ front-most follows any operation, and never marks the map shell ───────────────────────── */
 test('#R255 ④ the raise fires on wheel and focus too, and cannot lift the map container', () => {

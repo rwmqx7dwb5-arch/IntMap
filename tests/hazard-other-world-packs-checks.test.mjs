@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -72,7 +73,7 @@ test('R211 world layers: nothing is shipped, every fetch is checked, and silence
      go stale and cannot be satisfied by keeping a string. */
   /* ⚠ COMMENTS ARE STRIPPED FIRST, both ways round: a note that happens to contain `.ok` is not
      a status test, and a nine-line note BETWEEN a call and its guard is not a missing one. */
-  const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
+  const code = codeOnly(src);
   const sites = [...code.matchAll(/\bfetch\(/g)].map((m) => m.index);
   assert.ok(sites.length >= 4, 'the pack fetches its data');
   assert.equal(sites.length, (src.match(/\bfetch\(/g) || []).length,
@@ -130,7 +131,7 @@ test('R211 world layers: a refused layer add is retried, and a style swap puts t
 {
 /* ⚠ block comments are stripped before a "this string must NOT appear" test — a comment that
    explains a defect otherwise trips the check for the defect (#R216's own note). */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '');
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑧ the smaller wirings: trade, tides, crops, seismic click mode, flight sim, rivers ─── */
 test('#R218 ⑧ the trade direction segment re-lights when it is pressed', () => {
@@ -172,7 +173,6 @@ test('#R218 ⑧ the crop raster is fetched per quadtree cell and kept', () => {
    (layer-manifest) which layers exist, and their facts */
 {
 /* comments carry the reasoning and quote the very strings under test — strip them first */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 /* ── ① the trade arrowhead is sized FROM the shaft, and there is a terminal head ─────────────── */
 test('#R255 ① trade arrows: the head is derived from the line width and every arc ends in one', () => {

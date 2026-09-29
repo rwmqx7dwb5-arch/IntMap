@@ -33,27 +33,19 @@ import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from '
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 export const LEDGER = join(ROOT, 'tests', 'z-layers-baseline.json');
 export const STYLESHEET = 'css/intmap.css';
 
-/* a comment is blanked to spaces of the same length, so positions and line numbers survive */
-const blank = (s) => s.replace(/[^\n]/g, ' ');
-export const stripCssComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, blank);
+/* a comment is blanked to spaces of the same length, so positions and line numbers survive — through the
+   one shared reader (scripts/code-only.mjs, check:static's comment-stripper rule) */
+export const stripCssComments = (src) => codeOnly(src, { lang: 'css', offsets: true });
 function stripJsComments(src) {
-  const spans = [];
-  const o = { ecmaVersion: 'latest', allowHashBang: true, allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true,
-    onComment: (block, text, start, end) => spans.push([start, end]) };
-  try { acorn.parse(src, { ...o, sourceType: 'module' }); } catch (_) {
-    spans.length = 0;
-    try { acorn.parse(src, { ...o, sourceType: 'script' }); } catch (e) { return null; }
-  }
-  let out = '', at = 0;
-  for (const [a, b] of spans) { out += src.slice(at, a) + blank(src.slice(a, b)); at = b; }
-  return out + src.slice(at);
+  try { return codeOnly(src, { parser: 'acorn', offsets: true }); } catch (_) { return null; }
 }
-const stripHtmlComments = (src) => stripCssComments(src.replace(/<!--[\s\S]*?-->/g, blank));
+const stripHtmlComments = (src) => stripCssComments(codeOnly(src, { lang: 'html', offsets: true }));
 
 /* THE SHAPES OF A BARE NUMBER — one per way the codebase writes a z-index, none per file */
 const LITERAL = [

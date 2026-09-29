@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, basename } from 'node:path';
-import * as acorn from 'acorn';
+import { codeOnly as sharedCodeOnly } from '../scripts/code-only.mjs';
 import { makeCameraMath } from '../js/camera-math.js';
 import { scanAll, scanFile, VALUE_BUDGET, PRIMARY_VIEW_FILE, ENGINE_FILE, IMAP_GLOBAL_FILES } from '../scripts/engine-coupling.mjs';
 
@@ -32,16 +32,11 @@ const body = [read('js/app-body.js'), read('js/geo-engine.js'), read('js/camera-
 /* CODE ONLY — comments blanked out, keeping every offset so line numbers still mean something.
    Necessary rather than fastidious: the first run of the checks below failed on `cmap.getProjection`
    and `setupMaplibre(maplibregl)`, both of which live in COMMENTS explaining why they are gone. That
-   is #R178's 「正規表現は嘘をつく」 arriving in the tests instead of the tool. */
+   is #R178's 「正規表現は嘘をつく」 arriving in the tests instead of the tool.
+   (test-code-only-one) The grammar's reading, from the shared reader; a source it cannot parse is
+   taken whole, as before. */
 const codeOnly = src => {
-  const spans = [];
-  try {
-    acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module',
-      onComment: (block, text, start, end) => spans.push([start, end]) });
-  } catch { return src; }
-  const out = src.split('');
-  for (const [a, b] of spans) for (let i = a; i < b; i++) if (out[i] !== '\n') out[i] = ' ';
-  return out.join('');
+  try { return sharedCodeOnly(src, { parser: 'acorn', offsets: true }); } catch { return src; }
 };
 
 /* ── ① the widened gate actually measures the thing it claims ─────────────────────────────── */

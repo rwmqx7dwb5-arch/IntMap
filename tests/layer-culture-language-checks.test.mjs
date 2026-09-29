@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -60,7 +61,6 @@ const json = (p) => JSON.parse(read(p));
 /* ⚠ (#R267) COUNT IN CODE, NOT IN COMMENTS. This file's own prose names the strings it checks for,
    which is how an audit ends up catching itself (nine rounds and counting). Comments are stripped
    before any «does X still exist» question is asked. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑧ religion / language ─────────────────────────────────────────────────────────────────── */
 test('R268 ⑧ the ex-Yugoslav standards are separate names with one fill', () => {
@@ -158,7 +158,6 @@ test('R268 ⑧ the composition popup is a bar chart and states the year', () => 
  *  one country, because an assertion that names Burkina Faso protects Burkina Faso and nothing else.
  * ==========================================================================*/
 const json = (p) => JSON.parse(read(p));
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 const L = json('data/language.json');
 const T = json('data/language-tree.json');
@@ -328,7 +327,6 @@ test('R538 ⑦ the language model is published, not reverse-engineered from the 
 /* (#R271) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ (#R267) read CODE, not comments — this file's own prose names the things it checks for, and a
    check that matches its own explanation is the failure this project has paid for eleven times. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ③ one swatch, one category ─────────────────────────────────────────────────────────────── */
 test('R271 ③ the culture palette continues instead of repeating', async () => {

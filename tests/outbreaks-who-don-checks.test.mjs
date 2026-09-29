@@ -286,8 +286,7 @@ test('#R650 ⑪ ONE name rule, TWO readers — the archive and the live tail can
   assert.equal(eventName.toString(), browser.eventName.toString(),
     'the build script must export the layer’s function, not a copy of it');
   assert.equal(donName.toString(), browser.donName.toString());
-  const build = read('scripts/build-who-don.mjs')
-    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const build = codeOnly(read('scripts/build-who-don.mjs'));
   assert.match(build, /vm\.runInContext\([\s\S]{0,160}outbreaks\.js/,
     'the build script must READ js/outbreaks.js for the rule');
   for (const own of ['SEP', 'REVISION', 'BARE_YEAR']) {
@@ -297,8 +296,7 @@ test('#R650 ⑪ ONE name rule, TWO readers — the archive and the live tail can
 
   /* and the layer must not read WHO's event title anywhere else. Comments are stripped first,
      because a check that reads prose is a check prose can satisfy (#R505). */
-  const body = read('js/outbreaks.js').split('window.IntMapModules.outbreaks =')[1]
-    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const body = codeOnly(read('js/outbreaks.js').split('window.IntMapModules.outbreaks =')[1]);
   assert.ok(!/\bev\s*(?:&&\s*ev)?\.Title\b/.test(body) && !/EmergencyEvent\s*\.\s*Title/.test(body),
     'the live tail must get its name from window.IntMapWhoDonName.donName, never from ev.Title');
 

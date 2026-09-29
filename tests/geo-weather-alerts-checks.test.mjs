@@ -15,6 +15,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { assertUnreadNeverGreys } from './wash-tier.mjs';
 import { isolate, read } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R298 · one 「発表なし」, one simplification, the cadence   (was tests/r298-checks.test.mjs, in part)
@@ -50,7 +51,7 @@ describe('§ #R298 · one 「発表なし」, one simplification, the cadence', 
   /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
      This project has paid for that twenty-two times; the answer is to ask the question of the text
      that RUNS. String literals are kept, because a layer id IS a string literal. */
-  const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const noComments = (src) => codeOnly(src);
   /* …and this module holds a dozen packs; the alerts one is the subject here. */
   const alertsModule = (src) => {
     const a = src.indexOf('(function alerts()'), b = src.indexOf('window.__wpAlerts=', a);
@@ -256,7 +257,7 @@ describe('§ #R299 · the JMA reduce, finer units, the Danger list, short notes'
   const WP = () => read('js/world-packs.js');
   /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
      This project has paid for that twenty-four times; ask the question of the text that RUNS. */
-  const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const noComments = (src) => codeOnly(src);
 
   const alertsModule = (src) => {
     const a = src.indexOf('(function alerts()'), b = src.indexOf('window.__wpAlerts=', a);

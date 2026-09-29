@@ -18,6 +18,7 @@ import { join } from 'node:path';
 import zlib from 'node:zlib';
 import { makeGisGeotiff } from '../js/gis-geotiff.js';
 import { ROOT, isolate } from './helpers/geo-shared.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R749 · the GeoTIFF reader   (was tests/r749-gis-geotiff-checks.test.mjs)
@@ -513,7 +514,7 @@ describe('§ #R749 · the GeoTIFF reader', () => {
     /* ⚠ COLLECTED FROM THE SOURCE, not from a list written here — a hand-kept expectation drifts from
        the implementation exactly as a hand-kept refusals() would (the defect this check exists for).
        The call sites are the only two constructors the module has. */
-    const code = SOURCE.replace(/\/\*[\s\S]*?\*\//g, '');
+    const code = codeOnly(SOURCE);
     const used = new Set();
     const re = /\b(?:bad|raise)\(\s*'([a-z0-9-]+)'/g;
     let m;

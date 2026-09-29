@@ -14,6 +14,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly as code, codeOnly } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -295,7 +296,6 @@ test('R211 water panel: no pan button, re-click releases, three pen widths, deta
    (layer-manifest) which layers exist, and their facts */
 {
 /* comments carry the reasoning and quote the very strings under test — strip them first */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 /* ── ⑦ terrain & water ───────────────────────────────────────────────────────────────────────── */
 test('#R255 ⑦a the sculptor never flies the camera to the water', () => {
@@ -732,7 +732,6 @@ test('R264 ②: coarseLegs is counted against the trace’s finest sampling', ()
     with its comments stripped — the prose that RECORDS a removal is not evidence against it. That
     is #R266's own lesson, and it has cost this repo a round twice. */
 {
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑪ the water model: a resolution dial and a run you can repeat ─────────────────────────── */
 test('R273 ⑪ the flow model has a resolution the reader chooses, and it is kept', () => {
@@ -815,7 +814,6 @@ test('R273 ⑪ the panel has one control height and one gap', () => {
 {
 /* comments are prose about the code and must never satisfy an assertion ABOUT the code — the
    「自分の検査が自分のコメントに当たる」 shape this project has paid for thirteen times (#R274). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const TW = () => codeOnly(read('js/terrain-water.js'));
 
 /* ── ① opening a tool is not a request to move the map ──────────────────────────────────────────

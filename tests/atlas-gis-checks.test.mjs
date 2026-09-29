@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 /* (#R763) the acquisition vocabulary, from the module that owns it — see realLayers() below */
 import { makeGisLayers } from '../js/gis-layers.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
@@ -487,7 +488,7 @@ test('#R759 ① js/gis-atlas.js は取得条件の一覧を自分で持たず、
      inverse of [[intmap-prose-carriers-are-not-only-markdown]]: a rule about prose must read prose,
      and a rule about what the file DOES must not. Stripping them costs the rule nothing: a list that
      only exists inside a comment is not a list any caller can read. */
-  const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+  const code = codeOnly(src);
   const lists = code.match(/\[\s*'[a-z]+'(?:\s*,\s*'[a-z]+')+\s*\]/g) || [];
   for (const lit of lists) {
     const names = lit.match(/'[a-z]+'/g).map((s) => s.slice(1, -1));

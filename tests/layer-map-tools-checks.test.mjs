@@ -14,6 +14,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { codeOnly, codeOnly as code, codeOnly as noComments } from '../scripts/code-only.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -252,7 +253,6 @@ test('#R216 ⑨ ear clipping never abandons a ring half-covered', () => {
 {
 /* 綴りのまま残した検査の理由: js/tool-panel.js・js/map-ui.js・js/map-pick.js・js/solid3d.js・js/map-tools.js・js/drone-ops.js などは DOM・WebGL・地図の入力に閉じたファクトリで node では組み立てられない（大圏の稠密化は切り出して実行している） */
 /* (#R254) the round's header note is kept with its largest block, in tests/layer-packs-rasters-checks.test.mjs */
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑨ THE FINE PLACE NAME ───────────────────────────────────────────────────────────────────── */
 test('#R254 ⑨ a name the search cannot surface is asked of OpenStreetMap itself', () => {
@@ -273,7 +273,6 @@ test('#R254 ⑨ a name the search cannot surface is asked of OpenStreetMap itsel
 /* (#R271) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ (#R267) read CODE, not comments — this file's own prose names the things it checks for, and a
    check that matches its own explanation is the failure this project has paid for eleven times. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ④ the clear mark is placed from the field ──────────────────────────────────────────────── */
 test('R271 ④ the ✕ is measured against the input, not the box around it', () => {
@@ -300,7 +299,6 @@ test('R271 ④ the ✕ is measured against the input, not the box around it', ()
 /* (#R305) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-five times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
  *  「地点を選ばないといけない系のツール…いや並行してどちらも出てくるとかあほか。」
@@ -356,7 +354,7 @@ test('R305 ⑮ the sun panel does not say it twice either', () => {
 /* (#R307) the round's header note is kept with its largest block, in tests/layer-warnings-drawing-checks.test.mjs */
 /* the comments in this project carry the reasoning, and several of them QUOTE the spellings that
    were replaced — a check that greps them proves nothing */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* the body of a named function declaration, brace-balanced (the #R228 helper, and the answer to
    #R306's ⚠ about character-counted windows: ask the BODY, not a byte range around a name) */

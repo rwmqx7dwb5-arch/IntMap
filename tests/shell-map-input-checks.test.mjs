@@ -18,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,10 +33,8 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    and `{timeout:2000}` are all named in the note that says they are gone. #R208 and #R229 hit exactly
    this ("a check whose regex matches its own comment"), so the rule is now a helper: strip comments,
    then match syntax. */
-const noJs = (p) => read(p)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')                       /* block comments */
-  .replace(/^[ \t]*\/\/.*$/gm, ' ');
-const noCss = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const noJs = (p) => codeOnly(read(p));
+const noCss = (p) => codeOnly(read(p), { lang: 'css' });
 
 /* ── ④ the bottom sheet's two behaviours ────────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
@@ -64,7 +62,6 @@ test('R231 sheet: the scroll → drag hand-off is delegated, not a list of tab i
 /* ═══════════════════════ #R252 · from r252-checks.test.mjs ═══════════════════════ */
 /* (#R252 — the round's own account of why these checks exist heads its other half, in tests/shell-map-labels-checks.test.mjs) */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑥ THE PILL IS LAID OUT AGAINST A GEOMETRY THAT HAS STOPPED MOVING ───────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
@@ -77,7 +74,7 @@ test('#R252 ⑥ the search-pill watcher re-runs when the right panel has finishe
     'the immediate recomputation was removed — the pill would not move until the animation ended');
 
   /* the property this hangs on is the one the stylesheet animates */
-  assert.match(code(read('css/intmap.css')), /\.map-controls-top[^{]*\{ *transition:right \.38s/,
+  assert.match(code(read('css/intmap.css'), { lang: 'css' }), /\.map-controls-top[^{]*\{ *transition:right \.38s/,
     'the right-anchored HUD no longer transitions `right` — re-derive which event says «it has landed»');
   /* …and js/map-ui.js still fires the early one from BOTH doors of the right panel (the third
      dispatch in that file belongs to the panel's own drag-resizer, which resizes nothing else) */

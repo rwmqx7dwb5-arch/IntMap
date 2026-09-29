@@ -30,6 +30,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -180,7 +181,7 @@ try {
   const page = await ctx.newPage();
   await bootInto(page);
 
-  const SRC_DL = srcAt('js/data-layers.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const SRC_DL = codeOnly(srcAt('js/data-layers.js'));
   const GROUPS = literalOf(SRC_DL, 'const GROUPS=');
   const OTHERS_IDS = literalOf(SRC_DL, 'const OTHERS_IDS=');
   /* …and the keys reorganizeLayerPanel resolves by name outside GROUPS (`rowFor('nightside')` …) */

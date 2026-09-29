@@ -20,7 +20,7 @@ import path, { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -305,7 +305,6 @@ test('#R387 ⑥ mobile-trace and frame-profile agree on the base URL, or the rep
  * ========================================================================== */
 
 /* comments off, so a sentence ABOUT el.click() is not mistaken for a call to it (#R229's rule) */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/[^\n]*/g, '$1');
 
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const TRACE = read('scripts/mobile-trace.mjs');

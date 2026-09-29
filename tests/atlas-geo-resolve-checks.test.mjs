@@ -43,6 +43,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -51,27 +52,7 @@ const R = (p) => readFileSync(join(ROOT, p), 'utf8');   /* (#R667's name for the
    its OWN comment explaining that maxLayers is gone — the self-hit this repository has now made
    thirteen times (see `memory/intmap-recurring-lessons.md`). Comments and string literals are blanked
    first; identical to tests/r162-checks.test.mjs's `code()`. */
-function code(src) {
-  let out = '', i = 0, inBlock = false;
-  const NL = String.fromCharCode(10), BS = String.fromCharCode(92);
-  while (i < src.length) {
-    const c = src[i], c2 = src[i + 1];
-    if (inBlock) { if (c === '*' && c2 === '/') { inBlock = false; i += 2; } else { out += c === NL ? NL : ' '; i++; } continue; }
-    if (c === '/' && c2 === '*') { inBlock = true; i += 2; continue; }
-    if (c === '/' && c2 === '/') { while (i < src.length && src[i] !== NL) { out += ' '; i++; } continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; out += ' '; i++;
-      while (i < src.length) {
-        if (src[i] === BS) { out += '  '; i += 2; continue; }
-        if (src[i] === q) { out += ' '; i++; break; }
-        out += src[i] === NL ? NL : ' '; i++;
-      }
-      continue;
-    }
-    out += c; i++;
-  }
-  return out;
-}
+function code(src) { return codeOnly(src, { literals: 'blank' }); }
 
 /* The modules under test are pure ESM with no DOM, which is what lets the SHIPPED code run here.
    ⚠ (tests-by-topic) ONE window for the whole file: #R413 used a bare {} and #R667 used globalThis
@@ -707,7 +688,7 @@ test('R737 ②: the honest answers are untouched — including a POI whose own n
 test('R737 ③: the rule is asked by both resolvers and written once', () => {
   /* a spelling on purpose: «written once, read by exactly two» is a claim about the source, not about any one answer */
   const SRC = readFileSync(join(ROOT, 'js/atlas-geo-resolve.js'), 'utf8').replace(/\r\n/g, '\n');
-  const bare = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const bare = codeOnly(SRC);
   /* one definition … */
   assert.equal((bare.match(/function _rankableFor\(/g) || []).length, 1);
   /* … and exactly two readers: the point picker and the extent filter. A third would be a copy, and a

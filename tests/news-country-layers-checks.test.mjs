@@ -14,6 +14,7 @@ import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R290 — from tests/r290-checks.test.mjs (1 of its 16 tests) ════════ */
 {
@@ -34,7 +35,6 @@ import { readLF } from '../scripts/eol.mjs';
  * ==========================================================================*/
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readLF(resolve(ROOT, p));
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
@@ -149,7 +149,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* ⚠ comments are stripped before every claim about code — this project has now written a test
    that matched its own explanation nineteen times (see #R288 ⑪ this round for the twentieth). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
@@ -207,7 +206,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(resolve(ROOT, p));
 /* comments in this project QUOTE the spellings they replaced, so a check that greps the raw file
    proves nothing — every source assertion reads the code with the comments taken out (#R313) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const code = (p) => codeOnly(read(p));
 
 
 /* ══════════════════════════════════════════════════════════════════════════

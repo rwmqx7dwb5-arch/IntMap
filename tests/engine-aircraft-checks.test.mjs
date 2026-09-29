@@ -33,6 +33,7 @@ import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { appShell } from './app-source.mjs';
 import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
+import { codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rootURL = new URL('../', import.meta.url);
@@ -45,7 +46,6 @@ const { lazyFiles } = await import('./app-source.mjs');
 
 const code = (rel) => codeOnly(readLF(join(ROOT, rel)));
 const R = (rel) => readFileSync(join(ROOT, rel), 'utf8');
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 /* (#R175) "the page" is index.html + src/main.js + js/app-body.js (+ js/geo-engine.js) */
 const INDEX = appShell(rootURL);
 

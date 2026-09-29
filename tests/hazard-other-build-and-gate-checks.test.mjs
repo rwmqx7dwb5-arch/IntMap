@@ -18,6 +18,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -169,7 +170,7 @@ test('#R218 ⑨ a module reached only by a page <script src> counts as reachable
     'the reachability scan does not read the standalone pages');
   /* ⚠ read the check WITHOUT its comments: the two file names appear in the note that explains why
      the scan reads the pages, and that note is the thing this test is here to protect (#R216). */
-  assert.equal(/page-i18n|sources-list/.test(s.replace(/\/\*[\s\S]*?\*\//g, '')), false,
+  assert.equal(/page-i18n|sources-list/.test(codeOnly(s)), false,
     'the two modules are exempted by name instead of being found in the page that loads them');
 });
 }

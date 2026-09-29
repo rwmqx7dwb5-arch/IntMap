@@ -22,13 +22,13 @@ import {
   SPELLINGS, FACETS, SUBJECTS, REASONS, FRESHNESS,
   statedValue, read, freshness, attribution, account, measureQuality,
 } from '../js/data-governance.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* Comments are where this repository explains its defects, and three of them QUOTE a licence
    identifier in order to describe the bug. A rule about what the CODE holds must not read them —
    memory intmap-prose-carriers-are-not-only-markdown is the same distinction from the other side. */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ① THE SPELLING TABLE HAD ONE READER BECAUSE IT HAD ONE HOME.
    MEASURED before this round: `INTEROP` was a `const` inside js/gis-export.js's factory closure, so

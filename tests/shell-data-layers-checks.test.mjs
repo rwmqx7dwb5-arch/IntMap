@@ -408,13 +408,6 @@ const FEED = 'supabase/functions/aviation-feed/index.ts';
 
 /* ⚠ コメントを剥がしてから数える。#R341 で同じ検査が**自分の説明コメント**に当たって
    `genSyntheticPlanes()` を3つ数えた——この文書化の濃いファイルでは10回目の形である。 */
-function codeOnly(src) {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .split('\n')
-    .map((l) => l.replace(/(^|[^:])\/\/.*$/, '$1'))
-    .join('\n');
-}
 const count = (s, re) => (s.match(re) || []).length;
 
 /* ── ① 上流へ出る道は、予算を通ったものしか無い ─────────────────────────────────────────── */

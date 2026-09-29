@@ -14,6 +14,7 @@ import { cpus } from 'node:os';
 import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jsReachability } from './js-reachability.mjs';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
@@ -208,7 +209,7 @@ const DESTRUCTIVE = [
   { name: 'TRUNCATE', re: /(?:^|;)\s*truncate\b/im },
   { name: 'DELETE FROM', re: /\bdelete\s+from\b/i },
 ];
-const stripSqlComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
+const stripSqlComments = (s) => codeOnly(s, { lang: 'sql' });
 for (const f of ALL.filter((x) => x.rel.startsWith('supabase/migrations/') && x.ext === '.sql')) {
   const t = stripSqlComments(read(f));   // scan executable DDL only, not comments
   for (const d of DESTRUCTIVE) {
@@ -684,6 +685,21 @@ try {
   for (const l of zLayersCheck().lines) err('z-layers', l);
 } catch (e) {
   err('z-layers', 'could not run the z-layers ledger: ' + (e && e.message));
+}
+
+// ── 19. (test-code-only-one) a comment stripper that is not the shared one ──
+// scripts/code-only.mjs is the one reader that knows a comment from code (#R345), and tests/ and
+// scripts/ had gone on writing their own: 635 sites in 170 files (regex chains, loops, blankers), most
+// of them a regex pair that opens a «comment» inside a string. The rule is on what a stripper DOES, from
+// the parse tree (a .replace with a comment-matching regex literal, a loop testing for an opener, an
+// acorn onComment that blanks offsets, a filter dropping comment lines), whatever it is called; the
+// sites that remain are held to scripts/comment-strippers-ledger.json in both directions. A rule
+// here and not a check:* of its own for the reason given at 15.
+try {
+  const { commentStripperProblems } = await import('./comment-strippers.mjs');
+  for (const p of commentStripperProblems()) err('comment-stripper', p);
+} catch (e) {
+  err('comment-stripper', 'could not run the comment-stripper ledger: ' + (e && e.message));
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

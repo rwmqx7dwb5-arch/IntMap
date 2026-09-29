@@ -18,6 +18,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -26,7 +27,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* (#R231 — the round's own account of why these checks exist heads its other half, in tests/shell-i18n-locales-checks.test.mjs) */
 {
 /* whole-line // comments */
-const noHtml = (p) => read(p).replace(/<!--[\s\S]*?-->/g, ' ');
+const noHtml = (p) => codeOnly(read(p), { lang: 'html' });
 
 /* ── ② the phone's three marks are the app's own, not vendor emoji ──────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
@@ -44,7 +45,7 @@ test('R231 mobile icons: the search FAB, the locate FAB and the time machine car
   /* the locate FAB is the navigation dart, not the old crosshair */
   const loc = html.slice(html.indexOf('id="m-fab-locate"'), html.indexOf('id="m-fab-locate"') + 900);
   assert.match(loc, /<polygon points="[^"]+"/, 'a four-point dart');
-  assert.ok(!/circle cx="12" cy="12" r="3\.4"/.test(loc.replace(/<!--[\s\S]*?-->/g, ' ')), 'and no crosshair ring');
+  assert.ok(!/circle cx="12" cy="12" r="3\.4"/.test(codeOnly(loc, { lang: 'html' })), 'and no crosshair ring');
 });
 }
 
@@ -91,7 +92,7 @@ test('R231 mobile icons: the search FAB, the locate FAB and the time machine car
    text stops changing, which is the fixed point where no comment remains. */
 const noComments = (html) => {
   let prev;
-  do { prev = html; html = html.replace(/<!--[\s\S]*?-->/g, ''); } while (html !== prev);
+  do { prev = html; html = codeOnly(html, { lang: 'html' }); } while (html !== prev);
   return html;
 };
 

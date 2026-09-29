@@ -30,6 +30,7 @@ import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
+import { codeOnly as codeOnlyOf } from './code-only.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 export const BASELINE = join(ROOT, 'tests', 'global-surface-baseline.json');
@@ -45,24 +46,14 @@ export const BASELINE = join(ROOT, 'tests', 'global-surface-baseline.json');
    and the missing set agreed exactly with an AST walk of every `window.X =` assignment.
    Whether a `/` opens a regular expression or divides is decided by the grammar, which only the
    parser knows — so acorn tokenizes (the same acorn hostMembers() already parses with), and a file
-   it cannot parse is an error, not a guess. */
+   it cannot parse is an error, not a guess.
+   (test-code-only-one) That tokenizing reader now lives in scripts/code-only.mjs as the options
+   { parser: 'acorn', literals: 'blank' } — module first, then a classic script, the backquotes
+   blanked too so window[`X`] reads like window['X'] — and this is the name this module exports it by. */
 export function codeOnly(src, file) {
-  const out = String(src).split('');
-  const blank = (s, e) => { for (let k = s; k < e; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '; };
-  const BLANKED = new Set(['string', 'template', 'invalidTemplate', 'regexp', '`']);   /* the backquotes too: window[`X`] reads like window['X'] */
-  const opts = (sourceType) => ({
-    ecmaVersion: 'latest', sourceType, allowHashBang: true, locations: false,
-    onComment: (_block, _text, s, e) => blank(s, e),
-    onToken: (t) => { if (BLANKED.has(t.type.label)) blank(t.start, t.end); },
-  });
-  /* the program is ES modules; a classic script (no import/export, sloppy-mode syntax) is read as one */
-  try { acorn.parse(String(src), opts('module')); } catch (asModule) {
-    out.splice(0, out.length, ...String(src).split(''));
-    try { acorn.parse(String(src), opts('script')); } catch (asScript) {
-      throw new Error(`global-surface: cannot tokenize ${file || 'source'} — ${asModule.message}`);
-    }
+  try { return codeOnlyOf(src, { parser: 'acorn', literals: 'blank' }); } catch (e) {
+    throw new Error(`global-surface: cannot tokenize ${file || 'source'} — ${e.message}`);
   }
-  return out.join('');
 }
 
 /** The members of IM_HOST, from the parser: literal properties (getter/setter/value, deduplicated)
@@ -156,13 +147,8 @@ function readerFiles(R) {
 /* comments blanked (same offsets), strings and code kept; a file acorn cannot read is taken whole */
 function withoutComments(src, file) {
   const s = String(src);
-  if (file.endsWith('.html')) return s.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
-  const out = s.split('');
-  const blank = (a, b) => { for (let k = a; k < b; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '; };
-  for (const sourceType of ['module', 'script']) {
-    try { acorn.parse(s, { ecmaVersion: 'latest', sourceType, allowHashBang: true, onComment: (_b, _t, a, b) => blank(a, b) }); return out.join(''); } catch (_) { out.splice(0, out.length, ...s.split('')); }
-  }
-  return s;
+  if (file.endsWith('.html')) return codeOnlyOf(s, { lang: 'html', offsets: true });
+  try { return codeOnlyOf(s, { parser: 'acorn', offsets: true }); } catch (_) { return s; }
 }
 /* every `Object.keys(window)` walk in js/ or src/: the regular expression it filters by, and — when the
    walk also demands entry points — the string list it takes them from. Read from the parse tree of the

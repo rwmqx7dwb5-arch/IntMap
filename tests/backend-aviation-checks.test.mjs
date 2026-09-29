@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -346,7 +347,7 @@ test('#R341 ⑮b genSyntheticPlanes is unreachable when the new path is the defa
      call and two sentences about it. That is the ninth time in this repository a check has matched
      its own prose (scripts/atlas-capability-audit.mjs solved it the same way, with codeOnly()).
      A check that counts its own explanation is measuring the wrong document. */
-  const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const src = codeOnly(raw);
 
   /* one definition, and exactly one CALL. `function genSyntheticPlanes(){` matches `name()` as
      well, so the declaration is subtracted by name — not by knowing the total happens to be two,

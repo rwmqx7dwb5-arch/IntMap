@@ -50,7 +50,7 @@ const CODE = (p) => codeOnly(R(p));
    跡に残した CSS の注記も、直した綴りをそのまま書いている。実測: 最初の版は raw な CSS を読み、
    注記の中の `.reader-bar` を「規則が在る」と読んで、①が変異に対して緑のままだった。
    CSS の注釈は 1 形だけなので、JS 用の stripper ではなくこの 1 行を使う。 */
-const CSS = () => R('css/intmap.css').replace(/\/\*[\s\S]*?\*\//g, '');
+const CSS = () => codeOnly(R('css/intmap.css'), { lang: 'css' });
 
 /** Lift a top-level `function name(...){…}` out of a file whose comments are already stripped. */
 function lift(code, sig, where) {
@@ -273,7 +273,7 @@ const CODE = (p) => codeOnly(R(p));
 /* ⚠ (#R345 の形・15 回目) この検査は自分の説明文も、製品側の注記も読んではならない——上の見出しは
    `window._imReader=null` も `OPEN NEWS ARTICLE` もそのまま書いているし、js/app-body.js の注記は
    運ぶ側と捨てる側の両方の綴りを持っている。CSS の注釈は 1 形なのでこの 1 行で剥がす。 */
-const CSS = () => R('css/intmap.css').replace(/\/\*[\s\S]*?\*\//g, '');
+const CSS = () => codeOnly(R('css/intmap.css'), { lang: 'css' });
 
 /** Lift a top-level `function name(...){…}` out of a file whose comments are already stripped. */
 function lift(code, sig, where) {

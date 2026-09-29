@@ -37,13 +37,14 @@ import { makeAtlasAgent } from '../js/atlas-agent.js';
 import { fetchViaProxy } from '../js/proxy-fetch.js';
 import { jsonWithin } from '../js/fetch-deadline.js';
 import { newTurnController, settleWithin } from '../js/atlas-deadlines.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ⚠ (#R345, fourteen rounds of it) A COMMENT THAT DESCRIBES THE DEFECT IS NOT THE DEFECT. Every
    file touched this round explains in prose what it used to do, so a check for 「the old ladder is
    gone」 read against the raw text would be satisfied by the note saying it is gone. */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+const code = (p) => codeOnly(read(p));
 
 const AGENT = makeAtlasAgent();
 

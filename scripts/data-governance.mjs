@@ -68,6 +68,7 @@ import { fileURLToPath } from 'node:url';
 import { SPELLINGS, FACETS, SUBJECTS, REASONS, read, freshness, account } from '../js/data-governance.js';
 import { readManifest, requireData, filesUnder } from './data-assets.mjs';
 import { checkRepository as checkOutbound, LEDGER as OUTBOUND_LEDGER } from './outbound-hosts.mjs';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const has = (k) => process.argv.includes(k);
@@ -179,19 +180,7 @@ function bundles() {
    Length and newlines are preserved so that every index and every line number computed from the
    blanked text still points at the real file — a report a reader cannot navigate to is the defect
    scripts/hist-fidelity.mjs's file:line convention exists to avoid. */
-function blankComments(s) {
-  const out = s.split('');
-  let i = 0;
-  const wipe = (from, to) => { for (let k = from; k < to && k < out.length; k++) if (out[k] !== '\n') out[k] = ' '; };
-  while (i < s.length) {
-    const c = s[i];
-    if (c === '"' || c === "'" || c === '`') { const j = endOfString(s, i); if (j < 0) break; i = j + 1; continue; }
-    if (c === '/' && s[i + 1] === '*') { const j = s.indexOf('*/', i + 2); const end = j < 0 ? s.length : j + 2; wipe(i, end); i = end; continue; }
-    if (c === '/' && s[i + 1] === '/') { const j = s.indexOf('\n', i); const end = j < 0 ? s.length : j; wipe(i, end); i = end; continue; }
-    i++;
-  }
-  return out.join('');
-}
+function blankComments(s) { return codeOnly(s, { offsets: true }); }
 
 function endOfString(s, i) {
   const q = s[i];

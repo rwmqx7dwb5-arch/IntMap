@@ -22,11 +22,11 @@ import vm from 'node:vm';
 import * as M from '../js/layer-manifest.js';
 import { whenBoxes } from '../js/layer-rows.js';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* comments and strings blanked, so prose that QUOTES an old pattern is not the pattern */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* the keyed UI table of one language, by running its locale file */
 function uiTable(code) {

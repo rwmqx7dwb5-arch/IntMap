@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -53,7 +54,7 @@ test('R191 UI: the desktop chrome carries no magnifier emoji', () => {
   const css = read('css/intmap.css');
   /* ⚠ COMMENTS STRIPPED FIRST. The notes that record the removal quote the glyph, and a negative
      check that reads prose fails on a correct tree — #R208's and #R229's recurring defect. */
-  const cssCode = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const cssCode = codeOnly(css, { lang: 'css' });
   assert.ok(!cssCode.includes('\u{1F50D}'), 'no magnifier in any rule, the mobile block included');
 });
 
@@ -113,8 +114,8 @@ const ROOT = new URL('../', import.meta.url);
 /* ⚠ (#R283) THE CONTENT OF A FILE, NOT THE BYTES THIS CHECKOUT PRODUCED — scripts/eol.mjs. ① also
    runs the generator's own staleness gate, which compared js/locales/_langs.js byte for byte with
    what it renders and therefore called the committed copy stale on every CRLF working copy. */
-const noHtml = (s) => String(s).replace(/<!--[\s\S]*?-->/g, ' ');
-const noCss = (s) => String(s).replace(/\/\*[\s\S]*?\*\//g, ' ');
+const noHtml = (s) => codeOnly(String(s), { lang: 'html' });
+const noCss = (s) => codeOnly(String(s), { lang: 'css' });
 
 /* ── ⑥ the phone's layer sheet ───────────────────────────────────────────────────────────────── */
 test('R232 mobile: the layer sheet is the SAME tile grid the desktop browses with', () => {
@@ -178,7 +179,6 @@ test('R232 Companies and Countries do not drift sideways', () => {
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234 — SEVEN rounds of a check hitting its own explanation). Strip the
    comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 8 · the phone's layer sheet is the desktop's ───────────────────────────────────────────── */
 test('R235 mobile: the layer sheet is the desktop panel, without the compare/imagery furniture', () => {
@@ -213,7 +213,6 @@ test('R235 mobile: the layer sheet is the desktop panel, without the compare/ima
     Comments are stripped before matching wherever a test looks for a fragment that this file's own
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑧ the UV widget's sub-line is three answers, not one run-on ───────────────────────────────── */
 test('R243 ⑧ the UV card states the peak, the time and the qualifiers on their own lines', () => {
@@ -245,7 +244,7 @@ test('R243 ⑧ the UV card states the peak, the time and the qualifiers on their
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ══ ⑥ THE ADDRESS THE READER OPENED IS READ BEFORE ANYTHING CAN OVERWRITE IT ═════════════════════
    「再読み込み時に情報が保持されなくなっている。」 `save()` is armed on `moveend` with a 400 ms timer
@@ -299,7 +298,6 @@ test('r244 ⑪ a postcode search outlines its real boundary and never a box', ()
 {
 /* ⚠ comments are stripped before matching — this file's own prose quotes the instruction, and a
    negative check that reads its own comment is [[intmap-recurring-lessons]] E, eight rounds running. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /* ── ⑤b THE FEEDBACK TYPES ────────────────────────────────────────────────────────────────────
    「Feedbackの選べるtypeの種類が少なすぎる。」 Three choices sorted nothing. ⚠ And the reader of the
@@ -326,7 +324,6 @@ test('r247 ⑤b the feedback type list is the app\'s own subjects, and its Engli
    (layer-manifest) which layers exist, and their facts */
 {
 /* comments carry the reasoning and quote the very strings under test — strip them first */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 /* ── ⑤ both layer-search boxes have a clear button ───────────────────────────────────────────── */
 test('#R255 ⑤ the clear button exists on BOTH search inputs', () => {

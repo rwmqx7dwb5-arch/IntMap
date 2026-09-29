@@ -341,21 +341,10 @@ const rss = (inner) => '<rss><channel><item>' + HEAD + inner + '</item></channel
  *  migration を読む道具。⚠ `--` の除去は**文字列リテラルの中では止める**——
  *  除去する側が壊れると、以下の検査は「何も書いていない SQL」を見て静かに緑になる。
  * ────────────────────────────────────────────────────────────────────────── */
-function stripSqlComments(sql) {
-  let out = '', inStr = false;
-  for (let i = 0; i < sql.length; i++) {
-    const c = sql[i];
-    if (inStr) {
-      out += c;
-      if (c === "'") { if (sql[i + 1] === "'") out += sql[++i]; else inStr = false; }
-      continue;
-    }
-    if (c === "'") { inStr = true; out += c; continue; }
-    if (c === '-' && sql[i + 1] === '-') { while (i < sql.length && sql[i] !== '\n') i++; out += '\n'; continue; }
-    out += c;
-  }
-  return out;
-}
+/* (test-code-only-one) the shared reader's SQL mode: `--` AND block comments, stopping at '…' —
+   the scanner that stood here knew only `--`, and the cron.job check below had to strip the block
+   comments a second time with the JS regex to stop answering its own explanation. */
+const stripSqlComments = (sql) => codeOnly(sql, { lang: 'sql' });
 function statements(sql) {
   const src = stripSqlComments(sql);
   const out = [];

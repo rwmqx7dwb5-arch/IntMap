@@ -15,6 +15,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 import { assertUnreadIsTheHatch } from './wash-tier.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ⚠ (tests-by-topic) THE AXIS AND THE URLS, RUN. ① and ② below used to read js/wx-ecmwf.js for the
    spelling of `fileUrl`, `omUrl`, `validTimes: j.valid_times.slice()` and `nowIndex`. The shipped
@@ -58,7 +59,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* comments are prose ABOUT the code and must never satisfy an assertion about the code — the
    「自分の検査が自分のコメントに当たる」 shape this project has paid for thirteen times (#R274). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
 const WIND = () => codeOnly(read('js/wx-wind.js'));
 const WX = () => codeOnly(read('js/weather.js'));
@@ -725,7 +725,6 @@ test('R276 ⑮ the popup shows gusts, MSL pressure, the data\'s own valid time, 
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
@@ -1051,7 +1050,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* ⚠ comments are stripped before every claim about code — this project has now written a test
    that matched its own explanation nineteen times (see #R288 ⑪ this round for the twentieth). */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));

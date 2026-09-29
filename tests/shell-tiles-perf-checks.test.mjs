@@ -22,6 +22,7 @@ import path from 'node:path';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -89,7 +90,7 @@ test('R206 ③ the tile warmer asks for the level and the host the render path a
  * ==========================================================================*/
 {
 /* comments in this project carry the reasoning, so a check that greps them proves nothing (#R229) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const code = (p) => codeOnly(read(p));
 
 test('R230 ③ the phone gets MapLibre\'s own image-request default, not a raised one', async () => {
   const app = code('js/app-body.js');
@@ -210,7 +211,7 @@ test('R230 ⑦ the census measures what is actually painted, on screen', () => {
 /* (#R231 — the round's own account of why these checks exist heads its other half, in tests/shell-i18n-locales-checks.test.mjs) */
 {
 /* whole-line // comments */
-const noHtml = (p) => read(p).replace(/<!--[\s\S]*?-->/g, ' ');
+const noHtml = (p) => codeOnly(read(p), { lang: 'html' });
 
 /* ── ③ the base-map square ──────────────────────────────────────────────────────────────────── */
 /* spelling kept: page markup / inline script (index.html) — only a browser document runs it. */

@@ -67,6 +67,7 @@ import path, { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { parse } from 'acorn';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -121,7 +122,7 @@ function labelStack() {
 function baseRows() {
   const blk = /const BASE=\{([\s\S]*?)\n\s*\};/.exec(read('js/data-layers.js'));
   assert.ok(blk, 'js/data-layers.js still declares the base-toggle audit map as a literal');
-  const body = blk[1].replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const body = codeOnly(blk[1]);
   const rows = new Map();
   for (const m of body.matchAll(/'(cb-[a-z0-9]+)'\s*:\s*\[([^\]]*)\]/g)) {
     rows.set(m[1], m[2].split(',').map((s) => s.trim().replace(/'/g, '')).filter(Boolean));

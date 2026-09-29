@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -123,7 +124,7 @@ test('R191 aircraft: the coverage notice is about the current view, not the runn
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ⑧ 「Live aircraft trafficで航空機の色は以下に。民間機：シアン #00D9FF 軍用機：鮮赤 #FF3040
       両方とも：より太いアウトライン」 (#R246, superseding #R244's 山吹色) — and each is written ONCE:
@@ -147,22 +148,7 @@ test('r244 ⑧ the two aircraft colours each live in one constant', () => {
     quotes the strings it forbids — [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 /* comments out, string literals kept — the same helper every round since #R208 */
-const code = (p) => {
-  const src = read(p);
-  let out = '', i = 0;
-  while (i < src.length) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = (e < 0 ? src.length : e + 2); continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = (e < 0 ? src.length : e); continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; let j = i + 1;
-      while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; }
-      out += src.slice(i, j + 1); i = j + 1; continue;
-    }
-    out += c; i++;
-  }
-  return out;
-};
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑥ the first aircraft answer is drawn when it arrives ───────────────────────────────────────
    「Live aircraft trafficで航空機が表示されるまでが遅い。」 `lastPub` starts at the sweep's start, so
@@ -186,7 +172,6 @@ test('r245 ⑥ a live-aircraft sweep publishes its first success immediately', (
 {
 /* ⚠ comments are stripped before matching — this file's own prose quotes the instruction, and a
    negative check that reads its own comment is [[intmap-recurring-lessons]] E, eight rounds running. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /* ── ④ THE AIRCRAFT RAMP ──────────────────────────────────────────────────────────────────────
    「Live aircraft trafficで航空機の大きさを少し大きく。」 1.25× at every stop, so the SHAPE of the

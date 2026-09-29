@@ -16,6 +16,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -214,7 +215,7 @@ test('R202 ③i the seismic mesh got finer, and the sky model is not wired twice
 {
 /* ⚠ block comments are stripped before a "this string must NOT appear" test — a comment that
    explains a defect otherwise trips the check for the defect (#R216's own note). */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, '');
+const code = (p) => codeOnly(read(p));
 test('#R218 ③ …the distance is factored over the grid, and only when there is no rupture to measure to', () => {
   const s = code('js/seismic.js');
   assert.match(s, /const _fastD=!fault&&!!epi;/, 'the factored distance is not gated on the rupture');
@@ -328,7 +329,7 @@ test('R226 ② the desktop field is finer and the phone is untouched', () => {
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ══ ⑤ THE FAR FIELD MEASURES THE DISTANCE THE FINE FIELD MEASURES ════════════════════════════════
    「震源の外側に数千キロ規模の四角形の線がありそこで震度分布が断絶している。」 `buildFar` passed
@@ -352,22 +353,7 @@ test('r244 ⑤ buildFar subtracts the rupture’s reach before srcDistM', () => 
     quotes the strings it forbids — [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 /* comments out, string literals kept — the same helper every round since #R208 */
-const code = (p) => {
-  const src = read(p);
-  let out = '', i = 0;
-  while (i < src.length) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = (e < 0 ? src.length : e + 2); continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = (e < 0 ? src.length : e); continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; let j = i + 1;
-      while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; }
-      out += src.slice(i, j + 1); i = j + 1; continue;
-    }
-    out += c; i++;
-  }
-  return out;
-};
+const code = (p) => codeOnly(read(p));
 
 /* ── ④ the far field and the fine image tile exactly ────────────────────────────────────────────
    「震源の外側に数千キロ規模の四角形の線がありそこで震度分布が断絶している。」 The line was the far
@@ -405,7 +391,6 @@ test('r245 ④ the intensity field has one boundary, on the grid, with no fade a
 {
 /* ⚠ comments are stripped before matching — this file's own prose quotes the instruction, and a
    negative check that reads its own comment is [[intmap-recurring-lessons]] E, eight rounds running. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /* ── ② THE FAR RASTER'S LIMITS ────────────────────────────────────────────────────────────────
    `rEdge` comes off the profile's own radius grid, which is the distance `srcDistM()` PRODUCES;
@@ -478,7 +463,6 @@ test('r247 ③ one function writes the colour AND the alpha, for both rasters', 
     [[intmap-recurring-lessons]] E has caught nine rounds writing a check that trips on its own
     explanation of the defect. */
 {
-const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① THE FAR RASTER'S INPUTS ARE AT THE FAR RASTER'S CELL ─────────────────────────────────── */
 test('#R250 ① the far seismic raster answers land and site at its OWN cell, not at 19.6 / 28 km', () => {

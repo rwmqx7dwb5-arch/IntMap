@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
 import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -249,7 +250,7 @@ test('R197 ②a the disaster simulator has no tsunami hazard at all', () => {
      that the hazard list has no tsunami and that `setHazard` refuses an unknown one. 「災害シミュレー
      ターは4つのうち、放射性物質拡散シミュレーションを残し全削除」 removed the list, the setter and the
      module. The requirement survives its implementation: nothing in js/sims.js may offer a tsunami. */
-  const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');   /* (#R296) 21st round: a check for a removed name must not match the comment that explains the removal */
+  const code = (s) => codeOnly(s);   /* (#R296) 21st round: a check for a removed name must not match the comment that explains the removal */
   assert.doesNotMatch(code(sims), /hazard/i, 'there is no hazard list left to put a tsunami in');
   assert.doesNotMatch(code(sims), /IntMapTsunami/, 'and js/sims.js does not open the propagation model either');
 });
@@ -420,7 +421,6 @@ test('R223 ⑧ the polar filter and the frame decimation only touch what can be 
     prose could contain ([[intmap-recurring-lessons]] E, eight rounds running). */
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑧ the tsunami animation ──────────────────────────────────────────────────────────────────── */
 test('R242 ⑧ the near-source picture is undecimated over a window', () => {

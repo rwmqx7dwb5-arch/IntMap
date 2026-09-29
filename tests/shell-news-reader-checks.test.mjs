@@ -19,6 +19,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -32,9 +33,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    and `{timeout:2000}` are all named in the note that says they are gone. #R208 and #R229 hit exactly
    this ("a check whose regex matches its own comment"), so the rule is now a helper: strip comments,
    then match syntax. */
-const noJs = (p) => read(p)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')                       /* block comments */
-  .replace(/^[ \t]*\/\/.*$/gm, ' ');
+const noJs = (p) => codeOnly(read(p));
 
 /* ── ⑪ the gazetteer index yields to the gesture ────────────────────────────────────────────── */
 /* spelling kept: browser script (js/news-context.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -81,7 +80,7 @@ test('R231 performance: the world-gazetteer registration is deadline-bound and y
  * ==========================================================================*/
 {
 /* comments stripped: a mention in prose is not a use (#R408) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /** Every production JS file, found on disk — never a list written down here (#R399). */
 function everyJs(dir) {

@@ -75,7 +75,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ⚠ (#R345, fifteen rounds of it) A COMMENT THAT DESCRIBES THE DEFECT IS NOT THE DEFECT. Every file
    #R464 touched explains in prose what it used to do, so a raw-text check for 「the old number
    is gone」 would be satisfied by the note saying it is gone. */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+const code = (p) => codeOnly(read(p));
 /* ── the bodies, in the shapes the real relays returned ───────────────────────────────────────── */
 
 /* a news article page: a doctype, paragraphs, an og:image — the 198–217 KB shape, in miniature but
@@ -535,7 +535,7 @@ test('R464 ⑧: gdelt-relay is not one of the raced proxies', () => {
 /* ── ⑨ the relay only remembers what GDELT actually answered ───────────────────────────────────── */
 test('R464 ⑨: nothing is written to the shared cache unless GDELT returned a real article list', () => {
   /* ⚠ READ, NOT RUN: refresh() is a Deno Edge Function body that reads GDELT and Supabase storage; its guard order is asked of the statement. */
-  const src = RELAY.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+  const src = codeOnly(RELAY);
   const refresh = /async function refresh\([\s\S]*?\n\}/.exec(src);
   assert.ok(refresh, 'the upstream read must live in one function');
   /* ⚠ (#R769) THIS READ `/if \(!r\.ok\) return null/` — the 2026-08 spelling of 「give up」. #R769 made

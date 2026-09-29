@@ -22,6 +22,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import { simple } from 'acorn-walk';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -41,7 +42,7 @@ test('r201 ①a the five-ring staircase is gone from js/night-side.js', () => {
   /* …and it is the ONLY place the band appears: nightness and the draw loop both derive from it */
   const uses = NIGHT.match(/TWILIGHT_END/g) || [];
   assert.ok(uses.length >= 3, `the constant is used, not shadowed by literals (${uses.length})`);
-  assert.ok(!/\/\s*12\b/.test(NIGHT.replace(/\/\*[\s\S]*?\*\//g, '')), 'no leftover /12 twilight literal');
+  assert.ok(!/\/\s*12\b/.test(codeOnly(NIGHT)), 'no leftover /12 twilight literal');
 });
 
 test('r201 ①b the drawn pixel is the GIBS pixel — no threshold, no gain, no bias', () => {
@@ -157,7 +158,7 @@ test('r201 ③a there is no button left anywhere', () => {
   const specs = readdirSync(join(ROOT, 'tests')).filter((f) => f.endsWith('.spec.js'));
   for (const f of specs) {
     if (f === 'r201.spec.js') continue;             /* r201 ③ asserts the button's ABSENCE */
-    const code = read('tests/' + f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    const code = codeOnly(read('tests/' + f));
     assert.ok(!/#space-btn|buttonVisible/.test(code), `tests/${f} still drives the removed button`);
   }
 });

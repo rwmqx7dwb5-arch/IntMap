@@ -1,0 +1,18 @@
+{
+  "_": "scripts/comment-strippers.mjs — per file, how many comment-stripping sites (regex / scanner / parser / filter) REMAIN under tests/ and scripts/. It only goes down: `node scripts/comment-strippers.mjs --write` rewrites `pending` to what is measured. `kept` is not debt — each says why that file strips comments itself.",
+  "kept": {
+    "scripts/code-only.mjs": {
+      "sites": 4,
+      "why": "This IS the canonical reader — the scanner every other file imports (lang / offsets / literals options) and the acorn onComment path behind parser:'acorn'. Every other site in tests/ and scripts/ is routed here."
+    },
+    "tests/r345-checks.test.mjs": {
+      "sites": 2,
+      "why": "LEGACY is the regex-pair heuristic kept as a SPECIMEN: test 8 feeds it the fixtures it truncates ('not // a comment', a template with // inside) and the ones where it deletes a whole call, and asserts the shared reader does not. A proof that the old form is wrong needs the old form."
+    },
+    "tests/stalled-fetch-and-surface-gauge-checks.test.mjs": {
+      "sites": 2,
+      "why": "replacedCodeOnly is the character loop global-surface used before it tokenized with the parser, kept verbatim as the MUTANT: the regex-literal fixture must be red on it and green on the shared reader, or the test proves nothing."
+    }
+  },
+  "pending": {}
+}

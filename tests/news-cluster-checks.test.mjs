@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { CATEGORIES, DEFAULTS, tokenise, normaliseTitle, normaliseUrl, pairVerdict, clusterArticles, countIndependentSources, geoClass, lngOf, latOf, kindOf } from '../supabase/functions/_shared/news-cluster.js';
 import { makeNewsCluster } from '../js/news-cluster.js';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ════════ #R334 — from tests/r334-checks.test.mjs ════════ */
 {
@@ -452,7 +453,7 @@ test('#R340 ⑤ #R76\'s relaxed branch no longer exists, and there is ONE groupe
   const adapter = read('js/news-cluster.js');
   assert.match(adapter, /from '\.\.\/supabase\/functions\/_shared\/news-cluster\.js'/,
     'js/news-cluster.js no longer imports the shared #R334 grouper — that is a second implementation');
-  const code = adapter.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const code = codeOnly(adapter);
   assert.ok(!/par\[find\(|union|jaccard\s*\(\s*[a-z]+\s*,\s*[a-z]+\s*\)\s*[<>]/.test(code),
     'js/news-cluster.js is deciding pairs itself instead of delegating');
   const nums = (code.match(/\b0\.\d+\b/g) || []);
@@ -560,7 +561,7 @@ test('#R340 ⑨ the same articles always produce the same events', () => {
      ⚠ And the subject is the WALL CLOCK, not the Date constructor: the adapter builds
      instants from the caller's "hours ago" against a fixed epoch, which is exactly what
      makes the fixture reproducible. Argless new Date() and Date.now() are the ban. */
-  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const strip = (s) => codeOnly(s);
   for (const f of ['js/news-cluster.js', 'supabase/functions/_shared/news-cluster.js']) {
     const code = strip(read(f));
     assert.ok(!/Math\.random|Date\.now\(\)|new Date\(\s*\)|fetch\(/.test(code), f + ' reached for the wall clock, a die or the network');

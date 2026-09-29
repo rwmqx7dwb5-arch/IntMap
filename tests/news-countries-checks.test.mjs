@@ -937,7 +937,7 @@ test('R424 ④ every region resolves in all nine languages, through the app’s 
    ⚠ Code-shaped needles only — this file's own header names the field and the spellings. */
 /* 綴りのまま: 対象は DOM・地図（MapLibre / WebGL）に触れる closure の中で、ブラウザの外では走らない（実ブラウザ側は spec が持つ） */
 test('R424 ⑤ the list sub-line and the country card both name the region through _regionName', () => {
-  const src = rd(COUNTRIES).replace(/\/\*[\s\S]*?\*\//g, '');   /* comments are not the program */
+  const src = codeOnly(rd(COUNTRIES));   /* comments are not the program */
 
   assert.match(src, /const subline=[^\n]*_regionName\(s\.region\)/,
     'the Countries list sub-line must resolve the region, not print it');
@@ -1059,7 +1059,7 @@ test('R443 ⑨ CONTINENT and SUBREGION never disagree about a place they both na
 /* ══ ⑩ ONE TABLE, TWO READERS — the shape that would have caught the original defect ═══════════ */
 /* 綴りのまま: 対象は DOM・地図（MapLibre / WebGL）に触れる closure の中で、ブラウザの外では走らない（実ブラウザ側は spec が持つ） */
 test('R443 ⑩ the card resolves the subregion, and no second copy of the table exists in js/', () => {
-  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');   /* comments are not the program (#R345) */
+  const strip = (s) => codeOnly(s);   /* comments are not the program (#R345) */
   const src = strip(rd(COUNTRIES));
 
   assert.match(src, /statRegion'\)[^\n]*_imSubregionName\(s\.subregion,\s*HOST\.lang\)/,

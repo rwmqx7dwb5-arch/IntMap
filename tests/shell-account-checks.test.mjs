@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -28,9 +29,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    and `{timeout:2000}` are all named in the note that says they are gone. #R208 and #R229 hit exactly
    this ("a check whose regex matches its own comment"), so the rule is now a helper: strip comments,
    then match syntax. */
-const noJs = (p) => read(p)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')                       /* block comments */
-  .replace(/^[ \t]*\/\/.*$/gm, ' ');
+const noJs = (p) => codeOnly(read(p));
 
 /* ── ⑧ the profile sheet ────────────────────────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
@@ -92,7 +91,6 @@ test('R467 ② every writer of the account sheet goes through a callee the instr
 {
 const rd = (f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 /* comments quote the defect on purpose, so they must not be what is measured */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 const AUTH = code(rd('js/auth-ui.js'));
 const AI = rd('js/ai-core.js');

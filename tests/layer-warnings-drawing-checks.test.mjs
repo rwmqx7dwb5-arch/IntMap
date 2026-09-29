@@ -16,7 +16,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import pc from 'polygon-clipping';
-import { codeOnly } from '../scripts/code-only.mjs';
+import { codeOnly, codeOnly as noComments } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { assertUnreadNeverGreys, assertUnreadIsTheHatch } from './wash-tier.mjs';
 
@@ -53,7 +53,6 @@ test('R266 ⑦: a tap lists administrative units, not a flat run of municipaliti
 /* ⚠ (#R267) COUNT IN CODE, NOT IN COMMENTS. This file's own prose names the strings it checks for,
    which is how an audit ends up catching itself (nine rounds and counting). Comments are stripped
    before any «does X still exist» question is asked. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 test('R268 ⑨ the tap folds three levels deep and never opens on a list of towns', () => {
   const s = codeOnly(read('js/world-packs.js'));
@@ -95,7 +94,6 @@ test('R268 ⑨ the tap folds three levels deep and never opens on a list of town
  * ==========================================================================*/
 /* ⚠ (#R267) read CODE, not comments — this file's own prose names the things it checks for, and a
    check that matches its own explanation is the failure this project has paid for eleven times. */
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ① the issuing unit, and what a country wash is allowed to mean ─────────────────────────── */
 test('R271 ① Japan is drawn at the JMA’s own issuing regions, not at the prefecture', () => {
@@ -194,7 +192,6 @@ test('R271 ② Europe’s regions get a shape from the feed’s own polygon or t
  *  the check pass — 「自分の検査が自分のコメントに当たる」, thirteen times and counting.
  * ==========================================================================*/
 /* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => codeOnly(read('js/world-packs.js'));
 const RELAY = () => codeOnly(read('supabase/functions/alerts-relay/index.ts'));
 
@@ -341,7 +338,6 @@ test('R277 ⑫ the Chinese boundaries are read through the relay, not from the p
 /* 綴りのまま残した検査の理由: js/world-packs.js は DOM・MapLibre・各機関への fetch に閉じた 1 つのファクトリで node では組み立てられない（切り出して実行できる関数は実行している） */
 /* (#R284) the round's header note is kept with its largest block, in tests/layer-weather-ecmwf-checks.test.mjs */
 /* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
-const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 const WP = () => codeOnly(read('js/world-packs.js'));
 
@@ -649,7 +645,6 @@ test('R297 ⑫ the shape libraries this browser holds are counted, not assumed',
  * ==========================================================================*/
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-five times; ask the question of the text that RUNS. */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => noComments(read('js/world-packs.js'));
 /* ══ ⚠⚠⚠ (#R307) A WINDOW COUNTED IN CHARACTERS IS A TIMER ON THE NEXT ROUND ═══════════════════
    Two of the checks below used `[\s\S]{0,600}` / `{0,1600}` to mean 「inside this function」, and both
@@ -829,7 +824,6 @@ test('R306 ⑰ a neighbour is not something inside this unit', () => {
  *  unit's grey away.
  * ==========================================================================*/
 /* ⚠ comments are stripped first — this file's own notes quote the spellings it replaced */
-const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => noComments(read('js/world-packs.js'));
 
 /* ── ① a point that is really in the shape ───────────────────────────────────────────────────*/
@@ -910,7 +904,7 @@ test('R306 ④ the view-pass check is asked of the function, not of a byte count
  * ==========================================================================*/
 /* the comments in this project carry the reasoning, and several of them QUOTE the spellings that
    were replaced — a check that greps them proves nothing */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* the body of a named function declaration, brace-balanced (the #R228 helper, and the answer to
    #R306's ⚠ about character-counted windows: ask the BODY, not a byte range around a name) */

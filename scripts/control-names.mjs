@@ -43,6 +43,7 @@ import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from '
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 export const LEDGER = join(ROOT, 'tests', 'control-names-baseline.json');
@@ -244,7 +245,7 @@ function corpus(R) {
   const js = walkJs(join(R, 'js'), []).map((p) => { const src = readFileSync(p, 'utf8'); const { ast, code } = parseJs(src, rel(p)); return { file: rel(p), ast, text: code }; });
   const html = readdirSync(R).filter((x) => x.endsWith('.html')).sort().map((f) => {
     const src = readFileSync(join(R, f), 'utf8');
-    return { file: f, ast: null, text: src.replace(/<!--[\s\S]*?-->/g, blank) };
+    return { file: f, ast: null, text: codeOnly(src, { lang: 'html', offsets: true }) };
   });
   return js.concat(html);
 }

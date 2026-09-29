@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import * as LM from '../js/layer-manifest.js';
 import { readLF } from '../scripts/eol.mjs';
 import { byKey, publishedList } from './helpers/layer-groups.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -115,8 +116,7 @@ test('R211 POI: on by default, coloured by tier, industry named, and no all-at-o
      label stack stops existing — the silent-loss shape this project keeps paying for. Adding
      'office' to tier 2 while it was still in tier 3 did precisely that; tests/smoke caught it.
      Derived from the source rather than listed, so a future addition cannot reintroduce it. */
-  const tierBlock = pl.slice(pl.indexOf('const POI_TIER='), pl.indexOf('    4];'))
-    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const tierBlock = codeOnly(pl.slice(pl.indexOf('const POI_TIER='), pl.indexOf('    4];')));
   const classes = [...tierBlock.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
   const seen = new Set();
   const dups = [...new Set(classes.filter((c) => (seen.has(c) ? true : (seen.add(c), false))))];
@@ -153,9 +153,7 @@ const ROOT = new URL('../', import.meta.url);
 /* ⚠ COMMENTS ARE STRIPPED BEFORE EVERY NEGATIVE CHECK. #R231 hit this five times and #R208/#R229
    before it: a note that QUOTES the thing it says was removed makes "it is gone" fail. Match syntax,
    never prose. */
-const noJs = (s) => String(s)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const noJs = (s) => codeOnly(String(s));
 
 /* ── ③ the day/night switch ──────────────────────────────────────────────────────────────────── */
 test('R232 layers: the flat night layer is gone and the shading has one owner', () => {
@@ -185,7 +183,6 @@ test('R232 layers: the flat night layer is gone and the shading has one owner', 
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234 — SEVEN rounds of a check hitting its own explanation). Strip the
    comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 7 · day/night is a basic display, not a layer ──────────────────────────────────────────── */
 test('R235 day/night: not counted, not chipped, not offered as a layer to discover', () => {
@@ -222,7 +219,6 @@ test('R235 day/night: not counted, not chipped, not offered as a layer to discov
     Comments are stripped before matching wherever a test looks for a fragment that this file's own
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑦ every U.S. presidential election ───────────────────────────────────────────────────────── */
 test('R243 ⑦ the election dataset is sixty elections and every cell resolves', () => {
@@ -278,7 +274,7 @@ test('R243 ⑦ «did not vote» is expressed in the colour, because the opacity 
 {
 /* comments stripped, so a note that QUOTES a pattern cannot satisfy or trip a check
    ([[intmap-recurring-lessons]] E — this has cost eight rounds) */
-const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const code = (p) => codeOnly(read(p));
 
 /* ⑩ 「アメリカ大統領選挙レイヤーは、操作時に凡例が上に伸びるのではなく下に伸びるように。」 */
 test('r244 ⑩ a legend may declare that it grows downward, and the election legend does', () => {
@@ -296,22 +292,7 @@ test('r244 ⑩ a legend may declare that it grows downward, and the election leg
     quotes the strings it forbids — [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 /* comments out, string literals kept — the same helper every round since #R208 */
-const code = (p) => {
-  const src = read(p);
-  let out = '', i = 0;
-  while (i < src.length) {
-    const c = src[i], d = src[i + 1];
-    if (c === '/' && d === '*') { const e = src.indexOf('*/', i + 2); i = (e < 0 ? src.length : e + 2); continue; }
-    if (c === '/' && d === '/') { const e = src.indexOf('\n', i); i = (e < 0 ? src.length : e); continue; }
-    if (c === '"' || c === "'" || c === '`') {
-      const q = c; let j = i + 1;
-      while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; }
-      out += src.slice(i, j + 1); i = j + 1; continue;
-    }
-    out += c; i++;
-  }
-  return out;
-};
+const code = (p) => codeOnly(read(p));
 
 /* ── ⑨ the climate names are ONE table, and every reader goes through one lookup ────────────────
    They were four tables (an `{en,jp}` literal plus `_kde`/`_kru`/`_kes` patched on at load), which
@@ -334,7 +315,6 @@ test('r245 ⑨ Köppen names are one table and one accessor', () => {
    (layer-manifest) which layers exist, and their facts */
 {
 /* comments carry the reasoning and quote the very strings under test — strip them first */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 
 /* ── ③ the data-centre card is PLACED ────────────────────────────────────────────────────────── */
 test('#R255 ③ detail cards set their own left/top — .country-popup has none', () => {
@@ -634,7 +614,6 @@ test('R264 ③: the data-centre layer floats exactly one thing — the card abou
     with its comments stripped — the prose that RECORDS a removal is not evidence against it. That
     is #R266's own lesson, and it has cost this repo a round twice. */
 {
-const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── ⑩ the Serbo-Croatian standards are one hue ────────────────────────────────────────────── */
 test('R273 ⑩ Serbian, Croatian, Bosnian and Montenegrin are near-identical colours', () => {

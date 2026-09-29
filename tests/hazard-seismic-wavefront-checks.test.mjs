@@ -15,6 +15,7 @@ import path, { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -66,9 +67,7 @@ const ROOT = new URL('../', import.meta.url);
 /* ⚠ COMMENTS ARE STRIPPED BEFORE EVERY NEGATIVE CHECK. #R231 hit this five times and #R208/#R229
    before it: a note that QUOTES the thing it says was removed makes "it is gone" fail. Match syntax,
    never prose. */
-const noJs = (s) => String(s)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+const noJs = (s) => codeOnly(String(s));
 
 test('R232 seismic: the wavefronts are named, and the observation points are cities that shake', () => {
   const s = read('js/seismic.js');
@@ -131,7 +130,6 @@ test('R234 seismic: the front labels are placed toward the map centre, not at a 
 /* ⚠ comments quote the instructions, and the instructions quote the strings the checks look for
    (#R208/#R215/#R231/#R232/#R234 — SEVEN rounds of a check hitting its own explanation). Strip the
    comments and match the SYNTAX. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ── 3 · the front envelope: spherical, and concave where the source is ─────────────────────── */
 test('R235 wavefronts: the envelope is the spherical outer root, not the convex support function', () => {
@@ -260,7 +258,6 @@ test('R235 wavefronts: playback runs on the shared frame loop and keeps its frac
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap #R235 hit eight
    times and #R236 hit once more. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 3 · the wavefront's resolution ─────────────────────────────────────────────────────────────
    「動作は離散的ではなくスムーズにして」 — 144 bearings is 2.5° of arc whatever the zoom. */
@@ -286,7 +283,6 @@ test('R237 seismic: the front is densified from the screen, not from a constant'
 {
 /* strip comments so a rule is never satisfied by prose ABOUT the rule — the trap that has now been
    hit nine times across #R208…#R237. */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /* ── 2 · ③ the wavefront radius is interpolated, not quantised to the traced samples ────────────
    Measured before the fix: frontDelta('S', 24 km, t) returned 0.8961573° for BOTH t = 30 s and
@@ -407,7 +403,6 @@ test('R238 fronts: the source points are cached and carry their own trig', () =>
 {
 const R = read;
 /* comments out, so a claim in prose can never satisfy a check about code (#R166) */
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ⚠⚠⚠ (#R241) THE BLEND-RAMP TEST THAT STOOD HERE WAS OVERTURNED BY THE READER ════════════════
    It pinned #R240's answer to 「ある程度までズームインすると途端に見えなくなってしまう」: hold the
@@ -469,7 +464,6 @@ test('R240 ② the front carries the rupture’s directivity, and only when ther
     [[intmap-recurring-lessons]] E, eight rounds running. */
 {
 const R = read;
-const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══ ② THE WAVEFRONT LEAVES THE RUPTURE ════════════════════════════════════════════════════════ */
 

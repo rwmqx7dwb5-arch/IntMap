@@ -18,6 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const tracked = execFileSync('git', ['ls-files', 'scripts', 'tests'], { cwd: ROOT, encoding: 'utf8' })
@@ -31,7 +32,7 @@ function uses() {
   const out = [];
   for (const f of tracked) {
     /* comments are prose about imports, not imports (this file's own header quotes the defect) */
-    const src = readFileSync(join(ROOT, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    const src = codeOnly(readFileSync(join(ROOT, f), 'utf8'));
     for (const m of src.matchAll(STATIC)) if (!m[2].startsWith('node:')) out.push({ file: f, pkg: m[2] });
     for (const m of src.matchAll(DYNAMIC)) if (!m[1].startsWith('node:')) out.push({ file: f, pkg: m[1] });
   }

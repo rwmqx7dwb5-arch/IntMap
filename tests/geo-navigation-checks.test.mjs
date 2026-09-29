@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { readLF } from '../scripts/eol.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R347 · navigation   (was tests/r347-checks.test.mjs)
@@ -33,9 +34,7 @@ import { readLF } from '../scripts/eol.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readLF(resolve(ROOT, p));
 /* an «X is gone» check must read the code, not the note that says X is gone (#R291's header) */
-const bare = (p) => read(p)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .split('\n').map((l) => l.replace(/(^|[^:'"\\`])\/\/.*$/, '$1')).join('\n');
+const bare = (p) => codeOnly(read(p));
 
 const IDX = { en: 0, jp: 1, de: 2, ru: 3, es: 4 };
 function makeWindow() {
@@ -433,8 +432,7 @@ test('R347 ㉒ every capability’s lazyModules names a module IntMapLazy actual
   /* ⚠ COMMENTS FIRST. The block carries paragraphs of prose containing colons, and a name-scan over
      the raw text picks words out of them (it found «reason» on the first run). This is the same trap
      this file's own header warns about, met from the other side. */
-  const noComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .split('\n').map((l) => l.replace(/(^|[^:'"\\`])\/\/.*$/, '$1')).join('\n');
+  const noComments = (s) => codeOnly(s);
   /* (#R798) the ids IntMapLazy knows are the registry's keys — read from the object, not a scan */
   const known = new Set(Object.keys(LAZY_REGISTRY));
   assert.ok(lazy.length > 0 && typeof noComments === 'function');

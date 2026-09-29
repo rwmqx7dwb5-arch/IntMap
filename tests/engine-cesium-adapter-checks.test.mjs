@@ -25,6 +25,7 @@ import vm from 'node:vm';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { PbfWriter } from 'pbf';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const R = (p) => readFileSync(new URL(p, ROOT), 'utf8');
@@ -171,9 +172,11 @@ test('R181 ①: no texture producer builds a bitmap without saying which way up 
 /* ⚠ READ, NOT RUN: OffscreenCanvas.transferToImageBitmap is a browser API. */
 test('R181 ①: transferToImageBitmap is gone — it cannot carry an orientation', () => {
   const src = R('js/cesium-layers.js');
-  const uses = src.split('\n')
+  /* (test-code-only-one) the comments are gone with their line breaks kept, so a line number is
+     still a line number — the filter no longer guesses which lines belong to a comment */
+  const uses = codeOnly(src).split('\n')
     .map((ln, i) => [i + 1, ln])
-    .filter(([, ln]) => /\.transferToImageBitmap\s*\(/.test(ln) && !/^\s*\*/.test(ln));
+    .filter(([, ln]) => /\.transferToImageBitmap\s*\(/.test(ln));
   assert.deepEqual(uses.map(([n]) => n), [],
     'transferToImageBitmap takes no options, so a canvas transferred that way arrives upside down');
 });
