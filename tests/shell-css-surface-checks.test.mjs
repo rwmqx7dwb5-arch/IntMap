@@ -22,6 +22,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -261,8 +262,9 @@ const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('#R508 ① the front-band level in js/map-ui.js is the level css/intmap.css actually applies', () => {
   const css = read('css/intmap.css');
-  const fromCss = /\.im-front\{\s*z-index:(\d+)\s*!important/.exec(css);
-  assert.ok(fromCss, '.im-front no longer sets a z-index — the guard has nothing to compare against');
+  const fromCssM = /\.im-front\{\s*z-index:([^;!}]+?)\s*!important/.exec(css);
+  assert.ok(fromCssM, '.im-front no longer sets a z-index — the guard has nothing to compare against');
+  const fromCss = [fromCssM[0], String(zResolve(fromCssM[1], zTokens(css)))];   /* (map-a11y-structure) a named layer, resolved */
 
   const ui = code(read('js/map-ui.js'));
   const fromJs = /const\s+_FRONT_Z\s*=\s*(\d+)/.exec(ui);
@@ -301,9 +303,11 @@ test('#R508 ② a layer above the band is exempted, by measurement rather than b
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('#R508 ③ the fix did not lower the dialogs into the band to get out of the way', () => {
   const css = read('css/intmap.css');
-  const band = +(/\.im-front\{\s*z-index:(\d+)\s*!important/.exec(css) || [])[1];
-  const overlay = /\.modal-overlay\{[^}]*z-index:(\d+)/.exec(css);
-  assert.ok(overlay, '.modal-overlay no longer carries a z-index');
+  const bandM = /\.im-front\{\s*z-index:([^;!}]+?)\s*!important/.exec(css);
+  const band = bandM ? zResolve(bandM[1], zTokens(css)) : NaN;
+  const overlayM = /\.modal-overlay\{[^}]*?z-index:([^;}]+)/.exec(css);
+  assert.ok(overlayM, '.modal-overlay no longer carries a z-index');
+  const overlay = [overlayM[0], zResolve(overlayM[1], zTokens(css))];
   assert.ok(+overlay[1] > band,
     `.modal-overlay is at ${overlay[1]}, at or below the front band (${band}) — a dialog must outrank every panel, and the exemption in js/map-ui.js is written for that`);
 });
@@ -460,9 +464,9 @@ const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('#R253 ④ an open sidebar out-ranks the floating panels, and the pointer moves that rank', () => {
   const css = code(read('css/intmap.css'));
-  const m = /body:not\(\.im-float-front\)\s*\.sidebar,\s*body:not\(\.im-float-front\)\s*#layer-sidebar-r\{\s*z-index:(\d+)/.exec(css);
+  const m = /body:not\(\.im-float-front\)\s*\.sidebar,\s*body:not\(\.im-float-front\)\s*#layer-sidebar-r\{\s*z-index:([^;}]+)/.exec(css);
   assert.ok(m, 'the front-most band for the two sidebars is gone');
-  const z = +m[1];
+  const z = zResolve(m[1], zTokens(read('css/intmap.css')));   /* (map-a11y-structure) a named layer, resolved */
   /* it must clear the whole map-surface band and stay under the modal layer */
   assert.ok(z > 2500, `the sidebar band is ${z}; the context menu is 2500 and the country card 2200, so it still paints through`);
   assert.ok(z < 9999, `the sidebar band is ${z}; the modal overlay is 9999 and must never go behind a sidebar`);

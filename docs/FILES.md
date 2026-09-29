@@ -90,7 +90,8 @@ _precip_years_convert.py        GPCC → 年別 PNG（同上）
 
 ```
 css/
-  intmap.css                        アプリのスタイルシート全体
+  intmap.css                        アプリのスタイルシート全体。重なり順は :root の層（`--z-inset` … `--z-system`）で名づけ、
+                                    z-index はすべてそれを読む（台帳は scripts/z-layers.mjs）
   pages.css                         読み物2ページ（science.html / sources.html）のスタイル
   fonts.css                         同梱フォントの @font-face
 src/
@@ -992,6 +993,10 @@ legal.js                          その本文をアプリ内モーダルに表�
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
                                   閉じたときのフォーカス復帰、「押せる」の契約（role+tabindex を Enter/Space で押す委譲・makeActionable）、
                                   検索欄の listbox（矢印キー）。数える側は scripts/keyboard-reach.mjs
+map-narrator.js                   地図のテキスト代替——視覚的に隠した role=status に、中心の場所（過去の年は
+                                  その年の記録から）・表示中の日付・Active layers・表示範囲の件数・選択中の地物を
+                                  落ち着いてから 1 文で。#map を名前つき region にし、Alt+N / Alt+Shift+N で中心付近の
+                                  地物をレンダラ自身のクリック経路（GE().events.pressAt）で押す（map-a11y-structure）
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 monitors.js                       Area Monitors IntMapMonitors
@@ -1454,6 +1459,14 @@ scripts/
                                   `js/`・`src/` の大域 `fetch(` で options に `signal` の無いものをファイルごとに
                                   構文木から数え、`tests/fetch-deadline-baseline.json` と両方向に照合する。
                                   `--update` で台帳を書き直す。除外は理由の文つきの `EXEMPT` だけ
+  control-names.mjs               **名前の無い操作要素の台帳**（`npm run check:static` の `control-names` 規則）。
+                                  記号・アイコンだけで aria-label / title の無い button と、ラベルの無い
+                                  input / select / textarea を、`js/`・ルートの `*.html` のマークアップと構文木から
+                                  ファイルごとに数え、`tests/control-names-baseline.json` と両方向に照合する
+  z-layers.mjs                    **重なり順の台帳**（`npm run check:static` の `z-layers` 規則）。css/intmap.css の
+                                  全 z-index を :root の `--z-*` で解決した順序列を `tests/z-layers-baseline.json` と
+                                  完全一致で照合し（描画順が動けば落ちる）、`css/`・`js/`・`*.html` に残る
+                                  数値リテラルの z-index をファイルごとに両方向で ratchet する
   outbound-hosts.mjs              **ブラウザが通信しうるホストと、それを述べるプライバシー §4 の照合**
                                   （`npm run check:datagov` の `outbound-disclosed` 規則。門は data-governance.mjs が走らせる）。
                                   `js/`・`src/`・配信する `*.html`・`sw.js`・`css/` の**文字列とテンプレートの
@@ -1548,7 +1561,7 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 122 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 123 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

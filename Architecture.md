@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（930行・92 KB）＋ `css/`（3本）＋ `js/`（327本・14.9 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（931行・92 KB）＋ `css/`（3本）＋ `js/`（328本・14.9 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -4001,7 +4001,7 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
   持ち主の `isOpen` 述語）。⚠ **「モーダルが開いているか」は `IntMapDialog.anyOpen()` だけが答える。**
   サイドバーの Esc（`js/app-body.js`）とワークスペースの Esc（`js/workspace.js`）はこれに訊き、
   選択子の一覧を持たない。一文字のキーボードショートカット（`js/keyboard-shortcuts.js`）もモーダルの
-  背後には届かない（「?」だけはヘルプを開閉する）。登録している面: 設定・支援・規約・出典・投稿・
+  背後には届かない（「?」だけはヘルプを開閉する。設定で全部を切れる——下の「一文字のショートカットは切れる」）。登録している面: 設定・支援・規約・出典・投稿・
   画像の拡大・公開プロフィール・アバターの切り抜き・フィードバック・不具合報告・ショートカットのヘルプ・ウィジェットの
   追加・AI レポート・時系列・相関・企業の詳細・プレイグラウンドのカード・初回の案内・
   アカウント（ログイン・アカウント・確認）・携帯の 2 枚のシート。
@@ -4019,8 +4019,46 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
   （`camera.flyTo`／`easeTo`／`fitBounds`／`zoomTo`／`zoomIn`／`zoomOut`）が `duration:0` を渡す——
   行き先も、動くかどうかも変えない（CONSTITUTION §3）。CSS は各節の transition を止める規則が節の
   隣にあり、終わらないアニメーション（事件点と検索ピンのパルス）とスクリーンショットの全画面の閃光は
-  `css/intmap.css` 末尾の 1 ブロックが止める。回転する読み込み表示は、作業が続いている唯一の印なので
+  `css/intmap.css` 末尾の 1 ブロックが止める。同じブロックが**ページ全体の transition** を即時にし
+  （`transition-duration:0.01ms`・`scroll-behavior:auto`。状態は変わり `transitionend` も来る）、
+  各節のブロックが面を追いかける形をやめた。回転する読み込み表示は、作業が続いている唯一の印なので
   止めない。
+- **`forced-colors: active`（Windows のハイコントラスト）では、色に頼るものを残さない。** 末尾の 1 ブロックが
+  ページ全体の backdrop-filter を外し、塗りだけで示していた状態（`aria-pressed`／`aria-selected`／
+  `aria-current`）に Highlight の輪郭を付ける。**`#map` だけは `forced-color-adjust:none`**——階級区分・凡例の
+  色・マーカーの色相は情報そのものなので、OS の色で塗り潰さない。コンポーネント別のブロック（ウィジェット・
+  Playground など）はそのまま隣にある。
+- **地図にはテキスト代替がある——`js/map-narrator.js`。** 視覚的に隠した `#map-narration`（`role="status"`・
+  `aria-live="polite"`・`aria-atomic`・`.im-sr-only`）に、中心の場所・表示中の日付（今日でないとき）・
+  表示中のレイヤー・表示範囲の件数・選択中の地物を 1 段落で書く。**変化が落ち着いてから 1 回**（1.2 秒の
+  デバウンス）、文が変わったときだけ。`#map` は `role="region"`・言語に合う `aria-label`・
+  `aria-describedby="map-narration"`・`aria-keyshortcuts`。各節は**それを持つ読み手から**読む——
+  レイヤー名は Active layers の帯（`_refreshActiveLayers` が書くチップ）、件数は `IntMapLayers.featuresIn`、
+  場所は今日なら `HOST.countryGeo` と `window._imPipGeo`（名前は `HOST.cName`）、⚠ **時計が過去の年を指す間は
+  現代の国を使わず** `IntMapTimeBorders.currentFC()`（その年の記録）が名づける。答えの無い節は書かない。
+  外部への通信は足していない。
+  **地物はキーボードでも選べる。** 地図にフォーカスがあるとき Alt+N／Alt+Shift+N（`e.code` で読むので
+  macOS の Option+N も同じ）が、画面中央付近で描かれている地物を近い順に巡り、**レンダラ自身の click
+  経路**（`GE().events.pressAt(point)`——MapLibre は `MapMouseEvent` を発火、Cesium は LEFT_CLICK と同じ
+  `dispatch`）で押す。開くポップアップ・カード・所有権の判定はクリックとまったく同じで、新しい popup は無い。
+  巡る対象は click 所有権の登録簿（`clickLayers({ownersOnly:true})`。背景の fallback は地物ではない）が答える。
+  地図の上の `events.on('click')` だけで拾う物（航空機・衛星など）は登録簿に無いので巡回に入らない。
+  視点は動かない。門は `tests/map-a11y-structure-checks.test.mjs` ③ と `tests/map-a11y-structure.spec.js` ①②。
+- **一文字のショートカットは切れる（WCAG 2.1.4）。** 設定 ▸ キーボードショートカット ▸「1 文字のショートカット
+  キー」（既定オン・`localStorage` の `intmap_kbd_single`・変えた瞬間に効く）。オフでは修飾キーの無い全ショート
+  カット（「?」を含む）が何もしない。Escape はダイアログの登録簿のものなので対象外。
+- **操作要素には名前がある。** 記号やアイコンだけの button は `aria-label`／`title` を、input／select／textarea は
+  `<label>`・`aria-label`・placeholder のどれかを持つ。門は `check:static` の `control-names` 規則
+  （`scripts/control-names.mjs`・台帳 `tests/control-names-baseline.json`。ファイルごとに両方向）。
+  描画時の全数は `tests/form-control-names.spec.js` がブラウザの accessibility tree に訊く。
+- **重なり順は名前のついた層で書く。** `css/intmap.css` の `:root` が層を 1 回だけ宣言する——
+  `--z-inset` 0・`--z-marker` 100・`--z-map-overlay` 900・`--z-controls` 1000・`--z-dropdown` 1300・
+  `--z-sheet` 1650・`--z-popup` 2000・`--z-menu` 2500・`--z-toast` 3000・`--z-modal` 10000・
+  `--z-overlay` 99990・`--z-system` 200000。スタイルシートの z-index は全部 `var(--z-…)` か
+  `calc(var(--z-…) + n)` を読む。門は `check:static` の `z-layers` 規則（`scripts/z-layers.mjs`）——全宣言を
+  解決した**順序列**を `tests/z-layers-baseline.json` と完全一致で照合し（描画順が動けば `--update` で書き
+  直すまで落ちる）、`css/`・`js/`・`*.html` に残る数値リテラルの z-index をファイルごとに両方向で数える。
+  JS のインライン style の数値はまだ残っており、減らすたびに台帳を下げる。
 - **携帯の地図の帰属表示のリンクは、見た目の大きさのまま指には 24 × 24 px 以上で当たる。**
   `#map-credit a::after` が文字の中心に `max(100%,24px)` 四方の透明な当たり判定を置き、ピルは
   `overflow:visible`（切り取られた箱は当たり判定も切り取られる。ピルの高さは 23 px）。門は

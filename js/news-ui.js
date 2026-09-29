@@ -606,7 +606,7 @@ window.IntMapModules.newsUi=function(HOST){
          the class stays reachable for the saved snapshots #R30 restores, which still carry it. */
       const chipCls=(item.analysis.mapped===true)?'loc-chip':((item.analysis.mapped==='publisher')?'loc-chip publisher':'loc-chip unmapped');
       const readLabel = window.IntMapLang.t(HOST.lang,'Read ↗','記事を読む ↗','Lesen ↗','Читать ↗','Leer ↗');
-      card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}" data-effect="private">★</button>
+      card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}" data-effect="private" aria-label="${window.IntMapLang.t(HOST.lang,'Bookmark','ブックマーク')}">★</button>
         <div class="news-head"><span class="${chipCls}" title="${IntMapSafe.html(item.analysis.name||'')}">${IntMapSafe.html(item.analysis.name)||(window.IntMapLang.t(HOST.lang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida'))}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
         <div class="news-title">${HOST.newsTitleHTML(item)}</div>
         <div class="news-foot"><small class="news-pub"${item.publisher?' role="link" tabindex="0" title="'+IntMapSafe.html(item.publisher+' — Wikipedia ↗')+'"':''}>${IntMapSafe.html(item.publisher)}</small><button class="btn-read">${readLabel}</button></div>`;   /* (#R138 SEC) name/publisher from external RSS → escape (newsTitleHTML self-escapes) */

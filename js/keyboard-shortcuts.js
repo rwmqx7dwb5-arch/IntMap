@@ -38,6 +38,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
         ['F',KL('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa')],
         ['0',KL('Reset north','北を上に','Norden ausrichten','Сброс на север','Restablecer norte')],
         ['+ / −',KL('Zoom in / out','ズームイン / アウト','Zoom rein / raus','Приблизить / отдалить','Acercar / alejar')],
+        ['Alt+N / Alt+Shift+N',KL('Next / previous feature near the map centre (map focused)','地図の中心付近の次 / 前の地物（地図にフォーカス時）')],
         ['?',KL('This help','このヘルプ','Diese Hilfe','Эта справка','Esta ayuda')]
       ];
       m.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);width:min(430px,calc(100vw - 32px));max-height:80vh;overflow-y:auto;padding:18px 20px;">'
@@ -53,6 +54,23 @@ export function makeKeyboardShortcuts(HOST, CTX) {
     window.IntMapKbdHelp=helpModal;
     setTimeout(()=>{ try{ const b=document.getElementById('btn-kbd-help'); if(b) b.onclick=()=>{ try{ const m0=document.getElementById('settings-modal'); if(m0) m0.style.display='none'; }catch(_){} helpModal(); }; }catch(_){} },1200);
     const click=id=>{ const el=document.getElementById(id); if(el) el.click(); };
+    /* ══ (map-a11y-structure) THE SINGLE-KEY SHORTCUTS CAN BE TURNED OFF (WCAG 2.1.4 Character Key Shortcuts) ══
+       Every shortcut below is one character with no modifier, so a speech-input user saying a word, or a
+       screen-reader user whose virtual cursor lets keys through, fires them by accident. Settings ▸ Keyboard
+       shortcuts ▸ Single-key shortcuts turns all of them off («?» included — the help stays one button away
+       in the same group). Default on; stored in localStorage and applied the moment it is changed, the way
+       the day/night switch is (a display preference with no reason to wait for Apply). Escape is not one of
+       them: it belongs to the dialog registry. */
+    const SINGLE='intmap_kbd_single';
+    const singleOn=()=>{ try{ return localStorage.getItem(SINGLE)!=='off'; }catch(_){ return true; } };
+    { const sel=document.getElementById('setting-kbd-single'), lbl=document.getElementById('lbl-kbd-single');
+      /* the row's words, in the reader's language — written here, next to the rule they describe (en + jp, CONSTITUTION §7) */
+      const words=()=>{ try{ const L2=window.IntMapLang.pick(()=>HOST.lang);
+        if(lbl) lbl.textContent=L2('Single-key shortcuts','1 文字のショートカットキー');
+        if(sel&&sel.options.length>1){ sel.options[0].textContent=L2('On (default)','オン（既定）'); sel.options[1].textContent=L2('Off — only shortcuts that use Ctrl/⌘ or Alt','オフ — Ctrl/⌘ や Alt との組み合わせのみ'); } }catch(_){} };
+      words(); window.addEventListener('intmap-lang',words);
+      if(sel){ sel.value=singleOn()?'on':'off';
+        sel.addEventListener('change',()=>{ try{ localStorage.setItem(SINGLE,sel.value==='off'?'off':'on'); }catch(_){} }); } }
     document.addEventListener('keydown',(e)=>{
       if(e.ctrlKey||e.metaKey||e.altKey) return;
       if(typeof isMobile==='function'&&isMobile()) return;
@@ -62,6 +80,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
       /* (a11y-shared-dialog) Escape on an open dialog — this help included — is the dialog registry's (js/dialog.js), and
          while a modal dialog is open the single-letter shortcuts do not reach the page behind it; «?» still toggles the help */
       if(k==='Escape') return;
+      if(!singleOn()) return;
       if(k!=='?'&&window.IntMapDialog.anyOpen()) return;
       const K=k.toLowerCase();
       let done=true;

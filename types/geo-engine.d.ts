@@ -106,6 +106,8 @@ export interface GeoEngineAdapterCore {
   projectAltitude(ll?: any, altM?: any): any;
   terrainElevation(ll?: any, o?: any): any;
   queryRenderedFeatures(g?: any, o?: any): any;
+  /** a primary press at a screen point, delivered as the renderer's own click (both engines) */
+  pressAt(pt?: any): any;
   hasSource(id?: any): any;
   addSource(id?: any, d?: any): any;
   setSourceData(id?: any, data?: any, opts?: any): any;
@@ -462,6 +464,7 @@ export interface GeoEngineEvents {
   clickLayers(options?: any): any;
   claimClick(e?: any): any;
   clickClaimed(e?: any): any;
+  pressAt(pt?: any): any;
 }
 
 /** What engineFacade(A) returns — for the primary view and for every ui.createSubView. */

@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -130,9 +131,9 @@ test('#R254 ① the population progress bar has no UI of its own, because its fr
 /* ── ⑧ WHO IS IN FRONT ───────────────────────────────────────────────────────────────────────── */
 test('#R254 ⑧ the panel under the pointer is named, so a popup with no z-index can come forward', () => {
   const css = code(read('css/intmap.css'));
-  const m = /\.im-front\{\s*z-index:(\d+)\s*!important/.exec(css);
+  const m = /\.im-front\{\s*z-index:([^;!}]+?)\s*!important/.exec(css);
   assert.ok(m, 'nothing raises the panel being used — a MapLibre popup has z-index:auto and can never beat the sidebar');
-  const z = +m[1];
+  const z = zResolve(m[1], zTokens(css));   /* (map-a11y-structure) a named layer, resolved */
   assert.ok(z > 2600, `the raised panel is ${z}; the sidebar band is 2600 and would still cover it`);
   assert.ok(z < 9999, `the raised panel is ${z}; the modal overlay is 9999 and must stay on top`);
   { const at = css.indexOf('.im-front{'); const mq = css.lastIndexOf('@media(min-width:769px)', at);

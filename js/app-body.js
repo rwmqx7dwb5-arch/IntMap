@@ -37,6 +37,7 @@ import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is �
 import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
+import { makeMapNarrator } from './map-narrator.js';   /* (map-a11y-structure) the map's text alternative + keyboard feature walk */
 import { makeLazyModules } from './lazy-modules.js';
 import { makeRuntime, everyTick, stopTick } from './runtime.js';
 import { makeDemSource } from './dem-source.js';
@@ -713,7 +714,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   });
   /* (#R200) moved to js/keyboard-shortcuts.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeKeyboardShortcuts(IM_HOST, { GE, applyTheme, imToast, isMobile });
+  makeKeyboardShortcuts(IM_HOST, { GE, applyTheme, imToast, isMobile }); makeMapNarrator(IM_HOST, { GE });
   /* ===== Map init ===== */
   const isInitiallyDark=document.documentElement.getAttribute('data-theme')==='dark';
   /* ══ (#R179) WHETHER THIS SCREEN WANTS DOUBLE-DENSITY TILES — ONE rule, ONE owner ═════════════
@@ -3070,7 +3071,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       ov.innerHTML=`<div class="crop-card">
         <div class="crop-title">${window.IntMapLang.t(currentLang,'Crop image','画像をトリミング','Bild zuschneiden','Обрезать изображение','Recortar imagen')}</div>
         <div class="crop-stage" id="crop-stage"><img id="crop-img" alt="" draggable="false"><div class="crop-ring"></div></div>
-        <div class="crop-zoom"><span>－</span><input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1"><span>＋</span></div>
+        <div class="crop-zoom"><span aria-hidden="true">－</span><input type="range" id="crop-zoom" aria-label="${window.IntMapLang.t(currentLang,'Zoom','ズーム')}" min="1" max="4" step="0.01" value="1"><span aria-hidden="true">＋</span></div>
         <div class="crop-actions"><button id="crop-cancel">${window.IntMapLang.t(currentLang,'Cancel','キャンセル','Abbrechen','Отмена','Cancelar')}</button><button id="crop-ok" class="crop-ok">${window.IntMapLang.t(currentLang,'Apply','適用','Anwenden','Применить','Aplicar')}</button></div>
       </div>`;
       document.body.appendChild(ov);

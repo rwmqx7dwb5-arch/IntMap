@@ -1233,7 +1233,7 @@ function _m(){ return window.__imap||null; }
         return { x:o[0], y:o[1] };
       }catch(_){ return null; } },
     terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
-    queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
+    queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; }, /* (map-a11y-structure) a primary press at a screen point, as the renderer's own click event — so every click owner, claim and popup runs exactly as for a pointer (js/map-narrator.js walks features with it) */ pressAt(pt){ const m=_m(); if(!m||!pt) return false; try{ const r=m.getCanvas().getBoundingClientRect(); m.fire(new maplibregl.MapMouseEvent('click',m,new MouseEvent('click',{clientX:r.left+pt.x,clientY:r.top+pt.y,bubbles:true,cancelable:true}))); return true; }catch(_){ return false; } },
     /* ⚠ (#R730) A PREDICATE ANSWERS, IT DOES NOT THROW: `m.getSource`/`getLayer` read `this.style`, null
        until the first style loads, so these threw instead of saying «no» (tests/monitors.spec.js). */
     hasSource(id){ try{ const m=_m(); return !!(m&&m.getSource(id)); }catch(_){ return false; } }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)){ _sd.forget(id); m.addSource(id,d); } },
@@ -2287,7 +2287,7 @@ function _m(){ return window.__imap||null; }
       onceLayer:(e,l,c)=>A().onceLayer?A().onceLayer(e,l,c):null,
       clickLayers:(options)=>_clickOwnership.layers(options),
       /* (#R210) "I consumed this click" / "did anyone?" — see the ownership note above. */
-      claimClick:(e)=>_claimClick(e), clickClaimed:(e)=>_clickClaimed(e) },
+      claimClick:(e)=>_claimClick(e), clickClaimed:(e)=>_clickClaimed(e), pressAt:(pt)=>{ const a=A(); return (a&&a.pressAt)?a.pressAt(pt):false; } },
     raw(){ return A().raw(); }
    };
   }

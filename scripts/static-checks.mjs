@@ -662,6 +662,30 @@ try {
   err('keyboard-reach', 'could not run the keyboard-reach ledger: ' + (e && e.message));
 }
 
+// ── 17. (map-a11y-structure) a control a screen reader cannot name is not added unseen ──
+// An icon-only <button> («×», «−», «★», an SVG) with no aria-label / aria-labelledby / title, and an
+// <input>/<select>/<textarea> with no label, is announced by role alone. This counts them per file from
+// the markup and the parser and holds them to tests/control-names-baseline.json in both directions; the
+// shapes live in scripts/control-names.mjs. A rule here and not a check:* of its own for the reason given at 15.
+try {
+  const { check: controlNamesCheck } = await import('./control-names.mjs');
+  for (const l of controlNamesCheck().lines) err('control-names', l);
+} catch (e) {
+  err('control-names', 'could not run the control-names ledger: ' + (e && e.message));
+}
+
+// ── 18. (map-a11y-structure) the stacking order is named, and does not move unseen ──
+// css/intmap.css names its layers once (:root --z-*) and every z-index there reads one. This resolves
+// every declaration and holds the ordered list to tests/z-layers-baseline.json (a changed painting order
+// fails until it is written down), and ratchets the z-index values still written as a bare number in
+// css/, js/ and the root *.html per file; scripts/z-layers.mjs. A rule here for the reason given at 15.
+try {
+  const { check: zLayersCheck } = await import('./z-layers.mjs');
+  for (const l of zLayersCheck().lines) err('z-layers', l);
+} catch (e) {
+  err('z-layers', 'could not run the z-layers ledger: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

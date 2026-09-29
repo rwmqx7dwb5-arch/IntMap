@@ -131,8 +131,8 @@ window.IntMapModules.projView=function(HOST){
       sel=document.createElement('select');
       sel.innerHTML=Object.keys(PROJS).map(k=>`<option value="${k}">${LP.arr(PROJS[k].name)}</option>`).join('');
       sel.onchange=()=>{ cur=sel.value; zoom=1;panx=0;pany=0; if(entry)entry.value=cur; updateTitle(); render(); };
-      const zin=document.createElement('button'); zin.textContent='＋'; zin.onclick=()=>{ zoom=Math.min(8,zoom*1.25); render(); };
-      const zout=document.createElement('button'); zout.textContent='－'; zout.onclick=()=>{ zoom=Math.max(0.5,zoom/1.25); render(); };
+      const zin=document.createElement('button'); zin.textContent='＋'; zin.title=window.IntMapLang.t(HOST.lang,'Zoom in','ズームイン'); zin.onclick=()=>{ zoom=Math.min(8,zoom*1.25); render(); };
+      const zout=document.createElement('button'); zout.textContent='－'; zout.title=window.IntMapLang.t(HOST.lang,'Zoom out','ズームアウト'); zout.onclick=()=>{ zoom=Math.max(0.5,zoom/1.25); render(); };
       const cl=document.createElement('button'); cl.className='proj-close'; cl.textContent=(window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); cl.onclick=()=>api.close();
       bar.appendChild(titleEl); bar.appendChild(sel); bar.appendChild(zout); bar.appendChild(zin); bar.appendChild(cl);
       host.appendChild(bar); mc.appendChild(host); ctx=cv.getContext('2d');

@@ -641,9 +641,9 @@ window.IntMapModules.photoGeo = function (HOST) {
     const cur = t || c;
     const row = (label, act, step, unit, val) =>
       '<div class="pg-tune-row"><span>' + esc(label) + '</span>' +
-      '<button class="pg-btn" data-act="' + act + '" data-d="' + (-step) + '">−</button>' +
+      '<button class="pg-btn" data-act="' + act + '" data-d="' + (-step) + '" aria-label="' + esc(L('Decrease', '小さく') + ' — ' + label) + '">−</button>' +
       '<b>' + val + unit + '</b>' +
-      '<button class="pg-btn" data-act="' + act + '" data-d="' + step + '">+</button></div>';
+      '<button class="pg-btn" data-act="' + act + '" data-d="' + step + '" aria-label="' + esc(L('Increase', '大きく') + ' — ' + label) + '">+</button></div>';
     let h = '<div class="pg-sec"><div class="pg-h">' + esc(L('Fine tuning', '微調整', 'Feinabstimmung', 'Точная настройка', 'Ajuste fino')) + '</div>';
     h += '<div class="pg-hint">' + esc(L('Adjust the viewpoint and camera; the computed skyline and the agreement are recomputed against the terrain.',
       '地点とカメラを調整すると、計算した稜線と一致度が地形に対して再計算されます。',
