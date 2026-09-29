@@ -1390,6 +1390,9 @@ export function makeAtlasCapabilities(HOST) {
       if (!o) return;
       if (typeof o.dispatch === 'function') runtime.dispatch = o.dispatch;
       if (o.docs) runtime.docs = o.docs;
+      /* (atlas-outward-effects) per capability id, a function (args) → the effect its target DECLARES
+         ('outward' | 'destructive' | 'private' | 'none' | ''). Read through `cap.effectOf` below. */
+      if (o.effects && typeof o.effects === 'object') runtime.effects = Object.assign({}, runtime.effects || null, o.effects);
       if (o.resolvePlace) runtime.resolvePlace = o.resolvePlace;
       if (o.pinnedPoint) runtime.pinnedPoint = o.pinnedPoint;
       if (o.selection) runtime.selection = o.selection;
@@ -1496,6 +1499,16 @@ export function makeAtlasCapabilities(HOST) {
            the one thing a verdict may never do. The extra argument is ignored by every observer that
            does not need it, and `verify(ctx,args,before,after,raw)` still behaves as it always did. */
         verify: function (ctx, args, before, after, raw) { return unobservedOr(obs.verify(ctx, args, before, after, raw, id), writes); },
+        /* ══ (atlas-outward-effects) WHAT THIS CALL WOULD DO, ASKED BEFORE IT RUNS ══════════════════════════
+           Column 8 says what a ROW may do. `system.control` is one row that can press any button in the app —
+           a map toggle and «Post to the community» alike — so the row cannot say it; the button can. The
+           resolver is bound by Atlas (bindRuntime `effects`) and reads the `data-effect` the element itself
+           declares; js/atlas-executor.js 4b asks this before execution and treats 'outward' / 'destructive'
+           exactly as it treats an 'explicit' row. A row with no resolver answers '' and nothing changes. */
+        effectOf: function (ctx, args) {
+          var f = runtime.effects && runtime.effects[id];
+          return typeof f === 'function' ? f(args || {}) : '';
+        },
         examples: [], negativeExamples: [], limitations: []
       };
       cap.execute = legacyExecute(cap);

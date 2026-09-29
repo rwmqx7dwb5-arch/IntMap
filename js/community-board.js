@@ -133,18 +133,18 @@ window.IntMapModules.communityBoard=function(HOST){
       ${imgHtml}
       ${post.body?`<div class="comm-post-body">${linkify(post.body)}</div>`:''}
       <div class="comm-post-actions">
-        <button class="vote-btn ${post.voted?'voted':''}" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Upvote','役に立った','Hilfreich','Полезно','Útil')}">▲ ${post.votes||0}</button>
+        <button class="vote-btn ${post.voted?'voted':''}" data-effect="outward" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Upvote','役に立った','Hilfreich','Полезно','Útil')}">▲ ${post.votes||0}</button>
         <button class="cmt-toggle" data-id="${post.id}">💬 ${cmts.length}</button>
         <button class="locate-btn" data-id="${post.id}">🌐 ${HOST.t('commLocate')}</button>
         ${mine?`<button class="edit-btn" data-id="${post.id}">${HOST.t('commEdit')}</button>`:''}
-        <button class="report-btn" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Report','通報','Melden','Пожаловаться','Denunciar')}">⚑</button>
-        ${canDel?`<button class="del-btn" data-id="${post.id}">${HOST.t('commDelete')}</button>`:''}
+        <button class="report-btn" data-effect="outward" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Report','通報','Melden','Пожаловаться','Denunciar')}">⚑</button>
+        ${canDel?`<button class="del-btn" data-effect="destructive" data-id="${post.id}">${HOST.t('commDelete')}</button>`:''}
       </div>
       <div class="comm-comments ${HOST.commCollapsed[post.id]?'collapsed':''}" data-cwrap="${post.id}">
         ${threadHTML(post)}
         ${HOST.user?`<div class="comm-comment-add">
-          <input type="text" placeholder="${HOST.t('commWrite')}" data-pid="${post.id}" maxlength="280">
-          <button data-pid="${post.id}">${HOST.t('commPost')}</button></div>`:''}
+          <input type="text" placeholder="${HOST.t('commWrite')}" data-pid="${post.id}" maxlength="280" data-effect="outward">
+          <button data-pid="${post.id}" data-effect="outward">${HOST.t('commPost')}</button></div>`:''}
       </div>
     </div>`;
   }
@@ -166,10 +166,10 @@ window.IntMapModules.communityBoard=function(HOST){
       <div class="comm-comment-meta">${commAvatar(c.author)} <b>${HOST.escapeHtml(c.author||'')}</b> · ${relTime(c.ts)}${edited}</div>
       <div class="comm-comment-body">${linkify(c.text)}</div>
       <div class="comm-comment-actions">
-        ${cv?`<button class="cvote-btn ${c.voted?'voted':''}" data-cid="${c.id}">▲ ${c.votes||0}</button>`:''}
+        ${cv?`<button class="cvote-btn ${c.voted?'voted':''}" data-effect="outward" data-cid="${c.id}">▲ ${c.votes||0}</button>`:''}
         ${th&&HOST.user?`<button class="creply-btn" data-cid="${c.id}" data-pid="${c.postId}">${HOST.t('commReply')}</button>`:''}
-        ${mine?`<button class="cedit-btn" data-cid="${c.id}">${HOST.t('commEdit')}</button>`:''}
-        ${canDel?`<button class="cdel-btn" data-cid="${c.id}">${HOST.t('commDelete')}</button>`:''}
+        ${mine?`<button class="cedit-btn" data-effect="outward" data-cid="${c.id}">${HOST.t('commEdit')}</button>`:''}
+        ${canDel?`<button class="cdel-btn" data-effect="destructive" data-cid="${c.id}">${HOST.t('commDelete')}</button>`:''}
       </div>
     </div>`;
   }

@@ -215,9 +215,9 @@ window.IntMapModules.monitors=function(HOST){
           +'<div class="mon-row-meta">'+S(ML('Last','前回','Zuletzt','Последний','Último'))+': '+S(_fmtWhen(m.last_run_at))+' · '+S(ML('Next','次回','Nächste','Следующий','Próximo'))+': '+S(_fmtNext(m.next_run_at,m.enabled))+'</div>'
         +'</div>'
         +'<div class="mon-row-acts">'
-          +'<button class="mon-ic" data-act="run" title="'+S(ML('Run now','今すぐ実行','Jetzt ausführen','Запустить','Ejecutar ahora'))+'">▶</button>'
-          +'<button class="mon-ic" data-act="'+(m.enabled===false?'resume':'pause')+'" title="'+S(m.enabled===false?ML('Resume','再開','Fortsetzen','Возобновить','Reanudar'):ML('Pause','一時停止','Pause','Пауза','Pausar'))+'">'+(m.enabled===false?'▷':'❚❚')+'</button>'
-          +'<button class="mon-ic" data-act="map" title="'+S(ML('Show on map','地図に表示','Auf Karte','На карте','En el mapa'))+'">◎</button>'
+          +'<button class="mon-ic" data-act="run" data-effect="private" title="'+S(ML('Run now','今すぐ実行','Jetzt ausführen','Запустить','Ejecutar ahora'))+'">▶</button>'
+          +'<button class="mon-ic" data-act="'+(m.enabled===false?'resume':'pause')+'" data-effect="private" title="'+S(m.enabled===false?ML('Resume','再開','Fortsetzen','Возобновить','Reanudar'):ML('Pause','一時停止','Pause','Пауза','Pausar'))+'">'+(m.enabled===false?'▷':'❚❚')+'</button>'
+          +'<button class="mon-ic" data-act="map" data-effect="none" title="'+S(ML('Show on map','地図に表示','Auf Karte','На карте','En el mapa'))+'">◎</button>'
         +'</div></div>'; }
 
     async function render(query){ const feed=document.getElementById('monitors-feed'); if(!feed) return;
@@ -277,7 +277,7 @@ window.IntMapModules.monitors=function(HOST){
         +'<select class="mon-inp" id="mon-sens">'+sens.map(([v,l])=>'<option value="'+v+'"'+(v==='medium'?' selected':'')+'>'+S(l)+'</option>').join('')+'</select>'
         +'<div class="mon-note">'+S(ML('The monitor runs on our servers even when this page is closed. A report is generated only when a meaningful change is detected — every claim links to its source.','このページを閉じてもサーバー側で実行されます。意味のある変化が検出された時だけレポートが生成され、各主張は出典にリンクします。','Läuft serverseitig, auch wenn die Seite geschlossen ist. Ein Bericht entsteht nur bei einer bedeutsamen Änderung.','Работает на сервере, даже если страница закрыта. Отчёт создаётся только при значимом изменении.','Se ejecuta en el servidor aunque cierres la página. El informe solo se genera ante un cambio significativo.'))+'</div>'
         +'<div class="mon-create-err" id="mon-create-err" style="display:none;color:#ff453a;font-size:12px;margin:8px 0 0;line-height:1.45;"></div>'   /* (#R149) inline, unmissable failure feedback right where the user is looking — toast infra is not guaranteed */
-        +'<div class="mon-dlg-acts"><button class="mon-cancel">'+S(ML('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button><button class="mon-save" id="mon-create-btn">'+S(ML('Create monitor','監視を作成','Monitor erstellen','Создать','Crear monitor'))+'</button></div>';   /* (#R148) NEVER render disabled — a disabled button clicks to nothing ("押しても何も起こらない"); the click handler below falls back to the map view or shows a clear toast, so pressing it always does something */
+        +'<div class="mon-dlg-acts"><button class="mon-cancel">'+S(ML('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button><button class="mon-save" id="mon-create-btn" data-effect="private">'+S(ML('Create monitor','監視を作成','Monitor erstellen','Создать','Crear monitor'))+'</button></div>';   /* (#R148) NEVER render disabled — a disabled button clicks to nothing ("押しても何も起こらない"); the click handler below falls back to the map view or shows a clear toast, so pressing it always does something */
       const ov=_overlay(inner,'mon-ov-create');
       const upd=()=>{ const box=ov.querySelector('.mon-area-box'); const btn=ov.querySelector('#mon-create-btn'); const nm=ov.querySelector('#mon-name');
         if(box){ box.classList.toggle('mon-area-none',!area); box.innerHTML=area?(S(ML('Watching','監視範囲','Überwacht','Область','Vigilando'))+': <b>'+S(area.label)+'</b>'):S(ML('No area selected.','範囲が未選択です。','Kein Bereich gewählt.','Область не выбрана.','Sin área.')); }
@@ -301,7 +301,7 @@ window.IntMapModules.monitors=function(HOST){
       const runs=await _runs(id);
       const kv=(k,v)=>'<div class="mon-kv"><span>'+S(k)+'</span><b>'+v+'</b></div>';
       const runsHtml=runs.length?('<div class="mon-runs">'+runs.map(r=>{ const sev=(r.report_generated&&r.change_score!=null)?'':''; const badge='<span class="mon-chip" style="--c:'+(r.status==='success'||r.status==='partial'?'#30a46c':(r.status==='success_no_change'?'#8e8e93':(r.status==='source_unavailable'||r.status==='ai_failed'?'#ff9f0a':'#ff453a')))+'">'+S(statusLabel(r.status))+'</span>';
-        return '<div class="mon-run" data-rid="'+S(r.id)+'" data-rep="'+S(r.report_id||'')+'"><div class="mon-run-l"><span class="mon-run-when">'+S(_fmtWhen(r.started_at))+'</span>'+badge+'</div>'
+        return '<div class="mon-run" data-effect="private" data-rid="'+S(r.id)+'" data-rep="'+S(r.report_id||'')+'"><div class="mon-run-l"><span class="mon-run-when">'+S(_fmtWhen(r.started_at))+'</span>'+badge+'</div>'
           +'<span class="mon-run-r">'+(r.report_generated?'<span class="mon-run-link">'+S(ML('View report','レポートを見る','Bericht','Отчёт','Ver informe'))+' →</span>':(r.evidence_count?S(r.evidence_count)+' '+S(ML('items','件','Einträge','эл.','elem.')):'—'))+'</span></div>'; }).join('')+'</div>'):('<div class="mon-empty">'+S(ML('No runs yet.','実行履歴はまだありません。','Noch keine Läufe.','Пока нет запусков.','Sin ejecuciones.'))+'</div>');
       const inner='<button class="mon-x" aria-label="'+ML('Close','閉じる','Schließen','Закрыть','Cerrar')+'">×</button>'
         +'<h3 class="mon-h3">'+S(m.name)+' '+_statusChip(m)+'</h3>'
@@ -314,10 +314,10 @@ window.IntMapModules.monitors=function(HOST){
           +kv(ML('Next run','次回実行','Nächster Lauf','Следующий','Próximo'),S(_fmtNext(m.next_run_at,m.enabled)))
         +'</div>'
         +'<div class="mon-dlg-acts mon-detail-acts">'
-          +'<button class="mon-btn" data-d="run">▶ '+S(ML('Run now','今すぐ実行','Jetzt','Запустить','Ejecutar'))+'</button>'
-          +'<button class="mon-btn" data-d="map">◎ '+S(ML('Map','地図','Karte','Карта','Mapa'))+'</button>'
-          +'<button class="mon-btn" data-d="'+(m.enabled===false?'resume':'pause')+'">'+(m.enabled===false?'▷ '+S(ML('Resume','再開','Fortsetzen','Возобновить','Reanudar')):'❚❚ '+S(ML('Pause','一時停止','Pause','Пауза','Pausar')))+'</button>'
-          +'<button class="mon-btn mon-btn-danger" data-d="del">🗑 '+S(ML('Delete','削除','Löschen','Удалить','Eliminar'))+'</button>'
+          +'<button class="mon-btn" data-d="run" data-effect="private">▶ '+S(ML('Run now','今すぐ実行','Jetzt','Запустить','Ejecutar'))+'</button>'
+          +'<button class="mon-btn" data-d="map" data-effect="none">◎ '+S(ML('Map','地図','Karte','Карта','Mapa'))+'</button>'
+          +'<button class="mon-btn" data-d="'+(m.enabled===false?'resume':'pause')+'" data-effect="private">'+(m.enabled===false?'▷ '+S(ML('Resume','再開','Fortsetzen','Возобновить','Reanudar')):'❚❚ '+S(ML('Pause','一時停止','Pause','Пауза','Pausar')))+'</button>'
+          +'<button class="mon-btn mon-btn-danger" data-d="del" data-effect="destructive">🗑 '+S(ML('Delete','削除','Löschen','Удалить','Eliminar'))+'</button>'
         +'</div>'
         +'<h4 class="mon-h4">'+S(ML('Run history','実行履歴','Verlauf','История','Historial'))+'</h4>'+runsHtml;
       const ov=_overlay(inner,'mon-ov-detail');

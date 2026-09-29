@@ -48,6 +48,16 @@ export function makeAtlasControls(HOST, CTX) {
       const near=all.filter(function(c){ return c.sc>=22 && c.sc>=bs*0.92; });
       _lastControlField={ best:best, score:bs, near:near, all:all };
       return bs>=22?best:null; }
+    /* ══ (atlas-outward-effects) WHAT PRESSING IT DOES — DECLARED BY THE ELEMENT, NOT LISTED HERE ════════════════
+       `data-effect` on the control itself: 'outward' (sends or publishes something on the reader's behalf — a post,
+       a vote, feedback, an email, a credential change), 'destructive' (deletes what cannot be restored), 'private'
+       (writes only the reader's own state, undoable), 'none' (a shared handler's branch that writes nothing).
+       ⚠ THIS FILE HOLDS NO LIST OF DANGEROUS BUTTONS (.agents/rules/no-ad-hoc-hardcoding.md): the markup that
+       wires a write says what it writes, and tests/atlas-outward-effects-checks.test.mjs refuses a click/change/Enter
+       handler that reaches a Supabase write, an rpc, an auth change or a POSTed Edge Function while its element
+       declares nothing. js/atlas-executor.js 4b asks controlEffect() BEFORE anything is pressed. */
+    function _effectOf(el){ try{ return String((el&&el.getAttribute&&el.getAttribute('data-effect'))||'').trim().toLowerCase(); }catch(_){ return ''; } }
+    function controlEffect(a){ try{ return _effectOf(findControl(a&&a.target)); }catch(_){ return ''; } }
     /* the field the last findControl() saw — read by doControl to answer `ambiguous_target`, and by
        controlCatalog to rank. Not state: it is overwritten by every call and read only right after. */
     let _lastControlField=null;
@@ -64,17 +74,26 @@ export function makeAtlasControls(HOST, CTX) {
         if(cand.length>=2) return R(false, warn('⚠ '+L('Several controls match','複数の操作対象が一致します','Mehrere Bedienelemente passen','Совпадает несколько элементов','Coinciden varios controles')+': '+esc(cand.map(function(c){ return c.label||c.id; }).join(' · '))), {meta:{code:'ambiguous_target', candidates:cand}}); }
       if(!el) return R(false, warn('⚠ '+L('Control not found','操作対象が見つかりません','Steuerung nicht gefunden','Элемент не найден','Control no encontrado')+': '+esc(a.target||'')));
       const tag=el.tagName.toLowerCase(), nm=esc(a.target||el.id||(el.textContent||'').trim().slice(0,24));
+      /* (atlas-outward-effects) what pressing it DOES, as the element itself declares it — carried in the result so
+         the turn record says «this sent something» rather than only «a control was pressed». The decision to ask the
+         reader first was taken BEFORE this line, by js/atlas-executor.js 4b through controlEffect() above. */
+      const _eff=_effectOf(el), X=_eff?{meta:{effect:_eff}}:null;
+      /* ⚠ FOUR OTHER CASES FALL BACK TO THIS FUNCTION (a layer name, a tool name, an unknown action type in
+         js/atlas-console.js) and none of them is `system.control`, so the executor asked none of them what the
+         element does. A fallback that lands on a control declaring it sends or deletes does not press it: the
+         one road to such a control is the `control` action (a.type), whose effect 4b has already judged. */
+      if((_eff==='outward'||_eff==='destructive')&&a.type!=='control') return R(false, warn('⚠ '+esc(L('“{x}” sends or deletes something, so it is pressed only when it is named as a control.','「{x}」は送信または削除を行うため、操作対象として名指しされたときだけ押します。','„{x}“ sendet oder löscht etwas und wird nur gedrückt, wenn es als Bedienelement genannt wird.','«{x}» отправляет или удаляет данные и нажимается, только когда названо как элемент управления.','«{x}» envía o elimina algo, así que solo se pulsa cuando se nombra como control.').split('{x}').join(a.target||el.id||''))), X);
       try{
-        if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(!o) return R(false, warn('⚠ '+nm+': '+L('option not found','選択肢なし','Option fehlt','нет варианта','sin opción')+' "'+esc(a.value)+'"')); el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
-        if(el.type==='checkbox'||el.type==='radio'){ const want=(a.on!=null)?(a.on!==false):!el.checked; if(el.checked!==want){ el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(el.checked===want, note('✓ '+nm+': '+(want?'on':'off'))+_ctlTogHtml(a.target||el.id,el)); }   /* (#R152) attach an on/off switch for any checkbox control */
+        if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(!o) return R(false, warn('⚠ '+nm+': '+L('option not found','選択肢なし','Option fehlt','нет варианта','sin opción')+' "'+esc(a.value)+'"')); el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):'')), X); }
+        if(el.type==='checkbox'||el.type==='radio'){ const want=(a.on!=null)?(a.on!==false):!el.checked; if(el.checked!==want){ el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(el.checked===want, note('✓ '+nm+': '+(want?'on':'off'))+_ctlTogHtml(a.target||el.id,el), X); }   /* (#R152) attach an on/off switch for any checkbox control */
         if(el.type==='range'||el.type==='number'){ if(a.value!=null){ el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
         /* (#R77) dated-layer date/month inputs (「気温レイヤーの日付を2023-06-01に」) were unreachable — click() did nothing useful */
         if(el.type==='date'||el.type==='month'){ if(a.value!=null){ let v=String(a.value).trim(); if(el.type==='month') v=v.slice(0,7); else v=v.slice(0,10);
             el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
             return R(el.value===v, el.value===v?note('✓ '+nm+' = '+esc(v)):warn('⚠ '+nm+': '+L('value rejected (out of range?)','値が受理されません（範囲外？）','Wert abgelehnt','значение отклонено','valor rechazado')+' '+esc(v))); }
           return R(true, note('✓ '+nm)); }
-        if(tag==='textarea'||(tag==='input'&&(!el.type||/^(text|search|email|url)$/.test(el.type)))){ if(a.value!=null){ el.focus(); el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); if(a.submit!==false){ el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); } } return R(true, note('✓ '+nm)); }
-        el.click(); return R(true, note('✓ '+nm));
+        if(tag==='textarea'||(tag==='input'&&(!el.type||/^(text|search|email|url)$/.test(el.type)))){ if(a.value!=null){ el.focus(); el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); if(a.submit!==false){ el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); } } return R(true, note('✓ '+nm), X); }
+        el.click(); return R(true, note('✓ '+nm), X);
       }catch(_){ return R(false, warn('⚠ '+nm)); } }
     /* Compact catalog of the main controls (buttons + selects), fed to the AI so it can target ANY of them by
        name via {"type":"control",...}. Layer checkboxes are omitted (the `layer` action covers them). */
@@ -85,9 +104,21 @@ export function makeAtlasControls(HOST, CTX) {
       if(l.indexOf(q)>=0) return 100;
       let sc=0; q.split(/[\s,、。]+/).forEach(function(w){ if(w.length>1&&l.indexOf(w)>=0) sc+=20; });
       return sc; }
+    /* ══ (atlas-outward-effects) A FIELD'S NAME, AND WHAT MAY NOT BECOME ONE ═════════════════════════════════════
+       This line used to read `label || title || placeholder || id`, and this catalogue goes to the MODEL. The delete-
+       account dialog (js/auth-ui.js) sets its field's placeholder to the reader's own address, so the address rode
+       into every prompt the dialog was open for. The order is now the element's authored names — aria-label, its
+       <label>, its data-i18n key, its title — and the placeholder only as a last resort, and NEVER for a field that
+       holds personal information: an email/password/tel type, or an autocomplete token naming the person. That is a
+       property of the field, so it covers every such field, not the one that was found. */
+    const _PERSONAL_AC=/(^|\s)(email|username|current-password|new-password|one-time-code|tel|tel-[a-z-]+|name|given-name|family-name|additional-name|nickname|street-address|address-line\d|postal-code|bday[a-z-]*|cc-[a-z-]+)(\s|$)/;
+    function _isPersonalField(el){ try{ const ty=String(el.getAttribute('type')||el.type||'').toLowerCase(); if(ty==='email'||ty==='password'||ty==='tel') return true;
+      return _PERSONAL_AC.test(String(el.getAttribute('autocomplete')||'').toLowerCase()); }catch(_){ return true; } }
+    function _fieldName(el){ const g=k=>(el.getAttribute&&el.getAttribute(k))||'';
+      return g('aria-label')||_assocLabel(el)||g('data-i18n')||g('title')||(_isPersonalField(el)?'':(el.placeholder||''))||el.id||''; }
     function controlCatalog(forRequest){ try{ const seen=new Set(), out=[];
       _ctlEls().forEach(el=>{ const tag=el.tagName.toLowerCase(); if(el.type==='checkbox'||el.type==='radio') return; if(el.closest&&el.closest('#layer-dropdown')&&tag!=='select') return;
-        let nm=(tag==='select'||tag==='input'||tag==='textarea')?(_assocLabel(el)||(el.getAttribute&&(el.getAttribute('title')||el.placeholder||''))||el.id||''):((el.textContent||'').replace(/\s+/g,' ').trim()||(el.getAttribute&&(el.getAttribute('title')||el.getAttribute('aria-label')||''))||el.id||''); nm=String(nm).replace(/\s+/g,' ').slice(0,28).trim(); if(!nm||nm.length<2) return;
+        let nm=(tag==='select'||tag==='input'||tag==='textarea')?_fieldName(el):((el.textContent||'').replace(/\s+/g,' ').trim()||(el.getAttribute&&(el.getAttribute('title')||el.getAttribute('aria-label')||''))||el.id||''); nm=String(nm).replace(/\s+/g,' ').slice(0,28).trim(); if(!nm||nm.length<2) return;
         const key=(el.id||nm).toLowerCase(); if(seen.has(key)) return; seen.add(key);
         out.push(nm+(el.id?(' [#'+el.id+']'):'')+(tag==='select'?' (select)':'')); });
       /* ⚠⚠ (#R320) THIS USED TO BE `out.slice(0,140)` — DOM ORDER. Which controls existed for the
@@ -388,5 +419,5 @@ export function makeAtlasControls(HOST, CTX) {
       try{ B.set(want); }catch(_){ return R(false, warn('⚠')); } const now=B.get(); const ok=(now===want);
       return R(ok, ok?note('✓ '+L('Base display','基本表示','Basisanzeige','Базовое отображение','Visualización base')+': '+lblOf(now)+(want==='custom'?'':(' — '+rowsOn().join(', ')))):warn('⚠ '+L('The preset did not apply','基本表示を切り替えられませんでした','Voreinstellung nicht übernommen','Пресет не применился','El ajuste no se aplicó')));
     }
-  return { clickId, controlCatalog, doBaseDisplay, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel };
+  return { clickId, controlCatalog, controlEffect, doBaseDisplay, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel };
 }
