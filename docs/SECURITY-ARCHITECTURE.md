@@ -115,6 +115,17 @@ flowchart LR
     protection is a **BEFORE UPDATE trigger** (`tg_monitors_guard_state`), not the grant. Tables
     whose writes are meant to be service-role-only rely on RLS **default-deny** (no write policy) —
     that holds in prod regardless of grants. pgTAP now simulates the prod grant so tests catch this.
+  - **Who wrote a community post, and when, is the database's statement.** The INSERT grant on
+    `community_posts` / `community_comments` used to be the whole row, so one REST call could publish
+    under any name (another reader's, the operator's) and a future `created_at` pinned it to the top of
+    the feed. INSERT is now a column grant naming what the client sends (`created_at` / `edited_at` /
+    `id` are refused), and the BEFORE INSERT trigger `tg_community_stamp_provenance` writes
+    `author_name` from the author's `profiles_public` card and `created_at` from `now()` — the same
+    grant-independent layer `tg_profiles_guard_privcols` is for `profiles`
+    (`supabase/migrations/20260929100000_db_provenance_hardening.sql`).
+  - **Public Storage buckets are read by URL, not listed.** `aviation` / `gdelt` / `ais` carry no
+    SELECT policy: `/storage/v1/object/public/…` does not consult RLS, so such a policy only let anyone
+    with the publishable key enumerate object names. Nothing in `js/` or `supabase/functions/` lists them.
 - **AuthZ — AI quota:** `ai_usage` is writable **only** by the SECURITY DEFINER RPCs
   `increment_ai_usage` / `refund_ai_usage`, whose EXECUTE is granted to `service_role` only.
   The term-gloss lane has the identical shape in its own table (`ai_gloss_usage`,
@@ -586,6 +597,17 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    `getMatrixForModel`. The reach-path defence stays (§4, and DECISIONS.md's attribution row): the
    renderer's AttributionControl is still never enabled, so the fix is defence in depth rather than the
    only control. `npm audit` no longer reports this advisory.
+
+13. **A post image or an avatar can still point at a third-party host.** `community_posts.img` and
+   `profiles.avatar_url` are free text; the client only ever writes inline `data:image/…` URLs
+   (`js/app-body.js` `compressImage`, the avatar crop in `js/auth-ui.js`) and uploads nothing to
+   Storage, but a direct REST write can store `https://tracker.example/pixel?id=…`, and every reader who
+   renders that post or card then sends their IP and User-Agent to that host. `IntMapSafe.url` (§4)
+   checks the scheme, which stops script, not tracking. **Not closed** by db-provenance-hardening: the
+   hardening proposed there («accept only this project's Storage URLs») describes a design the client
+   does not have. The fitting close is a DB CHECK (`NOT VALID`, so existing rows are not rewritten)
+   accepting `null` or `data:image/(png|jpeg|webp|gif);base64,…` on both columns — a change to what the
+   database accepts, left for a decision.
 
 ---
 
