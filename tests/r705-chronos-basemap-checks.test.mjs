@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { installSafe } from './helpers/safe-html.mjs';
 const ctx=vm.createContext({window:{},console});
 for(const file of ['js/historical-basemap.js','js/cesium-style.js']) vm.runInContext(fs.readFileSync(new URL('../'+file,import.meta.url),'utf8'),ctx);
 const base=ctx.window.IntMapHistoricalBasemap, style=ctx.window.IntMapStyle;
@@ -69,6 +70,7 @@ test('visible credit follows historical physical base, satellite and return to N
   const el={innerHTML:''};
   const document={readyState:'complete',getElementById:id=>id==='map-credit'?el:{classList:{contains:()=>sat}}};
   const win={IntMapTimeBorders:{active:()=>active}};
+  installSafe(win);   /* the credit's links go through window.IntMapSafe.url (safe-output-single-module) */
   vm.runInNewContext(fs.readFileSync(new URL('../js/carto-basemap.js',import.meta.url),'utf8'),{window:win,document});
   assert.match(el.innerHTML,/CARTO/);
   active=true;win.IntMapCartoCredit();assert.match(el.innerHTML,/OpenFreeMap/);assert.match(el.innerHTML,/OpenStreetMap/);assert.doesNotMatch(el.innerHTML,/CARTO/);

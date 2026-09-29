@@ -1,7 +1,7 @@
 /* ============================================================================
  *  audit-sweep-0927 — 多面的な監査（2026-09-27）で直したものの回帰
  * ----------------------------------------------------------------------------
- *  ① IntMapSafe.url() の結果は、それ単体で引用符つき属性に入れて無害（index.html を評価する）
+ *  ① IntMapSafe.url() の結果は、それ単体で引用符つき属性に入れて無害（正本 js/safe-html.js を評価する）
  *  ② ファイル台帳の木（docs/FILES.md）の本数・実在・「全件」名簿を実体に訊く（ledger-claims）
  *  ③ 通知（*toast）に裸の文字列を渡した箇所を、関数名から発見して数える（i18n-sink-literal-audit）
  *  ④ main に着地する定期 workflow は、GITHUB_TOKEN の push が起こさない deploy を自分で起動する
@@ -21,14 +21,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 /* ── ① ─────────────────────────────────────────────────────────────────────── */
+/* the real encoder — js/safe-html.js since safe-output-single-module (it was index.html's inline block) */
 const safe = (() => {
-  const html = rd('index.html');
-  const start = html.indexOf('(function(){', html.indexOf('Canonical output-encoding helpers'));
-  const end = html.indexOf('})();', start) + 5;
-  assert.ok(start > 0 && end > start, 'the IntMapSafe block is still in index.html');
-  const ctx = { window: {} };
-  vm.runInNewContext(html.slice(start, end), ctx);
-  return ctx.window.IntMapSafe;
+  const ctx = {};
+  vm.runInNewContext(rd('js/safe-html.js'), ctx);
+  return ctx.IntMapSafe;
 })();
 
 test('① url(): a URL with a quote in it can no longer close the attribute it is put in', () => {

@@ -17,6 +17,7 @@
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { makeAtlasAnnotate } from './atlas-annotate.js';   /* (#R492) the in-reply unit / clock / abbreviation notes — js/atlas-annotate.js */
+import './safe-html.js';   /* (safe-output-single-module) the one output encoder — publishes globalThis.IntMapSafe */
 import { makeAtlasMarkdown } from './atlas-markdown.js';   /* (#R494) the block parser — see the header of that file */
 import { makeAtlasHighlight } from './atlas-highlight.js';  /* (#R494) code-block token colouring */
 export function makeAtlasReply(HOST, CTX) {
@@ -459,7 +460,7 @@ export function makeAtlasReply(HOST, CTX) {
          The cap on what is VISIBLE stays (six cards is the row this layout was designed for); what
          changes is that the rest are rendered, hidden, behind a chip that says how many there are. */
       const card=c=>{ const dom=(c.agg&&c.src)?c.src:c.host;   /* (#R154) aggregator card shows the PUBLISHER name (from src), not the ugly "news.google.com" */
-        return '<a class="atl-lc" href="'+esc(c.url)+'" target="_blank" rel="noopener">'
+        return '<a class="atl-lc" href="'+esc(globalThis.IntMapSafe.url(c.url))+'" target="_blank" rel="noopener">'
         +'<img class="atl-lc-ico" src="https://www.google.com/s2/favicons?domain='+esc(encodeURIComponent(c.host))+'&sz=64" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
         +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(c.title)+'</span><span class="atl-lc-d">'+esc(dom)+'</span></span></a>'; };
       const shown=clean.slice(0,6).map(card).join('');

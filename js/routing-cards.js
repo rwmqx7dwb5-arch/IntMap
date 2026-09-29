@@ -29,7 +29,7 @@ window.IntMapRouteCards = (function () {
 
   var _lang = 'en';
   var L = window.IntMapLang.pick(function () { return _lang; });
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+  function esc(s) { return window.IntMapSafe.html(s); }   /* the one encoder (js/safe-html.js), read at call time */
   function use(o) { if (o && o.lang) _lang = o.lang; return o || {}; }
 
   /* ══ SVG ═══════════════════════════════════════════════════════════════════════════════════════ */

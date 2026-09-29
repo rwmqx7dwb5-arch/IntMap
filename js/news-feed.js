@@ -128,13 +128,12 @@ window.IntMapModules.newsFeed=function(HOST){
     HOST.aiToast(hit? HOST.t('aiTransDone').replace('{n}',hit) : HOST.t('aiTransNone'));
   }
   /* ===== Shared helper: strip HTML to plain text (used by the news ingest) ===== */
-  /* ⚠ (safe-output-one-source) parsed in an INERT document. An element made by the LIVE document belongs to one
-     with a browsing context, so `d.innerHTML=<RSS description>` fetched <img src=x> and fired its onerror even
-     though d was never attached — third-party markup ran as script in the reader's session. A document from
-     createHTMLDocument has no browsing context: nothing in it is fetched or run, and it decodes entities and
-     drops tags exactly as before, so the text is unchanged. scripts/safe-output.mjs refuses the live shape. */
-  let _inertDoc=null;
-  function stripHTML(s){ if(!s) return ''; const doc=_inertDoc||(_inertDoc=document.implementation.createHTMLDocument('')); const d=doc.createElement('div'); d.innerHTML=s; return d.textContent||''; }
+  /* ⚠ (safe-output-one-source → safe-output-single-module) parsed in an INERT document, by the one encoder's
+     text() (js/safe-html.js). An element made by the LIVE document belongs to one with a browsing context, so
+     `d.innerHTML=<RSS description>` fetched <img src=x> and fired its onerror even though d was never attached —
+     third-party markup ran as script in the reader's session. The inert parse lived here until the encoder
+     became a module; scripts/safe-output.mjs refuses the live shape anywhere. */
+  function stripHTML(s){ return window.IntMapSafe.text(s); }
   function dateRangeQualifier(d){
     /* ±3 day window for that date */
     const start=new Date(d.getTime()-3*864e5), end=new Date(d.getTime()+3*864e5);

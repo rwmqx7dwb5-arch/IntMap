@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（946行・92 KB）＋ `css/`（3本）＋ `js/`（325本・14.9 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（928行・92 KB）＋ `css/`（3本）＋ `js/`（326本・14.9 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -5533,15 +5533,22 @@ supabase db diff --schema public             # driftゼロ確認
 
 トークンが `localStorage` にあるので **XSS ＝ トークン窃取**であり、**各シンクでの正しい出力エンコードが
 最優先の防御**になる（CSP は二次防御）。非信頼テキストは唯一の正規ヘルパー `window.IntMapSafe`
-（`<head>` 最初の script でグローバル定義）を通す。
+（本体は **`js/safe-html.js` の 1 ファイル**）を通す。
 
 - `.html(s)` ＝ `& < > " '` エスケープ（テキスト／属性の両方に安全）。
 - `.url(s,{allowData})` ＝ http(s) / mailto / tel（＋ ラスタの `data:image`。SVG は不可）のみ許可し、
   `javascript:` / `data:text/html` 等は `''` にする。href / src / style は `html(url(s))` で包む。
+- `.text(s)` ＝ HTML 断片の文字だけ（不活性な文書で解析。下記）。
+- **読み込み方は全経路で同じファイル。** アプリは `src/main.js` が固定の 3 枠の直後に import（その 3 枠と
+  その依存、`index.html` の inline script は `IntMapSafe` を使わない）、`sources.html`・`admin.html` は描画する
+  script より前に `<script src>`（`vite.config.js` がコピー）、ES module は `import './safe-html.js'` して
+  `globalThis.IntMapSafe` を読む（Node でも動く）、classic なファイルを `new Function('window', …)` で評価する
+  Node の検査は `tests/helpers/safe-html.mjs` で本物をその `window` に渡す（写しや恒等関数の代用を作らない）。
 - **ファイルごとの独自エスケープは持たない。** 局所の `esc` は `window.IntMapSafe.html` を呼ぶ 1 行の委譲にする
   （独自実装は強さがばらばらで、`"` を変換しないものがあった）。HTML から**文字だけ**を取るときは、生きた
   `document` ではなく `document.implementation.createHTMLDocument()` の不活性な文書で解析する
-  （生きた文書の要素は未接続でも `<img onerror>` を発火する）。
+  （生きた文書の要素は未接続でも `<img onerror>` を発火する）——それが `IntMapSafe.text` で、ニュースの
+  `stripHTML` はそれを呼ぶ。
 - **門**は `scripts/safe-output.mjs`（`check:static` の 1 規則）。独自エスケープ・生きた文書でのテキスト化・
   `IntMapSafe.url` を通らない href/src の始まりを**形で**数え、`scripts/safe-output-ledger.json` の台帳より
   増えたら落ち、減ったら台帳を下げさせる（`--write`）。XML を書き出すもの（GeoTIFF の PAM・GPX/KML）は

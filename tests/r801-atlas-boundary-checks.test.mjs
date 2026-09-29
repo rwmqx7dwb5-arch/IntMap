@@ -363,16 +363,13 @@ test('R801 C⑦: the tool surface carries the turn record to the action runner b
 
 /* ══ D — a URL from outside does not open unless it is http(s) ═══════════════════════════════ */
 
-/* the real guard, out of index.html: the IIFE that defines window.IntMapSafe, evaluated as-is */
+/* the real guard, out of js/safe-html.js (index.html's inline IIFE until safe-output-single-module),
+   evaluated as-is with a global object of its own */
 function realIntMapSafe() {
-  const lines = read('index.html').split('\n');
-  const s = lines.findIndex((l) => /^\s*\(function\(\)\{\s*$/.test(l) && lines.slice(lines.indexOf(l), lines.indexOf(l) + 14).some((x) => /window\.IntMapSafe=/.test(x)));
-  assert.ok(s > 0, 'the IntMapSafe IIFE moved');
-  let e = s; while (e < lines.length && !/^\s*\}\)\(\);\s*$/.test(lines[e])) e++;
-  const w = {};
-  new Function('window', lines.slice(s, e + 1).join('\n'))(w);
-  assert.ok(w.IntMapSafe && typeof w.IntMapSafe.url === 'function');
-  return w.IntMapSafe;
+  const g = {};
+  new Function('globalThis', read('js/safe-html.js'))(g);
+  assert.ok(g.IntMapSafe && typeof g.IntMapSafe.url === 'function');
+  return g.IntMapSafe;
 }
 
 test('R801 D①: the guard refuses javascript: and keeps http(s)', () => {

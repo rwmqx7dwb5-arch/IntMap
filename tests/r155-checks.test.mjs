@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { appSource } from './app-source.mjs';
+import { installSafe } from './helpers/safe-html.mjs';
 
 const root = new URL('..', import.meta.url);
 const index = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
@@ -65,6 +66,10 @@ test('admin.html re-authenticates before the destructive import', () => {
 });
 
 test('admin esc() neutralizes XSS payloads (incl. the single quote)', () => {
+  /* (safe-output-single-module) admin.html delegates to the app's encoder, loaded before its inline script */
+  assert.ok(admin.indexOf('<script src="./js/safe-html.js"></script>') > 0
+    && admin.indexOf('<script src="./js/safe-html.js"></script>') < admin.indexOf('const esc=(s)=>'), 'admin.html loads js/safe-html.js before the console script');
+  const window = {}; installSafe(window);   // eslint-disable-line no-unused-vars -- read by the eval below
   const m = admin.match(/const esc=\(s\)=>[^\n]+/);
   assert.ok(m, 'esc() found');
   const esc = eval('(' + m[0].replace(/^const esc=/, '').replace(/;\s*$/, '') + ')');
@@ -111,6 +116,7 @@ test('Atlas typography: forceful format mandate + sharper heading render', () =>
 });
 
 test('admin safeUrl() rejects dangerous schemes', () => {
+  const window = {}; installSafe(window);   // eslint-disable-line no-unused-vars -- read by the eval below
   const m = admin.match(/const safeUrl=\(u\)=>[^\n]+/);
   assert.ok(m, 'safeUrl() found');
   const safeUrl = eval('(' + m[0].replace(/^const safeUrl=/, '').replace(/;\s*$/, '') + ')');

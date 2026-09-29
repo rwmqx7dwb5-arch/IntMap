@@ -611,7 +611,10 @@ export const sharedIds = () => LAYERS.filter((l) => l.share).map((l) => l.id);
 /** the rows this file generates (js/layer-rows.js), in the order they are inserted */
 export const htmlRows = () => LAYERS.filter((l) => l.html);
 
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
+import './safe-html.js';
+const esc = (s) => globalThis.IntMapSafe.html(s);
 /** the markup of one generated row — byte-for-byte what index.html shipped before layer-manifest.
     `text(key)` is the English name (the i18n pass replaces it with the reader's language). */
 export function rowHTML(l, text) {

@@ -32,6 +32,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
+import { installSafe } from './helpers/safe-html.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -113,6 +114,7 @@ function loadModule(lang = 'en') {
     navigator: { language: 'en' },
   };
   win.window = win;
+  installSafe(win);   /* the REAL output encoder — the blank card escapes through window.IntMapSafe */
   const ctx = vm.createContext(win);
   /* the REAL language registry, over the REAL generated language list */
   vm.runInContext(rd('js/locales/_langs.js'), ctx);

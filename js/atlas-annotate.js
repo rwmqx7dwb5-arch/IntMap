@@ -36,6 +36,10 @@
    ⚠ `title` 属性は使わない。ネイティブのツールチップは 1 秒待たされ、体裁を選べず、
    タッチでは出ない。そして #R459 以降 `title=` は i18n の計器が読む面でもある。
    ⚠ 語彙（1）・略語（2）・走査（3）・配線（4）は下の makeAtlasAnnotate() の中。 */
+/* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
+   (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
+import './safe-html.js';
+
 export const ATLAS_ANNOTATE_CSS = ''
   /* ⚠ #atlas-panel で囲わない。同じ返答が浮動パネル・サイドバータブ・ワークスペース窓の
      3 面に出るので、コードブロックや表と同じく面に依らない書き方にする。 */
@@ -276,10 +280,8 @@ export function makeAtlasAnnotate() {
   const RX_ISO_OFF = new RegExp('^(\\d{4})-(\\d{2})-(\\d{2})[T ](\\d{2}):(\\d{2})(?::(\\d{2}))?(?:(Z)|([+-])(\\d{2}):?(\\d{2}))$');
   const RX_QTY = new RegExp('^([\u2212-]?' + NUM + ')[ \u00A0\u202F]?(' + UNIT_ALT + ')$');
 
-  /** HTML 属性値として安全にする（mdMini の esc と同じ4文字）。 */
-  function escAttr(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
+  /** HTML 属性値として安全にする——正本 IntMapSafe.html（& < > " ' の5文字）。 */
+  const escAttr = (s) => globalThis.IntMapSafe.html(s);
 
   /** 注釈1つ分の span。`kind` は q（量）/ t（時刻）/ a（略語）。 */
   function span(kind, text, note, sub) {

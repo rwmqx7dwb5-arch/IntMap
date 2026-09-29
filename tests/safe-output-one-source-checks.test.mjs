@@ -28,16 +28,10 @@ function* nodes(n) {
   for (const k in n) { const v = n[k]; if (Array.isArray(v)) { for (const c of v) yield* nodes(c); } else if (v && typeof v.type === 'string') yield* nodes(v); }
 }
 
-/* the real encoder, evaluated out of index.html */
-const SAFE = (() => {
-  const html = rd('index.html');
-  const start = html.indexOf('(function(){', html.indexOf('Canonical output-encoding helpers'));
-  const end = html.indexOf('})();', start) + 5;
-  assert.ok(start > 0 && end > start, 'the IntMapSafe block is still in index.html');
-  const ctx = { window: {} };
-  vm.runInNewContext(html.slice(start, end), ctx);
-  return ctx.window.IntMapSafe;
-})();
+/* the real encoder, evaluated out of js/safe-html.js (safe-output-single-module moved it there from
+   index.html) in a context of its own — `ctx` is that context's global, so it gets its own document */
+const loadSafe = (ctx = {}) => { vm.runInNewContext(rd('js/safe-html.js'), ctx); return ctx.IntMapSafe; };
+const SAFE = loadSafe();
 
 const HOSTILE = ['"><img src=x onerror=alert(1)>', "'><svg onload=alert(1)>", '<script>alert(1)</script>', 'a&b "c" \'d\''];
 const inertInAttr = (out) => !/["'<>]/.test(out);
@@ -93,12 +87,12 @@ test('② the webcam preset gallery drops javascript: and cannot be closed by a 
 
 /* ── ③ ─────────────────────────────────────────────────────────────────────── */
 test('③ the news ingest reads RSS markup in an inert document — the live one never parses it', () => {
-  /* the real stripHTML, evaluated out of js/news-feed.js with a document that throws if IT is asked to parse */
+  /* the real stripHTML, evaluated out of js/news-feed.js, over the real IntMapSafe.text (js/safe-html.js —
+     safe-output-single-module moved the inert parse there) given a document that throws if IT is asked to parse */
   const feed = rd('js/news-feed.js');
   const ast = parse(feed);
   const fn = [...nodes(ast)].find((n) => n.type === 'FunctionDeclaration' && n.id.name === 'stripHTML');
   assert.ok(fn, 'stripHTML is still a declaration in js/news-feed.js');
-  const cache = [...nodes(ast)].find((n) => n.type === 'VariableDeclaration' && n.declarations.some((d) => d.id.name === '_inertDoc'));
   const live = { createElement() { throw new Error('the LIVE document was asked to parse untrusted HTML'); } };
   let madeInert = 0; const parsed = [];
   /* a fake that does not parse (nor strip): it answers the text of the inputs this test gives it, by lookup */
@@ -106,7 +100,7 @@ test('③ the news ingest reads RSS markup in an inert document — the live one
   live.implementation = { createHTMLDocument() { madeInert++; return { createElement: () => ({
     set innerHTML(v) { parsed.push(v); this._t = TEXT_OF.get(String(v)); },
     get textContent() { return this._t; } }) }; } };
-  const stripHTML = new Function('document', feed.slice(cache.start, cache.end) + feed.slice(fn.start, fn.end) + '; return stripHTML;')(live);
+  const stripHTML = new Function('window', 'document', feed.slice(fn.start, fn.end) + '; return stripHTML;')({ IntMapSafe: loadSafe({ document: live }) }, live);
   assert.equal(stripHTML('<p>A &amp; B<img src=x onerror=alert(1)></p>'), 'A & B');
   assert.equal(stripHTML('<b>C</b>'), 'C');
   assert.equal(stripHTML(''), '');

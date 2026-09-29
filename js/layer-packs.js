@@ -308,8 +308,7 @@ window.IntMapModules.landCover=function(HOST){
          an `escapeHtml` that does not exist on it: it threw, the catch returned '', and the popup
          opened with an empty name and an empty code under a heading that was still there. Measured on
          the first click. There is no `escapeHtml` anywhere in js/ except that mistake. */
-      const esc=(s)=>{ try{ return window.IntMapSafe?window.IntMapSafe.html(String(s)):String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-        catch(_){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } };
+      const esc=(s)=>window.IntMapSafe.html(String(s));   /* (safe-output-single-module) js/safe-html.js is loaded before any layer pack, so the two fallback copies had no reader */
       const L=window.IntMapLang.pick(()=>HOST.lang);
       let html='<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>';
       if(code) html+='<div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">'+L('Plate code','プレートコード','Plattencode','Код плиты','Código de placa')+': <b style="color:var(--text-main);">'+esc(code)+'</b></div>';
@@ -542,7 +541,7 @@ window.IntMapModules.betaPack2=function(HOST){
     const ROW_LAYERS={dc:['dc-pt','dc-lbl'],pharma:['ph-pt','ph-lbl'],rail:['rail-ln','rail-det-ln','rail-cons-ln','rail-st','rail-st-lbl']};
     const cache={};
     let pop2=null;
-    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const esc=(s)=>window.IntMapSafe.html(s);   /* the one encoder — the local copy did not encode quotes */
     /* ---------- curated datasets (city-level coordinates) ---------- */
     /* (#R254) the data-center table left this file with the layer — js/datacenters.js. What was
        here was 73 rows of [lng, lat, name, kind]; the module that replaced it carries the operator,
