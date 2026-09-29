@@ -77,11 +77,13 @@ function runGate(args = []) {
 const RULES = [...new Set([...readFileSync(join(ROOT, 'scripts/doc-facts.mjs'), 'utf8')
   .matchAll(/\bok\('([a-z-]+)'/g)].map((m) => m[1]))].sort();
 
-test('#R274 ① the cross-document gate passes, and every rule actually ran', () => {
+test('#R274 ① the cross-document gate passes, and every rule actually ran', async () => {
   /* an empty derivation would pass the loop below without asserting anything — the exact failure
      this file's header is about */
   assert.ok(RULES.length >= 12, `only ${RULES.length} rules were read out of scripts/doc-facts.mjs — the derivation is not reaching it`);
-  const { code, out } = runGate(['--check']);
+  /* under the tree lock: the mutation checks in tests/process-doc-facts-claims-checks.test.mjs write
+     broken values into tracked documents while holding it, and an unlocked run read them (PR #819 CI) */
+  const { code, out } = await withTreeLock(() => runGate(['--check']));
   assert.equal(code, 0, 'scripts/doc-facts.mjs --check failed:\n' + out);
   for (const r of RULES) {
     assert.ok(out.includes('✓ ' + r + ':'), `the gate never reported the rule "${r}" — a rule that does not run cannot fail\n` + out);

@@ -29,7 +29,7 @@ export function liftFunction(src, name) {
    js/atlas-console.js's `_OVL` is: the returned text is the literal that ships, braces and all, ready to
    evaluate. Run it on comment-stripped source, for the reason given above. */
 export function liftLiteral(src, name) {
-  const re = new RegExp('\\b(?:const|let|var)\\s+' + name.replace(/[$]/g, '\\$&') + '\\s*=\\s*\\{');
+  const re = new RegExp('\\b(?:const|let|var)\\s+' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*=\\s*\\{');
   const m = re.exec(src);
   if (!m) throw new Error('no object literal named ' + name);
   const at = m.index + m[0].length - 1;
