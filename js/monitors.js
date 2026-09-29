@@ -40,7 +40,7 @@ window.IntMapModules.monitors=function(HOST){
           imToast=HOST.imToast, aiToast=HOST.aiToast, satToast=HOST.satToast;
     const DB=window.sb;
     const FN_URL=((window.SUPABASE_URL||'').replace(/\/$/,''))+'/functions/v1/monitor-run';
-    const S=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.html(v==null?'':String(v)) : String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }catch(_){ return ''; } };
+    const S=(v)=>window.IntMapSafe.html(v);
     const URLS=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.url(v) : (/^https?:\/\//i.test(String(v||''))?String(v):'#'); }catch(_){ return '#'; } };
     const ML=window.IntMapLang.pick(()=>HOST.lang||'en');
     const MLA=window.IntMapLang.pickArgs();   /* (#R251) the ARRAY form — see `pickArgs` in js/lang-registry.js */

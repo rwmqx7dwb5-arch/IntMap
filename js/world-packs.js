@@ -44,7 +44,7 @@ window.IntMapModules.worldPacks=function(HOST){
        100 %. scripts/i18n-positional-array-audit.mjs found them and fails if the shape returns. */
     const LA=window.IntMapLang.pickArgs();
     const D=Math.PI/180;
-    const esc=(s)=>{ try{ return HOST.escapeHtml(String(s==null?'':s)); }catch(_){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } };
+    const esc=(s)=>window.IntMapSafe.html(s);
 
     /* ── the year every layer here reads ──────────────────────────────────────────────────────────
        ONE clock (#R94 standing rule: window.IntMapTime is the master). A layer that needs a year

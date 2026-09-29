@@ -261,7 +261,7 @@ window.IntMapModules.runwaySearch=function(HOST){
     const R=Math.PI/180, MIL=/\b(air ?base|a\.?f\.?b|air force|naval air|\bnas\b|\braf\b|army air ?field|aerodrom|militar|airbase)\b/i;
     let data=null, loading=false, panel=null, center=null;
     const jp=()=>HOST.lang==='jp';
-    const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const esc=s=>window.IntMapSafe.html(s);
     /* (#R11) Runway lengths / distances respect the measurement-units setting (metric / imperial / both). */
     const isImp=()=>((typeof HOST.unitMode!=='undefined')?HOST.unitMode:'both')==='imperial';
     /* (#R15c) Per-panel unit override — imperial is always selectable inside Runway search regardless of

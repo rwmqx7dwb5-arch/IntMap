@@ -40,7 +40,7 @@ window.IntMapModules.routeUi = function (HOST) {
     const CD = () => window.IntMapRouteCards;
     const PV = () => window.IntMapRouteProviders;
     const GC = () => window.IntMapRouteGeocode;
-    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const esc = (s) => window.IntMapSafe.html(s);   /* the one encoder */
     /* ══ ⚠⚠⚠ (#R298 追記) `HOST.isMobile` IS A FUNCTION, SO `!!HOST.isMobile` WAS ALWAYS TRUE ═══════
        MEASURED on production immediately after this round shipped: `#route-panel` carried
        `data-detent="full"` on a 1,280 px desktop — and `data-detent` is only ever written by

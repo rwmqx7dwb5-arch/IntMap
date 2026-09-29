@@ -442,7 +442,7 @@ window.IntMapModules.aiCore=function(HOST){
     el.textContent=msg; el.classList.add('show');
     clearTimeout(aiToast._t); aiToast._t=setTimeout(()=>el.classList.remove('show'),4600);
   }
-  function aiEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function aiEsc(s){ return window.IntMapSafe.html(s); }   /* the one encoder (index.html IntMapSafe) */
   /* Generic report popup. opts:{title, sub, images:[{src,caption}]}. Returns an api
      with setLoading()/setBody(text)/setError(msg,onRetry)/close(). */
   function aiReport(opts){
@@ -450,7 +450,7 @@ window.IntMapModules.aiCore=function(HOST){
     let ov=document.getElementById('ai-report-modal');
     if(!ov){ ov=document.createElement('div'); ov.id='ai-report-modal'; ov.className='modal-overlay'; document.body.appendChild(ov);
       ov.addEventListener('click',e=>{ if(e.target===ov) ov.style.display='none'; }); }
-    const imgsHtml=(opts.images&&opts.images.length)?`<div class="ai-report-imgs">${opts.images.map(im=>`<figure><img src="${aiEsc(im.src)}">${im.caption?`<figcaption>${aiEsc(im.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:'';
+    const imgsHtml=(opts.images&&opts.images.length)?`<div class="ai-report-imgs">${opts.images.map(im=>`<figure><img src="${aiEsc(window.IntMapSafe.url(im.src,{allowData:true}))}">${im.caption?`<figcaption>${aiEsc(im.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:'';
     ov.innerHTML=`<div class="modal-content">
       <div class="ai-report-head">✨ <span>${aiEsc(opts.title||'AI')}</span></div>
       ${opts.sub?`<div class="ai-report-sub">${aiEsc(opts.sub)}</div>`:''}

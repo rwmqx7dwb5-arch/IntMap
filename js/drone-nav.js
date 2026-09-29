@@ -582,8 +582,7 @@ window.IntMapModules.droneNav=function(HOST){
     return !!(panel&&a&&panel.contains(a)&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); }catch(_){ return false; } };
   /* window.IntMapSafe is the app's ONE sanitizer (#R138) — route names are typed by the user and land in
      innerHTML, so they go through it like every other user string in the app. */
-  function esc(s){ try{ return window.IntMapSafe.html(String(s)); }
-    catch(_){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } }
+  function esc(s){ return window.IntMapSafe.html(s); }
   function specLabel(f){ return L.arr(f.lbl); }
   function presetName(p){ return L.arr(p.name); }
 

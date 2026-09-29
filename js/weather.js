@@ -1781,7 +1781,7 @@ window.IntMapModules.weatherEC=function(HOST){
       if(!d||!d.validTime) return L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…');
       return L('valid','有効時刻','gültig','действ.','válido')+' '+EC(cfg).fmt(d.validTime)+' · '+relTxt(d.validTime);
     }
-    const esc=(s)=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const esc=(s)=>window.IntMapSafe.html(s);
     /* Why a model is not offered for THIS layer, in words a reader can act on. The codes come from
        js/wx-models.js `availability()`; there is no default branch, because a reason nobody wrote
        is a reason nobody can fix. */

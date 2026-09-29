@@ -99,7 +99,7 @@ window.IntMapModules.analysisCorrelate=function(HOST){
       return Promise.all(need.map(m=>window.IntMapWB.fetch(m.wb).then(d=>{ WBV[m.wb]=d||{}; }).catch(()=>{ WBV[m.wb]={}; }))); }catch(_){ return Promise.resolve(); } }
     function reRender(){ if(!ov) return; try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).some(m=>m&&m.wb&&!WBV[m.wb]); if(need){ const w=ov.querySelector('.corr-svg-wrap'); if(w) w.innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; } }catch(_){} ensureWB().then(render); }
     const ml=m=>tr.arr(m.lbl);   /* (#R248) see the note by `LA` above — this was the fourteenth shape */
-    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function esc(s){ return window.IntMapSafe.html(s); }
     function pear(xs,ys){ const n=xs.length; if(n<3)return null; let sx=0,sy=0,sxx=0,syy=0,sxy=0; for(let i=0;i<n;i++){const x=xs[i],y=ys[i]; sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;} const dx=n*sxx-sx*sx,dy=n*syy-sy*sy; if(dx<=0||dy<=0)return null; return (n*sxy-sx*sy)/Math.sqrt(dx*dy); }
     function ranks(a){ const idx=a.map((v,i)=>[v,i]).sort((p,q)=>p[0]-q[0]); const r=new Array(a.length); let i=0; while(i<idx.length){ let j=i; while(j+1<idx.length&&idx[j+1][0]===idx[i][0])j++; const avg=(i+j)/2+1; for(let k=i;k<=j;k++)r[idx[k][1]]=avg; i=j+1; } return r; }
     function lsq(xs,ys){ const n=xs.length; let sx=0,sy=0,sxx=0,sxy=0; for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxx+=xs[i]*xs[i];sxy+=xs[i]*ys[i];} const m=(n*sxy-sx*sy)/((n*sxx-sx*sx)||1); return {m,b:(sy-m*sx)/n}; }

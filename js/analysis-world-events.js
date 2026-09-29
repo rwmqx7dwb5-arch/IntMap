@@ -586,7 +586,7 @@ window.IntMapModules.analysisEvents=function(HOST){
         ' <input type="number" value="'+yMin+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'min\',this.value)"> –'+
         ' <input type="number" value="'+yMax+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'max\',this.value)">'+
         ' <span>'+list.length+(window.IntMapLang.t(HOST.lang,' events','件',' Ereignisse',' событий',' sucesos'))+'</span></div>';
-      const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const esc=(s)=>window.IntMapSafe.html(s);
       const cards=list.map(e=>{
         const nm=LWE.arr(e.nm), d=LWE.arr(e.ds), tl=EV_LBL[e.tp]?LWE.arr(EV_LBL[e.tp]):e.tp;
         const wiki='https://'+(jp?'ja':'en')+'.wikipedia.org/wiki/'+e.wiki;

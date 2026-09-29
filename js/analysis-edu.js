@@ -18,7 +18,7 @@ window.IntMapModules.analysisEdu=function(HOST){
   window.__imAnalysisEdu=(function(){
     const jp=()=>HOST.lang==='jp';
     let panel=null, mode=null, q=null, score=0, streak=0, total=0, mapQuizArmed=false;
-    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const esc=(s)=>window.IntMapSafe.html(s);   /* the one encoder — the local copy did not encode quotes */
     function pool(){ try{ return Object.values(countryStats||{}).filter(s=>s&&s.nameEn&&s.flag&&(s.pop||0)>300000); }catch(_){ return []; } }
     function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
     function cname(s){ return jp()?(s.nameJp||s.nameEn):s.nameEn; }

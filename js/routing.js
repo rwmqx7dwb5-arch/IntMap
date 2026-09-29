@@ -830,7 +830,7 @@ window.IntMapModules.routing=function(HOST){
        directions panel: editable start/destination, one-tap mode switch (drive/walk/cycle), swap, live recompute,
        distance + time, and a scrollable turn-by-turn list. ===== */
     const LL=window.IntMapLang.pick(()=>HOST.lang);
-    const escp=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const escp=s=>window.IntMapSafe.html(s);
     /* (#R126) 経路10-10 §6.3/§6.4: SAME-NAME disambiguation — fetch several candidates and prefer the one near the
        current map view (then the most populous), instead of blindly taking hit #1 ("Potsdam" from a Germany view
        geocoded to Potsdam NY, USA). refLL (optional) = the point to bias toward (map centre / other endpoint). */

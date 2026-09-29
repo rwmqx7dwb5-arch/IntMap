@@ -54,7 +54,7 @@ window.IntMapModules.atlasChart = function (HOST, CTX) {
      ⚠ The bare `L` binding is shape ④ of scripts/i18n-helpers.mjs: `npm run check:i18n` reads the
      five positional arguments below, and a language added later needs no edit in this file. */
   const L = (CTX && CTX.L) || window.IntMapLang.pick(function () { try { return HOST ? HOST.lang : 'en'; } catch (_) { return 'en'; } });
-  const esc = (CTX && CTX.esc) || function (s) { try { return window.IntMapSafe.esc(s); } catch (_) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); } };
+  const esc = (CTX && CTX.esc) || ((s) => window.IntMapSafe.html(s));
 
   /* ⚠ EVERY PLOTTED MARK CARRIES `data-mark`. The chart observer (js/atlas-capabilities.js) counts
      them IN THE EMITTED HTML and holds the total against the count the renderer reports, so what is

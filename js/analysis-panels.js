@@ -77,7 +77,7 @@ window.IntMapModules.correlate=function(HOST){
     if(typeof countryStats==='undefined') return;
     const L=()=>HOST.lang;
     const tr=window.IntMapLang.pick(()=>L());
-    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function esc(s){ return window.IntMapSafe.html(s); }
     /* the loader and the failure notice — see the note above IntMapTimeSeries */
     function _lazyFail(){ const m=window.IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisCorrelate: '+m); }catch(__){} } }

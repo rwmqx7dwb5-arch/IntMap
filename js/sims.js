@@ -423,7 +423,7 @@ window.IntMapModules.radiation=function(HOST){
        preset until the reader touches it, so choosing «Chernobyl» moves it. */
     let uiSrc='fukushima', uiIso='cs137', uiEmit=8, uiHours=48, uiRise=300, uiRiseTouched=false;
     const presetRise=()=>{ const t=RAD.sourceTerm(uiSrc,uiIso); return (t&&t.rise)||300; };
-    const _esc=(x)=>String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const _esc=(x)=>window.IntMapSafe.html(x);
     function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
       try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
       try{ GE().render.canvas().style.cursor=''; }catch(_){} }

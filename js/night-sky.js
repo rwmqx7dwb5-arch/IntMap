@@ -76,7 +76,7 @@ window.IntMapNightSky = (function () {
   const TER = () => window.IntMapTerrain;
   const lang = () => { try { return (window.IM_HOST && window.IM_HOST.lang) || document.documentElement.lang || 'en'; } catch (_) { return 'en'; } };
   const L = window.IntMapLang.pick(()=>lang());
-  const esc = (s) => { try { return window.IntMapSafe.html(String(s)); } catch (_) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); } };
+  const esc = (s) => window.IntMapSafe.html(s);   /* the one encoder — no second copy to fall back to */
 
   /* ── state ──────────────────────────────────────────────────────────────────────────────── */
   let root = null, cv = null, ctx = null, panel = null;

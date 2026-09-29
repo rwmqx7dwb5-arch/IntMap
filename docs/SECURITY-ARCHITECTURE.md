@@ -173,6 +173,26 @@ globally-defined helper, `window.IntMapSafe` (defined in the first `<head>` scri
   reachable from OSM `website` tags and feed URLs — the rule was fixed on the helper, where every
   caller gets it, rather than on nine call sites.
 
+**One encoder, not one per file.** A local `esc` is a one-line delegate to `IntMapSafe.html`, never
+a copy. MEASURED 2026-09-29: 48 files carried 49 copies of their own, and they differed — five did not
+encode `"` (an attribute value could be closed from the data), one deleted `<>&` instead of encoding
+them, one defaulted to the identity function. HTML that is parsed only to read its **text** (the news
+ingest's RSS `description`) is parsed in `document.implementation.createHTMLDocument()`: an element of
+the LIVE document fetches `<img src=x>` and fires its `onerror` even when it is never attached; a
+document without a browsing context fetches and runs nothing and yields the same text.
+
+**The gate** is `scripts/safe-output.mjs`, one rule of `npm run check:static`. It counts three shapes by
+their form (AST), never by a helper's name: a function that outputs both `'&amp;'` and `'&lt;'`; a
+live-document `createElement(..).innerHTML = <value>` read back through `textContent`; an `href="` /
+`src="` whose value is started by something that did not come out of `IntMapSafe.url` (a constant that
+fixes the scheme, or a builder in the same file that only returns such constants, passes).
+`scripts/safe-output-ledger.json` holds what remains per file: more fails, fewer fails until the ledger
+is lowered (`node scripts/safe-output.mjs --write`). `kept` entries are XML writers (GeoTIFF PAM
+metadata, GPX/KML) — another grammar, written to a file — and each carries its reason.
+⚠ Modules that are evaluated in Node by their tests (no `window.IntMapSafe` there) and `sources.html`
+(which does not load it) still hold their copies in `pending`; they need the canonical encoder to become
+importable from a module, which is a change to `index.html`.
+
 **Sinks hardened this round** (all were confirmed reachable from attacker-controlled data):
 
 | Surface | Field(s) | Trigger |

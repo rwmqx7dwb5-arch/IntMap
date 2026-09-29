@@ -90,7 +90,7 @@ window.IntMapNavUI = (function () {
   var L = (window.IntMapLang && window.IntMapLang.pick)
     ? window.IntMapLang.pick(lang)
     : function () { return arguments[0]; };
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+  function esc(s) { return window.IntMapSafe.html(s); }   /* the one encoder */
 
   /* ⚠ THE MEASUREMENT AND TIME-ZONE SETTINGS COME FROM THE SAVED SETTINGS, not from a HOST. Every
      module that receives `IM_HOST` reads `HOST.unitMode` / `HOST.userTZ`; this one is imported by
