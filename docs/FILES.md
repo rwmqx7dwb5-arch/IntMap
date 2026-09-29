@@ -1503,6 +1503,11 @@ scripts/
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
+  gate-universe.mjs               **宣言済みゲートの母集合**（`package.json` の `check:*`）・build を読むかの発見・
+                                  実行コマンド・LPT 詰め。`ci-gates.mjs` と `test-parallel.mjs` が**同じ関数を** import する
+  checks-shards.mjs               node 回帰テストの shard を**実測秒**（`.github/checks-cost.json`）で詰める。
+                                  `test-checks.mjs` の `--test-shard=i/n` がこれに訊く
+  checks-timing-reporter.mjs      `node --test` の reporter。ファイルごとの秒を JSON に書く（`--timings`）
   dev-notes.mjs                   **開発記録**: `dev-notes/` の各エントリから `DEV-NOTES.md`（索引）を生成・照合し
                                   （`--write` / `--check`、`check:docs` の `dev-notes` 規則）、旧 1 本ファイルを
                                   エントリごとに分割する（`--split`・再実行可・本文を 1 バイトも変えない）。

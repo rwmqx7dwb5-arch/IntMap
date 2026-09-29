@@ -14,7 +14,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import { validate } from '../scripts/lib/elections-schema.mjs';
-import { ciRuns } from './helpers/ci-reach.mjs';
+import { ciRuns, npmTestRuns } from './helpers/ci-reach.mjs';
 import * as LM from '../js/layer-manifest.js';   /* the Layers taxonomy (layer manifest) */
 /* is `key` filed on `shelf`, and does the manifest resolve it to the box the row builder makes */
 const onShelf = (shelf, key, id) => (LM.layerGroups().find(([k]) => k === shelf) || [null, []])[1].includes(key)
@@ -61,8 +61,9 @@ test('① js/elections.js names no polity, party or district from the data', () 
 test('② check:elections is declared AND called by the suite and by CI', () => {
   const pkg = JSON.parse(rd('package.json'));
   assert.ok(pkg.scripts['check:elections'], 'package.json declares no check:elections');
-  assert.match(rd('scripts/test-parallel.mjs'), /build-elections\.mjs['"],\s*['"]--check/,
-    'npm test does not run the elections gate');
+  /* (gate-parity-and-shards) asked of `npm test`'s evaluated plan (tests/helpers/ci-reach.mjs), not of
+     scripts/test-parallel.mjs's text: that file discovers its gates from package.json and names none. */
+  assert.ok(npmTestRuns('check:elections'), 'npm test does not run the elections gate');
   /* ⚠ (#R771) ASKED OF WHAT CI RUNS, NOT OF HOW ci.yml SPELLS IT — tests/helpers/ci-reach.mjs.
      The 28 declared gates stopped being one step each when they were split across three machines;
      grepping the workflow for this gate's name reported it as unrun while it ran every time. */

@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allSpecs, coreNames, fixedCoreNames, tierSpecs, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
+import { localCommands } from './helpers/ci-reach.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -281,7 +282,10 @@ test('R205 ⑧b `npm test` runs its two independent halves at the same time', ()
   assert.ok(!/Promise\.race/.test(r));
   assert.match(r, /results\.some\(\(r\) => r\.code !== 0\)/);
   /* every step of the old chain is still there */
+  /* (gate-parity-and-shards) asked of `npm test`'s evaluated plan (tests/helpers/ci-reach.mjs), not of
+     scripts/test-parallel.mjs's text: that file discovers its gates from package.json and names none. */
+  const cmds = localCommands().join('\n');
   for (const s of ['static-checks.mjs', 'engine-coupling.mjs', 'test-budget.mjs', 'test:checks', 'run-tests.mjs']) {
-    assert.ok(r.includes(s), `${s} must still run`);
+    assert.ok(cmds.includes(s), `${s} must still run`);
   }
 });

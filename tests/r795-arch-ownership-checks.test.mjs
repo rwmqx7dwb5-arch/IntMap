@@ -14,13 +14,14 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { deadExports, reachedNames, namedExports } from '../scripts/export-readers.mjs';
 import { hostMembers, windowPublications } from '../scripts/global-surface.mjs';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
+import { repositoryLineCeilings } from './helpers/line-ceilings.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
@@ -113,11 +114,14 @@ test('③ the baseline is names, and the live tree matches it (the gate check:su
 
 /* ── the ceiling itself must not come back ────────────────────────────────────────────── */
 test('no test holds a line ceiling over a source file any more', () => {
-  /* the eleven sites retired this round, by the assertion form they all used */
-  const hits = [];
-  for (const f of readdirSync(join(ROOT, 'tests')).filter((x) => /\.test\.mjs$/.test(x) && x !== 'r795-arch-ownership-checks.test.mjs')) {
-    const s = readFileSync(join(ROOT, 'tests', f), 'utf8');
-    for (const m of s.matchAll(/assert\.ok\(\s*[\w.()'"/\\-]*(?:lines|shell|atlas|n\('js\/[\w-]+\.js'\)|\w+\.split\((?:'\\n'|String\.fromCharCode\(10\)|NL)\)\.length)\s*<\s*\d[\d_]*\s*,/g)) hits.push(f + ': ' + m[0].slice(0, 80));
-  }
+  /* ⚠ (gate-parity-and-shards) THIS USED TO BE A REGULAR EXPRESSION OVER ONE ASSERTION FORM —
+     `assert.ok(<name> < N,` with the name from a short list — and it passed while five ceilings still
+     stood: one written `<=`, two over a variable called `body`, two over `n` split by /\r?\n/. The
+     question is now asked of the FACT (a file's line count compared against a number as its upper
+     bound, in any orientation and through any binding), with a parser: tests/helpers/line-ceilings.mjs.
+     tests/gate-parity-and-shards-checks.test.mjs ③ proves it catches every form, including each of
+     the historical sites. No file is exempt — fixtures of the forbidden form live in strings, which
+     a parser does not mistake for code. */
+  const hits = repositoryLineCeilings(ROOT);
   assert.deepEqual(hits, [], 'line ceilings still standing:\n' + hits.join('\n'));
 });

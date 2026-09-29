@@ -71,6 +71,48 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
+### `npm test` runs the gates CI runs — and the regression shards are split by seconds (gate-parity-and-shards)
+
+**The gates are discovered, once, for both runners.** `scripts/gate-universe.mjs` answers «which gates
+exist» (package.json's `check:*`), «which read the build» and «how is one run»; `scripts/ci-gates.mjs`
+(CI, three machines) and `scripts/test-parallel.mjs` (`npm test`) both import it. Measured before
+this: `npm test` carried a hand-written list and ran 23 of the 31 declared gates, so a push that passed
+locally could still be red in CI.
+
+- **checks half**: `data-assets.mjs verify`, then every declared gate in package.json's own order (the
+  acorn gates are declared first), then `npm run test:checks`.
+- **browser half**: `scripts/run-tests.mjs`, then `npm run build` and the gates that read the build
+  (`check:perf`, `check:assets` — discovered, not listed). They wait for the browser suite because its
+  own server builds `dist/` while it runs; two builds into one `dist/` would race.
+- **A gate may stay out of `npm test` only with a sentence saying why**: `CI_ONLY` in
+  `scripts/test-parallel.mjs` (empty today). Every run prints `CI でだけ走るゲート: …` at the start and
+  at the end, and an entry without a reason — or naming a gate that no longer exists — stops the run.
+- «Does `npm test` run X?» is asked of `node scripts/test-parallel.mjs --planned` (the plan as JSON),
+  through `tests/helpers/ci-reach.mjs` (`npmTestRuns`, `npmTestRunsScript`) and `check:docs`'
+  `ci-gates` / `gate-callers` rules — never of the runner's source text, which names no gate.
+
+**The node regression suite is split by measured seconds, not by file count.** `npm run test:checks --
+--test-shard=i/n` is answered by `scripts/test-checks.mjs` itself: it asks `scripts/checks-shards.mjs` for
+bin *i* of *n* — the same glob, packed longest-first (the packing `ci-gates.mjs` uses) by the seconds
+in `.github/checks-cost.json` — and hands node those files. node's own `--test-shard` splits by count,
+and one run measured 11m16s / 8m32s / 4m52s because the heaviest files had landed together.
+
+- The ledger decides **balance, never membership**: a file it does not know is charged the median and
+  still runs; `node scripts/checks-shards.mjs --check` fails on a row for a file that is gone.
+- Each CI shard writes what it measured (`--timings checks-timings.json`,
+  `scripts/checks-timing-reporter.mjs`: per file, the sum of its top-level test durations) and uploads
+  it as `checks-timings-<i>`. Refresh by hand, as with the gate ledger:
+  `node scripts/checks-shards.mjs --update checks-timings-*.json`.
+- ⚠ The mutation tests queue on one lock per checkout (`tests/helpers/gate-lock.mjs`), so their
+  measured time includes the wait. That overstates them, which spreads them apart.
+- `node scripts/checks-shards.mjs --plan` prints the bins and their heaviest files.
+
+**Line ceilings stay retired, and the check that says so asks about the fact.** `tests/helpers/line-ceilings.mjs`
+parses each node test and reports a comparison that holds a file's line count under a number — `<`,
+`<=`, `>`, `>=`, in any orientation, through variables, helpers and imported readers. #R795's
+regex check looked for one assertion form and missed five ceilings, which are now retired.
+`tests/gate-parity-and-shards-checks.test.mjs` covers all three parts.
+
 ⚠ **A NETWORK-DEPENDENT ASSERTION DOES NOT BELONG IN THE GATE.** #R341 split its browser coverage in
 two for this reason: `tests/r341.spec.js` is in the gate and asserts only what is true whether or not
 a provider answered this minute (the browser contacts no upstream; the GPU cloud is what draws; there
@@ -132,7 +174,7 @@ fails if `package.json` and `package-lock.json` disagree.
 ## Run the tests
 
 ```bash
-npm test                 # static checks + hermetic browser suite (the full CI gate)
+npm test                 # every declared check:* gate + node regression suite + hermetic browser suite
 npm run check:static     # fast: syntax / JSON / YAML / merge-markers / secrets / assets
 npm run test:smoke       # does the app boot + render its shell?
 npm run test:qa          # IntMap's own in-page QA harnesses

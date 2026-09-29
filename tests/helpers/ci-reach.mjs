@@ -93,3 +93,37 @@ export function ciBuildsBefore(gate) {
   const line = plan.split('\n').find((l) => l.includes('npm run build'));
   return Boolean(line && line.includes(gate));
 }
+
+/* ══ (gate-parity-and-shards) …AND THE SAME QUESTION ABOUT `npm test` ═══════════════════════════════
+ * Eight test files asked «does npm test run this gate» by looking for a spelling inside
+ * scripts/test-parallel.mjs. That file stopped naming its gates when it began DISCOVERING them from
+ * package.json (scripts/gate-universe.mjs, the function CI's planner uses) — so the question is asked
+ * of its plan, evaluated, for the reason the CI half above is: reading the runner's text would
+ * re-create the defect this helper exists to remove. */
+let localCached = null;
+
+/** `npm test`'s plan as data: node scripts/test-parallel.mjs --planned. */
+export function localPlan() {
+  if (localCached) return localCached;
+  const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'test-parallel.mjs'), '--planned'],
+    { cwd: ROOT, encoding: 'utf8', timeout: 60000 });
+  return (localCached = JSON.parse(out.trim()));
+}
+
+/** Every command `npm test` would run, as «cmd arg arg…» strings, across both halves. */
+export function localCommands() {
+  return localPlan().halves.flatMap((h) => h.steps.map((s) => [s.cmd, ...s.args].join(' ')));
+}
+
+/** True when `npm test` runs the declared gate `gate` (e.g. 'check:elections'). */
+export function npmTestRuns(gate) {
+  return localPlan().gates.includes(gate);
+}
+
+/** True when `npm test` runs scripts/<stem>.mjs — as a gate's command or as a step of its own. */
+export function npmTestRunsScript(scriptStem) {
+  const needle = 'scripts/' + scriptStem + '.mjs';
+  if (localCommands().some((c) => c.includes(needle))) return true;
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts || {};
+  return localPlan().gates.some((g) => String(pkg[g] || '').includes(needle));
+}

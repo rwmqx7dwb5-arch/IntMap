@@ -16,6 +16,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { npmTestRuns } from './helpers/ci-reach.mjs';
 
 import {
   SPELLINGS, FACETS, SUBJECTS, REASONS, FRESHNESS,
@@ -291,8 +292,9 @@ test('⑪ check:datagov is a declared gate with a caller and a row in both instr
   const pkg = JSON.parse(src('package.json'));
   assert.equal(typeof pkg.scripts['check:datagov'], 'string', 'check:datagov is not a declared gate');
   assert.ok(/data-governance\.mjs/.test(pkg.scripts['check:datagov']));
-  assert.ok(/scripts\/data-governance\.mjs/.test(src('scripts/test-parallel.mjs')),
-    '`npm test` does not run the gate');
+  /* (gate-parity-and-shards) asked of `npm test`'s evaluated plan (tests/helpers/ci-reach.mjs), not of
+     scripts/test-parallel.mjs's text: that file discovers its gates from package.json and names none. */
+  assert.ok(npmTestRuns('check:datagov'), '`npm test` does not run the gate');
   assert.ok(/check:datagov/.test(src('.agents/rules/execution-strategy.md')),
     'the gate is in no instruction table, so no session is told to run it');
   assert.ok(/check:datagov/.test(src('.agents/roles/intmap-verifier.md')),

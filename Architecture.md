@@ -214,8 +214,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   ゲートが落ちるのは ① 誰も名指ししないファイル、② 同一 SHA-256 の payload が許可リストの外で
   2回配られている、③ ファイル単位の天井を超えていて理由が記録されていない——の3つ。
   許可リストは**名前ではなく理由**を持つ（Cesium SDK の実行時ツリー、繁体/簡体ページ用に
-  ハッシュ無しでも要る KaTeX と Inter の写しなど）。ビルドが要るので `npm test` の中ではなく
-  `check:perf` の隣で走る。
+  ハッシュ無しでも要る KaTeX と Inter の写しなど）。ビルドが要るので `check:perf` と同じ扱い——
+  CI では build と同じ shard、`npm test` では browser 半分の最後（`npm run build` の後）で走る。
 - ⚠ **同じデータを2つの形で配ってはならない。** `data/` はディレクトリごと `dist/` へ複写されるので、
   1つのデータセットの2表現がどちらも入りうる。`data/ecoregions_2017.js`（`window.__ECOREGIONS_2017`）は
   隣の `.geojson` と**バイト同一**なので `STATIC_EXCLUDE` で配布から外してある——リポジトリには
@@ -5300,11 +5300,18 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 
 ```bash
 npm ci && npx playwright install --with-deps chromium   # 初回
-npm test           # = 静的検査 + hermetic ブラウザ（CIゲート）
+npm test           # = 宣言済みの全ゲート（check:*）+ node 回帰 + hermetic ブラウザ（CI と同じ門）
 npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 ```
 
 ⚠ 全件テストは**完成後に1回**にする。長い待ちは並列化し、push 前に CI と同じ門をローカルで通す。
+
+- **ゲートの母集合は1か所で発見する。** `scripts/gate-universe.mjs` が `package.json` の `check:*` を数え、
+  CI の `scripts/ci-gates.mjs` と `npm test` の `scripts/test-parallel.mjs` が同じ関数を使う。`npm test` が
+  走らせないゲートは `CI_ONLY` に理由の文つきで置くしかなく、毎回その表を印字する（現在は空）。
+- **node の回帰テストは実測秒で割る。** CI の `Regression i/n` は `scripts/checks-shards.mjs` が
+  `.github/checks-cost.json`（ファイルごとの秒）で詰めた束を走らせる。台帳に無いファイルは中央値で見積もる。
+- 詳細（build を読むゲートの位置・台帳の更新・行数天井の検出）は [`docs/TESTING.md`](docs/TESTING.md)。
 
 ### 15.3 診断のためにアプリが持っているもの
 

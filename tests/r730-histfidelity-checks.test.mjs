@@ -16,7 +16,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolveClassSpans } from '../scripts/histadmin/class-dates.mjs';
-import { ciRuns } from './helpers/ci-reach.mjs';
+import { ciRuns, npmTestRuns } from './helpers/ci-reach.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -138,7 +138,9 @@ test('⑤ coverage is observed across every era the clock reaches, and the gate 
      The 28 declared gates stopped being one step each when they were split across three machines;
      grepping the workflow for this gate's name reported it as unrun while it ran every time. */
   assert.ok(ciRuns('check:histfidelity'), 'CI does not run the fidelity gate');
-  assert.ok(read('scripts/test-parallel.mjs').includes('hist-fidelity.mjs'), 'npm test does not run the gate');
+  /* (gate-parity-and-shards) asked of `npm test`'s evaluated plan (tests/helpers/ci-reach.mjs), not of
+     scripts/test-parallel.mjs's text: that file discovers its gates from package.json and names none. */
+  assert.ok(npmTestRuns('check:histfidelity'), 'npm test does not run the gate');
 });
 
 /* ⑥ AND THE RULE IT ENFORCES IS LOADED EVERY SESSION ─────────────────────────────────────────

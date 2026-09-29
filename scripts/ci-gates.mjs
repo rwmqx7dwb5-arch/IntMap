@@ -56,35 +56,14 @@
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+/* (gate-parity-and-shards) THE DISCOVERY IS SHARED WITH `npm test`, NOT WRITTEN HERE. The universe,
+   the «reads the build» test and the packing live in scripts/gate-universe.mjs, which
+   scripts/test-parallel.mjs imports too — so the gates CI runs and the gates a local run runs are
+   one answer, not two lists that happen to agree today. */
+import { ROOT, BUILD, declaredGates, scriptFileOf, needsBuild, medianOf, lpt } from './gate-universe.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const LEDGER = join(ROOT, '.github', 'gate-cost.json');
-const BUILD = 'npm run build';
-
-/* A gate reads the build output if its own script names dist/ or the build report as a path. The
-   spellings below are the ones this repository actually uses; see the header for what happens when
-   a third appears (it fails loudly, and the fix is in the gate, not here). */
-const READS_BUILD = /join\(\s*ROOT\s*,\s*'(dist|\.perf)'|'\.perf'\s*,\s*'build-report\.json'|readFileSync\([^)]*build-report/;
-
-function pkg() { return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')); }
-
-/** The declared universe, in a stable order. Nothing else may enter a bin. */
-function declaredGates() {
-  return Object.keys(pkg().scripts).filter((s) => /^check:/.test(s)).sort();
-}
-
-function scriptFileOf(gate) {
-  const m = String(pkg().scripts[gate] || '').match(/scripts\/[\w.-]+\.mjs/);
-  return m ? join(ROOT, m[0]) : null;
-}
-
-function needsBuild(gate) {
-  const f = scriptFileOf(gate);
-  if (!f || !existsSync(f)) return false;
-  return READS_BUILD.test(readFileSync(f, 'utf8'));
-}
 
 function ledger() {
   if (!existsSync(LEDGER)) return { seconds: {} };
@@ -95,9 +74,7 @@ function ledger() {
     new gate onto one shard, and never at the max, which would spread them at the others' expense. */
 function costTable() {
   const secs = ledger().seconds || {};
-  const known = Object.values(secs).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
-  const median = known.length ? known[Math.floor(known.length / 2)] : 5;
-  return { secs, median };
+  return { secs, median: medianOf(Object.values(secs), 5) };
 }
 
 /**
@@ -127,13 +104,7 @@ function tasks() {
  * gate's name, so the same tree always produces the same plan on every runner.
  */
 function plan(of) {
-  const bins = Array.from({ length: of }, () => ({ tasks: [], cost: 0 }));
-  for (const t of tasks().sort((a, b) => b.cost - a.cost || a.gates[0].localeCompare(b.gates[0]))) {
-    const bin = bins.reduce((lo, b) => (b.cost < lo.cost ? b : lo), bins[0]);
-    bin.tasks.push(t);
-    bin.cost += t.cost;
-  }
-  return bins;
+  return lpt(tasks(), of, (t) => t.cost, (t) => t.gates[0]).map((b) => ({ tasks: b.items, cost: b.cost }));
 }
 
 function run(cmd, args) {

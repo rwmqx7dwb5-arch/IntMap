@@ -25,6 +25,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { npmTestRunsScript } from './helpers/ci-reach.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -131,10 +132,11 @@ test('③ a violating document really does fail the gate', async () => {
 
 /* ── ④ the gate is wired into the run, so it cannot quietly stop running ─────────────────── */
 test('④ the gate runs as part of `npm test`', () => {
-  const chain = read('scripts/test-parallel.mjs');
-  assert.match(chain, /scripts\/doc-facts\.mjs', '--check'/,
+  /* (gate-parity-and-shards) asked of `npm test`'s evaluated plan (tests/helpers/ci-reach.mjs), not of
+     scripts/test-parallel.mjs's text: that file discovers its gates from package.json and names none. */
+  assert.ok(npmTestRunsScript('doc-facts'),
     'scripts/doc-facts.mjs is not in the source-level chain — it would never run');
-  assert.match(chain, /scripts\/arch-files-check\.mjs', '--check'/,
+  assert.ok(npmTestRunsScript('arch-files-check'),
     'scripts/arch-files-check.mjs is not in the source-level chain — §3 could drift silently');
   const pkg = JSON.parse(read('package.json'));
   assert.equal(pkg.scripts['check:docs'], 'node scripts/doc-facts.mjs --check');

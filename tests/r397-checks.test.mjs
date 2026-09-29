@@ -39,7 +39,7 @@ import { makeAtlasGeoObject } from '../js/atlas-geo-object.js';
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
 import { makeAtlasAnswerAudit } from '../js/atlas-answer-audit.js';
 import { makeAtlasAnomalyScore } from '../js/atlas-anomaly-score.js';
-import { ciRuns, ciRunsScript } from './helpers/ci-reach.mjs';
+import { ciRuns, ciRunsScript, npmTestRunsScript } from './helpers/ci-reach.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -479,8 +479,9 @@ test('R397 ⑨: the capability audit runs in BOTH gates, and the match is a comm
      comments and must ask about each place separately. */
   const pkg = JSON.parse(read('package.json'));
   assert.ok(pkg.scripts['check:capabilities'], 'the capability audit script is gone');
-  const local = codeOnly(read('scripts/test-parallel.mjs'));
-  assert.ok(/atlas-capability-audit/.test(local),
+  /* (gate-parity-and-shards) asked of `npm test`'s evaluated plan (tests/helpers/ci-reach.mjs), not of
+     scripts/test-parallel.mjs's text: that file discovers its gates from package.json and names none. */
+  assert.ok(npmTestRunsScript('atlas-capability-audit'),
     'the twenty-item capability audit does not run in npm test, while DECISIONS.md calls it the gate for the one-list rule');
   /* ⚠ (#R771) ASKED OF WHAT CI RUNS, NOT OF HOW ci.yml SPELLS IT — tests/helpers/ci-reach.mjs.
      The 28 declared gates stopped being one step each when they were split across three machines;

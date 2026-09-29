@@ -428,7 +428,7 @@ test('R291 ⑳ no new code in the app shell, and no new inline-style panel', () 
   const body = read('js/app-body.js');
   assert.equal(/routeUi|IntMapRouteUI|routing-ui/.test(body), false,
     '「js/app-body.js へ新機能を追加しない」 — the panel is mounted by js/lazy-modules.js');
-  assert.ok(body.split('\n').length <= 4400, 'the app shell’s line ceiling only ever comes down');
+  /* (#R795, completed in gate-parity-and-shards) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. #R795's own detector missed this one on its spelling; tests/helpers/line-ceilings.mjs asks about the fact. */
   const ui = bare('js/routing-ui.js');
   assert.equal(/<style|createElement\('style'\)/.test(ui), false, 'the CSS is in css/intmap.css');
   /* the panel it replaces was ~9 kB of `style="…"`; what is left is per-instance geometry only */
