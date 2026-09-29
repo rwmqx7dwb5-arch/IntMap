@@ -76,6 +76,42 @@ retry 側の赤（`:110`、CI 2 コアでの CPU 飢餓で `page.evaluate` 自�
 保留の門（`js/layer-rows.js`）が漏らしている証拠は無かった。MapLibre 6 移行が飢えを悪化させたかは、
 このマシンでは移行の前後とも 5/5 失敗で測れていない。
 
+## 1c. 1 行の import が起動のリクエストを 1 本増やしていた（`check:perf` の赤）
+
+PR の CI で `eager.requests grew: 10 > ceiling 9`（modules は 284 のまま）。`dist/index.html` の
+modulepreload に `proxy-fetch-*.js` が独立したチャンクとして増えていた。
+
+**原因。** `js/fetch-deadline.js` に足した `import { clockFor } from './proxy-fetch.js'`（classic script へ
+`window.IntMapFetchWithin` として時計を渡すためだけのもの）。その 1 行を外した build では 9 に戻る。
+仕組みは Rolldown の `experimental.chunkOptimization` を切り替えて測った:
+
+| 設定 | eager.requests | proxy-fetch | fetch-deadline |
+|---|---|---|---|
+| `false`（最適化なし） | 17 | 独立 | 独立 |
+| `{ mergeCommonChunks: false }` | 11 | 独立 | 独立 |
+| `{ avoidRedundantChunkLoads: false }` | 11 | 独立 | 独立 |
+| 既定（両方 on） | 10 | **独立** | main に合流 |
+| 既定・import を外す | 9 | main に合流 | main に合流 |
+
+main と遅延チャンクの両方が import するアプリのモジュールは、まず共通チャンクを 1 つずつ与えられ、
+`mergeCommonChunks` が「循環するチャンク依存を作らないときだけ」main へ折り戻す（Rolldown の型定義の文言）。
+最適化なしで独立していた 8 つ（fetch-deadline・proxy-fetch・atlas-capabilities・atlas-persona・
+lifted-projection・nominatim-gate・runtime・ui.en）のうち、**他の 7 つのどれかを import していたのは
+fetch-deadline だけ**で、合流しなかったのはその import 先の proxy-fetch だけ。proxy-fetch を先に main へ
+入れると main → fetch-deadline → main が循環になる。⚠ 合流の順序そのものは Rolldown の内部で、観測できたのは
+この非対称（import する側は入り、される側は残る）までである。
+
+**直し方。** 天井を `--update` で受け入れず、2 つの共有モジュールの間の辺を消した。`js/fetch-deadline.js` は
+何も import しない（公開もしない）。`window.IntMapFetchWithin = { jsonWithin, readWithin, clockFor }` は
+**main にしか居らず、すでに両方を import している** `js/app-body.js` が組む（classic script は呼び出し時に読むので、
+起動時に評価される app-body で足りる）。実体は今も 1 つずつ。`tests/helpers/load-wx-source.mjs` の
+`fetchWithinFor` は同じ組み方で { jsonWithin, readWithin, clockFor } を返す。理由と実測は
+`vite.config.js` の codeSplitting の註に書いた（名前付きの group で抑える直し方は取らなかった——
+手書きのファイル名一覧になり、次に同じ形の辺を足した人には効かない）。
+
+実測（`node scripts/perf-budget.mjs`）: eager.requests **10 → 9**（天井 9）・modules 284 → 284・
+eager brotli 1188.9 → 1187.9 kB。
+
 ## 2. 残したもの・選ばなかったもの
 
 - ⚠ **オーロラは本体とサムネイルがまだ 2 本の取得**。本体の取得は `js/layer-packs.js` にあり、この回は

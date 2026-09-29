@@ -39,7 +39,6 @@
  *      keeps delivering is not a stall; a connection that stops is, at any size.
  *  How long a given URL may take is not decided here — js/proxy-fetch.js `clockFor` says, per host.
  */
-import { clockFor } from './proxy-fetch.js';   /* (fetch-deadline-layer) only to hand it on, with the readers, to the classic scripts below */
 export const { jsonWithin, readWithin } = (() => {
   /* An AbortController is standard everywhere IntMap runs; the guard is for the node checks, which
      evaluate this module without a DOM. Without one the deadline simply cannot be enforced, and the
@@ -160,6 +159,14 @@ export const { jsonWithin, readWithin } = (() => {
    and the loader harnesses of tests/r375 / r423 execute them with `new Function`; tests/r184 #5 parses
    routing-ops as a script), so an `import` line is not open to them — and both held a read with no end
    (the Natural Earth loader, the earthquakes along a route). They reach this module the way classic
-   scripts reach js/nominatim-gate.js: through one window name, carrying the two readers and the host
-   table's clock, so there is still exactly one of each. Guarded for node, where there is no window. */
-if (typeof window !== 'undefined') window.IntMapFetchWithin = { jsonWithin, readWithin, clockFor };
+   scripts reach js/nominatim-gate.js: through one window name, `window.IntMapFetchWithin`, carrying the
+   two readers and the host table's clock, so there is still exactly one of each.
+   ⚠ THAT NAME IS PUBLISHED BY js/app-body.js, NOT HERE, AND THIS FILE IMPORTS NOTHING — ON PURPOSE.
+   It was published here once, with `import { clockFor } from './proxy-fetch.js'` to carry the clock, and
+   that one import line added a request to EVERY session: MEASURED `npm run check:perf` eager.requests
+   9 → 10, proxy-fetch split out of main into a chunk of its own (modules unchanged, 284). Both files are
+   shared by main and by lazy chunks, so the bundler first gives each a chunk of its own and then merges
+   them back into main — and it refuses a merge that would make a chunk cycle. With this file importing
+   proxy-fetch, merging proxy-fetch first would have made main ⇄ fetch-deadline a cycle, so it stayed
+   out (the full measurement: vite.config.js, codeSplitting). js/app-body.js is in main alone and already
+   imports both, so the one handle is assembled there with no edge between the two shared files. */

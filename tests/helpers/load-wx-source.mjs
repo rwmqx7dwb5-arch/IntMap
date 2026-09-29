@@ -3,8 +3,9 @@
  * (fetch-deadline-layer) js/fetch-deadline.js's readers call the global `fetch`, so a harness that
  * hands a module its own `fetch` (the `new Function('…','fetch', src)` pattern several tests use)
  * would otherwise be bypassed by them. `fetchWithinFor(fetch)` evaluates the REAL js/fetch-deadline.js
- * source in a scope where `fetch` is the stub, and returns what that file publishes as
- * `window.IntMapFetchWithin` — { jsonWithin, readWithin, clockFor }, with the real clockFor.
+ * source in a scope where `fetch` is the stub, and returns the handle the classic scripts read as
+ * `window.IntMapFetchWithin` — { jsonWithin, readWithin, clockFor }, with the real clockFor, assembled
+ * the way js/app-body.js assembles it (the file itself publishes nothing — see its last comment).
  * `loadWxSource(fetch)` does the same for js/wx-source.js, whose two import lines are removed and
  * their bindings supplied from that evaluation. Nothing in either file is copied here; both are read
  * from the tree on every call. */
@@ -19,11 +20,9 @@ export function fetchWithinFor(fetchImpl) {
   const raw = read('js/fetch-deadline.js');
   const src = raw.replace(IMPORTS, '').replace(/^export const \{ jsonWithin, readWithin \} =/m, 'const { jsonWithin, readWithin } =');
   if (!/^const \{ jsonWithin, readWithin \} =/m.test(src)) throw new Error('js/fetch-deadline.js no longer exports { jsonWithin, readWithin } in one statement — update this helper');
-  const win = {};
   // eslint-disable-next-line no-new-func
-  new Function('fetch', 'clockFor', 'window', src)(fetchImpl, clockFor, win);
-  if (!win.IntMapFetchWithin) throw new Error('js/fetch-deadline.js no longer publishes window.IntMapFetchWithin — update this helper');
-  return win.IntMapFetchWithin;
+  const { jsonWithin, readWithin } = new Function('fetch', src + '\nreturn { jsonWithin, readWithin };')(fetchImpl);
+  return { jsonWithin, readWithin, clockFor };
 }
 
 export function loadWxSource(fetchImpl, win) {
