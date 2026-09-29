@@ -788,12 +788,30 @@ window.IntMapModules.layerSidebar=function(HOST){
     function _wireFrontMost(){ if(window.__imFrontMostWired) return; window.__imFrontMostWired=1;
       /* the floating panel an event landed in — the first positioned ancestor, asked of the LAYOUT
          rather than of a list of selectors (#R253). The map's own canvas is explicitly not one. */
-      const panelOf=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
-          if(n.matches&&n.matches(_NOT_PANEL)) return null;
-          let p='',z=''; try{ const cs=getComputedStyle(n); p=cs.position; z=cs.zIndex; }catch(_){}
-          if(p==='absolute'||p==='fixed') return n;
-          if((p==='relative'||p==='sticky')&&z&&z!=='auto') return n; }
-        return null; };
+      /* ⚠ (front-mark-outer-context) THE MARK GOES WHERE ITS z-index COMPETES. The first positioned
+         ancestor is the panel only when nothing above it traps its z-index. A dropdown inside a pill
+         that is itself a stacking context (`#ms-results` inside the fixed, z-indexed `#map-search`)
+         got the mark and could not leave its parent's context: measured in production 2026-09-30, the
+         pointerdown on a search result set im-float-front, the Köppen legend (1100) rose over the pill
+         (1002), the pointerup landed on the legend and the result was never chosen. So after the
+         innermost positioned element, the walk keeps climbing and moves the mark to every ancestor
+         that FORMS A STACKING CONTEXT and can take a z-index (positioned: fixed/sticky always, abs/rel
+         with a z-index or a transform/filter/opacity) — the outermost one is the element that stands
+         in the band. It still stops at the map and the shell (_NOT_PANEL), keeping what it found. */
+      const trapsZ=(cs)=>{ const p=cs.position; if(p==='fixed'||p==='sticky') return true;
+          if(p!=='absolute'&&p!=='relative') return false;
+          return (cs.zIndex&&cs.zIndex!=='auto')||cs.transform!=='none'||cs.filter!=='none'||+cs.opacity<1; };
+      const panelOf=(el)=>{ let found=null;
+        for(let n=el; n&&n!==document.body; n=n.parentElement){
+          if(n.matches&&n.matches(_NOT_PANEL)) return found;
+          let cs=null; try{ cs=getComputedStyle(n); }catch(_){}
+          if(!cs) continue;
+          const p=cs.position, z=cs.zIndex;
+          if(!found){
+            if(p==='absolute'||p==='fixed') found=n;
+            else if((p==='relative'||p==='sticky')&&z&&z!=='auto') found=n;
+          } else if(trapsZ(cs)) found=n; }
+        return found; };
       const raise=(el)=>{ try{ document.querySelectorAll('.im-front').forEach(n=>{ if(n!==el) n.classList.remove('im-front'); }); }catch(_){}
         if(el) el.classList.add('im-front'); };
       const act=(t,mayDemote)=>{ if(!t||!t.closest) return;

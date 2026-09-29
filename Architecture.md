@@ -3864,8 +3864,12 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ⚠ `reorganizeLayerPanel()` は DOM を大量に並べ替えるので、タップ中に走ると行がずれて誤タップの原因になる。
 - **ウィンドウの重なり順**は `bringToFront` が1か所で決める（インラインで z-index を書かない）。
 - **触ったパネルが最前面に来る**（`js/map-ui.js` の `_wireFrontMost`）。pointerdown / wheel / focusin /
-  keydown が当たった要素から**最初の positioned 祖先**を探し、そこに `.im-front`（`z-index:2650
-  !important`・デスクトップ幅のみ）を付ける。印は常に1つで、サイドバーを触ると外れる。
+  keydown が当たった要素から**最初の positioned 祖先**を探し、さらに上に**重なり文脈を作る positioned
+  祖先**（fixed/sticky、または z-index・transform・filter・opacity を持つ absolute/relative）があれば
+  **その一番外側**へ移して、そこに `.im-front`（`z-index:2650 !important`・デスクトップ幅のみ）を付ける
+  ——内側の要素の z-index は親の文脈から出られないので、印は帯の中で競う要素に付かなければ効かない
+  （検索欄の中の結果一覧に付いて、凡例に押し負けていた）。地図と外殻（`_NOT_PANEL`）で止まる。
+  印は常に1つで、サイドバーを触ると外れる。
   ⚠ **これは「上げる」印であって、下げる手段ではない。** モーダル (`.modal-overlay` は 9999) の
   ように**この帯より上にいる層は、この機構の対象外**——`_aboveBand()` が resolved z-index を見て
   除外する（綴りの一覧ではなく実測。後から足した重ね物も自動で入る）。除外しないと、設定の上に開いた

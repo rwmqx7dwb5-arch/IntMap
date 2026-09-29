@@ -376,7 +376,7 @@ test('R258 ⑧: the front-most band covers every panel, including the compare wi
   const ui = read('js/map-ui.js');
   assert.match(ui, /document\.addEventListener\('keydown',\(e\)=>\{ try\{ act\(e\.target,false\); \}catch\(_\)\{\} \},true\);/,
     'typing counts as an operation');
-  assert.match(ui, /if\(\(p==='relative'\|\|p==='sticky'\)&&z&&z!=='auto'\) return n;/,
+  assert.match(ui, /if\(\(p==='relative'\|\|p==='sticky'\)&&z&&z!=='auto'\) found=n;/,
     'a panel positioned relative WITH a z-index is a panel, not a reason to demote');
   assert.ok(ui.includes(".sidebar,#sidebar,#layer-sidebar-r'"),
     'the two sidebars are the shell this band is measured against, never a panel inside it');
