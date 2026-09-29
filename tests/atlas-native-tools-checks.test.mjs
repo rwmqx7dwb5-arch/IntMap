@@ -280,7 +280,8 @@ test('atlas-native-tools ⑥: the reply is the provider\'s items; the final shap
 
 /* ══ ⑦ ════════════════════════════════════════════════════════════════════════════════════════ */
 test('atlas-native-tools ⑦: the header names the model the code runs — the secret overrides the constant, so they must agree', () => {
-  const constant = (/const OPENAI_DEFAULT_MODEL = "([^"]+)"/.exec(PROXY) || [])[1];
+  /* (edge-spend-and-models) the constant is the shared model table's, which ai-proxy imports */
+  const constant = (/const OPENAI_DEFAULT_MODEL = "([^"]+)"/.exec(rd('supabase/functions/_shared/ai-provider.js')) || [])[1];
   const header = (/secrets set AI_MODEL=(\S+)/.exec(PROXY) || [])[1];
   assert.ok(constant && header);
   assert.equal(header, constant, 'the deploy header tells the operator to set AI_MODEL=' + header + ' while the code default is ' + constant);

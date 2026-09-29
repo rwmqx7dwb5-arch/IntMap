@@ -1225,7 +1225,7 @@ supabase/
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定。14本）
   functions/<name>/index.ts       Edge Functions（20本。一覧と各本の役割は Architecture.md §6.2）
-  functions/_shared/              関数ではないライブラリ（atlas-persona.js / aviation-codec.js /
+  functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
@@ -1234,6 +1234,8 @@ supabase/
                                   ⚠ fetch-relay-policy.js も**ブラウザが import する**（js/proxy-fetch.js。
                                   許可表の写しを作らない・own-fetch-relay）
                                   ⚠ client-error-shape.js は**ブラウザも import する**
+                                  ⚠ ai-provider.js は有料の提供元への**唯一の扉**（既定モデルの表・
+                                  関数ごとのプロジェクト全体の 1 日の天井・本文を運ばない失敗）
                                   （js/client-error-report.js。写しを作らない・client-error-log）
                                   ⚠ news-cluster.js は**サーバー専用**——クライアントの
                                   バンドルに入れない（docs/NEWS-EVENTS.md §5）

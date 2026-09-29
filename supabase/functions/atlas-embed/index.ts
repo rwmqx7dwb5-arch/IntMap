@@ -36,13 +36,17 @@
 //  Secrets:  OPENAI_API_KEY (the same secret ai-proxy and news-ingest read)
 //            ATLAS_EMBED_MODEL (optional; default text-embedding-3-small)
 //            ATLAS_EMBED_GLOBAL_PER_DAY (optional override of the project-wide ceiling)
+//            ATLAS_EMBED_PER_USER_PER_DAY (optional override of one account's share of it)
 //  (SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are injected by the platform.)
 //
 //  ⚠ NO TYPE ANNOTATIONS IN THIS FILE — scripts/static-checks.mjs parses it as plain JavaScript.
 // ============================================================================
 
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+/* (edge-spend-and-models) the project-wide ceiling and the one door to the provider, shared with
+   every other function that holds a provider key */
+import { spendCeiling, providerFetch, ProviderFail } from "../_shared/ai-provider.js";
 import { parseSearch, parseSeed, batches, vectorLiteral, EMBED_DIM, MAX_BODY_BYTES } from "./core.js";
 
 const CORS = { ...corsFor(), "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -62,7 +66,22 @@ const MODEL_DEFAULT = "text-embedding-3-small";
    · SEED_PER_USER_PER_HOUR = 4. A catalogue changes when the page changes (a release, the UI
      language, the module set), not per search; four an hour is every language switch a reader is
      plausibly going to make, and stops one account from embedding catalogue after catalogue.
-   All three fail CLOSED when the database does not answer: the vectors live in that database, so a
+   · (edge-spend-and-models) PER_USER_PER_DAY = GLOBAL_PER_DAY / MIN_ACCOUNTS_TO_SPEND_A_DAY
+     (= 2,000 by default), one account's SHARE of the day, in the same units. THE DEFECT it answers
+     (audit, 2026-09-29): a seed costs one unit per document and one account may seed four times an
+     hour, i.e. up to 4 × MAX_ENTRIES (400) = 1,600 units an hour — so ONE account could empty the
+     whole day's 20,000 in about thirteen hours, and every reader's find_capability would answer from
+     spellings alone until it refilled. The project ceiling protects the invoice; this share protects
+     the OTHER readers from one account. MIN_ACCOUNTS_TO_SPEND_A_DAY is routing-relay's
+     MIN_ADDRESSES_TO_SPEND_A_DAY read for accounts: the same estimate as _shared/rate-limit.js's
+     READERS_PER_ADDRESS (10), turned round — no fewer than ten accounts can exhaust a day. An honest
+     day is far inside it: a catalogue is ~145 documents, so 2,000 is thirteen full seeds or two
+     thousand searches. ESTIMATE; it expires the first time production shows `rate_limit` from
+     `atlas-embed:user:day` for an account that was a reader, and ATLAS_EMBED_PER_USER_PER_DAY moves it
+     without a deploy. ⚠ Accounts cost nothing to make, so this raises the price of emptying the day
+     from one account to ten; it does not make it impossible — the project ceiling is still what
+     bounds the invoice.
+   All four fail CLOSED when the database does not answer: the vectors live in that database, so a
    search it cannot serve is not a search this function can answer anyway. */
 const PER_USER_PER_MIN = 30;
 const SEED_PER_USER_PER_HOUR = 4;
@@ -70,7 +89,14 @@ function envCeiling(name, fallback) {
   const v = Number(Deno.env.get(name) || "");
   return (Number.isFinite(v) && v >= 1) ? Math.floor(v) : fallback;
 }
-const GLOBAL_PER_DAY = envCeiling("ATLAS_EMBED_GLOBAL_PER_DAY", 20000);
+/* The project ceiling is _shared/ai-provider.js's spendCeiling — scope `atlas-embed:global:day` and
+   the override ATLAS_EMBED_GLOBAL_PER_DAY, both unchanged from before it was shared. */
+const CEILING = spendCeiling({ fn: "atlas-embed", perDay: 20000, env: (k) => Deno.env.get(k) || "" });
+const GLOBAL_PER_DAY = CEILING.perDay;
+const MIN_ACCOUNTS_TO_SPEND_A_DAY = READERS_PER_ADDRESS;
+const PER_USER_PER_DAY = envCeiling("ATLAS_EMBED_PER_USER_PER_DAY", Math.max(1, Math.floor(GLOBAL_PER_DAY / MIN_ACCOUNTS_TO_SPEND_A_DAY)));
+/* Read by tests/edge-spend-and-models-checks, which evaluates this module (Deno.serve stubbed). */
+export const SPEND = { ceiling: CEILING, schedule: [], perUserPerDay: PER_USER_PER_DAY };
 
 /* How long the embeddings endpoint may take. Observation: news-ingest gives a 96-input batch 30 s
    (supabase/functions/news-ingest/index.ts, embedBatch) and has not been recorded exceeding it; a
@@ -105,16 +131,21 @@ async function callerId(req, url, anon) {
    what it has meant here before: Architecture.md records that this project's key could not reach an
    embedding model when news-ingest first asked (2026-08-24). The fix is an operator's
    (ATLAS_EMBED_MODEL, or a key that can), and the page must not be told «no match» for it. */
-async function embed(key, model, inputs) {
+/* (edge-spend-and-models) Through the shared door, with the RECEIPT the ceiling handed back when the
+   whole operation was charged (a seed is charged for every document before its first batch, so its
+   batches carry that one receipt rather than each asking again). */
+async function embed(key, model, inputs, receipt) {
   let r;
   try {
-    r = await fetch("https://api.openai.com/v1/embeddings", {
+    r = await providerFetch("https://api.openai.com/v1/embeddings", {
       method: "POST",
       headers: { authorization: "Bearer " + key, "content-type": "application/json" },
       body: JSON.stringify({ model, input: inputs }),
-      signal: AbortSignal.timeout(EMBED_TIMEOUT_MS),
-    });
-  } catch (_) { return { state: "upstream_unreachable" }; }
+    }, { receipt, timeoutMs: EMBED_TIMEOUT_MS });
+  } catch (e) {
+    if (e instanceof ProviderFail && e.code === "no_ceiling") return { state: "limiter_unavailable" };
+    return { state: "upstream_unreachable" };
+  }
   if (!r.ok) {
     try { await r.body?.cancel(); } catch (_) { /* */ }
     if (r.status === 403 || r.status === 404) return { state: "model_unavailable" };
@@ -160,13 +191,18 @@ Deno.serve(async (req) => {
 
     const db = restRpcClient({ url, serviceKey });
     const limiter = makeLimiter({ db });
+    /* The caller's share of the day, then the project's day. Both in units (a search 1, a seed one per
+       document). Returns { receipt } to carry on, or { code } to refuse with. */
     const ceiling = async (cost) => {
-      const day = await limiter.take("atlas-embed:global:day", "*", {
-        capacity: GLOBAL_PER_DAY, refillPerSec: GLOBAL_PER_DAY / 86400, cost, onUnavailable: "deny",
+      const mine = await limiter.take("atlas-embed:user:day", uid, {
+        capacity: PER_USER_PER_DAY, refillPerSec: PER_USER_PER_DAY / 86400, cost, onUnavailable: "deny",
       });
-      if (day.source !== "db") return "limiter_unavailable";
-      return day.allowed ? null : "spend_ceiling";
+      if (mine.source !== "db") return { code: "limiter_unavailable" };
+      if (!mine.allowed) return { code: "rate_limit" };
+      const day = await CEILING.take(cost);
+      return day.ok ? { receipt: day.receipt } : { code: day.code };
     };
+    const refusal = (code) => fail(code, code === "limiter_unavailable" ? 503 : 429);
     const stored = async (catalog) => {
       const r = await db.rpc("atlas_capability_catalog_size", { p_catalog: catalog, p_model: model });
       if (r.error) return -1;
@@ -188,8 +224,8 @@ Deno.serve(async (req) => {
       if (n < 0) return fail("store_unavailable", 503);
       if (n === 0) return json({ state: "catalog_unknown", model });
       const c = await ceiling(1);
-      if (c) return fail(c, c === "spend_ceiling" ? 429 : 503);
-      const e = await embed(key, model, [p.q]);
+      if (c.code) return refusal(c.code);
+      const e = await embed(key, model, [p.q], c.receipt);
       if (!e.vectors) return fail(e.state, 502);
       const r = await db.rpc("atlas_capability_similarity", { p_catalog: p.catalog, p_model: model, p_query: e.vectors[0] });
       if (r.error || !Array.isArray(r.data)) return fail("store_unavailable", 503);
@@ -215,10 +251,10 @@ Deno.serve(async (req) => {
       if (s.source !== "db") return fail("limiter_unavailable", 503);
       if (!s.allowed) return fail("rate_limit", 429);
       const c = await ceiling(p.entries.length);
-      if (c) return fail(c, c === "spend_ceiling" ? 429 : 503);
+      if (c.code) return refusal(c.code);
       const rows = [];
       for (const chunk of batches(p.entries)) {
-        const e = await embed(key, model, chunk.map((x) => x.text));
+        const e = await embed(key, model, chunk.map((x) => x.text), c.receipt);
         if (!e.vectors) return fail(e.state, 502);
         chunk.forEach((x, i) => rows.push({ id: x.id, e: e.vectors[i] }));
       }

@@ -21,7 +21,7 @@ the data flow, an Edge Function, or the auth model changes.
 | Per-user private data (`favorites`, `user_prefs`, `donations`/`feedback`/`bug_reports` PII, `ai_usage`) | Postgres | **RLS** + column grants + SECURITY DEFINER RPCs |
 | Admin capability + billing (`profiles.is_admin`/`is_pro`/`plan`/`email`) | Postgres | RLS (`is_admin()`) + column grant + **`tg_profiles_guard_privcols` BEFORE-UPDATE trigger** (grant-independent freeze, #R155) — no self-escalation of admin or billing plan |
 | Provider API keys (AI, etc.) | Edge Function env (server only) | Never sent to the browser; never logged |
-| AI spend / quota | `ai_usage` + `ai-proxy` | JWT-gated proxy + atomic RPC; refresh-news fail-closed secret |
+| AI spend / quota | `ai_usage` + `ai-proxy` (per account); `relay_rate_buckets` `<fn>:global:day` (per project) | JWT-gated proxy + atomic RPC; fail-closed scheduler secrets; **a project-wide daily ceiling in every function that holds a provider key** (§5, «Spend ceilings») |
 | Integrity of what every visitor sees | `index.html` render paths | **XSS output-encoding** (`window.IntMapSafe`) + CSP |
 
 **Adversaries considered:** an anonymous internet user; a *logged-in* user attacking other
@@ -137,6 +137,9 @@ flowchart LR
   the expensive tasks at the cheap counter's price. The cheap lane additionally refuses images and
   hosted web search and carries its own prompt ceiling.
   A user cannot inflate/deflate their own quota.
+  ⚠ **Per-account quota is not a bound on the project**: an account costs nothing to create
+  (`enable_signup`, no confirmation), so N accounts are N quotas. What bounds the invoice is the
+  project-wide ceiling in §5 («Spend ceilings»).
 - **AuthZ — admin:** `profiles.is_admin`, checked by the `is_admin()` SECURITY DEFINER
   function (with `search_path=''`) inside the admin-only RLS policies. `admin.html`'s login
   gate is convenience; a non-admin who loads it still gets **zero** rows from RLS.
@@ -226,24 +229,28 @@ flag that lives in a comment is not configuration. All twenty are declared there
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
 `fetch-relay` own-fetch-relay).
-⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
+⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
 `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `fetch-relay-policy.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
-| `ai-proxy` | **true** | Supabase JWT (login required) → 401 | plan lookup + `increment/refund_ai_usage` RPC | server env only, never logged |
-| `atlas-embed` | **true** | Supabase JWT, and the function resolves the caller itself (`/auth/v1/user`) → 401 `signed_out`; the per-user buckets are keyed by that id | `atlas_capability_catalog_size` / `_similarity` / `_seed` RPCs and the shared `relay_take` buckets | `OPENAI_API_KEY` (the same secret as `ai-proxy`), server env only, never returned. The query is embedded per call and **not stored**; the catalogue key is recomputed from the text before anything is embedded or stored |
+| `ai-proxy` | **true** | Supabase JWT (login required) → 401 | plan lookup + `consume/refund/settle_ai_turn` RPCs + the `ai-proxy:global:day` bucket | server env only, never logged; every provider request through `_shared/ai-provider.js` |
+| `atlas-embed` | **true** | Supabase JWT, and the function resolves the caller itself (`/auth/v1/user`) → 401 `signed_out`; the per-user buckets (minute, seed hour, **share of the day**) are keyed by that id | `atlas_capability_catalog_size` / `_similarity` / `_seed` RPCs and the shared `relay_take` buckets | `OPENAI_API_KEY` (the same secret as `ai-proxy`), server env only, never returned. The query is embedded per call and **not stored**; the catalogue key is recomputed from the text before anything is embedded or stored |
 | `delete-account` | **true** | Supabase JWT **and** an explicit re-check; body must be `{"confirm":"DELETE"}` | `delete_account_data(uuid)` then `auth.admin.deleteUser` | — |
-| `monitor-run` | false | two callers, two credentials: pg_cron's `x-monitor-secret` (from Vault) or a user JWT; fail-closed on the secret | claim/finalize monitor runs | server env only |
-| `refresh-news` | false (by design) | **fail-closed shared secret** (`x-refresh-secret` header, constant-time) | write `current_news`, read `geo_pins` | server env only |
-| `news-ingest` | false (by design) | **fail-closed shared secret** (`x-news-ingest-secret` header, constant-time, POST only) | write the `news_*` Event tables; read `news_sources` / `news_source_feeds` | server env only |
+| `monitor-run` | false | two callers, two credentials: pg_cron's `x-monitor-secret` (from Vault) or a user JWT; fail-closed on the secret | claim/finalize monitor runs; the `monitor-run:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
+| `refresh-news` | false (by design) | **fail-closed shared secret** (`x-refresh-secret` header, constant-time) | write `current_news`, read `geo_pins`; the `refresh-news:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
+| `news-ingest` | false (by design) | **fail-closed shared secret** (`x-news-ingest-secret` header, constant-time, POST only) | write the `news_*` Event tables; read `news_sources` / `news_source_feeds`; the `news-ingest:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
+| `who-don` | false (by design) | two callers: the public GET (already-extracted counts, per-address `callerGate` bucket) and the ingest POST behind a **fail-closed shared secret** (`x-who-don-secret` header, constant-time) | read (anon key) / upsert (service role) `who_don_extracts`; the `who-don:global:day` bucket | the AI provider key, server env only; provider requests through `_shared/ai-provider.js` |
 | `alerts-relay` | false | none — keyless public relay of official warning feeds | — | — |
 | `cable-geo` | false | none — keyless public relay of two TeleGeography GeoJSON URLs | — | — |
 | `news-relay` | false | none — keyless public relay of Google News RSS | — | — |
 | `routing-relay` | false | none — public, but **keyed upstream**: it is the only relay that holds a provider token | — | `MAPBOX_TOKEN`, server env only, never returned |
 | `sv-cov` | false | none — keyless public relay of Google Street-View coverage tiles | — | — |
 | `quotes-relay` | false | none — keyless public relay of two Yahoo Finance v8 endpoints (share prices) | — | — (those endpoints need no key) |
+| `gdelt-relay` | false | none — keyless public relay of GDELT DOC 2.0, cached (GDELT's own 429s arrive without ACAO) | the GDELT cache bucket (Storage) | — |
+| `volcano-feed` | false | none — keyless; relays the two volcano feeds that send no CORS headers (Smithsonian/USGS weekly report, volcanic-ash SIGMETs) parsed server-side | — | — |
+| `radiation-feed` | false | none — keyless; merges six national ambient-gamma networks into one array (the registry is `_shared/radiation-sources.js`) | — | — |
 | `fetch-relay` | false | none — keyless public relay of the upstreams in `_shared/fetch-relay-policy.js` (the ones that send no ACAO and have no relay of their own) | — | — |
 | `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 | `ais-feed` | false | none — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
@@ -259,6 +266,34 @@ exception. Its `?meta=1` channel reports the PRESENCE of its credentials as bool
 their values.
 
 `ais-feed` is the same shape: a channel and a viewport box, never a URL.
+
+⚠ **Spend ceilings — every function that holds a provider key has a project-wide daily one.**
+Per-account quotas (`PLAN_LIMITS`, `TURN_MAX_CALLS`) bound an account, and an account costs nothing
+to make; the scheduler secrets bound who may call, not how much a leaked secret or a loop can spend.
+The September 2026 audit found that only `atlas-embed` and `routing-relay` bounded the project at
+all. Now `ai-proxy`, `atlas-embed`, `monitor-run`, `news-ingest`, `refresh-news` and `who-don`
+reach a paid provider only through **one door**, `_shared/ai-provider.js` `providerFetch`:
+- it takes one unit from `<function>:global:day` in `public.relay_rate_buckets` (the same
+  `relay_take` row lock as the relays; no new migration) **before** anything is sent — one unit per
+  provider request, so a fallback step or a retry is counted as the request it is;
+- it **fails closed**: a database that does not answer means no request (`limiter_unavailable`);
+- without a ceiling (or a receipt the ceiling minted) it sends nothing, and it refuses any host that
+  is not a provider, so it cannot be used as a general fetch;
+- its failures carry a **status and a length, never the provider's body** (`providerFail`). The body
+  used to reach `monitor_runs.error_detail` (readable by the monitor's owner) and
+  `news_ingest_runs`; a provider error body can echo the prompt or name the account.
+The numbers are each function's own, with the observation and the expiry beside the constant, and
+each can be moved without a deploy through `<FUNCTION>_GLOBAL_PER_DAY`:
+`ai-proxy` 3,000 requests (~26× the busiest recorded day, 2026-09-17: 114); `monitor-run`,
+`refresh-news` and `news-ingest` are **derived from their pg_cron schedules** (runs a day × the most
+one run can ask × 2 for hand-run jobs — 2,880 / 2,304 / 6,336), and
+`tests/edge-spend-and-models-checks.test.mjs` fails if a schedule in the migrations changes under
+them; `who-don` 1,000 (its busiest day, the 2026-09-09 backfill, was 461 extractions); `atlas-embed`
+keeps its 20,000 units and adds **one account's share of the day** (the day ÷ `READERS_PER_ADDRESS`
+= 2,000), because one account could otherwise empty it in about thirteen hours of seeding.
+⚠ **A ceiling is a fence on the invoice, not on Atlas** (`CONSTITUTION.md` §5): it changes no turn
+limit and no capability. A reader who meets `ai-proxy`'s is refunded the use and told
+`provider_quota` with `meta.ceiling: "project_day"` (503, not 429 — 429 is the reader's own quota).
 
 ⚠ **(client-error-log) `client-errors` is the only function a browser WRITES to without a login**, which is why
 it carries four bounds where a relay carries one allow-list. It stores readers' uncaught exceptions in
@@ -653,6 +688,19 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    does not have. The fitting close is a DB CHECK (`NOT VALID`, so existing rows are not rewritten)
    accepting `null` or `data:image/(png|jpeg|webp|gif);base64,…` on both columns — a change to what the
    database accepts, left for a decision.
+14. **The project-wide AI ceilings can be exhausted by many accounts, which then denies AI to
+   everyone for the rest of the day.** That is the ceiling working — the invoice stays bounded — but
+   it turns «spend my money» into «deny everyone», and accounts cost nothing to make. `atlas-embed`'s
+   per-account share raises the price from one account to ten; `ai-proxy` bounds each account by its
+   plan (at most ~180 requests a day on free), so its 3,000 is ~16 free accounts. Closing this fully
+   needs an identity that costs something (e-mail confirmation, CAPTCHA, or a paid plan), which is a
+   product decision, not a code change. The ceilings are also not a PRICE statement: they count
+   requests, and the providers bill by token.
+15. **`ai-proxy/index.gemini-backup.ts` is still in the tree.** It is an unwired earlier version with
+   none of the #R801 bounds and no ceiling. It is not deployed — the CLI bundles what `index.ts`
+   reaches, and nothing reaches it — and it says so in its first line;
+   `tests/edge-spend-and-models-checks.test.mjs` ⑥ requires that marker on any code file in a function
+   directory that its entrypoint does not reach. Removing it needs the owner's approval.
 
 ---
 

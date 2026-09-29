@@ -40,6 +40,8 @@ import { liftFunction } from './helpers/lift-function.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CODE = (p) => codeOnly(readLF(join(ROOT, p)));
 const PROXY = CODE('supabase/functions/ai-proxy/index.ts');
+/* (edge-spend-and-models) the model table ai-proxy imports — one table for every function that calls a model */
+const MODELS = CODE('supabase/functions/_shared/ai-provider.js');
 const CORE = CODE('js/ai-core.js');
 const BODY = CODE('js/app-body.js');
 
@@ -118,11 +120,12 @@ test('R722 ③ a provider switch does not inherit the AI_MODEL secret', () => {
 
   /* ⚠ ONE TABLE OF DEFAULTS, NOT A TERNARY AT EVERY READER. Two readers exist now (the call and the
      catalogue's serverDefault); #R515's shape is two copies of one rule drifting apart. */
-  assert.match(PROXY, /const PROVIDER_DEFAULT_MODEL: Record<string, string> = \{/);
+  assert.match(MODELS, /export const PROVIDER_DEFAULT_MODEL = Object\.freeze\(\{/);
+  assert.match(PROXY, /\bPROVIDER_DEFAULT_MODEL\b[\s\S]*?from "\.\.\/_shared\/ai-provider\.js"/, 'ai-proxy reads the shared table');
   assert.doesNotMatch(PROXY, /provider === "gemini" \? "gemini-[^"]+" :/,
     'the inline per-provider default ternary is back — it is the second copy of PROVIDER_DEFAULT_MODEL');
   for (const p of ['openai', 'gemini', 'anthropic']) {
-    assert.ok(PROXY.includes('  ' + p + ': '), 'PROVIDER_DEFAULT_MODEL has no ' + p + ' row');
+    assert.ok(MODELS.includes('  ' + p + ': '), 'PROVIDER_DEFAULT_MODEL has no ' + p + ' row');
   }
 });
 
@@ -186,8 +189,8 @@ test('R722 ⑥ the picker speaks through the language registry (CONSTITUTION §7
 
 /* ── ⑦ the one place a model id is written, and the document that has to agree ────────────── */
 test('R722 ⑦ the shipped model is named once, and Architecture.md names the same one', () => {
-  const dflt = (PROXY.match(/const OPENAI_DEFAULT_MODEL = "([^"]+)"/) || [])[1];
-  const chain = ((PROXY.match(/const FALLBACK_CHAIN = \[([^\]]*)\]/) || [])[1] || '')
+  const dflt = (MODELS.match(/const OPENAI_DEFAULT_MODEL = "([^"]+)"/) || [])[1];
+  const chain = ((MODELS.match(/const FALLBACK_CHAIN = \[([^\]]*)\]/) || [])[1] || '')
     .split(',').map((x) => x.trim().replace(/^"|"$/g, '')).filter(Boolean);
   assert.ok(dflt && chain.length >= 1);
 

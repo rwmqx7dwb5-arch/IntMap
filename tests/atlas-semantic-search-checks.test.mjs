@@ -253,7 +253,8 @@ test('atlas-semantic-search ⑤ atlas-embed: login required, an unknown catalogu
     const j = await r.json();
     assert.equal(j.state, 'ok');
     assert.equal(j.sims['view.locate'], 0.5);
-    assert.deepEqual(log, ['auth', 'take:atlas-embed:user', 'size', 'take:atlas-embed:global:day', 'openai:1', 'similarity']);
+    /* (edge-spend-and-models) the caller's share of the day is taken before the project's day */
+    assert.deepEqual(log, ['auth', 'take:atlas-embed:user', 'size', 'take:atlas-embed:user:day', 'take:atlas-embed:global:day', 'openai:1', 'similarity']);
   } finally {
     globalThis.fetch = realFetch;
   }

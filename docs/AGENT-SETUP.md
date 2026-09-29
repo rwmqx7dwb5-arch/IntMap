@@ -344,7 +344,7 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 `client-errors` / `delete-account` / `fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
 `radiation-feed` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）。20 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
-⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
+⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・
 `news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`・`fetch-relay-policy.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 

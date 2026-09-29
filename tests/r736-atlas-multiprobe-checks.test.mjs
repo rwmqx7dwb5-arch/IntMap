@@ -110,12 +110,14 @@ test('R736 ②: the defect is not caught by the bigram floor alone — the captu
  * ==========================================================================================*/
 const PROXY = readFileSync(join(ROOT, 'supabase/functions/ai-proxy/index.ts'), 'utf8').replace(/\r\n/g, '\n');
 const AICORE = readFileSync(join(ROOT, 'js/ai-core.js'), 'utf8').replace(/\r\n/g, '\n');
+/* (edge-spend-and-models) the model table ai-proxy imports — the constant is declared there now */
+const MODELS = readFileSync(join(ROOT, 'supabase/functions/_shared/ai-provider.js'), 'utf8').replace(/\r\n/g, '\n');
 
 test('R736 ③: the model every account gets — the developer account included — is Terra', () => {
-  const dflt = (PROXY.match(/const OPENAI_DEFAULT_MODEL = "([^"]+)"/) || [])[1];
+  const dflt = (MODELS.match(/const OPENAI_DEFAULT_MODEL = "([^"]+)"/) || [])[1];
   assert.equal(dflt, 'gpt-5.6-terra');
   /* the ladder under it may not start at the model it is the ladder FOR */
-  const chain = ((PROXY.match(/const FALLBACK_CHAIN = \[([^\]]*)\]/) || [])[1] || '')
+  const chain = ((MODELS.match(/const FALLBACK_CHAIN = \[([^\]]*)\]/) || [])[1] || '')
     .split(',').map((x) => x.trim().replace(/^"|"$/g, '')).filter(Boolean);
   assert.ok(chain.length >= 1, 'there is still a ladder');
   assert.ok(!chain.includes(dflt), `the fallback chain starts with the model it exists to replace (${dflt})`);

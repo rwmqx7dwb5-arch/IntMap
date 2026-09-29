@@ -45,6 +45,7 @@
 //           supabase secrets set ANTHROPIC_API_KEY=sk-ant-... (or OPENAI_API_KEY / GEMINI_API_KEY)
 //           supabase secrets set WHO_DON_MODEL=...            (optional — this job's own model)
 //           supabase secrets set WHO_DON_EXTRACT=off          (optional kill-switch)
+//           supabase secrets set WHO_DON_GLOBAL_PER_DAY=<n>   (optional — moves the project-wide ceiling below)
 //  (SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 //
 //  ⚠ NO TYPE ANNOTATIONS. scripts/static-checks.mjs parses every committed .ts with acorn, so the
@@ -54,6 +55,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { corsFor, fetchGuarded, relayFail } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
+/* (edge-spend-and-models) The model table, the one door to a paid provider, the project-wide ceiling
+   and the failure that carries a status and a length instead of the provider's body. */
+import {
+  PROVIDER_DEFAULT_MODEL, OPENAI_LAST_RESORT_MODEL, providerFetch, providerFail, bodyLength, spendCeiling,
+} from "../_shared/ai-provider.js";
 import {
   plainText, parseExtract, sourceHash, truncateForModel, EXTRACT_PROMPT, DEFAULT_MODEL_CHARS,
 } from "../_shared/who-don-extract.js";
@@ -130,8 +136,25 @@ function timingSafeEqual(a, b) {
  *   for this project's key. ai-proxy knows that and retries once against a known-good model
  *   (#R148/#R150); refresh-news did not, and that silence is exactly why `analyzed_by='ai'` was
  *   0 rows out of 1,651 (#R351). So: this job may name its OWN model (WHO_DON_MODEL), falls back
- *   to AI_MODEL, and on a 403/404 falls once to the model ai-proxy falls to. */
-const OPENAI_FALLBACK_MODEL = "gpt-5.6-luna";
+ *   to AI_MODEL, and on a 403/404 falls once to the model ai-proxy falls to.
+ *   (edge-spend-and-models) Both the default and that one fallback step are _shared/ai-provider.js's:
+ *   PROVIDER_DEFAULT_MODEL (what answers when no secret names a model) and OPENAI_LAST_RESORT_MODEL
+ *   (the last rung of ai-proxy's FALLBACK_CHAIN — the model this project has never lost). The
+ *   default used to be the fallback itself (Luna), from the months when Terra answered 403. */
+
+/* (edge-spend-and-models) THE PROJECT-WIDE CEILING on provider requests from this function — a fence
+   on the invoice (_shared/ai-provider.js says why, and how it fails). who-don has no schedule; its
+   POST is run by an operator (a backfill, or a few new DONs), so the number is an OBSERVATION:
+     · the busiest day on record is 2026-09-09, the backfill: 461 extractions (public.who_don_extracts,
+       read 2026-09-29), each one request, and each may take one fallback step (a second request).
+     · 1000 is that day with its fallback steps, rounded up — a second backfill of the same size in one
+       day meets it, which is what WHO_DON_GLOBAL_PER_DAY (no deploy) is for.
+   Expires when the corpus is re-extracted under a new ALGORITHM_VERSION (3,195 DONs), which is a day
+   to raise it on purpose. */
+const GLOBAL_PER_DAY = 1000;
+const CEILING = spendCeiling({ fn: "who-don", perDay: GLOBAL_PER_DAY, env: (k) => Deno.env.get(k) || "" });
+/* Read by tests/edge-spend-and-models-checks, which evaluates this module (Deno.serve stubbed). */
+export const SPEND = { ceiling: CEILING, schedule: [] };
 
 /* The provider contract, in the same shape news-ingest uses so the two cannot drift: a kill
    switch env, a model-override env, and the provider inferred from whichever key is present. */
@@ -145,32 +168,35 @@ function providerConfig(offEnv, modelEnv) {
     else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
   }
   const pick = (fallback) => Deno.env.get(modelEnv) || Deno.env.get("AI_MODEL") || fallback;
-  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: pick(OPENAI_FALLBACK_MODEL) }; }
-  if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: pick("gemini-2.0-flash") }; }
-  if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: pick("claude-3-5-haiku-latest") }; }
+  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: pick(PROVIDER_DEFAULT_MODEL.openai) }; }
+  if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: pick(PROVIDER_DEFAULT_MODEL.gemini) }; }
+  if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: pick(PROVIDER_DEFAULT_MODEL.anthropic) }; }
   return null;
 }
 
 function extractConfig() { return providerConfig("WHO_DON_EXTRACT", "WHO_DON_MODEL"); }
 
 /** One model call. Returns { text, usage:{in,out}, model } — ⚠ the usage the API actually
- *  reported, never an estimate: this is what lets a run say what it really cost. */
-async function callProvider(cfg, sys, user, signal, _isFallback) {
+ *  reported, never an estimate: this is what lets a run say what it really cost.
+ *  (edge-spend-and-models) Through the shared door: one unit of CEILING per request, one deadline
+ *  (timeoutMs) over headers and body, a byte ceiling, and a failure that carries no body. */
+async function callProvider(cfg, sys, user, timeoutMs, _isFallback) {
+  const via = { ceiling: CEILING, timeoutMs };
   if (cfg.provider === "openai") {
-    const r = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST", signal,
+    const r = await providerFetch("https://api.openai.com/v1/responses", {
+      method: "POST",
       headers: { Authorization: "Bearer " + cfg.key, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: cfg.model, instructions: sys,
         input: [{ role: "user", content: [{ type: "input_text", text: user }] }],
         max_output_tokens: 600, reasoning: { effort: "low" }, store: false,
       }),
-    });
+    }, via);
     if (!r.ok) {
-      if (!_isFallback && (r.status === 403 || r.status === 404) && cfg.model !== OPENAI_FALLBACK_MODEL) {
-        return await callProvider({ ...cfg, model: OPENAI_FALLBACK_MODEL }, sys, user, signal, true);
+      if (!_isFallback && (r.status === 403 || r.status === 404) && cfg.model !== OPENAI_LAST_RESORT_MODEL) {
+        return await callProvider({ ...cfg, model: OPENAI_LAST_RESORT_MODEL }, sys, user, timeoutMs, true);
       }
-      throw new Error("openai " + r.status + " (" + cfg.model + ")");
+      throw providerFail(r.status, await bodyLength(r));
     }
     const j = await r.json();
     const usage = { in: j?.usage?.input_tokens || 0, out: j?.usage?.output_tokens || 0 };
@@ -182,15 +208,15 @@ async function callProvider(cfg, sys, user, signal, _isFallback) {
     return { text, usage, model: cfg.model };
   }
   if (cfg.provider === "gemini") {
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
-      method: "POST", signal, headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
+    const r = await providerFetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: user }] }],
         systemInstruction: { parts: [{ text: sys }] },
         generationConfig: { temperature: 0, maxOutputTokens: 600 },
       }),
-    });
-    if (!r.ok) throw new Error("gemini " + r.status);
+    }, via);
+    if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json();
     const c = j?.candidates?.[0];
     return {
@@ -199,12 +225,12 @@ async function callProvider(cfg, sys, user, signal, _isFallback) {
       model: cfg.model,
     };
   }
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST", signal,
+  const r = await providerFetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({ model: cfg.model, max_tokens: 600, temperature: 0, system: sys, messages: [{ role: "user", content: user }] }),
-  });
-  if (!r.ok) throw new Error("anthropic " + r.status);
+  }, via);
+  if (!r.ok) throw providerFail(r.status, await bodyLength(r));
   const j = await r.json();
   return {
     text: (j?.content || []).map((b) => b.text || "").join(""),
@@ -438,7 +464,7 @@ async function handlePost(req) {
       const user = "TITLE: " + String(item.don.Title || "").slice(0, 300) + "\n\nREPORT:\n" + item.text;
       let out = null;
       try {
-        out = await callProvider(cfg, EXTRACT_PROMPT, user, AbortSignal.timeout(Math.min(60000, left())));
+        out = await callProvider(cfg, EXTRACT_PROMPT, user, Math.min(60000, left()));
       } catch (e) {
         /* ⚠ The provider's message names the model and the status; it is logged, never returned. */
         console.error("[who-don] provider", String((e && e.message) || e).slice(0, 200));

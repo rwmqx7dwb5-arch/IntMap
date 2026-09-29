@@ -11,6 +11,9 @@ import { appSource } from './app-source.mjs';
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const aiproxy = readFileSync(new URL('supabase/functions/ai-proxy/index.ts', root), 'utf8');
+/* (edge-spend-and-models) the model table moved to _shared/ai-provider.js, which ai-proxy imports —
+   the constants are read where they are now declared. */
+const models = readFileSync(new URL('supabase/functions/_shared/ai-provider.js', root), 'utf8');
 
 test('R147 #13 free AI quota is 10/day on the client and server', () => {
   assert.match(html, /const AI_FREE_DAILY\s*=\s*10\b/, 'client AI_FREE_DAILY=10');
@@ -27,9 +30,9 @@ test('R150 #9 the OpenAI path has a default model and a DIFFERENT fallback; Gemi
   // fallback, it is a second attempt at the thing that just 403'd. The id itself: tests/r722 ⑦.
   /* (#R722) the per-provider ternary became a table; the fact is the same one — the OpenAI row of
      that table IS this constant, so a model id is written in one place rather than two. */
-  assert.match(aiproxy, /openai: OPENAI_DEFAULT_MODEL,/, 'PROVIDER_DEFAULT_MODEL.openai = OPENAI_DEFAULT_MODEL');
-  const dflt = (aiproxy.match(/const OPENAI_DEFAULT_MODEL = "([^"]+)"/) || [])[1];
-  const chain = ((aiproxy.match(/const FALLBACK_CHAIN = \[([^\]]*)\]/) || [])[1] || '')
+  assert.match(models, /openai: OPENAI_DEFAULT_MODEL,/, 'PROVIDER_DEFAULT_MODEL.openai = OPENAI_DEFAULT_MODEL');
+  const dflt = (models.match(/const OPENAI_DEFAULT_MODEL = "([^"]+)"/) || [])[1];
+  const chain = ((models.match(/const FALLBACK_CHAIN = \[([^\]]*)\]/) || [])[1] || '')
     .split(',').map((x) => x.trim().replace(/^"|"$/g, '')).filter(Boolean);
   assert.ok(dflt, 'ai-proxy has no OPENAI_DEFAULT_MODEL');
   assert.ok(chain.length >= 1, 'ai-proxy has no FALLBACK_CHAIN');

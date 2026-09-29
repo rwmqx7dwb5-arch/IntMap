@@ -1,3 +1,10 @@
+// ⚠ NOT DEPLOYED (edge-spend-and-models, 2026-09-29). Nothing imports this file. ai-proxy's entrypoint
+//   is index.ts ([functions.ai-proxy] in supabase/config.toml) and the CLI bundles only what that
+//   entrypoint reaches, so these lines never run. It is an earlier, unwired version of the function,
+//   kept because removing a file needs the owner's approval (AGENTS.md §3-1) — and it has none of the
+//   #R801 bounds, the project-wide spend ceiling or the shared model table. Do not import it or copy
+//   from it. tests/edge-spend-and-models-checks ⑥ requires this marker on every code file in a
+//   function directory that its entrypoint does not reach.
 // ============================================================================
 //  IntMap · ai-proxy  —  Supabase Edge Function (Deno)
 // ----------------------------------------------------------------------------

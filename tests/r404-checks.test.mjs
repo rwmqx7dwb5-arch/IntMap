@@ -285,7 +285,8 @@ test('⑩ the locate stage can never fail silently', () => {
   const st = fn.slice(fn.indexOf('async function stageLocate'), fn.indexOf('async function stageEmbed'));
   assert.match(st, /skipped:/, 'a stage that did nothing because it is switched off must say so');
   assert.match(st, /lastError/, 'the last upstream failure must be carried out of the loop');
-  assert.match(st, /AbortSignal\.timeout/, 'the LLM call needs a deadline of its own');
+  /* (edge-spend-and-models) the deadline is the shared door's timeoutMs now, still capped by the budget */
+  assert.match(st, /AbortSignal\.timeout|callProvider\(cfg, [A-Z_]+, user, Math\.min\(\d+, budget\.left\(\)\)\)/, 'the LLM call needs a deadline of its own');
   assert.match(st, /budget\.left\(\)/, 'the stage must stop before the wall-clock budget does');
   for (const k of ['located', 'omitted', 'considered', 'batches', 'error'])
     assert.ok(new RegExp('\\b' + k + '\\b').test(st), 'the stage does not report ' + k);

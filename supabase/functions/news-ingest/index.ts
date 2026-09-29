@@ -33,6 +33,7 @@
 //           supabase secrets set NEWS_EMBED_MODEL=...          (default text-embedding-3-small)
 //           supabase secrets set NEWS_GEO_AI=off               (optional kill-switch, #R404 地点解析)
 //           supabase secrets set NEWS_GEO_MODEL=...            (optional — 地点解析だけ別モデル)
+//           supabase secrets set NEWS_INGEST_GLOBAL_PER_DAY=<n> (optional — プロジェクト全体の天井を動かす。下の SCHEDULE)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 //
 //  NOTE: written WITHOUT TypeScript annotations, like sv-cov / cable-geo / news-relay —
@@ -41,6 +42,12 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { fetchGuarded } from "../_shared/relay-guard.js";
+/* (edge-spend-and-models) モデルの既定表・有料の提供元へ通じる唯一の扉・プロジェクト全体の天井・
+   本文ではなく長さだけを運ぶ失敗。どれも他の 4 関数と同じ 1 本。 */
+import {
+  PROVIDER_DEFAULT_MODEL, OPENAI_LAST_RESORT_MODEL, providerFetch, providerFail, bodyLength,
+  spendCeiling, scheduleCeiling,
+} from "../_shared/ai-provider.js";
 // 地点解析は既存の決定論エンジン。⚠ 第二の実装を作らない——このファイルは
 // js/newsgeo.js と 1 バイト同一で、同一性ゲートが scripts/static-checks.mjs §7 にある。
 import "../_shared/newsgeo.js";
@@ -322,7 +329,7 @@ async function stageLocate(db, budget, relocated) {
 
     let out;
     try {
-      out = await callProvider(cfg, GEO_SYS, user, AbortSignal.timeout(Math.min(60000, budget.left())));
+      out = await callProvider(cfg, GEO_SYS, user, Math.min(60000, budget.left()));
     } catch (e) {
       lastError = String((e && e.message) || e).slice(0, 200);
       console.warn("[news-ingest] locate:", lastError);
@@ -416,34 +423,32 @@ function embedText(a) {
  *   推測で 2 つ 3 つ試すより速く、しかも次の運用者に「何が使えるか」を残せる。 */
 async function listEmbeddingModels(key) {
   try {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 15000);
-    let r;
-    try { r = await fetch("https://api.openai.com/v1/models", { signal: ctl.signal, headers: { Authorization: "Bearer " + key } }); }
-    finally { clearTimeout(timer); }
-    if (!r.ok) return { error: "models " + r.status, ids: [] };
+    /* (edge-spend-and-models) 鍵を運ぶので一覧も扉を通る（天井を 1 つ使う）。 */
+    const r = await providerFetch("https://api.openai.com/v1/models", { headers: { Authorization: "Bearer " + key } }, { ceiling: CEILING, timeoutMs: 15000 });
+    if (!r.ok) return { error: providerFail(r.status, await bodyLength(r)).message, ids: [] };
     const j = await r.json();
     const ids = (Array.isArray(j?.data) ? j.data : []).map((m) => String(m?.id || "")).filter(Boolean);
     return { ids: ids.filter((id) => /embed/i.test(id)).sort(), all: ids.length };
   } catch (e) { return { error: String((e && e.message) || e), ids: [] }; }
 }
 
+/* (edge-spend-and-models) ⚠ `error` は上流の本文ではない。以前は本文の先頭 300 字を運び、それが
+   `news_ingest_runs` と scheduler への応答に残った——提供元のエラー本文は要求を写し返したり
+   組織名を含んだりしうる。運ぶのは状態と長さ（providerFail）と、扉が拒んだ理由の符号だけ。 */
 async function embedBatch(key, model, inputs, dims) {
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 30000);
   try {
     const body = { model, input: inputs };
     if (dims) body.dimensions = dims;
-    const r = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST", signal: ctl.signal,
+    const r = await providerFetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
       headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    });
-    if (!r.ok) return { status: r.status, error: (await r.text().catch(() => "")).slice(0, 300) };
+    }, { ceiling: CEILING, timeoutMs: 30000 });
+    if (!r.ok) return { status: r.status, error: providerFail(r.status, await bodyLength(r)).message };
     return { status: 200, json: await r.json() };
   } catch (e) {
     return { status: 0, error: String((e && e.message) || e) };
-  } finally { clearTimeout(timer); }
+  }
 }
 
 async function stageEmbed(db, budget) {
@@ -1002,8 +1007,10 @@ async function stageLink(db, budget) {
  *   1,651 行中 0 件」は、cron の不調でもモデルの質でもなく、これである。
  *   ⇒ ここでは ① 翻訳のモデルを `NEWS_TRANSLATE_MODEL` で**独立に**選べるようにし
  *     （見出しの翻訳に Atlas と同じ推論モデルを使う理由が無い）、② それでも 403/404 なら
- *     `ai-proxy` と同じ既知の代替へ 1 回だけ落ちる。 */
-const OPENAI_FALLBACK_MODEL = "gpt-5.6-luna";
+ *     `ai-proxy` と同じ既知の代替へ 1 回だけ落ちる。
+ *   (edge-spend-and-models) 既定も代替も `_shared/ai-provider.js` の 1 本（PROVIDER_DEFAULT_MODEL と、
+ *   ai-proxy の FALLBACK_CHAIN の最後の段 OPENAI_LAST_RESORT_MODEL）。既定が代替そのもの（Luna）
+ *   だったのは Terra が 403 を返していた頃の名残で、Terra は 2026-09-15 から届いている。 */
 
 /* 日本語の見出しに入りうない書記体系（デーヴァナーガリー・アラビア・ヘブライ・タイ・
  * ベンガル・タミル・テルグ）。外国の人名・地名はカタカナかラテン文字で書かれるので、
@@ -1027,9 +1034,9 @@ function providerConfig(offEnv, modelEnv, defaultOn) {
     else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
   }
   const pick = (fallback) => Deno.env.get(modelEnv) || Deno.env.get("AI_MODEL") || fallback;
-  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: pick(OPENAI_FALLBACK_MODEL) }; }
-  if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: pick("gemini-2.0-flash") }; }
-  if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: pick("claude-3-5-haiku-latest") }; }
+  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: pick(PROVIDER_DEFAULT_MODEL.openai) }; }
+  if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: pick(PROVIDER_DEFAULT_MODEL.gemini) }; }
+  if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: pick(PROVIDER_DEFAULT_MODEL.anthropic) }; }
   return null;
 }
 
@@ -1052,20 +1059,23 @@ const TRANSLATE_SYS = personaPrompt("translating world-news headlines into Japan
   "(4) Translate EVERY item you are given, and return the SAME id for each. " +
   "Reply with ONLY a JSON array: [{\"i\":<id>,\"ja\":\"<Japanese headline>\"}]. No commentary, no code fences.";
 
-async function callProvider(cfg, sys, user, signal, _isFallback) {
+/* (edge-spend-and-models) 扉を通る: 1 要求ごとに天井を 1 つ使い、期限（timeoutMs）はヘッダと本文の
+   両方に掛かり、答えにはバイト上限があり、失敗は本文を運ばない。 */
+async function callProvider(cfg, sys, user, timeoutMs, _isFallback) {
+  const via = { ceiling: CEILING, timeoutMs };
   if (cfg.provider === "openai") {
-    const r = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST", signal,
+    const r = await providerFetch("https://api.openai.com/v1/responses", {
+      method: "POST",
       headers: { Authorization: "Bearer " + cfg.key, "Content-Type": "application/json" },
       body: JSON.stringify({ model: cfg.model, instructions: sys, input: [{ role: "user", content: [{ type: "input_text", text: user }] }], max_output_tokens: 3000, reasoning: { effort: "low" }, store: false }),
-    });
+    }, via);
     if (!r.ok) {
       /* 設定されたモデルにこのプロジェクトの鍵が届かない (403/404 model_not_found)。
          ai-proxy と同じ 1 回だけの retry。⚠ 再帰しないよう _isFallback で止める。 */
-      if (!_isFallback && (r.status === 403 || r.status === 404) && cfg.model !== OPENAI_FALLBACK_MODEL) {
-        return await callProvider({ ...cfg, model: OPENAI_FALLBACK_MODEL }, sys, user, signal, true);
+      if (!_isFallback && (r.status === 403 || r.status === 404) && cfg.model !== OPENAI_LAST_RESORT_MODEL) {
+        return await callProvider({ ...cfg, model: OPENAI_LAST_RESORT_MODEL }, sys, user, timeoutMs, true);
       }
-      throw new Error("openai " + r.status + " (" + cfg.model + ")");
+      throw providerFail(r.status, await bodyLength(r));
     }
     const j = await r.json();
     const usage = { in: j?.usage?.input_tokens || 0, out: j?.usage?.output_tokens || 0 };
@@ -1077,11 +1087,11 @@ async function callProvider(cfg, sys, user, signal, _isFallback) {
     return { text, usage, model: cfg.model };
   }
   if (cfg.provider === "gemini") {
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
-      method: "POST", signal, headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
+    const r = await providerFetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent", {   /* (#R801) key in the header, not the query string (access logs keep query strings) */
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: user }] }], systemInstruction: { parts: [{ text: sys }] }, generationConfig: { temperature: 0, maxOutputTokens: 3000 } }),
-    });
-    if (!r.ok) throw new Error("gemini " + r.status);
+    }, via);
+    if (!r.ok) throw providerFail(r.status, await bodyLength(r));
     const j = await r.json();
     const c = j?.candidates?.[0];
     return {
@@ -1090,12 +1100,12 @@ async function callProvider(cfg, sys, user, signal, _isFallback) {
       model: cfg.model,
     };
   }
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST", signal,
+  const r = await providerFetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({ model: cfg.model, max_tokens: 3000, system: sys, messages: [{ role: "user", content: user }] }),
-  });
-  if (!r.ok) throw new Error("anthropic " + r.status);
+  }, via);
+  if (!r.ok) throw providerFail(r.status, await bodyLength(r));
   const j = await r.json();
   return {
     text: (j?.content || []).map((b) => b.text || "").join(""),
@@ -1154,7 +1164,7 @@ async function stageTranslate(db, budget) {
     const user = "Headlines:\n" + chunk.map((c) => c.id + ". " + c.title).join("\n");
     let out;
     try {
-      out = await callProvider(cfg, TRANSLATE_SYS, user, AbortSignal.timeout(Math.min(60000, budget.left())));
+      out = await callProvider(cfg, TRANSLATE_SYS, user, Math.min(60000, budget.left()));
     } catch (e) {
       lastError = String((e && e.message) || e).slice(0, 200);
       console.warn("[news-ingest] translate:", lastError);
@@ -1315,7 +1325,7 @@ async function stageSummarise(db, budget) {
 
     let out;
     try {
-      out = await callProvider(cfg, SUMMARY_SYS, user, AbortSignal.timeout(Math.min(60000, budget.left())));
+      out = await callProvider(cfg, SUMMARY_SYS, user, Math.min(60000, budget.left()));
     } catch (e) {
       lastError = String((e && e.message) || e).slice(0, 200);
       console.warn("[news-ingest] summarise:", lastError);
@@ -1426,6 +1436,39 @@ async function stagePrune(db) {
   out.ms = Date.now() - t0;
   return out;
 }
+
+/* ── (edge-spend-and-models) プロジェクト全体の天井 ─────────────────────────────
+   有料の提供元への要求の、この関数ぶんの 1 日の上限。請求の柵であって、段が何をするかの柵ではない
+   （理由と失敗時の向きは _shared/ai-provider.js）。**数はこの関数自身の予定表から出す**:
+     · SCHEDULE — migration 20260925090000_cron_jobs_as_code.sql の 2 本の job と、それぞれが
+       body で指定する段。tests/edge-spend-and-models-checks がその migration を読み、job 名・
+       1 日の回数・段が 1 つでも食い違えば落ちる——それがこの数の失効条件である。
+     · STAGE_REQUESTS — 1 run の 1 段が送りうる要求の最大。上限と batch の定数（LOCATE_CAP /
+       LOCATE_BATCH・TRANSLATE_CAP / TRANSLATE_BATCH・SUMMARY_CAP・EMBED_CAP / EMBED_BATCH）から
+       導き、写さない。chat の段は 1 要求ごとに代替モデルへの 1 段（×2）を含み、embed は batch に
+       加えて一覧 1・乗り換え 1・次元の再要求 1（どれも 1 run に 1 回）を含む。
+   ⇒ 予定表だけで 72 × (12×2) + 24 × (30×2) = 3,168 要求/日。scheduleCeiling がそれを 2 倍にする
+     （手で走らせる embed・translate・再処理のぶん。SCHEDULE_HEADROOM の見積りと失効はそちら）。
+   実測 2026-09-29: 直近 9 日で最も多い日は 1,188 件を AI が地点づけ（news_ingest_runs.located_ai、
+   2026-09-23）＝ 約 60 要求＋要約。暴走（ループ・秘密の漏洩・毎分の cron）だけがこれに当たる。 */
+const SCHEDULE = [
+  { job: "news-ingest-tick", runsPerDay: 72, stages: ["fetch", "locate", "assign", "link", "prune"] },
+  { job: "news-ingest-summarise", runsPerDay: 24, stages: ["summarise"] },
+];
+const STAGE_REQUESTS = {
+  locate: Math.ceil(LOCATE_CAP / LOCATE_BATCH) * 2,
+  translate: Math.ceil(TRANSLATE_CAP / TRANSLATE_BATCH) * 2,
+  summarise: SUMMARY_CAP * 2,
+  embed: Math.ceil(EMBED_CAP / EMBED_BATCH) + 3,
+};
+const CEILING = spendCeiling({
+  fn: "news-ingest",
+  perDay: scheduleCeiling(1, SCHEDULE.reduce((n, j) =>
+    n + j.runsPerDay * j.stages.reduce((m, s) => m + (STAGE_REQUESTS[s] || 0), 0), 0)),
+  env: (k) => Deno.env.get(k) || "",
+});
+/* tests/edge-spend-and-models-checks が読む（Deno.serve を差し替えてこのモジュールを評価する）。 */
+export const SPEND = { ceiling: CEILING, schedule: SCHEDULE, stageRequests: STAGE_REQUESTS };
 
 /* ── 入口 ────────────────────────────────────────────────────────────────── */
 Deno.serve(async (req) => {
