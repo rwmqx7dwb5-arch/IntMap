@@ -126,13 +126,15 @@ function compounds(sel) {
     return c;
   }).filter((c) => c.tag || c.classes.length || c.ids.length || c.attrs.length);
 }
-const word = (w) => new RegExp('(?<![\\w-])' + w.replace(/[-]/g, '\\-') + '(?![\\w-])');
+/* every regex metacharacter, the backslash included (CodeQL js/incomplete-sanitization) */
+const reEsc = (w) => String(w).replace(/[.*+?^${}()|[\]\\-]/g, '\\$&');
+const word = (w) => new RegExp('(?<![\\w-])' + reEsc(w) + '(?![\\w-])');
 function tagMatches(t, c) {
   if (c.tag && t.tag !== c.tag) return false;
   if (c.classes.length && !/\bclass\s*=/.test(t.attrs)) return false;
   if (!c.classes.every((x) => word(x).test(t.attrs))) return false;
-  if (!c.ids.every((x) => new RegExp('\\bid\\s*=\\s*["\']?' + x.replace(/-/g, '\\-') + '(?![\\w-])').test(t.attrs))) return false;
-  if (!c.attrs.every((x) => new RegExp('(?:^|\\s)' + x.replace(/-/g, '\\-') + '(?:\\s*=|\\s|$)').test(t.attrs))) return false;
+  if (!c.ids.every((x) => new RegExp('\\bid\\s*=\\s*["\']?' + reEsc(x) + '(?![\\w-])').test(t.attrs))) return false;
+  if (!c.attrs.every((x) => new RegExp('(?:^|\\s)' + reEsc(x) + '(?:\\s*=|\\s|$)').test(t.attrs))) return false;
   return !!(c.classes.length || c.ids.length || c.attrs.length);
 }
 
