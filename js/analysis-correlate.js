@@ -230,7 +230,6 @@ window.IntMapModules.analysisCorrelate=function(HOST){
       }catch(e){ if(tries++<40){ setTimeout(paint,120); } else { residPill(f.mx,f.my,true); } } };
       ensureCountriesSrc(()=>setTimeout(paint,0));
     }
-    window._refreshResidualColors=()=>{ try{ if(GE().layers.has('corr-resid-fill')&&GE().layers.getLayout('corr-resid-fill','visibility')==='visible'&&_lastFit&&_lastFit.mb) residualMap(); }catch(_){} };
     /* (#R545) the one sentence this panel has for «the country data did not arrive» — named because
        open() now says it too when its own load fails, and one notice in nine languages must not
        become two. */

@@ -208,6 +208,5 @@ window.IntMapModules.mobileMapInput=function(HOST){
   }
 
   const API={ longPress, crosshair };
-  try{ window.IntMapMobileMapInput=API; }catch(_){ }
   return API;
 };

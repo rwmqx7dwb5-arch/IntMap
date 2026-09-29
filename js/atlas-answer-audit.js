@@ -515,7 +515,6 @@ export function makeAtlasAnswerAudit() {
        to know it does not fire falsely is to run it over cases (#R392: 検査は変異させて赤を見るまで完成
        していない). */
     const API = { AUDIT_CODES, auditAnswer, headTerms, questionAddressed };
-    try { window.IntMapAnswerAudit = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

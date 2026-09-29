@@ -343,9 +343,14 @@ from a line joined to its neighbour, so it had stopped measuring what it was for
   expression literals blanked first — by acorn's tokenizer, because only the grammar can tell a `/`
   that opens a pattern from one that divides; a file acorn cannot parse is an error naming it).
   `tests/stalled-fetch-and-surface-gauge-checks.test.mjs` holds the register equal to an AST walk of
-  every `window.X =` assignment, and keeps the character loop it replaced as a mutant that must fail.
+  every `window.X =` assignment, and keeps the character loop it replaced as a mutant that must fail;
+- which of those published names have **no reader** (`unread`): no occurrence other than their own
+  assignment in the code of js/, src/, tests/, scripts/ or a top-level page (comments blanked, strings
+  kept — an inline `onclick` is a reader), and not reachable by a program that enumerates window with
+  a regular expression (Atlas's module catalogue, discovered from the source together with the entry
+  points it demands). `tests/dead-code-removal-checks.test.mjs` holds the rule to fixtures.
 
-Both are held as **names** in `tests/global-surface-baseline.json` and ratcheted both ways, like
+All three are held as **names** in `tests/global-surface-baseline.json` and ratcheted both ways, like
 `check:perf`: a name that appears fails until it is accepted with `--update` (and named in
 DEV-NOTES — that is the review of a new coupling); a name that is gone fails too, so the baseline
 keeps asserting what it says (#R194). The diff it prints is the member, not the count.

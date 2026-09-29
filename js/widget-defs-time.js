@@ -12,7 +12,7 @@
  *  week and the year on one axis. tests/r292-checks asserts, per family, that the three renderers
  *  emit different information elements — a CSS-only difference fails it.
  * ==========================================================================*/
-window.IntMapWidgetDefsTime = (function () {
+(function () {
   'use strict';
 
   var WC = window.IntMapWidgetCore;

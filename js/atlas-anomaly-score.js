@@ -290,7 +290,6 @@ export function makeAtlasAnomalyScore() {
 
     var API = { CAP_LEVEL, KINDS, RECENCY_WINDOW_MS, SEVERITY, VERSION, WEIGHTS, curve, extentOf,
       fromAlerts, fromUsgs, populationOf, promptBlock, rank, recencyOf, score, severityOf };
-    try { window.IntMapAnomalyScore = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

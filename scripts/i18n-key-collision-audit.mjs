@@ -66,7 +66,7 @@ const BENIGN = new Set([
   'Heavy rain', 'High', 'High-tech exports %', 'highways', 'history', 'Homicide rate /100k', 'in ',
   'In service', 'Inclination', 'Income inequality (Gini)', 'Industry', 'Inflation % (CPI)',
   'Internet users', 'Internet users %', 'Isolate', 'Joseon', 'Large', 'launch', 'Length',
-  'Limitations', 'Literacy rate %', 'live', 'Loading…', 'Low', 'Lowest', 'Manufacturing % GDP',
+  'Limitations', 'Literacy rate %', 'live', 'Low', 'Lowest', 'Manufacturing % GDP',
   'Markets', 'Medium', 'Mil. spending (% GDP)', 'Military', 'Military (% GDP)', 'moderate', 'Moderate',
   'Name', 'nearby', 'Need start & destination', 'Neutral', 'News', 'No dated eruption',
   'No layers are on', 'objects', 'Observatory', 'of the view', 'Operator',

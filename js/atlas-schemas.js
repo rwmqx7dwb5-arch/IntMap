@@ -1,6 +1,5 @@
 /* ============================================================================
  *  IntMap · ATLAS — WHAT EACH CAPABILITY'S ARGUMENTS ACTUALLY ARE  (#R406)
- *  window.IntMapAtlasSchemas
  * ----------------------------------------------------------------------------
  *  All 126 capabilities shared ONE schema, written once in js/atlas-capabilities.js:
  *
@@ -396,7 +395,6 @@ export function makeAtlasSchemas() {
     function ids() { return Object.keys(S); }
 
     var API = { ALL: S, schemaFor: schemaFor, ids: ids };
-    try { window.IntMapAtlasSchemas = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

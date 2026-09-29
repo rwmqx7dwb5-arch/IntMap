@@ -24,11 +24,6 @@ import { NominatimGate } from './nominatim-gate.js';   /* (#R489) the one Nomina
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.projView=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.ProjView=(function(){
     const RAD=Math.PI/180, EARTH_KM=6371;
     let host=null, cv=null, ctx=null, sel=null, titleEl=null, entry=null, mEntry=null;
@@ -156,15 +151,12 @@ window.IntMapModules.projView=function(HOST){
       _projs:PROJS
     };
     /* ---- entry selectors (#16): desktop top-controls + mobile map sheet ---- */
-    function chooseProj(v){ if(v==='mercator'){ api.close(); } else { let c=[0,20]; try{ if(window.map&&GE().hasRenderer()&&GE().camera.getCenter){ const cc=GE().camera.getCenter(); c=[cc.lng,cc.lat]; } }catch(_){} api.open(v,c); } }
-    window.__projChoose=chooseProj;
     /* (#R7-proj) The Flat-view no longer carries a projection SELECTOR — Flat = real Mercator and Globe
        stay in perfect lock-step with the live map (the user disliked a separate "blank" projection
        window hijacking the Flat toggle). The alternative projections live in the right-click context
        menu instead: Azimuthal-equidistant is centerd on the clicked point, and an "All projections…"
        entry opens the viewer (whose own bar still switches between Equal Earth / Robinson / Winkel /
-       Mollweide / Equirectangular / Azimuthal). So buildEntries no longer injects any selector. */
-    function buildEntries(){ /* intentionally empty — see note above */ }
+       Mollweide / Equirectangular / Azimuthal). So there is no selector to inject. */
     /* Close the projection viewer whenever the user returns to the real map via Flat/Globe/3D. */
     function _wireProjAutoClose(){ ['btn-view-flat','btn-view-globe','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b&&!b.__projWired){ b.__projWired=1; b.addEventListener('click',()=>{ try{ if(api.isOpen()) api.close(); }catch(_){} }); } }); }
     if(document.readyState!=='loading') setTimeout(_wireProjAutoClose,0); else document.addEventListener('DOMContentLoaded',_wireProjAutoClose);
@@ -277,7 +269,6 @@ window.IntMapModules.drawTool=function(HOST){
     function recomputeArea(){ const r=enclosedArea(coarse.length>=2?coarse:raw); lockedArea=r.area; loopRings=r.rings; }   // the 5-px trace → invariant under the slider (#R8c, #R782)
 
     /* ---- panel ---- */
-    function jp(){ return HOST.lang==='jp'; }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='draw-panel'; panel.style.display='none'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     /* ══ (#R190) A HOST FEATURE THAT DRIVES THE DRAW TOOL DOES NOT WANT ITS PANEL ══════════════════
        「フリー描画中にdrawポップアップは表示しないように。」 The seismic simulator borrows this tool to

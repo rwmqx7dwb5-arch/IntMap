@@ -158,7 +158,6 @@ export function makeLabelOcclusion(HOST, CTX) {
      the renderer's own number alone at pitches where the horizon is not what is binding. */
   try{ GE().camera.setHorizonReach(true); }catch(_){}
 
-  function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
   let _occAllVis=false;
   function updateOcclusion(){
     if(!GE().hasRenderer()) return;

@@ -206,7 +206,6 @@ export function makeAtlasGeoObject() {
 
     var API = { CONFIDENCE, GEO_OBJECT_VERSION, POINT_LIKE, PROVENANCE, USER_POINT,
       describesUserPoint, geoObject, mergeKnown, normName, placed, pointLike, rank, validLngLat };
-    try { window.IntMapGeoObject = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

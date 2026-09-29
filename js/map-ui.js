@@ -118,10 +118,6 @@ window.IntMapPlaceClear=function(inp,btn,gap){
 window.IntMapModules.layerRegistry=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const demElevAt=HOST.demElevAt;
   window.IntMapLayers=(function(){
@@ -2145,7 +2141,6 @@ window.IntMapModules.ticker=function(HOST){
        the session. The host is read under its direct clock and our relay under the relay's (js/proxy-fetch.js clockFor);
        a status is still an answer (readWithin does not throw on one), so PEER_REFUSED keeps stopping the descent. */
     async function fjson(url){ const R=rungs(url); for(let i=0;i<R.length;i++){ try{ const u=R[i]; if(!u) continue; const r=await readWithin(u,clockFor(url,i===0?'direct':'relay')); if(r.ok) return JSON.parse(r.text); if(i===0&&PEER_REFUSED.has(r.status)) return null; }catch(_){} } return null; }
-    async function ftext(url){ const R=rungs(url); for(let i=0;i<R.length;i++){ try{ const u=R[i]; if(!u) continue; const r=await readWithin(u,clockFor(url,i===0?'direct':'relay')); if(r.ok) return r.text; }catch(_){} } return null; }
     function css(){ const st=document.createElement('style');
       /* (#R65) DETERMINISTIC column layout — no height calc at all: body becomes a flex column, the app shell
          takes the remaining space and the bar its fixed 30px row BELOW it. There is no arithmetic (dvh/scaling
@@ -2566,13 +2561,6 @@ window.IntMapModules.labelPopup=function(HOST){
             try{ window.IntMapMoveShape&&window.IntMapMoveShape.start(g,name); }catch(_){} }); };
         },0);
       }catch(_){}
-    }
-    function highlight(lngLat,isCountry){ if(!ensureHL()) return; const set=(fc)=>{ try{ GE().layers.setSourceData('place-hl-src',fc); }catch(_){} };
-      const dot={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[lngLat.lng,lngLat.lat]},properties:{}}]};
-      if(!isCountry){ set(dot); return; }
-      const fill=()=>{ try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]);
-          for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ set({type:'FeatureCollection',features:[{type:'Feature',geometry:f.geometry,properties:{}}]}); return; } }catch(_){} } } set(dot); }catch(_){ set(dot); } };
-      if(typeof withCountries==='function'){ try{ withCountries(fill); }catch(_){ fill(); } } else fill();
     }
     /* (#R62) anchor the popup at the LABEL's own point (its symbol geometry), not the raw click position —
        "ポップアップの位置は、クリック地点に固定ではなく、地名ラベルの位置に固定に". Line-placed labels (rivers)

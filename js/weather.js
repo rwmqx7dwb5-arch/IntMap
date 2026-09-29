@@ -1299,7 +1299,6 @@ window.IntMapModules.weatherEC=function(HOST){
         curIds(l).forEach(id=>{ try{ EC(l).toTop(id); }catch(_){} }); }); }catch(_){}
     }
     function addLayer(cfg){ return addSlot(cfg,cfg._s|0); }
-    function removeLayer(cfg){ dropSlot(cfg,0); dropSlot(cfg,1); }
     function setVisSlot(cfg,s,on){ slotIds(cfg,s).forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} }); }
     function setVis(cfg,on){ setVisSlot(cfg,cfg._s|0,on); if(!on) setVisSlot(cfg,1-(cfg._s|0),false); }
     function setOpSlot(cfg,s,op){ const lid=cfg.id+'-'+s;
@@ -1386,8 +1385,8 @@ window.IntMapModules.weatherEC=function(HOST){
       syncSubs();
       try{ if(state['ec-slp']&&state['ec-slp'].on) renderLegend(); }catch(_){} }
     /* ⚠ (#R337) THE ONE DOOR. The legend box, Atlas's dispatch and Atlas's inline toggle all come
-       through here, so no two of them can hold different ideas of the state — the same shape
-       `window._imNatoStyle` uses in js/data-layers.js: no argument READS, an argument WRITES. */
+       through here, so no two of them can hold different ideas of the state: no argument READS, an
+       argument WRITES. */
     /* (#R439) …one door PER QUESTION. `_imWxParts` takes the layer; `_imWxTempParts` is what #R337
        published and half a dozen callers name, so it stays as the temperature layer's door onto it
        rather than becoming a second answer. */
@@ -1447,7 +1446,6 @@ window.IntMapModules.weatherEC=function(HOST){
         if(!cfg.sub) syncSubs();
       });
     }
-    window.toggleWeatherLayer=toggle;
 
     /* ══ ⚠⚠⚠ (#R356) CHANGING MODEL KEEPS THE INSTANT, AND CHANGES NOTHING UNTIL IT CAN ═════════
        Three rules, and a naive implementation gets all three wrong.
@@ -1925,7 +1923,6 @@ window.IntMapModules.weatherEC=function(HOST){
       if(show){ legendLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); }
       /* the tiler owns where the legends sit; opening or closing one moves every box below it */
       try{ window._tileLegends&&window._tileLegends(); }catch(_){} }
-    window._ecSyncTimeLegend=syncLegend;
     /* (#R293) the master clock moved, so the 「いつの絵か」 line and the transport have to be re-read.
        The AXIS itself is moved by js/wx-ecmwf.js's own subscription — one writer, and this is the
        reader. (#R288's `applyMonth` wiring went with the reanalysis source it existed for.) */

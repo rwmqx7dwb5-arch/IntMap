@@ -621,7 +621,7 @@ try {
 
 // ── 14. a script the served site pulls from another origin, unpinned ──
 // #R175 bundled the seven CDN <script> tags, and the two loaders that insert a <script> at RUNTIME
-// (the ECMWF tile SDK, the PMTiles plugin) went on running unpinned unpkg code on this origin — where
+// (the ECMWF tile SDK, and a PMTiles plugin since removed) went on running unpinned unpkg code on this origin — where
 // the Supabase session and the reader's AI keys are readable. The rule is on the fact, not the files:
 // every cross-origin script carries integrity + crossorigin or is declared UNPINNABLE with a reason,
 // and every CSP script-src host is used or declared CSP_ONLY. The net, the universe and the two tables

@@ -663,7 +663,6 @@ export function makeAtlasCapabilities(HOST) {
     var _camDrew = null;
     /* legacy(raw) — what a not-yet-migrated dispatch case said about itself. A verifier may use it,
        but it may never be the ONLY evidence for `completed` on a capability that writes something. */
-    function legacyOk(raw) { return !!(raw && raw.ok !== false); }
     function legacyCode(raw) { return (raw && raw.meta && raw.meta.code) || ''; }
 
     /* ══ ⚠⚠⚠ (#R740) WHAT THE READER ASKED FOR IS A VIEW, NOT A MOVEMENT ══════════════════════════

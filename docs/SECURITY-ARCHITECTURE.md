@@ -486,7 +486,8 @@ of reach. The chosen posture:
   declared unpinnable with a reason.** `src/vendor.js` took the seven CDN `<script>` tags into the
   bundle, but two loaders that insert a `<script>` **at runtime** kept loading unpinned code from
   `unpkg.com`, and a script from another origin runs with this origin's authority — it can read
-  `localStorage`, where the Supabase session and the reader's own AI keys live. Both now set
+  `localStorage`, where the Supabase session and the reader's own AI keys live. The one that
+  remains (the other, a PMTiles plugin loader nothing called, was removed) sets
   `integrity` (the sha384 of the exact versioned file, measured 2026-09-29) and
   `crossOrigin='anonymous'` (unpkg answers `Access-Control-Allow-Origin: *`), so a CDN serving
   other bytes is refused by the browser instead of run:
@@ -495,9 +496,7 @@ of reach. The chosen posture:
     (its dependency `@openmeteo/file-reader` is GPL-2.0-only) and IntMap's own licence is not
     GPL-compatible; the hash is what makes loading it from a third party safe. Its jsDelivr
     fallback carries the same pin but is refused by `script-src` before it is fetched (the host is
-    not admitted);
-  - the PMTiles plugin (`js/layer-packs.js`, `pmtiles@3.0.6`) — **nothing calls this loader**
-    (ecoregions have been a self-hosted GeoJSON since #R13); it is pinned so it is safe if called.
+    not admitted).
   Scripts whose provider changes the bytes by design cannot carry a fixed hash and are declared,
   each with its reason, in `UNPINNABLE` in `scripts/runtime-scripts.mjs`: the Street View JSONP
   lookup (`maps.googleapis.com`), gtag.js (`www.googletagmanager.com`) and Clarity
@@ -710,11 +709,6 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    needs an identity that costs something (e-mail confirmation, CAPTCHA, or a paid plan), which is a
    product decision, not a code change. The ceilings are also not a PRICE statement: they count
    requests, and the providers bill by token.
-15. **`ai-proxy/index.gemini-backup.ts` is still in the tree.** It is an unwired earlier version with
-   none of the #R801 bounds and no ceiling. It is not deployed — the CLI bundles what `index.ts`
-   reaches, and nothing reaches it — and it says so in its first line;
-   `tests/edge-spend-and-models-checks.test.mjs` ⑥ requires that marker on any code file in a function
-   directory that its entrypoint does not reach. Removing it needs the owner's approval.
 
 ---
 

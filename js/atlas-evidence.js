@@ -317,7 +317,6 @@ export function makeAtlasEvidence() {
   }
 
     const API = { DATE_TYPES, MAX_FACTS_PER_RECORD, MAX_RECORDS, MAX_TITLE, ORIGINS, SOURCE_TYPES, TRACKING_PARAMS, canonicalizeUrl, looksDoubledHost, makeEvidenceRegistry };
-    try { window.IntMapEvidence = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }

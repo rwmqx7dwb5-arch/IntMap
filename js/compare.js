@@ -542,7 +542,6 @@ window.IntMapModules.compare=function(HOST){
         if(m==='xray'){ [60,200,500].forEach(ms=>setTimeout(()=>{ try{ layoutXrayLens(); applyBase(); _reshowCmpLayer(); syncFromMain(); cmap.render.resize(); }catch(_){} },ms)); }
       }
       win.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.getAttribute('data-m')));
-      window._cmpSetMode=setMode;
       /* layers pulldown */
       /* (#R23) compare layer picker = native <select> (one layer at a time). buildLayerDD repopulates it;
          picking a layer hides the previous one and lazily adds + shows the new one. */

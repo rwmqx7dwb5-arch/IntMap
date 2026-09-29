@@ -91,16 +91,19 @@ test('R164 #1 each block was moved out, loaded, and instantiated at its original
 
 test('R164 #2 INVARIANT: every reassigned closure value the new modules read is a LIVE getter', () => {
   // Prove the classification rather than trusting it: each of these is assigned somewhere in
-  // index.html OUTSIDE its own declaration, so a captured copy would go stale. (renderUI's only
-  // reassignment sits in the retired-ACLED block behind an early `return` — dead code — but the
-  // getter costs nothing and stays correct if that block ever comes back to life.)
+  // index.html OUTSIDE its own declaration, so a captured copy would go stale.
+  // renderUI is the stated exception: its only reassignment sat in the retired-ACLED block behind an
+  // early `return` — it never ran — and that block was removed as dead code (2026-09-29,
+  // dev-notes/2026-09-29-dead-code-removal.md). A getter over a function declaration is still correct,
+  // so the getter is kept and required; the reassignment is not.
+  const NOT_REASSIGNED = new Set(['renderUI']);
   const reassignments = (name) => {
     const asg = new RegExp(`(?:^|[^.\\w$=!<>+\\-*/%&|^])${name}\\s*=(?!=)`);
     const decl = new RegExp(`(?:const|let|var)\\b[^;]*\\b${name}\\s*=`);
     return html.split('\n').filter((l) => asg.test(l) && !decl.test(l)).length;
   };
   for (const [name, prop] of Object.entries(LIVE)) {
-    assert.ok(reassignments(name) > 0,
+    if (!NOT_REASSIGNED.has(name)) assert.ok(reassignments(name) > 0,
       `${name} is reassigned at runtime — if that ever stops being true, revisit why it is a getter`);
     assert.match(html, new RegExp(`get\\s+${prop}\\(\\)\\{\\s*return\\s+${name};\\s*\\}`),
       `IM_HOST.${prop} must be a live getter over ${name}`);

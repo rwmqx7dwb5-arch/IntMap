@@ -108,7 +108,6 @@ window.IntMapModules.locate=function(HOST){
     function _mapCenterAtFix(){ const E=M(); if(!E||!active||!last) return false;
       try{ const pc=E.coords.project(E.camera.getCenter()), pf=E.coords.project([last.lng,last.lat]); return Math.hypot(pc.x-pf.x,pc.y-pf.y)<=_CENTER_PX; }catch(_){ return false; } }
     function _syncFab(){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on', _mapCenterAtFix()); }catch(_){} }
-    window._imLocSyncFab=_syncFab;
     /* ⚠ (#R232) …AND IT HAS TO RUN WHEN THE *CAMERA* MOVES, NOT ONLY WHEN THE *FIX* DOES.
        「現在地に合わせてないときは中塗りなしの線アイコンで」 — the predicate above is about the distance
        between the map centre and the fix, and the map centre changes far more often than the fix does.

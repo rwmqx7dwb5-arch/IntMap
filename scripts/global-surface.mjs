@@ -119,6 +119,123 @@ export function windowPublications(root) {
   return names;
 }
 
+/* ══ (dead-code-removal) A PUBLICATION THAT NOTHING READS ═══════════════════════════════════════
+   The register above counts what is published; it could not say that 60 of the 683 names were
+   read by nobody — not by js/ or src/, not by a page, not by a test or a script, not by the one
+   code path that enumerates window. They were found by hand, removed with the owner's approval,
+   and this is the rule that finds the next one: every published name has a reader other than its
+   own assignment. The names that have none are recorded in the baseline (`unread`) and ratcheted
+   both ways like everything else here, so a new publication with no reader is named in review
+   instead of accreting, and a name that gains a reader or is removed drops off by --update.
+   WHAT COUNTS AS A READER:
+     · an occurrence of the name in the CODE of any js/ src/ tests/ scripts/ file or a top-level
+       page, other than a `window.NAME =` assignment — comments are blanked (prose about a name is
+       not a use of it), strings are NOT (an inline `onclick="_x()"` or `window['X']` is a use);
+     · a program that ENUMERATES window (`Object.keys(window)` filtered by a regular expression) —
+       discovered from the source, not listed here. Atlas's module catalogue is one (js/atlas-controls.js:
+       an IntMap* name joins the planner's catalogue if its object has one of the entry points the
+       same function lists), so such a name is read when the file that publishes it defines one of
+       those entry points. ⚠ That test is per FILE, not per object: it can only err toward «read»,
+       which is the safe direction — this rule must never be the reason an Atlas-reachable module
+       is deleted (CONSTITUTION.md §5). */
+const READER_DIRS = ['js', 'src', 'tests', 'scripts'];
+function readerFiles(R) {
+  const out = [];
+  const walk = (rel) => {
+    const d = join(R, rel);
+    if (!existsSync(d)) return;
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = rel + '/' + e.name;
+      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); } else if (/\.(m|c)?js$/.test(e.name)) out.push(p);
+    }
+  };
+  READER_DIRS.forEach(walk);
+  for (const f of readdirSync(R)) if (f.endsWith('.html')) out.push(f);
+  return out;
+}
+/* comments blanked (same offsets), strings and code kept; a file acorn cannot read is taken whole */
+function withoutComments(src, file) {
+  const s = String(src);
+  if (file.endsWith('.html')) return s.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
+  const out = s.split('');
+  const blank = (a, b) => { for (let k = a; k < b; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '; };
+  for (const sourceType of ['module', 'script']) {
+    try { acorn.parse(s, { ecmaVersion: 'latest', sourceType, allowHashBang: true, onComment: (_b, _t, a, b) => blank(a, b) }); return out.join(''); } catch (_) { out.splice(0, out.length, ...s.split('')); }
+  }
+  return s;
+}
+/* every `Object.keys(window)` walk in js/ or src/: the regular expression it filters by, and — when the
+   walk also demands entry points — the string list it takes them from. Read from the parse tree of the
+   file, so renaming either constant moves the rule with it instead of leaving it behind. */
+export function windowEnumerators(root) {
+  const R = root || ROOT;
+  const found = [];
+  for (const dir of ['js', 'src']) {
+    const d = join(R, dir);
+    if (!existsSync(d)) continue;
+    for (const f of readdirSync(d).filter((x) => x.endsWith('.js'))) {
+      const src = readFileSync(join(d, f), 'utf8');
+      if (!/Object\.keys\(\s*window\s*\)/.test(src)) continue;
+      const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
+      const consts = new Map();   /* name → { regex } | { strings } */
+      const fns = [];
+      (function walk(n, fn) {
+        if (!n || typeof n !== 'object') return;
+        if (Array.isArray(n)) { n.forEach((x) => walk(x, fn)); return; }
+        if (/Function/.test(n.type)) fn = n;
+        if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier' && n.init) {
+          if (n.init.type === 'Literal' && n.init.regex) consts.set(n.id.name, { regex: new RegExp(n.init.regex.pattern, n.init.regex.flags) });
+          else if (n.init.type === 'ArrayExpression' && n.init.elements.length && n.init.elements.every((e) => e && e.type === 'Literal' && typeof e.value === 'string')) consts.set(n.id.name, { strings: n.init.elements.map((e) => e.value) });
+        }
+        if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression' && n.callee.object.type === 'Identifier' && n.callee.object.name === 'Object'
+          && n.callee.property.name === 'keys' && n.arguments[0] && n.arguments[0].type === 'Identifier' && n.arguments[0].name === 'window' && fn) fns.push(fn);
+        for (const k of Object.keys(n)) if (k !== 'type' && k !== 'start' && k !== 'end') walk(n[k], fn);
+      })(ast, null);
+      for (const fn of fns) {
+        const used = new Set();
+        (function ids(n) { if (!n || typeof n !== 'object') return; if (Array.isArray(n)) return n.forEach(ids); if (n.type === 'Identifier') used.add(n.name); for (const k of Object.keys(n)) if (k !== 'type') ids(n[k]); })(fn.body);
+        const re = [...used].map((u) => consts.get(u)).find((c) => c && c.regex);
+        if (!re) continue;
+        const methods = [...used].map((u) => consts.get(u)).find((c) => c && c.strings);
+        found.push({ file: dir + '/' + f, regex: re.regex, methods: methods ? methods.strings : null });
+      }
+    }
+  }
+  return found;
+}
+
+/** The published names nothing reads (see the note above). */
+export function unreadPublications(root) {
+  const R = root || ROOT;
+  const pubs = windowPublications(R);
+  const counts = new Map(), assigns = new Map();
+  for (const f of readerFiles(R)) {
+    const text = withoutComments(readFileSync(join(R, f), 'utf8'), f);
+    for (const m of text.matchAll(/[A-Za-z_$][\w$]*/g)) counts.set(m[0], (counts.get(m[0]) || 0) + 1);
+    for (const m of text.matchAll(/(?<![\w$.])window\s*(?:\.\s*([A-Za-z_$][\w$]*)|\[\s*['"`]([A-Za-z_$][\w$]*)['"`]\s*\])\s*=(?!=)/g)) {
+      const n = m[1] || m[2]; assigns.set(n, (assigns.get(n) || 0) + 1);
+    }
+  }
+  const enums = windowEnumerators(R);
+  const entryPoint = new Map();   /* file → does it define one of the listed entry points */
+  const definesEntry = (file, methods) => {
+    const key = file + '\0' + methods.join(',');
+    if (!entryPoint.has(key)) {
+      const code = withoutComments(readFileSync(join(R, file), 'utf8'), file);
+      const alt = methods.map((x) => x.replace(/[$]/g, '[$]')).join('|');
+      entryPoint.set(key, new RegExp(`(?<![\\w$])(?:${alt})\\s*(?::|\\(|=(?!=))|[{,]\\s*(?:${alt})\\s*[,}]|\\.(?:${alt})\\s*=(?!=)`).test(code));
+    }
+    return entryPoint.get(key);
+  };
+  const out = [];
+  for (const [name, file] of pubs) {
+    if ((counts.get(name) || 0) - (assigns.get(name) || 0) > 0) continue;
+    if (enums.some((e) => e.regex.test(name) && (!e.methods || definesEntry(file, e.methods)))) continue;
+    out.push(name);
+  }
+  return out.sort();
+}
+
 export function measure(root) {
   const host = hostMembers(root);
   const win = windowPublications(root);
@@ -126,6 +243,7 @@ export function measure(root) {
     host: host.members,
     hostWritable: host.writable,
     window: Array.from(win.keys()).sort(),
+    unread: unreadPublications(root),
   };
 }
 
@@ -147,7 +265,10 @@ export function check(root) {
     for (const x of d.added) { ok = false; lines.push(`  + ${d.label} ${x}  — new coupling: name it (DEV-NOTES) and run --update, or route it through the module's own dependencies`); }
     for (const x of d.removed) { ok = false; lines.push(`  − ${d.label} ${x}  — gone: run --update so the baseline records the smaller surface`); }
   }
-  lines.unshift(`global surface: IM_HOST ${cur.host.length} members (${cur.hostWritable.length} writable) · window ${cur.window.length} names` + (ok ? ' — matches the baseline' : ''));
+  const u = diff('unread window global', base.unread || [], cur.unread);
+  for (const x of u.added) { ok = false; lines.push(`  + ${u.label} ${x}  — published, and nothing reads it: remove the publication, or give it its reader (a console-only diagnostic says so in dev-notes and runs --update)`); }
+  for (const x of u.removed) { ok = false; lines.push(`  − ${u.label} ${x}  — now read or gone: run --update so the baseline records it`); }
+  lines.unshift(`global surface: IM_HOST ${cur.host.length} members (${cur.hostWritable.length} writable) · window ${cur.window.length} names, ${cur.unread.length} unread` + (ok ? ' — matches the baseline' : ''));
   return { ok, lines };
 }
 

@@ -22,9 +22,9 @@ window.IntMapModules.dashExtended=function(HOST){
      100% additive & self-contained — it never mutates the existing MapLibre / Supabase / i18n / timezone
      logic, honouring the repeated "全ロジックを破壊せずに" constraint. It delivers the achievable core of the
      next-gen brief WITHOUT a risky full CesiumJS rewrite of a working 8k-line app (that swap would break
-     every feature; the app is instead made modular so a Cesium globe can later be fed through IntMapSim):
-       (A) IndexedDB persistence  (B) per-frame simulation bridge for external Wasm fluid/ballistic compute
-       (C) Web-Worker offload bridge  (D) speculative camera-lookahead tile prefetch
+     every feature; the app is instead made modular):
+       (A) IndexedDB persistence  (D) speculative camera-lookahead tile prefetch
+       [(B) a simulation bridge and (C) a Web-Worker offload bridge were never called and are gone]
        (E) new overlays: sovereignty-dispute lines + geodesic air-defense coverage "domes". */
   (function(){
     if(!GE().hasRenderer()) return;
@@ -48,31 +48,6 @@ window.IntMapModules.dashExtended=function(HOST){
       everyTick('dash-extended:cache-cards', 60000, ()=>{ try{ if(typeof HOST.extendedDashDB!=='undefined' && HOST.extendedDashDB && HOST.extendedDashDB.length) window.IntMapCache.set('dash_cards', HOST.extendedDashDB); }catch(_){} });
     }catch(_){}
 
-    /* ---------- (B) Simulation bridge — external compute → per-frame render ----------
-       External (Wasm-side) fluid (wind/rain) or ballistic (satellite/missile) compute feeds 64-bit
-       absolute coords here every frame; the bridge owns a geojson source per channel and streams it
-       straight into MapLibre. Future Cesium engine subscribes the same way. */
-    window.IntMapSim=(function(){
-      const ids={};
-      function ensure(id, makeLayers){ if(ids[id]) return ids[id]; const sid='sim-'+id; try{ if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); if(makeLayers) makeLayers(sid); ids[id]=sid; }catch(_){} return sid; }
-      function update(id, geojson){ const sid=ids[id]||('sim-'+id); try{ GE().layers.setSourceData(sid,geojson||{type:'FeatureCollection',features:[]}); }catch(_){} }
-      function feedParticles(id, arr){ update(id,{type:'FeatureCollection',features:(arr||[]).map(p=>({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat,(p.alt||0)]},properties:p}))}); }
-      function feedTracks(id, tracks){ update(id,{type:'FeatureCollection',features:(tracks||[]).map(t=>({type:'Feature',geometry:{type:'LineString',coordinates:t.path||t},properties:t.props||{}}))}); }
-      return { ensure, update, feedParticles, feedTracks, _ids:ids };
-    })();
-
-    /* ---------- (C) Web-Worker offload bridge — keep heavy compute off the paint thread ---------- */
-    window.IntMapWorker=(function(){
-      let worker=null, seq=0; const pending={};
-      const SRC="self.onmessage=function(e){var d=e.data||{},id=d.id,task=d.task,p=d.payload||{},out=null,err=null;try{"+
-        "if(task==='haversineTotal'){var pts=p.points||[],R=6371,s=0;for(var i=1;i<pts.length;i++){var a=pts[i-1],b=pts[i],dLat=(b[1]-a[1])*Math.PI/180,dLon=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180,h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)*Math.sin(dLon/2);s+=2*R*Math.asin(Math.min(1,Math.sqrt(h)));}out=s;}"+
-        "else if(task==='echo'){out=p;}else{err='unknown task '+task;}"+
-        "}catch(ex){err=String(ex);} self.postMessage({id:id,out:out,err:err});};";
-      function ensure(){ if(worker) return worker; try{ const blob=new Blob([SRC],{type:'application/javascript'}); worker=new Worker(URL.createObjectURL(blob)); worker.onmessage=e=>{ const m=e.data||{},cb=pending[m.id]; if(cb){ delete pending[m.id]; m.err?cb.rej(new Error(m.err)):cb.res(m.out); } }; }catch(_){ worker=null; } return worker; }
-      function run(task,payload){ return new Promise((res,rej)=>{ const w=ensure(); if(!w){ rej(new Error('worker unavailable')); return; } const id=++seq; pending[id]={res,rej}; w.postMessage({id,task,payload}); }); }
-      return { run, ensure };
-    })();
-
     /* ---------- (D) Speculative tile prefetch — camera-direction lookahead ---------- */
     (function(){
       let hist=[];
@@ -90,9 +65,9 @@ window.IntMapModules.dashExtended=function(HOST){
          never consulted — so the warm warmed NOTHING and paid for it in console errors. It surfaced
          as an INTERMITTENT failure of tests/monitors.spec.js's console-error gate, intermittent only
          because this block fires on a fast `moveend` PAIR; the leak itself was not.
-         The app registers seven protocols (`imapsat`, `pmtiles`, `om`, and the DEM / world-base /
-         crop ones), so the rule is about the SCHEME and not about a name: warm what the browser can
-         load, and warm nothing for a template it cannot.
+         The app registers five protocols (`imapsat`, `om`, and the DEM / world-base / crop ones), so
+         the rule is about the SCHEME and not about a name: warm what the browser can load, and warm
+         nothing for a template it cannot.
          ⚠ REFUSING IS NOT SILENCING, AND SATELLITE IS NOT LEFT UNWARMED. js/tile-warm.js OWNS the
          satellite prefetch: on this same `moveend` it warms that imagery through the protocol's own
          network URL (`IntMapSatProto.tileUrl`, #R206), at the level the render path actually asks

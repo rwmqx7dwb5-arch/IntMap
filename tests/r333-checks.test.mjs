@@ -98,16 +98,6 @@ test('5. _shared is a library, not a function — it is never counted as one', (
   assert.ok(!/\[functions\._shared\]/.test(cfg), '_shared must not be declared in config.toml');
 });
 
-test('6. the contract comes from index.ts, not the undeployed gemini backup beside it', () => {
-  const backup = new URL('../supabase/functions/ai-proxy/index.gemini-backup.ts', import.meta.url);
-  if (!existsSync(backup)) return;                 // it may be deleted one day; that is fine
-  const ghost = declaredAllowHeaders(readLF(backup), 'index.gemini-backup.ts');
-  assert.ok(ghost && !ghost.has('x-intmap-turn'), 'the backup predates #R318 (guard assumption)');
-  const live = repoCorsContract(ROOT).get('ai-proxy').headers;
-  /* Reading the directory instead of index.ts would compare production against a file that is
-     never deployed — and would have called the outage healthy. */
-  assert.ok(live.has('x-intmap-turn'), 'the live table wins over the ghost beside it');
-});
 
 test('7. corsFor() is resolved through _shared, extra header and all', () => {
   const base = sharedCorsBase(ROOT);

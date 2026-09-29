@@ -1189,25 +1189,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  /* (#R8b) Catmull-Rom densifier → polylines render as natural CURVES through their control points
-     instead of straight chords (the user: "線が直線的すぎる"). Returns the input unchanged for paths that
-     cross the antimeridian (|Δlng|>170), so seam-spanning routes are never smeared across the globe. */
-  window.smoothGeoPath=function(pts,segs){
-    if(!pts||pts.length<3) return pts;
-    for(let i=1;i<pts.length;i++){ if(Math.abs(pts[i][0]-pts[i-1][0])>170) return pts; }
-    segs=segs||14; const out=[]; const P=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
-    for(let i=0;i<pts.length-1;i++){ const p0=P(i-1),p1=P(i),p2=P(i+1),p3=P(i+2);
-      for(let t=0;t<segs;t++){ const s=t/segs,s2=s*s,s3=s2*s;
-        out.push([ 0.5*((2*p1[0])+(-p0[0]+p2[0])*s+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*s2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*s3),
-                   0.5*((2*p1[1])+(-p0[1]+p2[1])*s+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*s2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*s3) ]); } }
-    out.push(pts[pts.length-1]); return out;
-  };
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  /* (#R225) `refreshGeoLabels` re-emitted the geo sources so their on-map labels followed the
-     language; there are no geo sources. ⚠ `triggerLayerHover` KEEPS ITS NAME — js/companies-ui.js and
+  /* (#R225) there are no geo sources any more. ⚠ `triggerLayerHover` KEEPS ITS NAME — js/companies-ui.js and
      js/news-ui.js call it from inline handlers with a `layerRef` that is now always empty, and the
      early return was always the answer for that. It no longer drives a layer family that is gone. */
-  window.refreshGeoLabels=function(){};
   window.triggerLayerHover=function(k,h){ if(!k) return; if(h) forceHoverLayers.add(k); else forceHoverLayers.delete(k); };
 
   let countryGeo=null, countryStats={}, countryDataLoaded=false, countryDataPromise=null;
@@ -1980,7 +1965,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const IM_TIP=window.IntMapModules.mapTooltip();
   function ensureMapTooltip(){ return IM_TIP.ensureMapTooltip(); }
   function positionTooltip(point){ return IM_TIP.positionTooltip(point); }
-  function setMapTooltipHTML(el,html){ return IM_TIP.setMapTooltipHTML(el,html); }
   let newsFeatures=[], dashFeatures=[];
   /* (#R32) Is the current UI/map dark? The news band must FLIP color by theme — a dark pill is invisible on
      the dark map ("ダークモードでは視認性が悪い"). */
@@ -2123,7 +2107,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(tb) tb.onclick=()=>{ try{ if(!aiGate()) return; aiTranslateTitles(); }catch(_){} };
     aiButtonSyncers.push(function(){ const b=document.getElementById('ai-translate-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
   })();
-  function openAISettingsOrToast(){ try{ imToast(t('aiNoKey')); }catch(_){} }
 
   /* ===== News pin location =====
      (#R430) The client-side AI locator that used to sit here is GONE along with #ai-geocode-btn.
@@ -2131,9 +2114,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      user-facing "AI-locate" button. The markup went away in #R29 when location moved server-side,
      so this handler had been binding itself to null ever since. Event-mode locations now come from
      news-ingest's `locate` step; article mode uses the deterministic js/newsgeo.js (no network).
-     ⚠ aiReaffirmLoc() below has had NO caller since then either (measured #R430). It is left in
-     place rather than removed, because removing it was not part of the requested change. */
-  function aiReaffirmLoc(a){ applyPinMode(a); }
+     aiReaffirmLoc(), which had NO caller since then either (measured #R430), has been removed. */
 
   /* (#R29) Hide anything older than 72h from the live feed — the server also deletes >72h rows, this is
      the matching client guard (covers the live-RSS fallback + any stale cache). Saved/bookmarked items
@@ -2270,15 +2251,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   };
   window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#countries-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }catch(_){} };
   window._showCompare=function(){   /* (#R311) the tray's 「view comparison」 button — the main door into js/stats-compare.js */ if(compareSet.size<2) return; window.IntMapLazy.need('statsCompare').then(()=>{ try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.open([...compareSet]); }catch(_){} }); };
-  window._hideCompare=function(){ renderStats(searchVal()); };
-  window._backToStats=function(){ renderStats(searchVal()); };
   /* (#R79b) Countries has its OWN search box in workspace mode (the shared #search-input lives in the News
      window). Read from it there; fall back to the shared search in the normal tabbed sidebar. */
   function _countriesSearchVal(){ try{ const ci=document.getElementById('countries-search-input'); if(document.body.classList.contains('ws-mode')&&ci) return ci.value.trim().toLowerCase(); }catch(_){} return searchVal(); }
   window._wsRenderCountries=function(){ try{ const q=_countriesSearchVal(); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ renderStats(q); }catch(_){} }); } renderStats(q); }catch(_){} };
-  /* (#R79d) toggle the map's Country-info layer (cb-countries → country-fill/line) with the Countries window,
-     so closing the window clears the "countries selected" state visible on the map. Mirrors _setCountriesInfo. */
-  window._wsCountryInfo=function(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==!!on){ cb.checked=!!on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} };
   (function(){ const ci=document.getElementById('countries-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderStats(ci.value.trim().toLowerCase()); }catch(_){} }); })();
   /* (#R153) Companies filter box (workspace-mode Companies window) — mirrors _countriesSearchVal + its input wiring so
      companies can be filtered by name/ticker/sector in ws-mode (previously renderCompanies got '' and nothing filtered). */
@@ -2654,7 +2630,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        オンされるのは今後はなしで」). The Countries tab still loads the country DATA it needs for its rows/compare,
        but the MAP's Countries(info) overlay (cb-countries) is now fully manual — it is neither auto-enabled on
        entering the tab nor auto-disabled on leaving it. The checkbox in the Layers panel still works as always. */
-    function _setCountriesInfo(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
   /* (#R238) the dock's glue is in js/window-manager.js beside the mechanism (`wireDock`) — which is also what keeps the glue beside the mechanism rather than in the shell. */
   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるように」 — the Layers button, the palette and Atlas, one command (the module is lazy) */
   IntMapOS.register('sim.seismic', (ctx)=>window.IntMapLazy.need('seismic').then(()=>{ try{ return !!(window.IntMapSeismic&&window.IntMapSeismic.open(((ctx&&ctx.params)||{}).at||{})); }catch(_){ return false; } }),
@@ -2948,7 +2923,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
     const go=document.getElementById('blueberry-go'); if(go) go.setAttribute('data-effect','outward');   /* (atlas-outward-effects) its markup is index.html's; the write is wired here */
     if(go) go.addEventListener('click', ()=>{ try{ if(typeof DB!=='undefined' && DB && typeof currentUser!=='undefined' && currentUser){ DB.from('donations').insert({ user_id:currentUser.id, email:currentUser.email||null, locale:currentLang, source:'support_button', status:'initiated' }); } }catch(_){} });
-    window._openBlueberry=open;
   })();
 
   /* (#R167) moved to js/feedback.js — see Architecture.md §3.1. */
@@ -3041,8 +3015,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window._measureFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(toolMode!=='measure') setTool('measure'); measurePoints=[[p.lng,p.lat]]; refreshTool(); updateToolPanel(); _closePinPopup(); };
   /* Radius from this pin (#54) — fixed center, tune radius/color in the tool panel. */
   window._radiusFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; try{ window._radiusFromPoint(p.lng,p.lat); }catch(_){} _closePinPopup(); };
-  /* #17 — open the azimuthal-equidistant viewer centerd on this pin (true distances/bearings from it). */
-  window._azimuthalFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(window.ProjView) window.ProjView.open('azimuthal',[p.lng,p.lat]); };
 
   document.addEventListener('click',(e)=>{ const m=document.getElementById('ctx-menu'); if(m&&!m.contains(e.target)) m.style.display='none'; });
 
@@ -3068,7 +3040,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let communityPosts=[];   /* cache; the source of truth is Supabase (loadCommunity) */
   let communityAddArmed=false; /* When true, the next map click creates a post here */
   let pendingPostLoc=null;
-  function saveCommunity(){ /* community now lives in Supabase; nothing to persist locally */ }
   let pendingImg='', communitySort='hot';
   /* ---- Community v2 UI state ---- */
   let commCaps=null;                 /* detected schema capabilities (graceful degradation) */
@@ -3265,7 +3236,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R155) Render the signed-in user's passkeys into #acct-passkeys (management list).
      Defensive about the exact SDK return/param shape (Beta API) so a shape change degrades
      gracefully instead of throwing. */
-  window._imOpenSetPassword=_openSetPassword;
   /* Account avatar (#28) — chosen emoji icon, persisted locally. */
   window.imGetAvatar=function(){ try{ return localStorage.getItem('intmap_avatar')||'👤'; }catch(_){ return '👤'; } };
   window.imGetAvatarImg=function(){ try{ return localStorage.getItem('intmap_avatar_img')||''; }catch(_){ return ''; } };
@@ -3436,7 +3406,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const updateNewsCountryLabel=()=>{ try{ NS().syncCountryLabel(); }catch(_){} };
   const renderNewsSourceChecks=()=>{ try{ NS().render(); }catch(_){} };
   const updateNewsSourceLabel=()=>{ try{ NS().syncLabel(); }catch(_){} };
-  window._populateNewsSources=renderNewsSourceChecks;
 
   /* ---------- Wire the new Settings controls (open → fill, Apply → commit+save) ---------- */
   { const open=document.getElementById('btn-open-settings');
@@ -3626,7 +3595,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.IntMapModules.earthSky(IM_HOST);
 
   /* ===== (#R11) Land cover & earth science: ESA WorldCover 2021 (WMTS raster), RESOLVE/WWF Ecoregions
-     2017 (PMTiles vector), and tectonic plates (real polygons + boundaries). Self-contained. ===== */
+     2017 (self-hosted GeoJSON), and tectonic plates (real polygons + boundaries). Self-contained. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.landCover(IM_HOST);
 
@@ -3805,8 +3774,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Windy-style color scales per variable. We lazy-load the UMD build, register the protocol once, and
      add each variable as a raster (or vector contours for isobars) BETWEEN the basemap and the labels via
      beforeId. Hourly time selection comes from latest.json's valid_times; the active valid-time is shown.
-     Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Exposes
-     window.toggleWeatherLayer(id, visible) + per-layer opacity. ===== */
+     Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Per-layer
+     toggle + opacity. ===== */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
   window.IntMapModules.weatherEC(IM_HOST);
 
@@ -3914,99 +3883,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
   window.IntMapModules.worldEvents(IM_HOST);
 
-  /* ===== (#R22) ACLED CONFLICT EVENTS card removed from the News tab per request ("News欄のACLEDは削除"). ===== */
-  (function(){
-    return; /* ACLED card retired (#R22) */
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
-    const jp=()=>currentLang==='jp';
-    const esc=window.IntMapSafe.html;
-    const PROX=[x=>x];   /* (own-fetch-relay) the host itself only — this card has been unreachable since #R22, and the public relays it named are gone from the app */
-    const KEY='intmap_acled';
-    let cred={email:'',key:''}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cred=s; }catch(_){}
-    let card=null, open=false, events=[], pinsOn=true;
-    const TYPE_COL={'Battles':'#ff3b30','Explosions/Remote violence':'#ff9500','Violence against civilians':'#af52de','Protests':'#0a84ff','Riots':'#ffd60a','Strategic developments':'#8e8e93'};
-    function ensureLayer(){ if(GE().layers.hasSource('acled-src')) return true; if(!canDraw()) return false;
-      try{
-        GE().layers.addSource('acled-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'ACLED'});
-        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
-        GE().layers.add({id:'acled-pt',type:'circle',source:'acled-src',layout:{visibility:'none'},paint:{
-          'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,5,4.4,9,7],
-          'circle-color':['coalesce',['get','col'],'#ff3b30'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.88}},before);
-        GE().events.onLayer('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          try{ GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
-            .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(window.IntMapLang.t(currentLang,"fatalities ","死者 ","Todesopfer ","погибшие ","víctimas mortales "))+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>')); }catch(_){}
-        });
-        GE().events.onLayer('mouseenter','acled-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
-        GE().events.onLayer('mouseleave','acled-pt',()=>{ GE().render.canvas().style.cursor=''; });
-        return true;
-      }catch(_){ return false; } }
-    function setPins(on){ pinsOn=on; const a=()=>{ if(!ensureLayer()){ GE().events.once('idle',a); return; } try{ GE().layers.setLayout('acled-pt','visibility',on&&events.length?'visible':'none'); }catch(_){} }; a(); }
-    function pushPins(){ const a=()=>{ if(!ensureLayer()){ GE().events.once('idle',a); return; }
-      try{ GE().layers.setSourceData('acled-src',{type:'FeatureCollection',features:events.map(ev=>({type:'Feature',geometry:{type:'Point',coordinates:[+ev.longitude,+ev.latitude]},properties:{tp:ev.event_type,d:ev.event_date,loc:ev.location,cty:ev.country,fat:+ev.fatalities||0,notes:ev.notes||'',col:TYPE_COL[ev.event_type]||'#ff3b30'}}))}); }catch(_){}
-      setPins(pinsOn); }; a(); }
-    async function loadEvents(){
-      const st=card.querySelector('#acled-status'); const list=card.querySelector('#acled-list');
-      if(!cred.email||!cred.key){ st.textContent=window.IntMapLang.t(currentLang,"Enter your email + API key (free registration at acleddata.com).","メールとAPIキーを入力してください（acleddata.comで無料登録）。","E-Mail und API-Schlüssel eingeben (kostenlose Registrierung auf acleddata.com).","Введите e-mail и API-ключ (бесплатная регистрация на acleddata.com).","Introduzca su correo y su clave de API (registro gratuito en acleddata.com)."); return; }
-      st.textContent=window.IntMapLang.t(currentLang,"Loading…","取得中…","Wird geladen…","Загрузка…","Cargando…"); list.innerHTML='';
-      const d2=new Date(), d1=new Date(Date.now()-14*864e5);
-      const f=(d)=>d.toISOString().slice(0,10);
-      const url='https://api.acleddata.com/acled/read?key='+encodeURIComponent(cred.key)+'&email='+encodeURIComponent(cred.email)+
-        '&event_date='+f(d1)+'|'+f(d2)+'&event_date_where=BETWEEN&limit=400&fields=event_date|event_type|country|location|latitude|longitude|fatalities|notes';
-      let j=null;
-      for(const wrap of PROX){ try{
-        const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },20000);
-        const r=await fetch(wrap(url),{signal:ctrl.signal}); clearTimeout(to);
-        if(!r.ok) continue; j=await r.json(); if(j&&(j.data||j.success!==undefined)) break;
-      }catch(_){} }
-      const rows=(j&&j.data)||[];
-      if(!rows.length){ st.textContent=(j&&j.error)?((window.IntMapLang.t(currentLang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+esc(j.error.message||JSON.stringify(j.error)).slice(0,160)):(window.IntMapLang.t(currentLang,"Nothing returned — check the key, email and your API quota.","取得できませんでした。キー・メール・利用枠を確認してください。","Nichts zurückgeliefert — Schlüssel, E-Mail und API-Kontingent prüfen.","Ничего не получено — проверьте ключ, e-mail и квоту API.","No se ha devuelto nada: compruebe la clave, el correo y su cuota de API.")); return; }
-      events=rows.filter(ev=>ev&&ev.latitude&&ev.longitude);
-      st.textContent=(jp()?('直近14日間: '+events.length+'件 · ACLED'):(events.length+' events, last 14 days · ACLED'));
-      const fmt=events.slice(0,40).map(ev=>'<div class="acled-row" data-ll="'+(+ev.longitude)+','+(+ev.latitude)+'" style="display:flex;gap:7px;align-items:flex-start;padding:6px 4px;border-bottom:1px solid rgba(128,128,128,0.12);cursor:pointer;font-size:11.5px;line-height:1.45;">'+
-        '<span style="width:9px;height:9px;border-radius:5px;flex:none;margin-top:3px;background:'+(TYPE_COL[ev.event_type]||'#ff3b30')+';"></span>'+
-        '<span><b style="color:var(--text-main);">'+esc(ev.event_type)+'</b> · '+esc(ev.event_date)+'<br><span style="color:var(--text-muted);">'+esc(ev.location)+', '+esc(ev.country)+(+ev.fatalities>0?(' · '+(window.IntMapLang.t(currentLang,"†","死者 ","†","†","†"))+ev.fatalities):'')+'</span></span></div>').join('');
-      list.innerHTML=fmt;
-      list.querySelectorAll('.acled-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); GE().camera.flyTo({center:[lng,lat],zoom:7}); }catch(_){} });
-      pushPins();
-    }
-    function build(){
-      if(card) return card;
-      const feed=document.getElementById('live-news-feed'); if(!feed||!feed.parentElement) return null;
-      card=document.createElement('div'); card.id='acled-card';
-      card.style.cssText='display:none;flex:0 0 auto;background:var(--card-bg);border:1px solid rgba(128,128,128,0.12);border-radius:14px;padding:10px 12px;margin:0 0 10px;box-shadow:var(--shadow);';
-      feed.parentElement.insertBefore(card,feed);
-      render();
-      return card;
-    }
-    function render(){
-      if(!card) return;
-      card.innerHTML='<div id="acled-head" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text-main);">⚔ '+(window.IntMapLang.t(currentLang,"Conflict events (ACLED)","紛争イベント（ACLED）","Konfliktereignisse (ACLED)","События конфликтов (ACLED)","Eventos de conflicto (ACLED)"))+'<span style="margin-left:auto;font-size:10px;color:var(--text-muted);">beta</span><span style="opacity:0.6;font-size:10px;">'+(open?'▾':'▸')+'</span></div>'+
-        (open?('<div style="margin-top:8px;">'+
-          '<div style="display:flex;gap:6px;margin-bottom:6px;">'+
-          '<input id="acled-email" type="email" placeholder="'+window.IntMapLang.t(currentLang,"email","メール","E-Mail","эл. почта","correo")+'" value="'+esc(cred.email)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;">'+
-          '<input id="acled-key" type="password" placeholder="'+window.IntMapLang.t(currentLang,"API key","APIキー","API-Schlüssel","API-ключ","clave de API")+'" value="'+esc(cred.key)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;"></div>'+
-          '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">'+
-          '<button id="acled-load" class="ai-test-btn" style="flex:1;">'+(window.IntMapLang.t(currentLang,"Load last 14 days","直近14日間を取得","Letzte 14 Tage laden","Загрузить за последние 14 дней","Cargar los últimos 14 días"))+'</button>'+
-          '<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);cursor:pointer;"><input id="acled-pins" type="checkbox" '+(pinsOn?'checked':'')+'>'+(window.IntMapLang.t(currentLang,"Pins","ピン","Pins","Метки","Marcadores"))+'</label></div>'+
-          '<div id="acled-status" style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(window.IntMapLang.t(currentLang,"Armed Conflict Location & Event Data. Needs the free-registration email + API key.","ACLED（武力紛争位置・事件データ）。無料登録のメール+APIキーが必要です。","Armed Conflict Location & Event Data. Benötigt E-Mail und API-Schlüssel aus der kostenlosen Registrierung.","Armed Conflict Location & Event Data. Требуются e-mail и API-ключ из бесплатной регистрации.","Armed Conflict Location & Event Data. Requiere el correo y la clave de API del registro gratuito."))+'</div>'+
-          '<div id="acled-list" style="max-height:230px;overflow-y:auto;"></div></div>'):'');
-      card.querySelector('#acled-head').onclick=()=>{ open=!open; render(); };
-      if(open){
-        const em=card.querySelector('#acled-email'), ky=card.querySelector('#acled-key');
-        [em,ky].forEach(i=>i.addEventListener('change',()=>{ cred={email:em.value.trim(),key:ky.value.trim()}; try{ localStorage.setItem(KEY,JSON.stringify(cred)); }catch(_){} }));
-        card.querySelector('#acled-load').onclick=()=>{ cred={email:em.value.trim(),key:ky.value.trim()}; try{ localStorage.setItem(KEY,JSON.stringify(cred)); }catch(_){} loadEvents(); };
-        card.querySelector('#acled-pins').onchange=(e)=>setPins(e.target.checked);
-        if(events.length){ const st=card.querySelector('#acled-status'); st.textContent=(jp()?('直近14日間: '+events.length+'件 · ACLED'):(events.length+' events, last 14 days · ACLED')); }
-      }
-    }
-    function syncVis(){ const c=build(); if(!c) return;
-      c.style.display=(typeof currentMode!=='undefined'&&(currentMode==='news'||currentMode==='saved'))?'block':'none'; }
-    /* follow the tab switches */
-    try{ const orig=renderUI; renderUI=function(){ const r=orig.apply(this,arguments); try{ syncVis(); }catch(_){} return r; }; }catch(_){}
-    if(document.readyState!=='loading') setTimeout(syncVis,400); else document.addEventListener('DOMContentLoaded',()=>setTimeout(syncVis,400));
-    window.addEventListener('intmap-lang',()=>{ try{ render(); }catch(_){} });
-    window.IntMapACLED={load:loadEvents};
-  })();
+  /* (#R22) The ACLED conflict-events card was retired from the News tab; its body sat behind an early
+     `return` and never ran. Removed as dead code 2026-09-29 (dev-notes/2026-09-29-dead-code-removal.md). */
 
   /* ⚠ (#R296) `layerSearch` is gone — it filtered the classic dropdown, which no longer opens. */
 

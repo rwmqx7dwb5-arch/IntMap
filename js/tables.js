@@ -526,8 +526,8 @@ window.IntMapTables=(function(){
    index.html, the drawing and labelling in js/place-labels.js, the preview in
    js/layer-previews.js and the favourite in js/layer-favs.js. */
   /* JP translations for the on-map geo-theory labels (#1) — English leaked onto the Japanese map
-     because these labels were drawn verbatim. geoLabel() swaps them when the UI is in Japanese, and
-     refreshGeoLabels() re-emits the source data on a language switch. */
+     because these labels were drawn verbatim. geoLabel() swaps them when the UI is in Japanese, and a
+     language switch re-emitted the source data. */
   /* (#R225) `GEO_LABEL_JP` translated the geo layers' on-map labels; those layers are deleted. */
   /* ===== Country data & extended stats ===== */
   const GDP={USA:27361,CHN:17795,JPN:4213,DEU:4456,IND:3550,GBR:3340,FRA:3031,ITA:2255,BRA:2174,CAN:2140,RUS:2021,MEX:1789,AUS:1724,KOR:1713,ESP:1581,IDN:1371,TUR:1108,NLD:1118,SAU:1068,CHE:884,POL:811,TWN:790,BEL:632,SWE:593,ARG:641,IRL:545,NOR:486,AUT:516,ISR:510,ARE:504,THA:515,SGP:501,BGD:446,PHL:437,VNM:430,DNK:404,MYS:400,HKG:382,EGY:396,IRN:388,ZAF:378,COL:364,ROU:351,CHL:335,CZE:330,FIN:300,PRT:287,PER:268,IRQ:264,KAZ:261,NZL:251,GRC:238,QAT:235,DZA:240,HUN:213,UKR:179,KWT:162,ETH:156,MAR:142,SVK:132,ECU:119,KEN:108,OMN:108,GTM:102,BGR:101,VEN:92,CRI:86,LUX:86,PAN:82,CIV:79,HRV:80,LTU:79,UZB:90,TZA:76,GHA:76,SRB:75,LKA:74,BLR:73,SVN:68,COD:67,MMR:65,TKM:56,JOR:50,CMR:49,UGA:49,TUN:47,BOL:45,LBY:45,PRY:43,NPL:41,ZWE:32,CYP:32,ISL:30,GEO:30,SEN:31,KHM:31,PNG:31,ZMB:28,BIH:27,ARM:24,LBN:23,ALB:23,HTI:20,MOZ:21,YEM:21,GAB:21,BWA:20,MLT:20,BFA:20,MLI:20,BEN:19,PRK:18,MNG:18,NIC:17,NER:17,MDG:16,MDA:16,LAO:15,BRN:15,MUS:14,AFG:14,RWA:14,MWI:13,TCD:13,KGZ:12,TJK:12,NAM:12,SOM:11,CUB:107,SDN:109,FJI:5};

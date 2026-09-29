@@ -115,7 +115,6 @@ window.IntMapModules.flightSim=function(HOST){
     const g0=9.80665;
     /* ===== quaternion attitude (body→world, NED frame) — a quaternion (not Euler angles) so the aircraft can roll
        CONTINUOUSLY, loop over the top and fly inverted with no ±180° gimbal clamp. ===== */
-    function qMul(a,b){ return [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3], a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2], a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1], a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]]; }
     function qNorm(q){ const n=Math.hypot(q[0],q[1],q[2],q[3])||1; return [q[0]/n,q[1]/n,q[2]/n,q[3]/n]; }
     function qConj(q){ return [q[0],-q[1],-q[2],-q[3]]; }
     function qRot(q,v){ const t=[2*(q[2]*v[2]-q[3]*v[1]),2*(q[3]*v[0]-q[1]*v[2]),2*(q[1]*v[1]-q[2]*v[0])]; return [v[0]+q[0]*t[0]+q[2]*t[2]-q[3]*t[1], v[1]+q[0]*t[1]+q[3]*t[0]-q[1]*t[2], v[2]+q[0]*t[2]+q[1]*t[1]-q[2]*t[0]]; }

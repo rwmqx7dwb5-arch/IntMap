@@ -4,7 +4,7 @@
  *  THE DEFECT THIS EXISTS FOR. #R175 moved seven <script src="https://unpkg.com/…"> tags into npm
  *  dependencies (src/vendor.js) and the documents said the app no longer took code from a CDN. Two
  *  loaders that insert a <script> at RUNTIME were not tags and were not looked at: the ECMWF tile SDK
- *  (js/wx-ecmwf.js) and the PMTiles plugin (js/layer-packs.js), both from unpkg, both without
+ *  (js/wx-ecmwf.js) and the PMTiles plugin (js/layer-packs.js; later removed — nothing called it), both from unpkg, both without
  *  Subresource Integrity. A script from another origin runs with this origin's authority — it can read
  *  localStorage, where the Supabase session and the reader's own AI keys live — so a compromised
  *  unpkg, or a compromised package on it, was a compromised IntMap. The judgement «not from a CDN

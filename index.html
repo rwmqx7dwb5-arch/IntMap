@@ -91,7 +91,6 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     var pv=/\.pages\.dev$/i.test(location.hostname);   /* Cloudflare Pages preview */
     var mf=!!document.querySelector('meta[name="intmap-staging"]');
     if(!(q||pv||mf)) return;
-    window.INTMAP_STAGING=true;
     var r=document.createElement('div');
     r.setAttribute('data-intmap-staging','1');
     r.style.cssText='position:fixed;left:0;right:0;top:0;z-index:100000;background:#a15c00;color:#fff;font:700 12px/1.5 system-ui,sans-serif;text-align:center;padding:4px 8px;letter-spacing:.04em;pointer-events:none;box-shadow:0 1px 6px rgba(0,0,0,.3);';
@@ -666,7 +665,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     </div>
     <!-- (#R207) 「ニュースは、ニュースの元を選択できるように。例えば、ロイターとか、なんとか新聞とか、
          そういう。複数選択可能。」 Same UI again; the list is built from the outlets the feed has actually
-         delivered (see _populateNewsSources), so it never claims an outlet that is not there. -->
+         delivered (see renderNewsSourceChecks in js/app-body.js), so it never claims an outlet that is not there. -->
     <div class="setting-group"><label for="setting-newssource" data-i18n="lblNewsSources">News outlets</label><select id="setting-newssource"><option value="off" data-i18n="newsSourceAll">All outlets</option><option value="multi" data-i18n="newsSourceMultiSel">Choose outlets…</option></select>
       <div id="newssource-dd" class="nc-dd" style="display:none; margin-top:10px;">
         <button type="button" id="newssource-dd-btn" class="nc-dd-btn"><span id="newssource-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>

@@ -22,7 +22,7 @@
  *  A card that computed its own severity, its own ETA or its own brief would be a second source of
  *  truth, and the two would drift — which is the defect this whole platform exists to stop.
  * ==========================================================================*/
-window.IntMapWidgetDefsMap = (function () {
+(function () {
   'use strict';
 
   var WC = window.IntMapWidgetCore;

@@ -51,12 +51,6 @@ window.IntMapModules.routing=function(HOST){
       if(/HIGHSPEED|LONG_DISTANCE|NIGHT|REGIONAL|SUBURBAN|RAIL|TRAIN/.test(m)) return '#1558d6';
       if(/CAR|DRIV/.test(m)) return '#1a73e8';
       return '#d81b60'; }
-    function _modeIcon(m){ m=String(m||'').toUpperCase();
-      if(/SUBWAY|METRO/.test(m)) return '🚇'; if(/TRAM|STREETCAR|LIGHT_RAIL/.test(m)) return '🚊';
-      if(/BUS|COACH/.test(m)) return '🚌'; if(/FERRY|BOAT/.test(m)) return '⛴';
-      if(/WALK|FOOT/.test(m)) return '🚶'; if(/BIKE|CYCL/.test(m)) return '🚲';
-      if(/HIGHSPEED|LONG_DISTANCE/.test(m)) return '🚄'; if(/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)) return '🚆';
-      if(/CAR|DRIV/.test(m)) return '🚗'; return '🚈'; }
     /* (#R105) ROOT CAUSE of "鉄道経路が実際の路線を無視した直線になる": the old decoder used 32-bit bitwise ops
        (`<<shift`, `>>1`, `&1`), which OVERFLOW for precision-7 polylines wherever the coordinate exceeds ~2^31 — i.e.
        any longitude > ~107° (all of East Asia, incl. Tokyo 139°). The longitude decoded to garbage (−74.98 for

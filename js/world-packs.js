@@ -582,13 +582,6 @@ window.IntMapModules.worldPacks=function(HOST){
       const metrePerPx=()=>{ let z=2; try{ z=GE().camera.getZoom(); }catch(_){}
         if(!isFinite(z)) z=2; return (2*MERC_HALF)/(512*Math.pow(2,z)); }
 
-      /* the initial great-circle bearing a→b, clockwise from north — the local heading, which is what
-         `icon-rotate` measures when `icon-rotation-alignment` is 'map' (and it is a property of the
-         two points, not of the projection, so it is right in globe view as well as flat) */
-      function bearingOf(a,b){ const f1=a[1]*D, f2=b[1]*D, dl=(b[0]-a[0])*D;
-        const y=Math.sin(dl)*Math.cos(f2), x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);
-        return (Math.atan2(y,x)*180/Math.PI+360)%360; }
-
       /* ⚠ (#R258) THE CUT IS MEASURED IN THE RENDERER'S OWN PROJECTION, NOT IN MERCATOR METRES.
          The first version of this round did the arithmetic in Mercator metres, which is exact only
          where the theoretical and the drawn scale agree. MEASURED at z4 in GLOBE projection with
@@ -4270,7 +4263,6 @@ window.IntMapModules.worldPacks=function(HOST){
       const NO_UNITS=Object.create(null);     /* iso3 → this map has looked and has none */
       let gbInflight=0;
       const GB_MAX=2;
-      function unitsOf(iso){ const u=UNITS[iso]; return (u&&u.length)?u:null; }
       /* ⚠ (#R298) 単位の名前は、単位の形と一緒に運ぶ。`UNITS[iso]` は「形の配列」のままで、名前は
          geometry に非可視で貼る（`setSourceData` の構造化複製は列挙可能なものだけを運ぶ）。
          こうしないと、「発表なし」の区域をタップしたカードが名前を言えない——日本はこれまで

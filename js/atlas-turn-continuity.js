@@ -145,7 +145,6 @@ export function makeAtlasTurnContinuity() {
     }
 
     const API = { ASK_TYPES, isAsk, questionOf, optionsOf, actionLabel, askRecords, markCancelled };
-    try { window.IntMapAtlasTurnContinuity = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
 }
