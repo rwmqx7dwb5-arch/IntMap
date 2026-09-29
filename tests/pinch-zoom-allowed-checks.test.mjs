@@ -16,8 +16,13 @@ function viewportFor(ua, maxTouchPoints = 0) {
   assert.ok(meta, 'index.html declares the viewport meta with id="im-viewport"');
   // the inline <script> that follows the viewport meta is the one that adjusts it
   const after = index.slice(meta.index + meta[0].length);
-  const body = after.match(/^\s*<script\b[^>]*>([\s\S]*?)<\/script\s*>/i);
-  assert.ok(body, 'the viewport meta is followed directly by the script that adjusts it');
+  /* cut by position, not by a tag regex: the element that follows the meta is the script */
+  const lower = after.toLowerCase();
+  const open = lower.indexOf('<script');
+  const bodyStart = lower.indexOf('>', open) + 1;
+  const bodyEnd = lower.indexOf('</script', bodyStart);
+  assert.ok(open >= 0 && after.slice(0, open).trim() === '' && bodyEnd > bodyStart, 'the viewport meta is followed directly by the script that adjusts it');
+  const body = [null, after.slice(bodyStart, bodyEnd)];
   let content = meta[1];
   const el = { getAttribute: () => content, setAttribute: (_k, v) => { content = v; } };
   vm.runInNewContext(body[1], {
