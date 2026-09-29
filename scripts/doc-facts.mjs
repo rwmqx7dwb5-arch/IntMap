@@ -1470,9 +1470,11 @@ if (RULE && RULE !== 'i18n-open-gap') {
  *  ⚠ THE COMPARISON IS BY SCRIPT FILE, NOT BY npm ALIAS. `ci.yml` says `npm run check:docs`
  *    and test-parallel says `node scripts/doc-facts.mjs --check`; matching on the alias would
  *    call them different, and matching on nothing would call everything fine.
- *  ⚠ `check:perf` / `check:assets` go the other way — CI runs them and `npm test` does not,
- *    deliberately, because they need the build. That direction is not checked here; what must
- *    not happen is a gate the developer's own command runs and CI never sees. */
+ *  ⚠ The other direction — a gate CI runs and `npm test` does not — is not checked here. Since
+ *    gate-parity-and-shards both runners take their gates from scripts/gate-universe.mjs, and
+ *    tests/gate-parity-and-shards-checks.test.mjs holds every declared gate to «npm test runs it,
+ *    or scripts/test-parallel.mjs CI_ONLY says why not». What must not happen HERE is a gate the
+ *    developer's own command runs and CI never sees. */
 /* (#R771) WHICH GATES A CI SHARD WOULD ACTUALLY RUN — asked of the planner, not of the workflow's
    text. Empty when ci.yml does not invoke it on a non-comment line, so removing the shard step
    makes both rules below go red rather than quietly widening. */
@@ -1489,11 +1491,33 @@ const plannedGates = (() => {
   }
 })();
 
+/* (gate-parity-and-shards) WHAT `npm test` WOULD RUN — asked of its planner, not of its text.
+   scripts/test-parallel.mjs stopped naming its gates when it began discovering them from package.json
+   (scripts/gate-universe.mjs, shared with ci-gates.mjs), so its source holds no gate spelling to
+   read; `--planned` prints the plan as data. Each step is expanded to the text of the command it runs
+   — an `npm run <x>` step to package.json's body for <x> — so both rules below match script FILES,
+   as rule 28 always has. Empty (and a failure) when the planner cannot answer. */
+const localSteps = (() => {
+  try {
+    const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'test-parallel.mjs'), '--planned'],
+      { cwd: ROOT, encoding: 'utf8', timeout: 30000 });
+    const plan = JSON.parse(out.trim());
+    const pkgScripts = JSON.parse(rd('package.json')).scripts || {};
+    return plan.halves.flatMap((h) => h.steps.map((s) => {
+      const text = [s.cmd, ...s.args].join(' ');
+      return s.args[0] === 'run' && pkgScripts[s.args[1]] ? text + ' ' + pkgScripts[s.args[1]] : text;
+    }));
+  } catch (e) {
+    fail('ci-gates', 'scripts/test-parallel.mjs --planned が答えられなかった: ' + (e.message || e));
+    return [];
+  }
+})();
+
 {
-  const par = rd('scripts/test-parallel.mjs');
+  const par = localSteps.join('\n');
   const ci = rd('.github/workflows/ci.yml');
   const pkg = JSON.parse(rd('package.json')).scripts || {};
-  /* every scripts/*.mjs the source half invokes */
+  /* every scripts/*.mjs `npm test` invokes */
   /* ⚠ ONE name is excluded, and only because it is the OTHER HALF: `run-tests` is the browser
      suite, which CI runs as a job of its own rather than as a step here. Anything else that turns
      up gets demanded of ci.yml — a false positive there is loud and gets fixed, whereas a longer
@@ -2717,23 +2741,27 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
      itself for three rounds — and with the comments left in, deleting the step still passed,
      because the sentence explaining the absence looked exactly like the presence. */
   const ci = rd('.github/workflows/ci.yml').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
-  const par = has('scripts/test-parallel.mjs') ? rd('scripts/test-parallel.mjs') : '';
+  /* ⚠ (gate-parity-and-shards) `npm test` IS NOT COUNTED AS A CALLER. Since it discovers its gates from
+     package.json it runs every declared gate by construction, so «npm test runs it» carries no
+     information — counting it made this rule accept a gate CI had stopped running (tests/r628 ③ blanks
+     the shard step and must see the orphan). Only what ci.yml executes is a caller here; that npm test
+     runs every gate is held by tests/gate-parity-and-shards-checks.test.mjs ①. */
   const gates = Object.keys(pkg).filter((k) => /^check:/.test(k));
   const orphan = gates.filter((g) => {
     if (ci.includes('npm run ' + g)) return false;
     /* (#R771) CI reaches the declared gates through the planner — see the note in rule 28. */
     if (plannedGates.names.includes(g)) return false;
     const body = pkg[g] || '';
-    /* CI may reach the same script directly, or `npm test` may run it out of test-parallel */
+    /* CI may reach the same script directly */
     for (const m of body.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)) {
-      if (ci.includes('scripts/' + m[1] + '.mjs') || par.includes('scripts/' + m[1] + '.mjs')) return false;
+      if (ci.includes('scripts/' + m[1] + '.mjs')) return false;
     }
     return true;
   });
   if (gates.length < 10) fail('gate-callers', `only ${gates.length} check:* scripts were read out of package.json — this rule needs rewriting`);
   else if (orphan.length) fail('gate-callers', `package.json declares ${orphan.map((g) => 'npm run ' + g).join(', ')}, and nothing runs ${orphan.length > 1 ? 'them' : 'it'}`
     + ' — a gate nobody calls is a script, and it goes on passing by never running');
-  else ok('gate-callers', `all ${gates.length} declared check:* gates have a caller in ci.yml or npm test`);
+  else ok('gate-callers', `all ${gates.length} declared check:* gates have a caller in ci.yml`);
 }
 
 /* ═══ 36. the development record: one file per entry, and DEV-NOTES.md is ITS INDEX ═══════════

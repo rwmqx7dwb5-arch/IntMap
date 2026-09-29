@@ -281,11 +281,16 @@ jobs:
   # measured three times in one session on #R578. Shortening the gate is what makes the merge
   # reachable at all; it is not a comfort.
   #
-  # ⚠ AND THE SHARDS ARE NODE'S OWN, NOT A HAND-WRITTEN LIST. `--test-shard=i/n` splits the file set
-  # the glob found. Naming "the slow files" here would be the embedded-list shape
+  # ⚠ AND THE SHARDS ARE NOT A HAND-WRITTEN LIST. `--test-shard=i/n` splits the file set the glob
+  # found. Naming "the slow files" here would be the embedded-list shape
   # .agents/rules/no-ad-hoc-hardcoding.md §1 names first: it would go stale the day a file is added
   # and nothing would say so. Each shard is a separate checkout, so the mutation tests' tree lock is
   # per-runner and two shards can never edit one tree.
+  # ⚠ (gate-parity-and-shards) …AND THEY ARE SPLIT BY MEASURED SECONDS, NOT BY FILE COUNT. node's own
+  # --test-shard is a count split, and run 36513330956 measured 11m16s / 8m32s / 4m52s — the four
+  # heaviest files had all landed on shard 1. scripts/test-checks.mjs now answers the flag itself: the
+  # same glob, packed longest-first by .github/checks-cost.json (scripts/checks-shards.mjs), still a
+  # partition — every file on exactly one shard.
 
   checks:
     name: Regression ${{ matrix.shard }}/${{ matrix.of }}
@@ -310,7 +315,19 @@ jobs:
       # which is exactly the kind of guard that must not be optional. The glob is the one `npm test`
       # uses (package.json `test:checks`), so the two can no longer drift.
       - name: Source-level regression checks (Edge Function invariants, area-monitor engine, R1xx suites)
-        run: npm run test:checks -- --test-shard=${{ matrix.shard }}/${{ matrix.of }}
+        run: npm run test:checks -- --test-shard=${{ matrix.shard }}/${{ matrix.of }} --timings "$RUNNER_TEMP/checks-timings.json"
+      # (gate-parity-and-shards) The seconds each file took go back into .github/checks-cost.json by
+      # hand (`node scripts/checks-shards.mjs --update`), as gate-timings do: the ledger decides
+      # BALANCE only, so drift costs seconds, never coverage.
+      # ⚠ THE FILE IS WRITTEN OUTSIDE THE CHECKOUT ($RUNNER_TEMP). The reporter holds it open, empty,
+      # for the whole run; inside the tree it was an invalid JSON file for check:static (tests/r394 ②b)
+      # and an untracked file for the clean-tree assertions (tests/r674 ⑦) that run in this same job.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: checks-timings-${{ matrix.shard }}
+          path: ${{ runner.temp }}/checks-timings.json
+          retention-days: 7
 
   # (#R586) …and the name the ruleset requires, for the reason browser-gate exists: a required check
   # cannot be a matrix leg, because the leg names change the day the shard count does.

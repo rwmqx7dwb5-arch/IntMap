@@ -71,6 +71,50 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
+### `npm test` runs the gates CI runs — and the regression shards are split by seconds (gate-parity-and-shards)
+
+**The gates are discovered, once, for both runners.** `scripts/gate-universe.mjs` answers «which gates
+exist» (package.json's `check:*`), «which read the build» and «how is one run»; `scripts/ci-gates.mjs`
+(CI, three machines) and `scripts/test-parallel.mjs` (`npm test`) both import it. Measured before
+this: `npm test` carried a hand-written list and ran 23 of the 31 declared gates, so a push that passed
+locally could still be red in CI.
+
+- **checks half**: `data-assets.mjs verify`, then every declared gate in package.json's own order (the
+  acorn gates are declared first), then `npm run test:checks`.
+- **browser half**: `scripts/run-tests.mjs`, then `npm run build` and the gates that read the build
+  (`check:perf`, `check:assets` — discovered, not listed). They wait for the browser suite because its
+  own server builds `dist/` while it runs; two builds into one `dist/` would race.
+- **A gate may stay out of `npm test` only with a sentence saying why**: `CI_ONLY` in
+  `scripts/test-parallel.mjs` (empty today). Every run prints `CI でだけ走るゲート: …` at the start and
+  at the end, and an entry without a reason — or naming a gate that no longer exists — stops the run.
+- «Does `npm test` run X?» is asked of `node scripts/test-parallel.mjs --planned` (the plan as JSON),
+  through `tests/helpers/ci-reach.mjs` (`npmTestRuns`, `npmTestRunsScript`) and `check:docs`'
+  `ci-gates` / `gate-callers` rules — never of the runner's source text, which names no gate.
+
+**The node regression suite is split by measured seconds, not by file count.** `npm run test:checks --
+--test-shard=i/n` is answered by `scripts/test-checks.mjs` itself: it asks `scripts/checks-shards.mjs` for
+bin *i* of *n* — the same glob, packed longest-first (the packing `ci-gates.mjs` uses) by the seconds
+in `.github/checks-cost.json` — and hands node those files. node's own `--test-shard` splits by count,
+and one run measured 11m16s / 8m32s / 4m52s because the heaviest files had landed together.
+
+- The ledger decides **balance, never membership**: a file it does not know is charged the median and
+  still runs; `node scripts/checks-shards.mjs --check` fails on a row for a file that is gone.
+- Each CI shard writes what it measured (`--timings "$RUNNER_TEMP/checks-timings.json"` — outside the
+  checkout: the reporter holds the file open and empty for the whole run, and inside the tree that
+  broke `check:static` and the clean-tree checks; a path inside the repository is refused —
+  `scripts/checks-timing-reporter.mjs`: per file, the sum of its top-level test durations) and uploads
+  it as `checks-timings-<i>`. Refresh by hand, as with the gate ledger:
+  `node scripts/checks-shards.mjs --update checks-timings-*.json`.
+- ⚠ The mutation tests queue on one lock per checkout (`tests/helpers/gate-lock.mjs`), so their
+  measured time includes the wait. That overstates them, which spreads them apart.
+- `node scripts/checks-shards.mjs --plan` prints the bins and their heaviest files.
+
+**Line ceilings stay retired, and the check that says so asks about the fact.** `tests/helpers/line-ceilings.mjs`
+parses each node test and reports a comparison that holds a file's line count under a number — `<`,
+`<=`, `>`, `>=`, in any orientation, through variables, helpers and imported readers. #R795's
+regex check looked for one assertion form and missed five ceilings, which are now retired.
+`tests/gate-parity-and-shards-checks.test.mjs` covers all three parts.
+
 ⚠ **A NETWORK-DEPENDENT ASSERTION DOES NOT BELONG IN THE GATE.** #R341 split its browser coverage in
 two for this reason: `tests/r341.spec.js` is in the gate and asserts only what is true whether or not
 a provider answered this minute (the browser contacts no upstream; the GPU cloud is what draws; there
@@ -132,7 +176,7 @@ fails if `package.json` and `package-lock.json` disagree.
 ## Run the tests
 
 ```bash
-npm test                 # static checks + hermetic browser suite (the full CI gate)
+npm test                 # every declared check:* gate + node regression suite + hermetic browser suite
 npm run check:static     # fast: syntax / JSON / YAML / merge-markers / secrets / assets
 npm run test:smoke       # does the app boot + render its shell?
 npm run test:qa          # IntMap's own in-page QA harnesses
@@ -1169,7 +1213,8 @@ between them and the runner, so registering it is a step of adding it, not a fol
 
 ⚠ **(#R628) That gap is now watched — `gate-callers`.** Its universe is the one place a gate cannot
 hide from, the `check:*` scripts `package.json` itself declares, and it requires each of them to be
-reached by `.github/workflows/ci.yml` or by `npm test`. It found exactly one: of the eighteen
+reached by `.github/workflows/ci.yml` (since gate-parity-and-shards, only CI counts: `npm test` runs every
+declared gate by construction, so it can no longer vouch for one). It found exactly one: of the eighteen
 declared gates, `check:bordercoast` (below) was named in both instruction tables and run by nothing
 — `npm test` reached only the one-in-eight sample inside `tests/r531-checks.test.mjs`, while
 `scripts/build-border-coast.mjs` had been telling itself in its own source that CI ran the whole
@@ -2272,7 +2317,7 @@ reader here for this list; adding a rule means adding a row.
 | `histb-count` | the size of the day-exact border record below CShapes, as any tracked file states it, disagrees with `data/hist-borders.js` — or one of the nine source pages states that row without a number its English original states (see below) |
 | `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
 | `section-refs` | a document names another document and a `§` number that document has no section for |
-| `gate-callers` | `package.json` declares a `check:*` script that neither `ci.yml` nor `npm test` ever runs |
+| `gate-callers` | `package.json` declares a `check:*` script that `ci.yml` never runs (`npm test` is not counted: it runs every declared gate by construction) |
 | `bordercoast-rings` | a document states how many rings the border/coast record marks, and `data/border-coast.js` marks a different number (three documents said 25,506 while the bundles held 33,600 — the number came from #R564 own completion line and none of the three copies moved) |
 | `chronos-sheets` | a document — **or a tracked file under `js/` or `scripts/`** (#R717) — states how many year snapshots `data/hist-eras.js` holds, in Japanese (`枚`) or English (digits **or** a cardinal word), and the record holds a different number |
 | `chronos-units` | a stated unit or ring count for one of the historical admin tiers, or the count of era polygons upstream gave no name to, is not what the bundle holds |

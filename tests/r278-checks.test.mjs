@@ -189,7 +189,4 @@ test('R278 ⑥ the isochrone reports failure when nothing reached the map', () =
    #R199 capped js/atlas-console.js and the cap is the reason this round's catalogue entries and
    notes live inside existing source lines. Raising it would have been the easy half of the same
    mistake this round is about. */
-test('R278 ⑦ js/atlas-console.js did not grow', () => {
-  const n = ATLAS().split(/\r?\n/).length;
-  assert.ok(n < 5300, `js/atlas-console.js is ${n} lines; #R199's ceiling is 5,300 and is never raised`);
-});
+/* (#R795, completed in gate-parity-and-shards) R278 ⑦ was this ceiling and nothing else, so the test is retired with it: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. #R795's own detector missed this one on its spelling; tests/helpers/line-ceilings.mjs asks about the fact. */

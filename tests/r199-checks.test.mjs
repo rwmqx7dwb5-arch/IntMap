@@ -193,7 +193,8 @@ test('R199 ⑤: the two files 「中心部がまだ巨大」 named have ceilings
   const body = n('js/app-body.js');
   /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.ok(atlas > 0);
-  assert.ok(body < 5_200, `js/app-body.js is ${body} lines; it was 5,375 before #R199 and must not grow back`);
+  /* (#R795, completed in gate-parity-and-shards) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. #R795's own detector missed this one on its spelling; tests/helpers/line-ceilings.mjs asks about the fact. */
+  assert.ok(body > 0);
   /* the seven modules together account for what left, so "smaller" cannot mean "deleted" */
   const moved = MODULES.reduce((a, [rel]) => a + n(rel), 0);
   assert.ok(moved > 1_500, `the seven modules hold ${moved} lines — the core shrank by moving, not by losing`);

@@ -517,7 +517,4 @@ test('R350 ⑨d: the proxy knows the task, budgets it, and refuses a shape the c
   assert.match(proxy, /structuredAnswerOk\(out\.text\)/, 'a malformed structured answer is handed to the client as prose');
 });
 
-test('R350 ⑨e: the kernel stayed under its ceiling while gaining all of this', () => {
-  const n = read('js/atlas-console.js').split(/\r?\n/).length;
-  assert.ok(n < 5300, 'js/atlas-console.js is ' + n + ' lines — the ceiling is never raised (tests/r199 ⑤)');
-});
+/* (#R795, completed in gate-parity-and-shards) R350 ⑨e was this ceiling and nothing else, so the test is retired with it: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. #R795's own detector missed this one on its spelling; tests/helpers/line-ceilings.mjs asks about the fact. */

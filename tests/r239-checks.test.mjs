@@ -8,6 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
+import { npmTestRunsScript } from './helpers/ci-reach.mjs';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -72,8 +73,9 @@ test('① the gate exits non-zero when a language is short — it is a gate, not
   assert.match(audit, /--gate/, 'the gate flag exists');
   assert.match(audit, /process\.exit\(1\)/, 'and it exits 1');
   /* and it is wired into the suite the round runs, not only available */
-  assert.match(code('scripts/test-parallel.mjs'), /i18n-audit\.mjs['"]\s*,\s*['"]--gate/,
-    'npm test runs the translation gate');
+  /* (gate-parity-and-shards) asked of `npm test`'s evaluated plan (tests/helpers/ci-reach.mjs), not of
+     scripts/test-parallel.mjs's text: that file discovers its gates from package.json and names none. */
+  assert.ok(npmTestRunsScript('i18n-audit'), 'npm test runs the translation gate');
 });
 
 /* ⚠ THIS ONE PASSES ON THE OLD TREE TOO, and is meant to: it is a property of the measurement, not
