@@ -80,7 +80,8 @@ for (const f of textFiles) {
   if (f.rel === 'scripts/static-checks.mjs') continue;
   const t = read(f);
   if (/^<{7}[ \t]/m.test(t) || /^>{7}[ \t]/m.test(t)) {
-    err('merge-markers', `${f.rel} contains a Git conflict marker (  }
+    err('merge-markers', `${f.rel} contains a Git conflict marker (<<<<<<< / >>>>>>>)`);
+  }
 }
 
 // ── 1b. 正規表現の中の制御文字  (#R394) ──────────────────────────
