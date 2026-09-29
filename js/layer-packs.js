@@ -361,9 +361,17 @@ window.IntMapModules.landCover=function(HOST){
         cb(true);
       }).catch(()=>{ platesLoading=false; try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load plate data","プレートデータを取得できませんでした","Plattendaten konnten nicht geladen werden","Не удалось загрузить данные о плитах","No se pudieron cargar los datos de placas")); }catch(_){} cb(false); }); }
     /* ---- Ecoregions (PMTiles vector) ---- */
+    /* ⚠ NOTHING CALLS loadPMTiles — since #R13 the ecoregions are a self-hosted GeoJSON (below), so this
+       loader has not run since. Its removal is proposed, not done (removals need approval); until then it
+       is kept in the only shape that is safe if something calls it again: the exact file, pinned.
+       `integrity` is the sha384 of https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js, measured 2026-09-29
+       (48,555 B, byte-identical to that file in the npm tarball of pmtiles@3.0.6); unpkg answers with
+       `Access-Control-Allow-Origin: *`, which `crossOrigin` needs for the browser to check it. A CDN
+       serving other bytes is now refused instead of run (scripts/runtime-scripts.mjs). */
     let pmReady=false, pmLoading=false; const pmQ=[];
     function loadPMTiles(cb){ if(pmReady){ cb(true); return; } pmQ.push(cb); if(pmLoading) return; pmLoading=true;
       const s=document.createElement('script'); s.src='https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js';
+      s.integrity='sha384-4sbA4B4Oqxkzs6apu8HaZcGrL3BySmt0tO/LQf6al3hkgq8ijZFxkTkvxxZZ/3PU'; s.crossOrigin='anonymous';
       s.onload=()=>{ try{ if(typeof pmtiles!=='undefined'){ const proto=new pmtiles.Protocol(); GE().scene.addProtocol('pmtiles', proto.tile); pmReady=true; } }catch(_){} pmLoading=false; pmQ.splice(0).forEach(fn=>fn(pmReady)); };
       s.onerror=()=>{ pmLoading=false; pmQ.splice(0).forEach(fn=>fn(false)); };
       document.head.appendChild(s); }

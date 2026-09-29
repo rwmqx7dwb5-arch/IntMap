@@ -432,9 +432,26 @@ import './wx-models.js';
   /* the SDK is a 340 kB (compressed) third-party bundle; it is fetched the first time a weather
      layer is actually switched on, NOT at boot. The metadata below needs no SDK at all. */
   var SDK_VER = '0.0.19';
+  /* ⚠ EACH URL CARRIES THE HASH OF THE ONE FILE IT MAY RUN. The SDK executes on this origin, where the
+     Supabase session and the reader's own AI keys are readable, so a CDN (or a package on it) serving
+     different bytes must be REFUSED, not run. `integrity` is the sha384 of dist/index.js of
+     @openmeteo/weather-map-layer@0.0.19, measured 2026-09-29: 2,988,460 B, byte-identical from unpkg,
+     from jsDelivr and in the npm tarball; both CDNs answer `Access-Control-Allow-Origin: *`, which the
+     `crossOrigin` in loadSDK needs for the browser to check it.
+     ⚠⚠ THE HASH BELONGS TO SDK_VER. Bumping the version without re-measuring makes the browser refuse
+     the new file and the weather layers stop loading — measure the new file
+     (curl -s <url> | openssl dgst -sha384 -binary | openssl base64 -A) and write both in one edit.
+     ⚠ The package is GPL-2.0 and is therefore loaded, not bundled (dev-notes R314); the pin is what
+     makes loading it from a third party safe. scripts/runtime-scripts.mjs refuses an unpinned one. */
   var SDK_URLS = [
-    'https://unpkg.com/@openmeteo/weather-map-layer@' + SDK_VER + '/dist/index.js',
-    'https://cdn.jsdelivr.net/npm/@openmeteo/weather-map-layer@' + SDK_VER + '/dist/index.js'
+    { src: 'https://unpkg.com/@openmeteo/weather-map-layer@' + SDK_VER + '/dist/index.js',
+      integrity: 'sha384-fdX/+ZwRKmcCzvOsr6noy9b1Nki8xYPmHjgXnjzpdUAexWmlixujwbbR6VIZpfq0' },
+    /* ⚠ index.html's CSP script-src does not admit cdn.jsdelivr.net, so the browser refuses this one
+       before fetching it: today it is not a second CDN but a second refusal. It is pinned all the same,
+       so that if the CSP ever admits the host only the same file can run from it. Removing it versus
+       admitting it is written up as a proposal (dev-notes, vendored-runtime-scripts). */
+    { src: 'https://cdn.jsdelivr.net/npm/@openmeteo/weather-map-layer@' + SDK_VER + '/dist/index.js',
+      integrity: 'sha384-fdX/+ZwRKmcCzvOsr6noy9b1Nki8xYPmHjgXnjzpdUAexWmlixujwbbR6VIZpfq0' }
   ];
 
   var meta = null;          /* {referenceTime, validTimes[], variables[], fetchedAt} */
@@ -683,7 +700,9 @@ import './wx-models.js';
   /* ── the SDK ──────────────────────────────────────────────────────────────────────────────────
      Two CDNs for one PINNED version. Not a "fallback" that is really the main path (#R272): the
      first URL is the main path, and the second exists so one CDN being unreachable does not take
-     the weather layers down with it. */
+     the weather layers down with it. ⚠ (see SDK_URLS) the second is refused by the CSP today, and a
+     file whose bytes do not match its `integrity` fails the same way — `onerror`, next URL — so a
+     tampered CDN reads as an unreachable one and is never run. */
   function loadSDK() {
     if (sdk) return Promise.resolve(sdk);
     if (sdkP) return sdkP;
@@ -692,8 +711,9 @@ import './wx-models.js';
     sdkP = new Promise(function (res, rej) {
       var tryOne = function () {
         if (i >= SDK_URLS.length) { rej(new Error('ECMWF SDK unreachable')); return; }
+        var c = SDK_URLS[i++];
         var s = document.createElement('script');
-        s.src = SDK_URLS[i++]; s.async = true;
+        s.src = c.src; s.integrity = c.integrity; s.crossOrigin = 'anonymous'; s.async = true;
         s.onload = function () { sdk = window.OMWeatherMapLayer; sdk ? res(sdk) : tryOne(); };
         s.onerror = function () { try { s.remove(); } catch (_) {} tryOne(); };
         document.head.appendChild(s);

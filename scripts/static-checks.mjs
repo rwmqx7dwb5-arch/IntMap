@@ -619,6 +619,20 @@ try {
   err('safe-output', 'could not run the safe-output ratchet: ' + (e && e.message));
 }
 
+// ── 14. a script the served site pulls from another origin, unpinned ──
+// #R175 bundled the seven CDN <script> tags, and the two loaders that insert a <script> at RUNTIME
+// (the ECMWF tile SDK, the PMTiles plugin) went on running unpinned unpkg code on this origin — where
+// the Supabase session and the reader's AI keys are readable. The rule is on the fact, not the files:
+// every cross-origin script carries integrity + crossorigin or is declared UNPINNABLE with a reason,
+// and every CSP script-src host is used or declared CSP_ONLY. The net, the universe and the two tables
+// live in scripts/runtime-scripts.mjs.
+try {
+  const { collectServed, runtimeScriptProblems } = await import('./runtime-scripts.mjs');
+  for (const p of runtimeScriptProblems(collectServed(ROOT)).problems) err('runtime-scripts', p);
+} catch (e) {
+  err('runtime-scripts', 'could not run the cross-origin script check: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

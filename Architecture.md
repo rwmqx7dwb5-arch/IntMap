@@ -5555,6 +5555,15 @@ supabase db diff --schema public             # driftゼロ確認
   `tests/security-logic.test.mjs` が admin 側に `'unsafe-eval'` が戻らないことを毎回検査する。
   ⚠ **新しい CDN ホストを CSP に足さない。** 実行時依存は npm から取り `src/vendor.js` が再公開する
   （§1.1）。現在残っている 7 つは、その方針より前からある計測・地図・タイル系のタグである。
+  ⚠ **他 origin から読む `<script>` は、実行時に挿入するものも含めて Subresource Integrity で固定する。**
+  `unpkg.com` に残る 2 本——ECMWF タイル SDK（`js/wx-ecmwf.js`、`@openmeteo/weather-map-layer`）と
+  PMTiles（`js/layer-packs.js`。呼び出し元は無い）——は `integrity`（その版のファイルの sha384）と
+  `crossOrigin='anonymous'` を持ち、CDN が別のバイトを返せばブラウザが実行を拒む。SDK を同梱しないのは
+  GPL-2.0 だから（`docs/SECURITY-ARCHITECTURE.md` §6）。固定できないもの（Street View の JSONP・
+  gtag.js・Clarity——配信元が中身を変える前提）は `scripts/runtime-scripts.mjs` の `UNPINNABLE` に
+  理由の文つきで宣言され、コードが名指さない CSP ホスト（`www.google-analytics.com` /
+  `ssl.google-analytics.com`）は `CSP_ONLY` に宣言されている。`npm run check:static` がこの 2 表を
+  配信物と両方向に照合する。
   ⚠ 不在の directive は「許可」ではなく「**不在**」であり、それが意図かどうかを policy が言えない。
 - **ヘッダ形式でしか設定できないもの**（`X-Frame-Options` / `Referrer-Policy` / `Permissions-Policy` /
   `X-Content-Type-Options`）は **GitHub Pages では設定できない**ので未設定のままである。

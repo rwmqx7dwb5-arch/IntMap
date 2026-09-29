@@ -962,6 +962,14 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   build. The Supabase **publishable** (anon) key is public on purpose and is allowlisted.
 - **Referenced assets** — a static `src`/`href`/`url(...)` in `index.html` / `admin.html`
   pointing at a missing local file fails (dynamic `'+x+'` refs are ignored).
+- **Cross-origin scripts** (`scripts/runtime-scripts.mjs`) — every `<script>` the served site can
+  load from another origin carries `integrity` + `crossorigin`, or is declared `UNPINNABLE` with a
+  sentence saying why no fixed hash exists; every CSP `script-src` host is named by the served code
+  or declared `CSP_ONLY`. Both tables are checked in both directions (a declaration that no longer
+  matches anything fails). The net is the CSP host list itself — any string on a `script-src` host
+  that no pinned `<script>` consumes fails, whatever form the loader takes — and the files are
+  discovered (root pages, `js/`, `src/`, `vite.config.js`'s `STATIC_ASSETS`). Regression and
+  mutation cases: `tests/vendored-runtime-scripts-checks.test.mjs`.
 - **Test discovery** (#R529, `scripts/static-checks.mjs`) — `test:checks` is
   `node --test "tests/**/*.test.mjs"`, so the runner finds the files itself and a file cannot be
   left out of a list that no longer exists. Until #R529 it **was** a list: one hand-written literal
