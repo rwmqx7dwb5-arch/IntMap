@@ -23,6 +23,8 @@
 # ============================================================================
 set -euo pipefail
 
+# DB_URL_FILE: the short-lived URL scripts/db-login-url.mjs wrote (kept out of the log and the environment)
+if [ -z "${DB_URL:-}" ] && [ -n "${DB_URL_FILE:-}" ] && [ -s "$DB_URL_FILE" ]; then DB_URL="$(cat "$DB_URL_FILE")"; fi
 : "${DB_URL:?set DB_URL (Postgres connection string)}"
 : "${GPG_PASSPHRASE:?set GPG_PASSPHRASE (encryption passphrase)}"
 OUT_DIR="${OUT_DIR:-./backups}"

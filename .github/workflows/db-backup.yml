@@ -62,14 +62,17 @@ jobs:
       - name: Short-lived database login
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DB_URL_FILE: ${{ runner.temp }}/db-url
         run: node scripts/db-login-url.mjs
 
       # pg_dump refuses a server newer than itself (measured 2026-09-29: server 17.6, the runner's client
       # 16.15 → «aborting because of server version mismatch»). Ask the server its major and install that
       # client from PostgreSQL's own PGDG repository — no version written here.
       - name: pg_dump matching the server
+        env:
+          DB_URL_FILE: ${{ runner.temp }}/db-url
         run: |
-          major=$(psql "$DB_URL" -tAc 'show server_version_num' | tr -d '[:space:]' | cut -c1-2)
+          major=$(psql "$(cat "$DB_URL_FILE")" -tAc 'show server_version_num' | tr -d '[:space:]' | cut -c1-2)
           echo "server major: $major"
           # the PGDG repository (PostgreSQL's own) carries every supported major; Ubuntu's carries one
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
@@ -79,6 +82,7 @@ jobs:
       - name: Dump + encrypt + checksum
         env:
           GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+          DB_URL_FILE: ${{ runner.temp }}/db-url
           OUT_DIR: ${{ runner.temp }}/backups
         run: bash scripts/backup-db.sh
 
