@@ -79,8 +79,10 @@ test('R320 ②: doControl answers ambiguous_target instead of pressing one of se
   /* the threshold is a RATIO — an exact id next to a word match is not a tie */
   assert.match(code, /c\.sc>=bs\*0\.9\d/, 'the tie test is an absolute number again; it has to be relative to the best');
   /* and the kernel has to be able to read it */
-  assert.match(read('js/atlas-capabilities.js'), /raw\.meta\.code === 'ambiguous_target'/,
-    'the control verifier no longer turns an ambiguous match into needs_input');
+  /* …and the kernel reads it — for every capability, in js/atlas-executor.js; that it really
+     answers needs_input is EVALUATED in tests/atlas-ambiguous-is-not-failure-checks.test.mjs */
+  assert.match(read('js/atlas-executor.js'), /raw\.meta\.code === 'ambiguous_target'/,
+    'the kernel no longer turns an ambiguous match into needs_input');
 });
 
 /* ── ③ a subsystem that has not loaded is not a missing subsystem ───────────────────────────── */

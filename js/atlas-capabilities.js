@@ -1325,9 +1325,9 @@ export function makeAtlasCapabilities(HOST) {
         observe: function () { return { panels: openPanelIds(), paint: paintNow(), camera: cameraNow() }; },
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
-          if (raw && raw.meta && raw.meta.code === 'ambiguous_target') {
-            return { status: 'needs_input', code: 'ambiguous_target', candidates: (raw.meta.candidates || []), html: raw.html || '' };
-          }
+          /* An ambiguous target never reaches this verifier: js/atlas-executor.js reads
+             meta.code === 'ambiguous_target' for every capability before any observer runs (a branch
+             here, placed after the `ok === false` line above, was unreachable). */
           /* §14: 「`click()`後にpostconditionを検証する。対象操作にpostconditionが無ければ
              `completed`を返さない。」 The generic control fallback has no declared postcondition of
              its own, so the ONLY evidence available is that the app changed at all. */

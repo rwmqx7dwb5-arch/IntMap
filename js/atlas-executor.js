@@ -423,6 +423,24 @@ function makeAtlasExecutor(HOST, CTX) {
             phase(op, 'waiting-input');
             return settle(Results.needsInput(Object.assign({}, raw, { operationId: operationId, capabilityId: cap.id })));
           }
+          /* ══ ⚠⚠ SEVERAL THINGS MATCHED IS NOT A FAILURE, WHICHEVER OBSERVER WATCHES ══════════════════
+             A dispatch that found more than one target and pressed none says so in `meta` —
+             js/atlas-controls.js `doControl` answers {ok:false, meta:{code:'ambiguous_target', candidates}}
+             (#R320). The control observer tested `raw.ok === false` FIRST and returned `failed`, so the
+             branch meant to turn this into `needs_input` below it was never reached (measured on the real
+             executor: a two-way tie came back `failed`). Atlas was then told the press had failed and
+             tried again — the repetition .agents/rules/one-pass-or-a-reason.md §2 ① names: an observer
+             reporting as a failure what was a question. The fact belongs to the RESULT, not to one
+             observer's branch order, so it is read here once for every capability — the same shape as
+             step 4's `ambiguous` inputs, which asks the same question before the work runs. */
+          if (raw && raw.meta && raw.meta.code === 'ambiguous_target' && Array.isArray(raw.meta.candidates) && raw.meta.candidates.length > 1) {
+            phase(op, 'waiting-input');
+            return settle(Results.needsInput({
+              operationId: operationId, capabilityId: cap.id, code: 'ambiguous_target',
+              messageKey: 'atlas.code.ambiguous_target', candidates: raw.meta.candidates, html: raw.html || '',
+              inputRequest: { kind: 'choice', promptKey: 'atlas.input.choice', pendingArgs: args, capabilityId: cap.id }
+            }));
+          }
 
           /* 8 — the AFTER observation */
           try { op.after = (typeof cap.observe === 'function') ? await cap.observe(Caps.context(), args) : null; } catch (_) { op.after = null; }
