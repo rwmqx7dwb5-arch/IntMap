@@ -44,3 +44,8 @@ date: 2026-09-29
 
 - `node --test tests/test-code-only-one-checks.test.mjs`（8）: 既定の不変・offsets・lang 3 種・acorn と scanner の一致・4 形の検出と非検出・台帳の両方向・木と台帳の一致・helpers/ast。
 - `npm run check:static`（`comment-stripper` を含む）・`npm run check:docs`・置き換えた全ファイルの `node --test`。
+
+## 統合時の追記 — 規則は最初の日に効いた
+
+main に並行して入った map-a11y-structure（#821）の 2 本の新スクリプト `scripts/z-layers.mjs`・`scripts/control-names.mjs` が、それぞれ自前のコメント剥がしを書いていた（正規表現 3・acorn の onComment 1）。rebase した瞬間に `comment-stripper` 規則が 4 か所を赤にしたので、正本（`lang:'css'`／`lang:'html'`／`parser:'acorn'`、いずれも `offsets:true`）へ移した。
+⚠ 移したら `admin.html` の **z-index の生の数 3 件**（`header` 10・`.toast`・`.modal-bg` 2000）が見えた。旧 `stripHtmlComments` は HTML の上で CSS のブロックコメントの正規表現を走らせていて、`<style>` の外の `/*`〜`*/` に挟まれた範囲ごと空白にしていた——**写しが誤っていた 2 例目**。台帳（`tests/z-layers-baseline.json`）は 144→147 で、隠れていた数を正直に載せた（admin.html は intmap.css の層変数を読まないので、層化は別の論点）。
