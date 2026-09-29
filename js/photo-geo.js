@@ -42,7 +42,7 @@ window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.photoGeo = function (HOST) {
   const GE = () => window.IntMapGeoEngine;
   const L = window.IntMapLang.pick(() => HOST.lang);
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = (s) => window.IntMapSafe.html(s);   /* the one encoder */
 
   const SRC = 'photogeo-src', LYR_PT = 'photogeo-pt', LYR_SEL = 'photogeo-sel', LYR_VIEW = 'photogeo-view', LYR_LBL = 'photogeo-lbl';
   const SRC_AREA = 'photogeo-area-src', LYR_AREA = 'photogeo-area', LYR_AREAL = 'photogeo-area-line';
@@ -436,7 +436,7 @@ window.IntMapModules.photoGeo = function (HOST) {
     if (!state.analysis) {
       h += '<button class="pg-btn pg-primary" data-act="pick">' + esc(T_.choose) + '</button><div class="pg-hint">' + esc(T_.dropHint) + '</div>';
     } else {
-      h += '<div class="pg-photowrap"><img class="pg-photo" src="' + state.orig.url + '" alt=""><canvas class="pg-ov"></canvas></div>';
+      h += '<div class="pg-photowrap"><img class="pg-photo" src="' + esc(window.IntMapSafe.url(state.orig.url, { allowData: true })) + '" alt=""><canvas class="pg-ov"></canvas></div>';
       h += '<div class="pg-meta">' + esc(state.file.name) + ' · ' + state.orig.width + '×' + state.orig.height + ' · ' + fmtBytes(state.file.size) + '</div>';
       h += exifBlock();
       h += '<button class="pg-btn" data-act="pick">' + esc(L('Change photo', '写真を変える', 'Foto wechseln', 'Сменить фото', 'Cambiar foto')) + '</button>';

@@ -609,6 +609,16 @@ try {
   err('round-name', 'could not run the round-artefact name check: ' + (e && e.message));
 }
 
+// ── 12. (safe-output-one-source) one output encoder: local escapers, live-document text parses and
+// href/src values not started by IntMapSafe.url may only go DOWN — the rule and the ledger are in
+// scripts/safe-output.mjs / scripts/safe-output-ledger.json.
+try {
+  const { safeOutputProblems } = await import('./safe-output.mjs');
+  for (const p of safeOutputProblems()) err('safe-output', p);
+} catch (e) {
+  err('safe-output', 'could not run the safe-output ratchet: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

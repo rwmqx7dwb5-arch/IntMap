@@ -5470,6 +5470,14 @@ supabase db diff --schema public             # driftゼロ確認
 - `.html(s)` ＝ `& < > " '` エスケープ（テキスト／属性の両方に安全）。
 - `.url(s,{allowData})` ＝ http(s) / mailto / tel（＋ ラスタの `data:image`。SVG は不可）のみ許可し、
   `javascript:` / `data:text/html` 等は `''` にする。href / src / style は `html(url(s))` で包む。
+- **ファイルごとの独自エスケープは持たない。** 局所の `esc` は `window.IntMapSafe.html` を呼ぶ 1 行の委譲にする
+  （独自実装は強さがばらばらで、`"` を変換しないものがあった）。HTML から**文字だけ**を取るときは、生きた
+  `document` ではなく `document.implementation.createHTMLDocument()` の不活性な文書で解析する
+  （生きた文書の要素は未接続でも `<img onerror>` を発火する）。
+- **門**は `scripts/safe-output.mjs`（`check:static` の 1 規則）。独自エスケープ・生きた文書でのテキスト化・
+  `IntMapSafe.url` を通らない href/src の始まりを**形で**数え、`scripts/safe-output-ledger.json` の台帳より
+  増えたら落ち、減ったら台帳を下げさせる（`--write`）。XML を書き出すもの（GeoTIFF の PAM・GPX/KML）は
+  別の文法なので理由つきで `kept`。
 - 回帰は `tests/security.spec.js`（実ブラウザで無害化を確認）＋ CodeQL。
 
 ### 17.2 認証・認可

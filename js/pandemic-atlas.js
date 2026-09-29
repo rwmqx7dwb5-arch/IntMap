@@ -48,7 +48,7 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
       return _pick.apply(null, arguments);
     } catch (_) { return arguments[0]; }
   };
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = (s) => window.IntMapSafe.html(s);   /* the one encoder */
   const grp = (n) => { const v = Math.round(+n || 0); return v.toLocaleString('en-US'); };
 
   const SRC = 'atl-pandemic-src';

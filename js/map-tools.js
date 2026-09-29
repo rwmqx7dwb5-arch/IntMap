@@ -1205,7 +1205,7 @@ window.IntMapModules.objectList=function(HOST){
     const OL=window.IntMapLang.pick(()=>HOST.lang);
     const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
     let panel=null, fab=null, openState=false;
-    const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const esc=s=>window.IntMapSafe.html(s);
     function srcFeats(id){ try{ const d=GE().layers.sourceData(id); return (d&&d.features)||[]; }catch(_){ return []; } }
     function fitFeats(feats){ try{ let a=180,b=90,c=-180,d=-90; const eat=co=>{ if(typeof co[0]==='number'){ if(co[0]<a)a=co[0]; if(co[1]<b)b=co[1]; if(co[0]>c)c=co[0]; if(co[1]>d)d=co[1]; } else co.forEach(eat); };
       feats.forEach(f=>{ if(f&&f.geometry&&f.geometry.coordinates) eat(f.geometry.coordinates); });

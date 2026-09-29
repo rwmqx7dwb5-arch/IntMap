@@ -180,7 +180,7 @@ window.IntMapModules.dashExtended=function(HOST){
        material to pop Language + Family. ===== */
     const LANG_SRC='langs-src', LANG_FILL='langs-fill', LANG_LINE='langs-line', LSET=[LANG_FILL,LANG_LINE];
     let langData=null, langFetching=false, langHoverWired=false, langTip=null;
-    const _esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const _esc=s=>window.IntMapSafe.html(s);
     const _langHash=s=>{ let h=0; for(let i=0;i<(s||'').length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; };
     const _firstLabelId=()=>{ try{ for(const l of (GE().scene.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; };
     const _langProp=(p,keys)=>{ for(const k of keys){ if(p&&p[k]!=null&&p[k]!=='') return p[k]; } return ''; };

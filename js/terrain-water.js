@@ -1883,7 +1883,7 @@ window.IntMapModules.terrainWater=function(HOST){
     const cap=(t)=>'<div class="tw-cap">'+t+'</div>';
     const card=(inner)=>'<div class="tw-card">'+inner+'</div>';
     /* (#R277) an attribute value, escaped — the tool strip carries the full name on `title` */
-    const _at=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    const _at=(s)=>window.IntMapSafe.html(s);
     /* kept for the few places that still write an inline control (the params block builds rows) */
     const NUM='';
     const ROW='';

@@ -1,0 +1,106 @@
+{
+  "_": "scripts/safe-output.mjs — per file, how many local HTML escapers (escaper), live-document HTML-to-text parses (parseText) and href/src values not started by IntMapSafe.url (rawUrlAttr) REMAIN. It only goes down: `node scripts/safe-output.mjs --write` rewrites `pending` to what is measured. `kept` is not debt — each says why.",
+  "kept": {
+    "index.html": {
+      "escaper": 1,
+      "why": "This IS window.IntMapSafe.html — the canonical encoder every other file is routed to (docs/SECURITY-ARCHITECTURE.md §4)."
+    },
+    "js/gis-export.js": {
+      "escaper": 1,
+      "why": "xmlEsc writes GDAL PAM XML metadata into an exported GeoTIFF file — XML grammar, a file on disk, never the DOM, and it runs where no window exists."
+    },
+    "js/routing-export.js": {
+      "escaper": 1,
+      "why": "xml() writes GPX/KML documents for download — XML grammar ('&apos;'), a file, never the DOM; the module is pure and verified in Node where no window exists."
+    }
+  },
+  "pending": {
+    "admin.html": {
+      "escaper": 1,
+      "rawUrlAttr": 1
+    },
+    "js/app-body.js": {
+      "escaper": 2,
+      "rawUrlAttr": 1
+    },
+    "js/atlas-annotate.js": {
+      "escaper": 1
+    },
+    "js/atlas-answer-render.js": {
+      "rawUrlAttr": 1
+    },
+    "js/atlas-console.js": {
+      "escaper": 1,
+      "rawUrlAttr": 6
+    },
+    "js/atlas-highlight.js": {
+      "escaper": 1
+    },
+    "js/atlas-map-compose.js": {
+      "escaper": 1
+    },
+    "js/atlas-markdown.js": {
+      "rawUrlAttr": 2
+    },
+    "js/atlas-query.js": {
+      "escaper": 1
+    },
+    "js/atlas-reply.js": {
+      "rawUrlAttr": 1
+    },
+    "js/atlas-view-capture.js": {
+      "rawUrlAttr": 1
+    },
+    "js/beta-overlays.js": {
+      "rawUrlAttr": 1
+    },
+    "js/carto-basemap.js": {
+      "rawUrlAttr": 1
+    },
+    "js/companies-ui.js": {
+      "rawUrlAttr": 1
+    },
+    "js/countries-ui.js": {
+      "escaper": 1,
+      "rawUrlAttr": 2
+    },
+    "js/data-layers.js": {
+      "escaper": 1
+    },
+    "js/feedback.js": {
+      "rawUrlAttr": 1
+    },
+    "js/gis-atlas.js": {
+      "escaper": 1
+    },
+    "js/layer-manifest.js": {
+      "escaper": 1
+    },
+    "js/layer-packs.js": {
+      "escaper": 3
+    },
+    "js/map-ui.js": {
+      "escaper": 4,
+      "rawUrlAttr": 2
+    },
+    "js/news-events.js": {
+      "rawUrlAttr": 2
+    },
+    "js/routing-cards.js": {
+      "escaper": 1
+    },
+    "js/sources-list.js": {
+      "escaper": 1,
+      "rawUrlAttr": 1
+    },
+    "js/time-borders.js": {
+      "escaper": 1
+    },
+    "js/volcano-intel.js": {
+      "rawUrlAttr": 1
+    },
+    "js/waves.js": {
+      "escaper": 1
+    }
+  }
+}

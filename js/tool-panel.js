@@ -300,7 +300,7 @@ window.IntMapModules.toolPanel=function(HOST){
         const objs=V.list();
         if(!objs.length){ box.innerHTML=''; return; }
         const sel=V.selected();
-        const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+        const esc=(s)=>window.IntMapSafe.html(s);
         box.innerHTML=`<div class="tp-sub" style="margin-top:8px;">${objs.length} ${_L('objects','オブジェクト','Objekte','объектов','objetos')}`
           +` · ${_L('total','合計','gesamt','всего','total')} <b style="color:var(--text-main);">${V.fmtVolumeOf(V.totalVolumeM3())}</b></div>`
           +`<div class="radius-list">`+objs.map(o=>

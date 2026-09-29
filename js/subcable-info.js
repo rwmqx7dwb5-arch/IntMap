@@ -47,7 +47,7 @@ window.IntMapSubcableInfo = function (HOST) {
      entirely. The gate would have kept saying 100 % while this popup read
      English in Chinese, French and Korean, which is precisely the hole #R239 and
      #R313 were about. Verbose, and visible. */
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = (s) => window.IntMapSafe.html(s);   /* the one encoder */
 
   const LINE_LAYERS = ['lyr-subcables'];
   const PT_LAYERS = ['lyr-subcables-pts'];

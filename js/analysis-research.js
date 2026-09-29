@@ -21,7 +21,7 @@ window.IntMapModules.analysisResearch=function(HOST){
     /* (#R39) 4-language helper so the brief panel's own UI follows the app language (DE/RU used to fall to EN). */
     const LL=window.IntMapLang.pick(()=>HOST.lang);   /* (#R40) +Spanish (falls back to EN when a 5th arg isn't supplied) */
     let panel=null;
-    function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+    function esc(s){ return window.IntMapSafe.html(s); }   /* the one encoder — the local copy did not encode quotes */
     /* minimal safe markdown: ## headers, **bold**, bullet lines */
     function md(s){ return esc(s)
       .replace(/^#{1,6}\s*(.+)$/gm,'<h5 style="margin:12px 0 4px;font-size:13px;color:var(--primary-color);">$1</h5>')
