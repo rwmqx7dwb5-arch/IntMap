@@ -221,7 +221,7 @@ function directReads(code) {
   for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;]{0,400})/g)) {
     const l = lit.exec(m[2]);
     if (!l) continue;
-    const name = m[1].replace(/\$/g, '\\$');
+    const name = m[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (new RegExp('\\bfetch\\s*\\(\\s*(?:new\\s+URL\\s*\\(\\s*)?' + name + '(?![\\w$])').test(code)) {
       out.push({ path: l[1].replace(/^\.\//, ''), how: 'via ' + m[1] });
     }
