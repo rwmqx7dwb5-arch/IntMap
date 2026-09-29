@@ -242,7 +242,7 @@ function scanHtml(file, html, out) {
   const line = lineIndex(html);
   const blank = html.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, ' '));
   const scripts = [];
-  for (const m of blank.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+  for (const m of blank.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
     const type = (/\btype\s*=\s*["']?([^"'\s>]+)/i.exec(m[1]) || [])[1] || '';
     const body0 = m.index + m[0].indexOf('>') + 1;
     scripts.push([m.index, m.index + m[0].length]);
@@ -300,8 +300,11 @@ export function privacySection4(legalSource) {
     const html = L.html('privacy', lang);
     const m = /<p><b>4\.[\s\S]*?<\/p>/.exec(html);
     if (!m) return null;
-    return m[0].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ');
+    /* text, for comparison only (never rendered): strip tags until none remain, then decode, &amp; LAST */
+    let t = m[0], prev;
+    do { prev = t; t = t.replace(/<[^<>]*>/g, ''); } while (t !== prev);
+    return t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/&amp;/g, '&').replace(/\s+/g, ' ');
   };
   return { en: para('en'), jp: para('jp') };
 }
