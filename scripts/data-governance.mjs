@@ -34,6 +34,14 @@
  *    facets-accounted   every FACET of every subject is stated, undeclared-with-a-reason, or
  *                       not-applicable-with-a-reason. Never an absent key — that is the whole of
  *                       「何を知らないかを知っている」 ([[intmap-data-must-not-claim-an-author-it-lacks]]).
+ *    outbound-disclosed (outbound-hosts-disclosed) the other half of provenance: not what we SHIP but
+ *                       whom the reader's browser TALKS TO. Every host the browser code can request
+ *                       (parsed from js/, src/, the served pages, sw.js and css/ — string and template
+ *                       literals only) is in scripts/outbound-hosts.json with what it is sent, and the
+ *                       words that say so are in Privacy §4 of js/legal-text.js in BOTH en and jp; a
+ *                       ledger row whose host the code no longer requests fails too. The rule itself
+ *                       lives in scripts/outbound-hosts.mjs (tests/outbound-hosts-disclosed-checks
+ *                       evaluates it on injected files); this gate only runs it.
  *
  *  ⚠ THE UNIVERSE IS DISCOVERED, NEVER LISTED. Both universes come from `git ls-files`: the
  *  bundles from data/ (plus the sets data-assets.json places there from outside git — see
@@ -59,6 +67,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { SPELLINGS, FACETS, SUBJECTS, REASONS, read, freshness, account } from '../js/data-governance.js';
 import { readManifest, requireData, filesUnder } from './data-assets.mjs';
+import { checkRepository as checkOutbound, LEDGER as OUTBOUND_LEDGER } from './outbound-hosts.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const has = (k) => process.argv.includes(k);
@@ -917,6 +926,19 @@ function main() {
       + (g.reasons ? 'reason(s) outside REASONS — ' + g.reasons.join(',')
         : [g.missing.length ? 'unaccounted ' + g.missing.join(',') : '', g.twice.length ? 'twice ' + g.twice.join(',') : '', g.alien.length ? 'not a facet ' + g.alien.join(',') : ''].filter(Boolean).join('; '))).join(' | '));
 
+  /* ── 7. outbound-disclosed ────────────────────────────────────────────────────────────── */
+  /* ⚠ THE SAME REFUSAL OF AN EMPTY UNIVERSE as the four above: a parser that found no host has
+     measured nothing, and 「0 undisclosed」 must not be printed for it. */
+  const ob = checkOutbound();
+  say('outbound-disclosed', ob.requested.size > 0, ob.requested.size + ' host(s) the browser code can request, '
+    + ob.linked.size + ' only ever linked, over ' + ob.occurrences + ' URL occurrence(s) in string/template literals');
+  for (const p of ob.problems) say('outbound-disclosed', false, p);
+  for (const n of ob.notes) say('outbound-disclosed', true, n);
+  if (!ob.problems.length) {
+    say('outbound-disclosed', true, 'every requested host is in ' + OUTBOUND_LEDGER + ' and each disclosure is in Privacy §4 in en and jp ('
+      + ob.kinds.disclosure + ' disclosed, ' + ob.kinds.link + ' link, ' + ob.kinds.dormant + ' dormant, ' + ob.kinds.removedBy + ' being removed)');
+  }
+
   /* ── the measurement, always printed ──────────────────────────────────────────────────── */
   const shards = m.bs.filter((b) => b.kind === 'shard');
   console.log('\n── 実測 (' + new Date().toISOString().slice(0, 10) + ')');
@@ -937,6 +959,9 @@ function main() {
   console.log('   unchecked response can ship     ' + m.exposed.length + ' certain, ' + m.suspected.length + ' suspected');
   console.log('   shard dirs with no index        ' + m.shardsWithoutIndex.length
     + (m.shardsWithoutIndex.length ? '  (' + m.shardsWithoutIndex.map((s) => s.subject + ' ' + s.shards).join(', ') + ')' : ''));
+  console.log('   hosts the browser can request   ' + ob.requested.size + '  (' + OUTBOUND_LEDGER + ': disclosed '
+    + ob.kinds.disclosure + ', link ' + ob.kinds.link + ', dormant ' + ob.kinds.dormant + ', being removed ' + ob.kinds.removedBy
+    + '; host assembled at run time ' + ob.dynamic.length + ')');
   const lc = (readLedger() || {}).counts || {};
   console.log('   ' + LEDGER + '  undeclared ' + (lc.undeclared ?? '—') + ' / unchecked ' + (lc.updateFailureExposed ?? '—')
     + ' / shards ' + (lc.shardsWithoutIndex ?? '—'));
