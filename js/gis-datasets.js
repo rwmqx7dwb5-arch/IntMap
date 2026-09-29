@@ -369,11 +369,20 @@ export function makeGisDatasets() {
       return false;
     }
 
+    /* ⚠ A TIME DECLARATION IS REFUSED THROUGH THE SAME DECLARED SET AS EVERY OTHER REFUSAL. This path
+       answers {time:null, refused} rather than {ok:false, why}, and it used to build that object with a
+       private no() that never consulted REFUSALS — so a code this path returned but the list did not
+       declare was a code no reader sentence was checked for (measured: removing 'time-constant-reversed'
+       from REFUSALS failed nothing). The shape differs; the membership rule is the same one. */
+    function refuseTime(why, detail) {
+      if (REFUSALS.indexOf(why) < 0) throw new Error('gis-datasets: undeclared refusal code ' + why);
+      return { time: null, refused: detail ? { why, detail } : { why } };
+    }
     function declareTime(decl, features) {
       if (decl == null) return { time: null, refused: null };
-      if (typeof decl !== 'object') return { time: null, refused: { why: 'time-declaration-not-an-object' } };
+      if (typeof decl !== 'object') return refuseTime('time-declaration-not-an-object');
       const kind = String(decl.kind || '');
-      const no = (why, detail) => ({ time: null, refused: detail ? { why, detail } : { why } });
+      const no = refuseTime;
 
       if (kind === 'constant') {
         /* ⚠⚠⚠ (#R759) 正規化は冪等でなければならない。THIS BRANCH TURNS 「2020」 INTO A PAIR OF
@@ -662,7 +671,7 @@ export function makeGisDatasets() {
          than having it quietly ignored. */
       const wanted = src.time || null;
       const declared = (wanted && wanted.kind && wanted.kind !== 'constant')
-        ? { time: null, refused: { why: 'time-kind-not-for-raster', detail: { kind: String(wanted.kind) } } }
+        ? refuseTime('time-kind-not-for-raster', { kind: String(wanted.kind) })
         : declareTime(wanted, []);
       const rec = {
         id,
