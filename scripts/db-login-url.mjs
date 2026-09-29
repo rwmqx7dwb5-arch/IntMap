@@ -37,7 +37,9 @@ const api = async (method, path, body) => {
 };
 
 try {
-  const login = await api('POST', '/cli/login-role', { read_only: true });
+  /* read_only:true cannot read the auth schema (measured: «permission denied for schema auth»); the role lives
+     300 s and is used only by pg_dump, which reads */
+  const login = await api('POST', '/cli/login-role', { read_only: false });
   if (!login.role || !login.password) throw new Error('login-role answered without a role/password');
   mask(login.password);
   const pools = await api('GET', '/config/database/pooler');
@@ -48,7 +50,7 @@ try {
   const url = `postgresql://${encodeURIComponent(`${login.role}.${ref}`)}:${encodeURIComponent(login.password)}@${p.db_host}:${port}/${p.db_name || 'postgres'}`;
   mask(url);
   out(`DB_URL=${url}`);
-  console.log(`DB_URL: short-lived read-only login role via the access token (host ${p.db_host}:${port}, ttl ${login.ttl_seconds ?? '?'} s)`);
+  console.log(`DB_URL: short-lived login role via the access token (host ${p.db_host}:${port}, ttl ${login.ttl_seconds ?? '?'} s)`);
 } catch (e) {
   console.log(`::error::could not obtain a database login from the access token: ${e.message}`);
   process.exit(1);

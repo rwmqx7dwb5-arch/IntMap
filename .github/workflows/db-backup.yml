@@ -12,7 +12,7 @@
 # scripts/ci-require-secrets.sh and tests/backup-and-deploy-as-code-checks.test.mjs runs it.
 #
 # The two secrets, and the one-time registration, are in docs/BACKUP-RESTORE.md (the 正本):
-#   SUPABASE_ACCESS_TOKEN   Supabase access token — a short-lived read-only DB login is derived from it (no stored DB password).
+#   SUPABASE_ACCESS_TOKEN   Supabase access token — a short-lived DB login is derived from it (no stored DB password).
 #   BACKUP_GPG_PASSPHRASE   The ONLY key to the backups — losing it makes them unrecoverable.
 #
 # NOTE: even encrypted, these artifacts are held on GitHub. Retention is short
@@ -54,7 +54,7 @@ jobs:
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y postgresql-client gnupg
 
-      # No stored database password: a short-lived read-only login role is asked of the Management API with
+      # No stored database password: a short-lived login role is asked of the Management API with
       # the access token (the Supabase CLI's own mechanism).
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
