@@ -170,7 +170,7 @@ test('edge-spend-and-models ① the literal ban is not vacuous — an id written
 const FETCHLIKE = ['fetch', 'fetchBounded', 'fetchGuarded', 'followRedirects'];
 function bareProviderCalls(code) {
   const out = [];
-  const hosts = P.PROVIDER_HOSTS.map((h) => h.replace(/\./g, '\\.')).join('|');
+  const hosts = P.PROVIDER_HOSTS.map((h) => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   const re = new RegExp('\\b(' + FETCHLIKE.join('|') + ')\\s*\\(\\s*["\'`]https://(' + hosts + ')', 'g');
   for (const m of code.matchAll(re)) out.push(m[1] + '(' + m[2] + ')');
   return out;
