@@ -72,10 +72,11 @@ export function needsBuild(gate, { root = ROOT } = {}) {
  * @returns {[string, string[]]}
  */
 export function gateCommand(gate, { root = ROOT } = {}) {
-  const body = String(pkgScripts({ root })[gate] || '').trim();
-  if (/^node\s+[\w./-]+\.m?js(\s+--?[\w=:.-]+)*$/.test(body)) {
-    const [, ...args] = body.split(/\s+/);
-    return ['node', args];
+  /* word by word, not one pattern over the whole string: a repeated group with overlapping
+     alternatives backtracks exponentially on a long non-matching script (CodeQL js/redos) */
+  const [head, file, ...flags] = String(pkgScripts({ root })[gate] || '').trim().split(/\s+/);
+  if (head === 'node' && /^[\w./-]+\.m?js$/.test(file || '') && flags.every((w) => /^--?[\w=:.-]+$/.test(w))) {
+    return ['node', [file, ...flags]];
   }
   return [process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', gate]];
 }

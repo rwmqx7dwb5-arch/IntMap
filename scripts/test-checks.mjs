@@ -19,7 +19,8 @@
  * ==========================================================================*/
 import { spawnSync } from 'node:child_process';
 import { problems } from './data-assets.mjs';
-import { join } from 'node:path';
+import { join, relative, resolve, isAbsolute } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { testFiles, planShards, parseShard } from './checks-shards.mjs';
 
@@ -53,6 +54,18 @@ function main() {
   const argv = process.argv.slice(2);
   const shardSpec = takeFlag(argv, '--test-shard');
   const timings = takeFlag(argv, '--timings');
+  /* ⚠ THE TIMINGS FILE MUST LIVE OUTSIDE THE CHECKOUT. The reporter opens it at the start and writes
+     it at the end, so for the whole run it is an EMPTY .json inside the tree — which check:static
+     reads as invalid JSON (tests/r394 ②b) and the clean-tree assertions read as an untracked file
+     (tests/r674 ⑦). Measured on the first CI run of gate-parity-and-shards. Refused, not relocated:
+     a path the caller named and this runner silently moved would be a file nobody finds. */
+  if (timings != null) {
+    const inTree = relative(ROOT, resolve(shardSpec != null ? ROOT : process.cwd(), timings));
+    if (!timings || (!inTree.startsWith('..') && !isAbsolute(inTree))) {
+      console.error(`--timings ${timings}: write it outside the repository (e.g. $RUNNER_TEMP or ${tmpdir()}) — inside, it is an empty JSON file for the whole run`);
+      return 1;
+    }
+  }
 
   /* ⚠ (data-outside-git) THE DATASETS OUTSIDE GIT. A checkout without them fails dozens of files here, each with
      an ENOENT that names neither cause nor fix. So the absence is said ONCE, first and last, with the

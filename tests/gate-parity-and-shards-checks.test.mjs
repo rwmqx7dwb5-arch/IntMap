@@ -162,6 +162,11 @@ test('② --test-shard=i/n runs the planned files, and --timings writes seconds 
     for (const [k, v] of Object.entries(t)) { assert.match(k, /f\d\.test\.mjs$/); assert.ok(!k.includes('\\'), 'keys are forward-slashed'); assert.ok(Number.isFinite(v)); }
     const bad = spawnSync(process.execPath, [join(ROOT, 'scripts/test-checks.mjs'), '--test-shard=4/3'], { cwd: ROOT, encoding: 'utf8', env });
     assert.notEqual(bad.status, 0, 'a shard outside 1..n must fail, not run something');
+    /* a timings file inside the checkout is refused before anything runs (it would sit there empty) */
+    const inTree = spawnSync(process.execPath, [join(ROOT, 'scripts/test-checks.mjs'), '--test-shard=1/1', '--timings', 'checks-timings.json'], { cwd: ROOT, encoding: 'utf8', env });
+    assert.notEqual(inTree.status, 0, 'a timings file inside the repository was accepted');
+    assert.match(inTree.stderr, /outside the repository/);
+    assert.doesNotMatch(inTree.stdout, /ℹ pass/, 'the suite ran anyway');
   } finally { rmSync(dir, { recursive: true, force: true }); }
   assert.deepEqual(parseShard('2/3'), { i: 2, of: 3 });
   assert.equal(parseShard('0/3'), null);
@@ -179,9 +184,12 @@ test('② CI shards through the runner and uploads what it measured', () => {
   const job = loadYaml(rd('.github/workflows/ci.yml')).jobs.checks;
   const step = job.steps.find((s) => typeof s.run === 'string' && s.run.includes('test:checks'));
   assert.match(step.run, /--test-shard=\$\{\{ matrix\.shard \}\}\/\$\{\{ matrix\.of \}\}/);
-  assert.match(step.run, /--timings checks-timings\.json/);
+  /* ⚠ OUTSIDE THE CHECKOUT: the reporter holds its destination open and empty for the whole run, and
+     inside the tree that is an invalid JSON for check:static and an untracked file for the clean-tree
+     checks running in the same job (measured on this round's first CI run: tests/r394 ②b, r674 ⑦) */
+  assert.match(step.run, /--timings "\$RUNNER_TEMP\/checks-timings\.json"/);
   const up = job.steps.find((s) => String(s.uses || '').startsWith('actions/upload-artifact'));
-  assert.ok(up && up.with.path === 'checks-timings.json' && /checks-timings-/.test(up.with.name), 'the measured seconds are thrown away');
+  assert.ok(up && up.with.path === '${{ runner.temp }}/checks-timings.json' && /checks-timings-/.test(up.with.name), 'the measured seconds are thrown away');
 });
 
 /* ── ③ a line ceiling is found by what it is ───────────────────────────────────────────────── */

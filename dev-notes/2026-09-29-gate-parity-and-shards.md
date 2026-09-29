@@ -40,7 +40,7 @@ date: 2026-09-29
 - **node 回帰の shard**: `scripts/checks-shards.mjs`（新規）が `test-checks.mjs` の GLOB と同じ集合を
   `.github/checks-cost.json`（新規・ファイルごとの秒）で LPT に詰める。`test-checks.mjs` が
   `--test-shard=i/n` を自分で受けて束のファイルを node に渡すので、`ci.yml` の step は形を変えずに
-  `--timings checks-timings.json` を足しただけ。各 shard は計った秒を `checks-timings-<i>` として
+  `--timings "$RUNNER_TEMP/checks-timings.json"` を足しただけ（リポジトリの中に置くと、実行中ずっと空の JSON として `check:static` と作業ツリーの清浄検査を落とした——PR の CI 初回の実測。中を指す `--timings` は拒む）。各 shard は計った秒を `checks-timings-<i>` として
   upload し、`--update` で台帳に畳む（gate-cost.json と同じ手順・台帳が決めるのは均衡だけ）。
   `scripts/checks-timing-reporter.mjs`（新規）はファイルごとに nesting 0 のテストの所要を足す reporter。
 - **台帳の初期値**: 上の run の 3 shard のログから、トップレベルのテスト 5,570 件の所要を**題名で**
@@ -81,3 +81,12 @@ date: 2026-09-29
   台帳に無く中央値 1 s ずつ——types は tsc なので実際にはこれより長い見込み）。
 - browser 半分 **+約 158 s**（build 42・assets 115・perf 1）。
 - 2 つの半分は並行なので、壁時計の増分は長いほうの半分に載った分だけ。
+
+## 5. PR の CI 初回で落ちた 3 件（同じ回で直した）
+
+- `--timings checks-timings.json` がリポジトリ直下に空ファイルを実行中ずっと置き、`tests/r394` ②b（不正な JSON）と
+  `tests/r674` ⑦（作業ツリーの汚れ）が落ちた。出力を `$RUNNER_TEMP` へ移し、中を指す指定は `test-checks.mjs` が拒む。
+- `check:docs` の `gate-callers` が評価した npm test の計画を呼び出し元に数えていた。npm test は構造上全ゲートを
+  走らせるので情報を持たず、`tests/r628` ③（shard の段を消したら孤児を名指すこと）が受け入れてしまった。
+  呼び出し元は ci.yml が実行するものだけにした（③ は緩めていない）。
+- `gate-universe.mjs` の実行コマンド判定の正規表現が CodeQL js/redos に当たった。1 語ずつ判定する形にした。

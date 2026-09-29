@@ -2741,23 +2741,27 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
      itself for three rounds — and with the comments left in, deleting the step still passed,
      because the sentence explaining the absence looked exactly like the presence. */
   const ci = rd('.github/workflows/ci.yml').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
-  const par = localSteps.join('\n');   /* (gate-parity-and-shards) the evaluated plan — see rule 28 */
+  /* ⚠ (gate-parity-and-shards) `npm test` IS NOT COUNTED AS A CALLER. Since it discovers its gates from
+     package.json it runs every declared gate by construction, so «npm test runs it» carries no
+     information — counting it made this rule accept a gate CI had stopped running (tests/r628 ③ blanks
+     the shard step and must see the orphan). Only what ci.yml executes is a caller here; that npm test
+     runs every gate is held by tests/gate-parity-and-shards-checks.test.mjs ①. */
   const gates = Object.keys(pkg).filter((k) => /^check:/.test(k));
   const orphan = gates.filter((g) => {
     if (ci.includes('npm run ' + g)) return false;
     /* (#R771) CI reaches the declared gates through the planner — see the note in rule 28. */
     if (plannedGates.names.includes(g)) return false;
     const body = pkg[g] || '';
-    /* CI may reach the same script directly, or `npm test` may run it out of test-parallel */
+    /* CI may reach the same script directly */
     for (const m of body.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)) {
-      if (ci.includes('scripts/' + m[1] + '.mjs') || par.includes('scripts/' + m[1] + '.mjs')) return false;
+      if (ci.includes('scripts/' + m[1] + '.mjs')) return false;
     }
     return true;
   });
   if (gates.length < 10) fail('gate-callers', `only ${gates.length} check:* scripts were read out of package.json — this rule needs rewriting`);
   else if (orphan.length) fail('gate-callers', `package.json declares ${orphan.map((g) => 'npm run ' + g).join(', ')}, and nothing runs ${orphan.length > 1 ? 'them' : 'it'}`
     + ' — a gate nobody calls is a script, and it goes on passing by never running');
-  else ok('gate-callers', `all ${gates.length} declared check:* gates have a caller in ci.yml or npm test`);
+  else ok('gate-callers', `all ${gates.length} declared check:* gates have a caller in ci.yml`);
 }
 
 /* ═══ 36. the development record: one file per entry, and DEV-NOTES.md is ITS INDEX ═══════════

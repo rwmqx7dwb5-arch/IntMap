@@ -315,15 +315,18 @@ jobs:
       # which is exactly the kind of guard that must not be optional. The glob is the one `npm test`
       # uses (package.json `test:checks`), so the two can no longer drift.
       - name: Source-level regression checks (Edge Function invariants, area-monitor engine, R1xx suites)
-        run: npm run test:checks -- --test-shard=${{ matrix.shard }}/${{ matrix.of }} --timings checks-timings.json
+        run: npm run test:checks -- --test-shard=${{ matrix.shard }}/${{ matrix.of }} --timings "$RUNNER_TEMP/checks-timings.json"
       # (gate-parity-and-shards) The seconds each file took go back into .github/checks-cost.json by
       # hand (`node scripts/checks-shards.mjs --update`), as gate-timings do: the ledger decides
       # BALANCE only, so drift costs seconds, never coverage.
+      # ⚠ THE FILE IS WRITTEN OUTSIDE THE CHECKOUT ($RUNNER_TEMP). The reporter holds it open, empty,
+      # for the whole run; inside the tree it was an invalid JSON file for check:static (tests/r394 ②b)
+      # and an untracked file for the clean-tree assertions (tests/r674 ⑦) that run in this same job.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: ${{ !cancelled() }}
         with:
           name: checks-timings-${{ matrix.shard }}
-          path: checks-timings.json
+          path: ${{ runner.temp }}/checks-timings.json
           retention-days: 7
 
   # (#R586) …and the name the ruleset requires, for the reason browser-gate exists: a required check

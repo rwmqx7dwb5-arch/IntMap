@@ -99,7 +99,9 @@ and one run measured 11m16s / 8m32s / 4m52s because the heaviest files had lande
 
 - The ledger decides **balance, never membership**: a file it does not know is charged the median and
   still runs; `node scripts/checks-shards.mjs --check` fails on a row for a file that is gone.
-- Each CI shard writes what it measured (`--timings checks-timings.json`,
+- Each CI shard writes what it measured (`--timings "$RUNNER_TEMP/checks-timings.json"` — outside the
+  checkout: the reporter holds the file open and empty for the whole run, and inside the tree that
+  broke `check:static` and the clean-tree checks; a path inside the repository is refused —
   `scripts/checks-timing-reporter.mjs`: per file, the sum of its top-level test durations) and uploads
   it as `checks-timings-<i>`. Refresh by hand, as with the gate ledger:
   `node scripts/checks-shards.mjs --update checks-timings-*.json`.
@@ -1211,7 +1213,8 @@ between them and the runner, so registering it is a step of adding it, not a fol
 
 ⚠ **(#R628) That gap is now watched — `gate-callers`.** Its universe is the one place a gate cannot
 hide from, the `check:*` scripts `package.json` itself declares, and it requires each of them to be
-reached by `.github/workflows/ci.yml` or by `npm test`. It found exactly one: of the eighteen
+reached by `.github/workflows/ci.yml` (since gate-parity-and-shards, only CI counts: `npm test` runs every
+declared gate by construction, so it can no longer vouch for one). It found exactly one: of the eighteen
 declared gates, `check:bordercoast` (below) was named in both instruction tables and run by nothing
 — `npm test` reached only the one-in-eight sample inside `tests/r531-checks.test.mjs`, while
 `scripts/build-border-coast.mjs` had been telling itself in its own source that CI ran the whole
@@ -2314,7 +2317,7 @@ reader here for this list; adding a rule means adding a row.
 | `histb-count` | the size of the day-exact border record below CShapes, as any tracked file states it, disagrees with `data/hist-borders.js` — or one of the nine source pages states that row without a number its English original states (see below) |
 | `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
 | `section-refs` | a document names another document and a `§` number that document has no section for |
-| `gate-callers` | `package.json` declares a `check:*` script that neither `ci.yml` nor `npm test` ever runs |
+| `gate-callers` | `package.json` declares a `check:*` script that `ci.yml` never runs (`npm test` is not counted: it runs every declared gate by construction) |
 | `bordercoast-rings` | a document states how many rings the border/coast record marks, and `data/border-coast.js` marks a different number (three documents said 25,506 while the bundles held 33,600 — the number came from #R564 own completion line and none of the three copies moved) |
 | `chronos-sheets` | a document — **or a tracked file under `js/` or `scripts/`** (#R717) — states how many year snapshots `data/hist-eras.js` holds, in Japanese (`枚`) or English (digits **or** a cardinal word), and the record holds a different number |
 | `chronos-units` | a stated unit or ring count for one of the historical admin tiers, or the count of era polygons upstream gave no name to, is not what the bundle holds |
