@@ -46,7 +46,10 @@ for s in $DUMP_SCHEMAS; do SCHEMA_ARGS+=( -n "$s" ); done
 
 echo "[backup] pg_dump (schemas: $DUMP_SCHEMAS) → custom format…"
 # -Fc custom format (compressed, flexible restore); no owner/privesc surprises on restore.
-pg_dump "$DB_URL" -Fc --no-owner "${SCHEMA_ARGS[@]}" -f "$PLAIN"
+# PG_DUMP_ROLE: a login that is only a door (the Supabase CLI's short-lived role) switches to the role that
+# can read every dumped schema, as the CLI itself does (scripts/db-login-url.mjs sets it).
+ROLE_ARGS=(); [ -n "${PG_DUMP_ROLE:-}" ] && ROLE_ARGS=(--role "$PG_DUMP_ROLE")
+pg_dump "$DB_URL" -Fc --no-owner "${ROLE_ARGS[@]}" "${SCHEMA_ARGS[@]}" -f "$PLAIN"
 
 echo "[backup] encrypting (AES-256, symmetric)…"
 printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \

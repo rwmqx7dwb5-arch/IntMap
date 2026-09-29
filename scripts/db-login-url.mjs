@@ -50,6 +50,8 @@ try {
   const url = `postgresql://${encodeURIComponent(`${login.role}.${ref}`)}:${encodeURIComponent(login.password)}@${p.db_host}:${port}/${p.db_name || 'postgres'}`;
   mask(url);
   out(`DB_URL=${url}`);
+  /* the login role is a door; the dump reads as postgres (auth/storage are not readable by the door itself) */
+  out('PG_DUMP_ROLE=postgres');
   console.log(`DB_URL: short-lived login role via the access token (host ${p.db_host}:${port}, ttl ${login.ttl_seconds ?? '?'} s)`);
 } catch (e) {
   console.log(`::error::could not obtain a database login from the access token: ${e.message}`);
