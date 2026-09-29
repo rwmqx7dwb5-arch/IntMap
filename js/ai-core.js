@@ -450,7 +450,7 @@ window.IntMapModules.aiCore=function(HOST){
     let ov=document.getElementById('ai-report-modal');
     if(!ov){ ov=document.createElement('div'); ov.id='ai-report-modal'; ov.className='modal-overlay'; document.body.appendChild(ov);
       ov.addEventListener('click',e=>{ if(e.target===ov) ov.style.display='none'; }); }
-    const imgsHtml=(opts.images&&opts.images.length)?`<div class="ai-report-imgs">${opts.images.map(im=>`<figure><img src="${aiEsc(window.IntMapSafe.url(im.src,{allowData:true}))}">${im.caption?`<figcaption>${aiEsc(im.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:'';
+    const imgsHtml=(opts.images&&opts.images.length)?`<div class="ai-report-imgs">${opts.images.map(im=>`<figure><img src="${aiEsc(window.IntMapSafe.url(im.src,{allowData:true}))}" alt="${aiEsc(im.caption||'')}">${im.caption?`<figcaption>${aiEsc(im.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:'';
     ov.innerHTML=`<div class="modal-content">
       <div class="ai-report-head">✨ <span>${aiEsc(opts.title||'AI')}</span></div>
       ${opts.sub?`<div class="ai-report-sub">${aiEsc(opts.sub)}</div>`:''}
@@ -459,6 +459,8 @@ window.IntMapModules.aiCore=function(HOST){
       <div class="ai-report-actions" id="ai-report-actions"></div>
     </div>`;
     ov.style.display='flex';
+    /* (a11y-shared-dialog) registered (idempotent — the overlay is reused): Escape, a Tab trap, focus back */
+    window.IntMapDialog.adopt(ov,{ label:String(opts.title||'AI') });
     const bodyEl=ov.querySelector('#ai-report-body'), actEl=ov.querySelector('#ai-report-actions');
     const api={
       el:ov,

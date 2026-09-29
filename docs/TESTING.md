@@ -981,6 +981,20 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   than as a `check:*` of its own because it is static analysis and the gate list has no room.
   Regression: `tests/fetch-deadline-layer-checks.test.mjs` ⑤ (a bare fetch put back into
   `js/wx-source.js` turns it red).
+- **Presses no keyboard can reach** (`keyboard-reach`, a11y-shared-dialog) —
+  `scripts/keyboard-reach.mjs` counts, per file and from the parser, every click receiver in `js/`
+  (`onclick =`, `addEventListener('click')`, a delegated handler's `e.target.closest('…')`, a
+  hyperscript `h('div', { onclick })`) whose element resolves to a non-interactive tag with no
+  tabindex — resolved from `document.createElement`, a hyperscript tag, or a selector looked up in
+  the markup this file (then every `js/` file, then `index.html` for ids) writes. Not counted: a
+  backdrop (the handler acts only when the event's target IS the receiver — Escape is its keyboard
+  twin), a handler that only stops the event, a closest() that only leaves (`if (…closest('button'))
+  return;`), an `aria-hidden="true"` scrim, and a `role="option"` in a file that drives a combobox.
+  The counts are held to `tests/keyboard-reach-baseline.json` in both directions (lower it with
+  `node scripts/keyboard-reach.mjs --update`). The way out is a real `<button>`, or `role` +
+  `tabindex="0"` in markup / `IntMapDialog.makeActionable(el)` in code — `js/dialog.js` turns Enter
+  and Space into the same `click()`. Regression and mutation cases:
+  `tests/a11y-shared-dialog-checks.test.mjs`.
 - **Test discovery** (#R529, `scripts/static-checks.mjs`) — `test:checks` is
   `node --test "tests/**/*.test.mjs"`, so the runner finds the files itself and a file cannot be
   left out of a list that no longer exists. Until #R529 it **was** a list: one hand-written literal

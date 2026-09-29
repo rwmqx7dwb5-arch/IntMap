@@ -15,26 +15,8 @@
     }
   },
   "pending": {
-    "js/app-body.js": {
-      "escaper": 2,
-      "rawUrlAttr": 1
-    },
-    "js/companies-ui.js": {
-      "rawUrlAttr": 1
-    },
-    "js/countries-ui.js": {
-      "escaper": 1,
-      "rawUrlAttr": 2
-    },
     "js/data-layers.js": {
       "escaper": 1
-    },
-    "js/feedback.js": {
-      "rawUrlAttr": 1
-    },
-    "js/map-ui.js": {
-      "escaper": 4,
-      "rawUrlAttr": 2
     }
   }
 }

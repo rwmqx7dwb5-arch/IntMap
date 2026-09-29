@@ -55,6 +55,8 @@ const at = (p, list) => list.some((q) => Math.abs(p[0] - q[0]) < 1e-9 && Math.ab
 class El {
   constructor(tag) { this.tagName = tag; this.children = []; this.className = ''; this.textContent = ''; this.style = {}; this.onclick = null; this.parent = null; this._html = ''; this._stubs = new Map(); }
   appendChild(c) { c.parent = this; this.children.push(c); return c; }
+  setAttribute(k, v) { (this._attrs = this._attrs || {})[k] = String(v); }   /* (a11y-shared-dialog) a row is role=option */
+  getAttribute(k) { return (this._attrs && k in this._attrs) ? this._attrs[k] : null; }
   remove() { if (this.parent) { const i = this.parent.children.indexOf(this); if (i >= 0) this.parent.children.splice(i, 1); this.parent = null; } }
   set innerHTML(h) {
     this.children.forEach((c) => { c.parent = null; }); this.children = []; this._html = String(h || ''); this._stubs.clear();

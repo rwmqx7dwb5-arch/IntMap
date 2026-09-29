@@ -100,7 +100,7 @@ test('#R252 ③ ofm-other asks for the sub-municipal classes OpenMapTiles really
 test('#R252 ④ the place popup shows both names, and still queries by the local one', () => {
   const mu = code(read('js/map-ui.js'));
 
-  assert.match(mu, /safe=String\(opts\.title\|\|name\)/,
+  assert.match(mu, /safe=(?:window\.IntMapSafe\.html\()?String\(opts\.title\|\|name\)/,   /* (a11y-shared-dialog) encoded by the one encoder */
     'the popup heading is not taken from opts.title — the two-name caption cannot appear');
   /* …and everything that IDENTIFIES the place still uses `name`: a caption is not a query */
   assert.match(mu, /navigator\.clipboard\.writeText\(name\)/, 'Copy must write the place name, not the caption');

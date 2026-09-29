@@ -142,7 +142,7 @@ test('R483 ② 同じレイヤーの2枚のタイルは、両方が地図の状�
   /* ⚠ 単数形の querySelector は最初の1枚しか触らない＝2枚目が古いまま残る */
   assert.doesNotMatch(ui, /const tile=h\.querySelector\(sel\)/,
     'the live-sync listener no longer stops at the first matching tile');
-  assert.match(ui, /h\.querySelectorAll\(sel\)\.forEach\(tile=>tile\.classList\.toggle\('on'/,
+  assert.match(ui, /h\.querySelectorAll\(sel\)\.forEach\(tile=>(?:tile\.classList\.toggle\('on'|tileOn\(tile,)/,   /* (a11y-shared-dialog) tileOn writes the class AND aria-checked */
     'it toggles every tile standing for that checkbox');
 });
 

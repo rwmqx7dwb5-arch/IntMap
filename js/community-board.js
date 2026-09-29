@@ -116,16 +116,16 @@ window.IntMapModules.communityBoard=function(HOST){
     const jp=HOST.lang==='jp', mine=HOST.user&&post.userId===HOST.user.id;
     const canDel = HOST.user && (mine || HOST.user.isAdmin);
     const cat=commCatById(post.category||'general');
-    const imgHtml=post.img?`<img class="comm-post-img" src="${IntMapSafe.html(IntMapSafe.url(post.img,{allowData:true}))}" data-id="${post.id}" alt="">`:'';   /* (#R138 SEC) post.img is user-controlled (direct Supabase insert) → scheme-validate + quote-escape (stored XSS, auto-fires on feed render) */
+    const imgHtml=post.img?`<img class="comm-post-img" src="${IntMapSafe.html(IntMapSafe.url(post.img,{allowData:true}))}" data-id="${post.id}" alt="" role="button" tabindex="0" aria-label="${IntMapSafe.html(window.IntMapLang.t(HOST.lang,'View image','画像を表示'))}">`:'';   /* (#R138 SEC) post.img is user-controlled (direct Supabase insert) → scheme-validate + quote-escape (stored XSS, auto-fires on feed render) */
     const edited=post.editedTs?` · <span class="comm-edited">${HOST.t('commEdited')}</span>`:'';
     const cmts=post.comments||[];
     return `<div class="comm-post" id="comm-post-${post.id}">
       <div class="comm-post-top">
-        <span class="comm-author-link" data-uid="${post.userId||''}" data-author="${HOST.escapeHtml(post.author||'')}" style="display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0;flex:1;">
+        <span class="comm-author-link" role="button" tabindex="0" data-uid="${post.userId||''}" data-author="${HOST.escapeHtml(post.author||'')}" style="display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0;flex:1;">
         ${commAvatar(post.author)}
         <div class="comm-post-idn">
           <div class="comm-post-author">${HOST.escapeHtml(post.author||(window.IntMapLang.t(HOST.lang,'Anonymous','匿名','Anonym','Анонимно','Anónimo')))}</div>
-          <div class="comm-post-sub">${relTime(post.ts)}${edited} · <span class="comm-post-loc" data-lat="${post.lat}" data-lng="${post.lng}">📍 ${post.lat.toFixed(1)}°, ${post.lng.toFixed(1)}°</span></div>
+          <div class="comm-post-sub">${relTime(post.ts)}${edited} · <span class="comm-post-loc" role="button" tabindex="0" data-lat="${post.lat}" data-lng="${post.lng}">📍 ${post.lat.toFixed(1)}°, ${post.lng.toFixed(1)}°</span></div>
         </div></span>
         <span class="comm-cat-tag" style="--cc:${cat.color}">${cat.emoji} ${commCatLabel(post.category||'general')}</span>
       </div>
@@ -226,6 +226,7 @@ window.IntMapModules.communityBoard=function(HOST){
     m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:320px;text-align:center;">${ava}<h2 style="margin:0 0 6px;font-size:18px;">${HOST.escapeHtml(name||'?')}</h2><p style="color:var(--text-muted);font-size:13px;line-height:1.55;white-space:pre-wrap;margin:0 0 16px;">${bio?HOST.escapeHtml(bio):(window.IntMapLang.t(HOST.lang,'No bio yet.','自己紹介はまだありません。','Noch keine Bio.','Пока без описания.','Aún sin biografía.'))}</p><button id="pm-close" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;cursor:pointer;">${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}</button></div>`;
     m.querySelector('#pm-close').onclick=()=>{ m.style.display='none'; };
     m.style.display='flex';
+    window.IntMapDialog.adopt(m,{ panel:m.firstElementChild });   /* (a11y-shared-dialog) Escape, Tab trap, focus back; named by its heading */
   }
   /* Detect which v2 columns/tables exist so the UI degrades gracefully on an un-migrated DB.
      (Same tolerant pattern as refreshCurrentUser's is_pro probe.) Runs once, then cached. */

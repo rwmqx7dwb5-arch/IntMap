@@ -201,7 +201,7 @@ window.IntMapModules.authUi=function(HOST){
     const inStyle='width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin-bottom:10px;';
     const oaStyle='width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:9px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-weight:600;font-size:13.5px;cursor:pointer;margin-bottom:8px;';
     m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;max-height:92vh;overflow-y:auto;">
-      <h2 style="margin:0 0 4px;font-size:19px;">IntMap account</h2>
+      <h2 id="am-h" style="margin:0 0 4px;font-size:19px;">IntMap account</h2>
       <p id="am-sub" style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.5;">Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.</p>
       <div style="display:flex;background:var(--input-bg);border-radius:10px;padding:3px;margin-bottom:14px;">
         <button id="am-tab-login" style="flex:1;border:none;background:var(--card-bg);color:var(--text-main);padding:8px;border-radius:8px;font-weight:600;cursor:pointer;">Log In</button>
@@ -243,6 +243,7 @@ window.IntMapModules.authUi=function(HOST){
     try{ setTab('login'); }catch(_){}   /* (#R122) normalize the initial segment colours for the current theme */
     $am('am-close').onclick=()=>{ m.style.display='none'; };
     m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
+    window.IntMapDialog.adopt(m,{ panel:m.firstElementChild, labelledby:'am-h' });   /* (a11y-shared-dialog) Escape, Tab trap, focus back — js/dialog.js */
     $am('am-submit').onclick=async()=>{
       const email=$am('am-email').value.trim(), password=$am('am-pass').value, name=$am('am-name').value.trim(), msg=$am('am-msg');
       if(!email||!password){ msg.textContent=_authL('Enter email and password.','メールアドレスとパスワードを入力してください。','Gib E-Mail und Passwort ein.','Введите e-mail и пароль.','Introduce el correo y la contraseña.'); return; }
@@ -354,12 +355,14 @@ window.IntMapModules.authUi=function(HOST){
       [go,inp].forEach(x=>{ if(o.effect) x.setAttribute('data-effect',o.effect); else x.removeAttribute('data-effect'); });
       /* one live listener set per call — replaced wholesale, never accumulated */
       const done=(v)=>{ d.style.display='none'; document.removeEventListener('keydown',key,true); resolve(v); };
-      const key=(e)=>{ if(e.key==='Escape'){ e.stopPropagation(); done(null); } else if(e.key==='Enter'&&(o.input?document.activeElement===inp:true)){ done(inp.hidden?'':inp.value); } };
+      /* Escape is the dialog registry's (js/dialog.js) — it closes the topmost dialog, which is this one when it is up */
+      const key=(e)=>{ if(e.key==='Enter'&&(o.input?document.activeElement===inp:true)){ done(inp.hidden?'':inp.value); } };
       go.onclick=()=>done(inp.hidden?'':inp.value);
       no.onclick=()=>done(null);
       d.onclick=(e)=>{ if(e.target===d) done(null); };
       document.addEventListener('keydown',key,true);
       d.style.display='flex';
+      window.IntMapDialog.adopt(d,{ panel:box, labelledby:'acct-ask-h', close:()=>done(null), focus:false });
       try{ (o.input?inp:go).focus(); }catch(_){}
       try{ box.scrollTop=0; }catch(_){}
     });
@@ -604,7 +607,7 @@ window.IntMapModules.authUi=function(HOST){
       else { proRow.style.display='none'; proRow.textContent=''; }
     }
     m.style.display='flex';
-    document.addEventListener('keydown',_acctKey,true);
+    window.IntMapDialog.adopt(m,{ panel:m.querySelector('.acct-sheet'), labelledby:'acct-h', close:_acctClose, focus:false });   /* (a11y-shared-dialog) Escape + Tab trap from the registry; _acctClose still owns where focus lands */
     try{ _acctPrevFocus=document.activeElement; m.querySelector('.acct-sheet').focus(); }catch(_){}
   }
 
@@ -612,11 +615,8 @@ window.IntMapModules.authUi=function(HOST){
      backdrop, Esc, logging out, deleting the account) and each one must also release the key
      listener and hand focus back to the button that opened the sheet. */
   let _acctPrevFocus=null;
-  function _acctKey(e){ if(e.key!=='Escape') return; const a=document.getElementById('acct-ask'); if(a&&a.style.display==='flex') return;   /* the inner asker owns Esc while it is up */
-    e.stopPropagation(); _acctClose(); }
   function _acctClose(){
     const m=document.getElementById('acct-modal'); if(m) m.style.display='none';
-    document.removeEventListener('keydown',_acctKey,true);
     /* back to whatever had focus — and when nothing did (the sheet was opened from a script, or the
        click never focused the button), to the control that opens it, which is where a keyboard
        reader expects to be standing afterwards. */

@@ -171,6 +171,13 @@ window.IntMapModules.searchGeocode=function(HOST){
 
   async function doGeocode(){
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q)return;
+    /* (a11y-shared-dialog) the results are a listbox driven from the field — ArrowDown/ArrowUp move, Enter picks,
+       Escape closes the list; focus stays in the field (the combobox pattern js/routing-ui.js's stop field uses).
+       Wired once per field, here, because this is the file that renders the rows. */
+    if(!inp._imListbox&&window.IntMapDialog) inp._imListbox=window.IntMapDialog.listbox(inp,res,{
+      options:()=>res.style.display==='none'?[]:res.querySelectorAll('.ms-item'),
+      pick:(el)=>el.click(), close:()=>{ res.style.display='none'; },
+      label:window.IntMapLang.t(HOST.lang,'Search results','検索結果') });
     res.style.display='block';
     /* (#R15e) Make sure the bundled country data is loading so local country/capital matches are available
        (the gazetteer is always loaded; countryStats may not be until Stats is opened). Non-blocking. */
@@ -219,14 +226,14 @@ window.IntMapModules.searchGeocode=function(HOST){
       const f=_rowFacts(label,lng,lat,raw,kind);
       const same=rows.find((r)=>_sameFeature(r.f,f,_nameKey));
       if(same){ if(f.rich>same.f.rich){ same.f=f; _paint(); } return; }   /* the row that knows more stays, rewritten in place */
-      const d=document.createElement('div'); d.className='ms-item'; const row={f,el:d};
+      const d=document.createElement('div'); d.className='ms-item'; d.setAttribute('role','option'); const row={f,el:d};
       d.onclick=()=>{ const g=row.f; gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); res.style.display='none'; inp.value=String(g.label).split(',')[0].split(' · ')[0]; };
       rows.push(row); res.appendChild(d); _paint(); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
        (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
        timeout so it can never hang the search. */
-    res.innerHTML='';
+    res.innerHTML=''; try{ inp._imListbox.reset(); }catch(_){}
     /* (#R185) …and the extent rides along as the shape js/place-framing.js already reads — a
        Nominatim-style [S, N, W, E] box plus the point — so one ladder frames local and remote
        results alike rather than there being a second copy of the decision here. */

@@ -1155,6 +1155,8 @@ export function makeGisPanel(HOST) {
                at 60 characters; opening the editor with that would let a reader save the display of
                their own data over the data. */
             td.onclick = () => { const raw = v == null ? '' : String(v); cellEdit = { id: ds.id, index: i, field: c.name, value: raw, was: raw }; render(); };
+            /* (a11y-shared-dialog) a data cell keeps its cell role; Tab reaches it and Enter opens its editor, as in a spreadsheet */
+            td.tabIndex = 0; td.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); td.click(); } });
           }
           tr.appendChild(td);
         });

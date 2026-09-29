@@ -419,6 +419,7 @@
   "IntMapDefaultLayers",
   "IntMapDefaultOn",
   "IntMapDem",
+  "IntMapDialog",
   "IntMapDrone",
   "IntMapDroneOps",
   "IntMapECMWF",

@@ -46,8 +46,11 @@ window.IntMapModules.playground=function(HOST){
     function shell(maxw){ const ov=document.createElement('div'); ov.className='pg-overlay';
       ov.style.cssText='position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);padding:18px;';
       const card=document.createElement('div'); card.style.cssText='position:relative;width:min('+(maxw||520)+'px,100%);max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card-bg);color:var(--text-main);border-radius:18px;box-shadow:var(--shadow);padding:22px 22px max(22px,env(safe-area-inset-bottom));box-sizing:border-box;';
-      ov.appendChild(card); ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov); return {ov,card}; }
-    function xbtn(onclick){ const b=document.createElement('button'); b.textContent='×'; b.style.cssText='position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;z-index:2;'; b.onclick=onclick; return b; }
+      ov.appendChild(card); ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov);
+      /* (a11y-shared-dialog) every playground card is a registered dialog — Escape, Tab trap, focus back; named by its heading.
+         focus:false — the card is filled AFTER this returns, so the owner's own first control is not there yet */
+      window.IntMapDialog.open(ov,{ panel:card, focus:false }); return {ov,card}; }
+    function xbtn(onclick){ const b=document.createElement('button'); b.textContent='×'; b.style.cssText='position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;z-index:2;'; b.setAttribute('aria-label',L('Close','閉じる','Schließen','Закрыть','Cerrar')); b.onclick=onclick; return b; }
     function pill(txt,bg){ const s=document.createElement('span'); s.textContent=txt; s.style.cssText='display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:'+(bg||'var(--primary-fill)')+';color:#fff;'; return s; }
 
     /* ===================== HUB ===================== */
@@ -717,7 +720,7 @@ window.IntMapModules.playground=function(HOST){
             restricted:window.IntMapLang.t(HOST.lang,"entry restricted","入国制限","Einreise beschränkt","въезд ограничен","entrada restringida"),
             closed:window.IntMapLang.t(HOST.lang,"highest restrictions","規制は最高レベル","höchste Beschränkungen","максимальные ограничения","restricciones máximas")};
           const head='<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><b style="font-size:13px;flex:1;">'+nm[inspectIdx]+'</b>'
-            +'<button id="pg-ins-x" style="border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);padding:3px 9px;font-size:11px;cursor:pointer;">×</button></div>';
+            +'<button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" id="pg-ins-x" style="border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);padding:3px 9px;font-size:11px;cursor:pointer;">×</button></div>';
           let body='';
           /* ⚠ WHOSE DECISION IS BEING SHOWN. A dependency's border is its sovereign's border and the
              panel must not present it as a decision taken here; a row with no government has no

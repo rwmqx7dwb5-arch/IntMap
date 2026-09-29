@@ -120,7 +120,7 @@ test('R152 #13 IntMapGeoEngine renderer abstraction + MapLibre adapter + Cesium 
   assert.match(html, /return \{ id:'maplibre', capabilities:MAPLIBRE_CAPS,/, 'MapLibre adapter');
   assert.match(html, /const CESIUM_CONTRACT=\{ id:'cesium', implemented:false,/, 'Cesium contract (no SDK)');
   /* (#R179) …through A(), the adapter GETTER the facade is built over — see the note in r161-checks */
-  assert.match(html, /camera:\{ flyTo:o=>A\(\)\.flyTo\(o\)/, 'camera facade delegates to the adapter');
+  assert.match(html, /camera:\{ flyTo:o=>A\(\)\.flyTo\((?:_calm\(o\)|o)\)/, 'camera facade delegates to the adapter');   /* (a11y-shared-dialog) through the reduced-motion door */
   assert.match(html, /use\(a\)\{ if\(a&&a\.id\) _adapter=a;/, 'a future renderer can be swapped in');
   // Atlas camera execution routes through the engine (R160 aliases `const GE=IntMapGeoEngine.camera` in these cases)
   /* (#R171) The pitch case now builds its easeTo options first, because the tilt ceiling is a user setting

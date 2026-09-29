@@ -209,7 +209,7 @@ window.IntMapModules.monitors=function(HOST){
     function _rowHtml(m){ const sources=(m.sources||[]).map(srcLabel).join(', ');
       const sev=(m.last_change_severity&&m.last_change_severity!=='none')?('<span class="mon-sev" style="--c:'+(SEV_COLOR[m.last_change_severity]||'#8e8e93')+'">'+S(sevLabel(m.last_change_severity))+'</span>'):'';
       return '<div class="mon-row" data-mid="'+S(m.id)+'">'
-        +'<div class="mon-row-main">'
+        +'<div class="mon-row-main" role="button" tabindex="0">'
           +'<div class="mon-row-top"><span class="mon-name">'+S(m.name)+'</span>'+_statusChip(m)+sev+'</div>'
           +'<div class="mon-row-sub">'+S(m.area_label||'')+' · '+S(sources)+'</div>'
           +'<div class="mon-row-meta">'+S(ML('Last','前回','Zuletzt','Последний','Último'))+': '+S(_fmtWhen(m.last_run_at))+' · '+S(ML('Next','次回','Nächste','Следующий','Próximo'))+': '+S(_fmtNext(m.next_run_at,m.enabled))+'</div>'
@@ -253,7 +253,9 @@ window.IntMapModules.monitors=function(HOST){
 
     /* ---- create dialog ---- */
     function _overlay(inner,cls){ const ov=document.createElement('div'); ov.className='mon-ov '+(cls||''); ov.innerHTML='<div class="mon-dialog" role="dialog" aria-modal="true">'+inner+'</div>';
-      document.body.appendChild(ov); ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); }); const x=ov.querySelector('.mon-x'); if(x) x.onclick=()=>ov.remove(); return ov; }
+      document.body.appendChild(ov); ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); }); const x=ov.querySelector('.mon-x'); if(x) x.onclick=()=>ov.remove();
+      window.IntMapDialog.open(ov,{ panel:ov.querySelector('.mon-dialog') });   /* (a11y-shared-dialog) Escape, Tab trap, focus back; named by its own heading */
+      return ov; }
     function openCreateDialog(prefill){ if(!_loggedIn()){ _promptLogin(); return; }
       prefill=prefill||{}; let area=prefill.area||activeArea(); let usingView=false; if(!area){ const mv=mapViewArea(); if(mv){ area=mv; usingView=true; } }   /* (#R147) fall back to the current map view so "監視を作成" is always actionable — the button used to render disabled with no area and clicking did nothing ("監視を作成を押しても何も起こらない") */
       const intervals=[[30,ML('Every 30 min','30分ごと','Alle 30 Min','Каждые 30 мин','Cada 30 min')],[60,ML('Hourly','1時間ごと','Stündlich','Каждый час','Cada hora')],[180,ML('Every 3 hours','3時間ごと','Alle 3 Std','Каждые 3 ч','Cada 3 h')],[360,ML('Every 6 hours','6時間ごと','Alle 6 Std','Каждые 6 ч','Cada 6 h')],[720,ML('Every 12 hours','12時間ごと','Alle 12 Std','Каждые 12 ч','Cada 12 h')],[1440,ML('Daily','1日ごと','Täglich','Ежедневно','Diario')]];
@@ -328,7 +330,7 @@ window.IntMapModules.monitors=function(HOST){
         else if(d==='resume'){ await resume(id); ov.remove(); }
         else if(d==='del'){ if(confirm(ML('Delete this monitor and its history?','この監視と履歴を削除しますか？','Diesen Monitor löschen?','Удалить этот монитор?','¿Eliminar este monitor?'))){ await remove(id); ov.remove(); render(); } }
       }; });
-      ov.querySelectorAll('.mon-run').forEach(rr=>{ const rep=rr.getAttribute('data-rep'); if(rep){ rr.classList.add('mon-run-clickable'); rr.onclick=()=>{ openReport(rep); }; } }); }
+      ov.querySelectorAll('.mon-run').forEach(rr=>{ const rep=rr.getAttribute('data-rep'); if(rep){ rr.classList.add('mon-run-clickable'); window.IntMapDialog.makeActionable(rr); rr.onclick=()=>{ openReport(rep); }; } }); }
     function _intLabel(mins){ mins=+mins||360; if(mins<60) return ML(mins+' min','約'+mins+'分','','','')||mins+' min'; const h=Math.round(mins/60); if(h<24) return ML(h+' h',h+'時間',h+' Std',h+' ч',h+' h'); return ML(Math.round(h/24)+' d',Math.round(h/24)+'日',Math.round(h/24)+' T',Math.round(h/24)+' д',Math.round(h/24)+' d'); }
 
     /* ---- report overlay: conclusion + changes(→evidence) + metrics + evidence list + gaps + limitations ---- */

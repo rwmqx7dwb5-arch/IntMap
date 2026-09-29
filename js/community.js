@@ -19,10 +19,11 @@ window.IntMapModules.community=function(HOST){
   function openImageLightbox(src){
     const old=document.getElementById('img-lightbox'); if(old) old.remove();
     const lb=document.createElement('div'); lb.id='img-lightbox';
-    const im=document.createElement('img'); im.src=src; lb.appendChild(im);
-    lb.onclick=()=>lb.remove();
-    document.addEventListener('keydown',function esc(e){ if(e.key==='Escape'){ lb.remove(); document.removeEventListener('keydown',esc); } });
-    document.body.appendChild(lb);
+    const im=document.createElement('img'); im.src=src; im.alt=window.IntMapLang.t(HOST.lang,'Enlarged image','拡大画像'); lb.appendChild(im);
+    /* (a11y-shared-dialog) a registered dialog: Escape and a press anywhere on it close it (it is all
+       «tap to dismiss», cursor:zoom-out), focus goes back to the thumbnail — js/dialog.js. The keydown
+       listener this used to add was never removed when the lightbox was closed by a click. */
+    window.IntMapDialog.open(lb,{ label:im.alt, backdrop:'any' });
   }
 
   function renderCommunity(){
