@@ -12,7 +12,7 @@
 # scripts/ci-require-secrets.sh and tests/backup-and-deploy-as-code-checks.test.mjs runs it.
 #
 # The two secrets, and the one-time registration, are in docs/BACKUP-RESTORE.md (the 正本):
-#   SUPABASE_DB_URL         Postgres session-pooler connection string (the password is in it).
+#   SUPABASE_ACCESS_TOKEN   Supabase access token — a short-lived DB login is derived from it (no stored DB password).
 #   BACKUP_GPG_PASSPHRASE   The ONLY key to the backups — losing it makes them unrecoverable.
 #
 # NOTE: even encrypted, these artifacts are held on GitHub. Retention is short
@@ -47,17 +47,42 @@ jobs:
       - name: Require backup secrets
         id: gate
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
-        run: bash scripts/ci-require-secrets.sh SUPABASE_DB_URL BACKUP_GPG_PASSPHRASE
+        run: bash scripts/ci-require-secrets.sh SUPABASE_ACCESS_TOKEN BACKUP_GPG_PASSPHRASE
 
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y postgresql-client gnupg
 
+      # No stored database password: a short-lived login role is asked of the Management API with
+      # the access token (the Supabase CLI's own mechanism).
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Short-lived database login
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DB_URL_FILE: ${{ runner.temp }}/db-url
+        run: node scripts/db-login-url.mjs
+
+      # pg_dump refuses a server newer than itself (measured 2026-09-29: server 17.6, the runner's client
+      # 16.15 → «aborting because of server version mismatch»). Ask the server its major and install that
+      # client from PostgreSQL's own PGDG repository — no version written here.
+      - name: pg_dump matching the server
+        env:
+          DB_URL_FILE: ${{ runner.temp }}/db-url
+        run: |
+          major=$(psql "$(cat "$DB_URL_FILE")" -tAc 'show server_version_num' | tr -d '[:space:]' | cut -c1-2)
+          echo "server major: $major"
+          # the PGDG repository (PostgreSQL's own) carries every supported major; Ubuntu's carries one
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y "postgresql-client-$major"
+          echo "/usr/lib/postgresql/$major/bin" >> "$GITHUB_PATH"
+
       - name: Dump + encrypt + checksum
         env:
-          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+          DB_URL_FILE: ${{ runner.temp }}/db-url
           OUT_DIR: ${{ runner.temp }}/backups
         run: bash scripts/backup-db.sh
 

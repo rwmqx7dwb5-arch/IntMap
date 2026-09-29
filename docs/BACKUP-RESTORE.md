@@ -55,9 +55,9 @@ New repository secret**. Type the value there yourself — never into chat, a fi
 
 | Secret | Used by | What it is | Where to get it |
 |---|---|---|---|
-| `SUPABASE_DB_URL` | `db-backup.yml` | Postgres **session-pooler** URI. The password inside makes the whole string a secret. | Supabase Dashboard → **Connect** (or Settings → Database) → Connection string → URI → **Session pooler**: `postgresql://postgres.<ref>:PASSWORD@aws-…pooler.supabase.com:5432/postgres` |
+| ~~`SUPABASE_DB_URL`~~ | — | **Not needed any more.** `db-backup.yml` derives a short-lived (300 s) database login from `SUPABASE_ACCESS_TOKEN` through the Management API — the Supabase CLI's own mechanism — and `pg_dump` switches to `postgres` (`--role`). No database password is stored anywhere. (`scripts/db-login-url.mjs`) | — |
 | `BACKUP_GPG_PASSPHRASE` | `db-backup.yml` | The **only** key to the backups. Lose it → they are unrecoverable. Leak it → encryption is defeated. | Generate one (`openssl rand -base64 32`), store it in your password manager **first**, then here. |
-| `SUPABASE_ACCESS_TOKEN` | `supabase-deploy.yml` (deploy + nightly drift) | A Supabase personal access token. MEASURED 2026-09-25 (CLI 2.106.0): `link`, `db push`, `migration list` and `functions deploy` all ran with it alone — no database password needed. | <https://supabase.com/dashboard/account/tokens> → **Generate new token** (name it e.g. `intmap-github-actions`). |
+| `SUPABASE_ACCESS_TOKEN` | `supabase-deploy.yml` (deploy + nightly drift) and `db-backup.yml` | A Supabase personal access token. MEASURED 2026-09-25 (CLI 2.106.0): `link`, `db push`, `migration list` and `functions deploy` all ran with it alone — no database password needed. | <https://supabase.com/dashboard/account/tokens> → **Generate new token** (name it e.g. `intmap-github-actions`). |
 
 Confirm each once it is set:
 
