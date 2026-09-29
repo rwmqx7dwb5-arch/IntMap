@@ -2935,7 +2935,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
-    const go=document.getElementById('blueberry-go');
+    const go=document.getElementById('blueberry-go'); if(go) go.setAttribute('data-effect','outward');   /* (atlas-outward-effects) its markup is index.html's; the write is wired here */
     if(go) go.addEventListener('click', ()=>{ try{ if(typeof DB!=='undefined' && DB && typeof currentUser!=='undefined' && currentUser){ DB.from('donations').insert({ user_id:currentUser.id, email:currentUser.email||null, locale:currentLang, source:'support_button', status:'initiated' }); } }catch(_){} });
     window._openBlueberry=open;
   })();

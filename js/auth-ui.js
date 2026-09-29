@@ -121,12 +121,12 @@ window.IntMapModules.authUi=function(HOST){
       box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+HOST.escapeHtml(_authL('Could not load your passkeys.','パスキーを読み込めませんでした。','Deine Passkeys konnten nicht geladen werden.','Не удалось загрузить паскеи.','No se pudieron cargar tus passkeys.'))+'</div>'; return; }
     if(!list.length){ box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+HOST.escapeHtml(_authL('No passkeys yet.','パスキーはまだありません。','Noch keine Passkeys.','Паскеев пока нет.','Aún no hay passkeys.'))+'</div>'; return; }
     box.innerHTML=list.map(pk=>{ const nm=HOST.escapeHtml(pk.friendly_name||pk.friendlyName||pk.name||'Passkey'), id=HOST.escapeHtml(String(pk.id||''));
-      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--input-bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;"><span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nm+'</span><button data-pkdel="'+id+'" style="background:transparent;border:none;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;">'+HOST.escapeHtml(_authL('Remove','削除','Entfernen','Удалить','Quitar'))+'</button></div>'; }).join('');
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--input-bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;"><span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nm+'</span><button data-pkdel="'+id+'" data-effect="destructive" style="background:transparent;border:none;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;">'+HOST.escapeHtml(_authL('Remove','削除','Entfernen','Удалить','Quitar'))+'</button></div>'; }).join('');
     box.querySelectorAll('[data-pkdel]').forEach(b=>b.onclick=async()=>{ const id=b.getAttribute('data-pkdel');
       /* (#R753) the fifth and last browser dialog this panel used to raise — in the sheet now, like the other four */
       if(await _acctAsk({ title:_authL('Remove this passkey?','このパスキーを削除しますか？','Diesen Passkey entfernen?','Удалить этот паскей?','¿Quitar este passkey?'),
         body:_authL('You will not be able to sign in with it on that device any more.','その端末ではこのパスキーでログインできなくなります。','Auf diesem Gerät kannst du dich damit nicht mehr anmelden.','На этом устройстве вход по нему станет невозможен.','Ya no podrás iniciar sesión con él en ese dispositivo.'),
-        danger:true, confirmLabel:_authL('Remove','削除','Entfernen','Удалить','Quitar') })===null) return;
+        danger:true, effect:'destructive', confirmLabel:_authL('Remove','削除','Entfernen','Удалить','Quitar') })===null) return;
       /* ⚠ (supabase-js 2.117) the parameter is `passkeyId` (DELETE …/passkeys/<passkeyId>). The line
          here guessed `{id}` first and fell back on a throw — but the SDK does not throw, it RETURNS
          {error}, so the guess sent DELETE …/passkeys/undefined, «succeeded», and the fallback never
@@ -147,7 +147,7 @@ window.IntMapModules.authUi=function(HOST){
       d.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:340px;box-sizing:border-box;">'
         +'<h2 style="margin:0 0 12px;font-size:18px;">'+HOST.escapeHtml(_authL('Set a new password','新しいパスワードを設定','Neues Passwort festlegen','Задать новый пароль','Establecer nueva contraseña'))+'</h2>'
         +'<input id="setpw-input" type="password" autocomplete="new-password" placeholder="'+HOST.escapeHtml(_authL('New password (min. 8, incl. a number)','新しいパスワード（8文字以上・数字を含む）','Neues Passwort (min. 8, mit Ziffer)','Новый пароль (мин. 8, с цифрой)','Nueva contraseña (mín. 8, con número)'))+'" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin-bottom:12px;">'
-        +'<button id="setpw-save" style="width:100%;background:var(--primary-fill);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;cursor:pointer;">'+HOST.escapeHtml(_authL('Save','保存','Speichern','Сохранить','Guardar'))+'</button>'
+        +'<button id="setpw-save" data-effect="outward" style="width:100%;background:var(--primary-fill);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;cursor:pointer;">'+HOST.escapeHtml(_authL('Save','保存','Speichern','Сохранить','Guardar'))+'</button>'
         +'<p id="setpw-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>'
         +'<button id="setpw-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">'+HOST.escapeHtml(_authL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button></div>';
       document.body.appendChild(d);
@@ -212,8 +212,8 @@ window.IntMapModules.authUi=function(HOST){
       <input id="am-name" type="text" placeholder="${window.IntMapLang.t(HOST.lang,'Display name','表示名','Anzeigename','Отображаемое имя','Nombre visible')}" autocomplete="nickname" maxlength="40" style="${inStyle}display:none;">
       <input id="am-email" type="email" placeholder="you@example.com" autocomplete="username" style="${inStyle}">
       <input id="am-pass" type="password" placeholder="${window.IntMapLang.t(HOST.lang,'Password','パスワード','Passwort','Пароль','Contraseña')}" autocomplete="current-password" style="${inStyle}margin-bottom:8px;">
-      <div id="am-forgot-row" style="text-align:right;margin:-2px 0 12px;"><a id="am-forgot" href="#" style="color:var(--text-muted);font-size:12px;text-decoration:none;">${_authL('Forgot password?','パスワードをお忘れですか？','Passwort vergessen?','Забыли пароль?','¿Olvidaste tu contraseña?')}</a></div>
-      <button id="am-submit" style="width:100%;background:var(--primary-fill);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">Log In</button>
+      <div id="am-forgot-row" style="text-align:right;margin:-2px 0 12px;"><a id="am-forgot" data-effect="outward" href="#" style="color:var(--text-muted);font-size:12px;text-decoration:none;">${_authL('Forgot password?','パスワードをお忘れですか？','Passwort vergessen?','Забыли пароль?','¿Olvidaste tu contraseña?')}</a></div>
+      <button id="am-submit" data-effect="outward" style="width:100%;background:var(--primary-fill);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">Log In</button>
       <button id="am-passkey" style="width:100%;background:var(--card-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);padding:10px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;margin-top:8px;display:none;">${_authL('Sign in with a passkey','パスキーでログイン','Mit Passkey anmelden','Войти по паскею','Iniciar sesión con passkey')}</button>
       <p id="am-msg" style="margin:12px 0 0;color:var(--text-muted);font-size:12.5px;line-height:1.5;"></p>
       <button id="am-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">Close</button>
@@ -349,6 +349,9 @@ window.IntMapModules.authUi=function(HOST){
       go.textContent=o.confirmLabel||_authL('Confirm','確認','Bestätigen','Подтвердить','Confirmar');
       no.textContent=_authL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar');
       go.classList.toggle('acct-ask-danger',!!o.danger);
+      /* (atlas-outward-effects) the confirm button — and the field whose Enter confirms — declare what they
+         confirm, so a press that did not come from the reader is asked about (js/atlas-controls.js _effectOf) */
+      [go,inp].forEach(x=>{ if(o.effect) x.setAttribute('data-effect',o.effect); else x.removeAttribute('data-effect'); });
       /* one live listener set per call — replaced wholesale, never accumulated */
       const done=(v)=>{ d.style.display='none'; document.removeEventListener('keydown',key,true); resolve(v); };
       const key=(e)=>{ if(e.key==='Escape'){ e.stopPropagation(); done(null); } else if(e.key==='Enter'&&(o.input?document.activeElement===inp:true)){ done(inp.hidden?'':inp.value); } };
@@ -452,25 +455,25 @@ window.IntMapModules.authUi=function(HOST){
         <div class="acct-card">
           <div class="acct-avatar-pick" id="acct-avatar-pick"></div>
           <label class="acct-btn acct-btn-quiet" for="acct-avatar-file">${_authL('Upload image','画像をアップロード','Bild hochladen','Загрузить изображение','Subir imagen')}</label>
-          <button class="acct-btn acct-btn-quiet" id="acct-avatar-clear" hidden>${_authL('Remove image','画像を削除','Bild entfernen','Удалить изображение','Quitar imagen')}</button>
-          <input type="file" id="acct-avatar-file" accept="image/*" hidden>
+          <button class="acct-btn acct-btn-quiet" id="acct-avatar-clear" data-effect="outward" hidden>${_authL('Remove image','画像を削除','Bild entfernen','Удалить изображение','Quitar imagen')}</button>
+          <input type="file" id="acct-avatar-file" data-effect="outward" accept="image/*" hidden>
           <div class="acct-note acct-icon-note">${_authL('This is also your picture on the community board.','コミュニティでのあなたの画像もこれになります。','Das ist auch dein Bild im Community-Board.','Это же изображение показывается на доске сообщества.','Esta es también tu imagen en el tablón de la comunidad.')}</div>
         </div>
 
         <div class="acct-grp-t">${_authL('Security','セキュリティ','Sicherheit','Безопасность','Seguridad')}</div>
         <div class="acct-card acct-rows">
           <div id="acct-passkeys" class="acct-note"></div>
-          <button class="acct-row" id="acct-add-passkey" hidden>${_authL('Add a passkey','パスキーを追加','Passkey hinzufügen','Добавить паскей','Añadir passkey')}</button>
-          <button class="acct-row" id="acct-change-email">${_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo')}</button>
+          <button class="acct-row" id="acct-add-passkey" data-effect="private" hidden>${_authL('Add a passkey','パスキーを追加','Passkey hinzufügen','Добавить паскей','Añadir passkey')}</button>
+          <button class="acct-row" id="acct-change-email" data-effect="outward">${_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo')}</button>
           <button class="acct-row" id="acct-change-pw">${_authL('Change password','パスワードを変更','Passwort ändern','Изменить пароль','Cambiar contraseña')}</button>
-          <button class="acct-row" id="acct-logout-all">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
+          <button class="acct-row" id="acct-logout-all" data-effect="outward">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
         </div>
 
         <p id="acct-msg" class="acct-msg" role="status" aria-live="polite"></p>
 
         <div class="acct-card acct-rows acct-danger">
-          <button class="acct-row" id="acct-logout">${_authL('Log out','ログアウト','Abmelden','Выйти','Cerrar sesión')}</button>
-          <button class="acct-row acct-row-danger" id="acct-delete">${_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta')}</button>
+          <button class="acct-row" id="acct-logout" data-effect="private">${_authL('Log out','ログアウト','Abmelden','Выйти','Cerrar sesión')}</button>
+          <button class="acct-row acct-row-danger" id="acct-delete" data-effect="destructive">${_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta')}</button>
         </div>
 
         <button class="acct-close" id="acct-close">${_authL('Close','閉じる','Schließen','Закрыть','Cerrar')}</button>
@@ -479,7 +482,7 @@ window.IntMapModules.authUi=function(HOST){
       /* Avatar picker (#28): emoji + color, stored locally (and used as the account-button icon). */
       const AV_EMOJI=['👤','🌍','🛰️','⚓','✈️','🛡️','📡','⛰️','🗺️','🔭','📰','🏛️','🦅','🐻','🐉','🌐'];
       const pick=document.getElementById('acct-avatar-pick');
-      pick.innerHTML=AV_EMOJI.map(e=>`<button class="acct-emoji" data-e="${e}">${e}</button>`).join('');
+      pick.innerHTML=AV_EMOJI.map(e=>`<button class="acct-emoji" data-effect="outward" data-e="${e}">${e}</button>`).join('');
       pick.querySelectorAll('.acct-emoji').forEach(b=>b.onclick=async()=>{ window.imSetAvatarImg(''); window.imSetAvatar(b.dataset.e); pick.querySelectorAll('.acct-emoji').forEach(x=>x.classList.toggle('sel',x===b)); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=''; pv.textContent=b.dataset.e; pv.style.background='hsl('+(window.imAvatarHue())+',58%,46%)';
         /* (#R753) ③ — the uploaded photo is withdrawn from the PROFILE too, not just from this device.
            Without this the community board kept showing the picture the reader had just replaced. */
@@ -534,7 +537,7 @@ window.IntMapModules.authUi=function(HOST){
         const ne=await _acctAsk({ title:_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo'),
           body:_authL('We’ll send a confirmation link to the new address.','新しいアドレスに確認リンクを送ります。','Wir senden einen Bestätigungslink an die neue Adresse.','Мы отправим ссылку для подтверждения на новый адрес.','Enviaremos un enlace de confirmación a la nueva dirección.'),
           input:{ type:'email', placeholder:_authL('New email address','新しいメールアドレス','Neue E-Mail-Adresse','Новый e-mail','Nuevo correo'), autocomplete:'email' },
-          confirmLabel:_authL('Send','送信','Senden','Отправить','Enviar') });
+          effect:'outward', confirmLabel:_authL('Send','送信','Senden','Отправить','Enviar') });
         if(ne==null) return;
         if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ne.trim())){ msg.textContent=_authL('That doesn\'t look like an email.','メールアドレスの形式ではありません。','Das sieht nicht wie eine E-Mail aus.','Это не похоже на e-mail.','Eso no parece un correo.'); return; }
         msg.textContent=_authL('Sending confirmation…','確認メールを送信中…','Bestätigung wird gesendet…','Отправка подтверждения…','Enviando confirmación…');
@@ -551,7 +554,7 @@ window.IntMapModules.authUi=function(HOST){
       document.getElementById('acct-logout-all').onclick=async()=>{
         if(await _acctAsk({ title:_authL('Log out on all devices?','すべての端末からログアウトしますか？','Auf allen Geräten abmelden?','Выйти на всех устройствах?','¿Cerrar sesión en todos los dispositivos?'),
           body:_authL('Every signed-in device, including this one, will need to sign in again.','この端末を含め、ログイン中のすべての端末で再度ログインが必要になります。','Jedes angemeldete Gerät, auch dieses, muss sich neu anmelden.','Все устройства, включая это, потребуют повторного входа.','Todos los dispositivos, incluido este, tendrán que iniciar sesión otra vez.'),
-          danger:true, confirmLabel:_authL('Log out everywhere','すべてログアウト','Überall abmelden','Выйти везде','Cerrar en todos') })===null) return;
+          danger:true, effect:'outward', confirmLabel:_authL('Log out everywhere','すべてログアウト','Überall abmelden','Выйти везде','Cerrar en todos') })===null) return;
         _acctClose(); HOST.user=null; HOST.bookmarks=[];
         try{ HOST.updateAccountButton(); }catch(_){}
         try{ if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
@@ -563,7 +566,7 @@ window.IntMapModules.authUi=function(HOST){
         const typed=await _acctAsk({ title:_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta'),
           body:_authL('This permanently deletes your account and all your data — it cannot be undone. Type your email address to confirm.','アカウントと全データを完全に削除します（取り消せません）。確認のためメールアドレスを入力してください。','Dies löscht dein Konto und alle Daten dauerhaft — nicht umkehrbar. Gib zur Bestätigung deine E-Mail-Adresse ein.','Это навсегда удалит аккаунт и все данные — отменить нельзя. Введите свой e-mail для подтверждения.','Esto elimina permanentemente tu cuenta y todos tus datos, sin vuelta atrás. Escribe tu correo para confirmar.'),
           input:{ type:'email', placeholder:String(HOST.user.email||''), autocomplete:'off' },
-          danger:true, confirmLabel:_authL('Delete permanently','完全に削除','Endgültig löschen','Удалить навсегда','Eliminar definitivamente') });
+          danger:true, effect:'destructive', confirmLabel:_authL('Delete permanently','完全に削除','Endgültig löschen','Удалить навсегда','Eliminar definitivamente') });
         if(typed==null) return;
         if((typed||'').trim().toLowerCase()!==String(HOST.user.email||'').toLowerCase()){ msg.textContent=_authL('That didn\'t match your email — cancelled.','メールアドレスが一致しません。キャンセルしました。','Stimmt nicht mit deiner E-Mail überein — abgebrochen.','Не совпадает с вашим e-mail — отменено.','No coincide con tu correo — cancelado.'); return; }
         msg.textContent=_authL('Deleting your account…','アカウントを削除中…','Konto wird gelöscht…','Удаление аккаунта…','Eliminando tu cuenta…');

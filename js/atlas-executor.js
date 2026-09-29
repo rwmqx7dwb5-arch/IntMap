@@ -351,13 +351,30 @@ function makeAtlasExecutor(HOST, CTX) {
            the second call follows an answer from the reader, not a failure; js/atlas-agent.js never
            freezes a `needs_input` in `doneCalls`, so it is not «already done» either. */
         var conf = String(cap.confirmation || 'none');
-        if (!opts.confirmed && (conf === 'always' || (conf === 'explicit' && op.source === 'atlas' && !!opts.externalContent))) {
+        /* ══ (atlas-outward-effects) …AND WHAT THIS CALL WOULD ACTUALLY DO ═══════════════════════════════════
+           Column 8 is per ROW, and one row — `system.control` (confirm 'none') — presses any button in the app,
+           including the ones that publish a community post, send feedback or a bug report, or delete the
+           account. A page or an attachment that told the model to press one got it pressed with nobody asked.
+           The element declares its own effect (`data-effect`), the capability resolves the call's target and
+           reads it (`cap.effectOf`), and an 'outward' or 'destructive' effect is asked about under EXACTLY the
+           'explicit' rule above — the model's say-so, after outside content, this turn. Nothing is refused and
+           no capability is withdrawn: the reader answers, and the same call runs. ⚠ ASKED HERE, BEFORE step 5:
+           a confirmation after the press is a report, not a question. */
+        var mayAsk = !opts.confirmed && op.source === 'atlas' && !!opts.externalContent;
+        var eff = '';
+        /* only asked when its answer can change the outcome — a button press from the UI, a plain turn and an
+           'explicit' row (which asks anyway) never pay for resolving the target twice */
+        if (mayAsk && conf === 'none' && typeof cap.effectOf === 'function') {
+          try { eff = String((await cap.effectOf(Caps.context(), args)) || '').toLowerCase(); } catch (_) { eff = ''; }
+        }
+        var effAsks = (eff === 'outward' || eff === 'destructive');
+        if (!opts.confirmed && (conf === 'always' || ((conf === 'explicit' || effAsks) && mayAsk))) {
           phase(op, 'waiting-input');
           return settle(Results.needsInput({
             operationId: operationId, capabilityId: cap.id, code: 'needs_confirm',
             /* `promptKey` names the prompt the renderer draws for this request — the text lives in
                js/atlas-results.js ('atlas.input.confirm', nine languages), not here. */
-            inputRequest: { kind: 'choice', promptKey: 'atlas.input.confirm', pendingArgs: args, capabilityId: cap.id, confirm: conf }
+            inputRequest: { kind: 'choice', promptKey: 'atlas.input.confirm', pendingArgs: args, capabilityId: cap.id, confirm: conf, effect: eff }
           }));
         }
 

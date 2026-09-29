@@ -765,6 +765,26 @@ attach.recall・data.query・news.category）、提供者の hosted web search �
 この日から初めて効く。`always` の行は今日 0。**Atlas が何を呼ぶかは縛らない**（one-pass 規則）。
 縛るのは、誰の言葉で動いたかを知らずに機密が外へ出る経路だけ。
 
+**⚠ 列が言えないことは、押される要素が言う（`data-effect`）。** `system.control` は confirm='none' の
+1 行で、地図の拡大ボタンも「投稿」も同じ行を通る。だから効果は**要素自身が宣言する**——
+`outward`（読者の名で外へ送る・公開する・アカウントを変える: コミュニティの投稿・投票・コメント・通報、
+フィードバック・バグ報告、メール・パスワード・アバターの変更、全端末ログアウト）、`destructive`
+（取り戻せない削除: 投稿・コメント・パスキー・監視・アカウント）、`private`（読者自身の状態だけ・
+取り消せる: ブックマーク・監視の一時停止など）、`none`（書き込むハンドラを共有するが自分は書かない枝）。
+能力は `effectOf(ctx,args)` を持ち（`bindRuntime({effects})` で Atlas が `system.control` に
+`controlEffect` を結ぶ。`findControl` と同じ採点で対象を解決して `data-effect` を読む）、実行器の確認の段は
+**実行の前に**それを訊き、`outward` / `destructive` を `explicit` と**同じ条件**で扱う（inputRequest に
+`effect` が載り、押した結果の `meta.effect` にも残る）。能力は 1 本も減らない——読者が答えれば同じ呼び出しが
+走る。`system.control` 以外の経路（レイヤー名・道具名・未知の type からの `doControl` への後退）は
+4b を通っていないので、宣言された `outward` / `destructive` の要素を押さない。危険なボタンの一覧は
+どこにも書かない：`tests/atlas-outward-effects-checks.test.mjs` が、Supabase の書き込み・rpc・auth の変更・
+POST する Edge Function に届く click/change/Enter ハンドラの要素が `data-effect` を持たなければ赤くする
+（関数は同じファイルと、別ファイルの同名関数・転送シム `X.name.apply` まで辿る。ハンドラの中で登録される
+別のハンドラには降りない）。`_acctAsk` の確認ボタンと欄は、呼び出し元が渡す `effect` を宣言する。
+**モデルが読む操作一覧（controlCatalog）では、欄の名前は aria-label → `<label>` → data-i18n → title →
+placeholder の順で、個人情報の欄（type が email / password / tel、または autocomplete が人を指す欄）の
+placeholder は使わない**——アカウント削除の欄は placeholder が読者自身のメールアドレスだった。
+
 **status は 7 つあり、`ok` はその導出である**（`status === 'completed'`。読み取り専用の
 getter なので、観測していない成功を呼び出し側が書き込むことはできない）。
 `running`＝計算が続いている。`needs_input`＝必要な入力が無い。`partial`＝一部だけ。
