@@ -8,6 +8,27 @@
    legends from these; the stylesheet is the one place that knows where the chrome is. */
 @property --m-legend-top{ syntax:'<length>'; inherits:true; initial-value:0px; }
 @property --m-legend-right{ syntax:'<length>'; inherits:true; initial-value:0px; }
+/* ══ (map-a11y-structure) THE STACKING ORDER HAS NAMES ══════════════════════════════════════════════
+   MEASURED 2026-09-29: 86 z-index declarations here over 54 distinct numbers (0 … 200001) and no shared
+   token, so two unrelated surfaces could sit on one number by coincidence (1500 was both the sidebar
+   toggle and the search-result card). Each LAYER below is a band; a declaration reads its layer, or
+   calc(var(--z-layer) + n) for a fixed step above it — the steps are the old numbers minus the base, so
+   the painting order did not move by one. scripts/z-layers.mjs resolves every declaration and holds the
+   ordered list to tests/z-layers-baseline.json (check:static `z-layers`): a changed order fails until it
+   is written down, and a bare number (here or in js/) is ratcheted per file.
+     inset       0      ordering inside one component (a sticky header over its own list)
+     marker      100    a hovered map marker over its neighbours
+     map-overlay 900    readouts drawn on the map (credit, coordinates)
+     controls    1000   the chrome: sidebar, map buttons, search, tool panels
+     dropdown    1300   menus and result lists that open from the chrome, map tooltips
+     sheet       1650   the phone's bottom sheet, its scrim, the floating windows' mobile form
+     popup       2000   feature popups and cards opened from the map
+     menu        2500   the context menu and the front-most floating window
+     toast       3000   transient notices
+     modal       10000  dialogs and full-screen sheets that block the page
+     overlay     99990  full-viewport overlays above every dialog (detail views, the capture flash)
+     system      200000 boot splash and the reload notice — above everything, always */
+:root{ --z-inset:0; --z-marker:100; --z-map-overlay:900; --z-controls:1000; --z-dropdown:1300; --z-sheet:1650; --z-popup:2000; --z-menu:2500; --z-toast:3000; --z-modal:10000; --z-overlay:99990; --z-system:200000; }
     /* (#R101) --text-muted darkened for legibility ("灰色文字は見えにくい") — was #6c6c70 */
     /* ══ (ui-a11y-polish) THE ACCENT HAS TWO JOBS, SO IT IS TWO TOKENS ══════════════════════════════
        --primary-color is the accent AS TEXT (and borders, rings, icons); --primary-fill is the accent AS A
@@ -110,7 +131,7 @@
        branch — a tilt that never tilted and a drag that never dragged, because the splash ate them.
        An iOS launch screen does not capture input either; letting an early tap reach the app under it
        is the better behaviour as well as the compatible one. */
-    .boot-splash{ position:fixed; inset:0; z-index:200000; pointer-events:none; display:flex; align-items:center; justify-content:center;
+    .boot-splash{ position:fixed; inset:0; z-index:var(--z-system); pointer-events:none; display:flex; align-items:center; justify-content:center;
       background:var(--bg-color); opacity:1; transition:opacity 0.42s cubic-bezier(0.4,0,0.2,1); }
     .boot-splash.boot-gone{ opacity:0; pointer-events:none; }
     .boot-inner{ display:flex; flex-direction:column; align-items:center; gap:26px;
@@ -174,7 +195,7 @@
        already open). ⚠ Deliberately NOT a .sat-toast: that class is pointer-events:none so a toast never
        eats a map drag, which also means no button inside one can be pressed. ⚠ It sits ABOVE the launch
        screen (z-index 200000) because a chunk that 404s during boot leaves the splash up. */
-    .im-reload{ position:fixed; left:50%; top:calc(12px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:200001; display:flex; align-items:center; gap:12px; max-width:min(520px,92vw); padding:10px 12px 10px 16px; border-radius:14px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); color:var(--text-main); font-size:13px; font-weight:500; line-height:1.45; }
+    .im-reload{ position:fixed; left:50%; top:calc(12px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:calc(var(--z-system) + 1); display:flex; align-items:center; gap:12px; max-width:min(520px,92vw); padding:10px 12px 10px 16px; border-radius:14px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); color:var(--text-main); font-size:13px; font-weight:500; line-height:1.45; }
     .im-reload > button{ flex:0 0 auto; border:none; border-radius:999px; padding:7px 14px; background:var(--primary-fill); color:#fff; font-size:13px; font-weight:600; white-space:nowrap; }
     .im-reload > button:hover{ filter:brightness(1.06); }
     /* the stale-build case is a fault the app already tried and failed to heal (it purged the caches and reloaded once), so it keeps the red of the banner it replaces */
@@ -187,7 +208,7 @@
     button{ margin:0; padding:0; cursor:pointer; color:var(--text-main); }
     body{ overflow:hidden; transition:background-color 0.4s; }
     .operation-room{ display:flex; width:100vw; height:100vh; height:100dvh; overflow:hidden; }
-    .sidebar{ width:var(--sidebar-w); max-width:100vw; flex-shrink:0; background-color:var(--sidebar-bg); backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px); border-right:1px solid rgba(128,128,128,0.15); padding:24px; padding-top:max(24px,env(safe-area-inset-top)); display:flex; flex-direction:column; box-sizing:border-box; z-index:1000; transition:margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1); min-height:0; }
+    .sidebar{ width:var(--sidebar-w); max-width:100vw; flex-shrink:0; background-color:var(--sidebar-bg); backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px); border-right:1px solid rgba(128,128,128,0.15); padding:24px; padding-top:max(24px,env(safe-area-inset-top)); display:flex; flex-direction:column; box-sizing:border-box; z-index:var(--z-controls); transition:margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1); min-height:0; }
     .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
     .map-container{ flex:1; height:100%; position:relative; background:var(--bg-color); overflow:hidden; }
     /* (#R22) flex-wrap + gap so a narrowed (resized) sidebar wraps the Settings button below the title
@@ -302,7 +323,7 @@
     .news-item{ background:var(--card-bg); padding:11px 15px; border-radius:14px; font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
     #live-news-feed{ gap:9px; }   /* (#R86) denser news feed — fit more cards without cramming (news only; info/community/countries feeds unaffected) */
     #countries-feed{ gap:7px; padding-top:0; }   /* (#R105) a little MORE gap BETWEEN cards; the in-card top/bottom padding is tightened on .stat-row instead. No top padding so the sort toolbar hugs the search field. */
-    .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:10; }
+    .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:calc(var(--z-inset) + 10); }
     /* iOS-style location pill (replaces old loc-chip) */
     /* (#R137) the geolocated location pill = the ACCENT colour ("ニュースカードの地点ピルはアクセントカラーに"). Was a
        hardcoded blue gradient that ignored the user's chosen accent; the unmapped/publisher states stay distinct below. */
@@ -316,7 +337,7 @@
     [data-theme="dark"] .loc-chip{ box-shadow:0 1px 4px rgba(0,0,0,0.4); }
     .btn-bookmark{ position:absolute; top:9px; right:14px; background:none; border:none; font-size:17px; line-height:1; color:var(--text-muted); cursor:pointer; transition:0.2s; padding:0; }
     .btn-bookmark:hover{ transform:scale(1.2); } .btn-bookmark.active{ color:#ffcc00; text-shadow:0 0 8px rgba(255,204,0,0.5); }
-    .dash-nav{ display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; padding-bottom:8px; flex-shrink:0; position:sticky; top:0; background:var(--sidebar-bg); z-index:5; }
+    .dash-nav{ display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; padding-bottom:8px; flex-shrink:0; position:sticky; top:0; background:var(--sidebar-bg); z-index:calc(var(--z-inset) + 5); }
     .dash-nav::-webkit-scrollbar{ height:0; }
     .dash-nav-btn{ white-space:nowrap; background:var(--input-bg); border:1px solid transparent; padding:8px 12px; border-radius:10px; font-size:12px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:0.2s; }
     .dash-nav-btn.active{ background:rgba(88,86,214,0.08); color:var(--info-hub); border-color:var(--info-hub); }
@@ -422,7 +443,7 @@
     .co-mono{ width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; }
     .co-banner{ opacity:0.85; }
     .co-row{ cursor:pointer; }
-    .co-detail-ov{ position:fixed; inset:0; z-index:99990; background:rgba(0,0,0,0.42); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:18px; }
+    .co-detail-ov{ position:fixed; inset:0; z-index:var(--z-overlay); background:rgba(0,0,0,0.42); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:18px; }
     .co-detail{ position:relative; width:min(420px,94vw); max-height:88vh; overflow:auto; background:var(--sidebar-bg,var(--bg-color)); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.28)); border-radius:18px; box-shadow:0 18px 60px rgba(0,0,0,0.4); padding:20px; }
     .co-detail-x{ position:absolute; top:12px; right:12px; width:30px; height:30px; border:none; border-radius:50%; background:var(--input-bg); color:var(--text-main); font-size:15px; cursor:pointer; }
     .co-detail-head{ display:flex; align-items:center; gap:13px; margin-bottom:14px; }
@@ -473,7 +494,7 @@
        <body>, where it is not inside .operation-room — just as it was not a sibling of #sidebar there
        before — so these rules go on not applying in workspace mode, and #btn-toggle-sidebar is
        `display:none` there anyway. ═══════════════════════════════════════════════════════════════ */
-    .btn-toggle-sidebar{ position:fixed; top:50%; left:var(--sidebar-w); z-index:1500; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.18); border-left:none; color:var(--text-muted); width:22px; height:64px; padding:0; border-radius:0 10px 10px 0; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:4px 0 16px rgba(0,0,0,0.12); transition:left 0.4s cubic-bezier(0.25,1,0.5,1), background 0.2s, color 0.2s, transform 0.2s; transform:translateY(-50%); }
+    .btn-toggle-sidebar{ position:fixed; top:50%; left:var(--sidebar-w); z-index:calc(var(--z-dropdown) + 200); background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.18); border-left:none; color:var(--text-muted); width:22px; height:64px; padding:0; border-radius:0 10px 10px 0; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:4px 0 16px rgba(0,0,0,0.12); transition:left 0.4s cubic-bezier(0.25,1,0.5,1), background 0.2s, color 0.2s, transform 0.2s; transform:translateY(-50%); }
     .operation-room:has(> .sidebar.collapsed) .map-container .btn-toggle-sidebar { left:0; }
     .btn-toggle-sidebar:hover{ background:var(--card-bg); color:var(--primary-color); transform:translateY(-50%) scale(1.08); }
     .btn-toggle-sidebar .chev{ width:7px; height:7px; border-left:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); transition:transform 0.4s cubic-bezier(0.25,1,0.5,1); }
@@ -486,7 +507,7 @@
        a slimmer bar (group padding 2px 4px) and the same 4px gap. */
     /* (#R123) the LAST remaining difference was the vertical gap BETWEEN the stacked bars — normal mode was 8px
        while workspace mode uses 4px (see the body.ws-mode override). Match it so the bar spacing is identical. */
-    .map-controls-top{ position:absolute; top:10px; right:10px; z-index:1000; display:flex; flex-direction:column; gap:4px; align-items:flex-end; pointer-events:none; }
+    .map-controls-top{ position:absolute; top:10px; right:10px; z-index:var(--z-controls); display:flex; flex-direction:column; gap:4px; align-items:flex-end; pointer-events:none; }
     .map-controls-top > *, .map-controls-top .layer-dropdown{ pointer-events:auto; }
     /* (#R480) 「Map/SatelliteとFlat/Globe/3Dを同じ行にまとめて。」 — .map-controls-top is a COLUMN, so two
        pills can only share a line by sharing a parent. This wrapper is that parent and nothing else: no
@@ -549,7 +570,7 @@
        say so out loud. */
     .compass-svg{ transition:transform 0.2s; display:block; }
     /* (#R152) desktop right-click-the-compass numeric view entry (bearing / pitch / zoom) — opaque, like Measure/Share */
-    .compass-num-pop{ position:fixed; z-index:4000; background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); width:194px; font-size:12px; display:flex; flex-direction:column; gap:8px; }
+    .compass-num-pop{ position:fixed; z-index:calc(var(--z-toast) + 1000); background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); width:194px; font-size:12px; display:flex; flex-direction:column; gap:8px; }
     .compass-num-pop .cnp-t{ font-weight:700; font-size:12.5px; color:var(--text-main); margin-bottom:2px; }
     .compass-num-pop label{ display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--text-muted); }
     .compass-num-pop input[type=number]{ width:78px; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px; }
@@ -559,7 +580,7 @@
     .layer-menu-container{ position:relative; }
     /* (#R9) Measurement tools collapsed under one "Measure ▾" trigger (Radius stays standalone). */
     .measure-menu-container, .share-menu-container{ position:relative; display:inline-block; }   /* (#R151) share menu mirrors the measure menu */
-    .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--glass-fill); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:12px; padding:6px; box-shadow:var(--shadow); min-width:182px; flex-direction:column; gap:4px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }   /* (#R153) FOLLOW the Solid/Frosted-Glass appearance setting like every other popup (#R33 "全てのUIはこの設定に従うように"): --glass-fill is the ONE shared material — it resolves to the OPAQUE --card-bg in Solid mode (so NOT transparent — the original "無条件で透過しないように") and to a translucent rgba in the two glass modes (so NOT unconditionally opaque either — the "無条件で不透過するな" addendum). R152 hardcoded --card-bg which ignored the glass modes. */
+    .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:var(--z-dropdown); background:var(--glass-fill); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:12px; padding:6px; box-shadow:var(--shadow); min-width:182px; flex-direction:column; gap:4px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }   /* (#R153) FOLLOW the Solid/Frosted-Glass appearance setting like every other popup (#R33 "全てのUIはこの設定に従うように"): --glass-fill is the ONE shared material — it resolves to the OPAQUE --card-bg in Solid mode (so NOT transparent — the original "無条件で透過しないように") and to a translucent rgba in the two glass modes (so NOT unconditionally opaque either — the "無条件で不透過するな" addendum). R152 hardcoded --card-bg which ignored the glass modes. */
     .share-dropdown{ left:auto; right:0; }   /* (#R151) share sits near the right edge → anchor the dropdown right so it never overflows the viewport */
     .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown{ display:flex; }
     .measure-dropdown .view-btn, .share-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
@@ -586,7 +607,7 @@
     /* (#R101) tighter LEFT + BOTTOM gap on the always-visible active-layers bar (padding 12→10 / bottom 6+7 → 4+5),
        kept off flush per request ("左と下の隙間をもうちょっと詰めて。ただし完全密着はさせないように"). */
     /* (#R115) Active layers = OPAQUE (card-bg, no glass/blur) — the user asked that this UI never be transparent. */
-    #layer-active-section{ position:sticky; top:0; z-index:4; background:var(--card-bg); margin:0 -12px 4px; padding:7px 10px 5px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:12px 12px 0 0; }
+    #layer-active-section{ position:sticky; top:0; z-index:calc(var(--z-inset) + 4); background:var(--card-bg); margin:0 -12px 4px; padding:7px 10px 5px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:12px 12px 0 0; }
     /* flush with the panel's top edge only when it actually IS the first element (#R65: the negative margin
        used to overlap the search box when that was inserted above the bar) */
     #layer-active-section:first-child{ margin-top:-12px; top:-12px; }
@@ -597,7 +618,7 @@
        _placeActiveSection() — so it is a sticky last child of the REAL scroll container and truly pins to the
        sheet bottom ("モバイル版でもActive layersは下部にstick"). Full width (the scroller has no side padding). */
     /* (#R64) mobile: same TOP placement — sticky first child of the sheet scroller, fixed height. */
-    .m-sheet #layer-active-section{ position:sticky; top:0; z-index:5; margin:0; padding:8px 16px 7px; border-radius:0; background:var(--card-bg); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.25)); box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+    .m-sheet #layer-active-section{ position:sticky; top:0; z-index:calc(var(--z-inset) + 5); margin:0; padding:8px 16px 7px; border-radius:0; background:var(--card-bg); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.25)); box-shadow:0 4px 12px rgba(0,0,0,0.12); }
     /* ⚠ (#R469) …and on the phone the same strip has the same defect for the same reason: `.m-sheet`
        is painted with --glass-fill in the two frosted appearances (the #R33 list further down), while
        this bar stayed on the opaque --card-bg. It takes the sheet's own material, and keeps the
@@ -654,7 +675,7 @@
       .lyr-head[data-i18n="lyrGrpOthers"]::after{ content:'▾'; margin-left:auto; font-size:9px; opacity:0.6; }
       .lyr-head[data-i18n="lyrGrpOthers"].lyr-collapsed::after{ content:'▸'; }
     }
-    .tool-panel{ display:none; position:absolute; top:200px; right:24px; z-index:1000; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:248px; font-size:13px; }
+    .tool-panel{ display:none; position:absolute; top:200px; right:24px; z-index:var(--z-controls); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:248px; font-size:13px; }
     .tp-title{ font-weight:600; margin-bottom:8px; } .tp-row{ display:flex; justify-content:space-between; margin:4px 0; } .tp-hint{ font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.4; }
     /* (#R170) Measure ▸ 3-D volume — the altitude band. Two number fields so the "from … to …" reads as
        one range; they re-extrude the box on every keystroke.
@@ -789,7 +810,7 @@
     /* (#R41) Webcam popup — inherits .plc-popup dark-mode theming; just give the embedded live player room and
        keep the × clear of the title ("ポップアップのデザインがダークモードで死んでいる"). */
     .webcam-popup .maplibregl-popup-content{ padding:11px 12px 12px !important; }
-    .webcam-popup .maplibregl-popup-close-button{ background:rgba(128,128,128,0.22); color:var(--text-main); top:7px; right:7px; width:24px; height:24px; border-radius:7px; z-index:2; }
+    .webcam-popup .maplibregl-popup-close-button{ background:rgba(128,128,128,0.22); color:var(--text-main); top:7px; right:7px; width:24px; height:24px; border-radius:7px; z-index:calc(var(--z-inset) + 2); }
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; min-width:0; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     /* (#R33) radius −/＋ steppers + let long action-button labels wrap instead of overflowing (desktop radius legend). */
@@ -848,14 +869,14 @@
     .dot-news{ background:var(--primary-fill); color:var(--primary-color); } .dot-source{ background:var(--threat-unmapped); color:var(--threat-unmapped); opacity:0.55; }
     .dot-info-choke{background:var(--info-choke);color:var(--info-choke);} .dot-info-mil{background:var(--info-mil);color:var(--info-mil);} .dot-info-tech{background:var(--info-tech);color:var(--info-tech);} .dot-info-space{background:var(--info-space);color:var(--info-space);} .dot-info-energy{background:var(--info-energy);color:var(--info-energy);} .dot-info-hub{background:var(--info-hub);color:var(--info-hub);} .dot-info-maritime{background:var(--info-maritime);color:var(--info-maritime);}
     .intel-label{ display:none; position:absolute; left:18px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.78); backdrop-filter:blur(6px); color:#fff; padding:3px 9px; border-radius:8px; font-size:11px; font-weight:500; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); pointer-events:none; text-shadow:0 1px 2px rgba(0,0,0,0.8); max-width:220px; overflow:hidden; text-overflow:ellipsis; }
-    .intel-marker:hover .intel-label,.intel-marker.hovered .intel-label{ display:inline-block; z-index:101; }
-    .intel-marker:hover{ z-index:100; }
+    .intel-marker:hover .intel-label,.intel-marker.hovered .intel-label{ display:inline-block; z-index:calc(var(--z-marker) + 1); }
+    .intel-marker:hover{ z-index:var(--z-marker); }
     .intel-marker:hover .intel-dot,.intel-marker.hovered .intel-dot{ transform:scale(1.4); }
     @keyframes pulse{ 0%{transform:scale(0.6);opacity:0.7;} 100%{transform:scale(1.6);opacity:0;} }
     @keyframes imDemoPulse{ 0%,100%{opacity:1;} 50%{opacity:0.45;} }   /* (#R22) intro-demo AUTO badge */
-    .hover-tooltip{ display:none; position:absolute; bottom:22px; left:50%; transform:translateX(-50%); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); color:var(--text-main); font-size:13px; border-radius:12px; padding:14px; box-shadow:var(--shadow); white-space:normal; width:280px; backdrop-filter:blur(15px); z-index:1000; text-align:left; pointer-events:none; }
+    .hover-tooltip{ display:none; position:absolute; bottom:22px; left:50%; transform:translateX(-50%); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); color:var(--text-main); font-size:13px; border-radius:12px; padding:14px; box-shadow:var(--shadow); white-space:normal; width:280px; backdrop-filter:blur(15px); z-index:var(--z-controls); text-align:left; pointer-events:none; }
     .intel-marker:hover .hover-tooltip,.intel-marker.hovered .hover-tooltip{ display:block; }
-    .country-info{ display:none; position:absolute; bottom:60px; left:24px; z-index:1200; width:260px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:13px; }
+    .country-info{ display:none; position:absolute; bottom:60px; left:24px; z-index:calc(var(--z-controls) + 200); width:260px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:13px; }
     .ci-name{ font-weight:700; font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px; } .ci-row{ display:flex; justify-content:space-between; margin:3px 0; color:var(--text-muted); } .ci-row b{ color:var(--text-main); }
     .ci-details{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--primary-fill); color:#fff; font-weight:600; cursor:pointer; }
     /* (#R103) the coordinate/elevation always-on readout tucked closer to the bottom-left corner (kept non-flush). */
@@ -863,7 +884,7 @@
        corner inset moves with it (see .news-timeline in the frosted block) so the two bottom
        corners keep the SAME gap — that is the whole point of the pair. ⚠ tests/r252 ⑥ and
        tests/r485 ⑤ pin this number on purpose: other clearances are derived from it. */
-    .coord-readout{ display:none; position:absolute; bottom:6px; left:6px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
+    .coord-readout{ display:none; position:absolute; bottom:6px; left:6px; z-index:var(--z-map-overlay); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
 
     /* ══ (#R485) BASEMAP CREDIT — A ROW OF THE LAYOUT, NOT A THING FLOATING ON THE MAP ═══════════
        #R479 put this in the bottom-right corner as an absolutely-positioned pill and it was WRONG:
@@ -898,7 +919,7 @@
     .coord-readout .cr-warr i{ display:block; line-height:0; }
     .coord-readout .cr-eye{ color:var(--text-muted); }   /* (#R171) camera altitude — same weight as the ground elevation next to it */
     /* ===== Satellite imagery engine UI ===== */
-    .sat-controller{ display:none; position:absolute; top:180px; right:24px; z-index:999; width:250px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); font-size:12px; }
+    .sat-controller{ display:none; position:absolute; top:180px; right:24px; z-index:calc(var(--z-map-overlay) + 99); width:250px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); font-size:12px; }
     .satc-head{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:13px; margin-bottom:10px; color:var(--text-main); }
     .satc-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
     .satc-row > label{ color:var(--text-muted); font-size:11px; flex-shrink:0; }
@@ -911,7 +932,7 @@
     .satc-row input[type=range]{ flex:1; min-width:0; }
     .satc-attr{ color:var(--text-muted); font-size:10px; line-height:1.4; margin-top:6px; border-top:1px solid rgba(128,128,128,0.12); padding-top:6px; }
     .map-container.sat-on .tool-panel{ top:auto!important; bottom:24px; }
-    .sat-toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--info-mil); color:#fff; padding:11px 18px; border-radius:11px; font-size:12.5px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,0.32); z-index:3000; opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; max-width:min(420px,80vw); text-align:center; }
+    .sat-toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--info-mil); color:#fff; padding:11px 18px; border-radius:11px; font-size:12.5px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,0.32); z-index:var(--z-toast); opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; max-width:min(420px,80vw); text-align:center; }
     .sat-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
     .sat-keys-hint{ font-size:11px; color:var(--text-muted); margin-bottom:10px; font-weight:400; line-height:1.45; }
     /* News-by-country multi-select pulldown (#R15) */
@@ -921,7 +942,7 @@
     .nc-dd-label{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .nc-dd-caret{ flex-shrink:0; opacity:0.7; transition:transform 0.18s; }
     .nc-dd.open .nc-dd-caret{ transform:rotate(180deg); }
-    .nc-dd-panel{ display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:30; max-height:260px; overflow-y:auto; padding:6px; border-radius:10px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--card-bg,#fff); box-shadow:var(--shadow,0 8px 28px rgba(0,0,0,0.22)); }
+    .nc-dd-panel{ display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:calc(var(--z-inset) + 30); max-height:260px; overflow-y:auto; padding:6px; border-radius:10px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--card-bg,#fff); box-shadow:var(--shadow,0 8px 28px rgba(0,0,0,0.22)); }
     .nc-dd.open .nc-dd-panel{ display:block; }
     /* (#R34) 44px tap rows + the SAME mobile-tap hardening as the layer rows: touch-action:manipulation kills
        the iOS ~300ms delayed synthetic click that landed on the ADJACENT language, and pointer-events:none on
@@ -1015,7 +1036,7 @@
     .ai-report-actions{ display:flex; gap:8px; margin-top:20px; }
     .ai-report-actions button{ flex:1; padding:11px; border-radius:12px; border:1px solid rgba(128,128,128,0.18); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:600; cursor:pointer; }
     .ai-report-actions button.primary{ border:none; background:var(--primary-fill); color:#fff; }
-    .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(12px); z-index:9999; justify-content:center; align-items:center; padding:16px; }
+    .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(12px); z-index:calc(var(--z-modal) - 1); justify-content:center; align-items:center; padding:16px; }
     .modal-content{ background:var(--popup-bg); border-radius:20px; padding:32px; width:340px; max-width:90vw; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); position:relative; max-height:85vh; overflow-y:auto; } .country-modal .modal-content{ width:400px; }
     .cm-row{ display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid rgba(128,128,128,0.12); font-size:14px; } .cm-row b{ font-weight:600; text-align:right; }
     .setting-group{ margin-bottom:20px; } .setting-group label{ display:block; font-size:13px; font-weight:500; margin-bottom:8px; color:var(--text-muted); }
@@ -1026,7 +1047,7 @@
     /* (#R18) iOS-style timezone combobox — input + custom tappable dropdown (no native size-N select). */
     .tz-combo input#setting-tz-search{ width:100%; padding:11px 12px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; font-size:14px; color:var(--text-main); box-sizing:border-box; outline:none; }
     .tz-combo input#setting-tz-search:focus{ border-color:var(--primary-color); }
-    .tz-results{ display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:20; max-height:260px; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,0.22); }
+    .tz-results{ display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:calc(var(--z-inset) + 20); max-height:260px; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,0.22); }
     .tz-results.show{ display:block; }
     .tz-row{ padding:11px 13px; font-size:14px; color:var(--text-main); cursor:pointer; border-bottom:1px solid rgba(128,128,128,0.1); }
     .tz-row:last-child{ border-bottom:none; }
@@ -1077,7 +1098,7 @@
     #settings-modal .settings-sec .setting-group > label{ font-size:13.5px; }
     @media(max-width:768px){ #settings-modal .settings-scroll{ padding:20px 16px 0; } #settings-modal .settings-sec{ padding:2px 12px; } }
     #settings-modal .settings-scroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:32px 32px 0; }
-    #settings-modal .settings-foot{ flex:0 0 auto; z-index:3; margin:0; padding:14px 32px calc(16px + env(safe-area-inset-bottom,0px)); background:var(--popup-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:0 0 20px 20px; }
+    #settings-modal .settings-foot{ flex:0 0 auto; z-index:calc(var(--z-inset) + 3); margin:0; padding:14px 32px calc(16px + env(safe-area-inset-bottom,0px)); background:var(--popup-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:0 0 20px 20px; }
     #settings-modal .settings-foot #btn-close-settings{ margin-top:0; }
     /* (#R35) In the two frosted modes the modal body switches to --glass-fill, but the Apply footer
        kept the opaque --popup-bg → a mismatched solid strip at the bottom ("frosted glassにするとSettingsの
@@ -1097,9 +1118,9 @@
     body.ws-mode #settings-modal{ background:rgba(0,0,0,0.18); -webkit-backdrop-filter:none; backdrop-filter:none; align-items:flex-start; padding-top:52px; }
     body.ws-mode #settings-modal .modal-content{ background:var(--bg-color,#0b0b0d); border:1px solid var(--glass-border,rgba(128,128,128,0.28)); border-radius:13px; box-shadow:0 20px 60px rgba(0,0,0,0.5); width:440px; max-width:calc(100vw - 24px); max-height:calc(100vh - 100px); }
     body.ws-mode #settings-modal .settings-foot{ background:var(--bg-color,#0b0b0d); }
-    .measure-tooltip{ position:absolute; background:rgba(0,0,0,0.82); color:#fff; padding:5px 9px; border-radius:8px; font-size:12px; font-weight:600; pointer-events:none; z-index:2000; transform:translate(12px,-50%); display:none; white-space:nowrap; }
+    .measure-tooltip{ position:absolute; background:rgba(0,0,0,0.82); color:#fff; padding:5px 9px; border-radius:8px; font-size:12px; font-weight:600; pointer-events:none; z-index:var(--z-popup); transform:translate(12px,-50%); display:none; white-space:nowrap; }
     /* Right-click context menu */
-    .ctx-menu{ display:none; position:absolute; z-index:2500; min-width:180px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(20px); overflow:hidden; padding:4px; font-size:13px; }
+    .ctx-menu{ display:none; position:absolute; z-index:var(--z-menu); min-width:180px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(20px); overflow:hidden; padding:4px; font-size:13px; }
     .ctx-menu button{ display:flex; align-items:center; gap:8px; width:100%; background:transparent; border:none; color:var(--text-main); padding:9px 10px; border-radius:8px; cursor:pointer; text-align:left; font-size:13px; }
     .ctx-menu button:hover{ background:var(--input-bg); }
     .ctx-menu .ctx-divider{ height:1px; background:rgba(128,128,128,0.15); margin:4px 2px; }
@@ -1121,7 +1142,7 @@
     .ctx-menu .ctx-coord{ padding:7px 10px 6px; font-size:11.5px; color:var(--text-muted); font-weight:600; letter-spacing:0.2px; }
     /* Time-travel news timeline — anchored on the right side of the map, raised to avoid coord readout/legends */
     /* (#R103) tucked closer to the bottom-right (non-flush) + smaller button/popup per request. */
-    .news-timeline{ position:absolute; right:14px; bottom:54px; z-index:1100; display:flex; align-items:stretch; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:14px; padding:0; overflow:hidden; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
+    .news-timeline{ position:absolute; right:14px; bottom:54px; z-index:calc(var(--z-controls) + 100); display:flex; align-items:stretch; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:14px; padding:0; overflow:hidden; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
     .news-timeline.collapsed .ntl-body{ display:none; }
     /* (#27) collapsed = the labeled "See the past world / 1900 to present" button (smaller, #R103) */
     .ntl-open{ display:flex; align-items:center; gap:9px; padding:7px 11px; background:transparent; border:none; cursor:pointer; text-align:left; width:100%; }
@@ -1276,7 +1297,7 @@
       .ntl-synced .ntl-chip{ font-size:8.5px; padding:2px 5px; }
     }
     /* Movable country detail popup (replaces the old modal — does not lock the map) */
-    .country-popup{ display:none; position:absolute; z-index:2200; width:380px; max-width:calc(100vw - 32px); max-height:80vh; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); padding:18px 22px 18px; overflow-y:auto; }
+    .country-popup{ display:none; position:absolute; z-index:calc(var(--z-popup) + 200); width:380px; max-width:calc(100vw - 32px); max-height:80vh; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); padding:18px 22px 18px; overflow-y:auto; }
     .country-popup-header{ display:flex; align-items:center; justify-content:space-between; margin:0 0 10px 0; padding-right:24px; cursor:move; user-select:none; }
     .country-popup-header h3{ margin:0; font-size:18px; font-weight:600; line-height:1.2; }
     .country-popup-close{ position:absolute; top:10px; right:12px; background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; padding:4px 8px; border-radius:8px; line-height:1; }
@@ -1296,7 +1317,7 @@
     /* Pin popup (anchored DOM element near pin location) */
     /* (#R175) LIVE AIRCRAFT detail card (js/aircraft-detail.js). It IS a .country-popup — same shell, same
        drag, same mobile bottom sheet — so only the aircraft-specific rows are described here. */
-    .ac-popup{ width:344px; z-index:2210; }
+    .ac-popup{ width:344px; z-index:calc(var(--z-popup) + 210); }
     .acp-photo{ display:block; width:100%; border-radius:12px; overflow:hidden; margin:0 0 6px; background:var(--input-bg); }
     .acp-photo img{ display:block; width:100%; height:auto; }
     .acp-photo-none{ display:flex; align-items:center; justify-content:center; text-align:center; min-height:74px; padding:14px 12px; font-size:12px; color:var(--text-muted); }
@@ -1323,7 +1344,7 @@
     /* (#R184) LIVE SATELLITE detail card (js/satellite-detail.js). Same shell and the same .acp-* rows as
        the aircraft card above — it deliberately reuses that vocabulary rather than inventing a second
        one — so only the two states orbit has and flight does not are described here. */
-    .sat-popup{ width:344px; z-index:2210; }
+    .sat-popup{ width:344px; z-index:calc(var(--z-popup) + 210); }
     .acp-badge.sunlit{ color:#8a6d00; background:rgba(255,210,63,0.22); }
     .acp-badge.ecl{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
     @media (max-width:768px){ .sat-popup{ width:calc(100vw - 24px); } }
@@ -1332,7 +1353,7 @@
        than inventing a third one — so only the shapes neither of those cards has are described here:
        the four tabs, the status badges, the VEI histogram and the eruption list. Every colour that is
        not a hazard code comes from the theme tokens, so the card follows light/dark like every panel. */
-    .volc-popup{ width:372px; z-index:2210; max-height:min(78vh,760px); overflow-y:auto; }
+    .volc-popup{ width:372px; z-index:calc(var(--z-popup) + 210); max-height:min(78vh,760px); overflow-y:auto; }
     .volc-popup .country-popup-header h3{ display:flex; flex-direction:column; gap:2px; }
     .volc-sub{ font-size:11.5px; font-weight:500; color:var(--text-muted); }
     .volc-tabs{ display:flex; gap:4px; margin:2px 0 8px; }
@@ -1412,14 +1433,14 @@
     .rad-pop-x{ margin-top:6px; font-size:10px; color:var(--text-muted); }
     .rad-spark{ display:block; }
     .rad-spark-r{ font-size:10px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
-    .pin-popup{ display:none; position:absolute; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
+    .pin-popup{ display:none; position:absolute; z-index:var(--z-dropdown); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
     .pin-popup-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; } .pin-popup-row b{ color:var(--text-main); font-weight:600; }
     .pin-popup-close{ position:absolute; top:4px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; } .pin-popup-close:hover{ color:var(--text-main); }
     .pin-popup-actions{ display:flex; gap:4px; margin-top:8px; }
     .pin-popup-actions button{ flex:1; padding:6px 4px; font-size:11px; font-weight:600; border:none; border-radius:7px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
     .pin-popup-actions button:hover{ background:var(--primary-fill); color:#fff; }
     /* WebGL-pin hover tooltip — follows the cursor in screen space. Pins themselves are rendered on the WebGL canvas so they CANNOT drift. */
-    .map-tooltip{ position:absolute; display:none; pointer-events:none; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); color:var(--text-main); font-size:13px; border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); z-index:1500; width:280px; max-width:80vw; transform:translate(-50%,calc(-100% - 18px)); }
+    .map-tooltip{ position:absolute; display:none; pointer-events:none; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); color:var(--text-main); font-size:13px; border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); z-index:calc(var(--z-dropdown) + 200); width:280px; max-width:80vw; transform:translate(-50%,calc(-100% - 18px)); }
     .map-tooltip::after{ content:''; position:absolute; bottom:-6px; left:var(--tip-ax,50%); transform:translateX(-50%) rotate(45deg); width:10px; height:10px; background:var(--popup-bg); border-right:1px solid rgba(128,128,128,0.15); border-bottom:1px solid rgba(128,128,128,0.15); }
     /* (#R175) …and the same tooltip UNDER its anchor, for the case where it does not fit above (see
        positionTooltip). Only the direction changes: the arrow moves to the top edge and points up. */
@@ -1439,7 +1460,7 @@
     .news-item .btn-read{ flex-shrink:0; background:#fff; border:1px solid rgba(0,0,0,0.14); color:#000; font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
     .news-item .btn-read:hover{ background:#f0f0f0; color:#000; border-color:rgba(0,0,0,0.2); }
     /* (#R38) Mobile news pin → popup with a Read button (instead of jumping straight to the article). */
-    .m-news-pop-back{ display:none; position:fixed; inset:0; z-index:1190; background:rgba(0,0,0,0.30); }
+    .m-news-pop-back{ display:none; position:fixed; inset:0; z-index:calc(var(--z-controls) + 190); background:rgba(0,0,0,0.30); }
     .m-news-pop-back.show{ display:block; }
     /* (#R39) The popup was translucent --popup-bg with NO backdrop-filter (every other popup has one), so the
        map showed straight through it → "設定にかかわらず透明で視認性が悪い". Use the opaque card surface + a
@@ -1457,7 +1478,7 @@
     /* ===== In-sidebar article reader (replaces the broken iframe browser) ===== */
     .news-reader-pane{ flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; margin-right:-10px; padding-right:10px; -webkit-overflow-scrolling:touch; }
     .news-reader-pane::-webkit-scrollbar{ width:4px; } .news-reader-pane::-webkit-scrollbar-thumb{ background:rgba(128,128,128,0.2); border-radius:10px; }
-    .nrp-bar{ position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; padding:6px 2px 12px; background:linear-gradient(var(--sidebar-bg) 75%, transparent); backdrop-filter:blur(8px); }
+    .nrp-bar{ position:sticky; top:0; z-index:calc(var(--z-inset) + 5); display:flex; align-items:center; gap:10px; padding:6px 2px 12px; background:linear-gradient(var(--sidebar-bg) 75%, transparent); backdrop-filter:blur(8px); }
     .nrp-back{ display:inline-flex; align-items:center; gap:6px; background:var(--input-bg); border:none; color:var(--text-main); font-size:13px; font-weight:600; padding:9px 14px; border-radius:999px; cursor:pointer; transition:0.2s; }
     .nrp-back:hover{ background:var(--primary-fill); color:#fff; }
     .nrp-src{ font-size:12px; color:var(--text-muted); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:0 1 auto; }
@@ -1573,18 +1594,18 @@
     .nrp-mode:hover{ background:var(--primary-fill); color:#fff; }
     .nrp-webwrap{ position:relative; width:100%; height:72vh; min-height:420px; border-radius:14px; overflow:hidden; background:var(--card-bg); box-shadow:var(--shadow); margin-bottom:8px; }
     .nrp-iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; background:#fff; }
-    .nrp-webnote{ position:absolute; top:0; left:0; right:0; padding:14px 16px; font-size:12px; color:var(--text-muted); background:var(--card-bg); z-index:1; line-height:1.5; }
+    .nrp-webnote{ position:absolute; top:0; left:0; right:0; padding:14px 16px; font-size:12px; color:var(--text-muted); background:var(--card-bg); z-index:calc(var(--z-inset) + 1); line-height:1.5; }
     /* (#R104) in-map search bar unified with the Atlas input pill (rounding / hairline border / focus ring); keeps its floating frosted material so it stays legible over the map. Size & wording unchanged. */
     /* (#R170) 24px → 10px ("地名検索バーの位置をもう少し上に") — now flush with the top of .map-controls-top
        (also top:10px) on the right, so the two float on one visual row instead of the pill sitting lower. */
-    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:18px; padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
+    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:var(--z-controls); display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:18px; padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
     .map-search:focus-within{ border-color:var(--focus-ring); box-shadow:0 0 0 1px var(--focus-ring), 0 0 0 4px rgba(10,132,255,0.18); }   /* (ui-a11y-polish) the same 2 px edge as .search-bar */
     /* Place-search pin + popup card */
     .search-pin{ width:30px; height:38px; position:relative; cursor:pointer; }
     .search-pin .sp-body{ position:absolute; left:50%; top:0; transform:translateX(-50%); width:24px; height:24px; border-radius:50% 50% 50% 0; background:linear-gradient(135deg,#ff3b30,#c2271f); transform-origin:bottom; transform:translateX(-50%) rotate(-45deg); box-shadow:0 4px 10px rgba(0,0,0,0.3); border:2px solid #fff; }
     .search-pin .sp-body::after{ content:''; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:50%; background:#fff; }
     .search-pin .sp-pulse{ position:absolute; left:50%; top:8px; transform:translateX(-50%); width:16px; height:16px; border-radius:50%; border:2px solid #ff3b30; opacity:0; animation:pulse 2s infinite; pointer-events:none; }
-    .search-result-card{ position:absolute; z-index:1500; width:280px; max-width:80vw; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:14px; padding:14px 16px; box-shadow:0 12px 40px rgba(0,0,0,0.2); backdrop-filter:blur(20px); transform:translate(-50%,calc(-100% - 48px)); }
+    .search-result-card{ position:absolute; z-index:calc(var(--z-dropdown) + 200); width:280px; max-width:80vw; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:14px; padding:14px 16px; box-shadow:0 12px 40px rgba(0,0,0,0.2); backdrop-filter:blur(20px); transform:translate(-50%,calc(-100% - 48px)); }
     .search-result-card::after{ content:''; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%) rotate(45deg); width:14px; height:14px; background:var(--popup-bg); border-right:1px solid rgba(128,128,128,0.18); border-bottom:1px solid rgba(128,128,128,0.18); }
     .src-card-close{ position:absolute; top:8px; right:10px; background:transparent; border:none; color:var(--text-muted); font-size:14px; cursor:pointer; padding:2px 6px; border-radius:6px; }
     .src-card-close:hover{ background:var(--input-bg); color:var(--info-mil); }
@@ -1641,7 +1662,7 @@
     .tool-panel.tp-collapsed{ width:auto; min-width:0; }
     /* (#R39) The AI brief / Ask-AI panel scrolls; pin its header so the × (and title) are ALWAYS reachable
        — it used to scroll out of view, so the user had to scroll back to the top to close it. */
-    #ai-research-panel .tp-header{ position:sticky; top:-14px; margin:-14px -16px 8px; padding:14px 16px 8px; background:var(--popup-bg); z-index:6; border-radius:14px 14px 0 0; }
+    #ai-research-panel .tp-header{ position:sticky; top:-14px; margin:-14px -16px 8px; padding:14px 16px 8px; background:var(--popup-bg); z-index:calc(var(--z-inset) + 6); border-radius:14px 14px 0 0; }
     body.sidebar-translucent #ai-research-panel .tp-header, body.sidebar-glass2 #ai-research-panel .tp-header{ background:var(--glass-fill); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
     /* (#R39) In frosted-glass modes the AI brief's follow-up input + buttons used solid --input-bg/--card-bg
        fills with hard 1px borders → they read as cheap opaque squares on the frosted panel. Blend them into
@@ -1761,7 +1782,7 @@
          right-hand view buttons and the left sidebar, so the search can never overlap them or get crushed
          ("つぶれて押せない" / "かぶる"). It anchors left+right (no centering) and stretches between. */
       body.ms-hide .map-search{ display:none !important; }   /* (#R66) no usable map strip → no pill */
-      body.ms-narrow .map-search{ position:fixed; z-index:1002; top:var(--ms-top,78px); left:var(--ms-left,14px); right:var(--ms-right,290px);
+      body.ms-narrow .map-search{ position:fixed; z-index:calc(var(--z-controls) + 2); top:var(--ms-top,78px); left:var(--ms-left,14px); right:var(--ms-right,290px);
         width:auto; transform:none; min-width:0; overflow:hidden;
         /* (#R65) never wider than the anchors allow — a degenerate layout collapses instead of overflowing
            across the in-flow right sidebar */
@@ -1920,11 +1941,11 @@
     .compose-img-preview{ position:relative; display:none; }
     .compose-img-preview img{ max-height:72px; max-width:120px; border-radius:8px; display:block; object-fit:cover; }
     .compose-img-remove{ position:absolute; top:-8px; right:-8px; width:22px; height:22px; border-radius:50%; background:var(--info-mil); color:#fff; border:2px solid var(--card-bg); cursor:pointer; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0; }
-    #img-lightbox{ position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
+    #img-lightbox{ position:fixed; inset:0; z-index:var(--z-modal); background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
     #img-lightbox img{ max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.6); }
 
     /* Compose modal for new community posts */
-    .compose-modal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); z-index:9999; justify-content:center; align-items:center; padding:16px; }
+    .compose-modal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); z-index:calc(var(--z-modal) - 1); justify-content:center; align-items:center; padding:16px; }
     .compose-modal.active{ display:flex; }
     .compose-content{ background:var(--popup-bg); border-radius:18px; padding:20px 22px; width:440px; max-width:90vw; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); }
     .compose-content h3{ margin:0 0 14px; font-size:17px; }
@@ -2028,7 +2049,7 @@
       .map-container{ position:fixed; inset:0; width:100vw; height:100dvh; }
       /* (#R485) …so the credit is a pill again here, at the offset MEASURED clear above the sheet
          (the same var the coord readout uses at line ~4004 and Chronos uses for its own bottom). */
-      .map-credit{ position:fixed; left:6px; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px); z-index:900; height:auto; padding:3px 9px; border:1px solid rgba(128,128,128,0.15); border-radius:9px; background:var(--popup-bg); box-shadow:var(--shadow); font-size:10px; line-height:1.5; max-width:calc(100vw - 12px); overflow:visible; }
+      .map-credit{ position:fixed; left:6px; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px); z-index:var(--z-map-overlay); height:auto; padding:3px 9px; border:1px solid rgba(128,128,128,0.15); border-radius:9px; background:var(--popup-bg); box-shadow:var(--shadow); font-size:10px; line-height:1.5; max-width:calc(100vw - 12px); overflow:visible; }
       /* ══ (ui-a11y-polish) THE CREDIT'S LINKS ARE 24 × 24 TO A FINGER AND THE SAME SIZE TO THE EYE ═══
          MEASURED on production (375 px): 「© Esri」's link was 18 × 12 px — under WCAG 2.5.8's 24 × 24.
          The pill stays exactly as drawn; each link gets an invisible hit box centred on its text, at
@@ -2049,7 +2070,7 @@
         border-radius:16px 16px 0 0;
         background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(30px); -webkit-backdrop-filter:saturate(180%) blur(30px);
         box-shadow:0 -8px 36px rgba(0,0,0,0.22);
-        z-index:1100; min-height:0; overflow:hidden;
+        z-index:calc(var(--z-controls) + 100); min-height:0; overflow:hidden;
         /* (#R15d) Default to the PEEK position (~196px of sheet visible) BEFORE JS computes the exact
            detent — was 42dvh (~half), which is the "最初は真ん中で始まる" flash the user saw. */
         transform:translateY(var(--sheet-ty,calc(var(--sheet-h) - 196px)));
@@ -2142,7 +2163,7 @@
         overflow:visible; }
       .map-search.ms-open input{ width:auto; flex:1 1 auto; opacity:1; height:46px; padding:0 4px; }
       .map-search.ms-open > button, .map-search.ms-open #ms-btn{ width:38px; height:38px; flex:0 0 auto; border-radius:19px; font-size:15px; }
-      .map-search-results{ top:54px; z-index:1400; max-height:min(300px, calc(100dvh - var(--sheet-cover,180px) - 132px)); }
+      .map-search-results{ top:54px; z-index:calc(var(--z-dropdown) + 100); max-height:min(300px, calc(100dvh - var(--sheet-cover,180px) - 132px)); }
 
       /* ---------- Hide the cramped desktop control cluster ---------- */
       .map-controls-top{ display:none !important; }
@@ -2152,7 +2173,7 @@
          ("レイヤーボタン、Tools、方位磁石のUIの位置がおかしくなってる。前の位置に戻せ"). The bottom-hugging
          treatment now applies only to the always-on readout (see .coord-readout). */
       .m-fab-stack{ display:flex; flex-direction:column; gap:10px; position:fixed; right:var(--m-edge);
-        top:var(--m-chrome-top); bottom:auto; z-index:1150;
+        top:var(--m-chrome-top); bottom:auto; z-index:calc(var(--z-controls) + 150);
         transition:opacity 0.3s, transform 0.3s; }
       .m-fab{ width:var(--m-fab); height:var(--m-fab); border-radius:23px; border:0.5px solid rgba(128,128,128,0.16);
         background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px);
@@ -2200,9 +2221,9 @@
          ⚠ The delay is a TRANSITION-DELAY, and the reduced-motion block below overrides
          transition-DURATION — two different properties — so that block gets an explicit delay
          override too, or a reduced-motion reader keeps the blur for 320 ms after an instant close. */
-      .m-scrim{ display:block; position:fixed; inset:0; background:rgba(0,0,0,0.3); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); z-index:1690; opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0.32s, visibility 0s linear 0.32s; }
+      .m-scrim{ display:block; position:fixed; inset:0; background:rgba(0,0,0,0.3); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); z-index:calc(var(--z-sheet) + 40); opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0.32s, visibility 0s linear 0.32s; }
       .m-scrim.show{ opacity:1; visibility:visible; pointer-events:auto; transition:opacity 0.32s, visibility 0s linear 0s; }
-      .m-sheet{ display:flex; flex-direction:column; position:fixed; left:0; right:0; bottom:0; z-index:1700;
+      .m-sheet{ display:flex; flex-direction:column; position:fixed; left:0; right:0; bottom:0; z-index:calc(var(--z-sheet) + 50);
         background:var(--popup-bg); backdrop-filter:saturate(180%) blur(30px); -webkit-backdrop-filter:saturate(180%) blur(30px);
         border-radius:16px 16px 0 0; box-shadow:0 -8px 36px rgba(0,0,0,0.26);
         max-height:82dvh; padding:0 18px 0;
@@ -2281,7 +2302,7 @@
          a phone; the element is untouched and widening the window brings it straight back. */
       #sat-controller{ display:none !important; }
       .m-sheet .lsr-mount{ display:block; margin:0 0 6px; }
-      .m-sheet .lsr-mount .lsr-search{ padding:2px 0 8px; position:sticky; top:0; z-index:4; background:var(--sidebar-bg); }
+      .m-sheet .lsr-mount .lsr-search{ padding:2px 0 8px; position:sticky; top:0; z-index:calc(var(--z-inset) + 4); background:var(--sidebar-bg); }
       .m-sheet .lsr-mount .lsr-search input{ width:100%; box-sizing:border-box; height:38px; border-radius:19px;
         border:1px solid rgba(128,128,128,0.28); background:var(--card-bg); color:var(--text-main);
         font-size:13px; padding:0 15px; outline:none; }
@@ -2471,7 +2492,7 @@
         top:max(8px, env(safe-area-inset-top)) !important; bottom:auto !important;
         max-height:min(42dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 90px)) !important;
         overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 12px !important; border-radius:16px !important; }
-      .tool-panel.tp-radius .tp-header{ position:sticky; top:-10px; margin:-10px -12px 6px; padding:10px 12px 6px; background:var(--glass-fill,var(--popup-bg)); z-index:2; }
+      .tool-panel.tp-radius .tp-header{ position:sticky; top:-10px; margin:-10px -12px 6px; padding:10px 12px 6px; background:var(--glass-fill,var(--popup-bg)); z-index:calc(var(--z-inset) + 2); }
       /* (#R39) AI brief sticky header — match the mobile .tool-panel padding (9px 11px) so it spans flush. */
       #ai-research-panel .tp-header{ top:-9px; margin:-9px -11px 6px; padding:9px 11px 6px; }
       .tool-panel.tp-radius .tp-sub{ margin:6px 0 2px !important; font-size:10.5px !important; }
@@ -2535,7 +2556,7 @@
       .news-timeline.collapsed .ntl-open-txt small{ display:none; }
       /* (#R13c) Country-isolation "Exit" pill used a fixed bottom:96px → hidden behind the bottom sheet
          on phones. Ride just above the sheet's current top like the other floating controls. */
-      #iso-exit-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; z-index:1750 !important; }
+      #iso-exit-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; z-index:calc(var(--z-sheet) + 100) !important; }
       .news-timeline .ntl-body{ min-width:0; } .ntl-label{ min-width:0; flex:1; font-size:11px; }
       .pin-popup{ min-width:0; width:max-content; max-width:calc(100vw - 24px); font-size:13px; }
       .ctx-menu{ min-width:210px; } .ctx-menu button{ padding:13px 12px; font-size:15px; }
@@ -2588,7 +2609,7 @@
          literal white border, as asked, on both themes — it is what separates the picture from the
          map behind it. The picture itself is drawn by js/basemap-switch.js from data the app already
          ships (data/world-basemap.jpg for the satellite face, data/land-mask.png for the map face). */
-      .bm-square{ position:fixed; z-index:1150; left:var(--m-edge);
+      .bm-square{ position:fixed; z-index:calc(var(--z-controls) + 150); left:var(--m-edge);
         top:var(--m-bm-top);
         width:var(--m-bm); height:var(--m-bm); padding:0; border-radius:11px; overflow:hidden;
         border:2px solid #fff; box-shadow:0 4px 16px rgba(0,0,0,0.3);
@@ -2609,7 +2630,7 @@
       body.sheet-full .bm-pop{ display:none; }
 
       /* the popover the square opens: the five controls, in the two groups they belong to */
-      .bm-pop{ position:fixed; z-index:1660; left:var(--m-edge);
+      .bm-pop{ position:fixed; z-index:calc(var(--z-sheet) + 10); left:var(--m-edge);
         top:var(--m-bm-top);
         width:min(232px, calc(100vw - 28px)); box-sizing:border-box;
         background:var(--popup-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px);
@@ -2791,7 +2812,7 @@
     @media(min-width:769px){
       .sidebar{ position:relative; }
       body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }
-      body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000; box-shadow:8px 0 32px rgba(0,0,0,0.10); }
+      body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:var(--z-controls); box-shadow:8px 0 32px rgba(0,0,0,0.10); }
       body.sidebar-glass .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
     }
 
@@ -2821,7 +2842,7 @@
     /* --- Cursor coord / elevation / layer-value readout = dark HUD, ALL-white text (#34). Overrides
        the unified glass fill (which would be white-on-white in Solid mode). Shifted clear of the
        sidebar when the sidebar overlays the map (frosted mode) so it is never hidden behind it. --- */
-    .coord-readout{ background:rgba(18,18,20,0.64) !important; -webkit-backdrop-filter:saturate(160%) blur(14px) !important; backdrop-filter:saturate(160%) blur(14px) !important; border:1px solid rgba(255,255,255,0.14) !important; color:#fff !important; z-index:1200; }
+    .coord-readout{ background:rgba(18,18,20,0.64) !important; -webkit-backdrop-filter:saturate(160%) blur(14px) !important; backdrop-filter:saturate(160%) blur(14px) !important; border:1px solid rgba(255,255,255,0.14) !important; color:#fff !important; z-index:calc(var(--z-controls) + 200); }
     .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat, .coord-readout .cr-eye{ color:#fff !important; font-weight:600; }
     /* (#R13c) Only the FROSTED sidebar overlays the map, so ONLY there must the left-anchored HUD (coord readout,
        data/Köppen legends, country-info) clear it; a collapsed sidebar → flush left. In SOLID mode the sidebar sits
@@ -2875,12 +2896,12 @@
        states must never go behind anything. */
     @media(min-width:769px){
       body:not(.im-float-front) .sidebar,
-      body:not(.im-float-front) #layer-sidebar-r{ z-index:2600; }
-      .im-front{ z-index:2650 !important; }
+      body:not(.im-float-front) #layer-sidebar-r{ z-index:calc(var(--z-menu) + 100); }
+      .im-front{ z-index:calc(var(--z-menu) + 150) !important; }
     }
 
     /* --- Avatar crop modal (#12) --- */
-    .crop-overlay{ position:fixed; inset:0; z-index:10050; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); padding:16px; }
+    .crop-overlay{ position:fixed; inset:0; z-index:calc(var(--z-modal) + 50); display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); padding:16px; }
     .crop-card{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.18); border-radius:18px; padding:18px; box-shadow:0 20px 60px rgba(0,0,0,0.35); width:max-content; max-width:calc(100vw - 32px); }
     .crop-title{ font-weight:700; font-size:15px; margin-bottom:12px; text-align:center; }
     .crop-stage{ position:relative; width:260px; height:260px; max-width:78vw; overflow:hidden; border-radius:12px; background:#111; cursor:grab; touch-action:none; margin:0 auto; }
@@ -2937,7 +2958,7 @@
        over the captured WebGL frame, producing a blank screenshot (#20). Make them transparent during
        capture so only the real map pixels (drawn separately) and the DOM overlays composite. */
     body.capture-mode .map-container, body.capture-mode #map{ background:transparent !important; }
-    .screenshot-flash{ position:fixed; inset:0; background:#fff; z-index:99999; pointer-events:none; opacity:0; }
+    .screenshot-flash{ position:fixed; inset:0; background:#fff; z-index:calc(var(--z-overlay) + 9); pointer-events:none; opacity:0; }
     .screenshot-flash.go{ animation:ssFlash 0.5s ease; }
     @keyframes ssFlash{ 0%{opacity:0.85;} 100%{opacity:0;} }
 
@@ -2984,7 +3005,7 @@
     .alc-exp:hover{ color:var(--text-main); }
     .alc-exp svg{ display:block; }
     .alc-exp.on{ background:var(--primary-fill); color:#fff; }
-    .alc-panel{ position:absolute; left:8px; right:8px; top:100%; margin-top:4px; z-index:60; background:var(--card-bg); border:1px solid var(--glass-border,rgba(128,128,128,0.3)); border-radius:12px; box-shadow:var(--shadow,0 10px 30px rgba(0,0,0,0.25)); padding:6px; max-height:44vh; overflow-y:auto; }   /* (#R116) the Active-layers LIST is opaque too (the R115 fix covered only the bar) */
+    .alc-panel{ position:absolute; left:8px; right:8px; top:100%; margin-top:4px; z-index:calc(var(--z-inset) + 60); background:var(--card-bg); border:1px solid var(--glass-border,rgba(128,128,128,0.3)); border-radius:12px; box-shadow:var(--shadow,0 10px 30px rgba(0,0,0,0.25)); padding:6px; max-height:44vh; overflow-y:auto; }   /* (#R116) the Active-layers LIST is opaque too (the R115 fix covered only the bar) */
     .alc-row{ display:flex; align-items:center; gap:8px; padding:5px 7px; border-radius:8px; }
     .alc-row:hover{ background:var(--input-bg); }
     .alc-row .alcr-name{ flex:1; min-width:0; font-size:12px; color:var(--text-main); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -3048,11 +3069,11 @@
     .layer-dropdown .lyr-op, .layer-dropdown .ec-op, .layer-dropdown .lyr-extras,
     .m-sheet .layer-dropdown .lyr-op, .m-sheet .layer-dropdown .ec-op, .m-sheet .layer-dropdown .lyr-extras{ display:none !important; }
     /* Generic control popup for layers that have no rich legend */
-    .layer-ctrl{ display:none; position:absolute; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
+    .layer-ctrl{ display:none; position:absolute; right:24px; z-index:calc(var(--z-controls) + 100); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
     .layer-ctrl h4{ margin:0 0 4px; font-size:12px; padding-right:18px; }
 
     /* --- Stats compare: fixed bottom panel that ignores list scroll (#26) --- */
-    .stats-compare-fixed, .co-compare-fixed{ display:none; position:absolute; left:0; right:0; bottom:0; z-index:30; padding:12px 14px max(14px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 24px rgba(0,0,0,0.12); }   /* (#R152) Companies compare dock shares the Countries dock's EXACT styling (was a sticky in-feed tray with rounded corners = the "half-baked imitation") */
+    .stats-compare-fixed, .co-compare-fixed{ display:none; position:absolute; left:0; right:0; bottom:0; z-index:calc(var(--z-inset) + 30); padding:12px 14px max(14px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 24px rgba(0,0,0,0.12); }   /* (#R152) Companies compare dock shares the Countries dock's EXACT styling (was a sticky in-feed tray with rounded corners = the "half-baked imitation") */
     body.sidebar-translucent .stats-compare-fixed, body.sidebar-translucent .co-compare-fixed{ background:var(--sidebar-bg); }
     .stats-compare-fixed.show, .co-compare-fixed.show{ display:block; }
     /* (#R103) the "you can compare countries" hint made clearly visible again (icon-led, main-text colour) — the muted
@@ -3171,10 +3192,10 @@
        inserted BEFORE #map in the DOM, so the renderer's own canvas — and therefore the opaque Earth
        — paints on top of it and occludes every star behind the planet for free. `#map` gives up its
        --bg-color while the sky is up, because that colour IS the black the request is about. */
-    #space-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; display:none; }
+    #space-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:var(--z-inset); display:none; }
     body.space-sky-on #map{ background:transparent; }
     body.space-sky-on .map-container{ background:#000; }
-    #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; display:none; }
+    #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:calc(var(--z-inset) + 5); display:none; }
 
     /* --- Data sources list in Settings (#37) --- */
     .src-list{ max-height:300px; overflow-y:auto; margin-top:6px; }
@@ -3204,8 +3225,8 @@
     /* --- Information selector + Stats toolbar: paint with the sidebar material and stick flush to
        the top of the scroll area, so no map/background peeks through above the selector (#18) --- */
     .content-area{ padding-top:0; }
-    .dash-nav{ position:sticky; top:0; z-index:6; background:var(--glass-fill); margin:0 0 12px; padding:6px 0 8px; }
-    #live-news-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--glass-fill); margin:0 0 8px; padding:4px 0 8px; }
+    .dash-nav{ position:sticky; top:0; z-index:calc(var(--z-inset) + 6); background:var(--glass-fill); margin:0 0 12px; padding:6px 0 8px; }
+    #live-news-feed .stats-toolbar{ position:sticky; top:0; z-index:calc(var(--z-inset) + 6); background:var(--glass-fill); margin:0 0 8px; padding:4px 0 8px; }
     /* (#R309) …and both of these carry the SAME double-paint the Countries toolbar had (see the block below).
        They name --glass-fill DIRECTLY rather than var(--panel-bg,…), so unlike that one they are correct in
        Solid — there --glass-fill is the opaque --card-bg, a deliberately raised strip against the recessed
@@ -3225,7 +3246,7 @@
        filter box above ("Filter Countriesと指標プルダウン、降順/昇順ボタンの間の隙間を詰めて"). */
     /* (#R108) a SLIGHT gap above the sort toolbar — created by the toolbar's OWN padding-top so the strip is painted
        with the recessed panel tone, NOT a see-through void ("わずかだけ隙間を…後ろの画面が見えるような空白にしない"). */
-    #countries-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--panel-bg,var(--glass-fill)); margin:0 0 4px; padding:6px 0 4px; gap:2px; }
+    #countries-feed .stats-toolbar{ position:sticky; top:0; z-index:calc(var(--z-inset) + 6); background:var(--panel-bg,var(--glass-fill)); margin:0 0 4px; padding:6px 0 4px; gap:2px; }
     /* (#R309) …and in the two FROSTED modes it painted nothing but a second copy of the panel. --panel-bg is
        declared only for `body:not(.sidebar-translucent):not(.sidebar-glass2)` (#R104), so with frosted glass the
        fallback --glass-fill is picked — the EXACT fill .sidebar itself is already painting underneath. The two
@@ -3284,7 +3305,7 @@
     .mon-row-acts{display:flex;flex-direction:column;gap:4px;justify-content:center}
     .mon-ic{width:30px;height:26px;border-radius:7px;border:1px solid rgba(128,128,128,.2);background:var(--input-bg,rgba(128,128,128,.08));color:var(--text);cursor:pointer;font-size:12px;line-height:1}
     .mon-ic:hover{background:rgba(10,132,255,.12)}
-    .mon-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
+    .mon-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:calc(var(--z-overlay) + 10);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
     .mon-dialog{background:var(--card-bg,#fff);color:var(--text);border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:20px 18px;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.35)}
     .mon-x{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(128,128,128,.15);color:var(--text);cursor:pointer;font-size:14px}
     .mon-h3{margin:0 30px 12px 0;font-size:17px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -3381,7 +3402,7 @@
         font-size:10.5px !important; padding:5px 7px !important; max-width:124px;
         overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       #space-view .sp-sidebox{ display:flex; flex-direction:column; position:fixed;
-        left:8px; right:8px; bottom:8px; z-index:9; max-height:60vh;
+        left:8px; right:8px; bottom:8px; z-index:calc(var(--z-inset) + 9); max-height:60vh;
         border-radius:14px; background:rgba(10,10,14,0.96);
         border:1px solid rgba(255,255,255,0.18);
         -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
@@ -3467,7 +3488,7 @@
          every state light is the one that was already there (the rule #R216 set for this block). */
       #space-view .sp-timeb{ display:inline-flex !important; align-items:center; font-variant-numeric:tabular-nums; }
       #space-view .sp-timebox{ display:none !important; position:fixed; left:8px; right:8px; bottom:8px;
-        z-index:8; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:6px !important;
+        z-index:calc(var(--z-inset) + 8); flex-direction:row; flex-wrap:wrap; justify-content:center; gap:6px !important;
         padding:10px; border-radius:14px; background:rgba(10,10,14,0.95);
         border:1px solid rgba(255,255,255,0.18); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
         max-height:52vh; overflow:auto; overscroll-behavior:contain; }
@@ -3840,7 +3861,7 @@
    1,280 px screen is not 主要文字; a route's duration is, and it is still 20 px.
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 .rtp{
-  position:absolute; left:14px; top:74px; z-index:1401;
+  position:absolute; left:14px; top:74px; z-index:calc(var(--z-dropdown) + 101);
   width:clamp(340px, 30vw, 440px);
   max-height:calc(100% - 96px);
   display:flex; flex-direction:column; box-sizing:border-box;
@@ -4124,7 +4145,7 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
    ⚠ It has to clear the WHOLE window band, not just `.rtp`: it belongs to whichever panel is on top,
    and it lives on <body> precisely so no panel's `overflow` can clip it. */
 .rtp-suggest{
-  position:fixed; z-index:2700; max-height:min(320px,52vh); overflow-y:auto;
+  position:fixed; z-index:calc(var(--z-menu) + 200); max-height:min(320px,52vh); overflow-y:auto;
   background:var(--card-bg); color:var(--text-main);
   border:1px solid var(--glass-border,rgba(128,128,128,0.28)); border-radius:13px;
   box-shadow:var(--shadow); padding:4px;
@@ -4262,7 +4283,7 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
     /* ⚠ FIXED, NOT ABSOLUTE. The desktop panel is positioned inside #map-container; a bottom sheet
        has to be anchored to the VIEWPORT, or it slides with the map container and the keyboard lift
        (--rtp-kb) moves the wrong box. */
-    position:fixed; z-index:1800;
+    position:fixed; z-index:calc(var(--z-sheet) + 150);
     left:0; right:0; top:auto; bottom:0; width:auto;
     max-height:none; height:var(--rtp-h,62dvh);
     border-radius:20px 20px 0 0; border-left:none; border-right:none; border-bottom:none;
@@ -4478,10 +4499,10 @@ body.sidebar-glass2{ --widget-surface:rgba(255,255,255,0.20); }
 }
 .wgt-card.wgt-s{ border-radius:var(--widget-radius-m); padding:11px 12px; }
 .wgt-card::before{
-  content:""; position:absolute; inset:0; z-index:0; border-radius:inherit; pointer-events:none;
+  content:""; position:absolute; inset:0; z-index:var(--z-inset); border-radius:inherit; pointer-events:none;
   background:linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0) 46%);
 }
-.wgt-card > *,.wgt-stack > *{ position:relative; z-index:1; min-width:0; }
+.wgt-card > *,.wgt-stack > *{ position:relative; z-index:calc(var(--z-inset) + 1); min-width:0; }
 .wgt-card:focus-visible,.wgt-stack:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
 @media(hover:hover){ .wgt-card:not(.editing):hover{ transform:translateY(-1.5px); } }
 
@@ -4708,10 +4729,10 @@ a.wgt-art:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2
 .wgt-card.editing:active{ cursor:grabbing; }
 @keyframes wgtJiggle{ from{ transform:rotate(-0.45deg); } to{ transform:rotate(0.45deg); } }
 .wgt-card.picked,.wgt-stack.picked{ outline:2.5px solid var(--widget-accent); animation:none; transform:scale(1.03); }
-.wgt-del{ position:absolute; top:-8px; left:-8px; z-index:4; width:26px; height:26px; border:none; border-radius:50%;
+.wgt-del{ position:absolute; top:-8px; left:-8px; z-index:calc(var(--z-inset) + 4); width:26px; height:26px; border:none; border-radius:50%;
   background:rgba(60,60,67,0.94); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
   box-shadow:0 1px 5px rgba(0,0,0,0.4); }
-.wgt-grip{ position:absolute; top:7px; right:7px; z-index:2; color:var(--widget-text-secondary); opacity:.7; display:flex; }
+.wgt-grip{ position:absolute; top:7px; right:7px; z-index:calc(var(--z-inset) + 2); color:var(--widget-text-secondary); opacity:.7; display:flex; }
 .wgt-cfg{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border:none;
   border-radius:14px; background:rgba(128,128,128,0.16); color:var(--widget-text-secondary); cursor:pointer; }
 .wgt-cfg:hover{ background:rgba(128,128,128,0.3); color:var(--widget-text-primary); }
@@ -4719,7 +4740,7 @@ a.wgt-art:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2
 .wgt-cfgbox{ border-top:1px solid var(--widget-border); padding-top:7px; margin-top:5px; }
 
 /* ── the card menu ─────────────────────────────────────────────────────────────────────────── */
-.wgt-menu{ position:fixed; z-index:10050; min-width:212px; max-width:min(300px,92vw); padding:5px;
+.wgt-menu{ position:fixed; z-index:calc(var(--z-modal) + 50); min-width:212px; max-width:min(300px,92vw); padding:5px;
   border-radius:14px; border:1px solid var(--widget-border); background:var(--widget-surface-elevated);
   backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
   box-shadow:0 10px 34px rgba(0,0,0,0.24); display:flex; flex-direction:column; gap:1px; }
@@ -4729,7 +4750,7 @@ a.wgt-art:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2
 .wgt-menu-i:hover{ background:rgba(128,128,128,0.16); }
 .wgt-menu-i:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:-2px; }
 .wgt-menu-i.danger{ color:var(--widget-danger); }
-.wgt-undo{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:10060;
+.wgt-undo{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:calc(var(--z-modal) + 60);
   display:flex; align-items:center; gap:12px; padding:9px 12px 9px 16px; border-radius:999px;
   background:var(--widget-surface-elevated); border:1px solid var(--widget-border);
   box-shadow:0 8px 28px rgba(0,0,0,0.26); font-size:12.5px; color:var(--widget-text-primary); }
@@ -4752,7 +4773,7 @@ a.wgt-art:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2
 .wgt-stack-dot:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:-2px; border-radius:11px; }
 
 /* ── the add gallery ───────────────────────────────────────────────────────────────────────── */
-.wgt-sheet{ position:fixed; inset:0; z-index:10040; display:flex; }
+.wgt-sheet{ position:fixed; inset:0; z-index:calc(var(--z-modal) + 40); display:flex; }
 .wgt-scrim{ position:absolute; inset:0; background:rgba(0,0,0,0.34); }
 .wgt-sheet-p{ position:relative; display:flex; flex-direction:column; min-height:0;
   background:var(--widget-surface-elevated); border:1px solid var(--widget-border);
@@ -4915,7 +4936,7 @@ select.wgt-input[multiple]{ min-height:88px; }
    ⚠ AND IT IS NOT TRANSLUCENT UNCONDITIONALLY (#R296's rule): glass only when the reader chose
    glass in Settings ▸ サイドバーの質感, opaque otherwise, which is the default. */
 .nvg{
-  position:absolute; inset:0; z-index:1402;
+  position:absolute; inset:0; z-index:calc(var(--z-dropdown) + 102);
   display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start;
   pointer-events:none;
   color:var(--text-main); font-size:14px; line-height:1.4;
@@ -5038,7 +5059,7 @@ body.nvg-on #route-panel{ display:none !important; }
 /* ══ THE PHONE (§37) — the guidance card owns the top, the status bar owns the bottom ══════════ */
 @media (max-width:767px){
   /* fixed for the same reason .rtp is: a bar anchored to the viewport must not ride the map */
-  .nvg{ position:fixed; z-index:1802; }
+  .nvg{ position:fixed; z-index:calc(var(--z-sheet) + 152); }
   .nvg-top{ width:100%; padding:max(10px,calc(env(safe-area-inset-top) + 4px)) 10px 0; gap:7px; }
   .nvg-bar{ width:100%; padding:0; }
   .nvg-panel{ border-radius:20px 20px 0 0; border-left:none; border-right:none; border-bottom:none;
@@ -5099,7 +5120,7 @@ body.nvg-on #route-panel{ display:none !important; }
    `max-height` on the shell, because those are exactly what that sheet rule owns.
    ⚠ No new colour tokens. Everything is --text-main / --text-muted / --primary-color / --input-bg /
    --card-bg / --info-choke, so dark mode needs no second copy of any of this. */
-.co-popup{ width:400px; z-index:2210; }
+.co-popup{ width:400px; z-index:calc(var(--z-popup) + 210); }
 @media(max-width:768px){ .co-popup{ width:calc(100vw - 24px); } }
 
 /* ── header: mark, names, one line of metadata ─────────────────────────────────────────────── */
@@ -5246,7 +5267,7 @@ body.nvg-on #route-panel{ display:none !important; }
    (`.rtp-err`'s amber and `.mon-btn-danger`'s red), so dark mode needs no second copy of any of it.
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 .pg-panel{
-  display:none; position:fixed; z-index:2200;
+  display:none; position:fixed; z-index:calc(var(--z-popup) + 200);
   width:clamp(320px, 32vw, 440px); max-width:calc(100vw - 28px); box-sizing:border-box;
   flex-direction:column; overflow:hidden;
   background:var(--panel-bg,var(--card-bg)); color:var(--text-main);
@@ -5459,4 +5480,34 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
 @media (prefers-reduced-motion:reduce){
   .intel-dot::after, .search-pin .sp-pulse{ animation:none !important; opacity:0 !important; }
   .screenshot-flash.go{ animation:none !important; }
+  /* (map-a11y-structure) …and every transition on the page, not only the components above — see the note below */
+  *, *::before, *::after{ transition-duration:0.01ms !important; transition-delay:0s !important; scroll-behavior:auto !important; }
+}
+
+/* ══ (map-a11y-structure) TEXT THAT IS FOR ASSISTIVE TECHNOLOGY ONLY ════════════════════════════════
+   Read by a screen reader, drawn nowhere: js/map-narrator.js puts the map's live description here.
+   Not display:none / visibility:hidden (those remove it from the accessibility tree too). */
+.im-sr-only{ position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important;
+  overflow:hidden !important; clip:rect(0 0 0 0) !important; clip-path:inset(50%) !important; white-space:nowrap !important; border:0 !important; }
+
+/* ══ (map-a11y-structure) THE WHOLE PAGE, ONCE — REDUCED MOTION AND FORCED COLORS ══════════════════════
+   (the reduced-motion half is the last line of the (a11y-shared-dialog) block above; the forced-colors half is below)
+   MEASURED 2026-09-29: eight prefers-reduced-motion blocks and four forced-colors blocks, each following
+   one component, so every surface that was not one of those components moved and depended on colour
+   exactly as before. The component blocks stay beside the rules they answer (tests pin several of them);
+   these two answer for everything else.
+   · REDUCED MOTION: every CSS transition finishes at once and a scroll jumps rather than glides. The
+     state change itself still happens (a transitionend still fires), only the travel is gone. Animations
+     are NOT stopped here — the block above keeps spinners turning on purpose (they are the only sign
+     that work is in progress), and the looping pulses and the flash are already stopped there. Camera
+     moves are the renderer's and are made instant by js/geo-engine.js `_calm`.
+   · FORCED COLORS: the OS owns every colour, so nothing may depend on one. Glass (backdrop blur) is
+     dropped so a surface reads as the system Canvas; a state that was carried by fill alone (pressed,
+     selected, current) gets an edge in the system Highlight; and the MAP keeps its own colours
+     (forced-color-adjust:none on #map) — a choropleth, a legend swatch drawn over it, a marker's hue are
+     the information itself, and forcing them to CanvasText would erase the picture. */
+@media (forced-colors:active){
+  *, *::before, *::after{ backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+  [aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"]){ outline:2px solid Highlight; outline-offset:-2px; }
+  #map{ forced-color-adjust:none; }
 }

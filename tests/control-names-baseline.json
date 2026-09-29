@@ -1,0 +1,30 @@
+{
+ "//": "written by scripts/control-names.mjs --update — buttons / inputs / selects / textareas with no accessible name, per file; ratcheted both ways by check:static",
+ "total": 55,
+ "files": {
+  "js/atlas-console.js": 9,
+  "js/atlas-reply.js": 1,
+  "js/companies-ui.js": 2,
+  "js/data-layers.js": 2,
+  "js/drone-nav.js": 2,
+  "js/feedback.js": 2,
+  "js/layer-packs.js": 2,
+  "js/legal-page.js": 1,
+  "js/map-extras.js": 2,
+  "js/map-pick.js": 1,
+  "js/map-ui.js": 2,
+  "js/net-health-live.js": 1,
+  "js/page-i18n.js": 1,
+  "js/playground.js": 1,
+  "js/satellite.js": 4,
+  "js/sims.js": 4,
+  "js/sources-list.js": 1,
+  "js/space.js": 3,
+  "js/stats-compare.js": 3,
+  "js/tool-panel.js": 2,
+  "js/tsunami.js": 1,
+  "js/weather.js": 1,
+  "admin.html": 2,
+  "index.html": 5
+ }
+}

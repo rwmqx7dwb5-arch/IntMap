@@ -40,7 +40,7 @@ test('R160 (B1) the LEFT sidebar keeps its ORIGINAL mechanism, UNCHANGED — SOL
   ok('.sidebar{ position:relative; }', 'solid sidebar stays a flex sibling');
   // FROSTED mode ONLY overlays the map (unchanged #23 behaviour).
   ok('body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }', 'only the frosted sidebar overlays a full-width map');
-  ok('body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000;', 'frosted sidebar is the overlay');
+  ok('body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:var(--z-controls);', 'frosted sidebar is the overlay');   /* (map-a11y-structure) the controls layer — tests/z-layers-baseline.json holds its number */
   // the wrong overlay-for-everything generalisation AND the transition:none tweak are both reverted — the sidebar
   // CSS is exactly the original (nothing about the mechanism or its animation was touched).
   gone('body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }', 'the map-container is NOT force-overlaid in solid mode');

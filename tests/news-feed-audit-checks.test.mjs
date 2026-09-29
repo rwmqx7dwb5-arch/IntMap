@@ -13,6 +13,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 /* ════════ #R372 — from tests/r372-checks.test.mjs ════════ */
 {
@@ -73,12 +74,14 @@ test('R372 ② the reload prompt is PRESSABLE — it is not the pointer-events:n
   const m = /\.im-reload\s*\{([^}]*)\}/.exec(css);
   assert.ok(m, 'the reload prompt has its own class');
   assert.ok(!/pointer-events\s*:\s*none/.test(m[1]), 'and it is not click-through');
-  assert.match(m[1], /z-index\s*:\s*(\d+)/, 'it declares a stacking order');
-  /* a chunk that 404s DURING boot leaves the launch screen up, so the prompt has to be above it */
-  const zPrompt = +/z-index\s*:\s*(\d+)/.exec(m[1])[1];
+  assert.match(m[1], /z-index\s*:\s*[^;]+/, 'it declares a stacking order');
+  /* a chunk that 404s DURING boot leaves the launch screen up, so the prompt has to be above it.
+     (map-a11y-structure) both read a named layer now — resolved through the stylesheet's own tokens */
+  const zOf = (block) => zResolve(/z-index\s*:\s*([^;]+)/.exec(block)[1], zTokens(css));
+  const zPrompt = zOf(m[1]);
   const splash = /\.boot-splash\s*\{([^}]*)\}/.exec(css);
-  if (splash && /z-index\s*:\s*(\d+)/.test(splash[1])) {
-    assert.ok(zPrompt > +/z-index\s*:\s*(\d+)/.exec(splash[1])[1],
+  if (splash && /z-index\s*:\s*[^;]+/.test(splash[1])) {
+    assert.ok(zPrompt > zOf(splash[1]),
       'above the launch screen, or a boot-time failure is invisible');
   }
 });

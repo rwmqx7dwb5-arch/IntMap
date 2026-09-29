@@ -61,7 +61,7 @@ and unchanged resolution and image fallback. These count released resources; the
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**128 measured spec files / 85.5 min** of serial browser time against a ceiling of 85.5 min; and
+**129 measured spec files / 86.0 min** of serial browser time against a ceiling of 86.0 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -82,7 +82,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **122 spec files** — is the whole suite minus core
+**deep** tier — **123 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -785,7 +785,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **122 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **123 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -1016,6 +1016,26 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   `tabindex="0"` in markup / `IntMapDialog.makeActionable(el)` in code — `js/dialog.js` turns Enter
   and Space into the same `click()`. Regression and mutation cases:
   `tests/a11y-shared-dialog-checks.test.mjs`.
+- **Controls with no accessible name** (`control-names`, map-a11y-structure) —
+  `scripts/control-names.mjs` counts, per file, every `<button>` whose static content has no letter or
+  digit (a «×», a «★», an SVG) and carries no `aria-label` / `aria-labelledby` / `title` /
+  `data-i18n-aria` / `data-i18n-title`, and every `<input>` (not hidden/submit/reset/button/image),
+  `<select>` and `<textarea>` with none of those, no placeholder (not for a select), no enclosing
+  `<label>` and no `<label for>` pointing at its id — in the root `*.html` and in the strings of
+  `js/**/*.js` (comments excluded), and in code: `document.createElement(…)` read in the function
+  that made it (a literal symbol written into a button with nothing naming it; a field nothing names
+  that reaches the document and is not hidden). A computed content, an empty button (filled by code)
+  and an element that never leaves its function are not evidence. Held to
+  `tests/control-names-baseline.json` in both directions (`--update` lowers it). The rendered page is
+  measured separately by `tests/form-control-names.spec.js` through Chromium's accessibility tree.
+- **The stacking order** (`z-layers`, map-a11y-structure) — `scripts/z-layers.mjs` resolves every
+  z-index of `css/intmap.css` through the `:root` `--z-*` layer tokens (calc() evaluated) and holds the
+  ORDERED list to `tests/z-layers-baseline.json` exactly — a moved layer fails until it is written
+  down with `--update`, where the diff names the surface. It also ratchets, per file and both ways,
+  the z-index values still written as a bare number in `css/`, `js/**` and the root `*.html`
+  (`z-index:12`, `zIndex = '12'`, `{ zIndex: 12 }`, `setProperty('z-index', …)`; comments excluded).
+  Regression and mutation cases for both: `tests/map-a11y-structure-checks.test.mjs`; the browser's
+  own resolution of every declaration against the ledger: `tests/map-a11y-structure.spec.js` ③.
 - **Test discovery** (#R529, `scripts/static-checks.mjs`) — `test:checks` is
   `node --test "tests/**/*.test.mjs"`, so the runner finds the files itself and a file cannot be
   left out of a list that no longer exists. Until #R529 it **was** a list: one hand-written literal

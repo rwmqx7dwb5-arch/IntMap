@@ -1703,6 +1703,8 @@ window.IntMapCesiumEngine=(function(){
         }
       };
       H.setInputAction(m=>dispatch('click',m.position),T.LEFT_CLICK);
+      /* (map-a11y-structure) the same click, pressed from the keyboard (js/map-narrator.js through GE().events.pressAt) */
+      this._pressAt=(pt)=>{ dispatch('click',{x:+pt.x,y:+pt.y}); return true; };
       H.setInputAction(m=>dispatch('dblclick',m.position),T.LEFT_DOUBLE_CLICK);
       H.setInputAction(m=>dispatch('mousemove',m.endPosition),T.MOUSE_MOVE);
       /* ══ (#R181) THE REST OF THE POINTER STREAM, FROM THE DOM ══════════════════════════════
@@ -2850,6 +2852,7 @@ window.IntMapCesiumEngine=(function(){
       projectAltitude(ll,a){ const v=V(); return v?v.projectAltitude(ll,a):null; },
       terrainElevation(ll){ const v=V(); return v?v.terrainElevation(ll):null; },
       queryRenderedFeatures(g,o){ const v=V(); return v?v.queryRenderedFeatures(g,o):[]; },
+      pressAt(pt){ const v=V(); return (v&&v._pressAt&&pt)?v._pressAt(pt):false; },
       querySourceFeatures(s,p){ const v=V(); return v?v.querySourceFeatures(s,p):[]; },
       worldSize(){ const v=V(); return v?TILE*Math.pow(2,v.getZoom()):0; },
       lngLat(lng,lat){ return { lng, lat, toArray:()=>[lng,lat] }; },

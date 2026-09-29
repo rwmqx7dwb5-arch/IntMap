@@ -1434,7 +1434,7 @@ window.IntMapModules.space=function(HOST){
         +'<span class="sp-timebox" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px;">'
         +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
         +'<button class="sp-back" style="'+BTN+'" title="'+S(L('Slower','遅く','Langsamer','Медленнее','Más lento'))+'">⏪</button>'
-        +'<button class="sp-play" style="'+BTN+'">▶</button>'
+        +'<button class="sp-play" style="'+BTN+'" title="'+S(L('Play / pause','再生 / 一時停止'))+'">▶</button>'
         +'<button class="sp-fwd" style="'+BTN+'" title="'+S(L('Faster','速く','Schneller','Быстрее','Más rápido'))+'">⏩</button>'
         /* any multiplier, typed. `sp-ratev` is what it currently is, in the unit the ladder speaks. */
         +'<label class="sp-ratebox" style="display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:8px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11.5px;">'

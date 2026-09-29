@@ -20,6 +20,7 @@ import { installSafe } from './helpers/safe-html.mjs';
 import { until } from './helpers/wx-ecmwf-page.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { ROOT, isolate, read } from './helpers/geo-shared.mjs';
+import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R291 · the route store and panel   (was tests/r291-checks.test.mjs)
@@ -758,8 +759,9 @@ describe('§ #R298 · route cards on both surfaces, what production measured', (
     /* MEASURED on production: typing 「Tokyo」 gave EIGHT candidates and `elementFromPoint` returned a
        panel element for all six visible rows — the list sat at z-index 1600 under `.im-front`'s 2650,
        so only the keyboard could reach it. That is what 「検索機能なし」 looked like from outside. */
-    const front = +(/\.im-front\{ z-index:(\d+) !important; \}/.exec(css) || [])[1];
-    const sug = +(/\.rtp-suggest\{\s*\n?\s*position:fixed; z-index:(\d+);/.exec(css) || [])[1];
+    const zOf = (m) => (m ? zResolve(m[1], zTokens(css)) : 0);   /* (map-a11y-structure) a z-index is a named layer — resolve, then compare */
+    const front = zOf(/\.im-front\{ z-index:([^;!}]+?) !important; \}/.exec(css));
+    const sug = zOf(/\.rtp-suggest\{\s*\n?\s*position:fixed; z-index:([^;}]+);/.exec(css));
     assert.ok(front > 0 && sug > 0, 'both z-indices are declared');
     assert.ok(sug > front, `the candidate list (${sug}) must sit above a fronted window (${front})`);
     /* MEASURED, same frame, right after closing: the store said false and the UI said true. */

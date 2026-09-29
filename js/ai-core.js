@@ -504,8 +504,8 @@ window.IntMapModules.aiCore=function(HOST){
           `<div style="color:var(--text-muted);font-size:11.5px;margin:3px 0 7px;">`+
             aiEsc(L('Applies to every AI call you make. Scheduled background jobs keep the server model.',
                     'あなたが行う全ての AI 呼び出しに効きます。自動実行のバックグラウンド処理はサーバー既定のままです。'))+`</div>`+
-          `<select id="ai-model-provider" style="width:100%;margin-bottom:6px;"></select>`+
-          `<select id="ai-model-id" style="width:100%;"></select>`+
+          `<select id="ai-model-provider" aria-label="${aiEsc(L('AI provider','AI の提供元'))}" style="width:100%;margin-bottom:6px;"></select>`+
+          `<select id="ai-model-id" aria-label="${aiEsc(L('Model','モデル'))}" style="width:100%;"></select>`+
           `<div id="ai-model-note" style="color:var(--text-muted);font-size:11px;margin-top:6px;">`+
             aiEsc(pick?L('Chosen: ','選択中： ')+pick.model:L('Loading the catalogue…','一覧を読み込み中…'))+`</div>`+
         `</div>`;
