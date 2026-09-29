@@ -288,7 +288,7 @@ test('R493 ③: view.inspect is registered, typed, documented, offered and dispa
   /* the switch — every spelling the registry promises */
   const spellings = new Set(dispatchGroups(lines('js/atlas-console.js')).flatMap((g) => g.names));
   for (const s of ['inspect'].concat(cap.aliases || [])) {
-    assert.ok(spellings.has(s), `the dispatch has no case for "${s}", which the registry promises`);
+    assert.ok(spellings.has(CAPS.dispatchName(s)), `the dispatch has no case for "${s}", which the registry promises`);   /* (atlas-one-declaration) through the resolver the dispatch calls */
   }
 });
 

@@ -977,17 +977,19 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   assert.match(mod, /const SRC = 'atl-compose-src'/, '…and that is the source the module writes');
   const con = R('js/atlas-console.js');
   assert.match(con, /^import \{ makeAtlasMapCompose \} from '\.\/atlas-map-compose\.js';/m, 'imported at line start (scripts/js-reachability.mjs anchors there)');
-  assert.match(con, /case 'compose': case 'mapCompose': case 'composeMap': case 'explainOnMap': return await COMPOSE\.run\(a,dctx\);/, 'every spelling the registry promises reaches the module — with the execution context (#R551)');
+  assert.match(con, /case 'compose': return await COMPOSE\.run\(a,dctx\);/, 'the case reaches the module — with the execution context (#R551)');
+  for (const alias of ['mapCompose', 'composeMap', 'explainOnMap']) assert.equal(CAPS.dispatchName(alias), 'compose', `every spelling the registry promises reaches that case (atlas-one-declaration): ${alias}`);
   assert.match(con, /"answer_mode":"text"\|"map"\|"chart"\|"mixed"/, 'the REPLY FORMAT tells Atlas the field exists');
   assert.match(con, /COMPOSE\.linkProse\(head,_cr\)/, 'the answer is linked to the markers it drew');
   assert.match(con, /COMPOSE\.bind\(ai\)/);
   assert.match(con, /case 'reset':[^\n]*COMPOSE\.clear\(\)/, 'clearing highlights clears the composition');
   assert.match(con, /case 'clearAll':[^\n]*COMPOSE\.clear\(\)/);
-  /* the overlay chip's layer list IS the module's list — one fact */
-  const ovl = /compose:\[([^\]]+)\]/.exec(con);
-  assert.ok(ovl, '_OVL has a compose row');
-  const C = makeAtlasMapCompose({});
-  assert.deepEqual(ovl[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')), C.LAYERS, '_OVL.compose lists exactly the layers the module draws');
+  /* the overlay chip's layer list IS the module's list — one fact. (atlas-one-declaration) It is no longer typed a second
+     time in js/atlas-console.js: the chip's kind is the effect key the module claims its source under, and the layers are
+     the ones reading that source. tests/atlas-one-declaration-checks.test.mjs RUNS the module's painter and the chip's
+     resolver against one renderer and holds the result equal to C.LAYERS. */
+  assert.doesNotMatch(con, /compose:\['atl-compose/, '_OVL types the compose layers again — the claim is the list');
+  assert.match(con, /'map\.compose':'map\.compose'/, 'the compose chip switches what map.compose claimed');
   /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.match(R('docs/FILES.md'), /atlas-map-compose\.js/, 'docs/FILES.md describes the file');
   assert.match(R('js/atlas-styles.js'), /\.atl-geo-n\{/, 'the badge is styled');

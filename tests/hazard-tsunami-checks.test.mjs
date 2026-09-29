@@ -15,6 +15,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
+import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -264,8 +265,9 @@ test('R197 ②b nothing opens a tsunami inside the disaster simulator', () => {
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
   const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
-  assert.match(atlas, /case 'tsunami': case 'tsunamiSim': case 'tsunamiPropagation':/,
+  assert.match(atlas, /case 'tsunami':/,
     'Atlas routes tsunami to its own model');
+  for (const sp of ['tsunamiSim', 'tsunamiPropagation']) assert.equal(dispatchName(sp), 'tsunami', `…under every spelling its row declares (atlas-one-declaration): ${sp}`);
   /* ⚠ (#R296) the free-text forward stood in the `disaster` case, which is gone with its module —
      a sentence saying 「tsunami」 reaches the model by naming it, and there is no longer a nearer
      hazard for it to be captured by. The SYS entry keeps its subject and loses the comparison. */

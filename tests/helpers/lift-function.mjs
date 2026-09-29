@@ -24,3 +24,22 @@ export function liftFunction(src, name) {
   }
   throw new Error('unbalanced body for ' + name);
 }
+
+/* (atlas-one-declaration) the same matcher for a `const NAME={…}` object literal, which a table like
+   js/atlas-console.js's `_OVL` is: the returned text is the literal that ships, braces and all, ready to
+   evaluate. Run it on comment-stripped source, for the reason given above. */
+export function liftLiteral(src, name) {
+  const re = new RegExp('\\b(?:const|let|var)\\s+' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*=\\s*\\{');
+  const m = re.exec(src);
+  if (!m) throw new Error('no object literal named ' + name);
+  const at = m.index + m[0].length - 1;
+  let i = at, depth = 0, q = null;
+  for (; i < src.length; i++) {
+    const c = src[i];
+    if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+    if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (!depth) return src.slice(at, i + 1); }
+  }
+  throw new Error('unbalanced literal for ' + name);
+}

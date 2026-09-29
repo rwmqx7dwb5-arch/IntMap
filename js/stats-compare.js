@@ -952,6 +952,7 @@ window.IntMapModules.statsCompare=function(HOST){
        categorical fill built directly from window.countryGeo — needs no layer toggle and never disturbs Atlas's
        own highlight/choropleth layers. Country codes[i] gets PAL[i], exactly matching the chips/bars/table. */
     function ensureCmpMap(){ if(!GE().hasRenderer()||!GE().hasRenderer()) return false; const g=window.countryGeo||(typeof HOST.countryGeo!=='undefined'?HOST.countryGeo:null); if(!g||!g.features) return false;
+      try{ GE().render.claim('imcmp-src','panel.compare'); }catch(_){}   /* (atlas-one-declaration) claimed under the effect key its capability declares, so the Atlas chip switches — and the observers see — what this module draws, from this line and not from a copied id list in js/atlas-console.js. No remover is passed: the one undo keeps treating these as it did */
       try{ if(!_LY().hasSource('imcmp-src')) _LY().addSource('imcmp-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
       if(!_LY()) return false;   /* engine not built yet (#R172) */
       if(_LY().has('imcmp-fill')) return true;

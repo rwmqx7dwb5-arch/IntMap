@@ -82,7 +82,7 @@ export function installCapabilityKernel(OS, HOST, deps) {
   return caps;
 }
 
-export function makeAtlasCapabilities(HOST) {
+export function makeAtlasCapabilities(HOST, OPTS) {
   return (function () {
     var API = {};
 
@@ -1592,6 +1592,33 @@ export function makeAtlasCapabilities(HOST) {
     };
     API.has = function (x) { return !!API.resolve(x); };
     API.aliasMap = function () { var m = {}; Object.keys(byAlias).forEach(function (k) { m[k] = byAlias[k]; }); return m; };
+    /* ══ (atlas-one-declaration) THE SPELLINGS THE DISPATCH ANSWERS TO ARE THE ROWS ABOVE, AND ONLY THEM ══
+       Every alias used to be written down three times: in its row here, as a `case 'reach':` label in
+       js/atlas-console.js's dispatch, and again as a key of that file's map-chip table (`OVL_OF`). The
+       second and third copies were already drifting — 12 spellings declared here reached no case, and
+       the chip table knew `viewshed` but not `rfCoverage`, the name the tool surface actually sends.
+       Now the dispatch switches on `dispatchName(a.type)`, so its cases carry each capability's column-1
+       spelling only, and every other spelling in the row reaches the same case because the row says so.
+       ⚠ EXACT CASE, ON PURPOSE. A JS `switch` compares exactly, and `resolve()` above folds case — the
+       dispatch must not start answering spellings nobody declared. A spelling the table does not know
+       is returned unchanged, so the dispatch's `default` answers it exactly as before.
+       ⚠ A CLASH IS RESOLVED THE WAY `resolve()` RESOLVES IT: a spelling belongs to the capability that
+       `byAlias` holds for it, so the two readers cannot disagree about who owns a word. */
+    var spelled = null, spelledAt = -1;
+    function spellingTable() {
+      if (spelledAt === order.length) return spelled;
+      spelled = Object.create(null);
+      order.forEach(function (id) {
+        var c = byId[id]; if (!c || !c.legacy) return;
+        (c.aliases || []).forEach(function (a) { a = String(a); if (byAlias[a.toLowerCase()] === c.id && !spelled[a]) spelled[a] = c.id; });
+      });
+      spelledAt = order.length;
+      return spelled;
+    }
+    /** the capability a dispatch spelling belongs to (exact case), or null */
+    API.ofSpelling = function (t) { var id = (t == null) ? null : spellingTable()[String(t)]; return id ? byId[id] : null; };
+    /** the case label the dispatch answers `t` with: the owning row's column 1, or `t` itself */
+    API.dispatchName = function (t) { var c = API.ofSpelling(t); return c ? c.legacy : t; };
     API.withdrawn = function () { return Object.keys(WITHDRAWN).slice(); };
     API.ruleDocumented = function () { return Object.assign({}, RULE_DOCUMENTED); };
     /* define() — a capability added by a module rather than by this table. It is subject to the SAME
@@ -2461,7 +2488,10 @@ export function makeAtlasCapabilities(HOST) {
       });
     };
 
-    try { window.IntMapCapabilities = API; } catch (_) { }
+    /* (atlas-one-declaration) a module that only needs to READ the table (js/atlas-turn-results.js, when nobody injected
+       the app's registry) builds a private copy with `{ publish: false }`, so it cannot replace the app's published one —
+       which may hold rows `define()` added since boot. */
+    if (!(OPTS && OPTS.publish === false)) { try { window.IntMapCapabilities = API; } catch (_) { } }
     return API;
   })();
 }

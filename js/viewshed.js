@@ -281,7 +281,8 @@ window.IntMapModules.los=function(HOST){
       setSite(); }
 
     /* ---- layers ------------------------------------------------------------------------------ */
-    function ensureLayers(){ if(!_imCanDraw()) return false;
+    function ensureLayers(){ try{ GE().render.claim([SRC,IMGSRC],'map.los'); }catch(_){}   /* (atlas-one-declaration) claimed under the effect key its capability declares, so the Atlas chip switches — and the observers see — what this module draws, from this line and not from a copied id list in js/atlas-console.js. No remover is passed: the one undo keeps treating these as it did */
+      if(!_imCanDraw()) return false;
       try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has('los-site')) GE().layers.add({id:'los-site',type:'circle',source:SRC,filter:['==',['get','kind'],'site'],

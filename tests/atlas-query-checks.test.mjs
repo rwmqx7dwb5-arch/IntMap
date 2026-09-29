@@ -194,7 +194,7 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
   assert.ok(docs.idsCovered().includes('data.query'), 'the catalogue block the planner is shown');
   assert.match(docs.text(['data.query']), /CROSS-DATASET QUERY/, '…and it says what it is');
   const spellings = new Set(dispatchGroups(read('js/atlas-console.js').split(/\r?\n/)).flatMap((g) => g.names));
-  for (const s of ['query', 'crossQuery', 'dataQuery']) assert.ok(spellings.has(s), 'the dispatch door answers «' + s + '»');
+  for (const s of ['query', 'crossQuery', 'dataQuery']) assert.ok(spellings.has(CAPS.dispatchName(s)), 'the dispatch door answers «' + s + '»');   /* (atlas-one-declaration) through the resolver the dispatch calls */
   /* the door fetching the engine lazily is closure code inside js/atlas-console.js — a spelling */
   assert.match(read('js/atlas-console.js'), /IntMapLazy\.need\('atlasQuery'\)/, '…which fetches the engine');
   /* (#R798) one registry entry holds what it publishes, how to fetch it and how to mount it */
@@ -626,7 +626,7 @@ test('R620 ④c: the shipped dispatch actually hands the key to the turn', () =>
   let seen = null;
   (function walk(n) {
     if (!n || typeof n !== 'object') return;
-    if (n.type === 'SwitchCase' && n.test && n.test.type === 'Literal' && n.test.value === 'dataQuery') {
+    if (n.type === 'SwitchCase' && n.test && n.test.type === 'Literal' && n.test.value === 'query') {   /* (atlas-one-declaration) the one label; `dataQuery` reaches it through the registry */
       seen = src.slice(n.range[0], n.range[1]);
     }
     for (const k in n) { const v = n[k]; if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v.type === 'string') walk(v); }

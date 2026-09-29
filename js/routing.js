@@ -70,7 +70,8 @@ window.IntMapModules.routing=function(HOST){
     const LAYERS=['imroute-cas','imroute-walk','imroute-rail','imroute-line','imroute-transfer','imroute-pt','imroute-wp','imroute-durlab','imroute-hit'];
     function _layersOK(){ try{ if(!GE().layers.hasSource(SRC)) return false;
       for(let i=0;i<LAYERS.length;i++) if(!GE().layers.has(LAYERS[i])) return false; return true; }catch(_){ return false; } }
-    function ensureLayers(){ _watchStyle(); try{ if(_layersOK()) return true; if(!_imCanDraw()) return false;
+    function ensureLayers(){ _watchStyle(); try{ GE().render.claim(SRC,'map.route'); }catch(_){}   /* (atlas-one-declaration) claimed under the effect key its capability declares, so the Atlas chip switches — and the observers see — what this module draws, from this line and not from a copied id list in js/atlas-console.js. No remover is passed: the one undo keeps treating these as it did */
+      try{ if(_layersOK()) return true; if(!_imCanDraw()) return false;
       GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       /* ⚠ (#R291) THE CASING IS OPAQUE NOW. At 0.6 alpha the white under-line took the colour of
          whatever it sat on, so on satellite imagery and on the dark basemap the route read as a
@@ -931,7 +932,8 @@ window.IntMapModules.routing=function(HOST){
        panel, the first corner previews, and a box too small to mean anything is refused HERE with a
        reason the caller can print. */
     const AREA_SRC='imroute-area-src', AREA_FILL='imroute-area', AREA_LINE='imroute-area-line';
-    function _areaLayers(){ try{ const E=GE(); if(!E||!E.canDraw()) return false;
+    function _areaLayers(){ try{ GE().render.claim(AREA_SRC,'map.route'); }catch(_){}   /* (atlas-one-declaration) the drawn keep-out areas are part of the route's surface — see ensureLayers */
+      try{ const E=GE(); if(!E||!E.canDraw()) return false;
       if(!E.layers.hasSource(AREA_SRC)) E.layers.addSource(AREA_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(!E.layers.has(AREA_FILL)) E.layers.add({id:AREA_FILL,type:'fill',source:AREA_SRC,paint:{'fill-color':'#ff453a','fill-opacity':['case',['==',['get','sel'],1],0.28,0.16]}});
       if(!E.layers.has(AREA_LINE)) E.layers.add({id:AREA_LINE,type:'line',source:AREA_SRC,paint:{'line-color':'#ff453a','line-width':['case',['==',['get','sel'],1],2.6,1.6],'line-dasharray':[3,2]}});

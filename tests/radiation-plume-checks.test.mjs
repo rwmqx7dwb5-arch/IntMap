@@ -312,7 +312,7 @@ test('R568: every field the answer reads is a field the model returns', async ()
 
   let node = null;
   walk.full(parse('js/atlas-console.js'), (n) => {
-    if (n.type === 'SwitchCase' && n.test && n.test.value === 'radiationSim') node = n;
+    if (n.type === 'SwitchCase' && n.test && n.test.value === 'radiation') node = n;   /* (atlas-one-declaration) the one label; `radiationSim` reaches it through the registry */
   });
   assert.ok(node, 'found the radiation case in the console');
   const consumed = new Set();

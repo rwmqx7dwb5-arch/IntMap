@@ -374,6 +374,9 @@ window.IntMapModules.shakeMap = function (HOST) {
   /* (atlas-observer-undo) the contour source every metric produces, claimed under the effect key map.shakemap
      declares; its remover is the whole close, so the module's own state follows the map */
   try { GE().render.claim(SRC_LN, 'map.shakemap', { clear: () => close() }); } catch (_) { }
+  /* (atlas-one-declaration) …and the intensity image under the same key, so the Atlas chip switches all three layers from
+     the claim rather than from a copied id list. No remover of its own: the contour source's remover is the whole close. */
+  try { GE().render.claim(SRC_IMG, 'map.shakemap'); } catch (_) { }
   function close() { clearMap(); cur = null; mmiGrid = null; mmiFor = ''; unmountLegend(); fire(); return true; }
   function setOpacity(v) {
     opacity = clamp(+v, 0, 1) || 0;

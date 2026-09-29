@@ -200,7 +200,7 @@ test('R666 ④: "open the pandemic simulator" does not answer with the hub on a 
      and #R209 made that factory run only on demand — so before anyone had opened the Playground the
      arm was false and the request fell through to the `else`, which opened the four-card hub. */
   const s = nocomment(read('js/atlas-console.js'));
-  const c = s.slice(s.indexOf("case 'playground': case 'game':"));
+  const c = s.slice(s.indexOf("case 'playground':"));
   const arm = c.indexOf('_pgPandemic');
   const load = c.indexOf("IntMapLazy.need('playground')");
   assert.ok(load >= 0 && load < arm, 'the loader is awaited BEFORE the mode arms are tested');

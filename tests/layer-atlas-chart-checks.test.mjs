@@ -255,8 +255,9 @@ test('R543 ⑩: chart.compose is reachable by every route Atlas actually has', (
   assert.equal((core.find((c) => c.name === 'chart') || {}).cap, 'chart.compose', 'it is a CORE tool, not something only find_capability can reach');
 
   const con = R('js/atlas-console.js');
-  assert.match(con, /^ {8}case 'chart': case 'chartCompose': case 'plot': case 'graph':/m,
+  assert.match(con, /^ {8}case 'chart':/m,
     'the dispatch door starts a line at eight spaces — scripts/atlas-catalog.mjs reads it there');
+  for (const sp of ['chartCompose', 'plot', 'graph']) assert.equal(CAPS.dispatchName(sp), 'chart', `every spelling the row declares reaches that door (atlas-one-declaration): ${sp}`);
   assert.match(con, /IntMapLazy\.need\('atlasChart'\)/, 'and it is lazy');
   /* the renderer must NOT be in the boot graph: tests/perf-baseline.json pins eager.modules exactly */
   assert.ok(!/^import .*atlas-chart\.js/m.test(con), 'no static import of the renderer');

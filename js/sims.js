@@ -222,7 +222,8 @@ window.IntMapModules.radiation=function(HOST){
          behind it are gone. Every URL this simulator builds is an Open-Meteo one (omURL), so this line is the
          defensive remainder, not a path the plume takes. */
       try{ const r=await fetch(url); if(r&&r.ok) return await r.json(); }catch(_){} return null; }
-    function ensureLayers(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+    function ensureLayers(){ try{ GE().render.claim([SRC,DEP],'map.radiation'); }catch(_){}   /* (atlas-one-declaration) claimed under the effect key its capability declares, so the Atlas chip switches — and the observers see — what this module draws, from this line and not from a copied id list in js/atlas-console.js. No remover is passed: the one undo keeps treating these as it did */
+      try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
       GE().layers.addSource(DEP,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       GE().layers.add({id:'imrad-dep',type:'fill',source:DEP,paint:{'fill-color':['get','c'],'fill-opacity':0.5}});
       GE().layers.add({id:'imrad-dep-line',type:'line',source:DEP,paint:{'line-color':['get','c'],'line-width':0.4,'line-opacity':0.5}});

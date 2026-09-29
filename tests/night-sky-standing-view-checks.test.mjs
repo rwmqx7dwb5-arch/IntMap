@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -205,7 +206,7 @@ test('R214 ④c: the standing view is reachable by hand and by Atlas, and the pl
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
   const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
-  assert.ok(/case 'standHere':/.test(atlas), 'Atlas has an action for it');
+  assert.ok(/case 'nightSky':/.test(atlas) && dispatchName('standHere') === 'nightSky', 'Atlas has an action for it — `standHere` reaches the night-sky case through its row (atlas-one-declaration)');
   /* ⚠ #R115: a parameter the SYS catalogue does not name DOES NOT EXIST to the planner. */
   const sys = atlas.slice(atlas.indexOf('NIGHT SKY FROM A POINT:'), atlas.indexOf('NIGHT SKY FROM A POINT:') + 2000);
   for (const p of ['"mode"', '"az"', '"alt"', '"fov"', 'stand']) {

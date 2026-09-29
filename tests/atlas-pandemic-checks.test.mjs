@@ -213,7 +213,7 @@ test('R754 ⑧: every spelling of both capabilities reaches a dispatch case', as
     assert.ok(cap, id + ' is not in the registry');
     const spellings = [cap.legacy].concat(cap.aliases || []).filter(Boolean).filter((s, i, a) => a.indexOf(s) === i);
     assert.ok(spellings.length >= 2, id + ' offers more than one spelling');
-    for (const s of spellings) assert.ok(doors.has(s), id + ': no dispatch case for ' + s);
+    for (const s of spellings) assert.ok(doors.has(C.dispatchName(s)), id + ': no dispatch case for ' + s);   /* (atlas-one-declaration) through the resolver the dispatch calls */
   }
 });
 

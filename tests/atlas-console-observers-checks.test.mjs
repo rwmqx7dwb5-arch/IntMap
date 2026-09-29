@@ -697,7 +697,7 @@ test('R441 ⑧ js/atlas-console.js composes through the module and keeps no seco
      build; the module's decisions are RUN in ①–⑦. */
   const atlas = codeOnly(R('js/atlas-console.js'));
   assert.match(atlas, /import\s*\{\s*makeAtlasTurnResults\s*\}\s*from\s*'\.\/atlas-turn-results\.js'/, 'js/atlas-console.js does not import the module');
-  assert.match(atlas, /makeAtlasTurnResults\(\s*\{\s*norm\s*:\s*_lnorm\s*\}\s*\)/, 'the module is not given the console\'s own `_lnorm`');
+  assert.match(atlas, /makeAtlasTurnResults\(\s*\{\s*norm\s*:\s*_lnorm\b[^}]*\}\s*\)/, 'the module is not given the console\'s own `_lnorm`');   /* (atlas-one-declaration) it is given the registry too */
   assert.match(atlas, /const\s+keep\s*=\s*TRES\.keep\(results\)/, '_atlCompose no longer composes from the module');
   assert.ok(!/_atlGoalKey|_atlGoalScore|_ATL_ANSWER_TYPES/.test(atlas), 'the old in-file de-dupe is still there — two rules for one decision');
   /* the exact-HTML guard stays: two DIFFERENT operations that render the same fragment are still one */
