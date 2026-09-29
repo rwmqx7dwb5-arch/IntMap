@@ -122,7 +122,7 @@ select ok(not exists(select 1 from pg_policies where schemaname='public' and tab
 select ok(has_table_privilege('anon','public.feedback','insert'),                   'R155: anon CAN still submit feedback');
 select ok(has_table_privilege('anon','public.current_news','select'),               'R155: anon CAN still read current_news');
 select ok(has_table_privilege('authenticated','public.favorites','insert'),         'R155: authenticated CAN still save favorites');
-select ok(has_table_privilege('authenticated','public.community_posts','insert'),   'R155: authenticated CAN still post');
+select ok(has_any_column_privilege('authenticated','public.community_posts','insert'),   'R155: authenticated CAN still post');
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  3. PUBLIC-WRITE LENGTH CAPS reject an oversized payload (abuse/DoS guard).

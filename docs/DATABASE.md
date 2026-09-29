@@ -22,6 +22,11 @@ is the human explanation.
   `aviation` (the live-aircraft snapshot, #R341), `gdelt` (the GDELT cache, #R424) and `ais` (the
   live-ship snapshot, #R510). Avatars are stored inline (data URL in `profiles.avatar_url`). The
   buckets hold derived public data, so there is nothing to back up.
+  **Read by URL, never listed:** every reader GETs `/storage/v1/object/public/<bucket>/<object>`,
+  which Storage serves without consulting RLS, so the buckets carry **no SELECT policy** — such a
+  policy would add only the listing endpoint (anyone with the publishable key enumerating every
+  object name). `supabase/tests/12_db_provenance_hardening_test.sql` asserts it for every
+  `public = true` bucket.
 
 ## Tables
 
@@ -40,8 +45,8 @@ is the human explanation.
 ### Community
 | Table | Purpose | Read | Write |
 |---|---|---|---|
-| `community_posts` | User map posts. | Everyone. | Author inserts own; author **or admin** edits/deletes. |
-| `community_comments` | Threaded comments. | Everyone. | Author inserts own; author **or admin** edits/deletes. |
+| `community_posts` | User map posts. | Everyone. | Author inserts own — INSERT is a **column grant** (`user_id, author_name, title, body, img, lat, lng, category`), and `author_name` / `created_at` are **written by the database** (`tg_community_stamp_provenance`), never taken from the request; author **or admin** edits/deletes the content columns. |
+| `community_comments` | Threaded comments. | Everyone. | Author inserts own — column grant (`post_id, user_id, author_name, body, parent_id`), provenance stamped the same way; author **or admin** edits/deletes. |
 | `community_votes` | Upvotes (post,user). | Everyone (counts). | Owner insert/delete. |
 | `community_comment_votes` | Upvotes (comment,user). | Everyone. | Owner insert/delete. |
 | `community_reports` | Post flags. | **Admin only.** | Owner inserts own. |
@@ -162,6 +167,7 @@ itself; `grant execute` means "may call", never "may do".
 | `public.monitor_claim_due(int,int)` / `monitor_claim_one(uuid,uuid,int,int)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Atomic claims (cron `FOR UPDATE SKIP LOCKED`; manual `UPDATE…WHERE…RETURNING`). service_role only. |
 | `public.monitor_finalize(...)` / `monitor_commit_report(...)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Finalize a run + (optionally) insert its report + update the monitor meta in one transaction. service_role only. |
 | `public.tg_monitors_guard_state()` + `trg_monitors_guard` *(#R144)* | SECURITY DEFINER, `search_path=''` | BEFORE UPDATE on `area_monitors`: freezes run-state columns and server-owns `next_run_at` for any non-runner caller (grant-independent). |
+| `public.tg_community_stamp_provenance()` + `trg_community_posts_provenance` / `trg_community_comments_provenance` | SECURITY DEFINER, `search_path=''` | BEFORE INSERT on `community_posts` / `community_comments`: for any caller that is not service_role or a no-JWT session, `author_name` := the author's `profiles_public.display_name` (no name → the `User-` + first five alphanumerics of the id handle the client shows), `created_at` := `now()`, `edited_at` := null. What the request said about them is never read (grant-independent, like `tg_profiles_guard_privcols`). |
 
 Every SECURITY DEFINER function pins a `search_path` that does not contain `public` and
 schema-qualifies its objects, so a caller cannot hijack it via their own search path. All but
@@ -169,7 +175,12 @@ six pin the empty string; the six embedding functions (`news_embedding_candidate
 `news_articles_set_embeddings`, `news_event_link_candidates`, and the three `atlas_capability_*`
 functions) pin `extensions` alone, because
 pgvector's `<=>` operator lives there and operators are resolved through the search path.
-`supabase/tests/09_r801_security_audit_test.sql` measures this over `pg_proc`, not over a list.
+`supabase/tests/09_r801_security_audit_test.sql` measures this over `pg_proc`, not over a list, and
+`12_db_provenance_hardening_test.sql` states the property itself: every entry is the empty string,
+`pg_temp` (last only), or a schema that is not `public` and in which neither `anon` nor `authenticated`
+holds CREATE. ⚠ **Read the catalogue, not the CREATE statement:** the news-event RPCs still say
+`set search_path = public` in `20260824090000` / `20260824190000`, and run with `''` because
+`20260918090000` re-pinned them with `ALTER FUNCTION` inside a DO block.
 
 A SECURITY DEFINER function runs with its owner's rights, so **who may call it is its whole access
 control** — and PostgreSQL gives EXECUTE to PUBLIC on creation while Supabase's default privileges give
@@ -207,9 +218,14 @@ same pgTAP file asserts zero grants.
    Supabase's default privileges grant users full table UPDATE (RLS is the real protection), which
    would otherwise let a user forge run metadata or hand-pick their execution time. `monitor_limit`
    is service-role-only so plans can't be enumerated.
+5. **Community provenance is the server's.** An author writes the content of a post or comment; the
+   name it appears under and the time it was posted are written by `tg_community_stamp_provenance`
+   (INSERT) and are not in the UPDATE grant (#R801). A REST call that names `created_at` / `edited_at`
+   / `id` is refused by the column grant; a forged `author_name` is overwritten.
 
 Guarantees 1–3 (and the R144 monitor matrix) are proven by the pgTAP tests
-(`04_monitors_test.sql` simulates the prod default grant) — see [`DATABASE.md`](DATABASE.md#rls--permission-testing).
+(`04_monitors_test.sql` simulates the prod default grant; guarantee 5 is
+`12_db_provenance_hardening_test.sql`, which simulates it too) — see [`DATABASE.md`](DATABASE.md#rls--permission-testing).
 
 ## Admin privileges
 
@@ -300,6 +316,13 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 - **`11_definer_execute_test.sql`** *(multi-aspect-audit)* — no callable SECURITY DEFINER function in
   `public` is executable by `anon` unless an `anon`-facing RLS policy calls it (stated on `pg_proc` ×
   `pg_policies`, not on names), and the two RPCs that had inherited `anon` no longer do.
+- **`12_db_provenance_hardening_test.sql`** *(db-provenance-hardening)* — ① every SECURITY DEFINER
+  function in `public` pins a search_path with no schema a caller could create in (over `pg_proc` ×
+  `pg_namespace` × `has_schema_privilege`); ② no `public = true` bucket has a SELECT policy anon or
+  authenticated could list it through; ③ a post or comment signed as someone else, or dated in the
+  future, is published under the author's card name at `now()` — through the real grant **and** under a
+  simulated production blanket grant, with the no-name fallback and the service_role boundary;
+  ④ the INSERT grant is exactly the columns the client sends.
 - **`10_client_errors_test.sql`** *(client-error-log)* — the error record: RLS on; anon and a non-admin
   reader can neither read nor write it and cannot call `record_client_error`; an admin reads every
   row and cannot update one; the table has no column that could hold an IP, a user, a session, a
