@@ -55,6 +55,8 @@
  *  Sources & terms: Open-Meteo (CC-BY 4.0, keyless) and MET Norway Locationforecast 2.0
  *  (NLOD / CC-BY 4.0, keyless) — both already declared in js/reference-data.js and js/legal.js.
  * ==========================================================================*/
+import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) every read below, under a clock that covers the body */
+import { clockFor } from './proxy-fetch.js';        /* …sized per host, stated once there */
 (function () {
   'use strict';
 
@@ -107,29 +109,88 @@
       return h === 'open-meteo.com' || h.slice(-15) === '.open-meteo.com';
     } catch (_) { return false; }
   }
-  function guardedJSON(url, ttlMs) {
+  /* ══ ⚠⚠⚠ (fetch-deadline-layer) THE SHARED READ HAD NO END, AND SHARING IT MADE THAT EVERYONE'S ══════
+     This was `fetch(url, { cache: 'no-store' })` with no signal, and `inflight[url]` hands every later
+     caller of the same URL the promise already on its way. So one read that a host stopped answering
+     was not one stalled request: it was every widget, panel and Atlas turn that asked the same URL
+     for the rest of the session, all waiting on a promise that could not settle — and the entry that
+     would have let the next caller start a new read was deleted only when it did. Three changes:
+       · the read goes through js/fetch-deadline.js `readWithin` under js/proxy-fetch.js `clockFor(url)`
+         (the host's clock, stated once there) — the IDLE clock, so it bounds the longest silence, the
+         wait for the headers included, rather than the length of a large forecast on a slow line;
+       · the in-flight entry leaves the table the moment the read settles OR is abandoned, so the next
+         caller always starts a new read rather than joining a dead one;
+       · a caller may pass `opts.signal` (Atlas's turn signal, a Stop). Its own wait ends at once; the
+         shared read is aborted only when EVERY caller waiting on it has gone, so one caller's Stop
+         never cancels another caller's answer.
+     `null` still means 「nothing usable」 for every caller that reads only the value. A caller that
+     needs to say WHICH nothing passes `opts.note`, an object it owns (the #R769 contract of
+     js/proxy-fetch.js fetchViaProxy), and this writes into it at every exit:
+       note.reason  'ok' | 'timeout' | 'network' | 'http' | 'parse' | 'refused' | 'aborted'
+                    — 'refused' is a 2xx whose body says `error: true` (Open-Meteo's own refusal);
+                      'aborted' is THE CALLER'S signal, never the host's failure
+       note.status  the HTTP status when one arrived, else 0
+       note.cached  true when the answer came from the TTL cache without a request */
+  function _read(url) {
+    var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
+    var fl = { waiters: 0, p: null };
+    fl.abandon = function () {
+      if (inflight[url] === fl) delete inflight[url];
+      try { if (ctl) ctl.abort(); } catch (_) { /* already done */ }
+    };
+    var init = { cache: 'no-store' };
+    if (ctl) init.signal = ctl.signal;
+    fl.p = readWithin(url, clockFor(url), init, { idle: true }).then(function (r) {
+      var j = null, parsed = true;
+      try { j = JSON.parse(r.text); } catch (_) { parsed = false; }
+      if (!r.ok || !j || j.error) {
+        var reason = (j && j.reason) || ('HTTP ' + r.status);
+        /* Open-Meteo says which kind of 429 it is, in prose. "Daily API request limit exceeded"
+           is the one that lasts all day; "Minutely"/"Hourly" recover on their own. */
+        if (isOpenMeteo(url)) _trip(r.status === 429 && /dai(ly|l)/i.test(reason), reason);
+        return { j: null, reason: !r.ok ? 'http' : (!parsed || !j) ? 'parse' : 'refused', status: r.status };
+      }
+      if (isOpenMeteo(url)) _clear();
+      cache[url] = { t: Date.now(), j: j };
+      return { j: j, reason: 'ok', status: r.status };
+    }, function (e) {
+      /* nothing arrived: the clock, the network, or every waiter having left. None of these is a
+         statement about the rest of the day, so the breaker is not tripped — as before. */
+      return { j: null, reason: (e && e.reason) || 'network', status: 0 };
+    }).then(function (rec) { if (inflight[url] === fl) delete inflight[url]; return rec; });
+    return fl;
+  }
+  function guardedJSON(url, ttlMs, opts) {
+    var o = opts || {};
     var ttl = (ttlMs == null) ? 300000 : ttlMs;
+    var say = function (rec) {
+      if (o.note && typeof o.note === 'object') {
+        try { o.note.reason = rec.reason; o.note.status = rec.status || 0; o.note.cached = !!rec.cached; } catch (_) { /* the caller's object is theirs */ }
+      }
+      return rec.j;
+    };
     var hit = cache[url];
-    if (hit && (Date.now() - hit.t) < ttl) return Promise.resolve(hit.j);
-    if (inflight[url]) return inflight[url];
-    var p = fetch(url, { cache: 'no-store' }).then(function (r) {
-      return r.text().then(function (txt) {
-        var j = null;
-        try { j = JSON.parse(txt); } catch (_) {}
-        if (!r.ok || !j || j.error) {
-          var reason = (j && j.reason) || ('HTTP ' + r.status);
-          /* Open-Meteo says which kind of 429 it is, in prose. "Daily API request limit exceeded"
-             is the one that lasts all day; "Minutely"/"Hourly" recover on their own. */
-          if (isOpenMeteo(url)) _trip(r.status === 429 && /dai(ly|l)/i.test(reason), reason);
-          return null;
-        }
-        if (isOpenMeteo(url)) _clear();
-        cache[url] = { t: Date.now(), j: j };
-        return j;
+    if (hit && (Date.now() - hit.t) < ttl) return Promise.resolve(say({ j: hit.j, reason: 'ok', status: 200, cached: true }));
+    var outer = o.signal || null;
+    if (outer && outer.aborted) return Promise.resolve(say({ j: null, reason: 'aborted', status: 0 }));
+    var fl = inflight[url] || (inflight[url] = _read(url));
+    fl.waiters++;
+    return new Promise(function (resolve) {
+      var done = false;
+      var leave = function () { fl.waiters--; if (outer) { try { outer.removeEventListener('abort', onAbort); } catch (_) { /* nothing to remove */ } } };
+      var onAbort = function () {
+        if (done) return;
+        done = true; leave();
+        if (fl.waiters <= 0) fl.abandon();   /* the last one waiting has gone: nobody wants this read */
+        resolve(say({ j: null, reason: 'aborted', status: 0 }));
+      };
+      if (outer) { try { outer.addEventListener('abort', onAbort); } catch (_) { /* no listener support */ } }
+      fl.p.then(function (rec) {
+        if (done) return;
+        done = true; leave();
+        resolve(say(rec));
       });
-    }).catch(function () { return null; }).then(function (v) { delete inflight[url]; return v; });
-    inflight[url] = p;
-    return p;
+    });
   }
 
   /* ── MET Norway → the Open-Meteo shape ────────────────────────────────────────────────────────
@@ -162,9 +223,12 @@
     var hit = cache[url];
     if (hit && (Date.now() - hit.t) < ttl) return Promise.resolve(hit.j);
     if (inflight[url]) return inflight[url];
-    var p = fetch(url).then(function (r) {
+    /* (fetch-deadline-layer) under the same clock as guardedJSON above: this is the fallback every
+       widget lands on when Open-Meteo is out, so a read here with no end was the SECOND place one
+       stalled host could hold the whole weather board — and its `inflight[url]` shares the read too. */
+    var p = readWithin(url, clockFor(url), undefined, { idle: true }).then(function (r) {
       if (!r.ok) return null;
-      return r.json();
+      return JSON.parse(r.text);
     }).then(function (j) {
       var ts = j && j.properties && j.properties.timeseries;
       if (!ts || !ts.length) return null;

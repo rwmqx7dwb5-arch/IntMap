@@ -436,6 +436,7 @@
   "IntMapEyeAlt",
   "IntMapFacilities",
   "IntMapFaultGeom",
+  "IntMapFetchWithin",
   "IntMapFlightSim",
   "IntMapGazetteer",
   "IntMapGeoEngine",

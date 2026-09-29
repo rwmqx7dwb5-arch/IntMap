@@ -12,6 +12,8 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+import { jsonWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the neighbouring-year prefetch, under a clock — see hbPrefetch */
+import { clockFor } from './proxy-fetch.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.betaOverlays=function(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -223,9 +225,12 @@ window.IntMapModules.betaOverlays=function(HOST){
     async function hbPrefetch(year){
       if(hbCache.has(year)) return;
       try{ if(window.IntMapCache){ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ hbCache.set(year,c); return; } } }catch(_){}
+      /* (fetch-deadline-layer) a warm-up, so its failure is not the reader's news — hbLoad() reads the year again when it
+         is actually asked for, and that read reports. What it may not do is hold a socket to a silent host for the
+         session: the neighbours of every year scrubbed past would pile up behind it. The host's clock, idle. */
       for(const wrap of PROX){ try{
-        const r=await fetch(wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson')); if(!r.ok) continue;
-        const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
+        const u=wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson');
+        const j=await jsonWithin(u,clockFor(u),undefined,{idle:true}); if(!j||!Array.isArray(j.features)) continue;
         j.features.forEach((f,i)=>{ if(!f.properties) f.properties={}; const nm=f.properties.NAME||f.properties.name||String(i);
           let h=0; for(let k=0;k<nm.length;k++) h=(h*31+nm.charCodeAt(k))>>>0; f.properties.__col=HB_PAL[h%HB_PAL.length]; });
         hbCache.set(year,j); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,j); }catch(_){}

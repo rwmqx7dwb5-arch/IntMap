@@ -188,8 +188,11 @@ test('R266 ⑦: a tap lists administrative units, not a flat run of municipaliti
 test('R266 ⑧: annual precipitation is a measured field, and its grid is read from the manifest', () => {
   const s = read('js/precip-annual.js');
   assert.ok(!/const\s+(VAL_W|W)\s*=\s*\d{3,}/.test(s), 'the grid is hard-coded here instead of read from the manifest');
-  assert.match(s, /fetch\(url\('data\/precip-mm\.json'\)\)/);
-  assert.match(s, /fetch\(url\('data\/precip-year\.json'\)\)/);
+  /* (fetch-deadline-layer) the manifests are read under js/fetch-deadline.js's clock now — read(f) is
+     jsonWithin(url(f), clockFor(url(f))) in the same file; what this pins is that BOTH come from the data files */
+  assert.match(s, /read\('data\/precip-mm\.json'\)/);
+  assert.match(s, /read\('data\/precip-year\.json'\)/);
+  assert.match(s, /const read = \(f\) => \{ const u = url\(f\); return jsonWithin\(u, clockFor\(u\)\); \};/);
   assert.match(s, /GE\(\)\.layers\.updateImage\(SRC/, 'the image source is repointed off-contract');
 
   const mm = json('data/precip-mm.json');

@@ -58,6 +58,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { fetchWithinFor } from './helpers/load-wx-source.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { readdirSync } from 'node:fs';
@@ -162,14 +163,19 @@ async function runLoader({ coarse, fine }) {
     turf: { area: areaOf },
     fetch: async (url) => {
       const body = /ne_10m_/.test(String(url)) ? fine : coarse;
-      if (!body) return { ok: false, json: async () => null };
-      return { ok: true, json: async () => JSON.parse(JSON.stringify({ type: 'FeatureCollection', features: body })) };
+      if (!body) return { ok: false, status: 404, text: async () => 'null', json: async () => null };
+      const fc = JSON.stringify({ type: 'FeatureCollection', features: body });
+      return { ok: true, status: 200, text: async () => fc, json: async () => JSON.parse(fc) };
     },
     navigator: {},
     requestIdleCallback: (fn) => setTimeout(fn, 0),
     console: { warn: () => {}, log: () => {}, error: () => {} },
     localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
   };
+  /* (fetch-deadline-layer) js/countries-ui.js reads Natural Earth through js/fetch-deadline.js, reached as
+     window.IntMapFetchWithin — the REAL file, evaluated so that the fetch it calls is this stub. The stub
+     answers with a body (`text`) because that is what the clock reads. */
+  win.IntMapFetchWithin = fetchWithinFor(env.fetch);
   const run = (src) => new Function(
     'window', 'document', 'turf', 'fetch', 'navigator', 'requestIdleCallback', 'console', 'localStorage', src,
   )(win, env.document, env.turf, env.fetch, env.navigator, env.requestIdleCallback, env.console, env.localStorage);

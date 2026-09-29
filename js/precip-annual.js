@@ -27,6 +27,8 @@
  *  read the picture at all: it reads data/precip-mm.png, an 8-bit log(mm) grid, so a number never
  *  comes from a colour.
  * ==========================================================================*/
+import { jsonWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the two manifests, under a clock — see manifests() */
+import { clockFor } from './proxy-fetch.js';
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.precipAnnual = function (HOST) {
   const GE = () => window.IntMapGeoEngine;
@@ -56,12 +58,17 @@ window.IntMapModules.precipAnnual = function (HOST) {
     try { return !!window.IntMapMemBudget.deviceIsPhone(own); } catch (_) { return own(); }
   };
 
+  /* (fetch-deadline-layer) Every drawing and every readout starts here, so a manifest read with no end held the row, its
+     legend and the point readout for the session, and a refused one was the same silent `false` as a slow one. The reads
+     are js/fetch-deadline.js `jsonWithin` under our own origin's clock (js/proxy-fetch.js `clockFor`), and a read that
+     got nothing is said once per attempt by the layer that asked (paint(), below) and kept as `manifestFail` for state(). */
+  let manifestFail = null;
   function manifests() {
     if (mm && yr) return Promise.resolve(true);
-    return Promise.all([
-      fetch(url('data/precip-mm.json')).then((r) => r.json()),
-      fetch(url('data/precip-year.json')).then((r) => r.json()),
-    ]).then(([a, b]) => { mm = a; yr = b; return true; }).catch(() => false);
+    const read = (f) => { const u = url(f); return jsonWithin(u, clockFor(u)); };
+    return Promise.all([read('data/precip-mm.json'), read('data/precip-year.json')])
+      .then(([a, b]) => { mm = a; yr = b; manifestFail = null; return true; })
+      .catch((e) => { manifestFail = (e && e.reason) || 'network'; return false; });
   }
 
   /* the log encoding both rasters share, decoded exactly the way the builders wrote it */
@@ -141,7 +148,7 @@ window.IntMapModules.precipAnnual = function (HOST) {
   function paint() {
     if (!on) { setVis(false); return; }
     manifests().then((ok) => {
-      if (!ok) { legend(); return; }
+      if (!ok) { legend(); try { HOST.imToast(window.IntMapLang.t(HOST.lang, 'Could not load — toggle again later.', '取得できませんでした — 後でもう一度オンにしてください。', 'Laden fehlgeschlagen — später erneut einschalten.', 'Не удалось загрузить — включите позже ещё раз.', 'No se pudo cargar; vuelva a activarlo más tarde.')); } catch (_) { } return; }   /* (fetch-deadline-layer) the reader is told that nothing came; state().manifestFail says why */
       if (year === CLIM) { if (ensure(climURL())) { setVis(true); try { window._raiseLabelLayers && window._raiseLabelLayers(); } catch (_) { } } else { GE().events.once('idle', paint); } legend(); return; }
       loadYear(year).then((got) => {
         if (!got) { year = CLIM; paint(); return; }
@@ -264,7 +271,7 @@ window.IntMapModules.precipAnnual = function (HOST) {
        several hundred cities — got `null` for every point unless the reader happened to have the layer
        on. This is that load, with nothing painted and nothing toggled. */
     warmValues: () => ensureVals(),
-    state: () => ({ on, year, hasClim: !!mmVals, yearsLoaded: Object.keys(yearVals), painted: lastPainted }),
+    state: () => ({ on, year, hasClim: !!mmVals, yearsLoaded: Object.keys(yearVals), painted: lastPainted, manifestFail }),   /* (fetch-deadline-layer) why the manifests did not arrive, or null */
   };
   return window.IntMapPrecipAnnual;
 };

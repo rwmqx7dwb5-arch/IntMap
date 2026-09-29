@@ -20,6 +20,15 @@ import { jsonWithin, readWithin } from './fetch-deadline.js';   /* (stalled-fetc
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor } from './layer-manifest.js';
+/* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
+   js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
+   clock, and — for the cables — the host FIRST and our relay second, the order cable-relay-first had just
+   reversed here because the host is refused by CORS in every page a reader has. Two copies of «how this
+   layer gets its data» had already disagreed once, so the preview no longer keeps one: the factory below
+   puts the layer's own functions here (`subcables` → fetchSubcables, `radarIndex` → rvFetch) and the
+   preview calls them. One ladder, one clock, one cache, and an order that cannot drift because there is
+   only one of it. Empty until the factory has run; a reader finding a name absent draws its sketch. */
+export const layerReads = {};
 /* ── (#R186) THE DATA LAYERS THAT ARE ON BEFORE ANYONE TOUCHES ANYTHING ──────────────────────────
    「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」
    Three readers need this list and they must not disagree, so it is stated once, here, above the
@@ -5996,6 +6005,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const [cNet,lNet]=await Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]);
       return {cab:cNet,lp:lNet,from:'telegeography',fromCache:false};
     }
+    layerReads.subcables=fetchSubcables;   /* (fetch-deadline-layer) the preview draws from THIS ladder — see layerReads at the top */
     /* The app — not the user — is switching this box off. Recorded on the element so the session
        snapshot can tell the two apart (js/app-body.js reads `imAutoOff`). */
     function autoUncheck(id){ const cb=document.getElementById(id); if(!cb) return;
@@ -6242,6 +6252,7 @@ window.IntMapModules.dataLayers=function(HOST){
         .catch(()=>{ _rvPending=null; return null; });
       return _rvPending;
     }
+    layerReads.radarIndex=rvFetch;   /* (fetch-deadline-layer) the preview reads the frame index through the row's own read */
     function rvRefreshFrames(){
       const r=(_rvData&&_rvData.radar)||{};
       const was=(_rvIdx>=0)?_rvFrames[_rvIdx]:null;

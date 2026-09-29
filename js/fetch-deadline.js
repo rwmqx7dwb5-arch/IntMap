@@ -39,6 +39,7 @@
  *      keeps delivering is not a stall; a connection that stops is, at any size.
  *  How long a given URL may take is not decided here — js/proxy-fetch.js `clockFor` says, per host.
  */
+import { clockFor } from './proxy-fetch.js';   /* (fetch-deadline-layer) only to hand it on, with the readers, to the classic scripts below */
 export const { jsonWithin, readWithin } = (() => {
   /* An AbortController is standard everywhere IntMap runs; the guard is for the node checks, which
      evaluate this module without a DOM. Without one the deadline simply cannot be enforced, and the
@@ -58,6 +59,21 @@ export const { jsonWithin, readWithin } = (() => {
       out += dec.decode(value, { stream: true });
     }
     return out + dec.decode();
+  };
+
+  /* ══ (fetch-deadline-layer) WHY NOTHING ARRIVED IS PART OF THE ANSWER ══════════════════════════
+     Every throw below carries `reason` — 'timeout' | 'aborted' | 'network' | 'http' | 'parse' — and,
+     for 'http' and 'parse', `status`. Before, the deadline and a refusal reached the caller as two
+     Errors that differed only in their message text, so the callers that needed to say which (js/wx-source.js
+     guardedJSON, whose `.catch(() => null)` made 「the host stopped answering」, 「the host said no」
+     and 「there is nothing here」 one null) had nothing to read. ⚠ 'aborted' is the CALLER's signal —
+     a Stop or a superseding turn — and must never be reported as the host's failure
+     (.agents/rules/one-pass-or-a-reason.md §5: 「could not observe」 is not 「failed」). The error is
+     the one the platform threw, so a caller testing `e.name === 'AbortError'` still sees it. */
+  const failed = (e, reason, extra) => {
+    const err = (e && typeof e === 'object') ? e : new Error(String(e));
+    try { err.reason = reason; if (extra) Object.assign(err, extra); } catch (_) { /* a frozen error keeps its own shape */ }
+    return err;
   };
 
   /* readWithin(url, ms, init, opts) -> { ok, status, type, text }
@@ -86,7 +102,8 @@ export const { jsonWithin, readWithin } = (() => {
       const text = await bodyText(r, idle ? arm : null);
       return { ok: !!r.ok, status: r.status, type, text };
     } catch (e) {
-      throw timedOut ? new Error('deadline ' + ms + 'ms') : e;
+      if (timedOut) throw failed(new Error('deadline ' + ms + 'ms'), 'timeout');
+      throw failed(e, ((outer && outer.aborted) || (e && e.name === 'AbortError')) ? 'aborted' : 'network');
     } finally {
       if (t) clearTimeout(t);
       if (outer && c) { try { outer.removeEventListener('abort', relay); } catch (_) { /* nothing to remove */ } }
@@ -101,9 +118,18 @@ export const { jsonWithin, readWithin } = (() => {
    * and a timeout reaching the same branch as a refusal is correct: in both cases nothing arrived. */
   async function jsonWithin(url, ms, init, opts) {
     const r = await readWithin(url, ms, init, opts);
-    if (!r.ok) throw new Error('http ' + r.status);
-    return JSON.parse(r.text);
+    if (!r.ok) throw failed(new Error('http ' + r.status), 'http', { status: r.status });
+    try { return JSON.parse(r.text); } catch (e) { throw failed(e, 'parse', { status: r.status }); }
   }
 
   return { jsonWithin, readWithin };
 })();
+
+/* ══ (fetch-deadline-layer) THE SAME CLOCK FOR THE FILES THAT CANNOT IMPORT IT ════════════════════
+   js/countries-ui.js and js/routing-ops.js are run as CLASSIC scripts by the node harnesses (tests/r453 ⑤
+   and the loader harnesses of tests/r375 / r423 execute them with `new Function`; tests/r184 #5 parses
+   routing-ops as a script), so an `import` line is not open to them — and both held a read with no end
+   (the Natural Earth loader, the earthquakes along a route). They reach this module the way classic
+   scripts reach js/nominatim-gate.js: through one window name, carrying the two readers and the host
+   table's clock, so there is still exactly one of each. Guarded for node, where there is no window. */
+if (typeof window !== 'undefined') window.IntMapFetchWithin = { jsonWithin, readWithin, clockFor };

@@ -216,17 +216,26 @@ window.IntMapModules.routingOps=function(HOST){
       }catch(_){ pr.wx=null; }
     }
     /* DISASTER — the live USGS feed, filtered to what is actually near the line */
-    let quakes=[];
+    /* ⚠ (fetch-deadline-layer) 「NO EARTHQUAKES NEAR THE ROUTE」 AND 「THE FEED COULD NOT BE READ」 WERE THE SAME EMPTY LIST.
+       A bare fetch with an empty catch: a refused or stalled feed left `quakes` at [] and the panel, Atlas and the
+       reader all read that as a quiet day — and a feed that stopped answering held along() (and the route panel
+       awaiting it) for ever. The read has the host's clock now, and a failure is recorded as `quakesErr` — the
+       same field elevation and borders already carry — and said out loud. An empty feed is still [].
+       ⚠ The clock is reached through `window.IntMapFetchWithin` (js/fetch-deadline.js), not an import: this file is
+       parsed as a classic script by tests/r184 #5. */
+    let quakes=[], quakesErr=null;
     try{
-      const r=await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson',{cache:'no-store'});
-      if(r.ok){ const j=await r.json();
-        (j.features||[]).forEach(f=>{ const c=f.geometry&&f.geometry.coordinates; if(!c) return;
+      const QU='https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
+      const FW=window.IntMapFetchWithin;
+      const j=await FW.jsonWithin(QU,FW.clockFor(QU),{cache:'no-store'},{idle:true});
+      { ((j&&j.features)||[]).forEach(f=>{ const c=f.geometry&&f.geometry.coordinates; if(!c) return;
           let best=Infinity, at=0;
           probes.forEach(pr=>{ const d=distM([c[0],c[1]],[pr.lng,pr.lat]); if(d<best){ best=d; at=pr.atM; } });
           if(best<=250000) quakes.push({ mag:f.properties&&f.properties.mag, place:f.properties&&f.properties.place,
             time:f.properties&&f.properties.time, lng:c[0], lat:c[1], km:best/1000, atM:at }); });
         quakes.sort((a,b)=>(b.mag||0)-(a.mag||0)); quakes=quakes.slice(0,6); }
-    }catch(_){}
+    }catch(e){ quakesErr=(e&&e.reason)||'network';
+      if(quakesErr!=='aborted'){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos")); }catch(_){} } }
     /* NEWS — what this session already has, geolocated. No request, and it cannot disagree with the
        pins on the map because it IS the pins on the map. */
     let news=[];
@@ -240,7 +249,7 @@ window.IntMapModules.routingOps=function(HOST){
             source:p.source||'', km:best/1000, atM:at }); } });
       news.sort((a,b)=>a.km-b.km); news=news.slice(0,8);
     }catch(_){}
-    lastAlong={ probes, quakes, news, totalM:total, departMs, durationS };
+    lastAlong={ probes, quakes, quakesErr, news, totalM:total, departMs, durationS };
     return lastAlong;
   }
 
@@ -534,7 +543,7 @@ window.IntMapModules.routingOps=function(HOST){
     lastHistorical:()=>lastHist&&Object.assign({},lastHist),
     state:()=>({ elevation:lastElev&&{ ascentM:lastElev.ascentM, descentM:lastElev.descentM, maxGradePct:lastElev.maxGradePct, samples:lastElev.samples, missing:lastElev.missing, err:lastElev.err },
       borders:lastBorders&&{ count:lastBorders.count, countries:lastBorders.countries, err:lastBorders.err },
-      along:lastAlong&&{ probes:lastAlong.probes.length, quakes:lastAlong.quakes.length, news:lastAlong.news.length },
+      along:lastAlong&&{ probes:lastAlong.probes.length, quakes:lastAlong.quakes.length, quakesErr:lastAlong.quakesErr, news:lastAlong.news.length },
       differences:lastDiff, historical:lastHist&&{ year:lastHist.year, kind:lastHist.kind, lengthM:lastHist.lengthM, ways:lastHist.ways, datedPct:lastHist.datedPct, err:lastHist.err } }),
     /* the pure parts, exported so they can be tested without a map or a network */
     _math:{ distM, resample, ptInPoly, uniqueOf, osmYear, existedIn, CLIMB_NOISE_M, SAME_M }

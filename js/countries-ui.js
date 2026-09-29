@@ -269,6 +269,7 @@ window.IntMapModules.countriesUi=function(HOST){
   function loadCountryData(){
     if(HOST.countryDataPromise) return HOST.countryDataPromise;
     HOST.countryDataPromise=(async()=>{
+      let grabFail=null;   /* (fetch-deadline-layer) why the last Natural Earth rung failed — read in `finally` below */
       try{
         let gj=null;
         /* (#R13) Highest-resolution Natural Earth borders (10 m) so the boundary lines are crisp and
@@ -291,7 +292,15 @@ window.IntMapModules.countriesUi=function(HOST){
            The 10 m outline still ends up in `countryGeo`, so hit-testing, the silhouette quiz and the
            projection viewer are exactly as precise as before; they simply are not what boot pays for. */
         const NE='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/';
-        const grab=async(f)=>{ try{ const r=await fetch(NE+f); if(r.ok) return await r.json(); }catch(e){} return null; };
+        /* ⚠ (fetch-deadline-layer) A READ WITH NO END MADE THIS LOADER WAIT FOR EVER. `grab` was a bare fetch, so a jsDelivr
+           connection that stopped answering never reached the 50 m rung, never reached the #R40 retry below (which only runs
+           when this promise SETTLES), and left `countryDataPromise` pending — every Countries click awaiting it, for the
+           session, with nothing on screen. The read is js/fetch-deadline.js `jsonWithin` under the host's clock, idle, so it
+           bounds a silence and not the 4.3 MB file's length. ⚠ Reached through `window.IntMapFetchWithin`
+           (published by js/fetch-deadline.js with the host table's `clockFor`) and not an import, because this file
+           must stay a classic script — several node harnesses run it with `new Function` (tests/r453 ⑤). `grabFail` keeps WHY the last rung failed, so a load that
+           reached nothing says so (below) instead of looking exactly like a load that is still coming. */
+        const grab=async(f)=>{ try{ const FW=window.IntMapFetchWithin; return await FW.jsonWithin(NE+f,FW.clockFor(NE+f),undefined,{idle:true}); }catch(e){ grabFail=(e&&e.reason)||'network'; } return null; };
         let coarse=true;
         gj=await grab('ne_110m_admin_0_countries.geojson');
         if(!(gj&&gj.features)) gj=await grab('ne_50m_admin_0_countries.geojson');
@@ -538,7 +547,11 @@ window.IntMapModules.countriesUi=function(HOST){
           /* (#R127) borders are here now → re-spread any live news pins that were placed as a tight blob while
              countryGeo was still loading (regionFor had no polygon), so country clusters fill the real territory. */
           try{ if(typeof HOST._respreadNews==='function') HOST._respreadNews(); }catch(_){}
-        } else { HOST.countryDataLoaded=false; HOST.countryDataPromise=null; }
+        } else { HOST.countryDataLoaded=false; HOST.countryDataPromise=null;
+          /* (fetch-deadline-layer) nothing arrived from any rung — say so; the next click retries (#R40, above). A load
+             that the reader's own Stop ended is not a failure to report. */
+          if(grabFail&&grabFail!=='aborted'){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')); }catch(_){} }
+        }
       } }
     )();
     HOST.countryDataPromise.then(()=>{ try{ HOST.loadGdpPPP(); }catch(_){} });   /* (#R22) enrich with PPP once base stats exist */

@@ -16,8 +16,17 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+/* (fetch-deadline-layer) THE COMPARE WINDOW'S FOUR NETWORK LAYERS READ UNDER A CLOCK, AND SAY WHEN THEY GOT NOTHING.
+   Plates, aurora, earthquakes and historical borders were bare `fetch(…).then(r=>r.json())` with `.catch(()=>{})`:
+   a host that stopped answering left the box ticked over an empty map for the session, and a host that refused
+   looked exactly the same. Each is js/fetch-deadline.js `jsonWithin` under js/proxy-fetch.js `clockFor` now, and its
+   failure path is the app's toast (`cmpFail`) — the sentence the main map already uses for the same failure. */
+import { jsonWithin } from './fetch-deadline.js';
+import { clockFor } from './proxy-fetch.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.compare=function(HOST){
+  const cmpRead=(u)=>jsonWithin(u,clockFor(u),undefined,{idle:true});   /* (fetch-deadline-layer) see the note at the imports */
+  const cmpFail=(msg)=>{ try{ HOST.imToast(msg); }catch(_){ /* no toast surface yet */ } };
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const countryStats=HOST.countryStats, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, t=HOST.t;
   /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, NOT ABOUT 768 px ═══════════════════════
@@ -327,13 +336,13 @@ window.IntMapModules.compare=function(HOST){
       {k:'plates', n:()=>window.IntMapLang.t(HOST.lang,"Tectonic plates","プレート境界","Tektonische Platten","Тектонические плиты","Placas tectónicas"), ids:['cmpx-plates-f','cmpx-plates-l'], add(done){
         if(cmap.layers.hasSource('cmpx-plates')){ done&&done(); return; }
         Promise.all([
-          fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json').then(r=>r.json()),
-          fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json').then(r=>r.json()).catch(()=>null)
+          cmpRead('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json'),
+          cmpRead('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json').catch(()=>null)
         ]).then(([pl,bd])=>{ try{
           cmap.layers.addSource('cmpx-plates',{type:'geojson',data:pl}); cmap.layers.addSource('cmpx-plates-b',{type:'geojson',data:bd||{type:'FeatureCollection',features:[]}});
           cmap.layers.add({id:'cmpx-plates-f',type:'fill',source:'cmpx-plates',layout:{visibility:'none'},paint:{'fill-color':'#e8590c','fill-opacity':0.12}});
           cmap.layers.add({id:'cmpx-plates-l',type:'line',source:'cmpx-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.4,'line-opacity':0.9}});
-          done&&done(); }catch(_){} }).catch(()=>{}); }},
+          done&&done(); }catch(_){} }).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load plate data","プレートデータを取得できませんでした","Plattendaten konnten nicht geladen werden","Не удалось загрузить данные о плитах","No se pudieron cargar los datos de placas"))); }},
       /* (#R234) the comparison map's DEM was pinned at 13 for every device — two zoom levels below
          what the main map has streamed on desktop since #R20, so the same hillshade was visibly
          coarser here than beside it. It asks the shell for the depth now (window.__imDemMaxZoom),
@@ -387,17 +396,17 @@ window.IntMapModules.compare=function(HOST){
           'circle-color':['interpolate',['linear'],['get','a'],8,'#00753b',20,'#00d072',50,'#7dffa6',100,'#d2ffdc'],
           'circle-blur':0.85,
           'circle-opacity':['interpolate',['linear'],['zoom'],4,0,6,0.32,8,0.62,10,0.8]}},'cmpx-aurora-heat');
-        fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json').then(r=>r.json()).then(j=>{ try{
+        cmpRead('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json').then(j=>{ try{
           const co=j.coordinates||[], feats=[];
           for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
           if(cmap.layers.hasSource('cmpx-aurora')) cmap.layers.setSourceData('cmpx-aurora',{type:'FeatureCollection',features:feats});
-          done&&done(); }catch(_){} }).catch(()=>{}); }},
+          done&&done(); }catch(_){} }).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
       {k:'eq', n:()=>window.IntMapLang.t(HOST.lang,"Earthquakes (USGS)","地震（USGS）","Erdbeben (USGS)","Землетрясения (USGS)","Terremotos (USGS)"), ids:['cmpx-eq'], add(done){
         if(cmap.layers.hasSource('cmpx-eq')){ done&&done(); return; }
-        fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson').then(r=>r.json()).then(j=>{ try{
+        cmpRead('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson').then(j=>{ try{
           cmap.layers.addSource('cmpx-eq',{type:'geojson',data:j});
           cmap.layers.add({id:'cmpx-eq',type:'circle',source:'cmpx-eq',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}});
-          done&&done(); }catch(_){} }).catch(()=>{}); }},
+          done&&done(); }catch(_){} }).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos"))); }},
       /* (#R21) "全部のレイヤーをcompare viewでも使えるように" — country CHOROPLETHS are now cloned:
          the main map paints them via feature-state on its own 'countries' source (unshareable), so
          the compare map gets ONE geojson with every metric baked into properties + the same ramps. */
@@ -448,7 +457,7 @@ window.IntMapModules.compare=function(HOST){
           cmap.layers.add({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}});
           done&&done(); }catch(_){} };
         if(cur&&cur.fc){ use(cur.fc); return; }
-        fetch('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(r=>r.json()).then(use).catch(()=>{}); }},
+        cmpRead('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(use).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
       {k:'rail', n:()=>window.IntMapLang.t(HOST.lang,"World railways","世界の鉄道","Eisenbahnen","Железные дороги","Ferrocarriles"), ids:['cmp-rail'], add(done){
         if(cmap.layers.hasSource('cmp-rail')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
