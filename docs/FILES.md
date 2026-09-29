@@ -1015,7 +1015,8 @@ proxy-fetch.js                    ACAO を返さない上流を**自前の relay
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
                                   `opts.idle` は本文の塊ごとに時計を掛け直す（大きなファイルの無音を測る）。
                                   投げる例外は `reason`（timeout／aborted／network／http／parse）を持つ。
-                                  import できない classic script 向けに同じものを `window.IntMapFetchWithin` に置く
+                                  import できない classic script 向けの `window.IntMapFetchWithin` は `js/app-body.js` が置く
+                                  （このファイルは何も import しない——共通チャンクの循環を作らないため）
 overpass.js                       **Overpass の唯一のクライアント** `overpassQuery()`——ミラー一覧を持つ唯一のファイル。
                                   予算は問い合わせ自身の `[timeout:N]`＋本文の余裕、応答の無いミラーは持ち分を過ぎたら
                                   次のミラーを並走させ、観測された失敗は即座に次へ。全滅は `OverpassUnavailable` を投げる
@@ -1561,7 +1562,7 @@ tests/
                                   順序が逆になる対がある）。閾値は表からではなく**観測者から**採る
                                   ——ΔE00 は 1.0 が JND、2 以上が一目で分かる帯
   helpers/load-wx-source.mjs      `fetchWithinFor(fetch)`＝本物の `js/fetch-deadline.js` を stub の fetch のスコープで評価した
-                                  `IntMapFetchWithin`。`loadWxSource(fetch)`＝出荷中の `js/wx-source.js` を同じ時計で評価する
+                                  readers に `clockFor` を足した組（app-body と同じ組み方）。`loadWxSource(fetch)`＝出荷中の `js/wx-source.js` を同じ時計で評価する
   helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
                                   prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
                                   コードだけ——コメントの中の `corsFor()` は契約ではない
