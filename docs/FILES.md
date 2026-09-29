@@ -1250,6 +1250,9 @@ docs/
 scripts/
   serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
+  runtime-scripts.mjs             配信物が他 origin から読む <script> は integrity＋crossorigin を持つか、
+                                  理由の文つきで UNPINNABLE に宣言されているか。CSP script-src の各ホストは
+                                  使われているか CSP_ONLY に宣言されているか（acorn・両方向の照合。check:static が呼ぶ）
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
   ledger-claims.mjs               この台帳の木が述べる本数・実在・「全件」の名簿を実体に訊く純関数（doc-facts の `ledger` 規則）
   atlas-catalog.mjs               **Atlas の操作カタログのゲート**（`PRODUCT.md` §3.4・ディスパッチャ ⇄ SYS）

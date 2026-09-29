@@ -80,8 +80,7 @@ for (const f of textFiles) {
   if (f.rel === 'scripts/static-checks.mjs') continue;
   const t = read(f);
   if (/^<{7}[ \t]/m.test(t) || /^>{7}[ \t]/m.test(t)) {
-    err('merge-markers', `${f.rel} contains a Git conflict marker (<<<<<<< / >>>>>>>)`);
-  }
+    err('merge-markers', `${f.rel} contains a Git conflict marker (  }
 }
 
 // ── 1b. 正規表現の中の制御文字  (#R394) ──────────────────────────
@@ -617,6 +616,20 @@ try {
   for (const p of safeOutputProblems()) err('safe-output', p);
 } catch (e) {
   err('safe-output', 'could not run the safe-output ratchet: ' + (e && e.message));
+}
+
+// ── 14. a script the served site pulls from another origin, unpinned ──
+// #R175 bundled the seven CDN <script> tags, and the two loaders that insert a <script> at RUNTIME
+// (the ECMWF tile SDK, the PMTiles plugin) went on running unpinned unpkg code on this origin — where
+// the Supabase session and the reader's AI keys are readable. The rule is on the fact, not the files:
+// every cross-origin script carries integrity + crossorigin or is declared UNPINNABLE with a reason,
+// and every CSP script-src host is used or declared CSP_ONLY. The net, the universe and the two tables
+// live in scripts/runtime-scripts.mjs.
+try {
+  const { collectServed, runtimeScriptProblems } = await import('./runtime-scripts.mjs');
+  for (const p of runtimeScriptProblems(collectServed(ROOT)).problems) err('runtime-scripts', p);
+} catch (e) {
+  err('runtime-scripts', 'could not run the cross-origin script check: ' + (e && e.message));
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

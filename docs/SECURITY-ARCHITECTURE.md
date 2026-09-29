@@ -433,6 +433,31 @@ of reach. The chosen posture:
   `script-src` lost `https://cdn.jsdelivr.net`: measured across the tree, jsDelivr is only ever
   a `fetch()` target here, and the one page that loaded a `<script>` from it was `admin.html`,
   which bundles its SDK now. `<meta name="referrer" content="strict-origin-when-cross-origin">`.
+- **Every script the page loads from another origin is pinned by Subresource Integrity, or is
+  declared unpinnable with a reason.** `src/vendor.js` took the seven CDN `<script>` tags into the
+  bundle, but two loaders that insert a `<script>` **at runtime** kept loading unpinned code from
+  `unpkg.com`, and a script from another origin runs with this origin's authority — it can read
+  `localStorage`, where the Supabase session and the reader's own AI keys live. Both now set
+  `integrity` (the sha384 of the exact versioned file, measured 2026-09-29) and
+  `crossOrigin='anonymous'` (unpkg answers `Access-Control-Allow-Origin: *`), so a CDN serving
+  other bytes is refused by the browser instead of run:
+  - the ECMWF tile SDK (`js/wx-ecmwf.js`, `@openmeteo/weather-map-layer@0.0.19`, loaded the first
+    time a weather layer is switched on). It is **loaded, not bundled, because it is GPL-2.0**
+    (its dependency `@openmeteo/file-reader` is GPL-2.0-only) and IntMap's own licence is not
+    GPL-compatible; the hash is what makes loading it from a third party safe. Its jsDelivr
+    fallback carries the same pin but is refused by `script-src` before it is fetched (the host is
+    not admitted);
+  - the PMTiles plugin (`js/layer-packs.js`, `pmtiles@3.0.6`) — **nothing calls this loader**
+    (ecoregions have been a self-hosted GeoJSON since #R13); it is pinned so it is safe if called.
+  Scripts whose provider changes the bytes by design cannot carry a fixed hash and are declared,
+  each with its reason, in `UNPINNABLE` in `scripts/runtime-scripts.mjs`: the Street View JSONP
+  lookup (`maps.googleapis.com`), gtag.js (`www.googletagmanager.com`) and Clarity
+  (`www.clarity.ms`) — the last two only load while `INTMAP_ANALYTICS` is true (off today).
+  `www.google-analytics.com` / `ssl.google-analytics.com` are named by no code and are kept as
+  `CSP_ONLY` because gtag.js may load from them at runtime (unmeasured). `npm run check:static`
+  holds all of this in both directions: an unpinned cross-origin script, a string on a
+  `script-src` host that no pinned `<script>` consumes, a `script-src` host nothing uses, and a
+  declaration that no longer matches anything are each an error.
   ⚠ `frame-ancestors` is **ignored** in a `<meta>` policy, so it is deliberately not written
   there rather than written and silently inert.
 - **The admin console's policy is stricter and lost two entries**, each of which had exactly
