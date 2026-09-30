@@ -38,57 +38,13 @@ async function boot(page) {
    simulator ask for it the way a click does. */
 
 /* ── ① the mark ──────────────────────────────────────────────────────────────────────────────── */
-test('R191 aircraft: the lifted mark is the glyph — same silhouette, same stroke, same colour', async ({ page }) => {
-  test.setTimeout(180000);
-  await boot(page);
-  /* the layers are built when the layer is first switched on — no live feed is needed for that, and
-     depending on one would make this test about airplanes.live's rate limit instead of the mark */
-  await page.evaluate(() => {
-    const cb = document.getElementById('dl-planes');
-    if (cb && !cb.checked) { const row = cb.closest('label') || cb.parentElement;
-      ['pointerdown', 'pointerup'].forEach(t => row.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1 }))); }
-  });
-  await page.waitForFunction(() => { try { return window.IntMapGeoEngine.layers.has('lyr-planes-3d'); } catch (_) { return false; } }, null, { timeout: 60000 });
-  const r = await page.evaluate(() => {
-    /* The colour the EXTRUSION is asked for is not the colour it renders — MapLibre lights it. The
-       contract this pins is the one that matters: whatever the layer declares, feeding it back through
-       the shader's own arithmetic has to land on the glyph's colour. */
-    const GE = window.IntMapGeoEngine;
-    let expr = null;
-    try { expr = GE.layers.getPaint('lyr-planes-3d', 'fill-extrusion-color'); } catch (_) { }
-    if (!expr) return { has: false };
-    const hex = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-    /* ['interpolate',['linear'],['zoom'], z0, <case>, z1, <case>] */
-    const globeCase = expr[4], mercCase = expr[6];
-    const civOf = (c) => c[c.length - 1][c[c.length - 1].length - 1];   /* the match's default output */
-    const render = (declared, dir) => hex(declared).map(v => Math.min(255, (v / 255 + 0.03) * dir * 255));
-    return { has: true,
-      globe: render(civOf(globeCase), 0.933),
-      merc: render(civOf(mercCase), 1.0),
-      rimGlobe: globeCase[2], rimMerc: mercCase[2] };
-  });
-  test.skip(!r.has, 'the aircraft layer is not installed here');
-  /* every channel the layer could ask for lands on the glyph; the ones it could not are named */
-  const FLOOR = AMBIENT * 255;   /* a glyph channel below this is over-lit at a declared 0 */
-  expect(CIV.some((v) => v === 255), 'the glyph has a saturated channel, so the ceiling case is exercised').toBe(true);
-  for (const [proj, got] of [['Mercator', r.merc], ['globe', r.globe]]) {
-    for (let c = 0; c < 3; c++) {
-      const want = CIV[c];
-      if (want <= FLOOR) {
-        expect(got[c], `${proj} channel ${c} sits at the shader's ambient floor, which is as low as it goes`)
-          .toBeLessThan(FLOOR + 1.5);
-      } else if (want < 255) {
-        expect(Math.abs(got[c] - want), `${proj} channel ${c} lands on the glyph (${GLYPH})`).toBeLessThan(1.5);
-      } else {
-        /* 255 under the globe: `directional` is < 1, so the channel needs more than a channel has */
-        expect(got[c], `${proj} channel ${c} is at the ceiling the extrusion can reach`).toBeGreaterThan(240);
-      }
-    }
-  }
-  /* and the stroke case exists in both halves of the ramp */
-  expect(String(r.rimGlobe), 'the stroke is white under the globe').toMatch(/^#f{0,2}[0-9a-f]/i);
-  expect(String(r.rimMerc), 'and under Mercator').toMatch(/^#f{0,2}[0-9a-f]/i);
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
 /* ── ② the intensity field ───────────────────────────────────────────────────────────────────── */
 test('R191 seismic: the field reaches the end of the lowest class, and only over land', async ({ page }) => {

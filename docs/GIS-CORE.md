@@ -1313,7 +1313,7 @@ Atlas は鎖を始められない**——何も取り込んでいないセッシ
 |---|---|---|
 | `heritage` | `complete:true` / `viewBound:false` / `live:false` | 同梱文書の全地点を `whs-src` に書く。絞り込みは paint 側 |
 | `volcanoes` | `complete:true` / `viewBound:false`（`live` は述べない） | `data/volcanoes_gvp.json` 全件。⚠ 観測所の状態は同じ地物へ更新されるので「更新されない」とは言えない |
-| `aircraft` | `complete:false` / `viewBound:true` / `live:true` | airplanes.live に**カメラ矩形**で問い合わせる |
+| `aircraft` | `complete:false` / `viewBound:true` / `live:true` | 地図に載っているのは GPU cloud の在庫（`world` と**カメラ矩形**の `view` で満ちる）。行は `IntMapAviation.snapshotFor()` を読む |
 | `ships` | `complete:false` / `viewBound:true` / `live:true` | AIS の購読も中継も**カメラの bbox** を運ぶ |
 | `pharma` | `complete:true` / `viewBound:false` / `live:false`（#R759） | 同梱の配列を丸ごと `ph-src` に書く。bbox・上限・ズーム・視野が読み込み経路に 1 つも無い |
 

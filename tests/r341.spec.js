@@ -57,21 +57,19 @@ test('R341 ① the browser never asks a provider, and the GPU cloud is the rende
     return {
       capable: !!E.capabilities().aircraftCloud,
       cloud: !!E.layers.hasAircraftCloud('lyr-aircraft-cloud'),
-      /* the OLD renderings must stay hidden — three renderings of one layer, and only one of them
-         may be visible (#R172's rule, with a third member) */
-      flatVisible: (() => { try { return E.layers.has('lyr-planes') && E.layers.getLayout('lyr-planes', 'visibility') === 'visible'; } catch (_) { return false; } })(),
-      extrusionVisible: (() => { try { return E.layers.has('lyr-planes-3d') && E.layers.getLayout('lyr-planes-3d', 'visibility') === 'visible'; } catch (_) { return false; } })(),
+      /* (remove-synthetic-planes) the OLD renderings are not merely hidden any more — the
+         airplanes.live sweep that fed them was removed with them, so neither layer exists */
+      flatVisible: (() => { try { return E.layers.has('lyr-planes'); } catch (_) { return false; } })(),
+      extrusionVisible: (() => { try { return E.layers.has('lyr-planes-3d'); } catch (_) { return false; } })(),
       endpoint: (() => { try { return window.IntMapPlanes3D.aviation().endpoint; } catch (_) { return ''; } })(),
-      v2: (() => { try { return window.IntMapPlanes3D.aviation().v2; } catch (_) { return null; } })(),
     };
   });
 
   expect(state.capable, '① the renderer declares the aircraft-cloud primitive').toBe(true);
   expect(state.cloud, '① the aircraft cloud is in the style').toBe(true);
-  expect(state.v2, '① the new path is the default').toBe(true);
   expect(state.endpoint, "① and it reads IntMap's own feed").toMatch(/functions\/v1\/aviation-feed$/);
-  expect(state.flatVisible, '① the old flat glyph layer is not also drawing').toBe(false);
-  expect(state.extrusionVisible, '① the old extrusion layer is not also drawing').toBe(false);
+  expect(state.flatVisible, '① the old flat glyph layer is gone').toBe(false);
+  expect(state.extrusionVisible, '① the old extrusion layer is gone').toBe(false);
   expect(upstream, '① the browser must not contact any ADS-B provider directly: ' + upstream.slice(0, 3).join(', '))
     .toEqual([]);
 
@@ -94,8 +92,8 @@ test('R341 ② zoom changes the detail, never the fleet — and never prompts', 
   for (const z of [0, 1, 2, 11]) {
     await page.evaluate((zz) => window.IntMapGeoEngine.camera.jumpTo({ zoom: zz }), z);
     /* ⚠ (#R401) THE 250 ms SLEEP PER STOP IS GONE. `jumpTo` fires the map's own `zoom` event
-       synchronously, and `updatePlanesZoomHint` is a direct listener on it (js/data-layers.js), so
-       by the time this evaluate returns the hint has already been shown or hidden. Both assertions
+       synchronously; (remove-synthetic-planes) and nothing in js/data-layers.js shows the hint any
+       more — the sweep whose coverage it described is removed — so this now guards its return. Both assertions
        read state — a style predicate and an element's display — and neither needs a painted frame.
        One second of the four stops, spent so #R401 could add a test to tests/r379.spec.js without
        the suite's total going up (scripts/test-budget.mjs). */

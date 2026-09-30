@@ -258,62 +258,13 @@ test('R186 sea level: the number applies as it is typed, and 100 % is opaque', a
   for (const a of r.alphas) expect(a).toMatch(/,(0|1)\)$/);
 });
 
-test('R186 aircraft: the sweep covers the viewport with tiled circles, not one', async ({ page }) => {
-  test.setTimeout(180_000);
-  /* ⚠ (#R341) ?aviation=v1 — THE SWEEP IS THE SUBJECT, so the path that plans one is named rather
-     than assumed. The aircraft layer has two renderings now, and the GPU cloud that became the
-     default asks one server for the whole world: it has no circles, no budget and no zoom floor, so
-     `state().cover` is null and there is nothing here to measure (measured, #R341). Nothing below is
-     changed. ⚠ This is the ONLY test in this file that is about aircraft — the launch screen, the
-     default layers, the sky, the atmosphere, the POI labels, the sea level, the water tools and the
-     Cesium sky all boot exactly as they did. */
-  await page.goto('/?aviation=v1');
-  await ready(page);
-  /* No network here — the PLAN is the thing this pins. One 250 nm circle is 615 km across; a wide
-     view now asks for a grid of them, and the poll interval grows with the grid so the long-run
-     request rate stays where the feed tolerates it. */
-  const r = await page.evaluate(async () => {
-    const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-    const G = window.IntMapGeoEngine;
-    const out = {};
-    G.camera.jumpTo({ center: [8, 50], zoom: 6.2 }); await wait(400);
-    const cb = document.getElementById('dl-planes');
-    cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
-    await wait(1200);
-    out.close = window.IntMapPlanes3D.state().cover;
-    /* The view-driven refetch is DEBOUNCED against the poll interval, so waiting for it makes this
-       a test of a timer under whatever load the runner is carrying. Re-arm the layer instead: that
-       is the same entry point a poll uses, and it plans the sweep synchronously before it asks the
-       network for anything — so this measures the PLAN, which is what the test is about.
-       ══ ⚠⚠ (#R304) …AND THE CENTRE HAS TO MOVE, WHICH IS #R188's RULE AND NOT A TRICK ══════════
-       This zoomed out over the SAME centre. #R188 made a request that arrives while a sweep is
-       running yield to it 「when it is about the same sky」 and take over only 「when the centre has
-       moved more than half the covered block」 — a 128-circle sweep takes 154 s to issue, and
-       abandoning it on every moveend was measured as an aircraft track with 2 legs where five fixes
-       had been fed to it (tests/r174). Nothing here has a network, so the first sweep never finishes
-       and never releases; with the centre unmoved the second request was refused for ever and
-       `state().cover` stayed the close-in plan. MEASURED: same centre → 1 circle after 45 s; centre
-       moved → 48 circles (8 × 6) in the first 250 ms. So the view MOVES as well as widening, which
-       is what a reader does and what the rule is written for. */
-    G.camera.jumpTo({ center: [-40, 20], zoom: 4.2 }); await wait(600);
-    cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); await wait(200);
-    cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
-    for (let i = 0; i < 40 && ((window.IntMapPlanes3D.state().cover || {}).circles || 1) === 1; i++) await wait(250);
-    out.wide = window.IntMapPlanes3D.state().cover;
-    out.budget = window.IntMapPlanes3D.state().circleBudget;
-    out.minZoom = window.IntMapPlanes3D.state().minZoom;
-    cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true }));
-    return out;
-  });
-  expect(r.close.circles).toBe(1);
-  expect(r.wide.circles, 'a continent-wide view has to ask for more than one circle').toBeGreaterThan(4);
-  expect(r.wide.circles).toBeLessThanOrEqual(r.budget);
-  expect(r.wide.coverKmX).toBeGreaterThan(1500);
-  /* (#R187) 「もっと増やして」 again: the budget went 16 → 48 circles and the floor z3 → z2. The
-     SHAPE of the plan is what this test is for and that is unchanged; the two numbers it pinned are
-     the ones the instruction moved. */
-  expect(r.minZoom).toBe(2);
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
 test('R186 water: a source outside the working rectangle is not silently dropped', async ({ page }) => {
   test.setTimeout(240_000);

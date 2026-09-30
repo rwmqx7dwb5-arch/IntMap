@@ -38,7 +38,14 @@ window.IntMapAviationWorker = (function () {
         const p = pend.get(m.id);
         if (!p) return;
         pend.delete(m.id);
-        if (m.type === 'error') p.rej(new Error(m.error || 'aviation worker'));
+        /* (remove-synthetic-planes) the worker's `reason` / `status` cross with the message, so the page
+           can classify a failed poll (js/layer-state.js) instead of reading its words */
+        if (m.type === 'error') {
+          const e = new Error(m.error || 'aviation worker');
+          if (m.reason) e.reason = m.reason;
+          if (m.status != null) e.status = m.status;
+          p.rej(e);
+        }
         else p.res(m);
       };
       it.onerror = () => {

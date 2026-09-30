@@ -192,6 +192,10 @@ function runToggle(id) {
     whenStyleReady: wait,
     withCountries: (cb) => wait().then(cb),
     addKoppen: wait, applyMilMode: wait, startSats: wait,
+    /* (remove-synthetic-planes) the aircraft layer's start is the GPU platform's (js/data-layers.js
+       _av2Start — a lazy module, then the worker's config), and the row returns it; the ships half of
+       startTraffic starts its stream synchronously and returns nothing, as it always has */
+    startTraffic: (id) => (id === 'planes' ? wait() : undefined),
     rvFetch: () => Promise.resolve(),
     fetch: () => gate.p,
     setTimeout: (fn, ms) => { timers.push(ms); return 0; },

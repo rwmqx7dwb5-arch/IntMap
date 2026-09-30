@@ -455,9 +455,11 @@ test('R352 ① the detail card renders the source line it was GIVEN, not a provi
     'the card must render the source the record carries — this line was the literal that credited '
     + 'airplanes.live for adsb.lol data on every card production served');
 
-  /* A provider name may still appear, but only BEHIND the record's value: the v1 rollback path
-     (?aviation=v1) builds records with no _srcLine and really did use that provider. So the
-     literal is required to sit on the right-hand side of a fallback, never on its own. */
+  /* A provider name may only ever appear BEHIND the record's value, never on its own. (The v1
+     rollback path that built records without a _srcLine is gone with its provider —
+     remove-synthetic-planes — so the fallback names no provider at all; this still holds the line
+     against one coming back.) */
+  assert.doesNotMatch(expr, /airplanes\.live/, 'the removed provider is not credited, even as a fallback');
   const literals = expr.match(/'[^']*(?:airplanes\.live|adsb\.lol|opensky)[^']*'/gi) || [];
   for (const lit of literals) {
     const at = expr.indexOf(lit);

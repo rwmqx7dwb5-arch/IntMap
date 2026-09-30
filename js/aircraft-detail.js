@@ -276,10 +276,12 @@ window.IntMapModules.aircraftDetail=function(HOST){
          and missed this line, so production verification found the card crediting the wrong
          provider on 10 cards out of 10, for data that provider supplied none of. Naming the
          wrong source is worse than naming none.
-         `p._srcLine` is set by whichever path built the record; the literal remains the
-         fallback so the v1 rollback path (?aviation=v1), whose records carry no _srcLine,
-         still credits the provider it really used. */
-      +'<div class="acp-src">'+S(p._srcLine||'airplanes.live · ADS-B')+(photo?S(' · planespotters.net'):'')+'</div>';
+         `p._srcLine` is set where the record is built (js/data-layers.js _av2Plane, from the
+         feed's own x-intmap-attribution). (remove-synthetic-planes) The fallback used to be the
+         airplanes.live literal, for the rollback path that built records without it; that path
+         is gone with its provider, so a record without a line names no provider at all — the
+         same 'ADS-B' _planeSourceLine() says before the feed has named itself. */
+      +'<div class="acp-src">'+S(p._srcLine||'ADS-B')+(photo?S(' · planespotters.net'):'')+'</div>';
   }
 
   function agoStr(sec){ const s=Math.max(0,Math.round(Date.now()/1000-sec));

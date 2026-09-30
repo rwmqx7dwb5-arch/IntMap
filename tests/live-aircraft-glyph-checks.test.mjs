@@ -19,54 +19,36 @@ const ROOT = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
 const code = codeOnly;
 
-/* ── js/data-layers.js — the aircraft glyph, read as source ───────────────────────────────────── */
-const DL = read('js/data-layers.js');
+/* ══ (remove-synthetic-planes) THE MARK HAS ONE DECLARATION NOW ════════════════════════════════
+   js/data-layers.js drew the aircraft twice for the airplanes.live sweep: a canvas glyph registered
+   with the renderer (#R183's devicePixelRatio fix) and a lifted fill-extrusion body counted by its
+   'body' part (#R183's counter). Both went with that sweep, which had no provider left. The facts
+   those checks guarded — the original outline, the thicker white stroke, the two colours — are asked
+   of where they live now: js/plane-glyph.js (the outline and the stroke, read by both engines) and
+   src/aviation-worker.js (the colours it packs for the GPU). The removal itself is measured in
+   tests/remove-synthetic-planes-checks.test.mjs. */
+const DL = code(read('js/data-layers.js'));
+const GLYPH = code(read('js/plane-glyph.js'));
+const WORKER = code(read('src/aviation-worker.js'));
 
-test('R183: the aircraft icon is declared at devicePixelRatio', () => {
-  // The bug was silent: addImage(id, ImageData) with no pixelRatio makes MapLibre treat canvas
-  // pixels as CSS pixels, so a 1× bitmap is upscaled on every HiDPI screen. Nothing errors.
-  assert.match(DL, /devicePixelRatio/, 'the plane glyph must be rasterised at the screen\'s ratio');
-  assert.match(DL, /addImage\([^)]*\{\s*pixelRatio/, 'and DECLARED with it, or MapLibre still scales it');
+test('R190: the aircraft mark is the original silhouette, not a multi-part airliner', () => {
+  assert.match(GLYPH, /const OUTLINE = \[\[0, -19\]/, 'the one declaration of the mark begins at the original nose');
+  assert.doesNotMatch(DL, /_PLANE_ORIG|_PLANE_OUTLINE/, 'and js/data-layers.js keeps no second copy of it');
+  for (const s of [DL, GLYPH]) {
+    assert.doesNotMatch(s, /_P_LEVELS/, 'the part-height table is gone');
+    assert.doesNotMatch(s, /DETAIL_MAX_AIRCRAFT/, 'and the budget that chose between the two bodies');
+    assert.doesNotMatch(s, /rgba\(255,255,255,0\.97\)/, 'and the rim plate is still gone');
+  }
 });
 
-/* ⚠ #R190 WITHDREW the multi-part body. 「Live aircraft trafficの飛行機のマークはat real altitude中も
-   昔のものに戻して。」 — the lifted aircraft is ONE polygon of the original outline again, so the
-   level table, the rim/halo plates and the aircraft-count budget that switched between the detailed
-   and plain versions are gone. These three assertions pinned that construction; what survives of
-   #R183 here is the counter's LESSON, which is why the last one is kept and pointed at the shape the
-   count actually has now. */
-test('R190: the lifted aircraft is the original silhouette, not a multi-part airliner', () => {
-  assert.match(DL, /const _PLANE_OUTLINE=_PLANE_ORIG;/, "the 3-D body draws the 2-D glyph's own outline");
-  assert.doesNotMatch(DL, /_P_LEVELS/, 'the part-height table is gone');
-  assert.doesNotMatch(DL, /DETAIL_MAX_AIRCRAFT/, 'and the budget that chose between the two bodies');
-  /* (#R191) one AEROPLANE per aircraft, drawn as the glyph is drawn: the outline inset by its own
-     1.6-px stroke, with that stroke as a second ring. #R185's multi-part airliner and its rim PLATE
-     stay gone — which is what the two doesNotMatch assertions above are for. */
-  assert.match(DL, /coordinates:\[planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_CORE\)\]/, 'one aeroplane per aircraft');
-  assert.doesNotMatch(DL, /rgba\(255,255,255,0\.97\)/, 'and the rim plate is still gone');
-});
-
-test('R183: the "lifted" counter counts aircraft, not the parts they are made of', () => {
-  // #R181's lesson: suspect what a counter counts. Kept through #R190, pointed at 'body'.
-  assert.match(DL, /part==='body'/, 'aircraft are counted by the one solid that IS the aeroplane');
-  assert.match(DL, /aircraft:\s*bodies\.length/, 'and reported under their own name');
-});
-
-/* ── ⑤ THE TWO AIRCRAFT COLOURS AND THE THICKER OUTLINE ────────────────────────────────────── */
-test('r246 ⑤ live aircraft are cyan and vivid red, with one outline width both renderings read', () => {
-  const s = code(read('js/data-layers.js'));
-  assert.match(s, /const PLANE_CIV='#00D9FF';/, 'civil aircraft are not the cyan the reader asked for');
-  assert.match(s, /const PLANE_MIL='#FF3040';/, 'military aircraft are not the vivid red the reader asked for');
-  /* ⚠ THICKER, AND ONLY ONCE. #R244's outline was 1.6 units of the 44-unit artwork; the lifted 3-D
-     body draws the same stroke as a mitred RING whose half-width was the literal 0.8. Deriving it
-     means the two renderings cannot disagree about how thick the outline is — the defect #R173
-     wrote up and `_feHex` exists for. */
-  const w = /const PLANE_STROKE=([\d.]+);/.exec(s);
+/* ── ⑤ THE THICKER OUTLINE AND THE MILITARY RED ─────────────────────────────────────────────── */
+test('r246 ⑤ live aircraft are vivid red when military, with one outline width both engines read', () => {
+  /* ⚠ THICKER, AND ONLY ONCE. #R244's outline was 1.6 units of the 44-unit artwork; #R246 asked for
+     a thicker one. js/plane-glyph.js states it once and both engines read it (engine-aircraft ⑤). */
+  const w = /const STROKE = ([\d.]+);/.exec(GLYPH);
   assert.ok(w, 'the outline width is not a constant');
   assert.ok(parseFloat(w[1]) > 1.6, `the outline is ${w[1]} units — it was asked to get THICKER than 1.6`);
-  assert.match(s, /const _PLANE_STROKE=PLANE_STROKE\/2;/, 'the lifted mark still hard-codes its own half-width');
-  assert.match(s, /ctx\.lineWidth=PLANE_STROKE;/, 'the flat glyph still hard-codes its own stroke');
+  assert.match(WORKER, /mil: \[0xFF, 0x30, 0x40\]/, 'military aircraft are the vivid red #FF3040 the reader asked for');
   /* the ship glyph is NOT an aircraft and keeps its own line */
-  assert.match(s, /const make=\(color\)=>\{ const s=40,[\s\S]{0,200}?ctx\.lineWidth=1\.6;/, 'the ship icon lost its own stroke');
+  assert.match(DL, /const make=\(color\)=>\{ const s=40,[\s\S]{0,200}?ctx\.lineWidth=1\.6;/, 'the ship icon lost its own stroke');
 });
-

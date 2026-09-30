@@ -624,17 +624,25 @@ describe('§ #R756 · the supplier executes what it claims', () => {
   /* ══ ③ 内蔵レイヤーは `all` に原理的に到達できなかった ═══════════════════════════════════════ */
 
   test('R756 ③ the layer that holds everything reaches all, and the camera-bound one does not', async () => {
-    const { sources, registry, put } = await boot();
+    const { sources, registry, put, w } = await boot();
     put(HERITAGE_SRC, quakeSet());
-    put('src-planes', quakeSet());
+    /* (remove-synthetic-planes) the aircraft on the map are js/aviation-live.js's GPU cloud, read
+       through the surface that module publishes (snapshotFor reads the buffers the renderer draws);
+       the `src-planes` GeoJSON this used to fill belonged to the removed airplanes.live sweep. The
+       module is lazy and needs WebGL, so its published surface stands in for it here. */
+    w.IntMapAviation = {
+      isOn: () => true,
+      snapshotFor: () => quakeSet().map((f, i) => ({ hex: 'a0000' + i, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], altFt: 30000, track: 90 })),
+      stats: () => ({ attribution: 'adsb.lol — ODbL 1.0', provider: 'adsblol' }),
+    };
 
     const held = await sources.acquire('heritage', {});
     assert.equal(held.ok, true);
     assert.equal(held.coverage.completeness, 'all', 'reason: ' + held.coverage.reason);
 
     /* ⚠ BOTH DIRECTIONS. A rule that answers `all` for everything is not a measurement, and it is the
-       answer a 「とりあえず complete:true」 would give. The aircraft row fetches the CAMERA'S rectangle
-       from airplanes.live, says so, and must not be able to reach it. */
+       answer a 「とりあえず complete:true」 would give. The aircraft row holds what the CAMERA'S
+       rectangle brought in from the feed, says so, and must not be able to reach it. */
     const camBound = await sources.acquire('aircraft', {});
     assert.equal(camBound.ok, true, JSON.stringify(camBound));
     assert.notEqual(camBound.coverage.completeness, 'all');

@@ -151,7 +151,7 @@ people learn to ignore.
 
 ⚠ **AND A SPEC THAT `test.skip`s ITSELF IS GREEN WITHOUT ASSERTING ANYTHING.** Two aviation specs were
 measured waiting 66 s and 95 s for a feed and then skipping — passing in CI, proving nothing. When the
-thing a spec is about has two implementations, the spec must NAME the one it means (`?aviation=v1`)
+thing a spec is about has two implementations, the spec must NAME the one it means (`?aviation=v1` was the example until that path was removed)
 rather than depend on which is currently the default.
 
 > ⚠ **The whole-suite ceiling has zero headroom** (77.2 min measured against 77.2 min). A new

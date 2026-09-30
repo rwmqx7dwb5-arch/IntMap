@@ -12,7 +12,8 @@
  *  then replaced it again — not as a decision, but as what a signed distance field costs when you write
  *  it for three vertices instead of eighteen. What these checks hold:
  *    ① the shader evaluates the plan-form, and the dart's numbers are gone from it
- *    ② there is ONE declaration of the mark, and the frozen `?aviation=v1` path still agrees with it
+ *    ② there is ONE declaration of the mark, and nothing else carries a copy (the frozen `?aviation=v1`
+ *      path that did was removed with its provider — remove-synthetic-planes)
  *    ③ neither engine types the outline out for itself — the #R341 defect
  *    ④ the vertices really do describe an aeroplane (asserted so that a triangle would fail)
  *    ⑤ the white stroke is half the mark, in both engines
@@ -89,21 +90,18 @@ test('R379 ① the fragment shader tests the plan-form, and the dart is gone fro
     'the dot below five device pixels survives');
 });
 
-/* ── ② ONE DECLARATION, AND THE FROZEN PATH STILL AGREES WITH IT ──────────────────────────────
-   js/data-layers.js still renders the old symbol layer for `?aviation=v1`, and #R341 left it
-   byte-for-byte alone on purpose. So it keeps its own literal — and this is what stops that from
-   becoming a second, drifting truth. */
-test('R379 ② the shared declaration is the frozen v1 path\'s, vertex for vertex', () => {
-  const orig = arrayFrom('js/data-layers.js', '_PLANE_ORIG');
-  assert.ok(Array.isArray(orig) && orig.length === 18, 'js/data-layers.js still declares _PLANE_ORIG');
-  assert.deepEqual(G.OUTLINE, orig, 'js/plane-glyph.js carries the same eighteen vertices');
-
-  const stroke = /const\s+PLANE_STROKE\s*=\s*([\d.]+)\s*;/.exec(code('js/data-layers.js'));
-  assert.ok(stroke, 'and the v1 path still declares its stroke width');
-  assert.equal(G.STROKE, Number(stroke[1]), 'the shared stroke is #R246\'s 2.6, not the original 1.6');
-
-  const size = arrayFrom('js/data-layers.js', '_PLANE_SIZE');
-  assert.deepEqual(G.SIZE, size, 'and the size ramp is the same table (#R192 stated it once, #R247 scaled it)');
+/* ── ② ONE DECLARATION, AND NOTHING ELSE CARRIES A COPY ────────────────────────────────────────
+   Until remove-synthetic-planes, js/data-layers.js still rendered the old symbol layer for
+   `?aviation=v1` and kept its own literal, which this test held to the shared one vertex for vertex.
+   That path is gone with its provider, so the claim is now the stronger one it was standing in for:
+   js/plane-glyph.js is the ONLY place the mark is written down. */
+test('R379 ② the shared declaration is the only one — no second copy of the mark survives', () => {
+  const dl = code('js/data-layers.js');
+  assert.equal(arrayFrom('js/data-layers.js', '_PLANE_ORIG'), null, 'js/data-layers.js no longer declares an outline');
+  assert.doesNotMatch(dl, /const\s+(?:_PLANE_ORIG|_PLANE_SIZE|PLANE_STROKE)\s*=/, 'nor a stroke width or size ramp of its own');
+  assert.equal(G.OUTLINE.length, 18, 'the one declaration carries the eighteen vertices');
+  assert.equal(G.STROKE, 2.6, 'the shared stroke is #R246\'s 2.6, not the original 1.6');
+  assert.deepEqual(G.SIZE, [[2, 0.5], [5, 0.725], [9, 0.975]], 'and the size ramp is #R192\'s one table, #R247\'s scale');
 });
 
 /* ── ③ NEITHER ENGINE TYPES THE OUTLINE OUT FOR ITSELF ────────────────────────────────────────
@@ -221,77 +219,70 @@ test('R379 ⑧ the shared declaration is behind the same door as the layer', () 
 
 /* ══ THE ALTITUDE AN AIRCRAFT IS DRAWN AT, PICKING IT, AND ITS TRACK ════════════════════════════ */
 
-/* ⚠ READ, NOT RUN: the v1 aircraft layer builds MapLibre layers and features inside the booted
-   data-layers module against a live renderer. */
-test('#R172 aircraft are lifted with real geometry, because this renderer cannot lift a symbol', () => {
+/* ⚠ (remove-synthetic-planes) The lifted `fill-extrusion` bodies (#R172), the counters that read an
+   aircraft's altitude off them (#R185) and the pick that projected them (#R173) belonged to the
+   airplanes.live sweep's rendering and went with it. What the reader asked for in each survives in
+   the GPU cloud, and these ask it there. R185's check has no counterpart — the cloud has no parts
+   whose base could be mistaken for the aeroplane's altitude — and is withdrawn; the removal is
+   measured in tests/remove-synthetic-planes-checks.test.mjs. */
+
+/* ⚠ READ, NOT RUN: the cloud draws in a WebGL shader; the setting reaches it through two modules. */
+test('#R172 aircraft are drawn at their real altitude, and the reader\'s setting decides it', () => {
   const d = stripComments(R('js/data-layers.js'));
-  assert.match(d, /PLANE3D_LYR='lyr-planes-3d'/, 'a 3-D layer exists');
-  assert.match(d, /type:'fill-extrusion',source:PLANE3D_SRC/, 'it is extrusion geometry — MapLibre 5.24 has no symbol-z-offset');
-  assert.match(d, /'fill-extrusion-base':\['get','alt'\]/, 'the base is the aircraft\'s own altitude, per feature');
-  /* (#R191) the shared helper is `planeRingPts(…,pts)` — still an aeroplane, still turned to its track,
-     still built in ground metres, which is what this assertion is about. */
-  assert.match(d, /function planeRingPts\(lng,lat,hdg,halfM,pts\)/, 'the glyph is an aeroplane turned to its track, built in ground metres');
-  assert.match(d, /const _PLANE_CORE=_outsetRing\(_PLANE_OUTLINE,-_PLANE_STROKE\);/, 'and the body is that outline');
-  assert.match(d, /const alt=d\.onGround\?0:Math\.max\(0,\(d\.geoAlt!=null\?d\.geoAlt:\(d\.baroAlt!=null\?d\.baroAlt:0\)\)-off\)/,
-    'airborne aircraft get the ground offset taken off (renderer metres are above the DEM when terrain is on); aircraft ON the ground stay at 0 so they sit on it');
-  assert.match(d, /function planesLayerOn\(\)/, '"is the layer on" must accept either rendering — asking after one by name reports the other as off');
-  assert.match(d, /function applyPlanesMode\(visible\)/, 'one representation at a time');
+  assert.match(d, /lift:planes3D/, 'the cloud is started with the reader\'s real-altitude setting');
+  assert.match(d, /_av2\.setLift\(planes3D\)/, 'and told when the reader changes it');
+  assert.match(d, /function planesLayerOn\(\)\{ try\{ return !!\(_av2&&_av2\.isOn\(\)\);/,
+    '"is the layer on" asks the one rendering there is');
+  const live = code('js/aviation-live.js');
+  assert.match(live, /await W\(\)\.lift\(ST\.lift\)/, 'the controller hands it to the worker');
+  const worker = code('src/aviation-worker.js');
+  assert.match(worker, /liftAltitude = !!m\.on;/, 'which packs the altitude into what the GPU draws');
 });
 
-/* ⚠ READ, NOT RUN: as above — the stats are computed over the booted layer's features. */
-test('R185 aircraft: the altitude readers do not read a part base', () => {
-  /* The outline plates sit BELOW the aircraft and the fuselage sits on them, so `alt` on a feature is a
-     part's base and no longer the aeroplane's altitude. Three earlier rounds' tests assert the reported
-     altitude IS the reported altitude, so the stats must read `acAlt`. */
-  const src = R('js/data-layers.js');
-  assert.match(src, /acAlt:alt/, 'every part carries the aircraft’s own altitude');
-  assert.match(src, /lifted:bodies\.filter\(f=>\(\+f\.properties\.acAlt\|\|0\)>0\)/);
-  assert.match(src, /maxAlt:Math\.round\(bodies\.reduce\(\(m2,f\)=>Math\.max\(m2,\+f\.properties\.acAlt\|\|0\),0\)\)/);
-  /* (#R190 withdrew the multi-part body, so 'body' is the only name left — but `acAlt` and the named
-     lookup both stay, because they are what stopped the counters reading a part's base.) */
-  assert.match(src, /f\.properties\.part==='body'/);
-});
-
-/* ⚠ READ, NOT RUN: picking projects through a live renderer's projection data;
-   tests/maplibre-6-migration.spec.js ③ measures it against the pixels MapLibre draws. */
+/* ⚠ READ, NOT RUN: picking projects through a live renderer; tests/maplibre-6-migration.spec.js ③
+   measures the engine's projection against the pixels MapLibre draws. */
 test('#R173 an aircraft can be picked where it is DRAWN, not where its shadow falls', () => {
   const d = stripComments(R('js/data-layers.js'));
-  assert.match(d, /function pickPlane\(pt\)/, 'the pick is ours');
-  assert.match(d, /E\.coords\.projectAltitude/, 'and it projects the aircraft’s real altitude through the engine');
+  assert.match(d, /hex=_av2&&_av2\.pick\(e\.point\)/, 'the click asks the cloud\'s own pick');
+  const live = code('js/aviation-live.js');
+  /* the pre-cull radius carries an ALTITUDE ALLOWANCE, so a lifted aircraft is found where it is drawn */
+  assert.match(live, /if \(ST\.lift\) \{/, 'the pick knows whether the aircraft are lifted');
+  assert.match(live, /const rad = \(PICK_PX \* 3\) \/ world \+ altAllow;/, 'and widens its search by the altitude it draws at');
   assert.match(INDEX, /projectAltitude\(ll,altM\)\{/, 'the engine can project a point that is up in the air');
   /* (maplibre-6-migration) 6.0 removed transform.getMatrixForModel; the projection goes through the
      renderer's projection data (`_lifted`) */
   assert.match(INDEX, /projectAltitude\(ll,altM\)\{ const m=_m\(\); if\(!m\) return null;\s*try\{\s*const P=_lifted\(m\);/, 'through the renderer’s own projection data, so the globe is right too');
   assert.match(d, /events\.on\('mousemove',_planesHover\)/   /* (#R178) …through the contract */, 'hover uses it');
-  assert.match(d, /let d=pickPlane\(e\.point\), props=null;/, 'and so does the click');
   assert.ok(!/map\.on\('click',ly,/.test(d),
     'ONE click handler: two of them each toggled, so a click that satisfied both selected and deselected in the same event');
+  assert.equal((d.match(/events\.on\('click',_planesClear\)/g) || []).length, 1, 'and it is installed once');
 });
 
 test('#R173 the clicked aircraft draws the track this browser has actually observed', () => {
-  /* RUN: recordTracks is lifted out of js/data-layers.js with the buffers it closes over */
+  /* RUN: _av2TrackApply is lifted out of js/data-layers.js with the buffers it closes over. The
+     fixes are the worker's recording (#R506) — feet on the wire, metres in planeTracks. */
   const src = R('js/data-layers.js');
   const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
-  const want = ['TRACK_MAX', 'TRACK_TTL', 'planeTracks', 'selectedPlane', 'recordTracks'];
+  const want = ['FT_M', 'planeTracks', 'selectedPlane', '_av2TrackApply'];
   const stmts = [];
   walk.full(ast, (n) => {
     const hit = (n.type === 'FunctionDeclaration' && want.includes(n.id && n.id.name))
       || (n.type === 'VariableDeclaration' && n.declarations.some((x) => want.includes(x.id && x.id.name)));
     if (hit && !stmts.includes(n)) stmts.push(n);
   });
-  const T = new Function('drawTrack', `${stmts.sort((a, b) => a.start - b.start).map((n) => src.slice(n.start, n.end)).join('\n')}
-    return { recordTracks, planeTracks, TRACK_MAX, TRACK_TTL };`)(() => {});
-  const t0 = Date.UTC(2026, 8, 1);
-  for (let i = 0; i < T.TRACK_MAX + 100; i++) T.recordTracks([{ icao24: 'abc123', lng: 139 + i * 0.01, lat: 35, geoAlt: 10000 }], t0 + i * 20000);
-  assert.equal(T.planeTracks.abc123.length, T.TRACK_MAX, 'every poll is recorded, and the buffer is bounded');
-  assert.equal(T.planeTracks.abc123[0][0], 139 + 100 * 0.01, '…by dropping the OLDEST fixes');
-  const last = t0 + (T.TRACK_MAX + 99) * 20000;
-  T.recordTracks([{ icao24: 'abc123', lng: 139 + (T.TRACK_MAX + 99) * 0.01, lat: 35, geoAlt: 10000 }], last + 20000);
-  assert.equal(T.planeTracks.abc123.length, T.TRACK_MAX, 'a fix that repeats the previous one is not a new vertex');
-  T.recordTracks([{ icao24: 'def456', lng: 0, lat: 0, onGround: true, geoAlt: 900 }], last + T.TRACK_TTL + 40000);
-  assert.equal(T.planeTracks.abc123, undefined, 'an aircraft is forgotten once it has been silent past the TTL');
-  assert.deepEqual(T.planeTracks.def456[0].slice(0, 3), [0, 0, 0], 'an aircraft on the ground is recorded at the ground');
-  assert.equal(T.TRACK_TTL, 20 * 60000, 'and forgotten twenty minutes after its last fix');
+  const drawn = [];
+  const T = new Function('drawTrack', '_trackCard', 'window', `${stmts.sort((a, b) => a.start - b.start).map((n) => src.slice(n.start, n.end)).join('\n')}
+    return { apply: _av2TrackApply, planeTracks, select: (k) => { selectedPlane = k; } };`)((k) => drawn.push(k), () => ({}), {});
+  T.apply('abc123', [{ lon: 139, lat: 35, altFt: 10000, t: 1 }, { lon: 139.1, lat: 35, altFt: 10000, t: 2 }]);
+  assert.equal(T.planeTracks.ABC123.length, 2, 'every recorded fix becomes a vertex, keyed by the upper-case ICAO address');
+  assert.ok(Math.abs(T.planeTracks.ABC123[0][2] - 3048) < 1e-6, 'and its altitude is metres — the wire is feet');
+  assert.equal(drawn.length, 0, 'an aircraft nobody selected is recorded, not drawn');
+  T.select('ABC123');
+  T.apply('abc123', [{ lon: 139, lat: 35, altFt: 0, t: 1 }, { lon: null, lat: 35, t: 2 }]);
+  assert.equal(T.planeTracks.ABC123.length, 1, 'a fix without a position is not a vertex');
+  assert.deepEqual(drawn, ['ABC123'], 'the selected aircraft\'s track is redrawn when its fixes arrive');
+  T.apply('abc123', []);
+  assert.equal(T.planeTracks.ABC123, undefined, 'an aircraft the worker no longer has fixes for is forgotten');
   /* ⚠ READ (these halves): the ribbon, the tooltip and Atlas's action live in the booted layer/console */
   const d = stripComments(src);
   assert.match(d, /function legRing\(a,b,halfM\)/, 'each leg becomes a ribbon…');

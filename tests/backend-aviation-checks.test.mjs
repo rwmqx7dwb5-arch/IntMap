@@ -323,57 +323,30 @@ test('#R341 ⑮ aviation-feed: reads tiles serially, within the measured burst b
   assert.ok(/github\.com\/rwmqx7dwb5-arch\/IntMap/.test(src), 'the User-Agent carries contact info');
 });
 
-/* ── ⑮b THE INVENTED AIRCRAFT ARE UNREACHABLE ON THE SHIPPING PATH ────────────
-   §25.1 forbids a synthetic fallback in production, and the layer this round replaces had one that
-   was not merely present but ACTIVE: measured in production, `genSyntheticPlanes()` was drawing 270
+/* ── ⑮b THE INVENTED AIRCRAFT DO NOT EXIST ANY MORE ──────────────────────────
+   §25.1 forbids a synthetic fallback in production, and the layer #R341 replaced had one that was
+   not merely present but ACTIVE: measured in production, `genSyntheticPlanes()` was drawing 270
    aircraft whose ICAO addresses were not hexadecimal (0 of 38 valid), under a source line naming a
-   provider that had refused every request.
-   The function is KEPT — the v1 path is intact for the rollback window §28 Phase G requires — so
-   "we deleted it" is not the claim. The claim is that nothing on the default path can reach it, and
-   that is a property of the call graph rather than of anyone's intention:
-
-       genSyntheticPlanes()  ←  _sweep()  ←  fetchPlanes()  ←  { startTraffic's v1 branch,
-                                                                _planesMove, schedulePlanePoll }
-
-   and every one of those three is armed only inside the branch that runs when AVIATION_V2 is false.
-   ⚠ A source check is the right shape here precisely because a browser check cannot be: proving
-   "no synthetic aircraft appeared" by watching a running map means waiting for a sweep to fail,
-   which is the one thing the new path never does. */
-/* ⚠ READ, NOT RUN (the paragraph above is the reason): reachability is a property of the call graph. */
-test('#R341 ⑮b genSyntheticPlanes is unreachable when the new path is the default', () => {
-  const raw = readLF(join(ROOT, 'js', 'data-layers.js'));
-  /* ⚠ STRIP THE COMMENTS FIRST. This round's own note in js/data-layers.js explains what
-     genSyntheticPlanes() used to do, so counting call sites over the raw text finds three: one
-     call and two sentences about it. That is the ninth time in this repository a check has matched
-     its own prose (scripts/atlas-capability-audit.mjs solved it the same way, with codeOnly()).
-     A check that counts its own explanation is measuring the wrong document. */
-  const src = codeOnly(raw);
-
-  /* one definition, and exactly one CALL. `function genSyntheticPlanes(){` matches `name()` as
-     well, so the declaration is subtracted by name — not by knowing the total happens to be two,
-     which would stop being right the moment a second call appeared. */
-  const defs = (src.match(/function genSyntheticPlanes\(\)/g) || []).length;
-  const uses = (src.match(/genSyntheticPlanes\(\)/g) || []).length;
-  assert.equal(defs, 1, 'one definition, got ' + defs);
-  assert.equal(uses - defs, 1, 'exactly one call site in code, got ' + (uses - defs));
-
-  /* the default is the new path — the old provider answers 403 to everything */
-  const flag = /const AVIATION_V2=\(function\(\)\{[\s\S]*?\n      return (true|false);\n    \}\)\(\);/.exec(src);
-  assert.ok(flag, 'AVIATION_V2 resolves to a literal default');
-  assert.equal(flag[1], 'true', 'the new path is the default');
-
-  /* startTraffic's v2 branch must start no sweep of any kind */
+   provider that had refused every request. #R341 kept the function for a rollback window and
+   checked here that nothing on the default path could reach it.
+   (remove-synthetic-planes) The rollback had nothing to roll back to — its provider still answers
+   403 — so the generator, the sweep that called it and the switch that selected the sweep are
+   removed, and the claim is now the stronger one: there is no such code. The behaviour on a failed
+   feed (said on the row, never invented) is RUN in tests/remove-synthetic-planes-checks.test.mjs. */
+/* ⚠ READ, NOT RUN: absence is a property of the text. */
+test('#R341 ⑮b genSyntheticPlanes and the path that reached it are gone', () => {
+  /* ⚠ STRIP THE COMMENTS FIRST. The notes in js/data-layers.js explain what was removed, so the raw
+     text names it — a check that counts its own explanation is measuring the wrong document. */
+  const src = codeOnly(readLF(join(ROOT, 'js', 'data-layers.js')));
+  for (const gone of ['genSyntheticPlanes', 'AVIATION_V2', 'fetchPlanes', 'planesSynthetic', 'planesData',
+    'updatePlanesZoomHint', 'intmap_aviation_v2']) {
+    assert.ok(!src.includes(gone), gone + ' is gone from the code');
+  }
+  assert.doesNotMatch(src, /api\.airplanes\.live/, 'and nothing in the page asks the provider that refused every request');
+  /* startTraffic has one aircraft branch, and it starts the platform */
   const st = /function startTraffic\(id\)\{([\s\S]*?)\n    function stopTraffic/.exec(src);
   assert.ok(st, 'startTraffic is found');
-  const v2 = /if\(id==='planes'&&AVIATION_V2\)\{([\s\S]*?)\} else if\(id==='planes'\)\{/.exec(st[1]);
-  assert.ok(v2, 'startTraffic has an AVIATION_V2 branch ahead of the original one');
-  assert.doesNotMatch(v2[1], /fetchPlanes\(/, 'the new path never starts a sweep');
-  assert.doesNotMatch(v2[1], /planesTimer=/, 'and never arms the poll timer');
-  assert.doesNotMatch(v2[1], /_planesMove/, 'and never registers the viewport-follow sweep');
-
-  /* …and the zoom prompt production showed at z1 WHILE drawing 270 aircraft is suppressed */
-  assert.match(src, /if\(AVIATION_V2\)\{ el\.style\.display='none'; return; \}/,
-    'the zoom hint is off on the path that has no zoom gate');
+  assert.match(st[1], /if\(id==='planes'\) return _av2Start\(\);/, 'the aircraft layer is the platform, and its start is the row\'s request');
 });
 
 /* ── ⑯ no provider key may ever reach the browser ──────────────────────────── */

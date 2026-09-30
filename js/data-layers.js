@@ -3989,23 +3989,16 @@ window.IntMapModules.dataLayers=function(HOST){
     });
     /* ===== Traffic layer state ===== */
     const trafficFilters={ships:'all',planes:'all'};
-    let planesData=[], shipsData=[], planesTimer=null, shipsTimer=null;
-    let planesTime=0, planesSynthetic=false;   /* live-feed snapshot time (ms) + synthetic-fallback flag */
-    let _planesMove=null, _planesMoveT=null;   /* viewport-follow refetch handle */
-    let _planes3DZoom=null, _planes3DZoomT=null;   /* (#R172) rebuild the lifted glyphs when the scale changes */
-    let _planesClear=null, _planesHover=null, _pickHover=false, _pickAt=0;   /* (#R173) picking a lifted aircraft */
+    let shipsData=[], shipsTimer=null;
+    let _planesClear=null, _planesHover=null;   /* the one click and one hover handler of the aircraft layer, installed once */
+    let _trackZoom=null, _trackZoomT=null;   /* (#R174) rebuild the selected aircraft's track when the scale changes */
     let _planesDbl=null, _planesClearT=null;   /* (#R174) a double-click is a ZOOM, not "you clicked empty sky" */
-    /* (#R172) "is the aircraft layer on?" — it has two renderings now, so asking after one of them by name
-       (as every call site used to) reports the layer as OFF whenever the other one is the visible one. */
-    function planesLayerOn(){ try{
-      /* (#R341) THREE renderings now, not two. Asking after one of them by name is exactly the
-         defect this function was written for in #R172 - and adding a third without adding it here
-         would recreate it. */
-      if(_av2&&_av2.isOn()) return true;
-      const a=GE().layers.get('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible';
-      const b=GE().layers.get(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible';
-      return !!(a||b); }catch(_){ return false; } }
-    /* (#R341) the v1-shaped record the detail card, the tooltip and the flight simulator already
+    /* (#R172) "is the aircraft layer on?" — asked of the platform that draws it. (remove-synthetic-planes)
+       There is ONE rendering now: the GPU cloud js/aviation-live.js puts on the map. The two layers this
+       used to ask about (`lyr-planes`, `lyr-planes-3d`) belonged to the per-browser airplanes.live sweep,
+       which is gone with its provider. */
+    function planesLayerOn(){ try{ return !!(_av2&&_av2.isOn()); }catch(_){ return false; } }
+    /* (#R341) the record shape the detail card, the tooltip and the flight simulator already
        speak, built from the worker's normalised one. Nothing is invented: a field the provider did
        not report stays null, which the card renders as an em dash rather than as a number. */
     function _av2Plane(d){
@@ -4036,7 +4029,6 @@ window.IntMapModules.dataLayers=function(HOST){
        none. The name travels from the server in the x-intmap-attribution header, so a change of
        provider changes this line with no code change at all. */
     function _planeSourceLine(){
-      if(!AVIATION_V2) return 'airplanes.live · ADS-B';
       try{
         const st=_av2&&_av2.stats();
         const who=(st&&(st.attribution||st.provider))||'';
@@ -4053,7 +4045,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(rec) _av2Cache.set(hex,rec);
       return rec;
     }
-    /* (#R341) The click, on the v2 path. Same three promises the v1 click makes:
+    /* (#R341) The click. Three promises the aircraft click has made since #R173/#R174/#R210:
          . the tap belongs to the aircraft, not to the city name beneath it (claimClick, #R210)
          . a second tap on the same aircraft deselects
          . a tap on empty sky deselects, but only after MapLibre's double-click window (#R174)
@@ -4126,7 +4118,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null;
         if(selectedPlane){ selectPlane(null); try{ if(_av2) _av2.select(''); }catch(_){} } },320);
     }
-    /* Hover, throttled to one pick per frame exactly as the v1 path is. The worker round trip is
+    /* Hover, throttled to one pick per frame. The worker round trip is
        only made when the aircraft under the pointer CHANGES, so moving across a busy sky costs one
        message per aircraft entered, not one per pointer event. */
     let _av2HoverHex=null, _av2HoverPend=false;
@@ -4148,16 +4140,31 @@ window.IntMapModules.dataLayers=function(HOST){
         if(cached) show(cached); else _av2Detail(hex).then(show);
       });
     }
+    /* (remove-synthetic-planes) WHAT THE ROW IS TOLD WHEN THE PLATFORM CANNOT DRAW.
+       The per-browser sweep this replaced answered a dead feed with 270 aircraft it had made up. This
+       path answers it with the fact: the row's request REJECTS with a `reason` when the platform
+       cannot start (no worker, no GPU primitive, no feed address), and js/layer-rows.js hands that
+       rejection to js/layer-state.js, which marks the row «Couldn't load» and announces it once
+       through js/notify.js. A poll that fails later arrives through `onState` below — reported only
+       while nothing is held, because a layer still showing real (ageing) aircraft has not failed to
+       draw (js/aviation-live.js `told`). The box stays ticked: an unticked box cannot be told apart
+       from one the reader switched off (js/layer-state.js, the audit it records). */
+    function _av2State(st,err){
+      try{ layerState.report('dl-planes',st==='ok'?'ok':(err||{reason:'unknown'})); }catch(_){}
+    }
     async function _av2Start(){
       if(_av2Starting) return _av2;
       _av2Starting=true;
+      let why=null;
       try{
         await window.IntMapLazy.need('aviationLive');
-        _av2=window.IntMapAviation||null;
-        if(_av2){
+        const A=window.IntMapAviation||null;
+        if(!A||!AVIATION_ENDPOINT){ _av2=null; why={reason:'unsupported'}; }
+        else {
+          _av2=A;
           const ok=await _av2.start({ endpoint:AVIATION_ENDPOINT,
-            opacity:(opacities.planes!=null?opacities.planes:0.9), lift:planes3D });
-          if(!ok) _av2=null;
+            opacity:(opacities.planes!=null?opacities.planes:0.9), lift:planes3D, onState:_av2State });
+          if(!ok){ _av2=null; why={reason:'unsupported'}; }
           else {
             const f=trafficFilters.planes;
             _av2.setFilter({ kind:(f==='military'?'military':(f==='civilian'?'civil':'all')) });
@@ -4167,142 +4174,21 @@ window.IntMapModules.dataLayers=function(HOST){
             if(!_av2Zoom){ _av2Zoom=()=>{ try{ _av2&&_av2.onZoom(); }catch(_){} }; GE().events.on('zoom',_av2Zoom); }
           }
         }
-      }catch(_){ _av2=null; }
+      }catch(e){ _av2=null; why=e||{reason:'unsupported'}; }
       _av2Starting=false;
+      if(why) throw why;
       return _av2;
     }
-    /* Try OpenSky first; if CORS / rate-limit fails, fall back to synthetic civilian + military aircraft so the layer is never empty. */
-    const AIRPORTS=[
-      [-73.78,40.64,'civilian','JFK'],[-118.41,33.94,'civilian','LAX'],[-87.90,41.98,'civilian','ORD'],[-122.38,37.62,'civilian','SFO'],[-97.04,32.90,'civilian','DFW'],[-80.29,25.79,'civilian','MIA'],[-79.63,43.68,'civilian','YYZ'],[-99.07,19.43,'civilian','MEX'],
-      [-0.45,51.47,'civilian','LHR'],[2.55,49.01,'civilian','CDG'],[8.57,50.04,'civilian','FRA'],[4.76,52.31,'civilian','AMS'],[14.28,40.89,'civilian','FCO'],[28.81,41.28,'civilian','IST'],[-3.56,40.49,'civilian','MAD'],
-      [37.41,55.97,'civilian','SVO'],[55.36,25.25,'civilian','DXB'],[51.61,25.27,'civilian','DOH'],[51.16,35.69,'civilian','IKA'],[31.40,30.11,'civilian','CAI'],[28.05,-26.13,'civilian','JNB'],
-      [116.58,40.07,'civilian','PEK'],[121.81,31.14,'civilian','PVG'],[114.20,22.31,'civilian','HKG'],[121.55,25.07,'civilian','TPE'],[126.45,37.46,'civilian','ICN'],[139.78,35.55,'civilian','HND'],[140.39,35.77,'civilian','NRT'],[103.99,1.36,'civilian','SIN'],[100.75,13.69,'civilian','BKK'],[106.66,10.81,'civilian','SGN'],[77.10,28.55,'civilian','DEL'],[72.86,19.09,'civilian','BOM'],[101.71,2.74,'civilian','KUL'],[106.66,-6.13,'civilian','CGK'],[120.98,14.51,'civilian','MNL'],
-      [151.18,-33.93,'civilian','SYD'],[174.79,-37.01,'civilian','AKL'],
-      [-46.48,-23.43,'civilian','GRU'],[-58.42,-34.82,'civilian','EZE'],[-70.79,-33.39,'civilian','SCL'],[-74.14,4.70,'civilian','BOG'],
-      /* Military bases (less dense) */
-      [144.92,13.58,'military','Andersen'],[72.41,-7.31,'military','DG'],[-157.97,21.36,'military','HCK'],[127.02,36.96,'military','OSAN'],[7.60,49.44,'military','RAM'],[33.52,44.61,'military','SEV'],[126.68,37.96,'military','DMZ'],[35.18,32.99,'military','ROT'],[140.13,35.30,'military','YKS']
-    ];
-    function genSyntheticPlanes(){
-      const arr=[], now=Math.floor(Date.now()/1000);
-      AIRPORTS.forEach(([lng,lat,type,name])=>{
-        const count = type==='military'?2:6;
-        for(let i=0;i<count;i++){
-          const r=200+Math.random()*1400; /* km radius */
-          const ang=Math.random()*Math.PI*2;
-          const dLat = (r/111)*Math.sin(ang);
-          const dLng = (r/(111*Math.cos(lat*Math.PI/180)+1e-3))*Math.cos(ang);
-          arr.push({
-            icao24:Math.random().toString(36).slice(2,8).toUpperCase(),
-            callsign: type==='military'?'MIL'+Math.floor(Math.random()*9000+1000):name+Math.floor(Math.random()*900+100),
-            country: type==='military'?'MIL':'',
-            tpos:now, lastContact:now,
-            lng:lng+dLng, lat:lat+dLat,
-            baroAlt:9000+Math.random()*3500, onGround:false, vel:200+Math.random()*60, heading:Math.random()*360, vrate:0,
-            geoAlt:9000+Math.random()*3500, squawk:null, type
-          });
-        }
-      });
-      planesData=arr; planesTime=Date.now(); planesSynthetic=true;
-      refreshTrafficLayer('planes');
-    }
-    /* Live aircraft = airplanes.live (free, key-less, CORS-enabled community ADS-B network).
-       OpenSky's REST API is CORS-blocked from browsers and now rate-limits/auth-gates anonymous
-       access, so it cannot be reached client-side; airplanes.live serves the SAME real live ADS-B
-       data with proper CORS headers (and richer fields). We query the current viewport (center +
-       radius, capped at the API's 250 nm max) so the aircraft match what's on screen, capturing
-       every field for the tooltip + the exact data timestamp. Synthetic data is now a last resort
-       only when the device is offline / the feed is unreachable. */
-    let _lastPlaneFetch=0;
-    /* ══ (#R186) HOW MUCH SKY THE LAYER COVERS ════════════════════════════════════════════════════
-       「Live aircraft trafficの最大航空機表示領域/数をもっと増やして。」
-
-       The ceiling was never the renderer and never the aircraft count — it was ONE query. The feed's
-       point endpoint takes a centre and a radius, and 250 nm is a HARD cap: measured against the live
-       API, r=250 answers 200 and r=300/500/1000 all answer **403**, so a bigger circle is not on
-       offer. #R? therefore refused to draw below z5, because one 463-km circle inside a
-       continent-wide viewport is a blob in the middle rather than "the aircraft on screen".
-
-       A circle is not the only shape available, though — several of them are. The viewport is now
-       TILED with 250-nm circles on the step that makes their inscribed squares meet, the results are
-       merged and de-duplicated on the ICAO 24-bit address, and the covered area grows with the
-       number of circles instead of being fixed by one radius. Measured on the live API: eight
-       sequential queries over Europe returned 200 every time, took 3.4 s in total, and yielded 1,956
-       distinct aircraft where a single circle at the same centre returned 611.
-
-       ⚠ AND THE PACE IS MEASURED, NOT ASSUMED. The first version fired four at a time and 9 of 20
-       came back as network failures — not 429s, bare "Failed to fetch", i.e. the host stopped
-       answering this address at all — after which even single retries failed. Probed properly: the
-       block lifts after 30 s of quiet, and 14 consecutive requests spaced 1.2 s apart then ALL
-       succeed. So the sweep is STRICTLY SEQUENTIAL at 1.2 s, the budget is 16 circles rather than
-       30, and the poll interval grows with the sweep (16 circles → one refresh a minute). That is
-       0.29 requests a second in the long run — a fraction of what the feed tolerates — while a
-       close-in single-circle view still refreshes every 20 s exactly as it always did. The
-       staleness a wide sweep buys is invisible: a minute of flight is 15 km, five pixels at z4. */
-    /* ══ (#R187) WIDER STILL ═══════════════════════════════════════════════════════════════════════
-       「Live aircraft trafficの最大航空機表示領域/数をもっと増やして。」— re-reported after #R186.
-
-       Re-measured against the live API first, because the ceiling has to be the feed's and not a
-       guess: r=250 answers 200 (570 KB), r=300 and r=500 both answer 403, and there is no bounding-box
-       or all-aircraft endpoint (/v2/all is 404). So 250 nm per query still stands and the only way to
-       cover more sky is still more circles.
-
-       The budget is therefore raised from 16 to 48 (mobile 6 → 12). One circle's inscribed square is
-       615 km on a side, so the covered block grows from 4 × 4 = 2,460 × 2,460 km to 8 × 6 = 4,920 ×
-       3,690 km — a continent rather than a country group.
-
-       ⚠ THE PACE IS NOT RAISED WITH IT. #R186 measured where this feed cuts an address off: four
-       concurrent requests killed 9 of 20 outright, while 1.2 s spacing sustained 14 in a row. That
-       spacing is unchanged, which makes a full sweep ~58 s to issue, and the poll interval keeps its
-       3.5 s-per-circle rule so the long-run rate stays where #R186 left it (48 circles → one refresh
-       every 168 s ≈ 0.29 requests a second). The ceiling on that interval is raised to 180 s from 120
-       purely so the rule is not silently clipped — a clipped interval would mean asking FASTER than
-       the measured budget, which is the one thing that gets the address blocked. A close-in view is a
-       single circle and still refreshes every 20 s exactly as before. */
-    const PLANE_CIRCLE_NM=250;                       /* the API's hard maximum, re-verified by 403 above it (#R187) */
-    /* (#R188) 48 → 128 (mobile 12 → 24). The long-run request rate does NOT move with this number:
-       planePollMs() has always been 3.5 s a circle, so a bigger sweep refreshes less often instead of
-       asking faster. What it buys, together with the triangular lattice, is 65.7 million km². */
-    /* (#R668) which of the two sweeps a device may run is about the DEVICE — the width test gave a
-       phone in landscape the 128-circle sweep (and the aircraft it retains) on the same radio and the
-       same memory the 24 was measured for. `_phoneDev()` at the top of this module. */
-    const PLANE_CIRCLE_BUDGET=()=>(_phoneDev()?24:128);
-    const PLANE_GAP_MS=1200;                         /* measured sustainable spacing — see above */
-    const PLANE_MAX_AIRCRAFT=50000;                  /* was 1,800 = one circle's worth; a continental sweep is many times that */
-    /* (#R188) a 128-circle sweep takes ~154 s to ISSUE, so it publishes what it has every few seconds
-       instead of at the end — and an aircraft that a later publish has not re-seen is only dropped
-       when the sweep has actually re-asked about the patch of sky it was in (planeCellOf). */
-    const PLANE_PUBLISH_MS=4000;
-    /* Below this the covered block is a small fraction of an ocean-sized view and the old "zoom in"
-       prompt is still the honest answer. It used to be z5, then z3; a 48-circle sweep covers roughly
-       4,900 × 3,700 km, which is a real region at z2. */
-    const PLANES_MIN_ZOOM=2, SHIPS_MIN_ZOOM=6;
-    /* == (#R341) THE LIVE-AIRCRAFT PLATFORM, AND THE SWITCH BACK ==================================
-       Everything above this line describes the ORIGINAL path: a per-browser sweep of up to 128
-       point queries against api.airplanes.live. That endpoint now answers HTTP 403 to every
-       request, with no CORS header, so in production not one of those fetches has resolved - they
-       reject, the sweep reports total failure, and genSyntheticPlanes() puts 270 INVENTED aircraft
-       on the map under an "airplanes.live . ADS-B" source line (measured, #R341).
-
-       The replacement asks ONE server (supabase/functions/aviation-feed) which asks ONE provider
-       for everybody, and draws the answer on the GPU with no zoom floor and no aircraft cap. The
-       old path is kept, unmodified, for the rollback window SS28 Phase G requires - but it is not
-       the default, because its provider is gone.
-
-           ?aviation=v1   force the original sweep      ?aviation=v2   force the new platform
-           localStorage 'intmap_aviation_v2' = '0' | '1'   the same choice, remembered
-
-       WARNING: WHEN V2 IS ACTIVE, NOTHING BELOW FETCHES. fetchPlanes / _sweep / planeCircles /
-       genSyntheticPlanes are never entered - see startTraffic. */
-    const AVIATION_V2=(function(){
-      try{ const q=new URLSearchParams(location.search).get('aviation');
-        if(q==='v1') return false;
-        if(q==='v2') return true;
-        const v=localStorage.getItem('intmap_aviation_v2');
-        if(v==='0') return false;
-        if(v==='1') return true;
-      }catch(_){}
-      return true;
-    })();
+    /* == (remove-synthetic-planes) ONE PATH: THE SERVER'S FEED =====================================
+       The layer used to have two. The original one swept up to 128 point queries per browser against
+       api.airplanes.live; that host has answered HTTP 403 to every request since #R341 (re-measured
+       2026-09-30, and scripts/upstream-liveness.mjs recorded it as refused), so every sweep failed
+       and a generator put ~270 INVENTED aircraft on the map as if they were live traffic. #R341 made
+       the server's feed (supabase/functions/aviation-feed) the default and left the sweep reachable
+       through `?aviation=v1` / localStorage `intmap_aviation_v2=0` as a rollback. With the provider
+       gone there is nothing to roll back TO — the sweep, its generator, its lattice planner, its two
+       MapLibre renderings and the switch are removed together, and a feed that fails is reported
+       as a failure (see _av2Start), never papered over. */
     const AVIATION_ENDPOINT=(function(){ try{ const b=String(window.SUPABASE_URL||'').replace(/\/$/,'');
       return b?(b+'/functions/v1/aviation-feed'):''; }catch(_){ return ''; } })();
     /* (#R510) the ship relay — same derivation, same reason: the project ref lives in one place */
@@ -4311,8 +4197,8 @@ window.IntMapModules.dataLayers=function(HOST){
     let _av2=null;                 /* the IntMapAviation controller, once the lazy module has landed */
     let _av2Starting=false;
     let _av2Zoom=null;
-    const _av2Cache=new Map();     /* hex -> the v1-shaped record the card and tooltip already speak */
-
+    const _av2Cache=new Map();     /* hex -> the record shape the card and tooltip speak */
+    const SHIPS_MIN_ZOOM=6;
     function zoomHintEl(id,onClickZoom){
       let el=document.getElementById(id);
       if(!el){ el=document.createElement('button'); el.id=id; el.type='button';
@@ -4322,355 +4208,6 @@ window.IntMapModules.dataLayers=function(HOST){
       }
       return el;
     }
-    function updatePlanesZoomHint(){
-      const on=!!(planesLayerOn());   /* (#R172) either rendering counts as "the layer is on" */
-      const el=zoomHintEl('planes-zoom-hint',PLANES_MIN_ZOOM+2);
-      if(!on){ el.style.display='none'; return; }
-      /* (#R341) V2 HAS NO ZOOM FLOOR AND NO PARTIAL COVER, so it has nothing to prompt about.
-         Production was measured showing "Zoom in to load live aircraft" at z1 WHILE 270 aircraft
-         were drawn - a hint and a picture disagreeing about the same fact. */
-      if(AVIATION_V2){ el.style.display='none'; return; }
-      if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; return; }
-      /* (#R186) …and when the budget covers only part of a very wide view, SAY SO rather than letting
-         a partly-filled sky read as an empty one.
-         (#R191) The question is asked about THE VIEW ON SCREEN NOW — planeCircles(false) plans without
-         adopting the plan — not about `_planeCover`, which belongs to the sweep that is running and can
-         be minutes old. Reading the running sweep's answer is what left the notice up long after the
-         user had zoomed into a view one circle covers («ズームインで全域表示がいつまでも出てくる»).
-         A clipped sweep always covers the CENTRAL block, so a view zoomed inside it really is complete. */
-      let clipped=false; try{ const p=planeCircles(false); clipped=!!(p&&p.cover&&p.cover.clipped); }catch(_){}
-      if(clipped){ el.textContent=t('planesAreaHint')||t('planesZoomHint'); el.style.display='block'; return; }
-      el.style.display='none';
-    }
-    /* ── (#R186) THE SWEEP PLAN: which circles cover the view ──────────────────────────────────────
-       Each 250-nm circle fully contains a square of side r·√2, so stepping by that side leaves no
-       gap between neighbours (0.94 of it, for a little overlap at the corners where the projection
-       stretches). Longitude steps are widened by 1/cos(lat) so the ground spacing stays constant as
-       the grid climbs away from the equator. When the view needs more circles than the budget, the
-       grid is CLIPPED to the central block and `clipped` is set — the hint above then says the
-       coverage is partial instead of leaving the user to guess. */
-    /* ══ (#R188) THE SAME REQUESTS, HALF AS MANY OF THEM PER MILLION SQUARE KILOMETRES ═════════════
-       「Live aircraft trafficの最大航空機表示領域/数をもっと増やして。」— reported a third time.
-
-       Everything that could have made this easy was measured away first, and none of it survived:
-
-         · A SECOND FEED. adsb.fi and adsb.lol both answer the same shape of query, and adsb.fi
-           returns the same aircraft as airplanes.live (554 vs 554 over Frankfurt, union 561), so a
-           second host would have been a second rate-limit bucket and twice the circles per minute.
-           Measured from the page's own origin, BOTH answer `TypeError: Failed to fetch`: neither
-           sends `Access-Control-Allow-Origin`, so neither can be reached from a browser at all.
-           airplanes.live remains the only key-less CORS-enabled ADS-B feed there is.
-         · A FASTER PACE. #R186's 1.2 s came from a measurement, and it still holds: 34 consecutive
-           circles at 1,200 ms all answered 200, while the same 34 at 700 ms gave 12 successes and
-           then SIXTEEN consecutive hard failures — the address cut off, exactly the state #R186
-           described. The gap is not negotiable and is unchanged.
-         · A BIGGER CIRCLE. r=250 answers, r=300 and r=500 are 403. Unchanged since #R187.
-
-       What was left is the one thing nobody had looked at: the LATTICE. Stepping by a circle's
-       inscribed square throws away everything outside that square — a circle of radius r covers
-       πr², the square keeps 2r², i.e. 64% of what each request already paid for. The optimal
-       covering of a plane by equal circles is the TRIANGULAR lattice (Kershner 1939): neighbours at
-       d = r√3, rows at d·√3/2, alternate rows offset by d/2, and every point of the plane inside
-       some circle. Each request then owns a hexagon of (√3/2)d² = 2.598 r² instead of 2 r².
-
-       Measured on this app's own numbers (r = 463 km, keeping a 4% overlap margin for the
-       projection): 770 km between centres and 667 km between rows, so ONE REQUEST NOW COVERS
-       513,600 km² where it used to cover 378,700 — 1.36× the sky for exactly the same 1.2 s.
-
-       The circle budget then goes 48 → 128 (mobile 12 → 24). Combined: 18.2 → 65.7 million km², or
-       3.6× the area of #R187, and the long-run request rate is IDENTICAL because the poll interval
-       has always been 3.5 s per circle — a bigger sweep refreshes less often, it does not ask
-       faster. The two costs a 128-circle sweep would have had are both paid off below: it takes
-       154 s to issue (so the layer publishes AS IT GOES rather than at the end), and it used to
-       lock out the next viewport for its whole duration (so a sweep the camera has left behind is
-       now abandoned — which is only safe because what it had already published survives). */
-    const PLANE_LATTICE_MARGIN=0.96;    /* shrink the ideal covering step so the corners overlap slightly */
-    let _planeCover=null;
-    function planeCircles(commit){
-      const NM=1.852, toR=Math.PI/180;
-      let c={lat:48,lng:8}, b=null;
-      try{ if(GE().hasRenderer()){ c=GE().camera.getCenter(); b=GE().camera.getBounds(); } }catch(_){}
-      const rKm=PLANE_CIRCLE_NM*NM;                          /* the query radius on the ground */
-      const stepKm=rKm*Math.sqrt(3)*PLANE_LATTICE_MARGIN;    /* triangular-lattice spacing — see above */
-      const rowKm=stepKm*Math.sqrt(3)/2;                     /* …and the row pitch that goes with it */
-      const dLat=rowKm/110.574;
-      let wantX=1, wantY=1, spanKmX=stepKm, spanKmY=rowKm;
-      if(b){ try{
-        const w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
-        const lonSpan=((e-w)+360)%360||360;
-        spanKmX=Math.max(1,lonSpan*111.320*Math.max(0.05,Math.cos(c.lat*toR)));
-        spanKmY=Math.max(1,(n-s)*110.574);
-        wantX=Math.max(1,Math.ceil(spanKmX/stepKm)); wantY=Math.max(1,Math.ceil(spanKmY/rowKm));
-        /* ⚠ THE EXTRA COLUMN IS ONLY FOR THE OFFSET ROWS. A triangular lattice shifts alternate rows
-           half a step, so the block needs one more column to cover its own edges — but ONLY when
-           there are offset rows to cover and more than one column to offset. Adding it
-           unconditionally made a close-in view ask for TWO requests where one has always been
-           enough, which tests/shell-sky-space-checks.test.mjs (#R186) caught at z6.2 (`close.circles` 1 → 2). One circle for a small
-           view is not a detail: it is the 20-second refresh that view has always had. */
-        if(wantX>1&&wantY>1) wantX++;
-      }catch(_){} }
-      const budget=PLANE_CIRCLE_BUDGET();
-      let nx=wantX, ny=wantY, clipped=false;
-      /* Shrink the grid towards the budget while keeping the viewport's aspect, so the covered block
-         stays the shape of the screen rather than collapsing into a column. */
-      while(nx*ny>budget&&(nx>1||ny>1)){ clipped=true; if(nx*spanKmY>=ny*spanKmX&&nx>1) nx--; else if(ny>1) ny--; else nx--; }
-      const out=[], rows=[];
-      for(let j=0;j<ny;j++){ const lat=c.lat+((j-(ny-1)/2)*dLat);
-        const dLng=stepKm/(111.320*Math.max(0.05,Math.cos(lat*toR)));
-        const off=(j&1)?dLng/2:0;                            /* alternate rows are offset by half a step */
-        rows.push({lat,dLng,off});
-        if(lat>88||lat<-88) continue;
-        for(let i=0;i<nx;i++){ let lng=c.lng+off+((i-(nx-1)/2)*dLng);
-          lng=((lng+540)%360)-180;
-          /* the third element is the CELL KEY, not the list position: rows beyond ±88° are skipped,
-             so the two stop matching after the first skipped row and a carried-over aircraft would
-             be tested against the wrong patch of sky. */
-          out.push([Math.max(-89.9,Math.min(89.9,lat)),lng,j*nx+i]); } }
-      /* ⚠ (#R188) CENTRE FIRST. The sweep is now long enough to be watched, and it publishes as it
-         goes, so the ORDER decides what the user sees for the first two minutes. Row-major starts at
-         a corner of the block — measured over Europe at z3, the first four circles landed in the
-         mid-Atlantic and found ONE aircraft while Frankfurt sat unasked. Sorting by distance from the
-         view centre costs one sort and fills the middle of the screen first, which is where the user
-         is looking; the set of circles is identical either way. */
-      out.sort((a,b)=>{
-        const da=Math.pow((((a[1]-c.lng+540)%360)-180)*Math.cos(c.lat*toR),2)+Math.pow(a[0]-c.lat,2);
-        const db=Math.pow((((b[1]-c.lng+540)%360)-180)*Math.cos(c.lat*toR),2)+Math.pow(b[0]-c.lat,2);
-        return da-db;
-      });
-      const cover={ nx, ny, wantX, wantY, clipped, circles:out.length,
-                    coverKmX:nx*stepKm, coverKmY:ny*rowKm, spanKmX, spanKmY,
-                    /* the lattice itself, so a carried-over aircraft can be asked "has the sweep
-                       already looked where you are?" in O(1) — see _sweep()'s publish step */
-                    c, dLat, rows, stepKm, rowKm };
-      out.cover=cover;
-      /* (#R191) `commit === false` PLANS WITHOUT ADOPTING. The hint below needs to know whether THIS
-         view can be covered, and `_planeCover` is the running sweep's plan — which is replaced only
-         when the next sweep starts, i.e. after as much as 154 s for a 128-circle block. That is why
-         「ズームインで全域表示がいつまでも出てくる」: the answer on screen belonged to a view the
-         user had already left. The planner is cheap (≤128 cells), so the question is simply asked
-         again about the current viewport instead of being remembered. */
-      if(commit!==false) _planeCover=cover;
-      return out;
-    }
-    /* Which lattice cell a position falls in, or null when it is outside the planned block. The
-       answer is the index into the circle list the planner just built, so "cell k has been swept"
-       is a plain Set lookup. */
-    function planeCellOf(lat,lng){
-      const cv=_planeCover; if(!cv||!cv.rows||!cv.rows.length) return null;
-      const j=Math.round((lat-cv.c.lat)/cv.dLat+(cv.ny-1)/2);
-      if(j<0||j>=cv.ny) return null;
-      const row=cv.rows[j]; if(!row) return null;
-      let dl=((lng-cv.c.lng-row.off+540)%360)-180;
-      const i=Math.round(dl/row.dLng+(cv.nx-1)/2);
-      if(i<0||i>=cv.nx) return null;
-      return j*cv.nx+i;
-    }
-    /* Normalise an airplanes.live ADS-B record to our internal plane shape (units → m, m/s). */
-    function adsbToPlane(a,nowMs){
-      const FT=0.3048, KT=0.514444, FPM=0.00508, onGround=a.alt_baro==='ground';
-      /* (#R19) Military = dbFlags bit 0 ONLY. That bit comes from the curated Mictronics/tar1090
-         registration database (per-airframe, not guessed), so it's trustworthy — which is why the
-         military/civilian Filter stays. The old callsign-prefix heuristic ("KING", "SHELL", "BLUE"…)
-         mislabeled ordinary airline callsigns as military and is gone (it had no caller left). */
-      const mil=!!((a.dbFlags|0)&1);
-      return {
-        icao24:(a.hex||'').toUpperCase(), callsign:(a.flight||'').trim(), reg:a.r||'', acType:a.t||'', desc:a.desc||'',
-        lng:a.lon, lat:a.lat,
-        baroAlt: onGround?0:(typeof a.alt_baro==='number'?a.alt_baro*FT:null),
-        geoAlt: (typeof a.alt_geom==='number'?a.alt_geom*FT:null),
-        vel: (typeof a.gs==='number'?a.gs*KT:null),
-        heading: (a.track!=null?a.track:(a.true_heading!=null?a.true_heading:(a.mag_heading!=null?a.mag_heading:0))),
-        vrate: (typeof a.baro_rate==='number'?a.baro_rate*FPM:(typeof a.geom_rate==='number'?a.geom_rate*FPM:null)),
-        squawk:a.squawk||'', onGround, category:(a.category||null),
-        lastContact: a.seen!=null ? Math.floor(nowMs/1000 - a.seen) : Math.floor(nowMs/1000),
-        type: mil?'military':'civilian',
-        /* (#R175) …and the REST of what the feed already sends. The hover tooltip only ever had room for
-           eight fields, so these were parsed away and thrown out on every poll; the detail card behind a
-           click (js/aircraft-detail.js) shows them, and the flight simulator starts from the true airspeed
-           rather than the ground speed because of them. Nothing here is derived or guessed — every value
-           is a field airplanes.live reports, converted into the units this file already uses. */
-        ias:(typeof a.ias==='number'?a.ias:null), tas:(typeof a.tas==='number'?a.tas:null),
-        mach:(typeof a.mach==='number'?a.mach:null), oat:(typeof a.oat==='number'?a.oat:null),
-        navAlt:(typeof a.nav_altitude_mcp==='number'?a.nav_altitude_mcp*FT:null),
-        navQnh:(typeof a.nav_qnh==='number'?a.nav_qnh:null),
-        roll:(typeof a.roll==='number'?a.roll:null),
-        trueHdg:(typeof a.true_heading==='number'?a.true_heading:null),
-        magHdg:(typeof a.mag_heading==='number'?a.mag_heading:null),
-        windDir:(typeof a.wd==='number'?a.wd:null), windSpd:(typeof a.ws==='number'?a.ws:null),
-        rssi:(typeof a.rssi==='number'?a.rssi:null), messages:(typeof a.messages==='number'?a.messages:null),
-        src:(a.type||''), emergency:((a.emergency&&a.emergency!=='none')?a.emergency:'')
-      };
-    }
-    /* (#R186) One sweep at a time. A sweep is now several requests over a second or two, so a moveend
-       arriving mid-sweep must not start a second one on top of it — the two would interleave their
-       partial results and the layer would flicker between them. The in-flight sweep is aborted and
-       the new one takes over; `_planeSweep` is the token that says which one is allowed to publish. */
-    let _planeSweep=0, _planeStats=null, _planeBusy=false, _planeSweepAt=null;
-    async function fetchPlanes(){
-      /* ⚠ (#R186) A SWEEP THAT IS ALREADY RUNNING IS LEFT TO FINISH. The token below exists so a
-         stale sweep cannot publish into a layer that has moved on — but using it to abort on every
-         new request threw away work that had already been done: on a slow machine each sweep took
-         longer than the gap between two moveends, so every one was killed by the next and the
-         positions it had collected were lost. tests/geo-drone-planner-checks.test.mjs (#R174) measured that as an aircraft track with 2
-         legs where five fixes had been fed to it. Skipping is right and abandoning is not: the
-         running sweep is about to publish the same view, and the next poll covers anything newer. */
-      /* ⚠ (#R188) …UNLESS THE CAMERA HAS LEFT THAT SKY ALTOGETHER. #R186's rule was right for a
-         16-circle sweep of a few seconds; a 128-circle sweep takes 154 s to issue, and refusing every
-         new request for that long means panning to another continent shows the previous continent's
-         traffic for two and a half minutes. The reason #R186 could not abandon a sweep — that its
-         collected positions would be lost — no longer holds, because the sweep publishes as it goes:
-         everything it has found is already on the layer before it is abandoned. So a new request
-         while busy still yields to the running sweep when it is about the same sky, and takes over
-         when the centre has moved more than half the covered block. */
-      if(_planeBusy){
-        try{
-          const cv=_planeCover, at=_planeSweepAt;
-          if(!cv||!at) return;
-          const now=GE().camera.getCenter();
-          const dLng=(((now.lng-at.lng+540)%360)-180)*111.320*Math.max(0.05,Math.cos(now.lat*Math.PI/180));
-          const dLat=(now.lat-at.lat)*110.574;
-          if(Math.abs(dLng)<cv.coverKmX/2&&Math.abs(dLat)<cv.coverKmY/2) return;
-        }catch(_){ return; }
-      }
-      _lastPlaneFetch=Date.now();
-      /* Too zoomed out → don't query a central blob; show the "zoom in" prompt instead. */
-      if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; _planeCover=null; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
-      const mine=++_planeSweep;
-      _planeBusy=true;
-      try{ _planeSweepAt=GE().camera.getCenter(); }catch(_){ _planeSweepAt=null; }
-      /* ⚠ only the sweep that still OWNS the token may clear the busy flag: an abandoned sweep
-         finishing after its replacement has started would otherwise unlock a slot that is in use. */
-      try{ return await _sweep(mine); } finally { if(mine===_planeSweep) _planeBusy=false; }
-    }
-    async function _sweep(mine){
-      const circles=planeCircles();
-      updatePlanesZoomHint();
-      const t0=Date.now();
-      /* ⚠ `lastPub` starts at the sweep's own start, not at 0. Starting it at 0 made the elapsed time
-         the whole Unix epoch, so the FIRST circle always tripped the in-loop publish and every short
-         sweep published twice with identical data. Harmless (recordTracks de-duplicates on position)
-         but pointless work; a one-circle sweep should publish once, at the end. */
-      const byHex=new Map(); let ok=0, fail=0, newest=0, retried=0, published=0, lastPub=Date.now();
-      const swept=new Set();                                    /* cell keys this sweep has already asked about */
-      const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-      const one=async(la,lo,cell)=>{
-        try{
-          const r=await fetch(`https://api.airplanes.live/v2/point/${la.toFixed(3)}/${lo.toFixed(3)}/${PLANE_CIRCLE_NM}`);
-          if(!r.ok) return false;                               /* (#R183) an error body is valid JSON — check r.ok */
-          const j=await r.json();
-          if(j&&j.now>newest) newest=j.now;
-          const ac=Array.isArray(j&&j.ac)?j.ac:[];
-          for(const a of ac){ if(a&&a.lat!=null&&a.lon!=null&&a.hex&&!byHex.has(a.hex)) byHex.set(a.hex,a); }
-          if(cell!=null) swept.add(cell);
-          return true;
-        }catch(e){ return false; }
-      };
-      /* ══ (#R188) THE LAYER FILLS IN AS THE SWEEP RUNS ═════════════════════════════════════════════
-         A 128-circle sweep takes 154 s to issue. Publishing only at the end would mean two and a half
-         minutes of the previous answer and then everything at once, which is not what a bigger budget
-         was asked for. So every few seconds the layer is rebuilt from:
-           · every aircraft this sweep has seen so far, and
-           · every aircraft the LAST published answer held that this sweep has not re-seen AND whose
-             position is in a cell the sweep has not yet re-asked about.
-         The second rule is what makes this exact rather than merely optimistic: an aircraft is only
-         dropped once the feed has been asked about the patch of sky it was in and did not mention it.
-         Age is a backstop for aircraft outside the current lattice entirely. */
-      const KEEP_MS=Math.max(150000,circles.length*PLANE_GAP_MS+60000);
-      const prev=(!planesSynthetic&&Array.isArray(planesData))?planesData.slice():[];
-      const publish=(final)=>{
-        if(mine!==_planeSweep) return;
-        planesTime=(newest||Date.now());
-        const seenNow=Date.now();
-        const raw=Array.from(byHex.values());
-        const fresh=new Set(); raw.forEach(a=>{ const h=String(a.hex||'').toLowerCase(); if(h) fresh.add(h); });
-        const merged=raw.slice(0,PLANE_MAX_AIRCRAFT).map(a=>adsbToPlane(a,planesTime));
-        merged.forEach(d=>{ d.seenAt=seenNow; });
-        let carried=0;
-        for(const d of prev){
-          if(merged.length>=PLANE_MAX_AIRCRAFT) break;
-          const h=String(d.icao24||'').toLowerCase(); if(!h||fresh.has(h)) continue;
-          if(seenNow-(d.seenAt||0)>KEEP_MS) continue;
-          const cell=planeCellOf(d.lat,d.lng);
-          if(cell!=null&&swept.has(cell)) continue;             /* asked, and the feed did not mention it */
-          merged.push(d); carried++;
-        }
-        planesSynthetic=false;
-        planesData=merged;
-        published++; lastPub=Date.now();
-        /* No silent caps (#R185): every number the sweep produced is readable from the console API. */
-        _planeStats={ circles:circles.length, asked:swept.size, ok, fail, retried, carried, publishes:published,
-                      unique:raw.length, kept:planesData.length, complete:!!final,
-                      dropped:Math.max(0,raw.length-Math.min(raw.length,PLANE_MAX_AIRCRAFT)), ms:Date.now()-t0,
-                      cover:_planeCover?{ nx:_planeCover.nx, ny:_planeCover.ny, clipped:_planeCover.clipped,
-                        coverKmX:Math.round(_planeCover.coverKmX), coverKmY:Math.round(_planeCover.coverKmY),
-                        areaMkm2:+((_planeCover.coverKmX*_planeCover.coverKmY)/1e6).toFixed(1) }:null };
-        recordTracks(planesData,planesTime);   /* (#R173) keep what we have actually seen — see planeTracks */
-        refreshTrafficLayer('planes');
-      };
-      const missed=[];
-      for(let k=0;k<circles.length;k++){
-        if(mine!==_planeSweep) return;
-        if(k) await sleep(PLANE_GAP_MS);
-        const good=await one(circles[k][0],circles[k][1],circles[k][2]);
-        if(good) ok++; else { fail++; missed.push(circles[k]); }
-        /* ══ ⚠⚠ (#R245) THE FIRST ANSWER IS DRAWN THE MOMENT IT ARRIVES ═══════════════════════════
-           「Live aircraft trafficで航空機が表示されるまでが遅い。」
-           `lastPub` starts at the sweep's own start, so the in-loop publish could not fire until
-           PLANE_PUBLISH_MS (4 s) had passed — i.e. until the FIFTH circle on a multi-circle sweep,
-           at 1.2 s spacing. The centre circle answers in a fraction of a second and #R188 already
-           sorts the lattice centre-first, so the aircraft the reader is looking at were sitting in
-           `byHex` for four seconds with nothing on screen. The first success now publishes
-           immediately and the 4 s cadence takes over from there.
-           ⚠ NOTHING ABOUT THE REQUEST RATE MOVES. `PLANE_GAP_MS` is the measured limit (#R186/#R188)
-           and this changes only when what has already arrived is DRAWN.
-           ⚠ A ONE-CIRCLE SWEEP STILL PUBLISHES ONCE, at the end — that is what `circles.length>1`
-           preserves, and it is the case the note above `lastPub` is about. */
-        if(ok>0&&(published===0 ? circles.length>1 : Date.now()-lastPub>=PLANE_PUBLISH_MS)) publish(false);
-      }
-      /* One retry pass for the circles that came back empty-handed, at the same pace. A failed circle
-         is a HOLE in the sky, not a slightly smaller answer, so it is worth 1.2 s to fill it. */
-      for(const c of missed){
-        if(mine!==_planeSweep) return;
-        await sleep(PLANE_GAP_MS*2);
-        if(await one(c[0],c[1],c[2])){ ok++; fail--; retried++;
-          if(Date.now()-lastPub>=PLANE_PUBLISH_MS) publish(false); }
-      }
-      if(mine!==_planeSweep) return;                            /* a newer sweep owns the layer now */
-      if(ok>0){
-        publish(true);
-        if(_planeStats.dropped) console.warn('live aircraft: '+_planeStats.dropped+' beyond the '+PLANE_MAX_AIRCRAFT+' render cap were not drawn');
-        if(fail>0) console.warn('live aircraft: '+fail+' of '+circles.length+' circles did not answer; '+_planeStats.carried+' aircraft carried over from the previous sweep');
-        schedulePlanePoll(); return;
-      }
-      /* Every circle failed. If we still hold real aircraft, KEEP them — replacing real data with a
-         placeholder because one refresh was refused is a downgrade, not a fallback. The synthetic set
-         is only for a layer that has nothing at all. */
-      if(!planesSynthetic&&planesData.length){ console.warn('Live aircraft feed did not answer — keeping the previous positions'); schedulePlanePoll(); return; }
-      /* feed unreachable (offline / blocked) → clearly-labeled synthetic placeholder so the layer isn't empty */
-      console.warn('Live aircraft feed unavailable — using synthetic placeholder'); genSyntheticPlanes(); schedulePlanePoll();
-    }
-    /* (#R186) The poll interval follows the size of the sweep, so the long-run request rate stays
-       roughly constant instead of multiplying by the number of circles. One circle keeps the original
-       20 s; a full 30-circle sweep settles at ~66 s, which is five pixels of aircraft movement at the
-       zoom where a 30-circle sweep is what you get. */
-    function planePollMs(){ const n=(_planeCover&&_planeCover.circles)||1;
-      /* one circle → the original 20 s; a full 48-circle sweep takes ~58 s to issue, so its gap is
-         set well clear of that (3.5 s a circle) and the feed sees 0.29 requests a second.
-         (#R187) the ceiling is 180 s so a 48-circle sweep's interval is the rule's answer and not a
-         clip — clipping it would mean polling FASTER than the measured budget.
-         (#R188) …and 600 s for the same reason now the budget is 128: 128 × 3.5 s = 448 s, so the
-         ceiling has to be above it or the long-run rate would rise with the budget instead of
-         staying at the 0.29 requests a second #R186 measured as sustainable. */
-      return Math.max(20000,Math.min(600000,Math.round(n*3500))); }
-    /* (#R186) The shortest gap between two VIEW-DRIVEN sweeps: how long one sweep occupies — its circles
-       times their spacing — never under the 1.5 s a one-circle view has always had. Named once, because
-       the moveend handler applies it and IntMapPlanes3D.state().refetch reports it (No silent caps,
-       #R185): a view change inside this gap, or while a sweep of the same sky is still in flight (see
-       fetchPlanes), yields no request of its own — the running sweep publishes that sky. */
-    function planeRefetchGapMs(){ return Math.max(1500,(((_planeCover&&_planeCover.circles)||1)*PLANE_GAP_MS)); }
-    function schedulePlanePoll(){ if(!planesTimer) return;    /* the layer is off — nothing to re-arm */
-      stopTick(planesTimer); clearTimeout(planesTimer);
-      planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },planePollMs()); }
     /* Synthetic ship demo data — real-time AIS is paywalled. Distributes ships GLOBALLY along major sea lanes + chokepoints. */
     /* ===== Live ships via AISstream.io (real AIS over WebSocket) =====
        There is NO free, key-less, CORS-friendly global AIS feed, so this is BYOK: the user pastes
@@ -4912,28 +4449,17 @@ window.IntMapModules.dataLayers=function(HOST){
     })();
     /* ===== (#R172) AIRCRAFT AT THEIR REAL ALTITUDE ==========================================
        「Live aircraft trafficは、飛行中の高度に応じて、実際にIntMapの空間でもその高度に描画して。」
-       The glyphs were a `symbol` layer, which MapLibre pins to the map SURFACE — a jet at 11 km and one
-       taxiing sat at exactly the same height, and tilting the map showed no difference at all.
-       MapLibre 5.24 has NO way to lift a symbol: `symbol-z-offset` / `symbol-elevation-reference` are
-       absent from this build (checked in the dist — the properties simply do not exist), so the only
-       primitive that takes a real altitude is `fill-extrusion`. Each aircraft therefore becomes a small
-       aeroplane-shaped POLYGON built in ground metres, turned to its ADS-B track and extruded at its
-       reported altitude, plus a hairline post down to its ground position so the height is readable and
-       the aircraft stays tied to the point it is over.
-       Honest about the one exaggeration: a real 60 m airframe is far under a pixel at these zooms, so the
-       glyph has a MINIMUM on-screen size (it never shrinks below ~13 px) — the POSITION is real data, the
-       silhouette's size is a symbol, exactly as the flat glyph always was.
-       Altitude reference: the same trap the 3-D volume tool documents — with 3-D terrain on, the
-       renderer's metres are above the GROUND, otherwise above SEA LEVEL. Airborne aircraft get the ground
-       under the map centre subtracted so their altitude means AMSL either way; aircraft ON the ground are
-       left at 0 so they sit on the terrain instead of hovering over it. */
+       The setting below is the reader's choice between the lifted mark and the flat one. Since #R341 the
+       GPU cloud (js/aviation-live.js → src/aviation-worker.js `liftAltitude`) is what draws it; the
+       `fill-extrusion` bodies #R172–#R192 built for the airplanes.live sweep went with that sweep
+       (remove-synthetic-planes). The track below still stands at the aircraft's reported altitude. */
     /* ══ (#R190) DEFAULT ON — AND A THIRD KEY GENERATION, BECAUSE THAT IS WHAT A DEFAULT CHANGE COSTS ══
        「（あと、at real altitudeはデフォルトで選択状態に。）」
 
        #R187 made this default OFF so its restored 2-D glyph would be the thing on screen; #R189 had to
        bump the key because the #R172–#R186 era's TRUE was still sitting in storage. Now the default is
        TRUE again — and the mark no longer depends on the toggle at all, because #R190 draws the SAME
-       original silhouette in both renderings (see _PLANE_OUTLINE). The two halves of the instruction
+       original silhouette in both renderings (js/plane-glyph.js since #R379). The two halves of the instruction
        stop fighting each other.
 
        ⚠ The generation is bumped a second time for the same measured reason it was bumped the first.
@@ -4945,44 +4471,18 @@ window.IntMapModules.dataLayers=function(HOST){
     const PLANES3D_KEY='intmap_planes3d3';
     let planes3D=true; try{ const _p3=localStorage.getItem(PLANES3D_KEY); if(_p3!=null) planes3D=(_p3==='1');
       localStorage.removeItem('intmap_planes3d'); localStorage.removeItem('intmap_planes3d2'); }catch(_){}
-    let _planes3DStats={features:0,lifted:0,maxAlt:0,offsetM:0};
-    const PLANE3D_SRC='src-planes-3d', PLANE3D_LYR='lyr-planes-3d', PLANE3D_POST='lyr-planes-post';
     /* ===== (#R173) THE TRACK OF A CLICKED AIRCRAFT =========================================
-       「クリックした航空機はそれまでの軌跡も出るように。」 The track is REAL and it is OURS: every
-       ADS-B poll (one every 20 s) is written into planeTracks, so what a click draws is the path this
-       browser has actually watched the aeroplane fly since the layer was switched on — never an
+       「クリックした航空機はそれまでの軌跡も出るように。」 The track is REAL: src/aviation-worker.js
+       records every viewport fix it receives and _av2TrackApply puts them into planeTracks (#R506), so
+       what a click draws is the path the feed has actually reported for the aeroplane — never an
        interpolation, never a guess about where it was before we were looking. The feed has no public
        history endpoint, and inventing one would be exactly the fabrication this project forbids, so the
        readout says how long the recorded track is and how many fixes it has.
        In 3-D the track is drawn where it happened: each leg is a thin ribbon extruded at the pair's own
        reported altitude, so a climb is visibly a climb. Flat mode keeps a plain line on the ground. */
     const TRACK_SRC='src-plane-track', TRACK_LINE='lyr-plane-track', TRACK_3D='lyr-plane-track-3d';
-    const TRACK_MAX=400;            /* fixes per aircraft (~2 h at one poll every 20 s) */
-    const TRACK_TTL=20*60000;       /* forget an aircraft 20 min after its last fix */
     const planeTracks=Object.create(null);
     let selectedPlane=null;         /* icao24 of the aircraft whose track is on screen */
-    function recordTracks(list,tMs){
-      const now=+tMs||Date.now();
-      for(const d of list){
-        const k=d.icao24; if(!k||d.lng==null||d.lat==null) continue;
-        const alt=d.onGround?0:(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0));
-        const arr=planeTracks[k]||(planeTracks[k]=[]);
-        const last=arr[arr.length-1];
-        /* skip a fix that repeats the previous one — a parked aircraft would otherwise fill the buffer */
-        if(last&&Math.abs(last[0]-d.lng)<1e-6&&Math.abs(last[1]-d.lat)<1e-6&&Math.abs(last[2]-alt)<1) { last[3]=now; continue; }
-        arr.push([d.lng,d.lat,alt,now]);
-        if(arr.length>TRACK_MAX) arr.splice(0,arr.length-TRACK_MAX);
-      }
-      const cut=now-TRACK_TTL;
-      for(const k in planeTracks){ const a=planeTracks[k]; if(!a.length||a[a.length-1][3]<cut) delete planeTracks[k]; }
-      if(selectedPlane) drawTrack(selectedPlane);
-      /* (#R175) …and an open detail card is refreshed from the SAME poll, so the altitude and speed on the
-         card are never older than the aircraft on the map. Only the airframe the card is showing. */
-      try{ const P=window.IntMapAircraftPanel;
-        if(P&&P.isOpen()){ const k=P.current();
-          const d=k?list.find(x=>String(x.icao24||'').toUpperCase()===k):null;
-          if(d) P.update(d,{track:_trackCard(d.icao24)}); } }catch(_){}
-    }
     /* a strip of ground metres along a leg, so the 3-D track is a ribbon rather than a zero-width sheet */
     function legRing(a,b,halfM){
       const r=Math.PI/180, mLat=110574, mLng=(111320*Math.cos(((a[1]+b[1])/2)*r))||1;
@@ -5021,50 +4521,10 @@ window.IntMapModules.dataLayers=function(HOST){
       try{ if(GE().layers.has(TRACK_LINE)) GE().layers.setLayout(TRACK_LINE,'visibility',(on&&!planes3D)?'visible':'none');
         if(GE().layers.has(TRACK_3D)) GE().layers.setLayout(TRACK_3D,'visibility',(on&&planes3D)?'visible':'none'); }catch(_){}
     }
-    /* ===== (#R173) PICKING AN AIRCRAFT THAT IS UP IN THE AIR =================================
-       「立体時もホバーやクリックができるように。」 MapLibre answers queryRenderedFeatures on a
-       fill-extrusion at its FOOTPRINT: measured with one stubbed aircraft at 11,003 m, the glyph drawn at
-       y=272 and its ground point at y=388, the only row on the whole screen that reported the feature was
-       388 — at z9.5, z11.5 and z13.5 alike. So the lifted aircraft could not be hovered or clicked where
-       it is drawn; only the patch of ground it happened to be over could.
-       The pick is therefore done here, against the aircraft's real position: the engine projects
-       (lng, lat, altitude) through the renderer's own model matrices (coords.projectAltitude), and the
-       nearest aircraft within a finger-sized radius wins. The ground footprint keeps working too — the
-       post is a real thing to click at — so both ways of aiming at an aeroplane select the same one. */
-    const PICK_PX=16;
-    /* ⚠ (#R187) WHERE THE AIRCRAFT IS DRAWN DEPENDS ON WHICH RENDERING IS ON, AND THE PICK HAS TO
-       ASK THE SAME QUESTION AS THE DRAWING. In 3-D the body stands at its reported altitude; the flat
-       glyph is a symbol at the ground position. #R174's rule — "a pick that used a different offset
-       would look for the aeroplane somewhere it is not" — is the reason this exists, and making the
-       flat glyph the default (see planes3D) is exactly the case it had never been asked about:
-       `pickPlane` began with `if(!planes3D) return null`, so with 2-D restored, clicking an aircraft
-       would have selected nothing, opened no detail card and drawn no track. Found by tests/layer-boot-graph-checks.test.mjs (#R175),
-       which is about the card and not about 3-D at all. */
-    function _planeDrawAlt(d){
-      if(!planes3D||d.onGround) return 0;
-      return Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-_groundAt(d.lng,d.lat));
-    }
-    function pickPlane(pt){
-      if(!pt) return null;
-      const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
-      /* (#R174) the SAME per-aircraft ground the drawing uses — a pick that used a different offset would
-         look for the aeroplane somewhere it is not */
-      _gndFresh(); let best=null, bestD=PICK_PX*PICK_PX;
-      const filt=trafficFilters.planes;
-      for(const d of planesData){
-        if(d.lng==null||d.lat==null) continue;
-        if(filt&&filt!=='all'&&d.type!==filt) continue;
-        const p=pa([d.lng,d.lat],_planeDrawAlt(d)); if(!p) continue;
-        const dx=p.x-pt.x, dy=p.y-pt.y, q=dx*dx+dy*dy;
-        if(q<bestD){ bestD=q; best=d; }
-      }
-      return best;
-    }
     /* Select / deselect the aircraft whose track is shown. Returns the icao24 now selected (or null). */
     function selectPlane(k){
       selectedPlane=(k&&planeTracks[k])?k:(k||null);
       drawTrack(selectedPlane);
-      try{ refreshTrafficLayer('planes'); }catch(_){}   /* the glyph highlights itself via `sel` */
       /* (#R175) the detail card follows the selection: deselecting an aircraft closes its card, and the
          card's own Show/Hide button lands back here, so the two can never disagree about what is selected. */
       try{ const P=window.IntMapAircraftPanel;
@@ -5116,336 +4576,17 @@ window.IntMapModules.dataLayers=function(HOST){
       const v=(g==null||!isFinite(g))?0:+g;
       _gndMemo.set(k,v); return v; }catch(_){ return 0; } }
     function _gndFresh(){ _gndMemo=null; }
-    /* kept for the diagnostics readout only — "what would the old single offset have been" */
-    function _groundOffset(){ try{ if(!HOST.terrain3D) return 0;
-      const c=GE().camera.getCenter(); return _groundAt(c.lng,c.lat); }catch(_){ return 0; } }
-    /* An aeroplane silhouette in ground metres, centred on [lng,lat] and turned to `hdg` (°, clockwise from
-       north). Same outline as the 2-D glyph so the layer does not change character when it goes 3-D. */
-    /* ══ (#R190) THE MARK IS THE ORIGINAL ONE IN BOTH RENDERINGS ═══════════════════════════════════
-       「Live aircraft trafficの飛行機のマークはat real altitude中も昔のものに戻して。」
-
-       #R187 restored the flat 2-D glyph to the outline this app shipped with, and left the LIFTED
-       body as #R183/#R185 had rebuilt it: an eight-part airliner (two fuselage prisms, wing, two
-       nacelles, tailplane, two fin stages) sitting on a white rim and a dark halo. That is a
-       different mark, and 「at real altitude中も」 says so — the aircraft must not change shape when
-       it is drawn at its altitude.
-
-       So the lifted body is the #R172 rendering again: ONE plan-form polygon — `_PLANE_ORIG`, the
-       same outline the 2-D glyph draws — extruded to a uniform thickness at the reported altitude,
-       plus the hairline post down to the ground. The rim/halo plates and the eight parts are gone
-       with the plan-form they were grown from.
-
-       ⚠ DECLARED HERE, above every use. `_PLANE_ORIG` used to live next to ensurePlaneIcons, ~250
-       lines further down; naming it from here would have put this `const` in its own temporal dead
-       zone and thrown ReferenceError while the factory was still being constructed, taking the whole
-       data-layers module with it — the #R167/#R183/#R189 trap, three rounds running. */
-    const _PLANE_ORIG=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],
-                       [-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
-    const _PLANE_OUTLINE=_PLANE_ORIG;
-    /* ══ (#R192) ONE SIZE RAMP, READ BY BOTH RENDERINGS ════════════════════════════════════════════
-       The glyph's size on screen is `icon-size` × the artwork, and the lifted body's size is metres of
-       ground. They were written as two independent numbers and drifted apart (see refreshPlanes3D).
-       This is the ramp — the original one, restored by #R187 — stated ONCE: the symbol layer builds
-       its `icon-size` expression from it and the extrusion evaluates it at the current zoom, so
-       "the same mark" is true by construction rather than by two matching constants. */
-    /* ⚠ (#R247) 「Live aircraft trafficで航空機の大きさを少し大きく。」 — 1.25× at every stop, so the
-       ramp's SHAPE (how the mark grows with zoom) is untouched and only its scale moves. Because
-       both renderings read this one table — the symbol layer builds `icon-size` from it and the
-       lifted body evaluates it for its metres of ground — the flat glyph and the 3-D body grow by
-       exactly the same factor, which is the whole reason #R192 stated the ramp once. */
-    const _PLANE_SIZE=[[2,0.5],[5,0.725],[9,0.975]];
-    function _planeIconSize(z){
-      const t=_PLANE_SIZE; const zz=(+z||0);
-      if(zz<=t[0][0]) return t[0][1];
-      for(let i=1;i<t.length;i++){ if(zz<=t[i][0]){ const a=t[i-1], b=t[i];
-        return a[1]+(b[1]-a[1])*(zz-a[0])/(b[0]-a[0]); } }
-      return t[t.length-1][1];
-    }
-    const _planeIconSizeExpr=()=>['interpolate',['linear'],['zoom']].concat(_PLANE_SIZE.reduce((a,p)=>a.concat(p),[]));
-    /* ══ (#R191) THE ORIGINAL MARK'S WHITE STROKE, IN THE LIFTED RENDERING TOO ═════════════════════
-       「元に戻せと言っているのに、色を勝手に変えるな。」 #R190 gave the lifted body the original
-       SILHOUETTE and stopped there, so the two renderings still drew different marks — measured over
-       866 aircraft at z10.5: the flat glyph carries 0.037 white-outline pixels per body pixel and the
-       lifted body 0.012. The original mark is not a bare blue shape: `ensurePlaneIcons` fills it and
-       then strokes it with `PLANE_STROKE` px of white on a 44-unit canvas whose half-length is 19,
-       i.e. a stroke that straddles the path by half that either side. That stroke is half the mark's
-       identity — and (#R246) it is now the WIDTH the reader asked to be thicker, so it is a constant
-       both renderings read rather than a number written twice.
-       An extrusion has no stroke, so it is drawn as its own polygon (see refreshPlanes3D:
-       `part:'rim'`) — (#R192) a RING, outer boundary _PLANE_RIM and inner boundary _PLANE_CORE, which
-       is exactly the annulus `ctx.stroke()` paints and shares no surface with the body.
-       ⚠ MITRED, NOT SCALED. #R185's rim was the whole plan-form grown about its centre, which puts
-       more outset at the nose and the wingtips than beside the fuselage — a scaled copy, not a
-       stroke. This offsets each vertex along the mitre of its two edge normals, so the band is
-       `_PLANE_STROKE` units wide everywhere, exactly as the canvas stroke is. The mitre is limited at
-       3.25× that so the 2.2-unit-wide fuselage notches cannot spike. */
-    /* ══ ⚠ (#R246) THE TWO AIRCRAFT COLOURS AND THE OUTLINE WIDTH, EACH WRITTEN ONCE ════════════
-       「Live aircraft trafficで航空機の色は以下に。民間機：シアン #00D9FF 軍用機：鮮赤 #FF3040
-         両方とも：より太いアウトライン」
-       All three are read by the flat glyph (`ensurePlaneIcons`) AND by the lifted 3-D body below, so
-       the 2-D mark and the 3-D one cannot disagree — they did in #R173, which is what `_feHex` and
-       the `part:'rim'` ring exist to keep true. ⚠ THIS IS WHY THEY ARE DECLARED HERE, ABOVE
-       `_PLANE_RIM`: the ring's half-width is derived from the stroke rather than typed again, so
-       thickening the outline thickens the lifted mark's white band by exactly the same amount.
-       ⚠ The military red is deliberately not the app's --info-mil #ff3b30 any more: beside cyan the
-       warmer, more saturated #FF3040 is what tells the two apart at a glance. */
-    const PLANE_CIV='#00D9FF';                                /* civil — cyan */
-    const PLANE_MIL='#FF3040';                                /* military — vivid red */
-    const PLANE_STROKE=2.6;                                   /* the white outline, in the glyph's 44-unit space */
-    const _PLANE_STROKE=PLANE_STROKE/2;                       /* half of ensurePlaneIcons' stroke */
-    function _outsetRing(pts,w){
-      const n=pts.length, area=(()=>{ let a=0; for(let i=0,j=n-1;i<n;j=i++) a+=(pts[j][0]*pts[i][1]-pts[i][0]*pts[j][1]); return a; })();
-      const sgn=area>0?1:-1;                                  /* so the offset always goes OUTWARD */
-      const en=[];                                            /* one outward unit normal per edge */
-      for(let i=0;i<n;i++){ const a=pts[i], b=pts[(i+1)%n];
-        const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1;
-        en.push([sgn*dy/L, -sgn*dx/L]); }
-      const out=[];
-      for(let i=0;i<n;i++){ const p=en[(i-1+n)%n], q=en[i];
-        const mx=p[0]+q[0], my=p[1]+q[1], d=1+(p[0]*q[0]+p[1]*q[1]);
-        const k=(d>0.05)?(w/d):(w/0.05);
-        const ox=mx*k, oy=my*k, m=Math.hypot(ox,oy), lim=Math.abs(w)*3.25;
-        const s=(m>lim&&m>0)?(lim/m):1;
-        out.push([pts[i][0]+ox*s, pts[i][1]+oy*s]); }
-      return out;
-    }
-    /* `ctx.fill()` then `ctx.stroke()` puts HALF the line inside the path and half outside, so the
-       glyph's fill ends `_PLANE_STROKE` units short of the outline and its white ring is `PLANE_STROKE`
-       units wide. The lifted mark is built the same way round: the body is the outline INSET by
-       `_PLANE_STROKE`, the stroke is it OUTSET by the same, and the mark's overall size is unchanged
-       (the ring reaches exactly where the canvas one does — which is why #R246's thicker outline
-       widens the band inward and outward equally in both renderings, from one number). */
-    const _PLANE_RIM=_outsetRing(_PLANE_OUTLINE,_PLANE_STROKE);
-    const _PLANE_CORE=_outsetRing(_PLANE_OUTLINE,-_PLANE_STROKE);
-    /* ══ (#R191) A `fill-extrusion` NEVER RENDERS THE COLOUR IT IS GIVEN ═══════════════════════════
-       MapLibre lights every extrusion in the vertex shader — read it in fill_extrusion.vertex.glsl:
-
-           color += vec4(0.03);                              // a fixed ambient, on every channel
-           directional = clamp(dot(normal/16384.0, u_lightpos), 0, 1);
-           directional = mix(1-I, max(1-luminance+I, 1), directional);
-           v_color.rgb = clamp(color.rgb * directional * u_lightcolor, …, 1.0);
-
-       so the mark's declared `#1e90ff` reached the screen as rgb(35,141,245) while the flat glyph —
-       an icon, which is not lit — reached it as rgb(30,144,255). That is the reported colour change,
-       and it is not something the aircraft layer chose.
-
-       Two exits were measured and rejected. There is no per-layer escape in 5.24: the paint
-       properties are opacity/color/pattern/translate/height/base/vertical-gradient — no
-       emissive-strength. And `light.intensity = 0` DOES make every extrusion render its exact colour
-       in every projection (measured: rgb(38,152,255) at z8 globe, z13 Mercator and at 62° of pitch,
-       all identical) — but the light is a STYLE property, and with it flat the 3-D buildings lose
-       their form completely: walls and roofs become one tone (screenshotted over Midtown).
-
-       What is left is to ask for the colour that comes out right, which needs `directional`. It is
-       not a free variable: measured with a white body, it is 0.933 under the globe projection —
-       stable across z4→z10, off-centre views, 55° of pitch and 90° of bearing — and 1.0 under
-       Mercator, which the app switches to at z12. So the compensation is a two-stop zoom ramp
-       matching the renderer's own transition band, and it is exact except where a channel is already
-       at the ceiling: blue 255 needs 1.075 of a channel under the globe, so it stays at 245 there.
-       Measured result — globe rgb(30,144,245), Mercator rgb(30,144,255) against the glyph's
-       rgb(30,144,255): two channels exact instead of none, and the third as close as the renderer
-       can be asked to go. tests/hazard-other-aircraft-layer-checks.test.mjs (#R191) pins the constants against live pixels. */
-    const _FE_AMBIENT=0.03;                                   /* the shader's fixed ambient term */
-    const _FE_DIR_GLOBE=0.933, _FE_DIR_MERC=1.0;              /* measured roof `directional`, per projection */
-    const _FE_Z0=11.5, _FE_Z1=13;                             /* the globe→Mercator transition band */
-    function _feHex(hex,dir){
-      const n=parseInt(hex.slice(1),16), ch=[(n>>16)&255,(n>>8)&255,n&255];
-      return '#'+ch.map(v=>{ const want=v/255;
-        const need=Math.max(0,Math.min(1,want/dir-_FE_AMBIENT));
-        return Math.round(need*255).toString(16).padStart(2,'0'); }).join('');
-    }
-    /* the two-stop zoom ramp above, built from a factory so every plane layer states its colours once.
-       ⚠ The zoom expression has to be the OUTERMOST one — MapLibre rejects `['zoom']` nested inside a
-       data expression — which is why the factory is called twice rather than wrapped once. */
-    const _feRamp=(mk)=>['interpolate',['linear'],['zoom'],_FE_Z0,mk(_FE_DIR_GLOBE),_FE_Z1,mk(_FE_DIR_MERC)];
-    /* Turn a list of aircraft-frame offsets into a lng/lat ring. `pts` are in the SCREEN convention the
-       2-D glyph uses (+y = aft), in units where the half-length is 19; `halfM` is that half-length in
-       real ground metres. Shared by the whole-aircraft silhouette and by every 3-D part below. */
-    function planeRingPts(lng,lat,hdg,halfM,pts){
-      const r=Math.PI/180, s=halfM/19, th=(+hdg||0)*r, cs=Math.cos(th), sn=Math.sin(th);
-      const mLat=110574, mLng=(111320*Math.cos(lat*r))||1, out=[];
-      for(const p of pts){
-        /* the outline is drawn nose-up in screen space (+y = south); rotate it into a compass track */
-        const ex=p[0]*s, ey=-p[1]*s;                          /* east, north offsets in metres, track 0 */
-        const e=ex*cs+ey*sn, n=-ex*sn+ey*cs;
-        out.push([lng+e/mLng, lat+n/mLat]);
-      }
-      out.push(out[0]); return out; }
-    /* (#R183) 「立体的に見たときの感じもリアルに。」
-       #R172 gave the aircraft their real ALTITUDE, which was the important half. What stood there was
-       one flat plan-view polygon given a uniform thickness — a cookie-cutter plate. #R183 split that
-       into four parts at four heights and #R185 grew it to eight with a white rim and a dark halo, so
-       that a tilted camera would see structure.
-       (#R190) ALL OF THAT IS WITHDRAWN, by the same verdict #R187 delivered on the 2-D glyph:
-       「Live aircraft trafficの飛行機のマークはat real altitude中も昔のものに戻して。」 The lifted body
-       is one polygon of `_PLANE_OUTLINE` again — the original silhouette, the original 13-px size, a
-       uniform thickness and the hairline post. The parts, the rim, the halo, their level table and the
-       aircraft-count budget that switched between the detailed and plain versions are gone with the
-       plan-form they were grown from. `fill-extrusion` is still the only primitive with a real
-       altitude in MapLibre 5.24 (#R172 established that `symbol-z-offset` does not exist in this
-       build), which is why the mark is an extrusion at all rather than the symbol layer's own glyph. */
-    function squareRing(lng,lat,halfM){ const r=Math.PI/180, mLat=110574, mLng=(111320*Math.cos(lat*r))||1;
-      const dx=halfM/mLng, dy=halfM/mLat;
-      return [[lng-dx,lat-dy],[lng+dx,lat-dy],[lng+dx,lat+dy],[lng-dx,lat+dy],[lng-dx,lat-dy]]; }
-    /* (#R186) The 3-D body is 3-10 polygons PER AIRCRAFT, and #R186 raised the feed cap from 1,800 to
-       20,000 — so the quantity that used to be bounded by the feed now has to be bounded here. Two
-       steps, in this order, because only the first one is free:
-         1. CULL TO WHAT IS ON SCREEN (with a margin, so a small pan does not pop bodies in). An
-            aircraft outside the viewport contributes nothing to the picture; dropping it is not a
-            reduction in quality, it is not drawing the invisible.
-         2. If MORE than the cap are still on screen, keep the ones nearest the centre and say in the
-            console how many were left out — a silent truncation would read as "that is all there is"
-            (#R185). The flat glyph layer has no such limit: it is one symbol per aircraft and
-            MapLibre draws tens of thousands of those without noticing. */
-    const PLANES_3D_MAX=4000;
-    let _planes3DCulled=0;
-    function _cullFor3D(list){
-      _planes3DCulled=0;
-      /* Under the budget nothing is culled at all, so the drawn set does not depend on the viewport
-         and a pan cannot change which aircraft have bodies. Culling only engages where it has to. */
-      if(list.length<=PLANES_3D_MAX) return list;
-      let b=null; try{ b=GE().camera.getBounds(); }catch(_){}
-      let inView=list;
-      if(b){ try{
-        const w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
-        const padY=(n-s)*0.25, lonSpan=((e-w)+360)%360||360, padX=lonSpan*0.25;
-        const s2=s-padY, n2=n+padY;
-        const inLon=(lng)=>{ const d=((lng-w+540)%360)-180; return d>=-padX&&d<=lonSpan+padX; };
-        inView=list.filter(d=>d.lat!=null&&d.lat>=s2&&d.lat<=n2&&d.lng!=null&&inLon(d.lng));
-      }catch(_){ inView=list; } }
-      if(inView.length<=PLANES_3D_MAX){ _planes3DCulled=list.length-inView.length; return inView; }
-      let c={lat:0,lng:0}; try{ c=GE().camera.getCenter(); }catch(_){}
-      const d2=(d)=>{ const dy=d.lat-c.lat, dx=(((d.lng-c.lng)+540)%360-180)*Math.cos(c.lat*Math.PI/180); return dy*dy+dx*dx; };
-      const near=inView.slice().sort((a,b2)=>d2(a)-d2(b2)).slice(0,PLANES_3D_MAX);
-      _planes3DCulled=list.length-near.length;
-      console.warn('live aircraft 3-D: '+(inView.length-near.length)+' aircraft on screen are beyond the '+PLANES_3D_MAX+'-body budget and have no 3-D body this frame');
-      return near;
-    }
-    function refreshPlanes3D(all){
-      if(!GE().hasRenderer()||!GE().layers.hasSource(PLANE3D_SRC)) return;
-      const list=_cullFor3D(all||[]);
-      _gndFresh();
-      const mpp=_mppCentre();
-      /* ══ (#R192) THE SAME MARK MEANS THE SAME NUMBER OF PIXELS ═════════════════════════════════════
-         「Live aircraft trafficの飛行機のマークはat real altitude中もそうでないときと同じデザインに。」
-         — reported for the fourth round. #R187 restored the glyph, #R190 gave the lifted body the same
-         silhouette, #R191 matched the colour and put the white stroke back. What none of them checked
-         is HOW BIG the two marks are, and they were never the same size:
-
-             half-length on screen      z5      z9      z12     z15     z17
-             flat glyph (icon-size)   11.0px  14.8px  14.8px  14.8px  14.8px
-             lifted (#R190 sizes)     13.0px  13.0px  13.0px  40.0px  160px
-
-         Measured on a live aircraft over Frankfurt at z15: the lifted mark's bounding box is 41 × 82
-         px against the glyph's 19 × 26. The cause is the metre FLOOR — `max(60, 13·mpp)` reads as a
-         minimum size but 13·mpp IS 13 px at every zoom, so the floor only ever binds deep in, where it
-         pins the mark to a 120 m aeroplane and it grows without limit. That is a different mark.
-
-         So the size is taken from the glyph's OWN ramp — the interpolation in the symbol layer below,
-         evaluated at the same zoom — and the floor is gone with it. The two renderings are now the
-         same picture at every zoom; only the parallax of the altitude separates them, which is the
-         whole point of the mode.
-
-         AND IT IS NOT A BLOCK. #R190 gave the extrusion 2.2 px of thickness so it would "not be a
-         zero-height sheet"; that thickness is what a tilted camera sees as lit side walls, i.e. a
-         solid object where the flat rendering has a flat mark. It is now sub-pixel (0.35 px), which is
-         enough to separate the body from its own white stroke in the depth buffer and too little to
-         draw a wall at any pitch. */
-      const iconHalfPx=19*_planeIconSize(GE().camera.getZoom());
-      const half=iconHalfPx*mpp;                       /* exactly the glyph's half-length, in ground metres */
-      const post=Math.max(6, 1.1*mpp);                 /* the hairline down to the ground */
-      const thick=0.35*mpp;                            /* sub-pixel: enough for the depth test, never a wall */
-      const feats=[];
-      for(const d of list){
-        if(d.lng==null||d.lat==null) continue;
-        const off=_groundAt(d.lng,d.lat);              /* (#R174) the ground under THIS aircraft */
-        const alt=d.onGround?0:Math.max(0,(d.geoAlt!=null?d.geoAlt:(d.baroAlt!=null?d.baroAlt:0))-off);
-        /* (#R185) `acAlt` is THE AIRCRAFT'S OWN ALTITUDE and is never overwritten by a part. `alt`
-           is a part's BASE, and the parts no longer start at the aircraft's altitude (the outline
-           plates are under it and the fuselage sits on them), so every reader that means "how high
-           is this aeroplane" — the diagnostics, `lifted`, `maxAlt`, and the three tests that pin
-           them — has to read this instead. Deriving it from a part's base is what #R183's note
-           warns about one level up. */
-        const props={ type:d.type, alt, acAlt:alt, top:alt+thick, sel:(d.icao24&&d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
-          acType:d.acType||'', desc:d.desc||'', baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
-          vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
-          squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0), category:(d.category!=null?d.category:null) };
-        /* (#R190) ONE polygon per aircraft — the original silhouette, standing at its own altitude.
-           `part:'body'` is kept on it so every reader that resolves a rendered feature back to an
-           aircraft (the pick fallback, the stats, the tests) asks the same question it always did. */
-        /* (#R191) …preceded by the original glyph's white stroke, which is the other half of the mark
-           (see _PLANE_RIM). It carries the same properties, so a click that lands on the stroke still
-           resolves to the aircraft.
-           (#R192) …and it is a RING — outer boundary outset 0.8, inner boundary the body's own outline
-           — rather than a larger plate drawn 8 % lower. `ctx.stroke()` paints an annulus and nothing
-           underneath; two overlapping extrusions at 0.35 px of separation are two coplanar surfaces
-           asking a depth buffer to break a tie it cannot see. Disjoint geometry has no tie to break. */
-        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[
-            planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_RIM),
-            planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_CORE).slice().reverse()]},
-          properties:Object.assign({},props,{ alt, top:alt+thick, part:'rim' }) });
-        feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[planeRingPts(d.lng,d.lat,d.heading,half,_PLANE_CORE)]},
-          properties:Object.assign({},props,{ alt, top:alt+thick, part:'body' }) });
-        /* (#R183) The post carries the aircraft's IDENTITY, not just its colour. The click handler's
-           fallback resolves a rendered feature back to an aircraft through `properties.icao24`
-           (see _planesClear), and the post had only {type, alt, top, post} — so a click that landed
-           on the hairline under an aeroplane found a feature, failed to match it to anything in
-           planesData, and selected nothing. The post IS the aircraft's footprint; saying so is what
-           makes "click the post to select it" true by construction rather than by luck. */
-        if(!d.onGround&&alt>0) feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[squareRing(d.lng,d.lat,post)]},
-          properties:Object.assign({},props,{ alt:0, top:alt, post:1 }) });
-      }
-      try{ GE().layers.setSourceData(PLANE3D_SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
-      /* what was actually handed over, kept here rather than read back out of the renderer: MapLibre 5 does
-         not expose a GeoJSON source's data, and a reader that guessed at its internals reported "0 features"
-         while the screen was full of aircraft. */
-      /* (#R183) `lifted` used to be "features that are off the ground", which was the same thing as
-         "aircraft in the air" only while one aircraft was exactly one feature — it stopped being that
-         the moment the body became several, and counting features then reported a multiple of the
-         real number (#R181: suspect what a counter counts). Aircraft are counted by the ONE solid
-         that is the aeroplane, and the raw feature total is kept under its own name.
-         (#R190) With the original silhouette back there is exactly one such feature per aircraft
-         again — `part:'body'` — but the counters keep asking for it by name rather than assuming it,
-         because that assumption is precisely what broke here twice. */
-      const bodies=feats.filter(f=>!f.properties.post&&f.properties.part==='body');
-      /* maxAlt is THE AIRCRAFT'S ALTITUDE and is read off `acAlt`, never off a part's extrusion base:
-         #R183/#R185's parts were deliberately offset ABOVE the aircraft, so a max over the features'
-         `alt` returned the base of the tallest TAIL FIN — at z9 that is +0.19 × half, about 485 m, so
-         a jet at 36,000 ft reported 11,458 m instead of 10,973 m. Caught by tests/engine-volume3d-checks.test.mjs (#R172), r173 and
-         r174, all three of which are really the same assertion. */
-      _planes3DStats={ features:feats.length, aircraft:bodies.length,
-        lifted:bodies.filter(f=>(+f.properties.acAlt||0)>0).length,
-        maxAlt:Math.round(bodies.reduce((m2,f)=>Math.max(m2,+f.properties.acAlt||0),0)),
-        /* (#R192) the mark's size AS DRAWN, in screen pixels, beside the size the flat glyph draws at
-           the same zoom. Two numbers that must be the same number — this is the contract four rounds
-           of 「同じデザインに」 have been about, and it is the one thing nobody had measured. */
-        halfPx:+(half/mpp).toFixed(2), glyphHalfPx:+iconHalfPx.toFixed(2), thickPx:+(thick/mpp).toFixed(2),
-        offsetM:Math.round(_groundOffset()) };   /* the centre reading, for the readout only — the drawing uses one per aircraft */
-    }
     function planes3DOn(){ return planes3D; }
     function setPlanes3D(v){ planes3D=!!v; try{ localStorage.setItem(PLANES3D_KEY,planes3D?'1':'0'); }catch(_){}
       /* (#R341) SAME SETTING, SAME KEY, THIRD RENDERING. The saved preference is untouched, so a
          reader who turned real altitude off keeps it off across the change of engine. */
       try{ if(_av2) _av2.setLift(planes3D); }catch(_){}
-      try{ const on=GE().layers.get('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible';
-        const on3=GE().layers.get(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible';
-        if(on||on3) applyPlanesMode(true); }catch(_){}
       return planes3D; }
-    /* One representation at a time — the flat glyph and the lifted body are the same aircraft. */
-    function applyPlanesMode(visible){
-      try{ if(GE().layers.has('lyr-planes')) GE().layers.setLayout('lyr-planes','visibility',(visible&&!planes3D)?'visible':'none');
-        if(GE().layers.has(PLANE3D_LYR)) GE().layers.setLayout(PLANE3D_LYR,'visibility',(visible&&planes3D)?'visible':'none');
-        if(GE().layers.has(PLANE3D_POST)) GE().layers.setLayout(PLANE3D_POST,'visibility',(visible&&planes3D)?'visible':'none');
-      }catch(_){}
-      if(!visible) selectPlane(null);            /* (#R173) the layer went off — the track goes with it */
-      else drawTrack(selectedPlane);             /* …and it follows the flat/3-D switch */
-      if(visible&&planes3D) refreshTrafficLayer('planes');
-    }
     function refreshTrafficLayer(id){
       /* (#R341) Both filter controls (the Layers panel select and the legend select) call this, so
          hooking it here means neither call site has to learn about the cloud - and the two cannot
          drift apart, which is how they got out of step before. */
-      if(id==='planes'&&AVIATION_V2){
+      if(id==='planes'){
         try{ if(_av2){ const f=trafficFilters.planes;
           _av2.setFilter({ kind:(f==='military'?'military':(f==='civilian'?'civil':'all')) }); } }catch(_){}
         return;
@@ -5453,16 +4594,10 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!GE().hasRenderer()) return;
       const filt=trafficFilters[id];
       if(!GE().layers.hasSource('src-'+id)) return;
-      const data=id==='planes'?planesData:shipsData;
+      const data=shipsData;
       const filtered=filt==='all'?data:data.filter(d=>d.type===filt);
-      if(id==='planes') refreshPlanes3D(filtered);   /* (#R172) the lifted bodies ride the same filter */
       const features=filtered.map(d=>{
-        const props = id==='planes'
-          ? { type:d.type, sel:(d.icao24&&d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'', acType:d.acType||'', desc:d.desc||'',
-              baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
-              vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
-              squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||d.tpos||0), category:(d.category!=null?d.category:null) }
-          : { type:d.type, name:d.name||'', callsign:d.callsign||'', mmsi:(d.mmsi!=null?d.mmsi:null),
+        const props = { type:d.type, name:d.name||'', callsign:d.callsign||'', mmsi:(d.mmsi!=null?d.mmsi:null),
               vel:(d.speed!=null?d.speed:null), cog:(d.cog!=null?d.cog:null), heading:(d.heading!=null?d.heading:0),
               navStatus:(d.navStatus!=null?d.navStatus:null), shipType:(d.shipType!=null?d.shipType:null),
               dest:d.dest||'', draught:(d.draught!=null?d.draught:null), imo:(d.imo!=null?d.imo:null), t:(d.t||0) };
@@ -5470,56 +4605,6 @@ window.IntMapModules.dataLayers=function(HOST){
       });
       GE().layers.setSourceData('src-'+id,{type:'FeatureCollection',features});
     }
-    /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can color +
-       rotate them by heading. Pointing "up" = heading 0; MapLibre icon-rotate is clockwise-from-north. */
-    /* ══ (#R187) BACK TO THE FIRST DESIGN ═══════════════════════════════════════════════════════════
-       「航空機のマークは最初のデザインに戻して。」
-
-       #R183 answered 「飛行機アイコンはもっと目立つものに」 by replacing this glyph — a real airliner
-       plan-form, a white rim, a drop shadow, a larger size ramp — and #R185 carried the same treatment
-       into the lifted 3-D body. The verdict on all of it is in: the FIRST design is the wanted one.
-
-       `_PLANE_ORIG` (declared far above, next to _PLANE_OUTLINE — see the TDZ warning there) is the
-       outline this app shipped with, taken verbatim from the original implementation (identical from
-       the first commit through #R164, replaced in #R183). So are the canvas size (44), the colours,
-       the 1.6-px white stroke, and the size ramp restored at the layer. There is no shadow, no rim,
-       no halo: a flat fill and a thin white line, which is what was asked for.
-       (#R190) …and the LIFTED body draws the same outline now, so the mark no longer depends on the
-       toggle: 「at real altitude中も昔のもの」. `planes3D` is default ON again for that reason —
-       #R187's OFF existed only because the two renderings disagreed.
-
-       ⚠ The ONE thing not reverted is the raster resolution. #R183 found `addImage` being handed a
-       44-px bitmap with no `pixelRatio`, so MapLibre treated 44 canvas pixels as 44 CSS pixels and the
-       GPU upscaled it on every HiDPI screen. That is a defect, not a design: drawing the same 44-unit
-       artwork at devicePixelRatio and declaring it produces the SAME on-screen size, just not blurred.
-       Reverting it would restore a bug rather than an appearance. */
-    /* ══ ⚠ (#R246) THE TWO AIRCRAFT COLOURS AND THE OUTLINE, EACH WRITTEN ONCE ═══════════════════
-       「Live aircraft trafficで航空機の色は以下に。民間機：シアン #00D9FF 軍用機：鮮赤 #FF3040
-         両方とも：より太いアウトライン」
-       Both constants are read by the flat glyph AND by the two fill-extrusion cases below, so the
-       2-D mark and the 3-D body cannot disagree (they did in #R173, which is why _feHex exists).
-       ⚠ The military red is deliberately NOT the app's --info-mil #ff3b30 any more: beside cyan the
-       warmer, more saturated #FF3040 is what separates the two at a glance, which is the point of
-       having two colours at all. ⚠ And the outline is a CONSTANT rather than a number typed into
-       the one place that strokes: 1.6 → 2.6 units of the 44-unit artwork, drawn at devicePixelRatio
-       like the rest of the glyph (see the note above), so it thickens on every screen equally. */
-    function ensurePlaneIcons(){
-      if(!GE().hasRenderer()) return;
-      const dpr=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1)));
-      const make=(color)=>{
-        const s=44, cv=document.createElement('canvas'); cv.width=s*dpr; cv.height=s*dpr;
-        const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.translate(s/2,s/2);
-        ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=PLANE_STROKE; ctx.lineJoin='round';
-        ctx.beginPath(); _PLANE_ORIG.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-        return { data:ctx.getImageData(0,0,s*dpr,s*dpr), pixelRatio:dpr };
-      };
-      const add=(id,color)=>{ try{ if(!GE().scene.hasImage(id)){ const m=make(color); GE().scene.addImage(id,m.data,{pixelRatio:m.pixelRatio}); } }catch(_){} };
-      add('plane-civ',PLANE_CIV);
-      add('plane-mil',PLANE_MIL);
-      add('plane-sel','#ffd23f');   /* (#R173) the clicked aircraft */
-    }
-    function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString(window.IntMapLang.locale(HOST.lang)); }catch(_){ return ''; } }
     function agoStr(sec){ if(!sec) return ''; const s=Math.max(0,Math.round(Date.now()/1000-sec));
       const U=HOST.lang==='jp'?['秒前','分前','時間前']:HOST.lang==='de'?['s her','min her','h her']:HOST.lang==='ru'?['с назад','мин назад','ч назад']:HOST.lang==='es'?['s atrás','min atrás','h atrás']:['s ago','m ago','h ago'];
       const sep=window.IntMapLang.t(HOST.lang,' ','');
@@ -5545,11 +4630,11 @@ window.IntMapModules.dataLayers=function(HOST){
           typeChip+
           `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(Math.floor((p.t||0)/1000))}<br>${aisKey?'aisstream.io · AIS':'aisstream.io + Digitraffic/Fintraffic (CC BY 4.0) · AIS'}</div>`;
       }
-      /* planes — every available ADS-B field (airplanes.live) */
+      /* planes — every ADS-B field the feed carries (supabase/functions/aviation-feed) */
       const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
       const velKmh=p.vel!=null?` · ${Math.round(p.vel*3.6)} km/h · ${Math.round(p.vel*1.944)} kn`:'';
       const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(window.IntMapLang.t(HOST.lang,'level','水平飛行','Reiseflug','горизонтальный полёт','nivelado')):'');
-      /* ⚠ every ADS-B string below is the feed's (airplanes.live / OpenSky relay), exactly like the AIS
+      /* ⚠ every ADS-B string below is the feed's (the aviation-feed relay), exactly like the AIS
          strings of the ship half above — escaped the same way, not trusted because it is usually short */
       const acName=escapeHtml(p.desc||p.acType||'');
       return `<div style="font-weight:700;font-size:13px;">✈️ ${escapeHtml(p.callsign||p.reg||p.icao24||'—')}</div>`+
@@ -5576,220 +4661,99 @@ window.IntMapModules.dataLayers=function(HOST){
             ? (window.IntMapLang.t(HOST.lang,'Click to hide','クリックで軌跡を消す','Klicken zum Ausblenden','Нажмите, чтобы скрыть','Clic para ocultar'))
             : (window.IntMapLang.t(HOST.lang,'Click to show','クリックで軌跡を表示','Klicken für die Spur','Нажмите, чтобы показать','Clic para mostrar'));
           return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${lbl} — ${tip}</div>`:''; })()+
-        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(window.IntMapLang.t(HOST.lang,'Simulated placeholder (live feed unavailable)','※デモ用合成データ（実データ取得不可）','Simulierte Platzhalterdaten (kein Live-Feed)','Демонстрационные данные (живой поток недоступен)','Datos simulados de muestra (sin flujo en vivo)')):(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>${_planeSourceLine()}</div>`;
+        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)}<br>${_planeSourceLine()}</div>`;
     }
     function setupTrafficLayer(id){
+      if(id==='planes'){ setupPlanes(); return; }
       if(GE().layers.hasSource('src-'+id)) return;
       GE().layers.addSource('src-'+id,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(id==='planes'){
-        ensurePlaneIcons();
-        /* Aircraft = a real plane glyph rotated to its track (not a dot). */
-        GE().layers.add({id:'lyr-planes',type:'symbol',source:'src-planes',layout:{
-          visibility:'none',
-          'icon-image':['case',['==',['get','sel'],1],'plane-sel',['match',['get','type'],'military','plane-mil','plane-civ']],
-          'icon-size':_planeIconSizeExpr(),   /* (#R187) the original ramp — (#R192) stated once, in _PLANE_SIZE */
-          'icon-rotate':['coalesce',['get','heading'],0],
-          'icon-rotation-alignment':'map',
-          'icon-allow-overlap':true,
-          'icon-ignore-placement':true
-        },paint:{'icon-opacity':opacities.planes}},beforeId);
-        /* (#R172) the same aircraft, standing at their reported altitude. Two layers off one source: the
-           post first so the body always draws over it. */
-        if(!GE().layers.hasSource(PLANE3D_SRC)) GE().layers.addSource(PLANE3D_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        if(!GE().layers.has(PLANE3D_POST)) GE().layers.add({id:PLANE3D_POST,type:'fill-extrusion',source:PLANE3D_SRC,
-          filter:['==',['get','post'],1], layout:{visibility:'none'},
-          paint:{ 'fill-extrusion-color':_feRamp(d=>['match',['get','type'],'military',_feHex(PLANE_MIL,d),_feHex(PLANE_CIV,d)]),
-            'fill-extrusion-opacity':Math.min(0.5,opacities.planes*0.5),
-            'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
-        if(!GE().layers.has(PLANE3D_LYR)) GE().layers.add({id:PLANE3D_LYR,type:'fill-extrusion',source:PLANE3D_SRC,
-          filter:['!=',['get','post'],1], layout:{visibility:'none'},
-          paint:{ /* (#R173) the selected aircraft is the one whose track is drawn — say so in its colour.
-                     (#R190) the rim/halo cases went with the plates — the mark is the original one.
-                     (#R191) …and the original mark's own white stroke came back with it (see
-                     _PLANE_RIM), so `part:'rim'` is a case again — but it is the 0.8-unit outset of
-                     ensurePlaneIcons' stroke, not #R185's whole-plan-form plate, and there is still
-                     no halo. Every colour goes through _feHex so the extrusion renders the glyph's
-                     colour rather than the shader's idea of it. */
-            'fill-extrusion-color':_feRamp(d=>['case',
-              ['==',['get','part'],'rim'],_feHex('#ffffff',d),
-              ['==',['get','sel'],1],_feHex('#ffd23f',d),['match',['get','type'],'military',_feHex(PLANE_MIL,d),_feHex(PLANE_CIV,d)]]),
-            'fill-extrusion-opacity':opacities.planes,
-            'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
-        /* (#R173) the clicked aircraft's observed track — a flat line on the ground, and the same fixes as
-           altitude ribbons for the 3-D representation. One source feeds both; only one is ever visible. */
-        if(!GE().layers.hasSource(TRACK_SRC)) GE().layers.addSource(TRACK_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        if(!GE().layers.has(TRACK_LINE)) GE().layers.add({id:TRACK_LINE,type:'line',source:TRACK_SRC,
-          filter:['==',['get','kind'],'line'], layout:{visibility:'none','line-cap':'round','line-join':'round'},
-          paint:{'line-color':'#ffd23f','line-width':['interpolate',['linear'],['zoom'],4,1.4,10,2.6],'line-opacity':0.95}},beforeId);
-        if(!GE().layers.has(TRACK_3D)) GE().layers.add({id:TRACK_3D,type:'fill-extrusion',source:TRACK_SRC,
-          filter:['==',['get','kind'],'leg'], layout:{visibility:'none'},
-          paint:{'fill-extrusion-color':'#ffd23f','fill-extrusion-opacity':0.75,
-            'fill-extrusion-base':['get','alt'],'fill-extrusion-height':['get','top']}},beforeId);
-        /* the glyph's on-screen size is derived from the zoom, so rebuild the geometry when it changes */
-        if(!_planes3DZoom){ _planes3DZoom=()=>{ if(!planes3D) return;
-          if(!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible')) return;
-          /* (#R174) the TRACK's ribbons are sized from the scale too (see drawTrack), and only the glyphs
-             were being rebuilt — a track drawn at z8 kept its kilometre-wide legs all the way in. */
-          clearTimeout(_planes3DZoomT); _planes3DZoomT=setTimeout(()=>{ try{ refreshTrafficLayer('planes'); }catch(_){}
-            try{ if(selectedPlane) drawTrack(selectedPlane); }catch(_){} },160); };
-          GE().events.on('zoomend',_planes3DZoom); GE().events.on('terrain',_planes3DZoom); }
-      } else {
-        ensureShipIcons();
-        /* Ships = a ship glyph rotated to heading/COG (real AIS). */
-        GE().layers.add({id:'lyr-ships',type:'symbol',source:'src-ships',layout:{
-          visibility:'none',
-          'icon-image':['match',['get','type'],'military','ship-mil','ship-civ'],
-          'icon-size':['interpolate',['linear'],['zoom'],4,0.5,8,0.72,12,0.95],
-          'icon-rotate':['coalesce',['get','heading'],0],
-          'icon-rotation-alignment':'map',
-          'icon-allow-overlap':true,'icon-ignore-placement':true
-        },paint:{'icon-opacity':opacities.ships}},beforeId);
-      }
+      ensureShipIcons();
+      /* Ships = a ship glyph rotated to heading/COG (real AIS). */
+      GE().layers.add({id:'lyr-ships',type:'symbol',source:'src-ships',layout:{
+        visibility:'none',
+        'icon-image':['match',['get','type'],'military','ship-mil','ship-civ'],
+        'icon-size':['interpolate',['linear'],['zoom'],4,0.5,8,0.72,12,0.95],
+        'icon-rotate':['coalesce',['get','heading'],0],
+        'icon-rotation-alignment':'map',
+        'icon-allow-overlap':true,'icon-ignore-placement':true
+      },paint:{'icon-opacity':opacities.ships}},beforeId);
       /* Hover tooltip via shared map-tooltip — shows every available field + data freshness. */
       GE().events.onLayer('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); window.showMapTooltip(el); window.setMapTooltipHTML(el,trafficTooltipHTML(id,f.properties)); positionTooltip(GE().coords.project(f.geometry.coordinates)); });
       GE().events.onLayer('mousemove','lyr-'+id,(e)=>{ positionTooltip(e.point); });
       GE().events.onLayer('mouseleave','lyr-'+id,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
-      /* (#R172) the lifted bodies answer the same hover — the aircraft is the same aircraft whichever way
-         it is drawn, so the tooltip is the identical one (it is fed from the same ADS-B properties).
-         (#R173) …and the same CLICK. Both representations, and the post under a lifted aircraft, select it
-         and draw its track; clicking the map anywhere else clears the selection. */
-      if(id==='planes'){
-        [PLANE3D_LYR,PLANE3D_POST].forEach(ly=>{
-          GE().events.onLayer('mouseenter',ly,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer';
-            const f=e.features[0]; const el=ensureMapTooltip(); window.showMapTooltip(el); window.setMapTooltipHTML(el,trafficTooltipHTML('planes',f.properties)); positionTooltip(e.point); });
-          GE().events.onLayer('mousemove',ly,(e)=>{ positionTooltip(e.point); });
-          GE().events.onLayer('mouseleave',ly,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
-        });
-
-        /* The pick above, wired to the pointer: hovering a lifted aircraft shows the same tooltip and
-           clicking it selects it, wherever on screen it is drawn. A click that hits neither the pick nor
-           the footprint clears the selection — asked of the renderer rather than of a flag set by the layer
-           handlers, so it does not depend on which listener MapLibre calls first. */
-        if(!_planesHover){ _planesHover=(e)=>{
-          /* (#R341) On the v2 path the hover has no 3-D precondition: the cloud is ONE rendering
-             that carries both the flat glyph and the lifted body, so an aircraft is hoverable
-             whether or not real altitude is switched on. The v1 guard below is kept exactly as it
-             was for the rollback path. */
-          if(AVIATION_V2){ if(planesLayerOn()) _av2Hover(e); return; }
-          if(!planes3D||!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible')) return;
-          /* one pick per frame at most: a pointer emits far more moves than the screen has frames, and the
-             pick walks every aircraft in the viewport (hundreds over a busy sky). */
-          const _t=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-          if(_t-_pickAt<16) return; _pickAt=_t;
-          const d=pickPlane(e.point);
-          if(d){ GE().render.canvas().style.cursor='pointer'; const el=ensureMapTooltip(); window.showMapTooltip(el);
-            window.setMapTooltipHTML(el,trafficTooltipHTML('planes',{ type:d.type, sel:(d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
-              acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel, heading:d.heading,
-              vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) }));
-            positionTooltip(e.point); _pickHover=true; }
-          else if(_pickHover){ _pickHover=false; GE().render.canvas().style.cursor='';
-            try{ if(GE().coords.queryRenderedFeatures(e.point,{layers:[PLANE3D_LYR,PLANE3D_POST].filter(l=>GE().layers.get(l))}).length) return; }catch(_){}
-            if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); }
-        }; GE().events.on('mousemove',_planesHover); }
-        /* ONE click handler, deliberately. It began as two — a layer-scoped one for the renderer's own
-           footprint hit and a map-level one for the pick — and each of them TOGGLED, so a click that
-           satisfied both selected the aircraft and immediately deselected it. Caught on production with
-           41 real aircraft: the pick found the aeroplane, the click reported nothing selected. One
-           handler, one decision: the pick first (that is where the aeroplane is drawn), then the
-           renderer's footprint (the post and the flat glyph are real things to click at), else clear. */
-        /* (#R174) 「Live air traffic でズームインすると、軌跡が消える」 — REPRODUCED, and it was this handler.
-           Double-click IS how you zoom in on a map, and MapLibre delivers a double-click as two ordinary
-           `click` events before its own `dblclick`. Both of them landed here, found no aircraft under the
-           pointer, and cleared the selection — so the track vanished the instant the zoom began. Measured
-           against a stubbed feed: wheel zoom z11 → z12.9 kept the selection and its 6 legs; one
-           double-click at the same spot left `selected: null, legs: 0`.
-           Two guards, and neither of them touches the zoom gesture:
-             · the SECOND click of a double-click (originalEvent.detail ≥ 2) is ignored outright — it would
-               otherwise also toggle OFF an aircraft that the first click had just selected;
-             · clearing is DEFERRED past MapLibre's double-click window and cancelled by `dblclick`, so a
-               click on empty map still deselects, one frame later than before.
-           Selecting stays instantaneous: a click that actually hits an aeroplane is never deferred. */
-        if(!_planesDbl){ _planesDbl=()=>{ if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; } };
-          GE().events.on('dblclick',_planesDbl); }
-        if(!_planesClear){ _planesClear=(e)=>{
-          try{ if(e&&e.originalEvent&&(e.originalEvent.detail|0)>=2) return; }catch(_){}
-          if(AVIATION_V2){ _av2Click(e); return; }
-          let d=pickPlane(e.point), props=null;
-          if(!d){ try{ const ls=['lyr-planes',PLANE3D_LYR,PLANE3D_POST].filter(l=>GE().layers.get(l));
-              const f=ls.length?GE().coords.queryRenderedFeatures(e.point,{layers:ls}):[];
-              if(f&&f.length){ props=f[0].properties||{}; d=planesData.find(x=>x.icao24===(props.icao24||''))||null; } }catch(_){} }
-          if(d&&d.icao24){
-            try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}   /* (#R210) this tap belongs to the aircraft, not to the city name under it */
-            if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; }
-            selectPlane(d.icao24===selectedPlane?null:d.icao24);
-            /* (#R175) a click now opens the DETAIL CARD — the airframe's own photograph, every ADS-B field
-               the feed carries, and "fly from these conditions". The pinned tooltip stays as the fallback
-               for the case where js/aircraft-detail.js did not load, so the click never becomes a no-op;
-               when the card does open it takes the tooltip's place rather than sitting on top of it. */
-            /* (#R311) THIS CLICK IS THE CARD'S ONLY DOOR, so it is where js/aircraft-detail.js is
-               fetched. The branch below is unchanged, including the fallback: `need()` resolves
-               either way, so a chunk that genuinely fails to arrive still lands on the pinned
-               tooltip rather than turning the click into a no-op. */
-            if(selectedPlane){ window.IntMapLazy.need('aircraftDetail').then(()=>{
-              if(openPlaneCard(d)){ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); }
-              else { const el=ensureMapTooltip(); window.showMapTooltip(el);
-                window.setMapTooltipHTML(el,trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
-                  reg:d.reg||'', acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel,
-                  heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) }));
-                positionTooltip(e.point); } }); }
-            return; }
-          if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null; if(selectedPlane) selectPlane(null); },320);
-        }; GE().events.on('click',_planesClear); }
-      }
+    }
+    /* (remove-synthetic-planes) The aircraft themselves are drawn by js/aviation-live.js's GPU cloud, so
+       what this file adds for the layer is the observed TRACK of the selected aircraft (#R173/#R506) and
+       the pointer: one hover and one click handler that ask the cloud's own pick where the aeroplane is. */
+    function setupPlanes(){
+      /* (#R173) the clicked aircraft's observed track — a flat line on the ground, and the same fixes as
+         altitude ribbons for the lifted rendering. One source feeds both; only one is ever visible. */
+      if(!GE().layers.hasSource(TRACK_SRC)) GE().layers.addSource(TRACK_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(!GE().layers.has(TRACK_LINE)) GE().layers.add({id:TRACK_LINE,type:'line',source:TRACK_SRC,
+        filter:['==',['get','kind'],'line'], layout:{visibility:'none','line-cap':'round','line-join':'round'},
+        paint:{'line-color':'#ffd23f','line-width':['interpolate',['linear'],['zoom'],4,1.4,10,2.6],'line-opacity':0.95}},beforeId);
+      if(!GE().layers.has(TRACK_3D)) GE().layers.add({id:TRACK_3D,type:'fill-extrusion',source:TRACK_SRC,
+        filter:['==',['get','kind'],'leg'], layout:{visibility:'none'},
+        paint:{'fill-extrusion-color':'#ffd23f','fill-extrusion-opacity':0.75,
+          'fill-extrusion-base':['get','alt'],'fill-extrusion-height':['get','top']}},beforeId);
+      /* (#R174) the TRACK's ribbons are sized from the scale (see drawTrack), so a track drawn at z8 would
+         keep its kilometre-wide legs all the way in. (remove-synthetic-planes) This used to ride on the
+         lifted-glyph rebuild of the removed rendering, and bailed out unless THAT layer was visible — so
+         on the GPU cloud it never ran and the ribbons waited for the next published frame. It asks only
+         about the track now. */
+      if(!_trackZoom){ _trackZoom=()=>{ if(!selectedPlane) return;
+          clearTimeout(_trackZoomT); _trackZoomT=setTimeout(()=>{ try{ if(selectedPlane) drawTrack(selectedPlane); }catch(_){} },160); };
+        GE().events.on('zoomend',_trackZoom); GE().events.on('terrain',_trackZoom); }
+      /* (#R341) the cloud is ONE rendering that carries both the flat and the lifted mark, so an aircraft
+         is hoverable whether or not real altitude is switched on. */
+      if(!_planesHover){ _planesHover=(e)=>{ if(planesLayerOn()) _av2Hover(e); }; GE().events.on('mousemove',_planesHover); }
+      /* ONE click handler, deliberately. It began as two — a layer-scoped one for the renderer's own
+         footprint hit and a map-level one for the pick — and each of them TOGGLED, so a click that
+         satisfied both selected the aircraft and immediately deselected it. Caught on production with
+         41 real aircraft: the pick found the aeroplane, the click reported nothing selected. One
+         handler, one decision: the cloud's pick (that is where the aeroplane is drawn), else clear
+         (_av2Click). */
+      /* (#R174) 「Live air traffic でズームインすると、軌跡が消える」 — REPRODUCED, and it was this handler.
+         Double-click IS how you zoom in on a map, and MapLibre delivers a double-click as two ordinary
+         `click` events before its own `dblclick`. Both of them landed here, found no aircraft under the
+         pointer, and cleared the selection — so the track vanished the instant the zoom began. Measured
+         against a stubbed feed: wheel zoom z11 → z12.9 kept the selection and its 6 legs; one
+         double-click at the same spot left `selected: null, legs: 0`.
+         Two guards, and neither of them touches the zoom gesture:
+           · the SECOND click of a double-click (originalEvent.detail ≥ 2) is ignored outright — it would
+             otherwise also toggle OFF an aircraft that the first click had just selected;
+           · clearing is DEFERRED past MapLibre's double-click window and cancelled by `dblclick`, so a
+             click on empty map still deselects, one frame later than before.
+         Selecting stays instantaneous: a click that actually hits an aeroplane is never deferred. */
+      if(!_planesDbl){ _planesDbl=()=>{ if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; } };
+        GE().events.on('dblclick',_planesDbl); }
+      if(!_planesClear){ _planesClear=(e)=>{
+        try{ if(e&&e.originalEvent&&(e.originalEvent.detail|0)>=2) return; }catch(_){}
+        _av2Click(e);
+      }; GE().events.on('click',_planesClear); }
     }
     function startTraffic(id){
       setupTrafficLayer(id);
+      /* (#R341) the GPU cloud is the aircraft layer. Everything else about the layer — legend, filter,
+         opacity, the real-altitude switch, the detail card, the track, the flight simulator — reaches
+         it through the controller. The returned promise is the row's request (toggleLayer `req`), so a
+         platform that cannot start lands on the row as a failure (see _av2Start). */
+      if(id==='planes') return _av2Start();
       setVis('lyr-'+id,true);
-      if(id==='planes'&&AVIATION_V2){
-        /* (#R341) The GPU cloud replaces BOTH old renderings, so neither is made visible and no
-           sweep is started. Everything else about the layer - legend, filter, opacity, the real
-           altitude switch, the detail card, the track, the flight simulator - is unchanged and
-           reaches the same places through the controller. */
-        try{ if(GE().layers.has('lyr-planes')) GE().layers.setLayout('lyr-planes','visibility','none');
-          if(GE().layers.has(PLANE3D_LYR)) GE().layers.setLayout(PLANE3D_LYR,'visibility','none');
-          if(GE().layers.has(PLANE3D_POST)) GE().layers.setLayout(PLANE3D_POST,'visibility','none'); }catch(_){}
-        _av2Start();
-        updatePlanesZoomHint();
-      } else if(id==='planes'){
-        applyPlanesMode(true);   /* (#R172) flat glyphs OR lifted bodies — never both */
-        /* (#R186) a self-re-arming TIMEOUT, not an interval: one sweep is now several requests over a
-           second or two, and the gap to the next one is chosen from how big that sweep was
-           (planePollMs). An interval would keep firing at a fixed rate while a wide sweep was still
-           running. The non-null value is also what schedulePlanePoll reads as "the layer is on". */
-        if(planesTimer){ stopTick(planesTimer); clearTimeout(planesTimer); }
-        planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },20000);
-        fetchPlanes();
-        /* follow the viewport: refetch real aircraft for wherever the user pans/zooms */
-        /* ⚠ (#R186) The minimum gap between two view-driven sweeps is HOW LONG THE SWEEP TAKES — the
-           number of circles times their spacing — and NOT a fraction of the poll interval. The first
-           version used planePollMs()/4, which is 5 s even for a ONE-circle sweep whose floor is 20 s
-           for a quite different reason; that quietly tripled the close-in refetch gap from the 1.5 s
-           it had always been, and tests/geo-drone-planner-checks.test.mjs (#R174) caught it exactly (a track that accumulated 2 legs over
-           five moveends instead of 5). One circle is 1.5 s, as before; sixteen circles is 19 s, which
-           is the time those sixteen requests actually occupy. */
-        if(!_planesMove){ _planesMove=()=>{ if(planesLayerOn()){
-            try{ refreshTrafficLayer('planes'); }catch(_){}   /* (#R186) re-draw from what we already hold: the 3-D cull is viewport-shaped when the sky is very busy, and the per-aircraft ground offset follows the view */
-            updatePlanesZoomHint();                           /* (#R191) a PAN changes the required coverage too, not just a zoom */
-            clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{
-              if(Date.now()-_lastPlaneFetch>planeRefetchGapMs()) fetchPlanes(); },700); } }; GE().events.on('moveend',_planesMove); GE().events.on('zoom',updatePlanesZoomHint); }
-        updatePlanesZoomHint();
-      } else {
-        startShips();
-        /* viewport-follow: reconnect AIS for wherever the user pans (when zoomed in enough) */
-        /* ⚠ (#R510) THE PAN HANDLER BELOW THE FIRST LINE BELONGS TO THE BYOK STREAM, which is
-           subscribed to the VIEWPORT and must re-subscribe when the viewport moves — and its `else`
-           branch EMPTIES shipsData, which on the relay path would wipe the world every time the
-           reader dragged the map. The relay path takes the first line only: re-ask the relay when
-           the view has left the box the last poll covered, and never empty anything. */
-        if(!_aisMove){ _aisMove=()=>{ if(!shipsLayerOn()) return; if(!aisKey){ aisViewMoved(); return; }
-            updateShipsZoomHint(); if(GE().camera.getZoom()>=SHIPS_MIN_ZOOM){ clearTimeout(_aisMoveT); _aisMoveT=setTimeout(connectAIS,1500); } else { stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships'); } }; GE().events.on('moveend',_aisMove); GE().events.on('zoom',updateShipsZoomHint); }
-        updateShipsZoomHint();
-      }
+      startShips();
+      /* viewport-follow: reconnect AIS for wherever the user pans (when zoomed in enough) */
+      /* ⚠ (#R510) THE PAN HANDLER BELOW THE FIRST LINE BELONGS TO THE BYOK STREAM, which is
+         subscribed to the VIEWPORT and must re-subscribe when the viewport moves — and its `else`
+         branch EMPTIES shipsData, which on the relay path would wipe the world every time the
+         reader dragged the map. The relay path takes the first line only: re-ask the relay when
+         the view has left the box the last poll covered, and never empty anything. */
+      if(!_aisMove){ _aisMove=()=>{ if(!shipsLayerOn()) return; if(!aisKey){ aisViewMoved(); return; }
+          updateShipsZoomHint(); if(GE().camera.getZoom()>=SHIPS_MIN_ZOOM){ clearTimeout(_aisMoveT); _aisMoveT=setTimeout(connectAIS,1500); } else { stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships'); } }; GE().events.on('moveend',_aisMove); GE().events.on('zoom',updateShipsZoomHint); }
+      updateShipsZoomHint();
     }
     function stopTraffic(id){
+      if(id==='planes'){ try{ if(_av2) _av2.stop(); }catch(_){} selectPlane(null); return; }
       setVis('lyr-'+id,false);
-      if(id==='planes'&&AVIATION_V2){ try{ if(_av2) _av2.stop(); }catch(_){} selectPlane(null); updatePlanesZoomHint(); }
-      else if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ stopTick(planesTimer); clearTimeout(planesTimer); planesTimer=null; } _planeSweep++; updatePlanesZoomHint(); }   /* (#R186) bump the token so an in-flight sweep cannot publish into a layer that is now off */
       if(id==='ships'){ if(shipsTimer){ stopTick(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
     /* === (#R184) LIVE SATELLITES ============================================================
@@ -6493,7 +5457,8 @@ window.IntMapModules.dataLayers=function(HOST){
             try{ setVis('lyr-eez',true); }catch(_){}
           });
         }
-        else if(id==='ships'||id==='planes'){ startTraffic(id); }
+        else if(id==='planes'){ req=startTraffic(id); }   /* (remove-synthetic-planes) a platform that cannot start is the row's failure */
+        else if(id==='ships'){ startTraffic(id); }
         else if(id==='sats'){ req=startSats(); }
         else if(id==='pop'){
           lgdPop.style.display='block'; tileLegends();
@@ -6708,60 +5673,26 @@ window.IntMapModules.dataLayers=function(HOST){
        that says which path is actually running, because a diagnostic that reports the OLD sweep's
        counters while the NEW one is drawing is the two-lists-disagree defect in miniature. */
     window.IntMapPlanes3D={ isOn:planes3DOn, set:setPlanes3D,
-      aviation:()=>({ v2:AVIATION_V2, endpoint:AVIATION_ENDPOINT,
+      aviation:()=>({ endpoint:AVIATION_ENDPOINT,
         started:!!_av2, live:(function(){ try{ return !!(_av2&&_av2.isOn()); }catch(_){ return false; } })(),
         status:(function(){ try{ return _av2?_av2.stats():null; }catch(_){ return null; } })() }),
       /* (#R173) the clicked aircraft's track, also reachable by callsign / registration / ICAO24 so Atlas
-         and the tests drive exactly what a click drives (#R82: everything is operable from Atlas). */
-      /* ⚠ (#R506) SELECT AND FIND HAVE TO REACH THE PLATFORM THAT IS ACTUALLY DRAWING. Both
-         answered out of `planesData` / `planeTracks`, which the v1 sweep filled and which have been
-         empty since #R341 replaced it — so Atlas's `layers.aircraftTrack` could not find an
-         aircraft by callsign (v1 has no identities) and, when handed a hex, selected it in a store
-         nothing renders. The v1 branch is kept first and unchanged: it is still the answer whenever
-         the old layer is the one running.
-         ⚠ BOTH ARE THENABLE NOW. The identity table lives in the worker, so `find` is a round trip;
+         and the tests drive exactly what a click drives (#R82: everything is operable from Atlas).
+         ⚠ (#R506) BOTH ARE THENABLE. The identity table lives in the worker, so `find` is a round trip;
          `select` waits for the fixes so a caller that reports `trackStats` immediately afterwards
-         reports the track it just drew rather than an empty one. `await` on the v1 string is a
-         no-op, so the old path is unaffected. */
+         reports the track it just drew rather than an empty one. */
       select:(k)=>{ const r=selectPlane(k);
         try{ if(_av2){ _av2.select(r||''); if(r) return _av2TrackSync(r).then(()=>r); } }catch(_){}
         return r; },
       selected:()=>selectedPlane, track:k=>((planeTracks[k||selectedPlane]||[]).slice()),
-      /* diagnostics for the pick: where an aircraft is DRAWN, and which one a screen point would select */
-      screenPos:k=>{ const d=planesData.find(x=>x.icao24===k); if(!d) return null;
-        const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
-        /* (#R187) …and it answers for the rendering that is ON — see _planeDrawAlt. This is the
-           "where is it drawn" diagnostic, so it has to move with the drawing. */
-        return pa([d.lng,d.lat],_planeDrawAlt(d)); },
-      pickAt:pt=>{ const d=pickPlane(pt); return d?d.icao24:null; },
       trackStats:k=>trackStats(k||selectedPlane),
       find:q=>{ const s2=String(q||'').trim().toUpperCase(); if(!s2) return null;
-        const hit=planesData.find(d=>(d.icao24||'').toUpperCase()===s2)
-          ||planesData.find(d=>(d.callsign||'').trim().toUpperCase()===s2)
-          ||planesData.find(d=>(d.reg||'').toUpperCase()===s2)
-          ||planesData.find(d=>((d.callsign||'')+' '+(d.reg||'')).toUpperCase().indexOf(s2)>=0);
-        if(hit) return hit.icao24;
         try{ if(_av2) return _av2.find(s2); }catch(_){}
         return null; },
-      state:()=>{ const s2=_planes3DStats;
-        /* (#R183) `aircraft` and `detailed` are surfaced because `features` stopped meaning "one per
-           aircraft" the moment the body became four extrusions — a reader that only sees `features`
-           cannot tell 3 aircraft drawn in detail from 14 drawn plainly. */
-        return { on:planes3DOn(), planes:planesData.length, features:s2.features, aircraft:s2.aircraft,
-          /* (#R186) the SWEEP — how much sky was asked for, how many circles it took, what came back
-             and what the render cap left out. No silent caps (#R185). */
-          sweep:_planeStats, cover:_planeCover, culled3D:_planes3DCulled, minZoom:PLANES_MIN_ZOOM,
-          circleBudget:PLANE_CIRCLE_BUDGET(), maxAircraft:PLANE_MAX_AIRCRAFT, pollMs:planePollMs(), gapMs:PLANE_GAP_MS,
-          /* whether a view change right now would start a sweep of its own (see planeRefetchGapMs):
-             the last sweep's start (epoch ms), the gap it must be older than, and whether one is running */
-          refetch:{ lastAt:_lastPlaneFetch, gapMs:planeRefetchGapMs(), busy:_planeBusy },
-          lifted:s2.lifted, maxAlt:s2.maxAlt, groundOffsetM:s2.offsetM,
-          halfPx:s2.halfPx, glyphHalfPx:s2.glyphHalfPx, thickPx:s2.thickPx,   /* (#R192) same mark = same pixels */
-          visible:(()=>{ try{ return !!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible'); }catch(_){ return false; } })(),
-          flatVisible:(()=>{ try{ return !!(GE().layers.has('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible'); }catch(_){ return false; } })(),
-          selected:selectedPlane, tracked:Object.keys(planeTracks).length, track:trackStats(selectedPlane),
-          trackVisible:(()=>{ try{ const l=planes3D?TRACK_3D:TRACK_LINE; return !!(GE().layers.has(l)&&GE().layers.getLayout(l,'visibility')==='visible'); }catch(_){ return false; } })(),
-          synthetic:planesSynthetic }; } };
+      /* what the page itself holds about the layer: the setting, the selection and its track. The
+         aircraft counts are the platform's (IntMapAviation.stats(), and `aviation().status` above). */
+      state:()=>({ on:planes3DOn(), selected:selectedPlane, tracked:Object.keys(planeTracks).length, track:trackStats(selectedPlane),
+          trackVisible:(()=>{ try{ const l=planes3D?TRACK_3D:TRACK_LINE; return !!(GE().layers.has(l)&&GE().layers.getLayout(l,'visibility')==='visible'); }catch(_){ return false; } })() }) };
     /* Unified time slider (#8): drive the day-based weather layers from the global news date.
        ⚠ (#R298) ONE clamp of 今日−2 for all five is what this used to be, and it was wrong in both
        directions: it let a reader through to days before a product existed (MODIS AOD begins in 2017,
@@ -6795,12 +5726,9 @@ window.IntMapModules.dataLayers=function(HOST){
       else if(id==='nato'){ if(GE().layers.has('nato-fill'))GE().layers.setPaint('nato-fill','fill-opacity',v); }
       else if(id==='eu'){ if(GE().layers.has('eu-fill'))GE().layers.setPaint('eu-fill','fill-opacity',v); }
       /* (#R232) the 'night' opacity branch went with the layer — the day/night shading has no opacity knob. */
-      else if(id==='planes'){ if(GE().layers.has('lyr-planes'))GE().layers.setPaint('lyr-planes','icon-opacity',v);
-        /* (#R341) the GPU cloud is a third rendering of the same layer and follows the same slider */
-        try{ if(_av2) _av2.setOpacity(v); }catch(_){}
-        /* (#R172) the lifted bodies follow the same opacity slider; the posts stay fainter than the aircraft */
-        try{ if(GE().layers.has(PLANE3D_LYR))GE().layers.setPaint(PLANE3D_LYR,'fill-extrusion-opacity',v);
-          if(GE().layers.has(PLANE3D_POST))GE().layers.setPaint(PLANE3D_POST,'fill-extrusion-opacity',Math.min(0.5,v*0.5)); }catch(_){} }
+      else if(id==='planes'){
+        /* (#R341) the GPU cloud is the aircraft layer, and follows the slider */
+        try{ if(_av2) _av2.setOpacity(v); }catch(_){} }
       else if(id==='ships'){ if(GE().layers.has('lyr-ships'))GE().layers.setPaint('lyr-ships','icon-opacity',v); }
       /* (#R184) the satellite layer paints its own icons AND labels, and the eclipsed dimming is part of
          the same expression — so the slider goes to the module rather than to one paint property. */

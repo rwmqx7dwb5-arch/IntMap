@@ -566,31 +566,35 @@ Cesium は canvas のパスとして読む。箱の 92 % がマークで、z9 �
 
 - **失敗しても画面は空にならない。** worker は持っている機体を保持し続け、経年で薄くなり、
   やがて落ちる。「取得できていない」と「0機」は**別の絵**。
-- **合成データはこの経路に1機も無い。** 旧経路の `genSyntheticPlanes()` は
-  `?aviation=v1` を明示したときだけ到達できる。
+- **合成データは1機も無い。** 旧経路の `genSyntheticPlanes()`（掃引が全滅すると乱数で約 270 機を
+  実データとして描いていた）は、その旧経路ごと撤去した（→ §8）。
+- **何も持っていないまま取得に失敗したら、そう言う。** `js/aviation-live.js` は失敗した poll を
+  `status().failures` に数えるだけでなく、在庫が 0 機のときに限って `start({ onState })` の呼び手へ
+  渡す。`js/data-layers.js` はそれを `js/layer-state.js` に `dl-planes` の失敗として報告し
+  （理由は worker が付ける `http`＋`status` / `network` / `parse`）、行に「読み込めません」を出し、
+  `js/notify.js` で **1 回だけ**知らせる。在庫がある（本物の機体が古くなりつつある）ときの失敗は
+  「描けなかった」ではないので報告しない。次に snapshot を運んだ poll が `ok` に戻す。
+  基盤そのものが起動できない（worker が無い・GPU の primitive が無い・フィードの URL が無い）ときは、
+  行の要求（`toggleLayer` の `req`）が `reason:'unsupported'` で reject し、同じ記録に載る。
 - `stats().updating` は**フィードについての主張**であって在庫についてではない。
   2万機を持っていてフィードが死んでいる状態は、「本物の機体が古くなりつつある」。
 
 ---
 
-## 8. 切り替えと巻き戻し
+## 8. 切り替えと巻き戻し —— 撤去済み
 
-```
-?aviation=v1     旧経路（利用者ごとの掃引）
-?aviation=v2     新経路
-localStorage 'intmap_aviation_v2' = '0' | '1'
-```
+経路は**1本だけ**（`aviation-feed` → worker → GPU cloud）。以前あった切り替え（`?aviation=v1` /
+`?aviation=v2`、localStorage `intmap_aviation_v2`）と、それが選んでいた旧経路——ブラウザごとの
+`api.airplanes.live` 掃引、その格子計画・歩調・持ち越し規則、MapLibre の 2 つの描画（`lyr-planes` の
+シンボルと `lyr-planes-3d` の押し出し）、ズームの案内、合成機——は**まとめて撤去した**。
+巻き戻し期間のために残していたが、巻き戻す先の provider は今も全リクエストに 403 を返し
+（`scripts/upstream-liveness.mjs` も refused と記録）、その経路で描けたのは合成機だけだった。
+判断は `DECISIONS.md`、経緯と実測は `dev-notes/2026-10-01-remove-synthetic-planes.md`。
 
-既定は **v2**——v1 の provider が消えているため。旧経路は §28 Phase G の巻き戻し期間のために
-**挙動を変えずに**残してある。
-
-足したのは計器だけで、`IntMapPlanes3D.state().refetch = { lastAt, gapMs, busy }` が
-「視野の変化（`moveend`）がいま掃引を 1 本起こすか」を述べる——直前の掃引の開始時刻、それより
-古くなければならない間隔（`planeRefetchGapMs()`＝円の数 × `PLANE_GAP_MS`、下限 1.5 秒。
-`moveend` の処理もこの 1 か所を読む）、同じ空の掃引が走っている最中か。**視野の変化 1 回は
-fix 1 個を約束しない**（走っている掃引に譲る・間隔の内側では要求にならない）ので、
-`tests/r174.spec.js` の軌跡の試験は `moveend` の回数を数えず、これを見て 1 回ずつ促し、
-fix が記録されるのを待つ（経緯は `dev-notes/2026-09-28-r174-track-survives-zoom.md`）。
+`window.IntMapPlanes3D` は残っている（実高度の設定・選択・航跡・`find`——Atlas の
+`layers.aircraftTrack` がこれを通る）。旧経路だけが埋めていた診断（`screenPos` / `pickAt`、
+`state()` の `planes` / `features` / `sweep` / `cover` / `refetch` / `synthetic` など）は一緒に消えた。
+機数と鮮度は `window.IntMapAviation.stats()`（`IntMapPlanes3D.aviation().status` も同じもの）が述べる。
 
 ---
 

@@ -13,25 +13,18 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 /* ── 1 · the aircraft mark is the SAME NUMBER OF PIXELS in both renderings ───────────────────── */
-test('R192 aircraft: one size ramp, read by the glyph and by the lifted body', () => {
-  const s = read('js/data-layers.js');
-  /* the ramp is stated ONCE — the defect was two independent numbers that drifted */
-  /* (#R247) the same three stops, scaled 1.25x — see tests/r187-checks. What this file pins is that
-     there is exactly ONE table and that both renderings read it, which is unaffected by its scale. */
-  assert.match(s, /const _PLANE_SIZE=\[\[2,0\.5\],\[5,0\.725\],\[9,0\.975\]\];/, 'the ramp, as data');
-  assert.match(s, /'icon-size':_planeIconSizeExpr\(\)/, 'the symbol layer builds its expression from it');
-  assert.match(s, /const iconHalfPx=19\*_planeIconSize\(GE\(\)\.camera\.getZoom\(\)\);/,
-    'and the lifted body evaluates the same ramp at the same zoom');
-  assert.match(s, /const half=iconHalfPx\*mpp;/, 'so its ground size IS the glyph size');
-  /* the 60 m floor is what made the lifted mark 2.7x too big past z14.5 — it must be gone */
-  assert.doesNotMatch(s, /const half=Math\.max\(60, ?13\*mpp\)/, 'the metre floor is gone');
-  /* sub-pixel thickness: an extrusion that is a block is a different mark when the camera tilts */
-  assert.match(s, /const thick=0\.35\*mpp;/, 'and no wall at any pitch');
-  /* the stroke is a RING (outer boundary + the body outline as its hole), not a plate underneath */
-  assert.match(s, /planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_RIM\),\s*\n\s*planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_CORE\)\.slice\(\)\.reverse\(\)/,
-    'the stroke is an annulus');
-  /* the size is REPORTED, because "the same mark" is a measurable claim (nobody had measured it) */
-  assert.match(s, /halfPx:\+\(half\/mpp\)\.toFixed\(2\), glyphHalfPx:\+iconHalfPx\.toFixed\(2\)/, 'and it is measurable');
+/* (remove-synthetic-planes) The two renderings #R192 measured — the symbol glyph and the lifted
+   fill-extrusion body — were the airplanes.live sweep's, and went with it. The contract they were
+   held to survives in the form #R379 gave it: ONE size table (js/plane-glyph.js), and the drawing
+   that is left (js/aviation-live.js's GPU cloud) evaluates it rather than typing a second one. */
+test('R192 aircraft: one size ramp, read by the drawing rather than copied into it', () => {
+  const glyph = read('js/plane-glyph.js');
+  assert.match(glyph, /const SIZE = \[\[2, 0\.5\], \[5, 0\.725\], \[9, 0\.975\]\];/, 'the ramp, as data, stated once');
+  const live = read('js/aviation-live.js');
+  assert.match(live, /\[8, G\.boxPx\(8\)\], \[9, G\.boxPx\(9\)\]/, 'the cloud evaluates the same ramp at the zooms where it is the mark');
+  for (const f of ['js/data-layers.js', 'js/aviation-live.js', 'js/cesium-engine.js']) {
+    assert.doesNotMatch(read(f), /\[\[2, ?0\.5\], ?\[5, ?0\.725\], ?\[9, ?0\.975\]\]/, `${f} keeps no second copy of the ramp`);
+  }
 });
 
 /* ── 2 · the land mask, and the two places that used to paint the sea ────────────────────────── */

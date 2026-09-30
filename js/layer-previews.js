@@ -485,7 +485,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
            conditions), bilinearly interpolated into a real field / real streamlines / real isobars;
          · aurora → the live NOAA SWPC OVATION oval (same feed the layer uses);
          · fires → the same NASA FIRMS WMS the layer renders, yesterday's real detections;
-         · aircraft → live airplanes.live positions over central Europe (same API as the layer);
+         · aircraft → the aircraft the layer already holds, over central Europe (see _planesInHand);
          · news heatmap → the currently loaded news geolocations (same points as the layer);
          · submarine cables → the real TeleGeography cable geometry (same file the layer fetches);
          · roads → real Esri World Transportation cartography (LA freeway network).
@@ -658,8 +658,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        cannot drift away from what the layer draws. Sub-satellite points over the whole world, sized
        by orbit regime, plus the ISS ground track when the station is in the loaded group. */
     /* (#R184) THIS TILE NEVER TRIGGERS A LOAD — it only draws a catalogue that is ALREADY in hand.
-       The sibling `dl-planes` tile does fetch, and that is fine: airplanes.live is a high-volume
-       community ADS-B endpoint built to be polled. CelesTrak is not — it is a small, free, keyless
+       (The sibling `dl-planes` tile fetched too, until #R341 — see _planesInHand.) CelesTrak is not — it is a small, free, keyless
        service that stopped answering this machine entirely after seven requests in five minutes, and
        a preview tile that pulls a satellite catalogue on EVERY page load (measured: it did, in a
        session that never opened the layer) is the app being a bad citizen of it for a thumbnail.

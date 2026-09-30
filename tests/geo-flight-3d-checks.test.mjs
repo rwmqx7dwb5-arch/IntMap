@@ -100,11 +100,10 @@ describe('§ #R174 · flight, tilt, aircraft, solids', () => {
        dropped every leg while the glyph survived. Measured over Mt Fuji: 0 legs at every zoom from z10.5 to
        z14.3, with the aeroplane plainly on screen. */
     assert.match(code, /function _groundAt\(lng,lat\)/, 'the ground is read at a POINT');
-    assert.match(code, /const off=_groundAt\(d\.lng,d\.lat\)/, 'under each aircraft…');
-    assert.match(code, /const off=_groundAt\(\(a\[0\]\+b\[0\]\)\/2,\(a\[1\]\+b\[1\]\)\/2\)/, '…and under each track leg');
+    /* (remove-synthetic-planes) 「under each aircraft」 and the pick that shared it were the removed
+       airplanes.live rendering's lifted body; the track is what js/data-layers.js still draws. */
+    assert.match(code, /const off=_groundAt\(\(a\[0\]\+b\[0\]\)\/2,\(a\[1\]\+b\[1\]\)\/2\)/, 'under each track leg');
     assert.doesNotMatch(code, /if\(!\(alt>0\)\) continue;/, 'a leg at ground level is DRAWN, never dropped');
-    /* the pick must use the same offset the drawing does, or a click looks where the aircraft is not */
-    assert.match(code, /_gndFresh\(\); let best=null, bestD=PICK_PX\*PICK_PX/, 'the pick shares the per-aircraft ground');
   });
 
   test('#R174 a double-click zoom no longer clears the selected aircraft (a separate defect, found on the way)', () => {
@@ -113,7 +112,8 @@ describe('§ #R174 · flight, tilt, aircraft, solids', () => {
     assert.match(code, /originalEvent&&\(e\.originalEvent\.detail\|0\)>=2\) return/,
       'the second click of a double-click is ignored outright');
     assert.match(code, /events\.on\('dblclick',_planesDbl\)/   /* (#R178) …through the contract */, 'and a dblclick cancels a pending clear');
-    assert.match(code, /_planesClearT=setTimeout\(\(\)=>\{ _planesClearT=null; if\(selectedPlane\) selectPlane\(null\); \},320\)/,
+    /* (remove-synthetic-planes) the one click handler left is the GPU cloud's (_av2Click); the deferral is its */
+    assert.match(code, /_planesClearT=setTimeout\(\(\)=>\{ _planesClearT=null;\s*if\(selectedPlane\)\{ selectPlane\(null\);[\s\S]{0,80}?\},320\)/,
       'clearing is deferred past the double-click window');
     assert.match(code, /if\(selectedPlane\) drawTrack\(selectedPlane\)/, 'the track is rebuilt when the scale changes');
   });

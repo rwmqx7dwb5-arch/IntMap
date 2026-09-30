@@ -18,11 +18,8 @@ const DECAY_FLOOR_KM = (() => {
 const BOOT = { timeout: 120_000 };
 
 /* (#R201) ONE page load — see tests/helpers/engine.js
-   (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
-   original per-browser sweep, which owns `window.IntMapPlanes3D`, and the GPU cloud that replaced it
-   as the default. Only the aircraft test below reads that model, so only it passes a query; the two
-   Cesium tests and the satellite one are nothing to do with the live-aircraft layer and boot exactly
-   as they did. */
+   (remove-synthetic-planes) `query` was how the aircraft test in this file pinned the airplanes.live
+   sweep (`?aviation=v1`); that path and its test are removed, and no remaining test passes one. */
 const boot = (page, engine, query) => bootEngine(page, engine, { url: '/' + (query || ''), timeout: BOOT.timeout });
 
 test('R185 Cesium: a pan that does not change the tile cover rebuilds no layers', async ({ page }) => {
@@ -166,40 +163,10 @@ test('R185 satellites: the layer is not empty when the live feed is unreachable'
   expect(pos.hdg, 'every object knows which way it is going — the icon turns to it').toBe(pos.n);
 });
 
-test('R185 aircraft: the 3-D body carries its own outline and its altitude is its own', async ({ page }) => {
-  test.setTimeout(240_000);
-  /* ⚠ ?aviation=v1 — see the note on boot(). Every number read below comes out of
-     `IntMapPlanes3D.state()`, which only the sweep fills: on the default path `state().planes` never
-     leaves 0, so the 60 s wait beneath expired and `test.skip` blamed the feed — 66 s of a green run
-     asserting nothing (measured, #R341). The assertions are unchanged. */
-  await boot(page, 'maplibre', '?aviation=v1');
-  await page.evaluate(async () => {
-    window.IntMapGeoEngine.camera.jumpTo({ center: [139.78, 35.55], zoom: 11, pitch: 0, bearing: 0 });
-    await new Promise(r => setTimeout(r, 900));
-    const cb = document.getElementById('dl-planes');
-    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
-    /* (#R187) #R185's point was that the 3-D body is what the user SEES, so the flat glyph's rim and
-       halo were invisible work. 「航空機のマークは最初のデザインに戻して」 has since made the flat
-       glyph the default again — which does not retire the 3-D body or anything this test checks about
-       it, so the test turns it on rather than assuming it. */
-    window.IntMapPlanes3D.set(true);
-  });
-  const ok = await page.waitForFunction(() => {
-    try { const s = window.IntMapPlanes3D && window.IntMapPlanes3D.state(); return !!(s && s.planes > 0); }
-    catch (_) { return false; }
-  }, null, { timeout: 60_000 }).then(() => true).catch(() => false);
-  /* the ADS-B feed is live and keyless; if it is not answering, this assertion has nothing to say */
-  test.skip(!ok, 'live aircraft feed returned nothing here');
-  const s = await page.evaluate(() => window.IntMapPlanes3D.state());
-  console.log('R185 aircraft ·', s.aircraft, 'aircraft ·', s.features,
-    '· lifted', s.lifted, '· maxAlt', s.maxAlt);
-  expect(s.on, 'the 3-D body is switched on for this test (#R190 made it the default again)').toBe(true);
-  expect(s.aircraft).toBeGreaterThan(0);
-  /* (#R190) the multi-part body is withdrawn — one solid per aircraft, plus a post under each
-     airborne one. The invariant #R183/#R185 encoded here is still the one that matters: the aircraft
-     count is derived by NAME, never from the feature total (#R181: suspect what a counter counts). */
-  expect(s.features).toBeGreaterThanOrEqual(s.aircraft);
-  /* an altitude read off a part's base would now be tens of metres high for a parked aeroplane */
-  expect(s.maxAlt).toBeLessThan(25000);
-  if (s.lifted === 0) expect(s.maxAlt).toBe(0);
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */

@@ -275,7 +275,10 @@ test('R186 i18n: every new string exists in every registered language', () => {
      assertion was about coverage. `LANGS` is the one list (js/lang-registry.js). */
   const NL = (read('js/locales/_langs.js').split('IntMapLangBeta')[0].match(/"[a-z-]+"/g) || []).length;   /* (#R232) the GENERATED language list — the registry's rows stopped being the list when a language became one file */
   const src = read('js/i18n.js');
-  for (const key of ['poiLabels', 'planesAreaHint']) {
+  /* (remove-synthetic-planes) 'planesAreaHint' was the other key here — the airplanes.live sweep's
+     partial-coverage notice. It went with the sweep, and scripts/i18n-dead-key-audit.mjs then
+     (rightly) refused the rows no code could ask for. */
+  for (const key of ['poiLabels']) {
     const n = [...src.matchAll(new RegExp(key + ':"', 'g'))].length;
     assert.equal(n, NL, `${key} is in ${n} languages, not ${NL}`);
   }
