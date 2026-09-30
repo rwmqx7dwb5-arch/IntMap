@@ -73,9 +73,17 @@ test.describe('map-a11y-structure', () => {
     await page.waitForFunction(() => window.IntMapGeoEngine.coords.queryRenderedFeatures(
       [window.IntMapGeoEngine.render.canvas().clientWidth / 2, window.IntMapGeoEngine.render.canvas().clientHeight / 2], { layers: ['a11y-probe-pt'] }).length > 0, null, { timeout: 15_000 });
     await page.evaluate(() => { const m = document.getElementById('map'); const f = m.querySelector('[tabindex]:not([tabindex="-1"])') || m; f.focus(); });
+    /* what the status SAID, not what it holds when the poll happens to look: a later settled summary
+       replaces the text by design, so reading the current text measured the runner's speed (CI
+       2026-09-30: Alt+N took 1.45 s and the first read already held the summary). Every write is kept. */
+    await page.evaluate(() => {
+      const l = document.getElementById('map-narration');
+      window.__narration = [];
+      new MutationObserver(() => window.__narration.push(l.textContent)).observe(l, { childList: true, characterData: true, subtree: true });
+    });
     await page.keyboard.press('Alt+KeyN');
     await expect.poll(() => page.evaluate(() => window.__probePresses), { timeout: 5_000 }).toEqual([['Probe point']]);
-    await expect.poll(() => page.evaluate(() => document.getElementById('map-narration').textContent)).toMatch(/Feature \d+ of \d+: /);
+    await expect.poll(() => page.evaluate(() => window.__narration)).toContainEqual(expect.stringMatching(/^Feature \d+ of \d+: Probe point$/));
     /* the view did not move by one pixel (CONSTITUTION §3) */
     const before = await page.evaluate(() => { const c = window.IntMapGeoEngine.camera.getCenter(); return [c.lng, c.lat, window.IntMapGeoEngine.camera.getZoom()]; });
     await page.keyboard.press('Alt+Shift+KeyN');

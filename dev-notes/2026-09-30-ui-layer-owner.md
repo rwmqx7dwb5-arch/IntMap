@@ -52,3 +52,8 @@ date: 2026-09-30
 ## 統合時に足したこと — 公開名の台帳が綴りで数えていた
 
 `check:surface`（`scripts/global-surface.mjs`）は `window.X =` の綴りだけを数えていたので、この回の 2 つの持ち主（`(function (G) { G.X = … })(window か globalThis)`）も、既存の `IntMapSafe`・`IntMapMemBudget`・`IntMapWavesGL`・`IntMapStreamline`・`IntMapWavePalette`・`IntMapCosmos`・`IntMapAdminLiteral` も台帳の外にいた（計 9）。事実（グローバルオブジェクトのプロパティへの代入）を構文木に訊く: 対象が `window` / `globalThis`、またはそれを渡されて呼ばれた関数の引数（内側の同名の引数は隠す）。Worker が自分に置く `window` の模倣（`js/gis-runtime.js`）とローカルの `self` は数えない。台帳 638 → 647。
+
+## CI で見つかった 2 つ（製品 1・宣言 1）
+
+- **地図の読み上げ（`js/map-narrator.js`）**: キーボードで地物を巡回すると、その押下自身の click を「ポインタでの選択」として受け、1.2 秒後に要約を予約していた。押下の処理が 1.2 秒以上メインスレッドを塞ぐと、「Feature k of n」が読まれる前に要約で上書きされる（#821 以来の競合で、この回が持ち込んだものではない）。`step()` 自身の押下の間は要約を予約しない。spec は瞬間の文字列を読むのをやめ、読み上げ欄に書かれた全文を記録して `Feature \d+ of \d+: Probe point` が書かれたことを確かめる（地物名まで要求＝前より厳しい）。
+- **`types/globals.d.ts`** は `IntMapSafe` を「index.html が公開」と宣言していたが、実際は `js/safe-html.js` が IIFE で公開している。公開名の門が事実で数えるようになって見えた。宣言を直した（検査が正しかった）。
