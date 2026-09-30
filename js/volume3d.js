@@ -49,8 +49,9 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
-import { everyTick, stopTick } from './runtime.js';
+/* (#R408) this file used the program's one timer wheel (js/runtime.js) for its only repeating job, the
+   ground chase. That chase is now driven by the renderer's own events (see chaseGround), so this file
+   has no timer at all — and still no private one of its own. */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.volume3d=function(HOST){
   return (function(){
@@ -154,18 +155,62 @@ window.IntMapModules.volume3d=function(HOST){
        the value — 0 is both "still loading" and "sea level" — and a single read taken on the terrain event
        would have silently compensated by 0 m, i.e. left the box 2 000 m above the MOUNTAIN instead of above
        the SEA. That is exactly the failure this module exists to prevent.
-       Instead: poll for a few seconds and repaint whenever the reading MOVES, stopping once two consecutive
-       reads agree (settled) or the budget runs out. paint(true) suppresses re-arming so this cannot recurse. */
-    let _gndTimer=null;
-    function chaseGround(){ if(_gndTimer) return; let n=0, prev=groundM;
-      _gndTimer=everyTick('volume3d:chase-ground',400,()=>{ n++;
-        if(!has3DTerrain()||ring.length<3||n>16){ stopTick(_gndTimer); _gndTimer=null; return; }
-        const g=readGround();
-        if(g==null) return;
-        if(groundM==null||Math.abs(g-groundM)>1){ paint(true); }        /* moved → re-extrude at the new offset */
-        else if(prev!=null&&Math.abs(g-prev)<=1&&n>=2){ stopTick(_gndTimer); _gndTimer=null; }   /* settled */
-        prev=g;
-      }); }
+       ⚠⚠ SO THE READING IS FOLLOWED BY THE STATE OF THE ELEVATION SOURCE, NOT BY A COUNT OR A CLOCK.
+       This used to poll every 400 ms and stop on either of two guesses: 16 polls (6.4 s) had passed, or
+       two consecutive reads agreed. Both were an unobserved stop. MEASURED (2026-09-30, r170 «3-D volume»,
+       3 failures in 3 local runs and red in the nightly): the DEM answered 0 at the 1st and 2nd poll, the
+       two zeros «agreed», the chase stopped — and one second later the same query answered 3,666 m while
+       the box stayed compensated by 0 m for good. A slower tile (the S3 bucket, a busy machine) lost the
+       16-poll race the same way. Neither case ever re-read, because nothing was listening any more.
+       What decides it now is what the renderer SAYS about the terrain source (whatever id getTerrain()
+       names — js/terrain-water.js swaps it):
+         · a `sourcedata` event for it = a tile arrived → the reading is due again;
+         · the reading is taken on the next `render` (the frame that has the tile in its terrain set —
+           queryTerrainElevation reads the tiles the last frame used), and repainted when it MOVED;
+         · the chase is settled when a `sourcedata` for it has said `isSourceLoaded` (every tile the view
+           needs is in, or has failed) and a frame has been read after it — or when the map goes `idle`;
+         · an `error` event for it is an upstream failure the renderer itself reported: it is kept as
+           `groundError` in state(), so «the DEM failed» is visible and is not the same answer as
+           «still reading» or «sea level».
+       It re-arms on the next tile for the source (the camera moved, a finer zoom arrived), so the ground
+       follows the view instead of freezing at the first number. It stands down when terrain is switched
+       off or nothing is left to compensate. paint(true) does not re-arm, so none of this can recurse. */
+    let _gnd=null;            /* the live chase: its listeners and state, or null */
+    let groundError=null;     /* the last error the renderer reported for the terrain source while reading */
+    let groundState='off';    /* off | reading | read — see state() */
+    const demSource=()=>{ try{ const t=GE().scene.getTerrain(); return (t&&t.source)||null; }catch(_){ return null; } };
+    function rereadGround(){
+      /* the draft */
+      if(ring.length>=3){ const g=readGround(); if(g!=null&&(groundM==null||Math.abs(g-groundM)>1)) paint(true); }
+      /* and every saved body, each over its own centroid (see objGround) */
+      try{ if(saved.some(o=>{ const g=objGround(o); return g!=null&&(o.ground==null||Math.abs(g-o.ground)>1); })) repaintSaved(true); }catch(_){}
+    }
+    function stopChase(){ const c=_gnd; if(!c) return; _gnd=null;
+      for(const [ev,fn] of c.subs){ try{ c.E.events.off(ev,fn); }catch(_){} } }
+    function chaseGround(){
+      if(!has3DTerrain()){ groundState='off'; stopChase(); return; }
+      if(_gnd){ _gnd.due=true; groundState='reading'; return; }   /* `loaded` is a fact about the source, not the footprint — kept */
+      const E=GE(); if(!(E&&E.events)) return;
+      const c={ E, due:true, loaded:false, subs:[] };
+      const alive=()=>has3DTerrain()&&(ring.length>=3||saved.length>0);
+      const mine=(e)=>!!(e&&e.sourceId&&e.sourceId===demSource());
+      const onData=(e)=>{ if(!alive()){ groundState='off'; stopChase(); return; }
+        if(!mine(e)) return;
+        c.due=true; groundState='reading';
+        if(e.isSourceLoaded) c.loaded=true; };
+      const onRender=()=>{ if(!alive()){ groundState='off'; stopChase(); return; }
+        if(!c.due) return;
+        rereadGround();
+        if(c.loaded){ c.due=false; groundState='read'; } };
+      const onIdle=()=>{ if(!alive()){ groundState='off'; stopChase(); return; }
+        /* idle = every tile is in and the frame is drawn: whatever is read now is what the DEM holds */
+        rereadGround(); c.due=false; c.loaded=true; groundState='read'; };
+      const onError=(e)=>{ if(!mine(e)) return;
+        const er=e&&e.error; groundError=String((er&&(er.message||er.status))||er||'error'); c.due=true; };
+      c.subs=[['sourcedata',onData],['render',onRender],['idle',onIdle],['error',onError]];
+      for(const [ev,fn] of c.subs){ try{ E.events.on(ev,fn); }catch(_){} }
+      _gnd=c; groundError=null; groundState='reading';
+    }
 
     /* ---- rendering ------------------------------------------------------------------------- */
     /* (#R173) ONE CLOSED BODY, not a stack of layers.
@@ -316,7 +361,10 @@ window.IntMapModules.volume3d=function(HOST){
       try{ E.layers.remove(SL(o.id)); E.layers.remove(SE(o.id));
         if(E.layers.removeSolid) E.layers.removeSolid(SB(o.id));
         E.layers.removeSource(SS(o.id)); }catch(_){} }
-    function repaintSaved(){ saved.forEach(o=>{ try{ paintSaved(o); }catch(_){} }); }
+    function repaintSaved(noChase){ saved.forEach(o=>{ try{ paintSaved(o); }catch(_){} });
+      /* a saved body needs the same ground chase as the draft — before, only the draft's paint() armed it,
+         so bodies with no draft beside them kept whatever the DEM said at the terrain toggle (usually 0) */
+      if(!noChase&&saved.length&&has3DTerrain()) chaseGround(); }
 
     /* ---- the object list's operations ------------------------------------------------------- */
     /* declared ABOVE its first use — the #R167/#R183 dead-zone trap, which cost a whole module the
@@ -330,6 +378,7 @@ window.IntMapModules.volume3d=function(HOST){
       saved.push(o);
       selectedId=o.id;
       paintSaved(o);
+      if(has3DTerrain()) chaseGround();   /* its ground is read when the DEM has it, not only now */
       /* start the next one: the footprint goes, the SETTINGS stay. Re-entering the altitudes and the
          colour for every body in a series is exactly the friction this feature exists to remove — the
          same reasoning as #R18 keeping the line-of-sight numbers across sites. */
@@ -619,6 +668,9 @@ window.IntMapModules.volume3d=function(HOST){
         totalVolumeM3:saved.reduce((s,o)=>s+objVolumeM3(o),0),
         thickness:thicknessM(), areaM2:areaM2(), unit, fromClicks:ringFromClicks,
         volumeM3:volumeM3(), ground:groundM, terrain:has3DTerrain(), color, opacity,
+        /* where the ground reading stands (off | reading | read) and the terrain source's last reported
+           error while reading — «failed», «still reading» and «sea level» are three different answers */
+        groundState:has3DTerrain()?groundState:'off', groundError,
         /* (#R173) "painted" is true for EITHER representation — the closed body and the open shell are the
            same volume drawn two ways, and a caller asking "is it on screen?" must not have to know which. */
         painted:(()=>{ try{ const E=GE(); return !!(E&&((E.layers.has(LYR)&&E.layers.isVisible(LYR))||(E.layers.has(BODY)&&E.layers.isVisible(BODY)))); }catch(_){ return false; } })(),

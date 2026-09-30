@@ -183,6 +183,22 @@ function nightly() {
   };
 }
 
+/* ══ THE NIGHTS TOGETHER — which red is a regression and which is a wobble ══════════════════════
+   nightly() above is ONE night wide, and one night cannot tell the two apart: from 2026-08-08 every
+   scheduled run was red with a different one-to-three tests, and a real regression (the same test,
+   the same failure, two nights running) sat in the same one-word 「赤」 as tests that failed once.
+   scripts/deep-history.mjs reads the window (job logs, cached per run in <master>/.intmap/) and
+   sorts them; this only prints its answer. It runs as a child with a deadline, because `status`
+   must never make a session wait (see the header) — a night it could not read in time is said to
+   be unread by the script itself, and the next session's cache already holds what this one read. */
+function deepHistory() {
+  const r = spawnSync(process.execPath, [join(HERE, 'deep-history.mjs'), '--json', '--budget', '6000'],
+    { cwd: REPO, encoding: 'utf8', timeout: 9000, windowsHide: true });
+  if (r.status !== 0 || !r.stdout) return null;
+  try { const h = JSON.parse(r.stdout.trim().split('\n').pop()); return h && h.known ? h : null; } catch { return null; }
+}
+const specTitle = (id, w = 90) => { const s = String(id); return s.length > w ? s.slice(0, w - 1) + '…' : s; };
+
 /* ══ (#R771) THE STEPS THE ROUND NO LONGER WAITS FOR ════════════════════════════════════════════
    AGENTS.md §5.1 ends a round with production verification, the master fast-forward and the USB
    mirror. #R771 moved WHEN those happen — not WHETHER: they are picked up at the START of the next
@@ -396,7 +412,16 @@ function status(brief) {
     console.log(`原本: ${master}`);
     if (isMaster) console.log('⚠ 原本では作業しない。node scripts/worktree.mjs new <slug> で worktree を作る（AGENTS.md §6）。');
     const nb = nightly();
-    if (nb && !nb.ok) console.log(`⚠ deep tier (nightly ${nb.day}${nb.age}): ${nb.what}  → gh run view ${nb.id} --log-failed`);
+    if (nb && !nb.ok) {
+      console.log(`⚠ deep tier (nightly ${nb.day}${nb.age}): ${nb.what}  → gh run view ${nb.id} --log-failed`);
+      /* one more line only when the history says a red is a REGRESSION — a sporadic list printed at
+         the top of every session would be the line nobody reads (the #R771 rule for this hook) */
+      const dh = deepHistory();
+      if (dh && dh.regressions.length) {
+        console.log(`⚠ deep tier で ${dh.regressions.length} 件が連続で落ちている（退行の疑い）: `
+          + dh.regressions.map((x) => `${x.id.split(' › ')[0]}（${x.streak} 晩）`).join(' / ') + '  → node scripts/deep-history.mjs');
+      }
+    }
     /* (#R771) one line, and ONLY when something is actually outstanding. This prints at the top of
        every session, so a line that is always there is a line nobody reads. */
     const pw = pendingWork(master);
@@ -427,6 +452,16 @@ function status(brief) {
   if (mine) console.log(`  このセッション      ${mine}（branch feat/${mine}。PR を作ったらその番号が識別子）`);
   const nf = nightly();
   console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
+  const dh = deepHistory();
+  if (!dh) {
+    console.log('    直近の晩の分類   不明（gh が無い・未ログイン・オフライン・時間切れ のいずれか）→ node scripts/deep-history.mjs');
+  } else {
+    console.log(`    直近 ${dh.nights} 晩（読めた ${dh.read} 晩）: 連続で赤＝退行の疑い ${dh.regressions.length} 件 / 続けて赤だったが最新は通過 ${dh.mended.length} 件 / 散発 ${dh.sporadic.length} 件`
+      + (dh.unread.length ? ` / 未読 ${dh.unread.length} 晩（緑とは数えない）` : ''));
+    if (dh.stale) console.log(`      ⚠ ${dh.stale}`);
+    for (const x of dh.regressions) console.log(`      ⚠ ${specTitle(x.id)}  ${x.streak} 晩連続（${x.since} から）`);
+    console.log('      台帳（散発の名前と回数・直ったかを確かめるもの）→ node scripts/deep-history.mjs');
+  }
 
   /* (#R771) THE STEPS THIS ROUND'S PREDECESSORS NO LONGER WAITED FOR. Each line says what is
      known, or says that it could not be read — and every outstanding one carries the command that

@@ -1443,7 +1443,8 @@ scripts/
                                   一覧に訊く。branch は `-d`、断られたら `origin/main` と**木を比べて**
                                   同一のときだけ消す（§5 は `--squash` で merge するので `-d` は必ず断る）。
                                   ⚠ `status` は**前夜の deep tier の判定**も出す（`scripts/deep-alarm.mjs` と
-                                  同じ答え）。`gh` が無い・未ログイン・オフラインは**黙って省略**し、
+                                  同じ答え）と、晩の並びでの分類（`scripts/deep-history.mjs`）。
+                                  `gh` が無い・未ログイン・オフラインは**黙って省略**し、
                                   6 秒で打ち切る——`status` は決して非ゼロで終わらない（#R304）。
   build-report.mjs                **起動予算の計器**（vite プラグイン＋CLI）。束ね器（Rolldown）の最終グラフから
                                   eager（index.html のエントリ＋静的 import の推移閉包＝modulepreload
@@ -1582,6 +1583,14 @@ scripts/
                                   足すのは同じ沈黙を大きな字で書くだけ。⚠ `cancelled` は合格ではない。
                                   ⚠ 実測: 2026-08-08〜08-21 の nightly は**14回連続で赤**、集約ジョブは
                                   毎回正直に報告していた——誰も見ていなかっただけ（#R304）。
+  deep-history.mjs                **nightly の deep tier を晩の並びとして読む**。各 deep shard の job log 末尾の
+                                  Playwright の要約（failed / flaky）を、report の保存期間（action.yml から読む）
+                                  の晩数ぶん読み、テストを**ファイル › 題名**で束ねて「連続で赤（退行の疑い）」
+                                  「続けて赤だったが最新は通過」「散発（揺らぎ）の台帳」に分ける。読めなかった晩
+                                  （中断・log 無し・スイートの外で落ちた shard）は緑と数えず、連続も切らない。
+                                  終わった run は `<原本>/.intmap/deep-history.json` に保存。`worktree.mjs status`
+                                  が子プロセスとして期限つきで呼ぶ（取得 6 秒・子は 9 秒で打ち切り。読み切れ
+                                  なかった晩は「未読」と述べ、次のセッションはキャッシュから続ける）。
   atlas-eval.mjs                  **本番の Atlas を毎晩評価する**（`.github/workflows/atlas-eval.yml`）。Playwright で
                                   問題集の各問を `IntMapConsole.run()` に送り、既存の観測口（`lastTurn()`・
                                   `lastPlan()`・`snapshot()`・包んだ `makeExecute`）から記録を集めて照合する。
