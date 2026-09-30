@@ -5732,6 +5732,24 @@ supabase db diff --schema public             # driftゼロ確認
   `IntMapSafe.url` を通らない href/src の始まりを**形で**数え、`scripts/safe-output-ledger.json` の台帳より
   増えたら落ち、減ったら台帳を下げさせる（`--write`）。XML を書き出すもの（GeoTIFF の PAM・GPX/KML）は
   別の文法なので理由つきで `kept`。
+- **sink に流れ込む値そのものも測る。** 上の門はエンコーダの写しを数えるだけで、「innerHTML に書かれる
+  値がマークアップを運びうるか」は訊かない。`scripts/output-taint.mjs`（`check:static` の `output-taint`
+  規則）が `js/` の全 HTML sink（`innerHTML` / `outerHTML` の代入・`insertAdjacentHTML`・MapLibre の
+  `setHTML`）に差し込まれる式を**葉**に分け、各葉を判定する——リテラル・数値（算術・`Math.*`・`.toFixed`・
+  Date の書式）・`IntMapSafe.*` の戻り値・同じファイルで定義され戻り値が全部安全な組み立て関数（引数ごとに、
+  どの引数が出力に効くかまで見る）・`js/` 全体でその名前で提供される関数が全部安全な注入依存
+  （`{ esc }`）・宣言された翻訳関数（`TRUSTED`。定義場所と理由の文を持ち、消えた関数・呼ばれない宣言・
+  理由の無い行は門が落とす）。判定できない葉はファイルごとに `tests/output-taint-baseline.json` の台帳と
+  両方向に照合する（増えたら落ち、減ったら `--update` で下げさせる）。**未判定は「危険」ではない**——
+  解析が辿れない自前の数値やラベルが大半で、だから拒否でなく台帳である。`--why` は葉を定義まで辿って
+  決め手の読み取り（記録の欄・引数・他モジュール）を印字する。
+- **書き込む操作要素は自分でそう述べる。** Atlas がボタンを押す前の確認（`js/atlas-controls.js`
+  `controlEffect` → `js/atlas-executor.js` 4b）は要素の `data-effect` しか読まない。`scripts/data-effects.mjs`
+  （`check:static` の `data-effect` 規則）が、Supabase の書き込み・`rpc`・`functions.invoke`・認証の変更・
+  POST の Edge Function に**届く** UI ハンドラ（同じファイルの関数・他ファイルで同名の分割代入・
+  `Obj.name.apply` の転送・`window.name`・工場関数に渡された host リテラルのメンバーを辿る）のうち、
+  要素が `data-effect` を持たないものをファイルごとに `tests/data-effect-baseline.json` と照合する。
+  引数として渡された関数（`fn()`）は名前で辿らない——辿ると全ハンドラが全書き込みに届いてしまう。
 - 回帰は `tests/security.spec.js`（実ブラウザで無害化を確認）＋ CodeQL。
 
 ### 17.2 認証・認可
@@ -5776,9 +5794,13 @@ supabase db diff --schema public             # driftゼロ確認
   **Pwned Passwords（`api.pwnedpasswords.com`）には SHA-1 の先頭 5 文字だけ**（照合はブラウザ内）。
   ⚠ ホスト全体が実行時の式で決まる URL（OSRM の `'https://'+prof[0]` 等）は発見できず、
   門が件数と場所を note として印字する。正本 [`docs/DATA-GOVERNANCE.md`](docs/DATA-GOVERNANCE.md) §4.3。
-- ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN ホストが入っている**
+- ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN の source が入っている**
   （`unpkg.com` / `maps.googleapis.com` / `www.googletagmanager.com` / `www.google-analytics.com` /
-  `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。
+  `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。`unpkg.com` だけは**ホストではなく
+  1 ファイルの完全なパス**（`https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js`）で、
+  unpkg 上の他のパッケージも同じパッケージの他の版も拒まれる。CSP のパス照合は `/` で終わらない限り
+  完全一致なので、`js/wx-ecmwf.js` の `SDK_VER` を上げるときは CSP のパスも同じ版にする——
+  `tests/output-taint-gate-checks.test.mjs` ⑥ が `SDK_URLS` を AST から組み立てて CSP と照合する。
   これは**受け入れて追跡している残存リスク**で、理由・影響・軽減策は
   `docs/SECURITY-ARCHITECTURE.md §8` の 1 番に測定日つきで書いてある。
   ⚠ **`'unsafe-eval'` を外せるかは実測済み**（2026-09-18・`securitypolicyviolation` を最初のバイトから記録）:
@@ -5803,7 +5825,12 @@ supabase db diff --schema public             # driftゼロ確認
   `X-Content-Type-Options`）は **GitHub Pages では設定できない**ので未設定のままである。
   この事実は `docs/SECURITY-ARCHITECTURE.md §6/§8` に測定日つきで記録してある。
 - **本番にソースマップを出さない。**
-- **Service Worker** のパス規則は**ホストを見る**（ドット境界での判定）。`postMessage` のプリフェッチ口には
+- **Service Worker** のパス規則は**ホストを見る**（ドット境界での判定）。DEM（terrarium）は
+  **ホスト 1 つとパスの先頭から固定した接頭辞 1 つの組**で許す——S3 のパス形式のエンドポイント
+  （`s3.amazonaws.com/<bucket>/…`）は誰でも作れるバケットを全部配るので、接頭辞がバケット名まで含む
+  （`/elevation-tiles-prod/terrarium/`）。`js/` にある DEM の URL テンプレートは全部許され、別のバケットは
+  許されないことを `tests/output-taint-gate-checks.test.mjs` ⑤ が `isTileRequest` を実行して確かめる。
+  `postMessage` のプリフェッチ口には
   送信元検証・同じ allowlist・件数／URL 長／応答サイズ／容量上限・`credentials:'omit'` が付く。
   ⚠ allowlist 外の URL は**page 側へ差し戻す**（カスタム XYZ プロバイダの温めを失わない）。
 - **admin.html** は隔離する（§11）。SDK は同梱版を読み、データ取込は `js/admin-literal.js` の

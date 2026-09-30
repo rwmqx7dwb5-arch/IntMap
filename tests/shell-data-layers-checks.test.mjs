@@ -29,6 +29,7 @@ import * as LM from '../js/layer-manifest.js';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';
+import { installSafe } from './helpers/safe-html.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -238,6 +239,8 @@ function runCard({ facts }) {
     'window', 'document', 'turf', 'fetch', 'navigator', 'requestIdleCallback', 'console', 'localStorage', src,
   )(win, doc, env.turf, env.fetch, env.navigator, env.requestIdleCallback, env.console, env.localStorage);
 
+  /* the card escapes names and facts through window.IntMapSafe (output-taint-gate) — the real encoder */
+  installSafe(win);
   run(read('js/tables.js'));
   run(read('js/country-extent.js'));
   run(read('js/countries-ui.js'));

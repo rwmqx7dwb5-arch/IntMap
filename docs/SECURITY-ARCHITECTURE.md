@@ -218,6 +218,39 @@ metadata, GPX/KML) — another grammar, written to a file — and each carries i
 7 href/src values in `js/app-body.js`, `js/map-ui.js`, `js/countries-ui.js`, `js/data-layers.js`,
 `js/companies-ui.js` and `js/feedback.js` — the ledger names each; nothing blocks them any more.
 
+**The gate over values** — counting encoders never asks whether the value that reaches a sink can
+carry markup. `scripts/output-taint.mjs` (the `output-taint` rule of `npm run check:static`) reads every
+`innerHTML` / `outerHTML` assignment, `insertAdjacentHTML` and MapLibre `setHTML` in `js/` (590 sinks,
+measured 2026-09-30), splits the value into its **leaves** — the parts written at the sink — and judges
+each: a literal; a number (arithmetic, `Math.*`, `.toFixed`, a Date's formatting); the return of
+`IntMapSafe.html/esc/url/text`; a function defined in the same file whose every return is safe, judged
+per parameter (`row(k, v)` that escapes `v` needs only `k` to be safe); a local helper's parameter,
+judged at each of its callers when every use of the helper is a direct call; a name received as a
+factory dependency (`{ esc }`) when every function **offered** under that name anywhere in `js/` is
+safe; a translation from the `TRUSTED` table. `TRUSTED` is the one declared part — `IntMapLang.t`,
+`IntMapLang.pick` (and its `.arr`) and `HOST.t` — and each row names the file and function that
+implement it and says in a sentence why its output cannot carry the caller's data; a row whose function
+is gone, that nothing calls, or that has no reason fails the gate. What cannot be judged is held per
+file to `tests/output-taint-baseline.json` in both directions (434 leaves in 75 files at introduction;
+`--update` lowers it, `--why` follows a leaf into its definitions). **Unjudged is not unsafe** — most
+leaves are our own numbers and labels reached through a path the analysis does not follow — which is why
+it is a ledger and not a refusal. Building the ledger surfaced external data written raw, all now through
+`IntMapSafe.html`: OpenFreeMap/OSM country names (`js/map-extras.js`, the label-isolate chip), every
+ADS-B string of the aircraft tooltip and the MMSI / IMO / draught of the ship half (`js/data-layers.js`
+`trafficTooltipHTML`), the country card's name, capital, currency, languages, neighbours and time zones
+(`js/countries-ui.js`), the Open-Meteo model id and precipitation (`js/weather.js`), the webcam feed's
+credit line (`js/cameras.js`) and the gazetteer name in the seismic felt-report table (`js/seismic.js`).
+
+**A control that writes says so.** Atlas's confirmation before pressing an `outward` / `destructive`
+control reads the element's `data-effect` and nothing else. `scripts/data-effects.mjs` (the
+`data-effect` rule) finds every UI handler that reaches a Supabase table write, `rpc`,
+`functions.invoke`, an auth change or a POSTed Edge Function — through same-file functions, destructured
+names, `Obj.name.apply` shims, `window.name` and the members of the host literal a factory is called
+with — on an element with no `data-effect`, and holds them per file to `tests/data-effect-baseline.json`.
+At introduction: 39 writing controls, 10 undeclared (the language buttons, the settings close button,
+the news-language picker and the layer-preset save/delete, all reaching the preferences upsert through
+`window._syncPrefsUp` — the reader's own state, i.e. `private`).
+
 **Sinks hardened this round** (all were confirmed reachable from attacker-controlled data):
 
 | Surface | Field(s) | Trigger |
@@ -508,6 +541,13 @@ of reach. The chosen posture:
     GPL-compatible; the hash is what makes loading it from a third party safe. Its jsDelivr
     fallback carries the same pin but is refused by `script-src` before it is fetched (the host is
     not admitted).
+    ⚠ **`script-src` admits unpkg by that one file's full path**
+    (`https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js`), not the host: until
+    2026-09-30 it admitted every package on unpkg, pinned or not. A CSP path that does not end in `/`
+    matches exactly, so bumping `SDK_VER` means changing the CSP path in the same edit —
+    `tests/output-taint-gate-checks.test.mjs` ⑥ builds the URL from `SDK_URLS` and holds the two
+    together. Measured the same day: the file is served 200 without a redirect (after a redirect CSP
+    no longer compares paths), and its workers are `blob:` URLs, which `worker-src` already admits.
   Scripts whose provider changes the bytes by design cannot carry a fixed hash and are declared,
   each with its reason, in `UNPINNABLE` in `scripts/runtime-scripts.mjs`: the Street View JSONP
   lookup (`maps.googleapis.com`), gtag.js (`www.googletagmanager.com`) and Clarity
@@ -679,9 +719,15 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    from every tracked file (`ai-proxy`, `static-checks.mjs`, `js/ai-core.js`, `js/auth-ui.js`);
    removing it from past commits means rewriting published history, which is destructive and out
    of scope for this change.
-11. **The service worker's cache-first store is still keyed on host allow-lists**, and one entry
-   is `s3.amazonaws.com` for the terrarium DEM. The six exact hostnames are listed by name (not
-   by suffix) precisely so that "any S3 bucket serving a `/terrarium/` path" is not admitted.
+11. **The service worker's cache-first store is still keyed on allow-lists.** The terrarium DEM is
+   admitted by six (host, path-prefix) pairs, compared from the START of the normalised path. Until
+   2026-09-30 this item said "any S3 bucket serving a `/terrarium/` path is not admitted" while the
+   code tested `pathname.indexOf('/terrarium/')` on `s3.amazonaws.com` — S3's path-style endpoint,
+   where the first path segment names the bucket and anyone can create one — so
+   `https://s3.amazonaws.com/<any-bucket>/terrarium/…` was cached first-hit and answered cache-first
+   for sixty days. The path-style prefixes now carry the bucket (`/elevation-tiles-prod/terrarium/`);
+   `tests/output-taint-gate-checks.test.mjs` ⑤ runs `isTileRequest` on every DEM template in `js/`
+   (admitted) and on foreign buckets, traversal and plaintext (refused).
 5. **AI content-sharing**: when the active provider is OpenAI, submitted text/outputs may be
    used by OpenAI to improve its models (disclosed in-app); users are told not to submit
    sensitive data.

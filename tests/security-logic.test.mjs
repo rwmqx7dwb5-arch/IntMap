@@ -259,8 +259,11 @@ test('the service worker matches hosts on a dot boundary, never a bare suffix', 
 test('the service worker will not cache a path match on an arbitrary host', () => {
   const code = codeOnly(sw);
   assert.match(code, /TILE_PATH_RULES/, 'the path rules are not host-scoped');
-  assert.match(code, /r\.hosts\.indexOf\(h\) !== -1 && u\.pathname\.indexOf\(r\.path\)/,
-    'a path rule can match a host that is not on its own list');
+  /* (output-taint-gate) one host and one prefix from the START of the path — a path-style S3 endpoint
+     serves every bucket, so «/terrarium/ anywhere» admitted any bucket; tests/output-taint-gate-checks
+     runs the function itself on the real and the hostile URLs */
+  assert.match(code, /r\.host === h && u\.pathname\.startsWith\(r\.prefix\)/,
+    'a path rule can match a host that is not its own, or a prefix that is not at the start of the path');
   assert.ok(!/TILE_PATHS\.some\(\(p\) => u\.pathname\.indexOf\(p\)/.test(code),
     'the host-free path match is back — any origin serving /terrarium/ becomes cacheable');
 });

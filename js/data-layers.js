@@ -5452,18 +5452,18 @@ window.IntMapModules.dataLayers=function(HOST){
       const row=(label,val)=>val!==''&&val!=null?`<div style="font-size:11px;margin-top:2px;"><span style="color:var(--text-muted);">${label}:</span> ${val}</div>`:'';
       const typeChip=`<div style="font-size:11px;margin-top:4px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военное','Militar')):(window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданское','Civil'))}</div>`;
       if(id==='ships'){
-        const nm=escapeHtml(p.name||'')||('MMSI '+(p.mmsi||'—'));
+        const nm=escapeHtml(p.name||'')||('MMSI '+(p.mmsi?escapeHtml(String(p.mmsi)):'—'));
         const spd=p.vel!=null?(Math.round(p.vel*10)/10)+' kn'+(p.vel?` · ${Math.round(p.vel*1.852)} km/h`:''):'';
         return `<div style="font-weight:700;font-size:13px;">🚢 ${nm}</div>`+
           row(window.IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo'),shipTypeLabel(p.shipType))+
-          row('MMSI',p.mmsi)+
+          row('MMSI',p.mmsi!=null?escapeHtml(String(p.mmsi)):'')+
           row(window.IntMapLang.t(HOST.lang,'Call sign','呼出符号','Rufzeichen','Позывной','Indicativo'),escapeHtml(p.callsign||''))+
-          (p.imo?row('IMO',p.imo):'')+
+          (p.imo?row('IMO',escapeHtml(String(p.imo))):'')+
           row(window.IntMapLang.t(HOST.lang,'Speed','速力','Geschwindigkeit','Скорость','Velocidad'),spd)+
           row(window.IntMapLang.t(HOST.lang,'Course','針路(COG)','Kurs (COG)','Курс (COG)','Rumbo (COG)'),p.cog!=null?Math.round(p.cog)+'°':'')+
           row(window.IntMapLang.t(HOST.lang,'Heading','船首方位','Steuerkurs','Курс носа','Proa'),p.heading!=null?Math.round(p.heading)+'°':'')+
           row(window.IntMapLang.t(HOST.lang,'Status','状態','Status','Состояние','Estado'),navStatusLabel(p.navStatus))+
-          row(window.IntMapLang.t(HOST.lang,'Draught','喫水','Tiefgang','Осадка','Calado'),p.draught?p.draught+' m':'')+
+          row(window.IntMapLang.t(HOST.lang,'Draught','喫水','Tiefgang','Осадка','Calado'),p.draught?escapeHtml(String(p.draught))+' m':'')+
           row(window.IntMapLang.t(HOST.lang,'Destination','仕向地','Ziel','Пункт назначения','Destino'),escapeHtml(p.dest||''))+
           typeChip+
           `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(Math.floor((p.t||0)/1000))}<br>${aisKey?'aisstream.io · AIS':'aisstream.io + Digitraffic/Fintraffic (CC BY 4.0) · AIS'}</div>`;
@@ -5472,17 +5472,19 @@ window.IntMapModules.dataLayers=function(HOST){
       const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
       const velKmh=p.vel!=null?` · ${Math.round(p.vel*3.6)} km/h · ${Math.round(p.vel*1.944)} kn`:'';
       const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(window.IntMapLang.t(HOST.lang,'level','水平飛行','Reiseflug','горизонтальный полёт','nivelado')):'');
-      const acName=p.desc||p.acType||'';
-      return `<div style="font-weight:700;font-size:13px;">✈️ ${p.callsign||p.reg||p.icao24||'—'}</div>`+
+      /* ⚠ every ADS-B string below is the feed's (airplanes.live / OpenSky relay), exactly like the AIS
+         strings of the ship half above — escaped the same way, not trusted because it is usually short */
+      const acName=escapeHtml(p.desc||p.acType||'');
+      return `<div style="font-weight:700;font-size:13px;">✈️ ${escapeHtml(p.callsign||p.reg||p.icao24||'—')}</div>`+
         row(window.IntMapLang.t(HOST.lang,'Aircraft','機体','Luftfahrzeug','Воздушное судно','Aeronave'),acName)+
-        row(window.IntMapLang.t(HOST.lang,'Reg.','登録記号','Kennzeichen','Рег. номер','Matrícula'),p.reg)+
-        row('ICAO24',p.icao24?p.icao24.toUpperCase():'')+
+        row(window.IntMapLang.t(HOST.lang,'Reg.','登録記号','Kennzeichen','Рег. номер','Matrícula'),escapeHtml(p.reg||''))+
+        row('ICAO24',p.icao24?escapeHtml(String(p.icao24).toUpperCase()):'')+
         row(window.IntMapLang.t(HOST.lang,'Altitude','高度(気圧)','Höhe (baro)','Высота (баро)','Altitud (baro)'),p.onGround?(window.IntMapLang.t(HOST.lang,'on ground','地上','am Boden','на земле','en tierra')):(p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:''))+
         row(window.IntMapLang.t(HOST.lang,'Geo alt','高度(GPS)','Höhe (GPS)','Высота (GPS)','Altitud (GPS)'),p.geoAlt!=null?Math.round(p.geoAlt)+' m':'')+
         row(window.IntMapLang.t(HOST.lang,'Speed','対地速度','Geschwindigkeit','Путевая скорость','Velocidad'),p.vel!=null?Math.round(p.vel)+' m/s'+velKmh:'')+
         row(window.IntMapLang.t(HOST.lang,'Track','針路','Kurs über Grund','Путевой угол','Derrota'),p.heading!=null?Math.round(p.heading)+'°':'')+
         row(window.IntMapLang.t(HOST.lang,'Vert. rate','昇降率','Steig-/Sinkrate','Верт. скорость','Régimen vertical'),vr)+
-        row(window.IntMapLang.t(HOST.lang,'Squawk','スコーク','Squawk','Сквок','Squawk'),p.squawk)+
+        row(window.IntMapLang.t(HOST.lang,'Squawk','スコーク','Squawk','Сквок','Squawk'),escapeHtml(p.squawk||''))+
         typeChip+
         /* (#R173) what a click will draw, and how much of it there is. Named "observed" because that is
            exactly what it is — the fixes this browser has received, not a history we do not have. */

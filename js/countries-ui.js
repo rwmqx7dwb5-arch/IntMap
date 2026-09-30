@@ -196,6 +196,10 @@ window.IntMapCountryFacts=(function(){
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
+  /* the one encoder (js/safe-html.js). A country's name comes from the map feature's NAME_EN / ADMIN /
+     NAME when the stats table has no row, and its capital, currency, languages, neighbours and time
+     zones from the facts file — data, not our text, so each is escaped where it enters markup. */
+  const escC=(s)=>window.IntMapSafe.html(s==null?'':s);
   /* (#R251) the seven continent names the country table carries in `region`, as calls.
      ⚠ BUILT ON FIRST USE, NOT AT FACTORY LEVEL. tests/news-module-split-checks.test.mjs (#R168) #4 holds this repo to «a factory body
      does nothing while it runs» — a module factory may DECLARE, never CALL — and both
@@ -621,7 +625,7 @@ window.IntMapModules.countriesUi=function(HOST){
     const id=HOST.resolveCountryId(feat), s=HOST.countryStats[id], p=document.getElementById('country-info'),
           name=HOST.cName(s,feat.properties&&(feat.properties.NAME_EN||feat.properties.ADMIN||feat.properties.NAME));
     const haveAny = s && (s.pop||s.gdp||s.area||s.hdi||s.dem||s.milSpend);
-    p.innerHTML=`<div class="ci-name">${s&&s.flag?s.flag+' ':'🏳️ '}${name}</div>
+    p.innerHTML=`<div class="ci-name">${s&&s.flag?escC(s.flag)+' ':'🏳️ '}${escC(name)}</div>
       <div class="ci-row"><span>${HOST.t('statPop')} (${POP_YEAR})</span><b>${s&&s.pop?fmtNum(s.pop):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdp')} (${GDP_YEAR})</span><b>${s&&s.gdp?HOST.fmtMoney(s.gdp):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdpPPP')}</span><b>${s&&s.gdpPPP?HOST.fmtMoney(s.gdpPPP):HOST.t('dataNA')}</b></div>
@@ -629,8 +633,8 @@ window.IntMapModules.countriesUi=function(HOST){
       <div class="ci-row"><span>${HOST.t('statGdpPcPPP')}</span><b>${s&&s.gdppcPPP?HOST.fmtPc(s.gdppcPPP):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statHDI')}</span><b>${s&&s.hdi?s.hdi.toFixed(3):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statDem')}</span><b>${s&&s.dem?s.dem.toFixed(2):HOST.t('dataNA')}</b></div>
-      <div class="ci-row"><span>${HOST.t('statMil')}</span><b>${s&&s.milSpend?'$'+s.milSpend+'B':HOST.t('dataNA')}</b></div>
-      <div class="ci-row"><span>${HOST.t('statCapital')}</span><b>${s&&s.capital?s.capital:HOST.t('dataNA')}</b></div>
+      <div class="ci-row"><span>${HOST.t('statMil')}</span><b>${s&&s.milSpend?'$'+escC(s.milSpend)+'B':HOST.t('dataNA')}</b></div>
+      <div class="ci-row"><span>${HOST.t('statCapital')}</span><b>${s&&s.capital?escC(s.capital):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statArea')}</span><b>${s&&s.area?fmtArea(s.area):HOST.t('dataNA')}</b></div>`;
     p.style.display='block';
   }
@@ -677,7 +681,7 @@ window.IntMapModules.countriesUi=function(HOST){
     const _de=HOST.lang==='de', _jp=HOST.lang==='jp', _ru=HOST.lang==='ru', _es=HOST.lang==='es';
     const TR=window.IntMapLang.pick(()=>HOST.lang);
     const yn=v=>v?TR('Yes','はい','Ja','Да','Sí'):TR('No','いいえ','Nein','Нет','No');
-    const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('')+`</div>`; };
+    const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${escC(v)}</b></div>`).join('')+`</div>`; };
     /* ⚠ (#R443) THE COLLAPSE IS COMPARED AFTER RESOLUTION, NOT BEFORE. Natural Earth's CONTINENT
        and SUBREGION are different English strings for the same place on four groups of rows —
        «North America»/«Northern America» (13), «South America»/«South America» (41), «Antarctica»
@@ -762,7 +766,7 @@ window.IntMapModules.countriesUi=function(HOST){
     let s=HOST.countryStats[idStr];
     const name=HOST.cName(s,fallback);
     const popup=document.getElementById('country-popup');
-    document.getElementById('cp-title').innerHTML=(s&&s.flag?s.flag+' ':'🏳️ ')+name;
+    document.getElementById('cp-title').innerHTML=(s&&s.flag?escC(s.flag)+' ':'🏳️ ')+escC(name);
     const body=document.getElementById('cp-body');
     window._cpCurrent={code:idStr,name:name};   /* read by the isolate + time-series buttons */
     const _isoSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>';
@@ -822,7 +826,7 @@ window.IntMapModules.countriesUi=function(HOST){
     _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name);
     if(s && s.latlng){ try{ _CM().flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0}); }catch(_){} }
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(HOST.countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+HOST.cName(s,fallback); });
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(HOST.countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?escC(s.flag)+' ':'🏳️ ')+escC(HOST.cName(s,fallback)); });
     /* (#R94) let the time-machine refresh THIS card's numbers in place (no re-fly / no re-fetch) when the
        global clock moves — closes over the live idStr/body/topBtns for the currently-open country. */
     window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=HOST.countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } }catch(_){} };
@@ -929,10 +933,10 @@ window.IntMapModules.countriesUi=function(HOST){
          under every country name read «Europe / Berlin» in all nine languages — found by
          tests/r251.spec.js, which reads the rendered DOM rather than the source. The seven regions
          are a closed set, so they are a table of calls; the capital is a place name and stays. */
-      const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
+      const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${escC(s.capital||'')}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${String(HOST.cName(s)||'').replace(/"/g,'&quot;')}">${rankHTML}<span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${HOST.cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
+      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${escC(s.flag||'🏳️')}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{

@@ -77,7 +77,7 @@ const TILE_HOSTS = [
   'api.mapbox.com',                   // Mapbox Satellite (BYOK)
   'services.sentinel-hub.com',        // Sentinel Hub (BYOK)
   'basemaps.cartocdn.com',            // light/dark basemaps (a/b/c/d subdomains)
-  'elevation-tiles-prod.s3.amazonaws.com', // terrarium DEM (instant elevation/depth)
+  /* the terrarium DEM bucket is NOT a host entry: it is a (host, path prefix) pair in TILE_PATH_RULES below */
   'wmts.terrascope.be',               // (#R17) ESA WorldCover land-cover — single slow host, so cache hard → instant on revisit
   'tiles.openfreemap.org',            // (#R17) vector place labels — cache so labels snap in on revisit
 ];
@@ -115,16 +115,30 @@ const TILE_HOSTS = [
 function hostMatches(h, list) {
   return list.some((t) => h === t || h.endsWith('.' + t));
 }
+/* ══ ⚠⚠ SEC (output-taint-gate): THE PATH TEST STILL LOOKED ANYWHERE IN THE PATH, ON A HOST THAT IS EVERY BUCKET
+   The host list above was exact, but three of its six names are S3's PATH-STYLE endpoints —
+   `s3.amazonaws.com/<bucket>/<key>` — where the FIRST path segment names the bucket, and anyone can
+   create a bucket. The path test was `u.pathname.indexOf('/terrarium/') !== -1`, so
+   `https://s3.amazonaws.com/any-bucket/terrarium/x.png` was a tile: cached first-hit, answered cache-first
+   for sixty days, handed back as a same-origin body — the very thing the box above says was closed.
+   (docs/SECURITY-ARCHITECTURE.md §8 item 11 described exactly this as not admitted.)
+   ⇒ Each rule is now ONE host and ONE path PREFIX, compared from the start of the (already normalised —
+   `new URL` resolves `.`/`..` segments) pathname: a path-style endpoint carries the bucket in its prefix
+   (`/elevation-tiles-prod/terrarium/`), a virtual-hosted one carries it in the host (`/terrarium/`). The
+   URLs they must admit are the five js/dem-source.js round-robins (#R7) plus the one path-style host it
+   does not use today; tests/output-taint-gate-checks.test.mjs reads the templates from js/dem-source.js
+   and every other DEM URL in js/ and runs them through this function, so a sixth alias that is not
+   listed here fails a test instead of silently missing the cache. */
+const DEM_BUCKET = 'elevation-tiles-prod';
 const TILE_PATH_RULES = [
-  { path: '/terrarium/',              // AWS terrarium DEM, whichever S3 alias served it (js/dem-source.js)
-    hosts: [
-      's3.amazonaws.com',
-      'elevation-tiles-prod.s3.amazonaws.com',
-      'elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com',
-      'elevation-tiles-prod.s3.us-east-1.amazonaws.com',
-      's3.dualstack.us-east-1.amazonaws.com',
-      's3.us-east-1.amazonaws.com',
-    ] },
+  /* path-style endpoints — the bucket is the first path segment */
+  { host: 's3.amazonaws.com',                                     prefix: '/' + DEM_BUCKET + '/terrarium/' },
+  { host: 's3.dualstack.us-east-1.amazonaws.com',                 prefix: '/' + DEM_BUCKET + '/terrarium/' },
+  { host: 's3.us-east-1.amazonaws.com',                           prefix: '/' + DEM_BUCKET + '/terrarium/' },
+  /* virtual-hosted endpoints — the bucket is in the host name */
+  { host: DEM_BUCKET + '.s3.amazonaws.com',                       prefix: '/terrarium/' },
+  { host: DEM_BUCKET + '.s3.dualstack.us-east-1.amazonaws.com',   prefix: '/terrarium/' },
+  { host: DEM_BUCKET + '.s3.us-east-1.amazonaws.com',             prefix: '/terrarium/' },
 ];
 function isTileRequest(url) {
   let u;
@@ -132,9 +146,9 @@ function isTileRequest(url) {
   if (u.protocol !== 'https:') return false;      /* a tile is never plaintext; nothing here asks for http */
   const h = u.hostname;
   if (hostMatches(h, TILE_HOSTS)) return true;
-  /* ⚠ EXACT hostnames here, not hostMatches(): the two generic S3 endpoints in the list would
-     otherwise admit every bucket in the world that happens to serve a /terrarium/ path. */
-  return TILE_PATH_RULES.some((r) => r.hosts.indexOf(h) !== -1 && u.pathname.indexOf(r.path) !== -1);
+  /* ⚠ EXACT hostname and a prefix from the START of the path: a path-style S3 endpoint serves every
+     bucket in the world, and only the prefix says which one. */
+  return TILE_PATH_RULES.some((r) => r.host === h && u.pathname.startsWith(r.prefix));
 }
 
 /* ══ (#R224) WHAT MAY GO STALE, AND HOW STALE ═══════════════════════════════════════════════════════

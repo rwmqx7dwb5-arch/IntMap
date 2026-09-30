@@ -220,7 +220,8 @@ window.IntMapModules.layerHoverPopup=function(HOST){
         if(!name){ hide(); return; }
         const ll=e.lngLat;   /* isolate by the tapped POINT (reliable) — name is just the label */
         const b=ensurePop();
-        b.innerHTML='<span style="color:var(--primary-color);display:inline-flex;align-items:center;flex:0 0 auto;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">'+(HOST.lang==='jp'?(name+' だけ表示'):HOST.lang==='de'?(name+' isolieren'):HOST.lang==='ru'?('Только '+name):HOST.lang==='es'?('Aislar '+name):('Isolate '+name))+'</span>';
+        const nmH=window.IntMapSafe.html(name);   /* the tile's name is OpenStreetMap data, not our text */
+        b.innerHTML='<span style="color:var(--primary-color);display:inline-flex;align-items:center;flex:0 0 auto;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">'+(HOST.lang==='jp'?(nmH+' だけ表示'):HOST.lang==='de'?(nmH+' isolieren'):HOST.lang==='ru'?('Только '+nmH):HOST.lang==='es'?('Aislar '+nmH):('Isolate '+nmH))+'</span>';
         /* (#R32b) Pin to a RELIABLY-CLEAR bottom-centre slot (iOS contextual-action style) instead of the tap
            point — guarantees it never overflows the edge nor covers the top/right controls or the FAB stack
            ("はみ出している / ほかのボタンを隠している / 周りのUIと同一にしろ"). Width-capped + ellipsis for long names. */

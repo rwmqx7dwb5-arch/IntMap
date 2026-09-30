@@ -702,6 +702,33 @@ try {
   err('comment-stripper', 'could not run the comment-stripper ledger: ' + (e && e.message));
 }
 
+// ── 20. (output-taint-gate) what flows INTO an HTML sink, not how many encoders there are ──
+// §12 keeps the encoder single; it never asks whether the value that reaches innerHTML / outerHTML /
+// insertAdjacentHTML / setHTML can carry markup. This splits every such value into its leaves and judges
+// each (a literal, a number, an IntMapSafe.* result, a builder in the same file whose returns are safe, a
+// declared translation…); the leaves it cannot judge are held per file to tests/output-taint-baseline.json
+// in both directions. The rule, the judge and the TRUSTED table (a reason per row, checked against the
+// code it names) live in scripts/output-taint.mjs. A rule here for the reason given at 15.
+try {
+  const { check: outputTaintCheck } = await import('./output-taint.mjs');
+  for (const l of outputTaintCheck().lines) err('output-taint', l);
+} catch (e) {
+  err('output-taint', 'could not run the output-taint ledger: ' + (e && e.message));
+}
+
+// ── 21. (output-taint-gate) a control that writes to the database says so ──
+// Atlas's confirmation before pressing an outward / destructive control (js/atlas-controls.js
+// controlEffect → js/atlas-executor.js 4b) reads the element's data-effect and nothing else. This finds
+// every UI handler that reaches a Supabase write / rpc / functions.invoke / auth change / POSTed Edge
+// Function on an element with no data-effect and holds them per file to tests/data-effect-baseline.json
+// in both directions; scripts/data-effects.mjs. A rule here for the reason given at 15.
+try {
+  const { check: dataEffectCheck } = await import('./data-effects.mjs');
+  for (const l of dataEffectCheck().lines) err('data-effect', l);
+} catch (e) {
+  err('data-effect', 'could not run the data-effect ledger: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);
