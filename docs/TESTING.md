@@ -1035,6 +1035,24 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   directly from two files, and no file fetches a `data/*.gz` itself — a direct read being a literal,
   an inline `new URL('data/…')`, or a name bound to an expression holding a `data/` literal. ⑥
   evaluates `js/world-packs.js`'s own `worldAdm1` text: a failed read is dropped from its memo.
+- **The historical records are asked on another thread** (hist-bundles-off-main) —
+  `tests/hist-bundles-off-main-checks.test.mjs` runs `js/hist-bundles.js` over the shipped
+  ring-pooled records (CShapes, OpenHistoricalMap countries, the first subdivision tier with its two
+  gap records, the era sheets): ① the rows it says are in force on the days the history gates name
+  (-200 … 2000, 15 June and 1 January) are the rule restated over the whole file (inclusive end for
+  CShapes, exclusive for OHM), and the page's sparse copy holds exactly those rows and rings, value
+  for value, and fewer rings than the record; ② the epoch index is every edge in range; ③ on a real
+  `worker_threads` thread the answer is the page path's, each ring crosses once, a ring the page holds
+  is never replaced (identity), and the first travel arrives in slices no larger than `SLICE_POINTS`;
+  ④ the gap splice carries columns 10-12 and each gap record's view is that record by its own
+  indices, with `ringOrigin` naming it; ⑤ an era sheet arrives whole; ⑥⑦ `js/time-borders.js`
+  (through `scripts/histeras/time-borders.mjs`) and `js/time-admin1.js` are each run twice — over
+  bundles published whole on `window` (the old shape) and through the door — and every collection
+  and line source they write is identical year by year; ⑧ discovered from `data/border-coast.js`'s
+  registry of pools, no `js/` file injects a pooled record as a `<script>` or publishes it on
+  `window`, and the three readers open through the door. The in-browser before/after (feature sets
+  per year, place, deep tier and war day; page long tasks and heap) is in
+  `dev-notes/2026-09-30-hist-bundles-off-main.md`.
 - **A comment stripper that is not the shared one** (`comment-stripper`, test-code-only-one) —
   `scripts/comment-strippers.mjs` reads every `.js`/`.mjs`/`.cjs` under `tests/` and `scripts/` from
   the parser and finds a stripper by what it DOES, not what it is called: a `.replace()` whose

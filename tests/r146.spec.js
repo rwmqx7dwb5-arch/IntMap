@@ -25,10 +25,10 @@ test.beforeAll(async ({ browser }) => {
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForFunction((g) => g.every((k) => typeof window[k] !== 'undefined'), CRITICAL, { timeout: 45_000 });
-  /* The CShapes bundle is no longer warmed at boot: it waits for the reader to head for the past
-     (js/chronos.js IntMapTime.onIntent — dev-notes/2026-09-29-history-prefetch-on-demand.md). This
-     file reads it, so it says so the way the Chronos button does, then waits for the bundle. */
-  await page.evaluate(() => window.IntMapTime.intent('test:reads-cshapes'));
+  /* This file tests the CShapes DATA, so it reads the shipped file itself. The page no longer puts the
+     bundle on window: js/hist-bundles.js holds it on a Worker and hands the page only what an instant
+     draws (dev-notes/2026-09-30-hist-bundles-off-main.md) — the same way tests/r142.spec.js #12 reads it. */
+  await page.evaluate(() => new Promise((res) => { const s = document.createElement('script'); s.src = 'data/cshapes.js'; s.onload = res; s.onerror = res; document.head.appendChild(s); }));
   await page.waitForFunction(() => !!(window.__CSHAPES && window.__CSHAPES.rings), null, { timeout: 60_000 });
   await loadLazyModules(page);   // (#R209) ask for the on-demand modules, incl. streetView
   await page.waitForTimeout(1200);

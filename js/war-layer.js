@@ -65,7 +65,7 @@ window.IntMapModules.warLayer = function (HOST) {
   const L = window.IntMapLang.pick(() => HOST.lang);
   const GE = () => window.IntMapGeoEngine;
 
-  let data = null, cs = null, loading = null;
+  let data = null, cs = null, loading = null, inWars = [];
   const insts = new Map();          /* war id → the instance, built on that row's first ON */
 
   const canDraw = () => { try { return !!HOST.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } };
@@ -95,15 +95,16 @@ window.IntMapModules.warLayer = function (HOST) {
   const figure = (v) => (Array.isArray(v) ? (num(v[0]) + '–' + num(v[1])) : num(v));
 
   /* ── the two files, read once and shared by both wars ───────────────────────────────────────── */
+  /* ⚠ (hist-bundles-off-main) CShapes IS OPENED THROUGH js/hist-bundles.js, THE SAME DOOR AND THE SAME
+     OPEN AS js/time-borders.js — it was a <script> tag here too, which evaluated the 13 MB literal on
+     the thread that paints. The bundle lives on another thread; this layer asks it ONCE, when the
+     wars are known, for every record in force at some instant of the widest span any war draws
+     (`during`), and those rows and rings land on the shared mirror. `entitiesAt` then picks among
+     them by the exact date, synchronously, as it always did — the mirror is sparse and is never
+     walked whole. */
   function loadCShapes() {
-    if (window.__CSHAPES) { cs = window.__CSHAPES; return Promise.resolve(cs); }
-    return new Promise((res) => {
-      const s = document.createElement('script');
-      s.src = new URL('data/cshapes.js', document.baseURI || './').href; s.async = true;
-      s.onload = () => { cs = window.__CSHAPES || null; res(cs); };
-      s.onerror = () => res(null);
-      document.head.appendChild(s);
-    });
+    try { return window.IntMapHistBundles.open({ file: 'data/cshapes.js', global: '__CSHAPES' }); }
+    catch (_) { return Promise.resolve(null); }
   }
   function load() {
     if (data && cs) return Promise.resolve(true);
@@ -111,11 +112,17 @@ window.IntMapModules.warLayer = function (HOST) {
     loading = (async () => {
       try {
         const base = document.baseURI || './';
-        const [a] = await Promise.all([
+        const [a, h] = await Promise.all([
           fetch(new URL('data/wars.json', base).href).then((r) => (r.ok ? r.json() : null)),
           loadCShapes(),
         ]);
         data = a;
+        if (data && h && Array.isArray(data.wars) && data.wars.length) {
+          let t0 = Infinity, t1 = -Infinity;
+          for (const w of data.wars) { const sp = spanOf(w); t0 = Math.min(t0, dnum(sp[0])); t1 = Math.max(t1, dnum(sp[1])); }
+          inWars = await h.during(t0, t1);
+          cs = h.data;
+        }
         return !!(data && cs);
       } catch (_) { return false; } finally { loading = null; }
     })();
@@ -132,7 +139,7 @@ window.IntMapModules.warLayer = function (HOST) {
   }
   function entitiesAt(dateStr) {
     const t = dnum(dateStr), out = [];
-    for (let i = 0; i < cs.feats.length; i++) {
+    for (const i of inWars) {
       const f = cs.feats[i];
       if (f[2] * 10000 + f[3] * 100 + f[4] > t) continue;
       if (f[5] * 10000 + f[6] * 100 + f[7] < t) continue;

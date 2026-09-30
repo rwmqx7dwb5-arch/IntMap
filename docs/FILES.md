@@ -545,6 +545,14 @@ cameras.js                        ライブカメラ層 IntMapModules.cameras
 beta-overlays.js                  ベータのオーバーレイ IntMapModules.betaOverlays（火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,043件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
 volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
+hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
+                                  hist-admin1〜3.js と穴埋めの hist-kuni.js・hist-admin-fill.js）を読む**唯一の扉**
+                                  window.IntMapHistBundles。束は Blob Worker で取得・JSON.parse・保持し、
+                                  「その日に有効な行」「エポックの境目」「時代の1枚」を向こうで答え、ページには
+                                  **その瞬間に描く行と環だけ**を同じ形の疎な写し（mirror）へ送る（環は1回だけ・
+                                  SLICE_POINTS ごとに分けて）。穴埋め記録の継ぎ足しもここ。Worker が無いときは
+                                  同じ関数（histJob）をページで走らせる。読み手は time-borders.js・time-admin1.js・
+                                  war-layer.js・border-coast.js（docs/MAP-LAYERS.md・Architecture.md §7.4）
 border-coast.js                   歴史的な輪郭のどの辺が「国境／区分境界」で、どの辺が「その記録が持つ海岸線の
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から

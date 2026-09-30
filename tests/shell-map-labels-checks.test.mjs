@@ -515,7 +515,7 @@ function loadModule() {
   /* the real registry, the real scales, the real border/coast marks — and all three shipped
      bundles, so every tier of the record answers (CShapes, OpenHistoricalMap, the era sheets). */
   for (const p of ['js/locales/_langs.js', 'js/lang-registry.js', 'js/label-scale.js', 'js/hist-scale.js',
-    'js/border-coast.js', 'data/cshapes.js', 'data/hist-borders.js', 'data/hist-eras.js']) vm.runInContext(rd(p), ctx);
+    'js/hist-bundles.js', 'js/border-coast.js', 'data/cshapes.js', 'data/hist-borders.js', 'data/hist-eras.js']) vm.runInContext(rd(p), ctx);
   vm.runInContext(rd('js/time-borders.js'), ctx);
   const HOST = { lang: 'en', canDraw: () => true, isMobile: () => false };
   return { mod: ctx.window.IntMapModules.timeBorders(HOST), E, win: ctx.window };
@@ -817,7 +817,7 @@ function harness(global,years){
   }
  };
  w.window=w;const ctx=vm.createContext(w);
- for(const p of ['js/locales/_langs.js','js/lang-registry.js','js/label-scale.js','js/hist-scale.js','js/time-borders.js'])vm.runInContext(read(p),ctx);
+ for(const p of ['js/locales/_langs.js','js/lang-registry.js','js/label-scale.js','js/hist-scale.js','js/hist-bundles.js','js/time-borders.js'])vm.runInContext(read(p),ctx);
  const mod=w.IntMapModules.timeBorders({lang:'en',canDraw:()=>true,isMobile:()=>false});
  return {mod,sources,writes,rings, async arrive(idx){const r=rings[idx];detail.set(idx,[r[0],[r[0][0]+0.5,0.0002],...r.slice(1)]);await Promise.resolve();callbacks.forEach(cb=>cb());},fine:idx=>detail.get(idx)};
 }

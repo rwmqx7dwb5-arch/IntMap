@@ -179,14 +179,12 @@ window.IntMapModules.timeBorders=function(HOST){
        Built once, lazily, off the same bundle the polygons come from — no second source to drift. */
     let _csBnd=null;
     const _ymd=(y,m,d)=>y*10000+m*100+d;
-    function _dayAfter(y,m,d){ const t=new Date(Date.UTC(y,m-1,d)); t.setUTCDate(t.getUTCDate()+1);
-      return [t.getUTCFullYear(),t.getUTCMonth()+1,t.getUTCDate()]; }
-    function csBounds(d){ if(_csBnd) return _csBnd;
-      const set=new Set();
-      for(const f of d.feats){ set.add(_ymd(f[2],f[3],f[4]));
-        const a=_dayAfter(f[5],f[6],f[7]); set.add(_ymd(a[0],a[1],a[2])); }
-      _csBnd=[...set].filter(k=>k>=_ymd(CS_MIN,1,1)&&k<=_ymd(CS_MAX,12,31)).sort((a,b)=>a-b);
-      return _csBnd; }
+    /* ⚠ (hist-bundles-off-main) THE LIST IS COMPUTED WHERE THE RECORD IS. The bundle lives on another
+       thread now (js/hist-bundles.js) and the page holds only the records it has drawn, so «every
+       start and every day-after-an-end» is asked of the thread that holds every record — `csLoad`
+       awaits it once, and this returns what it answered. The rule itself (inclusive end → the day
+       AFTER it is the edge) is the job's `edges` with end:'inclusive'. */
+    function csBounds(){ return _csBnd||[]; }
     /* the epoch a date falls in = the last boundary at or before it. Two dates inside one epoch share a
        cache key, so scrubbing a quiet decade re-renders NOTHING while 1920 now steps thirteen times. */
     /* (#R518) the search itself, once — the OpenHistoricalMap record below asks the same question of its own
@@ -195,13 +193,21 @@ window.IntMapModules.timeBorders=function(HOST){
       while(lo<=hi){ const mid=(lo+hi)>>1; if(b[mid]<=t){ ans=b[mid]; lo=mid+1; } else hi=mid-1; }
       return ans; }
     function csEpoch(d,y,m,dd){ return _epochIn(csBounds(d),_ymd(y,m,dd)); }
-    let _csD=null,_csP=null; const _csGeom=new Map();
+    /* ══ (hist-bundles-off-main) THE THREE COUNTRY RECORDS ARE OPENED THROUGH js/hist-bundles.js ════
+       They were <script> tags, so the first travel evaluated a 13-34 MB literal on the thread that
+       paints. The bundle is fetched, parsed and asked on another thread now; `_csD` is the page's
+       MIRROR of it — the same shape, holding only the records and rings some instant has needed — so
+       everything below that reads `d.feats[i]` and `d.rings[ri]` reads the same objects as before.
+       ⚠ What needs EVERY record (which are in force, where the epochs change) is asked of the handle,
+       never walked here: the mirror is sparse. A failed open resolves null and is not remembered, so
+       the next call reads again (the old `onerror` did the same). */
+    const HB=()=>window.IntMapHistBundles;
+    let _csD=null,_csP=null,_csH=null; const _csGeom=new Map();
     function csLoad(){ if(_csD) return Promise.resolve(_csD); if(_csP) return _csP;
-      _csP=new Promise(res=>{ if(window.__CSHAPES){ _csD=window.__CSHAPES; res(_csD); return; }
-        const s=document.createElement('script'); s.src='data/cshapes.js'; s.async=true;
-        s.onload=()=>{ _csD=window.__CSHAPES||null; res(_csD); };
-        s.onerror=()=>{ _csP=null; res(null); };
-        document.head.appendChild(s); });
+      _csP=Promise.resolve().then(()=>HB().open({file:'data/cshapes.js',global:'__CSHAPES'}))
+        .then(h=>h?h.edges('inclusive',_ymd(CS_MIN,1,1),_ymd(CS_MAX,12,31)).then(b=>{ _csBnd=b; _csH=h; _csD=h.data; return _csD; }):null)
+        .catch(()=>null)
+        .then(d=>{ if(!d) _csP=null; return d; });
       return _csP; }
     /* era display names: gwcode → ordered [beforeYear, name] rules (first rule with year<beforeYear wins);
        null name = default (the CShapes name with any "(…)" gloss stripped). "(UK)/(France)…" suffixes reuse the
@@ -339,13 +345,15 @@ window.IntMapModules.timeBorders=function(HOST){
       _csGeom.set(idx,g); _lineRecordOf.set(g,[d,idx,'cs']); return g; }
     function _csLineOf(d,idx){ if(_csLn.has(idx)) return _csLn.get(idx);
       const g=_lineGeom(d,idx,_bcMarks('cs')); _csLn.set(idx,g); return g; }
-    function csFC(d,year,mon,day){ const feats=[],lines=[];
+    async function csFC(d,year,mon,day){ const feats=[],lines=[];
       /* (#R421) `mon`/`day` absent = the old July-1 sample, kept so the aourednik-fallback and any
          year-only caller still get a defined instant rather than January 1. */
       const M=(mon>=1&&mon<=12)?mon:7, D=(day>=1&&day<=31)?day:1, t=_ymd(year,M,D);
-      for(let i=0;i<d.feats.length;i++){ const f=d.feats[i];
-        /* active ON that date: started at or before it, and not yet ended (CShapes end dates are inclusive) */
-        if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<t) continue;
+      /* active ON that date: started at or before it, and not yet ended (CShapes end dates are
+         INCLUSIVE) — asked of the thread that holds every record; the rows it names are on the mirror
+         when it answers, in the record's own order */
+      const ix=await _csH.at(t,'inclusive');
+      for(const i of ix){ const f=d.feats[i];
         const NAME=_csName(f[0],f[1],year);
         /* (#R695) CShapes names are bare English; the table is what makes 1886-2019 readable in
            anything else. `_gw` is untouched — it is the record's identifier, not a name. */
@@ -385,23 +393,20 @@ window.IntMapModules.timeBorders=function(HOST){
        as much. 1688 covers 9,371 deg²; 1689 covers 11,314. Below that the snapshot series keeps
        answering, exactly as it did for the whole era before #R518.
        ⚠ HB_MIN BELOW IS A COPY OF THAT DERIVED FLOOR, and the only reason it is spelled here at all
-       is that `go()` has to decide whether to inject a 13 MB bundle BEFORE it can read the bundle's
+       is that `go()` has to decide whether to open a 34 MB bundle BEFORE it can read the bundle's
        own window. tests/history-era-borders-checks.test.mjs (#R690) holds the two equal; the bundle is the
        canonical one. */
     const HB_MIN=1689, HB_MAX=1885;
-    let _hbD=null,_hbP=null,_hbBnd=null; const _hbGeom=new Map();
+    let _hbD=null,_hbP=null,_hbBnd=null,_hbH=null; const _hbGeom=new Map();
+    /* (hist-bundles-off-main) opened like data/cshapes.js above, and for the same reason; the end is
+       EXCLUSIVE here, so the edge is the end itself (the job's end:'exclusive') */
     function hbLoad(){ if(_hbD) return Promise.resolve(_hbD); if(_hbP) return _hbP;
-      _hbP=new Promise(res=>{ if(window.__HISTB){ _hbD=window.__HISTB; res(_hbD); return; }
-        const s=document.createElement('script'); s.src='data/hist-borders.js'; s.async=true;
-        s.onload=()=>{ _hbD=window.__HISTB||null; res(_hbD); };
-        s.onerror=()=>{ _hbP=null; res(null); };
-        document.head.appendChild(s); });
+      _hbP=Promise.resolve().then(()=>HB().open({file:'data/hist-borders.js',global:'__HISTB'}))
+        .then(h=>h?h.edges('exclusive',_ymd(HB_MIN,1,1),_ymd(HB_MAX,12,31)).then(b=>{ _hbBnd=b; _hbH=h; _hbD=h.data; return _hbD; }):null)
+        .catch(()=>null)
+        .then(d=>{ if(!d) _hbP=null; return d; });
       return _hbP; }
-    function hbBounds(d){ if(_hbBnd) return _hbBnd;
-      const set=new Set();
-      for(const f of d.feats){ set.add(_ymd(f[2],f[3],f[4])); set.add(_ymd(f[5],f[6],f[7])); }
-      _hbBnd=[...set].filter(k=>k>=_ymd(HB_MIN,1,1)&&k<=_ymd(HB_MAX,12,31)).sort((a,b)=>a-b);
-      return _hbBnd; }
+    function hbBounds(){ return _hbBnd||[]; }
     function hbEpoch(d,y,m,dd){ return _epochIn(hbBounds(d),_ymd(y,m,dd)); }
     function _hbLineOf(d,idx){ if(_hbLn.has(idx)) return _hbLn.get(idx);
       const g=_lineGeom(d,idx,_bcMarks('hb')); _hbLn.set(idx,g); return g; }
@@ -415,10 +420,10 @@ window.IntMapModules.timeBorders=function(HOST){
        Land». OHM carries name:en/ja/de/ru/es/zh/fr/ko on 801-1,229 of these 1,411 records, so `_i18n` rides
        along on the feature and `tagSame` reads it before it reaches `_eraLocName`. It is re-read on
        every apply(), so switching language re-labels without re-selecting anything. */
-    function hbFC(d,year,mon,day){ const feats=[],lines=[];
+    async function hbFC(d,year,mon,day){ const feats=[],lines=[];
       const M=(mon>=1&&mon<=12)?mon:7, D=(day>=1&&day<=31)?day:1, t=_ymd(year,M,D);
-      for(let i=0;i<d.feats.length;i++){ const f=d.feats[i];
-        if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<=t) continue;   /* start <= t < end — the end is EXCLUSIVE here */
+      const ix=await _hbH.at(t,'exclusive');   /* start <= t < end — the end is EXCLUSIVE here */
+      for(const i of ix){ const f=d.feats[i];
         const NAME=f[0].en;
         /* (#R695) the record's QID fills the languages OHM did not write. ⚠ `f[0]` goes in LAST
            in `hnFor`, so what the upstream itself wrote always wins. */
@@ -546,8 +551,8 @@ window.IntMapModules.timeBorders=function(HOST){
          and, failing that, (until own-fetch-relay) corsproxy.io or allorigins. A century that only exists while three
          third parties are up is not coverage.
        ⇒ data/hist-eras.js: all 53, ring-pooled, 10.6 MB, built by scripts/build-hist-eras.mjs and
-         held to its invariants by `npm run check:histeras`. Same lazy <script> shape as the two
-         bundles above it, so the deep past costs nothing until a reader travels.
+         held to its invariants by `npm run check:histeras`. Opened lazily like the two bundles
+         above it (js/hist-bundles.js), so the deep past costs nothing until a reader travels.
        ⚠ THE REMOTE PATH BELOW IS KEPT AND IS NOW THE FALLBACK — the same demotion #R518 gave these
        snapshots for 1850-1885 and #R690 extended down to 1689. A bundle that fails to load still
        leaves a world on the screen, and so does a year inside that band the record has nothing for.
@@ -641,14 +646,17 @@ window.IntMapModules.timeBorders=function(HOST){
       if(!b||b._d) return null;
       return R.compose(nm,b,(g,lg)=>{ const c=_COLONIZER[_normNm(g)]; return c?window.IntMapLang.pick(()=>lg).arr(c):null; },window.IntMapLang.codes()); }
 
+    /* (hist-bundles-off-main) opened like the two records above. The mirror carries every sheet's
+       year and upstream file name from the start (`erYears` reads them), and a sheet's rows and rings
+       arrive when that sheet is first drawn — `erSheet` below. */
+    let _erH=null;
     function erLoad(){ if(_erD&&_hn!==null) return Promise.resolve(_erD); if(_erP) return _erP;   /* (#R695) the names lane is shared now — `_hn`, not the era-only `_erN` */
-      _erP=new Promise(res=>{ if(window.__HISTERAS){ _erD=window.__HISTERAS; res(_erD); return; }
-        const sc=document.createElement('script'); sc.src='data/hist-eras.js'; sc.async=true;
-        sc.onload=()=>{ _erD=window.__HISTERAS||null; res(_erD); };
-        sc.onerror=()=>{ res(null); };
-        document.head.appendChild(sc); })
+      _erP=Promise.resolve().then(()=>HB().open({file:'data/hist-eras.js',global:'__HISTERAS'}))
+        .then(h=>{ if(h){ _erH=h; _erD=h.data; return _erD; } return null; }, ()=>null)
         .then(d=>hnLoad().then(()=>{ if(!d) _erP=null; return d; }));   /* ⚠ the names never fail the bundle */
       return _erP; }
+    /* the sheet for astronomical year `y`, with its rows and the rings they name on the mirror */
+    function erSheet(y){ try{ return _erH?_erH.snap(y):Promise.resolve(null); }catch(_){ return Promise.resolve(null); } }
     /* the reach the record actually has, from the record — never a number typed here */
     function erYears(d){ return (d&&d.snaps)?d.snaps.map(s=>s.y):YEARS; }
     /* ⚠ THE UNNAMED POLYGONS ARE DRAWN AND NOT LABELLED, and both halves of that matter. In the
@@ -656,8 +664,8 @@ window.IntMapModules.timeBorders=function(HOST){
        (bc123000: 18,345 deg² against 3,210) — dropping it empties the map — and inventing a name
        for it would be the thing CONSTITUTION「偽物・ハリボテ禁止」 forbids. So it is shipped as
        geometry with no name, and the label layers, which key off the name, pass over it. */
-    function erFC(d,y){ const k='er'+y; let fc=_erFC.get(k); if(fc) return fc;
-      const sn=d.snaps.find(s=>s.y===y); if(!sn) return null;
+    async function erFC(d,y){ const k='er'+y; let fc=_erFC.get(k); if(fc) return fc;
+      const sn=await erSheet(y); if(!sn||!sn.feats) return null;
       const poly=ids=>ids.map(p=>p.map(ri=>d.rings[ri]));
       const feats=[];
       for(const ft of sn.feats){ const nm=(ft[0]&&ft[0].en)||'', at=ft[1]||{}, ps=poly(ft[2]);
@@ -682,7 +690,7 @@ window.IntMapModules.timeBorders=function(HOST){
       const unionP=(window.turf&&window.turf.ensureUnion)?window.turf.ensureUnion():null;
       const _union=async()=>{ if(unionP){ try{ await unionP; }catch(_){} } };
       /* the bundle answers first; `year` here is astronomical and `erFC` keys on that */
-      try{ const d=await erLoad(); await _union(); if(d){ const b=erFC(d,year);
+      try{ const d=await erLoad(); await _union(); if(d){ const b=await erFC(d,year);
         if(b&&b.features.length){ const bc=_correctEra(b,year); cache.set(year,bc); return bc; } } }catch(_){}
       /* ⚠ THE FALLBACK CAN ONLY ASK FOR WHAT THE FILE NAME IS, and below year 1 it has none to ask
          for without the bundle that carries them — so a deep year with no bundle is honestly absent
@@ -1568,7 +1576,7 @@ window.IntMapModules.timeBorders=function(HOST){
         if(my!==seq||!active) return;
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing */
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) don't silently give up when the style is mid-load — retry once ready */
-          let fc=cache.get(key); if(!fc){ try{ fc=csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
+          let fc=cache.get(key); if(!fc){ try{ fc=await csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } if(my!==seq||!active) return; }
           if(fc){ shownY=key; shownCorr=false; apply(fc); return; } } }
       /* (#R518, widened #R690) HB_MIN–1885 → the same day-exact treatment, off data/hist-borders.js.
          Same shape as the block above on purpose: the aourednik snapshot below stays the fallback for
@@ -1581,7 +1589,7 @@ window.IntMapModules.timeBorders=function(HOST){
         if(my!==seq||!active) return;
         if(d){ let key; try{ key='hb'+hbEpoch(d,year,mon,day); }catch(_){ key='hb'+year; }
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }
-          let fc=cache.get(key); if(!fc){ try{ fc=hbFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
+          let fc=cache.get(key); if(!fc){ try{ fc=await hbFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } if(my!==seq||!active) return; }
           if(fc&&fc.features.length){ shownY=key; shownCorr=false; apply(fc); return; } } }
       /* (#R679) the reach comes from the record, so the seventeen pre-common-era snapshots are
          selectable the moment the bundle is there and the fallback list still answers without it. */
@@ -1647,9 +1655,11 @@ window.IntMapModules.timeBorders=function(HOST){
           let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); }); };
       /* (#R122) the bundle is loaded AHEAD of the first time-travel so that journey does not block on
          parsing it — the reported "年代を変えてから国境が出るまで遅い".
-         (#R192) …but not on the boot path: it is a <script>, so the main thread PARSES the whole
-         literal at whatever moment it lands, and it waits for the browser to say the thread is FREE
-         (requestIdleCallback, with a 6 s ceiling so a permanently busy page still gets it).
+         (#R192) …but not on the boot path: it waits for the browser to say the thread is FREE
+         (requestIdleCallback, with a 6 s ceiling so a permanently busy page still gets it). That was
+         written when the bundle was a <script> the main thread parsed whole; since
+         hist-bundles-off-main it is parsed on another thread (js/hist-bundles.js), and the idle wait
+         is kept because the fetch still shares the connection with the tiles the reader is looking at.
          (#R192/#R201/#R668) …and not at all where a speculative copy is dear — Data Saver, 2G, or a
          phone, whose connection is the one its visible tiles are queued on. That rule is answered in
          ONE place (js/mem-budget.js `maySpeculate`), which js/time-admin1.js asks too. csLoad() in the
@@ -2076,8 +2086,8 @@ window.IntMapModules.timeBorders=function(HOST){
        world changed」 for a sheet would be the invention CONSTITUTION「偽物・ハリボテ禁止」 forbids;
        calling it 「the next moment this record can show you」 is what it is.
        ⚠ AND IT COSTS NOTHING WHERE IT IS NOT WANTED. The 10.6 MB bundle is only consulted when it
-       is ALREADY THERE — parsed by this module, or published on `window` by the <script> tag that
-       loads it. That is exactly when the map is drawing from it, so the stepper at 1950 does not
+       is ALREADY THERE — opened by this module (js/hist-bundles.js), or published on `window` by a
+       harness that evaluates the file itself. That is exactly when the map is drawing from it, so the stepper at 1950 does not
        pull a bundle to answer about 500 AD, and no path here can start a download. */
     async function _allBounds(){ const out=[];
       try{ const h=await hbLoad(); if(h) for(const k of hbBounds(h)) out.push(k); }catch(_){}
@@ -2106,7 +2116,7 @@ window.IntMapModules.timeBorders=function(HOST){
          list, so this is not a second opinion about which sheet is shown — it is the same one,
          available now. (The day-exact branches above already work this way: `hbEpoch`/`csEpoch`
          answer from the record and the date, never from what has been drawn.) */
-      if(y<HB_MIN){ const e=_erD||window.__HISTERAS||null; if(!e) return null; const ny=nearest(y,erYears(e));   /* (#R698) same availability rule as `_allBounds`: parsed here, or published on window by the <script> tag */
+      if(y<HB_MIN){ const e=_erD||window.__HISTERAS||null; if(!e) return null; const ny=nearest(y,erYears(e));   /* (#R698) same availability rule as `_allBounds`: opened here, or published on window by a harness */
         return (ny==null||ny>=HB_MIN)?null:_kToDate(_ymd(ny,1,1)); }
       if(y<CS_MIN||y>CS_MAX) return null;
       const d=await csLoad(); if(!d) return null;

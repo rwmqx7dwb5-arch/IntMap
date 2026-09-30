@@ -279,10 +279,12 @@ test('⑫ the first-tier bundle is not on the boot path, and not fetched on a ph
      6.5 MB literal into a chunk — so the test is for an import STATEMENT, not for the string. */
   const importsIt = src => /\bimport\s*\(?\s*['"][^'"]*hist-admin1/.test(src) || /\bfrom\s*['"][^'"]*hist-admin1/.test(src);
   assert.ok(!importsIt(MAIN), 'the data file is never imported into the bundle');
-  assert.ok(!importsIt(TA), '…and its own module reads it as a <script>, not as a module');
-  /* (#R564) the URL is the tier's, not a literal beside the injection — so the two halves are asked
-     separately: it IS injected as a script, and the URL it injects is this bundle's. */
-  assert.match(TA, /createElement\('script'\)[\s\S]{0,120}s\.src = cfg\.file/, 'it is injected, so the browser parses it off the main graph');
+  assert.ok(!importsIt(TA), '…and its own module does not import it either');
+  /* (#R564) the URL is the tier's, not a literal beside the load — so the two halves are asked
+     separately: it IS opened through the one door, and the URL it opens is this bundle's.
+     ⚠ (hist-bundles-off-main) it was injected as a <script>, which kept it off the module graph but
+     put its 41.5 MB evaluation on the thread that paints; the door fetches and parses it on a Worker. */
+  assert.match(TA, /IntMapHistBundles\.open\(\{ file: cfg\.file, global: cfg\.global/, 'it is opened through js/hist-bundles.js, so it is parsed off the main thread and off the main graph');
   assert.match(TA, /file: 'data\/hist-admin1\.js', global: '__HISTADM1'/, 'the first tier no longer names the bundle it reads');
   const bytes = fs.statSync(path.join(ROOT, 'data/hist-admin1.js')).size;
   /* ⚠ (#R604) THE CEILING MOVED, 9 -> 11 MB, BY THE MEASURED AMOUNT AND FOR A STATED REASON.
