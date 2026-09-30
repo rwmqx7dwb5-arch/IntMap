@@ -207,7 +207,7 @@ window.IntMapModules.warLayer = function (HOST) {
       '.war-info{max-height:min(360px,max(110px,calc(100dvh - 600px)));overflow-y:auto;overscroll-behavior:contain;}',
       /* …except on the narrow layout, where the box itself is already capped at 30dvh and scrolls —
          two nested scroll areas on a phone is a trap, not a feature */
-      '@media (max-width:768px){.war-info{max-height:none;overflow:visible;}}',
+      window.IntMapDevice.media('.war-info{max-height:none;overflow:visible;}'),   /* (atlas-ui-owners) the boundary is js/ui-device.js's COMPACT */
       /* ⚠⚠⚠ (#R409) A BODY THAT ARRIVES AFTER THE MINIMIZE PASS NEVER GETS MINIMIZED — and this one
          cause produced BOTH of the phone's symptoms. On a narrow screen js/data-layers.js starts
          every floating legend collapsed, and it does that by walking the box's children ONCE and

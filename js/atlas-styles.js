@@ -20,6 +20,7 @@
  *  anywhere in it (a comment included) would terminate a template literal somewhere and blank the
  *  whole site. It is built with quoted strings and `+` for exactly that reason; keep it that way.
  * ==========================================================================*/
+import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
 import { LIGHTBOX_CSS } from './atlas-attach.js';
 import { ATTACH_VIEW_CSS } from './atlas-file-view.js';   /* (#R773) 添付ビューアの中身。枠は LIGHTBOX_CSS */
 import { MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE } from './atlas-msg-tools.js';
@@ -34,7 +35,7 @@ export function atlasPanelCSS() {
        overrides it (inline styles beat these defaults). */
     /* (#R63) bottom clearance 64px so the always-on coordinate readout (bottom-left of the map) stays visible. */
     /* (#R72) spawn TALLER ("上部にまだ余裕があるので、上までもう少し伸ばして"): top 60→46px, height follows */
-return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:14px;top:46px;transform:none;display:none;flex-direction:column;width:min(400px,calc(100vw - 28px));height:calc(100% - 110px);min-width:300px;min-height:180px;max-width:calc(100vw - 16px);max-height:calc(100% - 52px);resize:none;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:18px;box-shadow:0 18px 52px rgba(0,0,0,0.28);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);overflow:hidden;}'
+return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--z-sheet) + 200);left:14px;top:46px;transform:none;display:none;flex-direction:column;width:min(400px,calc(100vw - 28px));height:calc(100% - 110px);min-width:300px;min-height:180px;max-width:calc(100vw - 16px);max-height:calc(100% - 52px);resize:none;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:18px;box-shadow:0 18px 52px rgba(0,0,0,0.28);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);overflow:hidden;}'
       +'#atlas-panel.atl-min{height:auto !important;min-height:0 !important;resize:none;}'
       +'#atlas-panel.atl-min .atl-sub,#atlas-panel.atl-min .atl-ex,#atlas-panel.atl-min .atl-chat,#atlas-panel.atl-min .atl-inbar{display:none !important;}'
       +'#atlas-panel .atl-btns{display:flex;gap:2px;align-items:center;}'
@@ -315,7 +316,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +MSG_TOOLS_CSS
       +GLOSS_CSS   /* (#R491) ⚠ NOT scoped to #atlas-panel: the card is appended to <body> so the panel's overflow cannot clip it */
       /* (#R72) scroll-to-bottom jump button */
-      +'#atlas-panel .atl-jump{position:absolute;left:50%;transform:translateX(-50%);bottom:72px;z-index:5;width:32px;height:32px;border-radius:50%;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--popup-bg);color:var(--text-main);cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:0;}'
+      +'#atlas-panel .atl-jump{position:absolute;left:50%;transform:translateX(-50%);bottom:72px;z-index:calc(var(--z-inset) + 5);width:32px;height:32px;border-radius:50%;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--popup-bg);color:var(--text-main);cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:0;}'
       +'#atlas-panel .atl-jump.show{display:flex;}'
       +'#atlas-panel .atl-jump:hover{color:var(--primary-color);border-color:var(--primary-color);}'
       /* (#R72) inline controls rendered inside replies */
@@ -370,7 +371,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
          text, a wider text zone (tighter side padding, full-width Atlas replies), a taller rounded input pill
          (16px font also stops the iOS focus auto-zoom) LIFTED clearly above the sheet's bottom edge/home
          indicator, and slightly bigger suggestion chips / inline controls to match. */
-      +'@media(max-width:768px){'
+      +'@media'+(globalThis.IntMapDevice || window.IntMapDevice).COMPACT+'{'
       /* (#R116) EDGE-TO-EDGE: the sheet's 16px side padding left the Atlas UI 358px wide on a 390px screen
          ("左右幅が画面幅とあっておらず") — bleed the feed to the full screen width, and kill every horizontal
          overflow so the chat can never wiggle sideways ("左右に動いてしまう"). */
@@ -404,7 +405,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
          search bars that needed the same fix and the #R39 rule it is copied from. */
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-go{width:44px;height:44px;}'
       /* (#R116) input LOWERED a bit from R115 (16px+safe-area was too high — "少し位置を下げて"). */
-      +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ainote{font-size:10px;padding:2px 12px calc(6px + env(safe-area-inset-bottom,0px));}'
+      +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ainote{font-size:10px;padding:2px 12px calc(6px + var(--safe-bottom));}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ctl-lbl{font-size:13px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt button{font-size:11.5px;padding:4px 8px;}'
       +MSG_TOOLS_CSS_MOBILE

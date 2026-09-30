@@ -35,12 +35,13 @@
  *  the kernel owns the one <style> element.
  * ==========================================================================*/
 
+import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. A call site adds its task role and its task rules, never a trait */
 
 /* The desktop rules. Solid --card-bg rather than a translucent pane: #R483 measured that the body of
    "glassing" a surface is the TEXT colour, and a definition is something you read. */
 export const GLOSS_CSS = ''
-  + '.atl-gloss{position:fixed;z-index:100060;width:min(344px,92vw);max-height:min(62vh,520px);display:flex;flex-direction:column;'
+  + '.atl-gloss{position:fixed;z-index:calc(var(--z-overlay) + 70);width:min(344px,92vw);max-height:min(62vh,520px);display:flex;flex-direction:column;'
   + 'background:var(--card-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:16px;'
   + 'box-shadow:0 12px 38px rgba(0,0,0,0.30),0 2px 8px rgba(0,0,0,0.16);overflow:hidden;'
   + 'font-size:12.5px;line-height:1.6;opacity:0;transform:translateY(-4px) scale(0.985);transition:opacity .13s ease,transform .13s ease;}'
@@ -67,7 +68,7 @@ export const GLOSS_CSS = ''
   + '.atl-gloss-err{color:#ff453a;font-size:12px;line-height:1.5;padding:2px 0 10px;}'
   + '.atl-gloss-retry{background:var(--input-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.28));color:var(--text-main);border-radius:12px;padding:5px 12px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;}'
   /* the touch affordance: a long-press selects, and this is what it can then be tapped on */
-  + '.atl-gloss-pill{position:fixed;z-index:100061;background:var(--primary-fill);color:#fff;border:none;border-radius:14px;'
+  + '.atl-gloss-pill{position:fixed;z-index:calc(var(--z-overlay) + 71);background:var(--primary-fill);color:#fff;border:none;border-radius:14px;'
   + 'padding:6px 13px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.30);'
   + 'display:inline-flex;align-items:center;gap:5px;line-height:1;}'
   ;
@@ -76,7 +77,7 @@ export const GLOSS_CSS = ''
    344 px box anchored to a rect near the bottom of a 375 px screen has nowhere to be. */
 export const GLOSS_CSS_MOBILE = ''
   + '.atl-gloss{left:8px!important;right:8px!important;width:auto!important;top:auto!important;'
-  + 'bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;max-height:64vh;border-radius:18px;font-size:13.5px;}'
+  + 'bottom:calc(10px + var(--safe-bottom))!important;max-height:64vh;border-radius:18px;font-size:13.5px;}'
   + '.atl-gloss-term{font-size:15px;}.atl-gloss-body{padding:12px 16px 6px;}'
   + '.atl-gloss-more{font-size:12.5px;padding:8px 15px;}'   /* a real touch target */
   + '.atl-gloss-also button{font-size:12px;padding:5px 11px;}'
@@ -235,7 +236,7 @@ export function makeAtlasGloss(HOST, CTX) {
     anchorRange = null; anchorRect = null;
     hidePill();
   }
-  function isMobile() { try { return window.matchMedia('(max-width:768px)').matches; } catch (_) { return false; } }
+  function isMobile() { try { return (globalThis.IntMapDevice || window.IntMapDevice).compact(); } catch (_) { return false; } }
   /** Put the card beside the phrase — below it if there is room, above it if there is not. */
   function place() {
     if (!card) return;
