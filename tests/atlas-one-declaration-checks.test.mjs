@@ -315,23 +315,22 @@ test('atlas-one-declaration ⑤: everything SYS() sends before the reply-languag
   const lines = CON_SRC.split('\n');
   const s = lines.findIndex((l) => /^\s*function SYS\(\w*\)\s*\{/.test(l));
   const e = lines.findIndex((l, i) => i > s && /^    \}$/.test(l));
-  const lifted = ['_capIndex', '_directCaps', '_toolBlock'].map((n) => liftFunction(CON_SRC, n)).join('\n');
+  const lifted = ['_capIndex', '_directCaps'].map((n) => liftFunction(CON_SRC, n)).join('\n');
   const tools = makeAtlasToolSurface({ capabilities: CAPS, schemas: makeAtlasSchemas(), runAction: () => {} }).baseTools();
-  const build = (proto, lang) => {
-    const env = { personaPrompt, POLICY: makeAtlasPolicy(), CAPS, Object, String, JSON, _aiProto: proto, __baseTools: tools, _langLine: () => lang };
+  const build = (lang) => {
+    const env = { personaPrompt, POLICY: makeAtlasPolicy(), CAPS, Object, String, JSON, __baseTools: tools, _langLine: () => lang };
     const stub = new Proxy(env, { has: () => true, get: (t, k) => (k === Symbol.unscopables ? undefined : (k in t ? t[k] : (typeof k === 'string' ? () => '' : undefined))) });
     return new Function('__stub', 'with(__stub){ ' + lifted + '\n' + lines.slice(s, e + 1).join('\n') + ' return SYS(__baseTools); }')(stub);
   };
-  for (const proto of ['', 'legacy']) {
-    const en = build(proto, 'English'), jp = build(proto, 'Japanese');
-    const tEn = 'Write final_text in English.\n', tJp = 'Write final_text in Japanese.\n';
-    assert.ok(en.endsWith(tEn) && jp.endsWith(tJp), 'the reply-language line is not the last line of SYS()');
-    assert.equal(en.slice(0, -tEn.length), jp.slice(0, -tJp.length), 'something above the language line depends on the language');
-    assert.match(en, /\[WHAT INTMAP CAN DO\]/, 'the capability index is part of what is measured');
-    /* measured 2026-09-29 with the real index and base tools: the shared prefix grew from 11,199 to 14,172
-       characters (native) and from 11,066 to 25,253 (legacy) — every byte but the last line */
-    assert.ok(en.length - tEn.length > 14000 || proto, `the native prefix is ${en.length - tEn.length}`);
-  }
+  /* (atlas-legacy-protocol-removal) SYS() has one form now; the second, for the retired one-string transport, was measured here too */
+  const en = build('English'), jp = build('Japanese');
+  const tEn = 'Write final_text in English.\n', tJp = 'Write final_text in Japanese.\n';
+  assert.ok(en.endsWith(tEn) && jp.endsWith(tJp), 'the reply-language line is not the last line of SYS()');
+  assert.equal(en.slice(0, -tEn.length), jp.slice(0, -tJp.length), 'something above the language line depends on the language');
+  assert.match(en, /\[WHAT INTMAP CAN DO\]/, 'the capability index is part of what is measured');
+  /* measured 2026-09-29 with the real index and base tools: the shared prefix grew from 11,199 to 14,172
+     characters — every byte but the last line */
+  assert.ok(en.length - tEn.length > 14000, `the prefix is ${en.length - tEn.length}`);
 });
 
 /* ── ⑥ the answer families of js/atlas-turn-results.js come from the same rows ────────────────── */

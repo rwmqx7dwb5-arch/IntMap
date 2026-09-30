@@ -58,8 +58,9 @@ const PDF_TEXT = '%PDF-1.7\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n'
   + '3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n';
 const PDF_B64 = Buffer.from(PDF_TEXT, 'latin1').toString('base64');
 
-/* モデルの役。⚠ 返すのは js/atlas-agent.js の TURN_SCHEMA そのもの——`turn:'continuing'` と
-   `tool_calls` が「まだ途中」で、それが無いものが答えである。 */
+/* モデルの役。⚠ 書く文は js/atlas-agent.js の FINAL_SCHEMA（`turn` / `final_text`）で、ここの `tool_calls` は
+   この上流の役が provider の function_call item（id つき）に組み替えて返す——`turn:'continuing'` と呼び出しが
+   「まだ途中」で、それが無いものが答えである。 */
 const recall = (name) => ({ name: 'run_capability', arguments_json: JSON.stringify({ id: 'attach.recall', args: { name: name } }) });
 /* ⚠ 番号は**ターンの呼び出しの通し番号**であって「読者の何通目か」ではない。1 通目（画像つき）は
    視覚の道へ行くので、ここに来る 1 本目は読者の 2 通目である。 */
@@ -107,12 +108,13 @@ test.beforeAll(async ({ browser }) => {
     if (task === 'atlas_turn') {
       turnBodies.push(body);
       const r = modelReply(turnBodies.length);
+      /* (atlas-legacy-protocol-removal) ページは protocol 2 しか話さない。それ以外の要求は、この上流の役も答えない（'{}' のまま＝ページは不正な応答として扱う） */
       if (body.protocol === 2) {
         const n = turnBodies.length;
         text = JSON.stringify({ turn: r.turn, final_text: r.final_text });
         extra = { output: (r.tool_calls || []).map((c, i) => ({ type: 'function_call', call_id: 'c' + n + '_' + i, name: c.name, arguments: c.arguments_json })),
           meta: { protocol: 2 } };
-      } else text = JSON.stringify(r);
+      }
     }
     else if (task === 'vision_read') { visionBodies.push(body); text = JSON.stringify({ contentClass: 'other', answer: '1×1 の PNG と、Catalog だけの PDF です。' }); }
     await route.fulfill({ status: 200, contentType: 'application/json',

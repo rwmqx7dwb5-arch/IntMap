@@ -927,7 +927,7 @@ test('R406 ③: the system prompt does not carry the action catalogue', () => {
      checks (R406-turn ⑥, R727 ⑤). */
   const i = CONSOLE_CODE.indexOf('function SYS(');
   assert.ok(i > 0);
-  const sys = CONSOLE_CODE.slice(i, CONSOLE_CODE.indexOf('function _toolBlock(', i));
+  const sys = CONSOLE_CODE.slice(i, CONSOLE_CODE.indexOf('function _capIndex(', i));   /* (atlas-legacy-protocol-removal) _toolBlock, which stood here, went with the one-string transport */
   assert.doesNotMatch(sys, /_DOCS\.text\(/, 'SYS() is pasting the catalogue into every turn again');
   assert.doesNotMatch(sys, /layerCatalogText\(\)/, 'SYS() is pasting 170 layer names again');
   assert.doesNotMatch(sys, /controlCatalog\(/, 'SYS() is pasting the control list again');

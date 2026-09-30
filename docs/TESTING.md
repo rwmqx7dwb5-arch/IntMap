@@ -4163,3 +4163,23 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   等しく、超える分は昇格せず `run_capability` の道が名指されること。
 - ⑤ **ループのモデル呼び出し（`maxSteps` ＋強制の回答 1）が、proxy の `TURN_MAX_CALLS` の下に余白を残す**こと、
   およびその数をエージェントが書き写していないこと。
+
+### `tests/atlas-legacy-protocol-removal-checks.test.mjs` (atlas-legacy-protocol-removal)
+
+6 本。**Atlas の伝送は関数呼び出しの 1 本だけで、撤去した 1 本の文字列の伝送が届かせていたものは何も
+失われていない**こと。本物のレジストリ・schema・道具の面・`runTurn()` と、**protocol 2 の形（`text` と provider の
+`output` item）でしか答えない偽のモデル**で実際に評価する。
+
+- ① **生きている全能力が、関数の呼び出しだけで届く**こと——`run_capability` で各能力を、schema から導いた
+  最小の引数で呼び、dispatch に正しい名前で届くか、**その能力の schema を添えて**型付きで返される
+  （＝名前は届いており、正しい呼び方がモデルに渡る）。`unknown_tool` / `unknown_capability` は 1 件も無い。
+  基本の道具は自分の関数名で呼ぶ。provider に宣言される関数は基本の道具そのもの。
+- ② **JSON の中に書かれた `tool_calls` は実行されず、捨てられもしない**——`readReply` が `callsInText` として
+  報告し、出力の門が `calls_in_text`（名前つき）で Atlas に返し、次の手で関数として呼ばれたものが 1 回だけ走る。
+- ③ 関数の呼び出しと並んでいたら、関数のほうだけが 1 回走り、書かれたほうについての注記が結果の横に載る。
+- ④ 古い形を書き続けるモデルでも、門の既存の予算（`maxOutputGate`）で返したあと強制の回答が読者に文を届ける。
+- ⑤ protocol 2 を求めた 1 手に protocol 2 の無い応答（parse できない本文・meta の無い応答・protocol 1）が来たら、
+  `js/ai-core.js` が `provider_malformed` として投げ、別の形でやり直さない。protocol 2 を求めていない呼び出しは
+  従来どおり。
+- ⑥ `SYS()` は 1 つの形しか持たず（`_aiProto` を環境に置いても同じバイト）、道具を JSON で貼らず、
+  `tool_calls` という語を含まない。`FINAL_SCHEMA` に呼び出しの欄は無い。

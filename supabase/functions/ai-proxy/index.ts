@@ -307,10 +307,11 @@ const DOC_MIME = new Set(["application/pdf"]);   // what all three providers rea
    {type:"reasoning", id, encrypted_content} (OpenAI's own, replayed), {type:"attachments", channels}
    (where the reader's files / documents / images go) — and `tools`, the functions Atlas holds. Each
    provider receives them in its own native shape; the answer comes back as `output`, the same items.
-   ⚠ THE ONE-STRING REQUEST IS STILL ACCEPTED, unchanged: GitHub Pages serves a cached bundle for a
-   while after a deploy (the `atlas_plan` argument in TASKS below), so the order of the two deploys
-   must not matter. meta.protocol says which one answered, and that is how a new page recognises an
-   old proxy (js/atlas-console.js `_aiProto`).
+   ⚠ THE ONE-STRING REQUEST IS STILL ACCEPTED, unchanged: every other task speaks it, and GitHub Pages
+   serves a cached bundle for a while after a deploy (the `atlas_plan` argument in TASKS below).
+   meta.protocol says which one answered. (atlas-legacy-protocol-removal) The page no longer speaks the
+   one-string form for an Atlas turn, and no longer falls back to it: js/ai-core.js treats a turn
+   answered without protocol 2 as malformed.
    ⚠ THE FENCE HERE IS THE LAST LINE, NOT THE BUDGET. js/atlas-agent.js composeInput spends the real
    budget item by item (INPUT_BUDGET: 240,000 in total, 48,000 per item) and says what it gave up; the
    bounds below are set at twice those, so a conforming client never reaches them. When something does,
@@ -1747,7 +1748,7 @@ Deno.serve(async (req) => {
     await refund();
     return turnParsed.error === "too_large"
       ? json({ error: "too_large", message: "The turn is larger than the server accepts, even without the earlier conversation.", meta: { protocol: 2 } }, 413)
-      : json({ error: "empty_turn", meta: { protocol: 2 } }, 400);   /* NOT "empty": that code is how a page recognises a proxy that predates protocol 2 (js/atlas-console.js _aiProto) */
+      : json({ error: "empty_turn", meta: { protocol: 2 } }, 400);   /* NOT "empty": that is the one-string request's code, and this is a protocol-2 request with nothing in it */
   }
   const turnReq: TurnReq | null = turnParsed;
   /* ⚠ THE PER-IMAGE CEILING IS IN parseDataUrl; THIS IS THE ONE FOR ALL OF THEM TOGETHER. Four
@@ -1952,7 +1953,7 @@ Deno.serve(async (req) => {
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
       meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
-        /* (atlas-native-tools) which protocol answered (a page reads this to recognise an older proxy), and what
+        /* (atlas-native-tools) which protocol answered (js/ai-core.js refuses an Atlas turn answered without 2), and what
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined },
       /* (atlas-native-tools) the provider's items — reasoning to replay, what it wrote, the calls with their ids */

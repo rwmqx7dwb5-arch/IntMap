@@ -281,7 +281,9 @@ test('#R508 ① the front-band level the guard compares with is the level css/in
 test('#R508 ② a layer above the band is exempted, by measurement rather than by name', () => {
   /* (ui-layer-owner) the guard lives in js/ui-stack.js now; its behaviour is also EVALUATED there
      (tests/ui-layer-owner-checks.test.mjs ①: a 9999 dialog is neither marked on wheel nor on pointerdown) */
-  const ui = code(read('js/ui-stack.js'));
+  /* the subject is the code's shape, not its line-ending bytes: a Windows checkout (core.autocrlf) holds CRLF and
+     the walks below are written against LF — normalised so the verdict is not a property of the runner */
+  const ui = code(read('js/ui-stack.js').replace(/\r\n/g, '\n'));
 
   const guard = /function aboveBand\(el\) \{([\s\S]*?)\n  \}/.exec(ui);
   assert.ok(guard, 'the aboveBand walk is gone');
