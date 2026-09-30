@@ -19,7 +19,8 @@
 //    · the model table                 (PROVIDER_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN)
 //    · the provider-answer ceilings    (PROVIDER_TIMEOUT_MS, PROVIDER_MAX_BYTES)
 //    · what a provider failure carries (ProviderFail / providerFail: a status and a LENGTH, never a body)
-//    · the spend ceiling               (spendCeiling: the project-wide bucket `<fn>:global:day`)
+//    · the spend ceiling               (spendCeiling: the project-wide bucket `<fn>:global:day`;
+//                                       shareCeiling: a cohort's share of it, `<fn>:<share>:day`)
 //    · the door                        (providerFetch: no ceiling → no request; no receipt → no request)
 //
 //  ⚠⚠ THE CEILING IS A FENCE ON THE INVOICE, NOT ON ATLAS (CONSTITUTION.md §5). It does not decide how
@@ -89,6 +90,8 @@ export const PROVIDER_HOSTS = Object.freeze(["api.openai.com", "api.anthropic.co
      http                — the provider answered with a non-2xx status (`status`, `bodyLen`)
      timeout / too_large / unreachable / redirect — the transport failed (relay-guard's codes)
      spend_ceiling       — the project-wide bucket is empty; no request was made
+     share_ceiling       — the caller's cohort has spent its share of the project bucket (shareCeiling);
+                           no request was made, and the rest of the project bucket is untouched
      limiter_unavailable — the bucket could not be consulted; no request was made (fail closed)
      no_ceiling          — a caller reached the door without a ceiling; no request was made
      not_a_provider      — the URL is not a provider this door serves; no request was made */
@@ -180,6 +183,57 @@ export function spendCeiling(o) {
       const receipt = Object.freeze({ scope, cost: n, remaining: r.remaining });
       RECEIPTS.add(receipt);
       return { ok: true, receipt };
+    },
+  };
+}
+
+/* ══ ④b A SHARE OF THE CEILING — so that one cohort cannot spend the whole  (ai-quota-fairness) ══
+   WHAT WAS FOUND (audit, 2026-10-01): a project ceiling is ONE bucket that every caller drains, and
+   each account is bounded only by its plan. So the number of accounts it takes to empty the day is
+   the ceiling divided by one account's plan maximum — ai-proxy's own comment said «~16 free
+   accounts» — and when it is empty EVERY reader's AI stops, the ones who had been using it for
+   months included. An account costs an e-mail address to make.
+   shareCeiling({ fn, share, of, perDay, env }) is a second bucket, `<fn>:<share>:day`, that a cohort
+   takes from FIRST and then from the whole (`of`, a spendCeiling). The whole still bounds everyone;
+   the share bounds what that cohort can take OUT of the whole, so
+       reserved for everyone else  =  of.perDay − share.perDay
+   holds whatever the cohort does. Nobody's plan changes, and a caller outside the cohort takes from
+   the whole exactly as before — this adds no step and no limit to it.
+   ⚠ IT IS NOT A LIMIT ON ATLAS (CONSTITUTION.md §5): no step, tool or plan number changes. It decides
+   only WHOSE day the invoice fence protects when many new accounts arrive at once.
+   · `perDay` is the share's default; `<FN>_<SHARE>_PER_DAY` (e.g. AI_PROXY_NEWCOMER_PER_DAY) moves it
+     without a deploy. It is clamped to the whole: a share larger than the whole would reserve nothing
+     and claim otherwise.
+   · The share is taken before the whole, so a refused share never spends a unit of the reserve. The
+     one unit it can lose is its own, on a request the WHOLE then refuses — a day the ceiling itself
+     is spent, when nothing is sent to anyone.
+   · It fails closed like the whole: a share that cannot be consulted cannot say the reserve holds. */
+export function shareEnvName(fn, share) {
+  return String(fn || "").toUpperCase().replace(/[^A-Z0-9]+/g, "_") + "_" +
+    String(share || "").toUpperCase().replace(/[^A-Z0-9]+/g, "_") + "_PER_DAY";
+}
+
+export function shareCeiling(o) {
+  const opts = o || {};
+  const whole = opts.of;
+  const fn = String(opts.fn || "");
+  const share = String(opts.share || "");
+  const env = typeof opts.env === "function" ? opts.env : () => "";
+  const wholeDay = whole && whole.perDay > 0 ? whole.perDay : 1;
+  const perDay = Math.min(wholeDay, envPositive(env, shareEnvName(fn, share), Math.max(1, Math.floor(+opts.perDay || 1))));
+  const scope = fn + ":" + share + ":day";
+  return {
+    fn, share, scope, perDay, reserved: wholeDay - perDay,
+    async take(cost) {
+      const n = Math.max(1, Math.floor(cost == null ? 1 : +cost || 1));
+      if (!fn || !share || !whole || typeof whole.take !== "function" || whole.fn !== fn) return { ok: false, code: "no_ceiling" };
+      const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
+      const r = await makeLimiter({ db }).take(scope, "*", {
+        capacity: perDay, refillPerSec: perDay / 86400, cost: n, onUnavailable: "deny",
+      });
+      if (r.source !== "db") return { ok: false, code: "limiter_unavailable" };
+      if (!r.allowed) return { ok: false, code: "share_ceiling" };
+      return whole.take(n);
     },
   };
 }

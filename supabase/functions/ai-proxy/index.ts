@@ -30,6 +30,7 @@
 //            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 Gemini grounding, default OFF)
 //            supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        (if AI_PROVIDER=anthropic)
 //            supabase secrets set AI_PROXY_GLOBAL_PER_DAY=<n>         (optional — moves the project-wide ceiling, GLOBAL_PER_DAY below)
+//            supabase secrets set AI_PROXY_NEWCOMER_PER_DAY=<n>       (optional — the share accounts under a week old draw from, NEWCOMER_SHARE below)
 //  (SUPABASE_URL, SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY are injected.)
 //
 // ----------------------------------------------------------------------------
@@ -91,14 +92,14 @@ import { readCapped, RelayError } from "../_shared/relay-guard.js";
 /* (ai-one-ledger) The plan table, the account and the turn ledger's doors (shared with monitor-run,
    which charges the same allowance), and what a provider answer cost (one shape for three providers,
    plus the Anthropic prompt-cache breakpoints). */
-import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable } from "../_shared/ai-ledger.js";
+import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
 import { usageMeter, withPromptCache } from "../_shared/ai-usage.js";
 /* (edge-spend-and-models) The model table, the provider-answer ceilings and the one door to a paid
    provider are shared with every other function that holds a provider key — see that file's header
    for what was found when each of them lived here and in four other places. */
 import {
   OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, PROVIDER_TIMEOUT_MS,
-  providerFetch, ProviderFail, spendCeiling,
+  providerFetch, ProviderFail, spendCeiling, shareCeiling,
 } from "../_shared/ai-provider.js";
 
 const cors = {
@@ -172,8 +173,44 @@ const MAX_TURN_KEY = 120;
      · Canonical place: THIS constant; the environment may move it, never define it. */
 const GLOBAL_PER_DAY = 3000;
 const CEILING = spendCeiling({ fn: "ai-proxy", perDay: GLOBAL_PER_DAY, env: (k: string) => Deno.env.get(k) || "" });
-/* Read by tests/edge-spend-and-models-checks, which evaluates this module (Deno.serve stubbed). */
-export const SPEND = { ceiling: CEILING, schedule: [] };
+
+/* ══ (ai-quota-fairness) …AND WHOSE DAY IT PROTECTS — a newcomer's requests come out of a share ═════
+   The ceiling above is one bucket, and each account is bounded only by its plan (at most 10 turns ×
+   TURN_MAX_CALLS 12 + 60 glosses = 180 requests a day). So about 17 accounts could empty it, and an
+   empty bucket stops EVERY reader's AI — the month-old reader's as much as the account factory's.
+   An account costs one confirmed e-mail address (production auth, read 2026-10-01:
+   mailer_autoconfirm false, anonymous sign-in off).
+   So an account younger than NEWCOMER_AGE_DAYS (_shared/ai-ledger.js cohortOf — auth.users.created_at,
+   which no request can move) takes each provider request from `ai-proxy:newcomer:day` first and then
+   from the project bucket (_shared/ai-provider.js shareCeiling). Whatever the newcomers do, they
+   cannot take more than their share out of the day; the rest is held for accounts that are older.
+   ⚠ NOTHING HERE LOWERS ANYONE'S LIMIT (CONSTITUTION.md §5, one-pass-or-a-reason §3). GLOBAL_PER_DAY,
+   PLAN_LIMITS, the gloss lane and TURN_MAX_CALLS are unchanged, an established account takes from the
+   project bucket exactly as before, and a newcomer keeps its whole plan — only which part of the
+   invoice fence its requests come from is decided here. A refusal is `provider_quota` with
+   meta.ceiling "newcomer_day", and the use is refunded like the project ceiling's.
+   NEWCOMER_SHARE = 1/3 of the project ceiling (no-ad-hoc-hardcoding §4):
+     · Observation — production ledger, read 2026-10-01: at most 9 accounts under a week old used AI
+       on one day, 16 turns between them; the busiest turn carried 12 requests and the busiest day of
+       the whole project 114. A third of 3000 is 1000 requests: 62× that newcomer day even if every
+       one of its turns had used all 12 calls (192), and five fresh accounts at their plan maximum.
+     · What it holds back: 2000 a day that no batch of new accounts can reach — 17× the busiest day
+       the project has recorded, for accounts a week old or more.
+     · A FRACTION, so that AI_PROXY_GLOBAL_PER_DAY moving the whole moves the share and the reserve
+       with it (a fixed share larger than a lowered whole would reserve nothing).
+       AI_PROXY_NEWCOMER_PER_DAY sets the share in requests directly, without a deploy.
+     · Expires the first time a newcomer meets `provider_quota` / meta.ceiling "newcomer_day" on a
+       day that was readers, not a factory — then the share moves (the env), not the age.
+     · Canonical place: THIS constant and NEWCOMER_AGE_DAYS in _shared/ai-ledger.js. */
+const NEWCOMER_SHARE = 1 / 3;
+const NEWCOMER_CEILING = shareCeiling({
+  fn: "ai-proxy", share: NEWCOMER, of: CEILING,
+  perDay: Math.max(1, Math.floor(CEILING.perDay * NEWCOMER_SHARE)),
+  env: (k: string) => Deno.env.get(k) || "",
+});
+/* Read by tests/edge-spend-and-models-checks and tests/ai-quota-fairness-checks, which evaluate this
+   module (Deno.serve stubbed). */
+export const SPEND = { ceiling: CEILING, schedule: [], shares: { [NEWCOMER]: NEWCOMER_CEILING } };
 
 /* (#R722) OpenAI model = GPT-5.6 SOL, with Terra as the fallback, on the user's instruction.
    ⚠ WHAT "THE MODEL IS X" MEANT BEFORE THIS ROUND, MEASURED. #R150 set AI_MODEL=gpt-5.6-terra and
@@ -856,11 +893,15 @@ function filesBlock(files: FilePart[]): string {
    What remains HERE is only the translation into this file's own failure type, because the callers
    below decide on ProviderError's fields (the OpenAI path retries a web call on meta.timeout, the
    Gemini path retries a 5xx on meta.providerStatus), and the ceiling that every request takes from. */
-async function providerCall(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS): Promise<Response> {
+async function providerCall(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS, meter?: Meter): Promise<Response> {
   try {
-    return await providerFetch(url, init, { ceiling: CEILING, timeoutMs: ms });
+    return await providerFetch(url, init, { ceiling: meter?.ceiling || CEILING, timeoutMs: ms });
   } catch (e) {
     const code = e instanceof ProviderFail ? e.code : "";
+    /* (ai-quota-fairness) The reader's COHORT has spent its share of the project ceiling; the rest of
+       the day is held for everyone else. Same code and status as the project ceiling (it is the same
+       kind of quota, separate from the reader's own uses, and the use is refunded), a different name. */
+    if (code === "share_ceiling") throw new ProviderError("provider_quota", "Today's AI capacity for new accounts was reached. Please try again later.", 503, false, { ceiling: String(meter?.ceiling?.share || "share") + "_day" });
     /* The project-wide ceiling said no. `provider_quota` is the code the page already explains as
        «a quota that is separate from your IntMap free uses» — which is exactly this — and it is not
        retryable today. meta.ceiling names which quota it was, for the log and the panel. */
@@ -999,7 +1040,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(withPromptCache(body)),
-  });
+  }, PROVIDER_TIMEOUT_MS, meter);
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);
     throw classifyGemini(r.status, t, "", "");   // same status→code mapping applies to Anthropic
@@ -1062,7 +1103,7 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(withPromptCache(body)),
-  });
+  }, PROVIDER_TIMEOUT_MS, meter);
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 400), "", "");
   const j = await r.json();
   meter?.add("anthropic", j);
@@ -1152,7 +1193,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
     body: JSON.stringify(body),
-  }, ms);
+  }, ms, meter);
 
   // (#R116) OUTAGE-PROOFING. The user hit a blanket "AI service temporarily unavailable": any
   // request-shape rejection (400) or a slow hosted web_search run must DEGRADE, never kill the
@@ -1300,7 +1341,11 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
    this request READS is added to it the moment its body is parsed — before any check that may still
    throw — so a fallback step, a retry or an answer later refused as empty is counted too: each of
    them was a request on the same invoice. */
-type Meter = { add(provider: string, answer: unknown): unknown };
+/* (ai-quota-fairness) …and the ceiling THIS request's provider calls come out of. The meter is the one
+   object every provider call site of a request already receives, so the cohort's share travels with
+   it rather than through a second parameter at each site; absent (the developer's model list, which
+   has no request meter) means the project ceiling alone. */
+type Meter = { add(provider: string, answer: unknown): unknown; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
 
 interface GeminiOpts {
   meter?: Meter;
@@ -1341,6 +1386,7 @@ async function callGemini(model: string, key: string, prompt: string, system: st
   const r = await providerCall(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
+    PROVIDER_TIMEOUT_MS, opts.meter,
   );
 
   if (!r.ok) {
@@ -1442,6 +1488,7 @@ async function callGeminiTurn(model: string, key: string, turn: TurnReq, system:
   const r = await providerCall(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
+    PROVIDER_TIMEOUT_MS, meter,
   );
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 1500), "", "");
   const j = await r.json();
@@ -1640,7 +1687,11 @@ Deno.serve(async (req) => {
      total is written to the same ledger once the request is over, answered or failed — a failure the
      provider billed was still a cost (a refund returns the reader's use, not the provider's tokens).
      The gloss lane is recorded too, as account-day totals (it has no turn row). */
-  const meter = usageMeter();
+  /* (ai-quota-fairness) …and which part of the project ceiling it is drawn from: a newcomer's share,
+     or the whole. Decided from the account's age as the auth server reports it (see NEWCOMER_SHARE). */
+  const meter: Meter & ReturnType<typeof usageMeter> = Object.assign(usageMeter(), {
+    ceiling: cohortOf(user.created_at, Date.now()) === NEWCOMER ? NEWCOMER_CEILING : CEILING,
+  });
   const record = () => recordUsage(db, user.id, isGloss ? "" : turnId, meter.total());
 
   // Parse the request body.

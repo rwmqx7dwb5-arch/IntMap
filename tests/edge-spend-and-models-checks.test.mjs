@@ -328,7 +328,7 @@ test('edge-spend-and-models ④ the schedule count is not vacuous — a job run 
 });
 
 /* ai-proxy, run: a signed-in reader with quota left meets an empty project bucket */
-const USER = { id: '00000000-0000-4000-8000-000000000001', aud: 'authenticated', role: 'authenticated', email: 'r@example.test' };
+const USER = { id: '00000000-0000-4000-8000-000000000001', aud: 'authenticated', role: 'authenticated', email: 'r@example.test', created_at: '2026-01-01T00:00:00Z' };   /* GoTrue always returns created_at; without it the account reads as new (ai-quota-fairness) */
 const PROXY_ENV = { SUPABASE_URL: SUPA, SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'svc', AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'sk-ant-stub' };
 const PROXY_DB = [
   ['/auth/v1/user$', { json: USER }],
