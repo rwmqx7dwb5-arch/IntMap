@@ -86,7 +86,11 @@ window.IntMapNavigation = (function () {
   var L = (window.IntMapLang && window.IntMapLang.pick)
     ? window.IntMapLang.pick(lang)
     : function () { return arguments[0]; };
-  function toast(m) { try { if (typeof window.imToast === 'function') window.imToast(m); } catch (_) { } }
+  /* (layer-failure-state) every message here is navigation failing while the reader is following a route, so it is
+     the one caller that speaks `urgent` (role=alert) in js/notify.js's region. ⚠ It used to call `window.imToast`,
+     which nothing assigns (js/app-body.js's imToast is closure-scoped) — measured 2026-09-30: all four messages were
+     dropped without a word. */
+  function toast(m) { try { window.IntMapNotify.show(m, { urgent: true }); } catch (_) { } }
 
   /* ── the live, non-state bits: the watch handle, the GPS filter's carry, the counters ───────── */
   var watchId = null;

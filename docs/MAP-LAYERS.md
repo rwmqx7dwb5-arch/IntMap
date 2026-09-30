@@ -768,6 +768,24 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
     `js/countries-ui.js`（`window.IntMapFetchWithin.isUnobserved` で分類し、遅れたと述べる）。
   ⚠ 他の枝が同じ形を持たないことは、下の `tests/stalled-fetch-and-surface-gauge-checks.test.mjs` ④ が
   `toggleLayer` の全枝について何も返さない相手と模擬時計で確かめている（枝の一覧は関数から読む）。
+- **要求の結末は `js/layer-state.js` が残す（layer-failure-state）。** `layerInflight` は settle で登録を外す
+  （「まだ取得中か」の答えとしてはそれで正しい）が、それまでは**失敗した要求の痕跡がどこにも残らなかった**——
+  失敗した行は描いた行と見分けがつかず、行が自分で外した箱は利用者が外した箱と見分けがつかなかった。
+  `inFlight(watch)` は追跡した要求を `layerState.request(箱, 要求)` にも渡し、reject なら理由で分類して残す
+  （`timeout`→`unobserved`、`aborted`→状態なし、それ以外→`failed`）。成功の後に行自身が報告した失敗は上書きしない。
+  自分で失敗を捕まえる腕（雨雲レーダー・火災・カラー標高・海面上昇・等高線・合計特殊出生率・人工衛星の読み込み）は
+  `layerState.report(箱, err, {told:true})` で同じ記録へ（すでにトーストしたので読み上げは重ねない）。
+  `rowUntilObserved` の再試行中は `loading` のまま `reason:'timeout'`・`retries` を持つ。
+  行には名前の後ろに pill（`Couldn't load`／`読み込めません`、`No reply`／`応答なし`。詳細は title と aria-label）、
+  同じ箱のタイル（`.lst-tile[data-lid]`）にも同じ pill。箱の次の `change` で消える。
+- **整合器は事象で走り、周期では走らない（layer-failure-state）。** 掃除（2,500 ms の心拍・#R41）と監査
+  （10,000 ms の心拍・#R108）は、何も動いていない地図でも 1 分に掃除 24 回・監査 6 回走っていた。#R41 の理由
+  （idle が来ない地図）は `styledata` で満たせる——MapLibre は `Style.update` の中、つまり描画のたびに変化があれば
+  撃つので、idle に関係なく来る。契機: `idle`・`styledata`（`_coalesce` で掃除は 2,500 ms、監査は 10,000 ms に
+  1 回＝旧周期を超えない）・`visibilitychange`・箱を含む要素の `#layer-dropdown` への挿入・監査の初回
+  （`whenCanDraw()`）。2 回連続判定の 2 回目は、当たりが **1 回だけ**の箱があるときに 10 秒後に 1 回（2 回以上＝
+  直した／直しの 4 分の冷却中の箱は見直さない——見直し続けると別名の心拍になる）。回数は
+  `IntMapLayerAudit.runs()`。直しは `IntMapLayerState.heals()` にも残る。
 
 ⚠ **個々のレイヤーに再試行や try/catch を足して直さない**——海底ケーブルだけが自前の再試行
 （`addSubcables` の梯子）を持っていたので同じ条件から回復し、ほかは失われていた。守るべき事実は

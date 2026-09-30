@@ -16,6 +16,7 @@ import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the TeleGeography fallback's second rung; (stalled-fetch) and how long one read of a host may take */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
+import { layerState } from './layer-state.js';   /* (layer-failure-state) what became of a row's request — failed / unobserved and why — kept, shown on the row, told once, readable by Atlas */
 import { jsonWithin, readWithin, untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock — see rvFetch; (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
@@ -5803,20 +5804,26 @@ window.IntMapModules.dataLayers=function(HOST){
       let s=null; try{ s=window.IntMapSatellites&&window.IntMapSatellites.state(); }catch(_){}
       if(!s){ box.textContent=''; return; }
       const jp=HOST.lang==='jp';
-      if(s.loading){ box.textContent=jp?'カタログを取得中…':window.IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
+      /* (layer-failure-state) «loading» only while there is NOTHING to count. MEASURED: the shipped catalogue is
+         drawn first (js/satellites-live.js — 15,969 objects on the map) while the live feed is still being asked,
+         and this line said «Loading the catalog…» over all of them. A count that exists is shown, with the
+         fetch still in progress said beside it. */
+      if(s.loading&&!s.catalogue){ box.textContent=jp?'カタログを取得中…':window.IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
       if(s.err&&!s.catalogue){ box.textContent=(window.IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
       const drawn=s.drawn, total=s.catalogue;
-      box.textContent = jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))
-        : (drawn.toLocaleString()+' / '+total.toLocaleString()+' shown'+(s.sunlit?(' · '+s.sunlit+' sunlit'):''));
+      box.textContent = (jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))
+        : (drawn.toLocaleString()+' / '+total.toLocaleString()+' shown'+(s.sunlit?(' · '+s.sunlit+' sunlit'):'')))
+        + (s.loading ? window.IntMapLang.t(HOST.lang,' · updating from the live feed…','・ライブ配信から更新中…') : '');
     }
     /* (#R311) THE ROW IS THE DOOR: js/satellites-live.js (and its detail card) are fetched here, and
        the "unavailable" branch below now answers a fetch that FAILED rather than one that never ran. */
     function startSats(){ return window.IntMapLazy.need('satellitesLive').then(_startSats); }
     function _startSats(){
       const A=window.IntMapSatellites;
-      if(!A){ try{ satToast(window.IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
+      if(!A){ try{ layerState.report('dl-sats',{reason:'unsupported'},{told:true}); }catch(_){}
+        try{ satToast(window.IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
         const cb=document.getElementById('dl-sats'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } return; }
       whenStyleReady().then(()=>{ try{ A.setOpacity(opacities.sats); A.start(); }catch(e){ console.warn('sats start fail',e); } });
       if(_satCountT) stopTick(_satCountT);
@@ -6039,6 +6046,8 @@ window.IntMapModules.dataLayers=function(HOST){
         wait:(ms)=>afterTick(tickKey('data-layers:unobserved:'+cbId),ms),
         wanted:()=>{ const c=box(); return !!(c&&c.checked)&&mine(); },
         onWait:({attempt})=>{ busy(true,attempt);
+          /* (layer-failure-state) still loading — but the owner knows the first answer did not arrive and is being asked again */
+          try{ layerState.report(cbId,'loading',{reason:'timeout',retries:attempt}); }catch(_){}
           if(!told){ told=true; try{ satToast(window.IntMapLang.t(HOST.lang,'Still waiting for the data — asking again','データの応答を待っています — もう一度問い合わせます')); }catch(_){} } }
       }).finally(()=>{ if(mine()) busy(false); });
     }
@@ -6407,19 +6416,23 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='precip'){ req=whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
-          req=whenStyleReady().then(()=>{ try{ const built=addFirmsThermal(); setThermalVis(true); return built; }catch(e){ console.warn('thermal (GIBS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
+          req=whenStyleReady().then(()=>{ try{ const built=addFirmsThermal(); setThermalVis(true); return built; }catch(e){ console.warn('thermal (GIBS) fail',e); try{ layerState.report('dl-thermal',e,{told:true}); }catch(_){} const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
         }
         else if(id==='radar'){
           lgdRadar.style.display='block'; tileLegends();
           /* (unobserved-is-not-refused) a read that was not observed keeps the box ticked and asks again
              (rowUntilObserved); only an answer — a status, a refusal, an index with no frames — reaches
              the failure arm below. 'aborted' = unticked or re-ticked meanwhile: that switch owns the row. */
+          /* (layer-failure-state) `why` is what the read threw — kept so the row's state says whether the host
+             refused (failed) or never answered in time (unobserved); js/layer-state.js classifies it */
+          let why=null;
           req=whenStyleReady().then(()=>rowUntilObserved('dl-radar',rvRead,clockFor(RV_INDEX_URL)))
-            .then(()=>true,e=>((e&&e.reason==='aborted')?null:false)).then(got=>{
+            .then(()=>true,e=>{ if(e&&e.reason==='aborted') return null; why=e; return false; }).then(got=>{
             if(got===null) return;
             const on=document.getElementById('dl-radar'); if(!(on&&on.checked)) return;   /* nothing drawn behind a box that is off (CONSTITUTION §3) */
             if(!got||!addRainViewer()){
               try{ satToast(window.IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
+              try{ layerState.report('dl-radar',got?{reason:'not-drawn'}:why,{told:true}); }catch(_){}
               const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
               lgdRadar.style.display='none'; tileLegends();
               return;
@@ -6455,11 +6468,11 @@ window.IntMapModules.dataLayers=function(HOST){
                   0,'#1a7a3c',150,'#4fae5b',500,'#a6d96a',1000,'#e6e08b',1800,'#d9a066',2800,'#a87b52',3800,'#9b6b4a',4800,'#cdbfb4',6000,'#ffffff']}},beforeId);
             }
             setVis('lyr-relief',true); if(lgdRelief){ lgdRelief.style.display='block'; tileLegends(); }
-          }catch(e){ console.warn('relief fail',e); const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Color relief unavailable','カラー標高を初期化できませんでした','Farbrelief nicht verfügbar','Цветной рельеф недоступен','Relieve en color no disponible')); }catch(_){} } });
+          }catch(e){ console.warn('relief fail',e); try{ layerState.report('dl-relief',e,{told:true}); }catch(_){} const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Color relief unavailable','カラー標高を初期化できませんでした','Farbrelief nicht verfügbar','Цветной рельеф недоступен','Relieve en color no disponible')); }catch(_){} } });
         }
         else if(id==='sealevel'){
           lgdSeaLevel.style.display='block'; tileLegends();
-          req=whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
+          req=whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); try{ layerState.report('dl-sealevel',e); }catch(_){} const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
         }
         else if(id==='subcables'){ req=whenStyleReady().then(()=>{ try{ return addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
         else if(id==='hillshade'){
@@ -6470,7 +6483,7 @@ window.IntMapModules.dataLayers=function(HOST){
           }catch(e){ console.warn('hillshade fail',e); } });
         }
         else if(id==='contours'){
-          req=whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(window.IntMapLang.t(HOST.lang,'Could not initialize contours','等高線を初期化できませんでした','Höhenlinien konnten nicht initialisiert werden','Не удалось инициализировать изолинии','No se pudieron iniciar las curvas de nivel')); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
+          req=whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { try{ layerState.report('dl-contours',{reason:'not-drawn'},{told:true}); }catch(_){} const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(window.IntMapLang.t(HOST.lang,'Could not initialize contours','等高線を初期化できませんでした','Höhenlinien konnten nicht initialisiert werden','Не удалось инициализировать изолинии','No se pudieron iniciar las curvas de nivel')); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
         }
         else if(id==='eez'){
           /* Show legend immediately so user sees feedback; defer source add until style loads */
@@ -6512,6 +6525,7 @@ window.IntMapModules.dataLayers=function(HOST){
             else { const u='https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400'; return rowUntilObserved('dl-tfr',s=>readWithin(u,clockFor(u)*s).then(r=>JSON.parse(r.text)),clockFor(u)).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(e=>{ if(e&&e.reason==='aborted') return;   /* unticked or re-ticked while it waited — that switch owns the row */
               /* (unobserved-is-not-refused) silent through every retry: nothing is kept (`_tfrData` stays unset, so the next
                  switch-on reads again) and the grey «no data» fill is taken down rather than left claiming the world has none */
+              try{ layerState.report('dl-tfr',e,{told:true}); }catch(_){}   /* (layer-failure-state) unobserved or failed — classified from `e` */
               if(isUnobserved(e)){ try{ setVis('tfr-fill',false); }catch(_){} try{ imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
               try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
           }catch(e){ console.warn('tfr choro fail',e); } });
@@ -6644,13 +6658,34 @@ window.IntMapModules.dataLayers=function(HOST){
         });
       }catch(_){}
     };
-    try{ if(GE().hasRenderer()) GE().events.on('idle',()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} }); }catch(_){}
-    /* (#R41) The orphan sweep + label-raise self-heals were driven ONLY by 'idle'. When the map is wedged
-       not-idle (a tile source erroring / looping), idle never fires, so "消したはずのレイヤーが残り続ける" and
-       buried labels persisted until a reload. Drive the SAME idempotent, drift-only self-heals on a slow
-       heartbeat too so they recover without an idle and without a reload. Each only acts on real drift, so in
-       steady state this does nothing. */
-    try{ if(GE().hasRenderer()){ everyTick('data-layers:orphan-sweep', 2500, ()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }); } }catch(_){}
+    /* ══ (layer-failure-state) THE RECONCILERS RUN WHEN SOMETHING CAN HAVE CHANGED, AND AT NO OTHER TIME ════════
+       Until this round the sweep above and the label raise ran on a 2,500 ms heartbeat for the life of the
+       tab ('data-layers:orphan-sweep', #R41), and the audit below on a 10,000 ms one ('data-layers:layer-audit',
+       #R74/#R108): whether or not anything had moved, getLayout() on every style layer and every Layers box
+       against the visible set — 24 sweeps and 6 audits a minute on a map nobody is touching.
+       #R41's reason for the heartbeat was real: a map wedged not-idle never fires 'idle'. But an orphan (a box
+       off, its layer painted) and a blank box (a box on, its layer gone) can only come about through
+       ⑴ a change to the STYLE — a layer added, shown, hidden, removed or the whole style swapped — which MapLibre
+       reports as 'styledata' from inside the render that applies it (Style.update → `if (changed) fire(data)`),
+       idle or not; ⑵ a Layers box changing, or a row being inserted; ⑶ the tab coming back (a hidden tab
+       renders nothing, so ⑴ is delivered on its return). So those are the triggers, and a quiet map runs
+       neither reconciler at all. `_reconcileRuns` counts each run by its trigger (IntMapLayerAudit.runs()).
+       SWEEP_GAP_MS — the former heartbeat's own period: a style that changes on every frame (a paint property
+       animated per frame fires 'styledata' per frame) is swept at most once per 2,500 ms, i.e. never more
+       often than the heartbeat did, and never later than it would have. Canonical here.
+       The label raise is not repeated here: js/label-occlusion.js already runs it on 'idle' and 'styledata',
+       the two events that can bury a label. */
+    const SWEEP_GAP_MS=2500;
+    const _reconcileRuns={ sweep:{}, audit:{} };
+    const _counted=(kind,why,fn)=>{ try{ const r=_reconcileRuns[kind]; r[why]=(r[why]||0)+1; }catch(_){} try{ fn(); }catch(_){} };
+    /* at most one run per `gap`, the first one at once (after the current task, which coalesces a synchronous burst) */
+    function _coalesce(gap,fn){ let last=-Infinity, t=null; return ()=>{ if(t) return; const wait=Math.max(0,last+gap-Date.now()); t=setTimeout(()=>{ t=null; last=Date.now(); fn(); },wait); }; }
+    const _sweepBy=(why)=>_counted('sweep',why,()=>{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); });
+    try{ if(GE().hasRenderer()){
+      GE().events.on('idle',()=>_sweepBy('idle'));
+      GE().events.on('styledata',_coalesce(SWEEP_GAP_MS,()=>_sweepBy('styledata')));
+      document.addEventListener('visibilitychange',()=>{ if(!document.hidden) _sweepBy('visible'); });
+    } }catch(_){}
     /* (#R36) UNIVERSAL async-race orphan guard for EVERY layer subsystem (main dl-, eco-dl-, beta-dl-, bx-, l9-dl-).
        The dl- toggle-time guard + the dl- idle sweep only cover the MAIN system; the eco / World-Bank / hazard
        layers add+show inside THEIR OWN async callbacks, so an ON-then-quick-OFF can re-show a layer whose box is
@@ -6942,6 +6977,10 @@ window.IntMapModules.dataLayers=function(HOST){
         'cb-admin1':['ref-admin1','ref-admin2','imta-line','imta2-line','imta3-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];
+      /* (layer-failure-state) every repair this reconciler makes is also recorded with the one owner of layer
+         state (js/layer-state.js `healed`), so «this layer was repaired» is readable by the row's reader and by
+         Atlas — not only by this private ring. Wrapping the ring's push keeps every writer below unchanged. */
+      { const _push=log.push; log.push=function(e){ try{ if(e&&e.id) layerState.healed(e.id,e.fix); }catch(_){} return _push.apply(log,arguments); }; }
       /* (#R85) NEVER FIGHT THE USER. The checked-but-blank heal pulses a layer off→on to force a re-add; the
          old 2nd half re-checked the box UNCONDITIONALLY, so if the user turned a layer OFF inside the 420 ms
          window it snapped back ON — the "オフにしてるレイヤーが勝手につく" the user still hit on desktop. Now every
@@ -7042,11 +7081,35 @@ window.IntMapModules.dataLayers=function(HOST){
             ids.forEach(lid=>{ try{ if(GE().layers.has(lid)) GE().layers.setLayout(lid,'visibility','none'); }catch(_){} }); sus[cb.id]=0; }
           else sus[cb.id]=0; });
       }catch(_){} }
-      /* (#R108) periodic audit runs a bit sooner + more often (25s→12s start, 15s→10s cadence) so a checked-but-blank
-         layer self-corrects faster ("選択状況と表示状況があっていない"); heal thresholds/cooldown unchanged (safe). */
-      /* (#R408) the hidden-tab test is the WHEEL's now, not this call's: `everyTick` already skips a
-         hidden tab, and the same rule written in two places is how the two of them drift apart. */
-      setTimeout(()=>{ everyTick('data-layers:layer-audit',10000,audit); },12000);
+      /* ══ (layer-failure-state) NO PERIODIC AUDIT — THE EVENTS THAT CAN MAKE A MISMATCH, AND ONE SECOND LOOK ══
+         This was a 10,000 ms heartbeat (#R108; before it 15 s, #R79). What a heartbeat bought is listed where the
+         sweep's triggers are (above `_reconcileRuns`): a mismatch can only follow a style change, a box or a row
+         changing, or the tab returning, and each of those now runs the audit (see `auditBy`).
+         ⚠ THE 2-HIT DEBOUNCE NEEDS A SECOND LOOK, AND AN EVENT MAY NOT COME. A box found blank once is a suspect,
+         not a finding; the heartbeat used to supply the second look 10 s later. So a suspect — and only a suspect —
+         is looked at ONCE more AUDIT_RECHECK_MS later, on the wheel (a hidden tab waits). No suspect, no timer.
+         ⚠ «Any count above zero» would re-arm for good on a box that stays blank after its heal (its count keeps
+         climbing while the heal is on its 4-min cooldown) — the heartbeat back under another name. Only a count of
+         exactly one is waiting for a second look.
+         AUDIT_RECHECK_MS — the former cadence (#R108), so the second hit comes exactly as far after the first as
+         it did before. A style changing continuously triggers the audit at most once per AUDIT_RECHECK_MS as well,
+         i.e. never more often than the heartbeat. Canonical here. */
+      const AUDIT_RECHECK_MS=10000;
+      let _recheckArmed=false;
+      function auditBy(why){ if(document.hidden) return;
+        _counted('audit',why,audit);
+        let suspect=false; for(const k in sus){ if(sus[k]===1){ suspect=true; break; } }   /* ONE hit = waiting for its second look; two or more = already a finding (healed, or its heal on the 4-min cooldown) — nothing to look again for */
+        if(suspect&&!_recheckArmed){ _recheckArmed=true;
+          afterTick('data-layers:layer-audit:recheck',AUDIT_RECHECK_MS).then(()=>{ _recheckArmed=false; auditBy('recheck'); }); } }
+      try{ whenStyleReady().then(()=>auditBy('start')); }catch(_){}
+      try{ if(GE().hasRenderer()) GE().events.on('styledata',_coalesce(AUDIT_RECHECK_MS,()=>auditBy('styledata'))); }catch(_){}
+      /* a ROW inserted (the ~160 rows modules build after boot) or re-built: one sweep and one audit, coalesced.
+         Only an added node that is or holds a checkbox counts — a row relabelling itself (i18n, a live count) or
+         the row's own state mark (js/layer-state.js) is text, not a box the reconcilers have not seen. */
+      try{ const dd=document.getElementById('layer-dropdown'); if(dd&&typeof MutationObserver!=='undefined'){
+        const rows=_coalesce(SWEEP_GAP_MS,()=>{ _sweepBy('rows'); auditBy('rows'); });
+        const box=(n)=>n&&n.nodeType===1&&((n.matches&&n.matches('input[type=checkbox]'))||(n.querySelector&&n.querySelector('input[type=checkbox]')));
+        new MutationObserver((ms)=>{ for(const m of ms){ for(const n of m.addedNodes){ if(box(n)){ rows(); return; } } } }).observe(dd,{childList:true,subtree:true}); } }catch(_){}
       /* (#R109) TARGETED post-toggle heal — the moment a USER turns a layer ON, check ~2.8 s later whether its layers
          actually painted; if not (and they haven't re-toggled it), re-fire ONCE right away instead of waiting for the
          2-hit background audit. Directly attacks "選択状況と表示状況が合っていない" for a freshly-toggled layer, using
@@ -7069,10 +7132,15 @@ window.IntMapModules.dataLayers=function(HOST){
          after the map SETTLES (idle → every engine's styledata re-add has run) and when the tab regains
          focus (a background wipe otherwise waited out the whole 15s). So real desyncs now self-heal in a
          couple of seconds instead of half a minute — no new heal logic, just more trigger points. */
-      try{ let _st=null; const soon=()=>{ clearTimeout(_st); _st=setTimeout(()=>{ if(!document.hidden) audit(); },1200); };
-        GE().events.on('idle',soon);
-        document.addEventListener('visibilitychange',()=>{ if(!document.hidden) soon(); }); }catch(_){}
-      window.IntMapLayerAudit={run:audit,check,log:()=>log.slice(-20)};
+      try{ let _st=null; const soon=(why)=>{ clearTimeout(_st); _st=setTimeout(()=>auditBy(why),1200); };
+        GE().events.on('idle',()=>soon('idle'));
+        document.addEventListener('visibilitychange',()=>{ if(!document.hidden) soon('visible'); }); }catch(_){}
+      try{ layerState.useLang(()=>HOST.lang); }catch(_){}   /* (layer-failure-state) the row marks speak the reader's language — HOST.lang is live (#R165) */
+      /* `runs()` — how many times each reconciler ran, by trigger (layer-failure-state): the measurement that the
+         quiet map runs neither. `states()` — the one owner's record (js/layer-state.js), for a reader already here. */
+      window.IntMapLayerAudit={run:audit,check,log:()=>log.slice(-20),
+        runs:()=>({ sweep:Object.assign({},_reconcileRuns.sweep), audit:Object.assign({},_reconcileRuns.audit) }),
+        states:()=>layerState.snapshot()};
     })();
   })();
 };

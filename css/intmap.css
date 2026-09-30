@@ -934,6 +934,20 @@
     .map-container.sat-on .tool-panel{ top:auto!important; bottom:24px; }
     .sat-toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--info-mil); color:#fff; padding:11px 18px; border-radius:11px; font-size:12.5px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,0.32); z-index:var(--z-toast); opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; max-width:min(420px,80vw); text-align:center; }
     .sat-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+    /* (layer-failure-state) THE ONE TOAST (js/notify.js) holds two live spans — role=status and role=alert — and only
+       one of them ever has text; the empty one takes no room. */
+    .sat-toast > span:empty{ display:none; }
+    /* (layer-failure-state) a row whose request came back «no» (failed) or never came back (unobserved) says so after
+       its name, as an iOS-style pill in the system red / orange the app already names (js/layer-state.js writes it). */
+    .layer-option .lyr-state{ margin-left:auto; flex-shrink:0; font-size:11px; font-weight:600; line-height:1.4; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+    .layer-option .lyr-state[data-state="failed"]{ color:var(--info-mil); background:rgba(255,59,48,0.12); }
+    .layer-option .lyr-state[data-state="unobserved"]{ color:var(--info-choke); background:rgba(255,149,0,0.14); }
+    /* …and on the tile that stands for the same box (js/map-ui.js `.lst-tile[data-lid]` — the face the desktop sidebar and
+       the phone's tile mode show instead of the row): a solid pill in the top-left corner, clear of the ★ in the other. */
+    .lst-tile > .lyr-state{ position:absolute; top:4px; left:4px; font-size:10px; font-weight:600; line-height:1.3; padding:2px 7px; border-radius:999px; white-space:nowrap; pointer-events:none; color:#fff; }
+    .lst-tile.lst-row > .lyr-state{ position:static; flex:0 0 auto; }
+    .lst-tile > .lyr-state[data-state="failed"]{ background:var(--info-mil); }
+    .lst-tile > .lyr-state[data-state="unobserved"]{ background:var(--info-choke); }
     .sat-keys-hint{ font-size:11px; color:var(--text-muted); margin-bottom:10px; font-weight:400; line-height:1.45; }
     /* News-by-country multi-select pulldown (#R15) */
     .nc-dd{ position:relative; }

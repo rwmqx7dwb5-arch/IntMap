@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（332本・17.8 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（334本・17.8 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -3957,6 +3957,35 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   合計特殊出生率の取得は `js/fetch-deadline.js` で読み、秒数は `js/proxy-fetch.js` の `clockFor` が host ごとに
   答える。期限切れは取得できなかったとして各枝の既存の失敗の経路へ流れる）。
   詳細は `docs/MAP-LAYERS.md` §7.2。
+- **レイヤーの「描けなかった」は状態として 1 か所が持つ——`js/layer-state.js`（`window.IntMapLayerState`）。**
+  箱ごとに `loading` / `ok` / `failed`（答えが届き、それが「否」だった——状態・拒否・読めない本文・描画器の拒否）/
+  `unobserved`（時間内に何も届かなかった＝`js/fetch-deadline.js` の `isUnobserved`。「確認できなかった」は
+  「失敗した」ではない）と、理由（共有の読み手が投げる `reason`：`timeout`・`network`・`http`＋`status`・`parse`・
+  `unsupported`・`worker`）・伝えた文・時刻を持つ。呼び手自身の中止（`aborted`）は状態にならない。
+  入口は共有の経路: ⑴ `layerInflight` は追跡した要求を全部ここにも渡す（`inFlight(watch)`）——reject した要求は
+  理由つきで**残る**（以前は `p.then(clear, clear)` で成功と同じく消えていた）⑵ 自分で失敗を捕まえて箱を外す行の
+  腕は `report(箱, err, {told:true})` ⑶ どのモジュールも `window.IntMapLayerState.report(id, 'failed', {reason})`。
+  出口は 3 つで同じ記録を読む: 行（`.lyr-state` の pill を名前の後ろに、en+jp。`js/map-ui.js` のタイル
+  `.lst-tile[data-lid]` にも同じ pill——デスクトップのサイドバーと携帯のタイル表示ではタイルが唯一の顔。作り直された
+  タイルには、失敗が在るあいだだけ動く観測器が付け直す）、読み上げ（状態に**入ったときに 1 回だけ**
+  `js/notify.js` へ。行がすでにトーストした失敗は `told` で黙る）、Atlas（`snapshot()` / `get(id)` / `heals()`＝
+  DOM を持たない素のデータ。`IntMapLayerAudit.states()` も同じもの）。**消えるのは箱の次の `change` だけ**
+  （やり直し、または利用者が外した）。自己修復の直し（`IntMapLayerAudit.log()` に書く全件）も `healed(id, fix)` で
+  ここに残る。
+- **通知は 1 本——`js/notify.js`（`window.IntMapNotify`）。** 要素は `#ai-toast`（`.sat-toast`）1 つ、時計は
+  4,600 ms 1 つ、live region は 1 つで中に 2 声（`role=status`/`aria-live=polite` と、`urgent` の呼び手だけが使う
+  `role=alert`/`aria-live=assertive`）。どちらの声も最初の文より前から文書に在る。表示中に同じ文が来たら時計を
+  延ばすだけで書き直さない（書き直しは 2 回目の読み上げ）。`aiToast`・`satToast`・`imToast`（→aiToast）・
+  `_toast`（→imToast）・各 `toast`（→imToast、`js/navigation.js` だけは直に `urgent`）・`majorToast` は残して委譲する。
+  `majorToast` だけは見た目が別で、シミュレータ自身の「速報」カードを画面上部に残し（その HUD は z-index 6300 で
+  トースト層 3000 より上）、文だけを `visual:false` でこの region に渡す。
+- **孤児の掃除（`_sweepOrphanLayers`）と表示状態の監査（`IntMapLayerAudit`）に周期実行は無い。** 不一致は
+  スタイルの変化（MapLibre は描画の中で `styledata` を撃つ——idle でなくても）・箱や行の変化・タブの復帰の
+  後にしか生まれないので、その事象で走る: `idle`・`styledata`（掃除は 2,500 ms、監査は 10,000 ms に 1 回へ束ねる
+  ＝旧周期より頻繁にはならない）・`visibilitychange`・`#layer-dropdown` への**箱を含む**要素の挿入・監査は
+  `whenCanDraw()` の最初の 1 回。監査の 2 回連続判定の 2 回目は、**1 回目に当たった箱があるときだけ** 10 秒後に
+  1 回見直す（当たりが無ければタイマーも無い）。回数は `IntMapLayerAudit.runs()` が契機ごとに数える。
+  ラベルの持ち上げは `js/label-occlusion.js` が `idle`・`styledata` で走らせるのでここでは繰り返さない。
   ⚠ Atlas の `layerCatalog()` はまだ `#layer-dropdown` を歩く。manifest 側の入口は `catalog()`。
   **Active layers** は `_refreshActiveLayers()` がオン中のレイヤーをチップで出し、常に**上部 sticky**の
   先頭要素にいる（固定高1行の横スクロール。空でも "(0)" で常時表示＝高さが動かない）。
@@ -4700,7 +4729,7 @@ observer の次の配達を待てないときに言う。
 `setInterval` が1つでもあれば落ち、**この登録簿の利用者が減っても落ちる**（「使われていない機構」に
 戻せない）。
 
-- **鍵は登録簿ぜんぶで1つの名前空間**。`'data-layers:orphan-sweep'` のように所有者を名乗る。
+- **鍵は登録簿ぜんぶで1つの名前空間**。`'data-layers:sat-legend'` のように所有者を名乗る。
   同じ鍵の2回目は1回目を**置き換える**ので、同時に複数走りうるもの（ポップアップごとの監視など）は
   `tickKey(prefix)` で連番を付ける。
 - **既定は「hidden なタブでは動かない」。** `{whenHidden:true}` は、1 tick 飛ばすと読者が戻ったときに

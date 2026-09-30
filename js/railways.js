@@ -192,7 +192,7 @@ window.IntMapModules.railways = function (HOST) {
       return world;
     }).catch((e) => {
       worldPending = null;
-      try { window.imToast && window.imToast(L('Could not load railway data', '鉄道データを読み込めませんでした', 'Eisenbahndaten konnten nicht geladen werden', 'Не удалось загрузить данные о железных дорогах', 'No se pudieron cargar los datos ferroviarios')); } catch (_) {}
+      try { window.IntMapNotify && window.IntMapNotify.show(L('Could not load railway data', '鉄道データを読み込めませんでした', 'Eisenbahndaten konnten nicht geladen werden', 'Не удалось загрузить данные о железных дорогах', 'No se pudieron cargar los datos ferroviarios')); } catch (_) {}
       throw e;
     });
     return worldPending;

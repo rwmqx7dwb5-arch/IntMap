@@ -26,12 +26,10 @@ window.IntMapModules.satellite=function(HOST){
   function satCaptureLabel(p){ if(!p) return ''; if(!p.dated) return HOST.t('satLatest'); if(p.dateMode==='year') return HOST.satState.year+' '+HOST.t('satMosaicSuffix'); return HOST.satState.day; }
   function satChipHTML(){ const p=satProviderById(HOST.satState.providerId); if(!p) return ''; return `<span class="cr-sat">📡 ${p.short} · ${satCaptureLabel(p)}</span>`; }
   function satRefreshReadout(){ try{ HOST.renderCoordReadout(); }catch(_){} }
-  function satToast(msg){
-    let el=document.getElementById('sat-toast');
-    if(!el){ el=document.createElement('div'); el.id='sat-toast'; el.className='sat-toast'; document.body.appendChild(el); }
-    el.textContent=msg; el.classList.add('show');
-    clearTimeout(satToast._t); satToast._t=setTimeout(()=>el.classList.remove('show'),4400);
-  }
+  /* (layer-failure-state) delegates to the app's ONE toast and live region, js/notify.js. It used to draw a second
+     `.sat-toast` box (#sat-toast) at exactly the spot #ai-toast occupies, on its own 4,400 ms clock, so two
+     messages close together were two boxes on top of each other — and neither was announced. */
+  function satToast(msg){ try{ window.IntMapNotify.show(msg); }catch(_){} }
   /* Self-rescheduling style-ready guard (same pattern that fixed the layer race). */
   function satReady(cb,n){ n=n||0; if(_imCanDraw()){ try{cb();}catch(_){ } return; } if(n>80) return; setTimeout(()=>satReady(cb,n+1),160); }
   function satBuildTiles(p){

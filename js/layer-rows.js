@@ -81,6 +81,7 @@
  *    so a re-ask attaches to the very promise being waited on.
  * ==========================================================================*/
 import { htmlRows, rowHTML, isLayer } from './layer-manifest.js';
+import { layerState } from './layer-state.js';   /* (layer-failure-state) the outcome of every tracked request is KEPT there — see ⑤ */
 
 /** write the manifest's own rows into the registry (idempotent: a row already present is left alone) */
 function mountManifestRows(doc) {
@@ -183,12 +184,17 @@ export function holdUntilDrawable(doc, engine) {
 /** the boxes whose delivered `change` is still being answered — see ④ in the header.
     `track(id, p)` records the promise a handler's request returned (anything not thenable clears the
     box: the change was answered at once); `has(id)` asks; `idle(id)` resolves once nothing is in flight
-    for the box, whichever request that turns out to be; `pending()` lists the boxes. */
-export function inFlight() {
+    for the box, whichever request that turns out to be; `pending()` lists the boxes.
+    ⑤ (layer-failure-state) `watch`, when given, is handed every tracked request too — `watch.request(id, p)`.
+    This registry forgets a request the moment it settles, fulfilled or rejected alike, which is right for
+    «is it still in flight» and was the whole of what the app knew: a rejected request left no trace. The
+    watcher is js/layer-state.js, which KEEPS the outcome (failed / unobserved and why). */
+export function inFlight(watch) {
   const live = new Map();
   const has = (id) => live.has(id);
   const track = (id, p) => {
     if (!id) return;
+    if (watch) { try { watch.request(id, p); } catch (_) { /* the registry does not depend on its reader */ } }
     if (!p || typeof p.then !== 'function') { live.delete(id); return; }
     live.set(id, p);
     const clear = () => { if (live.get(id) === p) live.delete(id); };
@@ -203,8 +209,9 @@ export function inFlight() {
   return { track, has, idle, pending: () => Array.from(live.keys()) };
 }
 /* the one registry the app uses: the rows that start requests (js/data-layers.js) and the reconciler
-   that must not judge them (same file) import it — a module binding, not one more window global */
-export const layerInflight = inFlight();
+   that must not judge them (same file) import it — a module binding, not one more window global.
+   Watched by js/layer-state.js, the one owner of what became of each request (⑤ above). */
+export const layerInflight = inFlight(layerState);
 
 try { if (typeof document !== 'undefined') mountManifestRows(document); } catch (e) { try { console.warn('[IntMap] layer rows', e); } catch (_) {} }
 try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => window.IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }

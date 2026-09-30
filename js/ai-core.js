@@ -435,12 +435,10 @@ window.IntMapModules.aiCore=function(HOST){
     try{ return JSON.parse(s); }catch(_){ try{ return JSON.parse(s.replace(/,\s*([\]}])/g,'$1')); }catch(__){ return null; } }
   }
   /* ---- Shared UI: toast + report popup (used by all four features) ---- */
-  function aiToast(msg){
-    let el=document.getElementById('ai-toast');
-    if(!el){ el=document.createElement('div'); el.id='ai-toast'; el.className='sat-toast'; document.body.appendChild(el); }
-    el.textContent=msg; el.classList.add('show');
-    clearTimeout(aiToast._t); aiToast._t=setTimeout(()=>el.classList.remove('show'),4600);
-  }
+  /* (layer-failure-state) the app's ONE toast and live region is js/notify.js (window.IntMapNotify): one element,
+     one clock, announced once. This function is kept — imToast, _toast and every HOST.aiToast reader reach it —
+     and delegates. It used to own #ai-toast itself, on a 4,600 ms clock of its own and with no aria-live. */
+  function aiToast(msg){ try{ window.IntMapNotify.show(msg); }catch(_){} }
   function aiEsc(s){ return window.IntMapSafe.html(s); }   /* the one encoder (index.html IntMapSafe) */
   /* Generic report popup. opts:{title, sub, images:[{src,caption}]}. Returns an api
      with setLoading()/setBody(text)/setError(msg,onRetry)/close(). */
