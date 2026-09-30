@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------------------
  *  The mutation tests proved a gate fails by making a fact wrong in the WORKING TREE, running the
  *  gate and putting it back. `node --test` runs test files in parallel, so every other file that
- *  read the same tree could see the mutant, and the tree lock (tests/helpers/gate-lock.mjs) only
+ *  read the same tree could see the mutant, and the tree lock (tests/helpers/gate-lock.mjs, since removed) only
  *  serialised the writers. MEASURED 2026-09-30 in one `npm test`: 10 red — 6 files dying in the
  *  600/900 s wait for the lock, 1 breach of the lock itself (#R623's 2.7 %), and 3 readers that took
  *  no lock tripping over js/__r717-probe.js, which tests/chronos-claims-checks.test.mjs created for

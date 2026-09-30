@@ -533,7 +533,7 @@ test('R771 (7) the gates packed with the build are the ones that cannot run with
   assert.ok(packed.length > 0, 'the build task carries no gates — the discovery is dead');
 
   /* The gate scripts are invoked directly rather than through `npm run`: one process instead of
-     two, which keeps this inside the tree lock for as short a time as possible. */
+     two per gate. */
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts;
   /* ⚠ (mutation-tests-off-tree) «without the build output» is a PRIVATE COPY OF THE CHECKOUT
      (tests/helpers/scratch-tree.mjs): it carries what git carries and nothing gitignored, so it has

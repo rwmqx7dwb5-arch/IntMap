@@ -50,7 +50,7 @@ const docFacts = () => SCRATCH.node('scripts/doc-facts.mjs', ['--check']);
 
 /* ── ① the new rules actually bite ───────────────────────────────────────────────────────── */
 /* ⚠ (#R286) A READER THAT REQUIRES A PRISTINE TREE IS ALSO A PARTY TO THE LOCK.
-   tests/helpers/gate-lock.mjs was written for the two tests that MUTATE tracked files, and both
+   tests/helpers/gate-lock.mjs (since removed) was written for the two tests that MUTATE tracked files, and both
    take it — but this test asserts the opposite property (nothing is mutated right now) and took
    nothing. `node --test` runs the files in parallel, so while tests/r274 ③ held the lock with
    `docs/_doc-facts-negative-probe.md` on disk, this ran check:docs and reported the probe as a

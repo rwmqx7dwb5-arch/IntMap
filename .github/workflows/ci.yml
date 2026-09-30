@@ -369,7 +369,8 @@ jobs:
   # That number is not an accident of size. Three of those files (r399 / r403 / r500) are MUTATION
   # tests: they break a fact in the working tree, run `check:docs` as a subprocess to prove the rule
   # goes red, and put the bytes back — under a lock, so they cannot overlap each other. Measured
-  # locally, those three alone are ~400 s of the suite's total.
+  # locally, those three alone are ~400 s of the suite's total. (They now break a private copy of
+  # the checkout — mutation-tests-off-tree — and the lock is removed: retire-gate-lock.)
   #
   # ⚠ WHY THIS IS WORTH A JOB OF ITS OWN. A 13-minute gate is longer than the interval between
   # merges to main, so a pull request could become un-mergeable while its own CI was still running —
@@ -379,8 +380,8 @@ jobs:
   # ⚠ AND THE SHARDS ARE NOT A HAND-WRITTEN LIST. `--test-shard=i/n` splits the file set the glob
   # found. Naming "the slow files" here would be the embedded-list shape
   # .agents/rules/no-ad-hoc-hardcoding.md §1 names first: it would go stale the day a file is added
-  # and nothing would say so. Each shard is a separate checkout, so the mutation tests' tree lock is
-  # per-runner and two shards can never edit one tree.
+  # and nothing would say so. Each shard is a separate checkout, and no test writes its checkout
+  # (check:static `tree-writer`), so two shards can never edit one tree.
   # ⚠ (gate-parity-and-shards) …AND THEY ARE SPLIT BY MEASURED SECONDS, NOT BY FILE COUNT. node's own
   # --test-shard is a count split, and run 36513330956 measured 11m16s / 8m32s / 4m52s — the four
   # heaviest files had all landed on shard 1. scripts/test-checks.mjs now answers the flag itself: the

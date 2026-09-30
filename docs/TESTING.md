@@ -2957,7 +2957,7 @@ that shells out for its facts. It is a **test affordance, never a narrower gate*
 check:docs` passes no `--rule`.
 
 Mutation tests run this script once per mutation (in a private copy since mutation-tests-off-tree;
-until then *while holding the tree lock*, `tests/helpers/gate-lock.mjs`). MEASURED #R407: a full run is **11.0 s**, of which
+until then *while holding the tree lock*, since removed). MEASURED #R407: a full run is **11.0 s**, of which
 `scripts/i18n-pair-audit.mjs` as a subprocess is **10.0 s** and every other rule together is under
 one second. The first draft of `tests/process-doc-facts-deep-tier-when-checks.test.mjs` (#R407) did fifteen full runs, held the lock for over two
 minutes, and **timed out `tests/process-doc-facts-edge-counts-checks.test.mjs` (#R399) and `tests/process-doc-facts-sweep-checks.test.mjs` (#R274) at their 180 s limit** — a new
@@ -2982,7 +2982,7 @@ const r = SCRATCH.mutate([{ file: 'Architecture.md', text: broken }],
 ```
 
 - **Why a copy.** `node --test` runs test files in parallel. A fact broken in the working tree was
-  visible to every other file reading the same tree; the lock below serialised the *writers* and
+  visible to every other file reading the same tree; the tree lock (below, now removed) serialised the *writers* and
   nothing else. MEASURED 2026-09-30, one `npm test`: 10 red, none a product defect — six files died
   waiting 600/900 s for the lock, one was the lock's own breach (#R623), and three readers that took
   no lock tripped over a probe file that `tests/chronos-claims-checks.test.mjs` planted in `js/`
@@ -3020,72 +3020,50 @@ links); one derived from `os.tmpdir()` / `mkdtemp` / `$TMPDIR` is fine. Run on t
 change it names exactly the 13 files and 59 call sites that wrote the checkout, and nothing else.
 `tests/mutation-tests-off-tree-checks.test.mjs` holds the helper and the rule.
 
-### The tree lock they used to share (`tests/helpers/gate-lock.mjs`) — kept, and taken by nobody
+### The tree lock they used to share — removed (retire-gate-lock, 2026-10-01)
 
-What follows is the record of the lock the mutation tests shared until they moved into private
-copies. The lock and its own tests are kept; no other test takes it
-(`tests/mutation-tests-off-tree-checks.test.mjs` ⑥ discovers the takers and allows only the files
-whose subject is the lock). Several files proved a gate really fails by making a fact wrong on disk,
-running the gate, and putting it back. ⚠ **Which ones is a question for the tree, not for this sentence** — it said "four:
-r274, r280, r399, r403" while nine files were importing the helper, because a hand-written list goes
-stale the day one is added and nothing says so. Ask instead:
+The mutation tests used to make a fact wrong **in the working tree** and serialise on one lock
+(`tests/helpers/gate-lock.mjs`, now removed; a directory taken with `mkdir`). Once they moved into private copies
+(above), the only file that still took the lock was the lock's own test, and that test's
+fought-over case (#R623 ①) was a known ~2.7 % flake under concurrent load. **The lock and its test
+are removed; nothing needs it.** What replaces it:
 
-```bash
-grep -l "helpers/gate-lock.mjs" tests/*.test.mjs
-```
+- **Nothing in the test run may write the checkout** — `tree-writer` in `check:static` (above)
+  refuses the call, so there is no second writer to serialise against.
+- **A precondition asked of a private copy** (`runGate(gate, { tree: SCRATCH })`) needs no witness:
+  nobody else can write the copy.
+- **A precondition asked of the shared tree** (`runGate(gate)`) has git as its witness, sampled
+  *before and after* the gate inside `runGate` (never when the message is printed). A tree that
+  **changed** during the run is reported as a writer caught in the act — never as the gate's own
+  problem; an unchanged tree is **not** called proof, because a writer that mutates and restores
+  inside the run is invisible to two samples, and the verdict names that case and says to ask a copy.
+  `tests/gate-precondition-checks.test.mjs` holds those three facts, the last one evaluated on a real
+  git repository whose gate writes a file that is removed before the verdict is read.
 
-`node --test` runs files in parallel, so they share one lock — a directory, because `mkdir` is
-atomic. Two rules about using it, both of which #R403 got wrong first and measured:
+MEASURED 2026-10-01 on this machine, after removal: two `node --test` runs started at the same
+instant in one checkout, each carrying mutation tests (see `dev-notes/2026-10-01-retire-gate-lock.md`
+for the files, times and result) — both green, and the checkout's `git status` unchanged.
 
-- **Take it per mutation, not per test.** Holds are serialised across every file in the suite, so a
-  hold spanning a whole test blocks three other files for its whole length — measured at 82 s for
-  one test and 264 s for one file.
-- **The deadline is a backstop against a wedged suite, not a performance budget.** It decides only
-  how long a waiter tries before declaring the suite broken, so it has to exceed everything every
-  other holder can legitimately want: under `npm test` — 200-odd files competing for CPU, each gate
-  run costing multiples of its ~6 s solo time — that is minutes, not the 180 s it used to be.
+What the lock taught, kept because the shapes recur in anything shared between processes:
 
-⚠⚠ **The lock is named after the checkout, and must stay that way.** It used to live at
-`<checkout>/node_modules/.intmap-tree-lock`, on the reasonable-sounding grounds that `node_modules`
-is gitignored — but `scripts/worktree.mjs` gives every worktree its `node_modules` as a **junction
-to the master copy's**, so that path resolved to *one directory shared by every checkout on the
-machine*, and this repository runs many sessions at once by design (`AGENTS.md` §6). The damage is
-not queueing: a waiter in another worktree runs whatever version of the helper *its branch* has, and
-an older one decides a lock held past its staleness timeout is dead and **deletes it — while a live
-process in a different checkout is holding it**. The holder never learns, the next acquirer in the
-holder's own worktree walks in, and two processes mutate that tree at once. Measured during #R403,
-with three other worktrees running suites concurrently: `Architecture.md` carried another test's
-probe while this file's tests held the lock, and results on one unchanged tree moved 12 → 8 → 4 →
-**0** → 8 → 10 across runs. ⚠ A single green run is not evidence against an intermittent red.
-
-⚠⚠⚠ **And the lock was still letting two writers in, 2.7% of the time it changed hands (#R623).**
-The owner's pid was published with `writeFileSync`, which opens the file with `O_TRUNC` and *then*
-writes — so for the microseconds in between it exists and is **empty**. A waiter that read it there
-got `''`, `Number('')` is `0`, `0` is not a live pid, and so the liveness check reported that the
-**live** holder was gone: the waiter deleted its lock and walked in. It is the #R403 clock bug in a
-new costume — a momentary failure to *read* the owner treated as proof there **is** no owner — and
-one bad reclaim cascades, because the robbed holder still removes "its" lock at the end and hands
-the same wound to the next waiter. Measured with eight processes taking the lock in turn with holds
-that block the event loop, as the gates do: `''` on **13 of 480 handovers**, and **24 breaches of
-mutual exclusion in 320 holds**. After the fix, **1,080 holds, 0 breaches**.
-
-The lock now publishes its stamp by writing it under a unique name and **renaming it into place**,
-so a reader sees the whole stamp or no stamp at all; an unreadable stamp counts as *not published
-yet*, never as *dead*; and a reclaim **claims** the stale stamp by renaming it before removing the
-directory, so two waiters that both judged the same dead lock cannot both delete — which is what
-would otherwise let the second one delete the live lock the first had just taken.
-
-⚠⚠ **The diagnostic used to point the wrong way, and that cost more than the bug.** When a mutation
-test found its gate red under the lock, `tests/process-doc-facts-instruction-docs-checks.test.mjs` (#R403) sampled `git status --porcelain` **after
-the gate had returned** and told the reader that a clean tree means the gate itself is wrong. But
-the interfering write is made *and put back* inside the gate run — that is what a mutation test is —
-so the sample printed `(clean)` in exactly the case it existed to catch. Measured on CI run
-34389623083, on a branch that touched none of this: `tests/process-doc-facts-instruction-docs-checks.test.mjs #R403 ①` reported `tests/process-doc-facts-edge-counts-checks.test.mjs #R399 ②`'s
-deliberate "Architecture.md no longer states how many Edge Functions there are" as its own failure.
-`tests/helpers/gate-precondition.mjs` now asks the **lock** instead of the tree — every writer takes
-it, so a hold that survived intact means nobody else was inside, and a hold that did not says so
-outright — and it names the one case it still cannot see (a writer that mutates and restores inside
-the gate run *without* taking the lock) rather than quietly excluding it.
+- ⚠⚠ **A lock path under `node_modules` is shared by every worktree on the machine.** It used to live
+  at `<checkout>/node_modules/.intmap-tree-lock`, and `scripts/worktree.mjs` makes every worktree's
+  `node_modules` a junction to the master copy's — so one checkout's waiter, running an older helper,
+  deleted a lock a live process in another checkout was holding. Results on one unchanged tree moved
+  12 → 8 → 4 → **0** → 8 → 10 across runs (#R403). ⚠ A single green run is not evidence against an
+  intermittent red.
+- ⚠⚠⚠ **"Could not read the owner" is not "the owner is dead".** The owner's pid was published with
+  `writeFileSync` (`O_TRUNC`, *then* write), so a waiter could read `''`, take `Number('') = 0` as a
+  dead pid and delete a live holder's lock: 13 of 480 handovers, 24 breaches in 320 holds (#R623).
+  Publish by rename; treat unreadable as *not yet published*; reclaim by claiming (rename) before
+  deleting.
+- **Liveness is the pid, not the clock.** A legitimate holder under load exceeded any mtime timeout
+  (208 s measured), and a heartbeat cannot fire while `execFileSync` blocks the event loop.
+- **On Windows the `mkdir` race returns `EPERM`, not `EEXIST`** (a directory in pending-delete).
+- ⚠⚠ **The diagnostic used to point the wrong way, and that cost more than the bug.** Sampling
+  `git status` *after* a gate returned printed `(clean)` in exactly the case it existed to catch —
+  the interfering write had been made and put back inside the run (CI run 34389623083). That is why
+  `runGate` samples around the gate and `explain()` only renders what was captured.
 
 ⚠ **A local full-suite run is not a trustworthy instrument while other sessions are working.** Under
 that contention it measures the machine, not the change — `tests/process-doc-facts-sweep-checks.test.mjs #R274 ③` was measured anywhere from
@@ -3111,7 +3089,7 @@ there all along; neither was reachable while holds were few and long:
 
 ⚠ **Check a restore by comparing bytes, not by running the gate again.** The byte comparison says
 what "restored" means — this file, these bytes — while a green gate only says no rule noticed, and
-it costs another gate run inside the lock. Cheaper and stricter at once.
+it costs another gate run. Cheaper and stricter at once.
 
 ⚠ **Do not kill a suite mid-mutation.** The restore lives in a `finally`; killing the process skips
 it and leaves the tree broken. Measured: an interrupted run left `tests/doc-facts-legal-pages-checks.test.mjs` (#R280)'s CSP probe in
