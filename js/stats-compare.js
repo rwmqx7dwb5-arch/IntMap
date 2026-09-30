@@ -485,7 +485,7 @@ window.IntMapModules.statsCompare=function(HOST){
         const items=cList().filter(c=>{ if(!q) return true; const s2=countryStats[c.code]||{};
           return c.name.toLowerCase().indexOf(q)>=0||(s2.nameEn||'').toLowerCase().indexOf(q)>=0||(s2.nameJp||'').indexOf(qRaw)>=0; }).slice(0,300);
         listEl.innerHTML=items.map(c=>{ const s2=countryStats[c.code]||{}; const on=codes.indexOf(c.code)>=0;
-          return '<div class="scp-cr'+(on?' sel':'')+'" data-c="'+esc(c.code)+'"><span style="width:20px;text-align:center;">'+(s2.flag||'')+'</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;">'+esc(c.name)+'</span>'+(on?'<span style="color:var(--primary-color);font-weight:700;">✓</span>':'')+'</div>'; }).join('')
+          return '<div class="scp-cr'+(on?' sel':'')+'" data-c="'+esc(c.code)+'"><span style="width:20px;text-align:center;">'+window.IntMapSafe.flag(s2.flag)+'</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;">'+esc(c.name)+'</span>'+(on?'<span style="color:var(--primary-color);font-weight:700;">✓</span>':'')+'</div>'; }).join('')
           ||'<div style="padding:8px 10px;color:var(--text-muted);font-size:11.5px;">'+LL('No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')+'</div>';
         listEl.querySelectorAll('.scp-cr').forEach(r=>{ r.onmousedown=(e)=>{ e.preventDefault(); const cd=r.getAttribute('data-c');
           if(codes.indexOf(cd)>=0) codes=codes.filter(x=>x!==cd);
@@ -563,7 +563,7 @@ window.IntMapModules.statsCompare=function(HOST){
     function _endPick(){ try{ _setPick(false); }catch(_){} }
     function chipRow(){ const w=host&&host.querySelector('#scp-chips'); if(!w) return; w.innerHTML='';
       codes.forEach((cd,i)=>{ const s2=_cs(cd); const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
-        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+(s2.flag?s2.flag+' ':'')+esc(cName(s2)||cd)+'<span class="scp-x" role="button" tabindex="0" aria-label="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'" title="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'">×</span>';
+        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+(s2.flag?window.IntMapSafe.flag(s2.flag)+' ':'')+esc(cName(s2)||cd)+'<span class="scp-x" role="button" tabindex="0" aria-label="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'" title="'+LL('remove','削除','Entfernen','Удалить','Quitar')+'">×</span>';
         el.querySelector('.scp-x').onclick=()=>{ codes=codes.filter(x=>x!==cd); render(); }; w.appendChild(el); });
       try{ paintOnMap(); }catch(_){} }   /* (#R83) keep the map fill in sync with the current selection */
     /* (#R71) grouped picker behind a single toggle ("指標選択画面が煩雑になっている。ごちゃごちゃ") */
@@ -714,7 +714,7 @@ window.IntMapModules.statsCompare=function(HOST){
       let html='<div class="scp-bars">'+entries.map(x=>{ const s2=_cs(x.cd);
         /* (#R94g) the flag may be an <img> (former states) — insert it RAW, escape only the NAME (an emoji is a
            safe char, but esc() turned the <img> into visible tag text). The title attr gets the plain name. */
-        const nmTxt=cName(s2)||x.cd, nm=(s2.flag?s2.flag+' ':'')+esc(nmTxt), nmT=esc(nmTxt);
+        const nmTxt=cName(s2)||x.cd, nm=(s2.flag?window.IntMapSafe.flag(s2.flag)+' ':'')+esc(nmTxt), nmT=esc(nmTxt);
         if(!x.e) return '<div class="scp-brow"><span class="scp-bnm" title="'+nmT+'">'+nm+'</span><span class="scp-btrack"'+(hasNeg?' data-z="1"':'')+'>'+(hasNeg?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span>'):'')+'</span><span class="scp-bval" style="color:var(--text-muted);">—</span></div>';
         const v=x.e.v, w=Math.max(0.8,Math.abs(v)/range*100), left=v<0?(zero-w):zero;
         const bar=hasNeg
@@ -895,7 +895,7 @@ window.IntMapModules.statsCompare=function(HOST){
       if(tSort&&cols.indexOf(tSort.col)>=0){ const colKey=tSort.col;
         const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const p=cellAt(indK,cd); return p?p.v:null; };
         rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
-      const cLbl=cd=>{ const s2=_cs(cd); return (s2.flag?s2.flag+' ':'')+esc(cName(s2)||cd); };
+      const cLbl=cd=>{ const s2=_cs(cd); return (s2.flag?window.IntMapSafe.flag(s2.flag)+' ':'')+esc(cName(s2)||cd); };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return i2?esc(LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4])):esc(k2); };
       const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
       const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);

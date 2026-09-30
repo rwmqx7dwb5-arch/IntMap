@@ -2377,7 +2377,7 @@ window.IntMapModules.labelPopup=function(HOST){
       /* (#R127) historical entities pass their flag (opts.flag = the countryStats/registry flag HTML) so the click
          popup shows it too — previously the flag only appeared in the full country card, never here ("国旗…まだ詰め
          られる箇所が大量にある"). Modern place labels pass no flag, so their popup is unchanged. */
-      const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+opts.flag+'</span>'):'';
+      const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+window.IntMapSafe.flag(opts.flag)+'</span>'):'';
       /* (#R682) one optional line under the title, for a caller that has something the map itself
          must say about the thing clicked — today the era layer's «what upstream calls this», which
          is upstream's own free text and must not be read as a name IntMap chose. The caller hands

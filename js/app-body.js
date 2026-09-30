@@ -2418,7 +2418,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!active){ return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
-    const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button aria-label="${window.IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
+    const chips=items.map((s)=>`<span class="scb-chip">${window.IntMapSafe.flag(s.flag,'🏳️')} ${cName(s)}<button aria-label="${window.IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button class="scf-view" onclick="_showCompare()">${t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;

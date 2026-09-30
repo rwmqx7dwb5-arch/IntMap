@@ -1,7 +1,7 @@
 {
  "//": "written by scripts/output-taint.mjs --update — values reaching an HTML sink (innerHTML/outerHTML/insertAdjacentHTML/setHTML) that the analysis cannot show to be markup-free, per file; ratcheted both ways by check:static",
  "sinks": 590,
- "total": 435,
+ "total": 432,
  "files": {
   "js/analysis-correlate.js": 4,
   "js/analysis-edu.js": 6,
@@ -40,7 +40,7 @@
   "js/map-extras.js": 3,
   "js/map-tools.js": 13,
   "js/map-tooltip.js": 1,
-  "js/map-ui.js": 4,
+  "js/map-ui.js": 3,
   "js/monitors.js": 2,
   "js/navigation-ui.js": 1,
   "js/net-health-live.js": 1,
@@ -63,7 +63,7 @@
   "js/search-geocode.js": 1,
   "js/seismic.js": 8,
   "js/sims.js": 16,
-  "js/stats-compare.js": 16,
+  "js/stats-compare.js": 14,
   "js/street-view.js": 1,
   "js/terrain-water.js": 18,
   "js/tool-panel.js": 17,

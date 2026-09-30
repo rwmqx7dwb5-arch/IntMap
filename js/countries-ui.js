@@ -625,7 +625,7 @@ window.IntMapModules.countriesUi=function(HOST){
     const id=HOST.resolveCountryId(feat), s=HOST.countryStats[id], p=document.getElementById('country-info'),
           name=HOST.cName(s,feat.properties&&(feat.properties.NAME_EN||feat.properties.ADMIN||feat.properties.NAME));
     const haveAny = s && (s.pop||s.gdp||s.area||s.hdi||s.dem||s.milSpend);
-    p.innerHTML=`<div class="ci-name">${s&&s.flag?escC(s.flag)+' ':'🏳️ '}${escC(name)}</div>
+    p.innerHTML=`<div class="ci-name">${window.IntMapSafe.flag(s&&s.flag,'🏳️')+' '}${escC(name)}</div>
       <div class="ci-row"><span>${HOST.t('statPop')} (${POP_YEAR})</span><b>${s&&s.pop?fmtNum(s.pop):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdp')} (${GDP_YEAR})</span><b>${s&&s.gdp?HOST.fmtMoney(s.gdp):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdpPPP')}</span><b>${s&&s.gdpPPP?HOST.fmtMoney(s.gdpPPP):HOST.t('dataNA')}</b></div>
@@ -766,7 +766,7 @@ window.IntMapModules.countriesUi=function(HOST){
     let s=HOST.countryStats[idStr];
     const name=HOST.cName(s,fallback);
     const popup=document.getElementById('country-popup');
-    document.getElementById('cp-title').innerHTML=(s&&s.flag?escC(s.flag)+' ':'🏳️ ')+escC(name);
+    document.getElementById('cp-title').innerHTML=window.IntMapSafe.flag(s&&s.flag,'🏳️')+' '+escC(name);
     const body=document.getElementById('cp-body');
     window._cpCurrent={code:idStr,name:name};   /* read by the isolate + time-series buttons */
     const _isoSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>';
@@ -826,7 +826,7 @@ window.IntMapModules.countriesUi=function(HOST){
     _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name);
     if(s && s.latlng){ try{ _CM().flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0}); }catch(_){} }
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(HOST.countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?escC(s.flag)+' ':'🏳️ ')+escC(HOST.cName(s,fallback)); });
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(HOST.countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=window.IntMapSafe.flag(s.flag,'🏳️')+' '+escC(HOST.cName(s,fallback)); });
     /* (#R94) let the time-machine refresh THIS card's numbers in place (no re-fly / no re-fetch) when the
        global clock moves — closes over the live idStr/body/topBtns for the currently-open country. */
     window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=HOST.countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } }catch(_){} };
@@ -936,7 +936,7 @@ window.IntMapModules.countriesUi=function(HOST){
       const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${escC(s.capital||'')}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${escC(s.flag||'🏳️')}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
+      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${window.IntMapSafe.flag(s.flag,'🏳️')}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{

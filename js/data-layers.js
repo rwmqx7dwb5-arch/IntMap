@@ -2131,7 +2131,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!e.features.length) return;
         const s=countryStats[e.features[0].id]; if(!s) return;
         const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${meta.label()}: <b style="color:var(--text-main);">${meta.fmt(s)}</b></div>`);
+        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${meta.label()}: <b style="color:var(--text-main);">${meta.fmt(s)}</b></div>`);
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave',id+'-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
@@ -2431,7 +2431,7 @@ window.IntMapModules.dataLayers=function(HOST){
       GE().events.onLayer('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
         const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
         const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
+        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div>`+
           `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
           `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
           `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`);
@@ -2521,7 +2521,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(_euHoverWired) return; _euHoverWired=true;
       GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
         const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
+        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div>`+
           `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(window.IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`);
         positionTooltip(e.point);
       });
