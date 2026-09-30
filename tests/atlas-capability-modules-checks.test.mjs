@@ -43,6 +43,8 @@ const { CAPABILITY_MODULES } = await import('../js/atlas-caps-modules.js');
 const CAPS = makeAtlasCapabilities({}, { publish: false });
 const ENTRIES = KIT.capabilityEntries(CAPABILITY_MODULES);
 const CONSOLE = read('js/atlas-console.js');
+/* a kernel name as a literal inside a RegExp — every metacharacter escaped, not only `$` */
+const reEscape = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /* ── ① ─────────────────────────────────────────────────────────────────────────────────────────── */
 test('atlas-capability-modules ①: every registry row is one entry, in the file of its namespace, with a schema and a run', () => {
@@ -117,7 +119,7 @@ test('atlas-capability-modules ③: K names exactly what the runs read — no mi
     if (p.kind === 'get') {
       getters.add(name);
       const body = CONSOLE.slice(p.value.body.start, p.value.body.end);
-      assert.match(body, new RegExp('return\\s+' + name.replace(/\$/g, '\\$') + '\\s*;'), `K.${name} must hand over the kernel's own ${name}`);
+      assert.match(body, new RegExp('return\\s+' + reEscape(name) + '\\s*;'), `K.${name} must hand over the kernel's own ${name}`);
     } else if (p.kind === 'set') setters.add(name);
   }
   /* what the runs read and write, from the modules as they ship (and the fallback in js/atlas-caps.js) */
@@ -135,7 +137,7 @@ test('atlas-capability-modules ③: K names exactly what the runs read — no mi
   assert.deepEqual([...writes].filter((x) => !setters.has(x)).sort(), [], 'a run writes a kernel `let` K has no setter for — the write would be lost');
   assert.deepEqual([...getters].filter((x) => !reads.has(x)).sort(), [], 'K hands over a name no run reads — padding hides what each run depends on');
   /* a setter exists exactly where the kernel binding is reassignable */
-  for (const s of setters) assert.match(CONSOLE, new RegExp('\\blet\\s+(?:[^;]*,\\s*)?' + s.replace(/\$/g, '\\$') + '\\b'), `K has a setter for ${s}, which is not a kernel \`let\``);
+  for (const s of setters) assert.match(CONSOLE, new RegExp('\\blet\\s+(?:[^;]*,\\s*)?' + reEscape(s) + '\\b'), `K has a setter for ${s}, which is not a kernel \`let\``);
 });
 
 /* ── ④ ─────────────────────────────────────────────────────────────────────────────────────────── */
