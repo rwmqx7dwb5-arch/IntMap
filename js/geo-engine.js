@@ -1405,6 +1405,11 @@ function _m(){ return window.__imap||null; }
       const u=(typeof m.getGlyphs==='function')?m.getGlyphs():null; if(!u) return false;
       gm.localIdeographFontFamily=fam; m._localIdeographFontFamily=fam; m.setGlyphs(u); return true;
     }catch(_){ return false; } },
+    /* the SAME family, a NEW face: the web font behind it arrived after the rasteriser had already drawn
+       CJK with the browser's fallback, and TinySDF keeps what it drew. Same public door as above —
+       js/map-typography.js calls it when document.fonts reports a CJK face finished loading. */
+    refreshCjkGlyphs(){ const m=_m(); try{ const u=(m&&typeof m.getGlyphs==='function')?m.getGlyphs():null;
+      if(!u||typeof m.setGlyphs!=='function') return false; m.setGlyphs(u); return true; }catch(_){ return false; } },
     /* ══ (#R225) THE FRAME'S OWN COST, AND WHAT THE SCENE COSTS IT ══════════════════════════════════
        「スマホでの地図スクロール、ズームが壊滅的に遅いです」 — four rounds have argued about this and
        three measured the wrong machine, so js/perf-hud.js exists to take the number ON THE DEVICE.
@@ -2227,6 +2232,7 @@ function _m(){ return window.__imap||null; }
       addProtocol:(n,fn)=>A().addProtocol(n,fn), setImageConcurrency:n=>A().setImageConcurrency(n),
       /* (#R252) the CSS family the renderer rasterises CJK/Hangul from — the glyph source, hence here */
       setCjkFontFamily:f=>A().setCjkFontFamily?A().setCjkFontFamily(f):false,
+      refreshCjkGlyphs:()=>A().refreshCjkGlyphs?A().refreshCjkGlyphs():false,
       /* (#R179) contour tiles derived from a DEM — the last thing that needed the library by name */
       demContourSource:o=>A().demContourSource?A().demContourSource(o):null },
     /* (#R178) RENDERER-OWNED UI + a SECOND VIEW. `new maplibregl.Popup/Marker/Map` were the last

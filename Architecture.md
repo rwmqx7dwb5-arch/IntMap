@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（931行・92 KB）＋ `css/`（3本）＋ `js/`（329本・14.9 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（332本・17.8 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -201,6 +201,38 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   いまは `scripts/check-split-scope.mjs`（自由識別子が何にも解決しないことを捕まえる）と
   `scripts/export-readers.mjs`（export に読み手が居ること。読み手は `js/`・`src/`・`scripts/`・
   `tests/` の全部）が、その規則が守っていた**性質**のほうを測る。
+- **行は起動時、本体は初めて使われたとき。** レイヤーの**行**（Layers の棚・チェックボックス・Atlas と
+  共有リンクとセッション復元が名前を引く相手）は起動時に要るが、その行が点ける**本体**は要らない。
+  そう切ってあるもの：世界データ層（`js/world-packs-rows.js` が行・共有ツールキット `_ui`・共有リンクの
+  選択を持ち、5 層の本体 `js/world-packs.js` は `worldPacksBody`）と宇宙エクスプローラ
+  （`js/space-approach.js` がズームの床のジェスチャー・ゲージ・`window.IntMapSpace` のファサードを持ち、
+  本体 `js/space.js` と、それだけが読む `js/space-{events,bodies,cosmos}.js` は `spaceBody`）。
+  行側の規則は 1 つ——`js/lazy-modules.js` の `lazyBody(ask)`：クリックは**到着の Promise 1 本**に
+  **押した順**に並ぶ（到着前の on→off が「遅れて on」にならない）、何も取っていないときの off は
+  何も取らない、到着後は**同期**に戻る（チェックを入れて同じターンで状態を読む呼び手がそのまま動く）、
+  到着の失敗は覚えない。届かなかったときは `lazyRowFailed` が行を外して言葉で言う。
+  エクスプローラの取得は**ゲージの予告が出た時点**（床の 2 ズーム手前）で始まり、世界データの取得は
+  **行にポインタが乗った時点**で `IntMapLazy.hint` が始める。ファサードは到着前に `state()` を
+  `loaded:false` で答え（本体の答えを作らない）、到着した本体が自分の入口をファサードへ渡す。
+  ⚠ **静的な到達で決まる。** バンドラは入口から static import で届くモジュールを入口チャンクに入れるので、
+  遅延化は「`src/main.js` から外す」では終わらない——`tests/startup-lazy-layers-checks.test.mjs` が
+  `LAZY_REGISTRY` の全項目について、入口の static import 閉包に入っていないことを実際のグラフで測る。
+  ⚠ **eager と遅延の両方が読むモジュールから、もう 1 つの共有モジュールへ static import を張らない**
+  （`vite.config.js` の fetch-deadline-layer の項）。`js/star-catalogue.js` が `js/data-door.js` を import した
+  版は eager チャンクが 7 → 9 本になった（`fetch-deadline`・`proxy-fetch` が main に畳めなくなる）ので、
+  扉は `window.IntMapDataDoor` 経由で読む。
+- **`data/stars.bin` の読み手は 1 つ。** `js/star-catalogue.js` が `js/data-door.js`（`as:'arrayBuffer'`）で
+  バイトを取り、IMSTAR1/2 のレコードを**一度だけ**列（赤経・赤緯・等級・B−V・年周視差）に復号する。
+  地球の背後の星空（`js/space-sky.js`）とエクスプローラ（`js/space.js`）はそこから自分の形を作る。
+- **Noto の規則シートは描画をブロックしない。** `index.html` の Google Fonts `<link>`（JP・SC・TC × 4 ウェイト、
+  実測 1,386,296 B の CSS・gzip 378,319 B）は撤去し、`js/map-typography.js` の `ensureWebFonts()` が
+  **言語が決まった後**（DOMContentLoaded と `intmap-lang`）に、その読者の面（`_readerFaces()`——ラベルが描く
+  面で、UI の面の上位集合）のうち `document.fonts` に宣言の無いものだけを注入する：ja と Latin の UI は
+  JP＋SC、繁体は TC＋SC、簡体は SC、韓国語は SC（Pretendard は同梱）。⚠ SC は「中国語用」ではない——
+  他国の現地名を描く `HAN_ALL` が SC なので、どの読者の地図にも要る。⚠ 最初の数フレームは
+  `css/fonts.css` のシステム CJK フォールバックで描かれうる（起動画面の下）。MapLibre の TinySDF が
+  面の到着前にラスタ化した CJK グリフを保持する競合は、フォントファイル（unicode-range で初使用時に取得）
+  にもともとあったもので、規則シートの到着もそこに入った。
 - **遅延モジュールは 1 モジュール 1 定義。** `js/lazy-modules.js` の `LAZY_REGISTRY` が正本で、
   1 項目が「公開する global・literal な `import('./x.js')`・factory を回す `mount`・factory を持たない
   `self`・一緒に取る `also`」を持つ。loader の取得・mount・検証はこの表を読み、`src/main.js` の
@@ -225,7 +257,13 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   1つのデータセットの2表現がどちらも入りうる。`data/ecoregions_2017.js`（`window.__ECOREGIONS_2017`）は
   隣の `.geojson` と**バイト同一**なので `STATIC_EXCLUDE` で配布から外してある——リポジトリには
   残す（消したのは配布であって記録ではない）。`js/layer-packs.js` の `window.__loadEcoregions` は
-  `fetch` を先に、`<script>` を後に試す。
+  `fetch` を先に、`<script>` を後に試す——ただし読み手は**比較ウィンドウ（`js/compare.js`）だけ**。
+  地図の `eco-regions` ソースには **URL をそのまま渡す**（`addSource({type:'geojson', data:'data/ecoregions_2017.geojson'})`）。
+  MapLibre は worker で取得・parse し、Cesium のアダプタ（`js/cesium-engine.js` `addSource`）も文字列の `data` を
+  自分で取る——2 エンジンとも同じ綴りで分岐は無い。⚠ MapLibre 6 は URL で読んだ GeoJSON を
+  **構造化複製でページへ返す**（`getData()` のため）ので、ページの仕事はゼロにはならない：消えたのは
+  9.76 MB の `JSON.parse` と worker への送り出しの直列化。取得の失敗はレンダラの `error`（`sourceId`）で
+  受けて同じ文言を出し、ソースを外して次のチェックで取り直す。
 - ⚠ **`resolve.alias` は dev サーバの事前バンドルに届かない。** 事前バンドル（Vite 8 では Rolldown）は
   `satellite.js` の `imports` 表を自分で辿るので、ビルドでは stub に差し替わる Emscripten 入口
   （`pthreads-release`）を**本物のまま**束ねる。`optimizeDeps.exclude` に置いて、dev もビルドと同じ
@@ -1411,7 +1449,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 
 ## 3. ファイル構成 (Files)
 
-**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 285 本あり、1行説明を
+**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 332 本あり、1行説明を
 全部ここに置くと仕様書の 4 分の 1 が台帳になるので分けた。節番号は向こうでも `§3.1`〜`§3.13` の
 ままで、他の文書からの `§3.x` 参照はそのまま通る。`node scripts/arch-files-check.mjs --check` が
 `js/` の実体と台帳を突き合わせる——**どの段が `js/` の話かは `§3.x` の見出しが名乗るディレクトリで
@@ -4894,9 +4932,10 @@ MultiPolygon は全体で断り、通ったらパートごとに断る。⚠ **�
   描画領域を即座に返す。読み込みは世代に属し、古い画像・bitmap の完了や失敗が
   解放済みデータを復活させたり、新しい期間の読み込みを重複して始めたりしない。
   bitmap と一時的な強調表示キャンバスは処理完了時に解放し、既存の解像度と再着色は維持する。
-- **押されてから取りに行くもの**（`js/lazy-modules.js`・**35 本**。主なもの）：フライトシム／Playground／
+- **押されてから取りに行くもの**（`js/lazy-modules.js`・**44 本**。主なもの）：フライトシム／Playground／
   地震／**ShakeMap**／津波／地形と水／見通し線／ストリートビュー／夜空／**Atlas カーネル**／経路パネル／
-  データセンター／機体カード／3D 体積ツール／国の比較／衛星（ライブ）／衛星パネル／写真の撮影地点探索。
+  データセンター／機体カード／3D 体積ツール／国の比較／衛星（ライブ）／衛星パネル／写真の撮影地点探索／
+  **世界データ層の 5 層**（行は起動時）／**宇宙エクスプローラ**（床のジェスチャーは起動時）。
   KaTeX と html2canvas も動的 import。
   ⚠ **「起動時に何も作らない」は静的解析では決まらない。** `js/analysis-panels.js` は候補に見えたが、
   5 ファクトリのうち 2 つが**起動時に Layers パネルのボタンを作る**（`#btn-correlate`／`#btn-edu`）。

@@ -33,7 +33,11 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    recording stubs, and window.addEventListener keeps its listeners so a language change can be fired. */
 function typography(tag) {
   const listeners = {}, keysAskedFor = [], handed = [];
-  const w = { console, URL, document: { documentElement: { lang: tag, setAttribute() { } }, baseURI: 'https://example.invalid/app/', querySelector: () => null, addEventListener() { } } };
+  /* (startup-lazy-layers) the page's FontFaceSet, as css/fonts.css really declares it — the faces this
+     origin bundles, which js/map-typography.js `webFonts()` must not ask Google Fonts for */
+  const bundled = [...read('css/fonts.css').matchAll(/@font-face\s*\{[^}]*?font-family:\s*'([^']+)'/g)].map((m) => ({ family: m[1] }));
+  const w = { console, URL, document: { documentElement: { lang: tag, setAttribute() { } }, baseURI: 'https://example.invalid/app/', querySelector: () => null, addEventListener() { },
+    fonts: { forEach: (fn) => bundled.forEach(fn) } } };
   w.window = w;
   w.addEventListener = (ev, fn) => { (listeners[ev] ||= []).push(fn); };
   const ctx = vm.createContext(w);
@@ -903,12 +907,24 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
       `«${f}» is a glyph-server stack name, not an installed font family — MapLibre would rasterise CJK `
       + 'from the system sans-serif with it');
   }
-  /* the two families that are not bundled have to be the ones index.html actually requests */
-  /* spelling kept: which font URLs the page requests is index.html markup — only a browser document loads it. */
-  const html = read('index.html');
-  for (const f of ['Noto+Sans+JP', 'Noto+Sans+SC', 'Noto+Sans+TC']) {
-    assert.ok(html.includes(f), `index.html does not load ${f.replace(/\+/g, ' ')} — the family named in text-font would not exist`);
+  /* the families that are not bundled have to be the ones the page actually requests.
+     (startup-lazy-layers) RUN, per language: js/map-typography.js `webFonts()` is what asks Google
+     Fonts for them now (index.html no longer carries a render-blocking <link> for all three), so every
+     Noto face a language's labels can emit must be in THAT language's request — otherwise the family
+     named in text-font would not exist on that reader's page. */
+  for (const l of ja.L.LANGS) {
+    const t = typography(l.html);
+    const asked = new Set(t.T.webFonts().map((w) => w.family));
+    const e = t.T.placeFont();
+    for (const f of t.T.readerFont().concat(e[2][1], e[3][1])) {
+      if (/^Noto Sans /.test(f)) assert.ok(asked.has(f), `${l.html}: labels are drawn in «${f}» and the page never requests it`);
+    }
+    for (const w of t.T.webFonts()) assert.match(w.href, /^https:\/\/fonts\.googleapis\.com\/css2\?family=Noto\+Sans\+(JP|SC|TC):wght@400;500;600;700&display=swap$/);
   }
+  /* …and a family no label on this reader's map can use is not requested (TC was 480 kB of rules on every page) */
+  assert.ok(!typography('ja').T.webFonts().some((w) => w.family === 'Noto Sans TC'), 'a Japanese page asks for Noto Sans TC again');
+  assert.doesNotMatch(read('index.html'), /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com/,
+    'the Noto rule sheets are render-blocking again (1.39 MB of CSS before the first paint)');
 
   /* the layers use it, and re-apply it when the language changes */
   /* spelling kept: js/place-labels.js builds its layers inside the label factory against the live renderer; which font expression it passes is read off its text. */

@@ -231,11 +231,14 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
        css/fonts.css declares the bundled Inter + Pretendard and sets `--im-font` per <html lang>;
        the three Noto CJK families come from Google Fonts, which subsets them by unicode-range so a
        CJK reader downloads ~30 KB rather than a 5 MB font. Map LABELS are the other half and are
-       wired in js/app-body.js (self-hosted Inter SDF glyphs + localIdeographFontFamily). -->
+       wired in js/app-body.js (self-hosted Inter SDF glyphs + localIdeographFontFamily).
+       (startup-lazy-layers) The Noto rule sheets are no longer a render-blocking <link> here: all three
+       families were 1.39 MB of CSS before the first paint, in every language. js/map-typography.js
+       `ensureWebFonts()` asks Google Fonts for the families this reader's faces need (JP + SC for most
+       readers, TC + SC for Traditional Chinese) once the language is known — see the note there. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="css/fonts.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="css/intmap.css">
 </head>
 <body>

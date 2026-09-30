@@ -431,6 +431,15 @@ have sat in the table looking gated while being incapable of failing. `tests/per
 drives `judge()` with synthetic numbers and requires an error from a regression, from an improvement
 that leaves the ceiling behind, and from a ±1 change in each count.
 
+⚠ **The byte gate says THAT the entry shrank, not WHICH module left it.** A module that
+`js/lazy-modules.js` fetches on demand stays out of the entry chunk only as long as nothing in the
+entry's STATIC import graph reaches it — a sibling that imports it with a plain `import` pulls it back
+with no change to `src/main.js`. `tests/startup-lazy-layers-checks.test.mjs` asks that of the real
+graph for every `LAZY_REGISTRY` entry (parsed imports from `src/main.js` outward), runs the
+eager-row / lazy-body rule (`lazyBody`) and the space facade, and — when a fresh
+`.perf/build-report.json` is present — checks that the build agrees (skipped with the reason when
+the report is missing or older than the files it would judge).
+
 **What is deliberately NOT in this gate:** first map pixel, interaction-ready, long-task counts and
 heap. Those need a browser and are genuinely noisy, and a flaky gate in front of every push teaches
 people to re-run it rather than read it. Bytes are deterministic — the same tree gives the same

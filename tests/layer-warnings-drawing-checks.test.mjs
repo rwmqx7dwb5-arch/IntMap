@@ -573,7 +573,7 @@ test('R297 ⑪ Europe gets a finer boundary set when the reader is close enough 
 
 /* ── ⑬ a data change is not a basemap swap ───────────────────────────────────────────────────── */
 test('R297 ⑬ the style-swap recovery runs on a swap, not on every mutation it makes itself', () => {
-  const s = read('js/world-packs.js').replace(/\r\n/g, '\n');
+  const s = (read('js/world-packs-rows.js') + read('js/world-packs.js')).replace(/\r\n/g, '\n');
   /* MapLibre fires `styledata` for setSourceData too, so an unconditional re-upload in this
      handler re-fires itself. The dispatcher coalesces… */
   assert.match(s, /let _reT=0;/);

@@ -69,13 +69,13 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
   assert.match(iw, /legendId:\s*'wpindustry'/, 'and it renders into the standard legend, not beside it');
   assert.doesNotMatch(iw, /new maplibregl\.Popup|GE\(\)\.ui\.popup/, 'there is no second, separate popup');
   /* it borrows the layer-family toolkit instead of carrying a second copy */
-  assert.match(iw, /window\.IntMapWorld && window\.IntMapWorld\._ui/, 'the panel/row toolkit is handed over by js/world-packs.js');
+  assert.match(iw, /window\.IntMapWorld && window\.IntMapWorld\._ui/, 'the panel/row toolkit is handed over by js/world-packs-rows.js');
   /* ══ ⚠⚠⚠ (#R650) THIS ASKED FOR A SPELLING AND WAS CHANGED TO ASK FOR THE FACT: every name a consumer
      destructures from `_ui` is actually published by js/world-packs.js — and the consumers are
      DISCOVERED from js/, so the next file to borrow the toolkit is covered without anybody remembering. */
-  const wp = read('js/world-packs.js');
+  const wp = read('js/world-packs-rows.js');
   const pub = /const _ui=\{([^}]*)\};/.exec(wp);
-  assert.ok(pub, 'js/world-packs.js still publishes the layer-family toolkit as `_ui`');
+  assert.ok(pub, 'js/world-packs-rows.js still publishes the layer-family toolkit as `_ui`');
   const published = new Set(pub[1].split(',').map((x) => x.trim().split(':')[0].trim()).filter(Boolean));
   const consumers = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js'))
     .map((f) => ['js/' + f, read('js/' + f)]).filter(([, src]) => /IntMapWorld\._ui/.test(src));
@@ -84,11 +84,11 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
     const d = /const\s*\{([^}]*)\}\s*=\s*W;/.exec(src);
     assert.ok(d, `${name} borrows _ui but does not destructure it`);
     for (const m of d[1].split(',').map((x) => x.trim()).filter(Boolean)) {
-      assert.ok(published.has(m), `${name} takes \`${m}\` from the toolkit and js/world-packs.js does not publish it`);
+      assert.ok(published.has(m), `${name} takes \`${m}\` from the toolkit and js/world-packs-rows.js does not publish it`);
     }
   }
   /* the module is imported after world-packs, which is what makes the line above true at boot */
   const main = read('src/main.js');
-  assert.ok(main.indexOf('js/world-packs.js') < main.indexOf('js/industry-web.js'), 'world-packs is imported first');
+  assert.ok(main.indexOf('js/world-packs-rows.js') < main.indexOf('js/industry-web.js'), 'world-packs is imported first');
   assert.match(read('js/app-body.js'), /window\.IntMapModules\.industryWeb\(IM_HOST\);/, 'and the factory is instantiated');
 });

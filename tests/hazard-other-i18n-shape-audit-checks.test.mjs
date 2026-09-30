@@ -74,7 +74,7 @@ test('R241 ① a tuple of translations is a CALL, so every existing instrument c
   for (const f of ['js/weather.js', 'js/layer-packs.js', 'js/data-layers.js',
     'js/analysis-timeseries.js', 'js/analysis-correlate.js', 'js/analysis-world-events.js',
     'js/stats-compare.js', 'js/atlas-console.js',
-    'js/world-packs.js', 'js/sims.js']) {
+    'js/world-packs.js', 'js/world-packs-rows.js', 'js/sims.js']) {
     assert.match(code(R(f)), /IntMapLang\.pickArgs\(\)/, `${f} declares the tuple helper`);
     assert.match(code(R(f)), /LA\('/, `${f} writes its tuples as calls`);
   }

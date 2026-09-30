@@ -187,7 +187,7 @@ export const SHELVES = [
     { id: 'dl-waves', key: 'waves', share: true, lazy: ['waves'] },
     { id: 'wp-dl-currents', key: 'currents', share: true },
     { id: 'gx-gxsstanom', key: 'gxsstanom', rest: true, share: true },
-    { id: 'wp-dl-tides', key: 'tides', rest: true, share: true },
+    { id: 'wp-dl-tides', key: 'tides', rest: true, share: true, lazy: ['worldPacksBody'] },
     { id: 'gx-gxseaice', key: 'gxseaice', rest: true, share: true },
   ] },
     /* ⚠ (#R469) TWO ROWS LEFT THIS SHELF AND NEITHER WENT TO ANOTHER ONE.
@@ -264,7 +264,7 @@ export const SHELVES = [
        the other always-there view switches (place names, borders, roads, grid) at the top of the
        panel. Moved by name into that list below, not duplicated: one row, one owner. */
   { key: 'lyrGrpHazard', layers: [   /* (#R585) +measured radiation — docs/RADIATION.md */   /* (#R270) +emergency response bases — see the note below */   /* (#R273) +live weather & disaster warnings — one national agency per country, GDACS removed */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
-    { id: 'wp-dl-alerts', key: 'alerts', share: true },
+    { id: 'wp-dl-alerts', key: 'alerts', share: true, lazy: ['worldPacksBody'] },
     { id: 'bx-eq', key: 'eq' },
     { id: 'beta-dl-volc2', key: 'volc2', share: true },
     { id: 'dl-thermal', key: 'thermal', label: 'lyrThermal', rest: true, share: true },
@@ -438,7 +438,7 @@ export const SHELVES = [
        +high-tech exports (← Technology), +pharma manufacturing hubs (← Health). */
   { key: 'lyrGrpEconomy', layers: [
     { id: 'dl-gdppc', key: 'gdppc', label: 'lyrGDPpc', share: true },
-    { id: 'wp-dl-trade', key: 'trade', share: true },
+    { id: 'wp-dl-trade', key: 'trade', share: true, lazy: ['worldPacksBody'] },
     { id: 'bx-wbgini', key: 'wbgini' },
     { id: 'wp-dl-industry', key: 'industry', rest: true, share: true },
     { id: 'bx-wbgdpgrow', key: 'wbgdpgrow', rest: true },
@@ -486,7 +486,7 @@ export const SHELVES = [
     /* (#R273) +undernourishment (← Health): it is the food-security measure, and it belongs
        with the land that grows the food. */
   { key: 'lyrGrpAgri', layers: [
-    { id: 'wp-dl-crops', key: 'crops', share: true },
+    { id: 'wp-dl-crops', key: 'crops', share: true, lazy: ['worldPacksBody'] },
     { id: 'bx-wbagremp', key: 'wbagremp' },
     { id: 'bx-wbunder', key: 'wbunder' },
     { id: 'bx-wbagri', key: 'wbagri', rest: true },
@@ -505,7 +505,7 @@ export const SHELVES = [
     /* (#R273) +clean cooking fuel access (← Health), directly beside electricity access:
        both are 「does this household have energy」 rates. */
   { key: 'lyrGrpEnergy', layers: [
-    { id: 'wp-dl-energy', key: 'energy', share: true },
+    { id: 'wp-dl-energy', key: 'energy', share: true, lazy: ['worldPacksBody'] },
     { id: 'bx-wbrenew', key: 'wbrenew' },
     { id: 'bx-wbelec', key: 'wbelec' },
     { id: 'fac-dl-osmpower', key: 'osmpower', rest: true },

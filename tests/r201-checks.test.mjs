@@ -28,7 +28,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const NIGHT = read('js/night-side.js');
 const MAPUI = read('js/map-ui.js');
-const SPACE = read('js/space.js');
+/* (startup-lazy-layers) the way in (js/space-approach.js, eager) and the explorer (js/space.js, fetched at the floor) */
+const SPACE = read('js/space-approach.js') + read('js/space.js');
 
 /* ══ ① THE NIGHT SIDE IS A GRADIENT, AND THE NIGHT IS THE PRODUCT ══════════════════════════════ */
 
@@ -172,7 +173,8 @@ test('r201 ③b the integral is sustained, decays, and only counts at the floor'
   assert.ok(/function pushOut\(dz\)\{[\s\S]*?if\(!atFloor\(\)\)/.test(SPACE),
     'a zoom-out the camera CAN spend is not an attempt to leave');
   /* nothing here may fight the renderer for the gesture */
-  const mount = SPACE.slice(SPACE.indexOf('function mount()'), SPACE.indexOf('return {\n      open:openView'));
+  const APPROACH = read('js/space-approach.js');
+  const mount = APPROACH.slice(APPROACH.indexOf('function mount()'), APPROACH.indexOf('const _kit='));
   const listeners = mount.match(/addEventListener\('(\w+)',[\s\S]*?\{passive:true\}\)/g) || [];
   assert.ok(listeners.length >= 4, `every map listener is passive (${listeners.length})`);
   assert.ok(!/preventDefault/.test(mount), 'and none of them cancels anything');

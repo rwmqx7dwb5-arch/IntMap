@@ -398,11 +398,32 @@ window.IntMapModules.landCover=function(HOST){
       fetch('data/ecoregions_2017.geojson').then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
         .then(gj=>done(gj)).catch(()=>viaScript());
     };
+    /* ══ (startup-lazy-layers) THE RENDERER READS THE FILE, NOT THE PAGE ════════════════════════════
+       This used to be `__loadEcoregions` → `r.json()` of 9.76 MB on the main thread → `addSource({data:obj})`,
+       which MapLibre then serialises across to its worker again: two long tasks on the thread the reader is
+       panning with, for a layer the page never reads itself (the popup reads the clicked feature's
+       properties, which the renderer hands back). A geojson source given a URL is fetched and parsed by
+       MapLibre's worker instead (it resolves the relative URL against the document first), and Cesium's
+       adapter accepts the same form (js/cesium-engine.js `addSource`: a string `data` is fetched) — so
+       both engines take ONE spelling and neither needs a branch.
+       `__loadEcoregions` stays for the one reader that wants the object itself — the Compare window
+       (js/compare.js) — and it is not called from here any more.
+       ⚠ A FAILED READ IS STILL SAID OUT LOUD. It no longer arrives as a null to a callback; the renderer
+       reports it as an `error` for this source (the event js/data-layers.js already reads for the night-
+       lights source). The same words are shown, and the source is taken down so the next tick asks again
+       instead of finding a source that holds nothing. */
+    const ECO_URL='data/ecoregions_2017.geojson';
+    let ecoErrWired=false;
+    function ecoFailed(){
+      try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load ecoregions","生態地域データを読み込めませんでした","Ökoregionen konnten nicht geladen werden","Не удалось загрузить экорегионы","No se pudieron cargar las ecorregiones")); }catch(_){}
+      try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){}
+      ecoBuilt=false; }
     function ensureEco(cb){ if(GE().layers.hasSource('eco-regions')){ cb(true); return; }
-      window.__loadEcoregions(gj=>{ if(!gj){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load ecoregions","生態地域データを読み込めませんでした","Ökoregionen konnten nicht geladen werden","Не удалось загрузить экорегионы","No se pudieron cargar las ecorregiones")); }catch(_){} cb(false); return; } addEcoLayers(gj); cb(true); }); }
-    function addEcoLayers(gj){ window._ecoGJ=gj; if(ecoBuilt||GE().layers.hasSource('eco-regions')) return; ecoBuilt=true;
+      if(!ecoErrWired){ ecoErrWired=true; try{ GE().events.on('error',(e)=>{ if(e&&e.sourceId==='eco-regions'&&GE().layers.hasSource('eco-regions')) ecoFailed(); }); }catch(_){} }
+      addEcoLayers(ECO_URL); cb(GE().layers.hasSource('eco-regions')); }
+    function addEcoLayers(data){ if(ecoBuilt||GE().layers.hasSource('eco-regions')) return; ecoBuilt=true;
       try{ const before=ecoBefore();
-        GE().layers.addSource('eco-regions',{type:'geojson',data:gj,attribution:'RESOLVE/WWF Ecoregions 2017'});
+        GE().layers.addSource('eco-regions',{type:'geojson',data,attribution:'RESOLVE/WWF Ecoregions 2017'});
         GE().layers.add({id:'eco-regions-fill',type:'fill',source:'eco-regions',layout:{visibility:'visible'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}},before);
         GE().layers.add({id:'eco-regions-line',type:'line',source:'eco-regions',layout:{visibility:'visible'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}},before);
         /* (#R13c) self-theme the popup (.plc-popup → var(--popup-bg)/var(--text-main)) so it stays
@@ -465,7 +486,7 @@ window.IntMapModules.landCover=function(HOST){
            pressure); it lazily re-fetches/re-parses on the next toggle. Desktop keeps the warm cache.
            ⚠ (#R668) asked of the DEVICE — see `_phoneDev` at the top of this factory for what the width
            test used to cost a phone in landscape. */
-        if(_phoneDev()){ try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window._ecoGJ=null; window.__ECOREGIONS_2017=null; }
+        if(_phoneDev()){ try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window.__ECOREGIONS_2017=null; }
       } }
       /* (#R19) opacity slider for these too — worldcover reuses its own class legend, the rest get a generic one */
       try{ const nm=[ECLBL[which][1],ECLBL[which][0],ECLBL[which][2],ECLBL[which][3]];
@@ -473,7 +494,7 @@ window.IntMapModules.landCover=function(HOST){
         else if(!on&&window._hideGenericLegend&&which!=='worldcover') window._hideGenericLegend('eco-'+which);
       }catch(_){}
     }
-    healWhenLost(GE,60,()=>Object.keys(SETS).map(k=>({key:k,on:!!state[k],ids:SETS[k]})),(lost)=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(lost.includes('plates')) loadPlates(()=>{}); } if(lost.includes('ecoregions')){ if(!GE().layers.hasSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } });
+    healWhenLost(GE,60,()=>Object.keys(SETS).map(k=>({key:k,on:!!state[k],ids:SETS[k]})),(lost)=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(lost.includes('plates')) loadPlates(()=>{}); } if(lost.includes('ecoregions')){ if(!GE().layers.hasSource('eco-regions')){ ecoBuilt=false; addEcoLayers(ECO_URL); } setVis(SETS.ecoregions,true); } });
     /* (#R38) [JP, EN, DE, RU]; ecoLbl() picks the active language. */
     const ECLBL={worldcover:LA('Land cover (ESA 2021)','土地被覆 (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)','Cobertura del suelo (ESA 2021)'),ecoregions:LA('Ecoregions (WWF/RESOLVE)','生態地域 (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)','Ecorregiones (WWF/RESOLVE)'),plates:LA('Tectonic plates','プレート境界','Tektonische Platten','Тектонические плиты','Placas tectónicas')};
     const ecoLbl=(k)=>LPK.arr(ECLBL[k]);

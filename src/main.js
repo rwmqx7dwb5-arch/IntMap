@@ -238,10 +238,11 @@ import '../js/wx-wind.js';   /* (#R293) js/wx-reanalysis.js went with the MERRA-
 import '../js/weather.js';
 import '../js/layer-packs.js';   /* (#R254) …which imports js/datacenters.js itself — see the note there */
 /* (#R211) the sixth pack — trade, energy, warnings, tides, crops. Same shape as layer-packs.js
-   (a factory on window.IntMapModules, instantiated once from js/app-body.js) and, like it, it must
-   be loaded EAGERLY rather than on demand: it creates layer rows at boot, and the progress gate and
-   the session restore both key off those rows existing. */
-import '../js/world-packs.js';
+   (a factory on window.IntMapModules, instantiated once from js/app-body.js). Its ROWS must be eager:
+   the progress gate and the session restore both key off those rows existing. (startup-lazy-layers)
+   …and only its rows are: the five layers (js/world-packs.js) are fetched by js/lazy-modules.js the
+   first time one of those rows is switched on — see js/world-packs-rows.js. */
+import '../js/world-packs-rows.js';
 /* (#R213) 「業界を選べば、そのなかでの利害関係や実際の数値が人物相関図的にマッピングされるレイヤー」 —
    the seventh member of the same family, and its own file because standing instruction 13 says new work
    leaves the core. It must come AFTER world-packs.js: it reuses that module's panel/row toolkit through
@@ -356,18 +357,20 @@ import '../js/ephemeris.js';
 /* (#R212) 「次の皆既月食まであと何日、みたいな表示…ほかの現象も」 — the events are SEARCHED in the
    ephemeris above (Meeus ch. 54 shadow radii for the eclipses), so this must come after it and before
    the view that lists them. Pure arithmetic like js/ephemeris.js: no DOM, no renderer. */
-import '../js/space-events.js';
+/* (startup-lazy-layers) …which js/space.js now imports itself, so it arrives with the explorer */
 /* (#R213) 「Voyager 1 / 2、New Horizons、Parker Solar Probe…」「小惑星、彗星も」「太陽系のさらに外の宇宙も」
    — three populations js/ephemeris.js cannot carry, because none of them is a closed-form series:
    sampled Horizons trajectories (Hermite), SBDB osculating elements (Kepler, elliptic AND hyperbolic)
    and SIMBAD deep-sky positions with measured distances. Arithmetic only, like the two files above,
    so it is verified in Node — and it FETCHES NOTHING until one of the three switches is pressed. */
-import '../js/space-bodies.js';
+/* (startup-lazy-layers) …imported by js/space.js — see above */
 /* (#R219) the distance ladder out of the solar system — published radii from the Kuiper cliff to the
    particle horizon, so «zoom out past the planets» has a measured object on every step instead of an
    empty claim. Pure data + arithmetic, verified in Node (tests/engine-space-checks.test.mjs (#R219)). */
-import '../js/space-cosmos.js';
-import '../js/space.js';
+/* (startup-lazy-layers) …imported by js/space.js — see above. What stays eager is the WAY IN: the zoom-floor
+   gesture, its gauge and window.IntMapSpace (js/space-approach.js); the explorer itself is fetched by
+   js/lazy-modules.js (`spaceBody`) when that gesture starts or Atlas asks for it. */
+import '../js/space-approach.js';
 /* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
    ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
    registers a factory; js/app-body.js calls it from the exact point the code used to occupy, because
@@ -428,7 +431,7 @@ const MODULE_FACTORIES = [
    one definition per module, and this guard reads it rather than keeping a second list. */
 const LAZY_FACTORIES = LAZY_NAMES.slice(); const CARRIED_FACTORIES = CARRIED_NAMES.slice();
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');

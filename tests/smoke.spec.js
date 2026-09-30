@@ -315,8 +315,9 @@ test('R207 ⑤ Settings is wider than the generic modal on a desktop viewport', 
    「月を拡大したら地球に戻ってしまうのはおかしい」. Driven through the module's public API rather
    than through the WebGL view, so this costs milliseconds and no frames. */
 test('R207 ⑥ switching the space scale keeps the framing; only the Earth hands the map back', async () => {
-  const seen = await page.evaluate(() => {
+  const seen = await page.evaluate(async () => {
     const S = window.IntMapSpace;
+    if (S && S.ready) await S.ready();   /* (startup-lazy-layers) the explorer arrives on first demand — without it this would skip, not pass */
     if (!S || !S.setScale || !S.state) return { skip: true };
     S.setScale('model'); const a = S.state();
     S.setScale('real'); const b = S.state();
