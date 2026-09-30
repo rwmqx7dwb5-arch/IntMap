@@ -43,7 +43,11 @@ window.IntMapModules.worldPacksBody=function(HOST){
      instruments recognise a translation call by the helper the FILE declares (scripts/i18n-helpers.mjs) */
   const L=window.IntMapLang.pick(()=>HOST.lang);
   const LA=window.IntMapLang.pickArgs();
-  const { BTN, D, LBL, ROW, SEL, STATE, centroidOf, countryAt, countryAtWhere, countryName, esc, greatCircle, hiResCountries, makePanel, mapClick, noteBlock, nowYear, onRestyle, onYear, owid, owidRange, pct, ptInRing, rampLegend, relabel, row, setVis, usdExact, usdShort, whenDrawable, withCountryGeo, withCountrySource }=K;
+  const { BTN, D, LBL, ROW, SEL, STATE, centroidOf, countryAt, countryAtWhere, countryName, greatCircle, hiResCountries, makePanel, mapClick, noteBlock, nowYear, onRestyle, onYear, owid, owidRange, pct, ptInRing, rampLegend, relabel, row, setVis, usdExact, usdShort, whenDrawable, withCountryGeo, withCountrySource }=K;
+  /* the encoder is bound HERE, not taken from the kit: a name handed over through `K` is judged by
+     scripts/output-taint.mjs across every file that defines an `esc` (a CSV quoter among them), so the
+     body's markup read as unjudged the day it moved out of js/world-packs-rows.js. Same function. */
+  const esc=(s)=>window.IntMapSafe.html(s);
     /* ══════════════════════════════════════════════════════════════════════════════════════════════
      *  1 · TRADE FLOWS — who a country trades with, and for how much
      * ----------------------------------------------------------------------------------------------

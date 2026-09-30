@@ -43,3 +43,10 @@ date: 2026-09-30
 
 - `tests/mutation-tests-off-tree-checks.test.mjs` ①〜⑥: 写しが作業ツリー・index・HEAD と一致し ignored を持たない／写しの変更が実物に届かず mutate が戻す／**2 プロセスが同時に同じパスを壊しても互いに見えない**／片付けがリンクを辿らず孤児を掃く／規則が 13 ファイルの形を全部拒み temp への書き込みを通す／写しの中の `check:static` が植えた書き手で赤くなる。
 - 並行の実測: 変異検査を含む 2 組（A: chronos-claims・doc-facts-claims・round-naming と、probe を踏んでいた読み手 hazard-other-build-and-gate・hazard-radiation-layer／B: legal-pages・edge-counts・sweep・volcano と、privacy.html を読む layer-test-gates-and-docs・hazard-other-i18n-shape-audit）を同時に `node --test` で走らせ、**135 件全部緑・153 秒・作業ツリーの状態は前後で不変・写しの残骸 0**。
+
+## 統合時に直したこと — main が check:static で赤になっていた
+
+output-taint の台帳（#827）と world-packs の分割（#833）がそれぞれ単独では緑で、両方が入った main で `check:static` が赤になった（`js/world-packs-rows.js` 5 件・`js/world-packs.js` 11 件 > 台帳 0 / 10）。
+- 本体は `esc` を道具箱 `K` から分割代入で受け取るようになり、判定器はその名前を「js/ 全体で `esc` と名づいた定義がすべて安全か」で判定する——`js/companies-ui.js` の CSV 用の `esc` があるので未判定になった。本体でも `IntMapSafe.html` を直に束縛する（同じ関数）。11 → 6。
+- 行ファイルの 5 件は `makePanel(id, title, bodyHTML)` などの引数。分割前は呼び出し元が同じファイルにあって全部見えたが、`K` 越しの呼び出しは見えない。中身は同じ値なので台帳を実測に合わせた（world-packs 10 → 6、world-packs-rows 0 → 5）。
+- 形の教訓: **ファイルごとの台帳を持つ門と、ファイルを分割する変更が並行すると、両方緑のまま main が赤になる。** 必須チェックが strict でない以上、main の CI だけがそれを見る。
