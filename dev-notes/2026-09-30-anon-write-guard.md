@@ -121,3 +121,7 @@ aviation-sweep の run は赤になる。コーディネータの指示で、既
 - authenticated の直接書き込み（§0）に 1 アカウントあたりの件数の上限が無い——`docs/SECURITY-ARCHITECTURE.md` §8 の 15。
 - 送信先はこれまでと同じ Supabase プロジェクトで、保存する列も変わらない（IP は保存しない）ので、
   プライバシーポリシー（`js/legal-text.js`）は変えていない。
+
+## CI で見つかった検出漏れ
+
+送信を `fetch(base + '/functions/v1/reader-reports', { method: 'POST' })` に変えた日、`scripts/data-effects.mjs`（書き込みに届く操作要素の門）は `#fb-send` と `#bug-send` を**書き込みとして見失った**——URL が文字列リテラル 1 つのときしか読んでいなかった。連結（`+`）の中の文字列も読み、分からない部分は `${}` とする（テンプレート文字列と同じ扱い）。2 本とも `sendReport→edge-function` として再び見え、宣言済み。
