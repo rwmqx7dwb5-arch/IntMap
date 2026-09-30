@@ -103,8 +103,13 @@ test('R203 ② a pitched zoom does not flip the far clip plane frame to frame', 
     window.__imap.on('render', window.__fzOn);
   });
   const box = await page.evaluate(() => { const r = window.__imap.getCanvas().getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+  /* ⚠ THE POINTER IS PLACED ONCE. It used to be moved to the same point before every wheel, and each
+     of those is an input round-trip the renderer has to acknowledge: in the deep-tier run 36772277497
+     (retry of this test) a move took 0.3-1.6 s and a wheel 0.8-2.7 s on a loaded runner, and the test
+     ran out of its 60 s AFTER every assertion below had passed (90 frames, jumps within the limit).
+     Eleven of those moves were the same point again and asked nothing. */
+  await page.mouse.move(box.x + box.w / 2, box.y + box.h * 0.6);
   for (let i = 0; i < 12; i++) {
-    await page.mouse.move(box.x + box.w / 2, box.y + box.h * 0.6);
     await page.mouse.wheel(0, -200);
     await page.waitForTimeout(120);
   }
@@ -165,7 +170,16 @@ test('R203 ③ the space crossing hands the Earth over at the same size and face
 
   await page.waitForTimeout(1200);
   await page.evaluate(() => window.IntMapSpace.leaveToMap());
-  await page.waitForTimeout(1200);
+  /* ⚠ WAIT FOR THE CROSSING TO FINISH, NOT FOR A GUESS AT HOW LONG IT TAKES. leaveToMap() moves the
+     camera at once and closes the explorer at the end of its 250 ms fade (js/space.js `fadeRoot`),
+     which begins on the next animation frame — so the close is one frame plus 270 ms after the call,
+     and a frame is as long as the runner makes it. MEASURED 2026-10-01 locally: 443 ms, 683 ms and
+     624 ms at CPU throttle 1x / 4x / 8x; the deep tier's runner was past the fixed 1,200 ms this used
+     to wait on 2026-09-18, -25 and -29 (b684b168, before the explorer was loaded lazily) and in run
+     36772277497 — each time «the map is back: true», and the failure screenshot already shows the
+     map. The claim is what the map looks like once it is back, so it is read once it IS back; a
+     crossing that never ends still fails here. */
+  await page.waitForFunction(() => !window.IntMapSpace.state().open, null, { timeout: 30000, polling: 50 });
   const after = await page.evaluate(() => {
     const G = window.IntMapGeoEngine, c = G.camera.getCenter();
     const a = G.coords.project([c.lng, c.lat]), b = G.coords.project([c.lng + 90, c.lat]);
@@ -194,10 +208,14 @@ test('R203 ③ the space crossing hands the Earth over at the same size and face
     await new Promise((r) => setTimeout(r, 900));
     const st = S.state();
     S.leaveToMap();
-    await new Promise((r) => setTimeout(r, 900));
+    /* the same finish as above — and a fade still pending here would close ④'s view under it */
+    const t0 = performance.now();
+    while (S.state().open && performance.now() - t0 < 30000) await new Promise((r) => setTimeout(r, 50));
+    const back = !S.state().open;
     G.camera.jumpTo({ bearing: 0 });
-    return { mapNorth, spaceNorth: st.northRollDeg, blend: st.axisBlend, mapRollDeg: st.mapRollDeg };
+    return { mapNorth, spaceNorth: st.northRollDeg, blend: st.axisBlend, mapRollDeg: st.mapRollDeg, back };
   });
+  expect(rot.back, 'the rotated crossing came back to the map').toBe(true);
   expect(rot.mapNorth, 'the map puts north at −bearing from screen up').toBeCloseTo(-40, 1);
   expect(rot.blend, 'the rotated crossing is still fully in the map’s frame').toBe(1);
   expect(Math.abs(rot.spaceNorth - rot.mapNorth),
