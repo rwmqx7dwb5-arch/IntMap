@@ -1621,8 +1621,8 @@ tests/
                                   毎回の作業で増えるので書かない——`ls tests/*.test.mjs`）
   *.spec.js                       ブラウザ回帰（同じ理由で本数は書かない）
 .github/workflows/               （全件。docs/FILES.md の `ledger` 規則が実体と照合する）
-  ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
-  deploy.yml                      本番公開（**有効**。§15.4）
+  ci.yml                          PR ＋ push main ＋ 手動。1 run 1 回のビルド・静的検査＋hermetic ブラウザ試験。main の run が緑ならその dist/ を本番公開（§15.4）
+  deploy.yml                      本番の手動再公開（Run workflow のみ・自前でビルド。自動の公開は ci.yml。§15.4）
   rollback.yml                    手動ロールバック（履歴に実在する ref のみ）
   db.yml                          DB 検査（本番非接続）。PR では常に走り、supabase/** に変更が無ければ軽く緑で終える
   db-backup.yml                   毎日の暗号化 pg_dump。Secret 2本が無ければ run は赤＋Issue（どれが無いかを述べる）
@@ -1633,7 +1633,7 @@ tests/
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
 .github/actions/
-  browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・実行・報告）。ci.yml の browser／browser-deep が使う
+  browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・build 成果物の受け取り・実行・報告）。ci.yml の browser／browser-deep が使う
   data-assets/                    git の外にあるデータ集合を置く（`data-assets.json` の hash を key にしたキャッシュ ＋
                                   `scripts/data-assets.mjs pull`）。データを読むジョブがビルドと検査の前に使う
 ```

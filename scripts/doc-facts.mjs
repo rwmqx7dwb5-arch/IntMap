@@ -460,15 +460,35 @@ const FILES = BODY.get('docs/FILES.md') || '';
    which read 「_shared/ holds 11」 aloud while passing a document that wrote nine. The counters
    below only count — no rule's verdict changes — and a sweep that reaches nothing now fails. */
 
+/* (ci-build-once) THE WORKFLOW THAT PUBLISHES ON A PUSH TO main IS FOUND, NOT NAMED. It was
+   deploy.yml until the publish moved to the end of main's CI run (ci.yml `pages`); a rule that went
+   on reading deploy.yml would have gone on passing about a workflow that no longer publishes
+   anything by itself. Found as: its live (comment-stripped) text uses actions/deploy-pages, and its
+   `on:` block has a `push:` trigger. Exactly one may — two would race each other to production. */
+function pushPublishers() {
+  const dir = '.github/workflows';
+  return readdirSync(join(ROOT, dir)).filter((n) => /\.ya?ml$/.test(n)).filter((n) => {
+    const live = rd(dir + '/' + n).split(/\r?\n/).filter((l) => !/^\s*#/.test(l));
+    if (!live.some((l) => /uses:\s*actions\/deploy-pages@/.test(l))) return false;
+    const on = live.findIndex((l) => /^on:\s*$/.test(l));
+    if (on < 0) return false;
+    for (let i = on + 1; i < live.length && !/^\S/.test(live[i]); i++) if (/^ {2}push:/.test(live[i])) return true;
+    return false;
+  }).map((n) => dir + '/' + n);
+}
+const PUBLISHERS = pushPublishers();
+if (PUBLISHERS.length !== 1) fail('deploy', `${PUBLISHERS.length} workflows publish to Pages on a push (${PUBLISHERS.join(', ') || 'none'}) — exactly one must`);
+const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
+
 /* ═══ 4. what is actually served ══════════════════════════════════════════════════════════ */
 {
   if (!/\.gitignore/.test('x') || true) {
     const gi = rd('.gitignore');
     if (!/^dist\/?$/m.test(gi)) fail('serving', '.gitignore no longer excludes dist/ — build output would be committed');
   }
-  const deploy = rd('.github/workflows/deploy.yml');
+  const deploy = rd(PUBLISHER);
   const publishesDist = /cp -r dist\/\.|path:\s*_site/.test(deploy);
-  if (!publishesDist) fail('serving', 'deploy.yml no longer assembles the site from dist/');
+  if (!publishesDist) fail('serving', `${PUBLISHER} no longer assembles the site from dist/`);
 
   /* nothing may still describe the repository tree itself as the thing that is served */
   const ROOT_SERVE = ['OneDrive 直配信', 'リポジトリ直配信'];
@@ -488,16 +508,19 @@ const FILES = BODY.get('docs/FILES.md') || '';
 
   if (!servedSwept) fail('serving', 'no document was swept for the "served from the repository" claims — the universe is empty');
   if (!/dist\//.test(ARCH)) fail('serving', 'Architecture.md never mentions dist/, which is what GitHub Pages actually serves');
-  else if (servedSwept) ok('serving', `dist/ is gitignored, built by deploy.yml, and named in Architecture.md · ${servedSwept} documents swept for ${ROOT_SERVE.length + 1} "served from" claims`);
+  else if (servedSwept) ok('serving', `dist/ is gitignored, built by ${PUBLISHER.split('/').pop()}, and named in Architecture.md · ${servedSwept} documents swept for ${ROOT_SERVE.length + 1} "served from" claims`);
 }
 
 /* ═══ 5. the production deploy is ACTIVE — no document may still call it dormant ═══════════ */
 {
-  const deploy = rd('.github/workflows/deploy.yml');
+  const deploy = rd(PUBLISHER);
   const gated = /vars\.ENABLE_PAGES_DEPLOY\s*==\s*'true'/.test(deploy);
-  if (!gated) fail('deploy', 'deploy.yml no longer reads vars.ENABLE_PAGES_DEPLOY — this rule needs rewriting');
+  if (!gated) fail('deploy', `${PUBLISHER} no longer reads vars.ENABLE_PAGES_DEPLOY — this rule needs rewriting`);
 
   const release = BODY.get('docs/RELEASE.md') || '';
+  /* (ci-build-once) the owner of the release procedure names the workflow that actually publishes */
+  const pubFile = PUBLISHER.split('/').pop();
+  if (!release.includes(pubFile)) fail('deploy', `docs/RELEASE.md never names ${pubFile}, the workflow that publishes on a push to main`);
   const releaseSaysActive = /ENABLE_PAGES_DEPLOY\s*=\s*true/.test(release) && /Active|有効|current/i.test(release);
   if (!releaseSaysActive) fail('deploy', 'docs/RELEASE.md (the source of truth for releasing) no longer states that the gated deploy is enabled');
 

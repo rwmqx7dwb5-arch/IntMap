@@ -233,7 +233,7 @@ const labelList = (labels) => (labels.length > LABELS_SHOWN
    site, so the sha of its last SUCCESSFUL run is what the public is looking at. A newer run that
    failed is a separate fact and is reported separately: «the deploy is red» and «the deploy has
    not caught up» have different next moves. Capped at five runs and six seconds, like nightly(). */
-/** The display name of the deploy.yml job that publishes (the one using actions/deploy-pages). */
+/** The display name of a workflow's job that publishes (the one using actions/deploy-pages). */
 export function pagesJobName(yml) {
   const lines = String(yml || '').split(/\r?\n/);
   let job = null;
@@ -248,36 +248,53 @@ export function pagesJobName(yml) {
 }
 
 function deployState() {
-  let pagesJob = null;
-  try { pagesJob = pagesJobName(readFileSync(join(REPO, '.github', 'workflows', 'deploy.yml'), 'utf8')); } catch { /* no workflow file */ }
-  let raw = '';
-  try {
-    raw = execFileSync('gh', ['run', 'list', '--workflow=deploy.yml', '--limit', '5',
-      '--json', 'conclusion,headSha,createdAt,databaseId'],
-    { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 6000 }).trim();
-  } catch { return { known: false }; }
-  let runs; try { runs = JSON.parse(raw); } catch { return { known: false }; }
-  if (!Array.isArray(runs) || !runs.length) return { known: false };
+  /* (ci-build-once) TWO workflows can publish now: ci.yml publishes on every push to main once all its
+     gates are green (the dist/ that CI tested is the dist/ that ships), and deploy.yml is kept for a
+     manual re-publish (and for the catalogue bot, whose GITHUB_TOKEN merge starts no push workflow).
+     Both are asked, and each run counts only when ITS publishing job — found in that workflow file as
+     the one using actions/deploy-pages — succeeded. A CI run is never judged by its overall colour: a
+     nightly or a red gate means «did not publish», not «production is broken». */
+  const sources = [];
+  for (const [file, extra] of [['deploy.yml', []], ['ci.yml', ['--event', 'push', '--branch', 'main']]]) {
+    let pagesJob = null;
+    try { pagesJob = pagesJobName(readFileSync(join(REPO, '.github', 'workflows', file), 'utf8')); } catch { /* no workflow file */ }
+    if (!pagesJob) continue;
+    let raw = '';
+    try {
+      raw = execFileSync('gh', ['run', 'list', '--workflow=' + file, ...extra, '--limit', '5',
+        '--json', 'conclusion,headSha,createdAt,databaseId'],
+      { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 6000 }).trim();
+    } catch { continue; }
+    let runs; try { runs = JSON.parse(raw); } catch { continue; }
+    if (Array.isArray(runs)) for (const r of runs) sources.push({ ...r, file, pagesJob });
+  }
+  if (!sources.length) return { known: false };
+  const runs = sources.sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
 
-  const newest = runs[0];
-  /* `conclusion` is '' while a run is still going: that is «not finished», not «failed». */
-  const broken = newest.conclusion && newest.conclusion !== 'success'
-    ? { id: newest.databaseId, what: newest.conclusion, day: String(newest.createdAt || '').slice(0, 10) } : null;
-  /* ⚠ A RED RUN CAN STILL HAVE PUT ITS BYTES ON THE SITE. deploy.yml publishes in one job and then
-     smoke-tests the live URL in another; when only the smoke is red the Pages job succeeded and the public
-     is looking at that commit. Measured 2026-09-28: three runs red on a smoke assertion alone, and this
-     line said «3 commits have not reached production» while the served build stamp was the newest of them.
-     So a run counts as on-production when its PUBLISHING job succeeded — the job is found in deploy.yml as
-     the one that uses actions/deploy-pages, not by a name written here. */
-  const published = (r) => {
-    if (r.conclusion === 'success') return true;
-    if (!r.conclusion || !pagesJob) return false;
+  const jobOk = (r) => {
     try {
       const jobs = JSON.parse(execFileSync('gh', ['run', 'view', String(r.databaseId), '--json', 'jobs'],
         { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 6000 })).jobs || [];
-      return jobs.some((j) => j.name === pagesJob && j.conclusion === 'success');
-    } catch { return false; }
+      const j = jobs.find((x) => x.name === r.pagesJob);
+      return j ? j.conclusion : null;
+    } catch { return null; }
   };
+  /* ⚠ A RED RUN CAN STILL HAVE PUT ITS BYTES ON THE SITE. The publishing job and the live-URL smoke are
+     separate jobs; when only the smoke is red the Pages job succeeded and the public is looking at that
+     commit. Measured 2026-09-28: three runs red on a smoke assertion alone, and this line said «3 commits
+     have not reached production» while the served build stamp was the newest of them. */
+  const published = (r) => {
+    if (!r.conclusion) return false;                      /* still going: not finished, not failed */
+    if (r.file === 'deploy.yml' && r.conclusion === 'success') return true;
+    return jobOk(r) === 'success';
+  };
+  /* «the deploy is red» is about a run whose PUBLISHING job failed — a CI run red on a gate did not try */
+  const newest = runs.find((r) => r.conclusion);
+  let broken = null;
+  if (newest && !published(newest)) {
+    const pj = newest.file === 'deploy.yml' ? newest.conclusion : jobOk(newest);
+    if (pj && pj !== 'success' && pj !== 'skipped') broken = { id: newest.databaseId, what: pj, day: String(newest.createdAt || '').slice(0, 10) };
+  }
   const ok = runs.find(published);
   if (!ok || !ok.headSha) return { known: false, broken };
 

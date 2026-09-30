@@ -4,7 +4,8 @@
 
 ```
 work branch → Pull Request (auto-merge on green) → CI (green) → squash merge to main
-   → deploy.yml:          build → publish dist/ → post-deploy smoke        ↓ (if broken) rollback
+   → ci.yml on main:      build once → gates + browser tier on that build → (all green) publish
+                          that same dist/ → post-deploy smoke             ↓ (if broken) rollback
    → supabase-deploy.yml: changed Edge Functions + added migrations        (only if supabase/ changed)
 ```
 
@@ -14,12 +15,17 @@ Everything that must be verified is verified **before** that: in the PR's CI, lo
 site, and (optionally) on a PR preview. What is checked **after** is production itself — the
 post-deploy smoke, and the round's production verification.
 
-**Current state: production publishes via the CI-gated GitHub Actions workflow**
-(`.github/workflows/deploy.yml`). Pages **Source = “GitHub Actions”** and the repo variable
-**`ENABLE_PAGES_DEPLOY = true`** are both set, so every push to `main` runs build → static
-checks → hermetic browser tests → **build the site with Vite and publish `dist/`** (#R175; it
-published the exact committed tree via `git archive HEAD` until then) → post-deploy smoke
-against the live URL. Confirm a deploy landed with
+**Current state: production publishes at the end of `main`'s own CI run**
+(`.github/workflows/ci.yml`, jobs `build` → … → `pages` → `post-smoke`). Pages **Source =
+“GitHub Actions”** and the repo variable **`ENABLE_PAGES_DEPLOY = true`** are both set, so every
+push to `main` runs: **build the site with Vite once** (the `build` job) → the declared gates, the
+regression suite and the core browser tier, all on that one build → **only if all of them are
+green, publish that same `dist/`** (the `pages` job) → post-deploy smoke against the live URL.
+(`dist/` since #R175; it published the exact committed tree via `git archive HEAD` until then.)
+A red `main` run publishes nothing — the site stays on the last green commit until a later push
+(or a re-run of the failed jobs) goes green. A newer push to `main` cancels the older run,
+publish included, so an older commit can never overwrite a newer one; the newer run publishes
+both. Confirm a deploy landed with
 `curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` — its `sha` must equal
 `git rev-parse origin/main`. (The older “Deploy from a branch” default is no longer in use; if
 `ENABLE_PAGES_DEPLOY` is ever unset the jobs skip green and Pages would fall back to it.)
@@ -32,8 +38,9 @@ against the live URL. Confirm a deploy landed with
 3. **Commit, push, open the PR with auto-merge**: `gh pr merge --squash --auto --delete-branch`.
    **CI** (`ci.yml`, plus `db.yml` which the ruleset requires) runs static checks, the hermetic
    browser tiers and the database rebuild. Nothing merges red.
-4. **Green = merged = released.** `deploy.yml` publishes the site and runs the **post-deploy
-   smoke** against the live URL; if the change touched `supabase/`, `supabase-deploy.yml`
+4. **Green = merged = released.** `main`'s CI run (`ci.yml`) re-checks the merged tree, and when
+   it is green publishes the site it built and runs the **post-deploy smoke** against the live
+   URL (about ten minutes after the merge); if the change touched `supabase/`, `supabase-deploy.yml`
    deploys it (below). Only a red run needs you back.
 5. **Production verification** of the round happens at the start of the next round
    (`AGENTS.md` §5.1; `node scripts/worktree.mjs verified` records it).
@@ -68,7 +75,7 @@ Free, per-PR preview URLs, and it does **not** touch GitHub Pages or production:
    **Build output directory = `dist`**. Save.
    > ⚠ Since #R175 the site is a **Vite build**. Serving the repository root (`/`) would ship the
    > un-bundled sources, which is not the site — the page comes up blank. Whatever previews the app
-   > must build it first, exactly as `deploy.yml` does.
+   > must build it first, exactly as CI's `build` job does.
 3. Cloudflare now builds every branch/PR to a `https://<hash>.<project>.pages.dev` URL.
 
 Any non-production origin (a `*.pages.dev` host, or `?staging=1`, or a
@@ -82,18 +89,31 @@ never be mistaken for production. Production never shows it.
 
 ## Production deploy
 
-- **Active (current):** `deploy.yml` runs on push to `main` (Source = GitHub Actions,
-  `ENABLE_PAGES_DEPLOY = true`), re-runs static + browser tests, then runs `npm run build` and
-  publishes **`dist/`** plus a `build-info.json` stamp, and finally runs the post-deploy smoke
-  against the live URL.
+- **Active (current):** `ci.yml` publishes on a push to `main` (Source = GitHub Actions,
+  `ENABLE_PAGES_DEPLOY = true`). Its `build` job runs `npm run build` **once for the whole run**
+  and hands `dist/` (with `.perf/build-report.json`) to the gate shard that reads the build and to
+  every browser machine as an artifact; on `main` it also assembles the Pages artifact — `dist/`
+  plus a `build-info.json` stamp whose `runId` is that CI run. The `pages` job publishes it only
+  after `build`, «Static checks», «Regression suite» and «Browser smoke + internal QA» all
+  succeeded, then `post-smoke` tests the live URL. Nightly and dispatched CI runs never publish.
+  «Migrations rebuild + RLS/permission tests» (`db.yml`) is a separate workflow and cannot be
+  waited on; it is required on the PR, which is where a migration is judged.
+- **Why `main` is tested again after the merge.** The ruleset's required checks are not
+  «strict» — a PR need not be up to date with `main` to merge — so two PRs green on their own can
+  merge into a tree no PR run saw. `main`'s CI run is the one place that tree is checked, and it
+  is now also what decides whether it ships (`DECISIONS.md`).
+- **Manual re-publish:** `deploy.yml` has only a **Run workflow** button now. It re-publishes
+  `main`'s current commit with its own build and static gates (no browser tier). Use it when a
+  green `main` did not reach Pages; `tle-refresh.yml` dispatches it after a bot merge, because a
+  push made with `GITHUB_TOKEN` starts no workflow. It is not a way around a red `main`.
 - **(#R175) What is published is now a BUILD, not the repo tree.** `dist/` is the Vite output:
   one hashed, minified, code-split bundle per entry, the CSS extracted and hashed, and the
   root static assets (`sw.js`, `admin.html`, `data/`, the Köppen rasters, the flag webfont, the
   Google verification file) copied verbatim by the `intmap-copy-static` plugin in
   `vite.config.js`. The deploy asserts `dist/index.html` and `dist/sw.js` exist before
   uploading, so an empty or half-copied build fails the job instead of blanking the site. The
-  browser gate that runs just above it tests a build of the same commit, so nothing reaches
-  production that the tests did not see.
+  browser tier serves **the same build** the `pages` job publishes (one artifact, not a rebuild),
+  so nothing reaches production that the tests did not see.
 - **If a deploy ever needs to be reasoned about offline:** `npm ci && npm run data:pull && npm run build`
   from the deployed commit reproduces `dist/` byte-for-byte apart from the content hashes.
 - **Some of `data/` is not in git (data-outside-git).** `data/border-detail/` and `data/hist-eras.js` are named
@@ -101,8 +121,8 @@ never be mistaken for production. Production never shows it.
   and the build job fetches them first (`.github/actions/data-assets`, cached by the manifest's hash).
   `vite.config.js` copies them into `dist/` as bytes (`dereference`), and `check:assets` fails a
   `dist/` that lacks a set, holds different bytes, or holds a link. See "Dataset releases" below.
-- **Fallback (not the current state):** if `ENABLE_PAGES_DEPLOY` is ever unset, `deploy.yml` skips
-  green and Pages reverts to “Deploy from a branch”. That is the stop switch, not how it publishes today.
+- **Fallback (not the current state):** if `ENABLE_PAGES_DEPLOY` is ever unset, the `pages` job in
+  `ci.yml` and `deploy.yml` skip green and Pages reverts to “Deploy from a branch”. That is the stop switch, not how it publishes today.
 
 ### How the gated deploy was turned on (done 2026-07-18 — kept for reference)
 
@@ -116,14 +136,15 @@ never be mistaken for production. Production never shows it.
    - (optional) `PROD_URL` = your production URL if it is not
      `https://rwmqx7dwb5-arch.github.io/IntMap/`.
 
-Until both are set, `deploy.yml` / `rollback.yml` skip every job (green no-op) and the
+Until both are set, `ci.yml`'s `pages` job and `deploy.yml` skip (green no-op), `rollback.yml` is red, and the
 branch publish keeps working. See [`docs/MONITORING.md`](MONITORING.md) for what to check
 after enabling.
 
 ## Supabase: Edge Functions and migrations
 
 [`.github/workflows/supabase-deploy.yml`](../.github/workflows/supabase-deploy.yml) is to
-Supabase what `deploy.yml` is to Pages. On a push to `main` that changes
+Supabase what `ci.yml`'s `pages` job is to Pages — except that it runs on the push itself and
+does not wait for `main`'s CI run. On a push to `main` that changes
 `supabase/functions/**`, `supabase/migrations/**` or `supabase/config.toml`,
 [`scripts/supabase-deploy.mjs`](../scripts/supabase-deploy.mjs):
 
@@ -150,7 +171,8 @@ and say so. **Manual** `supabase functions deploy` stays available for emergenci
 
 ## Post-deploy verification
 
-`deploy.yml`’s final job runs `playwright.prod.config.js` against the live URL:
+`ci.yml`’s `post-smoke` job (after `pages`, on `main` only; `deploy.yml` has the same job for a
+manual re-publish) runs `playwright.prod.config.js` against the live URL:
 HTTP 200, app shell present, no uncaught exceptions, layer UI built, `INTMAP_BUILD`
 reported. It retries to absorb GitHub Pages propagation lag. A transient upstream API
 failure does not fail it (only IntMap’s own breakage does).
@@ -261,7 +283,7 @@ and not LFS or an external bucket: `DECISIONS.md`.
 
 1. Branch from `main`: `git checkout -b hotfix/<thing>`.
 2. Make the minimal fix; `npm test` locally.
-3. PR with auto-merge → CI green → merged → `deploy.yml` (and `supabase-deploy.yml` if
+3. PR with auto-merge → CI green → merged → `main`'s CI green → `pages` (and `supabase-deploy.yml` if
    `supabase/` changed) → post-deploy smoke. Never skip CI — it is the only gate before production.
 
 ## Rollback

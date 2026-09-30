@@ -1,15 +1,22 @@
-# CI-gated production deploy to GitHub Pages.
+# MANUAL re-publish of production (GitHub Pages) — the dispatch button only.
 #
-# ACTIVE: this workflow IS how production is published. Both switches below were turned on
-# 2026-07-18, so every push to main publishes through the jobs here; the older
-# "Deploy from a branch" default is no longer in use.
+# ══ (ci-build-once) A PUSH TO main NO LONGER RUNS THIS WORKFLOW ═════════════════════════════════
+# Production is published by ci.yml's `pages` job: at the end of main's own CI run, only when that
+# run is green, from the SAME dist/ its `build` job made and its browser tier served. This workflow
+# used to run on every push to main IN PARALLEL with that CI — so it published a merged tree whether
+# or not main's run was red (the ruleset's checks are not «strict», so that tree was often one no PR
+# had tested), and it paid one more `npm run build` for bytes no test had served.
+# What stays is the button: «Run workflow» on main re-publishes main's current commit with the
+# recipe below (it builds for itself — there is no CI artifact to reuse from here). Use it when a
+# green main did not publish (e.g. the pages job itself failed and a re-run is not wanted), not as a
+# way around a red main: it re-runs only the static gates. To publish an OLDER commit, rollback.yml.
 #
 # Publishing still requires BOTH of these to stay true (see docs/RELEASE.md):
 #   1. Repo → Settings → Pages → Source = "GitHub Actions"
 #   2. Repo → Settings → Secrets and variables → Actions → Variables:
 #        ENABLE_PAGES_DEPLOY = true
-# Unsetting the variable is the stop switch: every job below then skips (green, no-op) and
-# Pages falls back to the branch publish.
+# Unsetting the variable is the stop switch: every job below — and ci.yml's `pages` job — then
+# skips (green, no-op).
 #
 # green-skip-by-design vars.ENABLE_PAGES_DEPLOY: an operator's stop switch, not a missing setting.
 #   Measured 2026-09-25 with `gh variable list`: ENABLE_PAGES_DEPLOY=true, set 2026-07-18. Turning it
@@ -27,8 +34,6 @@
 name: Deploy (production, Pages)
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -72,8 +77,8 @@ jobs:
       # tests something no pre-merge run can, namely the thing actually published.
       # (#R175) The site is a Vite build now, so what ships is dist/ — bundled, minified, hashed and
       # code-split — not the committed sources. `vite build` is deterministic from the checked-out
-      # tree, and the browser gate above already ran against a build of this same commit (Playwright's
-      # webServer builds first), so this cannot publish something the tests never saw.
+      # tree. ⚠ (ci-build-once) This is the manual path, so it builds for itself; the automatic path
+      # (ci.yml `pages`) publishes the very build its browser tier served.
       - name: Build the site (Vite)
         run: npm run build
       - name: Assemble site (build output + build stamp)

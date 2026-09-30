@@ -12,8 +12,14 @@ import { PORT, BASE, seededStorageState } from './tests/helpers/session-seed.js'
    that run every time and the 27 that run nightly, and the split is data in tests/durations.json so
    this config, the shard planner, the local runner and the budget gate cannot disagree about it. */
 import { wantedTier, tierIgnoreRegExps } from './scripts/tiers.mjs';
+import { existsSync } from 'node:fs';
 const isCI = !!process.env.CI;
 const TIER = wantedTier(process.env);
+/* (ci-build-once) true when the run was handed a built dist/ (see webServer below). */
+const PREBUILT = process.env.IM_PREBUILT_DIST === '1';
+if (PREBUILT && !existsSync(new URL('./dist/index.html', import.meta.url))) {
+  throw new Error('IM_PREBUILT_DIST=1 but dist/index.html is missing — the CI build artifact did not arrive; refusing to build a second copy here');
+}
 
 export default defineConfig({
   testDir: 'tests',
@@ -139,8 +145,16 @@ export default defineConfig({
   // in dist/. Testing the sources instead would leave every build-only failure (a bad chunk split, a
   // missing static asset, a module that only resolves through the dev server) to be found in
   // production. `vite build` is ~10 s, so the whole suite still starts in well under a minute.
+  // (ci-build-once) …and in CI the site is built ONCE per run, not once per browser machine. ci.yml's
+  // `build` job builds dist/ and hands it to every browser shard as an artifact, and says so with
+  // IM_PREBUILT_DIST=1 — then this serves that dist/ and builds nothing. It is still a build of the
+  // same commit, and it is the SAME build the gates measured and (on main) Pages publishes.
+  // ⚠ IM_PREBUILT_DIST=1 with no dist/index.html is refused, not built around: a silent build here
+  // would bring back the per-shard builds exactly when the artifact did not arrive. Unset (every
+  // developer's machine, `npm test`), the command is byte-for-byte what it was.
   webServer: {
-    command: `npm run build && node scripts/serve.mjs --port ${PORT} --root dist`,
+    command: PREBUILT ? `node scripts/serve.mjs --port ${PORT} --root dist`
+      : `npm run build && node scripts/serve.mjs --port ${PORT} --root dist`,
     url: BASE,
     reuseExistingServer: !isCI,
     timeout: 180_000,

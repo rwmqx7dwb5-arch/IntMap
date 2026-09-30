@@ -5487,8 +5487,9 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    ```
    GitHub Pages で公開する場合は **Settings → Pages → Source = "GitHub Actions"** と
    **Variables `ENABLE_PAGES_DEPLOY = true`** を設定する（本リポジトリでは両方設定済み）。
-   これで `main` への push ごとに `.github/workflows/deploy.yml` が
-   ビルド → 静的検査 → 公開 → 実 URL へのスモークを行う。詳細は `docs/RELEASE.md`。
+   これで `main` への push ごとに `.github/workflows/ci.yml` が
+   1 回だけビルド → そのビルドで全ゲート → 全部緑なら同じ `dist/` を公開 → 実 URL へのスモークを行う。
+   詳細は `docs/RELEASE.md`。
 8. **認証**：Supabase で Google / Apple / メールを設定（任意）。Redirect URL・漏えいパスワード保護・
    パスキーの RP 設定は `docs/SECURITY-ARCHITECTURE.md §9`。
 9. **動作確認**
@@ -5557,8 +5558,14 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 
 **本番は CI ゲート付きの GitHub Actions ワークフローで公開される。** Pages の Source は
 **GitHub Actions**、リポジトリ変数 **`ENABLE_PAGES_DEPLOY = true`** が設定済みで、`main` への
-push ごとに `.github/workflows/deploy.yml` が「ビルド(Vite) → 静的検査 → `dist/` を公開 →
-実 URL への post-deploy smoke」を行う。着地の確認は
+push ごとに走る **`main` 自身の CI（`.github/workflows/ci.yml`）の最後で公開する**。
+`build` ジョブが **1 run に 1 回だけ** Vite でビルドし、`dist/` と `.perf/build-report.json` を
+artifact としてゲートの shard（build を読む `check:perf`・`check:assets` を持つもの）とブラウザ試験の
+各機に渡す（それぞれは build しない。`IM_PREBUILT_DIST=1`）。`main` への push では同じ `dist/` から
+Pages の artifact も組み、`build`・「Static checks」・「Regression suite」・「Browser smoke + internal QA」が
+すべて success のときだけ `pages` ジョブが公開し、`post-smoke` が実 URL を検査する。`main` の run が
+赤なら公開しない。nightly と手動実行の run は公開しない。`.github/workflows/deploy.yml` は手動の
+再公開ボタン（自前でビルドする）だけが残る。着地の確認は
 `curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` の `sha` が
 `git rev-parse origin/main` と一致すること。ロールバックは `.github/workflows/rollback.yml`
 （履歴に実在する ref のみ・対象 ref を **Vite ビルドして `dist` を配信**）。
@@ -5567,7 +5574,9 @@ push ごとに `.github/workflows/deploy.yml` が「ビルド(Vite) → 静的�
 古いコミットはデータを git に持っているので取得しない）。**データ集合の Release は消さない**——
 それを名指すコミットのロールバックとビルドが再現できなくなる。
 
-⚠ `deploy.yml` は `concurrency: pages-production` で直列に走る（前の run が固まると次は pending のまま）。
+⚠ 公開する 3 か所（`ci.yml` の `pages`・`deploy.yml`・`rollback.yml`）は `concurrency: pages-production` で
+直列に走る（前の公開が固まると次は pending のまま）。`main` への新しい push は古い CI の run を公開ごと
+取り消す（workflow の concurrency）ので、遅れて終わった古い commit が新しいものを上書きすることは無い。
 **手順の正本は [`docs/RELEASE.md`](docs/RELEASE.md)。**
 
 ⚠ **配備単位は 3 つあり、互いに独立している**——静的サイト（Pages）・Edge Functions（Supabase）・

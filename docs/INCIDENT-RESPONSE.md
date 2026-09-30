@@ -131,7 +131,7 @@ green** (`AGENTS.md` §5.1), so **CI green is the moment it ships**. Verify *bef
 ## 7. Re-release
 
 - The merge to `main` releases everything the change touched, with no further step:
-  `deploy.yml` publishes the site and runs the post-deploy smoke; if the fix touched
+  `main`'s CI run (`ci.yml`) publishes the site once it is green and runs the post-deploy smoke; if the fix touched
   `supabase/functions/**`, `supabase/config.toml` or added a migration, `supabase-deploy.yml`
   deploys exactly those ([`docs/RELEASE.md`](RELEASE.md#supabase-edge-functions-and-migrations)).
   Confirm both runs are green.

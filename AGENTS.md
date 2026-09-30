@@ -218,7 +218,8 @@ production verification → 原本 (OneDrive) の最新化 → USB（§11）
   gh pr merge --squash --auto --delete-branch
   ```
 
-- ⚠ **merge 後に main で走る CI を待たない。** PR の CI が緑なら同じ木が同じ結果を出す。
+- ⚠ **merge 後に main で走る CI を待たない。** 本番公開はその run が緑になってから同じ run が行い、
+  赤なら公開しない（必須チェックは strict ではないので、merge 後の木を検査するのはこの run だけ）。
 - ⚠ **後ろへ倒した工程には読み手がある。** `node scripts/worktree.mjs status` が「本番に届いて
   いない commit」「本番検証の記録が無い commit」「原本の遅れ」を PR 番号で述べる。検証を終えたら
   `node scripts/worktree.mjs verified` で受領証を残す。
