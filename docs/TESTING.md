@@ -3568,6 +3568,26 @@ javascript:alert(1) · data:text/html,… · vbscript:… · java\tscript:…   
 Each must render as inert text; and 日本語 / Zürich / Москва / España / emoji / accents /
 long place names must survive `html()` unchanged.
 
+## レイヤーの状態・通知・整合器 — `tests/layer-failure-state-checks.test.mjs`（＋ `tests/heal-waits-for-inflight.spec.js` の 2 本目）
+
+`js/layer-state.js`（描けなかったことを持つ唯一の持ち主）・`js/notify.js`（通知の唯一の実装）・
+`js/data-layers.js` の整合器の契機を、**出荷するコードを評価して**確かめる（綴りは読まない）。
+node の検査は 12 本: ① `classify` が共有の読み手の `reason` だけで failed / unobserved / 状態なしを分ける
+② `inFlight(watch)` → `makeLayerState` で reject した要求が**残る**・新しい要求が勝つ・行の報告を成功が
+上書きしない ③ 状態に入ったときに 1 回だけ告げ、`told` は黙る・`snapshot()` は素のデータ ④ 行とタイルの
+pill（en+jp）と、箱の次の `change` で消えること（小さな偽の document で評価）⑤ region の 2 声が最初の文より
+前から在る・表示中の同じ文は書き直さない（live region への書き込みを数える）・要素は 1 つ・時計は 1 つ
+⑥ `aiToast`・`satToast`・`js/navigation.js` の `toast`・`majorToast` を出荷ファイルから持ち上げて実行し、全部が
+region に届く ⑦ `everyTick` の鍵に整合器が無い・`auditBy` は当たり 1 回の箱にだけ 1 回見直しを仕掛ける・
+`_coalesce` は束の最初を即座に、以後は間隔に 1 回、静かなら 0 回 ⑧ 衛星の凡例は取得中でも描いた数を出す
+⑨ 雨雲レーダーの失敗の腕は読みの error そのものを `told` で持ち主へ渡し、トーストは 1 回。
+ブラウザでは新しい spec ファイルを作らず、同じ要求の反対側を見ている `tests/heal-waits-for-inflight.spec.js` に
+1 本足した（`npm run check:testbudget` の天井——全体 86.0 分——に余白が無く、新しいファイルは未計測の p75 で
+core と全体の両方に課金される）: RainViewer の索引を 503 にして、行と**サイドバーのタイル**に pill が見え、持ち主が
+`{failed, http, 503}` を持ち、region が 1 回だけ告げ、次の ON で pill が消える。
+「何も触らない地図では整合器が走らない」はブラウザで 1 回測って記録した（`dev-notes/2026-09-30-layer-failure-state.md`
+§2）。常設の検査は node の ⑦（`everyTick` に整合器の鍵が無い・見直しは当たり 1 回の箱だけ・静かなら 0 回）。
+
 ## 企業アトラスの門 - `npm run check:companies`
 
 `scripts/companies-audit.mjs`。**他の `check:*` が source を読むのに対し、これは出荷される

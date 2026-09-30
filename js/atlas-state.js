@@ -158,6 +158,14 @@ export function makeAtlasState(HOST) {
         return out;
       });
 
+      /* the layer that could not be drawn. A row that met a refusal or silence takes its own box off, so
+         `activeLayers` above never lists it — without this section Atlas answered "the radar is off" when
+         the radar had failed. js/layer-state.js owns the states; this only reads them. */
+      reg('layerStates', function () {
+        var S = GLOBAL('IntMapLayerState');
+        return (S && typeof S.snapshot === 'function') ? S.snapshot() : null;
+      });
+
       /* ⚠ `offsetParent` is NOT the test — a position:fixed modal never has one. */
       var PANELS = [['#settings-modal', 'Settings'], ['#compare-window', 'Map-compare window'],
         ['#stats-compare-fixed', 'Statistics-comparison view'], ['#tool-panel', 'Map tool panel'],

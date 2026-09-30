@@ -440,6 +440,9 @@ window.IntMapModules.playground=function(HOST){
           try{ const host=document.getElementById('pg-news-host');
             if(host) Array.prototype.slice.call(host.children).forEach(n=>{ if(n.dataset&&n.dataset.pgPan) n.remove(); });
             pgNews(text,kind);
+            /* (layer-failure-state) the card is the simulator's own (its HUD sits above the app toast); the WORDS go
+               through the app's one live region, announced like every other message (js/notify.js) */
+            try{ window.IntMapNotify.show(String(text).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),{visual:false}); }catch(_){}
             const host2=document.getElementById('pg-news-host');
             const last=host2&&host2.lastElementChild; if(last&&last.dataset) last.dataset.pgPan='1';
           }catch(_){}
