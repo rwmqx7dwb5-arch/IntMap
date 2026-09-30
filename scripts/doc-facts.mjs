@@ -163,24 +163,27 @@ const ARCH = BODY.get('Architecture.md') || '';
 const LAYERS = BODY.get('docs/MAP-LAYERS.md') || '';
 const FILES = BODY.get('docs/FILES.md') || '';
 
-/* ═══ 1. the size of the app, as Architecture.md §1 states it ══════════════════════════════ */
+/* ═══ 1. the size of the app — measured here, never restated in Architecture.md §1 ═════════════
+   §1 used to carry «index.html（N 行・K KB）＋ css/（N 本）＋ js/（N 本・M MB）＋ src/（N 本）» and this rule
+   compared the numbers. Every change that adds a js/ file changes one of them, so every such branch
+   edited the same line: MEASURED 2026-09-30, six rebase conflicts in one day across nine parallel PRs —
+   and a second copy of the js/ count in §3 («js/ だけで N 本») that no rule read had drifted to 333 while
+   the first said 335. A number that moves with every change is the repository's to state, not the
+   prose's (the #R500 shape). The sentence names what the app is made of; this rule prints the numbers on
+   every run and refuses a count written back into either place. */
 {
-  const lines = rd('index.html').split('\n').length - (rd('index.html').endsWith('\n') ? 1 : 0);
+  const html = rd('index.html');
+  const lines = html.split('\n').length - (html.endsWith('\n') ? 1 : 0);
   const jsCount = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).length;
   const srcCount = readdirSync(join(ROOT, 'src')).filter((f) => f.endsWith('.js')).length;
   const cssCount = readdirSync(join(ROOT, 'css')).filter((f) => f.endsWith('.css')).length;
-
-  const m = ARCH.match(/index\.html`?（(\d+)\s*行[^）]*）[\s\S]{0,120}?css\/`?（(\d+)\s*本）[\s\S]{0,120}?js\/`?（(\d+)\s*本[^）]*）[\s\S]{0,80}?src\/`?（(\d+)\s*本）/);
-  if (!m) {
-    fail('app-size', 'Architecture.md §1 no longer states index.html / css / js / src counts in the expected shape');
-  } else {
-    const [, sLines, sCss, sJs, sSrc] = m.map(Number);
-    if (sLines !== lines) fail('app-size', `Architecture says index.html is ${sLines} lines; it is ${lines}`);
-    if (sCss !== cssCount) fail('app-size', `Architecture says css/ has ${sCss} files; it has ${cssCount}`);
-    if (sJs !== jsCount) fail('app-size', `Architecture says js/ has ${sJs} files; it has ${jsCount}`);
-    if (sSrc !== srcCount) fail('app-size', `Architecture says src/ has ${sSrc} files; it has ${srcCount}`);
-    if (sLines === lines && sJs === jsCount) ok('app-size', `index.html ${lines} lines · js/ ${jsCount} · src/ ${srcCount} · css/ ${cssCount}`);
-  }
+  const COUNT = /[（(]\s*\d[\d,.]*\s*(行|本|KB|MB)/;
+  const shape = ARCH.match(/本体は\s*`index\.html`[^\n]*`css\/`[^\n]*`js\/`[^\n]*`src\/`[^\n]*/);
+  const dup = ARCH.match(/`js\/` だけで\s*\d[\d,]*\s*本/);
+  if (!shape) fail('app-size', 'Architecture.md §1 no longer names what the app is made of (index.html + css/ + js/ + src/)');
+  else if (COUNT.test(shape[0])) fail('app-size', 'Architecture.md §1 states a file count or size again — those move with every change; this rule prints them (' + shape[0].slice(0, 80) + ')');
+  if (dup) fail('app-size', 'Architecture.md §3 states the js/ count again (' + dup[0] + ') — docs/FILES.md and check:archfiles own it');
+  if (shape && !COUNT.test(shape[0]) && !dup) ok('app-size', `index.html ${lines} lines · js/ ${jsCount} · src/ ${srcCount} · css/ ${cssCount} (measured; not restated in Architecture.md)`);
 }
 
 /* ═══ 2. the Edge Functions: directory ⇄ config.toml ⇄ EVERY current-state document ═══════
