@@ -86,9 +86,18 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
     { rule: 'news-path', file: 'js/legal-text.js',
       from: 'headlines are fetched <b>by your browser</b>',
       to: 'news is fetched and geolocated server-side and stored' },
+    /* ⚠ (output-taint-gate) WRITTEN AS WHAT THE MUTATION DOES, NOT AS TODAY'S SENTENCE. The anchor was
+       the whole line, count and noun included, so a correct rewording (「CDN ホスト」→「CDN の source」,
+       when unpkg narrowed to one file's full path) broke the case while the rule it proves was fine.
+       Case 1: the line that says script-src carries 'unsafe-eval' and CDN sources is replaced by one
+       saying neither is present. Case 2: the stated count is made one more than it is — the rule had
+       stopped reading that count on the same rewording, and nothing here noticed. */
     { rule: 'csp', file: 'Architecture.md',
-      from: '- ⚠ **`index.html` の `script-src` には現在 `\'unsafe-eval\'` と 7 つの CDN ホストが入っている**',
+      re: /^[^\n]*`script-src`[^\n]*'unsafe-eval'[^\n]*CDN[^\n]*$/m,
       to: '- ⚠ `\'unsafe-eval\'` と CDN ホスト（どちらも現在は入っていない）' },
+    { rule: 'csp', file: 'Architecture.md',
+      re: /(\d+)(\s*つの\s*CDN)/,
+      to: (_m, n, rest) => String(Number(n) + 1) + rest },
     { rule: 'db-tables', file: 'supabase/tests/00_structure_test.sql',
       /* (#R351) news_ingest_runs joined both lists and the count moved 29 → 30, so the anchor moved
          with it. (#R386) news_event_admin_actions joined them too, 30 → 31, and the anchor moved

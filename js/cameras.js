@@ -69,7 +69,8 @@ window.IntMapModules.cameras=function(HOST){
       else if(kind==='pano'){ media='<div style="position:relative;'+box+'height:175px;border-radius:11px;overflow:hidden;background:#000;"><iframe src="'+IntMapSafe.html(IntMapSafe.url(url))+'" width="100%" height="100%" style="border:0;position:absolute;inset:0;" allowfullscreen referrerpolicy="no-referrer" loading="lazy"></iframe></div>'; }   /* (#R138 SEC) OSM-editable webcam url → http(s)-only + escape (an unvalidated javascript: iframe src runs in our origin) */
       else if(kind==='video'){ media='<div style="position:relative;'+box+'">'+'<video class="wc-live" src="'+IntMapSafe.html(IntMapSafe.url(url))+'" autoplay muted loop playsinline style="'+box+'border-radius:11px;display:block;background:#000;" onerror="'+onerr+'"></video>'+offlineMsg+'</div>'; }
       else { const base=IntMapSafe.url((kind==='tfl')?String(p.img||''):url); const bust=base?(base+(base.indexOf('?')>=0?'&':'?')+'_t='+Date.now()):''; media='<div style="position:relative;'+box+'">'+'<img class="wc-live" data-base="'+IntMapSafe.html(base)+'" src="'+IntMapSafe.html(bust)+'" referrerpolicy="no-referrer" style="'+box+'border-radius:11px;display:block;background:#000;min-height:60px;" onerror="'+onerr+'">'+offlineMsg+'</div>'; }   /* (#R138 SEC) validate+escape webcam image url */
-      const srcTxt=p.attr||(kind==='tfl'?'© Transport for London':'© OpenStreetMap');
+      /* the credit is built from the feed (OpenTrafficCamMap's state/agency names, 511 hosts) — escaped */
+      const srcTxt=IntMapSafe.html(p.attr||(kind==='tfl'?'© Transport for London':'© OpenStreetMap'));
       const refreshTxt=(kind!=='yt'&&kind!=='pano')?(LLw('↻ live','↻ ライブ','↻ live','↻ вживую','↻ en vivo')+' · '):'';
       /* (#R87) a station with several camera views (Finland weather stations) → switchable thumbnails; tapping one
          swaps the main live image (the refresh loop then keeps THAT view live via its data-base). */

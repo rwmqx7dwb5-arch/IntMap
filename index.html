@@ -5,7 +5,7 @@
        ⚠ (#R272) it used to name FIVE directives with no `default-src` — a directive that is absent with nothing to fall back on is not "permissive",
        it is ABSENT. Fourteen now, each explained with its measurement in docs/SECURITY-ARCHITECTURE.md §6. ⚠ `frame-ancestors` is IGNORED in a
        <meta> policy, so it is deliberately absent rather than written and silently inert (§6/§8). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; manifest-src 'self'; frame-src 'self' https: blob:; child-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https: wss: data: blob:; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.clarity.ms https://*.clarity.ms">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; manifest-src 'self'; frame-src 'self' https: blob:; child-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https: wss: data: blob:; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.clarity.ms https://*.clarity.ms">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <!-- ⚠⚠⚠ (#R502) GA と Microsoft Clarity は「一旦停止」であって削除ではない ─────────────────
        このフラグ 1 つが両方を止める。`false` の間、www.googletagmanager.com にも www.clarity.ms にも
@@ -315,7 +315,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
   <div class="sidebar" id="sidebar">
     <div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div>
     <div class="header-area">
-      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button><button class="lang-btn" id="lang-ru">RU</button><button class="lang-btn" id="lang-es" title="Español">ES</button></div></div>
+      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en" data-effect="private">EN</button><button class="lang-btn" id="lang-jp" data-effect="private">JP</button><button class="lang-btn" id="lang-de" data-effect="private">DE</button><button class="lang-btn" id="lang-ru" data-effect="private">RU</button><button class="lang-btn" id="lang-es" data-effect="private" title="Español">ES</button></div></div>
       <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
            SECOND row, so the first "IntMap" row carries no action buttons. injectAuthUI() inserts WS, Login and
            Feedback before #btn-open-settings, so they land inside .header-actions in that exact order. -->
@@ -549,7 +549,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="settings-sec">
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
     
-    <div class="setting-group"><label for="setting-lang" data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option><option value="es">Español</option></select></div>
+    <div class="setting-group"><label for="setting-lang" data-i18n="lblLang">Language</label><select id="setting-lang" data-effect="private"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option><option value="es">Español</option></select></div>
     <div class="setting-group"><label for="setting-theme" id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
       <!-- (#R33) Only System Default / Dark / Light kept per request; the skin themes were deleted. -->
       <option value="auto" id="opt-theme-auto">System Default</option>
@@ -648,7 +648,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="setting-group"><label for="setting-newslang" data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMultiSel">Multiple languages…</option></select>
       <div id="newslang-dd" class="nc-dd" style="display:none; margin-top:10px;">
         <button type="button" id="newslang-dd-btn" class="nc-dd-btn"><span id="newslang-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
-        <div id="newslang-multi" class="nc-dd-panel"></div>
+        <div id="newslang-multi" data-effect="private" class="nc-dd-panel"></div>
       </div>
       <div id="newslang-hint" class="sat-keys-hint" data-i18n="newsLangHint" style="display:none; margin-top:6px;">Headlines from each language appear together; with an AI key their titles are auto-translated.</div>
     </div>
@@ -748,7 +748,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (#R34) Apply lives in a clean sticky FOOTER (matches the modal surface, rounded primary button +
          fine-print below) — the R33 full-bleed blue bar clashed with the iOS-clean design. -->
     <div class="settings-foot">
-      <button class="modal-close-btn" id="btn-close-settings">Apply</button>
+      <button class="modal-close-btn" id="btn-close-settings" data-effect="private">Apply</button>
       <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--text-muted);">
         <a href="./terms.html" id="link-terms" data-i18n="lnkTerms" style="color:var(--text-muted);">Terms of Service</a> ·
         <a href="./privacy.html" id="link-privacy" data-i18n="lnkPrivacy" style="color:var(--text-muted);">Privacy Policy</a>

@@ -1060,6 +1060,26 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   and an element that never leaves its function are not evidence. Held to
   `tests/control-names-baseline.json` in both directions (`--update` lowers it). The rendered page is
   measured separately by `tests/form-control-names.spec.js` through Chromium's accessibility tree.
+- **What flows into an HTML sink** (`output-taint`, output-taint-gate) — `scripts/output-taint.mjs`
+  reads every `innerHTML` / `outerHTML` assignment, `insertAdjacentHTML` and `setHTML` in `js/`,
+  splits the value into the leaves written at the sink and judges each from the parse tree (literal,
+  number, `IntMapSafe.*`, a same-file builder whose returns are safe — per parameter —, a local
+  helper's parameter judged at its callers, a factory dependency every offered definition of which is
+  safe, a `TRUSTED` translation). The unjudged leaves are held per file to
+  `tests/output-taint-baseline.json` in both directions (`--update` lowers it; `--why` follows a leaf
+  to the read that decides it). The `TRUSTED` rows are checked like claims: the function must exist
+  where the row says, something must call it, and the row must give its reason in a sentence.
+  Regression and in-memory mutation of the real tree (no working-tree file is written):
+  `tests/output-taint-gate-checks.test.mjs`, which also runs `sw.js`'s `isTileRequest` on every DEM
+  URL template in `js/` and on foreign buckets, and holds `index.html`'s CSP unpkg path to the URL
+  `js/wx-ecmwf.js` builds from `SDK_VER`.
+- **A control that writes and does not say so** (`data-effect`, output-taint-gate) —
+  `scripts/data-effects.mjs` finds every UI handler (click / change / input / keydown / keypress /
+  submit — what Atlas's `doControl` can fire) that reaches a Supabase table write, `rpc`,
+  `functions.invoke`, an auth change or a POSTed Edge Function, and whose element has no
+  `data-effect`, and holds them per file to `tests/data-effect-baseline.json` both ways. A function
+  received as a parameter (`fn()`) is not followed by name — that joins every handler to every write.
+  `tests/atlas-outward-effects-checks.test.mjs` D① holds its own narrower walk to zero.
 - **The stacking order** (`z-layers`, map-a11y-structure) — `scripts/z-layers.mjs` resolves every
   z-index of `css/intmap.css` through the `:root` `--z-*` layer tokens (calc() evaluated) and holds the
   ORDERED list to `tests/z-layers-baseline.json` exactly — a moved layer fails until it is written

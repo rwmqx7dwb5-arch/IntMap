@@ -985,8 +985,15 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
           if (ABSENT.some((re) => re.test(line))) fail('csp', f + " says the app's CSP has no 'unsafe-eval' / CDN hosts; index.html has " + (evalOn ? "'unsafe-eval' and " : '') + cdns.length + ' CDN host(s)');
         }
       });
-      const archCount = (ARCH.match(/(\d+)\s*つの\s*CDN\s*ホスト/) || [])[1];
-      if (archCount && Number(archCount) !== cdns.length) fail('csp', 'Architecture says ' + archCount + ' CDN hosts in script-src; index.html has ' + cdns.length);
+      /* ⚠ (output-taint-gate) THE COUNT IS READ OFF THE NUMBER, NOT OFF THE NOUN AFTER IT. This used to
+         need 「N つの CDN ホスト」, and the round that narrowed unpkg to one file's full path correctly
+         reworded it to 「N つの CDN の source」 — at which point the match came back empty and the
+         `archCount &&` below skipped the comparison without a word: the count claim went unmeasured
+         while the rule printed ok. The claim is 「N つの CDN …」 whatever it calls them, and a script-src
+         that carries CDN sources must be described with a count, so an absent claim is a failure. */
+      const archCount = (ARCH.match(/(\d+)\s*つの\s*CDN/) || [])[1];
+      if (cdns.length && !archCount) fail('csp', 'Architecture.md no longer states how many CDN sources script-src carries (「N つの CDN …」); index.html has ' + cdns.length);
+      if (archCount && Number(archCount) !== cdns.length) fail('csp', 'Architecture says ' + archCount + ' CDN sources in script-src; index.html has ' + cdns.length);
       if (!/SECURITY-ARCHITECTURE\.md/.test(ARCH)) fail('csp', 'Architecture.md no longer points at the residual-risk register that tracks this');
     }
     if (!problems.some((x) => x.startsWith('csp'))) ok('csp', dirs + ' directives · script-src: ' + (evalOn ? "'unsafe-eval' + " : '') + cdns.length + ' CDN host(s), described as such');

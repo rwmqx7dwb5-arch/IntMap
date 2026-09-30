@@ -2184,7 +2184,8 @@ window.IntMapModules.weatherPanel=function(HOST){
          with the reader's language is a model name nobody can look up. It is data, like the ECMWF
          run hour beside it, so it is not an L(…) site and the positional audit does not count it. */
       const m=j.model;
-      return 'Open-Meteo · '+((!m||m==='best_match')?'Best match':m);
+      /* the model id is the response's own string and this line is written into markup — escaped */
+      return 'Open-Meteo · '+((!m||m==='best_match')?'Best match':window.IntMapSafe.html(m));
     }
     async function open(lngLat,opt){ const p=ensure(); _lastLL=lngLat; p.style.display='block'; place();
       const lat=lngLat.lat, lng=lngLat.lng;
@@ -2218,7 +2219,7 @@ window.IntMapModules.weatherPanel=function(HOST){
           +`<span>${L('Wind','風','Wind','Ветер','Viento')}<br><b>${wind(c.wind_speed_10m)} ${dir(c.wind_direction_10m)}</b></span>`
           +`<span>${L('Gusts','突風','Böen','Порывы','Rachas')}<br><b>${wind(c.wind_gusts_10m)}</b></span>`
           +`<span>${L('Pressure (MSL)','海面気圧','Druck (NN)','Давление (у.м.)','Presión (NM)')}<br><b>${mslp!=null?Math.round(mslp)+' hPa':'—'}</b></span>`
-          +`<span>${L('Precip.','降水','Niederschl.','Осадки','Precip.')}<br><b>${c.precipitation!=null?c.precipitation+' mm':'—'}</b></span>`
+          +`<span>${L('Precip.','降水','Niederschl.','Осадки','Precip.')}<br><b>${c.precipitation!=null?window.IntMapSafe.html(c.precipitation)+' mm':'—'}</b></span>`
           +`<span style="grid-column:1/-1;">${L('Valid at','有効時刻','Gültig','Действительно на','Válido a las')}<br><b>${upd}</b></span>`
           +`</div><div class="wp-days">${dh}</div>`
           +`<div style="margin-top:9px;font-size:9.5px;color:var(--text-muted);">${modelName(j)} · ${L('drag to move','ドラッグで移動','zum Verschieben ziehen','перетащите','arrastra para mover')}</div>`;

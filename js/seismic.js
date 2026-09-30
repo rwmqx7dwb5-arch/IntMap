@@ -4743,7 +4743,7 @@ window.IntMapModules.seismic=function(HOST){
            It is the answer the table exists to give, and it was the SEVENTH column: the two numbers a
            reader compares (how far, how hard) were at opposite ends of a row that scrolls. Header and
            body are reordered together; nothing else about a cell changes. */
-        return '<tr><td class="sq-st-nm" title="'+HOST.escapeHtml(String(c.name||''))+'">'+badge+c.name+'</td>'
+        return '<tr><td class="sq-st-nm" title="'+HOST.escapeHtml(String(c.name||''))+'">'+badge+HOST.escapeHtml(String(c.name||''))+'</td>'   /* a gazetteer (GeoNames) name: escaped in the text as it already was in the title */
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+Math.round(a.km).toLocaleString()+'</td>'   /* (#R242) the unit is in the header — six characters of every row back for the place name */
           +'<td style="padding:3px 4px 3px 4px;text-align:right;">'+iCell(a,CW)+'</td>'
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;color:#ff6b6b;">'+fmtT(a.tP)+'</td>'

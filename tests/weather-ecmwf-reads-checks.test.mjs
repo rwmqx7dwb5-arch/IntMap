@@ -16,6 +16,8 @@ import { fileURLToPath } from 'node:url';
 import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 import { assertUnreadIsTheHatch } from './wash-tier.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { liftFunction } from './helpers/lift-function.mjs';
+import { installSafe } from './helpers/safe-html.mjs';
 
 /* ⚠ (tests-by-topic) THE AXIS AND THE URLS, RUN. ① and ② below used to read js/wx-ecmwf.js for the
    spelling of `fileUrl`, `omUrl`, `validTimes: j.valid_times.slice()` and `nowIndex`. The shipped
@@ -264,8 +266,19 @@ test('R276 ⑥ nothing calls this GFS, and an unspecified model is Best match', 
   assert.match(EC(), /MODEL: cfg\.nameKey/, 'and the instance reports the name its own row carries');
   assert.ok(!/'ECMWF IFS HRES'/.test(codeOnly(EC())),
     'js/wx-ecmwf.js does not hold a second copy of the name');
-  assert.match(WX(), /'Open-Meteo · '\+\(\(!m\|\|m==='best_match'\)\?'Best match':m\)/,
-    'an unspecified Open-Meteo model is reported as Best match');
+  /* ⚠ (output-taint-gate) THIS ONE CLAIM HAS A VALUE, SO IT IS EVALUATED, NOT READ. It used to match
+     the return line's spelling, and the round that escaped the model id (it is the response's own
+     string, written into markup) turned it red while the claim stayed true. modelName is lifted out
+     of the shipped file and run against the shipped encoder (js/safe-html.js), so the check now says
+     what the reader gets: Best match when no model is named, the model that answered when one is,
+     and that model id never as markup. */
+  const modelName = new Function('window', 'return (' + liftFunction(WX(), 'modelName') + ')')(
+    { IntMapSafe: installSafe({}) });
+  assert.equal(modelName({}), 'Open-Meteo · Best match', 'an unspecified Open-Meteo model is reported as Best match');
+  assert.equal(modelName({ model: 'best_match' }), 'Open-Meteo · Best match', 'and so is the explicit best_match id');
+  assert.equal(modelName({ model: 'ncep_gfs013' }), 'Open-Meteo · ncep_gfs013', 'a named model is reported as the model that answered');
+  assert.ok(!/[<>"]/.test(modelName({ model: '<img src=x onerror="1">' }).replace(/^Open-Meteo · /, '')),
+    'the model id the response carries is escaped before it reaches markup');
   assert.match(codeOnly(read('js/wx-source.js')), /if \(!j\.model\) j\.model = 'best_match';/,
     'and the client stamps which model answered');
 });
