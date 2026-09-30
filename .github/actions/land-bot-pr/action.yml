@@ -1,0 +1,182 @@
+# (perf-baseline-auto-tighten) LAND A BOT PULL REQUEST ON main — THE ONE PLACE THAT KNOWS HOW.
+#
+# Moved here, not copied, from .github/workflows/tle-refresh.yml, where it was written and measured
+# (#R185 → #R372). Two workflows now land a pull request that github-actions[bot] opened — the
+# satellite catalogue (tle-refresh.yml) and the start-up budget's lowered ceilings (perf-ceiling.yml)
+# — and every step below is a way the first version of this failed in production. A second copy
+# would be the second place each of those lessons has to be learnt again. DECISIONS.md (upstream
+# liveness) made the same call for the data bundles: ride the lander, do not rebuild it.
+#
+# ⚠ `main` carries a ruleset requiring a pull request with NO bypass actors, so the bot cannot push
+#   to it; it opens a pull request (the calling workflow does that) and this action lands it.
+# ⚠⚠ (#R372) OPENING THE PULL REQUEST WAS NEVER THE LAST STEP. This repo's Actions setting is
+#   `fork-pr-contributor-approval = first_time_contributors` and GitHub counts github-actions[bot]
+#   as one, so its pull requests' runs are parked at `action_required` with a 0 s duration. Measured
+#   2026-08-01…08-24: every scheduled catalogue run came back that way, and the three that landed
+#   landed because a person clicked Approve. So this approves the runs it caused, waits, and merges.
+#   It does NOT weaken `main` — the same ruleset, the same required checks, the same PR. If GitHub
+#   ever refuses the approval to GITHUB_TOKEN, this FAILS LOUDLY rather than leaving silence.
+#
+# The calling job needs `contents: write`, `pull-requests: write` and `actions: write` (approving
+# runs, and dispatching deploy.yml after the merge).
+#
+# OUTPUT `result`:
+#   none        no open pull request on the branch — nothing to land
+#   landed      merged, and deploy.yml dispatched
+#   lost        the checks passed but main kept moving past every attempt (not a failure by itself;
+#               the caller decides what «not landed this time» costs — tle-refresh.yml measures it)
+#   superseded  (require-current only) main moved past the commit the pull request was tested
+#               against; a newer run of the caller will propose again from the newer main
+# A pull request whose checks are RED is not landed and the step FAILS.
+name: Land a bot pull request
+description: Approve the runs a github-actions[bot] pull request parked, wait for its checks, merge it, and dispatch the deploy.
+
+inputs:
+  branch:
+    description: The head branch of the bot's pull request.
+    required: true
+  what:
+    description: What the pull request carries, for the log (e.g. "the catalogue").
+    required: false
+    default: the change
+  require-current:
+    description: >-
+      'true' = merge only while the pull request's head contains main's head, i.e. its checks ran
+      against exactly the tree the merge produces; if main moves, stop with result=superseded
+      instead of updating the branch. For a change whose correctness depends on the rest of the tree
+      (a ceiling lowered to a measurement). 'false' = bring the branch up to date and try again.
+    required: false
+    default: 'false'
+
+outputs:
+  result:
+    description: none | landed | lost | superseded
+    value: ${{ steps.land.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - id: land
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        BRANCH: ${{ inputs.branch }}
+        WHAT: ${{ inputs.what }}
+        REQUIRE_CURRENT: ${{ inputs.require-current }}
+      run: |
+        set -u
+        finish() { echo "result=$1" >> "$GITHUB_OUTPUT"; exit "${2:-0}"; }
+        PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
+        if [ -z "$PR" ]; then echo "no open pull request on $BRANCH — nothing to land"; finish none; fi
+
+        # (require-current) Does the pull request's head already contain main's head? Then the run
+        # GitHub made for it tested exactly the tree a merge now produces. `behind_by` is the number
+        # of commits on main that the head does not have.
+        current() {
+          local MAIN BEHIND
+          MAIN="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq .object.sha)"
+          BEHIND="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${MAIN}...${SHA}" --jq .behind_by)"
+          echo "main $MAIN · the pull request is $BEHIND commit(s) behind it"
+          [ "$BEHIND" = "0" ]
+        }
+
+        # `main` may require the branch to be up to date, and this repo merges often enough that a
+        # five-minute CI run can fall behind. Each attempt therefore re-syncs, re-approves whatever
+        # that created, and waits again — unless require-current says a moved main ends the attempt.
+        for attempt in 1 2 3 4; do
+          echo "── attempt $attempt ─────────────────────────────────────────"
+          SHA="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
+          if [ "$REQUIRE_CURRENT" = "true" ]; then
+            if ! current; then
+              echo "::notice::main moved past the commit $WHAT was measured against — not merging it onto a tree it was not tested with. The run for the newer main proposes again."
+              finish superseded
+            fi
+          else
+            STATE="$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus)"
+            if [ "$STATE" = "BEHIND" ]; then
+              echo "behind main — updating the branch"; gh pr update-branch "$PR" || true; sleep 20
+              SHA="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
+            fi
+          fi
+          echo "head $SHA"
+
+          # ⚠⚠ WAIT FOR THE RUNS BEFORE JUDGING THEM. GitHub creates the parked runs a few seconds
+          # AFTER the push that caused them, and the first version of this step read `gh pr checks`
+          # in that window: it printed «no checks reported», exited non-zero, and the step called a
+          # catalogue red whose checks had not been created yet, let alone run. Measured on the
+          # dispatch that was meant to prove this step works — the PR was opened at 07:13:22, the
+          # runs appeared at 07:13:25, and the step had already given up at 07:13:26.
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            SEEN="$(gh run list --branch "$BRANCH" --limit 20 --json headSha --jq "[.[]|select(.headSha==\"$SHA\")]|length")"
+            [ "${SEEN:-0}" -gt 0 ] && break
+            echo "no run on $SHA yet ($i)"; sleep 10
+          done
+
+          # Approve every run GitHub parked on THIS head. Without this they stay at 0 s forever
+          # and the required checks below can never report.
+          for RUN in $(gh run list --branch "$BRANCH" --limit 20 --json databaseId,conclusion,headSha \
+                        --jq ".[]|select(.headSha==\"$SHA\" and .conclusion==\"action_required\")|.databaseId"); do
+            echo "approving run $RUN"
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN}/approve" \
+              || { echo "::error::GITHUB_TOKEN could not approve run ${RUN}. $WHAT cannot land unattended; see the #R372 note at the top of .github/actions/land-bot-pr/action.yml."; exit 1; }
+          done
+
+          # ⚠ `gh pr checks` says «no checks reported» — and exits NON-ZERO — both when the checks
+          # have not been created yet and when there are none at all. That sentence is "not yet",
+          # never "red", so it is caught here rather than falling through to the failure branch.
+          OUT="$(gh pr checks "$PR" --watch --interval 20 2>&1)" && RC=0 || RC=$?
+          echo "$OUT" | tail -20
+          if [ "$RC" = "0" ]; then
+            if [ "$REQUIRE_CURRENT" = "true" ] && ! current; then
+              echo "::notice::the checks passed, but main moved while they ran — not merging $WHAT onto a tree it was not tested with. The run for the newer main proposes again."
+              finish superseded
+            fi
+            # --match-head-commit: merge exactly the head that was checked, or nothing.
+            if gh pr merge "$PR" --squash --delete-branch=false --match-head-commit "$SHA"; then
+              echo "$WHAT landed on main"
+              # ⚠⚠ LANDING ON MAIN IS NOT REACHING READERS. This merge is made with GITHUB_TOKEN,
+              # and a push made with GITHUB_TOKEN starts no other workflow — the publish on push to main
+              # (ci.yml's «Deploy to Pages», after its gates) never runs for it, and before
+              # ci-build-once deploy.yml's own `push` trigger did not either — so the catalogue sat on
+              # main until a person happened to push. Measured
+              # 2026-09-27: 19 of 19 bot commits since 09-10 had no push-triggered run at all;
+              # #773 (built 09-26 08:36) was still not on the Pages site the next day, and one
+              # earlier catalogue took 11.5 h. workflow_dispatch is the documented exception that
+              # GITHUB_TOKEN may start, so the deploy is asked for by name. A refusal is RED.
+              # (perf-baseline-auto-tighten) …even when the merge changed no deployed byte: the Pages
+              # site's build-info.json is how scripts/release-state.mjs and `worktree.mjs status` tell
+              # «main is in production», and a bot commit left undeployed reads as a release that did
+              # not happen.
+              gh workflow run deploy.yml --ref main \
+                || { echo "::error::$WHAT landed on main but deploy.yml could not be dispatched — the Pages site stays at the previous commit until the next push."; exit 1; }
+              echo "deploy.yml dispatched for main"
+              finish landed
+            fi
+            echo "checks passed but the merge was refused — re-syncing and trying again"
+            continue
+          fi
+          if echo "$OUT" | grep -qi 'no checks reported'; then
+            echo "the checks have not reported yet — waiting and looking again"; sleep 30; continue
+          fi
+
+          # ⚠ A CANCELLED RUN IS NOT A RED ONE, and `gh pr checks` cannot tell them apart:
+          # ci.yml carries `cancel-in-progress: true`, so moving this branch kills its own
+          # in-flight run, and the aggregating job then reports `core: cancelled` as exit 1.
+          # Measured while writing this step — the first attempt read a cancellation as a
+          # failure and refused a catalogue whose checks had never actually finished. Re-run
+          # the cancelled ones on the same commit and look again.
+          CANCELLED="$(gh run list --branch "$BRANCH" --limit 20 --json databaseId,conclusion,headSha \
+                        --jq ".[]|select(.headSha==\"$SHA\" and .conclusion==\"cancelled\")|.databaseId")"
+          if [ -n "$CANCELLED" ]; then
+            for RUN in $CANCELLED; do echo "re-running cancelled run $RUN"; gh run rerun "$RUN" || true; done
+            sleep 20; continue
+          fi
+
+          echo "::error::the pull request's checks are red — NOT merging. $WHAT stays as it is on main."
+          exit 1
+        done
+        # ⚠⚠ LOSING THE RACE IS NOT, BY ITSELF, A FAILURE. The approvals work, the checks run and
+        # they pass — but CI takes ~6 minutes and this repository merges every few minutes, so the
+        # merge can be overtaken on every attempt. What that costs is the caller's to measure
+        # (tle-refresh.yml asks how old main's catalogue is); this reports it and stops.
+        finish lost

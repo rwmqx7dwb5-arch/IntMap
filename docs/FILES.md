@@ -1511,11 +1511,12 @@ scripts/
                                   ⚠ brotli は**2つの品質**を使う——ゲートが読む eager だけ 11、それ以外は 5。
                                   全部を 11 にするとビルドが 40 秒延びる（Cesium だけで 4.8 MB）。
   perf-budget.mjs                 **起動予算のゲート**（`npm run check:perf`・CI の静的 job）。
-                                  eager は**両方向のラチェット**（増えたら退行／減ったのに天井が
-                                  ついてこなければ「天井が古い」で落とす＝#R194 と同じ規則）、
-                                  async chunk と dist の合計は**天井だけ**（縮むのは自由）。
-                                  ⚠ `requests` と `modules` は**バイトではなく個数**なので完全一致で見る。
-                                  基準は `tests/perf-baseline.json`（追跡対象）。`--update` で更新。
+                                  eager・async（合計と chunk ごと）・dist の合計が各自の天井を持つ。
+                                  PR が落ちるのは天井＋幅を**超えて増えた**ときだけ（`--update` は
+                                  超えた行だけを上げる）。下げるのは main の CI（`--tighten`、
+                                  `perf-ceiling.yml`。上げない）。
+                                  ⚠ `requests` と `modules` は**バイトではなく個数**なので幅 0。
+                                  基準は `tests/perf-baseline.json`（追跡対象）。
   typecheck.mjs                   **型検査のゲート**（`npm run check:types`）。同梱の typescript で
                                   `tsc --noEmit -p tsconfig.json` を走らせ、その終了コードを返す。typescript が
                                   入っていなければ「`npm install` が要る」と言って落ちる（退行と区別するため）
@@ -1712,10 +1713,12 @@ tests/
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
   atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いを送って評価（Secret 2本が無ければ**赤**。休眠しない）
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）。同じ PR に、期限の来た他の束も載せる（`scripts/data-refresh.mjs`・宣言 `autoRefresh`）
+  perf-ceiling.yml                main の CI が完了するたびに、その build の実測で起動予算の天井を下げる（`perf-budget.mjs --tighten`。上げない）。bot の PR を `land-bot-pr` で、測った main の上にまだ乗っているときだけ着地させる
   upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストの代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
 .github/actions/
   browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・build 成果物の受け取り・実行・報告）。ci.yml の browser／browser-deep が使う
+  land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml と perf-ceiling.yml が使う
   data-assets/                    git の外にあるデータ集合を置く（`data-assets.json` の hash を key にしたキャッシュ ＋
                                   `scripts/data-assets.mjs pull`）。データを読むジョブがビルドと検査の前に使う
 ```

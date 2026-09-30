@@ -15,7 +15,8 @@ on:
   workflow_dispatch:
 
 # Read-only token — no job here writes to the repo or needs secrets. `pages` and `deep-alarm` add
-# the one scope each needs at job level; nothing else can deploy or write.
+# the one scope each needs at job level; nothing else can deploy or write. (The ceiling bot that
+# acts on main's measurement is its own workflow, perf-ceiling.yml, so this stays true.)
 #
 # green-skip-by-design vars.ENABLE_PAGES_DEPLOY: the operator's stop switch for publishing, the same one deploy.yml reads (the `build` job's Pages steps and the `pages` job skip on it). With it off «did not publish» IS the job done and every test still ran; a red run on every push would make the switch unusable.
 permissions:
@@ -86,6 +87,20 @@ jobs:
           include-hidden-files: true   # .perf/ is a dot-directory; without this it is silently left out
           compression-level: 1
           retention-days: 1
+          if-no-files-found: error
+      # (perf-baseline-auto-tighten) …and on a push to main, the start-up measurement of THIS build for
+      # .github/workflows/perf-ceiling.yml, which lowers every ceiling main has fallen below. A few KB
+      # of JSON rather than the 280 MB site artifact: the bot needs the numbers, not the bytes. A pull
+      # request's build is not handed over — it measures a tree that is not main.
+      - name: The start-up measurement, for the ceiling bot
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: node scripts/perf-budget.mjs --report > perf-measured.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        with:
+          name: perf-measured-${{ github.run_attempt }}
+          path: perf-measured.json
+          retention-days: 3
           if-no-files-found: error
       - name: Assemble site (build output + build stamp)
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES_DEPLOY == 'true' }}
@@ -355,8 +370,10 @@ jobs:
   # The build has to happen here for the report to exist, and it is worth its ~35 s: it is also
   # the only place that proves the production tree still BUILDS before the browser shards spend
   # ten machines finding out. scripts/perf-budget.mjs then judges the two halves separately —
-  # eager bytes ratcheted in both directions, async chunks and dist/ totals under a ceiling —
+  # eager bytes, async chunks and dist/ totals each under their own ceiling —
   # because "the biggest chunk is big" is a fact about Cesium, not about start-up.
+  # (perf-baseline-auto-tighten) A pull request fails only on GROWTH past a ceiling; the ceilings
+  # follow a shrink down on main (the `build` job's perf-measured artifact → perf-ceiling.yml).
   # (#R322) …and the other half of the deploy. The budget above weighs what the bundler (Rolldown, since vite 8) produced,
   # which is 12.5 MB of a 105.7 MB tree; `data/` is copied whole by vite.config.js and never
   # passes through the bundler, so nothing could tell that a file in it had stopped being

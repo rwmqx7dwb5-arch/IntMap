@@ -517,7 +517,7 @@ test('R168 #8 no module body came back inline, and the stylesheet stays in css/'
      N−1. A count of LINES cannot tell a feature that moved out from a line that was joined to its
      neighbour, so it had stopped measuring what it was for. What it was for is measured directly:
        · what the browser must fetch and evaluate before the map is usable — `npm run check:perf`
-         (scripts/perf-budget.mjs) ratchets the EAGER bytes and module count both ways, in CI, from
+         (scripts/perf-budget.mjs) holds the EAGER bytes and module count under ceilings main lowers, in CI, from
          the build itself;
        · how much of the program reaches through one shared object — `npm run check:surface`
          (scripts/global-surface.mjs) ratchets the IM_HOST members and the window.* names the

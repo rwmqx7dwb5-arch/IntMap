@@ -1,0 +1,141 @@
+# (perf-baseline-auto-tighten) MAIN'S CI LOWERS THE START-UP BUDGET'S CEILINGS — PULL REQUESTS DO NOT.
+#
+# tests/perf-baseline.json holds the ceilings `npm run check:perf` (scripts/perf-budget.mjs) judges
+# every build against. Until 2026-10-01 a pull request that made start-up CHEAPER had to rewrite that
+# file too (the eager half failed on an improvement past 4 %, and the two counts had to match
+# exactly), so every pull request that touched the start-up graph edited the same file. Measured
+# 2026-09-30: it was the conflict of four to five parallel pull requests in one day, and each rebase
+# meant a fresh build and `--update`.
+#
+# Now a pull request fails only when a number GROWS past its ceiling, and lowering is done here:
+#   1. after every push to main, CI's `build` job uploads the measurement of that exact build
+#      (`perf-budget.mjs --report`, artifact perf-measured-<attempt>);
+#   2. this workflow, woken when that CI run completes, runs `perf-budget.mjs --tighten` on it —
+#      which only ever LOWERS a ceiling (and records a new chunk / drops a gone one) — and, when a
+#      row is due, proposes the result as a pull request from github-actions[bot];
+#   3. .github/actions/land-bot-pr lands it — the same lander tle-refresh.yml uses — with
+#      `require-current: 'true'`: it merges only while the pull request still sits on the main it
+#      measured, because a lowered ceiling is a claim about the whole tree. If main moves first, it
+#      stops (result `superseded`) and the run for the newer main proposes again.
+# So a ceiling sits above the tree for at most one push-to-main cycle (see the bound below).
+#
+# ⚠ ONE CYCLE IS «THE NEXT PUSH MAIN'S CI RUNS FOR». A merge made with GITHUB_TOKEN — this
+#   workflow's own, or tle-refresh.yml's — starts no CI run, so when the newest commit on main is a
+#   bot's, the run for the commit before it finds main moved and stops; the next human push closes
+#   the gap. Nothing is lost meanwhile: the gate still fails every pull request that GROWS past the
+#   ceiling on main; only the headroom a shrink freed stays open that long.
+# ⚠ THE MERGE DISPATCHES deploy.yml (inside the lander), although tests/ is not deployed: the Pages
+#   site's build-info.json is how release-state tells «main is in production», and a bot commit left
+#   undeployed would read as a release that never happened (tests/audit-sweep-0927-checks.test.mjs ④).
+#   Nothing loops: the deploy starts no CI run, and a pull_request run never wakes this workflow.
+name: Perf ceiling
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write                # push the bot's branch
+  pull-requests: write           # open / update / close its pull request, and merge it
+  actions: write                 # read the CI run's artifact, approve the runs the pull request parks, dispatch deploy.yml
+
+# The newest completed main run supersedes an older one still waiting on its pull request's checks —
+# the older one's measurement is of a tree main has already left.
+concurrency:
+  group: perf-ceiling
+  cancel-in-progress: true
+
+jobs:
+  tighten:
+    name: Lower the ceilings main's build fell below
+    runs-on: ubuntu-latest
+    # A push to main only (a pull request's run measures a tree that is not main), and not a run
+    # that a newer push cancelled (that push's own run is the one to measure).
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion != 'cancelled' }}
+    env:
+      MEASURED_SHA: ${{ github.event.workflow_run.head_sha }}
+      BRANCH: bot/perf-ceiling
+    steps:
+      # ⚠ THE DEFAULT BRANCH, NOT `ref: head_sha`. A privileged workflow_run job that checks out the
+      #   triggering run's head and executes it is the untrusted-checkout shape; here it would be the
+      #   same commit whenever the job acts at all (the next step refuses any other), so the safe
+      #   checkout costs nothing.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Is main still the commit that was measured?
+        id: current
+        run: |
+          MAIN="$(git ls-remote origin refs/heads/main | cut -f1)"
+          HERE="$(git rev-parse HEAD)"
+          echo "main $MAIN · checked out $HERE · measured $MEASURED_SHA"
+          if [ "$MAIN" = "$MEASURED_SHA" ] && [ "$HERE" = "$MEASURED_SHA" ]; then echo "current=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::main has moved past the measured commit — the CI run for the newer main measures it (a bot-merged commit starts no run; the next push does)."; echo "current=false" >> "$GITHUB_OUTPUT"; fi
+      - name: The measurement of that exact build
+        if: ${{ steps.current.outputs.current == 'true' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          pattern: perf-measured-*
+          path: ${{ runner.temp }}/perf-measured
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Lower what is due (never raises)
+        id: tighten
+        if: ${{ steps.current.outputs.current == 'true' }}
+        run: |
+          set -euo pipefail
+          # the newest attempt's measurement, if the build job was re-run
+          F="$( { find "$RUNNER_TEMP/perf-measured" -name perf-measured.json 2>/dev/null || true; } | sort -V | tail -1)"
+          if [ -z "$F" ]; then
+            echo "::notice::the CI run left no measurement (its build job did not finish) — nothing to lower from."
+            echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          node scripts/perf-budget.mjs --tighten --measured "$F" --summary "$RUNNER_TEMP/perf-summary.md"
+          if git diff --quiet -- tests/perf-baseline.json; then echo "changed=false" >> "$GITHUB_OUTPUT"
+          else echo "changed=true" >> "$GITHUB_OUTPUT"; git diff --stat -- tests/perf-baseline.json; fi
+      # ⚠ NOTHING DUE ALSO CLOSES AN OLDER PROPOSAL. A pull request left open by a superseded run
+      #   carries ceilings measured on an older main; if this main no longer falls below them by a
+      #   band, landing it later could put a ceiling under a tree it never measured.
+      - name: Nothing due — close any older proposal
+        if: ${{ steps.current.outputs.current == 'true' && steps.tighten.outputs.changed == 'false' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
+          if [ -n "$PR" ]; then
+            gh pr close "$PR" --comment "Superseded: main at $MEASURED_SHA has no ceiling due (perf-ceiling.yml)."
+          else
+            echo "no ceiling is due and no proposal is open"
+          fi
+      - name: Propose the lowered ceilings
+        if: ${{ steps.tighten.outputs.changed == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TITLE="perf: lower the start-up budget's ceilings to what main measured"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add tests/perf-baseline.json
+          { echo "$TITLE"; echo; echo "Measured on main at $MEASURED_SHA by .github/workflows/perf-ceiling.yml."; echo; cat "$RUNNER_TEMP/perf-summary.md"; } > "$RUNNER_TEMP/commit-message.txt"
+          git commit -F "$RUNNER_TEMP/commit-message.txt"
+          git push --force origin "$BRANCH"
+          { echo "Measured on main at \`$MEASURED_SHA\`."; echo; cat "$RUNNER_TEMP/perf-summary.md"; } > "$RUNNER_TEMP/pr-body.md"
+          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
+          if [ -z "$PR" ]; then
+            gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file "$RUNNER_TEMP/pr-body.md"
+          else
+            gh pr edit "$PR" --body-file "$RUNNER_TEMP/pr-body.md"
+            echo "pull request #$PR now carries this measurement"
+          fi
+      - name: Approve its checks, wait for them, and land it on the main it measured
+        if: ${{ steps.tighten.outputs.changed == 'true' }}
+        uses: ./.github/actions/land-bot-pr
+        with:
+          branch: bot/perf-ceiling
+          what: the lowered ceilings
+          require-current: 'true'

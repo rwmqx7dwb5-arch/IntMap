@@ -377,8 +377,8 @@ from a line joined to its neighbour, so it had stopped measuring what it was for
   a regular expression (Atlas's module catalogue, discovered from the source together with the entry
   points it demands). `tests/dead-code-removal-checks.test.mjs` holds the rule to fixtures.
 
-All three are held as **names** in `tests/global-surface-baseline.json` and ratcheted both ways, like
-`check:perf`: a name that appears fails until it is accepted with `--update` (and named in
+All three are held as **names** in `tests/global-surface-baseline.json` and ratcheted both ways
+(which `check:perf` no longer is — its ceilings are lowered by main's CI): a name that appears fails until it is accepted with `--update` (and named in
 DEV-NOTES — that is the review of a new coupling); a name that is gone fails too, so the baseline
 keeps asserting what it says (#R194). The diff it prints is the member, not the count.
 
@@ -406,7 +406,8 @@ which asserts exactly as much as printing nothing.
 npm run build            # writes .perf/build-report.json as a side effect of building
 npm run check:perf       # judge it against tests/perf-baseline.json
 npm run perf:report      # the same measurement, printed, without judging
-node scripts/perf-budget.mjs --update   # accept the current numbers as the new ceilings
+node scripts/perf-budget.mjs --update    # RAISE the rows that are over, to the measurement — no other row
+node scripts/perf-budget.mjs --tighten   # LOWER every row the build fell below (what main's CI runs)
 ```
 
 **It weighs the two halves of the bundle separately, and that is the whole point.** The largest
@@ -417,20 +418,42 @@ split from the graph the bundler (Rolldown, since Vite 8) finished with (the ent
 closure of its static imports = what Vite emits `modulepreload` for) rather than reading it off
 filenames — plus the workers that boot path starts (a `?worker&url` worker asset, or an emitted entry
 chunk an eager module names, with its closure; MapLibre 6's renderer worker is the emitted-chunk kind
-today, and it is fetched and compiled before the first tile) — and the budget applies two different rules:
+today, and it is fetched and compiled before the first tile) — and judges EAGER, ASYNC (totals and
+per chunk, so one feature cannot double while another that shrank hides it) and the `dist/` totals
+each against its own ceiling.
 
-* **EAGER — a ratchet in both directions.** Over the ceiling fails as a regression. *Under* it by
-  more than a little also fails, and says so: a ceiling with permanent headroom has stopped
-  asserting anything, which is the rule #R194 already gave the test-time budget.
-* **ASYNC and `dist/` — a ceiling only.** They may shrink freely without anyone editing the
-  baseline; they may not grow past the ceiling without someone deciding to raise it. Per chunk as
-  well as in total, so one feature cannot double while another that shrank hides it.
+**Who moves a ceiling, and which way** (perf-baseline-auto-tighten, 2026-10-01):
 
-⚠ **`requests` and `modules` are counts, not bytes, and are matched exactly.** A byte-sized slack
+* **A pull request fails only when a row GROWS past ceiling + band.** The band is churn —
+  `max(ceiling × 0.5 %, 2 kB)` — and one number serves both directions below. Shrinking, or moving
+  inside the band, is **green with `tests/perf-baseline.json` untouched**. Raising a ceiling is the
+  one decision a pull request states: `--update` raises **only the rows that are over** (it used to
+  rewrite every row from the build, so two pull requests that each accepted one row collided on all
+  of them) — say why in the round's `dev-notes/` entry.
+* **Main's CI lowers.** After each push to `main`, the `build` job uploads that build's measurement
+  (`perf-measured-<attempt>`), and `.github/workflows/perf-ceiling.yml`, woken when the run completes,
+  runs `--tighten` on it: every row becomes `min(ceiling, measured)`, a new async chunk gets its own
+  ceiling, a gone one loses its row — **it never raises**. It proposes only when something is *due*
+  (a row more than its band below, a count below at all, a chunk new or gone), so churn does not open
+  a pull request per push; once it proposes, it lowers every row. The pull request is landed by
+  `.github/actions/land-bot-pr` (the lander `tle-refresh.yml` uses) with `require-current`: it merges
+  only while the pull request still sits on the `main` it measured, and otherwise stops for the next
+  run to propose again. The merge dispatches `deploy.yml`, as every bot landing does.
+* **The slack is bounded and printed.** Once the bot has landed, no ceiling sits more than one band
+  above `main`'s tree, so a later pull request can grow a row by at most two bands undecided. Every
+  `check:perf` run prints how many ceilings sit above the build, how many by more than their band,
+  and the loosest row (in bands) with the growth it would let through. ⚠ The bound is one
+  push-to-`main` cycle: a commit merged with `GITHUB_TOKEN` (this bot's, or the catalogue's) starts no
+  CI run, so when the newest commit on `main` is a bot's, the next human push closes the gap.
+
+⚠ **`requests` and `modules` are counts, not bytes: their band is zero.** A byte-sized slack
 swallows them whole — `6 > 6 + 2048` is false for every value a count can take — so both rows would
-have sat in the table looking gated while being incapable of failing. `tests/perf-startup-and-cache-checks.test.mjs` (#R311)
-drives `judge()` with synthetic numbers and requires an error from a regression, from an improvement
-that leaves the ceiling behind, and from a ±1 change in each count.
+have sat in the table looking gated while being incapable of failing. One more fails the pull
+request; one fewer is green and due on `main` at once.
+`tests/perf-startup-and-cache-checks.test.mjs` (#R311) and `tests/perf-baseline-auto-tighten-checks.test.mjs`
+drive `judge()` / `tighten()` / `raise()` with a synthetic build report: an error from growth in every
+kind of row and at the band's exact edge, none from a shrink, and a tighten that never raises and
+leaves no ceiling above the tree it measured.
 
 ⚠ **The byte gate says THAT the entry shrank, not WHICH module left it.** A module that
 `js/lazy-modules.js` fetches on demand stays out of the entry chunk only as long as nothing in the

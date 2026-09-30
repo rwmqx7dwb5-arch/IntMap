@@ -116,16 +116,29 @@ test('③ notices: a bare literal handed to any *toast is found, whatever the he
 
 /* ── ④ ─────────────────────────────────────────────────────────────────────── */
 test('④ a workflow that lands on main with GITHUB_TOKEN also starts the deploy', () => {
-  const dir = join(ROOT, '.github/workflows');
-  const landers = [];
-  for (const f of readdirSync(dir).filter((x) => x.endsWith('.yml'))) {
-    const y = readFileSync(join(dir, f), 'utf8').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  /* (perf-baseline-auto-tighten) The landing moved out of tle-refresh.yml into a LOCAL composite
+     action (.github/actions/land-bot-pr) when a second workflow needed it, so the universe is the
+     workflows AND the local actions, and a workflow that `uses:` a landing action lands through it.
+     The rule is asked of the file that holds the merge: that file dispatches the deploy. */
+  const live = (p) => readFileSync(join(ROOT, p), 'utf8').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  const files = [
+    ...readdirSync(join(ROOT, '.github/workflows')).filter((x) => x.endsWith('.yml')).map((x) => '.github/workflows/' + x),
+    ...readdirSync(join(ROOT, '.github/actions')).map((d) => `.github/actions/${d}/action.yml`),
+  ];
+  const merges = new Set();
+  for (const f of files) {
+    let y;
+    try { y = live(f); } catch { continue; }
     const lands = /gh pr merge\b/.test(y) || /git push\b[^\n]*\bmain\b/.test(y);
     if (!lands || !/github\.token|GITHUB_TOKEN/.test(y)) continue;
-    landers.push(f);
+    merges.add(f);
     assert.match(y, /gh workflow run deploy\.yml/, `${f} lands on main with GITHUB_TOKEN, whose push starts no deploy`);
   }
-  assert.ok(landers.includes('tle-refresh.yml'), `the sweep found the one lander that exists today (${landers.join(', ')})`);
+  const landers = files.filter((f) => f.startsWith('.github/workflows/')).filter((f) => merges.has(f)
+    || [...live(f).matchAll(/uses:\s*\.\/(\.github\/actions\/[^\s/]+)/g)].some((m) => merges.has(m[1] + '/action.yml')));
+  for (const want of ['.github/workflows/tle-refresh.yml', '.github/workflows/perf-ceiling.yml']) {
+    assert.ok(landers.includes(want), `the sweep found ${want} among the landers (${landers.join(', ')})`);
+  }
 });
 
 /* ── ⑤ ─────────────────────────────────────────────────────────────────────── */
