@@ -629,6 +629,12 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ページで走らせ、束が `window` に既に載っているとき（node の足場）はそれをそのまま使う。
   前後の実測と、描かれる集合が年と場所ごとに同一であることの確認は開発記録
   `dev-notes/2026-09-30-hist-bundles-off-main.md`、回帰は `tests/hist-bundles-off-main-checks.test.mjs`。
+  ⚠ **取得を外から観測するとき、DevTools プロトコルの「完了」を完了と読まない。** 本文を `getReader()` で
+  最後まで読む fetch は、読み切ってページが全バイトを受け取ったあとでも、プロトコル（Playwright の
+  `requestfinished` / `requestfailed`）が `net::ERR_ABORTED` と報告することがある（実測は開発記録
+  `dev-notes/2026-10-01-deep-tier-after-restructure.md`）。届いたかは**ページ自身の Resource Timing**
+  （状態 200・本文の大きさ）と、扉の `IntMapHistBundles.requested(global)`／`loaded(global)` で見る
+  （`tests/history-prefetch-on-demand.spec.js`）。
 - 地名クリックの優先順位はエンジンの登録情報で判定する。`events.onLayer` の第4引数
   `{ownership:'fallback'}` は、他の地物や地名に譲る領域説明用。`clickLayers()` は全登録、
   `clickLayers({ownersOnly:true})` は優先権を持つ登録を返す。無名歴史領域の説明はfallbackで、

@@ -123,13 +123,27 @@ test('R169 #3 WRITE-THROUGH: appendNewsBatch advances renderedCount past the fir
   // setters when startNews() re-derives the list. index.html's own scroll handler then compares
   // `renderedCount<newsFiltered.length` off the closure to decide whether a second batch exists — so
   // a silent no-op write would leave the feed stuck at 30 cards.
-  const res = await page.evaluate(async () => {
+  // ⚠ THE FEED IS BROUGHT TO ITS END AT ONCE, AND READ IN THE SAME TASK — NOT 900 ms LATER.
+  // The feed is a `.content-area`, which css/intmap.css gives `scroll-behavior:smooth`, so
+  // `feed.scrollTop = feed.scrollHeight` does not move it: it starts an animation. MEASURED
+  // 2026-10-01 on this boot: scrollTop was still 0 when the synthetic scroll below ran (so the
+  // listener's «near the end» test was false and nothing was appended), and the second batch came
+  // 614-644 ms later from the animation's own scroll events — a margin of under 300 ms against the
+  // 900 ms this waited, on a frame-driven animation that a loaded runner stretches. That is the
+  // «30, not 45» the deep tier recorded on 5 of 14 nights (2026-09-16…27, each passing on retry) and
+  // again in run 36772277497. The same wait was also a window for somebody else's re-render: a probe
+  // with the feed's innerHTML setter wrapped saw js/auth-ui.js onAuthStateChange → startNews() empty
+  // the feed and re-render the first 30 about 3.3 s after the News tab opened.
+  // `behavior:'instant'` overrides the stylesheet for this one scroll, so the position is at the end
+  // when the listener (js/app-body.js) runs; it and appendNewsBatch (js/news-ui.js) are synchronous,
+  // so the second batch is in the DOM when dispatchEvent returns. The claim is the write-through —
+  // the closure's own `renderedCount<newsFiltered.length` — and one synchronous read proves it.
+  const res = await page.evaluate(() => {
     const feed = document.getElementById('live-news-feed');
     const count = () => feed.querySelectorAll('.news-item, .news-card').length;
     const before = count();
-    feed.scrollTop = feed.scrollHeight;
+    feed.scrollTo({ top: feed.scrollHeight, behavior: 'instant' });
     feed.dispatchEvent(new Event('scroll', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 900));
     const links = [...feed.querySelectorAll('.news-item, .news-card')]
       .map((c) => c.getAttribute('data-link') || c.querySelector('a')?.getAttribute('href') || c.innerText.slice(0, 60));
     return { before, after: count(), unique: new Set(links).size };

@@ -874,6 +874,26 @@ npx playwright test tests/r209.spec.js --workers=1
 more failures were `Target crashed` from a second Playwright process on the same machine. Run the
 file by itself at one worker first; `node scripts/baseline.mjs --classify test-results/junit.xml`
 says which of a run's failures `main` already has.
+
+⚠ **A spec's observer can be what is wrong — three shapes measured on 2026-10-01**
+(`dev-notes/2026-10-01-deep-tier-after-restructure.md`, deep-tier run 36772277497):
+
+- **The protocol's «finished» is not the page's «arrived».** A fetch whose body is read to the end
+  through `getReader()` (js/fetch-deadline.js `readWithin`, which js/hist-bundles.js uses for the
+  historical bundles) can be reported by the DevTools protocol as `requestfailed`
+  `net::ERR_ABORTED` after the page received every byte. A spec that waits for `requestfinished`
+  then waits forever for a request that succeeded. Ask the page: its Resource Timing entry (status,
+  body size — collect it with a `PerformanceObserver` from an init script, so a full buffer drops
+  nothing) and the product's own record (`tests/history-prefetch-on-demand.spec.js`).
+- **A fixed wait after an animation is a guess at a frame rate.** `scrollTop =` on a
+  `scroll-behavior:smooth` container starts an animation, and the space explorer closes one frame
+  plus its 250 ms fade after `leaveToMap()`. A loaded runner stretches both past any constant.
+  Make the step instant (`scrollTo({ behavior: 'instant' })`) or wait for the state the claim is
+  about (`waitForFunction(() => !IntMapSpace.state().open)`) — `tests/r169.spec.js` #3,
+  `tests/r203.spec.js` ③. A wait for the state still fails when the state never comes.
+- **Input round-trips are not free.** Each `page.mouse.move` / `wheel` waits for the renderer to
+  acknowledge it (0.3-2.7 s each on a loaded runner); repeating a move to the same point spends the
+  test's budget on nothing (`tests/r203.spec.js` ②).
 ## The process without round numbers — `tests/process-without-round-numbers-checks.test.mjs`
 
 利用者承認済み（2026-09-25）: 「ラウンド番号を名前として使うのをやめる」「DEV-NOTES の 1 本ファイルをやめる」
