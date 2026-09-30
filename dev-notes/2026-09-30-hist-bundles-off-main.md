@@ -118,3 +118,7 @@ node 側の回帰（`tests/hist-bundles-off-main-checks.test.mjs`）は同じ主
 - ⚠ 否定した見立て: 「アプリで年を動かしたときの長いタスクの大半は束の評価」——ヘッドレスの測定では
   描画のほうが桁違いに多かった。束の評価そのものは 1× で 57〜162 ms、4× で 259〜913 ms の 1 本で、
   それは消えた。
+
+## 公開名
+
+`window.IntMapHistBundles` を 1 つ足した（`check:surface` の台帳 +1）。歴史の束 8 本を読む唯一の扉で、`time-borders`・`time-admin1`・`war-layer`・`border-coast` の 4 つの読み手が同じ 1 つを引く——読み手ごとに束を `window` から直接読んでいた 8 つの名前（`__HISTB` ほか）の代わりである。
