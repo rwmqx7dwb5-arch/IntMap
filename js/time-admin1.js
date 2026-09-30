@@ -216,9 +216,13 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        already states its own provenance and licence in its `src` (`npm run check:histadmin` and
        `check:histfill` both require it), so the attribution is assembled from what is loaded. */
     const GAP_ATTR_FALLBACK = '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> (CC0)';
-    function gapAttrFor(gaps) {
+    /* ⚠ (hist-bundles-off-main) the gap records are spliced on another thread now and are not on
+       `window`; the splice carries each one's `src` onto the record as `gapSrcs`, in the same order,
+       so the credit is read from there. A record a harness published on `window` is still read. */
+    function gapAttrFor(gaps, d) {
       const out = [];
-      for (const e of (gaps || [])) { try { const X = window[e.global]; if (X && X.src) out.push(String(X.src)); } catch (_) {} }
+      if (d && Array.isArray(d.gapSrcs)) { for (const x of d.gapSrcs) if (x) out.push(String(x)); }
+      else for (const e of (gaps || [])) { try { const X = window[e.global]; if (X && X.src) out.push(String(X.src)); } catch (_) {} }
       return out.length ? out.join(' · ') : GAP_ATTR_FALLBACK;
     }
     const VT_ATTR = '<a href="https://www.openhistoricalmap.org/copyright" target="_blank" rel="noopener">OpenHistoricalMap</a> (CC0)';
@@ -324,61 +328,38 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       const cache = new Map();
 
       /* ── the bundle ────────────────────────────────────────────────────────
-         Injected as a <script>, like data/cshapes.js: it is a literal, not JSON, so the
-         browser's own parser is the fastest reader of it and there is no second copy in
-         memory while it is being parsed. */
-      let _D = null, _P = null;
+         ⚠ (hist-bundles-off-main) OPENED ON ANOTHER THREAD, NOT INJECTED. It was a <script> tag —
+         «a literal, not JSON, so the browser's own parser is the fastest reader of it» — and that
+         reader ran on the thread that paints: the first travel evaluated 41.5 MB (this tier) or
+         40.7 MB (the next) there. js/hist-bundles.js now fetches, parses and holds it in a Worker,
+         and `_D` is the page's MIRROR: the same shape, holding the rows and rings some instant has
+         drawn. So `geomOf`, `linesFor`, `idAt` and the click read the same row by the same index
+         as before; what needs EVERY row (`bounds`, which rows are in force) is asked of the handle.
+         == (#R669) THE SUBDIVISIONS UPSTREAM DOES NOT HOLD, SPLICED INTO THE SAME RECORD =======
+         「日本は北半分の令制国が全滅。」 Measured: OpenHistoricalMap holds 53 of the 68 classical
+         provinces of Japan and no relation at all for the other fifteen — the whole of 東山道 and
+         北陸道. data/hist-kuni.js is those fifteen, derived by scripts/build-hist-kuni.mjs from a
+         CC0 raster at ~112 m per cell and named from Wikidata.
+         (!) IT IS APPENDED TO _D, NOT HELD BESIDE IT. A second record beside this one would need a
+         second epoch index, a second label layer, a second click path and a second count — four
+         places to disagree with each other. Appended, every one of those already works, and the
+         ONE thing that differs about these units is already in the row: their relation id is
+         null, because there is no relation.
+         ⚠ (#R719) …AND THERE IS MORE THAN ONE OF THEM NOW, SO IT IS A FOLD AND NOT A STEP. The rows
+         of the Nth gap record carry N in column 12, because column 11 is «my index in MY file» and
+         two files both start at 0 — without the twelfth column the second record's row 3 would be
+         drawn with the first record's row 3 coastline marks.
+         ⚠ THE SPLICE ITSELF NOW RUNS WHERE THE RECORD IS (js/hist-bundles.js `splice`), unchanged,
+         and `d.gapPools[gi].view` is the page's view of the Nth gap record by ITS OWN indices —
+         what js/border-coast.js addresses that record's marks by. */
+      let _D = null, _P = null, _H = null;
       function load() {
         if (_D) return Promise.resolve(_D);
         if (_P) return _P;
-        _P = new Promise(res => {
-          if (window[cfg.global]) { _D = window[cfg.global]; res(_D); return; }
-          const s = document.createElement('script'); s.src = cfg.file; s.async = true;
-          s.onload = () => { _D = window[cfg.global] || null; if (_D && cfg.gaps && cfg.gaps.length) { addGaps(0); return; } res(_D); };
-          s.onerror = () => { _P = null; res(null); };
-          document.head.appendChild(s);
-          /* == (#R669) THE SUBDIVISIONS UPSTREAM DOES NOT HOLD, SPLICED INTO THE SAME RECORD =======
-             「日本は北半分の令制国が全滅。」 Measured: OpenHistoricalMap holds 53 of the 68 classical
-             provinces of Japan and no relation at all for the other fifteen — the whole of 東山道 and
-             北陸道. data/hist-kuni.js is those fifteen, derived by scripts/build-hist-kuni.mjs from a
-             CC0 raster at ~112 m per cell and named from Wikidata.
-             (!) IT IS APPENDED TO _D, NOT HELD BESIDE IT. A second record beside this one would need a
-             second epoch index, a second label layer, a second click path and a second count — four
-             places to disagree with each other. Appended, every one of those already works, and the
-             ONE thing that differs about these units is already in the row: their relation id is
-             null, because there is no relation. */
-          /* ⚠ (#R719) …AND THERE IS MORE THAN ONE OF THEM NOW, SO IT IS A FOLD AND NOT A STEP.
-             The rows of the Nth gap record carry N in column 12, because column 11 is «my index in
-             MY file» and two files both start at 0 — without the twelfth column the second record's
-             row 3 would be drawn with the first record's row 3 coastline marks. */
-          function addGaps(gi) {
-            if (gi >= cfg.gaps.length) { res(_D); return; }
-            const entry = cfg.gaps[gi];
-            const g = document.createElement('script'); g.src = entry.file; g.async = true;
-            const finish = () => { addGaps(gi + 1); };
-            g.onload = () => {
-              try {
-                const X = window[entry.global];
-                if (X && X.rings && X.feats) {
-                  const off = _D.rings.length;
-                  for (const r of X.rings) _D.rings.push(r);
-                  /* ⚠ column 11 is the row's index in the KUNI bundle, not in _D. js/border-coast.js
-                     marks each set's rings against its own file, so the run that says «this edge is a
-                     border and that one is the coast» is addressed by the index the marks were built
-                     from — the spliced index would read another unit's answer. */
-                  for (let k = 0; k < X.feats.length; k++) { const f = X.feats[k];
-                    _D.feats.push([f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7],
-                      f[8].map(poly => poly.map(ri => ri + off)), f[9], null, k, gi]); }
-                  _D.gapSrcs = (_D.gapSrcs || []).concat(X.src ? [X.src] : []);
-                  _D.gapSrc = _D.gapSrcs.join(' · ') || null;
-                }
-              } catch (_) {}
-              finish();
-            };
-            g.onerror = finish;
-            document.head.appendChild(g);
-          }
-        });
+        _P = Promise.resolve().then(() => window.IntMapHistBundles.open({ file: cfg.file, global: cfg.global, gaps: cfg.gaps || [] }))
+          .then(h => h ? h.edges('exclusive', _ymd(h.data.since ?? window.IntMapHistScale.FLOOR, 1, 1), _ymd(9998, 12, 31)).then(b => { _bnd = b; _H = h; _D = h.data; return _D; }) : null)
+          .catch(() => null)
+          .then(d => { if (!d) _P = null; return d; });
         return _P;
       }
 
@@ -386,20 +367,14 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          Every instant on which the subdivisions change, as sortable YYYYMMDD ints: a
          record's START and its exclusive END (a unit that vanishes with no successor
          still ends an epoch). Built once, lazily, off the same bundle the polygons come
-         from — there is no second source to drift from. */
+         from — there is no second source to drift from.
+         ⚠ (hist-bundles-off-main) computed by the thread that holds every row (the job's `edges`
+         with end:'exclusive', from the record's own `since` to 9998-12-31) and handed over once in
+         `load()`; the page's mirror is sparse and must not be walked for it. */
       let _bnd = null;
-      function bounds(d) {
-        if (_bnd) return _bnd;
-        const set = new Set(), lo = _ymd(d.since ?? window.IntMapHistScale.FLOOR, 1, 1), hi = _ymd(9998, 12, 31);
-        for (const f of d.feats) {
-          set.add(_ymd(f[2], f[3], f[4]));
-          set.add(_ymd(f[5], f[6], f[7]));
-        }
-        _bnd = [...set].filter(k => k >= lo && k <= hi).sort((a, b) => a - b);
-        return _bnd;
-      }
+      function bounds() { return _bnd || []; }
       function epoch(d, y, m, dd) {
-        const t = _ymd(y, m, dd), b = bounds(d);
+        const t = _ymd(y, m, dd), b = bounds();
         let lo = 0, hi = b.length - 1, ans = b.length ? b[0] : t;
         while (lo <= hi) { const mid = (lo + hi) >> 1; if (b[mid] <= t) { ans = b[mid]; lo = mid + 1; } else hi = mid - 1; }
         return ans;
@@ -424,11 +399,13 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         a = areaKm2(geomOf(d, ix)); _area.set(ix, a); return a;
       }
 
-      function fcAt(d, y, m, dd) {
+      /* the rows in force at the instant (`start <= t < end`) are asked of the handle; it answers in
+         the record's own order, with each row and its rings already on the mirror */
+      async function fcAt(d, y, m, dd) {
         const t = _ymd(y, m, dd), feats = [];
-        for (let i = 0; i < d.feats.length; i++) {
+        const ix = await _H.at(t, 'exclusive');
+        for (const i of ix) {
           const f = d.feats[i];
-          if (_ymd(f[2], f[3], f[4]) > t || _ymd(f[5], f[6], f[7]) <= t) continue;
           const NAME = nameOf(f);
           /* Keep the source's precision beside the rendered feature. The normalized bounds
              select geometry; they must never masquerade as day-exact source dates. */
@@ -464,12 +441,16 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
            row's index in the KUNI file. Marks that have not landed yet mean the line is drawn whole
            for a moment and rebuilt when they arrive (refreshLines) — the same «never latch the
            un-measured picture» rule the rest of this file follows. */
-        const marks = (cfg.gaps || []).map(e => { try { return (BC() && window[e.global]) ? BC().marks(e.set) : null; } catch (_) { return null; } });
+        /* ⚠ (hist-bundles-off-main) the Nth gap record is read through the mirror's view of it, by its
+           own indices — it is no longer on `window` (one a harness published there is still read) */
+        const pools = (_D && _D.gapPools) || [];
+        const viewOf = gi => (pools[gi] && pools[gi].view) || (cfg.gaps && cfg.gaps[gi] ? window[cfg.gaps[gi].global] : null) || null;
+        const marks = (cfg.gaps || []).map((e, gi) => { try { return (BC() && viewOf(gi)) ? BC().marks(e.set) : null; } catch (_) { return null; } });
         const feats = [];
         for (const f of (fc.features || [])) {
           if (!f.properties || !f.properties._gap) continue;
           const gi = (f.properties._gapSet >= 0) ? f.properties._gapSet : -1;
-          const K = (gi >= 0 && cfg.gaps[gi]) ? window[cfg.gaps[gi].global] : null;
+          const K = (gi >= 0 && cfg.gaps[gi]) ? viewOf(gi) : null;
           const m = (gi >= 0) ? marks[gi] : null;
           if (K && m && f.properties._gapIx >= 0) {
             const g = BC().lineGeom(K, f.properties._gapIx, m);
@@ -575,7 +556,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           const W = BS.admin1Width || ['interpolate', ['linear'], ['zoom'], 1, 0.45, 4, 0.75, 8, 1.15, 12, 1.6];
           if (!GE().layers.hasSource(cfg.src)) GE().layers.addSource(cfg.src, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: 'OpenHistoricalMap (CC0)' });
           if (!GE().layers.hasSource(cfg.lnSrc)) GE().layers.addSource(cfg.lnSrc, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: 'OpenHistoricalMap (CC0)' });
-          if (cfg.gaps && !GE().layers.hasSource(cfg.gapSrc)) GE().layers.addSource(cfg.gapSrc, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: gapAttrFor(cfg.gaps) });
+          if (cfg.gaps && !GE().layers.hasSource(cfg.gapSrc)) GE().layers.addSource(cfg.gapSrc, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: gapAttrFor(cfg.gaps, _D) });
           /* below the labels, and below the era COUNTRY line, so a national border always
              reads on top of a provincial one — the order `ref-admin1`/`borders-only-line`
              already have at Now. */
@@ -689,16 +670,17 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           return;
         }
         let fc = cache.get(key);
-        if (!fc) { try { fc = fcAt(d, y, m, dd); cache.set(key, fc); } catch (_) { fc = null; } }
+        if (!fc) { try { fc = await fcAt(d, y, m, dd); cache.set(key, fc); } catch (_) { fc = null; } if (my !== seq || !active) return; }
         if (fc) { shownKey = key; apply(fc); }
       }
 
-      function relocalize() {
+      async function relocalize() {
         try {
           if (!active || shownKey == null || !_D) return;
-          const w = shownWhen; if (!w) return;
-          const fc = fcAt(_D, w.getFullYear(), w.getMonth() + 1, w.getDate());
-          cache.set(shownKey, fc); apply(fc);
+          const w = shownWhen, key = shownKey, my = seq; if (!w) return;
+          const fc = await fcAt(_D, w.getFullYear(), w.getMonth() + 1, w.getDate());
+          if (my !== seq || shownKey !== key) return;   /* the reader moved on while it was asked */
+          cache.set(key, fc); apply(fc);
         } catch (_) {}
       }
 

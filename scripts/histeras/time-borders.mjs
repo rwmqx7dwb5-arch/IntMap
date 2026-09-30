@@ -33,7 +33,7 @@ const el = () => ({
 
 /**
  * Instantiate js/time-borders.js outside a browser.
- * @param {{lang?:string, year?:number}} opts
+ * @param {{lang?:string, year?:number, fetch?:Function}} opts
  * @returns {{api:object, window:object, host:object}}
  */
 export function timeBorders(opts = {}) {
@@ -46,7 +46,10 @@ export function timeBorders(opts = {}) {
     },
     setTimeout: () => 0, clearTimeout: noop, setInterval: () => 0, clearInterval: noop,
     requestAnimationFrame: noop, cancelAnimationFrame: noop,
-    fetch: async () => { throw new Error('tests/helpers/time-borders.mjs makes no network calls'); },
+    /* (hist-bundles-off-main) a caller may hand a fetch that serves the repository's own files, so the
+       records are opened the way the page opens them (through js/hist-bundles.js) instead of published */
+    fetch: opts.fetch || (async () => { throw new Error('tests/helpers/time-borders.mjs makes no network calls'); }),
+    TextDecoder,
     CustomEvent: class { constructor(t, o) { this.type = t; Object.assign(this, o); } },
   };
   const w = sandbox.window;
@@ -59,6 +62,9 @@ export function timeBorders(opts = {}) {
   w.IntMapGeoEngine = new Proxy({ hasRenderer: () => true, ready: () => true, whenCanDraw: () => new Promise(() => {}) }, {
     get: (t, k) => ((k in t) ? t[k] : deep()),
   });
+  /* (hist-bundles-off-main) the door reads a record's bytes through the app's clocked reader
+     (window.IntMapFetchWithin); a caller that serves files hands the same reader over the same fetch */
+  if (opts.fetch) w.IntMapFetchWithin = { clockFor: () => 60000, readWithin: async (u) => { const r = await opts.fetch(u); return { ok: r.ok, status: r.status, bytes: await r.arrayBuffer() }; } };
   w.IntMapTime = { year: () => (opts.year != null ? opts.year : 1500), isLive: () => false, on: noop, when: () => null };
   const ctx = vm.createContext(sandbox);
   const run = (f) => vm.runInContext(readFileSync(join(ROOT, f), 'utf8'), ctx, { filename: f });
@@ -71,6 +77,9 @@ export function timeBorders(opts = {}) {
      for them. Running the owner is cheap (it has no DOM, no map, no clock, no language, by its
      own stated invariant) and it is what the page does. */
   run('js/hist-scale.js');
+  /* (hist-bundles-off-main) the one door js/time-borders.js opens its records through. With no Worker
+     in this context it answers on this thread, from a bundle a caller published on `window`. */
+  run('js/hist-bundles.js');
   run('js/time-borders.js');
   w.IntMapHistStates = w.IntMapModules.histStates({});
   const host = { lang: opts.lang || 'jp', canDraw: () => false };

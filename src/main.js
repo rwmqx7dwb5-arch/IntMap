@@ -144,6 +144,12 @@ import '../js/routing.js';
    capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
    built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
 import '../js/routing-ops.js';
+/* (hist-bundles-off-main) the ONE door to the ring-pooled historical records (data/cshapes.js,
+   data/hist-borders.js, data/hist-eras.js, data/hist-admin*.js and the gap records): they are fetched,
+   parsed and asked on a Worker it owns, and the page holds only what an instant draws. Read by
+   js/time-borders.js, js/time-admin1.js, js/war-layer.js and js/border-coast.js; it starts nothing
+   until one of them opens a bundle. */
+import '../js/hist-bundles.js';
 import '../js/border-coast.js';
 import '../js/time-borders.js';
 import '../js/time-admin1.js';   /* (#R564) js/border-coast.js first: it is the ONE reader of data/border-coast.js (which edges of a historical outline are boundary rather than the record own copy of the coastline), and BOTH time modules call it — copying it into the second caller is what AGENTS.md 3.9 forbids. (#R530) …and the subdivisions of that same year — a factory on window.IntMapModules instantiated once from js/app-body.js, exactly like its twin, and the owner of window._applyAdmin1. The 41.5 MB bundle it reads (data/hist-admin1.js) is NOT here: fetched at idle, and not at all on a phone or Data Saver, for the reasons #R192/#R201 measured for data/cshapes.js. */

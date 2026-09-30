@@ -111,7 +111,26 @@ window.IntMapBorderCoast = (function () {
       _indexed[s.global] = 1;
     }
   }
-  function markOf(ring) { _index(); return (_byRing && _byRing.has(ring)) ? _byRing.get(ring) : 1; }
+  /* ⚠ (hist-bundles-off-main) …AND A RING THE PAGE WAS HANDED BY js/hist-bundles.js IS NOT ON `window`.
+     The bundles are parsed on another thread now and the page holds a sparse mirror of each, so the
+     identity index above (which walks `window[global].rings` whole) would see nothing. The door
+     records, for every ring it hands the page, which bundle it belongs to and its index there — the
+     same position the marks are addressed by — and the same length check guards it: a pool of a
+     different length is a different pool. */
+  const _HB = () => window.IntMapHistBundles;
+  function _setOf(global) {
+    if (!_D || !_D.sets) return null;
+    for (const k in _D.sets) { const s = _D.sets[k]; if (s && s.global === global) return s; }
+    return null;
+  }
+  function markOf(ring) {
+    let o = null; try { o = _HB() ? _HB().ringOrigin(ring) : null; } catch (_) { o = null; }
+    if (o) {
+      const s = _setOf(o[0]);
+      return (s && Array.isArray(s.draw) && s.rings === o[2] && s.draw.length === s.rings) ? s.draw[o[1]] : 1;
+    }
+    _index(); return (_byRing && _byRing.has(ring)) ? _byRing.get(ring) : 1;
+  }
 
   /* a collection handed over whole: each ring stroked whole unless the marks know it, in which case
      it is stroked the way the marks say — the outline drawn before #R531 for everything nobody has
@@ -235,8 +254,11 @@ window.IntMapBorderCoast = (function () {
         .finally(() => { indexPromise = null; });
       return undefined;
     }
-    let global = null;
-    for (const s of Object.values((_D && _D.sets) || {})) if (window[s.global] === d) { global = s.global; break; }
+    /* the bundle's name: a mirror handed out by js/hist-bundles.js says it through the door, a bundle a
+       harness published on `window` by being that property */
+    let global = null, named = null;
+    try { named = _HB() ? _HB().globalOf(d) : null; } catch (_) { named = null; }
+    for (const s of Object.values((_D && _D.sets) || {})) if (window[s.global] === d || (named && named === s.global)) { global = s.global; break; }
     const entry = global && detailIndex.sets[global] && detailIndex.sets[global][idx];
     if (!entry) return undefined;
     let keyed = fingerprints.get(d); if (!keyed) { keyed = new Map(); fingerprints.set(d, keyed); }

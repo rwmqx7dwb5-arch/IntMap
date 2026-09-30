@@ -187,7 +187,7 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
     const m = window.__imap;
     const cnt = (id) => { try { return m.getSource(id).serialize().data.features.length; } catch (_) { return -1; } };
     return { lineSource: (m.getLayer("imta-line") || {}).source, poly: cnt("imta-src"), line: cnt("imta-ln-src"),
-             deepLoaded: !!window.__HISTADM2, deepDrawn: m.queryRenderedFeatures({ layers: ["imta2-line"] }).length };
+             deepLoaded: window.IntMapHistBundles.requested("__HISTADM2"), deepDrawn: m.queryRenderedFeatures({ layers: ["imta2-line"] }).length };
   });
   /* ① 線は多角形ではなく「境界と印された run」だけ — 沿岸の区分が海に二本目の海岸線を引かない */
   expect(r564.lineSource, "imta-line must stroke the border runs, not the polygons").toBe("imta-ln-src");
@@ -351,12 +351,14 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
   /* ⚠ 要求は `zoomend` のあとに出るので、**出るまで待ってから**数える。即座に読むと、タイルの線が
      先に描かれた回だけ 0 を読む（実測で 1/3 が赤）——待つのは「要求が出たか」であり、要求を出さない
      ビルドはタイムアウトで落ちる（#R564 の版も同じ形で待っていた）。 */
+  /* ⚠ (hist-bundles-off-main) 束はもう `window.__HISTADM2` に載らない（Worker が持ち、ページには疎な写し
+     だけが来る）ので、`!!window.__HISTADM2` は常に偽になって上の `deepLoaded` を無意味にしていた——
+     扉自身が「要求したか」を答える（`requested`。開いた瞬間に立ち、解決は待たない）。 */
   await page.waitForFunction(() =>
-    performance.getEntriesByType('resource').some((e) => /hist-admin2\.js(\?|$)/.test(e.name)) || !!window.__HISTADM2,
+    window.IntMapHistBundles.requested('__HISTADM2'),
     null, { timeout: 60000, polling: 250 });
   const deepAsked = await page.evaluate(() =>
-    performance.getEntriesByType('resource').filter((e) => /hist-admin2\.js(\?|$)/.test(e.name)).length
-    + (window.__HISTADM2 ? 1 : 0));
+    (window.IntMapHistBundles.requested('__HISTADM2') ? 1 : 0));
   expect(deepAsked, 'the deeper tier was never even requested after zooming past its own minzoom').toBeGreaterThan(0);
 
   /* ── ④ Now に戻すと現代側が戻り、当時の区分は消える ─────────────────────── */

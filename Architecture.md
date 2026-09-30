@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（334本・17.8 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（335本・17.8 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -551,6 +551,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | 外部証拠の取得 | `js/proxy-fetch.js`（唯一の梯子） | **自前の Edge Function だけ**を段にする（第三者の公開 relay は使わない）。複数あれば**競争**させ、勝った時点で残りを中断する。⚠ **梯子は自分の評決を述べる**——`opts.note` を渡した呼び手には `reason`（`ok` / `refused` / `aborted` / `no-budget`）と `via`（答えた段）が返る。これが無い間、`null` が「どの段も答えなかった」と「答えは来たが中身が無かった」の**両方**を意味していて、読者はその差を知らされなかった（渡さない呼び手の戻り値は変わらない）。⚠ **公開 relay 4 本が生きているかは誰も測っていなかった**——計器は `scripts/probe-relay-ladder.mjs`、実測と警報の条件は [`docs/MONITORING.md`](docs/MONITORING.md)。⚠ **締切は本文を読み終わるまで掛かる**（ヘッダが着いた時点で解除すると、200 を返してから止まった相手を止めるものが無くなる）。呼び出し側は `budgetMs` で**梯子全体の上限**を、`signal` で**停止**を渡す。Atlas の 1 取得 14 秒／証拠集め全体 32 秒／GDELT の梯子 20 秒 |
 | 締切つきの単発取得 | `js/fetch-deadline.js` | `jsonWithin(url, ms, init, opts)` と、状態・型・本文を返す `readWithin`。Nominatim や地図の行の取得のように relay を要さない相手のための 1 回の取得。**呼び出し側の signal は置き換えず連結する**。`opts.idle` は本文の塊が届くたびに時計を掛け直す（大きなファイルでは長さではなく**無音**を測る）。`opts.bytes` は本文を文字列でなく `bytes`（ArrayBuffer）で返す（gzip を TextDecoder に通すと壊れるため。読み手は下の同梱データの扉）。**時計はホストの沈黙を数え、このページ自身の凍結を数えない**——最大 250 ms の歩を数える鎖で、凍結で遅れた歩も 1 歩としか数えず、最後の歩が凍結で遅れたときはもう 1 歩待ってから見切る（凍結の後ろに並んでいた応答を先に読むため）。何秒かは `js/proxy-fetch.js` の `clockFor(url, via)` が host ごとに答える。**投げる例外は理由を持つ**——`reason` が `timeout`／`aborted`（呼び手自身の signal。相手の失敗として扱わない）／`network`／`http`（`status` つき）／`parse` のどれか。**期限切れは拒否ではない**——判定は `isUnobserved(err)` の 1 つ（`timeout` だけが真）、方針は `untilObserved(read, opts)` の 1 つで、観測されなかった失敗だけを時計を 2 倍にして（最大 8 倍・`UNOBSERVED_RETRIES`＝3）、失敗した試みの時計と同じだけ待ってから読み直し、観測された失敗はその場で呼び手へ返す。待ちは `js/runtime.js` の `afterTick`（タイマーホイールの 1 回）。地図の行は `js/data-layers.js` の `rowUntilObserved` を通り、待つあいだ箱は ON のまま（`aria-busy`・回数は `data-im-unobserved`・要求は settle しない）。詳細は `docs/MAP-LAYERS.md`。`js/proxy-fetch.js` の時計も同じ語彙の `reason` を投げる。**classic script として走るファイル**（`js/countries-ui.js`・`js/routing-ops.js`——node のハーネスが `new Function` で実行するので import 行を持てない）には `window.IntMapFetchWithin`（`jsonWithin`・`readWithin`・`clockFor`）として同じものを渡す。`js/nominatim-gate.js` と同じ流儀で、実体は 1 つ |
 | 同梱データの扉 | `js/data-door.js`（`loadData(url, {as, cache})`。classic script は `window.IntMapDataDoor.load`） | `data/` の同梱ファイルを読む**唯一の経路**。鍵は**解決後の URL と形**（`json`／`text`／`arrayBuffer`）で、取得中の呼び手は全員**同じ 1 本の Promise** を受け取る。読めた値は **WeakRef で持つ**——誰かが値を持っている間は再取得しないが、扉自身は生の文書を常駐させない（地名表 13 MB の文書を、変換後の行と二重に持たないため）。**失敗は保持しない**——拒否された Promise は表から消え、次の呼び出しが読み直す（自動の再試行はしない）。時計は上の `readWithin` の idle 時計＋`clockFor`。gzip は**ファイル名でなく先頭 2 バイト**で判定し、gzip なら本文を **Blob Worker へ移譲**して展開・parse し、結果を構造化複製で受け取る（バイナリは移譲で返る）。Worker が無い・作れない・死んだときは**同じ関数**（`inflate`。Worker はその関数自身のソースから組み立てる）をページで走らせる。非圧縮の JSON はページで parse する（実測で 0.62 MB 以下は長いタスクを生まず、Worker を通すと 16〜22 ms 遅れるだけだったため。実測表と失効条件はファイル冒頭）。例外の `reason` は `timeout`／`network`／`http`（`status` つき）／`parse`／`unsupported`（DecompressionStream が無い）／`worker`（展開スレッドが死んだ。次の呼び出しはページで走る）。⚠ **値は共有される**——同じファイルの呼び手は同じオブジェクトを受け取るので、書き込む呼び手は全員に書く。gzip を自分で展開する読み手は 0 本で、`tests/data-one-door-checks.test.mjs` がリテラル・`new URL(…)`・定数経由の直接取得をコードから発見して拒む（例外は理由つきの `NOT_YET` だけで、いまは空） |
+| 歴史記録の扉 | `js/hist-bundles.js`（`window.IntMapHistBundles.open({file, global, gaps})`） | リングプールした歴史記録（国境 3 本・行政区分 3 層と穴埋め 2 本）はこちらで読む。バイトは上の `readWithin`（`clockFor`・idle）で取り、**Worker へ移譲**して向こうで `JSON.parse`・保持する。ページへ返すのは問い（`at`／`during`／`snap`／`edges`）の答えと、**その瞬間に描く行と環だけ**（束と同じ形の疎な写し）。値を丸ごと共有する上の扉とは契約が違う（仕組みは §7.4） |
 | 気象の共有クライアント | `js/wx-source.js`（`window.IntMapWx.guardedJSON` と `metNo`） | Open-Meteo と MET Norway の取得は上の `readWithin` に `clockFor(url)` の無音の時計で載る。同じ URL の呼び手は 1 本の取得を共有し、その取得は**終わった瞬間か、待つ者が居なくなった瞬間に**共有表から消える（次の呼び手は必ず新しく取りに行く）。`opts.signal` は**その呼び手の待ちだけ**を終わらせ、共有中の取得を中断するのは待つ者が 0 になったときだけ。戻り値は従来どおり「使えるデータか `null`」で、理由を知りたい呼び手は `opts.note` を渡す（`reason`: `ok`／`timeout`／`network`／`http`／`parse`／`refused`＝2xx の本文が `error: true`／`aborted`、`status`、`cached`）。Atlas の `_fetchJSON`（`js/atlas-deadlines.js`）はターンの signal と note をここへ渡す |
 | レイヤーの取得を他の読み手と共有する | `js/data-layers.js` の `layerReads` | 行が使う取得関数そのもの（`subcables` ＝ `fetchSubcables`、`radarIndex` ＝ `rvFetch`）を export し、`js/layer-previews.js` のサムネイルはそれを呼ぶ。サムネイルが独自の取得路を持たないので、取得の順序・時計・キャッシュが本体と食い違うことが原理的に起きない |
 | 期限の無い `fetch()` の台帳 | `scripts/fetch-deadlines.mjs`（`npm run check:static` の `fetch-deadline` 規則） | `js/`・`src/` の大域 `fetch(` のうち options に `signal` を持たない呼び出しを**構文木から、ファイルごとに**数え、`tests/fetch-deadline-baseline.json` と両方向に照合する（増えたら落ちる／減ったのに台帳を下げていなければ落ちる）。除外は理由の文を持つ `EXEMPT` の行だけ |
@@ -1449,7 +1450,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 
 ## 3. ファイル構成 (Files)
 
-**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 332 本あり、1行説明を
+**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 333 本あり、1行説明を
 全部ここに置くと仕様書の 4 分の 1 が台帳になるので分けた。節番号は向こうでも `§3.1`〜`§3.13` の
 ままで、他の文書からの `§3.x` 参照はそのまま通る。`node scripts/arch-files-check.mjs --check` が
 `js/` の実体と台帳を突き合わせる——**どの段が `js/` の話かは `§3.x` の見出しが名乗るディレクトリで
@@ -2948,6 +2949,28 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ⚠ これは**先読み**の規則であって、実際に年を変えたときの読み込み（`IntMapTime.on` の購読者）は
   全端末で従来どおり走る——先読みを控えて失うのは初回の待ちだけで、描画は失わない。
   ⚠ 第 2 層以下（`data/hist-admin2.js` ほか）は先読みしない（描かれるのはそのズームに達してから）。
+- **歴史の束はメインスレッドで評価しない。** リングプールした記録（`data/cshapes.js`・
+  `data/hist-borders.js`・`data/hist-eras.js`・`data/hist-admin1.js`〜`hist-admin3.js` と、第 1 層へ継ぎ足す
+  `data/hist-kuni.js`・`data/hist-admin-fill.js`）を読むのは **`js/hist-bundles.js`（`window.IntMapHistBundles`）
+  だけ**で、束は Blob Worker が取得・`JSON.parse`（ファイルは `window.__X=` ＋厳密な JSON で、形式も
+  ビルダーも変えていない）・保持する。問いは向こうで答える——`at(t, end)`（その日に有効な行。
+  `end` は CShapes が `inclusive`、OHM 系が `exclusive`）・`during(t0, t1)`（戦争の層）・`snap(y)`（時代の
+  1 枚）・`edges(end, lo, hi)`（エポックの境目）。ページが受け取るのは**その瞬間に描く行と環だけ**で、
+  束と同じ形の**疎な写し**（`h.data`：`rings`・`feats`・`dates`・`snaps` と束の上位の値）に入る。
+  だから `js/time-borders.js`・`js/time-admin1.js`・`js/war-layer.js`・`js/border-coast.js`・クリック・
+  ラベル・Atlas の `currentFC()` は、前と同じ行と同じ環の配列を同じ索引で読む。
+  ⚠ **写しは疎なので、ページ側で全行を歩いてはならない**（歩く問いは上の 4 つとして Worker に訊く）。
+  ⚠ **環は 1 回だけ送り、受け取った配列は差し替えない**（幾何のメモと線の記録が配列の同一性に付くため）。
+  最初の旅行の環は `SLICE_POINTS` 座標ずつ別のメッセージで届く（1 通の構造化複製が 1 本の長いタスクに
+  ならないように。数と由来はファイル冒頭）。穴埋め記録の継ぎ足し（列 11＝自分のファイルでの行番号、
+  列 12＝何番目の穴埋め記録か）も Worker 側で行い、`h.data.gapPools[gi].view` がその記録自身の索引で
+  見た写しになる（`js/border-coast.js` の印はその索引で引く）。ページに届いた環は
+  `IntMapHistBundles.ringOrigin(ring)` が「どの束の何番目か」を答え、`globalOf(写し)` が束の名前を答える
+  ——束はもう `window` に載らないので、印と詳細境界はこれで束を知る。
+  Worker が作れない・死んだときは**同じ関数**（`histJob`。Worker はその関数自身のソースから組み立てる）を
+  ページで走らせ、束が `window` に既に載っているとき（node の足場）はそれをそのまま使う。
+  前後の実測と、描かれる集合が年と場所ごとに同一であることの確認は開発記録
+  `dev-notes/2026-09-30-hist-bundles-off-main.md`、回帰は `tests/hist-bundles-off-main-checks.test.mjs`。
 - 地名クリックの優先順位はエンジンの登録情報で判定する。`events.onLayer` の第4引数
   `{ownership:'fallback'}` は、他の地物や地名に譲る領域説明用。`clickLayers()` は全登録、
   `clickLayers({ownersOnly:true})` は優先権を持つ登録を返す。無名歴史領域の説明はfallbackで、
@@ -3132,6 +3155,9 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   なく **FeatureCollection を丸ごと**渡してくるので、`js/border-coast.js` は**環そのものの同一性**で
   印を引く——束が溜めた配列と同じオブジェクトが collection に入っているため。どのグローバルが
   どの束かは印のファイル自身（`global`）が言うので、読み手には束の名前が1つも書かれていない。
+  束は Worker が持ち、ページには疎な写しが届く（§7.4）ので、ページの環は `js/hist-bundles.js` の
+  `ringOrigin` が「どの束の何番目か」を答え、印はその番号で引く（同じ長さの検査つき）。`window` に
+  束が丸ごと載っている場合（node の足場）は従来どおり同一性の索引で引く。
 - ⚠ **スナップショットへの丸め（`nearest`）は、1689 年以上では代替でしかない**（`js/time-borders.js`）。
   1689–1885 は `data/hist-borders.js`、1886–2019 は `data/cshapes.js` が日単位で答え、
   historical-basemaps はそれらが読めなかったときだけ出る。MAXGAP を 1886 年より下で適用しないのは、

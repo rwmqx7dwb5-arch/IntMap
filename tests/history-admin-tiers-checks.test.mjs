@@ -336,6 +336,7 @@ function tierHarness(opts = {}) {
   /* 猶予時間（GRACE_MS）を跨ぐために時計を進められるようにする。実時間で待たない。 */
   vm.runInContext('globalThis.__NOW = Date.now(); const _RD = Date; globalThis.Date = class extends _RD { static now() { return globalThis.__NOW; } };', ctx);
   vm.runInContext(read('js/hist-scale.js'), ctx, { filename: 'hist-scale.js' });
+  vm.runInContext(read('js/hist-bundles.js'), ctx, { filename: 'hist-bundles.js' });   /* (hist-bundles-off-main) the door the tiers open their records through */
   vm.runInContext(TA, ctx, { filename: 'time-admin1.js' });
   const mod = win.IntMapModules.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
   return {
@@ -477,49 +478,56 @@ function constOf(name, source = TA) {
   return source.slice(k, e).trim();
 }
 function runtime() {
-  const ctx = vm.createContext({ window: { IntMapHistScale: { FLOOR: -123000 } }, cfg: { key: 'a1' }, nameOf: f => f[0], geomOf: () => null, Math, Map });
+  /* ⚠ (hist-bundles-off-main) `fcAt` asks its handle which rows are in force and `bounds` is what `load()`
+     was handed by the thread that holds the record — so `load` is LIFTED too and run against the REAL
+     js/hist-bundles.js, over a record published on `window` (the door reads it where it is). The rule
+     under test is therefore the shipped one on both sides of the door. */
+  const ctx = vm.createContext({ window: { IntMapHistScale: { FLOOR: -123000 } }, cfg: { key: 'a1', file: 'data/x.js', global: '__TESTADM' }, nameOf: f => f[0], geomOf: () => null, Math, Map });
+  vm.runInContext(read('js/hist-bundles.js'), ctx);
   /* ⚠ `fcAt` stamps the collision order of the name on every feature, so the three names that ordering
      is made of are LIFTED from the shipped module, not stubbed (#R621). `geomOf` stays null because
      the SUBJECT here is the clock, and `areaKm2` answers 0 for a geometry that is not there. */
-  vm.runInContext('const _ymd=(y,m,d)=>y*10000+m*100+d; let _bnd=null; const _area=new Map(); const SORT_PROP=' + constOf('SORT_PROP') + '; '
-    + ['areaKm2', 'sortKeyOf', 'areaOf', 'bounds', 'epoch', 'fcAt'].map(n => fn(n)).join('\n'), ctx);
+  vm.runInContext('const _ymd=(y,m,d)=>y*10000+m*100+d; let _bnd=null, _D=null, _P=null, _H=null; const _area=new Map(); const SORT_PROP=' + constOf('SORT_PROP') + '; '
+    + ['areaKm2', 'sortKeyOf', 'areaOf', 'bounds', 'epoch', 'load'].map(n => fn(n)).join('\n') + '\nasync ' + fn('fcAt'), ctx);
+  /* publish the record and open it — what `go()` does before it asks anything */
+  ctx.use = async (data) => { ctx.window.__TESTADM = data; ctx.data = await vm.runInContext('load()', ctx); };
   return ctx;
 }
 const row = (name, start, end) => [name, 4, ...start, ...end, [], {}, 123];
 
-test('#R705 OHM changeover day removes the previous polygon and advances the epoch', () => {
+test('#R705 OHM changeover day removes the previous polygon and advances the epoch', async () => {
   const c = runtime();
-  c.data = { since: 1, feats: [row('old', [1, 1, 1], [99, 2, 28]), row('new', [99, 2, 28], [100, 1, 1])] };
-  assert.equal(vm.runInContext('fcAt(data,99,2,28).features.map(f=>f.properties.NAME).join()', c), 'new');
+  await c.use({ since: 1, feats: [row('old', [1, 1, 1], [99, 2, 28]), row('new', [99, 2, 28], [100, 1, 1])] });
+  assert.equal(await vm.runInContext('fcAt(data,99,2,28).then(fc=>fc.features.map(f=>f.properties.NAME).join())', c), 'new');
   assert.equal(vm.runInContext('epoch(data,99,2,28)', c), 990228);
-  assert.equal(vm.runInContext('fcAt(data,99,2,27).features[0].properties.NAME', c), 'old');
+  assert.equal(await vm.runInContext('fcAt(data,99,2,27).then(fc=>fc.features[0].properties.NAME)', c), 'old');
 });
-test('#R705 ended units without successors vanish at their end, including early leap years', () => {
+test('#R705 ended units without successors vanish at their end, including early leap years', async () => {
   const c = runtime();
-  c.data = { since: 1, feats: [row('unit', [1, 1, 1], [4, 2, 29])] };
-  assert.equal(vm.runInContext('fcAt(data,4,2,29).features.length', c), 0);
+  await c.use({ since: 1, feats: [row('unit', [1, 1, 1], [4, 2, 29])] });
+  assert.equal(await vm.runInContext('fcAt(data,4,2,29).then(fc=>fc.features.length)', c), 0);
   assert.equal(vm.runInContext('epoch(data,4,2,29)', c), 40229);
 });
-test('#R705 epoch floor follows the time kernel for bundles with no declared since', () => {
+test('#R705 epoch floor follows the time kernel for bundles with no declared since', async () => {
   const c = runtime();
-  c.data = { feats: [row('unit', [-500, 1, 1], [-400, 1, 1])] };
+  await c.use({ feats: [row('unit', [-500, 1, 1], [-400, 1, 1])] });
   assert.equal(vm.runInContext('epoch(data,-400,1,1)', c), -3999899);
 });
-test('#R705 KUNI uses the same abolition date contract as its OHM neighbours', () => {
+test('#R705 KUNI uses the same abolition date contract as its OHM neighbours', async () => {
   const c = runtime();
   const f = row('kuni', [-199, 1, 1], [1871, 8, 29]); f[10] = null;
-  c.data = { since: 1, feats: [f] };
-  assert.equal(vm.runInContext('fcAt(data,1871,8,28).features.length', c), 1);
-  assert.equal(vm.runInContext('fcAt(data,1871,8,29).features.length', c), 0);
+  await c.use({ since: 1, feats: [f] });
+  assert.equal(await vm.runInContext('fcAt(data,1871,8,28).then(fc=>fc.features.length)', c), 1);
+  assert.equal(await vm.runInContext('fcAt(data,1871,8,29).then(fc=>fc.features.length)', c), 0);
 });
-test('#R705 rendered features retain raw date precision instead of publishing normalized bounds as facts', () => {
+test('#R705 rendered features retain raw date precision instead of publishing normalized bounds as facts', async () => {
   const c = runtime();
   const dates = { start: { raw: '1800', precision: 'year', qualified: false }, end: { raw: '1900-02', precision: 'month', qualified: false } };
-  c.data = { since: 1, dateSemantics: 'exclusive-end', dates: { 123: dates }, feats: [row('unit', [1800, 1, 1], [1900, 3, 1])] };
-  const p = vm.runInContext('fcAt(data,1900,2,28).features[0].properties', c);
+  await c.use({ since: 1, dateSemantics: 'exclusive-end', dates: { 123: dates }, feats: [row('unit', [1800, 1, 1], [1900, 3, 1])] });
+  const p = await vm.runInContext('fcAt(data,1900,2,28).then(fc=>fc.features[0].properties)', c);
   assert.deepEqual(p.dates, dates);
   assert.equal(p.dateSemantics, 'exclusive-end');
-  assert.equal(vm.runInContext('fcAt(data,1900,3,1).features.length', c), 0);
+  assert.equal(await vm.runInContext('fcAt(data,1900,3,1).then(fc=>fc.features.length)', c), 0);
 });
 
 test('#R705 province popup shows only original source dates, including qualification and unknown endpoints', () => {
@@ -610,6 +618,7 @@ function orderHarness(n, counted) {
   };
   vm.createContext(ctx);
   vm.runInContext(read('js/hist-scale.js'), ctx, { filename: 'hist-scale.js' });
+  vm.runInContext(read('js/hist-bundles.js'), ctx, { filename: 'hist-bundles.js' });   /* (hist-bundles-off-main) the door the tiers open their records through */
   vm.runInContext(TA, ctx, { filename: 'time-admin1.js' });
   const mod = win.IntMapModules.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
   return {

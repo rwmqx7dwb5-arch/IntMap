@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import fs, { readFileSync, existsSync, statSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
@@ -661,37 +662,53 @@ const worldJul1Old = (d, year) =>
    region that decides 「which records are alive on this day」 — `csFC` with `_ymd`, and the epoch
    index `csBounds` / `_epochIn` / `csEpoch` — is lifted out and evaluated against the bundle that
    ships. Only what `csFC` does NOT decide is stubbed: the display name (`_csName` → the record's own
-   name), the translation table, and the geometry/line pools (null). */
-function liftSelector() {
+   name), the translation table, and the geometry/line pools (null).
+   ⚠ (hist-bundles-off-main) THE RECORDS IN FORCE AND THE EPOCH EDGES ARE ASKED OF THE DOOR NOW, so
+   `csLoad` is lifted too and the door is the REAL js/hist-bundles.js holding the shipped bundle (published
+   on a `window` the way a harness publishes it — the door then answers on this thread with the same job
+   the Worker runs). Nothing about which day is selected is restated here. */
+async function liftSelector() {
   const a = TB.indexOf('const CS_MIN=');
   const b = TB.indexOf('let _csD=', a);
   assert.ok(a > 0 && b > a, 'the day-exact epoch index is one region of js/time-borders.js');
   const i = TB.indexOf('function csFC(d,year,mon,day)');
   assert.ok(i > 0, 'csFC takes the month and the day');
+  assert.ok(TB.slice(i - 6, i) === 'async ', 'csFC asks the door, so it answers asynchronously');
   let depth = 0, j = -1;
   for (let k = TB.indexOf('{', i); k < TB.length; k++) {
     if (TB[k] === '{') depth++;
     else if (TB[k] === '}' && !--depth) { j = k; break; }
   }
   // eslint-disable-next-line no-new-func
-  return new Function('_csName', 'hnFor', '_csGeomOf', '_csLineOf', '_lnOf', '_lineFeat',
-    TB.slice(a, b) + '\n' + TB.slice(i, j + 1) + '\nlet _csD=null;\nreturn { csFC, csEpoch };')(
-    (name) => name, () => null, () => null, () => null, new Map(), (x) => x);
+  const l = TB.indexOf('function csLoad(){');
+  assert.ok(l > 0, 'csLoad is where the record is opened');
+  let dl = 0, e = -1;
+  for (let k = TB.indexOf('{', l); k < TB.length; k++) {
+    if (TB[k] === '{') dl++;
+    else if (TB[k] === '}' && !--dl) { e = k; break; }
+  }
+  const win = { __CSHAPES: cshapes() };
+  vm.runInNewContext(read('js/hist-bundles.js'), { window: win });
+  const S = new Function('_csName', 'hnFor', '_csGeomOf', '_csLineOf', '_lnOf', '_lineFeat', 'window',
+    TB.slice(a, b) + '\nlet _csD=null,_csP=null,_csH=null;\n' + TB.slice(l, e + 1) + '\nasync ' + TB.slice(i, j + 1) + '\nreturn { csFC, csEpoch, csLoad, csBounds };')(
+    (name) => name, () => null, () => null, () => null, new Map(), (x) => x, win);
+  assert.ok(await S.csLoad(), 'the door opened the shipped CShapes bundle');
+  return S;
 }
 const namesOf = (fc) => fc.features.map((f) => f.properties.NAME).sort();
 
-test('R421 #1 the July-1 rounding is GONE from the selector', () => {
-  const S = liftSelector();
+test('R421 #1 the July-1 rounding is GONE from the selector', async () => {
+  const S = await liftSelector();
   const d = cshapes();
   /* the shipped selector answers exactly the day-exact rule, on days that are not July 1 */
   for (const [y, m, dd] of [[1920, 10, 28], [1920, 1, 12], [1990, 10, 2], [1990, 10, 4], [1945, 8, 15]]) {
-    assert.deepEqual(namesOf(S.csFC(d, y, m, dd)), worldOn(d, y, m, dd), `${y}-${m}-${dd} is selected by its own day`);
+    assert.deepEqual(namesOf(await S.csFC(d, y, m, dd)), worldOn(d, y, m, dd), `${y}-${m}-${dd} is selected by its own day`);
   }
   /* …which is NOT what the July-1 sample of that year would have drawn — the rounding is gone */
-  assert.notDeepEqual(namesOf(S.csFC(d, 1990, 10, 4)), worldJul1Old(d, 1990),
+  assert.notDeepEqual(namesOf(await S.csFC(d, 1990, 10, 4)), worldJul1Old(d, 1990),
     'the reunified Germany of 1990-10-04 is drawn, not the July-1 world of 1990');
   /* and a caller that gives only a year still gets a defined instant — the old July-1 sample */
-  assert.deepEqual(namesOf(S.csFC(d, 1990)), worldJul1Old(d, 1990), 'a year-only caller is answered at July 1');
+  assert.deepEqual(namesOf(await S.csFC(d, 1990)), worldJul1Old(d, 1990), 'a year-only caller is answered at July 1');
 });
 
 /* 綴りのまま: 対象は DOM・地図（MapLibre / WebGL）に触れる closure の中で、ブラウザの外では走らない（実ブラウザ側は spec が持つ） */
@@ -764,12 +781,13 @@ test('R421 #6 day-exactness is real at events whose date is not July', () => {
 });
 
 /* 綴りのまま: 主張が配線・不在・一意性（どこが何を呼ぶか／無いこと／1 か所だけ）で、評価して取り出せる値が無い */
-test('R421 #7 the transition index is built from the SAME records as the polygons', () => {
+test('R421 #7 the transition index is built from the SAME records as the polygons', async () => {
   // A second, hand-kept list of dates would drift out of step with the geometry the moment either
   // was edited. The index is derived — both edges of every record — and filtered to the CShapes range.
-  assert.match(TB, /function csBounds\(d\)/, 'the boundary index exists');
-  assert.match(TB, /for\(const f of d\.feats\)/, 'it is derived from d.feats, not written down');
-  assert.match(TB, /_dayAfter\(f\[5\],f\[6\],f\[7\]\)/, 'the day AFTER an end is a boundary too');
+  /* ⚠ (hist-bundles-off-main) EVALUATED (was: three spellings of the loop). The index is computed by
+     the door's job over every record and handed to js/time-borders.js by csLoad; what the module
+     answers is compared with the rule restated below, over the shipped bundle. */
+  const S = await liftSelector();
   const d = cshapes();
   const set = new Set();
   for (const f of d.feats) {
@@ -779,6 +797,8 @@ test('R421 #7 the transition index is built from the SAME records as the polygon
     set.add(ymd(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()));
   }
   const inRange = [...set].filter((k) => k >= ymd(1886, 1, 1) && k <= ymd(2019, 12, 31));
+  assert.deepEqual([...S.csBounds()], inRange.slice().sort((x, y) => x - y),
+    'the index the module holds is every start and every day-after-an-end of the records, in range');
   assert.ok(
     inRange.length > 300,
     `the shipped bundle must expose 300+ border-change days; got ${inRange.length}`,
@@ -787,12 +807,12 @@ test('R421 #7 the transition index is built from the SAME records as the polygon
   assert.ok(inRange.length > 134 * 2, 'there must be far more transition days than calendar years');
 });
 
-test('R421 #8 the cache is keyed by EPOCH, so a quiet decade re-renders nothing', () => {
+test('R421 #8 the cache is keyed by EPOCH, so a quiet decade re-renders nothing', async () => {
   // Keying by the requested date would build a FeatureCollection per day scrubbed and defeat the
   // "did anything change?" short-circuit that makes dragging the slider cheap.
   /* (tests-by-topic) the epoch resolver is RUN: two days inside one epoch resolve to the same key,
      and the day before that epoch began resolves to another */
-  const S = liftSelector();
+  const S = await liftSelector();
   const d = cshapes();
   assert.equal(S.csEpoch(d, 1920, 11, 5), S.csEpoch(d, 1920, 10, 28), '1920-11-05 is inside the epoch that began 1920-10-28');
   assert.equal(S.csEpoch(d, 1920, 10, 28), 19201028, '…and that epoch is named by the day it began');

@@ -1104,8 +1104,9 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 - **1689 年より前の国境は、同梱の年別スナップショット `data/hist-eras.js` から描く**
   （`js/time-borders.js` の `erLoad` / `erFC` / `nearest`）。上流 aourednik/historical-basemaps が
   公開する `world_*.geojson` **54 枚**（**紀元前 17 枚**・紀元前 123000 年〜西暦 2010 年）で、
-  リングプールは他の束と同じ形。時計がその年を要求した最初の 1 回だけ `<script>` で読む
-  （起動時には読まない）。⚠ **このファイルは git の外にある**——`data-assets.json` が中身の sha256 と
+  リングプールは他の束と同じ形。時計がその年を要求した最初の 1 回だけ `js/hist-bundles.js` が
+  Worker で読み、ページへは描く 1 枚の行と環だけを送る（起動時には読まない。仕組みは
+  `Architecture.md` §7.4）。⚠ **このファイルは git の外にある**——`data-assets.json` が中身の sha256 と
   それを運ぶ Release の asset を持ち、`npm run data:pull` が置く（配信物の `dist/` には実体が入る。
   規約は `docs/TESTING.md`「git の外にあるデータ」）。⚠ **1689 年以降の帯には出ない**——そこは CShapes と OpenHistoricalMap の
   日単位の束が答え、この束はそれらが読めなかったときの予備でもある。

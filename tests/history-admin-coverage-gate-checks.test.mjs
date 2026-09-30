@@ -379,17 +379,20 @@ test('#R719 ⑤ dropping one unit of an answered country fails check:histfill', 
    Two derived records both start their own row numbering at 0, so without the twelfth column the
    second record's row 3 would be stroked with the first record's coastline marks. */
 test('#R719 ⑥ js/time-admin1.js splices every gap record and tags each row with its own', () => {
-  /* ⚠ SPELLING, ON PURPOSE, FOR THE SPLICE: the gap list and the row tagging live inside the layer's
-     loader, which injects the records with <script> tags; each record the list names is then
-     EVALUATED below for its own provenance. (tests/history-admin-tiers-checks runs the factory.) */
-  const s = read('js/time-admin1.js');
+  /* ⚠ SPELLING, ON PURPOSE, FOR THE SPLICE: the gap list lives in the layer and the row tagging in
+     the door that opens the records on another thread (js/hist-bundles.js, since
+     hist-bundles-off-main); each record the list names is then EVALUATED below for its own
+     provenance. (tests/history-admin-tiers-checks runs the factory; tests/hist-bundles-off-main-checks
+     runs the splice itself against the shipped files.) */
+  const s = read('js/time-admin1.js'), door = read('js/hist-bundles.js');
   assert.ok(!/cfg\.gapGlobal|cfg\.gapFile/.test(s), 'the single-gap spelling is gone — a second record may not need a second mechanism');
   assert.match(s, /const GAPS = \[[\s\S]*data\/hist-kuni\.js[\s\S]*data\/hist-admin-fill\.js[\s\S]*\];/,
     'both derived records are spliced into the first tier');
-  assert.match(s, /f\[9\], null, k, gi\]/, 'each spliced row carries the ORDINAL of the record it came from');
+  assert.match(door, /f\[9\], null, k, gi\]/, 'each spliced row carries the ORDINAL of the record it came from');
   assert.match(s, /_gapSet: \(f\[12\] == null\) \? -1 : f\[12\]/, 'and the feature carries it to the line builder');
   /* the credit is assembled from what is loaded, not typed once about one bundle */
-  assert.match(s, /function gapAttrFor\(gaps\)/, 'the attribution is derived from the records themselves');
+  assert.match(s, /function gapAttrFor\(gaps, d\)/, 'the attribution is derived from the records themselves');
+  assert.match(s, /d\.gapSrcs/, '…from the sources the splice carried onto the record, since the records are not on window');
   assert.ok(!/Asukana\/Ryoseikoku<\/a>/.test(s), 'no bundle is credited by a string hard-written into the renderer');
   /* and every record named in the list is a file that exists and states its own provenance */
   for (const m of s.matchAll(/\{ file: '(data\/[a-z0-9-]+\.js)',\s*global: '(__[A-Z0-9]+)',\s*set: '([a-z0-9]+)' \}/g)) {

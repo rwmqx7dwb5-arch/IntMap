@@ -86,10 +86,17 @@ test('⑦ a NEW loader in any served file, in any form, is caught', () => {
 });
 
 test('⑧ same-origin loaders are not external (data/, ./js/locales, new URL(\'data/…\').href)', () => {
-  const { sites } = runtimeScriptProblems(FILES);
+  /* (hist-bundles-off-main) js/war-layer.js and js/time-borders.js were this test's two shipped
+     examples — both injected data/cshapes.js — and both now open it through js/hist-bundles.js, which
+     reads it on a Worker. The shipped plain-string example is js/border-coast.js; the `new URL(…).href`
+     form has no shipped instance left, so it is handed over as a file of its own, the way ⑦ does. */
+  const files = plus('js/local-url-loader.js',
+    "const s=document.createElement('script'); s.src=new URL('data/x.js', document.baseURI || './').href; s.async=true; document.head.appendChild(s);");
+  const { sites } = runtimeScriptProblems(files);
   const local = sites.filter((s) => s.isScript && s.src && s.src.every((c) => c.value && !/^(https?:)?\/\//.test(c.value)));
-  assert.ok(local.some((s) => s.rel === 'js/war-layer.js'), 'new URL(...).href resolves to its first argument');
-  assert.ok(local.some((s) => s.rel === 'js/time-borders.js'));
+  assert.ok(local.some((s) => s.rel === 'js/local-url-loader.js'), 'new URL(...).href resolves to its first argument');
+  assert.ok(local.some((s) => s.rel === 'js/border-coast.js'));
+  assert.deepEqual(problems(files), [], 'and a same-origin loader is not reported as an unpinned external one');
 });
 
 test('⑨ Clarity\'s createElement(r) is found through the IIFE binding, and is what its declaration excuses', () => {

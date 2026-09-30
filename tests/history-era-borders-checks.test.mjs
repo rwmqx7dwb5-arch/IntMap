@@ -187,25 +187,33 @@ test('#R518 ② OHM end dates really are exclusive in this data', () => {
     'only ' + touching + '/' + pairs + ' successions touch — the exclusive-end reading no longer describes this data');
 });
 
-test('#R518 ② the selector reads the end exclusively, and csFC still reads its own inclusively', () => {
+test('#R518 ② the selector reads the end exclusively, and csFC still reads its own inclusively', async () => {
   /* EVALUATED (was: three regexes over the two bodies). `hbFC` and `csFC` are LIFTED by their braces
      (tests/helpers/lift-function.mjs — #R531: a body taken by what it returns swallowed its
      neighbour) and run on one record whose last day is 1871-01-18. Everything they call besides the
-     date test — geometry, line, name tables — is stubbed, because the date test is the subject. */
+     date test — geometry, line, name tables — is stubbed, because the date test is the subject.
+     ⚠ (hist-bundles-off-main) THE DATE TEST ITSELF NOW RUNS WHERE THE RECORD IS: each selector asks
+     its handle `at(t, end)`, and the handle here is the REAL job of js/hist-bundles.js holding the
+     one-record bundle — so what is measured is both halves, the end each selector names and the
+     predicate that end selects. A stub for the handle would measure neither. */
   const ymdDecl = /const _ymd=([^;\n]+);/.exec(TBC);
   assert.ok(ymdDecl, 'js/time-borders.js no longer declares _ymd');
-  const make = new Function('d0', 'var _ymd=' + ymdDecl[1] + '; var _lnOf=new WeakMap();'
-    + 'var _hbGeomOf=function(){return null;},_hbLineOf=function(){return null;},_csGeomOf=function(){return null;},_csLineOf=function(){return null;},_csD=d0;'
-    + 'var hnFor=function(){return null;}; var _csName=function(n){return n;}; var _lineFeat=function(g){return g;};\n'
-    + liftFunction(TBC, 'hbFC') + '\n' + liftFunction(TBC, 'csFC') + '\nreturn { hbFC: hbFC, csFC: csFC };');
+  const hbw = {}; vm.runInContext(rd('js/hist-bundles.js'), vm.createContext({ window: hbw, Map, Set, WeakMap, Uint8Array, Promise, Error, JSON }));
+  const job = hbw.IntMapHistBundles.histJob;
+  const handle = (global, d) => { const S = {}; job(S, { op: 'adopt', global, value: d }, () => {});
+    return { at: async (t, end) => job(S, { op: 'at', global, t, end }, () => {}) }; };
   const hb = { feats: [[{ en: 'OHM polity' }, 'Q1', 1860, 1, 1, 1871, 1, 18, []]] };
   const cs = { feats: [['CShapes polity', 999, 1860, 1, 1, 1871, 1, 18, []]] };
-  const F = make(cs);
-  const n = (fc) => fc.features.length;
-  assert.equal(n(F.hbFC(hb, 1871, 1, 17)), 1, 'hbFC dropped a record the day before it ends');
-  assert.equal(n(F.hbFC(hb, 1871, 1, 18)), 0, 'hbFC must skip a record whose end is at or before the day');
-  assert.equal(n(F.csFC(cs, 1871, 1, 18)), 1, 'csFC must keep a record whose end IS the day');
-  assert.equal(n(F.csFC(cs, 1871, 1, 19)), 0, 'csFC must not adopt the exclusive reading — nor keep a record after its last day');
+  const make = new Function('d0', 'H0', 'H1', 'var _ymd=' + ymdDecl[1] + '; var _lnOf=new WeakMap();'
+    + 'var _hbGeomOf=function(){return null;},_hbLineOf=function(){return null;},_csGeomOf=function(){return null;},_csLineOf=function(){return null;},_csD=d0,_hbH=H0,_csH=H1;'
+    + 'var hnFor=function(){return null;}; var _csName=function(n){return n;}; var _lineFeat=function(g){return g;};\n'
+    + 'async ' + liftFunction(TBC, 'hbFC') + '\nasync ' + liftFunction(TBC, 'csFC') + '\nreturn { hbFC: hbFC, csFC: csFC };');
+  const F = make(cs, handle('__HISTB', hb), handle('__CSHAPES', cs));
+  const n = async (p) => (await p).features.length;
+  assert.equal(await n(F.hbFC(hb, 1871, 1, 17)), 1, 'hbFC dropped a record the day before it ends');
+  assert.equal(await n(F.hbFC(hb, 1871, 1, 18)), 0, 'hbFC must skip a record whose end is at or before the day');
+  assert.equal(await n(F.csFC(cs, 1871, 1, 18)), 1, 'csFC must keep a record whose end IS the day');
+  assert.equal(await n(F.csFC(cs, 1871, 1, 19)), 0, 'csFC must not adopt the exclusive reading — nor keep a record after its last day');
 });
 
 test('#R518 ② and no day of the window draws the same entity twice', () => {

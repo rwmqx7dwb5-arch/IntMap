@@ -65,6 +65,7 @@ function loadModule(lang = 'en') {
   const ctx = vm.createContext(win);
   vm.runInContext(rd('js/hist-scale.js'), ctx);
   vm.runInContext(rd('data/hist-eras.js'), ctx);
+  vm.runInContext(rd('js/hist-bundles.js'), ctx);   /* (hist-bundles-off-main) the door the module opens its records through */
   vm.runInContext(TB, ctx);
   const HOST = { lang, canDraw: () => false, isMobile: () => false };
   return { mod: ctx.window.IntMapModules.timeBorders(HOST), bundle: ctx.window.__HISTERAS, HOST, win, ctx };
