@@ -15,6 +15,8 @@
 //  WHAT THIS FILE OWNS, so that each of those is one thing in one place:
 //    · the plan table                 (PLAN_LIMITS — the daily turn allowance per plan)
 //    · who the account is             (accountFor: profiles.plan, and the DEV_USER_IDS override)
+//    · which cohort it is in          (cohortOf: its age — ai-proxy draws a newcomer from a share of
+//                                      the project ceiling, ai-quota-fairness)
 //    · the turn ledger's four doors   (openTurn / refundTurn / settleTurn / recordUsage → the
 //                                      SECURITY DEFINER RPCs of public.ai_turns and public.ai_usage)
 //  ai-proxy and monitor-run both call these; neither spells a limit or an RPC of the ledger itself.
@@ -56,6 +58,38 @@ export async function accountFor(db, userId, env) {
   if (isDev) plan = "unlimited";
   const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS[DEFAULT_PLAN];
   return { id, plan, isDev, limit };
+}
+
+/* ══ (ai-quota-fairness) WHICH COHORT AN ACCOUNT IS IN — its age, and nothing it can claim ═════════
+   ai-proxy draws a NEWCOMER's provider requests from a share of the project ceiling
+   (_shared/ai-provider.js shareCeiling), so that a batch of fresh accounts cannot spend the day the
+   established readers need. The cohort is decided from auth.users.created_at — a value the database
+   wrote when the account was made, which no request can move and no amount of waiting shortens.
+   ⚠ NOT A PLAN AND NOT A LIMIT: a newcomer keeps the whole of its plan (PLAN_LIMITS, the gloss lane,
+   every step of a turn). What differs is only which part of the invoice fence its requests come out of.
+   NEWCOMER_AGE_DAYS = 7 (no-ad-hoc-hardcoding §4):
+     · Observation — production, 2026-10-01 (public.ai_usage × auth.users): of the 16 accounts ever
+       charged for AI, 14 were first charged on the day they signed up (the other two at 14 and 37
+       days), and at most 9 accounts under a week old used AI on one day, 16 turns between them. So
+       real newcomers DO use AI in this
+       window and the share is sized for them (ai-proxy NEWCOMER_SHARE). The age is not what makes a
+       reader welcome — the share is; the age is the delay an account factory must wait out.
+     · It is an ESTIMATE of that delay's worth, not a measurement: a week turns «make 17 accounts and
+       spend the day now» into «make them and wait a week, and then spend only the reserve's share».
+     · Expires when a newcomer day is measured to meet the share (`provider_quota` with
+       meta.ceiling "newcomer_day" on a day that was readers) — then the share moves, not this.
+     · Canonical place: THIS constant.
+   A created_at that is missing or unreadable is a NEWCOMER: «established» is a claim that needs the
+   date, and the smaller pool is the direction that cannot spend anyone else's day. */
+export const NEWCOMER_AGE_DAYS = 7;
+export const NEWCOMER = "newcomer";
+export const ESTABLISHED = "established";
+
+export function cohortOf(createdAt, nowMs) {
+  const t = Date.parse(String(createdAt || ""));
+  const now = Number.isFinite(+nowMs) ? +nowMs : Date.now();
+  if (!Number.isFinite(t)) return NEWCOMER;
+  return (now - t) >= NEWCOMER_AGE_DAYS * 86400 * 1000 ? ESTABLISHED : NEWCOMER;
 }
 
 /* The ledger did not answer. Thrown, not returned as «allowed»: a quota that cannot be consulted

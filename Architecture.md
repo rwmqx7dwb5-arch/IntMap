@@ -2046,6 +2046,15 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ⚠ **これは請求の柵であって Atlas の柵ではない**（`CONSTITUTION.md` §5）——ターンの上限も能力も変えない。
   `ai-proxy` で天井に当たった読者は使用回数を払い戻され、`provider_quota`（`meta.ceiling:"project_day"`・
   503。429 は読者自身の枠専用）を受け取る。
+- **`ai-proxy` の 1 日は、アカウントの年齢で分けてある**（新しいアカウントの束が全員の分を使い切れないように）。
+  作られて `NEWCOMER_AGE_DAYS`（7 日。`_shared/ai-ledger.js` の `cohortOf`、`auth.users.created_at` から判定）
+  未満のアカウントは、提供元への 1 要求ごとに **まず `ai-proxy:newcomer:day` から**、次に `ai-proxy:global:day`
+  から取る（`_shared/ai-provider.js` の `shareCeiling`）。新規の取り分は全体の 1/3（3,000 のうち 1,000。
+  `AI_PROXY_NEWCOMER_PER_DAY` で動かせ、全体を超えない）で、**残り 2,000 はどれだけ新規アカウントが来ても
+  届かない**。取り分が尽きた新規アカウントは全体のバケットに触れず、`provider_quota`（`meta.ceiling:"newcomer_day"`・
+  503）と払い戻しを受け取る。作成日が読めないアカウントは新規として扱う（「古い」は日付という根拠が要る主張）。
+  ⚠ **誰の上限も下げていない**——プラン・用語解説の枠・`TURN_MAX_CALLS`・全体の天井は同じで、7 日以上の
+  アカウントはこれまでどおり全体のバケットだけから取る。新規アカウントも自分のプランは全部使える。
 - **障害耐性** — 400 は**フォールバック階段**（tool_choice 解除 → **schema → json_object** →
   JSON モード解除 → ツール解除）で降格する。
   Web 付き呼び出しは長めの期限を持ち、空応答（推論が予算を食い切った場合）は予算を増やして1回再試行する。
@@ -2395,7 +2404,8 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
   `GEMINI_API_KEY`, `AI_MODEL`（任意）
 - プロジェクト全体の 1 日の天井（任意・どれも正の整数。既定は各関数の定数）: `AI_PROXY_GLOBAL_PER_DAY`,
   `MONITOR_RUN_GLOBAL_PER_DAY`, `NEWS_INGEST_GLOBAL_PER_DAY`, `REFRESH_NEWS_GLOBAL_PER_DAY`,
-  `WHO_DON_GLOBAL_PER_DAY`, `ATLAS_EMBED_GLOBAL_PER_DAY`（§5「有料の提供元へは扉が 1 つだけ」）
+  `WHO_DON_GLOBAL_PER_DAY`, `ATLAS_EMBED_GLOBAL_PER_DAY`（§5「有料の提供元へは扉が 1 つだけ」）。
+  `AI_PROXY_NEWCOMER_PER_DAY`（任意・7 日未満のアカウントの取り分。既定は全体の 1/3、全体を超えない）
 - refresh-news: `REFRESH_SECRET`（**必須**。未設定なら関数は全リクエストを拒否する）,
   `NEWS_AI=off`（任意・AI を止めて辞書だけにする kill-switch）
 - news-ingest: `NEWS_INGEST_SECRET`（**必須**）, `NEWS_GEO_AI=off`（任意・AI 地点解析の kill-switch）,

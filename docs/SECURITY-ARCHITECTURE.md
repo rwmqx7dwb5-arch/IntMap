@@ -21,7 +21,7 @@ the data flow, an Edge Function, or the auth model changes.
 | Per-user private data (`favorites`, `user_prefs`, `donations`/`feedback`/`bug_reports` PII, `ai_usage`) | Postgres | **RLS** + column grants + SECURITY DEFINER RPCs |
 | Admin capability + billing (`profiles.is_admin`/`is_pro`/`plan`/`email`) | Postgres | RLS (`is_admin()`) + column grant + **`tg_profiles_guard_privcols` BEFORE-UPDATE trigger** (grant-independent freeze, #R155) — no self-escalation of admin or billing plan |
 | Provider API keys (AI, etc.) | Edge Function env (server only) | Never sent to the browser; never logged |
-| AI spend / quota | `ai_usage` + `ai-proxy` and `monitor-run`'s «Run now», through one ledger (`_shared/ai-ledger.js`) (per account); `relay_rate_buckets` `<fn>:global:day` (per project) | JWT-gated proxy + atomic RPC; fail-closed scheduler secrets; **a project-wide daily ceiling in every function that holds a provider key** (§5, «Spend ceilings») |
+| AI spend / quota | `ai_usage` + `ai-proxy` and `monitor-run`'s «Run now», through one ledger (`_shared/ai-ledger.js`) (per account); `relay_rate_buckets` `<fn>:global:day` (per project), and `ai-proxy:newcomer:day` (the share of it accounts under a week old draw from) | JWT-gated proxy + atomic RPC; fail-closed scheduler secrets; **a project-wide daily ceiling in every function that holds a provider key** (§5, «Spend ceilings») |
 | Integrity of what every visitor sees | `index.html` render paths | **XSS output-encoding** (`window.IntMapSafe`) + CSP |
 
 **Adversaries considered:** an anonymous internet user; a *logged-in* user attacking other
@@ -290,7 +290,7 @@ flag that lives in a comment is not configuration. All twenty-one are declared t
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
-| `ai-proxy` | **true** | Supabase JWT (login required) → 401 | plan lookup + `consume/refund/settle_ai_turn` RPCs + the `ai-proxy:global:day` bucket | server env only, never logged; every provider request through `_shared/ai-provider.js` |
+| `ai-proxy` | **true** | Supabase JWT (login required) → 401 | plan lookup + `consume/refund/settle_ai_turn` RPCs + the `ai-proxy:global:day` bucket (and, for an account under a week old, `ai-proxy:newcomer:day` first) | server env only, never logged; every provider request through `_shared/ai-provider.js` |
 | `atlas-embed` | **true** | Supabase JWT, and the function resolves the caller itself (`/auth/v1/user`) → 401 `signed_out`; the per-user buckets (minute, seed hour, **share of the day**) are keyed by that id | `atlas_capability_catalog_size` / `_similarity` / `_seed` RPCs and the shared `relay_take` buckets | `OPENAI_API_KEY` (the same secret as `ai-proxy`), server env only, never returned. The query is embedded per call and **not stored**; the catalogue key is recomputed from the text before anything is embedded or stored |
 | `delete-account` | **true** | Supabase JWT **and** an explicit re-check; body must be `{"confirm":"DELETE"}` | `delete_account_data(uuid)` then `auth.admin.deleteUser` | — |
 | `monitor-run` | false | two callers, two credentials: pg_cron's `x-monitor-secret` (from Vault) or a user JWT; fail-closed on the secret | claim/finalize monitor runs; the `monitor-run:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
@@ -350,6 +350,19 @@ keeps its 20,000 units and adds **one account's share of the day** (the day ÷ `
 ⚠ **A ceiling is a fence on the invoice, not on Atlas** (`CONSTITUTION.md` §5): it changes no turn
 limit and no capability. A reader who meets `ai-proxy`'s is refunded the use and told
 `provider_quota` with `meta.ceiling: "project_day"` (503, not 429 — 429 is the reader's own quota).
+⚠ **(ai-quota-fairness) `ai-proxy`'s day is split by account age so that new accounts cannot spend it
+all.** An account younger than `NEWCOMER_AGE_DAYS` (7, `_shared/ai-ledger.js` `cohortOf`, read from
+`auth.users.created_at` — nothing a request can move) takes each provider request from
+`ai-proxy:newcomer:day` **first** and then from `ai-proxy:global:day` (`_shared/ai-provider.js`
+`shareCeiling`). The share is a third of the day (1,000 of 3,000; `AI_PROXY_NEWCOMER_PER_DAY` moves it,
+clamped to the whole), so **2,000 requests a day are out of reach of any number of new accounts**. A
+refused share never touches the project bucket, fails closed like it, and is answered `provider_quota`
+with `meta.ceiling: "newcomer_day"` and a refunded use. An older account draws from the project bucket
+exactly as before, and **nobody's plan, gloss lane or `TURN_MAX_CALLS` changed** — a newcomer keeps its
+whole plan; only which part of the invoice fence its requests come from is decided by its age.
+Sizing (production ledger, 2026-10-01): at most 9 accounts under a week old used AI on one day, 16 turns
+between them (≤ 192 requests even at 12 per turn); 14 of the 16 accounts ever charged were first charged
+on the day they signed up.
 
 ⚠ **(client-error-log) `client-errors` and (anon-write-guard) `reader-reports` are the only functions a browser WRITES to
 without a login**, which is why they carry four bounds where a relay carries one allow-list. It stores readers' uncaught exceptions in
@@ -796,12 +809,20 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    database accepts, left for a decision.
 14. **The project-wide AI ceilings can be exhausted by many accounts, which then denies AI to
    everyone for the rest of the day.** That is the ceiling working — the invoice stays bounded — but
-   it turns «spend my money» into «deny everyone», and accounts cost nothing to make. `atlas-embed`'s
-   per-account share raises the price from one account to ten; `ai-proxy` bounds each account by its
-   plan (at most ~180 requests a day on free), so its 3,000 is ~16 free accounts. Closing this fully
-   needs an identity that costs something (e-mail confirmation, CAPTCHA, or a paid plan), which is a
-   product decision, not a code change. The ceilings are also not a PRICE statement: they count
-   requests, and the providers bill by token.
+   it turns «spend my money» into «deny everyone». `atlas-embed`'s per-account share raises the price
+   from one account to ten. (ai-quota-fairness) `ai-proxy` no longer lets NEW accounts do it: accounts
+   under a week old draw from a third of the day (§5, «Spend ceilings»), so the other 2,000 requests
+   are reserved for accounts a week old or more. **What remains:** ① a burst of new accounts can still
+   spend the newcomer share, denying AI to OTHER new accounts for the day (not to anyone older);
+   ② accounts made and then left to age for a week draw from the reserve like any reader, each at
+   most ~180 requests a day on free, so about 12 of them could still spend it. An account costs a
+   confirmed e-mail address (production, measured 2026-09-30 and 2026-10-01: `mailer_autoconfirm:
+   false`, `anonymous_users: false`); raising that price further is a **CAPTCHA** on sign-up
+   (Supabase Auth supports hCaptcha / Turnstile, and needs the provider's site and secret keys —
+   an operator setting, not a code change, not done). The ceilings are also not a PRICE statement:
+   they count requests, and the providers bill by token (`ai_usage` records the tokens since
+   2026-09-29, but no request has been recorded with them yet, so no token-based bound has anything
+   to be sized from).
 15. **A signed-in reader's own writes are bounded by the account, not by a bucket.** anon-write-guard closed
    every direct INSERT `anon` had (`feedback`, `bug_reports` — now `reader-reports`, §5; the pgTAP census
    `14_anon_write_guard_test.sql` keeps it at zero). What `authenticated` may still insert through PostgREST
