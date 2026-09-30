@@ -25,6 +25,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { auditRoster, inventories, sharedRoster } from '../scripts/shared-roster.mjs';
 import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { chapters, specFiles, specFileFor } from '../scripts/architecture-spec.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -154,7 +155,9 @@ test('R399 ① every hole this round closed goes RED when its fact is made wrong
     assert.equal(pre.code, 0, 'check:docs must be green before any of this means anything:\n'
       + pre.out + '\n--- who to suspect ---\n' + pre.explain());
 
-    for (const c of CASES) {
+    for (const c0 of CASES) {
+      /* «Architecture.md» names the spec (architecture-split): the sentence is in whichever chapter carries it */
+      const c = c0.from ? { ...c0, file: specFileFor(ROOT, c0.file, anchorRe(c0.from)) } : c0;
       const originalBytes = rd(c.file);
       const original = readLF(join(ROOT, c.file));
       let broken;
@@ -185,8 +188,8 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
      needle は何も拾わない——そこで「拾わなかった」を緑にすると、この回が塞いだ穴が
      そのまま戻る。両方の主張を消してから、報告が正本を名指すことを確かめる。 */
   {
-    const originalBytes = rd('Architecture.md');
-    const original = readLF(join(ROOT, 'Architecture.md'));
+    /* (architecture-split) the 正本 is the spec — the map and its chapters — so every file of it is silenced */
+    const originals = specFiles(ROOT).map((f) => [f, rd(f), readLF(join(ROOT, f))]);
     /* ⚠ (#R699) THIS MUTATION USED TO NAME TWO SENTENCES BY HAND, AND THERE WERE THREE.
        Architecture.md §6.2 also opens 「⚠ **17本すべてを…宣言する」, which the old needle could
        not see (it attaches to no noun and leans on the heading above it) and which
@@ -196,28 +199,33 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
        measures the list, the way #R694's anchor measured last year's spelling.
        Ask the module which sentences state the count, and blank every one of them. */
     const SUBJECT = { noun: 'Edge Functions?', units: ['本', '函数'], words: { seventeen: 17 } };
-    const stated = claims(original, SUBJECT).items.filter((c) => CHECKED.includes(c.kind))
-      .sort((a, b) => b.index - a.index);
-    assert.ok(stated.length >= 3, `Architecture.md states the count in ${stated.length} place(s) — this mutation expects the 正本 to carry it more than twice`);
-    let silent = original;
-    for (const c of stated) {
-      /* replace the digits of that quantity with a word, in place, leaving everything else */
-      const head = silent.slice(0, c.index), tail = silent.slice(c.index);
-      silent = head + tail.replace(/\d[\d,]*/, 'すべて');
-    }
-    assert.notEqual(silent, original, 'Architecture.md no longer states the count anywhere');
+    let statedN = 0;
+    const silenced = originals.map(([f, , original]) => {
+      const stated = claims(original, SUBJECT).items.filter((c) => CHECKED.includes(c.kind))
+        .sort((a, b) => b.index - a.index);
+      statedN += stated.length;
+      let silent = original;
+      for (const c of stated) {
+        /* replace the digits of that quantity with a word, in place, leaving everything else */
+        const head = silent.slice(0, c.index), tail = silent.slice(c.index);
+        silent = head + tail.replace(/\d[\d,]*/, 'すべて');
+      }
+      return [f, silent, silent !== original];
+    });
+    assert.ok(statedN >= 3, `the spec states the count in ${statedN} place(s) — this mutation expects the 正本 to carry it more than twice`);
+    assert.ok(silenced.some(([, , changed]) => changed), 'the spec no longer states the count anywhere');
     try {
-      SCRATCH.write('Architecture.md', silent);
+      for (const [f, s, changed] of silenced) if (changed) SCRATCH.write(f, s);
       const r = docFacts();
       assert.equal(r.code, 1, 'check:docs stayed green when the 正本 stopped stating the number');
-      assert.match(r.out, /edge-count[^\n]*Architecture\.md no longer states/,
+      assert.match(r.out, /edge-count[^\n]*§6\.2 no longer states/,
         'the report must say the 正本 went silent, not merely that some count is wrong:\n' + r.out);
       /* ⚠ そして「### 6.2 Edge Functions」の `6.2` を数と読んではならない。読むと正本が
          「2本ある」と主張していることになり、上の錨ではなく別の理由で赤くなる。 */
       assert.doesNotMatch(r.out, /says «[^»]*2 Edge Functions»/,
         'the §6.2 section number is being read as a count — that is an address, not an inventory:\n' + r.out);
     } finally {
-      SCRATCH.write('Architecture.md', originalBytes);
+      for (const [f, bytes] of originals) SCRATCH.write(f, bytes);
     }
     assert.equal(docFacts().code, 0, 'the restore left the tree failing');
   }
@@ -253,6 +261,7 @@ test('R399 ④ the sweep reaches every current-state document, not a hand-writte
   const docs = [
     ...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md'),
     ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f),
+    ...chapters(ROOT),   /* the spec's chapters (architecture-split) — §6.2 lives in one */
   ];
   const holders = docs.filter((f) => claims(rd(f), SUBJECT).items.some((c) => CHECKED.includes(c.kind)));
   assert.ok(holders.length >= 5,
@@ -311,6 +320,7 @@ const ROSTER = sharedRoster(ROOT);
 const DOCS = [
   ...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md'),
   ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f),
+  ...chapters(ROOT),   /* the spec's chapters (architecture-split) */
 ];
 const rosterDocs = DOCS.filter((f) => inventories(rd(f)).some((i) => i.names.some((n) => ROSTER.includes(n))));
 

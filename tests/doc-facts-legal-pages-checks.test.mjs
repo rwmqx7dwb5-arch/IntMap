@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { scratchTree } from './helpers/scratch-tree.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
+import { readSpec, chapters, specFileFor } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -116,7 +117,9 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', (
       from: '[`MAP-LAYERS.md`](MAP-LAYERS.md)', to: '[`(removed)`](nothing.md)' },
   ];
 
-  for (const c of CASES) {
+  for (const c0 of CASES) {
+    /* «Architecture.md» names the spec (architecture-split): the sentence is in whichever chapter carries it */
+    const c = { ...c0, file: specFileFor(ROOT, c0.file, c0.re || anchorRe(c0.from)) };
     /* ⚠ (#R282 追記) MATCH ON CONTENT, RESTORE THE BYTES. Two of these needles contain a literal
        `\n`, and on a core.autocrlf=true checkout the file holds `\r\n` — so `includes` said no and
        this went red for a reason that has nothing to do with the facts it is guarding. #R283 fixed
@@ -139,7 +142,7 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', (
 
 /* ── ② the move lost nothing a reader could follow ───────────────────────────────────────── */
 test('R280 ③ the sections that moved kept their numbers, and the links resolve', () => {
-  const files = rd('docs/FILES.md'), layers = rd('docs/MAP-LAYERS.md'), arch = rd('Architecture.md');
+  const files = rd('docs/FILES.md'), layers = rd('docs/MAP-LAYERS.md'), arch = readSpec(ROOT);
   /* the ledger keeps §3.1…§3.13 so every `§3.x` citation elsewhere still lands */
   for (const n of ['3.1', '3.2', '3.3', '3.11', '3.12', '3.13']) {
     assert.ok(new RegExp('^#{2,3} ' + n.replace('.', '\\.') + '[ .]', 'm').test(files),
@@ -149,13 +152,14 @@ test('R280 ③ the sections that moved kept their numbers, and the links resolve
     assert.ok(new RegExp('^### ' + n.replace('.', '\\.') + ' ', 'm').test(layers),
       `docs/MAP-LAYERS.md lost §${n}`);
   }
-  /* …and Architecture still keeps the two contracts it did NOT move */
+  /* …and the spec (Architecture.md's chapters, architecture-split) still keeps the two contracts it did NOT move */
   for (const n of ['7.3', '7.4']) {
-    assert.ok(new RegExp('^### ' + n.replace('.', '\\.') + ' ', 'm').test(arch), `Architecture.md lost §${n}`);
+    assert.ok(new RegExp('^### ' + n.replace('.', '\\.') + ' ', 'm').test(arch), `the spec (Architecture.md + docs/architecture/) lost §${n}`);
   }
   /* every relative markdown link in the current-state documents points at a file that exists */
   const DOCS = [...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md'),
-                ...readdirSync(join(ROOT, 'docs')).map((f) => 'docs/' + f)];
+                ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f),
+                ...chapters(ROOT)];
   const missing = [];
   for (const d of DOCS) {
     const dir = d.includes('/') ? d.slice(0, d.lastIndexOf('/')) : '.';
@@ -184,7 +188,8 @@ test('R280 ④ the four merged documents are gone AND nothing still links to the
   /* no current-state document, workflow or SQL file still names a file that no longer exists */
   const SCAN = [
     ...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md'),
-    ...readdirSync(join(ROOT, 'docs')).map((f) => 'docs/' + f),
+    ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f),
+    ...chapters(ROOT),   /* the spec's chapters (architecture-split) */
     ...readdirSync(join(ROOT, '.github/workflows')).map((f) => '.github/workflows/' + f),
     'supabase/config.toml', 'supabase/tests/00_structure_test.sql',
   ];

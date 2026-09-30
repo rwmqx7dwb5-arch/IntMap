@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { npmTestRunsScript } from './helpers/ci-reach.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { readSpec, specFiles } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
@@ -173,16 +174,16 @@ test('#R274 ④ the gate runs as part of `npm test`', () => {
 
 /* ── ⑤ Architecture.md is a specification, not a changelog ───────────────────────────────── */
 test('#R274 ⑤ Architecture.md carries no round references', () => {
-  const md = read('Architecture.md');
+  /* (architecture-split) every file of the spec — the map and its chapters — with its own line numbers */
   const hits = [];
-  md.split('\n').forEach((l, i) => {
-    if (/(?:#R\d{1,3}|(?:^|[^A-Za-z0-9_/])R\d{1,3}(?![\d)A-Za-z]))/.test(l)) hits.push(i + 1 + ': ' + l.trim().slice(0, 70));
+  for (const f of specFiles(ROOT)) read(f).split('\n').forEach((l, i) => {
+    if (/(?:#R\d{1,3}|(?:^|[^A-Za-z0-9_/])R\d{1,3}(?![\d)A-Za-z]))/.test(l)) hits.push(f + ':' + (i + 1) + ': ' + l.trim().slice(0, 70));
   });
   assert.deepEqual(hits, [], 'the history is creeping back into the specification:\n' + hits.join('\n'));
 });
 
 test('#R274 ⑥ Architecture.md still has §1–§18, in order', () => {
-  const md = read('Architecture.md');
+  const md = readSpec(ROOT);   /* the map, then its chapters in order (architecture-split) */
   const nums = [...md.matchAll(/^## (\d+)\. /gm)].map((m) => Number(m[1]));
   assert.deepEqual(nums, Array.from({ length: 18 }, (_, i) => i + 1),
     'a top-level section was lost or reordered — this file is the map other documents point at');
@@ -190,7 +191,7 @@ test('#R274 ⑥ Architecture.md still has §1–§18, in order', () => {
 });
 
 test('#R274 ⑦ Architecture.md says what the reader most needs to be told correctly', () => {
-  const md = read('Architecture.md');
+  const md = readSpec(ROOT);
   /* the three facts whose staleness was actively dangerous: what is served, where the DB schema
      lives, and how many Edge Functions there are. Relations, not literals — the numbers are the
      gate's job (rule app-size / edge-functions), this is about the sentences existing at all. */
@@ -206,7 +207,7 @@ test('#R274 ⑧ each shared fact still has exactly one owner', () => {
   assert.match(read('docs/SECURITY-ARCHITECTURE.md'), /## 6\. Browser security/,
     'docs/SECURITY-ARCHITECTURE.md is the owner of the browser-security posture');
   /* Architecture.md points at those owners rather than restating them */
-  const md = read('Architecture.md');
+  const md = readSpec(ROOT);
   for (const owner of ['docs/RELEASE.md', 'docs/SECURITY-ARCHITECTURE.md', 'AGENTS.md']) {
     assert.ok(md.includes(owner), `Architecture.md no longer points at ${owner}`);
   }

@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { declaredEdgeFunctions, functionsImporting } from './helpers/edge-functions.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { readSpec, specFileFor } from '../scripts/architecture-spec.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -223,13 +224,13 @@ test('R403 ④ a legitimately PARTIAL list of functions is not read as the roste
        そして次のラウンドで緩められる。⚠ 文が消えたせいで緑、を排除するため存在も確かめる。
        ⚠ `assert.match` を巨大ファイルに使わない——落ちるとファイル全体が印字される
        （Architecture.md は 96 KB。#R390 で実測した形）。真偽と短い message で言う。 */
-    const arch = rd('Architecture.md');
+    const arch = readSpec(ROOT);   /* the whole spec: the map and its chapters (architecture-split) */
     /* (#R801) the NUMBER is the doc-facts rule's business (it re-counts the importers); this only
        needs the sentence to still exist in the shape the rule reads. */
     assert.ok(/を共有するのは\d+本\*\*（`[a-z-]+`/.test(arch),
-      'the relay-guard list is gone from Architecture.md — case ④ is no longer proven by the tree');
+      'the relay-guard list is gone from the spec (Architecture.md + docs/architecture/) — case ④ is no longer proven by the tree');
     assert.ok(/for f in refresh-news monitor-run/.test(arch),
-      'the split deploy loop is gone from Architecture.md — case ④ is no longer proven by the tree');
+      'the split deploy loop is gone from the spec (Architecture.md + docs/architecture/) — case ④ is no longer proven by the tree');
     assert.ok(/All [a-z-]+ are declared there now/.test(rd('docs/SECURITY-ARCHITECTURE.md')),
       'the "four most recently added" sentence is gone from docs/SECURITY-ARCHITECTURE.md — case ④ is no longer proven by the tree');
 
@@ -309,8 +310,10 @@ const NEW_RULES = [
 
 test('R403 ⑥ every rule this round added goes RED when its fact is made wrong', async () => {
   {
-    for (const c of NEW_RULES) {
-      const re = anchorRe(c.from);
+    for (const c0 of NEW_RULES) {
+      const re = anchorRe(c0.from);
+      /* «Architecture.md» names the spec (architecture-split): the sentence is in whichever chapter carries it */
+      const c = { ...c0, file: specFileFor(ROOT, c0.file, re) };
       assert.ok(re.test(readLF(join(ROOT, c.file))), `${c.file} no longer contains the anchor for «${c.why}»`);
       await breaking(c.file, (s) => s.replace(re, () => c.to), (r) => {
         assert.equal(r.code, 1, `check:docs stayed GREEN with ${c.file} broken — ${c.why}`);

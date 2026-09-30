@@ -117,7 +117,7 @@ PR を作ったら、その **PR 番号**が一意の識別子になる（squash
 
 | 触ったもの | 直す文書 |
 |---|---|
-| 実装を変えた | `Architecture.md`（**現状仕様**。ラウンド番号・PR 番号を書かない） |
+| 実装を変えた | 現状仕様の該当章 `docs/architecture/<NN>-<slug>.md`（`Architecture.md` の表で引く。ラウンド番号・PR 番号を書かない） |
 | `js/` にファイルを足した・消した | `docs/FILES.md` |
 | レイヤーの挙動 | `docs/MAP-LAYERS.md` |
 | 機能を足した・撤去した | `PRODUCT.md` |

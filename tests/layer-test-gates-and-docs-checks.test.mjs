@@ -21,6 +21,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { allSpecs, coreNames, fixedCoreNames, changedSpecs, tierSpecs, isDeep, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { codeOnly as noComments } from '../scripts/code-only.mjs';
+import { readSpec } from '../scripts/architecture-spec.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -120,7 +121,7 @@ test('R217 ⑦b: DEV-NOTES-ARCHIVE.md is everything older, oldest first', () => 
 });
 
 test('R217 ⑦c: Architecture.md is the CURRENT spec — no round appendices left in it', () => {
-  const md = rd('Architecture.md');
+  const md = readSpec(ROOT);   /* the spec: the map and its chapters (architecture-split) */
   assert.ok(!/^## 19\. ラウンド別補足/m.test(md), '§19 moved to the round records');
   assert.equal([...md.matchAll(/^### #R\d+ 補足/gm)].length, 0,
     'a per-round appendix in the spec is what "両者が混同されて混ざる" was');

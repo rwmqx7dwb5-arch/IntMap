@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { readSpec, specFiles } from '../scripts/architecture-spec.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -585,7 +586,7 @@ test('R292 ⑭: the file ledger and the architecture spec know about the platfor
     const base = f.replace('js/', '');
     assert.ok(files.includes(base), 'docs/FILES.md does not describe ' + f);
   }
-  const arch = read('Architecture.md');
+  const arch = readSpec(ROOT);   /* the spec: the map and its chapters (architecture-split) */
   assert.ok(/IntMapWidgetCore/.test(arch), 'Architecture.md does not mention the widget registry');
   assert.ok(/intmap_widgets4/.test(arch), 'Architecture.md does not name the storage key');
   /* ⚠ Architecture.md IS A CURRENT-STATE SPEC. `npm run check:docs` enforces "no round numbers"
@@ -697,7 +698,7 @@ test('R292 ⑲: there is one ticker for the board, and it stops when nothing nee
 /* ── ⑳ WE DO NOT CLAIM TO BE A NATIVE WIDGET ────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R292 ⑳: nothing calls these cards an iOS home-screen widget', () => {
-  const all = PLATFORM.concat(['css/intmap.css', 'PRODUCT.md', 'Architecture.md']);
+  const all = PLATFORM.concat(['css/intmap.css', 'PRODUCT.md', ...specFiles(ROOT)]);   /* the spec: the map and its chapters (architecture-split) */
   for (const f of all) {
     const src = read(f);
     /* the phrases that would be a claim about the operating system rather than about this page */

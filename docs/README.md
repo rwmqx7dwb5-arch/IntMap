@@ -36,7 +36,25 @@
 
 | 文書 | 対象読者 | 役割 | いつ更新するか |
 |---|---|---|---|
-| [`../Architecture.md`](../Architecture.md) | 実装する人 | **今どうなっているか** — 構造・データフロー・公開契約・不変条件（§1–§18） | 実装を変えたとき（**同じコミットで**） |
+| [`../Architecture.md`](../Architecture.md) | 実装する人 | **今どうなっているか**の**案内図** — 現状仕様（構造・データフロー・公開契約・不変条件、§1–§18）の「§ → ファイル」の表と各章の要約。**本文は下の `architecture/` の章にある**（他の文書の `Architecture.md §N.x` はこの表で引く） | 章を足す・分けるとき／章の主題が変わったとき |
+| [`architecture/01-overview.md`](architecture/01-overview.md) | 同上 | 現状仕様 **§1 概要 (Overview)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/02-features.md`](architecture/02-features.md) | 同上 | 現状仕様 **§2 主要機能一覧 (Features)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/03-files.md`](architecture/03-files.md) | 同上 | 現状仕様 **§3 ファイル構成 (Files)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/04-news.md`](architecture/04-news.md) | 同上 | 現状仕様 **§4 ニュース処理の流れ (News pipeline)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/05-ai.md`](architecture/05-ai.md) | 同上 | 現状仕様 **§5 AI APIの使い方と鍵管理 (AI usage & key policy)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/06-supabase.md`](architecture/06-supabase.md) | 同上 | 現状仕様 **§6 Supabase（テーブル・Edge Functions・環境変数）** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/07-map.md`](architecture/07-map.md) | 同上 | 現状仕様 **§7 地図・レイヤー・Globe・ウィジェットの構造** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/08-ui.md`](architecture/08-ui.md) | 同上 | 現状仕様 **§8 UI/UX の構造** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/09-mobile.md`](architecture/09-mobile.md) | 同上 | 現状仕様 **§9 モバイル対応の構造** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/10-i18n.md`](architecture/10-i18n.md) | 同上 | 現状仕様 **§10 多言語対応の構造** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/11-feedback-admin.md`](architecture/11-feedback-admin.md) | 同上 | 現状仕様 **§11 フィードバック・寄付・管理機能** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/12-fragile.md`](architecture/12-fragile.md) | 同上 | 現状仕様 **§12 壊れやすい部分・注意すべき部分** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/13-touch-guide.md`](architecture/13-touch-guide.md) | 同上 | 現状仕様 **§13 触ってよい部分 / 慎重に触るべき部分** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/14-restore.md`](architecture/14-restore.md) | 同上 | 現状仕様 **§14 新しい環境で IntMap を復元する手順** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/15-ops-quality.md`](architecture/15-ops-quality.md) | 同上 | 現状仕様 **§15 運用品質基盤 (CI・テスト・リリース・監視)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/16-data-protection.md`](architecture/16-data-protection.md) | 同上 | 現状仕様 **§16 データ保護基盤 (migrations・RLS/権限テスト・バックアップ・復元)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/17-security.md`](architecture/17-security.md) | 同上 | 現状仕様 **§17 セキュリティ基盤** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/18-area-monitors.md`](architecture/18-area-monitors.md) | 同上 | 現状仕様 **§18 地域監視基盤 (Area Monitors)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
 | [`FILES.md`](FILES.md) | 同上 | **ファイル台帳**（Architecture §3。節番号は同じ） | `js/` 等にファイルを足す・消す・改名したとき |
 | [`MAP-LAYERS.md`](MAP-LAYERS.md) | レイヤーを触る人 | **レイヤー実装の詳細**（Architecture §7.1・§7.2・§7.5–§7.10。節番号は同じ）——気象警報フィード・ラベル・地形と水・物理・ECMWF | 該当のレイヤーの挙動を変えたとき |
 | [`GIS-CORE.md`](GIS-CORE.md) | データを持ち込んで分析する人／その層を触る人 | **データセットと処理の基盤の正本** — データセットの契約（`id`・`fields[]` の型づけ規則・`crs`／`sourceCrs`・`provenance`）、処理の宣言と**出力が次の入力になる**規約、各処理が**何を拒み、なぜ拒むか**（コードの全一覧）、プロジェクト保存が**何を保存して何を保存しないか**、横断クエリ（`js/atlas-query.js`）がこの層を引く向き。⚠ 幾何計算の適用範囲と誤差（球面／平面のどちらで測るか）もここが正本 | データセットの契約・処理・拒否コード・保存の形を変えたとき |

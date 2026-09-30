@@ -34,6 +34,7 @@ import { claims, CHECKED, ENGLISH_CARDINALS } from './doc-claims.mjs';
 import { authoredLangs, carriedLangs } from './lang-policy.mjs';
 import { requireData } from './data-assets.mjs';
 import { namespaceFiles } from './atlas-caps.mjs';
+import { specFiles, chapters, guideRows, numberSpace, GUIDE, CHAPTER_DIR } from './architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
@@ -155,7 +156,46 @@ if (AGENT_DOCS.length < 3) fail('scan', `only ${AGENT_DOCS.length} instruction d
    see it at all — see the note on `sql-path` below. */
 ok('scan', `${PROSE_DOCS.length} prose + ${AGENT_DOCS.length} instruction documents reached`);
 
-const ARCH = BODY.get('Architecture.md') || '';
+/* ═══ 0b. the current-state spec: Architecture.md is the MAP, the chapters are docs/architecture/ ══
+ *  (architecture-split, 2026-10-01) The spec was one 741 KB file that 68 of the last 101 commits
+ *  touched. Its eighteen chapters now live one per file under docs/architecture/, discovered from
+ *  disk by scripts/architecture-spec.mjs, and Architecture.md holds the table «§N → file». Every rule
+ *  below that read "Architecture.md" reads ARCH, which is the WHOLE spec — the map and every chapter —
+ *  so a rule that measured a sentence in §10.1 still finds it. ⚠ A RULE THAT KEPT READING THE MAP ALONE
+ *  WOULD NOT FAIL, IT WOULD STOP LOOKING: the map holds no chapter text. So this rule proves the
+ *  chapters were reached and that the map and the chapters name each other, and prints the counts. */
+const SPEC_FILES = specFiles(ROOT);
+const SPEC = 'the spec (' + GUIDE + ' + ' + CHAPTER_DIR + '/)';
+const ARCH = SPEC_FILES.map((f) => BODY.get(f) || '').join('\n');
+/* the spec file that carries heading §sec — so a message names the file a reader has to open */
+const specAt = (sec) => {
+  const re = new RegExp('^#{2,6}[ \\t]+' + String(sec).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[ .\\t\\r]|$)', 'm');
+  const f = SPEC_FILES.find((x) => re.test(BODY.get(x) || ''));
+  return (f || GUIDE) + ' §' + sec;
+};
+{
+  const chs = chapters(ROOT);
+  const rows = guideRows(BODY.get(GUIDE) || '');
+  const numbered = (f) => [...(BODY.get(f) || '').matchAll(/^## (\d+)\. /gm)].map((m) => m[1]);
+  if (!chs.length) fail('arch-split', `${CHAPTER_DIR}/ holds no chapter — the spec has no body`);
+  for (const f of chs) {
+    if (!BODY.has(f)) fail('arch-split', `${f} is a chapter of the spec and the sweep did not read it`);
+    const h2 = numbered(f);
+    if (h2.length !== 1) fail('arch-split', `${f} carries ${h2.length} numbered chapter heading(s) (## N.) — a chapter file holds exactly one`);
+    else if (!rows.some((r) => r.sec === h2[0] && r.files[0] === f)) fail('arch-split', `${f} is §${h2[0]}, and ${GUIDE}'s table has no row «§${h2[0]} → ${f}» — a reader following the map never reaches it`);
+  }
+  for (const r of rows) {
+    if (!r.files.length) { fail('arch-split', `${GUIDE}:${r.line} maps §${r.sec} to no file`); continue; }
+    for (const f of r.files) if (!BODY.has(f)) fail('arch-split', `${GUIDE}:${r.line} maps §${r.sec} to ${f}, which the sweep did not read (does it exist?)`);
+    if (BODY.has(r.files[0]) && !numbered(r.files[0]).includes(r.sec)) fail('arch-split', `${GUIDE}:${r.line} maps §${r.sec} to ${r.files[0]}, which has no «## ${r.sec}.» heading`);
+  }
+  const dup = rows.map((r) => r.sec).filter((x, i, a) => a.indexOf(x) !== i);
+  if (dup.length) fail('arch-split', `${GUIDE}'s table maps §${dup.join(', §')} twice`);
+  if (numbered(GUIDE).length) fail('arch-split', `${GUIDE} carries a numbered chapter (## ${numbered(GUIDE)[0]}.) again — chapters live in ${CHAPTER_DIR}/, the map only points`);
+  if (!problems.some((p) => p.startsWith('arch-split'))) {
+    ok('arch-split', `${chs.length} chapter(s) under ${CHAPTER_DIR}/ read (${ARCH.split('\n').length} lines of spec in all), each one on ${GUIDE}'s table · ${rows.length} row(s), ${numberSpace(ROOT, (f) => BODY.get(f)).length} file(s) sharing the section numbers`);
+  }
+}
 /* (#R280) §3 (the file ledger) and most of §7 (the layer implementation) moved to documents of
    their own, keeping the same section numbers. The rules that measured those sections follow
    them — a rule left pointing at the old address does not fail, it just stops looking, which is
@@ -180,10 +220,10 @@ const FILES = BODY.get('docs/FILES.md') || '';
   const COUNT = /[（(]\s*\d[\d,.]*\s*(行|本|KB|MB)/;
   const shape = ARCH.match(/本体は\s*`index\.html`[^\n]*`css\/`[^\n]*`js\/`[^\n]*`src\/`[^\n]*/);
   const dup = ARCH.match(/`js\/` だけで\s*\d[\d,]*\s*本/);
-  if (!shape) fail('app-size', 'Architecture.md §1 no longer names what the app is made of (index.html + css/ + js/ + src/)');
-  else if (COUNT.test(shape[0])) fail('app-size', 'Architecture.md §1 states a file count or size again — those move with every change; this rule prints them (' + shape[0].slice(0, 80) + ')');
-  if (dup) fail('app-size', 'Architecture.md §3 states the js/ count again (' + dup[0] + ') — docs/FILES.md and check:archfiles own it');
-  if (shape && !COUNT.test(shape[0]) && !dup) ok('app-size', `index.html ${lines} lines · js/ ${jsCount} · src/ ${srcCount} · css/ ${cssCount} (measured; not restated in Architecture.md)`);
+  if (!shape) fail('app-size', specAt('1') + ' no longer names what the app is made of (index.html + css/ + js/ + src/)');
+  else if (COUNT.test(shape[0])) fail('app-size', specAt('1') + ' states a file count or size again — those move with every change; this rule prints them (' + shape[0].slice(0, 80) + ')');
+  if (dup) fail('app-size', specAt('3') + ' states the js/ count again (' + dup[0] + ') — docs/FILES.md and check:archfiles own it');
+  if (shape && !COUNT.test(shape[0]) && !dup) ok('app-size', `index.html ${lines} lines · js/ ${jsCount} · src/ ${srcCount} · css/ ${cssCount} (measured; not restated in ${SPEC})`);
 }
 
 /* ═══ 2. the Edge Functions: directory ⇄ config.toml ⇄ EVERY current-state document ═══════
@@ -240,10 +280,10 @@ const FILES = BODY.get('docs/FILES.md') || '';
   if (!reaches(BODY.get('AGENTS.md') || '')) {
     fail('edge-functions', `AGENTS.md neither names ${names(BODY.get('AGENTS.md') || '').join(', ')} nor points at a document that does`);
   }
-  for (const f of ['Architecture.md']) {
-    const body = BODY.get(f) || '';
-    const missing = names(body);
-    if (missing.length) fail('edge-functions', `${f} does not name ${missing.join(', ')}`);
+  /* the spec as a whole — §6.2 names them; which chapter does is the spec's business */
+  {
+    const missing = names(ARCH);
+    if (missing.length) fail('edge-functions', `${SPEC} does not name ${missing.join(', ')}`);
   }
   if (same(dir, declared)) ok('edge-functions', `${dir.length} functions, declared and documented: ${dir.join(', ')}`);
 
@@ -354,7 +394,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
   /* the 正本 must actually carry the number: a heading reworded out of the shape above would
      otherwise take the fact with it and nothing would notice (§6.2, per docs/README.md) */
   if (!claims(ARCH, SUBJECT).items.some((c) => CHECKED.includes(c.kind))) {
-    fail('edge-count', 'Architecture.md no longer states how many Edge Functions there are — §6.2 is the 正本 for that number');
+    fail('edge-count', specAt('6.2') + ' no longer states how many Edge Functions there are — §6.2 is the 正本 for that number');
   } else if (!wrong) {
     /* ⚠ THE CLASSES THAT WERE NOT CHECKED ARE PRINTED TOO. A rule that reports only what it
        agreed with cannot tell「nothing disagreed」from「nothing was looked at」, and 17 of the
@@ -411,7 +451,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
 /* ═══ 3. migrations ═══════════════════════════════════════════════════════════════════════ */
 {
   const n = readdirSync(join(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).length;
-  for (const [name, body] of [['Architecture.md', ARCH], ['docs/FILES.md', FILES]]) {
+  for (const [name, body] of [[SPEC, ARCH], ['docs/FILES.md', FILES]]) {
     const m = body.match(/migrations\/\*\.sql[^\n]*?（(\d+)\s*本/);
     if (m && Number(m[1]) !== n) fail('migrations', `${name} says ${m[1]} migrations; there are ${n}`);
   }
@@ -508,8 +548,8 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
   });
 
   if (!servedSwept) fail('serving', 'no document was swept for the "served from the repository" claims — the universe is empty');
-  if (!/dist\//.test(ARCH)) fail('serving', 'Architecture.md never mentions dist/, which is what GitHub Pages actually serves');
-  else if (servedSwept) ok('serving', `dist/ is gitignored, built by ${PUBLISHER.split('/').pop()}, and named in Architecture.md · ${servedSwept} documents swept for ${ROOT_SERVE.length + 1} "served from" claims`);
+  if (!/dist\//.test(ARCH)) fail('serving', SPEC + ' never mentions dist/, which is what GitHub Pages actually serves');
+  else if (servedSwept) ok('serving', `dist/ is gitignored, built by ${PUBLISHER.split('/').pop()}, and named in ${SPEC} · ${servedSwept} documents swept for ${ROOT_SERVE.length + 1} "served from" claims`);
 }
 
 /* ═══ 5. the production deploy is ACTIVE — no document may still call it dormant ═══════════ */
@@ -598,7 +638,7 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
      correctly」 came out of this rule as the same green line. §2 owns this number: if the sentence
      is gone, that is a failure, the way `edge-count` already demands it of Architecture.md §6.2. */
   const archN = (ARCH.match(/対応\s*UI\s*言語は\s*\**\s*(\d+)\s*つ/) || [])[1];
-  if (!archN) fail('languages', 'Architecture.md §2 no longer states how many UI languages there are — it is the 正本 for that number');
+  if (!archN) fail('languages', specAt('2') + ' no longer states how many UI languages there are — it is the 正本 for that number');
   else if (Number(archN) !== codes.length) fail('languages', `Architecture says ${archN} UI languages; js/locales/ holds ${codes.length}`);
 
   /* the README names them; count the bullets in its Languages section */
@@ -731,7 +771,7 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
   let shapeSwept = 0;
   eachDoc((f, s) => { shapeSwept++; for (const [needle, why] of SHAPE) if (s.includes(needle)) fail('app-shape', `${f}: ${why}`); });
   if (!shapeSwept) fail('app-shape', 'no document was swept for the no-build claims — the universe is empty');
-  if (!/Vite/.test(ARCH)) fail('app-shape', 'Architecture.md never mentions Vite, which is how the site is built');
+  if (!/Vite/.test(ARCH)) fail('app-shape', SPEC + ' never mentions Vite, which is how the site is built');
   else if (shapeSwept) ok('app-shape', `the documents describe a built app · ${shapeSwept} documents × ${SHAPE.length} no-build claims swept`);
 }
 
@@ -757,11 +797,15 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
   else if (!inIndex && inVendor) ok('anon-key', `the publishable key lives in src/vendor.js and admin.html · ${keyLines} line(s) naming the key across ${keyDocs} documents`);
 }
 
-/* ═══ 12. Architecture.md is the CURRENT spec — no round references in it ═════════════════ */
+/* ═══ 12. the spec is the CURRENT spec — no round references in it ═════════════════════════
+   (architecture-split) every file of the spec — the map and each chapter under docs/architecture/ —
+   with its own line numbers, and the number of files read is printed: a rule left reading the map
+   alone would read 60 lines and report them clean. */
 {
   const hits = [];
-  const archLines = ARCH.split('\n');
-  archLines.forEach((l, i) => {
+  let archLines = 0;
+  for (const f of SPEC_FILES) (BODY.get(f) || '').split('\n').forEach((l, i) => {
+    archLines++;
     /* a round citation, not a file name: `tests/r783-format-compat-checks.test.mjs` is lower-case and is a path.
        ⚠ ANY NUMBER OF DIGITS. This read `R\d{1,3}` followed by «not a digit», so `R1000` — the
        first four-digit round — matched nothing at all: `R100` is followed by `0`. The history-only
@@ -769,13 +813,13 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
        …and a PULL-REQUEST citation is the same kind of thing (history, with a number that names
        an event): «(#726)», «PR #726», «…/pull/726». */
     const m = l.match(/(?:#R\d+|(?:^|[^A-Za-z0-9_/])R\d+(?![\d)A-Za-z])|\(#\d+\)|\bPR\s*#\d+|\/pull\/\d+)/);
-    if (m) hits.push(`line ${i + 1}: ${l.trim().slice(0, 80)}`);
+    if (m) hits.push(`${f}:${i + 1}: ${l.trim().slice(0, 80)}`);
   });
-  if (hits.length) fail('arch-rounds', `Architecture.md carries ${hits.length} round or PR reference(s) — the history belongs in dev-notes/ (DEV-NOTES.md is its index)\n      ` + hits.slice(0, 5).join('\n      '));
+  if (hits.length) fail('arch-rounds', `${SPEC} carries ${hits.length} round or PR reference(s) — the history belongs in dev-notes/ (DEV-NOTES.md is its index)\n      ` + hits.slice(0, 5).join('\n      '));
   /* ⚠ zero hits IS the healthy state here, so the number that proves the sweep ran is the
      number of lines it read, not the number of findings. */
-  else if (!ARCH.trim()) fail('arch-rounds', 'Architecture.md is empty — this rule read nothing');
-  else ok('arch-rounds', `${archLines.length} lines of Architecture.md read, none carrying a round reference`);
+  else if (!ARCH.trim()) fail('arch-rounds', SPEC + ' is empty — this rule read nothing');
+  else ok('arch-rounds', `${archLines} lines across ${SPEC_FILES.length} file(s) of ${SPEC} read, none carrying a round reference`);
 }
 
 /* ═══ 13. Cesium is a SECOND ENGINE, not an abandoned one ═════════════════════════════════
@@ -796,7 +840,7 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
         if (GONE.some((g) => line.includes(g))) fail('cesium', f + ' calls Cesium abandoned while ' + files + ' js/cesium-*.js files ship and package.json depends on it: ' + line.trim().slice(0, 90));
       }
     });
-    if (!/第2エンジン|second engine/.test(ARCH)) fail('cesium', 'Architecture.md no longer describes Cesium as the selectable second engine');
+    if (!/第2エンジン|second engine/.test(ARCH)) fail('cesium', SPEC + ' no longer describes Cesium as the selectable second engine');
     if (!problems.some((x) => x.startsWith('cesium'))) ok('cesium', 'Cesium ships (' + files + ' files) and is described as a second engine');
   }
 }
@@ -813,10 +857,10 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
   const dispatchFiles = ['js/atlas-console.js', ...namespaceFiles(ROOT)];
   const withdrawn = dispatchFiles.some((f) => /FEATURE_WITHDRAWN/.test(rd(f)));
   if (noTab && withdrawn) {
-    const NAMED = ['Architecture.md', 'docs/AREA-MONITORS.md', 'PRODUCT.md'];
+    const NAMED = [SPEC, 'docs/AREA-MONITORS.md', 'PRODUCT.md'];
     let namedRead = 0, monitorDocs = 0, tabLines = 0;
     for (const f of NAMED) {
-      const body = BODY.get(f) || '';
+      const body = f === SPEC ? ARCH : BODY.get(f) || '';
       if (body) namedRead++;
       if (/Monitor/i.test(body) && !/撤去|WITHDRAWN|withdrawn/.test(body)) {
         fail('monitors', f + ' describes Area Monitors without saying the feature has no entry point');
@@ -996,9 +1040,9 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
          while the rule printed ok. The claim is 「N つの CDN …」 whatever it calls them, and a script-src
          that carries CDN sources must be described with a count, so an absent claim is a failure. */
       const archCount = (ARCH.match(/(\d+)\s*つの\s*CDN/) || [])[1];
-      if (cdns.length && !archCount) fail('csp', 'Architecture.md no longer states how many CDN sources script-src carries (「N つの CDN …」); index.html has ' + cdns.length);
+      if (cdns.length && !archCount) fail('csp', SPEC + ' no longer states how many CDN sources script-src carries (「N つの CDN …」); index.html has ' + cdns.length);
       if (archCount && Number(archCount) !== cdns.length) fail('csp', 'Architecture says ' + archCount + ' CDN sources in script-src; index.html has ' + cdns.length);
-      if (!/SECURITY-ARCHITECTURE\.md/.test(ARCH)) fail('csp', 'Architecture.md no longer points at the residual-risk register that tracks this');
+      if (!/SECURITY-ARCHITECTURE\.md/.test(ARCH)) fail('csp', SPEC + ' no longer points at the residual-risk register that tracks this');
     }
     if (!problems.some((x) => x.startsWith('csp'))) ok('csp', dirs + ' directives · script-src: ' + (evalOn ? "'unsafe-eval' + " : '') + cdns.length + ' CDN host(s), described as such');
   }
@@ -1024,9 +1068,9 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
     if (gone.length) fail('db-tables', 'supabase/tests/00_structure_test.sql list #' + (i + 1) + ' never names ' + gone.join(', ') + ' — ' + created.size + ' tables exist, it asserts ' + set.size);
   });
 
-  const RE = [['docs/DATABASE.md', /RLS is enabled on all \*\*(\d+)\*\*/], ['Architecture.md', /現在\s*\*\*(\d+)\s*表\*\*/]];
+  const RE = [['docs/DATABASE.md', /RLS is enabled on all \*\*(\d+)\*\*/], [SPEC, /現在\s*\*\*(\d+)\s*表\*\*/]];
   for (const [f, re] of RE) {
-    const mm = (BODY.get(f) || '').match(re);
+    const mm = (f === SPEC ? ARCH : BODY.get(f) || '').match(re);
     if (mm && Number(mm[1]) !== created.size) fail('db-tables', f + ' says ' + mm[1] + ' tables; the migrations create ' + created.size);
   }
   if (!problems.some((x) => x.startsWith('db-tables'))) ok('db-tables', created.size + ' tables, all of them asserted by the pgTAP structure test');
@@ -1133,7 +1177,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
   const sec = (ARCH.match(/### 10\.1[\s\S]*?(?=\n### )/) || [''])[0];
   let pairs = null;
   if (!sec) {
-    fail('i18n-open-gap', 'Architecture.md no longer has a §10.1 — this rule needs rewriting');
+    fail('i18n-open-gap', SPEC + ' no longer has a §10.1 — this rule needs rewriting');
   } else {
     try {
       pairs = JSON.parse(execFileSync(process.execPath, [join(ROOT, 'scripts/i18n-pair-audit.mjs'), '--json'],
@@ -1158,27 +1202,27 @@ if (RULE && RULE !== 'i18n-open-gap') {
       }))
       .filter((c) => c.files.length);
     if (!claims.length) {
-      fail('i18n-open-gap', 'Architecture.md §10.1 no longer states the OPEN GAP as «N件（`file` N …）» — the rule that checks that number can no longer find it');
+      fail('i18n-open-gap', specAt('10.1') + ' no longer states the OPEN GAP as «N件（`file` N …）» — the rule that checks that number can no longer find it');
     }
     for (const c of claims) {
-      if (c.total !== pairs.total) fail('i18n-open-gap', `Architecture.md §10.1 says the OPEN GAP is ${c.total}; scripts/i18n-pair-audit.mjs measures ${pairs.total} («${c.text}…»)`);
+      if (c.total !== pairs.total) fail('i18n-open-gap', `${specAt('10.1')} says the OPEN GAP is ${c.total}; scripts/i18n-pair-audit.mjs measures ${pairs.total} («${c.text}…»)`);
       for (const [f, n] of c.files) {
-        if (!measured.has(f)) fail('i18n-open-gap', `Architecture.md §10.1 says ${f} holds ${n} adjacent-data tuple(s); the audit finds none there («${c.text}…»)`);
-        else if (measured.get(f) !== n) fail('i18n-open-gap', `Architecture.md §10.1 says ${f} holds ${n}; the audit measures ${measured.get(f)} («${c.text}…»)`);
+        if (!measured.has(f)) fail('i18n-open-gap', `${specAt('10.1')} says ${f} holds ${n} adjacent-data tuple(s); the audit finds none there («${c.text}…»)`);
+        else if (measured.get(f) !== n) fail('i18n-open-gap', `${specAt('10.1')} says ${f} holds ${n}; the audit measures ${measured.get(f)} («${c.text}…»)`);
       }
       /* …and the other direction: a file the gap is in and the section does not name */
       for (const [f, n] of measured) {
-        if (!c.files.some(([g]) => g === f)) fail('i18n-open-gap', `${f} holds ${n} adjacent-data tuple(s) and Architecture.md §10.1 does not name it («${c.text}…»)`);
+        if (!c.files.some(([g]) => g === f)) fail('i18n-open-gap', `${f} holds ${n} adjacent-data tuple(s) and ${specAt('10.1')} does not name it («${c.text}…»)`);
       }
     }
     /* the exemption is stated in the same section, measured by the same instrument, and had drifted
        with it — an exemption whose size nobody checks is the one place this family of instruments
        can be defeated quietly */
     const ex = sec.match(/\*\*免除\*\*[^\n]{0,160}?(\d[\d,]*)\s*件/);
-    if (!ex) fail('i18n-open-gap', 'Architecture.md §10.1 no longer states how many containers are exempt');
-    else if (Number(ex[1].replace(/,/g, '')) !== pairs.exempt) fail('i18n-open-gap', `Architecture.md §10.1 says ${ex[1]} exempt container(s); the audit measures ${pairs.exempt}`);
+    if (!ex) fail('i18n-open-gap', specAt('10.1') + ' no longer states how many containers are exempt');
+    else if (Number(ex[1].replace(/,/g, '')) !== pairs.exempt) fail('i18n-open-gap', `${specAt('10.1')} says ${ex[1]} exempt container(s); the audit measures ${pairs.exempt}`);
     if (!problems.some((p) => p.startsWith('i18n-open-gap'))) {
-      ok('i18n-open-gap', `${pairs.total} adjacent-data tuple(s) in ${measured.size} file(s) + ${pairs.exempt} exempt, stated correctly in Architecture.md §10.1`);
+      ok('i18n-open-gap', `${pairs.total} adjacent-data tuple(s) in ${measured.size} file(s) + ${pairs.exempt} exempt, stated correctly in ${specAt('10.1')}`);
     }
   }
 }
@@ -1623,7 +1667,7 @@ const localSteps = (() => {
       for (const m of s.matchAll(/([\d,]{3,7})\s*の訳語/g)) if (num(m[1]) !== strings) fail('histnames', `${f} says ${m[1]} の訳語; data/histnames.json holds ${strings}`);
       for (const m of s.matchAll(/([\d,]{2,5})\s*の説明文/g)) if (num(m[1]) !== prose) fail('histnames', `${f} says ${m[1]} の説明文; data/histnames.json holds ${prose}`);
     });
-    if (!/histnames\.json/.test(BODY.get('Architecture.md') || '')) fail('histnames', 'Architecture.md no longer says where the historical polity names come from');
+    if (!/histnames\.json/.test(ARCH)) fail('histnames', SPEC + ' no longer says where the historical polity names come from');
     /* ⚠ THE SUPERSEDED FILE MUST NOT COME BACK. Two tables answering for one era name is the state
        AGENTS.md §9 forbids, and the cost is #R536's: `tagSame` reads one first and the other stops
        being reachable without anything going red. */
@@ -1673,7 +1717,7 @@ const localSteps = (() => {
       for (const m of s.matchAll(/([0-9][0-9,，]{2,8})\s*都市/g)) if (N(m[1]) !== cities) fail("hist-cities", `${f} says ${m[1]} 都市; data/hist-cities.json holds ${cities}`);
       for (const m of s.matchAll(/([0-9][0-9,，]{2,8})\s*の歴史名/g)) if (N(m[1]) !== names) fail("hist-cities", `${f} says ${m[1]} の歴史名; data/hist-cities.json holds ${names}`);
     });
-    if (!/都市/.test(BODY.get('Architecture.md') || '')) fail('hist-cities', 'Architecture.md no longer states how large the historical-city record is');
+    if (!/都市/.test(ARCH)) fail('hist-cities', SPEC + ' no longer states how large the historical-city record is');
     if (!problems.some((x) => x.startsWith('hist-cities'))) ok('hist-cities', `${cities} cities / ${names} historical names, stated correctly`);
   }
 }
@@ -1940,7 +1984,7 @@ const localSteps = (() => {
 
     /* the 正本 must actually carry it: a reworded §5 would take the fact with it in silence */
     if (!CLAIMS.some((c) => new RegExp(c.src).test(ARCH))) {
-      fail('capability-count', 'Architecture.md no longer states how large the capability registry is — §5 is the 正本 for that number');
+      fail('capability-count', SPEC + ' no longer states how large the capability registry is — §5 is the 正本 for that number');
     } else if (!problems.some((p) => p.startsWith('capability-count'))) {
       ok('capability-count', `${seen} stated size(s) across the documents — registry ${total}, reachable ${live} (${gone} withdrawn)`);
     }
@@ -1979,9 +2023,9 @@ const localSteps = (() => {
 
     const stated = ARCH.match(/\*\*(\d+)\s*本すべての system prompt/);
     if (!stated) {
-      fail('prompt-count', 'Architecture.md §7 no longer states how many system prompts there are');
+      fail('prompt-count', SPEC + ' no longer states how many system prompts there are');
     } else if (Number(stated[1]) !== total) {
-      fail('prompt-count', `Architecture.md says «${stated[1]} 本すべての system prompt» — EXPECTED_CALLS sums to ${total}`);
+      fail('prompt-count', `${SPEC} says «${stated[1]} 本すべての system prompt» — EXPECTED_CALLS sums to ${total}`);
     }
 
     /* the breakdown that follows the count: every row present, with its own number */
@@ -1989,14 +2033,14 @@ const localSteps = (() => {
     const near = head < 0 ? '' : ARCH.slice(head, head + 700);
     const listed = new Map([...near.matchAll(/`([a-z0-9-]+)`\s*(\d+)/g)].map((m) => [m[1], Number(m[2])]));
     for (const r of rows) {
-      if (!listed.has(r.base)) fail('prompt-count', `Architecture.md's breakdown omits \`${r.base}\` (${r.n})`);
-      else if (listed.get(r.base) !== r.n) fail('prompt-count', `Architecture.md says \`${r.base}\` ${listed.get(r.base)}; EXPECTED_CALLS says ${r.n}`);
+      if (!listed.has(r.base)) fail('prompt-count', `${SPEC}'s breakdown omits \`${r.base}\` (${r.n})`);
+      else if (listed.get(r.base) !== r.n) fail('prompt-count', `${SPEC} says \`${r.base}\` ${listed.get(r.base)}; EXPECTED_CALLS says ${r.n}`);
     }
     for (const [name] of listed) {
-      if (!rows.some((r) => r.base === name)) fail('prompt-count', `Architecture.md's breakdown names \`${name}\`, which EXPECTED_CALLS does not`);
+      if (!rows.some((r) => r.base === name)) fail('prompt-count', `${SPEC}'s breakdown names \`${name}\`, which EXPECTED_CALLS does not`);
     }
     if (!problems.some((p) => p.startsWith('prompt-count'))) {
-      ok('prompt-count', `${total} prompts across ${rows.length} files, and Architecture.md's breakdown matches EXPECTED_CALLS row for row`);
+      ok('prompt-count', `${total} prompts across ${rows.length} files, and ${SPEC}'s breakdown matches EXPECTED_CALLS row for row`);
     }
   }
 }
@@ -2276,7 +2320,7 @@ const localSteps = (() => {
     const archUnits = [...ARCH.split(/\r?\n/), ...ARCH.split(SENTENCE)].filter((u) => NAMES.test(u)).join('\n');
     for (const [, what, res] of CLAIM) {
       if (!res.some((re) => { re.lastIndex = 0; return re.test(archUnits); }))
-        fail('histb-count', 'Architecture.md no longer states how many ' + what + ' the day-exact border record holds — it is the 正本 for that number');
+        fail('histb-count', SPEC + ' no longer states how many ' + what + ' the day-exact border record holds — it is the 正本 for that number');
     }
     if (!problems.some((x) => x.startsWith('histb-count')))
       ok('histb-count', checked + ' stated number(s) across ' + carriers.size + ' carrier(s) + ' + langChecked
@@ -2701,15 +2745,20 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
  *  ⚠ ONLY REFERENCES THAT NAME THEIR DOCUMENT ARE CHECKED. 「指示書 §22.2」 is a document
  *    outside this repository and 「§6」 on its own is a self-reference whose meaning depends on
  *    the sentence. Both are left alone: this rule is about the addresses that ARE resolvable.
- *  ⚠ THREE DOCUMENTS SHARE ONE NUMBER SPACE — Architecture.md, docs/FILES.md and
- *    docs/MAP-LAYERS.md, declared as such in CONSTITUTION.md §6, so `docs/FILES.md §15.5` is a
- *    real address even though the heading lives in Architecture.md. They resolve as one pool.
+ *  ⚠ THE SPEC'S FILES SHARE ONE NUMBER SPACE — Architecture.md (the map), every chapter it maps under
+ *    docs/architecture/, docs/FILES.md and docs/MAP-LAYERS.md, declared by the map's table and in
+ *    CONSTITUTION.md §6, so «Architecture.md §7.4» is a real address even though the heading lives in
+ *    docs/architecture/07-map.md. They resolve as one pool.
  *  ⚠ AND 「§3.5」 IS SOMETIMES ITEM 5 OF SECTION 3 rather than a heading — AGENTS.md §3 is a
  *    numbered list, and three documents address its items that way. That form is accepted only
  *    when the numbered list under §X actually has a Y-th item, which is the half that can rot:
  *    the round that inserts an item renumbers every reference to the ones below it. */
 {
-  const SHARED = ['Architecture.md', 'docs/FILES.md', 'docs/MAP-LAYERS.md'];
+  /* (architecture-split) the files that share one number space are the ones the map's table names —
+     the chapters under docs/architecture/, docs/FILES.md and docs/MAP-LAYERS.md — derived, not listed,
+     so a chapter added to the table is an address the moment it is added. */
+  const SHARED = numberSpace(ROOT, (f) => BODY.get(f));
+  if (SHARED.length < 3) fail('section-refs', `${GUIDE}'s table names ${SHARED.length - 1} file(s) — the shared section-number space cannot be read from it`);
   const byBase = new Map();                                   /* README.md → docs/README.md, … */
   for (const f of DOCS) byBase.set(f.split('/').pop(), f);
   /* the numbered headings of one document: `## 1.` `### 7.1` `## 3.13` `## A-1` `## 11.2` */
@@ -2755,7 +2804,7 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
     }
   });
   if (checked < 20) fail('section-refs', `only ${checked} cross-document section references were resolved — the sweep is not reaching them`);
-  else if (!problems.some((p) => p.startsWith('section-refs'))) ok('section-refs', `${checked} cross-document §-references, all resolving to a section that exists`);
+  else if (!problems.some((p) => p.startsWith('section-refs'))) ok('section-refs', `${checked} cross-document §-references, all resolving to a section that exists (${SHARED.length} file(s) share the spec's numbers)`);
 }
 
 /* ═══ 33. every gate the repository declares has something that runs it ════════════════════

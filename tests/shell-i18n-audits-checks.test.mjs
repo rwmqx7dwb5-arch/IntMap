@@ -30,6 +30,7 @@ import { context, parseAll, shapeOf } from '../scripts/i18n-helpers.mjs';
 import { build } from '../scripts/zh-hans.mjs';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { readSpec } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -91,7 +92,7 @@ const R = read;
    production for a third time (js/map-readout.js was the first). */
 /* spelling kept: the source text is the subject (what a file carries, or that a copy is absent). */
 test('R467 ③ the lazy-wrapper blind spot is written down where the instruments are described', () => {
-  const arch = R('Architecture.md');
+  const arch = readSpec(ROOT);   /* the spec: the map and its chapters (architecture-split) */
   assert.match(arch, /map-readout/, '§10.1 still names the first instance');
   assert.match(arch, /_authL/, '…and now names js/auth-ui.js as the second');
 });

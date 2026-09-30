@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { load as loadYaml } from 'js-yaml';
+import { specFiles } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -218,7 +219,7 @@ test('#R507 ⑨⑩ existing profiles are backfilled and PostgREST is told the sh
 test('#R507 ⑪ the current-state documents no longer call profiles_public a view', () => {
   /* Only documents that describe TODAY. DEV-NOTES / DEV-NOTES-ARCHIVE are history: they were
      right when they were written and must not be rewritten (AGENTS.md §9). */
-  const CURRENT = ['Architecture.md', 'PRODUCT.md', 'README.md', 'docs/DATABASE.md',
+  const CURRENT = [...specFiles(ROOT), 'PRODUCT.md', 'README.md', 'docs/DATABASE.md',
     'docs/SECURITY-ARCHITECTURE.md', 'docs/TESTING.md', 'js/community-board.js'];
   for (const f of CURRENT) {
     if (!existsSync(join(ROOT, f))) continue;

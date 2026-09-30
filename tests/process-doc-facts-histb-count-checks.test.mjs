@@ -20,6 +20,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { specFileFor } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
@@ -94,6 +95,8 @@ const only = () => docFacts('--rule=histb-count');
 
 /** 壊す → 回す → **必ず**元のバイト列に戻す */
 function withBroken(edits, fn) {
+  /* «Architecture.md» names the spec — the sentence is in whichever chapter carries it now */
+  edits = edits.map((e) => ({ ...e, file: specFileFor(ROOT, e.file, anchorRe(e.from)) }));
   const saved = edits.map((e) => [e.file, rd(e.file)]);
   try {
     for (const e of edits) {

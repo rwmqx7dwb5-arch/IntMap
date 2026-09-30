@@ -1321,6 +1321,8 @@ supabase/
                                   ⚠ news-cluster.js は**サーバー専用**——クライアントの
                                   バンドルに入れない（docs/NEWS-EVENTS.md §5）
 docs/
+  architecture/<NN>-<slug>.md     現状仕様書の章（1 章 1 ファイル・節番号は Architecture.md と同じ）。
+                                  「§ → ファイル」の表は Architecture.md（案内図）が持つ
   TESTING.md                      テストの分類と走らせ方
   RELEASE.md                      リリース手順（**配信方法の正本**）
   MONITORING.md                   監視と、鳴ったときに見る場所
@@ -1337,6 +1339,9 @@ scripts/
                                   理由の文つきで UNPINNABLE に宣言されているか。CSP script-src の各ホストは
                                   使われているか CSP_ONLY に宣言されているか（acorn・両方向の照合。check:static が呼ぶ）
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
+  architecture-spec.mjs           現状仕様書の**在り処の唯一の実装**——章を docs/architecture/ から発見し、
+                                  案内図の表から節番号を共有するファイルを導く（doc-facts の `arch-split`・
+                                  `section-refs` と、仕様の文面を読むテストが同じ関数を使う）
   ledger-claims.mjs               この台帳の木が述べる本数・実在・「全件」の名簿を実体に訊く純関数（doc-facts の `ledger` 規則）
   atlas-catalog.mjs               **Atlas の操作カタログのゲート**（`PRODUCT.md` §3.4・ディスパッチャ ⇄ SYS）
   arch-files-check.mjs            §3 と js/ の突き合わせ。**どの段が js/ の話かは §3.x の見出しに訊く**
