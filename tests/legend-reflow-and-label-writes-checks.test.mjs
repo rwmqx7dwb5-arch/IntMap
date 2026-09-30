@@ -167,17 +167,22 @@ test('② no `ofm` sourcedata subscriber in js/ re-asserts on every tile — eac
 
 /* ── ③ the legend observer and the reader's own button ─────────────────────────────────────── */
 const DL = codeOnly(rd('js/data-layers.js'));
-const DECL = DL.match(/let _legRO=null; const _legWatched=new WeakSet\(\);/);
+const DECL = DL.match(/let _legRO=null; const _legWatched=new WeakSet\(\); const _legSize=new WeakMap\(\);/);
+/* (legend-layout-frame) the observer's ask is the same `tileLegends()` request every other site makes,
+   so the request and its frame are lifted with it; `placeLegends` (the pass) is what the rig counts */
+const QDECL = DL.match(/let _legQueued=false;/);
+const WATCH = () => DECL[0] + '\n' + QDECL[0] + '\n' + ['watchLegendSize', '_legRun', 'tileLegends'].map((n) => liftFunction(DL, n)).join('\n');
 test('③ a legend that changes size asks for one re-placement on the next frame, and is watched once', () => {
   assert.ok(DECL, 'the observer state is not declared beside watchLegendSize');
+  assert.ok(QDECL, 'the request flag is not declared beside tileLegends');
   const observed = []; let cb = null;
   class RO { constructor(f) { cb = f; } observe(el) { observed.push(el); } }
   const frames = new Map();
   const window = { IntMapRuntime: { frame: (k, fn) => frames.set(k, fn) } };
   let tiled = 0;
   /* eslint-disable no-new-func */
-  const make = new Function('window', 'ResizeObserver', 'tileLegends', 'requestAnimationFrame',
-    DECL[0] + '\n' + liftFunction(DL, 'watchLegendSize') + '\nreturn watchLegendSize;');
+  const make = new Function('window', 'ResizeObserver', 'placeLegends', 'requestAnimationFrame',
+    WATCH() + '\nreturn watchLegendSize;');
   const watch = make(window, RO, () => { tiled++; }, () => assert.fail('the frame register was bypassed'));
   const a = { id: 'a' }, b = { id: 'b' };
   for (let i = 0; i < 31; i++) { watch(a); watch(b); watch(null); }   /* the tiler's thirty-one call sites */
@@ -190,8 +195,8 @@ test('③ a legend that changes size asks for one re-placement on the next frame
 });
 
 test('③ no ResizeObserver (a test DOM, an old engine) is not an error', () => {
-  const make = new Function('window', 'ResizeObserver', 'tileLegends', 'requestAnimationFrame',
-    DECL[0] + '\n' + liftFunction(DL, 'watchLegendSize') + '\nreturn watchLegendSize;');
+  const make = new Function('window', 'ResizeObserver', 'placeLegends', 'requestAnimationFrame',
+    WATCH() + '\nreturn watchLegendSize;');
   const watch = make({}, undefined, () => {}, () => {});
   assert.doesNotThrow(() => watch({ id: 'a' }));
 });

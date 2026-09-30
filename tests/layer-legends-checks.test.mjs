@@ -194,10 +194,10 @@ test('#R708 delayed legend hints keep one subscription and use the current rebui
  *      data-legend-ec-temp  x=424  y= 172  w=199  h=303
  *      data-legend-wind     x=424  y= 485  w=199  h=252
  *
- *  積み上げは 1,028 px、ビューポートは 900 px。`tileLegends()` の 3 つの枝はどれも
+ *  積み上げは 1,028 px、ビューポートは 900 px。`placeLegends()`（旧 `tileLegends()`）の 3 つの枝はどれも
  *  `bottom += h + gap` と数えるだけで、容器の高さに対する上限を持っていなかった。
  *
- *  ⚠ 読解ではなく評価 (#R505)。ここは出荷される `js/data-layers.js` から `tileLegends` の
+ *  ⚠ 読解ではなく評価 (#R505)。ここは出荷される `js/data-layers.js` から `placeLegends` の
  *  本体を `liftFunction` で切り出し、偽の DOM に対して**実際に実行**して、書かれた
  *  `style.bottom` / `top` / `left` / `maxHeight` を測る。綴りを grep する検査は、
  *  「クランプは書いてある」（`data-grow-down` の枝にはあった）を根拠に緑になってしまう。
@@ -205,11 +205,14 @@ test('#R708 delayed legend hints keep one subscription and use the current rebui
  *  ⚠ 主張は「凡例は容器の中にある」という**事実**に対して測る。id にも枝にも紐づけない。
  * ==========================================================================*/
 const SRC = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
-/* ⚠ with legendShown: the ONE answer to «is this legend on screen», which tileLegends and
-   _minimizeOpenLegends both read (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③) */
-const BODY = liftFunction(SRC, 'legendShown') + '\n' + liftFunction(SRC, 'tileLegends');
+/* ⚠ with legendShown: the ONE answer to «is this legend on screen», which the placer and
+   _minimizeOpenLegends both read (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③).
+   ⚠ (legend-layout-frame) `tileLegends()` now only ASKS for a placement on the next frame; the pass
+   that places is `placeLegends`, and what a legend is comes from `discoverLegends` — both lifted,
+   so the arithmetic below is still the shipped arithmetic, evaluated at once. */
+const BODY = ['legendShown', 'discoverLegends', 'placeLegends'].map((n) => liftFunction(SRC, n)).join('\n');
 
-/* the identifiers tileLegends closes over in js/data-layers.js §legends. The seventeen `lgd*`
+/* the identifiers the placer closes over in js/data-layers.js §legends. The seventeen `lgd*`
    boxes are legends like any other, so the fixture hands them in as ordinary elements. */
 const LGD = ['lgdHDI', 'lgdDem', 'lgdPop', 'lgdEEZ', 'lgdThermal', 'lgdRadar', 'lgdSST', 'lgdPopGrid',
   'lgdRelief', 'lgdSeaLevel', 'lgdGdppc', 'lgdTfr', 'lgdMil', 'lgdMilGDP', 'lgdSnow', 'lgdAod', 'lgdNightsat'];
@@ -239,11 +242,10 @@ function run({ legends, mcH = 900, mcW = 1440, mobile = false, ws = false, calls
   const container = { getBoundingClientRect: () => ({ height: mcH, width: mcW }) };
   const document = {
     getElementById: (id) => (id === 'map-container' ? container : byId.get(id) || null),
-    querySelectorAll: (sel) => {
-      if (sel === '[id^="data-legend-ec-"]') return legends.filter((el) => el.id.startsWith('data-legend-ec-'));
-      if (sel === '.data-legend.generic-legend') return legends.filter((el) => el.generic);
-      return [];
-    },
+    /* the page's live class collections: every box here is a `.data-legend` (the placer matches the
+       ECMWF ones by id prefix inside it), and the generic ones also carry `generic-legend` */
+    getElementsByClassName: (c) => (c === 'data-legend' ? legends
+      : c === 'data-legend generic-legend' ? legends.filter((el) => el.generic) : []),
     querySelector: () => null,
     body: { classList: { contains: (c) => (c === 'ws-mode' ? ws : false) } },
   };
@@ -253,7 +255,7 @@ function run({ legends, mcH = 900, mcW = 1440, mobile = false, ws = false, calls
   };
   const args = ['document', 'window', 'getComputedStyle', ...LGD, ...HELPERS];
   /* eslint-disable no-new-func */
-  const make = new Function(...args, BODY + '\nreturn tileLegends;');
+  const make = new Function(...args, BODY + '\nreturn placeLegends;');
   const fn = make(document, window, () => ({ display: 'block' }),
     ...LGD.map(() => null), ...HELPERS.map(() => () => {}));
   for (let i = 0; i < calls; i++) fn();
@@ -487,7 +489,7 @@ const STUBS = ['ensureLegendOpacity', 'ensureContourSwitch', 'ensureContourDensi
 const DL_DECL = DL.replace('window._minimizeOpenLegends=function(', 'function minimizeOpenLegends(');
 /* ⚠ `legendShown` is lifted with them: it is the ONE answer to «is this legend on screen» that the
    tiler and _minimizeOpenLegends both read (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③). */
-const DL_BODY = ['legendShown', 'toggleLegendMin', 'ensureLegendMinimize', 'tileLegends'].map((n) => liftFunction(DL, n))
+const DL_BODY = ['legendShown', 'toggleLegendMin', 'ensureLegendMinimize', 'discoverLegends', 'placeLegends'].map((n) => liftFunction(DL, n))
   .concat([liftFunction(DL_DECL, 'minimizeOpenLegends')]).join('\n');
 
 /* ── the fixture DOM ─────────────────────────────────────────────────────────────────────
@@ -524,11 +526,8 @@ function legendRun({ legends, mcH = 923, mcW = 1112, mobile = false, ws = false 
   const container = { getBoundingClientRect: () => ({ height: mcH, width: mcW }) };
   const document = {
     getElementById: (id) => (id === 'map-container' ? container : byId.get(id) || null),
-    querySelectorAll: (sel) => {
-      if (sel === '[id^="data-legend-ec-"]') return legends.filter((el) => el.ec);
-      if (sel === '.data-legend.generic-legend') return legends.filter((el) => el.generic);
-      return [];
-    },
+    getElementsByClassName: (c) => (c === 'data-legend' ? legends.filter((el) => el.ec || el.generic)
+      : c === 'data-legend generic-legend' ? legends.filter((el) => el.generic) : []),
     querySelector: () => null,
     createElement: () => {
       const e = { tagName: 'BUTTON', className: '', style: {}, textContent: '', title: '' };
@@ -542,12 +541,16 @@ function legendRun({ legends, mcH = 923, mcW = 1112, mobile = false, ws = false 
     matchMedia: (q) => ({ matches: q === '(max-width:768px)' ? mobile : false }),
     IntMapLang: { t: (...a) => a[1] },
   };
-  const args = ['document', 'window', 'getComputedStyle', 'HOST', ...LGD, ...STUBS];
+  /* `tileLegends` is the request (the next frame's placement); the fold asks for one and the rig
+     counts the asks — the placement itself is `placeLegends`, called here at once */
+  const asked = { n: 0 };
+  const args = ['document', 'window', 'getComputedStyle', 'HOST', 'tileLegends', ...LGD, ...STUBS];
   /* eslint-disable no-new-func */
-  const make = new Function(...args, DL_BODY + '\nreturn { tileLegends, minimizeOpenLegends };');
-  const api = make(document, window, () => ({ display: 'block' }), { lang: 'en' },
+  const make = new Function(...args, DL_BODY + '\nreturn { placeLegends, minimizeOpenLegends };');
+  const api = make(document, window, () => ({ display: 'block' }), { lang: 'en' }, () => { asked.n++; },
     ...LGD.map((n) => legends.find((el) => el.lgd === n) || null), ...STUBS.map(() => () => {}));
-  api.tileLegends();
+  api.asked = asked;
+  api.placeLegends();
   return { api, mcH, mcW };
 }
 
@@ -572,7 +575,7 @@ test('#R742 ③ 容器に入りきらない凡例は畳まれる — 残るも�
   const legends = PROD_LEGENDS();
   const { mcH, mcW } = legendRun({ legends });
   const DOCK_START = 140, GAP = 10;                    /* the desktop dock's own origin and spacing */
-  const room = mcH - DOCK_START - 8;                   /* one column, as tileLegends measures it */
+  const room = mcH - DOCK_START - 8;                   /* one column, as placeLegends measures it */
 
   const open = legends.filter((el) => !el.folded);
   const shut = legends.filter((el) => el.folded);
@@ -609,7 +612,7 @@ test('#R742 ③ 容器に入りきらない凡例は畳まれる — 残るも�
   assert.ok(!reopened.folded, `${reopened.id}: the reader re-opened it and the tiler shut it again`);
 });
 
-test('#R742 ④ _minimizeOpenLegends の母集合は tileLegends の母集合と同じ集合（片方にしか無い綴りが 0 件）', () => {
+test('#R742 ④ _minimizeOpenLegends の母集合は placeLegends の母集合と同じ集合（片方にしか無い綴りが 0 件）', () => {
   const legends = [
     makeLegend({ id: 'koppen-legend', h: 120 }),
     makeLegend({ id: 'data-legend-nightsat', h: 130, lgd: 'lgdNightsat' }),
@@ -621,12 +624,15 @@ test('#R742 ④ _minimizeOpenLegends の母集合は tileLegends の母集合と
   const { api } = legendRun({ legends });
 
   /* what the tiler discovers — asked of the shipped function, never re-listed here */
-  const discovered = new Set((api.tileLegends() || []).filter(Boolean).map((el) => el.id));
+  const discovered = new Set((api.placeLegends() || []).filter(Boolean).map((el) => el.id));
   assert.ok(discovered.size >= legends.length, `the tiler saw ${discovered.size} of ${legends.length}`);
 
   legends.forEach((el) => { el.classList.remove('legend-collapsed'); el.children[1].style.display = ''; });
+  const before = api.asked.n;
   api.minimizeOpenLegends();
   const collapsed = new Set(legends.filter((el) => el.folded).map((el) => el.id));
+  /* the collapse changed every height the stack was placed from, so it asks for a placement */
+  assert.equal(api.asked.n - before, 1, 'a collapse that changed heights did not ask for the stack to be re-placed');
 
   /* the docked one is deliberately exempt (#R240): it is not over the map. Everything else the
      tiler can see is something this function can see. */
@@ -720,7 +726,7 @@ function balanced(src, i, open, close) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
-   ⑨ js/data-layers.js tileLegends() — every height read before the first position written
+   ⑨ js/data-layers.js placeLegends() — every height read before the first position written
    ══════════════════════════════════════════════════════════════════════════════════════════════
    THE SITE --attribute NAMED. 5,724 of the 5,852 `getBoundingClientRect` calls in one eight-second
    finger pan (phone profile, weather + warnings on) came from one line of this function's `mobile`
@@ -748,8 +754,13 @@ function tilerRig({ mobile = true, n = 4 } = {}) {
      next line then rebuilt the header by hand, which would have dropped the parameter and turned the
      new self-recall into unbounded recursion inside this rig. Find the declaration and carry the
      signature the file actually ships. */
-  const i = src.search(/function tileLegends\(/);
-  assert.ok(i > 0, 'tileLegends() is no longer a named function in js/data-layers.js');
+  /* (legend-layout-frame) the pass that reads and writes is `placeLegends`; `tileLegends` only asks
+     for it on the next frame (checked in tests/legend-layout-frame-checks.test.mjs) */
+  const i = src.search(/function placeLegends\(/);
+  assert.ok(i > 0, 'placeLegends() is no longer a named function in js/data-layers.js');
+  const d = src.search(/function discoverLegends\(/);
+  assert.ok(d > 0, 'discoverLegends() is no longer a named function in js/data-layers.js');
+  const discoverFn = src.slice(d, src.indexOf('{', d)) + balanced(src, src.indexOf('{', d), '{', '}');
   const fn = src.slice(i, src.indexOf('{', i)) + balanced(src, src.indexOf('{', i), '{', '}');
   /* ⚠ …and the declaration it reads for «is this legend on screen», shared with _minimizeOpenLegends
      (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③) — found the same way */
@@ -766,14 +777,16 @@ function tilerRig({ mobile = true, n = 4 } = {}) {
     body: { classList: { contains: () => false } },
     getElementById: () => null,
     querySelectorAll: () => [],
+    getElementsByClassName: () => [],
   };
   vm.createContext(g);
   vm.runInContext(`let lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat;
     function ensureLegendOpacity(){} function ensureContourSwitch(){} function ensureContourDensity(){} function ensureLegendMinimize(){}
     globalThis.__setBoxes = (b) => { [lgdHDI,lgdDem,lgdPop,lgdEEZ]=b; };
     ${shownFn}
+    ${discoverFn}
     ${fn}
-    globalThis.__tile = tileLegends;`, g, { filename: 'data-layers-tile.js' });
+    globalThis.__tile = placeLegends;`, g, { filename: 'data-layers-tile.js' });
   g.__setBoxes(boxes);
   return { log, tile: g.__tile, boxes };
 }

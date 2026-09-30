@@ -36,9 +36,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DL = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
 /* ⚠ with legendShown: the ONE answer to «is this legend on screen», which tileLegends and
    _minimizeOpenLegends both read (tests/cesium-koppen-and-boot-probe-checks.test.mjs ③) */
-const BODY = liftFunction(DL, 'legendShown') + '\n' + liftFunction(DL, 'tileLegends');
+/* (legend-layout-frame) `tileLegends()` only asks for the next frame's placement; the placement is
+   `placeLegends` and the population `discoverLegends`, lifted and evaluated at once */
+const BODY = ['legendShown', 'discoverLegends', 'placeLegends'].map((n) => liftFunction(DL, n)).join('\n');
 
-/* the identifiers tileLegends closes over in js/data-layers.js §legends */
+/* the identifiers the placer closes over in js/data-layers.js §legends */
 const LGD = ['lgdHDI', 'lgdDem', 'lgdPop', 'lgdEEZ', 'lgdThermal', 'lgdRadar', 'lgdSST', 'lgdPopGrid',
   'lgdRelief', 'lgdSeaLevel', 'lgdGdppc', 'lgdTfr', 'lgdMil', 'lgdMilGDP', 'lgdSnow', 'lgdAod', 'lgdNightsat'];
 const HELPERS = ['ensureLegendOpacity', 'ensureContourSwitch', 'ensureContourDensity', 'ensureLegendMinimize'];
@@ -67,7 +69,7 @@ function run({ legends, mcH, mcW, mobile = false, ws = false }) {
   const container = { getBoundingClientRect: () => ({ left: 0, top: 0, height: mcH, width: mcW }) };
   const document = {
     getElementById: (id) => (id === 'map-container' ? container : byId.get(id) || null),
-    querySelectorAll: (sel) => (sel === '.data-legend.generic-legend' ? legends.filter((el) => el.generic) : []),
+    getElementsByClassName: (c) => (c === 'data-legend generic-legend' ? legends.filter((el) => el.generic) : []),
     querySelector: () => null,
     body: { classList: { contains: (c) => (c === 'ws-mode' ? ws : false) } },
   };
@@ -77,7 +79,7 @@ function run({ legends, mcH, mcW, mobile = false, ws = false }) {
     getPropertyValue: () => '',
   });
   /* eslint-disable no-new-func */
-  const make = new Function('document', 'window', 'getComputedStyle', ...LGD, ...HELPERS, BODY + '\nreturn tileLegends;');
+  const make = new Function('document', 'window', 'getComputedStyle', ...LGD, ...HELPERS, BODY + '\nreturn placeLegends;');
   make(document, window, getComputedStyle, ...LGD.map(() => null), ...HELPERS.map(() => () => {}))();
 }
 

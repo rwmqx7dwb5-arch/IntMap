@@ -3587,10 +3587,10 @@ window.IntMapModules.dataLayers=function(HOST){
          `data-legend-ec-*` box and minus every `.data-legend.generic-legend`. MEASURED in production
          2026-09-15: of the five legends on the map, FOUR (eq / volc2 / rail2 and the ECMWF boxes)
          were invisible to this function, so 「tap the map to put the legends away」 put them away
-         never. tileLegends() RETURNS what it discovered, so there is exactly one place in this file
-         that knows what a legend is; and calling it again at the end is not waste — the collapse
-         just changed every height it had measured. */
-      let all=[]; try{ all=tileLegends()||[]; }catch(_){}
+         never. `discoverLegends()` is the tiler's own population, so there is exactly one place in
+         this file that knows what a legend is; and the re-placement asked for at the end is not waste
+         — the collapse just changed every height the stack was placed from. */
+      let all=[]; try{ all=discoverLegends(); }catch(_){}
       let changed=false;
       /* (#R240) a DOCKED legend is not over the map, so tapping the map has no reason to collapse
          it — and doing so is the other half of 「最小化された状態でスタートしないように」: the
@@ -3604,48 +3604,104 @@ window.IntMapModules.dataLayers=function(HOST){
     /* ══ ⚠⚠⚠ A LEGEND THAT CHANGES SIZE IS RE-PLACED, WHOEVER CHANGED IT ═══════════════════════
        MEASURED in production 2026-09-26 at 375×812: with three legends docked down the phone's
        left edge, pressing ▢ on the top one grew it from its title bar to its full body and left the
-       two below it where they were — so the expanded card's lower half sat UNDER them. tileLegends
+       two below it where they were — so the expanded card's lower half sat UNDER them. The placer
        places every card from its MEASURED height, so the arithmetic was right; nothing asked it
        again. The – / ▢ button called `toggleLegendMin` alone, while the two other folds in this file
        (`_minimizeOpenLegends` and the tiler's own) each end in a tileLegends() of their own — a
        rule held by every caller remembering it, which the next caller did not.
        ⚠ So the rule is attached to the FACT, not to the button: a card's size changed. One
-       ResizeObserver watches every legend the tiler has discovered (the same `all`, so there is no
-       second list of what a legend is), and a size change asks for ONE re-placement on the next
-       frame through js/runtime.js's `frame` register, keyed, so a burst of changes (a fold that
-       shrinks four cards, a body filled in by a late fetch, a re-rendered election year) costs one
-       call. Content that arrives late and changes a card's height is the same case as the button.
-       ⚠ IT SETTLES. tileLegends writes only through the guarded `put` and `capTo`, so a call whose
-       inputs are unchanged writes nothing and changes no size; a call that DOES cap or fold changes
-       sizes once, the observer asks once more, and that call writes nothing. Folding is one-way per
+       ResizeObserver watches every legend the tiler has discovered (the same `discoverLegends()`, so
+       there is no second list of what a legend is), and a size change is a `tileLegends()` request
+       like any other — one placement on the next frame, however many cards changed.
+       Content that arrives late and changes a card's height is the same case as the button.
+       ⚠ IT SETTLES. The placer writes only through the guarded `put` and `capTo`, so a pass whose
+       inputs are unchanged writes nothing and changes no size; a pass that DOES cap or fold changes
+       sizes once, the observer asks once more, and that pass writes nothing. Folding is one-way per
        opening (`legPinOpen`), so the second pass cannot fold what the first opened.
+       ⚠ (legend-layout-frame) …AND A SIZE THE PLACER ITSELF JUST MEASURED IS NOT A CHANGE. Every
+       `observe()` reports the card once, at the size it already has, and the placer had read that
+       size a moment before — so each newly watched card cost one more whole pass that could only
+       conclude nothing had moved. The placer hands the size it read (`size`, border box, the same
+       numbers the stack was placed from) and a report that agrees with it within half a pixel asks
+       for nothing. A report that differs — a fold, a late body, a cap the pass itself wrote — asks,
+       exactly as before; so does a card the placer did not measure (a dragged one), and a report
+       the engine words differently (no `borderBoxSize`) is taken as a change, never as a match.
        ⚠ The next frame, not the observer's own callback: re-placing inside the callback resizes
        other observed siblings of the same depth, which the browser reports as a ResizeObserver
-       loop error. */
-    let _legRO=null; const _legWatched=new WeakSet();
-    function watchLegendSize(el){
-      if(!el||_legWatched.has(el)) return;
+       loop error — and `tileLegends()` never places inline. */
+    let _legRO=null; const _legWatched=new WeakSet(); const _legSize=new WeakMap();
+    function watchLegendSize(el,size){
+      if(!el) return;
+      if(size) _legSize.set(el,size);
+      if(_legWatched.has(el)) return;
       if(!_legRO){ if(typeof ResizeObserver!=='function') return;
-        const again=()=>{ try{ tileLegends(); }catch(_){} };
-        _legRO=new ResizeObserver(()=>{ const R=window.IntMapRuntime;
-          if(R&&R.frame) R.frame('legends.reflow',again); else requestAnimationFrame(again); }); }
+        _legRO=new ResizeObserver((entries)=>{
+          for(const e of entries||[]){
+            const was=_legSize.get(e.target), b=e.borderBoxSize&&e.borderBoxSize[0];
+            if(!was||!b||Math.abs(was.w-b.inlineSize)>0.5||Math.abs(was.h-b.blockSize)>0.5){ try{ tileLegends(); }catch(_){} return; }
+          } }); }
       _legWatched.add(el); _legRO.observe(el);
     }
+    /* ══ ⚠⚠⚠ (legend-layout-frame) PLACING THE STACK IS ASKED FOR, AND DONE ONCE A FRAME ════════
+       MEASURED 2026-09-30 on a page opened from the share link that carries every layer
+       (tests/restored-layer-before-style.spec.js, 1280×720, headless Chromium): the placer ran
+       910 times in a 20-second window — 45 a second, 2.95 s of it inside the placer, 0.95 s of that
+       in `getBoundingClientRect` and 0.47 s in `querySelectorAll` — while the main thread had no
+       idle time left at all; at 2× CPU throttling 6.3 s of 20. The callers were not the reader:
+       364 were `_registerLayerOpacity` refreshing a legend it had already registered, 257 the wind
+       legend re-rendering its body, 116 the wave legend, 35 `panel.open`, 51 the fold's own
+       re-entry. #R499 had already made ONE pass cost one layout flush; nothing bounded how many
+       passes a frame paid for, and all but the last of a frame's passes placed a stack that was
+       re-placed before anybody could see it.
+       So `tileLegends()` — the name every site already calls, here and as `window._tileLegends` —
+       RECORDS that the stack is stale and asks js/runtime.js's frame register for one
+       `placeLegends()` on the next frame, keyed, so every request of a frame is the same one pass.
+       That pass runs before the frame paints, so no stack a reader sees is one a request did not
+       reach. A hidden tab runs no frames and places when it is shown — there was nothing on screen
+       to place.
+       ⚠ The placement is not needed synchronously anywhere. Checked every caller (the call sites in
+       this file, `window._tileLegends` in eight other modules, and every spec that reads a legend's
+       box): none reads a box in the same task that asked for it — `_minimizeOpenLegends`, the only
+       one that used the return value, wanted the POPULATION, which `discoverLegends()` gives it
+       without placing anything. The checks that evaluate the arithmetic call `placeLegends`. */
+    let _legQueued=false;
+    function _legRun(){ if(!_legQueued) return; _legQueued=false; try{ placeLegends(); }catch(_){} }
+    function tileLegends(){
+      if(_legQueued) return;
+      _legQueued=true;
+      const R=window.IntMapRuntime;
+      if(R&&R.frame) R.frame('legends.layout',_legRun); else requestAnimationFrame(_legRun);
+    }
     /* Is this legend on screen? The ONE answer, read by the tiler and by `_minimizeOpenLegends` — see the
-       note in tileLegends for why it is the fact and not a spelling of `display`. A declaration at this
+       note in placeLegends for why it is the fact and not a spelling of `display`. A declaration at this
        level, not a closure inside the tiler, so both readers (and the checks that lift them) share it. */
     function legendShown(el){ if(!el||!el.style||el.hidden) return false; const d=el.style.display; if(d==='none') return false;
       try{ return getComputedStyle(el).display!=='none'; }catch(_){ return !!d; } }
-    function tileLegends(_refold){
-      /* ⚠ (#R276) THE ECMWF BOXES HAVE TO BE IN THIS LIST. They dock at the same left/bottom as every
-         other legend, and a legend the tiler cannot see is a legend that sits ON TOP of the one below
-         it — MEASURED with the wind field and two ECMWF layers on: the wind legend covered the ECMWF
-         one completely, so the numeric bars #R276 added were invisible whenever both were up.
-         ⚠⚠ (#R284) …and there is no longer ONE of them. 「ECMWFレイヤーはなぜか凡例が連結してしまう。」 — every
-         ECMWF layer now has its own box under its own name (js/weather.js), so the list matches them
-         by ID PREFIX rather than naming one element. A box added later is picked up by construction;
-         a hand-maintained name would have gone stale on the next layer. */
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('[id^="data-legend-ec-"]')]).concat([...document.querySelectorAll('.data-legend.generic-legend')]);
+    /* What a legend is — the ONE population, read by the placer and by `_minimizeOpenLegends`.
+       ⚠ (#R276) THE ECMWF BOXES HAVE TO BE IN THIS LIST. They dock at the same left/bottom as every
+       other legend, and a legend the tiler cannot see is a legend that sits ON TOP of the one below
+       it — MEASURED with the wind field and two ECMWF layers on: the wind legend covered the ECMWF
+       one completely, so the numeric bars #R276 added were invisible whenever both were up.
+       ⚠⚠ (#R284) …and there is no longer ONE of them. 「ECMWFレイヤーはなぜか凡例が連結してしまう。」 — every
+       ECMWF layer now has its own box under its own name (js/weather.js), so the list matches them
+       by ID PREFIX rather than naming one element. A box added later is picked up by construction;
+       a hand-maintained name would have gone stale on the next layer.
+       ⚠ (legend-layout-frame) …AND THE DOCUMENT IS NOT WALKED FOR THEM ON EVERY PASS. This was two
+       `querySelectorAll`s, which re-match the whole document each time (0.47 s of the 20-second
+       window measured above). `getElementsByClassName` answers with the browser's LIVE collection
+       instead: it is kept current by the document itself as boxes are added and removed — the
+       discovery is updated by the event, not repeated by the reader — so a box added later is still
+       picked up by construction, and a pass on an unchanged document does not walk it again.
+       `'data-legend generic-legend'` is the same set `.data-legend.generic-legend` selected (both
+       classes). The ECMWF boxes are `.data-legend` boxes (js/weather.js `newBox`), still matched by
+       ID PREFIX within that collection. Order is kept: the named boxes, then the ECMWF ones, then the
+       generic ones, each in document order. */
+    function discoverLegends(){
+      const ec=[...document.getElementsByClassName('data-legend')].filter(el=>String(el.id||'').startsWith('data-legend-ec-'));
+      return [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat(ec,[...document.getElementsByClassName('data-legend generic-legend')]);
+    }
+    function placeLegends(_refold){
+      const all=discoverLegends();
       const ws=document.body.classList.contains('ws-mode');
       const mobile = !ws && window.matchMedia && window.matchMedia('(max-width:768px)').matches;
       /* ══ ⚠⚠⚠ WHETHER A LEGEND IS ON SCREEN IS ASKED OF THE PAGE, NOT OF ONE SPELLING OF `display` ══
@@ -3667,10 +3723,12 @@ window.IntMapModules.dataLayers=function(HOST){
          that has it today and any that says so later, and no list here names one. */
       const ownsPlace=el=>!mobile&&!!(el.dataset&&el.dataset.ownPlace);
       const docked=el=>!!(el.classList&&el.classList.contains('im-docked'));
-      const visible=all.filter(el=>shown(el) && !el.dataset.dragged && !ownsPlace(el));
-      const ownPlaced=all.filter(el=>shown(el) && !el.dataset.dragged && ownsPlace(el) && !docked(el));
-      all.forEach(el=>{ if(shown(el)) try{ ensureLegendOpacity(el); ensureContourSwitch(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
-      all.forEach(el=>{ try{ watchLegendSize(el); }catch(_){} });
+      /* (legend-layout-frame) the page is asked once per card per pass — it was asked three times
+         (0.51 s of the 20-second window measured above was `legendShown` alone) */
+      const on=new Set(all.filter(el=>shown(el)));
+      const visible=all.filter(el=>on.has(el) && !el.dataset.dragged && !ownsPlace(el));
+      const ownPlaced=all.filter(el=>on.has(el) && !el.dataset.dragged && ownsPlace(el) && !docked(el));
+      all.forEach(el=>{ if(on.has(el)) try{ ensureLegendOpacity(el); ensureContourSwitch(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
          over the map, so offset past it (unless collapsed); mobile keeps its own right-dock CSS. */
       let leftBase=24;
@@ -3707,7 +3765,13 @@ window.IntMapModules.dataLayers=function(HOST){
         H.push(r?r.height:0); W.push(r?r.width:0); NAT.push(Math.max(r?r.height:0,sh)); });
       /* the boxes the stack must stay clear of, read in the same pass (viewport coordinates; made
          container-relative below, once the container's own box is known) */
-      const OWN_R=[]; ownPlaced.forEach(el=>{ try{ const r=el.getBoundingClientRect(); if(r&&r.width>0&&r.height>0) OWN_R.push(r); }catch(_){} });
+      const OWN_R=[], SEEN=new Map(); ownPlaced.forEach(el=>{ try{ const r=el.getBoundingClientRect(); if(r){ SEEN.set(el,{w:r.width,h:r.height}); if(r.width>0&&r.height>0) OWN_R.push(r); } }catch(_){} });
+      /* Every card is watched, and told the size this pass read, so the observer can tell a size this
+         pass already placed from a size that changed since (see `watchLegendSize`). A card that is not
+         on screen has no box — `display:none` — so its size is known without asking the page; a
+         dragged card is not measured here and is told nothing, so any report about it asks. */
+      visible.forEach((el,i)=>SEEN.set(el,{w:W[i],h:H[i]}));
+      all.forEach(el=>{ if(!el) return; try{ watchLegendSize(el,SEEN.get(el)||(on.has(el)?null:{w:0,h:0})); }catch(_){} });
       /* ⚠ the guard compares against the INLINE declaration, not a remembered copy: reading
          `el.style.top` is a CSSOM read and costs no layout, and a remembered copy would go stale the
          moment anything else touched the box (a drag restoring `cssText`, the dock, a theme rebuild). */
@@ -3732,7 +3796,7 @@ window.IntMapModules.dataLayers=function(HOST){
          to an id, so one placer serves the desktop dock, the workspace dock and the phone dock, and
          serves every legend that exists as well as every one that does not exist yet. */
       /* (#R499) the container's box comes from js/runtime.js §5's observer — it changes when the
-         WINDOW changes, and this function is called thirty-one times per session for other reasons. */
+         WINDOW changes, and this pass is requested thirty-one-plus times per session for other reasons. */
       const mcBox=(()=>{ try{ const mc=document.getElementById('map-container'); if(!mc) return null;
         const R=window.IntMapRuntime; return (R&&R.box)?R.box(mc):mc.getBoundingClientRect(); }catch(_){ return null; } })();
       const mcH=(mcBox&&mcBox.height)||window.innerHeight||0;
@@ -3768,7 +3832,7 @@ window.IntMapModules.dataLayers=function(HOST){
          to its title bar, newest kept, oldest folded: the layer stays on, the element stays visible
          (`display` is untouched), and one click on the reader's own – button opens it again.
          ⚠ FOLDING IS ONE-WAY PER OPENING. A reader who re-opens a folded legend is not overruled on
-         the next of this function's thirty-one calls per session (`legPinOpen`). */
+         the next of this function's passes (`legPinOpen`). */
       const isFolded=el=>{ try{ return !!(el.classList&&el.classList.contains('legend-collapsed')); }catch(_){ return false; } };
       /* "oldest" is a fact about the reader's session, not about the order the discovery list
          happens to have, so a legend records the instant it became visible and forgets it when it
@@ -3806,7 +3870,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* Heights measured before the fold are no longer this stack's heights. The re-entry reads them
          once more and places from the new ones; `_refold` makes it exactly one re-entry, and it only
          happens on the call that actually folded something. */
-      if(folded&&!_refold) return tileLegends(true);
+      if(folded&&!_refold) return placeLegends(true);
       /* One column-wrapping placer for all three docks. `start` is the cursor's origin measured from
          the anchored edge (bottom for the two desktop docks, top on phones), `gap` the spacing the
          dock has always used, `base` its left margin. Nothing in here reads the DOM. */
@@ -3844,8 +3908,18 @@ window.IntMapModules.dataLayers=function(HOST){
             colW=Math.max(colW,o.x1-x); colX+=colW+12; colW=0; off=start;
           }
           /* Out of room sideways too (many tall legends in a narrow map): the column stops AT the
-             container's edge rather than walking out of it — the last resort, and still reachable. */
-          out.push({off,left:Math.min(base+colX,Math.max(base,edgeW-w-8)),cap,h});
+             container's edge rather than walking out of it — the last resort, and still reachable.
+             ⚠ (legend-layout-frame) A BOX STOPPED AT THE EDGE IS HELD BY THE EDGE (`right`), NOT BY A
+             `left` DERIVED FROM ITS OWN WIDTH. MEASURED 2026-09-30 with every layer on (1280×720): the
+             webcams card — folded, so `width:auto`, with a long note line — was placed at
+             `left = edge − w − 8`; an auto-width box's width is the room to the right of its `left`,
+             so moving it 8 px left made it 8 px wider, the size observer asked again, and the next
+             pass moved it 8 px further: 374 → 382 → 390 → … px, one pass a frame, until it spanned
+             the map. Held by `right`, its width no longer depends on where it is, so the second pass
+             finds nothing to move. The PLACE is the same place (`right` = the edge the clamp
+             stopped it at); a box too wide to fit at all keeps `left = base` as before. */
+          const at=base+colX, edge=edgeW-w-8;
+          out.push({off,left:Math.min(at,Math.max(base,edge)),right:(at>edge&&edge>base)?mcW-edgeW+8:null,cap,h});
           colW=Math.max(colW,w); off+=h+gap;
         }
         return out;
@@ -3857,17 +3931,19 @@ window.IntMapModules.dataLayers=function(HOST){
         if(cap){ put(el,'maxHeight',cap+'px'); put(el,'overflowY','auto'); el.dataset.legCap='1'; }
         else if(el.dataset.legCap){ put(el,'maxHeight',''); put(el,'overflowY',''); delete el.dataset.legCap; }
       };
+      /* the horizontal half of a slot: by its left edge, or — stopped at the container's edge — by that edge */
+      const side=(el,p)=>{ if(p.right!=null){ put(el,'left','auto'); put(el,'right',p.right+'px'); } else { put(el,'left',p.left+'px'); put(el,'right','auto'); } };
       if(ws){
         /* (#R85) workspace mode: dock legends to the BOTTOM-LEFT of the Map window ("ワークスペースモードでレイヤーを
            オンにしたら、凡例は地図の左下あたりに") — stack upward, clearing the coordinate readout in the corner. */
         const P=flow(dock.start,dock.gap,dock.base);
-        visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'bottom',P[i].off+'px'); put(el,'top','auto'); put(el,'left',P[i].left+'px'); put(el,'right','auto'); });
+        visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'bottom',P[i].off+'px'); put(el,'top','auto'); side(el,P[i]); });
       } else if(mobile){
         /* (#R15d) Stack legends DOWNWARD from the phone dock's origin (under the map switcher — see
            `mDock` above), left-aligned and clear of the FAB column. The CSS default is for the first
            paint; this keeps multiple open legends from overlapping. */
         const P=flow(dock.start,dock.gap,dock.base,dock.edgeW,true);
-        visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'top',P[i].off+'px'); put(el,'bottom','auto'); put(el,'left',P[i].left+'px'); put(el,'right','auto'); });
+        visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'top',P[i].off+'px'); put(el,'bottom','auto'); side(el,P[i]); });
       } else {
         /* ══ ⚠ (#R244) A LEGEND MAY ASK TO GROW DOWNWARD ═════════════════════════════════════════════
            「アメリカ大統領選挙レイヤーは、操作時に凡例が上に伸びるのではなく下に伸びるように。」
@@ -3879,7 +3955,7 @@ window.IntMapModules.dataLayers=function(HOST){
            unchanged — the same cursor decides where it sits — so it lands in exactly the same place
            and only its GROWTH direction differs. */
         const P=flow(dock.start,dock.gap,dock.base);
-        visible.forEach((el,idx)=>{ const p=P[idx]; capTo(el,p.cap); put(el,'left',p.left+'px'); put(el,'right','auto');
+        visible.forEach((el,idx)=>{ const p=P[idx]; capTo(el,p.cap); side(el,p);
           if(el.dataset.growDown==='1'){
             /* ⚠ WRITING `top` IS NOT ENOUGH — `top = mcH − bottom − h` is the bottom-anchored place
                expressed as a top, so it still moves when `h` changes. Measured on the election
