@@ -1180,7 +1180,7 @@ export function makeAtlasState(HOST) {
        (column 5 of js/atlas-capabilities.js) is one `map.undo` does not touch at all — a forecast model,
        a rail axis, the device-location dot, the 3-D volume — changed state that no snapshot holds, so
        comparing snapshots would say nothing and the undo would look complete. The turn ledger knows what
-       ran: every operation from the turn taken back up to now that did something (completed / partial)
+       ran: every operation from the turn taken back up to now that did something (completed / partial / unobserved)
        and wrote an untouched effect is named by its capability id. ⚠ Only UNTOUCHED effects: an effect
        the undo touches (objects, claimed surfaces) is judged by comparing its section, which names a
        deletion it could not undo and stays quiet about an addition it did take off. */
@@ -1189,7 +1189,7 @@ export function makeAtlasState(HOST) {
       var U = C.resolve('map.undo'); var touches = (U && U.effects && U.effects.writes) || [];
       var out = [];
       (t.operations || []).forEach(function (op) {
-        if (!op || (op.status !== 'completed' && op.status !== 'partial')) return;
+        if (!op || (op.status !== 'completed' && op.status !== 'partial' && op.status !== 'unobserved')) return;   /* (atlas-turn-engine) an unobserved operation RAN; that its effect was not seen is no evidence it made none */
         var c = C.resolve(op.capabilityId); if (!c || c === U) return;
         var w = (c.effects && c.effects.writes) || [];
         /* only effects on the MAP — its drawings, camera and clock (the heads js/atlas-capabilities.js's own rule reads); a panel the turn opened is not a change to the map */

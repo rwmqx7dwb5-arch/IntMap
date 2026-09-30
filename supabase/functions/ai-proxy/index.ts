@@ -329,7 +329,7 @@ type TurnItem =
   | { type: "function_call_output"; call_id: string; output: string }
   | { type: "reasoning"; id: string; encrypted_content: string }
   | { type: "attachments"; channels: string[] };
-interface FnTool { name: string; description: string; parameters: Record<string, unknown>; }
+interface FnTool { name: string; description: string; parameters: Record<string, unknown>; promoted?: boolean; }   // (atlas-turn-engine) promoted = appended this turn from find_capability (js/atlas-agent.js)
 interface TurnReq { items: TurnItem[]; tools: FnTool[]; toolChoice: "none" | ""; trim: Record<string, unknown> | null; }
 const itemLen = (it: TurnItem): number =>
   it.type === "message" ? it.content.length
@@ -418,7 +418,7 @@ function normalizeTurn(payload: Record<string, unknown>): TurnReq | { error: str
     if (!FN_NAME_OK.test(name) || !schemaOk(params) || tools.some((x) => x.name === name)) { bump("droppedTools"); continue; }
     let description = String(o.description || "");
     if (description.length > MAX_FN_DESC) { description = description.slice(0, MAX_FN_DESC); bump("cutToolDescriptions"); }
-    tools.push({ name, description, parameters: params });
+    tools.push({ name, description, parameters: params, ...(o.promoted === true ? { promoted: true } : {}) });
   }
   if (Array.isArray(payload.tools) && payload.tools.length > MAX_FN_TOOLS) bump("droppedTools", payload.tools.length - MAX_FN_TOOLS);
   if (!items.some((it) => it.type !== "attachments")) return { error: "empty" };
@@ -442,6 +442,15 @@ function fnParameters(t: FnTool): { parameters: Record<string, unknown>; descrip
   if (p.type !== "object") p.type = "object";
   if (!p.properties || typeof p.properties !== "object") p.properties = {};
   return { parameters: p, description };
+}
+
+/* (atlas-turn-engine) WHAT THE PROMPT-CACHE KEY IS A HASH OF. The instructions and the functions every call of
+   a turn declares — and NOT the functions js/atlas-agent.js promoted from find_capability during it: those
+   are appended after the fixed ones (the client orders them so) and marked `promoted`, and a key that moved
+   with each promotion would route the next call away from the cache that holds the unchanged prefix.
+   Without a promoted tool this is byte-for-byte the string the key was hashed from before. */
+function cacheBasis(system: string, tools: FnTool[]): string {
+  return system + "\n" + JSON.stringify(tools.filter((t) => !t.promoted).map((t) => ({ name: t.name, description: t.description, parameters: t.parameters })));
 }
 
 /* The reader's attachments, wherever the client's markers put them; a channel no marker names goes
@@ -1033,7 +1042,12 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
     } else if (it.type === "function_call_output") add("user", { type: "tool_result", tool_use_id: it.call_id.replace(/[^A-Za-z0-9_-]/g, "_"), content: it.output });
   }
   if (msgs.length && msgs[0].role !== "user") msgs.unshift({ role: "user", content: [{ type: "text", text: "[The conversation so far begins with your reply below.]" }] });
-  const tools: unknown[] = turn.tools.map((t) => { const f = fnParameters(t); return { name: t.name, description: f.description, input_schema: f.parameters }; });
+  const tools: Record<string, unknown>[] = turn.tools.map((t) => { const f = fnParameters(t); return { name: t.name, description: f.description, input_schema: f.parameters }; });
+  /* (atlas-turn-engine) a breakpoint at the end of the FIXED functions too, when this turn promoted some after
+     them (js/atlas-agent.js): the promoted ones move the last-tool breakpoint withPromptCache adds, and this
+     one keeps the unchanged prefix a hit. At most three breakpoints in all — under Anthropic's four. */
+  const lastFixed = turn.tools.map((t) => !t.promoted).lastIndexOf(true);
+  if (lastFixed >= 0 && lastFixed < tools.length - 1) tools[lastFixed] = { ...tools[lastFixed], cache_control: { type: "ephemeral" } };
   if (web) tools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 });
   const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: msgs };
   if (system) body.system = system;
@@ -1844,7 +1858,7 @@ Deno.serve(async (req) => {
      whoever is asking — it is derived from the prefix OpenAI caches, and names no account (nothing
      about the reader leaves in it; the privacy notice is unchanged). Requests that share a prefix are
      routed together, which is what makes the cache hit. */
-  const cacheKey = turnReq ? "atlas_turn:" + await sha256Hex(system + "\n" + JSON.stringify(turnReq.tools)) : "";
+  const cacheKey = turnReq ? "atlas_turn:" + await sha256Hex(cacheBasis(system, turnReq.tools)) : "";   /* (atlas-turn-engine) the fixed functions only — see cacheBasis */
 
   try {
     let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; output?: TurnItem[] };

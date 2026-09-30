@@ -17,12 +17,21 @@
  *  throws, in module strict mode, at the line that tried. And the user-visible sentence is built by
  *  `render()` FROM the structure, in whichever of the nine languages is current, never carried in it.
  *
- *  ⚠ THE SEVEN STATUSES ARE NOT A STYLE CHOICE. Each one exists because a real turn ended there and
+ *  ⚠ THE EIGHT STATUSES ARE NOT A STYLE CHOICE. Each one exists because a real turn ended there and
  *  the old shape had to call it either true or false:
  *      completed  — postcondition observed.               partial    — some targets, not all.
  *      running    — started, still going (progress).       failed     — did not happen; code says why.
  *      needs_input— a required input is missing.           cancelled  — the caller aborted it.
  *      superseded — a newer turn replaced this one.
+ *      unobserved — it RAN, and whether it took effect could not be observed (the renderer was not
+ *                   drawing, the surface could not be read). Not a failure and not a completion.
+ *  ⚠ (atlas-turn-engine) `unobserved` WAS SPELT `partial` + code `not_rendering` UNTIL IT WAS ITS OWN
+ *  STATUS. `partial` means 「some of it is still owed」, and js/atlas-agent.js lets a partial call be
+ *  made again for exactly that reason — so a call that had done its whole job on a page that was not
+ *  compositing was re-run as if it had not (.agents/rules/one-pass-or-a-reason.md §4, the third
+ *  question). Its own status is what lets the loop answer a repeat with 「already done, the effect
+ *  could not be observed」 instead of running it again. `ok` stays a derivation of `completed`: an
+ *  effect nobody saw is not claimed as one.
  *
  *  ⚠ MESSAGES ARE POSITIONAL FOR FIVE LANGUAGES AND KEYED FOR THE REST. That is `pick()`'s contract
  *  (js/lang-registry.js): index 0-4 come from the tuple, 5+ from the locale file's inline table keyed
@@ -33,9 +42,9 @@ export function makeAtlasResults(HOST) {
   return (function () {
     var API = {};
 
-    /* ── the seven statuses, and which of them are terminal ─────────────────────────────────── */
-    var STATUSES = ['completed', 'running', 'needs_input', 'partial', 'failed', 'cancelled', 'superseded'];
-    var TERMINAL = { completed: 1, partial: 1, failed: 1, cancelled: 1, superseded: 1 };
+    /* ── the eight statuses, and which of them are terminal ─────────────────────────────────── */
+    var STATUSES = ['completed', 'running', 'needs_input', 'partial', 'unobserved', 'failed', 'cancelled', 'superseded'];
+    var TERMINAL = { completed: 1, partial: 1, unobserved: 1, failed: 1, cancelled: 1, superseded: 1 };
     /* A status that still owes the user something. The planner may not close a turn on one of these
        without either resuming it (needs_input) or reporting it as unfinished (running). */
     var OPEN = { running: 1, needs_input: 1 };
@@ -69,6 +78,8 @@ export function makeAtlasResults(HOST) {
       'atlas.result.running':        LA('Still running…', '実行中です…', 'Läuft noch…', 'Выполняется…', 'En curso…'),
       'atlas.result.running.progress': LA('Still running — {done} of {total}.', '実行中 — {total} 件中 {done} 件。', 'Läuft — {done} von {total}.', 'Выполняется — {done} из {total}.', 'En curso — {done} de {total}.'),
       'atlas.result.partial':        LA('Partly done — {done} of {total}.', '一部のみ完了 — {total} 件中 {done} 件。', 'Teilweise erledigt — {done} von {total}.', 'Выполнено частично — {done} из {total}.', 'Parcialmente hecho — {done} de {total}.'),
+      /* (atlas-turn-engine) en + jp only — IntMap-authored text (CONSTITUTION.md §7); `pick()` reads English for the rest */
+      'atlas.result.unobserved':     LA('Done, but IntMap could not see whether it took effect.', '実行しましたが、効果を確認できませんでした。'),
       'atlas.result.failed':         LA('That did not happen.', 'これは実行されませんでした。', 'Das ist nicht passiert.', 'Это не выполнено.', 'Eso no ocurrió.'),
       'atlas.result.cancelled':      LA('Cancelled.', '中止しました。', 'Abgebrochen.', 'Отменено.', 'Cancelado.'),
       'atlas.result.superseded':     LA('Replaced by your newer request.', '新しい依頼に置き換えられました。', 'Durch die neuere Anfrage ersetzt.', 'Заменено более новым запросом.', 'Reemplazado por tu nueva petición.'),
@@ -171,10 +182,11 @@ export function makeAtlasResults(HOST) {
       return r;
     };
 
-    /* Shorthands for the seven endings, so a call site never spells a status by hand. */
+    /* Shorthands for the eight endings, so a call site never spells a status by hand. */
     API.completed = function (o) { return API.make(Object.assign({}, o, { status: 'completed', code: (o && o.code) || 'ok' })); };
     API.failed = function (o) { return API.make(Object.assign({}, o, { status: 'failed' })); };
     API.partial = function (o) { return API.make(Object.assign({}, o, { status: 'partial' })); };
+    API.unobserved = function (o) { return API.make(Object.assign({}, o, { status: 'unobserved' })); };
     API.running = function (o) { return API.make(Object.assign({}, o, { status: 'running' })); };
     API.cancelled = function (o) { return API.make(Object.assign({}, o, { status: 'cancelled' })); };
     API.superseded = function (o) { return API.make(Object.assign({}, o, { status: 'superseded' })); };

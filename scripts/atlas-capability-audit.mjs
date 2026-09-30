@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
    (#R345) It USED to be two lines of regex right here, and tests/helpers/fn-cors.js was about to
    become the second copy — so the stripper moved to scripts/code-only.mjs and both import it. */
 import { codeOnly } from './code-only.mjs';
+import { appLangs, authoredLangs } from './lang-policy.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -333,7 +334,11 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
   /* ⑬ the nine languages reach the same capabilities */
   {
     const bad = [];
-    const CODES = ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko'];
+    /* the language set is the app's own registry and the authoring policy (scripts/lang-policy.mjs),
+       never a list typed here — a typed nine demanded new translations the constitution (§7) no
+       longer authors, and would have kept demanding them after `return all;` changed nothing here. */
+    const CODES = appLangs(ROOT);
+    const AUTHORED = new Set(authoredLangs(ROOT));
     const reg = read('js/lang-registry.js');
     CODES.forEach((c) => { if (!fs.existsSync(path.join(ROOT, 'js/locales/ui.' + c + '.js'))) bad.push(`no locale file for ${c}`); });
     /* the model-facing language name must be DERIVED, not a five-row literal (#R318's zh 英文 bug) */
@@ -345,8 +350,10 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
       const latin = hints.filter((h) => /^[a-zà-ÿ' -]+$/i.test(h)).length;
       if (!cjk || !latin) bad.push(`capability search hints for "${cat}" cover only one script — a request in another language cannot rank`);
     });
-    /* every user-visible result message must exist in the four non-positional locales */
-    ['zh', 'zh-hans', 'fr', 'ko'].forEach((code) => {
+    /* every user-visible result message must exist in each non-positional locale IntMap AUTHORS in.
+       ⚠ The languages it no longer authors are not dropped: an existing inline translation that
+       disappears lowers their count, and scripts/i18n-floor.mjs (check:i18n) holds that floor. */
+    ['zh', 'zh-hans', 'fr', 'ko'].filter((code) => AUTHORED.has(code)).forEach((code) => {
       const loc = read('js/locales/ui.' + code + '.js');
       const missing = (caps.resultEnglish || (() => []))().filter((en) => !loc.includes(JSON.stringify(en).slice(1, -1)) && !loc.includes(en));
       if (missing.length) bad.push(`ui.${code}.js is missing ${missing.length} #R318 result message(s), e.g. "${missing[0].slice(0, 40)}"`);

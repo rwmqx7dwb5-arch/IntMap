@@ -4760,14 +4760,14 @@ window.IntMapModules.atlasConsole=function(HOST){
         _ranActions.push(action);
         await runActions(ai,'',[action],gen);
         const list=ai.__atlResults||[]; if(list.length<=before) return {ok:false,error:'not_run',message:'the turn was superseded'};
-        const rec=list[list.length-1];
+        let rec=null; for(let i=list.length-1;i>=before&&!rec;i--){ if(list[i]&&list[i].act===action) rec=list[i]; }   /* ⚠ (atlas-turn-engine) THIS action's record, found by identity. It was `list[list.length-1]` — the last record filed, which is this action's only while one call runs at a time; js/atlas-agent.js now runs the calls of one reply together when their conflict keys do not overlap, and another call may file its record between this one's and this line */
+        if(!rec) return {ok:false,error:'not_run',message:'the turn was superseded'};
         return { ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:(rec.act&&rec.act.__exec)||null }; };
       _turnRunAction=_runOne;
-      const _tools=TOOLS.baseTools();   /* rebuilt per turn: the layer enum below is live app state */
-      /* the real layer names, as an enum on the tool rather than 170 names of prose in the prompt */
-      try{ const ln=layerCatalogText().split(';').map(s2=>s2.trim()).filter(Boolean);
-        if(ln.length&&_tools.set_layer&&_tools.set_layer.parameters.properties.name) _tools.set_layer.parameters.properties.name.enum=ln; }catch(_){}
-      let _sys=SYS(_tools); const _c0=_agentCtx();   /* (atlas-native-tools) both fixed for the turn, so every step re-sends the same prefix — see _agentCtx */
+      const _tools=TOOLS.baseTools();   /* (atlas-turn-engine) the same declarations every turn — nothing on the page is written into them */
+      let _sys=SYS(_tools); const _c0=_agentCtx();
+      /* ⚠ (atlas-turn-engine) THE REAL LAYER NAMES, AS INPUT AND AS A CHECK — NOT AS PART OF THE DECLARATION. They were set as set_layer's `name.enum`, which made the tool list (and ai-proxy's prompt-cache key, a hash of it) move whenever the page did. js/atlas-toolsurface.js liveEnum keeps them enforced (js/atlas-agent.js `reject` reads `check`) and returns the sentence that puts them in front of the model in the request item — input, after the cached prefix */
+      try{ _c0.text+=TOOLS.liveEnum(_tools,'set_layer','name',layerCatalogText().split(';').map(s2=>s2.trim()).filter(Boolean)); }catch(_){}   /* (atlas-native-tools) both fixed for the turn, so every step re-sends the same prefix — see _agentCtx */
       /* ⚠⚠⚠ (atlas-native-tools) THE TRANSPORT IS NATIVE FUNCTION CALLING. What stood here said the opposite, and was
          true: ai-proxy attached `tools` only for hosted web search and parsed no function_call item, so
          every call rode a JSON envelope inside ONE string, and one step was the whole string, re-sent.
@@ -4784,13 +4784,13 @@ window.IntMapModules.atlasConsole=function(HOST){
         const built=_agentInput(req,q,_c0), _tImgs=_atlTurnImgs(VFRAMES.urls(),_atlRecallImgs), _o={task:'atlas_turn',files:_atts.files,docs:_atts.docs,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)};
         let env=null;
         if(_aiProto!=='legacy'){ try{ env=await askAIJSONEnvelope('',_sys,_tImgs,Object.assign({},_o,{ protocol:2, input:built.input, schema:AGENT.FINAL_SCHEMA, toolChoice:(req&&req.final)?'none':undefined,
-            tools:((req&&req.tools)||[]).concat(built.cut?[AGENT.READ_RESULT_TOOL]:[]).map(t=>({name:t.name,description:t.description,parameters:t.parameters})) })); }catch(e){ if(!(e&&e.code==='empty')) throw e; }   /* read_result only on a step whose input was cut: the tool list is the start of the cached prefix */
+            tools:((req&&req.tools)||[]).concat(built.cut?[AGENT.READ_RESULT_TOOL]:[]).map(t=>({name:t.name,description:t.description,parameters:t.parameters,promoted:t.promoted?true:undefined})) })); }catch(e){ if(!(e&&e.code==='empty')) throw e; }   /* read_result only on a step whose input was cut: the tool list is the start of the cached prefix */
           if(!(env&&env.meta&&env.meta.protocol===2)){ _aiProto='legacy'; _sys=SYS(_tools); env=null; } }
         if(!env) env=await askAIJSONEnvelope(AGENT.legacyPrompt(built),_sys,_tImgs,Object.assign({},_o,{schema:TURN_SCHEMA}));   /* ⚠ (#R493) `_tImgs`: THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */
         try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
         const _r=AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON, env&&env.meta, env&&env.output); if(built.trim.droppedHistory||built.cut) _r.inputTrim=built.trim; return _r; };   /* (#R801) THIS call's meta (webUsed/webAttached), not window._aiLastMeta — the #R350 reason, one reader over. (atlas-native-tools) `output` = the provider's items; `inputTrim` = what the composer gave up, recorded in the trace by runTurn */
       try{
-        const out=await AGENT.runTurn({ model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT), externalContent:!!((_atts.files&&_atts.files.length)||(_atts.docs&&_atts.docs.length)),   /* (#R801) an attachment's text or a document is outside content in the FIRST model input — js/atlas-agent.js `turn` starts true */
+        const out=await AGENT.runTurn({ model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT), footprint:(c)=>TOOLS.footprintOf(c,_tools), promote:TOOLS.promotionsOf,   /* (atlas-turn-engine) which calls of one reply may run together, and what find_capability makes callable by name — js/atlas-agent.js */ externalContent:!!((_atts.files&&_atts.files.length)||(_atts.docs&&_atts.docs.length)),   /* (#R801) an attachment's text or a document is outside content in the FIRST model input — js/atlas-agent.js `turn` starts true */
           system:_sys, messages:[{role:'user',content:q}], signal:(_abortCtl?_abortCtl.signal:undefined),
           onStep:(s)=>{ try{ PROG.plan(ai,s); }catch(_){} try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });   /* ⚠ (#R723) THE SECOND CALL IS THE ONE THAT WAS HERE ALONE — the only consumer of the turn's own trace was a developer diagnostics object. The reader's turn is now told to the reader. */
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }

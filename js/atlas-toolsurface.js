@@ -229,6 +229,9 @@ export function makeAtlasToolSurface(deps) {
         ids.push(cap.id);
         out.push({
           id: cap.id,
+          /* (atlas-turn-engine) the name it is callable by — a CORE tool the model already holds, or the
+             name js/atlas-agent.js promotes it under for the rest of the turn (promotionsOf below) */
+          tool: coreNameOf(cap.id) || toolNameOf(cap.id),
           summary: summaryOf(cap) || undefined,
           schema: schemaOf(cap.id),
           needsConfirmation: cap.confirmation && cap.confirmation !== 'none' ? cap.confirmation : undefined,
@@ -409,7 +412,10 @@ export function makeAtlasToolSurface(deps) {
         out.producedModes = out.produced.slice();
         if (out.producedModes.indexOf('map') >= 0) out.changedMap = true;
       }
-      if (!ok) {
+      /* (atlas-turn-engine) an UNOBSERVED call is not a failure and carries no `error`: it ran, and
+         whether it took effect could not be seen. js/atlas-agent.js writes the note that says so, and
+         remembers the call as done. `ok` is still false — nothing is claimed that nobody observed. */
+      if (!ok && out.status !== 'unobserved') {
         out.error = meta.code || 'failed';
         /* (#R413) …and not clipped at 400 either. This is the reason a call FAILED, read by the
            thing that has to decide what to do next; half a reason is how a turn picks the wrong
@@ -446,7 +452,8 @@ export function makeAtlasToolSurface(deps) {
          ~1,500 (measured on the same day); 2,000 keeps every ordinary card whole. A research
          answer is longer, but it is `rendered` and Atlas is told so — its content is not repeated,
          only its opening. Raise the number when a card that Atlas must read whole exceeds it. */
-      if (ok && res && res.html) {
+      /* (atlas-turn-engine) …and an UNOBSERVED call ran, so the reader was shown its card too */
+      if ((ok || out.status === 'unobserved') && res && res.html) {
         var shown = textOf(res.html);
         if (shown) out.text = shown.length > RESULT_TEXT_MAX ? (shown.slice(0, RESULT_TEXT_MAX) + ' …') : shown;
       }
@@ -454,7 +461,100 @@ export function makeAtlasToolSurface(deps) {
     }
     var RESULT_TEXT_MAX = 2000;
 
-    var API = { CORE, baseTools, find, actionFor, makeExecute, schemaOf };
+    /* ══ ⚠⚠⚠ (atlas-turn-engine) PROMOTION — WHAT find_capability FOUND, AS A TOOL ══════════════════════════
+       js/atlas-agent.js asks this after a result succeeds, and declares what it returns to the model
+       from the next step on (the measurement and the cache reasoning are written there, beside
+       `promoted`). A promoted tool is NOT a second path: `route` turns the call into run_capability
+       with the capability's id, so it is validated against the same schema twice, reaches the same
+       dispatch, and has the same identity (callKey) as the envelope it stands for. A capability that
+       is already a CORE tool is not promoted — the model holds it under its CORE name already. */
+    var _coreByCap = null;
+    function coreNameOf(capId) {
+      if (!_coreByCap) {
+        _coreByCap = {};
+        CORE.forEach(function (c) { var cp = capOf(c.cap); if (cp && cp.id) _coreByCap[cp.id] = c.name; });
+      }
+      return _coreByCap[capId] || '';
+    }
+    /* the function name a provider accepts (^[A-Za-z0-9_-]{1,64}$, the rule ai-proxy's FN_NAME_OK and all
+       three providers share), derived from the id — ids are dotted camelCase, so the dot is the only
+       character that has to change and no two ids collide */
+    function toolNameOf(capId) { return String(capId || '').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 64); }
+    function promotedTool(cap) {
+      var id = cap.id;
+      return {
+        name: toolNameOf(id), capabilityId: id, promoted: true,
+        description: (summaryOf(cap) || id) + ' [The capability "' + id + '", offered as a tool because find_capability returned it this turn; '
+          + 'calling it is the same as run_capability with id "' + id + '" and these arguments.]',
+        parameters: schemaOf(id),
+        endsTurn: ENDS_TURN(id) || undefined,
+        route: function (args) { return { name: 'run_capability', arguments: { id: id, args: args || {} } }; },
+      };
+    }
+    function promotionsOf(res) {
+      if (!res || res.ok === false || !Array.isArray(res.matches)) return [];
+      var out = [];
+      res.matches.forEach(function (m) {
+        var cap = m && m.id ? capOf(m.id) : null;
+        if (!cap || cap.withdrawn || coreNameOf(cap.id)) return;
+        out.push(promotedTool(cap));
+      });
+      return out;
+    }
+
+    /* ══ ⚠⚠⚠ (atlas-turn-engine) WHAT ONE CALL MAY TOUCH — the footprint js/atlas-agent.js orders a reply by ═══
+       The registry's column 5 is what a capability WRITES, and js/atlas-executor.js already locks on it
+       (`conflictKeys`). The loop reads it to decide which calls of one reply may run together:
+         · { pure:true }     — touches no app state: find_capability reads the registry; a run_capability
+                               with an id nobody has is answered before anything runs.
+         · { barrier:true }  — orders against every other call: a key naming a WHOLE section (one segment:
+                               `camera`, `time`, `navigation` — what every other call is read against), a
+                               key naming everything under a head (`map.all`, `panel.any`, `ui.any`), a
+                               capability whose success ends the turn, or a call this surface cannot place.
+         · { writes, reads } — `reads` is the registry's `effects.reads` when a row declares it, and null
+                               (= the whole app) when it does not — which today is every row, so a call that
+                               writes nothing waits for the writers before it.
+       ⚠ NOTHING HERE DECIDES WHETHER A CALL RUNS. It only says what the call could collide with. */
+    function footprintOf(call, tools) {
+      var name = String((call && call.name) || '');
+      var args = (call && call.arguments) || {};
+      if (name === 'find_capability') return { pure: true };
+      var cap = null;
+      if (name === 'run_capability') {
+        cap = capOf(String(args.id || ''));
+        if (!cap) return { pure: true };
+      } else {
+        var t = tools && tools[name];
+        cap = (t && t.capabilityId) ? capOf(t.capabilityId) : null;
+      }
+      if (!cap) return { barrier: true };
+      if (ENDS_TURN(cap.id)) return { barrier: true, endsTurn: true };
+      var w = ((cap.effects && cap.effects.conflictKeys) || []).map(String);
+      var whole = w.some(function (k) { var s = k.split('.'); var tail = s[s.length - 1]; return s.length < 2 || tail === 'all' || tail === 'any'; });
+      if (whole) return { barrier: true, writes: w };
+      var r = (cap.effects && Array.isArray(cap.effects.reads) && cap.effects.reads.length) ? cap.effects.reads.map(String) : null;
+      return { writes: w, reads: r };
+    }
+
+    /* ══ ⚠⚠⚠ (atlas-turn-engine) A VALUE THE PAGE DECIDES DOES NOT BELONG IN A DECLARATION THE PROVIDER CACHES ══
+       js/atlas-console.js used to write the live layer names into set_layer's `name.enum`, rebuilding the
+       tool list every turn «because the layer enum is live app state» — and ai-proxy's prompt-cache key
+       is a hash of the system text and the tools, so the key moved with the page (a language switch, a
+       layer that appeared) and so did every byte after the tools. The values are still enforced and still
+       in front of the model: `check` is the schema WITH the values, which js/atlas-agent.js `reject`
+       validates against (a wrong name comes back typed, listing the valid ones), and the returned
+       sentence goes into the turn's request, which is input — after the cached prefix, not inside it. */
+    function liveEnum(tools, toolName, prop, values) {
+      var t = tools && tools[toolName];
+      var v = (Array.isArray(values) ? values : []).filter(function (x) { return typeof x === 'string' && x; });
+      if (!t || !v.length || !t.parameters || !t.parameters.properties || !t.parameters.properties[prop]) return '';
+      var chk = JSON.parse(JSON.stringify(t.check || t.parameters));
+      chk.properties[prop].enum = v.slice();
+      t.check = chk;
+      return '[LIVE VALUES] ' + toolName + ' "' + prop + '" is exactly one of: ' + v.join('; ') + '\n\n';
+    }
+
+    var API = { CORE, baseTools, find, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum };
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

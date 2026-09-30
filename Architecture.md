@@ -508,7 +508,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
 | 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳**。⚠ **開いた台帳は閉じる**——`endTurn` が返答・停止理由・モデル呼び出し回数を書き戻し、取り消しと例外もそれぞれの状態で閉じる（呼び出し元は `js/atlas-console.js` の 1 か所） |
-| ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る。**読者への質問が成功した時点でターンは終わる**（`stopped:'awaiting_user'`）——同じ返信に並んだ後続の呼びは実行せず `turn_ended` で差し戻し、締めの 1 文のためのモデル呼び出しもしない。**旗は道具（と結果）に立っているので、ループは特定の道具の意味を知らない**。⚠ **同じ呼び出しを 1 ターンで 2 回したら、答えは 1 回**——`js/atlas-turn-results.js` の `callKey(name, args)` で同一性を見て、**成功した**先の結果をそのまま返し「これは今このターンで自分が出した答えである」と添える。同じ仕事かは引数の綴りだけでは決まらないので、結果が名乗る `meta.resultKey`（線・面は**形状**から作り、向きを問わない）が同じなら 2 回目以降は「もう済んでいる、地図には 1 つだけ」と名指す（呼び出し自体は実行するのでラベルや色の変更は反映される。作品の改訂は後継であって反復に数えない）。⚠ **上限ではない**——呼び出し回数の予算も plan も 1 つも変えず、拒否もしない。失敗した呼び出しの**結果**は覚えない（再試行が正しい場合だから）が、**同じ呼びが拒否されたことは覚える**——同一の引数での再拒否は進行ではないので、注記して上の回数に数える |
+| ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る。**読者への質問が成功した時点でターンは終わる**（`stopped:'awaiting_user'`）——同じ返信に並んだ後続の呼びは実行せず `turn_ended` で差し戻し、締めの 1 文のためのモデル呼び出しもしない。**旗は道具（と結果）に立っているので、ループは特定の道具の意味を知らない**。⚠ **同じ呼び出しを 1 ターンで 2 回したら、答えは 1 回**——`js/atlas-turn-results.js` の `callKey(name, args)` で同一性を見て、**成功した**先の結果をそのまま返し「これは今このターンで自分が出した答えである」と添える。同じ仕事かは引数の綴りだけでは決まらないので、結果が名乗る `meta.resultKey`（線・面は**形状**から作り、向きを問わない）が同じなら 2 回目以降は「もう済んでいる、地図には 1 つだけ」と名指す（呼び出し自体は実行するのでラベルや色の変更は反映される。作品の改訂は後継であって反復に数えない）。⚠ **上限ではない**——呼び出し回数の予算も plan も 1 つも変えず、拒否もしない。失敗した呼び出しの**結果**は覚えない（再試行が正しい場合だから）が、**同じ呼びが拒否されたことは覚える**——同一の引数での再拒否は進行ではないので、注記して上の回数に数える。⚠ **`unobserved`（実行はしたが、効果が出たかを観測できなかった）は済んだものとして覚える**——同じ呼びは再実行せず、「実行済み・効果は観測できなかった」と述べて最初の結果を返す（`partial` は借りが残っているので今までどおり再実行できる） |
 | ターンが必ず終わること | `js/atlas-agent.js` ＋ `js/proxy-fetch.js` ＋ `js/fetch-deadline.js` | **回数の上限に加えて時計を持つ。** 1 ツール呼び出しは `toolTimeoutMs`（45 秒）で見切り、Atlas には `tool_timeout` として**機械的に伝える**（中断ではなく報告——次に何をするかは Atlas が決める）。ターン全体は `turnBudgetMs`（180 秒）を超えたら道具を呼ぶのをやめ、**持っているもので回答を書く**。⚠ どちらも**健全なターン（実測およそ 10 秒）の一桁上**に置いた退避線であって、Atlas に与える裁量を減らすものではない（CONSTITUTION.md §5） |
 | 外部証拠の取得 | `js/proxy-fetch.js`（唯一の梯子） | **自前の Edge Function だけ**を段にする（第三者の公開 relay は使わない）。複数あれば**競争**させ、勝った時点で残りを中断する。⚠ **梯子は自分の評決を述べる**——`opts.note` を渡した呼び手には `reason`（`ok` / `refused` / `aborted` / `no-budget`）と `via`（答えた段）が返る。これが無い間、`null` が「どの段も答えなかった」と「答えは来たが中身が無かった」の**両方**を意味していて、読者はその差を知らされなかった（渡さない呼び手の戻り値は変わらない）。⚠ **公開 relay 4 本が生きているかは誰も測っていなかった**——計器は `scripts/probe-relay-ladder.mjs`、実測と警報の条件は [`docs/MONITORING.md`](docs/MONITORING.md)。⚠ **締切は本文を読み終わるまで掛かる**（ヘッダが着いた時点で解除すると、200 を返してから止まった相手を止めるものが無くなる）。呼び出し側は `budgetMs` で**梯子全体の上限**を、`signal` で**停止**を渡す。Atlas の 1 取得 14 秒／証拠集め全体 32 秒／GDELT の梯子 20 秒 |
 | 締切つきの単発取得 | `js/fetch-deadline.js` | `jsonWithin(url, ms, init, opts)` と、状態・型・本文を返す `readWithin`。Nominatim や地図の行の取得のように relay を要さない相手のための 1 回の取得。**呼び出し側の signal は置き換えず連結する**。`opts.idle` は本文の塊が届くたびに時計を掛け直す（大きなファイルでは長さではなく**無音**を測る）。`opts.bytes` は本文を文字列でなく `bytes`（ArrayBuffer）で返す（gzip を TextDecoder に通すと壊れるため。読み手は下の同梱データの扉）。**時計はホストの沈黙を数え、このページ自身の凍結を数えない**——最大 250 ms の歩を数える鎖で、凍結で遅れた歩も 1 歩としか数えず、最後の歩が凍結で遅れたときはもう 1 歩待ってから見切る（凍結の後ろに並んでいた応答を先に読むため）。何秒かは `js/proxy-fetch.js` の `clockFor(url, via)` が host ごとに答える。**投げる例外は理由を持つ**——`reason` が `timeout`／`aborted`（呼び手自身の signal。相手の失敗として扱わない）／`network`／`http`（`status` つき）／`parse` のどれか。**期限切れは拒否ではない**——判定は `isUnobserved(err)` の 1 つ（`timeout` だけが真）、方針は `untilObserved(read, opts)` の 1 つで、観測されなかった失敗だけを時計を 2 倍にして（最大 8 倍・`UNOBSERVED_RETRIES`＝3）、失敗した試みの時計と同じだけ待ってから読み直し、観測された失敗はその場で呼び手へ返す。待ちは `js/runtime.js` の `afterTick`（タイマーホイールの 1 回）。地図の行は `js/data-layers.js` の `rowUntilObserved` を通り、待つあいだ箱は ON のまま（`aria-busy`・回数は `data-im-unobserved`・要求は settle しない）。詳細は `docs/MAP-LAYERS.md`。`js/proxy-fetch.js` の時計も同じ語彙の `reason` を投げる。**classic script として走るファイル**（`js/countries-ui.js`・`js/routing-ops.js`——node のハーネスが `new Function` で実行するので import 行を持てない）には `window.IntMapFetchWithin`（`jsonWithin`・`readWithin`・`clockFor`）として同じものを渡す。`js/nominatim-gate.js` と同じ流儀で、実体は 1 つ |
@@ -551,7 +551,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 `compose`・`factions` と `isochrone` 観測器は**効果キーで**訊く。`sim` 観測器は何も動かなかったとき、その能力の
 効果キーで申告されたソースが描かれていれば `completed / already_there`（同じシミュレーションの描き直し）。
 **全能力に 1 つの規則**: 地図かカメラを書く能力の判定が `not_rendered` / `no_change` で、そのときレンダラ自身が
-`observable:false` と答えるなら `partial / not_rendering`（観測できなかった）に置き換える——完了は触らない。
+`observable:false` と答えるなら `unobserved / not_rendering`（観測できなかった）に置き換える——完了は触らない。
 申告の置き場: `js/atlas-console.js`（多角形・線・施設マーカー・歴史年のハイライト、および `js/atlas-sims.js` の
 飛行経路・爆風・標高・陣営塗り——同モジュールの本体はバイト一致を検査されているので取り外し関数を束ねる側で申告）、
 `js/map-tools.js`（到達圏）、`js/atlas-map-compose.js`、`js/shakemap.js`、`js/pandemic-atlas.js`。
@@ -573,7 +573,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 ⚠⚠⚠ **「動かなかった」と「動いたかを見られなかった」は別の答えである。** 合成されていないページは
 アニメーションフレームを 1 枚も回さないので、`flyTo` は本当にカメラをその場に残す——それを `no_change`
 （＝依頼が効かなかった）と報告すると、Atlas は正しく再試行し、手数を使い切る。カメラの検証器は、動きが
-無かったときに `partial / not_rendering` を返す——読者には「IntMap を前面にして、もう一度お尋ねください」と出る。
+無かったときに `unobserved / not_rendering` を返す——読者には「IntMap を前面にして、もう一度お尋ねください」と出る。
 ⚠ **訊くのは観測器であって判定ではない。** 「このページは合成されているか」は*見る*ことであって決めることでは
 ないので、カメラの観測器が AFTER の標本の隣で **`render.ticking()`**（`js/geo-engine.js` の
 `render.onNextFrame` が正本。描画の刻みを待つ実装はここに 1 つだけあり、画面の取り込みも同じものを使う）を
@@ -787,7 +787,7 @@ remover で外す）→ `surfaces`（申告されたソース——増えたも�
 **実行の 11 段**（`IntMapOS.execute(capabilityId, args, {source, turnId, signal})`）:
 能力の解決 → 可用性 → 引数 schema → **必要な入力の解決** → 競合キーの取得 → 前の観測 →
 実行 → **完了待ち（同期・Promise を問わず）** → 後の観測 → **事後条件の検証** → 構造化結果。
-各段は `planned / validating / waiting-input / started / progress / completed / partial /
+各段は `planned / validating / waiting-input / started / progress / completed / partial / unobserved /
 failed / cancelled / superseded` としてイベントバスに出る。
 
 **⚠ 確認の段（引数 schema の後・競合キーの前）——能力表の confirm 列は機構である。** 列の値は
@@ -829,9 +829,12 @@ POST する Edge Function に届く click/change/Enter ハンドラの要素が 
 placeholder の順で、個人情報の欄（type が email / password / tel、または autocomplete が人を指す欄）の
 placeholder は使わない**——アカウント削除の欄は placeholder が読者自身のメールアドレスだった。
 
-**status は 7 つあり、`ok` はその導出である**（`status === 'completed'`。読み取り専用の
+**status は 8 つあり、`ok` はその導出である**（`status === 'completed'`。読み取り専用の
 getter なので、観測していない成功を呼び出し側が書き込むことはできない）。
-`running`＝計算が続いている。`needs_input`＝必要な入力が無い。`partial`＝一部だけ。
+`running`＝計算が続いている。`needs_input`＝必要な入力が無い。`partial`＝一部だけ（まだ借りがある）。
+`unobserved`＝**実行はした。効果が出たかを観測できなかった**（レンダラが描いていない・描画面を読めない）。
+失敗でも完了でもない。⚠ `partial` の code として書いていた間は、`partial` は「まだ借りがある」なのでループが
+同じ呼び出しを**もう一度実行してよいもの**として扱い、仕事を終えた描画が再実行されていた。
 `cancelled` / `superseded`＝呼び出し側が取り消した／新しい依頼が置き換えた。
 
 **⚠ 対象が要る能力は、地図の中心を勝手に使わない。** 表の「必要な対象」列が
@@ -874,7 +877,23 @@ inputRequest kind `choice`）を返す。何も押していないので、観測
 1 バイトも変わらない**）→ **このターンの `function_call` / `function_call_output`**（provider の暗号化された
 reasoning も含めて、モデルが出したとおりに再送）→ 末尾に**手ごとに変わるもの**（呼び出し後の地図状態・添付台帳・
 撮ったフレーム）。system（人格・方針・索引）と道具の一覧も**ターン中は同一**なので、各手は前の手の入力の
-**末尾に足すだけ**になり、provider の prompt cache が先頭を保持する（`prompt_cache_key` は system＋道具から導く）。
+**末尾に足すだけ**になり、provider の prompt cache が先頭を保持する（`prompt_cache_key` は system＋**固定の**道具から導く——下の昇格で
+足された道具は含めない。ai-proxy の `cacheBasis`）。⚠ **ページが決める値は宣言に入れない。** `set_layer` の
+`name` の実在するレイヤー名は以前は道具の `enum` に書き込まれ、道具の一覧（と、そのハッシュであるキャッシュの鍵）
+がページの状態とともに動いていた。いまは `liveEnum` が値を道具の `check`（ループの `reject` が検証に使う
+schema。宣言としては送らない）に置き、同じ値を**依頼 item**（入力側・キャッシュされる先頭の後ろ）に
+`[LIVE VALUES]` として載せる——間違った名前は今までどおり型付きで、有効な名前を並べて返る。
+⚠⚠ **`find_capability` が返した能力は、次の手から型付きの道具になる（昇格）。** ループは結果を
+`promote`（道具の面の `promotionsOf`）に渡し、返った定義を**固定の道具の後ろに、昇格した順に追記**する
+（ターン中は外さない・並べ替えない）。道具名は能力 id の `.` を `_` にしたもの（`routing.route` →
+`routing_route`）。既に CORE にある能力は昇格せず、検索結果の `tool` がその CORE 名を示す。昇格した道具の
+呼び出しは**`run_capability` として実行する**（定義の `route`）——同じ 2 度目の schema 検査・同じ dispatch・
+同じ同一性（`callKey`）なので、昇格名で呼んでも `run_capability` で呼んでも 1 つの呼び出しである。
+見つけた結果には `promotedTools` と、それを述べる `promotionNote` が載る。定義は `promoted:true` を持ち、
+ai-proxy はそれを鍵から外し、Anthropic 経路では**固定の道具の末尾にも** `cache_control` を付ける（昇格が
+最後の道具の印を動かしても、固定の先頭は命中のまま。印は計 3 個まで）。1 回の呼び出しが宣言できる関数は
+ai-proxy の `MAX_FN_TOOLS` までで、ループの `maxOfferedTools` はそれと等しい（検査が照合）。超える分は
+昇格せず、結果が「`run_capability` で届く」と名指す——**届く範囲は何も減らない**。
 Anthropic は印を付けた先頭しかキャッシュしないので、Anthropic 経路は**道具の末尾と system の末尾**に
 `cache_control: {type:"ephemeral"}` を付ける（`_shared/ai-usage.js` の `withPromptCache`。印は最大 4 個・
 モデルが読む中身は同一）。命中したかは台帳の `cached_read_tokens` / `cache_write_tokens` で読める。
@@ -886,8 +905,21 @@ Anthropic は印を付けた先頭しかキャッシュしないので、Anthrop
 提示）を**柵の外に**書く。ai-proxy 側の柵（`MAX_INPUT_CHARS`・`MAX_ITEM_CHARS`）はその 2 倍に置いた最後の線で、
 切ったときは item の中に書き、`meta.inputTrimmed` で返す。ループは各手の切り詰めを `trace.inputTrims` に記録する。
 ⚠ **1 手で出された呼び出しには、全部に結果が返る**（`maxPerStep` を超えた分も `step_call_limit` として。
-関数呼び出しに出力が無いと provider が要求を拒むので、黙って落とせない）。1 手の中の呼び出しは**順に**実行する
-（地図の状態を変える道具どうしは順序が意味を持ち、実行経路も 1 本の返信へ結果を積む）。
+関数呼び出しに出力が無いと provider が要求を拒むので、黙って落とせない）。
+⚠⚠ **1 手の中の呼び出しは、互いに衝突しない組が同時に走る。** 各呼び出しは、同じ返信の**より前の**呼び出しの
+うち自分と衝突するものが終わるのだけを待つ。衝突は道具の面（`js/atlas-toolsurface.js` の `footprintOf`）が
+能力表の書き込み列＝**競合キー**（実行器がロックに使うのと同じ値）から述べる足跡で決まる:
+`find_capability` のようにアプリの状態に触れないもの（`pure`）は何も待たない／節全体を書くキー
+（`camera`・`time`・`navigation` のような 1 段のキー）、見出しの下の全部を書くキー（`map.all`・`panel.any`・
+`ui.any`）、ターンを終える能力、道具の面が置けない呼び出しは**障壁**で、前後の全部と順序を保つ（＝以前の直列）／
+何も書かない呼び出しは**アプリを読む**ので、前にある書き込みを待つ（能力表が `effects.reads` を申告すれば
+それで狭まる。今日申告している行は 0）／書き込みどうしは、キーが**段の単位で**重なるとき（同じキーか、
+一方が他方の部分: `camera` と `camera.follow`）だけ待つ。同一の呼び出しの 2 回目は 1 回目を待って、その答えで
+返される。⚠ **モデルが読む順は呼んだ順のまま**——結果は呼び出しの位置に戻し、`results` にも呼んだ順に積む。
+予算（`maxToolCalls`）も走らせる前に呼んだ順で割り当てる。`footprint` を渡さない呼び出し元では全部が障壁＝
+従来どおりの直列。各手の `trace.stepTiming` に、直列だった場合の合計（`serialMs`）・実際に待った時間
+（`wallMs`）・最大同時数（`concurrent`）を記録する。コンソールの `_runOne` は、同時に走る他の呼び出しの
+記録と取り違えないよう、自分の記録を**行動オブジェクトの同一性で**探す。
 ⚠ protocol 2 を話さない ai-proxy（ページが関数より先に配られた間）には、**同じ item を 1 本の文字列に畳んだもの**
 （`legacyPrompt`）と下の envelope で話す——そのセッションで 1 度、旧い応答を**観測してから**切り替える。
 

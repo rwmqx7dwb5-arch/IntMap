@@ -68,7 +68,7 @@ const asleep = await verdictWith('asleep');
 const live = await verdictWith('live');
 const mute = await verdictWith('throws');
 
-if (asleep.code === 'not_rendering' && asleep.status !== 'failed') ok('verdict: a page that is not compositing is reported as unobserved, not as a move that failed');
+if (asleep.code === 'not_rendering' && asleep.status === 'unobserved') ok('verdict: a page that is not compositing is reported as unobserved, not as a move that failed');
 else no('verdict: a camera move on a non-drawing page answered ' + asleep.status + '/' + asleep.code + ' — that sentence is what Atlas retries against (rule §2-1)');
 
 if (live.code === 'no_change') ok('verdict: a drawing page keeps the verdict it always had');
