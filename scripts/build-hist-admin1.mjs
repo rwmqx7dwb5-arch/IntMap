@@ -82,9 +82,20 @@ import { itemVerdicts, fillNames, chineseTags, missingByTag } from './histadmin/
 import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { plainLabel } from './histeras/match.mjs';
 import { geometryOf, repoolGeometry, generatedPrecision } from './histborders/precision.mjs';
+import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = (() => {
+  /* one builder, three tiers (--levels / --out): the same upstream and the same cadence for each */
+  const rec = { publisher: 'OpenHistoricalMap', url: EP, ...OPENHISTORICALMAP, builtBy: 'scripts/build-hist-admin1.mjs' };
+  return { 'data/hist-admin1.js': rec, 'data/hist-admin2.js': rec, 'data/hist-admin3.js': rec };
+})();
 
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };

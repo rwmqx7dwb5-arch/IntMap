@@ -33,6 +33,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { NATURAL_EARTH } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson';
@@ -52,6 +53,7 @@ export const GOVERNANCE = {
     /* 「public domain」 itself states that credit is not a CONDITION of redistribution; this file's
        header says so in the same words. Natural Earth is attributed anyway in js/reference-data.js. */
     attribution: false,
+    ...NATURAL_EARTH,
     builtBy: 'scripts/build-admin1.mjs',
   },
 };

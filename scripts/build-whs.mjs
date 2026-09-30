@@ -72,6 +72,7 @@ import vm from 'node:vm';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { toHans } from './zh-hans.mjs';
+import { UNESCO_WHC } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -99,21 +100,26 @@ const WD_ATTRIB = 'Wikidata';
    突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
 const WDQS = 'https://query.wikidata.org/sparql';
 
-export const GOVERNANCE = {
-  'data/whc-sites.json': {
-    /* ⚠ TWO UPSTREAMS, CREDITED SEPARATELY, and the header says so: the List itself is UNESCO's
-       and the in-danger status is Wikidata's.
-       ⚠ THE PER-LOCALE DESCRIPTION BUNDLES (`detailPath(tag)`) CARRY THIS SAME RECORD, and their
-       locale set is DISCOVERED from the feeds UNESCO publishes rather than listed here — a list
-       would be a photograph of the day it was typed ([[intmap-discovered-list-is-a-photograph]]). */
+export const GOVERNANCE = (() => {
+  /* ⚠ TWO UPSTREAMS, CREDITED SEPARATELY, and the header says so: the List itself is UNESCO's
+     and the in-danger status is Wikidata's.
+     ⚠ THE PER-LOCALE DESCRIPTION BUNDLES (`detailPath(tag)`) CARRY THIS SAME RECORD, and their
+     locale set is DISCOVERED from the feeds UNESCO publishes rather than listed here — a list
+     would be a photograph of the day it was typed ([[intmap-discovered-list-is-a-photograph]]).
+     (upstream-liveness) So they are declared by their PATTERN, `whc-detail.{locale}.json.gz`:
+     check:datagov groups a bundle by the stem before its first dot, which is all it needs to know
+     that data/whc-detail is this record's, and naming one locale would be the list refused above. */
+  const rec = {
     upstreams: [
       { publisher: WHC_ATTRIB, url: WHC + '/en/list/xml/', licence: '© UNESCO', attribution: true,
         paidBy: 'UNESCO World Heritage Centre' },
       { publisher: WD_ATTRIB, url: WDQS, licence: 'CC0', attribution: false },
     ],
+    ...UNESCO_WHC,
     builtBy: 'scripts/build-whs.mjs',
-  },
-};
+  };
+  return { 'data/whc-sites.json': rec, 'data/whc-detail.{locale}.json.gz': rec };
+})();
 
 /* Q222384 — «World Heritage Site in Danger», the value Wikidata's P793 (significant event) takes
    when a property is inscribed on the List in Danger. P580/P582 qualify when it began and ended;

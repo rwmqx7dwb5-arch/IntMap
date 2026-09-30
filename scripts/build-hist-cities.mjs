@@ -129,6 +129,22 @@ import {
 } from './histcities-record.mjs';
 import { LANGS } from './histcities/lang.mjs';
 import { sameName, fold, identityHosts, daysInMonth as daysInMonthLocal } from './histcities/upstream.mjs';
+import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/hist-cities.json': {
+    /* ⚠ THE BUNDLE STATES ITS THREE UPSTREAMS' TERMS IN-BAND (`rights`), so they are not restated here.
+       Its rows are harvested from OpenHistoricalMap, Pleiades and Wikidata, all three edited daily;
+       OpenHistoricalMap's cadence is spread because it is the one the file is built around. */
+    ...OPENHISTORICALMAP,
+    builtBy: 'scripts/build-hist-cities.mjs',
+  },
+};
+
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'hist-cities.json');

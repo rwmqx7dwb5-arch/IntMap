@@ -107,6 +107,21 @@ import { tmpdir } from 'node:os';
 import { stitch, simplifyRing, ringArea, pointInRing } from './histborders/geom.mjs';
 import { geometryOf, identityOf, repoolGeometry, previousPrecision, generatedPrecision } from './histborders/precision.mjs';
 import { fetchIndex, fetchGeom, loadGeom, migrateBatches } from './histborders/fetch.mjs';
+import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/hist-borders.js': {
+    /* the relations are fetched by scripts/histborders/fetch.mjs, which names the endpoint */
+    publisher: 'OpenHistoricalMap',
+    ...OPENHISTORICALMAP,
+    builtBy: 'scripts/build-hist-borders.mjs',
+  },
+};
+
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'hist-borders.js');

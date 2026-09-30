@@ -27,6 +27,7 @@
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
+import { CELESTRAK_GP } from './lib/upstream-cadence.mjs';
 
 const OUT_DIR = path.join(process.cwd(), 'data', 'tle');
 const CELESTRAK = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle';
@@ -43,8 +44,11 @@ export const GOVERNANCE = {
         { publisher: 'CelesTrak', url: CELESTRAK },
         { publisher: 'SatNOGS DB', url: SATNOGS },
       ],
-      /* ⚠ NO CADENCE IS DECLARED, and the one this repository refreshes at is NOT it: a schedule we
-         chose is not a period a supplier publishes (js/data-governance.js, `cadence`). */
+      /* ⚠ THE CADENCE IS THE UPSTREAM'S, MEASURED — NOT THE TWICE-A-DAY SCHEDULE THIS REPOSITORY
+         REFRESHES AT (.github/workflows/tle-refresh.yml). A schedule we chose is not a period a
+         supplier publishes (js/data-governance.js, `cadence`); the median element age at build time
+         is, and it is about a day. */
+      ...CELESTRAK_GP,
       builtBy: 'scripts/build-tle-snapshot.mjs',
     };
     return { 'data/tle/catalogue.tle': rec, 'data/tle/catalogue.json': rec, 'data/tle/groups.json': rec };

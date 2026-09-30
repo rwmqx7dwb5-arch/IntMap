@@ -24,9 +24,11 @@
  *                       CONDITION of redistribution names the DATA_SOURCES row that pays it, and
  *                       the name is compared as a VALUE against the real array (never «説明で照合」,
  *                       the judgement scripts/histcities/lang.mjs's LIC() already states).
- *    freshness-stated   a record states its CADENCE. ⚠ BEING OLD IS NEVER A FAILURE HERE — only
- *                       being silent is (.agents/rules/no-ad-hoc-hardcoding.md §4: a threshold
- *                       with no author must not delete or refuse data).
+ *    freshness-stated   every bundle has a CADENCE from some declaration, with its basis
+ *                       (observed / expires / canon), and is judged as «the date its bytes were
+ *                       last written × that cadence» (freshnessOf). ⚠ BEING OLD IS NEVER A FAILURE
+ *                       HERE — only being silent is (.agents/rules/no-ad-hoc-hardcoding.md §4: a
+ *                       threshold with no author must not delete or refuse data).
  *    update-failure     a builder that fetches cannot let a response it never checked reach the
  *                       bytes it writes.
  *    ledger-shrinks     everything already violating the four above is written down in
@@ -42,6 +44,9 @@
  *                       ledger row whose host the code no longer requests fails too. The rule itself
  *                       lives in scripts/outbound-hosts.mjs (tests/outbound-hosts-disclosed-checks
  *                       evaluates it on injected files); this gate only runs it.
+ *    probe-declared     every host the browser REQUESTS declares one representative probe in the
+ *                       same ledger (or says why it cannot be probed). Checked here without a
+ *                       network; scripts/upstream-liveness.mjs asks them, nightly.
  *
  *  ⚠ THE UNIVERSE IS DISCOVERED, NEVER LISTED. Both universes come from `git ls-files`: the
  *  bundles from data/ (plus the sets data-assets.json places there from outside git — see
@@ -67,7 +72,11 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { SPELLINGS, FACETS, SUBJECTS, REASONS, read, freshness, account } from '../js/data-governance.js';
 import { readManifest, requireData, filesUnder } from './data-assets.mjs';
-import { checkRepository as checkOutbound, LEDGER as OUTBOUND_LEDGER } from './outbound-hosts.mjs';
+/* ⚠ (upstream-liveness) scripts/outbound-hosts.mjs is imported INSIDE main(), not here: it parses the
+   browser code with acorn, an npm dependency, and scripts/data-refresh.mjs imports this module to
+   read builder declarations inside .github/workflows/tle-refresh.yml, a job that installs no
+   node_modules. A top-level import would make that job fail on a parser it never uses. */
+import { declared as declaredProbes } from './upstream-liveness.mjs';
 import { codeOnly } from './code-only.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -343,7 +352,17 @@ function builders() {
         unresolved.push({ line: lineOf(src, m.index), why: 'the destination is computed: ' + arg.trim().slice(0, 60) });
       }
     }
-    if (!writes.length) continue;
+    /* ⚠⚠ (upstream-liveness) A SCRIPT THAT DECLARES IS A SUBJECT EVEN WHEN ITS WRITE CANNOT BE READ.
+       The write detector above resolves a destination only when it is a literal or a `const` naming
+       one; `fs.writeFileSync(path.join(OUT_DIR, 'stars.bin'), …)` is neither, so it is skipped —
+       and until this line the script was skipped WITH it, declaration and all. Measured 2026-09-30:
+       build-star-catalogue, build-tle-snapshot, build-who-don and build-world-basemap each carried an
+       `export const GOVERNANCE` naming its bundles, and this gate had never read one of them — the
+       bundles they declare were counted as having no builder. A declaration keyed by `data/…` paths
+       states which bundles it is for more exactly than any reading of the write calls can, so it is
+       enough to make its script a subject. */
+    const declares = /export\s+const\s+GOVERNANCE\s*=/.test(src);
+    if (!writes.length && !declares) continue;
     /* ⚠ SOME BUILDERS ALREADY HOLD THEIR TERMS AS VALUES, UNDER A NAME NOTHING ELSE LOOKS FOR.
        #R689 put a `{source, licence, attribution}` record in build-cshapes.mjs and
        build-hist-cities.mjs and compared it against DATA_SOURCES right there, which is correct and
@@ -359,8 +378,10 @@ function builders() {
     const other = new RegExp('export\\s+const\\s+' + NAMES + '\\b').exec(src);
     const priv = new RegExp('(?:^|\\n)[ \\t]*(?:const|let)\\s+' + NAMES + '\\s*=').exec(src);
     const declaration = governanceOf(src, rel);
-    out.push({ subject: rel, src, writes, unresolved,
-      paths: [...new Set(writes.flatMap((w) => w.paths))],
+    const keyed = declaration.value && typeof declaration.value === 'object' && !Array.isArray(declaration.value)
+      ? Object.keys(declaration.value).filter((k) => k.startsWith('data/')) : [];
+    out.push({ subject: rel, src, writes, unresolved, declaredOnly: !writes.length,
+      paths: [...new Set([...writes.flatMap((w) => w.paths), ...keyed])],
       otherName: !declaration.present && other ? other[1] : null,
       privateValues: !declaration.present && !other && priv ? priv[1] : null,
       declaration });
@@ -593,6 +614,177 @@ function bundleRecord(bundle) {
       : 'the bundle states none of the facets' };
 }
 
+/* ── freshness: the date a bundle was written × the cadence declared for it ─────────────────────
+   ⚠⚠ (upstream-liveness) MEASURED 2026-09-30, BEFORE THIS SECTION: fresh 1 / aging 0 / stale 0 /
+   unknown 129. The vocabulary could always judge freshness (js/data-governance.js freshness()), but
+   it asks ONE record for both halves — a date and a cadence — and in this repository the two live in
+   different places: the CADENCE is a fact about the upstream, so it belongs to the builder's
+   declaration; the DATE is a fact about the bytes, and a builder's source cannot know when it was
+   last run. Asked of either alone, the answer is `unknown` every time. So the two halves are joined
+   here, each from where it is known:
+     cadence  the declaration(s) keyed to the bundle's paths (a builder's GOVERNANCE, or
+              scripts/data-unbuilt.mjs for the bundles no script in this repository writes), or the
+              bundle's own in-band record. Two different cadences for one bundle is a failure.
+     date     the bundle's own in-band `generatedAt`/`retrievedAt` when it states one (the builder's
+              statement about itself); otherwise the commit that last changed its bytes. For a set
+              that lives outside git (data-assets.json) it is the commit that recorded its sha256.
+   ⚠ THE COMMIT DATE IS STATED AS WHAT IT IS. It is when the bytes last CHANGED in this repository:
+   a rebuild that reproduced identical bytes leaves no commit (the date reads older than the build),
+   and a build committed days later reads younger. Both errors are bounded by how often the set is
+   rebuilt, and each row says which of the three sources its date came from.
+   ⚠ A SHALLOW CLONE HAS NO HISTORY TO ASK. CI checks out one commit, where every file's last change
+   is that commit — asked there, every bundle would be «written today» and fresh. The date is then
+   reported as unobserved (`no-date`), a NOTE: 「確認できなかった」 is not 「新しい」 and not 「古い」. */
+
+/* The subject a `data/…` path belongs to (bundles() groups by the same rule). */
+export function subjectOfPath(p) {
+  const rel = p.slice('data/'.length);
+  const slash = rel.indexOf('/');
+  return slash < 0
+    ? 'data/' + rel.slice(0, rel.indexOf('.') < 0 ? rel.length : rel.indexOf('.'))
+    : 'data/' + rel.slice(0, slash) + '/';
+}
+
+/* A declaration whose keys are all `data/…` paths is a map from output to record (see measure()). */
+function asPathMap(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const ks = Object.keys(v);
+  if (!ks.length) return null;
+  if (!ks.every((k) => k.startsWith('data/') && v[k] && typeof v[k] === 'object' && !Array.isArray(v[k]))) return null;
+  return ks;
+}
+
+const git = (args) => execFileSync('git', args, { cwd: ROOT, maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] }).toString('utf8');
+
+function bundleDates(bs) {
+  const out = new Map();
+  let shallow = false;
+  try { shallow = git(['rev-parse', '--is-shallow-repository']).trim() === 'true'; } catch { shallow = true; }
+  /* ONE walk of data/'s history, newest first: the first time a path appears is its last change.
+     Measured 0.27 s here, against 5.8 s for one `git log -1` per bundle. */
+  const last = new Map();
+  if (!shallow) {
+    let at = null;
+    for (const line of git(['-c', 'core.quotepath=off', 'log', '--format=@%cI', '--name-only', '--no-renames', '--', 'data']).split('\n')) {
+      if (line.startsWith('@')) { at = line.slice(1).trim(); continue; }
+      const f = line.trim();
+      if (f && !last.has(f)) last.set(f, at);
+    }
+  }
+  const sets = Object.values((readManifest(ROOT) || {}).sets || {});
+  for (const b of bs) {
+    if (shallow) { out.set(b.subject, { at: null, from: null, why: 'a shallow clone carries no history to date the bytes by' }); continue; }
+    const set = sets.find((st) => b.members.some((m) => m === st.path || m.startsWith(st.path + '/')));
+    if (set) {
+      let at = null;
+      try { at = git(['log', '-1', '--format=%cI', '-S' + set.sha256, '--', 'data-assets.json']).trim() || null; } catch { at = null; }
+      out.set(b.subject, at ? { at, from: 'data-assets.json (the commit that recorded sha256 ' + set.sha256.slice(0, 12) + ')' }
+        : { at: null, from: null, why: 'no commit of data-assets.json records sha256 ' + set.sha256.slice(0, 12) });
+      continue;
+    }
+    /* a shard directory is dated by its index (rewritten on every build of the set); a file bundle
+       by the newest of its encodings */
+    const pick = b.index ? [b.index] : b.members;
+    const ds = pick.map((m) => last.get(m)).filter(Boolean).sort();
+    out.set(b.subject, ds.length ? { at: ds[ds.length - 1], from: 'git (the last commit that changed ' + (b.index || 'its bytes') + ')' }
+      : { at: null, from: null, why: 'no commit in this clone touched it' });
+  }
+  return out;
+}
+
+/* What a cadence declaration must carry beside it (.agents/rules/no-ad-hoc-hardcoding.md §4): a
+   cadence is a threshold, and a threshold nobody can date is exactly what that rule forbids. */
+export const CADENCE_BASIS = Object.freeze(['observed', 'expires', 'canon']);
+export function basisProblem(rec) {
+  const b = rec && rec.cadenceBasis;
+  if (!b || typeof b !== 'object') return 'states a cadence with no `cadenceBasis` {' + CADENCE_BASIS.join(', ') + '}';
+  const missing = CADENCE_BASIS.filter((k) => typeof b[k] !== 'string' || b[k].trim().length < 12);
+  return missing.length ? '`cadenceBasis` does not say ' + missing.join(', ') : null;
+}
+
+export function freshnessOf(bs, bd, subjects, now) {
+  const dates = bundleDates(bs);
+  const inBand = new Map(subjects.filter((s) => s.kind !== 'builder').map((s) => [s.subject, s]));
+  const declFor = new Map();
+  for (const b of bd) {
+    const v = b.declaration.value;
+    if (!v) continue;
+    const map = asPathMap(v);
+    for (const p of (map || b.paths)) {
+      const sub = subjectOfPath(p);
+      if (!declFor.has(sub)) declFor.set(sub, []);
+      declFor.get(sub).push({ builder: b.subject, path: p, record: map ? v[p] : v });
+    }
+  }
+  const dateOf = (sub) => {
+    const s = inBand.get(sub);
+    const r = s && s.record ? read(s.record) : null;
+    const own = r && (r.generatedAt || r.retrievedAt);
+    if (own != null) return { at: String(own), from: 'in-band (' + s.from + ')' };
+    return dates.get(sub) || { at: null, from: null, why: 'not a bundle this gate discovered' };
+  };
+  const rows = [], conflicts = [], unbased = [];
+  const judge = (subject, kind, cadence, date, sources) => {
+    const f = freshness({ cadence, generatedAt: date.at }, now);
+    /* ⚠ A CADENCE THE VOCABULARY CANNOT PARSE IS NOT A CADENCE. freshness() answers `unknown` for it
+       with the reason «upstream states no cadence» — which is false here, because a person DID state
+       one. Measured while writing this: `P1W` (ISO 8601 weeks) is outside js/data-governance.js's
+       DUR grammar, and the three submarine-cable subjects read `unknown` with a cadence printed
+       beside them. So it is its own failure, named for what it is. */
+    const why = cadence == null ? 'no-cadence'
+      : f.reason === 'upstream-states-no-cadence' ? 'unparseable-cadence'
+        : (f.verdict === 'unknown' && !date.at ? 'no-date' : null);
+    rows.push({ subject, kind, cadence: cadence == null ? null : String(cadence), at: date.at, dateFrom: date.from || null,
+      dateWhy: date.why || null, verdict: f.verdict, dueAt: f.dueAt || null, ageDays: f.ageDays, why, sources });
+  };
+  for (const b of bs) {
+    const seen = new Map();
+    for (const d of declFor.get(b.subject) || []) {
+      const c = read(d.record).cadence;
+      if (c != null) { const k = String(c); if (!seen.has(k)) seen.set(k, []); seen.get(k).push(d.builder + ' → ' + d.path); }
+    }
+    const own = inBand.get(b.subject);
+    const oc = own && own.record ? read(own.record).cadence : null;
+    if (oc != null) { const k = String(oc); if (!seen.has(k)) seen.set(k, []); seen.get(k).push('in-band (' + own.from + ')'); }
+    if (seen.size > 1) conflicts.push({ subject: b.subject, cadences: [...seen].map(([c, w]) => c + ' ← ' + w.join(', ')) });
+    /* ⚠ ONE BUNDLE, ONE DECLARING SCRIPT. Two scripts stating the same bundle's terms is two places
+       for one fact, and the first edit to one of them makes them disagree silently — the reason
+       scripts/data-unbuilt.mjs must give a row up the day a builder claims it. */
+    const declarers = [...new Set((declFor.get(b.subject) || []).map((d) => d.builder))];
+    if (declarers.length > 1) conflicts.push({ subject: b.subject, cadences: ['declared by ' + declarers.length + ' scripts: ' + declarers.join(', ')] });
+    const [cadence] = seen.keys();
+    judge(b.subject, b.kind === 'shard' ? 'shard' : 'bundle', cadence ?? null, dateOf(b.subject), [...seen.values()].flat());
+  }
+  for (const s of subjects) {
+    if (s.kind !== 'builder') continue;
+    const c = s.record ? read(s.record).cadence : null;
+    if (c != null) { const p = basisProblem(s.record); if (p) unbased.push({ subject: s.subject, why: p }); }
+    /* dated by the OLDEST bundle it writes — a builder is only as fresh as its stalest output */
+    const paths = s.declaredFor ? [s.declaredFor] : (s.builder ? s.builder.paths : []);
+    const ds = [...new Set(paths.map(subjectOfPath))].map(dateOf);
+    const dated = ds.filter((d) => d.at).sort((a, b) => (Date.parse(a.at) - Date.parse(b.at)));
+    judge(s.subject, 'builder', c, dated[0] || ds[0] || { at: null, from: null, why: 'writes no bundle this gate can name' }, [s.subject]);
+  }
+  const tally = { fresh: 0, aging: 0, stale: 0, unknown: 0 };
+  for (const r of rows) tally[r.verdict]++;
+  return { rows, tally, conflicts, unbased, shallow: [...dates.values()].some((d) => /shallow/.test(d.why || '')) };
+}
+
+/** The freshness of every bundle and builder subject, for readers outside this gate. Nothing here
+    refuses anything. ⚠ It measures data/ WHOLE, so it needs the sets that live outside git placed
+    (`npm run data:pull`); a reader that only needs the declarations uses builderDeclarations(). */
+export function freshnessTable(now) {
+  const m = measure(now);
+  return { rows: m.fr.rows, tally: m.fr.tally, builders: m.bd.map((b) => ({ subject: b.subject, paths: b.paths, declaration: b.declaration.value })) };
+}
+
+/** Every script that writes into data/ or declares GOVERNANCE, with its declaration read statically
+    — without touching data/ (scripts/data-refresh.mjs runs in a job that has not pulled the sets
+    that live outside git). */
+export function builderDeclarations() {
+  return builders().map((b) => ({ subject: b.subject, paths: b.paths, declaration: b.declaration.value, unreadable: b.declaration.present && !b.declaration.value }));
+}
+
 /* ── the ledger ─────────────────────────────────────────────────────────────────────────────── */
 
 const LEDGER_NOTE = 'これは「まだ果たしていない義務」の台帳であって、免責ではない。'
@@ -610,7 +802,7 @@ const readLedger = () => {
 
 /* ── main ──────────────────────────────────────────────────────────────────────────────────── */
 
-function measure() {
+function measure(now) {
   const bs = bundles();
   const bd = builders();
   const src = dataSourceRows(ROOT);
@@ -621,13 +813,9 @@ function measure() {
   const writerOf = new Map();
   for (const b of bd) {
     for (const p of b.paths) {
-      const rel = p.slice('data/'.length);
-      const slash = rel.indexOf('/');
-      const subject = slash < 0
-        ? 'data/' + rel.slice(0, rel.indexOf('.') < 0 ? rel.length : rel.indexOf('.'))
-        : 'data/' + rel.slice(0, slash) + '/';
+      const subject = subjectOfPath(p);
       if (!writerOf.has(subject)) writerOf.set(subject, []);
-      writerOf.get(subject).push(b.subject);
+      if (!writerOf.get(subject).includes(b.subject)) writerOf.get(subject).push(b.subject);
     }
   }
 
@@ -651,14 +839,8 @@ function measure() {
      [[intmap-contract-reached-only-from-one-side]] in the gate itself.
      ⚠ BOTH SHAPES ARE ACCEPTED, and the population decides which: a declaration whose keys are all
      `data/…` paths is a map (one subject per bundle it claims), anything else is one record. A rule
-     that demanded the map shape would be a rule about spelling rather than about what was stated. */
-  const asPathMap = (v) => {
-    if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
-    const ks = Object.keys(v);
-    if (!ks.length) return null;
-    if (!ks.every((k) => k.startsWith('data/') && v[k] && typeof v[k] === 'object' && !Array.isArray(v[k]))) return null;
-    return ks;
-  };
+     that demanded the map shape would be a rule about spelling rather than about what was stated.
+     (asPathMap() is module-level: the freshness join reads declarations by the same rule.) */
   for (const b of bd) {
     const paths = asPathMap(b.declaration.value);
     if (paths) {
@@ -728,20 +910,12 @@ function measure() {
     }
   }
 
-  /* freshness — reported, never used to refuse */
-  const fresh = { fresh: 0, aging: 0, stale: 0, unknown: 0 };
-  const stales = [], noCadence = [];
-  for (const s of subjects) {
-    const f = freshness(s.record || {});
-    fresh[f.verdict]++;
-    if (f.verdict === 'stale') stales.push({ subject: s.subject, ageDays: f.ageDays, cadence: f.cadence });
-    /* ⚠ ASKED ONLY OF A RECORD THAT WAS READ. A declaration this gate could not evaluate has not
-       failed to state a cadence — it has not been read, and the two must not produce one verdict
-       (js/data-governance.js's FRESHNESS: `unknown` is not a weaker `stale`). */
-    if (f.verdict === 'unknown' && f.reason === 'facet-undeclared' && s.kind === 'builder' && s.record) {
-      noCadence.push({ subject: s.subject });
-    }
-  }
+  /* freshness — a MEASUREMENT: the date each bundle was last written × the cadence declared for it.
+     Reported, never used to refuse; what refuses is a subject nobody declared a cadence for. */
+  const fr = freshnessOf(bs, bd, subjects, now);
+  const fresh = fr.tally;
+  const stales = fr.rows.filter((r) => r.verdict === 'stale');
+  const noCadence = fr.rows.filter((r) => r.why === 'no-cadence');
 
   /* update-failure */
   const exposed = [], suspected = [];
@@ -757,7 +931,7 @@ function measure() {
   const unreadable = subjects.filter((s) => s.kind === 'builder' && s.declared && !s.record)
     .map((s) => ({ subject: s.subject, why: s.unread }));
 
-  return { bs, bd, subjects, accounts, rows, src, credit, fresh, stales, noCadence,
+  return { bs, bd, subjects, accounts, rows, src, credit, fresh, stales, noCadence, fr,
     exposed, suspected, shardsWithoutIndex, undeclared, facetGaps, unreadable, writerOf };
 }
 
@@ -794,7 +968,8 @@ function ledgerFrom(m) {
   };
 }
 
-function main() {
+async function main() {
+  const { checkRepository: checkOutbound, LEDGER: OUTBOUND_LEDGER, readLedger: readOutboundLedger } = await import('./outbound-hosts.mjs');
   const m = measure();
   if (has('--update')) {
     fs.writeFileSync(path.join(ROOT, LEDGER), JSON.stringify(ledgerFrom(m), null, 2) + '\n');
@@ -825,8 +1000,6 @@ function main() {
      debt a NEW one? A rule that failed on debts already written down would be red on the day it
      was written and stay red, and a permanently red gate is one nobody reads (#R403 §6). */
   const ledger = readLedger();
-  const ledgerFacets = new Map();
-  for (const e of (ledger && ledger.undeclared) || []) ledgerFacets.set(e.subject, new Set(e.facets || []));
   const ledgerHas = (list, subject) => ((ledger && Array.isArray(ledger[list]) ? ledger[list] : []).some((e) => e.subject === subject));
 
   /* ── 1. gov-declared ──────────────────────────────────────────────────────────────────── */
@@ -848,17 +1021,62 @@ function main() {
     : m.credit.wrong.map((w) => w.subject + ' names «' + w.paidBy + '» as the row that pays its attribution and js/reference-data.js has no row with that exact `n`').join('; '));
 
   /* ── 3. freshness-stated ──────────────────────────────────────────────────────────────── */
-  const newNoCadence = m.noCadence.filter((c) => !(ledgerFacets.get(c.subject) || new Set()).has('freshness.cadence'));
-  say('freshness-stated', newNoCadence.length === 0, newNoCadence.length === 0
-    ? (m.noCadence.length === 0
-      ? 'every readable declaration states a cadence (an ISO 8601 duration, or `static`)'
-      : m.noCadence.length + ' declaration(s) state no cadence, all already written down in ' + LEDGER)
-    : newNoCadence.length + ' declaration(s) state no cadence, so 「次の更新はいつか」 cannot be measured at all — '
-      + newNoCadence.map((c) => c.subject).join(', '));
+  /* ⚠⚠ (upstream-liveness) NO LEDGER EXEMPTION FOR A MISSING CADENCE ANY MORE. Every subject — a
+     bundle, or a builder's declaration for one — must have a cadence from SOMEWHERE (its builder,
+     scripts/data-unbuilt.mjs, or its own in-band record), because without one 「次の更新はいつか」 has
+     no answer and the verdict is `unknown` for ever. Measured before this rule: unknown 129 of 130.
+     A bundle whose inputs never change says `static` — and like every cadence it says WHY, in
+     `cadenceBasis` (observed / expires / canon): a period nobody can date is the threshold
+     .agents/rules/no-ad-hoc-hardcoding.md §4 forbids, and `static` with no reason is a way of not
+     answering. Being OLD is still only a note. */
+  say('freshness-stated', m.noCadence.length === 0, m.noCadence.length === 0
+    ? 'every one of ' + m.fr.rows.length + ' subject(s) has a declared cadence (an ISO 8601 duration, or `static`)'
+    : m.noCadence.length + ' subject(s) have no cadence from any declaration, so 「次の更新はいつか」 cannot be measured at all — '
+      + m.noCadence.slice(0, 12).map((c) => c.subject).join(', ') + (m.noCadence.length > 12 ? ' (+' + (m.noCadence.length - 12) + ')' : '')
+      + '. Declare `cadence` + `cadenceBasis` in the builder\'s GOVERNANCE (or scripts/data-unbuilt.mjs when no script writes the bundle)');
+  say('freshness-stated', m.fr.unbased.length === 0, m.fr.unbased.length === 0
+    ? 'every declared cadence carries its basis (' + CADENCE_BASIS.join(' / ') + ')'
+    : m.fr.unbased.slice(0, 8).map((u) => u.subject + ' ' + u.why).join('; '));
+  const unparsed = m.fr.rows.filter((r) => r.why === 'unparseable-cadence');
+  say('freshness-stated', unparsed.length === 0, unparsed.length === 0
+    ? 'every declared cadence parses (js/data-governance.js: ISO 8601 Y/M/D/T durations, or `static`)'
+    : unparsed.map((r) => r.subject + ' declares «' + r.cadence + '», which js/data-governance.js cannot parse — write it in Y/M/D (P7D, not P1W)').join('; '));
+  say('freshness-stated', m.fr.conflicts.length === 0, m.fr.conflicts.length === 0
+    ? 'no bundle is declared twice, or with two different cadences'
+    : m.fr.conflicts.map((c) => c.subject + ' is declared as ' + c.cadences.join(' AND ')).join('; '));
+  const undated = m.fr.rows.filter((r) => r.why === 'no-date');
+  if (undated.length) {
+    say('freshness-stated', true, undated.length + ' subject(s) could not be dated here, so their verdict is `unknown` (a NOTE: 「確認できなかった」 is neither fresh nor stale) — '
+      + (m.fr.shallow ? 'this is a shallow clone' : undated.slice(0, 6).map((r) => r.subject + ' (' + r.dateWhy + ')').join(', ')));
+  }
   if (m.stales.length) {
     say('freshness-stated', true, m.stales.length
-      + ' record(s) are older than the cadence they declare (a NOTE, never a failure: refusing data on a threshold nobody authored is what .agents/rules/no-ad-hoc-hardcoding.md §4 forbids) — '
-      + m.stales.slice(0, 6).map((s) => s.subject + ' ' + s.ageDays + 'd/' + s.cadence).join(', '));
+      + ' subject(s) are older than the cadence declared for them (a NOTE, never a failure: refusing data on a threshold nobody authored is what .agents/rules/no-ad-hoc-hardcoding.md §4 forbids) — '
+      + m.stales.slice(0, 8).map((s) => s.subject + ' ' + s.ageDays + 'd/' + s.cadence).join(', '));
+  }
+
+  /* ── 3b. refresh-safe ─────────────────────────────────────────────────────────────────── */
+  /* (upstream-liveness) A builder that says `autoRefresh` is run UNATTENDED by scripts/data-refresh.mjs
+     and its output lands on main through a bot pull request. That is only safe for a builder that
+     cannot write an answer it did not check — so the statement is refused from any builder this gate
+     suspects of it (rule update-failure, certain OR suspected), and from a bundle that declares no
+     period to be due by (`static`, or none). */
+  const refreshers = m.bd.filter((b) => {
+    const v = b.declaration.value;
+    const recs = v ? (asPathMap(v) ? Object.values(v) : [v]) : [];
+    return recs.some((r) => r && r.autoRefresh != null);
+  });
+  for (const b of refreshers) {
+    const v = b.declaration.value;
+    const recs = asPathMap(v) ? Object.values(v) : [v];
+    const unsafe = [...m.exposed, ...m.suspected].find((e) => e.subject === b.subject);
+    const why = recs.map((r) => r.autoRefresh).find((x) => typeof x === 'string' && x.trim().length >= 12);
+    const cads = recs.map((r) => read(r).cadence);
+    const problems = [];
+    if (!why) problems.push('its `autoRefresh` does not say why it is safe to run unattended');
+    if (unsafe) problems.push('rule update-failure flags it (' + unsafe.where + ')');
+    if (cads.some((c) => c == null || /^static$/i.test(String(c)))) problems.push('a bundle it declares has no period to be due by (' + cads.map(String).join(', ') + ')');
+    say('refresh-safe', !problems.length, problems.length ? b.subject + ' declares autoRefresh and ' + problems.join('; ') : b.subject + ' is on the unattended refresh roster (' + cads.join(', ') + ')');
   }
 
   /* ── 4. update-failure ────────────────────────────────────────────────────────────────── */
@@ -928,6 +1146,16 @@ function main() {
       + ob.kinds.disclosure + ' disclosed, ' + ob.kinds.link + ' link, ' + ob.kinds.dormant + ' dormant, ' + ob.kinds.removedBy + ' being removed)');
   }
 
+  /* ── 8. probe-declared ────────────────────────────────────────────────────────────────── */
+  /* (upstream-liveness) The same ledger, asked the next question: for every host the browser really
+     requests, is there one representative request that says whether it still answers? The
+     declarations are checked here, without a network; asking them is scripts/upstream-liveness.mjs's
+     job, nightly (.github/workflows/upstream-liveness.yml). ⚠ The same refusal of an empty universe. */
+  const lv = declaredProbes(readOutboundLedger(ROOT));
+  say('probe-declared', lv.probes.length > 0, lv.probes.length + ' probe(s) declared in ' + OUTBOUND_LEDGER
+    + ' for the hosts the browser requests; ' + lv.notRequested.length + ' row(s) are links, dormant, or say why they cannot be probed');
+  for (const p of lv.problems) say('probe-declared', false, p);
+
   /* ── the measurement, always printed ──────────────────────────────────────────────────── */
   const shards = m.bs.filter((b) => b.kind === 'shard');
   console.log('\n── 実測 (' + new Date().toISOString().slice(0, 10) + ')');
@@ -960,6 +1188,13 @@ function main() {
     for (const u of m.undeclared) console.log('   ' + u.subject.padEnd(44) + ' ' + String(u.facets.length).padStart(2) + '/' + FACETS.length + '  ' + u.why);
     console.log('\n── 帰属表示が再配布の条件で、払う行を名指していない');
     for (const u of m.credit.unpaid) console.log('   ' + u.subject.padEnd(44) + ' ' + (u.licence || '(licence not stated)'));
+    console.log('\n── 鮮度: 宣言された周期 × 最後に書かれた日（bundle の行。builder の行は、書く bundle のうち最も古い日付を取る）');
+    const order = { stale: 0, aging: 1, unknown: 2, fresh: 3 };
+    for (const r of m.fr.rows.filter((x) => x.kind !== 'builder').sort((x, y) => order[x.verdict] - order[y.verdict] || (x.subject < y.subject ? -1 : 1))) {
+      console.log('   ' + r.verdict.padEnd(8) + r.subject.padEnd(30) + ' ' + String(r.cadence ?? '—').padEnd(7)
+        + ' ' + (r.at ? String(r.at).slice(0, 10) : '—').padEnd(11) + (r.dueAt ? 'due ' + r.dueAt.slice(0, 10) + '  ' : '')
+        + (r.dateFrom ? '[' + r.dateFrom.split(' ')[0] + ']' : r.dateWhy || r.why || ''));
+    }
     console.log('\n── 応答を確かめずに書きうる builder');
     for (const e of m.exposed) console.log('   ' + e.where.padEnd(44) + ' ' + e.why);
     for (const s of m.suspected) console.log('   ' + s.where.padEnd(44) + ' (suspected) ' + s.why);
@@ -976,4 +1211,4 @@ function main() {
    import that executed this gate would make those builders run it, which is the very shape
    scripts/shared-roster.mjs was split out of doc-facts.mjs to avoid (「checks that run on import」).
    A module whose body does work cannot be reused, and a judgement nobody can reuse gets copied. */
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch((e) => { console.error(e); process.exit(1); });

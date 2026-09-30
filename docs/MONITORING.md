@@ -196,6 +196,37 @@ and the one-time secret setup are in [`docs/TESTING.md`](TESTING.md) 「Atlas ev
   (30 days), and it is also the next night's reference.
 - ⚠ It costs real model calls every night, on the evaluation account's allowance.
 
+## 1e. The upstreams the reader's browser talks to, probed nightly
+
+§1 watches IntMap's own site and §1c its own relays. **Nothing watched the third-party hosts the
+browser code actually requests** until `.github/workflows/upstream-liveness.yml` (04:41 UTC, and on
+demand). Measured by hand on 2026-09-30, before it existed: `api.airplanes.live` answered 403 and two
+of the three Overpass mirrors `js/overpass.js` falls back to were silent for 20 s — each a layer that
+draws nothing, found by accident.
+
+- **What is asked.** Every row of `scripts/outbound-hosts.json` that the browser requests declares one
+  representative `probe` (a real URL of the kind the product sends, and the statuses that mean the
+  host is answering). `check:datagov` (rule `probe-declared`) refuses a requested row without one.
+  How the probes are declared is in [`docs/DATA-GOVERNANCE.md`](DATA-GOVERNANCE.md) §4.5.
+- **The verdicts.** `alive` / `refused` (a 4xx, 429, or an undeclared status) / `dead` (no answer in
+  time, connection refused, DNS, a 5xx) / `unobserved` (this runner reached **no** host at all — its
+  own network is down, and nothing is said about the upstreams). A host that is not alive is asked
+  once more, 30 s later with twice the time limit; both attempts are in the result.
+- **When the run is red.** Only on the night a host that had been **up** has now been **down for two
+  runs in a row** — once per outage. The first bad night is listed as «failing» (not red; measured on
+  the first day, `overpass-api.de` answered 200 in the morning and 504 twice in the afternoon), a host
+  that has been dead for weeks is listed every night and never turns anything red, and a runner with
+  no network turns nothing red. A job that is red every night is a job nobody reads.
+- **Where to read it.** The job summary (the tables: went down / failing / came back / not alive in
+  this run, each with the probe URL) and the artifact **`upstream-liveness`** (JSON, 90 days — it is
+  also the next night's baseline, from which each host's streak is carried).
+- **What to do when it is red.** Open the host's probe URL; if the host is gone or refuses IntMap for
+  good, the layer that uses it needs another source or a removal proposal (never a silent swap —
+  AGENTS.md §3-1), and the ledger row changes with it. If the probe itself is stale (the host moved
+  its API), fix the `probe` — with a `why` if the healthy answer is no longer a 2xx.
+- **By hand**: `node scripts/upstream-liveness.mjs` (table), `--out r.json`, `--previous p.json`,
+  `--summary s.md`, `--fail-on-transition`, and `--check` (declarations only, no network).
+
 ## 2. Error monitoring
 
 ### Why it is our own record, not Sentry (client-error-log)

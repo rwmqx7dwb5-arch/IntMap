@@ -37,6 +37,20 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { validate } from './lib/elections-schema.mjs';
+import { NATIONAL_ELECTIONS } from './lib/upstream-cadence.mjs';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/elections/index.json': {
+    /* one pack per polity in scripts/elections/, each naming its own official source */
+    ...NATIONAL_ELECTIONS,
+    builtBy: 'scripts/build-elections.mjs',
+  },
+};
+
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACK_DIR = join(ROOT, 'scripts', 'elections');

@@ -22,9 +22,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fetchChecked } from './lib/upstream.mjs';
+import { NASA_GIBS_DAILY } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/gibs-range.json': {
+    publisher: 'NASA EOSDIS GIBS',
+    url: BASE,
+    ...NASA_GIBS_DAILY,
+    /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
+    autoRefresh: 'tile requests only (a few dozen per product), no key; only 200 and 404 are answers, and anything else stops the run before the file is written',
+    builtBy: 'scripts/probe-gibs-range.mjs',
+  },
+};
 
 /* the same seven ids js/layer-packs.js draws, with the level and extension it uses */
 const LAYERS = [
@@ -45,18 +62,19 @@ function snap(t, period) {
   return Date.UTC(y, 0, 1) + (Math.floor((d - 1) / period) * period) * DAY;
 }
 
+/* ⚠⚠ (upstream-liveness) «THE ARCHIVE SAID NO» AND «WE COULD NOT ASK» ARE NOT ONE ANSWER.
+   This returned `null` when the network failed, and two of its three callers could not tell null
+   from 404: the walk back from today read null as «not available» and kept walking, and each
+   bisection read it as «stop here» and recorded wherever it had got to as the archive's EDGE. A
+   dropped connection therefore became a fact about NASA's archive in data/gibs-range.json — which
+   is what the date picker offers the reader. Now only 200 and 404 are answers; anything else (a
+   5xx, a timeout, a reset) is asked again after an observed failure and then THROWS, the build exits
+   non-zero, and the file is not written. A product with no date in the last eleven years is also a
+   failure rather than a layer silently dropped from the file. */
 async function has(L, t) {
   const u = BASE + L.gibs + '/default/' + iso(t) + '/GoogleMapsCompatible_Level' + L.lvl + '/2/1/2.' + L.ext;
-  for (let i = 0; i < 3; i++) {
-    try {
-      const r = await fetch(u);
-      await r.arrayBuffer();
-      if (r.status === 200) return true;
-      if (r.status === 404) return false;
-    } catch (_) { }
-    await new Promise((res) => setTimeout(res, 1500));
-  }
-  return null;              /* the network, not the archive — never recorded as an edge */
+  const status = await fetchChecked(u, {}, { as: 'status', expect: [200, 404], attempts: 3, backoffMs: 1500, timeoutMs: 30000 });
+  return status === 200;
 }
 
 const out = {};
@@ -75,15 +93,13 @@ for (const L of LAYERS) {
     lo0 = t;
     if (step > 4096) break;
   }
-  if (last == null) { console.log(' — no date in the last 11 years answered; skipped'); continue; }
+  if (last == null) throw new Error(L.gibs + ': no date in the last eleven years answered 200 — the product id or the level is wrong, or GIBS withdrew it; refusing to write a file without it');
   if (lo0 != null && last < lo0) {
     let a = last, b = lo0;                          /* a = available, b = not */
     while (b - a > DAY * L.period) {
       const mid = snap(a + Math.floor((b - a) / (2 * DAY)) * DAY, L.period);
       if (mid <= a || mid >= b) break;
-      const ok = await has(L, mid);
-      if (ok === null) break;
-      if (ok) a = mid; else b = mid;
+      if (await has(L, mid)) a = mid; else b = mid;
     }
     last = a;
   }
@@ -95,9 +111,7 @@ for (const L of LAYERS) {
     while (hi - lo > DAY * L.period) {
       const mid = snap(lo + Math.floor((hi - lo) / (2 * DAY)) * DAY, L.period);
       if (mid <= lo || mid >= hi) break;
-      const ok = await has(L, mid);
-      if (ok === null) break;
-      if (ok) hi = mid; else lo = mid;
+      if (await has(L, mid)) hi = mid; else lo = mid;
     }
   }
   const first = iso(hi);

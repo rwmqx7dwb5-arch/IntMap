@@ -48,6 +48,20 @@ import { WarGeom } from '../js/war-geom.js';
 import { PLACES } from './wars/places.mjs';
 import { KINDS } from './wars/lang.mjs';
 import { WARS } from './wars/source.mjs';
+import { AUTHORED_HERE } from './lib/upstream-cadence.mjs';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/wars.json': {
+    /* the record is scripts/wars/, written and reviewed in this repository */
+    ...AUTHORED_HERE,
+    builtBy: 'scripts/build-wars.mjs',
+  },
+};
+
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'wars.json');

@@ -67,6 +67,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WORLD_BANK_WDI } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'data', 'health.json');
@@ -87,7 +88,7 @@ export const GOVERNANCE = (() => {
     { publisher: 'World Bank World Development Indicators', url: WB, licence: 'CC BY 4.0',
       attribution: true, paidBy: 'World Bank Open Data' },
   ];
-  return { 'data/health.json': { upstreams, builtBy: 'scripts/build-health.mjs' } };
+  return { 'data/health.json': { upstreams, ...WORLD_BANK_WDI, builtBy: 'scripts/build-health.mjs' } };
 })();
 
 /* the sentence a reader sees, BUILT FROM those values — never parsed back out of it */

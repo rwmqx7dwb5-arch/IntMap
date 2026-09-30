@@ -21,6 +21,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { OPENSTREETMAP } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EPS = [
@@ -47,6 +48,7 @@ export const GOVERNANCE = (() => {
        pays it is named per bundle because the two bundles are credited separately. */
     attribution: true,
     paidBy,
+    ...OPENSTREETMAP,
     builtBy: 'scripts/build-osm-sparse.mjs',
   });
   return {

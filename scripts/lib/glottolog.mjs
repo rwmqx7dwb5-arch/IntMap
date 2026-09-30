@@ -21,8 +21,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { cldfTable } from './cldf.mjs';
+import { GLOTTOLOG } from './upstream-cadence.mjs';
 
 const REPO = 'https://raw.githubusercontent.com/glottolog/glottolog-cldf/master/cldf/';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/language-aliases.json': {
+    publisher: 'Glottolog',
+    url: REPO,
+    ...GLOTTOLOG,
+    builtBy: 'scripts/lib/glottolog.mjs',
+  },
+};
 export const GLOTTOLOG_STAMP = {
   source: 'Glottolog — languoid catalogue, genealogical classification and endangerment status',
   url: 'https://glottolog.org/',

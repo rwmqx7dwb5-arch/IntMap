@@ -1582,11 +1582,11 @@ whose universe is discovered from data/」と述べていたが、実測で **`b
 追跡ファイル全体でその 1 文にしか無く**、`doc-facts.mjs` にその rule は無かった。
 **一般規則の唯一の記述が、書かれなかった実装への指差しだった。**
 
-**母集合は発見する**（`node scripts/data-governance.mjs --check` が毎回この行を印字する）:
-`data/` の論理データセット **72**（ファイル 66 ＋ シャードのディレクトリ 6＝7,529 ファイル）/
-`data/` へ書き込む script **43**（追跡された `.mjs` 226 本のうち）/ 読者向けの出典行 **175**。
+**母集合は発見する**（`node scripts/data-governance.mjs --check` が毎回この行を印字する——数は
+そこで読む）: `data/` の論理データセット、`data/` へ書き込むか `GOVERNANCE` で `data/…` を名指す
+script、読者向けの出典行。
 
-測るのは 6 つ:
+測るのは 6 つと、2026-09-30 に足した 2 つ（`refresh-safe`・`probe-declared`）:
 
 - **`gov-declared`** — `data/` へ書く script は `export const GOVERNANCE` で出自を**値として**述べる。
   ⚠ **script を import しない**（多くは top-level で走る）——ソースから静的に取り出す。
@@ -1595,12 +1595,23 @@ whose universe is discovered from data/」と述べていたが、実測で **`b
   再配布の条件）の宣言は、`paidBy` が `js/reference-data.js` の `DATA_SOURCES` に**実在する行の `n` と
   完全一致**しなければならない。⚠ **説明ではなく値で照合する**。実測 **15 件が条件つきで、14 件が
   実在する行に払われている**。
-- **`freshness-stated`** — ⚠⚠⚠ **拒むのは沈黙であって古さではない。** 周期を述べていない宣言は
-  落第、**述べた周期より古いのは note**（exit 0 を妨げない）。著者の無い閾値でデータを拒むと、
-  誤検出が正しいデータを消す（`.agents/rules/no-ad-hoc-hardcoding.md` §4）。
+- **`freshness-stated`** — ⚠⚠⚠ **拒むのは沈黙であって古さではない。** 鮮度は「束のバイトが最後に
+  書かれた日 × その束に宣言された周期」（`freshnessOf`）。**周期がどこからも述べられていない束**・
+  **根拠（`cadenceBasis`）の無い周期**・**語彙が解釈できない周期**・**2 つの script が宣言する束**は
+  落第（台帳での免除は無い）、**述べた周期より古いのは note**、日付が測れない（shallow clone）のも
+  note。著者の無い閾値でデータを拒むと、誤検出が正しいデータを消す（`.agents/rules/no-ad-hoc-hardcoding.md` §4）。
+  実測（2026-09-30）: この規則の前は fresh 1 / unknown 129、後は unknown 0。
+- **`refresh-safe`** — `autoRefresh` を述べる builder（`scripts/data-refresh.mjs` が無人で走らせる）は、
+  `update-failure` に名指されず、周期が `static` でないこと。
 - **`update-failure`** — 上流の応答を確かめずに束へ流れる経路があるか。⚠ **7 本の名前を門に
   書かない**（それが場当たりの一覧）——事実を測り、静的解析で**確実に言えないものは note にして
-  file:line で根拠を出す**。実測 **3 件が確実・2 件が疑い**。
+  file:line で根拠を出す**。#729 時点の実測 **3 件が確実・2 件が疑い**。2026-09-30 に確実な 3 件
+  （deep-sky・small-bodies・spacecraft）と疑いの 1 件（`probe-gibs-range.mjs`）を
+  `scripts/lib/upstream.mjs` の `fetchChecked` で直し、残る疑い 1 件（`build-maddison.mjs:112`）は
+  委託ファイルの読み取り失敗を `fail()`（`process.exit`）で終える catch で、上流の応答ではない（誤検出）。
+- **`probe-declared`** — `scripts/outbound-hosts.json` の、ブラウザが要求する行はどれも代表の
+  `probe` を持つ（または持てない理由）。訊くのは毎晩の `scripts/upstream-liveness.mjs`
+  （`docs/MONITORING.md` §1e）。
 - **`facets-accounted`** — 19 欄が主題ごとに `stated` / `undeclared(why)` / `notApplicable(why)` の
   **どれか 1 つ**に入る。⚠ **鍵が無いのはこの 3 つのどれでもない。**
 - **`ledger-shrinks`** — 既存の違反は `data/governance-ledger.json` にあり、**counts は下向きにしか
@@ -1611,6 +1622,29 @@ whose universe is discovered from data/」と述べていたが、実測で **`b
 #729 は宣言を builder 側に置いた（165 MB を再取得せずに正本を作るため）ので、
 **束のバイトと builder の宣言が食い違いうる期間がある**。門は両方を別の主題として読む。
 正本は [`DATA-GOVERNANCE.md`](DATA-GOVERNANCE.md)。
+
+### `tests/upstream-liveness-checks.test.mjs` — 上流の死活と同梱データの鮮度を、ネットワーク無しで評価する
+
+- ① `scripts/lib/upstream.mjs` の `classify()`: alive / refused / dead / unobserved。⚠ runner がどこにも
+  届かなかった応答の欠如は `unobserved` で、`dead` ではない。
+- ② `fetchChecked()`: 非 2xx・空の本文・JSON でない本文・スキーマ違反を拒み、再試行するのは
+  `dead` と 429 だけ（404 は 1 回しか訊かない）。
+- ③ `measureAll()` を偽の fetch で: 失敗したホストだけを後で・倍の時間でもう一度訊く／runner が
+  どこにも届かなければ全部 `unobserved`。
+- ④ `transitions()`: 赤になるのは、up だったホストが `CONFIRM_RUNS` 回続けて down になった回だけ
+  （1 回の障害につき 1 回）。ずっと死んでいるホストは赤にしない。`unobserved` は連続を伸ばしも切りもしない。
+- ⑤ `declared()`: probe の欠落・別ホストへの probe・理由の無い非 2xx 期待・link 行の probe を拒む。
+  実際の台帳は問題 0。
+- ⑥ **ビルダーを実際に走らせる**（子プロセス・`--import` で大域 `fetch` を偽物に差し替え）: SIMBAD が
+  200 で XML、SBDB が行の無い一括検索、Horizons が 403、GIBS が 403——どれも**書かずに非 0**。
+- ⑦ `freshnessOf()` を合成の束と宣言で: 周期なし・根拠なし・`P1W`・二重宣言をそれぞれの名前で拒む。
+  ⑦b は実リポジトリで `--rule=freshness-stated` が緑であること。
+- ⑧ `scripts/data-refresh.mjs` の名簿は宣言（`autoRefresh`）から発見し、「期限」は宣言された周期
+  （`aging` / `stale`、日付が読めなければ期限扱い）。実リポジトリで `--rule=refresh-safe` が緑。
+
+段 0 で走らせる: `node --test tests/upstream-liveness-checks.test.mjs`。
+ネットワークを使う実測は `node scripts/upstream-liveness.mjs`（毎晩の workflow が走らせる。
+読み方は [`MONITORING.md`](MONITORING.md) §1e）。
 
 ### `tests/data-governance.spec.js` — 読者に届く行は、二度言わず、一度も隠さない
 

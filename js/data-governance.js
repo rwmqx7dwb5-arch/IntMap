@@ -88,7 +88,7 @@ const SPELLINGS = Object.freeze({
   retrievedAt: Object.freeze(['retrievedAt', 'fetchedAt', 'readAt', 'acquiredAt', 'at', 'retrieved']),
   /* when this copy was WRITTEN by a builder — not the same fact as retrievedAt, and not the same
      fact as asOf. A bundle rebuilt today from a 2017 upstream is a new file about an old world. */
-  generatedAt: Object.freeze(['generatedAt', 'builtAt', 'generated', 'buildTime']),
+  generatedAt: Object.freeze(['generatedAt', 'builtAt', 'generated', 'buildTime', 'built', 'probed']),
   /* what the data is ABOUT. ⚠ THE ONE THE OTHER TWO ARE MOST OFTEN MISTAKEN FOR. */
   asOf: Object.freeze(['asOf', 'asof', 'as_of', 'epoch', 'vintage']),
   /* how often upstream publishes, as an ISO 8601 duration or the word `static`. Declared BY THE

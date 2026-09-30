@@ -144,8 +144,12 @@ ODbL 1.0 は帰属表示が**再配布の条件**である。それが名前と�
   シャード群は**論理的に 1 データセット**なので、その索引 1 件として数える（実測 6 ディレクトリが
   7,529 ファイルを持つ）。**索引を持たないシャード群はそれ自体が欠陥**——実測で 1 件
   （`data/planets/` の 9 枚）。⚠ 束ごとに `rights` を数千回写させるのは、この回が消している重複そのもの。
-- **builder**: `scripts/**/*.mjs` のうち **`data/` へ書き込むもの**。⚠ **名前（`build-` で始まる）で
-  数えない**——事実（`data/` へ書くか）で数える。
+- **builder**: `scripts/**/*.mjs` のうち **`data/` へ書き込むもの、または `export const GOVERNANCE`
+  で `data/…` を名指すもの**。⚠ **名前（`build-` で始まる）で数えない**——事実で数える。
+  ⚠ 後者は 2026-09-30 に足した。書き込み先を `path.join(OUT_DIR, 'x')` で組み立てる builder は
+  書き込みの検出から漏れ、**宣言ごと読まれていなかった**（`build-star-catalogue`・`build-tle-snapshot`・
+  `build-who-don`・`build-world-basemap` の 4 本が宣言を持ったまま主題でなかった）。`data/…` を鍵に持つ
+  宣言は、どの束のものかを書き込み呼び出しより正確に述べている。
 
 ### 4.1 拒むもの／拒まないもの
 
@@ -153,7 +157,11 @@ ODbL 1.0 は帰属表示が**再配布の条件**である。それが名前と�
 
 | 状態 | 門の答え |
 |---|---|
-| 周期を述べていない | **落第** |
+| 周期を述べていない | **落第**（台帳での免除は無い。§4.4） |
+| 周期に根拠（`cadenceBasis` の observed / expires / canon）が無い | **落第** |
+| 語彙が解釈できない周期（`P1W` など） | **落第**（「周期を述べていない」とは別の名前で） |
+| 1 つの束を 2 つの script が宣言している | **落第** |
+| 日付が測れない（shallow clone など） | **note**（`unknown`。「新しい」とも「古い」とも言わない） |
 | 述べた周期より古い | **note**（exit 0 を妨げない） |
 | 異常値・重複が在る | **落第にしない**（§5） |
 | 測っていない | **落第**（`not-measured` は述べるべき事実） |
@@ -195,6 +203,102 @@ IntMap は 69 束ぶんの「この欄の正常範囲」を持っていないの
 ⚠ **台帳は免責ではない。** `disclosure` は「§4 のこの語句がこれを述べている」という主張で、
 門がその語句の実在を両言語で確かめる。
 
+### 4.4 鮮度 — 「最後に書かれた日 × 宣言された周期」（規則 `freshness-stated`）
+
+⚠ **実測（2026-09-30、この節の前）: fresh 1 / aging 0 / stale 0 / unknown 129。** 語彙の
+`freshness()` は最初から判定できたが、**1 つの記録に日付と周期の両方を訊く**。このリポジトリでは
+2 つは別の場所に住む——**周期は上流についての事実**なので builder の宣言に、**日付はバイトに
+ついての事実**なので束の側に。builder のソースは自分が最後にいつ走ったかを知らない。
+片方だけに訊けば毎回 `unknown` になる。⇒ 門は 2 つを、それぞれ分かる場所から取って結ぶ:
+
+| 半分 | どこから | 注意 |
+|---|---|---|
+| 周期 | 束のパスを鍵にした宣言（builder の `GOVERNANCE`、builder が居ない束は `scripts/data-unbuilt.mjs`）、または束自身の in-band 記録 | 1 束に 2 つの周期／2 つの宣言者は落第 |
+| 日付 | ① 束自身の in-band `generatedAt` / `retrievedAt` ② 無ければ**そのバイトを最後に変えたコミット** ③ git の外の集合は、その sha256 を `data-assets.json` に記録したコミット | ⚠ コミット日は「最後に**変わった**日」。同じバイトを再現したリビルドはコミットを残さない（実際より古く読める）。どの行も日付の出所を述べる |
+
+⚠ **shallow clone は日付を持たない。** CI は 1 コミットだけを取り出すので、そこで訊けば全部が
+「今日書かれた」＝新しいことになる。そのときは日付を**測れなかった**と述べ（`no-date`、note）、
+新しいとも古いとも言わない。
+
+**周期とは何か**（正本 `scripts/lib/upstream-cadence.mjs` の冒頭）: 「その上流が、**この束が運ぶ
+種類の**新しいものを出すまでの期間」。地名辞典なら日々の dump、気候値なら新しい 1 年分、選挙結果
+なら次の選挙。⚠ **このリポジトリが取り直す頻度ではない**（それは供給者の周期ではない）。
+複数の上流を読む束は、運ぶものを出す上流のうち**最も短い**周期を取る。**上流ごとの周期は
+`scripts/lib/upstream-cadence.mjs` に 1 回だけ**書かれ、builder はそれを展開する（Natural Earth を
+読む builder は 4 本あり、周期を 4 回書かない）。1 本しか読まない上流の周期と `static`（版が閉じている
+上流）は、その builder の記録に直接書く。
+
+⚠ **どの周期にも根拠が要る**（`cadenceBasis`: `observed`＝何をいつ測った・読んだか、測っていなければ
+「estimate」と書く ／ `expires`＝何が変われば誤りになるか ／ `canon`＝どこが正本か）。`static` も例外ではない
+——「更新されない」には理由が要る。宣言の数と今日の集計は `node scripts/data-governance.mjs --report`
+が毎回印字する（数をここに書き写さない）。
+
+### 4.5 上流の死活 — 読者のブラウザが話すホストは、まだ答えるか（規則 `probe-declared`）
+
+`scripts/outbound-hosts.json` の**ブラウザが実際に要求する行**（`disclosure` / `removedBy`）は、
+代表の要求を 1 つ持つ: `probe: { url, expect?, why? }`。
+
+- `url` は**その行のホスト**に向かう（ワイルドカードの行は、それが名指すホストの 1 つ）。別のホストを
+  訊く probe は別の事実を測る——門が落とす。
+- `expect` の既定は 2xx。⚠ **2xx 以外を期待するなら `why` が要る**（例: 自前の gateway は anon key 無しに
+  401 を返す——それが「生きている」答え）。理由を要求しないと、失敗し始めた probe を「その失敗が
+  期待値」と書き換えて緑にできてしまう。
+- 要求しない行（`link` / `dormant`）は probe を持たない——IntMap のデータ経路ではない。
+- 持たせられない行は `probe: { none: "<理由>" }`。
+
+`check:datagov` は宣言だけを（ネットワーク無しで）確かめる。**訊くのは毎晩の
+`.github/workflows/upstream-liveness.yml`** で、`scripts/upstream-liveness.mjs` が全部を並列に 1 回ずつ
+訊き、`scripts/lib/upstream.mjs` の `classify()`——builder が使うのと**同じ判定**——で分類する:
+
+| 判定 | 意味 |
+|---|---|
+| `alive` | 宣言した状態で答えた |
+| `refused` | 答えて、断った（4xx・429・宣言外の状態） |
+| `dead` | 答えなかった（時間切れ・接続拒否・DNS）か 5xx |
+| `unobserved` | **この runner がどこにも届かなかった**——上流ではなく runner の網が落ちている |
+
+⚠ **「確認できなかった」は「死んでいる」ではない。** 読み方・赤くなる条件は
+[`MONITORING.md`](MONITORING.md) §1e。
+
+### 4.6 自動更新 — どの束を、いつ、無人で取り直すか（規則 `refresh-safe`）
+
+⚠ **実測（2026-09-30、この節の前）: `data/` へ書く script のうち定期実行されていたのは
+`build-tle-snapshot.mjs` だけ**（`.github/workflows/tle-refresh.yml`、1 日 2 回）。他は、人がたまたま
+builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-diplo 08-19、subcables 08-23、npp 09-09）。
+
+`tle-refresh.yml` は既に、無人更新の難しい部分——ruleset で守られた `main` への bot PR・自分が起こした
+検査の承認・merge・deploy の起動——を解いている。⇒ **2 本目の workflow を作らず、その job の
+1 段として** `scripts/data-refresh.mjs` が期限の来た束を取り直し、同じ PR に載せる。
+
+- **名簿は宣言から発見する。** builder の記録が `autoRefresh: '<無人で走らせてよい理由>'` を述べていれば
+  名簿に載る。⚠ 門（`refresh-safe`）は、規則 `update-failure` に確実でも疑いでも名指される builder と、
+  周期が `static` / 無しの束からのその宣言を拒む。
+- **期限は束自身の宣言された周期**（§4.4 と同じ `freshness()`・同じ `AGING_AT`）。`aging` か `stale` なら
+  走る。job は 1 日 2 回訊くだけで、月 1 の上流は月 1 回しか訊かれない。shallow clone では日付を
+  GitHub の履歴（`main` でそのパスを最後に変えたコミット）に訊く。**どちらでも日付が読めなければ
+  走らせる**——「新しいか分からない」は「新しい」ではなく、名簿の builder は確かめられないものを書かない。
+- **失敗した builder は束をそのままにする**（書かずに非 0 で終わる）。`::warning::` を出して次へ進む。
+  再試行はしない——12 時間後の次の定期実行が、別の試みである。
+
+| 載せたもの（2026-09-30） | 理由 |
+|---|---|
+| `build-spacecraft.mjs`（Horizons） | 20 件前後の要求・鍵なし。全応答を確かめ、FLEET の全機が返ったときだけ書く |
+| `build-smallbodies.mjs`（SBDB） | 90 件前後の間隔を空けた要求・鍵なし。行の無い一括検索を拒み、床（100 天体）を書く前に訊く |
+| `build-deepsky.mjs`（SIMBAD） | TAP 4 本・鍵なし。状態・JSON・`data` 配列を確かめ、床（80 天体）を書く前に訊く |
+| `probe-gibs-range.mjs`（GIBS） | タイル要求のみ・鍵なし。200 と 404 だけが答えで、それ以外は書く前に止まる |
+| `build-who-don.mjs`（WHO） | 公開 API へのページ要求 36 件前後・鍵なし。全ページの状態を確かめる |
+
+| 載せなかったもの | 理由 |
+|---|---|
+| `build-osm-sparse.mjs`・`rail/*` | 公開 Overpass への世界規模の重い問い合わせ。フォールバックの mirror 2 本は実測で無応答（§4.5） |
+| `build-hist-*`・`build-border-detail.mjs`・`build-histnames.mjs` | 数十 MB 〜 数百 MB・実行に長時間。歴史地図は機械的検証だけで出荷しない（`.agents/rules/historical-verification.md`） |
+| `build-gazetteer*.mjs`・`build-histcities-homonyms.mjs` | GeoNames の dump は数百 MB |
+| `build-subcables.mjs` | 海底の経路探索を含む重いパイプライン |
+| `build-airports`・`build-mobility`・`build-health`・`build-country-facts` | パンデミック・国カードの入力。値が変わるとシミュレーションの結果が変わるので、人が差分を読む |
+| `build-npp-registry.mjs`・`companies/*`・`build-elections.mjs`・`build-whs.mjs` | Wikidata / 各国の出典から選択・結合規則で組み立てる。差分に判断が要る |
+| `build-volcanoes.mjs`・`build-culture.mjs`・`build-language.mjs`・`build-planet-data.mjs`・`build-moons.mjs` | この回は応答の検証（状態・床・スキーマ）を読み通していない——読んで確かめるまで載せない。周期も 1 か月以上で、無人化の利益が小さい |
+| 周期が `static` の束 | 期限が来ない |
+
 ---
 
 ## 5. 欠損・異常値・重複 — 測るが、拒まない
@@ -233,8 +337,12 @@ IntMap は 69 束ぶんの「この欄の正常範囲」を持っていないの
 - **台帳に載っている束の出自は、まだ誰も述べていない。** ⚠ **推測で埋めてはならない**
   （memory `intmap-data-must-not-claim-an-author-it-lacks`——9 言語の欄を英語綴りの写しで埋めて
   67,622 行が偽の著者を名乗った実例がある）。埋めるのは**上流に訊いてから**。
-- **上流の変化を見るのは 1 本だけ**（`build-hist-eras.mjs --check-upstream`）。残りの builder の
+- **上流の中身の変化を見るのは 1 本だけ**（`build-hist-eras.mjs --check-upstream`）。残りの builder の
   上流が黙って変わっても誰も気づかない（memory `intmap-discovered-list-is-a-photograph` と同じ形）。
+  §4.5 の死活は**ブラウザが話すホスト**だけを訊き、**builder の上流**（SIMBAD・SBDB・Horizons など）の
+  死活は、名簿に載った builder が走るときに builder 自身が確かめるだけである。
+- **周期の多くは推定である。** `scripts/lib/upstream-cadence.mjs` の `observed` が「estimate」と
+  述べている値は、測れば置き換える。
 - **`source priority` は値になっていない。** 同じ事実の複数上流は主題ごとの散文 ladder として
   `js/world-packs.js`・`js/time-borders.js`・`js/reference-data.js` に埋まっている。`FACETS` に
   `precedence.*` の欄はあるが、**述べている実装はまだ無い**。

@@ -1484,6 +1484,17 @@ scripts/
   outbound-hosts.json             上の台帳（追跡対象・手で書く判断）。ホストごとに `what`・`sends`（符号＋補足）と、
                                   `disclosure`（§4 の en と jp の両方に実在する語句）か `link`（要求しない理由）か
                                   `dormant`（`index.html` の `window.<SWITCH>=false`）か `removedBy`（撤去中）の 1 つ
+                                  ＋ 要求される行は代表の `probe: { url, expect?, why? }`（`check:datagov` の `probe-declared` 規則）
+  upstream-liveness.mjs           **上流ホストの死活**。上の台帳の `probe` を並列に 1 回ずつ訊き、alive / refused / dead /
+                                  unobserved に分類して JSON と Markdown を出す。失敗だけを後でもう一度訊く。`--previous` で
+                                  前夜と比べ、`--fail-on-transition` は up→2 回続けて down の回だけ exit 1。`--check` は宣言だけ
+  lib/upstream.mjs                上流の応答の**判定 1 つ**（`classify`）と、builder が使う `fetchChecked`（非 2xx・空・
+                                  JSON でない・スキーマ違反を拒む。再試行は dead と 429 だけ）
+  lib/upstream-cadence.mjs        上流ごとの**更新周期**と根拠（observed / expires / canon）を 1 回だけ。builder の
+                                  `GOVERNANCE` はこれを展開する（`check:datagov` の `freshness-stated`）
+  data-unbuilt.mjs                **builder の居ない束**の宣言（出自と周期）。実行しても何もしない——門が静的に読む
+  data-refresh.mjs                期限の来た束の**無人の取り直し**。`autoRefresh` を宣言した builder だけを、宣言された
+                                  周期で期限が来たときに走らせる（`tle-refresh.yml` の 1 段。引数なしは計画の表示だけ）
   global-surface.mjs              **共有窓口の広さのゲート**（`npm run check:surface`）。`IM_HOST` の項目と
                                   `js/`・`src/` が `window.*` に代入する公開名を**名前で**
                                   `tests/global-surface-baseline.json` と両方向に照合する。行数の天井の代わり。
@@ -1630,7 +1641,8 @@ tests/
   security.yml                    CodeQL ほかセキュリティ検査
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
   atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いを送って評価（Secret 2本が無ければ**赤**。休眠しない）
-  tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）
+  tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）。同じ PR に、期限の来た他の束も載せる（`scripts/data-refresh.mjs`・宣言 `autoRefresh`）
+  upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストの代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
 .github/actions/
   browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・build 成果物の受け取り・実行・報告）。ci.yml の browser／browser-deep が使う

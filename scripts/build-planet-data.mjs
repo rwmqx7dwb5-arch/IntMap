@@ -43,6 +43,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { USGS_PLANETARY_NAMES } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'data', 'planets');
@@ -63,6 +64,12 @@ export const GOVERNANCE = (() => {
     /* 「BY」 is part of the identifier: credit is a condition of these terms. */
     attribution: true,
     paidBy: 'Solar System Scope — planetary surface textures',
+    cadence: 'static',
+    cadenceBasis: {
+      observed: 'the Solar System Scope texture set is a finished 2k/8k release that the publisher has not revised; the build downloads a fixed file per body',
+      expires: 'if solarsystemscope.com/textures publishes a revised set',
+      canon: 'this record (the only builder that reads Solar System Scope)',
+    },
     builtBy: 'scripts/build-planet-data.mjs',
   };
   const names = {
@@ -70,12 +77,13 @@ export const GOVERNANCE = (() => {
     url: 'https://planetarynames.wr.usgs.gov/',
     licence: 'public domain',
     attribution: false,
+    ...USGS_PLANETARY_NAMES,
     builtBy: 'scripts/build-planet-data.mjs',
   };
   return {
     'data/planets/': tex,
     'data/planet-names.json': names,
-    'data/planets.json': { upstreams: [tex, names], builtBy: 'scripts/build-planet-data.mjs' },
+    'data/planets.json': { upstreams: [tex, names], ...USGS_PLANETARY_NAMES, builtBy: 'scripts/build-planet-data.mjs' },
   };
 })();
 

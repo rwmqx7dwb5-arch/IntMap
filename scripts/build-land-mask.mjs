@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { NATURAL_EARTH } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const W = 2048, H = 1024;
@@ -46,6 +47,7 @@ export const GOVERNANCE = (() => {
     url: SRC,
     licence: 'public domain',
     attribution: false,
+    ...NATURAL_EARTH,
     builtBy: 'scripts/build-land-mask.mjs',
   };
   return { 'data/land-mask.png': rec, 'data/land-mask.json': rec };

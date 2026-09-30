@@ -26,6 +26,7 @@
  *  applies. It is cited in the file itself and on the sources page.
  * ==========================================================================*/
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { UNDP_HDR } from './lib/upstream-cadence.mjs';
 
 const URL_CSV = 'https://hdr.undp.org/sites/default/files/2023-24_HDR/HDR23-24_Composite_indices_complete_time_series.csv';
 const OUT = 'data/hdi-series.json';
@@ -40,6 +41,7 @@ export const GOVERNANCE = {
     /* ⚠ THE LICENCE IS NOT STATED IN THIS BUILD. The header names the publisher and the table
        (HDR 2023/24 composite indices) and says the attribution already made is the one that
        applies — which is a statement about a credit, not about terms. */
+    ...UNDP_HDR,
     builtBy: 'scripts/build-hdi.mjs',
   },
 };

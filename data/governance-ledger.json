@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-09-18T21:19:32.006Z",
+    "generatedAt": "2026-09-30T03:47:16.612Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -39,7 +39,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -58,6 +57,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -84,7 +84,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -123,6 +122,7 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -191,7 +191,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -214,7 +213,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -258,7 +256,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -275,6 +272,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -297,6 +295,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -367,7 +366,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -410,7 +408,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -419,8 +416,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `//`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/hist-admin-fill",
@@ -433,7 +429,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -442,8 +437,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `src`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/hist-admin1",
@@ -456,7 +450,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -465,8 +458,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `src`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/hist-admin2",
@@ -474,11 +466,11 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -487,8 +479,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `src`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/hist-admin3",
@@ -496,11 +487,11 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -509,8 +500,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `src`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/hist-borders",
@@ -569,7 +559,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -578,8 +567,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `src`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/hist-fidelity",
@@ -587,6 +575,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -614,7 +603,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -623,8 +611,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `src`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/hist-places",
@@ -679,7 +666,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -688,8 +674,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent",
-      "detail": "the bundle states none of the facets"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/land-mask",
@@ -701,7 +686,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -722,7 +706,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -739,6 +722,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -764,7 +748,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -809,7 +792,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -818,8 +800,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `//`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/moons",
@@ -832,7 +813,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
@@ -872,7 +852,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -932,11 +911,11 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -952,11 +931,11 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1001,7 +980,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1010,8 +988,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `textureSource`, `nameSource`, `earthNote`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/planets/",
@@ -1019,6 +996,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1039,6 +1017,7 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1059,6 +1038,7 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1080,6 +1060,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1106,7 +1087,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1127,7 +1107,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1148,7 +1127,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1169,7 +1147,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1185,11 +1162,11 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
@@ -1205,6 +1182,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1227,11 +1205,11 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1240,8 +1218,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent",
-      "detail": "the bundle states none of the facets"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/subcables-lp",
@@ -1249,6 +1226,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1271,6 +1249,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1297,7 +1276,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1313,6 +1291,7 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1406,7 +1385,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1427,7 +1405,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1471,7 +1448,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1480,8 +1456,7 @@
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "stated-only-in-prose",
-      "detail": "provenance is written as a sentence in `src`"
+      "why": "facet-undeclared"
     },
     {
       "subject": "data/whc-detail",
@@ -1489,6 +1464,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1514,7 +1490,6 @@
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1531,6 +1506,7 @@
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
@@ -1551,11 +1527,11 @@
       "facets": [
         "origin.publisher",
         "origin.retrievedAt",
+        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
-        "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
@@ -1573,7 +1549,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1594,7 +1569,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1615,7 +1589,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1634,7 +1607,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1650,7 +1622,25 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-border-detail.mjs → data/border-detail/index.json",
+      "facets": [
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1666,7 +1656,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1687,7 +1676,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1709,7 +1697,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1729,7 +1716,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1759,7 +1745,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1778,7 +1763,26 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-elections.mjs → data/elections/index.json",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1798,7 +1802,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1814,7 +1817,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1833,7 +1835,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1853,7 +1854,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -1865,159 +1865,167 @@
       "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-hist-admin-fill.mjs",
+      "subject": "scripts/build-hist-admin-fill.mjs → data/hist-admin-fill.js",
       "facets": [
-        "origin.publisher",
-        "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent",
-      "detail": "the values exist in this file as `LICENCE` and nothing outside it can read them"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-hist-admin1.mjs",
+      "subject": "scripts/build-hist-admin1.mjs → data/hist-admin1.js",
       "facets": [
-        "origin.publisher",
-        "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-hist-borders.mjs",
+      "subject": "scripts/build-hist-admin1.mjs → data/hist-admin2.js",
       "facets": [
-        "origin.publisher",
-        "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-hist-cities.mjs",
+      "subject": "scripts/build-hist-admin1.mjs → data/hist-admin3.js",
       "facets": [
-        "origin.publisher",
-        "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-hist-eras.mjs",
+      "subject": "scripts/build-hist-borders.mjs → data/hist-borders.js",
       "facets": [
-        "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-hist-kuni.mjs",
+      "subject": "scripts/build-hist-cities.mjs → data/hist-cities.json",
       "facets": [
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-hist-places.mjs",
+      "subject": "scripts/build-hist-eras.mjs → data/hist-eras.js",
       "facets": [
-        "origin.publisher",
-        "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-hist-kuni.mjs → data/hist-kuni.js",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-hist-places.mjs → data/hist-places.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
     },
     {
       "subject": "scripts/build-histcities-homonyms.mjs → data/histcities-homonyms.json.gz",
@@ -2029,7 +2037,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2039,26 +2046,23 @@
       "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-histnames.mjs",
+      "subject": "scripts/build-histnames.mjs → data/histnames.json",
       "facets": [
-        "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
       "subject": "scripts/build-land-mask.mjs → data/land-mask.json",
@@ -2067,7 +2071,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2083,7 +2086,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2103,7 +2105,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2125,7 +2126,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2146,7 +2146,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2166,7 +2165,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2187,7 +2185,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2203,7 +2200,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2222,7 +2218,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2243,7 +2238,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2264,7 +2258,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2282,7 +2275,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2298,7 +2290,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2314,7 +2305,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2334,7 +2324,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2352,7 +2341,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2372,7 +2360,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2392,7 +2379,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2408,7 +2394,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2424,7 +2409,107 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-star-catalogue.mjs → data/stars.bin",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "precedence.rank",
+        "precedence.over"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-star-catalogue.mjs → data/stars.json",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "precedence.rank",
+        "precedence.over"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-subcables.mjs → data/subcables-lp.json",
+      "facets": [
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-subcables.mjs → data/subcables-meta.json",
+      "facets": [
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-subcables.mjs → data/subcables.json",
+      "facets": [
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2444,7 +2529,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2464,12 +2548,77 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-tle-snapshot.mjs → data/tle/catalogue.json",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "precedence.rank",
+        "precedence.over"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-tle-snapshot.mjs → data/tle/catalogue.tle",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "precedence.rank",
+        "precedence.over"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-tle-snapshot.mjs → data/tle/groups.json",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "precedence.rank",
+        "precedence.over"
       ],
       "why": "facet-undeclared"
     },
@@ -2485,7 +2634,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2503,7 +2651,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2520,7 +2667,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2537,7 +2683,6 @@
         "rights.licenceUrl",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2556,7 +2701,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2575,7 +2719,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2594,7 +2737,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2604,26 +2746,63 @@
       "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-wars.mjs",
+      "subject": "scripts/build-wars.mjs → data/wars.json",
       "facets": [
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-who-don.mjs → data/who-don.json.gz",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-whs.mjs → data/whc-detail.{locale}.json.gz",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "precedence.rank",
+        "precedence.over"
+      ],
+      "why": "facet-undeclared"
     },
     {
       "subject": "scripts/build-whs.mjs → data/whc-sites.json",
@@ -2636,7 +2815,6 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2648,7 +2826,132 @@
       "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/companies/discover.mjs",
+      "subject": "scripts/build-world-basemap.mjs → data/world-basemap.jpg",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licenceUrl",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-world-basemap.mjs → data/world-basemap.json",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licenceUrl",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/companies/discover.mjs → data/companies/manifest.json",
+      "facets": [
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/data-unbuilt.mjs → data/basins_mrb.json",
+      "facets": [
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/data-unbuilt.mjs → data/ecoregions_2017.geojson",
+      "facets": [
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/data-unbuilt.mjs → data/precip-mm.json",
+      "facets": [
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/data-unbuilt.mjs → data/precip-year.json",
+      "facets": [
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/data-unbuilt.mjs → data/subcable-overrides.json",
       "facets": [
         "origin.publisher",
         "origin.url",
@@ -2660,55 +2963,91 @@
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/probe-gibs-range.mjs",
+      "subject": "scripts/hist-fidelity.mjs → data/hist-fidelity.json",
       "facets": [
         "origin.publisher",
         "origin.url",
         "origin.retrievedAt",
-        "origin.builtBy",
         "rights.licence",
         "rights.licenceUrl",
         "rights.attribution",
         "rights.paidBy",
         "freshness.generatedAt",
         "freshness.asOf",
-        "freshness.cadence",
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
         "integrity.duplicates"
       ],
-      "why": "record-absent"
-    }
-  ],
-  "updateFailureExposed": [
-    {
-      "subject": "scripts/build-deepsky.mjs",
-      "why": "fetches upstream and nowhere in the file asks whether the response was ok — the body of a 404 or a 503 page is parsed and written like data",
-      "where": "scripts/build-deepsky.mjs:56"
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-smallbodies.mjs",
-      "why": "fetches upstream and nowhere in the file asks whether the response was ok — the body of a 404 or a 503 page is parsed and written like data",
-      "where": "scripts/build-smallbodies.mjs:54"
+      "subject": "scripts/lib/glottolog.mjs → data/language-aliases.json",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
     },
     {
-      "subject": "scripts/build-spacecraft.mjs",
-      "why": "fetches upstream and nowhere in the file asks whether the response was ok — the body of a 404 or a 503 page is parsed and written like data",
-      "where": "scripts/build-spacecraft.mjs:127"
+      "subject": "scripts/probe-gibs-range.mjs → data/gibs-range.json",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/rail/build.mjs → data/railways/index.json",
+      "facets": [
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
     }
   ],
+  "updateFailureExposed": [],
   "shardsWithoutIndex": [
     {
       "subject": "data/planets/",
@@ -2716,17 +3055,12 @@
       "shards": 9
     }
   ],
-  "unreadableDeclaration": [
-    {
-      "subject": "scripts/build-hist-places.mjs",
-      "why": "it could not be evaluated apart from its builder: SOURCE is not defined"
-    }
-  ],
+  "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 130,
-    "undeclaredFacets": 1876,
-    "updateFailureExposed": 3,
+    "undeclared": 154,
+    "undeclaredFacets": 2100,
+    "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
-    "unreadableDeclaration": 1
+    "unreadableDeclaration": 0
   }
 }

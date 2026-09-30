@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url';
 import { RAW, SOURCE_STAMP, deent, j, useCache, countryFiles, isoIndex, isoOf, shortNameOf, yearOf } from './lib/factbook.mjs';
 import { loadGlottolog, loadLedger, normName, GLOTTOLOG_STAMP, LEVELS, AES } from './lib/glottolog.mjs';
 import { alpha3to2, CLDR_STAMP } from './lib/cldr.mjs';
+import { FACTBOOK } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -53,6 +54,8 @@ export const GOVERNANCE = (() => {
         attribution: true,
         paidBy: 'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)' },
     ],
+    /* the shorter of the two: the Factbook's shares move monthly, Glottolog releases twice a year */
+    ...FACTBOOK,
     builtBy: 'scripts/build-language.mjs',
   };
   return { 'data/language.json': rec, 'data/language-tree.json': rec };

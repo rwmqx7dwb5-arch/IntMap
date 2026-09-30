@@ -106,6 +106,7 @@ export const GOVERNANCE = {
     /* 「BY」 is part of the identifier: credit is a condition of these terms. */
     attribution: true,
     paidBy: 'GeoNames',
+    ...GEONAMES,
     builtBy: 'scripts/build-gazetteer.mjs',
   },
 };
@@ -493,3 +494,5 @@ async function main() {
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
+
+import { GEONAMES } from './lib/upstream-cadence.mjs';

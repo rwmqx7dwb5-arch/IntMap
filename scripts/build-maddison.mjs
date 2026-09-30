@@ -64,6 +64,14 @@ export const GOVERNANCE = {
        same release. The figures were verified against the committed bundle cell for cell. */
     url: SRC,
     /* ⚠ NO LICENCE IS STATED BY THIS BUILD for either the release or the mirror. */
+    /* ⚠ A FINISHED EDITION. MPD2020 will never be revised; its successor (MPD2023) is a different
+       release with different numbers, and moving to it is a decision about the data, not a refresh. */
+    cadence: 'static',
+    cadenceBasis: {
+      observed: 'the Maddison Project Database 2020 is a closed release (Bolt & van Zanden 2020); the OWID mirror of it is fixed to that release by its path',
+      expires: 'when this builder is pointed at a later release (MPD2023 exists) — that is a new edition, not a refresh of this one',
+      canon: 'this record (the only builder that reads the Maddison Project Database)',
+    },
     builtBy: 'scripts/build-maddison.mjs',
   },
 };

@@ -38,6 +38,8 @@
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
+import { fetchChecked } from './lib/upstream.mjs';
+import { JPL_HORIZONS } from './lib/upstream-cadence.mjs';
 
 const OUT = path.join(process.cwd(), 'data', 'spacecraft.json');
 const API = 'https://ssd.jpl.nasa.gov/api/horizons.api';
@@ -51,6 +53,9 @@ export const GOVERNANCE = {
     url: API,
     licence: 'U.S. Government work — not subject to copyright',
     attribution: false,
+    ...JPL_HORIZONS,
+    /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
+    autoRefresh: 'about twenty Horizons requests paced 0.7 s apart, no key; every answer is checked (scripts/lib/upstream.mjs) and the file is written only when every spacecraft in FLEET came back',
     builtBy: 'scripts/build-spacecraft.mjs',
   },
 };
@@ -120,18 +125,21 @@ const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
 function q(v){ return encodeURIComponent("'"+v+"'"); }
 
+/* ⚠ (upstream-liveness) HORIZONS' TEXT IS RETURNED ONLY WHEN HORIZONS ANSWERED.
+   This used to read the body without asking the status and return `null` after four failures,
+   and the fleet loop turned null into «SKIPPED» and wrote the file anyway — so a Horizons outage
+   shipped a bundle with spacecraft missing, which the explorer draws as spacecraft that do not
+   exist (check:datagov, rule update-failure). Horizons reports a question it cannot answer INSIDE
+   a 200 (`result` and `error` both carry «No ephemeris for target … after A.D. 2031-SEP-21», measured
+   2026-09-30), and that text is still returned to fetchVectors, which reads the covered span out
+   of it. What throws is a non-2xx, an empty or non-JSON body, or JSON with no `result` string. */
 async function horizons(params){
   const url = API+'?format=json&'+Object.entries(params).map(([k,v])=>k+'='+v).join('&');
-  for(let attempt=0; attempt<4; attempt++){
-    try{
-      const r = await fetch(url, { headers:{ 'accept':'application/json' } });
-      const j = await r.json();
-      if(j && typeof j.result === 'string') return j.result;
-      if(j && j.error) return 'ERROR: '+j.error;
-    }catch(e){ /* transient — Horizons rate-limits bursts */ }
-    await sleep(1500*(attempt+1));
-  }
-  return null;
+  const j = await fetchChecked(url, { headers:{ 'accept':'application/json' } }, {
+    as:'json', attempts:4, backoffMs:1500,     /* Horizons rate-limits bursts: a dead answer is asked again */
+    validate:(x)=> (x && typeof x.result === 'string') ? true : 'no `result` text in the Horizons answer',
+  });
+  return j.result;
 }
 
 /* Horizons refuses a span its kernel does not cover and NAMES the span it does cover, e.g.
@@ -146,7 +154,14 @@ function coverageFrom(text){
   return out;
 }
 const MON = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
-function isoOf(y,mon,d){ return `${y}-${MON[mon]||'01'}-${d}`; }
+/* Horizons writes the month in capitals (`2031-SEP-01`). The lookup read `SEP` as unknown and put
+   January in its place, so JWST's arc stopped at 2031-01 while Horizons covers it to 2031-09 — a date no
+   upstream stated. An unreadable month is refused, never substituted. */
+function isoOf(y,mon,d){
+  const k = String(mon).slice(0,1).toUpperCase() + String(mon).slice(1).toLowerCase();
+  if(!MON[k]) throw new Error(`Horizons coverage month '${mon}' is not a month`);
+  return `${y}-${MON[k]}-${d}`;
+}
 function shift(iso, days){ const t = Date.parse(iso+'T00:00:00Z') + days*86400000; return new Date(t).toISOString().slice(0,10); }
 
 function parseVectors(text){
@@ -175,7 +190,6 @@ async function fetchVectors(sc){
       START_TIME:q(from), STOP_TIME:q(to), STEP_SIZE:q(sc.stepD+'d'),
       VEC_TABLE:q('2'), OUT_UNITS:q('AU-D'), VEC_LABELS:q('NO'), CSV_FORMAT:q('YES'),
     });
-    if(!text){ console.warn(`  ${sc.key}: no answer`); return null; }
     const rows = parseVectors(text);
     if(rows) return { rows, from, to };
     const cov = coverageFrom(text);
@@ -206,10 +220,15 @@ const main = async () => {
     fields: ['jd','x','y','z','vx','vy','vz'],
     craft: [],
   };
+  /* ⚠ A SPACECRAFT HORIZONS DID NOT GIVE US IS A FAILED BUILD, NOT A SMALLER FLEET. Each FLEET row
+     is a vehicle Horizons carries; a row it cannot answer for is either an outage or a kernel that
+     changed, and both need a person — so the rows are all asked, the misses are listed, and nothing
+     is written unless every one came back. */
+  const missed = [];
   for(const sc of FLEET){
     process.stdout.write(`Horizons ${sc.key} (${sc.id}) … `);
     const got = await fetchVectors(sc);
-    if(!got){ console.log('SKIPPED'); continue; }
+    if(!got){ console.log('NOT ANSWERED'); missed.push(sc.key); continue; }
     const samples = got.rows.map(r=>[ rd(r[0],5), rd(r[1],7), rd(r[2],7), rd(r[3],7), rd(r[4],9), rd(r[5],9), rd(r[6],9) ]);
     out.craft.push({
       key:sc.key, en:sc.en, ja:sc.ja, agency:sc.agency, launched:sc.launched, contact:sc.contact,
@@ -219,10 +238,10 @@ const main = async () => {
     console.log(`${samples.length} samples`);
     await sleep(700);   /* Horizons asks for a civil request rate; this is one query per ~0.7 s */
   }
+  if(missed.length){ console.error(`Horizons did not answer for ${missed.join(', ')} — refusing to write ${OUT}`); process.exit(1); }
   fs.writeFileSync(OUT, JSON.stringify(out));
   const kb = (fs.statSync(OUT).size/1024).toFixed(0);
   console.log(`\n→ ${OUT}  (${out.craft.length} spacecraft, ${kb} KB)`);
-  if(!out.craft.length) process.exit(1);
 };
 
 main().catch(e=>{ console.error(e); process.exit(1); });

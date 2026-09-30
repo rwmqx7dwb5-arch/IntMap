@@ -58,6 +58,7 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import vm from 'node:vm';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WHO_DON } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'who-don.json.gz');
@@ -81,6 +82,9 @@ export const GOVERNANCE = {
     publisher: 'World Health Organization — Disease Outbreak News',
     url: WHO_API,
     /* ⚠ NO LICENCE IS STATED BY THIS BUILD. */
+    ...WHO_DON,
+    /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
+    autoRefresh: 'about thirty-six paged requests to the WHO public API (countries, regions, 3,195 items at 100 a page), no key; every page status is checked and a failure throws before the file is written',
     builtBy: 'scripts/build-who-don.mjs',
   },
 };

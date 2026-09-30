@@ -63,6 +63,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { simplifyRing, ringArea } from './histborders/geom.mjs';
+import { AOUREDNIK_BASEMAPS } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'hist-eras.js');
@@ -71,6 +72,19 @@ const OUT = join(ROOT, 'data', 'hist-eras.js');
 const CACHE = process.env.INTMAP_HISTERAS_CACHE || join(tmpdir(), 'intmap-histeras-cache');
 
 const API = 'https://api.github.com/repos/aourednik/historical-basemaps/contents/geojson';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/hist-eras.js': {
+    publisher: 'aourednik/historical-basemaps',
+    url: API,
+    ...AOUREDNIK_BASEMAPS,
+    builtBy: 'scripts/build-hist-eras.mjs',
+  },
+};
 const RAW = 'https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/';
 const FILE_RE = /^world_(bc)?(\d+)\.geojson$/;
 

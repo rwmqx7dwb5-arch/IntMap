@@ -51,6 +51,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { OURAIRPORTS } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'data', 'airports.json');
@@ -72,7 +73,7 @@ export const GOVERNANCE = (() => {
       fields: 'cca2 to cca3 only' },
   ];
   /* ⚠ ONE BUNDLE, TWO UPSTREAMS: a single licence for the file would be a claim neither made. */
-  return { 'data/airports.json': { upstreams, builtBy: 'scripts/build-airports.mjs' } };
+  return { 'data/airports.json': { upstreams, ...OURAIRPORTS, builtBy: 'scripts/build-airports.mjs' } };
 })();
 
 /* the same one alias data/country-facts.json declares — Natural Earth's KOS is mledoze's UNK */

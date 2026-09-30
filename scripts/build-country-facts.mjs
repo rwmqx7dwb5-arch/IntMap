@@ -91,6 +91,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { IANA_TZDB } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'data', 'country-facts.json');
@@ -116,6 +117,7 @@ export const GOVERNANCE = {
     /* three upstreams under two different sets of terms; the file has no single licence and saying
        it did would be a claim none of them made */
     upstreams: UPSTREAMS.map((s) => ({ publisher: s.n, url: s.u, licence: s.licence })),
+    ...IANA_TZDB,
     builtBy: 'scripts/build-country-facts.mjs',
   },
 };

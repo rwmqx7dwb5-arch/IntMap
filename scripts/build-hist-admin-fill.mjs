@@ -113,6 +113,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { registry, shipTags, harvestTags } from './histadmin/langs.mjs';
 import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
+import { WIKIDATA } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -120,6 +121,20 @@ const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1]
 const OUT = path.resolve(ROOT, argOf('--out', 'data/hist-admin-fill.js'));
 const GLOBAL = '__HISTADMFILL';
 const WDQS = 'https://query.wikidata.org/sparql';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/hist-admin-fill.js': {
+    /* the carried-back units' dates and names are Wikidata's; that is the material that moves */
+    publisher: 'Wikidata',
+    url: WDQS,
+    ...WIKIDATA,
+    builtBy: 'scripts/build-hist-admin-fill.mjs',
+  },
+};
 const UA = 'IntMap/build-hist-admin-fill (+https://github.com/rwmqx7dwb5-arch/IntMap)';
 const LICENCE = 'Derived: Natural Earth 10m admin-1 (public domain) via data/admin1-world.json.gz · dates and names from Wikidata (CC0) · assembled by scripts/build-hist-admin-fill.mjs';
 
