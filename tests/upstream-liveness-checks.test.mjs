@@ -157,6 +157,10 @@ test('⑤ every requested host declares a probe of itself, and a non-2xx expecta
   assert.ok(hostMatches('mts*.google.com', 'mts0.google.com'));
   assert.ok(!hostMatches('*.wikipedia.org', 'wikipedia.org.evil.example'));
   assert.ok(!hostMatches('api.example', 'api.example.org'));
+  /* a `.` in a pattern is a dot, not "any character" */
+  assert.ok(!hostMatches('mts*.google.com', 'mts0.googlexcom'));
+  assert.ok(!hostMatches('*.wikipedia.org', 'de.wikipediaxorg'));
+  assert.ok(!hostMatches('mts*.google.com', 'mts0.evil.example.google.com.evil.example'));
   const d = declared({ hosts: [
     { host: 'ok.example', disclosure: {}, probe: { url: 'https://ok.example/x' } },
     { host: 'none.example', disclosure: {} },
@@ -184,20 +188,25 @@ test('⑤ every requested host declares a probe of itself, and a non-2xx expecta
 /* The builders run their work at module top level, so they are RUN, in a child process, with the
    global fetch replaced by one that answers what the case needs — the real builder, the real check,
    a fake upstream. Refusals (4xx, a 200 that is not the answer) are used because they are not
-   retried, so each case ends in milliseconds rather than after a back-off. */
-function runWithFakeUpstream(script, fakeBody, sentinelRel) {
+   retried, so each case ends in milliseconds rather than after a back-off.
+   The fake answer travels as DATA (an environment variable read by a fixed module), not as code
+   spliced into the module's text — no case can change what the child executes. */
+const MOCK_FETCH = `const fake = JSON.parse(process.env.INTMAP_FAKE_UPSTREAM);
+globalThis.fetch = async () => new Response(fake.body, { status: fake.status, headers: { 'content-type': fake.contentType } });
+`;
+function runWithFakeUpstream(script, fake, sentinelRel) {
   const dir = mkdtempSync(join(tmpdir(), 'intmap-upstream-liveness-'));
   try {
     mkdirSync(join(dir, 'data'));
     const sentinel = sentinelRel ? join(dir, sentinelRel) : null;
     if (sentinel) writeFileSync(sentinel, 'SENTINEL');
     const mock = join(dir, 'mock-fetch.mjs');
-    writeFileSync(mock, `globalThis.fetch = async (url) => { ${fakeBody} };\n`);
-    const r = spawnSync(process.execPath, ['--import', pathToFileURL(mock).href, join(ROOT, script)], { cwd: dir, encoding: 'utf8', timeout: 60000 });
+    writeFileSync(mock, MOCK_FETCH);
+    const r = spawnSync(process.execPath, ['--import', pathToFileURL(mock).href, join(ROOT, script)], { cwd: dir, encoding: 'utf8', timeout: 60000, env: { ...process.env, INTMAP_FAKE_UPSTREAM: JSON.stringify(fake) } });
     return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), sentinel: sentinel ? readFileSync(sentinel, 'utf8') : null };
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }
-const R = (status, body, ct = 'application/json') => `return new Response(${JSON.stringify(body)}, { status: ${status}, headers: { 'content-type': '${ct}' } });`;
+const R = (status, body, contentType = 'application/json') => ({ status, body, contentType });
 
 test('⑥ a builder whose upstream does not answer writes nothing and exits non-zero', () => {
   /* SIMBAD answering an error page under 200: not JSON — refused, the bundle untouched */

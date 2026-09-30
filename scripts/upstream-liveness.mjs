@@ -84,10 +84,27 @@ export const CONCURRENCY = 16;
 /* ── declarations ──────────────────────────────────────────────────────────────────────────── */
 
 /* A ledger host may be a pattern: `*.wikipedia.org` or `mts*.google.com`. The probe's host must be
-   one the pattern names — a probe that asks a different host measures a different fact. */
+   one the pattern names — a probe that asks a different host measures a different fact.
+   Matched as text, not by building a RegExp from the pattern: the literal parts are compared
+   exactly (a `.` is a dot, never "any character"), and what a `*` stands for must be host
+   characters — letters, digits and hyphens, with a dot only before a non-empty label — so a `*`
+   can widen a label (`mts0`) or add labels (`de.`) but never swallow a foreign suffix. */
+const WILD_LABEL = /^[a-z0-9-]*$/;
+const wildcardSpan = (s) => s.split('.').every((label, i) => (i === 0 || label !== '') && WILD_LABEL.test(label));
 export function hostMatches(pattern, host) {
-  const re = new RegExp('^' + pattern.split('*').map((s) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('[a-z0-9-]*(?:\\.[a-z0-9-]+)*') + '$', 'i');
-  return re.test(host);
+  const parts = String(pattern).toLowerCase().split('*');
+  const h = String(host).toLowerCase();
+  if (!h.startsWith(parts[0])) return false;
+  /* parts[0..k] are matched and end at pos; next come a wildcard and parts[k + 1] */
+  const rest = (k, pos) => {
+    if (k === parts.length - 1) return pos === h.length;
+    const lit = parts[k + 1];
+    for (let end = pos; end + lit.length <= h.length; end++) {
+      if (h.startsWith(lit, end) && wildcardSpan(h.slice(pos, end)) && rest(k + 1, end + lit.length)) return true;
+    }
+    return false;
+  };
+  return rest(0, parts[0].length);
 }
 
 /** Which rows are probed, with what, and what is wrong with the declarations. Pure. */
