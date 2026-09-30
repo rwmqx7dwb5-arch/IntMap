@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4670117,
-    "gzip": 1520841,
-    "brotli": 1151552,
+    "raw": 4679741,
+    "gzip": 1524966,
+    "brotli": 1154267,
     "requests": 9,
-    "modules": 286,
-    "cssRaw": 359501,
-    "cssGzip": 59037
+    "modules": 288,
+    "cssRaw": 360262,
+    "cssGzip": 59175
   },
   "async": {
-    "raw": 11559456,
-    "gzip": 3780723,
+    "raw": 11559726,
+    "gzip": 3780816,
     "chunks": {
       "aircraft-detail": 17119,
       "analysis-correlate": 24234,
@@ -23,7 +23,7 @@
       "atlas-attach": 23189,
       "atlas-chart": 10539,
       "atlas-console": 1059973,
-      "atlas-executor": 56809,
+      "atlas-executor": 56924,
       "atlas-geo-resolve": 49608,
       "atlas-query": 48648,
       "atlas-view-capture": 8511,
@@ -43,7 +43,7 @@
       "esm": 286281,
       "flight-sim": 116056,
       "geo-import": 17728,
-      "gis-core": 554340,
+      "gis-core": 554357,
       "gis-export": 19659,
       "gis-geopackage": 26784,
       "gis-geotiff": 24050,
@@ -52,7 +52,7 @@
       "katex": 259214,
       "katex.min": 0,
       "lib": 129791,
-      "navigation": 61034,
+      "navigation": 61021,
       "net-health-live": 16816,
       "news-events": 34268,
       "night-sky": 25448,
@@ -60,16 +60,16 @@
       "pandemic-world": 32027,
       "photo-geo": 81610,
       "plane-glyph": 867,
-      "playground": 101877,
+      "playground": 101987,
       "polygon-clipping.esm": 22543,
       "radiation-layer": 14708,
-      "railways": 28004,
+      "railways": 28019,
       "routing-traffic": 12306,
       "routing-ui": 57755,
       "satellite-detail": 13743,
       "satellite-wasm-stub": 194,
       "satellites-live": 23092,
-      "seismic": 159241,
+      "seismic": 159267,
       "shakemap": 19524,
       "space": 98818,
       "stats-compare": 62637,
@@ -95,8 +95,8 @@
     }
   },
   "dist": {
-    "total": 772936204,
-    "data": 715642474,
-    "assets": 18971852
+    "total": 772972054,
+    "data": 715665660,
+    "assets": 18982507
   }
 }
