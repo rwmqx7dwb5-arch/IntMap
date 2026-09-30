@@ -29,6 +29,7 @@
    js/atlas-console.js に import 1 行ぶんの余白も無いから——あの中心部は shrink-only で、
    新しい主題はファイルごと外へ出し、入口だけをまとめる（tests/atlas-turn-checks.test.mjs #R419 ⑨ / r511 / r667）。 */
 import { ATTACH_LOG } from './atlas-attach-log.js';
+import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
 export { ATTACH_LOG };
 
 /** 添付の記録（ATL_FILE.read が返したもの）に id を与えて預かる場所。
@@ -263,10 +264,10 @@ export const ATTACH_VIEW_CSS =
   + '.atl-lightbox .atl-fv-tablewrap{overflow:auto;}'
   + '.atl-lightbox .atl-fv-table{border-collapse:collapse;font-size:12.5px;width:100%;}'
   + '.atl-lightbox .atl-fv-table th,.atl-lightbox .atl-fv-table td{border:1px solid var(--atlas-glass-edge,rgba(128,128,128,0.22));padding:5px 9px;text-align:left;white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;}'
-  + '.atl-lightbox .atl-fv-table th{position:sticky;top:0;background:var(--input-bg,#f2f2f7);font-weight:600;z-index:1;}'
+  + '.atl-lightbox .atl-fv-table th{position:sticky;top:0;background:var(--input-bg,#f2f2f7);font-weight:600;z-index:calc(var(--z-inset) + 1);}'
   + '.atl-lightbox .atl-fv-empty{padding:10px 16px;font-size:12px;opacity:.66;}'
   /* (#R773) 畳みのボタン。表の下にも本文の下にも同じ 1 つが出る。 */
   + '.atl-lightbox .atl-fv-fold{display:block;width:100%;padding:9px 16px;border:0;border-top:1px solid var(--atlas-glass-edge,rgba(128,128,128,0.22));background:transparent;color:var(--primary-color,#0a84ff);font-size:12.5px;text-align:left;cursor:pointer;font-family:inherit;}'
   + '.atl-lightbox .atl-fv-fold:hover{background:var(--input-bg,rgba(128,128,128,0.08));}'
   + '.atl-lightbox .atl-fv-textbox{display:flex;flex-direction:column;}'
-  + '@media(max-width:768px){ .atl-lightbox .atl-fv-frame{height:70vh;} }';
+  + (globalThis.IntMapDevice || window.IntMapDevice).media(' .atl-lightbox .atl-fv-frame{height:70vh;} ');

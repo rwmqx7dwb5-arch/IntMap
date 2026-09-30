@@ -39,6 +39,7 @@
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
+import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
 
 export const ATLAS_ANNOTATE_CSS = ''
   /* ⚠ #atlas-panel で囲わない。同じ返答が浮動パネル・サイドバータブ・ワークスペース窓の
@@ -46,15 +47,15 @@ export const ATLAS_ANNOTATE_CSS = ''
   + '.atl-an{text-decoration:underline dotted rgba(128,128,128,.34);text-decoration-thickness:1px;text-underline-offset:.2em;cursor:help;}'
   + '.atl-an-a{text-decoration-color:rgba(128,128,128,.62);}'
   + '.atl-an:hover{text-decoration-color:var(--primary-color);}'
-  /* ⚠ 20000 は「全パネルより上、全面オーバーレイより下」。この app の面の最大は 10060（ドック類）、
+  /* ⚠ 20000（= --z-modal + 10000。atlas-ui-owners で層の名前へ。値は同じ）は「全パネルより上、全面オーバーレイより下」。この app の面の最大は 10060（ドック類）、
      全面を覆うもの（監視オーバーレイ・オンボーディング・再読込バナー）は 99990 以上にいる。
      100000 に置くとオーバーレイと同点になり、後から body に足したこの一枚が上に乗ってしまう。 */
-  + '.atl-antip{position:fixed;left:0;top:0;z-index:20000;max-width:min(310px,86vw);padding:8px 11px 9px;border-radius:12px;background:var(--popup-bg,rgba(255,255,255,.9));color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,.2));box-shadow:0 10px 32px rgba(0,0,0,.24);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);font-size:12.5px;line-height:1.45;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(3px);transition:opacity .13s ease,transform .13s ease,visibility .13s;}'
+  + '.atl-antip{position:fixed;left:0;top:0;z-index:calc(var(--z-modal) + 10000);max-width:min(310px,86vw);padding:8px 11px 9px;border-radius:12px;background:var(--popup-bg,rgba(255,255,255,.9));color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,.2));box-shadow:0 10px 32px rgba(0,0,0,.24);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);font-size:12.5px;line-height:1.45;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(3px);transition:opacity .13s ease,transform .13s ease,visibility .13s;}'
   + '.atl-antip.on{opacity:1;visibility:visible;transform:none;}'
   + '.atl-antip.below{transform:translateY(-3px);}.atl-antip.below.on{transform:none;}'
   + '.atl-antip-t{font-size:14px;font-weight:600;letter-spacing:.005em;color:var(--text-main);}'
   + '.atl-antip-d{margin-top:3px;font-size:11.5px;color:var(--text-muted);}'
-  + '@media(max-width:768px){.atl-antip{font-size:13.5px;max-width:min(320px,92vw);}.atl-antip-t{font-size:15px;}.atl-antip-d{font-size:12.5px;}}';
+  + (globalThis.IntMapDevice || window.IntMapDevice).media('.atl-antip{font-size:13.5px;max-width:min(320px,92vw);}.atl-antip-t{font-size:15px;}.atl-antip-d{font-size:12.5px;}');
 
 /** ⚠ ONE FACTORY, because a js/ module may hold no unexported top-level declaration (tests/layer-boot-graph-checks.test.mjs #R175 ③)
  *  and no export that nothing imports by name. The lexicon, the glossary, the compiled regexes and

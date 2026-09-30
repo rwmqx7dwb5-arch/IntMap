@@ -11,7 +11,8 @@
  *
  *  ⚠ IT LIVES ON <body>, NOT INSIDE #atlas-panel. The panel is a 400 px box with `overflow` and its
  *  own stacking context; a full-screen overlay inside it would be clipped to it. The z-index sits
- *  above the panel's 1850 and above the mobile sheet's 1460.
+ *  above the panel's 1850 and above the mobile sheet's 1460: it is the `shell-front` layer (2600),
+ *  read from css/intmap.css :root since atlas-ui-owners — the same number it always wrote.
  *
  *  ⚠ AND IT PUSHES A HISTORY ENTRY, so on a phone the Back gesture closes the picture instead of
  *  leaving the map — the rule every other full-screen surface in this app follows.
@@ -30,6 +31,7 @@
 /* (#R773) 非画像の添付の「中身をどう描くか」は別の主題なので別のファイル。⚠ 全画面の枠は
    このファイルのものが 1 本きりで、あちらは中に置く要素を組むだけ（枠を 2 つ作らない）。 */
 import { ATTACH_STORE, ATTACH_VIEW } from './atlas-file-view.js';
+import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
 
 /** THE ONE ENTRY POINT: delegate from the chat element, once. Every picture the conversation will
  *  ever hold is covered, nothing is attached per image, and nothing leaks when the panel is rebuilt.
@@ -193,7 +195,7 @@ export function attachLightbox(chatEl, closeLabel, fileStrings) {
 
 /** The overlay's CSS, appended to the stylesheet js/atlas-console.js builds. */
 export const LIGHTBOX_CSS =
-  '.atl-lightbox{position:fixed;inset:0;z-index:2600;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.86);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:atlLbIn .16s ease;padding:24px;box-sizing:border-box;cursor:zoom-out;}'
+  '.atl-lightbox{position:fixed;inset:0;z-index:var(--z-shell-front);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.86);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:atlLbIn .16s ease;padding:24px;box-sizing:border-box;cursor:zoom-out;}'
   + '@keyframes atlLbIn{from{opacity:0}to{opacity:1}}'
   /* (#R233) `touch-action:none` is what makes the pinch reach this element instead of the browser's
      own page zoom, and `will-change:transform` keeps the scaled bitmap on its own layer while it is
@@ -203,9 +205,9 @@ export const LIGHTBOX_CSS =
   + '.atl-lightbox img.atl-lb-zoomed:active{cursor:grabbing;}'
   /* (#R233) 「×ボタンは丸ではなく四角に。」 A rounded SQUARE — the corner radius matches the picture's
      own 10px so the two shapes belong to the same sheet, and 50% (a circle) is gone. */
-  + '.atl-lightbox .atl-lb-x{position:absolute;top:max(12px,env(safe-area-inset-top));right:14px;width:40px;height:40px;border:none;border-radius:10px;background:rgba(255,255,255,0.14);color:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}'
+  + '.atl-lightbox .atl-lb-x{position:absolute;top:max(12px,var(--safe-top));right:14px;width:40px;height:40px;border:none;border-radius:10px;background:rgba(255,255,255,0.14);color:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}'
   + '.atl-lightbox .atl-lb-x:hover{background:rgba(255,255,255,0.26);}'
-  + '@media(max-width:768px){ .atl-lightbox{padding:10px;} }';
+  + (globalThis.IntMapDevice || window.IntMapDevice).media(' .atl-lightbox{padding:10px;} ');
 
 /* ══ WHAT A FILE IS — ASKED OF THE BYTES, NOT OF ITS NAME ════════════════════════════════════
  *  (#R540) 「Atlasに添付できるファイルの種類が少なすぎる。」

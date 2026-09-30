@@ -4296,7 +4296,7 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
   解決した**順序列**を `tests/z-layers-baseline.json` と完全一致で照合し（描画順が動けば `--update` で書き
   直すまで落ちる）、`css/`・`js/`・`*.html` に残る数値リテラルの z-index をファイルごとに両方向で数え、
   **0 でないファイルは台帳の `why` に理由を 1 文持つ**（残りは `css/intmap.css` を読まない別文書の
-  `admin.html`・`css/pages.css` と、別の作業が持っていた `js/atlas-*.js` の 5 本）。さらに `js/` と `*.html` が
+  `admin.html`・`css/pages.css` の 2 本だけ）。さらに `js/` と `*.html` が
   読む層の名前（`var(--z-…)` と `IntMapStack.z('…')`）が `:root` にあることも確かめる——綴りを誤った層は
   ブラウザでは誤りにならず、宣言が捨てられて `auto` で描かれる。
 - **セーフエリアも名前で読む。** `:root` の `--safe-top` / `--safe-right` / `--safe-bottom` / `--safe-left`

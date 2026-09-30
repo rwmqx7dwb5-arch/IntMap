@@ -1,22 +1,12 @@
 {
  "//": "written by scripts/z-layers.mjs --update — bare z-index numbers per file (ratcheted both ways; every file above zero says why under \"why\", kept by --update and written by hand) and every z-index of css/intmap.css resolved, in order (any change fails); held by check:static",
- "total": 11,
+ "total": 4,
  "literals": {
   "css/pages.css": 1,
-  "js/atlas-annotate.js": 1,
-  "js/atlas-attach.js": 1,
-  "js/atlas-file-view.js": 1,
-  "js/atlas-gloss.js": 2,
-  "js/atlas-styles.js": 2,
   "admin.html": 3
  },
  "why": {
   "css/pages.css": "css/pages.css (science, sources, privacy and terms) is its own document and does not load css/intmap.css, so the --z-* layers do not exist there; its z-index values order two or three things inside that page only (a sticky header, a toast, a dialog) and cannot collide with the app's stack.",
-  "js/atlas-annotate.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. Its numbers still sit where they did in the painting order; move them onto a --z-* layer (or IntMapStack.z) the next time the file is edited.",
-  "js/atlas-attach.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. Its numbers still sit where they did in the painting order; move them onto a --z-* layer (or IntMapStack.z) the next time the file is edited.",
-  "js/atlas-file-view.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. Its numbers still sit where they did in the painting order; move them onto a --z-* layer (or IntMapStack.z) the next time the file is edited.",
-  "js/atlas-gloss.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. Its numbers still sit where they did in the painting order; move them onto a --z-* layer (or IntMapStack.z) the next time the file is edited.",
-  "js/atlas-styles.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. Its numbers still sit where they did in the painting order; move them onto a --z-* layer (or IntMapStack.z) the next time the file is edited.",
   "admin.html": "admin.html is its own document and does not load css/intmap.css, so the --z-* layers do not exist there; its z-index values order two or three things inside that page only (a sticky header, a toast, a dialog) and cannot collide with the app's stack."
  },
  "stack": [
