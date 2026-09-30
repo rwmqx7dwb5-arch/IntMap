@@ -2483,7 +2483,7 @@ reader here for this list; adding a rule means adding a row.
 | rule | it fails when |
 |---|---|
 | `scan` | the sweep did not reach the tree, or missed a document it is required to read |
-| `app-size` | `Architecture.md` §1's file counts disagree with `index.html` / `js/` / `src/` / `css/` |
+| `app-size` | `Architecture.md` §1 no longer names what the app is made of, or writes a file count / size back into §1 or §3 (the counts move with every change; the rule prints them) |
 | `edge-functions` | `supabase/functions/` and `supabase/config.toml` disagree, a roster document drops a name, or the standing instructions can no longer reach a document that holds the whole roster |
 | `edge-count` | any document states an inventory size that is not the real one |
 | `edge-roster` | a document writes the roster out and omits a function, or introduces it with a wrong count |
