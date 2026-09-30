@@ -39,6 +39,7 @@ import * as catalogModule from '../js/atlas-catalog-text.js';
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { readSpec } from '../scripts/architecture-spec.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 /* (#R406) the tool surface is what SYS() carries now, so the measurement needs the real one */
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
@@ -360,7 +361,7 @@ test('R285 (8) ai-proxy admits the whole planner prompt, with room to grow', () 
 /* 「1か所を正本として管理し」 is a property of the DOCUMENTS too: a prose copy of the traits in
    Architecture.md is a second normative text, and #R274 is the round about what happens next. */
 test('R285 (9) Architecture.md names the source of truth and does not restate the persona', () => {
-  const arch = read('Architecture.md');
+  const arch = readSpec(ROOT);   /* the spec: the map and its chapters (architecture-split) */
   assert.match(arch, /js\/atlas-persona\.js/, 'Architecture.md does not name the persona file at all');
   /* (#R280 moved the file ledger out of §3 and into docs/FILES.md; the entry lives there now.) */
   assert.match(read('docs/FILES.md'), /atlas-persona\.js\s+Atlas の人格/, 'docs/FILES.md does not list js/atlas-persona.js');

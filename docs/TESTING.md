@@ -2536,7 +2536,8 @@ reader here for this list; adding a rule means adding a row.
 | `alerts` | the warning-feed counts in `docs/MAP-LAYERS.md` / README disagree with `js/world-packs.js` |
 | `app-shape` | a document still describes the app as one hand-written file with no build step |
 | `anon-key` | a document puts the browser-side Supabase key in the entry page instead of `src/vendor.js` |
-| `arch-rounds` | `Architecture.md` carries a round or pull-request reference, of any number of digits (`R1000` used to slip past a `R\d{1,3}` needle) — the history belongs in `dev-notes/` |
+| `arch-split` | the current-state spec's map (`Architecture.md`) and its chapters (`docs/architecture/`, discovered by `scripts/architecture-spec.mjs`) disagree: a chapter the map's table does not name, a row pointing at a file without that `## N.` heading, a chapter the sweep did not read, or a chapter written back into the map. Green prints how many chapters and lines were read — a rule reading the map alone would read no chapter text |
+| `arch-rounds` | the spec — `Architecture.md` and every chapter under `docs/architecture/`, each with its own line numbers — carries a round or pull-request reference, of any number of digits (`R1000` used to slip past a `R\d{1,3}` needle) — the history belongs in `dev-notes/` |
 | `cesium` | a document describes the second engine as withdrawn while it ships |
 | `monitors` | a document presents the withdrawn Area Monitors entry point as still clickable |
 | `news-path` | the privacy policy describes a news path the switches in `js/app-body.js` do not take |
@@ -2560,7 +2561,7 @@ reader here for this list; adding a rule means adding a row.
 | `deep-tier-size` | a stated size of a test tier — in a document, in `package.json` or in `scripts/worktree.mjs` — is not what `scripts/tiers.mjs` derives |
 | `histb-count` | the size of the day-exact border record below CShapes, as any tracked file states it, disagrees with `data/hist-borders.js` — or one of the nine source pages states that row without a number its English original states (see below) |
 | `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
-| `section-refs` | a document names another document and a `§` number that document has no section for |
+| `section-refs` | a document names another document and a `§` number that document has no section for. The files that share the spec's numbers (so `Architecture.md` §7.4 resolves to a chapter) are the ones the map's table names — derived, not listed |
 | `gate-callers` | `package.json` declares a `check:*` script that `ci.yml` never runs (`npm test` is not counted: it runs every declared gate by construction) |
 | `bordercoast-rings` | a document states how many rings the border/coast record marks, and `data/border-coast.js` marks a different number (three documents said 25,506 while the bundles held 33,600 — the number came from #R564 own completion line and none of the three copies moved) |
 | `chronos-sheets` | a document — **or a tracked file under `js/` or `scripts/`** (#R717) — states how many year snapshots `data/hist-eras.js` holds, in Japanese (`枚`) or English (digits **or** a cardinal word), and the record holds a different number |

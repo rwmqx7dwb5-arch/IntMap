@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { scratchTree } from './helpers/scratch-tree.mjs';
 import vm from 'node:vm';
 import { asClassicScript } from './app-source.mjs';
+import { readSpec } from '../scripts/architecture-spec.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const rd = (p) => readFileSync(new URL(p, ROOT), 'utf8');
@@ -140,7 +141,7 @@ test('#R717 ④ the polity counts Architecture.md states for the 1885/1886 seam 
      CShapes' inclusive. Asking one question of both would move every number in the paragraph. */
   const hbAt = (y) => HB.feats.filter((f) => start(f) <= at(y) && end(f) > at(y)).length;
   const csAt = (y) => CS.feats.filter((f) => start(f) <= at(y) && end(f) >= at(y)).length;
-  const arch = rd('Architecture.md');
+  const arch = readSpec(fileURLToPath(ROOT));   /* the spec: the map and its chapters (architecture-split) */
   const claim = /1885 年は OHM が \*\*(\d+)\*\*、1886 年は CShapes が \*\*(\d+)\*\*（OHM なら同じ日に (\d+)）/.exec(arch);
   assert.ok(claim, 'Architecture.md no longer states the 1885/1886 seam — a reader watching a third of the world vanish has nothing to read');
   assert.equal(Number(claim[1]), hbAt(1885), 'the stated 1885 count is not what data/hist-borders.js holds');

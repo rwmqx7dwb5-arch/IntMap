@@ -25,6 +25,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { chapters, readSpec } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
@@ -179,7 +180,7 @@ test('#R257 ⑤ CLAUDE.local.md is ignored, and no tracked doc carries a credent
   const docs = existsSync(at('docs'))
     ? readdirSync(at('docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f)
     : [];
-  const scanned = [...roots, ...docs].filter((f) => f !== 'CLAUDE.local.md');
+  const scanned = [...roots, ...docs, ...chapters(ROOT)].filter((f) => f !== 'CLAUDE.local.md');   /* + the spec's chapters (architecture-split) */
   assert.ok(scanned.includes('AGENTS.md'), 'the scan did not reach AGENTS.md');
   assert.ok(scanned.length >= 10, `only ${scanned.length} markdown files were scanned — the sweep is not reaching the tree`);
 
@@ -199,7 +200,7 @@ test('#R257 ⑥ CONSTITUTION.md and Architecture.md both register AGENTS.md', ()
     'CONSTITUTION.md §6 no longer lists AGENTS.md — the two top-level rule files have drifted apart');
   assert.ok(con.includes('CLAUDE.local.md'),
     'CONSTITUTION.md no longer records where the credentials live');
-  const arch = read('Architecture.md');
+  const arch = readSpec(ROOT);   /* the map and its chapters (architecture-split) */
   assert.ok(arch.includes('AGENTS.md'),
     'Architecture.md §3 (ファイル構成) no longer lists AGENTS.md');
 });
@@ -385,7 +386,7 @@ test('#R260 ④ the mirror is one-way, PC → USB', () => {
 /* ── ⑤ the other two rule documents know the procedure exists ───────────────────────────────── */
 test('#R260 ⑤ CONSTITUTION.md and Architecture.md record the finish procedure', () => {
   for (const f of ['CONSTITUTION.md', 'Architecture.md']) {
-    const body = read(f);
+    const body = f === 'Architecture.md' ? readSpec(ROOT) : read(f);   /* the spec is the map and its chapters */
     assert.ok(/作業終了処理|USB/.test(body),
       `${f} no longer mentions the finish procedure — the rule documents have drifted apart`);
   }

@@ -42,9 +42,9 @@
 - `CONSTITUTION.md`（製品の不文律）
 - **[`docs/README.md`](docs/README.md) — 文書の索引。**「どれが何の正本か・いつ更新するか」がここに
   1枚の表であるので、今回触る主題の**正本**をここで特定してから、その文書を読む
-- `Architecture.md`（現状仕様）・`PRODUCT.md`（何ができるか）・`DECISIONS.md`（なぜそうなっているか）
-  ⚠ **この 3 本は合計約 880 KB で、通読できない**（`Architecture.md` だけで約 20 万トークン）。
-  **今回の主題の節を `grep -n '^## \|^### '` で引いて、その節を読む**——読んだ節を最終報告に書く。
+- `Architecture.md`（現状仕様の案内図）・`PRODUCT.md`（何ができるか）・`DECISIONS.md`（なぜ）
+  ⚠ **通読できない。案内図の表で主題の章（`docs/architecture/`）を選び**、各文書で
+  **主題の節を `grep -n '^## \|^### '` で引いて、その節を読む**——読んだ節を最終報告に書く。
 - `README.md`、および今回の作業に関係するすべてのドキュメント・記録ファイル
 - **現在の Git 状態**（ブランチ、未コミット変更、他セッションの worktree）
 - **既存の PR** と **CI 状態**
@@ -77,7 +77,7 @@ node scripts/worktree.mjs status
 | **作業の手順** | **`.agents/skills/intmap-round/`**（Claude `/intmap-round`／Codex `$intmap-round`）・作業場は `node scripts/worktree.mjs` |
 | 専用 subagent | **`.agents/roles/`**（正本）— scout（全数調査）／verifier（テストとログ）／i18n（9言語）／implementer（隔離実装）／prod-verifier（本番検証） |
 | **製品別の設定** | **`docs/AGENT-SETUP.md`** — Claude Code と Codex で何が同じ・何が違う・何が手作業か |
-| 現状仕様書 | `Architecture.md`（＋ `docs/FILES.md` ファイル台帳・`docs/MAP-LAYERS.md` レイヤー実装） |
+| 現状仕様書 | `Architecture.md`（案内図）→ `docs/architecture/`・`docs/FILES.md`・`docs/MAP-LAYERS.md` |
 | 製品 | `PRODUCT.md`（目的・機能一覧・Atlas の到達点） |
 | 技術判断 | `DECISIONS.md`（今も有効な判断とその理由だけ） |
 | 開発記録 | **`dev-notes/`**（**1 エントリ 1 ファイル**）。`DEV-NOTES.md` は**固定の案内**（一覧は `--list`） |
@@ -336,9 +336,9 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
 - **複数の文書に書いてある同じ事実**（配信方法・Edge Function の一覧・対応言語・
   USB バックアップの頻度など）は **`npm run check:docs`（`npm test` に内包）が実体と照合する**。
   事実を書き写して二重にしないこと——**正本を 1 つに決め、他はそこへリンクする**。
-  ⚠ `Architecture.md` は**現状仕様書**であって変更履歴ではない。**ラウンド番号・PR 番号を書かない**
+  ⚠ 現状仕様書（案内図と章）は変更履歴ではない。**ラウンド番号・PR 番号を書かない**
   （経緯は開発記録の仕事。同じ検査がこれを見ている）。
-- **作業完了時**には、現在の状態を反映するよう `Architecture.md` および関連ドキュメントを更新し、
+- **作業完了時**には、現在の状態を反映するよう現状仕様の該当章と関連ドキュメントを更新し、
   **`dev-notes/<YYYY-MM-DD>-<slug>.md` を 1 本足す**（一覧は `node scripts/dev-notes.mjs --list`。
   `DEV-NOTES.md` は固定の案内で触らない。書式は `.agents/skills/intmap-round/` §3）。
 - **文書を1本足したら、同じコミットで [`docs/README.md`](docs/README.md) に1行足す**
@@ -346,7 +346,7 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
   **新しい文書を作らずそちらへ足す**——1つの事実に正本が2つある状態を作らない。
 - ファイルの分担の全体像は [`docs/README.md`](docs/README.md) と `CONSTITUTION.md` §6:
   `PRODUCT.md`＝何のためにあり何ができるか / `DECISIONS.md`＝なぜそうなっているか /
-  `Architecture.md`＝今どうなっているか（主題順） /
+  `Architecture.md`＝今どうなっているか（案内図→章） /
   `dev-notes/`＝記録（1 エントリ 1 ファイル。一覧は `node scripts/dev-notes.mjs --list`） /
   `DEV-NOTES-ARCHIVE.md`＝それ以前（古い順・追記しない）。
 

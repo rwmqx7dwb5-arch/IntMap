@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { specFileFor } from '../scripts/architecture-spec.mjs';
 
 const SCRATCH = scratchTree();
 function docFacts() {
@@ -29,22 +30,26 @@ test('app-size prints the measured counts and holds none in the prose', () => {
 });
 
 test('a count written back into §1 or §3 is red; the sentence going missing is red', () => {
-  const original = readFileSync(SCRATCH.path('Architecture.md'), 'utf8');
+  /* (architecture-split) §1 and §3 are chapters of their own now: each case edits the file that
+     carries its sentence, found by the sentence rather than by a path written here */
   const cases = [
-    ['§1 count', original.replace(/＋ `js\/` ＋/, '＋ `js/`（358本・17.8 MB）＋'), /states a file count or size again/],
-    ['§3 count', original.replace(/`js\/` の 1 本ずつの 1 行説明を/, '`js/` だけで 358 本あり、1行説明を'), /states the js\/ count again/],
-    ['sentence gone', original.replace(/本体は `index\.html`/, '本体は index'), /no longer names what the app is made of/],
+    ['§1 count', /＋ `js\/` ＋/, '＋ `js/`（358本・17.8 MB）＋', /states a file count or size again/],
+    ['§3 count', /`js\/` の 1 本ずつの 1 行説明を/, '`js/` だけで 358 本あり、1行説明を', /states the js\/ count again/],
+    ['sentence gone', /本体は `index\.html`/, '本体は index', /no longer names what the app is made of/],
   ];
-  try {
-    for (const [name, text, why] of cases) {
-      assert.notEqual(text, original, name + ': the mutation found nothing to change — the sentence moved');
-      SCRATCH.write('Architecture.md', text);
+  for (const [name, re, to, why] of cases) {
+    const file = specFileFor(SCRATCH.root, 'Architecture.md', re);
+    const original = readFileSync(SCRATCH.path(file), 'utf8');
+    const text = original.replace(re, to);
+    assert.notEqual(text, original, name + ': the mutation found nothing to change — the sentence moved');
+    try {
+      SCRATCH.write(file, text);
       const r = docFacts();
       assert.equal(r.code, 1, name + ' stayed green:\n' + r.out);
       assert.match(r.out, why, name + ':\n' + r.out);
+    } finally {
+      SCRATCH.write(file, original);
     }
-  } finally {
-    SCRATCH.write('Architecture.md', original);
   }
   assert.equal(docFacts().code, 0, 'the restore left the copy failing');
 });

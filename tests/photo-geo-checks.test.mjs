@@ -40,6 +40,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readSpec } from '../scripts/architecture-spec.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -734,6 +735,6 @@ test('#R547 ⑩ js/photo-geo-vision.js is imported by the panel and listed in bo
   assert.ok(/import '\.\/photo-geo-vision\.js';/.test(rd('js/photo-geo.js')),
     'the module must ride the photoGeo chunk, not be fetched by itself');
   assert.ok(/photo-geo-vision\.js/.test(rd('docs/FILES.md')), 'docs/FILES.md must carry a line for it');
-  assert.ok(/photo-geo-vision\.js/.test(rd('Architecture.md')), 'Architecture.md §2.4 must carry a row for it');
+  assert.ok(/photo-geo-vision\.js/.test(readSpec(ROOT)), 'Architecture.md §2.4 must carry a row for it');   /* the spec: the map and its chapters (architecture-split) */
   assert.ok(/photo-geo-vision\.js/.test(rd('docs/PHOTO-GEOLOCATION.md')), 'the feature document must describe it');
 });

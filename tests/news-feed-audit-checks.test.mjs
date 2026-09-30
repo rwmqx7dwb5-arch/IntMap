@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
+import { readSpec } from '../scripts/architecture-spec.mjs';
 
 /* ════════ #R372 — from tests/r372-checks.test.mjs ════════ */
 {
@@ -182,7 +183,7 @@ test('R372 ⑧ Architecture.md §10.1 states the MEASURED open gap', () => {
   const df = code('scripts/doc-facts.mjs');
   assert.match(df, /i18n-open-gap/, 'check:docs owns the comparison');
   assert.match(df, /i18n-pair-audit/, 'against the audit, not against a number copied into the script');
-  const arch = raw('Architecture.md');
+  const arch = readSpec(ROOT);   /* the spec: the map and its chapters (architecture-split) */
   assert.ok(!/analysis-panels\.js`?\s*132/.test(arch),
     'the file that reached zero is no longer listed as carrying 132');
 });

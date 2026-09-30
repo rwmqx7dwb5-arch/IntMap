@@ -29,6 +29,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { histScale, clockFloor } from './helpers/hist-scale.mjs';
 import { eraBundle } from './helpers/hist-eras.mjs';
+import { specFiles } from '../scripts/architecture-spec.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -95,7 +96,7 @@ test('R380 ①: every place that TELLS a reader how far the clock reaches names 
        file was not excluded, it was never in the母集合). ⚠ DEV-NOTES IS NOT HERE: it is the history,
        and a sweep that could not tell current spec from history would force the record to be
        falsified to stay green. */
-    .concat(['PRODUCT.md', 'README.md', 'Architecture.md'])
+    .concat(['PRODUCT.md', 'README.md', ...specFiles(ROOT)])   /* the spec: the map and its chapters (architecture-split) */
     .concat(readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f));
   /* the shapes a reach-claim takes in this codebase, in every language it is written in.
      WARNING (#R604) the scan counts CLAIM SENTENCES, whether the year in them is a literal or the

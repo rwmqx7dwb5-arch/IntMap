@@ -30,7 +30,7 @@ codex:
 | `npm run check:companies` | 企業アトラス（拠点・座標・出典） |
 | `npm run check:docs` | 文書間の事実の突き合わせ |
 | `npm run check:agents` | `AGENTS.md` の天井・`CLAUDE.md` の import・`.agents/` と生成物の一致 |
-| `npm run check:archfiles` | `Architecture.md` とファイル台帳の一致 |
+| `npm run check:archfiles` | ファイル台帳（`docs/FILES.md`＝現状仕様 §3）と `js/` の実体の一致 |
 | `npm run check:wars` | 紛争データの生成物と定義の一致 |
 | `npm run check:histcities` | 歴史都市名の生成物と記録の一致・綴りが2都市を指さないこと |
 | `npm run check:histeras` | 全時代の国境スナップショット（aourednik/historical-basemaps 54枚・紀元前17枚を含む）の同梱ファイルの不変条件（紀元前と西暦の両方があるか・`key` から導いた天文年と `y` が一致するか・名前に U+FFFD が無いか・リング番号が解決するか）。⚠ 再生成はしない（上流 71.5 MB の取得が要る） |

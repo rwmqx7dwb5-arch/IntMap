@@ -55,6 +55,7 @@ import { liftFunction } from './helpers/lift-function.mjs';
 import { readFileSync } from 'node:fs';
 import { appSource } from './app-source.mjs';
 import { OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL } from '../supabase/functions/_shared/ai-provider.js';
+import { readSpec } from '../scripts/architecture-spec.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CODE = (p) => codeOnly(readLF(join(ROOT, p)));
 const PROXY = CODE('supabase/functions/ai-proxy/index.ts');
@@ -228,7 +229,7 @@ test('R722 ⑦ the shipped model is named once, and Architecture.md names the sa
      «gpt-5.6-terra» while OpenAI answered 403 for it — measured 2026-09-15 — so every answer came
      from the fallback and three documents described a model that had not run in months. Prose
      cannot be kept true by hand; it is compared to the constant here. */
-  const arch = readLF(join(ROOT, 'Architecture.md'));
+  const arch = readSpec(ROOT).replace(/\r\n/g, '\n');   /* the spec: the map and its chapters (architecture-split) */
   assert.ok(arch.includes('`AI_MODEL` シークレット（現行 `' + dflt + '`）'),
     'Architecture.md names a different current model than ai-proxy ships (' + dflt + ')');
   /* the chain is stated in order, and the document has to walk the same ladder the code walks */

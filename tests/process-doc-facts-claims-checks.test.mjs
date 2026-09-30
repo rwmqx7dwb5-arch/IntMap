@@ -27,6 +27,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { tierSpecs } from '../scripts/tiers.mjs';
 import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { specFiles, specFileFor } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -101,6 +102,8 @@ function docFacts(rule) {
 
 /** 壊す → 回す → **必ず**元のバイト列に戻す */
 function withBroken(edits, fn) {
+  /* «Architecture.md» names the spec — the sentence is in whichever chapter carries it now */
+  edits = edits.map((e) => ({ ...e, file: specFileFor(ROOT, e.file, anchorRe(e.from)) }));
   const saved = edits.map((e) => [e.file, rd(e.file)]);
   try {
     for (const e of edits) {
@@ -185,16 +188,20 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
         .matchAll(/\{\s*src:\s*'((?:[^'\\]|\\.)*)'/g)]
         .map((m) => m[1].replace(/\\\\/g, '\\'));
       assert.ok(claims.length >= 4, 'the CLAIM shapes were read out of scripts/doc-facts.mjs (' + claims.length + ')');
-      const arch = readLF(join(ROOT, 'Architecture.md'));
-      let silent = arch, hits = 0;
-      for (const src of claims) {
-        silent = silent.replace(new RegExp(src, 'g'), (m) => { hits++; return m.replace(/\d+/g, 'N'); });
-      }
-      assert.ok(hits >= 4, 'Architecture.md states the size in ' + hits + ' place(s) — the mutation found them');
+      /* the spec is the map plus its chapters — silence the size in every file of it */
+      let hits = 0;
+      const silenced = specFiles(ROOT).map((f) => {
+        let silent = readLF(join(ROOT, f));
+        for (const src of claims) {
+          silent = silent.replace(new RegExp(src, 'g'), (m) => { hits++; return m.replace(/\d+/g, 'N'); });
+        }
+        return [f, silent];
+      });
+      assert.ok(hits >= 4, 'the spec states the size in ' + hits + ' place(s) — the mutation found them');
       const a = (() => {
-        const saved = readFileSync(join(ROOT, 'Architecture.md'));
-        try { SCRATCH.write('Architecture.md', silent); return docFacts('capability-count'); }
-        finally { SCRATCH.write('Architecture.md', saved); }
+        const saved = silenced.map(([f]) => [f, readFileSync(join(ROOT, f))]);
+        try { for (const [f, s] of silenced) SCRATCH.write(f, s); return docFacts('capability-count'); }
+        finally { for (const [f, b] of saved) SCRATCH.write(f, b); }
       })();
       assert.equal(a.code, 1, 'Architecture.md may drop the registry size in silence');
 
@@ -248,17 +255,21 @@ test('R500 ⑦ Architecture.md does not carry the same block twice', () => {
      existing check, because each copy was individually correct. A run of five non-empty lines is
      long enough that a repeat is a paste, not a coincidence: measured, the whole document has no
      legitimate one. */
-  const lines = readLF(join(ROOT, 'Architecture.md')).split('\n');
+  /* (architecture-split) across the whole spec — the map and every chapter — so a paste that lands
+     in two chapters is the same repeat it was when they were one file */
   const RUN = 5;
   const seen = new Map();
-  for (let i = 0; i + RUN <= lines.length; i++) {
-    const run = lines.slice(i, i + RUN);
-    if (run.some((l) => !l.trim())) continue;
-    const key = run.join('\n');
-    if (seen.has(key)) {
-      assert.fail(`Architecture.md repeats ${RUN} lines verbatim at line ${seen.get(key) + 1} and line ${i + 1}:\n  ${run[0].slice(0, 90)}`);
+  for (const f of specFiles(ROOT)) {
+    const lines = readLF(join(ROOT, f)).split('\n');
+    for (let i = 0; i + RUN <= lines.length; i++) {
+      const run = lines.slice(i, i + RUN);
+      if (run.some((l) => !l.trim())) continue;
+      const key = run.join('\n');
+      if (seen.has(key)) {
+        assert.fail(`the spec repeats ${RUN} lines verbatim at ${seen.get(key)} and ${f}:${i + 1}:\n  ${run[0].slice(0, 90)}`);
+      }
+      seen.set(key, `${f}:${i + 1}`);
     }
-    seen.set(key, i);
   }
 });
 }
@@ -629,11 +640,12 @@ for (const [what, from, to, expect] of [
 ]) {
   test(`#R699 ⑬ languages goes red when Architecture.md §2 ${what}`, async () => {
     {
-      const original = readFileSync(join(ROOT, 'Architecture.md'));
+      const file = specFileFor(ROOT, 'Architecture.md', from);
+      const original = readFileSync(join(ROOT, file));
       const text = original.toString('utf8');
-      assert.ok(text.includes(from), `Architecture.md no longer carries «${from}»`);
+      assert.ok(text.includes(from), `the spec no longer carries «${from}»`);
       try {
-        SCRATCH.write('Architecture.md', text.replace(from, to));
+        SCRATCH.write(file, text.replace(from, to));
         let code = 0, out = '';
         try {
           out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', '--rule=languages'],
@@ -642,7 +654,7 @@ for (const [what, from, to, expect] of [
         assert.equal(code, 1, 'the languages rule stayed green:\n' + out);
         assert.match(out, expect, out);
       } finally {
-        SCRATCH.write('Architecture.md', original);
+        SCRATCH.write(file, original);
       }
     }
   });
