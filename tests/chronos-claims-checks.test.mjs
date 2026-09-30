@@ -25,10 +25,9 @@
  * ========================================================================================== */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 import vm from 'node:vm';
 import { asClassicScript } from './app-source.mjs';
 
@@ -41,39 +40,35 @@ const path = (p) => fileURLToPath(new URL(p, ROOT));
    suite has a ceiling that only goes down (#R197). The two questions — «does the universe reach
    js/» and «is a number spelled as a word still a number» — are independent claims about the same
    invocation, so they are planted together and read off one exit. */
-test('#R717 ① a stale sheet count planted in js/ fails the gate, in digits and in words', async () => {
-  /* ⚠⚠⚠ THIS TEST WRITES INTO THE WORKING TREE, SO IT TAKES THE TREE LOCK. Measured when it was
-     written without one: the two probe files are visible to every OTHER test that shells out to a
-     gate over the same checkout, and eleven of them went red — r239/r274/r280/r399/r407/r500 read
-     the planted claim as a real one, and r701 hit Windows sharing violations reading
-     js/locales/*.js while a neighbour was rewriting them. None of those were defects; a test that
-     mutates a shared tree without the lock makes OTHER tests non-deterministic, which is the worst
-     kind of red because it teaches the next session to distrust the suite. */
-  await withTreeLock(async () => {
+test('#R717 ① a stale sheet count planted in js/ fails the gate, in digits and in words', () => {
+  /* ⚠⚠⚠ THE PROBES ARE PLANTED IN A PRIVATE COPY OF THE CHECKOUT, NOT IN js/ (mutation-tests-off-tree).
+     They used to be written into the working tree under the tree lock, and the lock only serialised
+     the writers: three files that READ js/ took no lock and saw them — MEASURED 2026-09-30,
+     hazard-other-build-and-gate R236 counted «js/ holds 331», hazard-other-i18n-shape-audit R241 ①
+     and hazard-radiation-layer #R585 ④ hit ENOENT on a probe removed mid-read. Before that (when
+     this test had no lock at all) eleven files went red the same way. The copy is invisible to
+     every other test file, and the gate is run FROM it, so it reads the copy top to bottom. */
+  const SCRATCH = scratchTree();
   /* Untracked-but-visible is deliberate: the sweep asks git for both halves (#R628), so a file
-     written this second is in scope — which is the state a file being edited is always in. */
-  const digits = path('js/__r717-probe.js');
-  const words = path('js/__r717-word-probe.js');
-  assert.equal(existsSync(digits) || existsSync(words), false, 'a probe path is already taken');
+     written this second is in scope — which is the state a file being edited is always in. The copy
+     carries this checkout's index, so the probes are exactly that there too. */
+  const digits = 'js/__r717-probe.js';
+  const words = 'js/__r717-word-probe.js';
+  assert.equal(SCRATCH.exists(digits) || SCRATCH.exists(words), false, 'a probe path is already taken');
   /* The Sources page says 「Fifty-four frames」, not 「54」 — so the word form is not a nicety here,
      it is how the 正本 states the fact the other eight languages are held to. */
   assert.match(rd('js/locales/pages.en.js'), /Fifty-four frames, seventeen of them BC/,
     'the English Sources page no longer states the sheet count as a word — if it now uses a digit, this assertion is the thing to re-aim, not to delete');
-  writeFileSync(digits, '/* data/hist-eras.js: 41 snapshots, seventeen of them BC. */\n');
-  writeFileSync(words, '/* data/hist-eras.js: forty-one snapshots in all. */\n');
-  let code = 0, out = '';
-  try {
-    out = execFileSync(process.execPath, [path('scripts/doc-facts.mjs'), '--check', '--rule=chronos-sheets'],
-      { cwd: path('.'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch (e) { code = e.status; out = String(e.stdout || '') + String(e.stderr || ''); } finally {
-    unlinkSync(digits); unlinkSync(words);
-  }
+  const { code, out } = SCRATCH.mutate([
+    { file: digits, text: '/* data/hist-eras.js: 41 snapshots, seventeen of them BC. */\n' },
+    { file: words, text: '/* data/hist-eras.js: forty-one snapshots in all. */\n' },
+  ], () => SCRATCH.node('scripts/doc-facts.mjs', ['--check', '--rule=chronos-sheets']));
+  assert.equal(SCRATCH.exists(digits) || SCRATCH.exists(words), false, 'the probes outlived the run');
   assert.equal(code, 1, 'a wrong sheet count in js/ did not fail the gate — its universe has stopped reaching the source');
   assert.match(out, /__r717-probe\.js says 41 sheets/,
     'the gate failed, but not on the planted digits — the failure this asserts must be the one it names');
   assert.match(out, /__r717-word-probe\.js says 41 sheets/,
     'a sheet count spelled as an English word passed the gate, and that is the form the 正本 uses');
-  });
 });
 
 /* ══ ② the contract the shrunken record rests on ═══════════════════════════════════════════════ */

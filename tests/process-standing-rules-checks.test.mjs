@@ -19,14 +19,16 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
+const SCRATCH = scratchTree();
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const read = rd;
 
@@ -429,11 +431,11 @@ const OWNERS = [CANON, 'AGENTS.md', 'PRODUCT.md'];
 const WIN = 700;                 /* scripts/doc-facts.mjs の窓と同じ幅 */
 
 /* ⚠ 規則1本だけを走らせる（#R407 の `--rule=`）。全規則を回すと 11 秒、これは 1 秒。
-   変異を戻さないまま長く錠を持たないためでもある。 */
+   変異はこのファイル専用の写し（tests/helpers/scratch-tree.mjs）に書き、木には書かない。 */
 function docFacts() {
   try {
-    execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--rule=shrink-policy', '--check'],
-      { cwd: ROOT, encoding: 'utf8' });
+    execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--rule=shrink-policy', '--check'],
+      { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: '' };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -442,19 +444,19 @@ function docFacts() {
 
 /* 壊す → 走らせる → **バイト列で**戻す（#R403 の helper と同じ約束） */
 async function breaking(file, mutate, fn) {
-  await withTreeLock(() => {
+  {
     const originalBytes = rd(file);
     const original = readLF(join(ROOT, file));
     const broken = mutate(original);
     assert.notEqual(broken, original, `the mutation did not change ${file} — its anchor is gone`);
     try {
-      writeFileSync(join(ROOT, file), broken);
+      SCRATCH.write(file, broken);
       fn(docFacts());
     } finally {
-      writeFileSync(join(ROOT, file), originalBytes);
+      SCRATCH.write(file, originalBytes);
     }
-    assert.equal(rd(file), originalBytes, `${file} was not restored byte-for-byte after the mutation`);
-  });
+    assert.equal(SCRATCH.read(file), originalBytes, `${file} was not restored byte-for-byte after the mutation`);
+  }
 }
 
 /* 錨から WIN 文字ぶんだけを書き換える。錨が複数あれば、そのすべてを書き換える
@@ -471,15 +473,13 @@ function editWindows(src, fn) {
 }
 
 function green(msg) {
-  return withTreeLock(() => {
-    const r = docFacts();
-    if (r.code === 0) return;
-    let dirty = '(git status unavailable)';
-    try {
-      dirty = execFileSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).trim() || '(clean)';
-    } catch { /* leave the placeholder */ }
-    assert.fail(`${msg}\n--- check:docs (shrink-policy) said ---\n${r.out}\n--- working tree ---\n${dirty}`);
-  });
+  const r = docFacts();
+  if (r.code === 0) return;
+  let dirty = '(git status unavailable)';
+  try {
+    dirty = execFileSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).trim() || '(clean)';
+  } catch { /* leave the placeholder */ }
+  assert.fail(`${msg}\n--- check:docs (shrink-policy) said, in a private copy of this checkout ---\n${r.out}\n--- the checkout it copies ---\n${dirty}`);
 }
 
 const red = (r, file, why) => {
@@ -501,50 +501,50 @@ test('R473 ① 3つの正本が、確認つきの形で削除・縮小の方針�
 });
 
 test('R473 ② どの1文書からでも「確認」の段が消えたら赤い', async () => {
-  await withTreeLock(async () => {
+  {
     for (const f of OWNERS) {
       await breaking(f, (s) => editWindows(s, (w) => w.replace(/確認|承認/g, '——')),
         (r) => red(r, f, 'permission with the asking step dropped'));
     }
-  });
+  }
 });
 
 test('R473 ③ 「勝手にはしない」が消えたら赤い', async () => {
-  await withTreeLock(async () => {
+  {
     for (const f of OWNERS) {
       await breaking(f, (s) => editWindows(s, (w) => w.replace(/勝手|承認の無い|承認されるまで/g, '——')),
         (r) => red(r, f, 'a permission with no brake on doing it alone'));
     }
-  });
+  }
 });
 
 test('R473 ④ Atlas の但し書きは CONSTITUTION.md が正本で、そこから消えたら赤い', async () => {
-  await withTreeLock(async () => {
+  {
     /* (a) 「一体として扱う」が消える */
     await breaking(CANON, (s) => s.replace(/一体/g, '別々'),
       (r) => red(r, CANON, 'Atlas no longer treated as one system'));
     /* (b) 「到達可能な能力は削らない」が消える——実装だけでなく能力まで削ってよく読める状態 */
     await breaking(CANON, (s) => s.replace(/到達/g, '——'),
       (r) => red(r, CANON, 'the reachable-capability floor is gone'));
-  });
+  }
 });
 
 test('R473 ⑤ 他の2文書が正本を名指さなくなったら赤い', async () => {
-  await withTreeLock(async () => {
+  {
     for (const f of OWNERS.filter((x) => x !== CANON)) {
       await breaking(f, (s) => editWindows(s, (w) => w.split(CANON).join('憲法')),
         (r) => red(r, f, 'the pointer to the owner of the Atlas carve-out is gone'));
     }
-  });
+  }
 });
 
 test('R473 ⑥ 錨ごと消えても緑にならない（文が消えたせいで緑、を作らない）', async () => {
-  await withTreeLock(async () => {
+  {
     for (const f of OWNERS) {
       await breaking(f, (s) => s.split('既存機能').join('既存の機能'),
         (r) => red(r, f, 'the policy simply stopped being stated'));
     }
-  });
+  }
 });
 }
 

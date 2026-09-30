@@ -30,6 +30,15 @@
  *  ⚠⚠ AND WHERE IT STILL CANNOT TELL, IT SAYS SO. One case remains invisible: a writer that
  *  mutates and restores the tree inside the gate run WITHOUT taking the lock. Nothing here can
  *  see that, so the verdict names it rather than quietly excluding it.
+ *
+ *  ⚠⚠⚠ (mutation-tests-off-tree) MOST OF THE QUESTION WENT AWAY. The mutation tests now break a
+ *  PRIVATE COPY of the checkout (tests/helpers/scratch-tree.mjs) and run the gate from there, and
+ *  the precondition is asked of that same copy: `runGate(gate, { tree })`. Nobody else can write a
+ *  private copy, so there is no interference to rule out and the verdict says so. git is sampled on
+ *  the checkout the copy was made from — «the copy carries uncommitted edits» is still an answer.
+ *  A precondition asked of the real tree without the lock is no longer a mistake either:
+ *  check:static's `tree-writer` rule refuses a test that writes the working tree, so the one way
+ *  left to be interfered with is from OUTSIDE the test run, and the verdict names that.
  * ==========================================================================*/
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
@@ -46,9 +55,19 @@ const porcelain = () => {
 /* Everything known about the moment the gate ran, in the order that decides the answer. */
 export function verdict({ before, after, lock }) {
   const lines = [];
-  if (!lock.held) {
-    lines.push('⚠ this precondition did not run under the tree lock, so it can say nothing about interference —');
-    lines.push('  wrap it in withTreeLock() (tests/helpers/gate-lock.mjs) if it reads a tree other tests mutate.');
+  if (lock.private) {
+    if (before !== '(clean)' || after !== '(clean)') {
+      lines.push('the gate ran in a PRIVATE COPY of this checkout, and the copy carries its uncommitted edits (git below) —');
+      lines.push('no other test can write the copy, so the gate is reading those edits; this is not interference.');
+    } else {
+      lines.push('the gate ran in a PRIVATE COPY of this checkout, and git reported no change in the checkout it copies,');
+      lines.push('so the gate is red on the tree AS COMMITTED — this is the gate’s own problem, not interference:');
+      lines.push('no other test can write a private copy (tests/helpers/scratch-tree.mjs).');
+    }
+  } else if (!lock.held) {
+    lines.push('⚠ this precondition ran on the shared working tree, outside the tree lock and not in a private copy.');
+    lines.push('  No TEST writes the working tree (check:static `tree-writer`), so a writer would be outside the test run;');
+    lines.push('  git below is the only witness. To rule it out, ask a copy: runGate(gate, { tree: scratchTree() }).');
   } else if (!lock.intact) {
     lines.push('THE LOCK BROKE — ' + lock.why + '.');
     lines.push('Another mutation test had this tree broken while the gate read it. Suspect the lock, NOT the gate:');
@@ -76,10 +95,12 @@ export function verdict({ before, after, lock }) {
    outside `withTreeLock`) would then be told «this did not run under the tree lock», which is both
    false and the same mistake in a new place: a state read at the wrong moment, reported as if it
    described another one. `explain()` is pure; it can only render what was captured in here. */
-export function runGate(gate) {
+export function runGate(gate, { tree } = {}) {
   const before = porcelain();
   const r = gate();
   const after = porcelain();
-  const lock = lockIntact();
+  const lock = tree
+    ? { private: true, held: false, intact: false, why: 'none needed — the gate ran in a private copy at ' + tree.root }
+    : lockIntact();
   return { ...r, explain: () => verdict({ before, after, lock }) };
 }

@@ -5,7 +5,7 @@
  *  into prose and compared with nothing but other prose. #R699: which sentences are claims was
  *  decided by a hand-written separator set, so a sentence outside it was never seen. The claim
  *  walk lives in scripts/doc-claims.mjs (evaluated directly here, in milliseconds); the rules are
- *  proved red by mutation. ⚠ Tree mutations under tests/helpers/gate-lock.mjs.
+ *  proved red by mutation. ⚠ Mutations are made in a PRIVATE COPY of the checkout (tests/helpers/scratch-tree.mjs), never in the tree.
  *
  *  Each block below was one round-numbered file until the tests were regrouped by subject. A block
  *  keeps that file's helpers private to it (a `{ … }` scope), so two rounds' `docFacts()` or
@@ -17,7 +17,7 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -26,11 +26,13 @@ import { CHECKED, claims, headNoun, opensLine } from '../scripts/doc-claims.mjs'
 import { readLF } from '../scripts/eol.mjs';
 import { tierSpecs } from '../scripts/tiers.mjs';
 import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const read = rd;
+/* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
+const SCRATCH = scratchTree();
 /* a literal anchor that tolerates either line ending — the checkout's, not the author's (#R286/#R283) */
 const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\n/g, '\\r?\\n'));
 
@@ -69,9 +71,9 @@ const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').repl
  *    ⑥ README が、UI が実際に名乗っている名前でその面を呼ぶ。
  *    ⑦ `Architecture.md` に、同じ段落が二度書かれていない。
  *
- *  ⚠ 実行コスト（#R407 が三度つまずいた場所）。①〜④ は木のロックを握ったまま `doc-facts` を
- *    回すので、**`--rule=` で 1 変異だけを評価し、取得は 1 回に畳む**。⑤⑥⑦ は読むだけなので
- *    ロックを取らない。
+ *  ⚠ 実行コスト（#R407 が三度つまずいた場所）。①〜④ は `doc-facts` を何度も回すので、
+ *    **`--rule=` で 1 変異だけを評価する**。変異はこのファイル専用の写し（tests/helpers/scratch-tree.mjs）
+ *    に書くので、他のファイルを待たせる錠はもう無い（mutation-tests-off-tree）。
  * ==========================================================================*/
 
 /* ⚠ (#R286/#R283) 錨は LF で書いてあり、このチェックアウトはそうとは限らない。照合は改行を
@@ -89,8 +91,8 @@ const REACH = REG - (_CAPS.withdrawn() || []).length;   /* the same two calls sc
 
 function docFacts(rule) {
   try {
-    const out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=' + rule],
-      { cwd: ROOT, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', '--rule=' + rule],
+      { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: String(out) };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -104,17 +106,17 @@ function withBroken(edits, fn) {
     for (const e of edits) {
       const re = anchorRe(e.from);
       assert.ok(re.test(readLF(join(ROOT, e.file))), `${e.file} no longer contains the anchor for «${e.why}»`);
-      writeFileSync(join(ROOT, e.file), readLF(join(ROOT, e.file)).replace(re, () => e.to));
+      SCRATCH.write(e.file, readLF(join(ROOT, e.file)).replace(re, () => e.to));
     }
     return fn();
   } finally {
-    for (const [f, bytes] of saved) writeFileSync(join(ROOT, f), bytes);
+    for (const [f, bytes] of saved) SCRATCH.write(f, bytes);
   }
 }
 
-/* ── ①〜④ 変異で赤を見る。⚠ ロックの取得はこの1回だけ ─────────────────────────────── */
+/* ── ①〜④ 変異で赤を見る。⚠ 写しの中で ─────────────────────────────────────── */
 test('R500 ①〜④ the three new rules go red when the fact drifts, and when it goes silent', async (t) => {
-  await withTreeLock(async () => {
+  {
     const green = (rule) => assert.equal(docFacts(rule).code, 0, `the tree is not green for ${rule} before the mutations`);
     for (const r of ['capability-count', 'prompt-count', 'deep-tier-size']) green(r);
 
@@ -191,8 +193,8 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
       assert.ok(hits >= 4, 'Architecture.md states the size in ' + hits + ' place(s) — the mutation found them');
       const a = (() => {
         const saved = readFileSync(join(ROOT, 'Architecture.md'));
-        try { writeFileSync(join(ROOT, 'Architecture.md'), silent); return docFacts('capability-count'); }
-        finally { writeFileSync(join(ROOT, 'Architecture.md'), saved); }
+        try { SCRATCH.write('Architecture.md', silent); return docFacts('capability-count'); }
+        finally { SCRATCH.write('Architecture.md', saved); }
       })();
       assert.equal(a.code, 1, 'Architecture.md may drop the registry size in silence');
 
@@ -206,7 +208,7 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
     for (const r of ['capability-count', 'prompt-count', 'deep-tier-size']) {
       assert.equal(docFacts(r).code, 0, `the restore left the tree failing for ${r}`);
     }
-  }, { timeoutMs: 600_000 });
+  }
 });
 
 /* ── ⑤ ai-proxy の散文が、20 行下の定数と一致する ─────────────────────────────────── */
@@ -426,7 +428,7 @@ test('#R699 ⑥ the heading is a subject, but only for a quantity standing at th
 /* ⚠ A gate is worth nothing until it has been seen to fail on the thing it exists to catch.
    This puts `docs/README.md` back to what #R696 found and runs the real rule over the real tree. */
 test('#R699 ⑦ check:docs fails when docs/README.md is one short again', async () => {
-  await withTreeLock(() => {
+  {
     const rel = 'docs/README.md';
     const original = readFileSync(join(ROOT, rel));
     const text = original.toString('utf8');
@@ -435,18 +437,18 @@ test('#R699 ⑦ check:docs fails when docs/README.md is one short again', async 
     const NEEDLE = 'Edge Function の名簿（' + N + ' 本';
     assert.ok(text.includes(NEEDLE), `${rel} no longer carries the sentence this test mutates`);
     try {
-      writeFileSync(join(ROOT, rel), text.replace(NEEDLE, 'Edge Function の名簿（' + (N - 1) + ' 本'));
+      SCRATCH.write(rel, text.replace(NEEDLE, 'Edge Function の名簿（' + (N - 1) + ' 本'));
       let code = 0, out = '';
       try {
-        out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=edge-count'],
-          { cwd: ROOT, encoding: 'utf8' });
+        out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', '--rule=edge-count'],
+          { cwd: SCRATCH.root, encoding: 'utf8' });
       } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
       assert.equal(code, 1, 'the gate stayed green on the #R696 defect:\n' + out);
       assert.match(out, /edge-count[\s\S]*docs\/README\.md/, out);
     } finally {
-      writeFileSync(join(ROOT, rel), original);
+      SCRATCH.write(rel, original);
     }
-  });
+  }
 });
 
 /* ── ⑧ the roster of rules cannot lose a member to a one-sided derivation ────────────────── */
@@ -500,22 +502,22 @@ const DEFECTS = [
 
 for (const [rule, file, good, bad, why] of DEFECTS) {
   test(`#R699 ⑨ ${rule} goes red when ${file} states it as «${bad}» (${why})`, async () => {
-    await withTreeLock(() => {
+    {
       const original = readFileSync(join(ROOT, file));
       const text = original.toString('utf8');
       assert.ok(text.includes(good), `${file} no longer carries «${good}» — this mutation has lost its subject`);
       try {
-        writeFileSync(join(ROOT, file), text.replace(good, bad));
+        SCRATCH.write(file, text.replace(good, bad));
         let code = 0, out = '';
         try {
-          out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=' + rule],
-            { cwd: ROOT, encoding: 'utf8' });
+          out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', '--rule=' + rule],
+            { cwd: SCRATCH.root, encoding: 'utf8' });
         } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
         assert.equal(code, 1, `${rule} stayed green on «${bad}» in ${file}:\n` + out);
       } finally {
-        writeFileSync(join(ROOT, file), original);
+        SCRATCH.write(file, original);
       }
-    });
+    }
   });
 }
 
@@ -585,18 +587,18 @@ test('#R699 ⑪ every capture group the alerts rule takes is compared against th
    none of the four was among them. This is ⑪ one step earlier: there a captured number was never
    read; here it was never captured. */
 test('#R699 ⑫ capability-count goes red on the sentence that was shipped for nine rounds', async () => {
-  await withTreeLock(() => {
+  {
     const rel = 'DECISIONS.md';
     const original = readFileSync(join(ROOT, rel));
     const text = original.toString('utf8');
     const good = `（${CAP_TOTAL} のうち撤去済み 1 を除く ${CAP_LIVE}）`;
     assert.ok(text.includes(good), `${rel} no longer carries «${good}»`);
     try {
-      writeFileSync(join(ROOT, rel), text.split(good).join('（130 のうち撤去済み 137 を除く 136）'));
+      SCRATCH.write(rel, text.split(good).join('（130 のうち撤去済み 137 を除く 136）'));
       let code = 0, out = '';
       try {
-        out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=capability-count'],
-          { cwd: ROOT, encoding: 'utf8' });
+        out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', '--rule=capability-count'],
+          { cwd: SCRATCH.root, encoding: 'utf8' });
       } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
       assert.equal(code, 1, 'the withdrawn/reachable claim went unchecked again:\n' + out);
       assert.match(out, /withdrawn count holds 1/, out);
@@ -605,9 +607,9 @@ test('#R699 ⑫ capability-count goes red on the sentence that was shipped for n
          two capabilities turned a working guard into a red test about nothing. */
       assert.match(out, new RegExp('reachable half holds ' + CAP_LIVE), out);
     } finally {
-      writeFileSync(join(ROOT, rel), original);
+      SCRATCH.write(rel, original);
     }
-  });
+  }
 });
 
 /* (tests regrouped by subject) «⑫ no capability needle carries one of the two counts as a literal»
@@ -626,23 +628,23 @@ for (const [what, from, to, expect] of [
   ['stops stating it at all', '**対応UI言語は9つ**', '**対応している UI の言語**', /no longer states how many UI languages/],
 ]) {
   test(`#R699 ⑬ languages goes red when Architecture.md §2 ${what}`, async () => {
-    await withTreeLock(() => {
+    {
       const original = readFileSync(join(ROOT, 'Architecture.md'));
       const text = original.toString('utf8');
       assert.ok(text.includes(from), `Architecture.md no longer carries «${from}»`);
       try {
-        writeFileSync(join(ROOT, 'Architecture.md'), text.replace(from, to));
+        SCRATCH.write('Architecture.md', text.replace(from, to));
         let code = 0, out = '';
         try {
-          out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=languages'],
-            { cwd: ROOT, encoding: 'utf8' });
+          out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', '--rule=languages'],
+            { cwd: SCRATCH.root, encoding: 'utf8' });
         } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
         assert.equal(code, 1, 'the languages rule stayed green:\n' + out);
         assert.match(out, expect, out);
       } finally {
-        writeFileSync(join(ROOT, 'Architecture.md'), original);
+        SCRATCH.write('Architecture.md', original);
       }
-    });
+    }
   });
 }
 
@@ -651,8 +653,8 @@ for (const [what, from, to, expect] of [
    gate naming all eleven files while proving nothing about any document — could still be printed
    by a sweep that audited nothing, because the `ok()` was unconditional. */
 test('#R699 ⑭ edge-shared says how many document inventories it audited', () => {
-  const out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--rule=edge-shared'],
-    { cwd: ROOT, encoding: 'utf8' });
+  const out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--rule=edge-shared'],
+    { cwd: SCRATCH.root, encoding: 'utf8' });
   const line = out.split('\n').find((l) => l.includes('edge-shared:'));
   assert.ok(line, 'edge-shared did not report at all:\n' + out);
   const n = Number((line.match(/(\d+) document inventor/) || [])[1]);

@@ -729,6 +729,21 @@ try {
   err('data-effect', 'could not run the data-effect ledger: ' + (e && e.message));
 }
 
+// ── 22. (mutation-tests-off-tree) a test that writes the checkout ──
+// `node --test` runs test files in parallel, and a mutation test that broke a fact in the working
+// tree was visible to every other file reading it — the tree lock serialised the writers and nothing
+// else (2026-09-30: 10 red in one run, all of them this). Mutation tests break a private copy
+// (tests/helpers/scratch-tree.mjs) and run the gate from it. This reads every fs write call under tests/
+// from the parse tree and refuses one whose destination derives from the checkout (import.meta,
+// __dirname, process.cwd(), a relative literal) or from a scratchTree() copy (its files are hard links
+// into the checkout); scripts/tree-writers.mjs. A rule here and not a check:* of its own for the reason given at 15.
+try {
+  const { treeWriterProblems } = await import('./tree-writers.mjs');
+  for (const p of treeWriterProblems()) err('tree-writer', p);
+} catch (e) {
+  err('tree-writer', 'could not run the tree-writer rule: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

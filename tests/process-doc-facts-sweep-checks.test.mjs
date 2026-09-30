@@ -5,8 +5,8 @@
  *  and with each other. Held here: every rule reports on a green run, the sweep reaches every
  *  current-state document (discovered, not hand-listed), a real violation fails it, Architecture.md
  *  stays a specification rather than a changelog, and the three rules #R628 added (section-refs,
- *  gate-callers, languages) actually go red. ⚠ The mutations write the real tree and so hold
- *  tests/helpers/gate-lock.mjs for exactly the mutation (the same lock every tree writer takes).
+ *  gate-callers, languages) actually go red. ⚠ The mutations are made in a PRIVATE COPY of the
+ *  checkout (tests/helpers/scratch-tree.mjs) and the gate is run from it — never in the tree, so no lock.
  *
  *  Each block below was one round-numbered file until the tests were regrouped by subject. A block
  *  keeps that file's helpers private to it (a `{ … }` scope), so two rounds' `docFacts()` or
@@ -18,15 +18,17 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { npmTestRunsScript } from './helpers/ci-reach.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
+const SCRATCH = scratchTree();
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const read = rd;
 /* a literal anchor that tolerates either line ending — the checkout's, not the author's (#R286/#R283) */
@@ -59,8 +61,8 @@ const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').repl
 
 function runGate(args = []) {
   try {
-    const out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), ...args],
-      { cwd: ROOT, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), ...args],
+      { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out };
   } catch (e) {
     return { code: e.status ?? 1, out: (e.stdout || '') + (e.stderr || '') };
@@ -81,9 +83,10 @@ test('#R274 ① the cross-document gate passes, and every rule actually ran', as
   /* an empty derivation would pass the loop below without asserting anything — the exact failure
      this file's header is about */
   assert.ok(RULES.length >= 12, `only ${RULES.length} rules were read out of scripts/doc-facts.mjs — the derivation is not reaching it`);
-  /* under the tree lock: the mutation checks in tests/process-doc-facts-claims-checks.test.mjs write
-     broken values into tracked documents while holding it, and an unlocked run read them (PR #819 CI) */
-  const { code, out } = await withTreeLock(() => runGate(['--check']));
+  /* in the private copy: the mutation checks in tests/process-doc-facts-claims-checks.test.mjs used to
+     write broken values into tracked documents, and a run of the real tree read them (PR #819 CI). They
+     break their own copies now; this asks the copy this file's mutations run in. */
+  const { code, out } = runGate(['--check']);
   assert.equal(code, 0, 'scripts/doc-facts.mjs --check failed:\n' + out);
   for (const r of RULES) {
     assert.ok(out.includes('✓ ' + r + ':'), `the gate never reported the rule "${r}" — a rule that does not run cannot fail\n` + out);
@@ -138,25 +141,22 @@ test('#R274 ② the sweep reaches the whole tree of current-state documents', ()
 });
 
 /* ── ③ …and it is NOT blind: a real violation fails it ───────────────────────────────────── */
-/* ⚠ (#R280) THIS TEST WRITES TO THE TREE, AND SO DOES tests/r280 ②. `node --test` runs files in
-   parallel, so without a lock one file's probe is on disk while the other asserts the tree is
-   clean — measured: this test passed alone and failed inside `npm test`. */
-test('#R274 ③ a violating document really does fail the gate', async () => {
-  await withTreeLock(() => {
-  const probe = join(ROOT, 'docs', '_doc-facts-negative-probe.md');
+/* ⚠ (#R280) THIS TEST USED TO WRITE TO THE TREE, AND SO DID tests/r280 ②. `node --test` runs files in
+   parallel, so one file's probe was on disk while the other asserted the tree was clean — measured:
+   this test passed alone and failed inside `npm test`. (mutation-tests-off-tree) The probe is planted
+   in this file's private copy of the checkout now, where no other file can see it. */
+test('#R274 ③ a violating document really does fail the gate', () => {
+  const probe = 'docs/_doc-facts-negative-probe.md';
   /* assembled, so this test file is not itself a violation of the rule it is proving */
   const badStamp = '`/' + '-' + 'build-info.json`';
-  try {
-    writeFileSync(probe, '# probe\n\nCheck ' + badStamp + ' to see which build is live.\n', 'utf8');
-    const { code, out } = runGate(['--check']);
-    assert.equal(code, 1, 'a document spelling the build stamp wrongly did NOT fail the gate:\n' + out);
-    assert.match(out, /build-info —/, 'the gate failed, but not for the reason under test:\n' + out);
-  } finally {
-    if (existsSync(probe)) unlinkSync(probe);
-  }
+  const { code, out } = SCRATCH.mutate(
+    [{ file: probe, text: '# probe\n\nCheck ' + badStamp + ' to see which build is live.\n' }],
+    () => runGate(['--check']));
+  assert.equal(code, 1, 'a document spelling the build stamp wrongly did NOT fail the gate:\n' + out);
+  assert.match(out, /build-info —/, 'the gate failed, but not for the reason under test:\n' + out);
+  assert.equal(SCRATCH.exists(probe), false, 'the probe outlived the run');
   const after = runGate(['--check']);
-  assert.equal(after.code, 0, 'the probe was not cleaned up — the tree is left failing');
-  });
+  assert.equal(after.code, 0, 'the probe was not cleaned up — the copy is left failing');
 });
 
 /* ── ④ the gate is wired into the run, so it cannot quietly stop running ─────────────────── */
@@ -244,20 +244,17 @@ test('#R274 ⑧ each shared fact still has exactly one owner', () => {
  *    ⑤ `languages` — 9 言語の名簿を**別名の綴り**で書くと落ちる（#R588 の形）
  *    ⑥ 上の①〜⑤が使う `--rule=` の近道が、綴りを間違えたら黙って緑にならないこと
  *
- *  ⚠ 実行コスト（#R407 が二度つまずいた形をそのまま踏襲する）。変異は**木のロックを握った
- *  まま**回すので、素の `doc-facts`（11 秒・うち 10 秒は `i18n-pair-audit` の子プロセス）
- *  ではなく `--rule=`（約 1 秒）で回し、**取得は 1 回に畳む**。ロックは
- *  `node_modules/.intmap-tree-lock` にあり、`node_modules` は原本からの junction なので
- *  **このマシンの全 worktree が同じ錠を共有している**——握る時間を短く、取る回数を少なく、
- *  待つ時間を長く。
+ *  ⚠ 実行コスト（#R407 が二度つまずいた形をそのまま踏襲する）。変異は何度も回すので、素の
+ *  `doc-facts`（11 秒・うち 10 秒は `i18n-pair-audit` の子プロセス）ではなく `--rule=`（約 1 秒）
+ *  で回す。変異はこのファイル専用の写し（tests/helpers/scratch-tree.mjs）に書くので、錠は無い
+ *  （mutation-tests-off-tree。錠があった頃は全 worktree が同じ錠を取り合っていた）。
  * ==========================================================================*/
 
-const LOCK_MS = 600_000;
 
 function docFacts(...extra) {
   try {
-    const out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', ...extra],
-      { cwd: ROOT, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', ...extra],
+      { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: String(out) };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -275,17 +272,17 @@ function withBroken(edits, fn) {
          and the mutation proved nothing. */
       const re = e.all ? new RegExp(anchorRe(e.from).source, 'g') : anchorRe(e.from);
       assert.ok(anchorRe(e.from).test(readLF(join(ROOT, e.file))), `${e.file} no longer contains the anchor for «${e.why}»`);
-      writeFileSync(join(ROOT, e.file), readLF(join(ROOT, e.file)).replace(re, () => e.to));
+      SCRATCH.write(e.file, readLF(join(ROOT, e.file)).replace(re, () => e.to));
     }
     return fn();
   } finally {
-    for (const [f, bytes] of saved) writeFileSync(join(ROOT, f), bytes);
+    for (const [f, bytes] of saved) SCRATCH.write(f, bytes);
   }
 }
 
 /* ── ①〜⑤ 変異。取得は 1 回だけ ─────────────────────────────────────────────────────────── */
 test('R628 the three new document rules actually go red', { timeout: 900_000 }, async (t) => {
-  await withTreeLock(async () => {
+  {
 
     /* ① 存在しない節を指す。壊すのは**この検査が実在を確かめている当の形**——文書の名前を
        挙げたうえでの §番号。`AGENTS.md` §11 は 11.4 で終わるので §11.9 は宛先が無い。 */
@@ -364,7 +361,7 @@ test('R628 the three new document rules actually go red', { timeout: 900_000 }, 
         assert.equal(only(rule).code, 0, `${rule} is not green on the unmutated tree`);
       }
     });
-  });
+  }
 });
 
 /* ── ⑥ 近道そのものが黙らないこと ────────────────────────────────────────────────────────

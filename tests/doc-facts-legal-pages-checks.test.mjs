@@ -16,11 +16,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { entries, renderIndex } from '../scripts/dev-notes.mjs';
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
 
@@ -42,14 +41,12 @@ const has = (p) => existsSync(join(ROOT, p));
    anchor that has genuinely gone is still a failure (tests/r286-checks ⑥ proves both directions). */
 const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\n/g, '\\r?\\n'));
 
-function docFacts() {
-  try {
-    execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check'], { cwd: ROOT, encoding: 'utf8' });
-    return { code: 0, out: '' };
-  } catch (e) {
-    return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
-  }
-}
+/* ⚠ (mutation-tests-off-tree) THE GATE RUNS IN A PRIVATE COPY OF THE CHECKOUT, and § ② breaks the
+   copy, not the working tree. It used to write CONSTITUTION.md, PRODUCT.md, js/legal-text.js,
+   Architecture.md, privacy.html … in place under the tree lock, and a reader elsewhere that took no
+   lock saw the mutant (PR #817 CI: tests/layer-test-gates-and-docs read privacy.html mid-mutation). */
+const SCRATCH = scratchTree();
+const docFacts = () => SCRATCH.node('scripts/doc-facts.mjs', ['--check']);
 
 /* ── ① the new rules actually bite ───────────────────────────────────────────────────────── */
 /* ⚠ (#R286) A READER THAT REQUIRES A PRISTINE TREE IS ALSO A PARTY TO THE LOCK.
@@ -60,20 +57,21 @@ function docFacts() {
    defect in the committed tree. MEASURED twice locally in one round; CI happened to schedule
    around it. The lock's own note already says everything that touches the tree must go through
    it — a reader of a shared invariant is exactly that, and nothing about WHAT is asserted below
-   changes. */
-test('R280 ① check:docs is green on the committed tree', async () => {
-  /* ⚠ (#R623) 「as committed」を主張できるのは、読んでいた間ずっと**錠が自分のものだった**とき
-     だけである。木を後から見ても分からない——妨害する変異はゲートの実行中に入って戻されるので、
-     あとで `git status` を採ると `(clean)` と出る。それが #R623 で1日を溶かした形。 */
-  const r = await withTreeLock(() => runGate(docFacts));
+   changes.
+   ⚠ (mutation-tests-off-tree) Both halves of that are now answered without a lock: the probes of
+   tests/r274 ③ and § ② below are planted in private copies, and this asks the same private copy
+   § ② will break — so the precondition is about the tree the mutations actually run in. */
+test('R280 ① check:docs is green on the committed tree', () => {
+  /* ⚠ (#R623) 「as committed」を主張できるのは、読んでいた間ずっと誰も書けなかったときだけ
+     である。私有の写しは他の検査からは見えないので、それが構造として成り立つ。 */
+  const r = runGate(docFacts, { tree: SCRATCH });
   assert.equal(r.code, 0, 'npm run check:docs must pass as committed:\n' + r.out
     + '\n--- who to suspect ---\n' + r.explain());
 });
 
-test('R280 ② every rule this round added FAILS when its fact is made wrong', async () => {
-  /* ⚠ the tree is shared. tests/r274 ③ does the same thing to prove the same kind of claim, and
-     `node --test` runs the two files at the same time — see tests/helpers/gate-lock.mjs. */
-  await withTreeLock(() => {
+test('R280 ② every rule this round added FAILS when its fact is made wrong', () => {
+  /* ⚠ (mutation-tests-off-tree) the facts are broken in this file's PRIVATE COPY of the checkout
+     (tests/helpers/scratch-tree.mjs), so no other test file can see them and nothing is locked. */
   /* Each case: a file, a byte-for-byte edit that creates the forbidden state, and the rule
      name the report must print. The file is always restored, pass or fail. */
   const CASES = [
@@ -124,26 +122,19 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
        this went red for a reason that has nothing to do with the facts it is guarding. #R283 fixed
        the same class in tests/r232 and tests/r261 with scripts/eol.mjs; this file landed in the
        same hour and missed it. The broken copy is written as LF (it lives for one `--check` and is
-       thrown away), and `finally` puts the ORIGINAL BYTES back, so the checkout is untouched. */
-    const originalBytes = rd(c.file);
-    const original = readLF(join(ROOT, c.file));
+       thrown away), and the copy gets the ORIGINAL BYTES back, so the next case starts clean. */
+    const original = readLF(SCRATCH.path(c.file));
     const re = c.re || anchorRe(c.from);    /* (#R286) a line break in the anchor ⇒ this checkout's line break */
     assert.ok(re.test(original), `${c.file} no longer contains the anchor for the ${c.rule} case`);
     /* the replacement is a FUNCTION, so a `$` inside `to` stays text instead of becoming a back-reference */
     const broken = original.replace(re, typeof c.to === 'function' ? c.to : () => c.to);
     assert.notEqual(broken, original, `the ${c.rule} case did not change ${c.file}`);
-    try {
-      writeFileSync(join(ROOT, c.file), broken);
-      const r = docFacts();
-      assert.equal(r.code, 1, `check:docs stayed green with a broken ${c.rule} fact in ${c.file}`);
-      assert.ok(r.out.includes(c.rule), `check:docs failed but never named the ${c.rule} rule:\n` + r.out);
-    } finally {
-      writeFileSync(join(ROOT, c.file), originalBytes);
-    }
+    const r = SCRATCH.mutate([{ file: c.file, text: broken }], docFacts);
+    assert.equal(r.code, 1, `check:docs stayed green with a broken ${c.rule} fact in ${c.file}`);
+    assert.ok(r.out.includes(c.rule), `check:docs failed but never named the ${c.rule} rule:\n` + r.out);
   }
-  /* and the tree is back the way it was */
-  assert.equal(docFacts().code, 0, 'the restore left the tree failing');
-  });
+  /* and the copy is back the way it was */
+  assert.equal(docFacts().code, 0, 'the restore left the copy failing');
 });
 
 /* ── ② the move lost nothing a reader could follow ───────────────────────────────────────── */

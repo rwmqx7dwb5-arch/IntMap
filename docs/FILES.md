@@ -1574,6 +1574,11 @@ scripts/
                                   `.replace` する・開き記号を比べるループ・offset を使う `onComment`・コメント行を
                                   落とす `filter`）で見つけ、`comment-strippers-ledger.json` と両方向に照合する。
                                   `kept` は理由の文つき（正本そのもの・r345 の標本・stalled-fetch の変異体）。`--write` で下げる
+  tree-writers.mjs                **検査がチェックアウトを書き換えない**ことの規則（`npm run check:static` の `tree-writer`）。
+                                  `tests/` の fs 書き込み呼び出しを構文木で読み、書き先の出どころ（変数はスコープで、
+                                  局所ヘルパは返り値と「引数を書く」で追う）が `import.meta`・`__dirname`・`process.cwd()`・
+                                  相対リテラル＝チェックアウト、または `scratchTree()` の写し（ハードリンク）なら拒む。
+                                  変異検査は `tests/helpers/scratch-tree.mjs` の私有の写しを壊す（`docs/TESTING.md`）
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算

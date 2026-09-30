@@ -24,7 +24,6 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { lf, readLF } from '../scripts/eol.mjs';
 import { ciRuns } from './helpers/ci-reach.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -185,13 +184,14 @@ test('#R503 ④ the round procedure reaches both products from one file', () => 
 
 /* ── ⑤ the renderer is the only thing allowed to write the copies ─────────────────────────── */
 test('#R503 ⑤ check:agents is clean, and it is what CI runs', async () => {
-  /* ⚠ THE LOCK. Four other files prove their gates by making a fact WRONG on disk, running the
-     gate and putting it back — and two of those facts now live in `.agents/`, whose rendered
-     copies this gate compares. Without the lock this test reads a tree mid-mutation and reports
-     «stale» for a file nobody edited (measured while writing this round). */
-  await withTreeLock(() => {
-    execFileSync(process.execPath, [at('scripts/agent-sync.mjs')], { cwd: ROOT, stdio: 'pipe' });
-  });
+  /* ⚠ THERE WAS A LOCK HERE. Four other files proved their gates by making a fact WRONG on disk,
+     running the gate and putting it back — two of those facts live in `.agents/`, whose rendered
+     copies this gate compares — and without the lock this test read a tree mid-mutation and
+     reported «stale» for a file nobody edited (measured while writing #R503).
+     (mutation-tests-off-tree) Those files break private copies of the checkout now
+     (tests/helpers/scratch-tree.mjs) and check:static's `tree-writer` refuses a test that writes
+     the tree, so there is no mid-mutation tree left to read and nothing to lock against. */
+  execFileSync(process.execPath, [at('scripts/agent-sync.mjs')], { cwd: ROOT, stdio: 'pipe' });
   /* ⚠ (#R771) ASK WHAT CI RUNS, NOT HOW ci.yml SPELLS IT. The 28 declared gates stopped being one
      step each when they were split across three machines: scripts/ci-gates.mjs discovers them from
      package.json and runs the bin it planned. Grepping for the name reported this gate as unrun
@@ -338,10 +338,12 @@ test('#R718 ④ check:agents reports the worst case for the shipped AGENTS.md', 
      CI's own LF bytes, renders 13/13 matching copies, and `--write` has nothing to do. The
      verdict was a property of the RUNNER's concurrency, not of the tree
      ([[intmap-gate-verdict-must-not-depend-on-the-runner]]).
-     ⚠ The lock wraps the whole body rather than the `execFileSync` alone: the assertions below
+     ⚠ The lock wrapped the whole body rather than the `execFileSync` alone: the assertions below
      read AGENTS.md again, and a gate verdict compared against a file that moved in between is
-     the same defect one line later. */
-  await withTreeLock(async () => {
+     the same defect one line later.
+     ⚠⚠ (mutation-tests-off-tree) AND NOW NOTHING MOVES IT. The mutation tests break private copies
+     of the checkout (tests/helpers/scratch-tree.mjs), so this reads a tree no test writes. */
+  {
   /* ⚠ EVALUATED, NOT READ. A test that greps agent-sync.mjs for the word `crlfBytes` passes on a
      file that imports it and never calls it (#R505). So run the gate and read the number out. */
   /* ⚠ AND ITS MUTATION IS A LINUX-SIDE ONE, WHICH IS THE POINT. On a CRLF checkout the bytes on
@@ -374,7 +376,7 @@ test('#R718 ④ check:agents reports the worst case for the shipped AGENTS.md', 
   /* and the bound has to actually bound the file this checkout holds */
   assert.ok(readFileSync(at('AGENTS.md')).length <= want,
     'this checkout is LARGER than the "worst case" — the measurement is not an upper bound');
-  });
+  }
 });
 
 /* ── ⑤ the margin was regained by moving, not by raising the number ─────────────────────────── */

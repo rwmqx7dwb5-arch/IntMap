@@ -18,7 +18,6 @@ import { fileURLToPath } from 'node:url';
 import { junitFiles, failuresFrom, body, TITLE } from '../scripts/deep-alarm.mjs';
 import { entries, checkNotes, allNotesText } from '../scripts/dev-notes.mjs';
 import { readLF } from '../scripts/eol.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
 import { allSpecs, coreNames, fixedCoreNames, changedSpecs, tierSpecs, isDeep, CORE_MAX_S, CORE_ALWAYS } from '../scripts/tiers.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { codeOnly as noComments } from '../scripts/code-only.mjs';
@@ -59,9 +58,10 @@ test('R286 ⑥: r280 ②\'s anchor follows the checkout\'s line endings and rela
   assert.equal(anchorRe('x$y').test('x$y'), true, 'and a dollar sign is a dollar sign');
 
   /* …and it finds the real anchor in the real file, whichever way this machine checked it out */
-  /* read under the tree lock: tests/doc-facts-legal-pages-checks.test.mjs mutates privacy.html in place
-     while holding it, and an unlocked read saw the mutant (PR #817 CI, 2026-09-30) */
-  const raw = await withTreeLock(() => readFileSync(resolve(ROOT, 'privacy.html'), 'utf8'));
+  /* an unlocked read of privacy.html once saw tests/doc-facts-legal-pages-checks.test.mjs's mutant (PR #817 CI,
+     2026-09-30); that test breaks a private copy of the checkout now (mutation-tests-off-tree), so a
+     plain read of the tree is a read of the tree */
+  const raw = readFileSync(resolve(ROOT, 'privacy.html'), 'utf8');
   assert.equal(anchorRe(anchor).test(raw), true,
     'privacy.html still loads the one copy of the policy text, on this checkout');
 });

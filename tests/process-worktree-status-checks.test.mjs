@@ -24,7 +24,6 @@ import path, { basename, delimiter, dirname, join, resolve, sep } from 'node:pat
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { lf, readLF } from '../scripts/eol.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
