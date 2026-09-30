@@ -169,7 +169,7 @@ const SPEC = 'the spec (' + GUIDE + ' + ' + CHAPTER_DIR + '/)';
 const ARCH = SPEC_FILES.map((f) => BODY.get(f) || '').join('\n');
 /* the spec file that carries heading §sec — so a message names the file a reader has to open */
 const specAt = (sec) => {
-  const re = new RegExp('^#{2,6}[ \\t]+' + sec.replace(/\./g, '\\.') + '(?=[ .\\t\\r]|$)', 'm');
+  const re = new RegExp('^#{2,6}[ \\t]+' + String(sec).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[ .\\t\\r]|$)', 'm');
   const f = SPEC_FILES.find((x) => re.test(BODY.get(x) || ''));
   return (f || GUIDE) + ' §' + sec;
 };
