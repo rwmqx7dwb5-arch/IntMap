@@ -22,6 +22,7 @@ import path from 'node:path';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeViewCapture } from '../js/atlas-view-capture.js';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -110,7 +111,7 @@ test('R801 A③: a bare URL carrying a quote or an angle bracket stops at it', (
    proxy receives, and the one string an older proxy still receives (legacyPrompt). */
 const AGENT_FOR_INPUT = makeAtlasAgent();
 function agentInput(req, q) {
-  const lines = read('js/atlas-console.js').split('\n');
+  const lines = (read('js/atlas-console.js') + '\n' + capsSource()).split('\n');
   const s = lines.findIndex((l) => /^\s*function _agentCtx\(\)\{/.test(l));
   assert.ok(s > 0, '_agentCtx moved');
   const e = lines.findIndex((l, i) => i > s && /fence:POLICY\.turnMechanics\.fence \}\); \}/.test(l));
@@ -174,7 +175,7 @@ test('R801 B③: a copy of the closing marker inside the data cannot close the f
 test('R801 B④: the fence is one spelling — wrap() and quote() are what the console uses, and quote() is idempotent', () => {
   /* read, not run: the evidence blocks are wrapped inside the Atlas kernel, which only a browser can
      build; quote()'s idempotence is RUN below. */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   /* (atlas-native-tools) the record block left the console for js/atlas-agent.js composeInput, which is HANDED the
      policy's fence rather than spelling one of its own; the three evidence blocks still wrap here */
   assert.ok((src.match(/POLICY\.turnMechanics\.fence\.wrap\(/g) || []).length >= 3, 'the three evidence blocks go through fence.wrap');
@@ -194,7 +195,7 @@ test('R801 B⑤: the policy says what the fence means and what needs_confirm mea
   assert.match(all, /never to carry out/, 'the instruction says a planted instruction is not followed');
   assert.match(all, /needs_confirm/, 'the instruction explains the confirmation stop');
   assert.ok(POLICY.turnMechanics.observed && all.indexOf(POLICY.turnMechanics.observed) >= 0, 'the analysis prompts reuse the same sentence (POLICY.turnMechanics.observed)');
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok((src.match(/\+POLICY\.turnMechanics\.observed\b/g) || []).length >= 2, 'the analysis and research-map system prompts carry the sentence');
 });
 
@@ -386,7 +387,7 @@ test('R801 C⑦: the tool surface carries the turn record to the action runner b
   assert.equal(got.length, 1);
   assert.equal(got[0].turn, turn, 'the same record object, not a copy');
   /* the model's `__externalContent` is an ARGUMENT here; js/atlas-console.js `_runOne` overwrites it from the record */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.match(src, /_runOne=async\(action,turn\)=>\{ action\.__externalContent=!!\(turn&&turn\.externalContentSeen\);/, 'the stamp is unconditional');
   assert.match(src, /externalContent:a\.__externalContent===true, confirmed:_confirmedBy\(/, 'and the executor is given both facts as execution context');
 });
@@ -412,7 +413,7 @@ test('R801 D①: the guard refuses javascript: and keeps http(s)', () => {
 });
 
 test('R801 D②: the two Wikipedia buttons and the cite pill open only what the guard returns', () => {
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.match(src, /const direct=IntMapSafe\.url\(_poiWikiUrl\(p\)\);/, 'the Wikidata-derived link is guarded before window.open');
   assert.match(src, /const u=IntMapSafe\.url\(j&&j\.content_urls&&j\.content_urls\.desktop&&j\.content_urls\.desktop\.page\);/, 'the fetched page\'s own link is guarded');
   /* the render, with the real guard installed the way the browser has it */
@@ -458,7 +459,7 @@ test('#R779 ① urls() は空のとき null を返す（[] ではない — こ�
 });
 
 test('#R779 ② 呼び手はその null を受けても落ちず、空なら null のまま渡す', () => {
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   /* 実物の式をソースから取り出して評価する。⚠ 綴りを読むのではなく**走らせる**
      （#R505: ソースを読む検査は評価順序も例外も見られない）。 */
   const m = /const _atlTurnImgs=(\([\s\S]*?\}\s*);/.exec(src);
@@ -475,7 +476,7 @@ test('#R779 ② 呼び手はその null を受けても落ちず、空なら nul
 test('#R779 ③ ターンの画像はその 1 か所からしか組まれない', () => {
   /* read, not run: the turn's images are gathered inside the kernel's run(), which only a browser can
      drive; ①② RUN the two functions it composes. */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.equal((src.match(/VFRAMES\.urls\(\)\.concat/g) || []).length, 0,
     'null を返す関数の戻り値に直接メソッドを生やしている — それがこのラウンドの欠陥そのもの');
   assert.match(src, /_atlTurnImgs\(VFRAMES\.urls\(\),_atlRecallImgs\)/);

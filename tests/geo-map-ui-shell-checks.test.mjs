@@ -18,6 +18,7 @@ import { resolve } from 'node:path';
 import { until } from './helpers/wx-ecmwf-page.mjs';
 import { ROOT, isolate, read } from './helpers/geo-shared.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R298 · flat projection, the Atlas message tools   (was tests/r298-checks.test.mjs, in part)
@@ -41,7 +42,7 @@ describe('§ #R298 · flat projection, the Atlas message tools', () => {
     assert.match(m, /export function makeMsgTools\(CTX\)/);
     assert.match(m, /function copyBtn\(src\)\{/, 'the one copy button lives here now');
     assert.match(m, /\.atl-msgt\{display:flex/, 'and so do its rules');
-    const k = read('js/atlas-console.js');
+    const k = (read('js/atlas-console.js') + '\n' + capsSource());
     /* ⚠ (#R313) THIS PINNED THE IMPORT LINE VERBATIM, which made it a test of a spelling rather than of
        a relation — the twenty-sixth time in this repository that a legitimate change was turned red by
        one. The kernel's ceiling is never raised, so #R313 moved the PANEL STYLESHEET out to
@@ -184,7 +185,7 @@ describe('§ #R299 · NUL bytes, the corner catch, point picking, the inset', ()
 
   test('R299 ⑨ Atlas asks rather than answering for the centre', () => {
     /* 綴りのまま: 対象が js/atlas-console.js の応答文で、Atlas は DOM とモデル呼び出しの上でしか組み立たない。 */
-    const code = noComments(read('js/atlas-console.js'));
+    const code = noComments((read('js/atlas-console.js') + '\n' + capsSource()));
     /* the tsunami case is the model: it does not fall to the centre, it asks where */
     for (const probe of ['Where? Give the transmitter site', 'Where from? Give a place']) {
       assert.ok(code.includes(probe), 'Atlas asks: ' + probe);

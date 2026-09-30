@@ -34,6 +34,7 @@ import * as walk from 'acorn-walk';
 import { appShell } from './app-source.mjs';
 import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
 import { codeOnly as stripComments } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rootURL = new URL('../', import.meta.url);
@@ -297,8 +298,8 @@ test('#R173 the clicked aircraft draws the track this browser has actually obser
   assert.match(d, /properties:\{kind:'leg',alt,top:alt\+thick\}/, '…extruded at the altitude that leg was flown at');
   assert.match(d, /Observed track:/, 'the tooltip says what the track is, because there is no history feed behind it');
   /* (#R318) …plus js/atlas-catalog-text.js, where the action catalogue lives now. */
-  const a = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
-  assert.match(a, /case 'aircraftTrack':/, 'Atlas can do it too (#R82)');
+  const a = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
+  assert.ok(capabilityEntry('aircraftTrack'), 'Atlas can do it too (#R82)');
   assert.equal(dispatchName('planeTrack'), 'aircraftTrack', '…under either spelling its row declares (atlas-one-declaration)');
   assert.match(a, /\{"type":"aircraftTrack","aircraft":str/, '…and the catalogue says so, or the planner cannot reach it (#R115)');
 });

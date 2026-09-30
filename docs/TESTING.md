@@ -3124,9 +3124,9 @@ node scripts/atlas-capability-audit.mjs --json     # machine-readable: registry 
 `tests/atlas-capabilities-checks.test.mjs` (#R318) feeds each one a fixture with the defect deliberately present and
 asserts that it fails. A check that cannot be made to fail is deleted, not kept.
 
-**A spelling reaches its case through the registry, and the checks ask it that way** (atlas-one-declaration).
-The dispatch switches on `CAPS.dispatchName(a.type)` and each case carries only the capability's column-1
-spelling, so a check about an alias asks the resolver (`tests/helpers/dispatch-spelling.mjs`, or
+**A spelling reaches its run through the registry, and the checks ask it that way** (atlas-one-declaration).
+The dispatch looks up `CAPS.dispatchName(a.type)` — each capability's column-1 spelling — among the capability
+entries (below), so a check about an alias asks the resolver (`tests/helpers/dispatch-spelling.mjs`, or
 `CAPS.dispatchName` where the test already holds a registry) instead of matching a `case '…': case '…':` run.
 `alias-coverage` in the audit counts both directions: every case label belongs to a row, and every spelling
 a row declares resolves to a live case. `tests/atlas-one-declaration-checks.test.mjs` holds the before of
@@ -3134,6 +3134,29 @@ that refactor as a photograph (`tests/fixtures/atlas-one-declaration-before.json
 `OVL_OF` at 6dad1019) and RUNS the resolver, `updateWctx`, `_ovlOf`, `_ovlIds` over the shipped painters and
 claims, and `SYS()` in two languages against it. `tests/helpers/lift-function.mjs` gained `liftLiteral` for
 the `const NAME={…}` tables those checks evaluate.
+
+**A capability's code is its ENTRY, and a check reads the entry, not a `case`** (atlas-capability-modules).
+There is no dispatch switch: each capability is one entry — `{ row, schema, run }` — in
+`js/atlas-cap-<namespace>.js`, and the registry rows (copied into `js/atlas-capabilities.js` between its `GENERATED ROWS` markers), the dispatch
+table and the schema table are derived from the entries (`js/atlas-caps.js`; what is generated is rewritten by
+`node scripts/atlas-caps.mjs --write` and held by `check:capabilities`). A check that used to slice
+`src.indexOf("case 'x':")` asks `tests/helpers/atlas-kernel.mjs` instead:
+
+| You need | Write |
+|---|---|
+| does the dispatch have X | `capabilityEntry('x')` (a dispatch spelling or a capability id; `null` when there is none) |
+| the body that used to be `case 'x':` | `capabilityEntry('x').run` (a shared run: the function the entry names) |
+| …parsed | `runAst('x')` |
+| its registry row / its schema, as source | `capabilityEntry('x').row` / `.schema` |
+| the spellings that share one run (the old fall-through) | `dispatchRuns()` |
+| «the kernel says X» anywhere | `kernelSource()` (js/atlas-console.js + every js/atlas-cap-*.js; never parse the join) |
+
+A run reads the kernel through `K`, so a kernel `let` appears in a run as `K._name` — a check on such a spelling
+says so. And a run is a function, so where a check can EVALUATE it, it should: `tests/atlas-capabilities-verdict-checks.test.mjs`
+㉑ imports view.flyTo's run and calls it with a recording camera as its K, where it used to lift the case's text.
+`tests/atlas-capability-modules-checks.test.mjs` holds the structure itself: one entry per row, the shipped dispatch
+lifted and evaluated for every declared spelling, `K` neither short nor padded, and — on a scratch copy outside the
+working tree — one new file becoming a capability in the registry, the dispatch and the schema table.
 
 ### What Atlas can SEE, as distinct from what it can reach (`tests/atlas-capabilities-checks.test.mjs` (#R582))
 

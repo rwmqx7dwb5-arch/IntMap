@@ -22,6 +22,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { ROOT, isolate, read } from './helpers/geo-shared.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R291 · the route store and panel   (was tests/r291-checks.test.mjs)
@@ -474,7 +475,7 @@ describe('§ #R291 · the route store and panel', () => {
   /* ⚠ ㉑ ONE RENDER LAYER — Atlas and the panel draw the same card (§17) ────────────────────────── */
   test('R291 ㉑ Atlas and the panel call the same renderer, and neither keeps a private copy', () => {
     /* 綴りのまま: 主張が「2 つ目が無い／1 か所だけ」という構造の不在で、実行した答えからは不在を観測できない（描画器の写しが無いこと）。 */
-    const atlas = read('js/atlas-console.js');
+    const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
     assert.match(atlas, /window\.IntMapRouteCards\.altCards\(/, 'Atlas builds its cards from the shared layer');
     assert.match(atlas, /window\.IntMapRouteCards\.legRows\(/);
     assert.match(atlas, /window\.IntMapRouteCards\.stepRows\(/);
@@ -731,7 +732,7 @@ describe('§ #R298 · route cards on both surfaces, what production measured', (
   test('R298 ⑫ the chosen route card opens on BOTH surfaces', () => {
     /* 綴りのまま: 対象は描画エンジンか DOM の上で組み立てられる closure の中にあり、Node で呼べる扉が無い（カードは両面の DOM）。 */
     const cards = read('js/routing-cards.js');
-    const atlas = read('js/atlas-console.js');
+    const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
     const ui = read('js/routing-ui.js');
     /* 「Atlas内の経路UIを勝手に例外にするな」 — #R296 made the PANEL's card open (the card stopped being a
        <button>, so a list of step buttons can live inside it) and Atlas kept #R291's sibling block. One
@@ -875,7 +876,7 @@ describe('§ #R299 · the route panel as a window, selection and closing', () =>
        chip switches every layer reading them — tests/atlas-one-declaration-checks.test.mjs ④ RUNS the painter and holds the
        switched set equal to the thirteen this row used to list. What is still read here: the claims, and the two
        js/routing-ops.js analyses that are added to them by name. */
-    const code = noComments(read('js/atlas-console.js'));
+    const code = noComments((read('js/atlas-console.js') + '\n' + capsSource()));
     const m = code.match(/'map\.route':\[[^\]]*\]/);
     assert.ok(m, 'the overlay table no longer adds routing-ops\' analyses to the route');
     for (const id of ['imroute-diff', 'imroute-hist']) assert.ok(m[0].includes(id), 'the toggle covers ' + id);

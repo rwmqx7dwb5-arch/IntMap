@@ -40,6 +40,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
@@ -499,7 +500,7 @@ test('R537 ②: state() answers during the window between the drop and the decod
 
 test('R537 ③: opening the tool does not start a search that costs minutes', () => {
   /* ⚠ READ, NOT RUN: the gate is a branch inside js/atlas-console.js's dispatcher, which needs the whole Atlas kernel and a map. */
-  const s = src('js/atlas-console.js');
+  const s = (src('js/atlas-console.js') + '\n' + capsSource());
   assert.match(s, /if\(pgAct!=='search'\) return R\(true,note\(L\('The photograph and the search area are both ready/,
     'a call without action:"search" reports readiness instead of sweeping');
   /* the sweep is still reachable — this is a gate, not a removal */

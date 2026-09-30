@@ -20,6 +20,7 @@ import * as LM from '../js/layer-manifest.js';
 import { readLF } from '../scripts/eol.mjs';
 import { byKey, publishedList } from './helpers/layer-groups.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -165,7 +166,7 @@ test('R232 layers: the flat night layer is gone and the shading has one owner', 
   assert.match(dl, /function _setNightSide\(on\)/, 'ONE place writes the boolean');
   assert.match(dl, /window\._imSyncNightSideRow/, '…and the other two surfaces re-read it');
   assert.match(read('js/app-body.js'), /_imSyncNightSideRow/, 'Settings follows');
-  assert.match(read('js/atlas-console.js'), /_imSyncNightSideRow/, 'Atlas follows');
+  assert.match((read('js/atlas-console.js') + '\n' + capsSource()), /_imSyncNightSideRow/, 'Atlas follows');
   assert.match(read('js/session-tabs.js'), /'dl-night':'dl-nightside'/, 'a saved session is migrated');
 });
 }

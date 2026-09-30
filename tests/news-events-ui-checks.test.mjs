@@ -19,6 +19,7 @@ import { DEFAULTS, pairVerdict, buildIdf } from '../supabase/functions/_shared/n
 import { makeNewsClaims } from '../js/news-claims.js';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ════════ #R386 — from tests/r386-checks.test.mjs (8 of its 19 tests) ════════ */
 {
@@ -75,8 +76,7 @@ test('#R386 ⑥ NEWS_EVENT_MODE と USE_SERVER_NEWS は別のスイッチで、�
 /* ══ ⑦ 能力表の lazy 列が実在する module を名指している（#R347 の 5 度目を防ぐ） ══ */
 /* 綴りのまま: 主張が配線・不在・一意性（どこが何を呼ぶか／無いこと／1 か所だけ）で、評価して取り出せる値が無い */
 test('#R386 ⑦ news.category が名指す lazy module は loader に実在する', () => {
-  const cap = rd('js/atlas-capabilities.js');
-  const row = cap.split('\n').find((l) => l.includes("'news.category'"));
+  const row = (capabilityEntry('news.category') || {}).row;   /* (atlas-capability-modules) the row is declared in its entry */
   assert.ok(row, 'the capability row must exist');
   /* 11 番目の引用符付きの語が lazy 列。(#R801) 最後の語ではない——任意の 12 番目 `ingests` が続く。 */
   const quoted = row.match(/'[^']*'/g) || [];
@@ -87,7 +87,7 @@ test('#R386 ⑦ news.category が名指す lazy module は loader に実在す�
   assert.ok(loader.includes("import('./news-events.js')"), 'the registry entry must have a LITERAL import');
   assert.ok(loader.includes('window.IntMapModules.newsEvents(IM_HOST)'), 'mount must run the factory');
   /* research.events も同じ module に依存するようになった（サーバーの Event を読むため）。 */
-  const ev = cap.split('\n').find((l) => l.includes("'research.events'"));
+  const ev = (capabilityEntry('research.events') || {}).row;
   assert.ok(ev && ev.includes("'newsEvents'"), 'research.events now needs the events module at execution');
 });
 
@@ -696,7 +696,7 @@ test('R416 ⑤ the Subject/Publisher pin mode is gone, in code and in markup', (
     /clickId\('pinmode-/,
     /cfg\.by\s*===\s*'publisher'/,
   ];
-  const files = { 'js/app-body.js': body, 'js/news-ui.js': ui, 'js/atlas-console.js': rd('js/atlas-console.js'), 'js/widget-defs-map.js': rd('js/widget-defs-map.js') };
+  const files = { 'js/app-body.js': body, 'js/news-ui.js': ui, 'js/atlas-console.js': (rd('js/atlas-console.js') + '\n' + capsSource()), 'js/widget-defs-map.js': rd('js/widget-defs-map.js') };
   for (const [name, src] of Object.entries(files)) {
     for (const re of codeNeedles) {
       assert.ok(!re.test(src), `${name} still wires the removed pin mode: ${re}`);

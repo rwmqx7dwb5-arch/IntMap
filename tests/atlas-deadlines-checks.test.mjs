@@ -38,6 +38,7 @@ import { fetchViaProxy } from '../js/proxy-fetch.js';
 import { jsonWithin } from '../js/fetch-deadline.js';
 import { newTurnController, settleWithin } from '../js/atlas-deadlines.js';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -239,7 +240,7 @@ test('R452 ⑥c: asking a second question ABORTS the first turn instead of joini
   assert.ok(newTurnController(null), 'the first turn has nothing to cancel and still gets a controller');
   /* the console half stays a spelling: `_abortCtl` is a closure variable inside js/atlas-console.js's
      factory, which needs the whole app (DOM, map, AI transport) to construct */
-  const s = code('js/atlas-console.js');
+  const s = (code('js/atlas-console.js') + '\n' + capsSource());
   /* the run() path installs a fresh controller — and must cancel the one it is replacing. Measured
      on the live site before this line existed: a superseded ai-proxy call ran 12.6 s more and
      returned 200, a superseded turn issued a NEW external fetch 3.7 s after being replaced, and
@@ -254,7 +255,7 @@ test('R452 ⑥b: Atlas hands its turn signal to the evidence fetches, not only t
   /* kept as a spelling: the turn signal is closure state inside js/atlas-console.js, which needs the whole app to construct */
   /* ⚠ the signal is a THUNK read at call time — one captured when the module was wired would belong
      to no turn at all, because `run()` installs the controller when a turn starts */
-  const s = code('js/atlas-console.js');
+  const s = (code('js/atlas-console.js') + '\n' + capsSource());
   assert.match(s, /turnSignal\s*=\s*\(\)\s*=>[\s\S]{0,90}_abortCtl\.signal/, 'there is no way for a fetch to see the turn’s controller');
   assert.match(s, /makeFetchJSON\(turnSignal\)/, 'the JSON evidence fetcher is not given the thunk');
   assert.match(code('js/atlas-deadlines.js'), /signal:\s*\(typeof turnSignal === 'function'\) \? turnSignal\(\)/,
@@ -264,7 +265,7 @@ test('R452 ⑥b: Atlas hands its turn signal to the evidence fetches, not only t
 
 test('R452 ⑤b: the evidence gather is bounded, and says how many sources did not arrive', async () => {
   /* the call sites are closure code in js/atlas-console.js (the app-wide factory), so they stay spellings */
-  const s = code('js/atlas-console.js');
+  const s = (code('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(!/await\s+Promise\.all\(jobs\)/.test(s), 'the gather still waits for the slowest source with no ceiling');
   assert.match(s, /settleWithin\(jobs,\s*GATHER_BUDGET_MS\)/, 'the gather is not bounded');
   assert.match(s, /missing\.push\(lateNote\(/, 'a source that did not arrive in time must be named, not silently dropped');

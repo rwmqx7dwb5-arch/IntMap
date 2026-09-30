@@ -643,7 +643,8 @@ article-reader.js                 サイドバー内の記事リーダー。本�
 ```
 atlas-persona.js                  Atlas の人格の**正本**（名前・製品名の表記・立場・由来・性格・対人姿勢・事実優先・
                                   意見・感情表現・自己設定・非開示。全 system prompt の先頭に入る唯一の写し）
-atlas-console.js                  Atlas カーネル（自然言語コンソール／OS コマンド面。846 KB）
+atlas-console.js                  Atlas カーネル（自然言語コンソール／OS コマンド面。435 KB）。dispatch は
+                                  switch ではなく能力の項目の run を 1 回引く参照で、run に渡す依存 K を組む
 atlas-controls.js                 Atlas — 実 UI コントロールとモジュールメソッドへの全操作面
 atlas-reading.js                  Atlas — 主題の上に着く到着（見出し＋説明＋起点チップ＋入力欄へのフォーカス）。
                                   `arrive()` は地図の右クリック `askHere` と読む面の `askReading()` の
@@ -701,14 +702,38 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
                                   146 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
-                                  遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
+                                  遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
+                                  行そのものは能力の項目（atlas-cap-*.js）の写しで、`GENERATED ROWS` の印の間を
+                                  `node scripts/atlas-caps.mjs --write` が書く（手で編集しない）
+atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組み — 項目（行・schema・run）の検証と、そこから dispatch の表・
+                                  schema の表・登録表の行を導く関数、旧 switch の default（unknownAction）、schema の組み立て関数
+atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs --write`）— 能力の名前空間ファイルの一覧（js/ から発見・遅延チャンクだけが読む）
+atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
+atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
+atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
+atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
+atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
+atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
+atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
+atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
+atlas-cap-panel.js                Atlas の能力 — パネルを開く・閉じる（panel.*）
+atlas-cap-photo.js                Atlas の能力 — 写真の撮影地点探索（photo.locate）
+atlas-cap-reader.js               Atlas の能力 — 回答文の語句の解説（reader.gloss）
+atlas-cap-research.js             Atlas の能力 — 調べて答える（research.*。brief・地図報告・歴史地図・出来事）
+atlas-cap-routing.js              Atlas の能力 — 経路・到達圏・ドローン（routing.*）
+atlas-cap-settings.js             Atlas の能力 — 設定（settings.*）
+atlas-cap-sim.js                  Atlas の能力 — シミュレーター（sim.*）
+atlas-cap-system.js               Atlas の能力 — 汎用の逃げ道とモジュール操作（system.*）
+atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
+atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
+atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
                                   earthquakes・volcanoes・facilities）と列（pop・precipMm・coastKm・elevM・
                                   tempC・国別統計・任意の World Bank 指標）はレジストリなので、データセットを
                                   1 行登録すれば同じ条件・結合・出典表示がその日から効く。条件は**費用の安い順**に
                                   評価し、ネットワーク列は生き残った行にだけ払う。打ち切りは必ず結果に印字する。
-                                  遅延モジュール（`atlasQuery`）。dispatch の入口は js/atlas-console.js の 1 行。
+                                  遅延モジュール（`atlasQuery`）。dispatch の入口は js/atlas-cap-data.js の data.query の run。
 atlas-catalog-text.js             Atlas — planner に渡す能力の説明文 40 ブロック（旧 SYS() の本文を逐語で移設）。
                                   各ブロックが「どの能力を説明しているか」を持つので関連分だけ送れる
 atlas-anomaly-score.js            **分野横断の異常度**（#R397）— 地震・台風・洪水・火山・警報・紛争などを
@@ -797,7 +822,8 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-schemas.js                  **引数の schema**（#R406）— 146能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-                                  綴りは dispatch が実際に読む名前から取る（発明しない）
+                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）

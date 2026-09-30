@@ -19,6 +19,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { makeGisDatasets } from '../js/gis-datasets.js';
 import { ROOT, fakeIDB, installWindow, isolate, read } from './helpers/geo-shared.mjs';
+import { capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does is its entry in js/atlas-cap-<namespace>.js */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R729 · the GIS core (registry, chain, refusals, project, query)   (was tests/r729-gis-core-checks.test.mjs)
@@ -1036,8 +1037,7 @@ describe('§ #R735 · grids, time, the spatial index', () => {
     /* And the same shape on the model's side: #R732 wired the spatial clause into the evaluator and the
        catalogue prose, and left it out of the argument schema — the list the model is actually shown.
        #R733 measured what that costs (eight steps of one turn spent searching for tools in hand). */
-    const schemas = read('js/atlas-schemas.js');
-    const line = schemas.split('\n').find((l) => l.indexOf("'data.query'") >= 0);
+    const line = (capabilityEntry('data.query') || {}).schema || '';   /* (atlas-capability-modules) the schema is declared in its entry */
     assert.ok(line, "data.query is no longer declared");
     assert.ok(/spatial:/.test(line), 'data.query still does not tell the model it can ask by shape');
 

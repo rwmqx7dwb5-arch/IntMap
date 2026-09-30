@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { installWindow, isolate, read } from './helpers/geo-shared.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does is its entry in js/atlas-cap-<namespace>.js */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R743 · the surface Atlas is handed   (was tests/r743-gis-atlas-surface-checks.test.mjs)
@@ -231,10 +232,10 @@ describe('§ #R743 · the surface Atlas is handed', () => {
 
     /* And the two are registered as two capabilities with two schemas — the audit in
        scripts/atlas-capability-audit.mjs measures the rest of that claim. */
-    const caps = read('js/atlas-capabilities.js');
-    assert.ok(caps.indexOf("'data.gis'") > 0 && caps.indexOf("'map.drawDataset'") > 0);
-    const sch = read('js/atlas-schemas.js');
-    assert.ok(sch.indexOf("'data.gis':") > 0 && sch.indexOf("'map.drawDataset':") > 0);
+    for (const id of ['data.gis', 'map.drawDataset']) {   /* (atlas-capability-modules) each is an entry with its own row and schema */
+      const e = capabilityEntry(id);
+      assert.ok(e && e.row && e.schema, id + ' is a capability with its own row and schema');
+    }
   });
 
   ISOLATED.built();

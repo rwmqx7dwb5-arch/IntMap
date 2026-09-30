@@ -68,6 +68,7 @@ import { ARTICLE_MIN_BYTES } from '../supabase/functions/_shared/fetch-relay-pol
 import { liftFunction } from './helpers/lift-function.mjs';
 import { makeAtlasSources } from '../js/atlas-sources.js';
 import { ATLAS_BUDGETS } from '../js/atlas-deadlines.js';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
@@ -365,7 +366,7 @@ test('R464 ③: _gdeltNews passes its budget down to the fetch that spends it', 
 /* ── ④ …and no chain of SEQUENTIAL GDELT calls pays its budget twice ───────────────────────────── */
 test('R464 ④: every sequential run of GDELT calls shares one shrinking budget', () => {
   /* ⚠ READ, NOT RUN: the chained calls live in js/atlas-console.js's turn code, which needs the whole Atlas kernel and a map to run. */
-  const src = code('js/atlas-console.js');
+  const src = (code('js/atlas-console.js') + '\n' + capsSource());
   /* Sites that `await` one GDELT call and then `await` another are the ones that can multiply the
      budget. Written out, both of them are on a single line, so a line carrying two awaited calls
      must also carry the countdown that binds them together. ⚠ THIS TEST FOUND THE SECOND SITE:
@@ -436,7 +437,7 @@ test('R464 ④b: the default GDELT budget can pay for a cold read, at the sites 
     + `(${ATLAS_BUDGETS.EVIDENCE_BUDGET_MS}) aborts exactly the upstream read that fills the shared `
     + 'cache, so every site keeps paying full price while merely looking unlucky');
   /* the console must actually supply it, or the default above is a number nobody receives */
-  assert.match(code('js/atlas-console.js'), /WEB_BUDGET_MS,\s*turnSignal/,
+  assert.match((code('js/atlas-console.js') + '\n' + capsSource()), /WEB_BUDGET_MS,\s*turnSignal/,
     'js/atlas-console.js must hand WEB_BUDGET_MS to makeAtlasSources');
 });
 

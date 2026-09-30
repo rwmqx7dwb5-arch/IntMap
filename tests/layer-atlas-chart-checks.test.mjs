@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -255,9 +256,9 @@ test('R543 ⑩: chart.compose is reachable by every route Atlas actually has', (
   const core = makeAtlasToolSurface({ capabilities: CAPS, schemas: SCHEMAS, runAction: async () => ({ ok: true }) }).CORE;
   assert.equal((core.find((c) => c.name === 'chart') || {}).cap, 'chart.compose', 'it is a CORE tool, not something only find_capability can reach');
 
-  const con = R('js/atlas-console.js');
-  assert.match(con, /^ {8}case 'chart':/m,
-    'the dispatch door starts a line at eight spaces — scripts/atlas-catalog.mjs reads it there');
+  const con = (R('js/atlas-console.js') + '\n' + capsSource());
+  assert.ok(capabilityEntry('chart') && capabilityEntry('chart').run,
+    'the dispatch door is an entry with a run — scripts/atlas-catalog.mjs reads the entries');
   for (const sp of ['chartCompose', 'plot', 'graph']) assert.equal(CAPS.dispatchName(sp), 'chart', `every spelling the row declares reaches that door (atlas-one-declaration): ${sp}`);
   assert.match(con, /IntMapLazy\.need\('atlasChart'\)/, 'and it is lazy');
   /* the renderer must NOT be in the boot graph: tests/perf-baseline.json pins eager.modules exactly */
@@ -348,7 +349,7 @@ test('R543 ⑬: what it could not do is reported, never claimed — and an empty
   assert.equal((String(LAZY_REGISTRY["atlasAnswerView"] && LAZY_REGISTRY["atlasAnswerView"].load).match(/import\('([^']+)'\)/) || [])[1], './atlas-answer-view.js');
   assert.match(String(LAZY_REGISTRY["atlasAnswerView"].mount), /window\.IntMapAnswerView=/);
   /* the capture rides on the snapshot the bubble already carried, not a second mechanism */
-  assert.match(R('js/atlas-console.js'), /ai\.__viewSnap=ASTATE\.snapshot\(\{only:\['camera','time','activeLayers'\]\}\)/);
+  assert.match((R('js/atlas-console.js') + '\n' + capsSource()), /ai\.__viewSnap=ASTATE\.snapshot\(\{only:\['camera','time','activeLayers'\]\}\)/);
   /* and the button is a SIBLING of the bubble, because _atlCompose rebuilds the bubble (#R492) */
   const mt = R('js/atlas-msg-tools.js');
   assert.match(mt, /aiEl\.__viewSnap/);

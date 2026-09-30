@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -250,7 +251,7 @@ test('R480 ⑥ moving the compass did not move its handles', () => {
   assert.match(app, /const btn=document\.getElementById\('btn-compass'\)/, 'right-click opens the numeric popup (#R152)');
   assert.match(read('js/map-readout.js'), /querySelector\('\.compass-svg'\)/, 'the needle counter-rotates with the bearing');
   assert.match(read('js/mobile-ui.js'), /getElementById\('btn-compass'\)/, 'the phone FAB proxies to it');
-  assert.match(read('js/atlas-console.js'), /clickId\('btn-compass'\)/, 'Atlas resetNorth');
+  assert.match((read('js/atlas-console.js') + '\n' + capsSource()), /clickId\('btn-compass'\)/, 'Atlas resetNorth');
   assert.match(read('js/keyboard-shortcuts.js'), /click\('btn-compass'\)/, 'the keyboard `0`');
   assert.match(read('js/workspace.js'), /clk\('btn-compass'\)/, 'the workspace menu');
 });

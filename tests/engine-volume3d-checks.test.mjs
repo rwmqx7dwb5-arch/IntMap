@@ -19,6 +19,7 @@ import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { appShell } from './app-source.mjs';
 import { codeOnly as stripComments } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const R = (f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 /* (#R175) "the page" is index.html + src/main.js + js/app-body.js (+ js/geo-engine.js) */
@@ -242,8 +243,8 @@ test('#R172 a footprint that did not come from clicks survives a panel refresh',
 /* ⚠ READ, NOT RUN: the SYS catalogue TEXT is what the planner reads (#R115: uncatalogued = nonexistent). */
 test('#R172 every new switch is operable from Atlas AND catalogued', () => {
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it. */
-  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
-  assert.ok(atlas.includes("case 'planeAltitude':"), 'Atlas must implement planeAltitude');
+  const atlas = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
+  assert.ok(capabilityEntry('planeAltitude'), 'Atlas must implement planeAltitude');
   assert.ok(atlas.includes('{"type":"planeAltitude"'), 'planeAltitude must appear in the SYS catalogue');
   assert.match(atlas, /\bplaneAltitude:\{ lbl:/, 'and offer an inline on/off switch in the reply');
   assert.match(atlas, /"unit"\?:"m"\|"km"\|"ft"\|"mi"/, 'the volume action must advertise the unit');

@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, kernelSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const root = new URL('../', import.meta.url);
@@ -57,7 +58,7 @@ const rd = (p) => readFileSync(new URL(p, root), 'utf8');
 /* (#R175) "the page" is three files now — index.html + src/main.js + js/app-body.js.
    appShell() concatenates them so every assertion below keeps meaning what it meant. */
 const html = appShell(root);
-const mod = rd('js/atlas-console.js');
+const mod = (rd('js/atlas-console.js') + '\n' + capsSource());
 
 /* Blank out comments and string/template literals so identifier scanning reads CODE only — through the
    one shared reader (scripts/code-only.mjs). ⚠ (test-code-only-one) this file used to carry its own
@@ -82,10 +83,10 @@ function code(src) { return codeOnly(src, { literals: 'blank' }); }
    unchanged and still enforced: for every member there is an explicit, exhaustive list of the files
    allowed to write it, every listed file really does write it, and nothing else writes it at all. */
 const RW = {
-  measurePoints:      { v: 'measurePoints',      owners: ['atlas-console.js', 'tool-panel.js'] },
-  radiusColor:        { v: 'radiusColor',        owners: ['atlas-console.js', 'tool-panel.js'] },
-  radiusKm:           { v: 'radiusKm',           owners: ['atlas-console.js', 'tool-panel.js'] },
-  unitMode:           { v: 'unitMode',           owners: ['atlas-console.js'] },
+  measurePoints:      { v: 'measurePoints',      owners: ['atlas-cap-map.js', 'tool-panel.js'] },   /* (atlas-capability-modules) Atlas's writer is the capability that writes it, not the kernel file */
+  radiusColor:        { v: 'radiusColor',        owners: ['atlas-cap-map.js', 'tool-panel.js'] },
+  radiusKm:           { v: 'radiusKm',           owners: ['atlas-cap-map.js', 'atlas-cap-research.js', 'tool-panel.js'] },
+  unitMode:           { v: 'unitMode',           owners: ['atlas-cap-settings.js'] },
   /* (#R199) …and js/theme-sky.js, deliberately: the theme + sky block left js/app-body.js this round,
      and the ONE thing in it that writes closure state is applyTheme's own skin fallback
      (`if(_SKINS.includes(HOST.userTheme)) HOST.userTheme='auto'` — a retired skin resets to auto).
@@ -94,7 +95,7 @@ const RW = {
      light → dark → auto, which is one of the two places in the app that CHOOSE a theme (the other is
      the Settings select it drives). It reaches the same closure variable through the same accessor
      pair, and it is the only host state that whole file writes. */
-  userTheme:          { v: 'userTheme',          owners: ['atlas-console.js', 'theme-sky.js', 'keyboard-shortcuts.js'] },
+  userTheme:          { v: 'userTheme',          owners: ['atlas-cap-settings.js', 'theme-sky.js', 'keyboard-shortcuts.js'] },
   /* `mode`'s getter sits with the other mutable state (it predates the setter), so only the pairing
      over the same closure variable is required — not that both halves share a line. */
   mode:               { v: 'currentMode',        owners: ['playground.js'], oneLinePair: false },
@@ -362,7 +363,7 @@ test('R165 #7 index.html actually shrank and no module body came back inline', (
  * ==========================================================================*/
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
-const KERNEL = read('js/atlas-console.js');
+const KERNEL = (read('js/atlas-console.js') + '\n' + capsSource());
 
 /* The seven files, the one name each exports, and the file that instantiates it. Nothing else is
    written down here: every list below is READ OUT of the sources. */
@@ -672,7 +673,8 @@ test('R209 ④: every entry point to a lazy feature awaits the loader first', ()
     ['js/atlas-controls.js', 'volcanoIntel'],
   ];
   for (const [file, name] of DOORS) {
-    assert.ok(code(R(file)).includes(`IntMapLazy.need('${name}')`),
+    /* (atlas-capability-modules) the kernel's doors are its capabilities' runs — js/atlas-console.js AND js/atlas-cap-*.js */
+    assert.ok(code(file === 'js/atlas-console.js' ? kernelSource() : R(file)).includes(`IntMapLazy.need('${name}')`),
       `${file} opens the ${name} feature, so it must await window.IntMapLazy.need('${name}') first — otherwise the click reaches a global that has not been downloaded`);
   }
 });

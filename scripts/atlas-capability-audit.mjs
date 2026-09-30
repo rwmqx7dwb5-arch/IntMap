@@ -34,6 +34,7 @@ import { fileURLToPath } from 'node:url';
    become the second copy — so the stripper moved to scripts/code-only.mjs and both import it. */
 import { codeOnly } from './code-only.mjs';
 import { appLangs, authoredLangs } from './lang-policy.mjs';
+import { entrySources, namespaceFiles, stale as capsStale } from './atlas-caps.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -56,16 +57,20 @@ async function loadSchemas() {
   try { return (await import('../js/atlas-schemas.js')).makeAtlasSchemas(); } catch { return null; }
 }
 
-/* Every `case 'x': case 'y':` inside the dispatch switch — one group is one capability, whatever
-   number of spellings it answers to. Shared with scripts/atlas-catalog.mjs, which reads it here. */
-export function dispatchGroups(src) {
-  const out = [];
-  src.forEach((line, i) => {
-    if (!/^ {8}case '/.test(line)) return;
-    const names = [...line.matchAll(/case '([A-Za-z_][\w ]*)'\s*:/g)].map((m) => m[1]);
-    if (names.length) out.push({ line: i + 1, names, src: src.slice(i, i + 4).join('\n') });
-  });
-  return out;
+/* (atlas-capability-modules) WHAT THE DISPATCH CAN RUN — one group per capability entry in
+   js/atlas-cap-<namespace>.js: { names: [its dispatch spelling], id, file, line, src: what the dispatch
+   runs for it }. These used to be the `case` labels of the switch in js/atlas-console.js, read off its
+   lines; the switch is now one lookup of the same entries (js/atlas-caps.js capabilityRunners), so
+   this reads what that lookup reads. Located by the parser (scripts/atlas-caps.mjs entrySources), not by
+   the layout. Shared with scripts/atlas-catalog.mjs, which reads it here. */
+export function dispatchGroups(root = ROOT) {
+  return entrySources(root).map((e) => ({ names: [e.spelling], id: e.id, file: e.file, line: e.file + ':' + e.line, src: e.run }));
+}
+
+/* The Atlas kernel's code, as lines: js/atlas-console.js and every capability module. The checks below
+   that ask «does the kernel say X» (kexec calls, registered state providers, the rules text) ask both. */
+export function kernelLines(root = ROOT) {
+  return ['js/atlas-console.js', ...namespaceFiles(root)].flatMap((rel) => fs.readFileSync(path.join(root, rel), 'utf8').split(/\r?\n/));
 }
 
 /* ⚠ (#R802) THE CAPABILITIES WHOSE CATALOGUE ENTRY STILL SAYS NOTHING ABOUT THEM — check ㉓'s floor.
@@ -91,11 +96,12 @@ export const CATALOGUE_SILENT = [
 ];
 
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
-export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas }) {
+export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
-  const groups = dispatchGroups(atlas);
+  /* `atlas` is the kernel's lines (kernelLines), `groups` what the dispatch can run (dispatchGroups) — both DATA, so a
+     fixture can hand either one a defect and watch the check fail */
   const checks = [];
   const add = (id, title, failures, note) => checks.push({ id, title, failures: failures || [], note: note || '' });
 
@@ -293,7 +299,7 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
       if (c.withdrawn) return;
       if (!c.legacy) { bad.push(`${c.id}: no dispatch type and no own executor`); return; }
       const g = groups.find((x) => x.names.includes(c.legacy));
-      if (!g) bad.push(`${c.id}: its dispatch type '${c.legacy}' has no case in the switch`);
+      if (!g) bad.push(`${c.id}: its dispatch type '${c.legacy}' has no entry with a run in js/atlas-cap-<namespace>.js`);
     });
     add('registry-runnable', 'every registered capability has real code behind it', bad);
   }
@@ -641,7 +647,8 @@ export async function audit() {
     caps, docs,
     checks: auditWith({
       caps, docs,
-      atlas: lines('js/atlas-console.js'),
+      atlas: kernelLines(),
+      groups: dispatchGroups(),
       controls: read('js/atlas-controls.js'),
       capSrc: read('js/atlas-capabilities.js'),
       execSrc: read('js/atlas-executor.js'),
@@ -669,6 +676,10 @@ if (IS_MAIN) {
     Object.keys(byClass).sort().forEach((k) => console.log(`    ${String(byClass[k]).padStart(4)}  ${k}`));
     console.log('');
   }
+  /* (atlas-capability-modules) what the entries generate agrees with them — the GENERATED ROWS of js/atlas-capabilities.js are
+     the registry's rows at boot and js/atlas-caps-modules.js the list the dispatch runs; stale, a capability exists in one and not the other */
+  const gen = await capsStale();
+  if (gen.length) checks.push({ id: 'caps-generated', title: 'the GENERATED ROWS of js/atlas-capabilities.js and js/atlas-caps-modules.js are what the entries generate (node scripts/atlas-caps.mjs --write)', failures: gen.map((g) => `${g.file}: ${g.why}`), note: '' });
   checks.forEach((c) => {
     const mark = c.failures.length ? '✗' : '✓';
     if (!process.argv.includes('--check') || c.failures.length) {

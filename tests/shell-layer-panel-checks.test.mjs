@@ -24,6 +24,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { codeOnly, codeOnly as code, codeOnly as nocomment } from '../scripts/code-only.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -118,7 +119,7 @@ test('R296 ⑧ nothing lost a feature when four rows were removed', () => {
   assert.match(vs, /const horizonKm=\(h\)=>4\.12\*\(Math\.sqrt\(Math\.max\(1,h\)\)\+Math\.sqrt\(2\)\)/, 'the 4/3-earth horizon came across…');
   assert.match(vs, /const fsplKm=\(dbm,mhz\)=>/, '…and so did the free-space link budget');
   assert.match(vs, /setMode:\(m\)=>/, 'and the mode can be set from outside (Atlas uses it)');
-  assert.match(code(read('js/atlas-console.js')), /L2\.setMode\(\/\^\(los\|lineOfSight\|viewshed\)\$\/\.test/, 'rfCoverage picks the radio analysis');
+  assert.match(code((read('js/atlas-console.js') + '\n' + capsSource())), /L2\.setMode\(\/\^\(los\|lineOfSight\|viewshed\)\$\/\.test/, 'rfCoverage picks the radio analysis');
 
   /* the three modules are gone from js/sims.js, with their factories */
   const sims = code(read('js/sims.js'));
@@ -196,8 +197,8 @@ test('R666 ④: "open the pandemic simulator" does not answer with the hub on a 
   /* MEASURED: the pandemic arm tested `window._pgPandemic`, which js/playground.js's factory installs
      and #R209 made that factory run only on demand — so before anyone had opened the Playground the
      arm was false and the request fell through to the `else`, which opened the four-card hub. */
-  const s = nocomment(read('js/atlas-console.js'));
-  const c = s.slice(s.indexOf("case 'playground':"));
+  const s = nocomment((read('js/atlas-console.js') + '\n' + capsSource()));
+  const c = nocomment((capabilityEntry('playground') || {}).run || '');   /* (atlas-capability-modules) the run of panel.playground */
   const arm = c.indexOf('_pgPandemic');
   const load = c.indexOf("IntMapLazy.need('playground')");
   assert.ok(load >= 0 && load < arm, 'the loader is awaited BEFORE the mode arms are tested');

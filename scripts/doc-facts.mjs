@@ -33,6 +33,7 @@ import { auditLedger } from './ledger-claims.mjs';
 import { claims, CHECKED } from './doc-claims.mjs';
 import { authoredLangs, carriedLangs } from './lang-policy.mjs';
 import { requireData } from './data-assets.mjs';
+import { namespaceFiles } from './atlas-caps.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
@@ -807,7 +808,10 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
    be held to it. */
 {
   const noTab = !/id="btn-monitors"/.test(rd('index.html'));
-  const withdrawn = /FEATURE_WITHDRAWN/.test(rd('js/atlas-console.js'));
+  /* (atlas-capability-modules) the dispatch is the kernel PLUS every capability entry — the answer a
+     capability gives lives in its js/atlas-cap-<namespace>.js, discovered, not in one named file. */
+  const dispatchFiles = ['js/atlas-console.js', ...namespaceFiles(ROOT)];
+  const withdrawn = dispatchFiles.some((f) => /FEATURE_WITHDRAWN/.test(rd(f)));
   if (noTab && withdrawn) {
     const NAMED = ['Architecture.md', 'docs/AREA-MONITORS.md', 'PRODUCT.md'];
     let namedRead = 0, monitorDocs = 0, tabLines = 0;

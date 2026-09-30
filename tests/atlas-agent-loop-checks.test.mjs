@@ -22,6 +22,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the sections below (each used to declare its own copy) */
 const R = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -976,15 +977,15 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   const mod = R('js/atlas-map-compose.js');
   assert.match(mod, /render\.claim\(SRC, 'map\.compose'/, '…which the module claims under the key map.compose writes');
   assert.match(mod, /const SRC = 'atl-compose-src'/, '…and that is the source the module writes');
-  const con = R('js/atlas-console.js');
+  const con = (R('js/atlas-console.js') + '\n' + capsSource());
   assert.match(con, /^import \{ makeAtlasMapCompose \} from '\.\/atlas-map-compose\.js';/m, 'imported at line start (scripts/js-reachability.mjs anchors there)');
-  assert.match(con, /case 'compose': return await COMPOSE\.run\(a,dctx\);/, 'the case reaches the module — with the execution context (#R551)');
+  assert.match(capabilityEntry('compose').run, /return await COMPOSE\.run\(a,dctx\);/, 'the capability\'s run reaches the module — with the execution context (#R551)');
   for (const alias of ['mapCompose', 'composeMap', 'explainOnMap']) assert.equal(CAPS.dispatchName(alias), 'compose', `every spelling the registry promises reaches that case (atlas-one-declaration): ${alias}`);
   assert.match(con, /"answer_mode":"text"\|"map"\|"chart"\|"mixed"/, 'the REPLY FORMAT tells Atlas the field exists');
   assert.match(con, /COMPOSE\.linkProse\(head,_cr\)/, 'the answer is linked to the markers it drew');
   assert.match(con, /COMPOSE\.bind\(ai\)/);
-  assert.match(con, /case 'reset':[^\n]*COMPOSE\.clear\(\)/, 'clearing highlights clears the composition');
-  assert.match(con, /case 'clearAll':[^\n]*COMPOSE\.clear\(\)/);
+  assert.match(capabilityEntry('reset').run, /COMPOSE\.clear\(\)/, 'clearing highlights clears the composition');
+  assert.match(capabilityEntry('clearAll').run, /COMPOSE\.clear\(\)/);
   /* the overlay chip's layer list IS the module's list — one fact. (atlas-one-declaration) It is no longer typed a second
      time in js/atlas-console.js: the chip's kind is the effect key the module claims its source under, and the layers are
      the ones reading that source. tests/atlas-one-declaration-checks.test.mjs RUNS the module's painter and the chip's
@@ -1210,7 +1211,7 @@ test('R663 ⑧: a refusal reaches Atlas as the sentence IntMap wrote, not as the
 test('R663 ⑦: SYS() carries the new wire shape, and js/atlas-console.js stayed under its ceiling', () => {
   /* read, not run: SYS() is assembled inside the Atlas kernel (js/atlas-console.js), a closure over the
      whole HOST that only a browser can build. */
-  const con = R('js/atlas-console.js');
+  const con = (R('js/atlas-console.js') + '\n' + capsSource());
   assert.match(con, /"turn":"final"\|"continuing"/, 'the REPLY FORMAT names the field and its vocabulary');
   assert.match(con, /"answer_mode":"text"\|"map"\|"chart"\|"mixed"/, '…and #R511\'s field is still named');
   assert.match(con, /a reply that says what you are about to do is "continuing"/, 'and what to do with it');

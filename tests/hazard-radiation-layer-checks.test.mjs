@@ -25,6 +25,7 @@ import * as LM from '../js/layer-manifest.js';
 import { makeRadiationObs } from '../js/radiation-obs-core.js';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -263,9 +264,9 @@ test('#R585 ⑤ every registration point the row needs actually exists', () => {
   assert.match(read('js/map-ui.js'), /imrad-obs-src/, 'js/map-ui.js does not register the layer with layerData — «what is on screen» would have no answer');
 
   /* and the dispatch must exist for both capability types */
-  const console_ = read('js/atlas-console.js');
+  const console_ = (read('js/atlas-console.js') + '\n' + capsSource());
   for (const t of ['radiationObserved', 'radiationNear']) {
-    assert.ok(console_.includes(`case '${t}':`), `dispatch has no case for '${t}'`);
+    assert.ok(capabilityEntry(t) && capabilityEntry(t).run, `dispatch has no run for '${t}'`);
   }
 });
 

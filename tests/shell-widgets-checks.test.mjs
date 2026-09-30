@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -414,7 +415,7 @@ test('R292 ⑧: the Atlas briefing card has no loader, no interval and no AI cal
   assert.ok(!/loader:/.test(block), 'the briefing card must have no loader');
   assert.ok(!/askAI|ai-proxy|IntMapConsole|dispatch\(/.test(block), 'the briefing card must not reach the AI');
   /* the handover is written by Atlas, on a brief the reader asked for */
-  const console_ = read('js/atlas-console.js');
+  const console_ = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(console_.includes('window.IntMapWidgetBriefStore'), 'js/atlas-console.js hands a requested brief to the board');
   assert.ok(/IntMapWidgetBriefStore\.remember/.test(console_), 'the handover calls remember(), it does not ask for anything');
 });

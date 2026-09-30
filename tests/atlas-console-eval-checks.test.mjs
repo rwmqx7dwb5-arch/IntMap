@@ -21,6 +21,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { readFileSync } from 'node:fs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the sections below (each used to declare its own copy) */
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -69,7 +70,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const src = (rel) => codeOnly(readLF(join(ROOT, rel)));
-const CONSOLE_SRC = src('js/atlas-console.js');
+const CONSOLE_SRC = (src('js/atlas-console.js') + '\n' + capsSource());
 
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
 const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');
@@ -359,10 +360,9 @@ test('R747 (1c): the concrete-place resolver does not keep a second field list o
      can build; the one reader it must use is RUN in (1a)/(1b). */
   /* the DEFECT restated: there were TWO lists and they disagreed. Not "`targets` is in the list" -
      that would pass again the next time a field is added to only one of them. */
-  const src = read('js/atlas-console.js');
-  const i = src.indexOf("case 'highlight':");
-  assert.ok(i > 0, 'the highlight case moved - this check lost its subject');
-  const body = src.slice(i, i + 30000);
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
+  const body = (capabilityEntry('highlight') || {}).run || '';   /* (atlas-capability-modules) the run of map.highlight */
+  assert.ok(body, 'the highlight capability has no run - this check lost its subject');
   assert.ok(/const raw=_hlReadNames\(a\)/.test(body),
     'the name path must take its fields from js/atlas-country-ids.js, not restate them');
   assert.ok(!/String\(a\.countries\|\|a\.country\|\|a\.name\|\|a\.place\|\|a\.region\|\|a\.query/.test(body),
@@ -452,10 +452,9 @@ test('R747 (2e): a DRAW is unaffected - presence is still judged by presence', (
 test('R747 (2f): both clearing paths declare what they emptied', () => {
   /* read, not run: the two clearing paths are branches of the kernel's dispatch; the verdict on what
      they declare is RUN in (2a)–(2e). */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(/const _CLEARED=\(\.\.\.kinds\)/.test(src), 'the declaration helper is gone');
-  const at = src.indexOf("case 'reset':");
-  assert.ok(at > 0 && /_CLEARED\(/.test(src.slice(at, at + 700)), '`reset` clears four surfaces and must say so');
+  assert.ok(/_CLEARED\(/.test((capabilityEntry('reset') || {}).run || ''), '`reset` clears four surfaces and must say so');
   const offAt = src.indexOf('if(a.on===false||/^(off|clear|none|');
   assert.ok(offAt > 0 && /_CLEARED\(/.test(src.slice(offAt, offAt + 700)),
     '`highlight {on:false}` clears through the drawing capability and must say so too');
@@ -492,7 +491,7 @@ test('R747 (7): the query engine writes in the language of the reply it is compo
   const q = read('js/atlas-query.js');
   assert.ok(/D\.lang === 'function'/.test(q),
     'js/atlas-query.js must take the reply language from its caller, not read the UI one');
-  const c = read('js/atlas-console.js');
+  const c = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(/_Q\.bind\(\{lang:\(\)=>_mirrorLang\(\)/.test(c),
     'and the composer must pass the language it is mirroring');
 });
@@ -504,8 +503,8 @@ test('R747 (8): `measure` returns the figure it measured', () => {
      boot only in a browser. */
   const body = read('js/app-body.js');
   assert.ok(/measureReading\(pts\)/.test(body), 'the host must expose the reading the tool panel prints');
-  const c = read('js/atlas-console.js');
-  const m = c.slice(c.indexOf("case 'measure':"), c.indexOf("case 'measure':") + 2600);
+  const c = (read('js/atlas-console.js') + '\n' + capsSource());
+  const m = (capabilityEntry('measure') || {}).run || '';
   assert.ok(/HOST\.measureReading/.test(m),
     'the production failure: measure:ok, drawLine:ok, and no distance anywhere in the reply');
 });
@@ -515,7 +514,7 @@ test('R747 (8): `measure` returns the figure it measured', () => {
 test('R747 (10): the painting warning belongs to a turn-ON', () => {
   /* read, not run: the warning is emitted inside the kernel's layer case, which needs a live map to
      reach. */
-  const c = read('js/atlas-console.js');
+  const c = (read('js/atlas-console.js') + '\n' + capsSource());
   /* the REASON this reads the LAST occurrence: the comment above the branch quotes the warning
      verbatim, and #R621 was turned red once by its own explanation. The subject is the emitter. */
   const i = c.lastIndexOf('Could not confirm the layer actually painted');
@@ -537,8 +536,8 @@ test('R747 (9): a pin, a circle and a line placed again at the same place are th
   const radAt = body.indexOf('window._radiusFromPoint=function');
   assert.ok(/radiusItems\.find\(/.test(body.slice(radAt, radAt + 1600)),
     'seven identical 500 km circles stacked on Tokyo');
-  const c = read('js/atlas-console.js');
-  const dl = c.slice(c.indexOf("case 'drawLine':"), c.indexOf("case 'drawLine':") + 2800);
+  const c = (read('js/atlas-console.js') + '\n' + capsSource());
+  const dl = (capabilityEntry('drawLine') || {}).run || '';
   assert.ok(/_lnSame/.test(dl), 'five identical Lisbon to Cape Town lines');
 });
 
@@ -555,8 +554,8 @@ test('R747 (3): the satellite catalogue is chosen by asking the catalogues, and 
     'the search must be bounded by the size of the catalogue already selected - narrowing may not cost more than not narrowing');
   assert.ok(!/'iss'/i.test(n), 'no table of names: CelesTrak decides what each catalogue holds');
   assert.ok(/narrow,/.test(sat), 'and it is exported');
-  const c = read('js/atlas-console.js');
-  const s = c.slice(c.indexOf("case 'satellites':"), c.indexOf("case 'satellites':") + 4400);
+  const c = (read('js/atlas-console.js') + '\n' + capsSource());
+  const s = (capabilityEntry('satellites') || {}).run || '';
   assert.ok(/A\.narrow\(q\)/.test(s), 'the reply claimed a single marker while 16,010 objects were drawn');
 });
 }
@@ -649,7 +648,7 @@ test('R775 ① the predicate answers the measured rows, and narrows nothing else
 test('R775 ① every Atlas path that RANKS countryStats asks the predicate', () => {
   /* read, not run: the population is every countryStats loop in the kernel, discovered from its source;
      the predicate itself is RUN above. */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   /* the母集合 is discovered, not listed: every enumeration of countryStats in the kernel.
      ⚠ THE RULE IS ATTACHED TO THE FACT, NOT TO A FUNCTION NAME (#R429): a loop that reads a METRIC
      off the row is producing a ranking, a shading or a score, and every one of those must ask who
@@ -795,7 +794,7 @@ test('R775 ④ the prompt says WHEN a drawing appeared, and says when there is n
 
 test('R775 ⑤ the auto-scroll anchors to the reader\u2019s question, not to a pixel', () => {
   /* read, not run: the auto-scroll is DOM code in the kernel's chat, which only a browser can drive. */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   const i = src.indexOf('(#R79g) auto-scroll');
   assert.ok(i > 0, '#R79g\u2019s auto-scroll is gone');
   const block = src.slice(i, i + 2600);
@@ -812,7 +811,7 @@ test('R775 ⑤ the auto-scroll anchors to the reader\u2019s question, not to a p
 
 test('R775 ⑥ a turn that filed no operation puts the question back in the composer', () => {
   /* read, not run: the composer refill is in the kernel's turn catch, which only a browser can drive. */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   const i = src.indexOf('A TURN THAT DIED WITH NOTHING DONE');
   assert.ok(i > 0, 'the login-loss path does not restore the question');
   const block = src.slice(i - 900, i);
@@ -851,7 +850,7 @@ test('R775 ⑦ sim.pandemicRun declares which refusals rewording cannot fix', as
 
 test('R775 js/atlas-console.js stayed under its shrink-only ceiling', () => {
   /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
-  assert.ok(read('js/atlas-console.js').length > 0);
+  assert.ok((read('js/atlas-console.js') + '\n' + capsSource()).length > 0);
 });
 }
 
@@ -866,7 +865,7 @@ test('R775 js/atlas-console.js stayed under its shrink-only ceiling', () => {
  * repair defends the repair and stops defending the reader — [[intmap-restate-the-defect-not-the-fix]].
  */
 
-const CONSOLE_SRC = codeOnly(readLF(join(ROOT, 'js/atlas-console.js')));
+const CONSOLE_SRC = codeOnly((readLF(join(ROOT, 'js/atlas-console.js')) + '\n' + capsSource()));
 const AGENT_SRC = codeOnly(readLF(join(ROOT, 'js/atlas-agent.js')));
 
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
@@ -968,9 +967,8 @@ test('R802 ⑤ the reflow keeps an abbreviation whole and still splits real sent
    back as an answer about the place they named. */
 test('R802 ⑥ a named place that did not resolve is not answered about the map centre', () => {
   /* read, not run: the layerData case is a branch of the kernel's dispatch, which needs a live map. */
-  const i = CONSOLE_SRC.indexOf("case 'layerData':");
-  assert.ok(i > 0, 'the layer reading is one case');
-  const body = CONSOLE_SRC.slice(i, i + 4000);
+  const body = codeOnly((capabilityEntry('layerData') || {}).run || '');
+  assert.ok(body, 'the layer reading is one capability with a run');
   const placeAt = body.indexOf('if(a.place)');
   const centreAt = body.indexOf('GE().camera.getCenter()');
   assert.ok(placeAt > 0 && centreAt > placeAt, 'the named place is resolved before the centre is used');

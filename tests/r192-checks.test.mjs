@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -189,7 +190,7 @@ test('R192 tsunami: linear long waves over the real sea floor, from an Okada sou
      opposite claim, and tests/r197-checks.test.mjs holds the whole of it. */
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
-  const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
+  const atlas = (read('js/atlas-console.js') + '\n' + capsSource()) + '\n' + read('js/atlas-catalog-text.js');
   assert.match(atlas, /if\(a\.hours!=null&&T\.setHours\) T\.setHours\(\+a\.hours\);/, 'Atlas drives it');
   assert.match(atlas, /"hours"\?:1-30,"maximum"\?:bool,"play"\?:bool/, 'and the SYS catalogue documents the parameters');
   /* five languages */

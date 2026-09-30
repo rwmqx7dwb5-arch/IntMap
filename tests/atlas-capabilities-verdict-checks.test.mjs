@@ -21,6 +21,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { capabilityEntry } from './helpers/atlas-kernel.mjs';
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -456,25 +457,22 @@ test('R740 ⑳: a VIEWPORT that straddles the antimeridian is measured on the ci
 });
 
 /* ── and the other half of the same fact: the dispatch really does declare, on EVERY branch ──────
-   ⚠ NOT A CHECK ON THE SPELLING OF THE SOURCE (#R505 / #R488). The `case 'flyTo'` block is lifted out
-   of the shipped file and EVALUATED, once per branch, against a recording camera — so what is asserted
+   ⚠ NOT A CHECK ON THE SPELLING OF THE SOURCE (#R505 / #R488). view.flyTo's run is imported from the
+   shipped js/atlas-cap-view.js and CALLED, once per branch, with a recording camera as its K — no text is
+   lifted any more (atlas-capability-modules: the case became a function of its dependencies) — so what is asserted
    is that the destination the result DECLARES is the destination that was handed to the camera. A
    branch that moves the camera and forgets to declare fails here. The census under it is what makes a
    NEW branch fail too: a success return nobody drove is a red test rather than a silent omission. */
-const CONSOLE_SRC = readFileSync(join(ROOT, 'js/atlas-console.js'), 'utf8');
-const FLYTO_BLOCK = (() => {
-  const a = CONSOLE_SRC.indexOf("case 'flyTo': {");
-  const b = CONSOLE_SRC.indexOf("case 'weather':", a);
-  assert.ok(a > 0 && b > a, "js/atlas-console.js no longer has a flyTo case — this check lost its subject");
-  return CONSOLE_SRC.slice(a + "case 'flyTo':".length, b);
-})();
+const FLYTO_ENTRY = (await import('../js/atlas-cap-view.js')).default.find((e) => e.row[1] === 'flyTo');
+assert.ok(FLYTO_ENTRY && typeof FLYTO_ENTRY.run === 'function', 'js/atlas-cap-view.js no longer has the flyTo entry — this check lost its subject');
+const FLYTO_BLOCK = capabilityEntry('flyTo').run;   /* its source, for the census of branches below */
 
 function flyToHarness(opts) {
   const flights = [];
   const D = {
     WORLD_RE: /^(world|whole world|globe|earth|全世界|世界)$/i,
     DEIXIS_RE: /^(here|there|ここ|そこ)$/i,
-    /* js/atlas-console.js:1056 — R(ok, html, extra) merges the extra onto the result */
+    /* js/atlas-console.js's R(ok, html, extra) merges the extra onto the result */
     R: (ok, html, extra) => Object.assign({ ok: !!ok, html: html || '' }, extra || null),
     note: (x) => String(x), warn: (x) => String(x), esc: (x) => String(x == null ? '' : x),
     L: (en) => en, _ambigNote: () => '', _setLast: (x) => x,
@@ -488,10 +486,8 @@ function flyToHarness(opts) {
       getCenter: () => ({ lng: 15, lat: 50 }), getZoom: () => 4
     } })
   };
-  const make = new Function('return async function flyToCase(a, D) {'
-    + ' const { WORLD_RE, DEIXIS_RE, R, note, warn, esc, L, _ambigNote, _setLast, _bboxOK, placeExtent, geocode, flyToBox, GE } = D;'
-    + FLYTO_BLOCK + ' }');
-  return { run: (a) => make()(a, D), flights };
+  /* D is the run's K: exactly the kernel names view.flyTo's run declares it reads (its first line) */
+  return { run: (a) => FLYTO_ENTRY.run(a, {}, D), flights };
 }
 
 test("R740 ㉑: every branch of the shipped flyTo case declares the destination it flew to", async () => {

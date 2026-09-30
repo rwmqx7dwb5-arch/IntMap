@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import * as acorn from 'acorn';
 import { lazyFiles } from './app-source.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const root = new URL('../', import.meta.url);
 const ROOT = fileURLToPath(root);
@@ -51,7 +52,7 @@ const insol = R('js/insolation.js');
 const sims = R('js/sims.js');
 /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
    The question below is unchanged; the read follows the answer to where it lives now. */
-const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
+const atlas = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
 const toolPanel = R('js/tool-panel.js');
 const refs = R('js/reference-data.js');
 /* (#R280) the policy TEXT is js/legal-text.js now — js/legal.js is the modal that renders it,
@@ -69,7 +70,7 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
   assert.match(entry, /import '\.\.\/js\/drone-nav\.js';/, 'the planner is still loaded');
   assert.match(body, /window\.IntMapModules\.droneNav\((IM_HOST)\)/, 'and still instantiated');
   assert.match(atlas, /window\.IntMapDrone&&window\.IntMapDrone\.toggle\(\)/, 'and Atlas opens it directly now');
-  assert.ok(atlas.includes("case 'drone':"), 'the full drone action still exists');
+  assert.ok(capabilityEntry('drone'), 'the full drone action still exists');
 });
 
 /* ── ⑥ the sunlight engine ──────────────────────────────────────────────────────────────────────
@@ -108,10 +109,10 @@ test('R176: the three simulators are in the right places, catalogued, and source
   assert.match(toolPanel, /window\.IntMapSeismic&&window\.IntMapSeismic\.open/, 'and the seismic simulator');
   assert.match(toolPanel, /window\.IntMapSun\.analysePoint\(lngLat\.lng,lngLat\.lat\)/, 'and the sunlight analysis');
   /* Atlas: an action AND a catalogue entry, or the planner cannot reach it (#R115) */
-  for (const [c, cat] of [["case 'terrainWater':", 'TERRAIN EDITING & WATER ROUTING'],
-                          ["case 'earthquake':", 'SEISMIC WAVE SIMULATION'],
-                          ["case 'sunHours':", 'SUNLIGHT HOURS & TERRAIN SHADE']]) {
-    assert.ok(atlas.includes(c), `Atlas implements ${cat}`);
+  for (const [c, cat] of [['terrainWater', 'TERRAIN EDITING & WATER ROUTING'],
+                          ['earthquake', 'SEISMIC WAVE SIMULATION'],
+                          ['sunHours', 'SUNLIGHT HOURS & TERRAIN SHADE']]) {
+    assert.ok(capabilityEntry(c), `Atlas implements ${cat}`);
     assert.ok(atlas.includes(cat), `and advertises ${cat} in the SYS catalogue`);
   }
   /* and a way to turn each of them off again (#R85) */

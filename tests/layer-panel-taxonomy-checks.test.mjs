@@ -18,6 +18,7 @@ import * as LM from '../js/layer-manifest.js';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { GROUPS, named as namedOf, rest as restOf, publishedList, byKey, OTHERS_IDS } from './helpers/layer-groups.mjs';
 import { uiLocale, uiLocaleCodes } from './helpers/layer-locale-tables.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -166,7 +167,7 @@ test('#R469 ③ a hidden row keeps its checkbox, and every sweep is told about i
   /* (layer-manifest) the registry's own rows are written from js/layer-manifest.js (they were index.html markup) */
   const cc = LM.LAYERS.find((l) => l.id === 'cb-countries');
   assert.ok(cc && cc.html && /id="cb-countries"/.test(LM.rowHTML(cc)), 'cb-countries is still in the registry');
-  assert.ok(/'countryInfo'/.test(code('js/atlas-console.js')), "…and Atlas's door to it still exists");
+  assert.ok(/'countryInfo'/.test((code('js/atlas-console.js') + '\n' + capsSource())), "…and Atlas's door to it still exists");
   assert.ok(!listOf('IntMapBasicLayerRows').includes('cb-countries'),
     'but it is no longer part of 基本表示');
   /* ⚠ EVERY SWEEP THAT FILES ROWS. `order.push` MOVES an element, so a row nobody claims lands in

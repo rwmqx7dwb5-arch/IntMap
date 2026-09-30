@@ -26,6 +26,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasMapCompose } = await import('../js/atlas-map-compose.js');
@@ -267,7 +268,7 @@ test('R551 ⑧: the turn id travels as execution context, not as an argument the
   /* kept as a spelling: the console’s argument stripping is closure code inside js/atlas-console.js, which needs the page */
   /* the fact IS the boundary: runActions builds the kernel's arguments by dropping every `__` key,
      so anything the case needs about the TURN cannot ride on the action. */
-  const con = R('js/atlas-console.js');
+  const con = (R('js/atlas-console.js') + '\n' + capsSource());
   assert.match(con, /k!=='type'&&k\.slice\(0,2\)!=='__'/, 'the console still strips internal fields from the arguments…');
   assert.match(con, /return await COMPOSE\.run\(a,dctx\)/, '…so the case is handed the context separately');
   assert.match(R('js/atlas-executor.js'), /turnId: op\.turnId, source: op\.source/, 'the executor puts it in the third argument');
@@ -360,7 +361,7 @@ test('R551 ⑪: a partial compose that really painted still counts as having pro
    fewer than it accepts. It is parsed, not grepped — the spelling of the parameters is not the fact. */
 test('R551 ⑫: the console does not narrow the kernel dispatcher it binds', async () => {
   const acorn = await import('acorn');
-  const src = R('js/atlas-console.js');
+  const src = R('js/atlas-console.js');   /* the binding is the console's own (bindRuntime) */
   const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
 
   let bound = null;

@@ -32,6 +32,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, runAst } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -220,7 +221,7 @@ test('R568 ⑧: the source term is source × ISOTOPE, and no accident has one ac
   assert.equal(RAD.sourceTerm('dirtybomb', 'cs137').bq, RAD.sourceTerm('dirtybomb', 'i131').bq);
   assert.equal(RAD.sourceTerm('dirtybomb', 'cs137').exact, false, '…and they do not claim to be an assessment');
   /* the console must no longer be able to read a per-accident activity that does not exist */
-  const con = read('js/atlas-console.js');
+  const con = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.equal(/srcPreset\s*\?\s*srcPreset\.bq/.test(con), false, 'atlas-console cannot read SOURCES[x].bq — there is no such quantity');
   assert.equal(/\[8\.5e16,\s*'Chernobyl/.test(con), false, 'nor keep a hard-coded «Chernobyl · 85 PBq» that ignores the isotope');
 });
@@ -270,7 +271,7 @@ test('R568 ⑩: the annual dose is an integral over decay and weathering, not a 
   /* the console must not still be extrapolating */
   /* ⚠ guard the CODE, not the prose: the comment above the fix quotes the removed expression on
      purpose, and a grep that cannot tell those apart would forbid explaining the bug. */
-  const con = codeOnly(read('js/atlas-console.js'));
+  const con = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
   assert.equal(/annualMSv/.test(con), false, 'the «this rate holds for a year» helper is gone from the answer code');
   assert.match(con, /r\.firstYearMSv/, '…and what the answer prints is the model’s integral');
 });
@@ -312,10 +313,8 @@ test('R568: every field the answer reads is a field the model returns', async ()
   assert.ok(produced && produced.size > 30, 'found the success object run() returns');
 
   let node = null;
-  walk.full(parse('js/atlas-console.js'), (n) => {
-    if (n.type === 'SwitchCase' && n.test && n.test.value === 'radiation') node = n;   /* (atlas-one-declaration) the one label; `radiationSim` reaches it through the registry */
-  });
-  assert.ok(node, 'found the radiation case in the console');
+  node = runAst('radiation');   /* (atlas-capability-modules) sim.radiation's run — what used to be its `case`; `radiationSim` reaches it through the registry */
+  assert.ok(node, 'found the radiation capability\'s run');
   const consumed = new Set();
   walk.simple(node, {
     MemberExpression(m) {

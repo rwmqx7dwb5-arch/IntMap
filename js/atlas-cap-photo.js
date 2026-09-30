@@ -1,0 +1,47 @@
+/* ============================================================================
+ *  IntMap · Atlas capabilities — the `photo.*` namespace   (js/atlas-cap-photo.js)
+ * ----------------------------------------------------------------------------
+ *  One entry per capability, and everything about it in the one place:
+ *    row     its registry row (its columns are documented at «THE TABLE» in js/atlas-capabilities.js) — the id, the dispatch
+ *            spelling, the aliases, the observer, the effects that are also its conflict keys …
+ *    schema  its argument schema, built fresh on every call (the builders are in js/atlas-caps.js)
+ *    run     what the dispatch runs for it: `run(a, dctx, K)` — the action, the execution context, and
+ *            K, the Atlas kernel's internals it needs (js/atlas-console.js builds K; a `let` there is
+ *            read and written as `K.name`, so the value is always the live one).
+ *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
+ *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
+ *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
+ *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ * ==========================================================================*/
+import { int, one, lat, lng } from './atlas-caps.js';
+
+export default [
+  /* (#R527) 「山並み写真から撮影地点・撮影方向を探す」 — js/photo-geo.js. It traces the ridge in a
+     photograph and matches it against the TERRAIN; an EXIF coordinate in the file is shown and
+     never used as the answer, which is the whole honesty of the feature.
+     ⚠ COLUMN 9 IS EMPTY ON PURPOSE, AND THAT IS NOT «no input needed». The two things this
+     needs — a photograph and a search rectangle — are ones only the READER can hand over, so
+     there is no place name that starts it and nothing for the map centre to stand in for
+     (#R302). An argument-less call opens the panel and asks; it does not refuse in a sentence.
+     `panel` observes it because the panel IS what one call delivers: the sweep that follows is
+     minutes long and is reported through the `photoGeo` state section (js/atlas-state.js). */
+  {
+    row: ['photo.locate',               'photoLocate',    'photoGeolocate,whereWasThisTaken,skylineMatch',               'photo',   'panel',   'panel.photoGeo',         'panel,explanation',   'session', 'none',   '',         'photoGeo'],
+    /* (#R527) 写真の撮影地点。EVERY ARGUMENT IS OPTIONAL, AND THAT IS THE SHAPE OF THE FEATURE,
+       not a relaxation of rule (3): the two inputs that decide the answer — the photograph and
+       the ridge traced on it — cannot travel in an action at all, because the reader supplies
+       them in the panel. What CAN come from a call is the rectangle to search, which candidate
+       to look at, and whether to start or stop; a call carrying none of them opens the panel,
+       which is a correct thing to do with an empty argument set. `area` is validated corner by
+       corner (js/atlas-executor.js recurses into nested `properties`), so a half-written
+       rectangle is refused before the dispatch draws one. `place` is deliberately ABSENT: this
+       file may not name an argument the case does not read (#R406), and nothing here resolves a
+       place name into a search area.
+       ⚠ `action` IS A CLOSED ASCII SET the dispatch really compares against — rule (2) is
+       satisfied because the case lower-cases the value and tests it against exactly these. */
+    schema: () => ({ type: 'object', properties: { action: one('open', 'search', 'abort', 'select'), select: int(1), area: { type: 'object', properties: { south: lat(), north: lat(), west: lng(), east: lng() }, required: ['south', 'north', 'west', 'east'] } } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note;
+      { let PG=null; try{ await window.IntMapLazy.need('photoGeo'); PG=window.IntMapPhotoGeo; }catch(_){} if(!PG||typeof PG.open!=='function') return R(false,warn('⚠ '+L('The photo-location tool could not be loaded.','写真の撮影地点ツールを読み込めませんでした。','Das Werkzeug für den Aufnahmeort konnte nicht geladen werden.','Инструмент поиска места съёмки не загрузился.','No se pudo cargar la herramienta de lugar de la foto.'))); const pgAct=String(a.action||'').toLowerCase(); if(pgAct==='abort'){ PG.abort(); return R(true,note(L('The search was stopped. The places it had already reached are still listed.','探索を中止しました。ここまでに見つかった候補はそのまま残しています。','Die Suche wurde gestoppt; die bereits gefundenen Orte bleiben stehen.','Поиск остановлен; уже найденные места остались в списке.','Se detuvo la búsqueda; los lugares ya encontrados siguen en la lista.')),{exec:PG.state()}); } const pgAr=(a.area&&['south','north','west','east'].every(k=>isFinite(+a.area[k])))?{south:+a.area.south,north:+a.area.north,west:+a.area.west,east:+a.area.east}:null; if(pgAr) PG.setArea(pgAr); await PG.open(); let pgS=PG.state(); if(pgAct==='select'||a.select!=null){ const pgN=Math.max(1,Math.round(+(a.select||1))), pgC=(pgS.candidates||[])[pgN-1]; if(!pgC) return R(true,note(L('There is no candidate with that number yet — the search has to run first.','その番号の候補はまだありません。先に探索を実行してください。','Diesen Kandidaten gibt es noch nicht — die Suche muss zuerst laufen.','Такого кандидата ещё нет — сначала нужно выполнить поиск.','Todavía no hay un candidato con ese número: primero hay que buscar.')),{exec:pgS}); PG.select(pgN-1); pgS=PG.state(); return R(true,note(L('Candidate','候補','Kandidat','Кандидат','Candidato')+' '+pgN+' · '+pgC.lat+', '+pgC.lon+' · '+L('view direction','撮影方向','Blickrichtung','направление съёмки','dirección de la vista')+' '+pgC.bearingDeg+'°'),{exec:pgS}); } if(!PG.hasPhoto()||!PG.hasArea()||!pgS.skyline) return R(true,note(L('The panel is open on the map. The photograph, the rectangle to search and the traced ridge are given there — none of the three can come from me.','パネルを地図上に開きました。写真・探索範囲・稜線のトレースはそこで指定してください（いずれも私からは供給できません）。','Das Panel ist offen. Foto, Suchrechteck und die gezeichnete Kammlinie werden dort angegeben — nichts davon kann von mir kommen.','Панель открыта. Фотография, прямоугольник поиска и обведённый гребень задаются там — ничего из этого я предоставить не могу.','El panel está abierto. La fotografía, el rectángulo de búsqueda y la cresta trazada se indican allí; nada de eso puede venir de mí.')),{exec:pgS}); if(pgS.phase==='searching') return R(true,note(L('The search is already running.','探索はすでに実行中です。','Die Suche läuft bereits.','Поиск уже выполняется.','La búsqueda ya está en marcha.')),{exec:pgS}); if(pgAct!=='search') return R(true,note(L('The photograph and the search area are both ready; say the word and I will start the search.','写真と探索範囲はそろっています。指示があれば探索を開始します。','Foto und Suchbereich liegen vor; auf ein Wort starte ich die Suche.','Фотография и область поиска готовы; по команде запущу поиск.','La foto y el área están listas; a su señal inicio la búsqueda.')),{exec:pgS}); const pgP=PG.search(); if(pgP&&pgP.catch) pgP.catch(()=>{}); pgS=PG.state(); if(pgS.phase!=='searching') return R(false,warn('⚠ '+L('The search did not start — the panel says why, and the usual reason is that too little of the traced ridge can be scored.','探索は開始されませんでした。理由はパネルに出ています（多くは、トレースできた稜線が短すぎる場合です）。','Die Suche startete nicht — das Panel nennt den Grund; meist ist zu wenig der gezeichneten Kammlinie auswertbar.','Поиск не начался — причина указана в панели; чаще всего обведённого гребня слишком мало для оценки.','La búsqueda no se inició — el panel indica el motivo; casi siempre es que la cresta trazada da muy poco que evaluar.')),{exec:pgS}); return R(true,note(L('Searching the terrain for the viewpoint that produces this skyline.','この稜線が見える視点を、地形の側から探索しています。','Suche im Gelände den Standort, der diese Kammlinie ergibt.','Ищу в рельефе точку, из которой видна эта линия горизонта.','Buscando en el terreno el punto que produce esta línea de cumbres.')+((pgS.plan&&pgS.plan.points!=null)?(' · '+pgS.plan.points.toLocaleString()+' pts · '+pgS.plan.spacingM+' m'):'')),{exec:pgS}); }   /* (#R527) photo.locate — js/photo-geo.js. ⚠ THE TWO INPUTS ARE THE READER'S: a photograph and a rectangle on the map. No place name starts this and the map centre may never stand in for one (#R302), so a call carrying neither OPENS THE PANEL and says where they go — the #R299 shape, not a sentence refusing a feature that exists. The sweep is deliberately NOT awaited: it is minutes of terrain work, and its phase, progress, verdict and candidates are read off the state ledger as 'photoGeo' (js/atlas-state.js). ⚠ ON THIS LINE because js/atlas-console.js stands at 4,909 against a shrink-only ceiling of 4,910 (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b): the file can hold this case, but not one more line. */
+    },
+  },
+];

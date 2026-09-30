@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（335本・17.8 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（356本・17.8 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -508,17 +508,55 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 2.1 制御カーネル (The control kernel)
 
-**「何ができるか」の一覧は 1 つしかない。** `js/atlas-capabilities.js` の表がそれで、
+**「何ができるか」の一覧は 1 つしかない。** `js/atlas-capabilities.js` の登録表がそれで、
 UI のボタンも Atlas の自然文も、テストも監査も、**同じ能力 ID** を名指す。
 
-**どの能力も宣言は表の 1 行で、ほかは導出する。** 表の 1 行が ID・列 1 の綴り（dispatch の case 名）・別名・
-副作用を持ち、`js/atlas-console.js` はそれを写さずに読む:
+**能力ひとつにつき、書く場所はひとつ。** 能力は **`js/atlas-cap-<名前空間>.js` の 1 項目**で、名前空間は能力 ID の先頭
+（`view.flyTo` は `js/atlas-cap-view.js`）。1 項目が **宣言と実行の両方**を持つ:
 
-- **dispatch の綴り** — `switch(CAPS.dispatchName(a.type))`。case は**列 1 の綴り 1 つだけ**を持ち、別名は
-  その行が宣言しているから同じ case に届く（`dispatchName` / `ofSpelling`。**大文字小文字は区別する**——
-  `switch` がそうだったので、宣言されていない綴りは今までどおり `default` に落ちる）。case の本体は
-  `a.type` を書き換えられずに受け取るので、綴りで分岐する case（`walkingRoute` など）はそのまま動く。
-  会話状態を更新する `updateWctx` も同じ解決器を通る。
+```js
+{ row:    ['view.flyTo', 'flyTo', '', 'view', 'camera', 'camera', 'camera,map', 'session', 'none', 'place', ''],
+  schema: () => ({ type: 'object', properties: { place: str(), … }, anyOf: [ … ] }),
+  async run(a, dctx, K) { const R = K.R, geocode = K.geocode, …; …本体… } }
+```
+
+- **`row`** — 登録表の 1 行（列の意味は `js/atlas-capabilities.js` の「THE TABLE」）: ID・列 1 の綴り
+  （dispatch が引く名前）・別名・分類・**観測器**（列 4）・副作用（列 5＝競合キー）・生成物・危険度・確認・
+  必要な対象・遅延モジュール・外部内容。
+- **`schema`** — 引数の schema。`js/atlas-caps.js` の組み立て関数で書き、**呼ぶたびに新しいオブジェクト**を返す。
+- **`run(a, dctx, K)`** — dispatch がこの能力に対して走らせるもの。`K` は Atlas カーネル
+  （`js/atlas-console.js` の閉包）から**この run が読む名前だけ**を渡す依存オブジェクトで、run の先頭の
+  `const R = K.R, …` がそのまま依存の一覧になる。カーネルの `let`（`_pois`・`_hlGen` など）は
+  `K._pois` として読み書きする（getter/setter なので常に今の値）。`window` には何も足さない。
+  コンソールの import だった関数（`personaPrompt`・`settleWithin` など）は能力のファイルが自分で import する。
+
+**ほかは項目から導出する**（導出の関数は `js/atlas-caps.js`）:
+
+- **dispatch** — `switch` は無い。`CAP_RUN[CAPS.dispatchName(a.type)]` の 1 回の参照で、`CAP_RUN` は
+  `capabilityRunners(CAPABILITY_MODULES)`（列 1 の綴り → run、プロトタイプ無しの表）。別名はその行が宣言して
+  いるから同じ run に届く（`dispatchName` / `ofSpelling`。**大文字小文字は区別する**）。どの行も持たない綴りは
+  `unknownAction`（旧 `default`）に落ちる。`a.type` は書き換えないので、綴りで分岐する run
+  （`walkingRoute` など）はそのまま動く。dispatch は `async` ではなく run の promise をそのまま返す——
+  旧 switch と同じく最初の `await` までは同期に走る。会話状態を更新する `updateWctx` も同じ解決器を通る。
+- **登録表** — `js/atlas-capabilities.js` の `GENERATED ROWS` の印の間（行だけ・実行関数なし）。**登録表は起動時に
+  要る**（能力はモジュールが届く前から見つけられる）ので、run を抱えた項目を起動経路に import せず、
+  `node scripts/atlas-caps.mjs --write` が行だけを写す。別のモジュールにしないのは、起動時に読むモジュールが 1 本増えるから。既存の ID は今の順を保ち、新しい ID は末尾に付く（順序は別名の衝突・検索の同点・索引が読む）。
+- **名前空間の一覧** — `js/atlas-caps-modules.js`。同じコマンドが `js/` の `atlas-cap-*.js` を**発見して**書く。
+  読むのは遅延チャンクの `js/atlas-console.js` と `js/atlas-schemas.js` だけ。
+- **schema の表** — `js/atlas-schemas.js` が `capabilitySchemas()` で項目から組む（能力 ID がキー）。
+- **観測器の選択** — 行の列 4。**説明文**は今までどおり `js/atlas-catalog-text.js` の各ブロックが自分の説明する
+  能力 ID を持つ。
+
+**能力を 1 つ足す手順**:
+
+1. 名前空間のファイル `js/atlas-cap-<名前空間>.js` に項目を 1 つ足す（無い名前空間なら新しいファイルを 1 本）。
+   カーネルの名前で `K` にまだ無いものが要るときだけ、`js/atlas-console.js` の `capDeps()` に getter を 1 行足す。
+2. `js/atlas-catalog-text.js` にその能力を説明するブロックを書く（書かない能力は planner に存在しない——`check:catalog`）。
+3. `node scripts/atlas-caps.mjs --write`（行の写しと名前空間の一覧を書き直す）。忘れると `check:capabilities` が名指しで落ちる。
+
+これで登録表・dispatch・schema の表・観測器の選択に現れる。`tests/atlas-capability-modules-checks.test.mjs` ④ が
+作業ツリーの外の写しにファイルを 1 本足してこれを実際に確かめる。項目の不備（名前空間違い・綴りの重複・run 無し・
+列数違い）は読み込み時に**名指しで拒む**。
 - **地図チップ** — `OVL_OF` は**能力 ID** をキーにし、どの綴りで呼ばれても `CAPS.ofSpelling` で同じ行に着く。
   チップが切り替えるレイヤーは `_ovlIds(kind)`: kind が効果キー（`map.isochrone`・`map.route`・`map.radiation`・
   `map.los`・`map.shakemap`・`map.outbreaks`・`panel.compare`・`map.poi`・`map.elevation`・`map.factions`・
@@ -534,15 +572,16 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
   依存として注入され（`capabilities`）、無ければ同じ表の**公開しない**複製（`makeAtlasCapabilities({}, { publish: false })`）を使う。
 - **system prompt の順序** — `SYS()` は persona → 中核指示 → 返答形式 → 能力の索引 → 道具 →
   **最後に返答言語の 1 行**。言語で変わるのはこの 1 行だけなので、その前はどの言語でも同じバイト列になる。
-- 引数の schema（`js/atlas-schemas.js`）は能力 ID をキーにしており、綴りを写していない。引数名は今も
-  dispatch の本体から読み取って書かれた照合の表である。
+- 引数の schema は能力 ID をキーにしており、綴りを写していない。引数名は同じ項目の `run` が読むものであり、
+  いまは同じ項目に並んでいる。
 
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
-| Capability Registry | `js/atlas-capabilities.js` | **146 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
+| Capability Registry | `js/atlas-capabilities.js`（行は `js/atlas-cap-*.js` の項目の写し＝`GENERATED ROWS`） | **146 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
 | 能力の索引 | `js/atlas-capabilities.js` の `index()` | **毎ターン system prompt に載る、ID だけの一覧**（カテゴリ別・撤去済みは除く）。レジストリから導出するので手で保守しない。これが「IntMap に何があるか」の唯一の常時提示 |
 | 能力の説明文 | `js/atlas-catalog-text.js` | 47 ブロック。**各ブロックがどの能力を説明しているか**を持つ。`find_capability` が要求されたときだけ返す |
-| 引数の schema | `js/atlas-schemas.js` | **146 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
+| 能力の項目 | `js/atlas-cap-<名前空間>.js`（19 本）・`js/atlas-caps.js` | **能力ひとつに項目ひとつ**: 行・schema・run。dispatch・登録表・schema の表はここから導出 |
+| 引数の schema | `js/atlas-schemas.js`（項目から組む） | **146 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
 | 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳**。⚠ **開いた台帳は閉じる**——`endTurn` が返答・停止理由・モデル呼び出し回数を書き戻し、取り消しと例外もそれぞれの状態で閉じる（呼び出し元は `js/atlas-console.js` の 1 か所） |
@@ -993,10 +1032,12 @@ strict json_schema はプロパティ順に生成されるので、この並び�
 `control` のカタログは**依頼に対して採点**して残し（DOM 順の先頭 N 件ではない）、**落とした数を明示する**——上限は残るが、それは予算であって穴ではない。近い候補が複数あれば押さずに `ambiguous_target` を返す。`module` のカタログは**まだ読み込まれていないモジュールも名前で出し**（`IntMapLazy.publishes()`）、`doModule` は必要なら取得してからその promise を返す。
 ⚠ **メソッドの許可リストは変わっていない**——広げたのは到達であって権限ではない。
 
-**⚠ 旧 dispatch は互換アダプターとして残っている。** 115 の `case` はそのまま engine の
-仕事をしており、変わったのは**その周りの 11 段**と、`ok` が観測の結果になったこと。
+**⚠ run は旧 dispatch の `case` の本体そのもの。** 146 の本体と `default` は一字も書き換えずに項目へ移り
+（変わったのはカーネルの `let` を `K.名前` と書く所だけ）、engine の仕事はそのまま。変わったのは**その周りの
+11 段**と、`ok` が観測の結果になったこと。
 
-検査は `node scripts/atlas-capability-audit.mjs`（20 項目・`--json` で機械可読）。
+検査は `node scripts/atlas-capability-audit.mjs`（23 項目・`--json` で機械可読。生成したものが項目と食い違えば
+それも名指しで落とす）。dispatch の群（`dispatchGroups`）は項目から読む。
 `scripts/atlas-catalog.mjs`（「planner に説明されているか」だけを問う旧ゲート）は互換入口として残る。
 
 ### 2.1b 回答の中の語句を引く (The term gloss)
@@ -1408,7 +1449,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 ⚠ **HYSPLIT / FLEXPART の代わりではない。** 系統（ラグランジュ粒子輸送＋乱流拡散＋乾性湿性沈着）は
 同じだが、気象場は公開 API の格子点であって数値予報モデルの全格子ではなく、化学も地形の効果も
 入っていない。入口は Layers ▸ Tools ▸ 放射性プルーム拡散、Atlas からは capability `sim.radiation`
-（回答は `js/atlas-console.js` の `case 'radiation'`）。
+（回答は `js/atlas-cap-sim.js` の `sim.radiation` の run）。
 
 | ファイル | 役割 |
 |---|---|
@@ -1450,7 +1491,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 
 ## 3. ファイル構成 (Files)
 
-**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 333 本あり、1行説明を
+**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 354 本あり、1行説明を
 全部ここに置くと仕様書の 4 分の 1 が台帳になるので分けた。節番号は向こうでも `§3.1`〜`§3.13` の
 ままで、他の文書からの `§3.x` 参照はそのまま通る。`node scripts/arch-files-check.mjs --check` が
 `js/` の実体と台帳を突き合わせる——**どの段が `js/` の話かは `§3.x` の見出しが名乗るディレクトリで
@@ -1724,7 +1765,7 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 ⚠⚠ **記事モードでも束ね方の実装はここには無い。** §4.4 と**同じ**
 `supabase/functions/_shared/news-cluster.js` を `import` して `clusterArticles()` を呼ぶ。
 この節のファイルがやるのは**適合だけ**——読み込み済みフィードの項目の形を入れ、返信に出す
-出来事オブジェクトの形で返す。`js/atlas-console.js` の `case 'events'` は窓と範囲を選び、
+出来事オブジェクトの形で返す。`js/atlas-cap-research.js` の `research.events` の run は窓と範囲を選び、
 描いて書くだけ。
 
 Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-capabilities.js`）。
@@ -1769,7 +1810,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   **そのファイルの中の文章そのものが仕様**で、この文書はここに書き写さない
   （**同じ事実を2か所に書くと片方だけが古くなる**——`npm run check:docs`）。
 - **22 本すべての system prompt が `personaPrompt('<その呼び出しの役割>')` で始まり、
-  各呼び出し側はタスク規則しか足さない**（`atlas-console` 9・`news-ingest` 3・`analysis-research` 2・
+  各呼び出し側はタスク規則しか足さない**（`atlas-console` 6・`atlas-cap-research` 3・`news-ingest` 3・`analysis-research` 2・
   `app-body` 2・`atlas-geo-resolve` 2・`atlas-gloss` 1・`news-ui` 1・`monitor-run` 1・`refresh-news` 1）。
   ⚠ **本数と内訳の正本は `tests/r285-checks.test.mjs` の `EXPECTED_CALLS`**——あの表に無いファイルは
   検査の視野にも入らないので、prompt を足したらまずあの表に足す。モードは 2 つ——

@@ -11,6 +11,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { appShell } from './app-source.mjs';
 import { isolate } from './helpers/geo-shared.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R174 · the drone planner   (was tests/r174-checks.test.mjs, in part)
@@ -252,8 +253,8 @@ describe('§ #R174 · the drone planner', () => {
     /* 綴りのまま: 対象が js/atlas-console.js の dispatch と SYS カタログの文面で、Atlas は DOM とモデル呼び出しの上でしか組み立たない。 */
     /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
        The question below is unchanged; the read follows the answer to where it lives now. */
-    const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
-    assert.ok(atlas.includes("case 'drone':"), 'Atlas implements it');
+    const atlas = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
+    assert.ok(capabilityEntry('drone'), 'Atlas implements it');
     assert.ok(atlas.includes('{"type":"drone"'), 'and advertises it in the SYS catalogue');
     assert.match(atlas, /"name":"measure"\|"radius"\|"draw"\|"volume"\|"drone"/, 'the tool switch lists it too');
     /* (#R176) …and with no button left to click, the `tool` switch calls the planner directly. */
