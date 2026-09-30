@@ -4,7 +4,7 @@
  *  THE DEFECT. Thirteen test files proved a gate goes red by writing a wrong fact into the WORKING
  *  TREE — js/, docs/, Architecture.md, privacy.html, data/, tests/ — running the gate and putting
  *  it back. `node --test` runs files in parallel, so every other file reading the same tree could
- *  see the mutant; the tree lock (tests/helpers/gate-lock.mjs) serialised the writers and nothing
+ *  see the mutant; the tree lock (tests/helpers/gate-lock.mjs, since removed) serialised the writers and nothing
  *  else. MEASURED 2026-09-30 in one `npm test`: 10 red, none of them a product defect —
  *    · 6 files died waiting 600/900 s for the lock;
  *    · 1 breach of the lock itself (#R623 measured 2.7 % of hand-overs);
@@ -27,7 +27,7 @@
  *    ⑤ the rule refuses every shape the thirteen writers had, and accepts the temp-dir writes
  *      the rest of the suite makes
  *    ⑥ the rule is WIRED: check:static, run from a copy holding a test that writes the checkout,
- *      goes red naming it — and the tree lock is left to the tests of the lock itself
+ *      goes red naming it. (The tree lock this made redundant is removed — retire-gate-lock, 2026-10-01.)
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -191,8 +191,8 @@ test('⑤ tree-writer refuses every shape the thirteen writers had, and accepts 
   refused(`{ const dir = mkdtempSync(join(tmpdir(), 'a')); writeFileSync(join(dir, 'x'), ''); } { const dir = join(ROOT, 'b'); writeFileSync(join(dir, 'y'), ''); }`);
 });
 
-/* ── ⑥ wired, and the lock is left to its own tests ─────────────────────────────────────────── */
-test('⑥ check:static goes red on a test that writes the checkout, and no test takes the tree lock to write', () => {
+/* ── ⑥ wired ─────────────────────────────────────────────────────────────────────────── */
+test('⑥ check:static goes red on a test that writes the checkout', () => {
   /* EVALUATED: the whole gate, run from a private copy that holds one offending test file. */
   const victim = 'tests/__tree-writer-probe-checks.test.mjs';
   const r = SCRATCH.mutate([{
@@ -205,21 +205,4 @@ test('⑥ check:static goes red on a test that writes the checkout, and no test 
   /* …and on the real tree the rule has nothing to say (the whole gate is run by `npm test` itself) */
   const here = spawnSync(process.execPath, [join(ROOT, 'scripts/tree-writers.mjs')], { cwd: ROOT, encoding: 'utf8' });
   assert.equal(here.status, 0, 'a test writes the checkout:\n' + here.stdout);
-
-  /* THE LOCK. Its reason to exist was writers of the tree, and the rule above refuses them — so a
-     test that still takes it is making the suite wait for nothing. The lock stays (removing it is
-     not this change's to make); the files that take it are the ones whose SUBJECT is the lock,
-     i.e. that also read its internals. Discovered, not listed. */
-  const takers = [];
-  (function walk(d) {
-    for (const f of readdirSync(d, { withFileTypes: true })) {
-      const p = join(d, f.name);
-      if (f.isDirectory()) { if (f.name !== 'node_modules' && f.name !== 'fixtures') walk(p); continue; }
-      if (!/\.m?js$/.test(f.name) || p === join(ROOT, 'tests', 'helpers', 'gate-lock.mjs')) continue;
-      const src = readFileSync(p, 'utf8');
-      if (/\bwithTreeLock\s*\(/.test(src)) takers.push({ p, ownSubject: /\b(lockPaths|lockIntact)\b/.test(src) });
-    }
-  })(join(ROOT, 'tests'));
-  const stray = takers.filter((t) => !t.ownSubject).map((t) => t.p);
-  assert.deepEqual(stray, [], 'these files take the tree lock without testing it — nothing writes the tree any more, so they wait for nothing');
 });

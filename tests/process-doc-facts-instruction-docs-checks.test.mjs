@@ -102,7 +102,7 @@ function docFacts() {
    **費用を決めるのは保持の長さではなく持ち替えの回数**だった——変異ごとに取り直した版は
    `npm test` 全体で 12 → 8 件落ち、test 単位で1回だけ取る版は落ちない。
    長い保持が危険だったのは**生存判定が時計だった**からで、それは pid に直したので消えている
-   （`tests/helpers/gate-lock.mjs` の頭を読むこと）。 */
+   （錠そのものは retire-gate-lock, 2026-10-01 で撤去した）。 */
 async function breaking(file, mutate, fn) {
   {
     const originalBytes = rd(file);

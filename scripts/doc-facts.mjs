@@ -1126,7 +1126,7 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
    gate's running time. That is the price of measuring rather than restating; check:docs is a lane
    of its own in scripts/test-parallel.mjs and is not the longest one.
    ⚠ …AND IT IS WHY `--rule=` EXISTS (see the top of this file). A mutation test that runs this
-   script once per mutation pays the ten seconds every time, while holding the tree lock. */
+   script once per mutation pays the ten seconds every time (in its private copy of the checkout). */
 if (RULE && RULE !== 'i18n-open-gap') {
   /* skipped: this rule shells out for its facts and the caller asked for a different one */
 } else {
@@ -2332,8 +2332,8 @@ const localSteps = (() => {
  *    matches nothing reports green (#R699 ⑬), and these needles are the kind that stop matching
  *    when a sentence is reworded. */
 /* ⚠ …and it costs real time: evaluating 41 MB of bundles plus sweeping every block of every
-   document is ~4 s. The mutation tests run this whole file ONCE PER MUTATION while holding the
-   tree lock (see `--rule` at the top), so a rule that is not the one being mutated steps aside. */
+   document is ~4 s. The mutation tests run this whole file ONCE PER MUTATION (see `--rule` at the
+   top), so a rule that is not the one being mutated steps aside. */
 if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
   const dataFiles = has('data') ? readdirSync(join(ROOT, 'data')) : [];
   /* the global is what the file itself assigns — not a name written down here (#R604 shipped the

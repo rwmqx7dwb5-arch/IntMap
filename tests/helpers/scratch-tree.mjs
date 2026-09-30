@@ -6,7 +6,7 @@
  *  put it back. Until this file, «make the fact wrong» meant writing into the working tree —
  *  js/, docs/, Architecture.md, privacy.html, data/ — and every other test file that reads the
  *  same tree while `node --test` runs files in parallel could see the mutant. The tree lock
- *  (tests/helpers/gate-lock.mjs) serialised the WRITERS, and that is all it could do:
+ *  (tests/helpers/gate-lock.mjs, removed once this made it redundant) serialised the WRITERS, and that is all it could do:
  *
  *    · a reader that did not take the lock read the mutant — MEASURED 2026-09-30, three files
  *      (hazard-other-build-and-gate R236 «js/ holds 331», hazard-other-i18n-shape-audit R241 ①,

@@ -7,7 +7,8 @@
  *  two completely different problems in front of them:
  *
  *      · THE GATE IS WRONG — it really is red on the committed tree.
- *      · THE LOCK BROKE — another mutation test had the tree broken while this one looked.
+ *      · SOMETHING ELSE WROTE THE TREE — another mutation test had it broken while this one looked
+ *        (until mutation-tests-off-tree, the likeliest cause; now nothing in the test run may write it).
  *
  *  ⚠⚠⚠ AND THE OLD WAY OF TELLING THEM APART ASSERTED THE OPPOSITE OF WHAT HAPPENED.
  *  `tests/r403-checks.test.mjs` sampled `git status --porcelain` AFTER the gate had returned, and
@@ -17,33 +18,31 @@
  *  printed «(clean)» in precisely the case it existed to catch. MEASURED: CI run 34389623083 on a
  *  branch that touched none of this; `tests/r403 ①` reported `tests/r399 ②`'s deliberate
  *  «Architecture.md no longer states how many Edge Functions there are» as its own, and the
- *  diagnostic sent the reader to the gate. The window it came through is in the header of
- *  `tests/helpers/gate-lock.mjs`.
+ *  diagnostic sent the reader to the gate. The window it came through was a half-written owner
+ *  stamp in the tree lock (#R623; the lock is removed — dev-notes/2026-10-01-retire-gate-lock.md).
  *
- *  ⚠ THE TREE IS THE WRONG THING TO ASK. Every writer takes the tree lock, so the question
- *  «could anybody else have been writing?» is a question about the LOCK, and the lock can answer
- *  it exactly: `lockIntact()` says whether the hold this process took is still the hold it has.
- *  git is still sampled either side of the run — a tree that was dirty before the gate ever ran
- *  is a third answer, and a worthwhile one — but it is no longer asked to testify about a moment
- *  it cannot see.
- *
- *  ⚠⚠ AND WHERE IT STILL CANNOT TELL, IT SAYS SO. One case remains invisible: a writer that
- *  mutates and restores the tree inside the gate run WITHOUT taking the lock. Nothing here can
- *  see that, so the verdict names it rather than quietly excluding it.
+ *  ⚠ THE TREE WAS THE WRONG THING TO ASK THEN, AND THE LOCK WAS ASKED INSTEAD: every writer took
+ *  the tree lock, and `lockIntact()` said whether this process's hold was still its own.
  *
  *  ⚠⚠⚠ (mutation-tests-off-tree) MOST OF THE QUESTION WENT AWAY. The mutation tests now break a
  *  PRIVATE COPY of the checkout (tests/helpers/scratch-tree.mjs) and run the gate from there, and
  *  the precondition is asked of that same copy: `runGate(gate, { tree })`. Nobody else can write a
  *  private copy, so there is no interference to rule out and the verdict says so. git is sampled on
  *  the checkout the copy was made from — «the copy carries uncommitted edits» is still an answer.
- *  A precondition asked of the real tree without the lock is no longer a mistake either:
- *  check:static's `tree-writer` rule refuses a test that writes the working tree, so the one way
- *  left to be interfered with is from OUTSIDE the test run, and the verdict names that.
+ *
+ *  ⚠⚠ (retire-gate-lock, 2026-10-01) AND THE LOCK IS GONE. check:static's `tree-writer` rule
+ *  (scripts/tree-writers.mjs) refuses a test that writes the working tree, so no test took the
+ *  lock any more but the lock's own tests. A precondition asked of the SHARED tree now has git as
+ *  its only witness, and it asks git the question git CAN answer: did the tree change between the
+ *  sample before the gate and the sample after it? A change is a writer caught in the act — from
+ *  outside the test run, since no test may write — and the verdict never calls that the gate's own
+ *  problem. A tree that stayed the same is still not proof: a writer that mutates AND restores
+ *  inside the run is invisible to two samples, and the verdict names that case instead of omitting
+ *  it. Ask a private copy to rule it out.
  * ==========================================================================*/
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { lockIntact } from './gate-lock.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -52,10 +51,12 @@ const porcelain = () => {
   catch { return '(git status unavailable)'; }
 };
 
-/* Everything known about the moment the gate ran, in the order that decides the answer. */
-export function verdict({ before, after, lock }) {
+/* Everything known about the moment the gate ran, in the order that decides the answer.
+   `where` is what `runGate` captured: `{ private: true, why }` for a private copy, otherwise
+   `{ private: false, why }` for the shared working tree. */
+export function verdict({ before, after, where }) {
   const lines = [];
-  if (lock.private) {
+  if (where.private) {
     if (before !== '(clean)' || after !== '(clean)') {
       lines.push('the gate ran in a PRIVATE COPY of this checkout, and the copy carries its uncommitted edits (git below) —');
       lines.push('no other test can write the copy, so the gate is reading those edits; this is not interference.');
@@ -64,43 +65,37 @@ export function verdict({ before, after, lock }) {
       lines.push('so the gate is red on the tree AS COMMITTED — this is the gate’s own problem, not interference:');
       lines.push('no other test can write a private copy (tests/helpers/scratch-tree.mjs).');
     }
-  } else if (!lock.held) {
-    lines.push('⚠ this precondition ran on the shared working tree, outside the tree lock and not in a private copy.');
-    lines.push('  No TEST writes the working tree (check:static `tree-writer`), so a writer would be outside the test run;');
-    lines.push('  git below is the only witness. To rule it out, ask a copy: runGate(gate, { tree: scratchTree() }).');
-  } else if (!lock.intact) {
-    lines.push('THE LOCK BROKE — ' + lock.why + '.');
-    lines.push('Another mutation test had this tree broken while the gate read it. Suspect the lock, NOT the gate:');
-    lines.push('the failure above is most likely that other test\u2019s deliberate mutation, reported here as ours.');
-  } else if (before !== '(clean)' || after !== '(clean)') {
-    lines.push('the tree lock held throughout, but the working tree was NOT clean — the gate is reading uncommitted edits.');
+  } else if (before !== after) {
+    lines.push('⚠ THE WORKING TREE CHANGED WHILE THE GATE READ IT — git differs before and after the run (below).');
+    lines.push('  Something wrote the shared tree during the gate. Suspect that writer, NOT the gate. No TEST may write');
+    lines.push('  the working tree (check:static `tree-writer`), so it is outside the test run — or a test the rule missed.');
+  } else if (before !== '(clean)') {
+    lines.push('this precondition ran on the shared working tree, and the tree was NOT clean — the gate is reading uncommitted edits.');
   } else {
-    lines.push('the tree lock held throughout, and git reported no change either side of the run,');
-    lines.push('so the gate is red on the tree AS COMMITTED — this is the gate\u2019s own problem, not interference.');
-    lines.push('⚠ the one thing this cannot see is a writer that mutates and restores the tree inside the gate run');
-    lines.push('  WITHOUT taking the tree lock; every writer is required to take it (tests/helpers/gate-lock.mjs).');
+    lines.push('⚠ this precondition ran on the shared working tree, not in a private copy, and git reported no change');
+    lines.push('  either side of the run. That is not proof the gate is at fault: a writer that mutates and restores the tree');
+    lines.push('  inside the run is invisible to two samples. No TEST writes the working tree (check:static `tree-writer`),');
+    lines.push('  so such a writer would be outside the test run. To rule it out, ask a copy: runGate(gate, { tree: scratchTree() }).');
   }
-  lines.push('--- tree lock ---            ' + lock.why);
+  lines.push('--- where the gate ran ---   ' + where.why);
   lines.push('--- git before the gate ---  ' + before);
   lines.push('--- git after the gate ---   ' + after);
   return lines.join('\n');
 }
 
 /* Run `gate()` — which must return `{ code, out }` — and return it with `explain()` alongside.
-   ⚠ CALL IT INSIDE THE HOLD. Sampling after the hold is released is the defect described above.
 
-   ⚠⚠⚠ AND EVERY SAMPLE IS TAKEN HERE, NOT INSIDE `explain()`. The first draft of this helper left
-   `lockIntact()` to be called lazily when the message was formatted — and the caller that formats
-   it after the hold has been released (`tests/r280 ①` does exactly that, because the assertion is
-   outside `withTreeLock`) would then be told «this did not run under the tree lock», which is both
-   false and the same mistake in a new place: a state read at the wrong moment, reported as if it
-   described another one. `explain()` is pure; it can only render what was captured in here. */
+   ⚠⚠⚠ EVERY SAMPLE IS TAKEN HERE, NOT INSIDE `explain()`. The first draft of this helper sampled
+   lazily when the message was formatted — and a caller that formats it later (after the assertion
+   that failed) would then be told about a moment other than the one the gate ran in: a state read
+   at the wrong moment, reported as if it described another one. `explain()` is pure; it can only
+   render what was captured in here. */
 export function runGate(gate, { tree } = {}) {
   const before = porcelain();
   const r = gate();
   const after = porcelain();
-  const lock = tree
-    ? { private: true, held: false, intact: false, why: 'none needed — the gate ran in a private copy at ' + tree.root }
-    : lockIntact();
-  return { ...r, explain: () => verdict({ before, after, lock }) };
+  const where = tree
+    ? { private: true, why: 'a private copy at ' + tree.root + ' — nobody else can write it' }
+    : { private: false, why: 'the shared working tree at ' + ROOT };
+  return { ...r, explain: () => verdict({ before, after, where }) };
 }

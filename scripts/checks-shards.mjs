@@ -29,10 +29,10 @@
  *  .github/checks-cost.json holds seconds per test file and says which run they came from. Each CI
  *  shard writes the seconds it measured (scripts/checks-timing-reporter.mjs, the sum of the file's
  *  top-level test durations) and uploads them; `--update <files…>` folds them back in.
- *  ⚠ A FILE THAT WAITS ON tests/helpers/gate-lock.mjs IS CHARGED ITS WAIT. The mutation tests
- *  serialise on one lock per checkout, so a file's measured time includes the time it queued behind
- *  another lock-holder on the same runner. That over-states the lock-holders — which is the safe
- *  direction: it spreads them apart, and apart is also where they stop waiting on each other.
+ *  ⚠ A FILE IS CHARGED WHATEVER IT WAITED ON. Until the mutation tests moved to private copies
+ *  (mutation-tests-off-tree) they serialised on one tree lock per checkout, and a file's measured
+ *  time included its queue behind other lock-holders (the lock is removed: retire-gate-lock). A
+ *  ledger measured before that change over-states those files until it is refreshed from a later run.
  *
  *  ══ USAGE ══════════════════════════════════════════════════════════════════════════════════════
  *      node scripts/checks-shards.mjs --plan [--of 3]       the bins and their predicted seconds
