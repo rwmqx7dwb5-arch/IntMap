@@ -183,7 +183,7 @@ window.IntMapModules.articleReader=function(HOST){
     /* (#R160) reveal the sidebar to show the reader. The sidebar overlays a fixed full-width map, so this
        can't move the map — just drop `collapsed` and let the search-pill layout recompute; no anchor, no resize. */
     try{ const _sb=document.getElementById('sidebar'); if(_sb&&_sb.classList.contains('collapsed')){ _sb.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
-    try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
+    try{ if(window.IntMapDevice.compact() && window.__setDetent) window.__setDetent('full'); }catch(_){}
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
     /* ⚠ `sidebar-search-bar` by ID, not `.search-bar` (see the renderUI note) — #countries-search-bar shares the class. */
     ['sidebar-search-bar','news-filter-toggle','ai-geocode-row',

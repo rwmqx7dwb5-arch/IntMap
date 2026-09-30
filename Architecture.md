@@ -38,7 +38,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（356本・17.8 MB）＋ `src/`（15本）。**
+- **本体は `index.html`（934行・92 KB）＋ `css/`（3本）＋ `js/`（358本・17.8 MB）＋ `src/`（15本）。**
   ビルドは **Vite 8**（束ねるのは **Rolldown**、JS の変換と最小化は **Oxc**、CSS の最小化は
   **esbuild**——チャンクの置き場と CSS の最小化器の理由はこの節の下のほうの項）。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
@@ -1491,7 +1491,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 
 ## 3. ファイル構成 (Files)
 
-**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 354 本あり、1行説明を
+**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 356 本あり、1行説明を
 全部ここに置くと仕様書の 4 分の 1 が台帳になるので分けた。節番号は向こうでも `§3.1`〜`§3.13` の
 ままで、他の文書からの `§3.x` 参照はそのまま通る。`node scripts/arch-files-check.mjs --check` が
 `js/` の実体と台帳を突き合わせる——**どの段が `js/` の話かは `§3.x` の見出しが名乗るディレクトリで
@@ -4057,18 +4057,27 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   **Active layers** は `_refreshActiveLayers()` がオン中のレイヤーをチップで出し、常に**上部 sticky**の
   先頭要素にいる（固定高1行の横スクロール。空でも "(0)" で常時表示＝高さが動かない）。
   ⚠ `reorganizeLayerPanel()` は DOM を大量に並べ替えるので、タップ中に走ると行がずれて誤タップの原因になる。
-- **ウィンドウの重なり順**は `bringToFront` が1か所で決める（インラインで z-index を書かない）。
-- **触ったパネルが最前面に来る**（`js/map-ui.js` の `_wireFrontMost`）。pointerdown / wheel / focusin /
+- **重なり順の持ち主は1つ**——`js/ui-stack.js`（`window.IntMapStack`）。浮遊ウィンドウ同士の順と、
+  「いま使っているパネル」の印の両方を、**document の capture リスナー 1 本**で決める。
+  **ウィンドウの重なり順**は `order(el)`（`js/window-manager.js` の `bringToFront` はこれを呼ぶだけ）——触った順の
+  **順位**を `calc(var(--z-window) + n)` としてインラインに書き、上限は `--z-shell-front` の 1 つ下
+  （帯の端は `level()` で**スタイルシートから読む**。JS に 2200・2599・2650 は無い）。pointerdown が
+  入った登録済みウィンドウは外側から順に並べ直すので、入れ子の内側が上に来る。
+- **触ったパネルが最前面に来る**（`js/ui-stack.js` の `act` / `panelOf` / `front` / `back`）。pointerdown / wheel / focusin /
   keydown が当たった要素から**最初の positioned 祖先**を探し、さらに上に**重なり文脈を作る positioned
   祖先**（fixed/sticky、または z-index・transform・filter・opacity を持つ absolute/relative）があれば
-  **その一番外側**へ移して、そこに `.im-front`（`z-index:2650 !important`・デスクトップ幅のみ）を付ける
+  **その一番外側**へ移して、そこに `.im-front`（`z-index:var(--z-front) !important`＝2650・デスクトップ幅のみ）を付ける
   ——内側の要素の z-index は親の文脈から出られないので、印は帯の中で競う要素に付かなければ効かない
-  （検索欄の中の結果一覧に付いて、凡例に押し負けていた）。地図と外殻（`_NOT_PANEL`）で止まる。
+  （検索欄の中の結果一覧に付いて、凡例に押し負けていた）。地図と外殻（`NOT_PANEL`）で止まる。
   印は常に1つで、サイドバーを触ると外れる。
   ⚠ **これは「上げる」印であって、下げる手段ではない。** モーダル (`.modal-overlay` は 9999) の
-  ように**この帯より上にいる層は、この機構の対象外**——`_aboveBand()` が resolved z-index を見て
+  ように**この帯より上にいる層は、この機構の対象外**——`aboveBand()` が resolved z-index を `--z-front` と比べて
   除外する（綴りの一覧ではなく実測。後から足した重ね物も自動で入る）。除外しないと、設定の上に開いた
   規約ダイアログが 1 回のスクロールで 2650 へ**下げられ**、設定の背後に沈む。
+  ⚠ **祖先の `overflow` に切られる形（検索欄の結果一覧が切られていた）は、重なり順では直らない。** `IntMapStack.clipOf(el)` が
+  包含ブロックの鎖をたどって、要素の箱を切っている祖先と軸を返す（静的な祖先は absolute の箱を切らず、
+  fixed の箱は transform／filter の祖先にしか切られない）。`tests/map-a11y-structure.spec.js` ⑤ が
+  検索結果について、⑦ がウィンドウの順位を実ブラウザで訊く。
 - **テキストに影を付けない**（`text-shadow:none` を徹底する）。
 
 ### 8.1.2 アカウントのボタンとアカウントメニュー
@@ -4279,12 +4288,20 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
   描画時の全数は `tests/form-control-names.spec.js` がブラウザの accessibility tree に訊く。
 - **重なり順は名前のついた層で書く。** `css/intmap.css` の `:root` が層を 1 回だけ宣言する——
   `--z-inset` 0・`--z-marker` 100・`--z-map-overlay` 900・`--z-controls` 1000・`--z-dropdown` 1300・
-  `--z-sheet` 1650・`--z-popup` 2000・`--z-menu` 2500・`--z-toast` 3000・`--z-modal` 10000・
-  `--z-overlay` 99990・`--z-system` 200000。スタイルシートの z-index は全部 `var(--z-…)` か
-  `calc(var(--z-…) + n)` を読む。門は `check:static` の `z-layers` 規則（`scripts/z-layers.mjs`）——全宣言を
+  `--z-sheet` 1650・`--z-popup` 2000・`--z-window` 2200・`--z-menu` 2500・`--z-shell-front` 2600・
+  `--z-front` 2650・`--z-toast` 3000・`--z-modal` 10000・`--z-overlay` 99990・`--z-system` 200000・
+  `--z-max` 2147483647。スタイルシートの z-index は全部 `var(--z-…)` か `calc(var(--z-…) ± n)` を読み、
+  **`js/` と `index.html` も同じ名前を読む**（style 文字列に `var(--z-…)` を書くか、実行時に組むなら
+  `IntMapStack.z(name, step)`）。門は `check:static` の `z-layers` 規則（`scripts/z-layers.mjs`）——全宣言を
   解決した**順序列**を `tests/z-layers-baseline.json` と完全一致で照合し（描画順が動けば `--update` で書き
-  直すまで落ちる）、`css/`・`js/`・`*.html` に残る数値リテラルの z-index をファイルごとに両方向で数える。
-  JS のインライン style の数値はまだ残っており、減らすたびに台帳を下げる。
+  直すまで落ちる）、`css/`・`js/`・`*.html` に残る数値リテラルの z-index をファイルごとに両方向で数え、
+  **0 でないファイルは台帳の `why` に理由を 1 文持つ**（残りは `css/intmap.css` を読まない別文書の
+  `admin.html`・`css/pages.css` と、別の作業が持っていた `js/atlas-*.js` の 5 本）。さらに `js/` と `*.html` が
+  読む層の名前（`var(--z-…)` と `IntMapStack.z('…')`）が `:root` にあることも確かめる——綴りを誤った層は
+  ブラウザでは誤りにならず、宣言が捨てられて `auto` で描かれる。
+- **セーフエリアも名前で読む。** `:root` の `--safe-top` / `--safe-right` / `--safe-bottom` / `--safe-left`
+  （`env(safe-area-inset-*, 0px)`）だけが端末に訊き、`css/` と `js/` はそれを読む。門は `check:static` の
+  `ui-owners` 規則（`scripts/ui-owners.mjs`・台帳 `tests/ui-owners-baseline.json`）。
 - **携帯の地図の帰属表示のリンクは、見た目の大きさのまま指には 24 × 24 px 以上で当たる。**
   `#map-credit a::after` が文字の中心に `max(100%,24px)` 四方の透明な当たり判定を置き、ピルは
   `overflow:visible`（切り取られた箱は当たり判定も切り取られる。ピルの高さは 23 px）。門は
@@ -4883,9 +4900,21 @@ disconnect／close を持つもの、または関数）で**登録したもの�
   半径だけ内側——と中心で `elementFromPoint` がそのカード自身を返すこと）。
 - **Radius パネル**：携帯では左下のコンパクトなカード（地図と FAB を塞がない）。
 - **`.m-scrim` は、閉じている間 `visibility:hidden`。**
+- **画面配置と端末の持ち主は1つ**——`js/ui-device.js`（`window.IntMapDevice`）。電話レイアウトの境界
+  `(max-width:768px)`（反対側は `(min-width:769px)`）を `js/` で書くのはここだけで、`isMobile()` は
+  `IntMapDevice.compact()`、注入 CSS は `IntMapDevice.media(css)` か `'@media'+IntMapDevice.COMPACT`。
+  スタイルシートも同じ 1 本の線で引く（`max-width:767px`／`min-width:768px` は無い——幅ちょうど 768 px で
+  スクリプトと 6 つの規則が食い違っていた）。形の問いは `kind()`（`phone` / `phone-landscape` /
+  `tablet` / `desktop`：主ポインタが coarse か、画面の短辺が 500 px 以下か、向き）で、`<body>` に
+  `im-compact`・`im-dev-<kind>`・`im-portrait`/`im-landscape` として常に出ている（スタイルシートの
+  「電話レイアウトで縦向き」の規則はこのクラスを読む）。門は `check:static` の `ui-owners` 規則——
+  767/768 の分裂は即失敗、`js/` に残る境界の数値はファイルごとに両方向で数え、残すなら理由を書く。
+  ⚠ **横向きの携帯（844 px）はデスクトップ配置のまま**（レイアウトは幅の問いのまま——横向きを電話の配置にすると読み出しが 1 つも出なくなる。
+  CONSTITUTION §4——地図のボタンを消さない）。変わったのは、その端末が `phone-landscape` と名指される
+  ようになったこと。`tests/r668.spec.js` が同じ iPhone で予算と配置の両方を測る。
 - ⚠ **「携帯」の問いは2種類あり、答える述語も2つある。** 幅（`isMobile()` ＝
-  `matchMedia('(max-width:768px)')`）は**レイアウト**の問い——シート・クロスヘア・携帯用読み出し・
-  タップの文言。`_imPhoneClass()` は**端末**の
+  `IntMapDevice.compact()`）は**レイアウト**の問い——シート・クロスヘア・携帯用読み出し・
+  タップの文言。`_imPhoneClass()`（＝`IntMapDevice.phoneBudget()`）は**端末**の
   問い——MSAA・DPR 上限・常駐タイル予算・@2x タイル・canvas の RAM 上限・DEM キャッシュ上限・
   DEM 先読み・毎フレームのマーカー遮蔽。**横向きの iPhone は 844 px なので、幅で端末を訊くと
   全部デスクトップの設定になる**（同じ GPU のまま）。

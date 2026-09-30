@@ -132,10 +132,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const hasTurf=()=>typeof turf!=='undefined';
   const searchVal=()=>document.getElementById('search-input').value.toLowerCase();
   /* Industry-standard responsive breakpoint (#10): the JS "mobile" test tracks the SAME media
-     query the stylesheet uses (Bootstrap/Tailwind-style 768px boundary) via matchMedia, so the
-     script and CSS can never disagree by a scrollbar width or a rounding pixel. */
-  const MOBILE_MQ=window.matchMedia('(max-width:768px)');
-  const isMobile=()=>MOBILE_MQ.matches;
+     query the stylesheet uses (Bootstrap/Tailwind-style boundary) via matchMedia, so the script
+     and CSS can never disagree by a scrollbar width or a rounding pixel. (ui-layer-owner) The
+     boundary is js/ui-device.js's `COMPACT`, the one place js/ writes it, and `isMobile()` is that
+     owner's layout answer. */
+  const isMobile=()=>window.IntMapDevice.compact();
   /* ⚠⚠ (#R232) 「携帯か」IS A GPU QUESTION AND WIDTH ANSWERS IT WRONG IN LANDSCAPE: an iPhone turned sideways is 844 px, so isMobile() flips false and the renderer gets the DESKTOP settings (MSAA, DPR 3) on the same phone GPU. 「横向きを縦向きと同じ品質設定に揃えてよい」 — asked first. QUALITY asks the device; LAYOUT still asks isMobile(). See DEV-NOTES #R232. */
   /* ══ ⚠⚠⚠ (#R498) …AND #R232 ONLY MOVED THREE OF THEM ═══════════════════════════════════════════
      #R232 established the rule — 「携帯か」 is a question about the DEVICE, and a 768 px media query
@@ -163,14 +164,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      ⚠ The third term can only move devices INTO the phone budget, never out of one, and it asks
      the DEVICE the way #R232 chose — `screen`, not the viewport, and the SMALLER of its two
      dimensions, so a phone held sideways answers as it does upright. See DEV-NOTES #R499 §2. */
-  const _imPhoneClass=()=>{ try{ if(!window.matchMedia('(pointer:coarse)').matches) return false; if(!window.matchMedia('(any-pointer:fine)').matches) return true; const s=window.screen||{}, m=Math.min(+s.width||0,+s.height||0); return m>0&&m<=500; }catch(_){ return isMobile(); } };
+  const _imPhoneClass=()=>window.IntMapDevice.phoneBudget();   /* (ui-layer-owner) the predicate lives in js/ui-device.js, beside the layout it must not be confused with */
   try{ window._imPhoneClass=_imPhoneClass; }catch(_){}   /* js/ modules that hold no HOST ask through this */
   /* (#R234) the elevation source — hosts, encoding and DEPTH — in one place three files can ask. */
   const _IM_DEM=makeDemSource();
   /* (#R25) Touch-vs-mouse for WORDING (e.g. Köppen "tap/long-press" vs "click/right-click"). isMobile()
      is width-only, so a desktop with a narrow window wrongly got the touch wording. A machine that has a
      fine pointer (a mouse/trackpad) — even a touchscreen laptop — should read as a "click" device. */
-  const _imTouchPrimary=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
+  const _imTouchPrimary=()=>window.IntMapDevice.touchPrimary();   /* (ui-layer-owner) js/ui-device.js */
   window._imTouchPrimary=_imTouchPrimary;
   /* ══ (#R200) HOISTED SHIMS FOR THE THREE NAMES THE LAYERS MENU HANDS BACK ═══════════════════════
      ⚠ MEASURED, AND IT KILLED THE BOOT. The layers menu and the layer favourites left this file for
@@ -1675,7 +1676,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       /* (#R16) On mobile the interaction is center-fixed (crosshair). A long-press anywhere acts on the
          CROSSHAIR point and the menu opens there (always on-screen) — the old behavior opened it under the
          finger, often off the edge / behind the sheet ("画面からはみ出して何も見えない"). */
-      try{ if(window._mCenterLL && window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const c=window._mCenterLL(); pt={x:c.px.x,y:c.px.y}; ll={lng:c.lng,lat:c.lat}; } }catch(_){}
+      try{ if(window._mCenterLL && window.IntMapDevice.compact()){ const c=window._mCenterLL(); pt={x:c.px.x,y:c.px.y}; ll={lng:c.lng,lat:c.lat}; } }catch(_){}
       showContextMenu(pt, ll); });
     /* (#R498) the long-press, the crosshair, the centre readout and the "Add point" pill left for
        js/mobile-map-input.js — one surface, in one file. Mounted from the two positions the blocks occupied, because both
@@ -1757,7 +1758,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   (function wireMapSearch(){
     const box=document.getElementById('map-search'), btn=document.getElementById('ms-btn'), inp=document.getElementById('ms-input'), res=document.getElementById('ms-results');
     if(!box||!btn||!inp) return;
-    const mob=()=>window.matchMedia('(max-width:768px)').matches;
+    const mob=()=>window.IntMapDevice.compact();
     const collapse=()=>{ box.classList.remove('ms-open'); if(res) res.style.display='none'; };
     btn.onclick=()=>{
       if(mob() && !box.classList.contains('ms-open')){ box.classList.add('ms-open'); setTimeout(()=>{ try{ inp.focus(); }catch(_){}} ,60); return; }
@@ -2577,7 +2578,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(GE().hasRenderer()) GE().events.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); window.IntMapCartoCredit(); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
   document.getElementById('btn-view-map').onclick=()=>IntMapOS.exec('view.base.map',{source:'ui'});
   /* (#R101) already on Satellite → toggle the provider/date panel (desktop). Otherwise switch to Satellite. */
-  document.getElementById('btn-view-sat').onclick=()=>{ const _mob=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+  document.getElementById('btn-view-sat').onclick=()=>{ const _mob=window.IntMapDevice.compact();
     if(!_mob && typeof currentMapType!=='undefined' && currentMapType==='sat'){ const p=document.getElementById('sat-controller'); if(p){ const showing=(p.style.display==='block'); satPanelDismissed=showing; p.style.display=showing?'none':'block'; if(!showing){ try{ satRenderController(); }catch(_){} } } return; }
     IntMapOS.exec('view.base.sat',{source:'ui'}); };
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
@@ -3658,7 +3659,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function ensure(){ if(panel) return panel; panel=document.createElement('div'); panel.id='widget-panel'; panel.className='tool-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function chk(k,label){ return '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-w="'+k+'" '+(cfg[k]?'checked':'')+'> '+label+'</label>'; }
     function render(){ const p=ensure();
-      p.style.cssText='display:block;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:1500;width:240px;';
+      p.style.cssText='display:block;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:calc(var(--z-sheet) - 150);width:240px;';
       p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(window.IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div id="wdg-clock" style="'+(cfg.clock?'':'display:none;')+'margin-bottom:7px;"></div>'
         +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(window.IntMapLang.t(currentLang,"Loading weather…","天気を取得中…","Wetter wird geladen…","Загрузка погоды…","Cargando el tiempo…"))+'</div>'

@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { asClassicScript } from './app-source.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { installDevice } from './helpers/ui-device.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -95,6 +96,7 @@ function labels() {
   ctx.window = ctx; ctx.console = console; ctx.setTimeout = noop;
   ctx.document = { baseURI: 'https://example.invalid/' };
   ctx.matchMedia = () => ({ matches: false });
+  installDevice(ctx);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   ctx.imLabelLang = 'ui+local';
   ctx.IntMapGeoEngine = Object.assign(R.GE, { camera: { getZoom: () => 6 }, coords: { querySourceFeatures: () => [] }, events: { on: noop } });
   ctx.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
@@ -210,6 +212,7 @@ test('③ the reader opening a legend pins it open; shutting it gives the pin up
     appendChild: (c) => kids.push(c), querySelector: (s) => kids.find((c) => c.classList.contains(s.slice(1))) || null };
   const document = { createElement: () => { const e = { className: '', style: {} }; e.classList = { contains: (c) => e.className === c }; return e; } };
   const window = { matchMedia: () => ({ matches: true }), IntMapLang: { t: (_l, en) => en } };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   const make = new Function('document', 'window', 'HOST', body + '\nreturn ensureLegendMinimize;');
   make(document, window, { lang: 'en' })(el);
   const btn = el.querySelector('.legend-min');

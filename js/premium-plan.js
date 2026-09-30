@@ -44,18 +44,18 @@ export function makePremiumPlan(HOST, CTX) {
 
       /* Modal: always laid out (display:flex) but inert when hidden
          (pointer-events:none) so the map underneath stays fully interactive. */
-      .ppm-overlay{ position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.42); -webkit-backdrop-filter:saturate(160%) blur(14px); backdrop-filter:saturate(160%) blur(14px); opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0.3s ease, visibility 0.3s ease; }
+      .ppm-overlay{ position:fixed; inset:0; z-index:var(--z-modal); display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.42); -webkit-backdrop-filter:saturate(160%) blur(14px); backdrop-filter:saturate(160%) blur(14px); opacity:0; visibility:hidden; pointer-events:none; transition:opacity 0.3s ease, visibility 0.3s ease; }
       .ppm-overlay.show{ opacity:1; visibility:visible; pointer-events:auto; }
       .ppm-card{ position:relative; width:min(940px,96vw); max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border-radius:26px; padding:30px 30px 26px; transform:scale(0.92) translateY(20px); opacity:0; transition:transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.32s ease; }
       .ppm-overlay.show .ppm-card{ transform:scale(1) translateY(0); opacity:1; }
-      .ppm-close{ position:absolute; top:13px; right:14px; width:32px; height:32px; border:none; cursor:pointer; font-size:22px; font-weight:300; line-height:1; color:var(--text-muted); background:transparent; display:flex; align-items:center; justify-content:center; transition:color 0.2s ease; z-index:3; }
+      .ppm-close{ position:absolute; top:13px; right:14px; width:32px; height:32px; border:none; cursor:pointer; font-size:22px; font-weight:300; line-height:1; color:var(--text-muted); background:transparent; display:flex; align-items:center; justify-content:center; transition:color 0.2s ease; z-index:calc(var(--z-inset) + 3); }
       .ppm-close:hover{ color:var(--text-main); }
       .ppm-head{ text-align:center; margin-bottom:22px; padding:0 6px; }
       .ppm-badge{ display:inline-block; font-size:11px; font-weight:800; letter-spacing:1.2px; padding:5px 13px; border-radius:999px; color:#7a5a00; background:linear-gradient(135deg,#ffe08a,#e9b949); box-shadow:0 2px 8px rgba(233,185,73,0.4); margin-bottom:12px; }
       .ppm-title{ margin:0; font-size:26px; font-weight:700; letter-spacing:-0.02em; color:var(--text-main); }
       .ppm-sub{ margin:8px auto 0; max-width:520px; font-size:15px; line-height:1.5; color:var(--text-muted); }
       .ppm-stripe{ border-radius:16px; overflow:hidden; min-height:120px; }
-      @media (max-width:768px){
+      @media${window.IntMapDevice.COMPACT}{
         .ppm-card{ width:100%; max-height:92vh; border-radius:22px; padding:24px 14px 18px; }
         .ppm-title{ font-size:21px; }
         .ppm-sub{ font-size:13px; }

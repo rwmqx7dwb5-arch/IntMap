@@ -18,6 +18,7 @@ import vm from 'node:vm';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { installDevice } from './helpers/ui-device.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -253,6 +254,7 @@ function run({ legends, mcH = 900, mcW = 1440, mobile = false, ws = false, calls
     innerHeight: mcH, innerWidth: mcW,
     matchMedia: (q) => ({ matches: q === '(max-width:768px)' ? mobile : false }),
   };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   const args = ['document', 'window', 'getComputedStyle', ...LGD, ...HELPERS];
   /* eslint-disable no-new-func */
   const make = new Function(...args, BODY + '\nreturn placeLegends;');
@@ -422,6 +424,7 @@ function wxRun({ bar, mapRect = { top: 0, left: 400, width: 1112, height: 923 },
     querySelector: (sel) => (sel === '.map-controls-top' ? barEl : null),
   };
   const window = { matchMedia: (q) => ({ matches: q === '(max-width:768px)' ? mobile : false }) };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   /* eslint-disable no-new-func */
   const make = new Function('document', 'window', 'panel', WX_BODY + '\nreturn place;');
   make(document, window, panel)();
@@ -541,6 +544,7 @@ function legendRun({ legends, mcH = 923, mcW = 1112, mobile = false, ws = false 
     matchMedia: (q) => ({ matches: q === '(max-width:768px)' ? mobile : false }),
     IntMapLang: { t: (...a) => a[1] },
   };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   /* `tileLegends` is the request (the next frame's placement); the fold asks for one and the rig
      counts the asks — the placement itself is `placeLegends`, called here at once */
   const asked = { n: 0 };
@@ -772,6 +776,7 @@ function tilerRig({ mobile = true, n = 4 } = {}) {
   g.window = g;
   g.window.innerHeight = 844;
   g.window.matchMedia = (q) => ({ matches: mobile && /max-width:768px/.test(q) });
+  installDevice(g);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   g.window.IntMapRuntime = null;
   g.document = {
     body: { classList: { contains: () => false } },

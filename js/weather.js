@@ -2112,7 +2112,7 @@ window.IntMapModules.weatherPanel=function(HOST){
     const fF=(c)=>(c==null||isNaN(c))?'–':Math.round(c*9/5+32);
     let panel=null, styled=false, _lastLL=null;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
-      s.textContent='#weather-panel{position:absolute;z-index:1750;width:300px;max-width:calc(100vw - 24px);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:14px 16px;font-size:12.5px;}'
+      s.textContent='#weather-panel{position:absolute;z-index:calc(var(--z-sheet) + 100);width:300px;max-width:calc(100vw - 24px);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:14px 16px;font-size:12.5px;}'
         +'#weather-panel .wp-x{position:absolute;top:9px;right:11px;background:none;border:none;color:var(--text-muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px;}'
         +'#weather-panel .wp-x:hover{background:var(--input-bg);color:var(--text-main);}'
         +'#weather-panel .wp-rf{position:absolute;top:10px;right:39px;background:none;border:none;color:var(--text-muted);font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px;}'
@@ -2128,7 +2128,7 @@ window.IntMapModules.weatherPanel=function(HOST){
         +'#weather-panel .wp-day .di{font-size:18px;margin:2px 0;}'
         +'#weather-panel .wp-day b{display:block;color:var(--text-main);font-size:11px;}'
         +'#weather-panel .wp-dayf{font-size:8.5px;color:var(--text-muted);margin-top:1px;line-height:1.2;}'
-        +'@media(max-width:768px){#weather-panel{left:8px !important;right:8px;width:auto;top:auto !important;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important;}}';
+        +'@media'+window.IntMapDevice.COMPACT+'{#weather-panel{left:8px !important;right:8px;width:auto;top:auto !important;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important;}}';
       document.head.appendChild(s); }
     function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='weather-panel'; panel.style.display='none';
       (document.getElementById('map-container')||document.body).appendChild(panel);
@@ -2161,7 +2161,7 @@ window.IntMapModules.weatherPanel=function(HOST){
         return Math.max(LEGACY_TOP,Math.round(bb.bottom-mb.top+inset));
       }catch(_){ return LEGACY_TOP; }
     }
-    function place(){ try{ if(panel&&panel.dataset.dragged) return; const mc=document.getElementById('map-container'); if(!mc) return; if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches) return; panel.style.left=(mc.clientWidth-panel.offsetWidth-22)+'px'; panel.style.top=wxTopBelowControls(mc)+'px'; }catch(_){} }
+    function place(){ try{ if(panel&&panel.dataset.dragged) return; const mc=document.getElementById('map-container'); if(!mc) return; if(window.IntMapDevice.compact()) return; panel.style.left=(mc.clientWidth-panel.offsetWidth-22)+'px'; panel.style.top=wxTopBelowControls(mc)+'px'; }catch(_){} }
     /* (#R183) ONE guarded weather client for the whole app — window.IntMapWx (js/wx-source.js).
        `_metNo` stays as a thin alias because the name appears in the #R72 notes and in tests. */
     const _metNo=(lat,lng)=>window.IntMapWx.metNo(lat,lng);

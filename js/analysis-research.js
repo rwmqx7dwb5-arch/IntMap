@@ -58,7 +58,7 @@ window.IntMapModules.analysisResearch=function(HOST){
     }
     function ensure(){ if(panel) return panel;
       panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ai-research-panel';
-      panel.style.cssText='display:none;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:1600;width:min(380px,calc(100vw - 24px));max-height:min(70vh,640px);overflow-y:auto;';
+      panel.style.cssText='display:none;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:calc(var(--z-sheet) - 50);width:min(380px,calc(100vw - 24px));max-height:min(70vh,640px);overflow-y:auto;';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       return panel; }
     async function open(name,lngLat){

@@ -376,7 +376,7 @@ window.IntMapModules.monitors=function(HOST){
        when create() failed (e.g. plan limit reached, geometry too big). The button just reverted and nothing
        appeared. Call the in-scope fns directly (typeof-guarded), with alert() as a guaranteed last resort. */
     function _toast(msg){ if(msg==null||msg==='') return; try{ if(typeof imToast==='function') return imToast(msg); }catch(_){} try{ if(typeof aiToast==='function') return aiToast(msg); }catch(_){} try{ if(typeof satToast==='function') return satToast(msg); }catch(_){} try{ alert(String(msg)); }catch(_){} }
-    function _closeSheetIfMobile(){ try{ if(window.__setDetent && window.matchMedia('(max-width:768px)').matches) window.__setDetent('peek'); }catch(_){} }
+    function _closeSheetIfMobile(){ try{ if(window.__setDetent && window.IntMapDevice.compact()) window.__setDetent('peek'); }catch(_){} }
 
     /* ---- realtime: refresh the list when a run finishes / a report lands (if the tab is open) ---- */
     (function subscribe(){ try{ if(!DB||!DB.channel) return; let t=null; const bump=()=>{ clearTimeout(t); t=setTimeout(()=>{ try{ if(HOST.mode==='monitors') render(); }catch(_){} },600); };

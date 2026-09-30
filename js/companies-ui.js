@@ -62,7 +62,7 @@ window.IntMapModules.companiesUi=function(HOST){
          #R40's answer, unchanged: drop the fill, and do NOT add a second backdrop-filter —
          re-blurring an already-frosted surface is what draws the 「四角い枠」 in the first place.
          The opaque mode keeps the panel tone it has always had. */
-      +'#co-cmp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'
+      +'#co-cmp-view .scp-stickhead{position:sticky;top:0;z-index:calc(var(--z-inset) + 8);background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'
       +'body.sidebar-translucent #co-cmp-view .scp-stickhead,body.sidebar-glass2 #co-cmp-view .scp-stickhead{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;}'
       +'#co-cmp-view .scp-back{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(0,0,0,0.12);border-radius:10px;background:#fff;color:#111;padding:3px 12px 3px 9px;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;}'
       +'#co-cmp-view .scp-back:hover{background:#f2f2f4;}'
@@ -84,7 +84,7 @@ window.IntMapModules.companiesUi=function(HOST){
       +'#co-cmp-view .scp-m.on{background:var(--primary-fill);border-color:var(--primary-fill);color:#fff;font-weight:600;}'
       +'[data-theme="dark"] #co-cmp-view .scp-m{border-color:rgba(255,255,255,0.85);}'
       +'#co-cmp-view .scp-add{height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.3);background:var(--card-bg);color:var(--text-main);font-size:12.5px;outline:none;width:100%;box-sizing:border-box;}'
-      +'#co-cmp-view #co-cmp-list{display:none;position:absolute;left:0;right:0;top:38px;max-height:230px;overflow-y:auto;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:12px;box-shadow:var(--shadow);z-index:40;padding:4px;}'
+      +'#co-cmp-view #co-cmp-list{display:none;position:absolute;left:0;right:0;top:38px;max-height:230px;overflow-y:auto;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:12px;box-shadow:var(--shadow);z-index:calc(var(--z-inset) + 40);padding:4px;}'
       +'#co-cmp-view #co-cmp-list .scp-cr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text-main);}'
       +'#co-cmp-view #co-cmp-list .scp-cr:hover{background:var(--input-bg);}'
       +'#co-cmp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);border:1.5px solid transparent;}'   /* (#R152) match the canonical Countries .scp-chip (was missing the transparent border) */
@@ -96,7 +96,7 @@ window.IntMapModules.companiesUi=function(HOST){
       +'#co-cmp-view .scp-bnm{flex:0 0 116px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
       +'#co-cmp-view .scp-btrack{flex:1;height:14px;border-radius:7px;background:var(--input-bg);overflow:hidden;position:relative;}'
       +'#co-cmp-view .scp-bfill{position:absolute;top:0;bottom:0;border-radius:4px;}'
-      +'#co-cmp-view .scp-zline{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--text-muted);opacity:0.6;z-index:1;}'
+      +'#co-cmp-view .scp-zline{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--text-muted);opacity:0.6;z-index:calc(var(--z-inset) + 1);}'
       +'#co-cmp-view .scp-bval{flex:0 0 104px;font-size:11.5px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}'
       +'#co-cmp-view .scp-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}'
       +'#co-cmp-view .scp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin:4px 0 6px;}'
@@ -118,7 +118,7 @@ window.IntMapModules.companiesUi=function(HOST){
       +'#co-cmp-view .co-ts-ax{position:absolute;left:4px;font-size:9.5px;color:var(--text-muted);pointer-events:none;font-variant-numeric:tabular-nums;}'
       +'#co-cmp-view .co-ts-axhi{top:2px;} #co-cmp-view .co-ts-axlo{bottom:2px;}'
       +'#co-cmp-view .co-ts-cursor{position:absolute;top:0;bottom:0;width:1px;background:var(--text-muted);opacity:0.5;display:none;pointer-events:none;}'
-      +'#co-cmp-view .co-ts-tip{position:absolute;top:2px;display:none;pointer-events:none;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:8px;box-shadow:var(--shadow);padding:5px 8px;font-size:11px;z-index:5;min-width:120px;}'
+      +'#co-cmp-view .co-ts-tip{position:absolute;top:2px;display:none;pointer-events:none;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:8px;box-shadow:var(--shadow);padding:5px 8px;font-size:11px;z-index:calc(var(--z-inset) + 5);min-width:120px;}'
       +'#co-cmp-view .co-ts-tth{font-weight:700;margin-bottom:2px;white-space:nowrap;}'
       +'#co-cmp-view .co-ts-ttr{display:flex;align-items:center;gap:5px;line-height:1.5;white-space:nowrap;} #co-cmp-view .co-ts-ttr b{margin-left:auto;font-variant-numeric:tabular-nums;}'
       +'#co-cmp-view .co-ts-ttd{width:8px;height:8px;border-radius:50%;flex:0 0 auto;} #co-cmp-view .co-ts-ttn{overflow:hidden;text-overflow:ellipsis;max-width:120px;}';

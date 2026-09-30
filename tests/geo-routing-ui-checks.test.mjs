@@ -467,8 +467,8 @@ describe('§ #R291 · the route store and panel', () => {
     for (const cls of ['.rtp{', '.rtp-suggest{', '.rt-alt{', '.rt-step{', '.rt-leg{', '.rtp-grip{']) {
       assert.ok(css.includes(cls), 'css/intmap.css is missing ' + cls);
     }
-    assert.match(css, /@media \(max-width:767px\)\{[\s\S]*?\.rtp\{/, 'the phone layout must exist');
-    assert.match(css, /env\(safe-area-inset-bottom/, 'and be safe-area aware');
+    assert.match(css, /@media \(max-width:768px\)\{[\s\S]*?\.rtp\{/, 'the phone layout must exist');   /* (ui-layer-owner) the one boundary: 768 is the phone, as js/ui-device.js says */
+    assert.match(css, /var\(--safe-bottom\)/, 'and be safe-area aware');   /* (ui-layer-owner) the safe area is read from :root --safe-* */
     assert.match(css, /--rtp-kb/, 'and lift for the on-screen keyboard (§3.2)');
   });
 
@@ -849,13 +849,13 @@ describe('§ #R299 · the route panel as a window, selection and closing', () =>
     const css = read('css/intmap.css');
     const i = css.indexOf('.rtp-fixed');
     assert.ok(i > 0, 'the fixed head block is still there');
-    assert.ok(/@media \(min-width:\s*768px\)/.test(css), 'the new sizing is behind a desktop query');
+    assert.ok(/@media \(min-width:\s*769px\)/.test(css), 'the new sizing is behind a desktop query');   /* (ui-layer-owner) the desktop side of the one boundary */
     /* the two halves of the fix: a ceiling above and a floor below */
     assert.ok(/\.rtp-fixed\s*\{[^}]*max-height/.test(css.replace(/\s+/g, ' ')) || /rtp-fixed[^{]*\{[^}]*max-height/.test(css),
       '.rtp-fixed has a ceiling');
     assert.ok(/\.rtp-body[^{]*\{[^}]*min-height/.test(css), '.rtp-body has a floor');
     /* ⚠ the phone sheet is not touched: 44 px targets and 13 px text are what tests/smoke R291 ⑧ measures */
-    assert.ok(/@media\s*\(max-width:\s*767px\)/.test(css), 'the phone sheet block still exists');
+    assert.ok(/@media\s*\(max-width:\s*768px\)/.test(css), 'the phone sheet block still exists');
   });
 
   /* ── ⑧ the routing module never shrinks its own public face ────────────────────────────────── */

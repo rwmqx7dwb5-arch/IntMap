@@ -687,6 +687,19 @@ try {
   err('z-layers', 'could not run the z-layers ledger: ' + (e && e.message));
 }
 
+// ── 18b. (ui-layer-owner) the phone/desktop boundary and the safe area are each written once ──
+// js/ui-device.js owns the layout boundary (768 / 769) and css/intmap.css :root owns the safe area
+// (--safe-*). This refuses a 767/768 split anywhere in css/ or in the CSS js/ builds, and ratchets the
+// boundary written as a number in js/ and env(safe-area-inset-*) read outside :root per file against
+// tests/ui-owners-baseline.json, where every file above zero says why; scripts/ui-owners.mjs. A rule
+// here for the reason given at 15.
+try {
+  const { check: uiOwnersCheck } = await import('./ui-owners.mjs');
+  for (const l of uiOwnersCheck().lines) err('ui-owners', l);
+} catch (e) {
+  err('ui-owners', 'could not run the ui-owners ledger: ' + (e && e.message));
+}
+
 // ── 19. (test-code-only-one) a comment stripper that is not the shared one ──
 // scripts/code-only.mjs is the one reader that knows a comment from code (#R345), and tests/ and
 // scripts/ had gone on writing their own: 635 sites in 170 files (regex chains, loops, blankers), most

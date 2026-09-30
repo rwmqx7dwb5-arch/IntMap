@@ -46,6 +46,13 @@ import '../js/safe-html.js';
    any module evaluated after this line, or by the app at any later time, reaches IntMap's own record
    (public.client_errors) instead of nowhere — the Sentry loader it replaces never had a DSN. */
 import '../js/client-error-report.js';
+/* (ui-layer-owner) …and the two owners of the screen's shape, before any module that builds a style
+   string: which LAYOUT this viewport gets and which DEVICE it is (window.IntMapDevice — the 768 px
+   boundary written once, and the classes on <body>), and who is IN FRONT (window.IntMapStack — the
+   floating windows' order and the `.im-front` mark, reading the --z-* layers of css/intmap.css).
+   No imports and no work at load beyond reading media queries, so their place costs nothing. */
+import '../js/ui-device.js';
+import '../js/ui-stack.js';
 import '../js/mem-budget.js';   /* (#R669) …and, before anything that decodes an elevation tile, the ONE owner of how many of them this device may hold. Five stores kept five hand-written ceilings for the same 262,144-byte tile and four of them never asked what device they were on (about 600 MB authorised on a phone), and it is also where 「携帯か」 is answered for the thirty-nine cost decisions that used to ask the viewport width. No DOM and no `window`, so the photo-search worker imports the same file and the two cannot disagree. */
 /* (#R479) CARTO's key, the two tile-URL builders and the basemap credit. Anywhere before
    js/app-body.js works (it builds tile URLs at map setup); the first three slots and the last one

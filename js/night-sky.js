@@ -544,7 +544,7 @@ window.IntMapNightSky = (function () {
     if (root) return;
     root = document.createElement('div');
     root.id = 'night-sky';
-    root.style.cssText = 'position:fixed;inset:0;z-index:9400;display:none;background:rgba(4,6,12,0.86);backdrop-filter:blur(3px);';
+    root.style.cssText = 'position:fixed;inset:0;z-index:calc(var(--z-modal) - 600);display:none;background:rgba(4,6,12,0.86);backdrop-filter:blur(3px);';
     root.innerHTML =
       '<div class="ns-wrap" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">'
       + '<canvas class="ns-cv" style="width:min(88vmin,88vw);height:min(88vmin,88vh);"></canvas></div>'
@@ -724,7 +724,7 @@ window.IntMapNightSky = (function () {
       ? 'position:relative;flex:1 1 auto;min-height:0;padding:10px 0 0;display:flex;align-items:center;justify-content:center;'
       : 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;';
     if (panel) panel.style.cssText = PANEL_CSS + (stand
-      ? 'position:relative;flex:0 0 auto;margin:10px auto calc(12px + env(safe-area-inset-bottom,0px));'
+      ? 'position:relative;flex:0 0 auto;margin:10px auto calc(12px + var(--safe-bottom));'
         + 'width:min(96vw,1680px);max-width:none;max-height:' + (100 - VIEW_MIN_VH) + 'vh;overflow:auto;'
       : 'left:12px;top:12px;max-width:min(420px,92vw);');
   }

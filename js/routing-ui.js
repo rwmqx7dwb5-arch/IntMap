@@ -57,7 +57,7 @@ window.IntMapModules.routeUi = function (HOST) {
        written, and they were: the call site was simply never reached.
        ⚠ AND THE CURSOR LIED. `.rtp-head{cursor:move}` is a stylesheet fact, so a local check that
        read the cursor saw 「draggable」 on a panel nothing had bound a handler to. */
-    const isMob = () => { try { return (typeof HOST.isMobile === 'function' ? !!HOST.isMobile() : !!HOST.isMobile) || window.innerWidth < 768; } catch (_) { return false; } };
+    const isMob = () => { try { return (typeof HOST.isMobile === 'function' ? !!HOST.isMobile() : !!HOST.isMobile) || window.IntMapDevice.compact(); } catch (_) { return false; } };
     const units = () => { try { return HOST.unitMode || 'metric'; } catch (_) { return 'metric'; } };
     const tz = () => { try { return HOST.userTZ && HOST.userTZ !== 'auto' ? HOST.userTZ : ''; } catch (_) { return ''; } };
     /* ⚠ (#R296) `at` is WHERE the times in these cards happen — the destination, because an ETA is

@@ -919,7 +919,7 @@ test('R289 ⑥ every election carries per-state results, and they agree with the
   assert.match(ue, /Electoral votes','選挙人票'/, 'and it names the elector count');
   assert.match(ue, /'\.usel-step\{flex:0 0 auto;width:38px;height:38px/, 'the ‹ › box is 38 px, not 30');
   assert.match(ue, /font-size:22px/, 'and the chevron itself is 22 px, not 13');
-  assert.match(ue, /@media\(max-width:768px\)\{\.usel-step\{width:44px;height:44px/, 'a finger gets 44 px');
+  assert.match(ue, /'@media'\+window\.IntMapDevice\.COMPACT\+'\{\.usel-step\{width:44px;height:44px/, 'a finger gets 44 px');   /* (ui-layer-owner) the boundary is the owner's */
 });
 
 /* ── ⑪ THE THREE DELETED LAYERS ARE GONE FROM EVERY SURFACE ─────────────────────────────────

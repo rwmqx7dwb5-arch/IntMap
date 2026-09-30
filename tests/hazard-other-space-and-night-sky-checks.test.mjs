@@ -16,6 +16,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -93,10 +94,13 @@ test('#R218 ⑥ …all six display switches default ON and their data is asked f
 test('#R218 ⑥ …the sources panel opens upward so its button does not move, and the return gauge is above the sky', () => {
   const s = code('js/space-approach.js') + code('js/space.js')   /* (startup-lazy-layers) the approach gauge is the eager half */;
   assert.match(s, /flex-direction:column-reverse/, 'the sources panel still pushes its own button up the screen');
-  const z = /gauge\.style\.cssText='position:fixed;bottom:96px;transform:translateX\(-50%\);z-index:(\d+);/.exec(s);
-  assert.ok(z, 'the approach gauge lost its style');
-  const view = /root\.style\.cssText='position:fixed;inset:0;z-index:(\d+);/.exec(s);
-  assert.ok(view, 'the space view lost its style');
+  /* (ui-layer-owner) both are named layers now — resolved against css/intmap.css :root before comparing */
+  const tok = zTokens(readLF(join(ROOT, 'css/intmap.css')));
+  const zm = /gauge\.style\.cssText='position:fixed;bottom:96px;transform:translateX\(-50%\);z-index:([^;']+);/.exec(s);
+  assert.ok(zm, 'the approach gauge lost its style');
+  const vm = /root\.style\.cssText='position:fixed;inset:0;z-index:([^;']+);/.exec(s);
+  assert.ok(vm, 'the space view lost its style');
+  const z = [zm[0], zResolve(zm[1], tok)], view = [vm[0], zResolve(vm[1], tok)];
   assert.ok(+z[1] > +view[1], `the gauge (z ${z[1]}) is still behind the space view (z ${view[1]}) on the way back`);
 });
 }

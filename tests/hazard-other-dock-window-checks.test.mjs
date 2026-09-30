@@ -16,6 +16,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import vm from 'node:vm';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -349,13 +350,18 @@ test('r245 ⑤ the dock observer owns its own watched set', () => {
 /* comments carry the reasoning and quote the very strings under test — strip them first */
 
 /* ── ④ front-most follows any operation, and never marks the map shell ───────────────────────── */
+/* (ui-layer-owner) the front mark moved from js/map-ui.js into js/ui-stack.js (window.IntMapStack);
+   the shell list is READ off the evaluated owner rather than out of its source text, and the
+   behaviour itself is evaluated in tests/ui-layer-owner-checks.test.mjs ①. */
 test('#R255 ④ the raise fires on wheel and focus too, and cannot lift the map container', () => {
-  const mu = code(read('js/map-ui.js'));
-  assert.match(mu, /addEventListener\('wheel'/, 'scrolling inside a panel does not raise it');
-  assert.match(mu, /addEventListener\('focusin'/, 'typing inside a panel does not raise it');
-  assert.match(mu, /_NOT_PANEL=/, 'the map shell is not excluded from panelOf');
+  const st = code(read('js/ui-stack.js'));
+  assert.match(st, /addEventListener\('wheel'/, 'scrolling inside a panel does not raise it');
+  assert.match(st, /addEventListener\('focusin'/, 'typing inside a panel does not raise it');
+  const g = { Math, Number, Set, parseInt }; g.window = g; vm.createContext(g);
+  vm.runInContext(read('js/ui-stack.js'), g, { filename: 'ui-stack.js' });
+  const NOT_PANEL = g.IntMapStack.NOT_PANEL.split(',');
   ['#map', '#map-container', '.operation-room'].forEach((sel) =>
-    assert.ok(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(mu.match(/_NOT_PANEL='([^']*)'/)[1]),
+    assert.ok(NOT_PANEL.includes(sel),
       `${sel} is a positioned ancestor and would be marked .im-front — lifting the whole map over the sidebar`));
 });
 }
@@ -371,12 +377,13 @@ test('#R255 ④ the raise fires on wheel and focus too, and cannot lift the map 
 /* ── ⑧ who is in front ─────────────────────────────────────────────────────────────────────── */
 test('R258 ⑧: the front-most band covers every panel, including the compare window', () => {
   const cmp = read('js/compare.js');
-  assert.match(cmp, /#compare-window\{position:fixed;[^}]*z-index:2200;/,
+  /* (ui-layer-owner) the card band is the named layer --z-window (2200), no longer the number */
+  assert.match(cmp, /#compare-window\{position:fixed;[^}]*z-index:var\(--z-window\);/,
     'the compare window is in the card band, not above the sidebars at 4000');
-  const ui = read('js/map-ui.js');
-  assert.match(ui, /document\.addEventListener\('keydown',\(e\)=>\{ try\{ act\(e\.target,false\); \}catch\(_\)\{\} \},true\);/,
+  const ui = code(read('js/ui-stack.js'));
+  assert.match(ui, /addEventListener\('keydown', \(e\) => \{ try \{ act\(e\.target, false\); \} catch \(_\) \{ \} \}, true\);/,
     'typing counts as an operation');
-  assert.match(ui, /if\(\(p==='relative'\|\|p==='sticky'\)&&z&&z!=='auto'\) found=n;/,
+  assert.match(ui, /else if \(\(p === 'relative' \|\| p === 'sticky'\) && zz && zz !== 'auto'\) found = n;/,
     'a panel positioned relative WITH a z-index is a panel, not a reason to demote');
   assert.ok(ui.includes(".sidebar,#sidebar,#layer-sidebar-r'"),
     'the two sidebars are the shell this band is measured against, never a panel inside it');
@@ -388,11 +395,15 @@ test('R258 ⑧: the front-most band covers every panel, including the compare wi
    `#compare-window` computed 4301 against the sidebar's 2600 after a pointerdown on the sidebar;
    after this change it computes 2201/2202 there and 2650 while it is the panel in use. */
 test('R258 ⑧b: click-to-front orders the windows inside the band, not above it', () => {
-  const wm = read('js/window-manager.js');
-  assert.match(wm, /const WIN_Z_BASE=2200, WIN_Z_CAP=2599;/,
-    'the window stack starts in the card band and stops below the sidebar');
-  assert.doesNotMatch(wm, /let __winZ=4300;/, 'the 4300 base is back — it sits above both sidebars');
-  assert.match(wm, /__winZ=Math\.min\(WIN_Z_CAP,Math\.max\(__winZ,mx\)\+1\)/,
-    'the counter is capped by the band, not by 5999');
+  /* (ui-layer-owner) the order is js/ui-stack.js's `order` now — ranks inside --z-window, capped
+     under --z-shell-front, both READ from css/intmap.css. Evaluated with 500 windows in
+     tests/ui-layer-owner-checks.test.mjs ①; here, that the window manager asks it and keeps no
+     band of its own. */
+  const wm = code(read('js/window-manager.js'));
+  assert.match(wm, /function bringToFront\(el\)\{ try\{ window\.IntMapStack\.order\(el\); \}/,
+    'the window manager orders windows itself again — a second owner of the band');
+  assert.doesNotMatch(wm, /__winZ|WIN_Z_BASE|WIN_Z_CAP/, 'a private counter is back beside the owner');
+  const st = code(read('js/ui-stack.js'));
+  assert.match(st, /level\('shell-front'\) - level\('window'\) - 1/, 'the ceiling is not read from the stylesheet');
 });
 }

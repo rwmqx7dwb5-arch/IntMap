@@ -340,13 +340,13 @@ window.IntMapModules.statsCompare=function(HOST){
            #R40's answer, unchanged: drop the fill, and do NOT add a second backdrop-filter —
            re-blurring an already-frosted surface is what draws the 「四角い枠」 in the first place.
            The opaque mode keeps the panel tone it has always had. */
-        +'#scp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'
+        +'#scp-view .scp-stickhead{position:sticky;top:0;z-index:calc(var(--z-inset) + 8);background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'
         +'body.sidebar-translucent #scp-view .scp-stickhead,body.sidebar-glass2 #scp-view .scp-stickhead{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;}'   /* (#R109) slight painted gap above the Back button (2→8) */
         +'#scp-view .scp-cmptitle{font-weight:700;font-size:13px;text-transform:none;line-height:1.15;}'
         +'#scp-view .scp-cmpsub{font-weight:500;font-size:10.5px;color:var(--text-muted);}'
         /* (#R64) proper country picker ("国を選択するときのUIがくそ"): search box + scrollable flag list with
            check state, click to add/remove — replaces the bare <datalist>. */
-        +'#scp-list{display:none;position:absolute;left:0;right:0;top:38px;max-height:240px;overflow-y:auto;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:12px;box-shadow:var(--shadow);z-index:40;padding:4px;}'
+        +'#scp-list{display:none;position:absolute;left:0;right:0;top:38px;max-height:240px;overflow-y:auto;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:12px;box-shadow:var(--shadow);z-index:calc(var(--z-inset) + 40);padding:4px;}'
         +'#scp-list .scp-cr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text-main);}'
         +'#scp-list .scp-cr:hover{background:var(--input-bg);}'
         +'#scp-list .scp-cr.sel{background:rgba(10,132,255,0.10);}'
@@ -373,7 +373,7 @@ window.IntMapModules.statsCompare=function(HOST){
         +'#scp-view .scp-bnm{flex:0 0 118px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
         +'#scp-view .scp-btrack{flex:1;height:14px;border-radius:7px;background:var(--input-bg);overflow:hidden;display:block;position:relative;}'
         +'#scp-view .scp-bfill{position:absolute;top:0;bottom:0;border-radius:4px;transition:width .35s ease,left .35s ease;}'
-        +'#scp-view .scp-zline{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--text-muted);opacity:0.65;z-index:1;}'
+        +'#scp-view .scp-zline{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--text-muted);opacity:0.65;z-index:calc(var(--z-inset) + 1);}'
         +'#scp-view .scp-bval{flex:0 0 112px;font-size:11.5px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}'
         +'#scp-view .scp-fill{color:var(--primary-color);font-weight:700;cursor:help;}'
         +'#scp-view .scp-secl{font-weight:700;}'
@@ -422,7 +422,7 @@ window.IntMapModules.statsCompare=function(HOST){
         +'@container (max-width:335px){ #scp-view .scp-modes button{font-size:11px;} #scp-view .scp-mtog{font-size:11px;} #scp-view .scp-mtog .scp-mcount{min-width:2.5em;} }'
         +'@container (max-width:313px){ #scp-view .scp-modes button{font-size:10.5px;} #scp-view .scp-mtog{font-size:10.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.4em;} }'
         +'@container (max-width:292px){ #scp-view .scp-modes button{font-size:9.5px;} #scp-view .scp-mtog{font-size:9.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.2em;} }'
-        +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
+        +'@media'+window.IntMapDevice.COMPACT+'{ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
          comparison mounted into #live-news-feed, but the country list moved to #countries-feed at the R78e
@@ -619,7 +619,7 @@ window.IntMapModules.statsCompare=function(HOST){
         +'<line class="ts-cursor" y1="0" y2="'+CH+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
         +'</svg>'
         +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);padding:1px 8px 0;font-variant-numeric:tabular-nums;"><span>'+y0+'</span><span>'+y1+'</span></div>'
-        +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:5;transform:translate(-50%,-104%);line-height:1.5;"></div>'
+        +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:calc(var(--z-inset) + 5);transform:translate(-50%,-104%);line-height:1.5;"></div>'
       +'</div>'; }
     function wireM(root){ root.querySelectorAll('.scp-chart').forEach(wrap=>{
       const svg=wrap.querySelector('.ts-svg'), cur=wrap.querySelector('.ts-cursor'), tip=wrap.querySelector('.ts-tip');

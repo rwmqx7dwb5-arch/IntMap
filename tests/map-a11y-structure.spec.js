@@ -132,7 +132,9 @@ test.describe('map-a11y-structure', () => {
       const b = res.getBoundingClientRect(), p = box.getBoundingClientRect();
       const hit = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(20, b.height / 2));
       const out = { hit: !!hit && res.contains(hit), resH: b.height, pillW: p.width,
-                    maxW: parseFloat(getComputedStyle(box).maxWidth), ox: getComputedStyle(box).overflowX };
+                    maxW: parseFloat(getComputedStyle(box).maxWidth), ox: getComputedStyle(box).overflowX,
+                    /* (ui-layer-owner) the owner's own measurement of the #823 shape agrees */
+                    clip: (() => { const c = window.IntMapStack.clipOf(res); return c ? (c.el.id || c.el.className) + ':' + c.axis : null; })() };
       res.style.display = ''; res.innerHTML = ''; document.body.classList.remove('ms-narrow');
       return out;
     });
@@ -140,6 +142,7 @@ test.describe('map-a11y-structure', () => {
     expect(r.hit, 'the middle of the open results panel is the results panel, not what is behind it').toBe(true);
     expect(r.ox, 'the pill still clips sideways').toBe('clip');
     expect(r.pillW).toBeLessThanOrEqual(r.maxW + 0.5);
+    expect(r.clip, 'IntMapStack.clipOf found an ancestor cutting the results panel').toBe(null);
     });
     await test.step('⑥ pressing a search result keeps it in front until the press is released', async () => {
     /* (front-mark-outer-context) the front-most mark went to the innermost positioned element under
@@ -171,6 +174,33 @@ test.describe('map-a11y-structure', () => {
     });
     expect(r.marked, 'the mark is on the pill that stands in the band, not on the list trapped inside it').toBe(true);
     expect(r.afterIsItem, 'after the press, the pressed result is what is under the pointer').toBe(true);
+    });
+    await test.step('⑦ the window order is written as named layers and the browser paints it inside the band', async () => {
+    /* (ui-layer-owner) js/ui-stack.js writes a window's rank as calc(var(--z-window) + n) — this is the
+       browser resolving it: two registered windows, pressed in turn, compute above the window layer,
+       in the order pressed, and below an open sidebar once the pointer goes back to it. */
+    const r = await page.evaluate(() => {
+      const mk = (id) => { const w = document.createElement('div'); w.id = id; w.style.cssText = 'position:fixed;left:40px;top:40px;width:60px;height:60px'; document.body.appendChild(w); window.registerWindow(w); return w; };
+      const a = mk('probe-win-a'), b = mk('probe-win-b');
+      const press = (el) => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }));
+      const Z = (el) => +getComputedStyle(el).zIndex;
+      press(a); press(b); press(a);
+      const aFront = Z(a), bInBand = Z(b);
+      const sb = document.getElementById('sidebar');
+      press(sb.firstElementChild || sb);
+      const out = { aFront, bInBand, aAfter: Z(a), bAfter: Z(b), inline: a.style.zIndex,
+                    win: window.IntMapStack.level('window'), shell: window.IntMapStack.level('shell-front'),
+                    front: window.IntMapStack.level('front') };
+      a.remove(); b.remove();
+      return out;
+    });
+    expect(r.inline).toMatch(/^calc\(var\(--z-window\) \+ \d+\)$/);
+    expect(r.aFront, 'the pressed window is the panel in use').toBe(r.front);
+    expect(r.aAfter).toBeGreaterThan(r.bAfter);
+    for (const z of [r.aAfter, r.bAfter, r.bInBand]) {
+      expect(z).toBeGreaterThan(r.win);
+      expect(z).toBeLessThan(r.shell);
+    }
     });
   });
 });

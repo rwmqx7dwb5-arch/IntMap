@@ -494,7 +494,7 @@ window.IntMapModules.toolPanel=function(HOST){
      nothing while it runs (a factory that works at construction time makes the module's cost a
      property of being imported). One MediaQueryList for the life of the page either way. */
   let _mq, _cover=null, _coverKey=null;
-  function _mqSmall(){ if(_mq===undefined){ try{ _mq=window.matchMedia('(max-width:768px)'); }catch(_){ _mq=null; } } return _mq; }
+  function _mqSmall(){ if(_mq===undefined){ try{ _mq=window.matchMedia(window.IntMapDevice.COMPACT); }catch(_){ _mq=null; } } return _mq; }
   function _rt(){ try{ return window.IntMapRuntime; }catch(_){ return null; } }
   function _boxOf(el){ const R=_rt(); if(R&&R.box) return R.box(el); return el.getBoundingClientRect(); }
   function _sheetCover(mcEl){

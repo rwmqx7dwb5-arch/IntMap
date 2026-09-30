@@ -20,7 +20,7 @@ window.IntMapModules.workspace=function(HOST){
   return (function(){
     const KEY='intmap_ws4';   /* (#R84) bumped — default restored to Countries·Map·Layers·Atlas (role-based tiling); old saved layouts not carried over */
     const T=window.IntMapLang.pick(()=>HOST.lang);
-    const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+    const isMob=()=>window.IntMapDevice.compact();
     try{
 
 
@@ -266,7 +266,7 @@ window.IntMapModules.workspace=function(HOST){
         /* (#R101) all windows share ONE background (the Countries window colour = --bg-color) so the title bars read
            uniformly ("上部の色が濃い黒とグレーで混在" → unified). Big 0 18px 50px shadow REMOVED — on tiled windows it
            radiated a halo over the neighbours around whichever window was in front ("操作中ウィンドウの放射する影は不要"). */
-        +'.ws-win{position:fixed;z-index:900;display:flex;flex-direction:column;box-sizing:border-box;background:var(--bg-color,#0b0b0d);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:13px;box-shadow:0 1px 5px rgba(0,0,0,0.16);overflow:hidden;min-width:120px;}'
+        +'.ws-win{position:fixed;z-index:var(--z-map-overlay);display:flex;flex-direction:column;box-sizing:border-box;background:var(--bg-color,#0b0b0d);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:13px;box-shadow:0 1px 5px rgba(0,0,0,0.16);overflow:hidden;min-width:120px;}'
         +'.ws-win.ws-ovis,.ws-win.ws-ovis .ws-body{overflow:visible;}'
         /* (#R107) while hovering a window's resize edge, force EVERY descendant (incl. the map canvas, which sets its
            own grab cursor) to show the window\'s resize cursor — otherwise the edge felt "dead" over content. */
@@ -286,9 +286,9 @@ window.IntMapModules.workspace=function(HOST){
         +'.ws-dot:active{filter:brightness(0.85);}'
         /* (#R116) join/snap indicators TONED DOWN ("ハイライトアニメーションが大げさすぎる"): a slim guide with a
            faint glow — visible, not theatrical. */
-        +'.ws-guide{position:fixed;z-index:5995;background:var(--primary-color,#0a84ff);display:none;pointer-events:none;opacity:0.5;box-shadow:none;}'   /* (#R117) quieter still: hairline, no glow ("ハイライトアニメーションが大げさ") */
+        +'.ws-guide{position:fixed;z-index:calc(var(--z-toast) + 2995);background:var(--primary-color,#0a84ff);display:none;pointer-events:none;opacity:0.5;box-shadow:none;}'   /* (#R117) quieter still: hairline, no glow ("ハイライトアニメーションが大げさ") */
         /* (#R83) draggable junction handle where 3+ panes meet — moves both dividers at once */
-        +'.ws-junction{position:fixed;z-index:947;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);cursor:move;background:rgba(10,132,255,0.16);border:1.5px solid rgba(10,132,255,0.55);touch-action:none;transition:background .12s ease,transform .12s ease;}'
+        +'.ws-junction{position:fixed;z-index:calc(var(--z-map-overlay) + 47);width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);cursor:move;background:rgba(10,132,255,0.16);border:1.5px solid rgba(10,132,255,0.55);touch-action:none;transition:background .12s ease,transform .12s ease;}'
         +'.ws-junction:hover{background:rgba(10,132,255,0.38);}'   /* (#R117) no grow-on-hover — the scale pop read as an exaggerated highlight */
         +'body.capture-mode .ws-junction{display:none !important;}'
         +'.ws-gv{top:0;bottom:0;width:3px;}.ws-gh{left:0;right:0;height:3px;}'
@@ -299,7 +299,7 @@ window.IntMapModules.workspace=function(HOST){
            a crisp bright bar on the shared edge with a soft glow + a gentle pulse so the exact join reads at a glance.
            Simple & minimal — only the shared segment, only while hovering/dragging/resizing an abutting edge. */
         /* (#R116) NO pulse, faint glow — the pulsing glow bar was "大げさ". A steady slim bar reads just as well. */
-        +'.ws-adj{position:fixed;z-index:944;background:var(--primary-color,#0a84ff);opacity:0.5;border-radius:3px;pointer-events:none;display:none;box-shadow:none;}'   /* (#R117) steady, subtle join bar — no glow */
+        +'.ws-adj{position:fixed;z-index:calc(var(--z-map-overlay) + 44);background:var(--primary-color,#0a84ff);opacity:0.5;border-radius:3px;pointer-events:none;display:none;box-shadow:none;}'   /* (#R117) steady, subtle join bar — no glow */
         +'body.capture-mode .ws-adj{display:none !important;}'
         +'.ws-body{flex:1 1 auto;min-height:0;position:relative;display:flex;}'
         +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;box-shadow:none !important;border-radius:0 !important;}'
@@ -307,7 +307,7 @@ window.IntMapModules.workspace=function(HOST){
         +'body.ws-mode .ws-body>.search-bar{border-radius:21px !important;flex:0 0 auto !important;}'
         /* (#R79b) VISIBLE, easy-to-grab resize grip in the bottom-right corner ("リサイズがやりにくい。ドラッグ
            アンドドロップで簡単に") — the invisible edge zones stay, but this gives an obvious drag target. */
-        +'.ws-win .ws-grip{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;z-index:946;touch-action:none;}'
+        +'.ws-win .ws-grip{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;z-index:calc(var(--z-map-overlay) + 46);touch-action:none;}'
         +'.ws-win .ws-grip::after{content:"";position:absolute;right:3px;bottom:3px;width:9px;height:9px;border-right:2px solid var(--text-muted,#8a8a94);border-bottom:2px solid var(--text-muted,#8a8a94);border-bottom-right-radius:3px;opacity:0.5;transition:opacity .15s ease;}'
         +'.ws-win .ws-grip:hover::after{opacity:1;}'
         +'.ws-win[data-min] .ws-grip{display:none;}'
@@ -320,7 +320,7 @@ window.IntMapModules.workspace=function(HOST){
         +'body.ws-mode #map-container{position:relative !important;width:100% !important;max-width:none !important;height:100% !important;margin:0 !important;flex:1 1 auto !important;}'
         /* (#R101) the map View controls (Map/Satellite/Flat/Globe/3D + the compass reset-north button) are shown in
            the MAP WINDOW's top-right, exactly like normal mode (in addition to the menu-bar View menu) — per request. */
-        +'body.ws-mode .map-controls-top{display:flex !important;position:absolute !important;top:10px !important;right:10px !important;left:auto !important;z-index:950 !important;gap:4px !important;}'
+        +'body.ws-mode .map-controls-top{display:flex !important;position:absolute !important;top:10px !important;right:10px !important;left:auto !important;z-index:calc(var(--z-map-overlay) + 50) !important;gap:4px !important;}'
         /* (#R103) tighter view-control bars in ws mode: less vertical padding around the buttons + a smaller gap between the two bars */
         +'body.ws-mode .map-controls-top .map-view-group{padding:2px 4px !important;}'
         /* (#R102) the map window does NOT need the Measure / Radius / Screenshot / Share / Atlas / Layers tool bar —
@@ -418,7 +418,7 @@ window.IntMapModules.workspace=function(HOST){
            hover outline looked "cut off at the bottom" ("下は途切れている"). Re-assert all four edges on hover. */
         +'body.ws-mode .ws-countries .stat-row:hover{border-color:var(--primary-color) !important;}'
         /* (#R78g) pin the elevation/coordinate readout to the MAP window's bottom-left, above the canvas */
-        +'body.ws-mode #coord-readout{position:absolute !important;left:7px !important;bottom:7px !important;right:auto !important;top:auto !important;z-index:950 !important;}'
+        +'body.ws-mode #coord-readout{position:absolute !important;left:7px !important;bottom:7px !important;right:auto !important;top:auto !important;z-index:calc(var(--z-map-overlay) + 50) !important;}'
         /* (#R78f) COMPACT news cards so more fit per screen ("上下方向に冗長") */
         +'body.ws-mode .ws-news .news-item{padding:9px 11px !important;border-radius:11px !important;}'
         +'body.ws-mode .ws-news .news-item .news-title{margin-top:4px !important;line-height:1.32 !important;}'
@@ -429,9 +429,9 @@ window.IntMapModules.workspace=function(HOST){
         +'body.ws-mode #layer-sidebar-r .lsr-head{display:none !important;}'
         /* (#R78c) the ticker is NOT a window — it is pinned to the very bottom of the screen, full width,
            above the workspace ("画面外の最下部に固定と何度も言っている") */
-        +'body.ws-mode #ticker-bar{position:fixed !important;left:0 !important;right:0 !important;bottom:0 !important;width:100% !important;z-index:5985 !important;}'
+        +'body.ws-mode #ticker-bar{position:fixed !important;left:0 !important;right:0 !important;bottom:0 !important;width:100% !important;z-index:calc(var(--z-toast) + 2985) !important;}'
         /* (#R78c) TOP MENU BAR ("上部から、ソフトのように選択できるようにしろ") — a real application menu strip */
-        +'#ws-menu{position:fixed;left:0;top:0;right:0;height:34px;z-index:5990;display:flex;align-items:center;gap:2px;padding:0 12px;background:var(--card-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.26));-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
+        +'#ws-menu{position:fixed;left:0;top:0;right:0;height:34px;z-index:calc(var(--z-toast) + 2990);display:flex;align-items:center;gap:2px;padding:0 12px;background:var(--card-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.26));-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
         /* (#R102) "IntMap" NOT bold per request ("ワークスペースモードでのIntMapの文字は太字ではなくして") — medium weight,
            same UI font as normal mode (inherited, no font-family override) */
         +'#ws-menu .ws-brand{font-size:20px;font-weight:500;color:var(--text-main);margin-right:16px;letter-spacing:0.01em;}'
@@ -439,7 +439,7 @@ window.IntMapModules.workspace=function(HOST){
         +'#ws-menu .ws-m{position:relative;}'
         +'#ws-menu .ws-m>button{border:none;background:transparent;color:var(--text-main);font-size:12px;padding:5px 11px;border-radius:7px;cursor:pointer;}'
         +'#ws-menu .ws-m>button:hover,#ws-menu .ws-m.open>button{background:var(--input-bg);}'
-        +'#ws-menu .ws-dd{display:none;position:absolute;left:0;top:32px;min-width:210px;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,0.35);padding:5px;z-index:5991;}'
+        +'#ws-menu .ws-dd{display:none;position:absolute;left:0;top:32px;min-width:210px;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,0.35);padding:5px;z-index:calc(var(--z-toast) + 2991);}'
         +'#ws-menu .ws-m.open .ws-dd{display:block;}'
         +'#ws-menu .ws-dd button{display:flex;width:100%;align-items:center;gap:8px;border:none;background:transparent;color:var(--text-main);font-size:12px;padding:7px 10px;border-radius:7px;cursor:pointer;text-align:left;white-space:nowrap;}'
         +'#ws-menu .ws-dd button:hover{background:var(--input-bg);}'
@@ -447,7 +447,7 @@ window.IntMapModules.workspace=function(HOST){
         +'#ws-menu .ws-dd .ws-dd-sep{height:1px;background:var(--glass-border,rgba(128,128,128,0.22));margin:5px 6px;}'
         +'#ws-menu .ws-spacer{flex:1;}'
         +'body.capture-mode #ws-menu{display:none !important;}'
-        +'@media(max-width:768px){ #ws-menu{display:none !important;} }';
+        +'@media'+window.IntMapDevice.COMPACT+'{ #ws-menu{display:none !important;} }';
       document.head.appendChild(st); }
     const state=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(_){ return {}; } };
     const save=p=>{ try{ localStorage.setItem(KEY,JSON.stringify(Object.assign(state(),p))); }catch(_){} };
@@ -691,7 +691,7 @@ window.IntMapModules.workspace=function(HOST){
        re-rendered every window ("ワークスペースモードを起動時にラグがあるため、読み込み画面を用意するように"). */
     function _wsLoadingOn(){ try{ if(!document.getElementById('ws-load-style')){ const s=document.createElement('style'); s.id='ws-load-style'; s.textContent='@keyframes wsSpin{to{transform:rotate(360deg)}}'; (document.head||document.documentElement).appendChild(s); }
       let o=document.getElementById('ws-loading'); if(!o){ o=document.createElement('div'); o.id='ws-loading';
-        o.style.cssText='position:fixed;inset:0;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;background:var(--bg-color,#0d1117);color:var(--text-main,#e6edf3);font-size:14px;font-weight:500;';
+        o.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-overlay) + 8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;background:var(--bg-color,#0d1117);color:var(--text-main,#e6edf3);font-size:14px;font-weight:500;';
         o.innerHTML='<div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(128,128,128,0.3);border-top-color:var(--primary-color,#0a84ff);animation:wsSpin .8s linear infinite;"></div><div>'+T('Entering workspace…','ワークスペースを準備中…','Arbeitsbereich wird geöffnet…','Открываю рабочую область…','Abriendo el espacio de trabajo…')+'</div>';
         document.body.appendChild(o); }
       o.style.display='flex'; o.style.opacity='1'; }catch(_){} }

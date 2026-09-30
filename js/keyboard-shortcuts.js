@@ -22,7 +22,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
       let m=document.getElementById('kbd-help-modal');
       if(m){ m.style.display=(m.style.display==='none'||!m.style.display)?'flex':'none'; return; }
       m=document.createElement('div'); m.id='kbd-help-modal'; m.className='modal';
-      m.style.cssText='position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);';
+      m.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-toast) + 3000);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);';
       const rows=[
         ['Esc',KL('Toggle sidebar','サイドバーの開閉','Seitenleiste ein/aus','Показать/скрыть панель','Mostrar/ocultar panel')],
         ['Ctrl/⌘+K '+KL('or','または','oder','или','o')+' A',KL('Atlas console','Atlas コンソール','Atlas-Konsole','Консоль Atlas','Consola Atlas')],

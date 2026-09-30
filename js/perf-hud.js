@@ -231,7 +231,7 @@ window.IntMapPerfHud = (function () {
   /* ── the panel ─────────────────────────────────────────────────────────────────────────────── */
   const box = document.createElement('div');
   box.id = 'im-perf-hud';
-  box.style.cssText = 'position:fixed;left:6px;top:6px;z-index:2147483647;font:11px/1.45 ui-monospace,Menlo,monospace;'
+  box.style.cssText = 'position:fixed;left:6px;top:6px;z-index:var(--z-max);font:11px/1.45 ui-monospace,Menlo,monospace;'
     + 'background:rgba(8,10,14,0.86);color:#d8e6ff;padding:7px 9px;border-radius:9px;max-width:min(94vw,340px);'
     + 'white-space:pre-wrap;border:1px solid rgba(120,160,255,0.35);box-shadow:0 4px 18px rgba(0,0,0,0.5);';
   const rows = document.createElement('div');

@@ -81,7 +81,7 @@ export function makeSessionTabs(HOST, CTX) {
     function _defaultTab(){ try{
       _tabInit=true; setTimeout(_save,1800);   /* persist the "already offered" flag once _restoring has cleared */
       if(HOST.mode) return;
-      if(typeof isMobile==='function' ? isMobile() : window.innerWidth<=768) return;
+      if(typeof isMobile==='function' ? isMobile() : window.IntMapDevice.compact()) return;
       if(document.body.classList.contains('ws-mode')) return;
       if(window.IntMapOS) IntMapOS.exec('tab.stats',{source:'default'});
     }catch(_){} }

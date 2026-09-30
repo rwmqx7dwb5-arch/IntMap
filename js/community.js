@@ -56,7 +56,7 @@ window.IntMapModules.community=function(HOST){
          Arm a one-shot map tap (the communityAddArmed handler opens the composer at the tapped point); on
          mobile collapse the sheet so the map is reachable, and guide with a toast. */
       HOST.pendingPostLoc=null; HOST.communityAddArmed=true;
-      try{ if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('peek',true); }catch(_){}   /* (#R107) 'mini' disabled → collapse to 'peek' (still frees the map) */
+      try{ if(window.IntMapDevice.compact() && window.__setDetent) window.__setDetent('peek',true); }catch(_){}   /* (#R107) 'mini' disabled → collapse to 'peek' (still frees the map) */
       HOST.imToast(window.IntMapLang.t(HOST.lang,'📍 Tap the map to choose where to post','📍 地図をタップして投稿する場所を選んでください','📍 Tippe auf die Karte, um den Ort des Beitrags zu wählen','📍 Коснитесь карты, чтобы выбрать место публикации','📍 Toca el mapa para elegir dónde publicar'));
     };
     cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ HOST.communitySort=b.dataset.sort; renderCommunity(); });

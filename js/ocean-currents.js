@@ -317,7 +317,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
        than being restated here, because a copied predicate drifts — the three files that kept their own
        copy each lost a clause of it (#R499). The width test stays as the FALLBACK for the moment before
        the shell has published its answer, so this is never worse than what the line did before. */
-    const _phone=()=>{ const w=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
+    const _phone=()=>{ const w=()=>{ try{ return window.IntMapDevice.compact(); }catch(_){ return false; } };
       try{ return window.IntMapMemBudget.deviceIsPhone(w); }catch(_){ return w(); } };
     function viewBox(){
       let b=null; try{ b=GE().camera.getBounds(); }catch(_){}

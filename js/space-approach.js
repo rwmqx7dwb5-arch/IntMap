@@ -119,7 +119,7 @@ window.IntMapModules.space=function(HOST){
          reader's side nothing at all happened until the map simply reappeared — which is exactly the
          report. It now sits above both, and above nothing else: 4300 is over the space view and still
          under the modals (#R148's dialog layer). */
-      gauge.style.cssText='position:fixed;bottom:96px;transform:translateX(-50%);z-index:4300;'
+      gauge.style.cssText='position:fixed;bottom:96px;transform:translateX(-50%);z-index:calc(var(--z-toast) + 1300);'
         +'pointer-events:none;opacity:0;transition:opacity 180ms ease;display:flex;flex-direction:column;'
         +'align-items:center;gap:6px;font-size:12px;font-weight:700;'
         +'padding:9px 16px 11px;border-radius:999px;'

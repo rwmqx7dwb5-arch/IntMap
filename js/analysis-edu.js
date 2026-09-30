@@ -24,7 +24,7 @@ window.IntMapModules.analysisEdu=function(HOST){
     function cname(s){ return jp()?(s.nameJp||s.nameEn):s.nameEn; }
     function ensure(){ if(panel) return panel;
       panel=document.createElement('div'); panel.className='tool-panel'; panel.id='edu-panel';
-      panel.style.cssText='display:none;position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:1600;width:min(340px,calc(100vw - 24px));max-height:min(72vh,600px);overflow-y:auto;';
+      panel.style.cssText='display:none;position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:calc(var(--z-sheet) - 50);width:min(340px,calc(100vw - 24px));max-height:min(72vh,600px);overflow-y:auto;';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       return panel; }
     /* (#R21) Renamed to QUIZ MODE; flags render via flagcdn images (Windows shows emoji flags as

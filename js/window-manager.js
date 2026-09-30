@@ -95,10 +95,16 @@ window.IntMapModules.windowManager=function(HOST){
      touched, and an open sidebar still covers all of them until you reach into one.
      ⚠ The phone is unaffected: the band is desktop-only, and the bottom sheet (1700) was already
      below 4300 as it is below 2599. */
-  const WIN_Z_BASE=2200, WIN_Z_CAP=2599;
-  let __winZ=WIN_Z_BASE;
-  function bringToFront(el){ if(!el) return; try{ let mx=WIN_Z_BASE; __winReg.forEach(w=>{ if(w===el||!w.isConnected) return; const z=parseInt(w.style.zIndex,10)||0; if(z>mx&&z<=WIN_Z_CAP) mx=z; }); __winZ=Math.min(WIN_Z_CAP,Math.max(__winZ,mx)+1); el.style.zIndex=String(__winZ); }catch(_){} }
-  function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ el.addEventListener('pointerdown',()=>bringToFront(el),true); }catch(_){ try{ el.addEventListener('mousedown',()=>bringToFront(el),true); }catch(__){} }
+  /* ══ (ui-layer-owner) …AND THE BAND IS NOT THIS FILE'S ANY MORE ═══════════════════════════════════
+     The order above was kept here as `WIN_Z_BASE=2200, WIN_Z_CAP=2599` and a counter, while the
+     `.im-front` half of the same question lived in js/map-ui.js with its own copy of 2650 — two
+     listeners on one pointerdown and two copies of each number. js/ui-stack.js (window.IntMapStack)
+     owns both halves now: `order` ranks the windows inside the `window` layer of css/intmap.css
+     and below `shell-front`, reading both edges from the stylesheet, and its ONE capture listener on
+     the document orders every registered window a pointerdown lands inside. `bringToFront` keeps its
+     name — 33 call sites across 22 files, and IM_HOST publishes it — and is that owner's `order`. */
+  function bringToFront(el){ try{ window.IntMapStack.order(el); }catch(_){} }
+  function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ window.IntMapStack.register(el); }catch(_){}
     /* (#R238) a window that appears while the dock is on goes straight into it — see below.
        (#R239) …and is watched, so that switching it off later takes it back out again. */
     if(__dockOn) try{ _watchEl(el); _dockOne(el); }catch(_){} }
@@ -368,7 +374,7 @@ window.IntMapModules.windowManager=function(HOST){
       const OS=window.IntMapOS;
       const already=(__dockOps&&__dockOps.mode&&__dockOps.mode()==='docked');
       if(!already&&OS&&OS.exec) OS.exec('tab.docked',{source:'auto'});
-      const phone=!!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches);
+      const phone=window.IntMapDevice.compact();
       /* a phone's sheet is at 'peek' most of the time; a panel behind it is not visible either */
       if(phone){ try{ if(window.__setDetent) window.__setDetent('half'); }catch(_){} }
       /* …and on a desktop the sidebar is a column that can be collapsed away entirely */
@@ -632,7 +638,8 @@ window.IntMapModules.windowManager=function(HOST){
         if(E.skip&&E.skip()) return;
         const g=_geoOf(w,fresh); if(!g||g.off) return;
         const d=E.edgeAt(e.clientX,e.clientY,g.r); if(!d||d.length!==2) return;
-        const z=parseInt(w.style.zIndex,10)||0; if(z>bz){ bz=z; best={w:w,d:d}; } }); }catch(_){}
+        let z=0; try{ z=+getComputedStyle(w).zIndex||0; }catch(_){}   /* (ui-layer-owner) the PAINTED level — js/ui-stack.js writes the rank as calc(var(--z-window) + n), which parseInt cannot read */
+        if(z>bz){ bz=z; best={w:w,d:d}; } }); }catch(_){}
       return best; };
     try{
       document.addEventListener('pointerdown',(e)=>{

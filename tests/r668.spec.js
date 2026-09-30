@@ -68,6 +68,11 @@ async function budgets(page) {
       demCesium: B ? B.demTiles('cesium') : null,
       demTerrainEdit: B ? B.demTiles('terrainEdit') : null,
       budgetSaysPhone: B ? B.isPhone() : null,
+      /* (ui-layer-owner) the LAYOUT owner's answer, and what it keeps on <body> */
+      compact: window.IntMapDevice ? window.IntMapDevice.compact() : null,
+      kind: window.IntMapDevice ? window.IntMapDevice.kind() : null,
+      bodyCompact: document.body.classList.contains('im-compact'),
+      bodyKind: ['phone', 'phone-landscape', 'tablet', 'desktop'].filter((k) => document.body.classList.contains('im-dev-' + k)),
     };
   });
 }
@@ -119,6 +124,19 @@ test.describe('R664 the device does not change when the phone is rotated', () =>
        js/map-readout.js, js/time-borders.js — 15 px, not the 6 px a mouse gets) */
     expect(landscape.touchPrimary, 'the tap tolerance collapsed to the mouse box in landscape')
       .toBe(portrait.touchPrimary);
+
+    /* (ui-layer-owner) THE OTHER HALF, ON THE SAME DEVICE: the LAYOUT is a width question and was
+       kept one (#R498; CONSTITUTION §4 — nothing on the main map vanishes). Upright the iPhone gets
+       the phone layout; sideways (844 px) it keeps the desktop layout, and the device is NAMED
+       `phone-landscape` on <body> for any rule that needs to know. */
+    expect(portrait.compact).toBe(true);
+    expect(portrait.kind).toBe('phone');
+    expect(landscape.compact, 'a landscape phone changed layout — that is a behaviour change, not a refactor').toBe(false);
+    expect(landscape.kind).toBe('phone-landscape');
+    expect(portrait.bodyCompact).toBe(true);
+    expect(landscape.bodyCompact, '<body> still says im-compact after the rotation — the class did not follow the media query').toBe(false);
+    expect(portrait.bodyKind).toEqual(['phone']);
+    expect(landscape.bodyKind).toEqual(['phone-landscape']);
 
     /* and the ceilings the report is about */
     expect(landscape.budgetSaysPhone).toBe(true);

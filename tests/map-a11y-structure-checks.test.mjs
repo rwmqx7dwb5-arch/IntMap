@@ -66,8 +66,15 @@ test('① the bare-number shapes it counts, and the named ones it lets through',
     writeFileSync(join(dir, 'css', 'intmap.css'), ':root{ --z-a:10; }\n.x{ z-index:var(--z-a); }');
     writeFileSync(join(dir, 'js', 'a.js'), "/* z-index:99 in a comment is not a layer */ function f(e){ e.style.zIndex='7'; }");
     const ledger = join(dir, 'ledger.json');
+    /* (ui-layer-owner) a file above zero has to say why; without the sentence the same count fails */
     writeFileSync(ledger, JSON.stringify({ literals: { 'js/a.js': 1 }, stack: ['.x → 10'] }));
+    assert.match(zCheck(dir, ledger).lines.join('\n'), /js\/a\.js: 1 bare z-index number\(s\) and the ledger does not say why/);
+    writeFileSync(ledger, JSON.stringify({ literals: { 'js/a.js': 1 }, why: { 'js/a.js': 'a fixture file standing in for a document that has no layers' }, stack: ['.x → 10'] }));
     assert.equal(zCheck(dir, ledger).ok, true, zCheck(dir, ledger).lines.join('\n'));
+    /* (ui-layer-owner) a layer read in js/ that :root does not define paints at auto — refused */
+    writeFileSync(join(dir, 'js', 'c.js'), "function h(e){ e.style.zIndex='var(--z-nope)'; }");
+    assert.match(zCheck(dir, ledger).lines.join('\n'), /js\/c\.js: reads the layer --z-nope/);
+    rmSync(join(dir, 'js', 'c.js'));
     writeFileSync(join(dir, 'js', 'b.js'), "function g(e){ e.style.cssText='z-index:3000'; }");
     const up = zCheck(dir, ledger);
     assert.equal(up.ok, false); assert.match(up.lines.join('\n'), /js\/b\.js: 1 z-index value/);

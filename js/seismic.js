@@ -3502,7 +3502,7 @@ window.IntMapModules.seismic=function(HOST){
         /* ══ ⚠⚠ (#R240) THE PINNED FOOTER — the flow, and the one verb ═══════════════════════════════
            Outside `.sq-body`, so it never scrolls away: 「フローが破綻している」 is in large part
            that the button which produces the answer was the fifth control in the fourth card. */
-        '.sq-foot{flex:0 0 auto;padding:9px 12px calc(11px + env(safe-area-inset-bottom,0px));'
+        '.sq-foot{flex:0 0 auto;padding:9px 12px calc(11px + var(--safe-bottom));'
           +'border-top:1px solid var(--glass-border,rgba(128,128,128,0.22));background:var(--input-bg);}',
         /* (#R242) the tick track that used to be here is gone — 「チェック画面？はいらない」. */
         /* ══ (#R242) THE PLAYER — 「時刻バーとか再生機構はもっと…洗練されたiOS風のUIに」 ═══════════════
@@ -5151,7 +5151,7 @@ window.IntMapModules.seismic=function(HOST){
       if(document.getElementById('sq-hud-css')) return;
       const st=document.createElement('style'); st.id='sq-hud-css';
       st.textContent='#sq-hud{position:absolute;left:50%;transform:translateX(-50%);'
-        +'bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:1450;display:none;align-items:center;gap:12px;'
+        +'bottom:calc(var(--safe-bottom) + 96px);z-index:calc(var(--z-dropdown) + 150);display:none;align-items:center;gap:12px;'
         +'max-width:min(560px,92%);padding:10px 10px 10px 14px;border-radius:22px;pointer-events:auto;'
         +'background:var(--popup-bg,rgba(28,28,30,0.82));border:1px solid var(--glass-border,rgba(128,128,128,0.28));'
         +'box-shadow:0 14px 44px rgba(0,0,0,0.42);backdrop-filter:blur(22px) saturate(1.7);-webkit-backdrop-filter:blur(22px) saturate(1.7);}'
@@ -5355,7 +5355,7 @@ window.IntMapModules.seismic=function(HOST){
        differently, and 94vw is nearly the whole screen — a shift right would push the panel off the
        edge. Nothing about the report is a phone. */
     function _defBox(){
-      if(window.innerWidth<=768) return { left:16, top:80, cut:96 };
+      if(window.IntMapDevice.compact()) return { left:16, top:80, cut:96 };
       let left=16;
       try{ const tg=document.querySelector('.btn-toggle-sidebar'), r=tg&&tg.getBoundingClientRect();
         if(r&&r.width>0&&r.right<60) left=Math.round(r.right+30); }catch(_){}
@@ -5375,7 +5375,7 @@ window.IntMapModules.seismic=function(HOST){
            two added up past the viewport and the primary button was cut off at the bottom — which is
            the defect the footer exists to fix, one layer down. The panel caps itself, the body flexes
            inside that cap, and the footer is `flex:0 0 auto`, so the verb is on screen at any height. */
-        panel.style.cssText='position:fixed;width:min(360px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+        panel.style.cssText='position:fixed;width:min(360px,94vw);z-index:calc(var(--z-dropdown) + 102);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       _applyDefBox();
       panel.style.display='flex'; opened=true; render();

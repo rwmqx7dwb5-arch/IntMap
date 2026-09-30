@@ -31,6 +31,7 @@ import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { sharedIds } from '../js/layer-manifest.js';
 import { holdUntilDrawable } from '../js/layer-rows.js';
+import { installDevice } from './helpers/ui-device.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DL = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
@@ -74,6 +75,7 @@ function run({ legends, mcH, mcW, mobile = false, ws = false }) {
     body: { classList: { contains: (c) => (c === 'ws-mode' ? ws : false) } },
   };
   const window = { innerHeight: mcH, innerWidth: mcW, matchMedia: (q) => ({ matches: q === '(max-width:768px)' ? mobile : false }) };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   const getComputedStyle = (el) => ({
     display: el.css !== undefined ? el.css : (el.style.display || 'none'),
     getPropertyValue: () => '',

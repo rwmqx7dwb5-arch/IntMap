@@ -23,7 +23,7 @@ window.IntMapModules.elevationProfile=function(HOST){
   function _openProfilePanel(samples,dist){
     let p=document.getElementById('elev-profile-panel');
     if(!p){ p=document.createElement('div'); p.id='elev-profile-panel'; p.className='tool-panel'; (document.getElementById('map-container')||document.body).appendChild(p); }
-    p.style.cssText='display:block;left:50%;top:auto;bottom:26px;right:auto;transform:translateX(-50%);width:min(560px,calc(100vw - 40px));z-index:1600;';
+    p.style.cssText='display:block;left:50%;top:auto;bottom:26px;right:auto;transform:translateX(-50%);width:min(560px,calc(100vw - 40px));z-index:calc(var(--z-sheet) - 50);';
     const j=HOST.lang==='jp';
     p.innerHTML='<div class="tp-header"><span class="tp-title">📈 '+(j?'標高断面':'Elevation profile')+'</span><button class="tp-close" title="'+HOST.t('close')+'">×</button></div><div id="elev-profile-body" style="font-size:12px;color:var(--text-muted);padding:8px 2px;">'+(j?'標高を取得中…':'Sampling elevation…')+'</div>';
     p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; _elevCursor(null); };

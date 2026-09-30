@@ -22,7 +22,7 @@ window.IntMapModules.mobileUI=function(HOST){
    *  slide-up option sheets, the place-search FAB, and the auto compass.
    * ===================================================================== */
   function initMobileUI(){
-    const mq=window.matchMedia('(max-width:768px)');
+    const mq=window.matchMedia(window.IntMapDevice.COMPACT);
     const sidebar=document.getElementById('sidebar');
     const mapContainer=document.getElementById('map-container');
     if(!sidebar) return;
@@ -404,7 +404,7 @@ window.IntMapModules.layoutReflow=function(HOST){
          to row 2 based on REAL collision geometry instead — would a centered pill cross the right controls'
          left edge or the left controls' right edge? (The controls don't move when the pill drops, so this
          is stable — no flicker loop.) */
-      const upd=()=>{ try{ const desk=window.matchMedia('(min-width:769px)').matches;
+      const upd=()=>{ try{ const desk=window.matchMedia(window.IntMapDevice.WIDE).matches;
         if(document.body.classList.contains('ws-mode')){ document.body.classList.remove('ms-narrow'); document.body.classList.remove('ms-hide'); return; }   /* (#R78d) ws-mode pins the search bar inside the map window itself */
         if(!desk){ document.body.classList.remove('ms-narrow'); return; }
         const winW=window.innerWidth;
@@ -536,9 +536,9 @@ window.IntMapModules.layoutReflow=function(HOST){
       /* The width override lives in a DESKTOP-ONLY media rule (NOT an inline :root style — that
          would beat the mobile @media :root{--sidebar-w:100vw} and shrink the bottom sheet). */
       const styleEl=document.createElement('style'); styleEl.id='sb-w-style'; document.head.appendChild(styleEl);
-      const setW=(w)=>{ styleEl.textContent='@media(min-width:769px){ :root{ --sidebar-w:'+w+'px; } }'
-        +'@media(max-width:768px){ #sb-resizer{ display:none; } }'; };
-      styleEl.textContent='@media(max-width:768px){ #sb-resizer{ display:none; } }';
+      const setW=(w)=>{ styleEl.textContent='@media'+window.IntMapDevice.WIDE+'{ :root{ --sidebar-w:'+w+'px; } }'
+        +'@media'+window.IntMapDevice.COMPACT+'{ #sb-resizer{ display:none; } }'; };
+      styleEl.textContent='@media'+window.IntMapDevice.COMPACT+'{ #sb-resizer{ display:none; } }';
       try{ const w=parseInt(localStorage.getItem('intmap_sidebar_w')||'',10); if(w>=320&&w<=Math.max(760,window.innerWidth-60)) setW(w); }catch(_){}   /* (#R62) may span almost the full window */
       /* ⚠ (#R251) this title was a bare English literal, so it read the same in all nine languages;
          and it is set ONCE on an element that outlives the language, so it also has to follow it.
@@ -546,7 +546,7 @@ window.IntMapModules.layoutReflow=function(HOST){
       const h=document.createElement('div'); h.id='sb-resizer';
       const _ht=()=>{ h.title=window.IntMapLang.t(HOST.lang,'Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar'); };
       _ht(); window.addEventListener('intmap-lang',()=>setTimeout(_ht,30));
-      h.style.cssText='position:absolute;top:0;right:-3px;width:8px;height:100%;cursor:col-resize;z-index:1200;touch-action:none;';
+      h.style.cssText='position:absolute;top:0;right:-3px;width:8px;height:100%;cursor:col-resize;z-index:calc(var(--z-dropdown) - 100);touch-action:none;';
       sb.appendChild(h);
       let drag=false,sx=0,sw=0;
       h.addEventListener('mouseenter',()=>{ h.style.background='linear-gradient(to right,transparent,rgba(0,122,255,0.35),transparent)'; });

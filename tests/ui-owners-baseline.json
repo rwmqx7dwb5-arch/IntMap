@@ -1,0 +1,24 @@
+{
+ "//": "written by scripts/ui-owners.mjs --update — per file, the phone/desktop boundary written as a number in js/ and env(safe-area-inset-*) read outside css/intmap.css :root (both ratcheted both ways); every file above zero says why under \"why\" (kept by --update, written by hand); held by check:static",
+ "breakpoints": {
+  "js/atlas-annotate.js": 1,
+  "js/atlas-attach.js": 1,
+  "js/atlas-file-view.js": 1,
+  "js/atlas-gloss.js": 1,
+  "js/atlas-styles.js": 1,
+  "js/war-layer.js": 1
+ },
+ "safeArea": {
+  "js/atlas-attach.js": 1,
+  "js/atlas-gloss.js": 1,
+  "js/atlas-styles.js": 1
+ },
+ "why": {
+  "js/atlas-annotate.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. It writes the same number the owner holds, so it agrees with it today; move it onto the owner the next time the file is edited.",
+  "js/atlas-attach.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. It writes the same number the owner holds, so it agrees with it today; move it onto the owner the next time the file is edited.",
+  "js/atlas-file-view.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. It writes the same number the owner holds, so it agrees with it today; move it onto the owner the next time the file is edited.",
+  "js/atlas-gloss.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. It writes the same number the owner holds, so it agrees with it today; move it onto the owner the next time the file is edited.",
+  "js/atlas-styles.js": "Not migrated in the ui-layer-owner round: js/atlas-*.js was being rewritten by a concurrent work item and was outside what that round could touch. It writes the same number the owner holds, so it agrees with it today; move it onto the owner the next time the file is edited.",
+  "js/war-layer.js": "Not migrated in the ui-layer-owner round: js/war-layer.js was being changed by a concurrent work item and was outside what that round could touch. It writes the same number the owner holds, so it agrees with it today; move it onto the owner the next time the file is edited."
+ }
+}

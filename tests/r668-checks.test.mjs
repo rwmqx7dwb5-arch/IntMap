@@ -239,7 +239,7 @@ test('R664 ④ nobody re-derives the device predicate; three copies had already 
      js/dem-source.js, js/precip-annual.js and js/vs30-mask.js each carried the first two clauses and
      not the third (#R499's), so a phone with a stylus or a paired mouse read as a workstation and
      took the workstation's download and tile budgets. */
-  const OWNERS = new Set(['js/app-body.js', 'js/mem-budget.js', 'js/geo-engine.js']);
+  const OWNERS = new Set(['js/app-body.js', 'js/mem-budget.js', 'js/geo-engine.js', 'js/ui-device.js']);   /* (ui-layer-owner) the predicate's body lives in js/ui-device.js now */
   const copies = [];
   for (const rel of trackedSources()) {
     if (OWNERS.has(rel)) continue;
@@ -259,10 +259,14 @@ test('R664 ④ nobody re-derives the device predicate; three copies had already 
     + 'Ask window.IntMapMemBudget.deviceIsPhone(...) instead.\n' + copies.join('\n'));
 
   /* …and the owner still has all three clauses, so delegating to it is worth something */
-  const b = CODE('js/app-body.js');
+  /* (ui-layer-owner) js/app-body.js's `_imPhoneClass` is js/ui-device.js's `phoneBudget`; the clauses are
+     held there, and EVALUATED case by case in tests/ui-layer-owner-checks.test.mjs ② */
+  assert.match(CODE('js/app-body.js'), /const _imPhoneClass=\(\)=>window\.IntMapDevice\.phoneBudget\(\);/, '_imPhoneClass decides by itself again');
+  const b = CODE('js/ui-device.js');
   assert.match(b, /pointer:coarse/, 'the canonical predicate lost its pointer clause');
   assert.match(b, /any-pointer:fine/, 'the canonical predicate lost its fine-pointer clause');
-  assert.match(b, /m>0&&m<=500/, "the canonical predicate lost #R499's screen-size clause");
+  assert.match(b, /m > 0 && m <= PHONE_SHORT_SIDE/, "the canonical predicate lost #R499's screen-size clause");
+  assert.match(b, /const PHONE_SHORT_SIDE = 500;/, "#R499's 500 px moved without its record");
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════

@@ -65,7 +65,7 @@ window.IntMapModules.compare=function(HOST){
          At 4000 it sat permanently in front of BOTH sidebars and clicking the left sidebar could not
          bring it forward, which is the half of that instruction that kept coming back. The MOBILE
          rule below is untouched: the band is desktop-only (the phone's sheet has its own order). */
-      '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:2200;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:none;display:flex;flex-direction:column;}'+
+      '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:var(--z-window);background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:none;display:flex;flex-direction:column;}'+
       '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
       /* (#R36) Minimise must VISIBLY collapse to just the title bar — hide the map body AND the layer-picker row
          ("最小化したときにもUIが変わらず分かりにくい"). */
@@ -83,7 +83,7 @@ window.IntMapModules.compare=function(HOST){
       /* (#R29.1) Clean circular close + grouped iOS segments so the header reads regular, not "並びが不規則でダサい". */
       /* (#R35) Close × is a rounded-RECT now, not a circle ("×ボタンが丸でダサい") — matches the minimise
          button + every other compare control (the iOS design language is rounded-rect, never circles here). */
-      '#cmp-close{position:absolute;top:6px;right:7px;z-index:30;width:28px;height:28px;border-radius:8px;background:rgba(128,128,128,0.16);font-size:13px;}'+
+      '#cmp-close{position:absolute;top:6px;right:7px;z-index:calc(var(--z-inset) + 30);width:28px;height:28px;border-radius:8px;background:rgba(128,128,128,0.16);font-size:13px;}'+
       '#cmp-close:hover{background:#ff3b30;color:#fff;}'+
       '.cmp-seg{display:inline-flex;background:var(--input-bg);border-radius:9px;padding:2px;gap:2px;flex:0 0 auto;}'+
       '.cmp-seg .cmp-btn{background:transparent;border-radius:7px;padding:4px 9px;}'+
@@ -97,10 +97,10 @@ window.IntMapModules.compare=function(HOST){
       '.cmp-body{position:relative;flex:1 1 auto;min-height:0;}'+
       '#compare-map{position:absolute;inset:0;}'+
       /* (#R31) layer picker row directly under the control segments. */
-      '.cmp-picker{flex:0 0 auto;padding:6px 10px 8px;background:var(--sidebar-bg);border-bottom:1px solid rgba(128,128,128,0.14);position:relative;z-index:8;pointer-events:auto;}'+
-      '#compare-window.cmp-xray .cmp-picker{pointer-events:auto !important;z-index:9;position:relative;}'+   /* (#R33) picker stays clickable in x-ray */
+      '.cmp-picker{flex:0 0 auto;padding:6px 10px 8px;background:var(--sidebar-bg);border-bottom:1px solid rgba(128,128,128,0.14);position:relative;z-index:calc(var(--z-inset) + 8);pointer-events:auto;}'+
+      '#compare-window.cmp-xray .cmp-picker{pointer-events:auto !important;z-index:calc(var(--z-inset) + 9);position:relative;}'+   /* (#R33) picker stays clickable in x-ray */
       '.cmp-picker select{width:100%;box-sizing:border-box;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.28);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:600;cursor:pointer;}'+
-      '.cmp-ctrls{position:absolute;top:8px;left:8px;z-index:5;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px);}'+
+      '.cmp-ctrls{position:absolute;top:8px;left:8px;z-index:calc(var(--z-inset) + 5);display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px);}'+
       '.cmp-ctrls label{font-size:11px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:4px 7px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
       /* (#R27) The select had display:flex applied to a NATIVE <select>, which collapsed its text box so
          "レイヤーを選択" rendered crushed. Give the select its own comfortable rule (no flex, bigger font,
@@ -119,7 +119,7 @@ window.IntMapModules.compare=function(HOST){
          the transparent map canvas painted OVER it → "枠が消えている箇所がある" (the top run of the frame vanished
          behind the header). Draw the frame as an always-on-top overlay border instead so all four sides are
          continuous and never covered (pointer-events:none keeps the lens fully interactive). */
-      '#compare-window.cmp-xray::after{content:"";position:absolute;inset:0;border:1.5px solid rgba(150,160,175,0.72);border-radius:14px;pointer-events:none;z-index:20;}'+
+      '#compare-window.cmp-xray::after{content:"";position:absolute;inset:0;border:1.5px solid rgba(150,160,175,0.72);border-radius:14px;pointer-events:none;z-index:calc(var(--z-inset) + 20);}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
       /* (#R35) Kill the "謎の青い枠": the focusable compare-map canvas (and the window) were showing the
          browser default blue :focus / :focus-visible outline on click. Suppress it everywhere in compare so
@@ -137,13 +137,13 @@ window.IntMapModules.compare=function(HOST){
       /* (#R26) x-ray needs the header SOLID (the window goes transparent for alignment) so the buttons stay
          visible — but it must MATCH THE THEME, not force black in light mode ("Light modeで黒くなる謎システムは
          いらない。テーマに合わせろ"). Solid theme surface + theme-colored chips; only the cyan keyline marks the lens. */
-      '#compare-window.cmp-xray .cmp-head{background:#f3f4f7 !important;position:relative;z-index:7;border-bottom:1px solid rgba(128,128,128,0.3);box-shadow:0 2px 10px rgba(0,0,0,0.18);}'+
+      '#compare-window.cmp-xray .cmp-head{background:#f3f4f7 !important;position:relative;z-index:calc(var(--z-inset) + 7);border-bottom:1px solid rgba(128,128,128,0.3);box-shadow:0 2px 10px rgba(0,0,0,0.18);}'+
       '[data-theme="dark"] #compare-window.cmp-xray .cmp-head{background:#1a1c22 !important;box-shadow:0 2px 10px rgba(0,0,0,0.45);}'+
       '#compare-window.cmp-xray .cmp-head .cmp-title{color:var(--text-main) !important;}'+
       '#compare-window.cmp-xray .cmp-btn{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
       '#compare-window.cmp-xray .cmp-btn.on{background:var(--primary-fill) !important;color:#fff !important;}'+
       '#compare-window.cmp-xray #cmp-close{background:#ff3b30 !important;color:#fff !important;}'+
-      '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;z-index:6;}'+
+      '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;z-index:calc(var(--z-inset) + 6);}'+
       '#compare-window.cmp-xray .cmp-ctrls select{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
       /* (#R18) In lens mode the compare map is pulled out to cover the whole container (clipped to the
          window). Keep it BELOW the header/controls and give it a cyan edge so the lens boundary reads. */
@@ -155,16 +155,16 @@ window.IntMapModules.compare=function(HOST){
          so the height IS adjustable ("大きさ調節できない" fixed). Native CSS resize ignores touch, hence the grip. */
       '.cmp-resize{display:none;}'+
       /* (#R20) four-corner resize handles */
-      '.cmp-rz{position:absolute;width:18px;height:18px;z-index:8;touch-action:none;}'+
+      '.cmp-rz{position:absolute;width:18px;height:18px;z-index:calc(var(--z-inset) + 8);touch-action:none;}'+
       '.cmp-rz[data-c="nw"]{top:-4px;left:-4px;cursor:nwse-resize;}'+
       '.cmp-rz[data-c="ne"]{top:-4px;right:-4px;cursor:nesw-resize;}'+
       '.cmp-rz[data-c="sw"]{bottom:-4px;left:-4px;cursor:nesw-resize;}'+
       '.cmp-rz[data-c="se"]{bottom:-4px;right:-4px;cursor:nwse-resize;}'+
       '.cmp-rz::after{content:"";position:absolute;inset:5px;border-radius:3px;border:2px solid rgba(150,160,175,0.55);border-top:none;border-left:none;opacity:0;transition:opacity 0.15s;}'+
       '#compare-window:hover .cmp-rz::after{opacity:0;}'+   /* (#R47) hide the resize corner-mark (still resizable; the cursor change is the only hint the user wants) */
-      '@media(max-width:768px){'+
-      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:16px;padding-bottom:20px;z-index:4200;overflow:hidden;}'+
-      '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:7;}'+
+      '@media'+window.IntMapDevice.COMPACT+'{'+
+      '#compare-window{left:6px !important;right:6px !important;top:max(8px,var(--safe-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:16px;padding-bottom:20px;z-index:calc(var(--z-toast) + 1200);overflow:hidden;}'+
+      '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:calc(var(--z-inset) + 7);}'+
       '.cmp-resize::after{content:"";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:42px;height:4px;border-radius:2px;background:rgba(150,160,175,0.7);}'+
       /* (#R30/#R31) Clean iOS header — NO chaotic flex-wrap. Title on its own line; the two segmented
          controls fill an even second row; the layer picker is its own row beneath. Close + Minimise are
@@ -175,11 +175,11 @@ window.IntMapModules.compare=function(HOST){
       '.cmp-head .cmp-seg{flex:1 1 0;display:flex;background:var(--input-bg);border-radius:9px;padding:2px;gap:2px;}'+
       '.cmp-head .cmp-seg .cmp-btn{flex:1 1 0;min-width:0;padding:7px 4px;font-size:12px;min-height:32px;background:transparent;border-radius:7px;}'+
       '.cmp-head .cmp-seg .cmp-btn.on{background:var(--primary-fill);color:#fff;}'+
-      '#cmp-close,#cmp-min{position:absolute !important;top:10px;z-index:30 !important;pointer-events:auto !important;width:34px;height:34px;min-width:34px;border-radius:9px;padding:0;display:flex !important;align-items:center;justify-content:center;background:var(--input-bg) !important;color:var(--text-main) !important;border:none;}'+
+      '#cmp-close,#cmp-min{position:absolute !important;top:10px;z-index:calc(var(--z-inset) + 30) !important;pointer-events:auto !important;width:34px;height:34px;min-width:34px;border-radius:9px;padding:0;display:flex !important;align-items:center;justify-content:center;background:var(--input-bg) !important;color:var(--text-main) !important;border:none;}'+
       '#cmp-close{right:10px;} #cmp-min{right:50px;}'+
       /* (#R30) Main-map FABs move to the BOTTOM-LEFT while compare is open — clear of the compare ×
          (top-right), the layer picker, AND the bottom-RIGHT timebar. Moved, never hidden. */
-      'body.cmp-open .m-fab-stack{top:auto !important;bottom:calc(env(safe-area-inset-bottom) + 84px) !important;left:12px !important;right:auto !important;transform:none !important;opacity:1 !important;pointer-events:auto !important;}'+
+      'body.cmp-open .m-fab-stack{top:auto !important;bottom:calc(var(--safe-bottom) + 84px) !important;left:12px !important;right:auto !important;transform:none !important;opacity:1 !important;pointer-events:auto !important;}'+
       '#compare-window.cmp-xray .cmp-head{padding:10px 92px 10px 14px;}'+
       '.cmp-picker select{min-height:40px;font-size:13px;}'+
       '}';
@@ -310,7 +310,7 @@ window.IntMapModules.compare=function(HOST){
       if(!xrayOn()||!win) return; const cm=document.getElementById('compare-map'); if(!cm) return;
       const mcEl=document.getElementById('map-container')||document.body; const mr=mcEl.getBoundingClientRect(); const wr=win.getBoundingClientRect();
       cm.style.position='fixed'; cm.style.inset='auto';
-      cm.style.left=mr.left+'px'; cm.style.top=mr.top+'px'; cm.style.width=mr.width+'px'; cm.style.height=mr.height+'px'; cm.style.zIndex='1';
+      cm.style.left=mr.left+'px'; cm.style.top=mr.top+'px'; cm.style.width=mr.width+'px'; cm.style.height=mr.height+'px'; cm.style.zIndex='calc(var(--z-inset) + 1)';
       const top=Math.max(0,wr.top-mr.top), left=Math.max(0,wr.left-mr.left), right=Math.max(0,mr.right-wr.right), bottom=Math.max(0,mr.bottom-wr.bottom);
       const clip='inset('+top+'px '+right+'px '+bottom+'px '+left+'px round 12px)'; cm.style.clipPath=clip; cm.style.webkitClipPath=clip;
       try{ cmap.render.resize(); }catch(_){}
@@ -578,7 +578,7 @@ window.IntMapModules.compare=function(HOST){
       win.querySelector('#cmp-close').onclick=close;
       /* (#R26) The compare window must not sit ON TOP OF the sidebar — clamp its left edge to the sidebar's
          right edge (desktop, sidebar visible on the left). On mobile it's a full-width sheet → no clamp. */
-      const _sbRight=()=>{ try{ if(window.matchMedia('(max-width:768px)').matches) return 0; const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return 0; const r=sb.getBoundingClientRect(); return (r.width>0 && r.left<=2)?(r.right+8):0; }catch(_){ return 0; } };
+      const _sbRight=()=>{ try{ if(window.IntMapDevice.compact()) return 0; const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return 0; const r=sb.getBoundingClientRect(); return (r.width>0 && r.left<=2)?(r.right+8):0; }catch(_){ return 0; } };
       /* drag by header */
       (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
         h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
@@ -642,7 +642,7 @@ window.IntMapModules.compare=function(HOST){
       try{ document.body.classList.add('cmp-open'); }catch(_){}
       /* (#R26) Make sure the default (bottom-right) position doesn't land ON TOP OF the sidebar on a narrow
          desktop / wide sidebar — nudge the window right of the sidebar if it would overlap. */
-      try{ if(!window.matchMedia('(max-width:768px)').matches){ const sb=document.getElementById('sidebar');
+      try{ if(!window.IntMapDevice.compact()){ const sb=document.getElementById('sidebar');
         if(sb && !sb.classList.contains('collapsed')){ const sr=sb.getBoundingClientRect(); const wr=win.getBoundingClientRect();
           if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; } } } }catch(_){}
       /* (#R22) Resize several times after the window becomes visible so the GL canvas always fills the
@@ -656,7 +656,7 @@ window.IntMapModules.compare=function(HOST){
        didn't cover a LIVE sidebar resize, so widening the sidebar slid it under the window ("サイドバーを
        広げるとCompare view windowがサイドバーの上に載る"). Pushes the window right if the now-wider sidebar
        would overlap it. */
-    window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(window.matchMedia('(max-width:768px)').matches) return;
+    window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(window.IntMapDevice.compact()) return;
       const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return;
       const sr=sb.getBoundingClientRect(), wr=win.getBoundingClientRect();
       if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); } }catch(_){} };

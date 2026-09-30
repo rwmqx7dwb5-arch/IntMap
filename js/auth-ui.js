@@ -143,7 +143,7 @@ window.IntMapModules.authUi=function(HOST){
   function _openSetPassword(isRecovery){
     let d=document.getElementById('setpw-modal');
     if(!d){ d=document.createElement('div'); d.id='setpw-modal';
-      d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:5300;padding:20px;';
+      d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2300);padding:20px;';
       d.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:340px;box-sizing:border-box;">'
         +'<h2 style="margin:0 0 12px;font-size:18px;">'+HOST.escapeHtml(_authL('Set a new password','新しいパスワードを設定','Neues Passwort festlegen','Задать новый пароль','Establecer nueva contraseña'))+'</h2>'
         +'<input id="setpw-input" type="password" autocomplete="new-password" placeholder="'+HOST.escapeHtml(_authL('New password (min. 8, incl. a number)','新しいパスワード（8文字以上・数字を含む）','Neues Passwort (min. 8, mit Ziffer)','Новый пароль (мин. 8, с цифрой)','Nueva contraseña (mín. 8, con número)'))+'" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin-bottom:12px;">'
@@ -197,7 +197,7 @@ window.IntMapModules.authUi=function(HOST){
     else document.body.appendChild(fb);
 
     const m=document.createElement('div'); m.id='auth-modal';
-    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
+    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2000);padding:20px;';
     const inStyle='width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin-bottom:10px;';
     const oaStyle='width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:9px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-weight:600;font-size:13.5px;cursor:pointer;margin-bottom:8px;';
     m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;max-height:92vh;overflow-y:auto;">
@@ -333,7 +333,7 @@ window.IntMapModules.authUi=function(HOST){
     return new Promise(resolve=>{
       let d=document.getElementById('acct-ask');
       if(!d){ d=document.createElement('div'); d.id='acct-ask';
-        d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5400;padding:20px;';
+        d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2400);padding:20px;';
         d.innerHTML='<div class="acct-ask-box" role="dialog" aria-modal="true" aria-labelledby="acct-ask-h">'
           +'<h3 class="acct-ask-h" id="acct-ask-h"></h3>'
           +'<p class="acct-ask-b" id="acct-ask-b"></p>'
@@ -404,7 +404,7 @@ window.IntMapModules.authUi=function(HOST){
     let m=document.getElementById('acct-modal');
     if(!m){
       m=document.createElement('div'); m.id='acct-modal';
-      m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
+      m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2000);padding:20px;';
       /* ══════════════════════════════════════════════════════════════════════════════════════════
          (#R231) THE PROFILE SHEET, REBUILT — 「アカウントのプロフィール欄は、UIをモダンな実装で整理
          して。Display nameとBio設定は廃止。」

@@ -87,11 +87,11 @@ window.IntMapModules.analysisTimeSeries=function(HOST){
           +'<line class="ts-cursor" y1="0" y2="'+H+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
           +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'
         +'</svg>'
-        +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:7px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:5;transform:translate(-50%,-118%);"></div>'
+        +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:7px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:calc(var(--z-inset) + 5);transform:translate(-50%,-118%);"></div>'
         /* (#R35) The intersection dot is an HTML element (perfect circle) — the old SVG <circle> lived in a
            preserveAspectRatio="none" chart, so the non-uniform x/y scale squashed it into an ellipse
            ("ドットが縦に潰れて楕円"). An absolutely-positioned div is immune to that scaling. */
-        +'<div class="ts-dot" style="display:none;position:absolute;width:9px;height:9px;border-radius:50%;background:var(--primary-fill);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.18);pointer-events:none;transform:translate(-50%,-50%);z-index:6;"></div>'
+        +'<div class="ts-dot" style="display:none;position:absolute;width:9px;height:9px;border-radius:50%;background:var(--primary-fill);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.18);pointer-events:none;transform:translate(-50%,-50%);z-index:calc(var(--z-inset) + 6);"></div>'
       +'</div>';
     }
     /* (#R34) Wire each chart's instant crosshair after its HTML is in the DOM. */

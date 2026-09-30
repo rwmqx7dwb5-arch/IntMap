@@ -111,17 +111,17 @@ window.IntMapModules.projView=function(HOST){
     function ensureDOM(){
       if(host) return;
       const st=document.createElement('style'); st.textContent=`
-        .proj-host{ position:absolute; inset:0; z-index:1400; display:none; background:var(--bg-color); }
+        .proj-host{ position:absolute; inset:0; z-index:calc(var(--z-dropdown) + 100); display:none; background:var(--bg-color); }
         .proj-host.on{ display:block; }
         .proj-host canvas{ position:absolute; inset:0; touch-action:none; cursor:grab; }
         .proj-host canvas:active{ cursor:grabbing; }
-        .proj-bar{ position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:2; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; background:var(--glass-fill); -webkit-backdrop-filter:saturate(160%) blur(16px); backdrop-filter:saturate(160%) blur(16px); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:12px; padding:7px 10px; box-shadow:var(--shadow); max-width:calc(100% - 20px); }
+        .proj-bar{ position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:calc(var(--z-inset) + 2); display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; background:var(--glass-fill); -webkit-backdrop-filter:saturate(160%) blur(16px); backdrop-filter:saturate(160%) blur(16px); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:12px; padding:7px 10px; box-shadow:var(--shadow); max-width:calc(100% - 20px); }
         .proj-bar .proj-title{ font-size:12.5px; font-weight:700; color:var(--text-main); }
         .proj-bar select{ padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px; }
         .proj-bar button{ border:1px solid rgba(128,128,128,0.22); background:var(--input-bg); color:var(--text-main); border-radius:8px; padding:6px 10px; font-size:13px; font-weight:600; cursor:pointer; }
         .proj-bar button.proj-close{ background:var(--primary-fill); color:#fff; border-color:transparent; }
         .proj-entry{ -webkit-appearance:none; appearance:none; }
-        @media(max-width:768px){ .proj-bar{ top:calc(env(safe-area-inset-top) + 8px); } }
+        @media${window.IntMapDevice.COMPACT}{ .proj-bar{ top:calc(var(--safe-top) + 8px); } }
       `; document.head.appendChild(st);
       const mc=document.getElementById('map-container')||document.body;
       host=document.createElement('div'); host.className='proj-host';
@@ -480,7 +480,7 @@ window.IntMapModules.isolate=function(HOST){
     function exitBtn(){ if(btn) return btn; btn=document.createElement('button'); btn.id='iso-exit-btn';
       /* (#R11) Exit pill lives at the BOTTOM-center, clear of the timebar / mobile sheet / other UI. */
       /* (#R108) sits a bit LOWER (96→64) and dark-mode gets a WHITE bg / black text (see the #iso-exit-btn CSS rule). */
-      btn.style.cssText='display:none;position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
+      btn.style.cssText='display:none;position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:calc(var(--z-sheet) + 50);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
       btn.onclick=exit; (document.getElementById('map-container')||document.body).appendChild(btn); return btn; }
     /* (#R12) The mask must sit ABOVE every data overlay or surrounding layers bleed through. Layers
        toggled on later (or re-added after a basemap swap) can land above it, so re-assert it to the
@@ -679,7 +679,7 @@ window.IntMapModules.seaRoute=function(HOST){
       }catch(err){ setBody((window.IntMapLang.t(HOST.lang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+err); } busy=false; },30);
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='route-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
-    function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:248px;';
+    function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:calc(var(--z-sheet) - 50);width:248px;';
       p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(window.IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;font-size:12px;">'
         +'<div>'+(window.IntMapLang.t(HOST.lang,"Start","始点","Start","Начало","Inicio"))+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
@@ -939,7 +939,7 @@ window.IntMapModules.moveShape=function(HOST){
     function paint(g){ ensure(); try{ GE().layers.setSourceData('immove-src',{type:'Feature',geometry:g,properties:{}}); }catch(_){} }
     function showPill(name){ try{ if(pill) pill.remove();
       pill=document.createElement('div'); pill.id='immove-pill';
-      pill.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:1450;display:flex;align-items:center;gap:10px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:22px;padding:8px 10px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);font-size:13px;';
+      pill.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + var(--safe-bottom));z-index:calc(var(--z-dropdown) + 150);display:flex;align-items:center;gap:10px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:22px;padding:8px 10px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);font-size:13px;';
       const L=window.IntMapLang.pick(()=>HOST.lang);
       /* (#R123) honest suffix: flat map = true-area preserved (Mercator counter-scale); globe = plain reposition. */
       const sizeNote=_mercNow()?L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real'):L('— true shape preserved','（形状を保持して移動）','— Form bleibt erhalten','— форма сохраняется','— forma conservada');
@@ -1075,7 +1075,7 @@ window.IntMapModules.isochrone=function(HOST){
          lists in css/intmap.css beside every other floating surface, and those rules carry
          `!important`, so 「フロストガラス」/「より透明」 still reach it — «not transparent by DEFAULT»
          is not «never transparent». */
-      panel.style.cssText='position:fixed;left:20px;top:80px;width:min(268px,92vw);z-index:1500;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:14px;overflow:hidden;box-shadow:0 16px 46px rgba(0,0,0,0.44);';
+      panel.style.cssText='position:fixed;left:20px;top:80px;width:min(268px,92vw);z-index:calc(var(--z-sheet) - 150);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:14px;overflow:hidden;box-shadow:0 16px 46px rgba(0,0,0,0.44);';
       panel.innerHTML='<div class="iso-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">🎯 '+LL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable')+'</span><button class="iso-x" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div><div class="iso-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;"></div>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       panel.querySelector('.iso-x').onclick=()=>clear();
@@ -1136,7 +1136,7 @@ window.IntMapModules.arc3d=function(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, hide(){}, animate(){}, draw(){} };
     let cv=null, ctx=null, data=null, raf=0, prog=1, dpr=1, bound=false;
     function ensure(){ if(cv) return; cv=document.createElement('canvas'); cv.id='arc3d-canvas';
-      cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6;';
+      cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:calc(var(--z-inset) + 6);';
       const cont=document.getElementById('map-container'); (cont||document.body).appendChild(cv); ctx=cv.getContext('2d');
       /* (#R95) arc redraw paused while the flight sim drives the camera.
          ⚠⚠ (#R234) AND IT USED TO REDRAW UP TO FOUR TIMES A FRAME. `move`, `zoom`, `rotate` and
@@ -1263,7 +1263,7 @@ window.IntMapModules.objectList=function(HOST){
       /* (#R124) the Objects panel must be OPAQUE ("Objects popupは無条件で透過しないように") — it used the
          semi-transparent --popup-bg (0.72/0.74 alpha) with NO backdrop blur, so the map showed straight through.
          Use the solid --card-bg (#fff / #1c1c1e). */
-      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:74vh;z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:74vh;z-index:calc(var(--z-dropdown) + 102);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       /* ⚠ (#R248) 「ポップアップの上部の帯の高さを短く」 — the band is SIZED HERE, inline, and that is why
          the numbers are here rather than in the stylesheet below: an inline `padding` beats any rule
          #iol-css could add, so a shorter band written there would have been silently ignored (the
@@ -1283,7 +1283,7 @@ window.IntMapModules.objectList=function(HOST){
           +'#iol-panel .iol-ic:hover{background:var(--input-bg);color:var(--text-main);}'
           +'#iol-panel .iol-ic input[type=color]{width:16px;height:16px;border:none;background:none;padding:0;cursor:pointer;}'
           +'#iol-panel .iol-del:hover{color:#fff;background:var(--info-mil,#ff3b30);}'
-          +'#iol-fab{position:fixed;left:16px;bottom:104px;z-index:1401;display:none;align-items:center;gap:6px;height:38px;padding:0 13px;border:none;border-radius:19px;background:var(--card-bg,#1c1c1e);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));box-shadow:0 6px 20px rgba(0,0,0,0.35);font-size:13px;font-weight:700;cursor:pointer;}';
+          +'#iol-fab{position:fixed;left:16px;bottom:104px;z-index:calc(var(--z-dropdown) + 101);display:none;align-items:center;gap:6px;height:38px;padding:0 13px;border:none;border-radius:19px;background:var(--card-bg,#1c1c1e);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));box-shadow:0 6px 20px rgba(0,0,0,0.35);font-size:13px;font-weight:700;cursor:pointer;}';
         document.head.appendChild(st); }
       panel.querySelector('.iol-close').onclick=()=>close();
       panel.querySelector('.iol-clear').onclick=()=>{ if(!_objs.length) return; _objs.slice().forEach(o=>{ try{ o.remove&&o.remove(); }catch(_){} }); setTimeout(renderList,60); };

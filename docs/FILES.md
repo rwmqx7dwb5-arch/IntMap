@@ -1002,7 +1002,17 @@ mobile-map-input.js               **指が地図に届く経路 1 面**——長
                                   ⚠ **マウント点は2つ**（`longPress()` は地図イベント配線から、
                                   `crosshair()` はブロックが在った位置から）——どちらもリスナーの登録順が
                                   観測可能なので、1つにまとめると片方が動く。
-window-manager.js                 浮遊パネルのドラッグ／リサイズ／重なり順
+window-manager.js                 浮遊パネルのドラッグ／リサイズ／ドック（重なり順は ui-stack.js に委ねる）
+ui-stack.js                       **重なり順の持ち主** window.IntMapStack（ui-layer-owner）。浮遊ウィンドウ同士の
+                                  順（`order`＝旧 `bringToFront`）と「いま使っているパネル」の `.im-front`／
+                                  `body.im-float-front` を 1 本の capture リスナーで決める。帯の端は css/intmap.css の
+                                  `--z-window` / `--z-shell-front` / `--z-front` を**読む**（数を持たない）。`z(name,step)` は
+                                  実行時に組む style 用の層式、`clipOf(el)` は #823 の形（祖先の overflow による切り取り）の計測。
+ui-device.js                      **画面配置と端末の持ち主** window.IntMapDevice（ui-layer-owner）。電話/デスクトップの
+                                  境界 `(max-width:768px)` を js/ で唯一書く場所（`compact()`＝`isMobile()`、注入 CSS は
+                                  `media()` / `COMPACT`）、コスト用の `phoneBudget()`（旧 `_imPhoneClass` の本体）、
+                                  形の `kind()`（phone / phone-landscape / tablet / desktop）。`<body>` に `im-compact`・
+                                  `im-dev-*`・`im-portrait`/`im-landscape` を保つ。
 workspace.js                      浮遊ウィンドウのワークスペースモード（デスクトップ）
 session-tabs.js                   タブバーと、その裏の OS 登録と、両方を復元するセッション
 keyboard-shortcuts.js             キーボードと、それを一覧するカード

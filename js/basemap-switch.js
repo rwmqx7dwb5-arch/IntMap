@@ -273,14 +273,14 @@ window.IntMapBasemapSwitch = (function () {
   /* Built only on a phone, and rebuilt when the width crosses back — same contract as the FAB stack. */
   function sync() {
     var isM = false;
-    try { isM = window.matchMedia('(max-width:768px)').matches; } catch (_) { }
+    try { isM = window.IntMapDevice.compact(); } catch (_) { }
     if (isM) build(); else destroy();
   }
 
   function install() {
     sync();
     try {
-      var mq = window.matchMedia('(max-width:768px)');
+      var mq = window.matchMedia(window.IntMapDevice.COMPACT);
       if (mq.addEventListener) mq.addEventListener('change', sync);
     } catch (_) { }
     window.addEventListener('orientationchange', function () { setTimeout(sync, 220); });

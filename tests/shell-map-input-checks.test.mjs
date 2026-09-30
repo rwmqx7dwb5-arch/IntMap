@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
+import { installDevice } from './helpers/ui-device.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -296,6 +297,7 @@ function crosshairRig({ mobile = true } = {}) {
   g.IntMapLang = { t: (l, en) => en };
   g.addEventListener = () => {};
   g.matchMedia = () => ({ matches: mobile });
+  installDevice(g);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   const HOST = {
     isMobile: () => mobile,
     toolMode: null, lang: 'en', lastElev: '',
