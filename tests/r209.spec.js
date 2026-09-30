@@ -247,6 +247,8 @@ const MEMBER = {
   companyFacilities: ['IntMapCompanyFacilities', 'show'],
   warLayer: ['__imWarFronts', 'toggle'],
   newsEvents: ['IntMapNewsEvents', 'load'],
+  spaceBody: ['__imSpaceBody', 'open'],   /* (startup-lazy-layers) the explorer behind the zoom-floor approach */
+  worldPacksBody: ['__wpTrade', 'toggle'],   /* (startup-lazy-layers) the five World-data layers behind their eager rows */
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {

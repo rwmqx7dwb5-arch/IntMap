@@ -521,7 +521,8 @@ data-layers.js                    データレイヤーの目録＋エンジン�
 layer-packs.js                    追加レイヤーパック（地球と空／土地被覆／ベータ2／宗教・言語／
                                   タイムゾーン／GIBS の科学プロダクト）
 wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新
-world-packs.js                    世界データ層——貿易・エネルギー・気象警報・潮汐・作物（282 KB）
+world-packs-rows.js               世界データ層の行・共有ツールキット（_ui）・共有リンクの選択——起動時に要る部分だけ
+world-packs.js                    世界データ層の本体——貿易・エネルギー・気象警報・潮汐・作物（初めて行を点けたときに取る）
 precip-annual.js                  年降水量——国別平均ではなく実測グリッド
 ocean-currents.js                 海流——同梱のアトラス盤
 subcable-info.js                  海底ケーブル／陸揚げ地点のクリック情報ポップアップ。
@@ -924,11 +925,13 @@ navigation-ui.js                  案内専用 UI（上の指示カードと下�
 ### 3.9 `js/` — 宇宙・空
 
 ```
-space.js                          宇宙エクスプローラ window.IntMapSpace（220 KB）
+space-approach.js                 宇宙への入口——ズームの床のジェスチャー・ゲージ・window.IntMapSpace のファサード
+space.js                          宇宙エクスプローラ本体（床でのジェスチャーが始まった／Atlas が開いたときに取る）
 space-bodies.js                   ほかに何があるか（探査機・小惑星・太陽系外）window.IntMapSpaceBodies
 space-cosmos.js                   太陽系の外へ出る距離の梯子 window.IntMapCosmos
 space-events.js                   天文現象 window.IntMapSpaceEvents
 space-sky.js                      地球の背後の実際の星空 window.IntMapSky
+star-catalogue.js                 data/stars.bin の読み手と復号器（1本）——星空とエクスプローラが共有
 ephemeris.js                      惑星の実位置 window.IntMapEphemeris
 night-sky.js                      地上の1点から見た空 window.IntMapNightSky
 satellites-live.js                ライブ衛星 window.IntMapSatellites

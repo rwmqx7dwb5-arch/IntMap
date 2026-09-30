@@ -28,6 +28,7 @@ import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { asClassicScript } from './app-source.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { decodeStarCatalogue } from '../js/star-catalogue.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -95,15 +96,33 @@ test('R208 ③a: stars.bin carries the measured parallax, and 0 means unknown', 
   assert.equal(bin.length, 12 + manifest.count * 8, 'eight bytes per star, not six');
 });
 
-/* ⚠ READ, NOT RUN: both readers parse inside a fetch().then of a WebGL/canvas view; the stride rule is
-   one line in each, and a hard-coded 6 would be a silent sky of noise. */
-test('R208 ③b: both readers take the stride from the magic, so either format loads', () => {
+/* (startup-lazy-layers) RUN, NOT READ: the record layout is decoded by ONE function now
+   (js/star-catalogue.js), so the claim «either format loads» is evaluated on the shipped file and on
+   the same bytes rewritten as IMSTAR1 — a hard-coded stride would put Sirius somewhere else in one of
+   them. Both views reach that decoder and neither walks the bytes itself any more. */
+test('R208 ③b: the one decoder takes the stride from the magic, so either format loads', () => {
+  const bin = readFileSync(join(ROOT, 'data', 'stars.bin'));
+  const v2 = decodeStarCatalogue(bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength));
+  assert.equal(v2.format, 'IMSTAR2');
+  assert.ok(v2.plxMas && v2.plxMas.length === v2.n, 'IMSTAR2 carries a parallax per star');
+  /* the same stars in the six-byte layout */
+  const v1b = Buffer.alloc(12 + v2.n * 6);
+  v1b.write('IMSTAR1', 0, 'latin1'); v1b.writeUInt32LE(v2.n, 8);
+  for (let i = 0; i < v2.n; i++) bin.copy(v1b, 12 + i * 6, 12 + i * 8, 12 + i * 8 + 6);
+  const v1 = decodeStarCatalogue(v1b.buffer.slice(v1b.byteOffset, v1b.byteOffset + v1b.byteLength));
+  assert.equal(v1.plxMas, null, 'IMSTAR1 has no parallax column, rather than a column of zeros');
+  let worst = 0;
+  for (let i = 0; i < v2.n; i++) worst = Math.max(worst, Math.abs(v1.ra[i] - v2.ra[i]), Math.abs(v1.dec[i] - v2.dec[i]), Math.abs(v1.mag[i] - v2.mag[i]));
+  assert.equal(worst, 0, 'the two layouts must decode to the same sky');
+  /* Sirius, where the catalogue says it is (RA 101.287°, Dec −16.716°, V −1.46) */
+  let best = Infinity;
+  for (let i = 0; i < v2.n; i++) best = Math.min(best, Math.hypot(v2.ra[i] - 101.287, v2.dec[i] + 16.716) + Math.abs(v2.mag[i] + 1.46));
+  assert.ok(best < 0.1, 'Sirius is not where the decoder puts it (' + best + ')');
+  assert.throws(() => decodeStarCatalogue(new ArrayBuffer(16)), /bad catalog header/);
   for (const f of ['js/space-sky.js', 'js/space.js']) {
-    const src = read(f);
-    assert.ok(/magic!=='IMSTAR1'&&magic!=='IMSTAR2'/.test(src), `${f} accepts both formats`);
-    assert.ok(/STRIDE=\(magic==='IMSTAR2'\)\?8:6/.test(src), `${f} derives the stride`);
-    assert.ok(!/12\+i\*6/.test(src), `${f} still has a hard-coded 6-byte stride — rebuilding the ` +
-      'catalogue would shift every field by two bytes and the sky would become noise');
+    const src = codeOnly(read(f));
+    assert.match(src, /loadStarCatalogue\(\)/, `${f} reads the catalogue through the one decoder`);
+    assert.ok(!/IMSTAR|getUint16\(o/.test(src), `${f} walks the catalogue bytes itself again — a second decoder that can disagree`);
   }
 });
 

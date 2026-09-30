@@ -91,7 +91,7 @@ test('R270 ④ one year row, driving the ONE clock, on every layer whose year is
     assert.ok(new RegExp('legendClockYear\\(' + el + ',').test(dl), `${el} must carry the year row`);
   }
   /* the three world-pack layers read the same builder rather than growing one of their own */
-  const wp = codeOnly(read('js/world-packs.js'));
+  const wp = codeOnly(read('js/world-packs-rows.js') + read('js/world-packs.js'))   /* (startup-lazy-layers) the panel toolkit and the layers that call it */;
   assert.match(wp, /clockYear\(opts\)\{[\s\S]*?window\._legendClockYear/, 'the panel must delegate to it');
   /* ⚠ NOT «exactly three». Energy asks twice on purpose: its bounds are the CSV's own year span, so
      the row can only be built once the file has landed, and the render runs before that. */

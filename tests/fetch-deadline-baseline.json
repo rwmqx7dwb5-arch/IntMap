@@ -1,6 +1,6 @@
 {
  "//": "written by scripts/fetch-deadlines.mjs --update — fetch() calls with no signal, per file; ratcheted both ways by check:static",
- "total": 125,
+ "total": 123,
  "files": {
   "js/ai-core.js": 1,
   "js/aircraft-detail.js": 1,
@@ -46,8 +46,7 @@
   "js/shakemap.js": 1,
   "js/sims.js": 3,
   "js/space-bodies.js": 1,
-  "js/space-sky.js": 1,
-  "js/space.js": 3,
+  "js/space.js": 2,
   "js/subcable-info.js": 1,
   "js/terrain-water.js": 1,
   "js/tile-warm.js": 1,
@@ -57,7 +56,8 @@
   "js/vs30-mask.js": 1,
   "js/war-layer.js": 1,
   "js/wb-layers.js": 1,
-  "js/world-packs.js": 19,
+  "js/world-packs-rows.js": 1,
+  "js/world-packs.js": 18,
   "js/wx-ecmwf.js": 2,
   "src/aviation-worker.js": 1,
   "src/photo-geo-worker.js": 1,

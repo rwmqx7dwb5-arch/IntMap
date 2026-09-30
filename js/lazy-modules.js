@@ -115,11 +115,62 @@ export const LAZY_REGISTRY = Object.freeze({
   shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST) => { window.IntMapShakeMap=window.IntMapModules.shakeMap(IM_HOST); } },
   radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST) => { window.IntMapRadiationObs=window.IntMapModules.radiationLayer(IM_HOST); } },
   netHealthLive: { publishes: '__imNetHealth', load: () => import('./net-health-live.js'), mount: (IM_HOST) => { window.IntMapModules.netHealthLive(IM_HOST); } },
+  spaceBody: { publishes: '__imSpaceBody', load: () => import('./space.js'), mount: (IM_HOST) => { window.__imSpaceBody=window.IntMapModules.spaceBody(IM_HOST); } },
+  worldPacksBody: { publishes: '__wpTrade', load: () => import('./world-packs.js'), mount: (IM_HOST) => { window.IntMapModules.worldPacksBody(IM_HOST); } },
 });
 /* the boot guard's two lists, derived: the factory-backed names, and the one registered by a file
    nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically — #R408) */
 export const LAZY_NAMES = Object.freeze(Object.keys(LAZY_REGISTRY).filter((n) => !LAZY_REGISTRY[n].self));
 export const CARRIED_NAMES = Object.freeze(['aircraftPoints']);
+
+/* ══ (startup-lazy-layers) AN EAGER ROW WHOSE LAYER IS NOT ══════════════════════════════════════
+ *  A Layers row has to exist at boot (the manifest, the session restore, the share link and Atlas's
+ *  catalogue all find a layer by its row), but what the row switches does not. The row modules that
+ *  defer their bodies (js/world-packs-rows.js, js/layer-packs.js …) all need the same three answers,
+ *  so they are written once, here:
+ *
+ *   · `lazyBody(ask)` — the ONE promise of the body's arrival, and `run(fn)`, which calls `fn(ok)`
+ *     IN THE ORDER IT WAS ASKED: every click queues on that one promise, so on→off before the file
+ *     lands reaches the layer as on, then off — never as a late «on» under an unticked row
+ *     (CONSTITUTION §3). Once the body is here `run` is SYNCHRONOUS again, so a caller that ticks a
+ *     box and reads the layer's state in the same turn (Atlas, `…Toggle` helpers) sees what it did
+ *     exactly as it did when the body was eager. `asked()` lets «off» skip a download: switching off
+ *     something nobody fetched is already true.
+ *     ⚠ `ask` is a function the CALLER writes as `window.IntMapLazy.need('<name>')` — the literal is
+ *     what tests/layer-manifest-checks ③ and the static reachability gate read, so it stays at the
+ *     call site rather than being assembled here.
+ *   · `lazyRowFailed(HOST, cb)` — a body that did not arrive unticks its row and says so in words.
+ *     js/lazy-modules.js has already recorded why (window.__imLazyCheck); a lit, empty row is the
+ *     silent death #R209 exists to prevent. */
+/** @type {(ask: () => Promise<boolean>) => { need: () => Promise<boolean>, asked: () => boolean, arrived: () => boolean, run: (fn: (ok: boolean) => void) => void }} */
+export const lazyBody = (ask) => {
+  /** @type {Promise<boolean>|null} */ let asked = null;
+  let arrived = false;
+  const need = () => {
+    if (!asked) {
+      const p = Promise.resolve().then(ask).then(
+        (ok) => { if (ok) arrived = true; else if (asked === p) asked = null; return !!ok; },
+        () => { if (asked === p) asked = null; return false; });
+      asked = p;
+    }
+    return asked;
+  };
+  return {
+    need,
+    asked: () => !!asked,
+    arrived: () => arrived,
+    run: (fn) => { if (arrived) { fn(true); return; } need().then(fn); },
+  };
+};
+/** @type {(HOST: any, cb: HTMLInputElement|null|undefined) => void} */
+export const lazyRowFailed = (HOST, cb) => {
+  const w = /** @type {any} */ (window);
+  try {
+    HOST.imToast(w.IntMapLang.t(HOST.lang, 'This layer could not be loaded — check your connection and try again.',
+      'このレイヤーを読み込めませんでした。接続を確認して、もう一度お試しください。'));
+  } catch (_) { }
+  if (cb && cb.checked) { cb.checked = false; const r = cb.closest('.lyr-row'); if (r) r.classList.remove('on'); }
+};
 
 /* ══ A CHUNK THAT WOULD NOT DOWNLOAD — WAS IT A NEW DEPLOY, OR JUST THE NETWORK? ═══════════════
  *  Measured on production: a tab opened on one build and kept across the next deploy asks for

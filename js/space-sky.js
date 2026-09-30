@@ -49,6 +49,8 @@
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+/* (startup-lazy-layers) data/stars.bin, one read and one decoder for both skies */
+import { loadStarCatalogue } from './star-catalogue.js';
 window.IntMapSky=(function(){
   'use strict';
   const GE=()=>window.IntMapGeoEngine;
@@ -151,32 +153,17 @@ window.IntMapSky=(function(){
 
   /* ── the catalogue ─────────────────────────────────────────────────────────────────────────── */
   let stars=null, starsLoading=null, starErr=null;
-  function catalogueUrl(){
-    /* Same trick the rest of the app uses for its bundled data: relative to the document, so it
-       works from the Pages sub-path, from vite preview and from the test server alike. */
-    try{ return new URL('data/stars.bin',document.baseURI).toString(); }catch(_){ return 'data/stars.bin'; }
-  }
+  /* (startup-lazy-layers) the bytes come through js/data-door.js and the record layout is decoded ONCE
+     by js/star-catalogue.js — the space explorer (js/space.js) reads the same file through the same
+     door, so the two views share one request and one decoder. This view keeps what it derives: the
+     colours and sizes below, and the precession buffers. */
   function loadStars(){
     if(stars||starsLoading) return starsLoading||Promise.resolve(stars);
-    starsLoading=fetch(catalogueUrl()).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.arrayBuffer(); })
-      .then(buf=>{
-        const dv=new DataView(buf);
-        let magic=''; for(let i=0;i<7;i++) magic+=String.fromCharCode(dv.getUint8(i));
-        /* (#R208) IMSTAR2 added the measured parallax as two more bytes per star. THE STRIDE COMES
-           FROM THE MAGIC, so this reader serves either version — the alternative is that rebuilding
-           the catalogue silently shifts every field by two bytes and the sky turns to noise. This
-           view draws a sky on a sphere and does not use the distance; it only has to read past it. */
-        if(magic!=='IMSTAR1'&&magic!=='IMSTAR2') throw new Error('bad catalog header');
-        const STRIDE=(magic==='IMSTAR2')?8:6;
-        const n=dv.getUint32(8,true);
-        const ra=new Float32Array(n), dec=new Float32Array(n), mag=new Float32Array(n);
+    starsLoading=loadStarCatalogue()
+      .then(cat=>{
+        const n=cat.n, ra=cat.ra, dec=cat.dec, mag=cat.mag;
         const cr=new Uint8Array(n), cg=new Uint8Array(n), cb=new Uint8Array(n);
-        for(let i=0;i<n;i++){ const o=12+i*STRIDE;
-          ra[i]=dv.getUint16(o,true)*360/65536;
-          dec[i]=dv.getInt16(o+2,true)*90/32767;
-          mag[i]=dv.getUint8(o+4)/20-2;
-          const rgb=bvToRGB(dv.getInt8(o+5)/50);
-          cr[i]=rgb[0]; cg[i]=rgb[1]; cb[i]=rgb[2]; }
+        for(let i=0;i<n;i++){ const rgb=bvToRGB(cat.bv[i]); cr[i]=rgb[0]; cg[i]=rgb[1]; cb[i]=rgb[2]; }
         stars={ n, ra, dec, mag, cr, cg, cb, precessedFor:null, pra:new Float32Array(n), pdec:new Float32Array(n),
                 vx:new Float32Array(n), vy:new Float32Array(n), vz:new Float32Array(n),
                 css:new Array(n), sz:new Float32Array(n) };

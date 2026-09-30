@@ -22,6 +22,9 @@ test.beforeAll(async ({ browser }) => {
     try { return !!window.__imap && window.IntMapGeoEngine.canDraw(); } catch (_) { return false; }
   }, null, { timeout: 60000 });
   await page.waitForTimeout(2500);
+  /* (startup-lazy-layers) the explorer is fetched on first demand (js/space-approach.js); these checks drive its
+     whole API synchronously, so they ask for it once, up front */
+  await page.evaluate(() => window.IntMapSpace.ready());
 });
 test.afterAll(async () => { await page?.close(); });
 

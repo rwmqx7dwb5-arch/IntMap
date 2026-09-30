@@ -78,6 +78,8 @@ interface IntMapPublished {
   IntMapShakeMap: any;
   IntMapRadiationObs: any;
   IntMapVolume3D: any;
+  /** the space explorer's own API, once js/space.js has arrived (js/space-approach.js is the eager facade) */
+  __imSpaceBody: any;
   /** js/lazy-modules.js — index.html's vite:preloadError listener asks it which reload prompt is true (stale-tab-chunks) */
   __imChunkFailed: () => void;
 }

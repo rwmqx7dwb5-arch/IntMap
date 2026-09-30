@@ -91,7 +91,7 @@ test('#R218 ⑥ …all six display switches default ON and their data is asked f
     'the populations default on but nothing fetches them when the view opens');
 });
 test('#R218 ⑥ …the sources panel opens upward so its button does not move, and the return gauge is above the sky', () => {
-  const s = code('js/space.js');
+  const s = code('js/space-approach.js') + code('js/space.js')   /* (startup-lazy-layers) the approach gauge is the eager half */;
   assert.match(s, /flex-direction:column-reverse/, 'the sources panel still pushes its own button up the screen');
   const z = /gauge\.style\.cssText='position:fixed;bottom:96px;transform:translateX\(-50%\);z-index:(\d+);/.exec(s);
   assert.ok(z, 'the approach gauge lost its style');

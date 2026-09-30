@@ -45,7 +45,7 @@ import { codeOnly } from '../scripts/code-only.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 
-const WP = () => codeOnly(read('js/world-packs.js'));
+const WP = () => codeOnly(read('js/world-packs-rows.js') + read('js/world-packs.js'))   /* (startup-lazy-layers) the toolkit and the five layers */;
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
 /* (#R293) js/wx-reanalysis.js is gone — see ⑩ and ⑪ */

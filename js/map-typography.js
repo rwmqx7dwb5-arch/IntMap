@@ -163,6 +163,81 @@ window.IntMapMapTypography = (function () {
   }
   try { window.addEventListener('intmap-lang', syncCjkFamily); } catch (_) { }
 
+  /* ══ A CJK FACE THAT ARRIVES AFTER THE MAP DREW WITH THE FALLBACK ═══════════════════════════════
+     The renderer rasterises CJK itself from `cjkFamily()` and keeps every glyph it drew. The Noto faces
+     are Google Fonts unicode-range subsets, fetched when a character first needs them — after the first
+     paint whether or not their stylesheet blocks rendering — so a label drawn a moment early kept the
+     fallback's shapes. The FACT is document.fonts reporting that a face of one of those families
+     finished loading; on that, the glyph cache is emptied once (coalesced: one burst of subsets is one
+     refresh), never on a timer. */
+  const CJK_FACE = /Noto Sans (JP|SC|TC)|Pretendard/i;
+  let _glyphRefresh = 0;
+  function refreshAfterFaces(ev) {
+    try {
+      const faces = (ev && ev.fontfaces) || [];
+      if (!faces.some((f) => CJK_FACE.test(String(f && f.family || '')))) return;
+      if (_glyphRefresh) return;
+      _glyphRefresh = requestAnimationFrame(() => {
+        _glyphRefresh = 0;
+        try { const GE = window.IntMapGeoEngine; if (GE && GE.scene && GE.scene.refreshCjkGlyphs) GE.scene.refreshCjkGlyphs(); } catch (_) { }
+      });
+    } catch (_) { }
+  }
+  try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', refreshAfterFaces); } catch (_) { }
+
+  /* ══ (startup-lazy-layers) THE WEB FONTS THIS READER'S FACES NEED — ONLY THOSE, AND NOT BEFORE THE FIRST PAINT ══
+     index.html used to request Noto Sans JP + SC + TC, four weights each, as ONE render-blocking
+     stylesheet. MEASURED 2026-09-30 (the css2 URL index.html carried, Chrome's user agent):
+     1,386,296 bytes of CSS, 378,319 gzipped — each family is ~120 unicode-range @font-face rules per
+     weight (JP 456,260 · SC 449,300 · TC 480,736 bytes alone) — fetched and parsed before the first
+     paint of every session in every language. The font FILES were already lazy (a subset is fetched
+     the first time a glyph in its range is drawn); the rule sheets were not.
+     ⚠ WHICH FAMILIES IS NOT «THE UI LANGUAGE'S». `HAN_ALL` above draws every CJK place name that is
+     somebody else's local name, for EVERY reader, so SC is needed by a Japanese and an English map as
+     much as by a Simplified one. The set is `_readerFaces()` itself — the faces the labels are drawn
+     in, which is also a superset of the one face css/fonts.css gives the UI of each language — minus
+     the families this origin already declares (css/fonts.css bundles Inter and Pretendard; which ones
+     that is, is asked of `document.fonts`, not written down here). Measured result: ja / en / de / fr /
+     ru / es request JP + SC, zh-Hant TC + SC, zh-Hans SC, ko SC — TC is the one family only one
+     setting needs, and nobody needs all three.
+     ⚠ NOT RENDER-BLOCKING, SO THE FIRST FRAMES CAN BE IN THE SYSTEM CJK FACE. css/fonts.css names
+     that fallback per language and has been `display=swap` since #R242, and the launch screen covers
+     the UI until the map is ready. What this does NOT fix: MapLibre's TinySDF keeps a CJK glyph it
+     rasterised before the face arrived — a race the lazily fetched font files already had, which
+     moves the rule sheet's arrival into it too (dev-notes/2026-09-30-startup-lazy-layers.md). */
+  const WEB_FONT_WEIGHTS = '400;500;600;700';   /* the weights index.html requested since #R242 */
+  function _declared(family) {
+    try {
+      const fs = document.fonts; if (!fs || typeof fs.forEach !== 'function') return false;
+      let yes = false; fs.forEach((f) => { if (String(f.family).replace(/^["']|["']$/g, '') === family) yes = true; });
+      return yes;
+    } catch (_) { return false; }
+  }
+  /** the Google Fonts stylesheets this reader needs, as { family, href } — nothing already declared here */
+  function webFonts() {
+    return _readerFaces().filter((f) => !_declared(f)).map((family) => ({
+      family, href: 'https://fonts.googleapis.com/css2?family=' + family.replace(/ /g, '+') + ':wght@' + WEB_FONT_WEIGHTS + '&display=swap',
+    }));
+  }
+  const _asked = new Set();
+  function ensureWebFonts() {
+    try {
+      for (const w of webFonts()) {
+        if (_asked.has(w.href)) continue; _asked.add(w.href);
+        const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = w.href; l.dataset.imWebFont = w.family;
+        document.head.appendChild(l);
+      }
+    } catch (_) { /* a document without a head (a node check) asks for nothing */ }
+    return Array.from(_asked);
+  }
+  /* after the language is known (js/locale-boot.js writes <html lang> during module evaluation, which is
+     over by DOMContentLoaded), and again whenever it changes */
+  try {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureWebFonts);
+    else if (document.readyState) ensureWebFonts();
+    window.addEventListener('intmap-lang', ensureWebFonts);
+  } catch (_) { }
+
   /* ⚠ (#R253) …AND THE SERVER HAS NEVER HEARD OF THOSE STACK NAMES. `text-font` doubles as the glyph
      URL, so a stack called «Noto Sans JP,Noto Sans SC» would 404 for every range the local
      rasteriser does NOT handle (Arabic, Thai, Devanagari…). The Latin/Cyrillic ranges already come
@@ -339,5 +414,5 @@ window.IntMapMapTypography = (function () {
   }
   installFlagFont();
 
-  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, placeFont, readerFont, syncCjkFamily, glyphRewrite, bandBox, bandText, declutterNewsBands, installFlagFont };
+  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, placeFont, readerFont, syncCjkFamily, webFonts, ensureWebFonts, glyphRewrite, bandBox, bandText, declutterNewsBands, installFlagFont };
 })();

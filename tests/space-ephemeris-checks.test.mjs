@@ -207,7 +207,7 @@ test('R197 space ⑧ the bundled worlds: textures, names and the list of what is
 
 test('R197 space ⑨ the button is bound to the zoom floor, not to a guess about it', () => {
   /* spelling kept — js/space.js's predicate reads the live renderer and the Atlas case lives in the console's switch; neither runs outside the app */
-  const sp = rd('js/space.js');
+  const sp = rd('js/space-approach.js') + rd('js/space.js');
   assert.match(sp, /function atFloor\(\)\{ return zoomNow\(\)<=minZoom\(\)\+0\.06; \}/, 'the predicate');
   assert.match(sp, /GE\(\)\.camera\.getMinZoom&&GE\(\)\.camera\.getMinZoom\(\)/, 'asked of the renderer');
   assert.doesNotMatch(sp, /zoomNow\(\)<=0\.0[0-9]/, 'and not compared against a literal zero');

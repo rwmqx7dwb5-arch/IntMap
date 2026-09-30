@@ -47,7 +47,7 @@ const read = (p) => (p === 'js/i18n.js'
 
 /* ── 6 · the new world layers ─────────────────────────────────────────────────────────────────── */
 test('R211 trade: the width is a square root of a ratio, and the value is never rescaled', () => {
-  const src = read('js/world-packs.js');
+  const src = read('js/world-packs-rows.js') + read('js/world-packs.js');
   /* ⚠ the instruction is a RELATION: not linear. Assert the shape, not the two constants. */
   assert.match(src, /const w=[\d.]+\+[\d.]+\*Math\.sqrt\(Math\.max\(0,d\.v\)\/Math\.max\(1,vmax\)\);/,
     'line width follows the square root of the share');
@@ -108,7 +108,7 @@ test('R211 world layers: nothing is shipped, every fetch is checked, and silence
 });
 
 test('R211 world layers: a refused layer add is retried, and a style swap puts them back', () => {
-  const src = read('js/world-packs.js');
+  const src = read('js/world-packs-rows.js') + read('js/world-packs.js');
   assert.match(src, /function whenDrawable\(fn,tries\)\{/, 'adds retry rather than being tried once');
   assert.match(src, /GE\(\)\.events\.on\('styledata'/, 'and a basemap swap re-applies them');
   const hooks = src.match(/onRestyle\(\(\)=>/g) || [];

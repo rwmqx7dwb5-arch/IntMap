@@ -263,7 +263,7 @@ const read = (p) => (p === 'js/i18n.js'
 
 /* ── ⑧ the space explorer ───────────────────────────────────────────────────────────── */
 test('#R216 ⑧ space: the hint starts earlier, the ✕ animates, and the deep sky is named', () => {
-  const s = read('js/space.js');
+  const s = read('js/space-approach.js') + read('js/space.js')   /* (startup-lazy-layers) the approach and the explorer */;
   const m = /const\s+NEAR_FLOOR\s*=\s*([\d.]+)/.exec(s);
   assert.ok(m, 'NEAR_FLOOR is gone');
   assert.ok(parseFloat(m[1]) >= 2, 'the space hint still starts less than two zoom levels out');

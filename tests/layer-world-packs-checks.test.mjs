@@ -21,6 +21,10 @@ import { readLF } from '../scripts/eol.mjs';
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+/* (startup-lazy-layers) the world-data family is two files: the rows and the shared toolkit (eager,
+   js/world-packs-rows.js) and the five layers (fetched on demand, js/world-packs.js). A check about the
+   family reads both; a check about the toolkit alone reads the first. */
+const worldPacks = () => read('js/world-packs-rows.js') + read('js/world-packs.js');
 
 /* ══════════ from tests/r212-checks.test.mjs — 4 of its 15 test(s) ══════════ */
 {
@@ -58,7 +62,7 @@ test('R212 ①: trade arcs carry direction — an icon layer along the line, and
 
 /* ── 2. a panel closed is a layer off ─────────────────────────────────────────────────────────── */
 test('R212 ②: every world-data panel drives its own layer row when it is closed', () => {
-  const s = read('js/world-packs.js');
+  const s = worldPacks();
   assert.match(s, /function makePanel\(id,title,cbId/, 'makePanel takes the row it belongs to');
   /* ⚠ (#R215) THE ✕ IS THE LEGEND'S OWN NOW. 「いや汎用の凡例の方に統合させろ。余計な例外作んなぼけ」 —
      the panel is no longer a window of this file's making, it IS `.data-legend.generic-legend`, whose
@@ -77,9 +81,13 @@ test('R212 ②: every world-data panel drives its own layer row when it is close
 
 /* ── 3. electricity and primary energy are ONE layer with a switch ─────────────────────────────── */
 test('R212 ③: the energy mix is one row, and its legend is built from the paint ramp', () => {
-  const s = read('js/world-packs.js');
+  const s = worldPacks();
   assert.ok(!/'wp-dl-elec'|'wp-dl-prim'/.test(s), 'the two separate rows are gone');
-  assert.match(s, /\['energy','#[0-9a-f]{6}',v=>window\.__wpEnergy\.toggle\(v\)\]/, 'one row drives one toggle');
+  /* (startup-lazy-layers) the row names its layer; what it switches is that layer's ONE entry point,
+     which the body publishes when it arrives */
+  assert.match(s, /\['energy','#[0-9a-f]{6}'\]/, 'one row for the energy mix');
+  assert.match(s, /energy:'__wpEnergy'/, 'the row drives the energy layer');
+  assert.match(s, /window\.__wpEnergy=\{ toggle/, 'and that layer publishes one toggle');
   /* the legend and the paint expression must come from the SAME array — one ramp, not two copies */
   assert.match(s, /const ENERGY_RAMP=\{/, 'the ramp is data at the factory top level (#R211)');
   assert.match(s, /ramp=\['interpolate',\['linear'\],\['to-number',\['feature-state',key\],-1\]\]\s*\n?\s*\.concat\(ENERGY_RAMP\[k\]/,
@@ -114,7 +122,7 @@ test('R212 ⑤: the crop layer draws FAO GAEZ cells, and its scale does not move
    「いや汎油の凡例の方に統合させろ。余計な例外作んなぼけ」 — the failure this guards is a SECOND
    floating box appearing beside the app's own legend, which is what the report was about. */
 test('R215 ①a: the world-data panel is the generic legend, not a window of its own', () => {
-  const wp = read('js/world-packs.js');
+  const wp = worldPacks();
   /* it must go through the app's own legend machinery… */
   assert.match(wp, /_registerLayerOpacity/, 'the panel registers through the standard legend/opacity path');
   assert.match(wp, /_hideGenericLegend/, 'closing the layer hides that same legend');
@@ -231,7 +239,7 @@ const code = (p) => codeOnly(read(p));
 
 /* ── ② closing a world-data legend must stay closed ──────────────────────────────────── */
 test('#R216 ② makePanel.claim() cannot re-open a panel the user closed', () => {
-  const s = read('js/world-packs.js');
+  const s = read('js/world-packs-rows.js');
   assert.match(s, /let\s+_want\s*=\s*false/, 'the panel has no idea whether it should be shown');
   /* hide() records the intent and claim() restores it — _registerLayerOpacity ends with
      display='block', which is what made the trade window come back a moment after every close */
@@ -249,7 +257,7 @@ test('#R216 ③ industry-web uses the engine contract name for source data', () 
 });
 test('#R216 ③ …and nothing else in js/ calls the non-existent name either', () => {
   /* the contract is one word; a second caller of the wrong one would fail the same silent way */
-  const files = ['js/industry-web.js', 'js/world-packs.js', 'js/ocean-currents.js'];
+  const files = ['js/industry-web.js', 'js/world-packs.js', 'js/world-packs-rows.js', 'js/ocean-currents.js'];
   for (const f of files) assert.equal(/\.layers\.setData\s*\(/.test(code(f)), false, f + ' calls layers.setData');
 });
 
@@ -258,7 +266,7 @@ test('#R216 ④ the country-geometry flush can be forced by a layer that is abou
   const a = read('js/app-body.js');
   assert.match(a, /_imFlushCountryGeo\s*=\s*function\(force\)/, 'the flush takes no force flag');
   assert.match(a, /force\s*===\s*true\s*\|\|\s*countryInfoOn/, 'the Countries-info gate is still the only way in');
-  const w = read('js/world-packs.js');
+  const w = worldPacks();
   assert.match(w, /_imFlushCountryGeo\(true\)/, 'the world-data families do not ask for it');
   /* setSourceData clears feature state, so a flush that lands after the paint must repaint */
   assert.match(w, /function hiResCountries\(after\)/, 'the retry cannot repaint');
@@ -396,7 +404,7 @@ function balanced(src, i, open, close) {
    ⑪ js/world-packs.js makePanel().open() — the guard skips the layout, never the body
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 function panelRig() {
-  const src = CODE('js/world-packs.js');
+  const src = CODE('js/world-packs-rows.js');
   const i = src.indexOf('function panelNames(');
   const j = src.indexOf('function makePanel(');
   assert.ok(i > 0 && j > i, 'panelNames / makePanel are no longer where this check cuts them out');

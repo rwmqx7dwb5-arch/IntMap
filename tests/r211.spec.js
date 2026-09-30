@@ -107,6 +107,8 @@ test('R211 ④: a trade arc is as wide as the SQUARE ROOT of its share, not its 
      assertion is on that RELATION, so it survives any future change to the two pixel constants. */
   const r = await page.evaluate(async () => {
     const W = window.IntMapWorld;
+    /* (startup-lazy-layers) the five layers arrive on first demand — the facade's `ready()` is that demand */
+    if (!(await W.ready())) return { on: 'the world-data layers could not be loaded' };
     W.tradeToggle(true);
     /* drive the drawing rule directly with a known pair, through the public loader's own path */
     const rows = [{ iso: 'USA', name: 'United States', v: 1e11 }, { iso: 'CAN', name: 'Canada', v: 1e9 }];

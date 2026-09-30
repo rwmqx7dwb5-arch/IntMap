@@ -141,7 +141,7 @@ test('R207 ⑩ space: the way back is the Earth\'s, the scale switch preserves f
 /* ── ⑪ the "keep zooming out" caption is placed in the MAP, and wears a pill ───────────────────── */
 /* spelling kept: browser script (js/space.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R207 ⑪ the space-approach caption is centred on the visible map and has its own surface', () => {
-  const s = read('js/space.js');
+  const s = read('js/space-approach.js') + read('js/space.js');
   assert.ok(/function mapMidX\(\)/.test(s), 'the midpoint is measured');
   assert.ok(/g\.style\.left=Math\.round\(mapMidX\(\)\)\+'px'/.test(s), 'and applied every time it is shown');
   assert.ok(!/position:fixed;left:50%;bottom:96px/.test(s), 'the absolute viewport centre is gone');
@@ -160,7 +160,7 @@ const read = (p) => readLF(resolve(ROOT, p));
    size and the FACE the Earth had on screen, which is a statement about a sphere. */
 /* spelling kept: browser script (js/space.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R289 ⑩ the zoom-out crossing is refused on the flat projection, gauge and all', () => {
-  const s = read('js/space.js');
+  const s = read('js/space-approach.js') + read('js/space.js');
   assert.match(s, /function flatProj\(\)\{ try\{ return HOST\.proj!=='globe'; \}catch\(_\)\{ return false; \} \}/,
     'the projection is asked through the host, and an error is not "flat"');
   assert.match(s, /function pushOut\(dz\)\{\r?\n\s+if\(flatProj\(\)\)\{ if\(over\)\{ over=0; paintGauge\(0\); \} return; \}/,

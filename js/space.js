@@ -49,12 +49,28 @@
  *  spheroid and Cesium draws WGS-84; neither has an opinion about Mercury. This is ~200 lines of
  *  WebGL — a sphere, a texture, a light and a line — which is smaller than the adapter would be.
  * ==========================================================================*/
+/* (startup-lazy-layers) data/stars.bin, one read and one decoder for both skies */
+import { loadStarCatalogue } from './star-catalogue.js';
+/* (startup-lazy-layers) the three arithmetic modules only the explorer reads — the events searched in the
+   ephemeris (#R212), the probes / small bodies / deep sky (#R213) and the distance ladder (#R219). They
+   were eager entries of src/main.js; they arrive with the explorer now. js/ephemeris.js stays eager
+   (js/night-sky.js and js/space-sky.js read it too). */
+import './space-events.js';
+import './space-bodies.js';
+import './space-cosmos.js';
 window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.space=function(HOST){
+/* (startup-lazy-layers) THE EXPLORER, FETCHED AT THE ZOOM FLOOR. The way in — the zoom-out the map can no
+   longer spend, its integral and its gauge — and window.IntMapSpace itself are js/space-approach.js, which
+   is eager; this factory is mounted by js/lazy-modules.js (`spaceBody`) the first time that gesture starts
+   (or Atlas asks for the explorer), and reads the approach's shared pieces off `window.IntMapSpace._kit`. */
+window.IntMapModules.spaceBody=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
+  const K=window.IntMapSpace&&window.IntMapSpace._kit;
+  if(!K) return null;
 
-  window.IntMapSpace=(function(){
+  const api=(function(){
     'use strict';
+    const { atFloor, nearFloor, paintGauge, OVER_TRIGGER, OVER_DECAY, pushOut }=K;
     const L=window.IntMapLang.pick(()=>HOST.lang);
     const EPH=()=>window.IntMapEphemeris;
     /* ⚠ (#R138) EVERY VALUE THAT REACHES THE DOM GOES THROUGH THE ONE SANITISER. Two of the strings
@@ -334,30 +350,28 @@ window.IntMapModules.space=function(HOST){
     function loadStars(){
       if(starBuf||starBuf===false) return;
       starBuf=false;
-      let url; try{ url=new URL('data/stars.bin',document.baseURI).toString(); }catch(_){ url='data/stars.bin'; }
-      fetch(url).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.arrayBuffer(); }).then(buf=>{
-        const dv=new DataView(buf); let magic=''; for(let i=0;i<7;i++) magic+=String.fromCharCode(dv.getUint8(i));
-        /* (#R208) the stride comes from the magic — see js/space-sky.js. IMSTAR2 also carries the
-           measured parallax, which is what lets this view leave the solar system: `starPc` below is
-           the real distance in parsecs, and 0 means the catalogue has no usable parallax for that
-           star (⚠ NOT "at the origin"). */
-        if(magic!=='IMSTAR1'&&magic!=='IMSTAR2') throw new Error('bad catalog header');
-        const STRIDE=(magic==='IMSTAR2')?8:6;
-        const n=dv.getUint32(8,true);
+      /* (startup-lazy-layers) one read and one decoder for both skies — js/star-catalogue.js (the bytes
+         through js/data-door.js). What is derived below is this view's own: the naked-eye subset as
+         unit vectors and colours for the GL points, and the distances. */
+      loadStarCatalogue().then(cat=>{
+        /* (#R208) IMSTAR2 also carries the measured parallax, which is what lets this view leave the
+           solar system: `starPc` below is the real distance in parsecs, and 0 means the catalogue has
+           no usable parallax for that star (⚠ NOT "at the origin"). */
+        const n=cat.n;
         const pos=new Float32Array(n*3), col=new Float32Array(n*4), pc=new Float32Array(n); let k=0;
-        for(let i=0;i<n;i++){ const o=12+i*STRIDE;
-          const ra=dv.getUint16(o,true)*360/65536*D2R, dec=dv.getInt16(o+2,true)*90/32767*D2R;
-          const mag=dv.getUint8(o+4)/20-2;
+        for(let i=0;i<n;i++){
+          const ra=cat.ra[i]*D2R, dec=cat.dec[i]*D2R;
+          const mag=cat.mag[i];
           if(mag>6.5) continue;                      /* the naked-eye sky — 9,000 of the 99,000 */
           const cd=Math.cos(dec);
           pos[k*3]=cd*Math.cos(ra); pos[k*3+1]=cd*Math.sin(ra); pos[k*3+2]=Math.sin(dec);
-          const bv=dv.getInt8(o+5)/50;
+          const bv=cat.bv[i];
           const t=Math.max(-0.3,Math.min(1.8,bv));
           col[k*4]=Math.min(1,1.05-0.18*t); col[k*4+1]=Math.min(1,0.98-0.05*Math.abs(t-0.3));
           col[k*4+2]=Math.min(1,0.85+0.28*(0.4-t));
           col[k*4+3]=Math.max(0.12,Math.min(1,(6.6-mag)/6.2));
-          /* parallax (mas × 10) → parsecs. 0 stays 0 and MEANS "not measured well enough". */
-          const plx=(STRIDE===8)?dv.getUint16(o+6,true)/10:0;
+          /* parallax (mas) → parsecs. 0 stays 0 and MEANS "not measured well enough". */
+          const plx=cat.plxMas?cat.plxMas[i]:0;
           pc[k]=plx>0?(1000/plx):0;
           k++;
         }
@@ -2454,180 +2468,16 @@ window.IntMapModules.space=function(HOST){
       lastFpsAt=performance.now(); frames=0; lastTick=0;
       refreshHUD();
       if(!raf) raf=requestAnimationFrame(render);
-      try{ if(gauge) gauge.style.opacity='0'; }catch(_){}
+      try{ const g=K.gaugeEl(); if(g) g.style.opacity='0'; }catch(_){}
       return true;
     }
     function close(){
       open=false; if(root) root.style.display='none';
       if(raf){ cancelAnimationFrame(raf); raf=0; }
-      over=0; try{ if(gauge) gauge.style.opacity='0'; }catch(_){}
+      K.resetOver(); try{ const g=K.gaugeEl(); if(g) g.style.opacity='0'; }catch(_){}
       return true;
     }
 
-    /* ══ (#R201) THE WAY IN IS THE ZOOM ITSELF, NOT A BUTTON ═════════════════════════════════════════
-       「宇宙を探索は、ボタンで押す形式ではなく、そのまま普段の状態から、ズームアウトし続ければそのまま
-         宇宙まで行き、画面も出てくる形式に。」
-
-       #R197 put a button at the zoom floor because the request it answered asked for one there. This
-       one asks for the opposite: the floor should not be a wall with a door in it, it should be a
-       place you keep going through. So the button is gone and what replaces it is the gesture that
-       was already being made — the zoom-out that the renderer has nowhere left to spend.
-
-       ⚠ THE RENDERER GIVES NO EVENT FOR A ZOOM THAT CANNOT HAPPEN. MapLibre clamps the camera at
-       minZoom and reports nothing, so "the user is still asking to zoom out" can only be read from
-       the INPUT. Two are watched, and they are the two that exist: the wheel/trackpad (deltaY > 0)
-       and a two-finger pinch that is closing. Both are read PASSIVELY — nothing here preventDefaults
-       anything, so at every zoom that is not the floor the map behaves exactly as it always has.
-
-       ⚠ AND IT HAS TO BE SUSTAINED, NOT INSTANTANEOUS. One flick past the floor must not launch
-       anybody into space, so the gesture is integrated in ZOOM LEVELS (the same unit the renderer
-       uses: MapLibre's wheel rate is one level per ~300 units of deltaY) and the integral decays back
-       to zero the moment the pushing stops. 「ズームアウトし続ければ」 is a duration, and this is it.
-       While it is filling, a non-interactive gauge says so — it is feedback for a gesture already
-       under way, not a control to press. */
-    /* ⚠ ASK THE RENDERER, DO NOT ASSUME 0. js/geo-engine.js RAISES the effective minimum zoom in some
-       projections, so "as far out as it goes" is a number that changes underneath this. */
-    function minZoom(){
-      try{ const v=GE().camera.getMinZoom&&GE().camera.getMinZoom(); if(isFinite(v)) return v; }catch(_){}
-      return 0;
-    }
-    function zoomNow(){ try{ const c=GE().camera.get(); return (c&&isFinite(c.zoom))?c.zoom:99; }catch(_){ return 99; } }
-    function atFloor(){ return zoomNow()<=minZoom()+0.06; }
-
-    const OVER_TRIGGER=1.6;          /* zoom levels of refused zoom-out that mean "keep going" */
-    const OVER_DECAY=900;            /* ms of no input after which the gesture has stopped */
-    let over=0, overAt=0, gauge=null, gaugeFill=null, wiredMap=false, pinchD=0;
-
-    /* ══ (#R207) THE CENTRE OF THE MAP IS NOT THE CENTRE OF THE WINDOW ═════════════════════════════
-       「さらにズームアウトで宇宙への文字は地図空間の中央下に。現在はサイドバー開時にも絶対的な中央下の
-        位置に配置されている。」
-
-       Since #R160 the sidebars OVERLAY a map that stays full-width, so `left:50%` is the middle of the
-       window and the middle of the map only when nothing is open. With the sidebar out, the caption
-       sits under it or beside it — never in the middle of what the user is actually looking at.
-       So the midpoint is MEASURED: the map's own box minus whatever panels are currently covering its
-       edges. Recomputed each time the gauge is shown, because the sidebar can open while it is up. */
-    function mapMidX(){
-      try{
-        const mc=document.getElementById('map-container');
-        const r=mc?mc.getBoundingClientRect():{left:0,right:(window.innerWidth||0)};
-        let l=r.left, rr=r.right;
-        /* every panel that OVERLAYS the map and is actually on screen eats into it from its own side */
-        ['#sidebar','#layer-sidebar-r','.mobile-sheet.open'].forEach(sel=>{
-          try{ const el=document.querySelector(sel); if(!el) return;
-            const cs=getComputedStyle(el);
-            if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0) return;
-            const b=el.getBoundingClientRect();
-            if(b.width<=1||b.height<=1) return;
-            /* a panel that does not reach into the map's box is not covering it */
-            if(b.right<=l||b.left>=rr) return;
-            const midEl=(b.left+b.right)/2, midMap=(l+rr)/2;
-            if(midEl<midMap) l=Math.max(l,b.right); else rr=Math.min(rr,b.left);
-          }catch(_){}
-        });
-        if(rr-l<120){ l=r.left; rr=r.right; }   /* everything covered → fall back to the whole map */
-        return (l+rr)/2;
-      }catch(_){ return (window.innerWidth||0)/2; }
-    }
-    function ensureGauge(){
-      if(gauge) return gauge;
-      gauge=document.createElement('div'); gauge.id='space-approach';
-      /* ⚠ (#R207) …AND IT IS A PILL, IN BOTH THEMES. 「ライトモードの時に視認性が悪いので、ダーク/
-         ライトモードともにピルで包んで。」 The caption was pale blue text with a shadow — legible over a
-         night sky, invisible over a white basemap, which is exactly the view a light-mode user zooms
-         out of. Wrapped in the app's own card surface so it carries its own contrast either way. */
-      /* ══ ⚠⚠ (#R218) THE RETURN GAUGE WAS BEHIND THE SPACE VIEW ═══════════════════════════════════
-         「宇宙から地球に戻る時にも、同じUIを表示し、いきなり戻ったという雰囲気にしないように。」 — sent
-         again, and the reason is one number. #R210 made `paintGauge(v, inbound)` take WHICH caption to
-         show and wired `pushIn` to call it, and that half is correct — but the gauge is a child of
-         <body> at z-index 1250, and `#space-view` is a full-screen opaque `#000` at z-index **4200**
-         (see openView). Outbound the gauge is over the map and visible; inbound it is painted, with
-         the right caption and the right fill, UNDERNEATH the black sky it is describing. From the
-         reader's side nothing at all happened until the map simply reappeared — which is exactly the
-         report. It now sits above both, and above nothing else: 4300 is over the space view and still
-         under the modals (#R148's dialog layer). */
-      gauge.style.cssText='position:fixed;bottom:96px;transform:translateX(-50%);z-index:4300;'
-        +'pointer-events:none;opacity:0;transition:opacity 180ms ease;display:flex;flex-direction:column;'
-        +'align-items:center;gap:6px;font-size:12px;font-weight:700;'
-        +'padding:9px 16px 11px;border-radius:999px;'
-        +'color:var(--text-main,#dce6ff);background:var(--card-bg,rgba(18,22,32,0.9));'
-        +'border:1px solid var(--glass-border,rgba(128,128,128,0.28));'
-        /* (#R210) NO inline box-shadow: css/intmap.css gives #space-approach a white RIM GLOW in
-           dark mode and the drop shadow in light. An inline value would beat both. */
-        +'-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);';
-      const cap=document.createElement('div'); cap.className='space-approach-cap';
-      cap.textContent=L('Keep zooming out for space','さらにズームアウトで宇宙へ','Weiter herauszoomen für den Weltraum','Продолжайте отдалять — космос','Sigue alejando para ir al espacio');
-      const bar=document.createElement('div');
-      bar.style.cssText='width:132px;height:4px;border-radius:99px;background:rgba(128,150,190,0.28);overflow:hidden;';
-      gaugeFill=document.createElement('div');
-      gaugeFill.style.cssText='height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--primary-color,#6ea8ff),#cfe0ff);';
-      bar.appendChild(gaugeFill); gauge.appendChild(cap); gauge.appendChild(bar);
-      document.body.appendChild(gauge);
-      return gauge;
-    }
-    /* ══ (#R210) THE WAY BACK GETS THE SAME UI AS THE WAY OUT ═════════════════════════════════════
-       「宇宙から地球に戻る時にも、同じUIを表示し、いきなり戻ったという雰囲気にしないように。」 `pushIn`
-       (below) has run the same integral as `pushOut` since #R208 — a zoom-in the space camera cannot
-       spend returns the map — but it drew nothing, so from the user's side the map simply reappeared
-       with no gesture having visibly been in progress. Same pill, same bar, opposite caption.
-       `paintGauge` therefore takes WHAT to show rather than reading `over` itself. */
-    function paintGauge(v,inbound){
-      if(!v){ if(gauge) gauge.style.opacity='0'; return; }
-      const g=ensureGauge();
-      g.style.left=Math.round(mapMidX())+'px';   /* (#R207) */
-      g.style.opacity='1';
-      try{ const cap=g.querySelector('.space-approach-cap'); if(cap) cap.textContent=inbound
-        ? L('Keep zooming in to return to the map','さらにズームインで地図へ戻る','Weiter hineinzoomen zurück zur Karte','Продолжайте приближать — назад к карте','Sigue acercando para volver al mapa')
-        : L('Keep zooming out for space','さらにズームアウトで宇宙へ','Weiter herauszoomen für den Weltraum','Продолжайте отдалять — космос','Sigue alejando para ir al espacio'); }catch(_){}
-      gaugeFill.style.width=Math.round(100*Math.min(1,v/OVER_TRIGGER))+'%';
-    }
-    /* ⚠ (#R212) THE PROMPT STARTS BEFORE THE FLOOR. 「さらにズームアウトで宇宙への開始ズームレベルを
-       もう少し前から始まるように。」 The gauge only existed once the map had NOTHING left to give: the
-       first sign that space was an option arrived at the exact moment zooming out stopped working,
-       which reads as the map having broken. It now appears as a primed hint while the last three
-       quarters of a zoom level are being spent — the map is still zooming, nothing is being counted
-       towards the trigger, and the caption says what continuing will do. The integral itself still
-       only accumulates on refused zoom-out, so a normal zoom-out can never fall into space. */
-    /* ⚠⚠ (#R216) 0.75 → 2.0. 「宇宙への開始ズームレベルをもう少し前から始まるように。」 — the third
-       round this sentence has been sent. #R212 did put the prompt before the floor, but three
-       quarters of ONE zoom level is a single wheel notch on a mouse and less than one pinch on a
-       phone: the hint appeared and the floor arrived in the same gesture, which is indistinguishable
-       from the hint appearing AT the floor. Two full zoom levels is about three notches of warning,
-       so the reader learns that space is down there while the map is still zooming normally.
-       ⚠ The trigger itself is untouched: `over` only accumulates on REFUSED zoom-out (`atFloor()`),
-       so widening the hint cannot make an ordinary zoom-out fall into space. */
-    const NEAR_FLOOR=2.0;
-    function nearFloor(){ return zoomNow()<=minZoom()+NEAR_FLOOR; }
-    /* the integral, in zoom levels; `dz` is how much zoom-out the gesture just asked for */
-    /* ══ ⚠ (#R289) THE FLAT MAP DOES NOT LEAD TO SPACE ══════════════════════════════════════════
-       「Flat地図では、ズームし続ければ宇宙へ行く機能を無効に。」 The crossing is written for the
-       globe: it hands the space camera the size and the FACE the Earth had on screen (see
-       handoverRadiusPx and the axis note above), which is a statement about a sphere. On the flat
-       projection there is no such face — Web Mercator at the zoom floor is a rectangle — so the
-       gesture was arriving somewhere the map had not been.
-       ⚠ THE GAUGE GOES WITH IT, not just the trigger: a primed hint that can never fire is the
-       worse half of the defect. `leaveToMap()` is untouched, so a session that is already in space
-       and switches to flat can still come back the same way it always could. */
-    function flatProj(){ try{ return HOST.proj!=='globe'; }catch(_){ return false; } }
-    function pushOut(dz){
-      if(flatProj()){ if(over){ over=0; paintGauge(0); } return; }
-      if(open||!(dz>0)) return;
-      if(!atFloor()){
-        if(over){ over=0; }
-        if(nearFloor()){ paintGauge(OVER_TRIGGER*0.12,false); if(overTmr) clearTimeout(overTmr);
-          overTmr=setTimeout(()=>{ over=0; paintGauge(0); },OVER_DECAY); }
-        else paintGauge(0);
-        return; }
-      const t=(typeof performance!=='undefined'?performance.now():Date.now());
-      if(overAt&&t-overAt>OVER_DECAY) over=0;
-      overAt=t;
-      over=Math.min(OVER_TRIGGER*1.5, over+Math.min(0.5,dz));
-      if(over>=OVER_TRIGGER){ over=0; paintGauge(0); enterFromZoom(); return; }
-      paintGauge(over,false);
-      if(overTmr) clearTimeout(overTmr);
-      overTmr=setTimeout(()=>{ over=0; paintGauge(0); },OVER_DECAY);
-    }
-    let overTmr=0;
     /* the same integral on the way back: a zoom-IN the space camera has nowhere to spend returns the
        map. `close()` and Escape still exist; this is only the gesture's own inverse. */
     let backIn=0, backAt=0, backTmr=0;
@@ -2850,34 +2700,9 @@ window.IntMapModules.space=function(HOST){
       return true;
     }
 
-    function mount(){
-      if(wiredMap) return; wiredMap=true;
-      let cont=null; try{ cont=GE().render.canvasContainer&&GE().render.canvasContainer(); }catch(_){}
-      if(!cont) cont=document.getElementById('map')||document.body;
-      /* MapLibre's own wheel rate is one zoom level per ~300 units of deltaY (js/wheel-zoom.js sets
-         it), so the same divisor keeps this integral in the same unit the map is refusing to move in.
-         Line/page deltas are normalised the way the renderer normalises them. */
-      cont.addEventListener('wheel',(e)=>{
-        let d=e.deltaY||0; if(e.deltaMode===1) d*=16; else if(e.deltaMode===2) d*=100;
-        if(d>0) pushOut(Math.min(0.5,d/300));
-      },{passive:true});
-      cont.addEventListener('touchstart',(e)=>{ if(e.touches&&e.touches.length===2)
-        pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); },{passive:true});
-      cont.addEventListener('touchmove',(e)=>{
-        if(!e.touches||e.touches.length!==2) return;
-        const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-        if(pinchD>0&&d>0&&d<pinchD) pushOut(Math.log2(pinchD/d));
-        pinchD=d;
-      },{passive:true});
-      const endPinch=()=>{ pinchD=0; };
-      cont.addEventListener('touchend',endPinch,{passive:true});
-      cont.addEventListener('touchcancel',endPinch,{passive:true});
-      /* the map moved somewhere that is not the floor → the gesture is no longer about leaving */
-      try{ GE().events.on('moveend',()=>{ if(!open&&over&&!atFloor()){ over=0; paintGauge(0); } }); }catch(_){}
-    }
 
     return {
-      open:openView, close, mount,
+      open:openView, close,
       setBody:setFocus, setMode, setScale, setWhen, setLive, setRate,
       setOrbits, setNames, orbits:()=>showOrbits, names:()=>showNames,   /* (#R207) */
       /* (#R213) the optional populations, so Atlas and the tests drive the same switch the button does */
@@ -2919,9 +2744,13 @@ window.IntMapModules.space=function(HOST){
         moonAt:(name)=>{ const b=EPH().body(focus); const m=moonList().find(x=>x.name===name);
           return (m&&b&&b.rKm)?{ name, frame:m.frame, aKm:m.aKm, periodDays:m.periodDays,
             radiusKm:m.radiusKm||null, pos:moonPos(m,jdNow(),b.rKm) }:null; },
-        textures:Object.keys(tex).length, overzoom:+over.toFixed(3), overTrigger:OVER_TRIGGER,
-        gaugeVisible:!!(gauge&&gauge.style.opacity==='1'), atNearLimit:atNearLimit(),
+        textures:Object.keys(tex).length, overzoom:+K.overNow().toFixed(3), overTrigger:OVER_TRIGGER,
+        gaugeVisible:K.gaugeShown(), atNearLimit:atNearLimit(),
         atFloor:atFloor(), err:lastErr })
     };
   })();
+  /* the facade (js/space-approach.js) takes the explorer's own entry points now that it is here, so
+     every later call goes straight to them; `mount`, `ready` and `_kit` stay the approach's */
+  try{ Object.assign(window.IntMapSpace,api); }catch(_){}
+  return api;
 };
