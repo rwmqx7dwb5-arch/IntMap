@@ -5,7 +5,7 @@
  *  twelve, and check:docs never read it. Held here: .agents/ is swept, the roster rule reads the
  *  list (and names what a stale list would skip), a correctly PARTIAL list is not a roster, nested
  *  checkouts are not descended into, the rules #R403 added each go red, and `i18n-audit --gate
- *  --todo` really asserts. ⚠ Tree mutations under tests/helpers/gate-lock.mjs.
+ *  --todo` really asserts. ⚠ Mutations are made in a PRIVATE COPY of the checkout (tests/helpers/scratch-tree.mjs), never in the tree.
  *
  *  Each block below was one round-numbered file until the tests were regrouped by subject. A block
  *  keeps that file's helpers private to it (a `{ … }` scope), so two rounds' `docFacts()` or
@@ -17,16 +17,18 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { declaredEdgeFunctions, functionsImporting } from './helpers/edge-functions.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
+const SCRATCH = scratchTree();
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const read = rd;
 /* a literal anchor that tolerates either line ending — the checkout's, not the author's (#R286/#R283) */
@@ -86,7 +88,7 @@ const GUARD_N = functionsImporting(ROOT, 'relay-guard.js').length;
 
 function docFacts() {
   try {
-    execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check'], { cwd: ROOT, encoding: 'utf8' });
+    execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check'], { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: '' };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -94,31 +96,31 @@ function docFacts() {
 }
 
 /* 壊す → 走らせる → 必ずバイト列を戻す
-   ⚠ 錠は**自分で**取る（単体でも安全であるように）。ただし `withTreeLock` は**再入可能**なので、
-   test 本体が既に取っていれば、ここは数えるだけで実際の取得は起きない。
+   ⚠ (mutation-tests-off-tree) 壊すのはこのファイル専用の写し（tests/helpers/scratch-tree.mjs）で、
+   木ではない。以下は錠があった頃の実測として残す。
    ⚠⚠ **この回は「変異ごとに取る」も試して、実測で外した。** 錠は行列ではなく取り合いなので、
    **費用を決めるのは保持の長さではなく持ち替えの回数**だった——変異ごとに取り直した版は
    `npm test` 全体で 12 → 8 件落ち、test 単位で1回だけ取る版は落ちない。
    長い保持が危険だったのは**生存判定が時計だった**からで、それは pid に直したので消えている
    （`tests/helpers/gate-lock.mjs` の頭を読むこと）。 */
 async function breaking(file, mutate, fn) {
-  await withTreeLock(() => {
+  {
     const originalBytes = rd(file);
     const original = readLF(join(ROOT, file));
     const broken = mutate(original);
     assert.notEqual(broken, original, `the mutation did not change ${file} — its anchor is gone`);
     try {
-      writeFileSync(join(ROOT, file), broken);
+      SCRATCH.write(file, broken);
       fn(docFacts());
     } finally {
-      writeFileSync(join(ROOT, file), originalBytes);
+      SCRATCH.write(file, originalBytes);
     }
     /* ⚠ THE RESTORE IS CHECKED BY BYTES, NOT BY RUNNING THE GATE AGAIN. Comparing the file says
        exactly what «restored» means — these bytes, this file — whereas a green gate only says no
        rule noticed, and it costs another whole gate run under the lock. #R403 measured that the
        cheaper check is also the stricter one. */
-    assert.equal(rd(file), originalBytes, `${file} was not restored byte-for-byte after the mutation`);
-  });
+    assert.equal(SCRATCH.read(file), originalBytes, `${file} was not restored byte-for-byte after the mutation`);
+  }
 }
 
 /* 木を読むだけでも、他のファイルの変異の最中に走らせれば他人の赤を自分の赤として読む。
@@ -132,19 +134,18 @@ async function breaking(file, mutate, fn) {
    ——それが変異テストという仕事そのもの——なので、採ったときには木はもう綺麗に戻っている。
    **捕まえるために置いた当の場合で `(clean)` と印字した。** 実測: CI run 34389623083 で
    `tests/r403 ①` が `tests/r399 ②` の意図的な変異を自分の赤として報告し、この診断が読み手を
-   ゲートへ送った。判断は `tests/helpers/gate-precondition.mjs` へ移した——**木ではなく錠に訊く**
-   （書き手は全員錠を取るので、「他に誰か書けたか」の答えを持っているのは錠のほう）。 */
+   ゲートへ送った。判断は `tests/helpers/gate-precondition.mjs` へ移した。
+   ⚠⚠ (mutation-tests-off-tree) そしていまは問いそのものが立たない: 読むのも壊すのもこのファイルの
+   私有の写しなので、他に書ける者がいない。 */
 function green(msg) {
-  return withTreeLock(() => {
-    const r = runGate(docFacts);
-    if (r.code === 0) return;
-    assert.fail(`${msg}\n--- check:docs said ---\n${r.out}\n--- who to suspect ---\n${r.explain()}`);
-  });
+  const r = runGate(docFacts, { tree: SCRATCH });
+  if (r.code === 0) return;
+  assert.fail(`${msg}\n--- check:docs said ---\n${r.out}\n--- who to suspect ---\n${r.explain()}`);
 }
 const BEFORE = 'check:docs must be green before any of this means anything';
 
 test('R403 ① the instruction documents are inside the sweep', async () => {
-  await withTreeLock(async () => {
+  {
     await green(BEFORE);
     /* 数とは無関係の2つの規則で確かめる。`usb` は「頻度を書いてよいのは AGENTS.md だけ」、
        `serving` は「本番を OneDrive から配信していると書いてはならない」。どちらも
@@ -165,11 +166,11 @@ test('R403 ① the instruction documents are inside the sweep', async () => {
         assert.ok(r.out.includes('SKILL.md'), `the report never named the file it read (${c.why}):\n` + r.out);
       });
     }
-  });
+  }
 });
 
 test('R403 ② the defect this round fixed goes RED, and names the deploys that would be skipped', async () => {
-  await withTreeLock(async () => {
+  {
     /* 報告された文そのもの。数（9 本）を述語のあとに置き、9つの名前を並べる形。 */
     const DEFECT = 'Edge Function を変えたなら本番へ出す（9 本: ai-proxy / alerts-relay / cable-geo /\n'
       + 'delete-account / monitor-run / news-ingest / news-relay / refresh-news / sv-cov）:';
@@ -185,11 +186,11 @@ test('R403 ② the defect this round fixed goes RED, and names the deploys that 
         assert.ok(r.out.includes(n), `the report never named ${n}, which this list silently drops:\n` + r.out);
       }
     });
-  });
+  }
 });
 
 test('R403 ③ a roster that is missing a name, and a count that is wrong, both go RED', async () => {
-  await withTreeLock(async () => {
+  {
     /* 名前を1つ落とす */
     const drop = anchorRe('`routing-relay` / `sv-cov`');
     assert.ok(drop.test(readLF(join(ROOT, 'docs/AGENT-SETUP.md'))), 'docs/AGENT-SETUP.md §9 no longer writes the roster in the shape this test edits');
@@ -207,16 +208,17 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
       assert.ok(r.out.includes('edge-count') || r.out.includes('edge-roster'),
         'neither count rule fired on a wrong number:\n' + r.out);
     });
-  });
+  }
 });
 
-/* ⚠ ④ と ⑦ は木を**書き換えない**が、`docFacts()` を走らせるので**読む側でも錠が要る**。
+/* ⚠ (mutation-tests-off-tree) 以下は錠があった頃の記録。いまは ④ と ⑦ も私有の写しを読むので錠は要らない。
+   ⚠ ④ と ⑦ は木を**書き換えない**が、`docFacts()` を走らせるので**読む側でも錠が要る**。
    `node --test` はファイルを並列に走らせ、`tests/r274 ③` や下の ⑥ は錠を取って一時的に木を
    壊す——その最中にゲートを走らせれば、**他人の変異を自分の赤として読む**。実測: 錠なしで
    「partial lists are all correct なのに check:docs が赤」で落ちた（#R403 で1回）。
    環境要因の赤は本物の退行と見分けがつかないので、読むだけの検査でも錠を取る。 */
 test('R403 ④ a legitimately PARTIAL list of functions is not read as the roster', async () => {
-  await withTreeLock(async () => {
+  {
     /* 木にある3つの実例。これらを在庫の主張と読む規則は、正しい文の上で赤を出す——
        そして次のラウンドで緩められる。⚠ 文が消えたせいで緑、を排除するため存在も確かめる。
        ⚠ `assert.match` を巨大ファイルに使わない——落ちるとファイル全体が印字される
@@ -233,31 +235,29 @@ test('R403 ④ a legitimately PARTIAL list of functions is not read as the roste
 
     /* そのうえで木が緑であること。上の3文はいずれも3本以上の実名を並べている。 */
     await green('check:docs is red on a tree whose partial lists are all correct');
-  });
+  }
 });
 
 test('R403 ⑤ the sweep does not descend into a nested checkout', async () => {
-  await withTreeLock(async () => {
+  {
     /* ハーネスは `.claude/worktrees/` の下に repository 全体の写しを作る（実測 #R282: 2本・
        11,615ファイル）。そこへ降りると、別のコミットに載った文書を「この木の文書」として
        読む——そして規則は全部「文書が実体と食い違っていないか」なので、必ず赤くなる。
        止める目印はフォルダ名ではなく `.git` の有無（＝チェックアウトをチェックアウトたらしめるもの）。 */
-    await withTreeLock(() => {
-      const nest = join(ROOT, '.agents/__r403-nested-checkout');
-      assert.ok(!existsSync(nest), 'the scratch directory this test creates already exists');
-      try {
-        mkdirSync(nest, { recursive: true });
-        writeFileSync(join(nest, '.git'), 'gitdir: ../../.git/worktrees/whatever\n');
-        writeFileSync(join(nest, 'AGENTS.md'), '# a second checkout\n\n**Edge Functions は 3 本**（`ai-proxy` / `sv-cov` / `news-relay`）。\n');
-        const r = docFacts();
-        assert.equal(r.code, 0,
-          'the sweep walked into a directory holding a .git entry and read another checkout\'s documents as this one\'s:\n' + r.out);
-      } finally {
-        rmSync(nest, { recursive: true, force: true });
-      }
-    });
+    {
+      /* (mutation-tests-off-tree) planted in this file's private copy of the checkout, not in .agents/ */
+      const nest = '.agents/__r403-nested-checkout';
+      assert.ok(!SCRATCH.exists(nest), 'the scratch directory this test creates already exists');
+      const r = SCRATCH.mutate([
+        { file: nest + '/.git', text: 'gitdir: ../../.git/worktrees/whatever\n' },
+        { file: nest + '/AGENTS.md', text: '# a second checkout\n\n**Edge Functions は 3 本**（`ai-proxy` / `sv-cov` / `news-relay`）。\n' },
+      ], docFacts);
+      assert.equal(r.code, 0,
+        'the sweep walked into a directory holding a .git entry and read another checkout\'s documents as this one\'s:\n' + r.out);
+      assert.equal(SCRATCH.exists(nest), false, 'the nested checkout outlived the run');
+    }
     await green('the cleanup left the tree failing');
-  });
+  }
 });
 
 /* ⑥ この回が新しく足した5規則。**1つずつ壊して赤を見るまで、書いただけの規則である。**
@@ -308,7 +308,7 @@ const NEW_RULES = [
 ];
 
 test('R403 ⑥ every rule this round added goes RED when its fact is made wrong', async () => {
-  await withTreeLock(async () => {
+  {
     for (const c of NEW_RULES) {
       const re = anchorRe(c.from);
       assert.ok(re.test(readLF(join(ROOT, c.file))), `${c.file} no longer contains the anchor for «${c.why}»`);
@@ -317,11 +317,11 @@ test('R403 ⑥ every rule this round added goes RED when its fact is made wrong'
         assert.ok(r.out.includes(c.rule), `check:docs failed but never named ${c.rule} (${c.why}):\n` + r.out);
       });
     }
-  });
+  }
 });
 
 test('R403 ⑦ naming a file AS GONE is not a stale reference', async () => {
-  await withTreeLock(async () => {
+  {
     /* `docs/MAP-LAYERS.md` は撤去した再解析の module を「一緒に消えている」と書く。この文は
        **ファイルが無いからこそ正しい**。逃げ道の無い named-path 規則は、唯一正しく書けている
        文書の上で赤を出す——そして次のラウンドで緩められる。
@@ -332,11 +332,11 @@ test('R403 ⑦ naming a file AS GONE is not a stale reference', async () => {
     assert.ok(!existsSync(join(ROOT, 'js/wx-reanalysis.js')),
       'js/wx-reanalysis.js is back, so that sentence is now the stale one — the case no longer proves the escape');
     await green('check:docs is red on a document that correctly names an absent file');
-  });
+  }
 });
 
-test('R403 ⑨ `--gate --todo <code>` actually asserts something', async () => {
-  await withTreeLock(async () => {
+test('R403 ⑨ `--gate --todo <code>` actually asserts something', () => {
+  {
     /* ⚠ `.agents/roles/intmap-i18n.md` prints these two commands under the heading 「唯一のゲート」,
        which reads as «add --gate and it will assert». It did not: the `--todo` branch ended in an
        unconditional `process.exit(0)` and the `--gate` branch below it was never reached, so the
@@ -351,24 +351,23 @@ test('R403 ⑨ `--gate --todo <code>` actually asserts something', async () => {
 
     const audit = (...args) => {
       try {
-        execFileSync(process.execPath, [join(ROOT, 'scripts/i18n-audit.mjs'), ...args],
-          { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+        execFileSync(process.execPath, [SCRATCH.path('scripts/i18n-audit.mjs'), ...args],
+          { cwd: SCRATCH.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
         return { code: 0, out: '' };
       } catch (e) { return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') }; }
     };
 
-    /* ⚠ 錠は変異の周りだけ。前後の「緑であること」は別に取る（helper 参照——保持が長いほど
-       stale とみなされて壊される側に近づく）。 */
-    await withTreeLock(() => {
+    /* 前後の「緑であること」と変異は、同じ私有の写しで訊く（mutation-tests-off-tree）。 */
+    {
       assert.equal(audit('--gate', '--todo', 'fr').code, 0, 'the tree must be green before this means anything');
-    });
-    await withTreeLock(() => {
+    }
+    {
       /* a real hole: the reading pages for one language stop existing. Emptied rather than deleted
          so the restore is a write of the original bytes, like every other mutation in this file. */
       const P = 'js/locales/pages.fr.js';
       const originalBytes = rd(P);
       try {
-        writeFileSync(join(ROOT, P), '');
+        SCRATCH.write(P, '');
         const withGate = audit('--gate', '--todo', 'fr');
         assert.equal(withGate.code, 1, '`--gate --todo fr` stayed GREEN on a tree with a hole in fr');
         /* ⚠ (#R700) THE FACT IS «IT NAMED THE LANGUAGE», NOT «IT SAID THESE TWO WORDS».
@@ -380,11 +379,11 @@ test('R403 ⑨ `--gate --todo <code>` actually asserts something', async () => {
         /* …and `--todo` ALONE is still a listing, not a gate — that half must not have changed */
         assert.equal(audit('--todo', 'fr').code, 0, '`--todo fr` alone became a gate; it is a listing for a person to read');
       } finally {
-        writeFileSync(join(ROOT, P), originalBytes);
+        SCRATCH.write(P, originalBytes);
       }
-      assert.equal(rd(P), originalBytes, `${P} was not restored byte-for-byte after the mutation`);
-    });
-  });
+      assert.equal(SCRATCH.read(P), originalBytes, `${P} was not restored byte-for-byte after the mutation`);
+    }
+  }
 });
 
 test('R403 ⑧ the sweep and the roster rule keep their shape', () => {
@@ -400,7 +399,7 @@ test('R403 ⑧ the sweep and the roster rule keep their shape', () => {
      except ⑤'s nested checkout, which carries a .git entry and is therefore not counted. */
   let out = '';
   try {
-    out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--rule=edge-roster'], { cwd: ROOT, encoding: 'utf8' });
+    out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--rule=edge-roster'], { cwd: SCRATCH.root, encoding: 'utf8' });
   } catch (e) { out = String(e.stdout || '') + String(e.stderr || ''); }
   const m = /current-state documents scanned \((\d+) prose \+ (\d+) instruction\)/.exec(out);
   assert.ok(m, 'the gate no longer says how many instruction documents it read:\n' + out);

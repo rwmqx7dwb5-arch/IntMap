@@ -248,6 +248,16 @@ test('R623 ⑤ the diagnostic never blames the gate when the lock was broken', (
   assert.doesNotMatch(dirty, /AS COMMITTED/, 'a tree that was already dirty is not evidence about the committed tree:\n' + dirty);
 
   const unlocked = verdict({ before: CLEAN, after: CLEAN, lock: { held: false, intact: false, why: 'this process is not holding the tree lock' } });
-  assert.match(unlocked, /did not run under the tree lock/, unlocked);
+  assert.match(unlocked, /outside the tree lock and not in a private copy/, unlocked);
   assert.doesNotMatch(unlocked, /AS COMMITTED/, 'a sample taken outside the lock proves nothing about the gate:\n' + unlocked);
+
+  /* (mutation-tests-off-tree) a gate run in a PRIVATE COPY needs no lock to be judged: nobody else
+     can write it. Clean → the gate's own problem; the checkout it copies was dirty → those edits. */
+  const PRIVATE = { private: true, held: false, intact: false, why: 'none needed — the gate ran in a private copy' };
+  const copied = verdict({ before: CLEAN, after: CLEAN, lock: PRIVATE });
+  assert.match(copied, /PRIVATE COPY/, copied);
+  assert.match(copied, /AS COMMITTED/, 'a clean private copy is the committed tree — red there is the gate’s own:\n' + copied);
+  const copiedDirty = verdict({ before: ' M Architecture.md', after: ' M Architecture.md', lock: PRIVATE });
+  assert.doesNotMatch(copiedDirty, /AS COMMITTED/, 'a copy of a dirty checkout is not the committed tree:\n' + copiedDirty);
+  assert.match(copiedDirty, /uncommitted edits/, copiedDirty);
 });

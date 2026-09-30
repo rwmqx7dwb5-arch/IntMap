@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  #R407: the prose said the merge runs the deep tier for 200 rounds after #R207 took it off push.
  *  `deep-tier-when` holds the prose to the workflow's own `if:` in both directions.
- *  ⚠ Tree mutations under tests/helpers/gate-lock.mjs.
+ *  ⚠ Mutations are made in a PRIVATE COPY of the checkout (tests/helpers/scratch-tree.mjs), never in the tree.
  *
  *  Each block below was one round-numbered file until the tests were regrouped by subject. A block
  *  keeps that file's helpers private to it (a `{ … }` scope), so two rounds' `docFacts()` or
@@ -15,14 +15,16 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
+const SCRATCH = scratchTree();
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const read = rd;
 /* a literal anchor that tolerates either line ending — the checkout's, not the author's (#R286/#R283) */
@@ -73,23 +75,20 @@ const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').repl
  *      ⇒ 変異は `--rule=deep-tier-when`（1.3 秒）で回す。1 ファイル合計 26 秒。
  *    · 次の版は**待つ側で**落ちた——⓪ が読むだけの主張のためにロックを取り、
  *      `tests/r399-checks ①` が 182 秒握っている間に 180 秒で諦めた（実測）。
- *      ⇒ ⓪ はロックを取らない。取る側は `LOCK_MS` まで待つ（錠は全 worktree 共有・下記）。
+ *      ⇒ ⓪ はロックを取らない。取る側は長く待つ（錠は当時全 worktree 共有だった）。
  *    · 三度目に**取得の回数**を削った。①〜④ で 4 回取っていたのを **1 回**に畳む
  *      （subtest にした）。取得のたびに他ファイルの後ろへ並び直すので、回数はそのまま待ちに
  *      なる。実測: 握っている合計 **8 秒**、この回が他のファイルに足す圧はそれだけ。
  *  **握る時間を短く、取る回数を少なく、待つ時間を長く。** 逆にすると、自分の検査が他人の
  *  検査を落とす——このラウンドは実際に `tests/r399-checks` `tests/r274-checks`
  *  `tests/r280-checks` を落としてから、ここに辿り着いている。
+ *  ⚠⚠ (mutation-tests-off-tree) そして錠そのものが要らなくなった。変異はこのファイル専用の
+ *  写し（tests/helpers/scratch-tree.mjs）に書き、ゲートはその写しから走らせるので、他のファイル
+ *  からは見えず、待つ相手も待たせる相手もいない。上の3つは錠があった頃の実測として残す。
  * ==========================================================================*/
 
 const CI = '.github/workflows/ci.yml';
 const RULE = 'deep-tier-when';
-/* ⚠ (#R407) 既定の 180 秒では足りない。木のロックは `node_modules/.intmap-tree-lock` にあり、
-   `scripts/worktree.mjs` が `node_modules` を原本から **junction** するので、**このマシンの
-   全 worktree（実測40本）が同じ錠を共有している**。実測: `tests/r399-checks ①` が 182 秒
-   握り、こちらの 1.3 秒の仕事が 180 秒で諦めて落ちた。⚠ 長くしたのは**待つ側**だけで、
-   握る側は短くしてある（`--rule` で 1 変異 1.3 秒・このファイル全体で 26 秒）。 */
-const LOCK_MS = 600_000;
 
 /* ⚠ (#R286/#R283) 錨は LF で書いてあり、このチェックアウトはそうとは限らない。照合は改行を
    緩めた正規表現で行い、**復元は元のバイト列**で行う。 */
@@ -105,8 +104,8 @@ function docFacts(...extra) {
   try {
     /* ⚠ keep stdout on the GREEN path too — ⓪ has to see that the rule actually reported, and a
        helper that returns '' on success cannot tell «passed» from «never ran» (#R399). */
-    const out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', ...extra],
-      { cwd: ROOT, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', ...extra],
+      { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: String(out) };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -132,11 +131,11 @@ function withBroken(edits, fn) {
     for (const e of edits) {
       const re = anchorRe(e.from);
       assert.ok(re.test(readLF(join(ROOT, e.file))), `${e.file} no longer contains the anchor for «${e.why}»`);
-      writeFileSync(join(ROOT, e.file), readLF(join(ROOT, e.file)).replace(re, () => e.to));
+      SCRATCH.write(e.file, readLF(join(ROOT, e.file)).replace(re, () => e.to));
     }
     return fn();
   } finally {
-    for (const [f, bytes] of saved) writeFileSync(join(ROOT, f), bytes);
+    for (const [f, bytes] of saved) SCRATCH.write(f, bytes);
   }
 }
 
@@ -158,7 +157,7 @@ test('R407 ⓪ this file is how deep-tier-when reaches CI at all', () => {
   }
 });
 
-/* ── ①〜④ 変異で赤を見る。⚠ ロックの取得は**この1回だけ** ───────────────────────────── */
+/* ── ①〜④ 変異で赤を見る。⚠ 写しの中で ─────────────────────────────────────────────────────────────────────── */
 /* 取得を4回に分けていた版は、そのたびに他ファイルの後ろへ並び直していた。錠は 40 worktree の
    共有物なので、並び直しはそのまま「他人が握っている時間ぶん待つ」を意味する。1回にまとめると
    待ちも1回で、**握っている合計は 8 秒ほど**——他のファイルから見て、この回の増分はそれだけ。 */
@@ -226,7 +225,7 @@ test('R407 ①〜④ deep-tier-when goes RED in both directions, and cannot pass
   const D = 'scripts/doc-facts.mjs';
   const NEEDLE = "'nightly|every night'";
 
-  await withTreeLock(async () => {
+  {
     await t.test('① every place that states the triggers goes RED when it is made stale again', () => {
       /* 4つまとめて壊して1回で回す——規則は一致を**全部**報告するので、4つとも名指されることが
          各ケースの証明になる（1つでも見落とせば、その名前が報告に出ない）。 */
@@ -264,8 +263,8 @@ test('R407 ①〜④ deep-tier-when goes RED in both directions, and cannot pass
       assert.match(r.out, /the sweep is not reaching the tree/, 'the report must say the sweep found nothing:\n' + r.out);
 
       /* …and on the GREEN path it must actually be visiting a tree-sized number of files. */
-      const green = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--rule=' + RULE],
-        { cwd: ROOT, encoding: 'utf8' });
+      const green = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--rule=' + RULE],
+        { cwd: SCRATCH.root, encoding: 'utf8' });
       const m = green.match(/deep-tier-when:[^\n]*?(\d+) file\(s\) mentioning the nightly/);
       assert.ok(m, 'the green report no longer says how many files the sweep visited:\n' + green);
       assert.ok(Number(m[1]) >= 20, `the sweep visited only ${m[1]} file(s) — it is no longer reaching the tree`);
@@ -273,7 +272,7 @@ test('R407 ①〜④ deep-tier-when goes RED in both directions, and cannot pass
 
     /* ⚠ そして木が元に戻っていること。⓪ が「この行が規則を CI へ届ける」と指しているのはここ。 */
     assert.equal(onlyRule().code, 0, 'the restore left the tree failing');
-  }, { timeoutMs: LOCK_MS });
+  }
 });
 
 /* ── ⑤ tier の意味を学びに読むファイルが、実際のトリガ集合を名乗る ─────────────────── */

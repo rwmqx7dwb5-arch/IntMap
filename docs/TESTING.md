@@ -131,8 +131,9 @@ and one run measured 11m16s / 8m32s / 4m52s because the heaviest files had lande
   `scripts/checks-timing-reporter.mjs`: per file, the sum of its top-level test durations) and uploads
   it as `checks-timings-<i>`. Refresh by hand, as with the gate ledger:
   `node scripts/checks-shards.mjs --update checks-timings-*.json`.
-- ⚠ The mutation tests queue on one lock per checkout (`tests/helpers/gate-lock.mjs`), so their
-  measured time includes the wait. That overstates them, which spreads them apart.
+- The mutation tests no longer queue on a lock (they break private copies — see «Mutation tests
+  break a private copy» below); timings measured before that include the wait and overstate them
+  until the ledger is refreshed.
 - `node scripts/checks-shards.mjs --plan` prints the bins and their heaviest files.
 
 **Line ceilings stay retired, and the check that says so asks about the fact.** `tests/helpers/line-ceilings.mjs`
@@ -2499,8 +2500,8 @@ The final three arrived in #R500; `tests/process-doc-facts-claims-checks.test.mj
 and — as with `deep-tier-when` (#R407) — that test file is the only path by which they reach CI,
 because the static job does not run `check:docs`. The last two rows arrived in #R628 and
 `tests/process-doc-facts-sweep-checks.test.mjs` (#R628) (six tests) is theirs, for the same reason and by the same method —
-mutation under the tree lock, with `--rule` so a mutation costs one rule's runtime rather than the
-whole file's.
+mutation in a private copy of the checkout, with `--rule` so a mutation costs one rule's runtime
+rather than the whole file's.
 
 ### ⚠⚠⚠ (#R717) `chronos-sheets` の母集合だけが `js/` と `scripts/` へ広がっている
 
@@ -2905,8 +2906,8 @@ with two copies is not a 正本, so a duplicated anchor is now a failure of its 
 that shells out for its facts. It is a **test affordance, never a narrower gate** — `npm run
 check:docs` passes no `--rule`.
 
-Mutation tests run this script once per mutation *while holding the tree lock*
-(`tests/helpers/gate-lock.mjs`). MEASURED #R407: a full run is **11.0 s**, of which
+Mutation tests run this script once per mutation (in a private copy since mutation-tests-off-tree;
+until then *while holding the tree lock*, `tests/helpers/gate-lock.mjs`). MEASURED #R407: a full run is **11.0 s**, of which
 `scripts/i18n-pair-audit.mjs` as a subprocess is **10.0 s** and every other rule together is under
 one second. The first draft of `tests/process-doc-facts-deep-tier-when-checks.test.mjs` (#R407) did fifteen full runs, held the lock for over two
 minutes, and **timed out `tests/process-doc-facts-edge-counts-checks.test.mjs` (#R399) and `tests/process-doc-facts-sweep-checks.test.mjs` (#R274) at their 180 s limit** — a new
@@ -2917,10 +2918,65 @@ costs ~1.3 s and the whole file is ~18 s.
 every mutation above prove nothing. `tests/process-doc-facts-deep-tier-when-checks.test.mjs` #R407 ⑥ asserts that, for the same reason the
 rest of the file exists.
 
-### Tests that break the tree on purpose, and the lock they share (`tests/helpers/gate-lock.mjs`)
+### Mutation tests break a private copy (`tests/helpers/scratch-tree.mjs`), never the checkout
 
-Several files prove a gate really fails by making a fact wrong on disk, running the gate, and
-putting it back. ⚠ **Which ones is a question for the tree, not for this sentence** — it said "four:
+A mutation test proves a gate fails by making a fact wrong, running the gate, and putting the fact
+back. **It does that in a private copy of the checkout, and runs the gate from the copy:**
+
+```js
+import { scratchTree } from './helpers/scratch-tree.mjs';
+const SCRATCH = scratchTree();             // one per test file, built on first use, removed at exit
+const pre = SCRATCH.node('scripts/doc-facts.mjs', ['--check', '--rule=x']);   // green first, in the SAME copy
+const r = SCRATCH.mutate([{ file: 'Architecture.md', text: broken }],
+                         () => SCRATCH.node('scripts/doc-facts.mjs', ['--check', '--rule=x']));
+```
+
+- **Why a copy.** `node --test` runs test files in parallel. A fact broken in the working tree was
+  visible to every other file reading the same tree; the lock below serialised the *writers* and
+  nothing else. MEASURED 2026-09-30, one `npm test`: 10 red, none a product defect — six files died
+  waiting 600/900 s for the lock, one was the lock's own breach (#R623), and three readers that took
+  no lock tripped over a probe file that `tests/chronos-claims-checks.test.mjs` planted in `js/`
+  for one gate run. In a copy nobody else can see, there is nothing to lock and nothing to wait for.
+- **Why the gate needs no flag.** Every gate under `scripts/` derives its root from its own location
+  (`dirname(import.meta.url)/..`), and so does every module it imports. `node <copy>/scripts/x.mjs`
+  therefore reads the copy top to bottom — no root argument had to be added to any gate.
+- **What the copy is.** The working tree as git sees it (`ls-files --cached --others
+  --exclude-standard`), byte for byte, as **hard links** (≈1–6 s for ~4,000 files here, against ~8 s
+  to copy 389 MB); its own `.git` whose index is this checkout's index, whose objects are this
+  repository's (read-only, through `objects/info/alternates`), and whose HEAD / `origin/main` name the
+  same commits (and a shallow clone's `shallow` file); `node_modules` and the `data-assets.json`
+  datasets that are placed in this checkout. **Nothing gitignored** — no `dist/`, no `.perf/` — so
+  «does this gate fail without the build» needs no renaming at all.
+- ⚠⚠⚠ **Change the copy only through `SCRATCH.write / remove / rename / mutate`.** They unlink the
+  name before writing; an `fs` write through a hard link writes *the checkout's* file.
+  `mutate()` restores bytes, absence and the directories it had to create, even when the run throws
+  or is async. Its paths are relative to the copy; an absolute or escaping path is refused.
+- **The precondition is asked of the same copy** (`runGate(gate, { tree: SCRATCH })` in
+  `tests/helpers/gate-precondition.mjs`), whose verdict then needs no lock: nobody else can write it.
+- ⚠ **Name it `SCRATCH`.** A one-letter name was shadowed by a test's own `T` and failed as
+  `T.path is not a function`.
+- **Removal never follows a link.** Every link the copy makes is recorded in its private
+  `.git/scratch-links` *before* it is made and unlinked first; a copy whose owning pid is gone is swept
+  by the next one built ([[intmap-cleanup-through-junctions]] is why this is not left to `rmSync`).
+
+**The rule that keeps it this way — `tree-writer`, in `check:static`** (`scripts/tree-writers.mjs`).
+From the parse tree of every `.js/.mjs/.cjs` under `tests/`, it finds the `fs` calls that write
+(`writeFileSync`, `rmSync`, `renameSync`, `copyFileSync`/`cpSync` destinations, `mkdirSync`, …, the
+async and `fs.promises` forms) and asks where the destination comes from — through variables *by
+scope*, through local helpers (what they return), and through helpers that write a parameter (judged
+at the call site). A destination derived from `import.meta`, `__dirname`, `process.cwd()` or a relative
+literal is **the checkout** and is refused; one derived from `scratchTree()` is refused too (hard
+links); one derived from `os.tmpdir()` / `mkdtemp` / `$TMPDIR` is fine. Run on the tree before this
+change it names exactly the 13 files and 59 call sites that wrote the checkout, and nothing else.
+`tests/mutation-tests-off-tree-checks.test.mjs` holds the helper and the rule.
+
+### The tree lock they used to share (`tests/helpers/gate-lock.mjs`) — kept, and taken by nobody
+
+What follows is the record of the lock the mutation tests shared until they moved into private
+copies. The lock and its own tests are kept; no other test takes it
+(`tests/mutation-tests-off-tree-checks.test.mjs` ⑥ discovers the takers and allows only the files
+whose subject is the lock). Several files proved a gate really fails by making a fact wrong on disk,
+running the gate, and putting it back. ⚠ **Which ones is a question for the tree, not for this sentence** — it said "four:
 r274, r280, r399, r403" while nine files were importing the helper, because a hand-written list goes
 stale the day one is added and nothing says so. Ask instead:
 

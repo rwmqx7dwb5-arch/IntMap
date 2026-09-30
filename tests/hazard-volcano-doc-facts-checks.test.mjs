@@ -6,8 +6,7 @@
  *  title, tagged with the round that wrote it. Each section is a block so its helpers stay its own.
  * ==========================================================================*/
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -47,7 +46,7 @@ const read = (p) => readLF(join(ROOT, p));
 /* ⚠ #R317: read source text through readLF so a CRLF working copy cannot make a source check
    permanently red on Windows and permanently green on CI. */
 const { readLF } = await import('../scripts/eol.mjs');
-const { withTreeLock } = await import('./helpers/gate-lock.mjs');
+const { scratchTree } = await import('./helpers/scratch-tree.mjs');
 const DETAIL = JSON.parse(gunzipSync(readFileSync(join(ROOT, 'data', 'volcano-detail.json.gz'))).toString('utf8'));
 
 /* ── ⑮ the document rule added with this one really goes red (#R440) ──
@@ -55,25 +54,20 @@ const DETAIL = JSON.parse(gunzipSync(readFileSync(join(ROOT, 'data', 'volcano-de
    record from the file and demands the three documents that state it agree. A rule nobody has
    watched fail is indistinguishable from a rule that never runs — #R428 shipped one of those and
    found out in production — so each half is made wrong on disk once and the gate must name it.
-   ⚠ THE TREE IS SHARED: `node --test` runs these files in parallel and four of them mutate
-   tracked files, so every mutation goes through tests/helpers/gate-lock.mjs, one at a time.
+   ⚠ (mutation-tests-off-tree) THE FACTS ARE BROKEN IN A PRIVATE COPY OF THE CHECKOUT
+   (tests/helpers/scratch-tree.mjs), never in the working tree: `node --test` runs the files in
+   parallel, and a mutant written in place is visible to every file that reads the same documents
+   — the tree lock only serialised the writers, and readers that took no lock saw the mutant.
    ⚠ `--rule=` keeps this to the one rule (and skips the rules that shell out), which is what
    makes three mutations cost about three seconds instead of thirty. */
-test('#R353 ⑮ check:docs goes red when a document misstates the size of the bundled record', async () => {
+test('#R353 ⑮ check:docs goes red when a document misstates the size of the bundled record', () => {
   const held = DETAIL.eruptions;
   const fmt = held.toLocaleString('en-US');
   const WRONG = '11,089';                      /* the upstream total — what all four documents said */
   assert.notEqual(fmt, WRONG, 'the bundled record now holds exactly the upstream total; pick another mutation');
 
-  const docFacts = () => {
-    try {
-      execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=volcano-eruptions'],
-        { cwd: ROOT, encoding: 'utf8' });
-      return { code: 0, out: '' };
-    } catch (e) {
-      return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
-    }
-  };
+  const SCRATCH = scratchTree();
+  const docFacts = () => SCRATCH.node('scripts/doc-facts.mjs', ['--check', '--rule=volcano-eruptions']);
 
   const CASES = [
     /* the number, written the two ways these documents write it */
@@ -83,36 +77,17 @@ test('#R353 ⑮ check:docs goes red when a document misstates the size of the bu
     { file: 'docs/VOLCANO-INTELLIGENCE.md', from: fmt + ' 件の噴火履歴', to: '噴火履歴' },
   ];
 
-  /* ⚠ A READER THAT REQUIRES A PRISTINE TREE IS ALSO A PARTY TO THE LOCK — the header of
-     tests/helpers/gate-lock.mjs says so, and this test learned it the same way #R280 did: the
-     baseline below first ran OUTSIDE the lock, and under `npm test` another file's mutation was
-     live while it read the tree, so it went red («volcano-eruptions is already red on the
-     committed tree») for a reason that had nothing to do with this round. Both bare reads take
-     the lock now, and both are one hold each rather than one hold around the whole test. */
-  await withTreeLock(() => {
-    assert.equal(docFacts().code, 0, 'volcano-eruptions is already red on the committed tree');
-  });
+  /* the precondition is asked of the same copy the mutations run in */
+  assert.equal(docFacts().code, 0, 'volcano-eruptions is already red on the committed tree');
   for (const c of CASES) {
-    await withTreeLock(() => {
-      /* ⚠ #R286/#R317: match on LF text, restore the ORIGINAL BYTES, so a CRLF checkout is
-         neither a false red here nor a phantom diff afterwards. */
-      const abs = join(ROOT, c.file);
-      const originalBytes = readFileSync(abs);
-      const original = readLF(abs);
-      assert.ok(original.includes(c.from), c.file + ' no longer contains «' + c.from + '»');
-      try {
-        writeFileSync(abs, original.replace(c.from, () => c.to));
-        const r = docFacts();
-        assert.equal(r.code, 1, 'check:docs stayed green with ' + c.file + ' saying «' + c.to + '»');
-        assert.ok(r.out.includes('volcano-eruptions'),
-          'check:docs failed but never named volcano-eruptions:\n' + r.out);
-      } finally {
-        writeFileSync(abs, originalBytes);
-      }
-    });
+    /* ⚠ #R286/#R317: match on LF text; the copy gets its ORIGINAL BYTES back after the run. */
+    const original = readLF(SCRATCH.path(c.file));
+    assert.ok(original.includes(c.from), c.file + ' no longer contains «' + c.from + '»');
+    const r = SCRATCH.mutate([{ file: c.file, text: original.replace(c.from, () => c.to) }], docFacts);
+    assert.equal(r.code, 1, 'check:docs stayed green with ' + c.file + ' saying «' + c.to + '»');
+    assert.ok(r.out.includes('volcano-eruptions'),
+      'check:docs failed but never named volcano-eruptions:\n' + r.out);
   }
-  await withTreeLock(() => {
-    assert.equal(docFacts().code, 0, 'the restore left check:docs failing');
-  });
+  assert.equal(docFacts().code, 0, 'the restore left check:docs failing in the copy');
 });
 }

@@ -13,13 +13,12 @@
  *  Was: tests/r674
  * ==========================================================================*/
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { artefactNames, LEGACY_NUMBERED_COUNT, LEGACY_NUMBERED_MAX_ROUND, roundArtefact, roundNameProblems, slugProblem } from '../scripts/round-names.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -115,39 +114,24 @@ test('R674 ⑥ the ratchet is refused when it is left too high after a rename', 
     'a snapshot nobody tightens stops asserting anything:\n' + p.join('\n'));
 });
 
-test('R674 ⑦ check:static actually goes red for a new round-numbered name on disk', async () => {
-  await withTreeLock(() => {
-    const gate = () => {
-      try {
-        execFileSync(process.execPath, [join(ROOT, 'scripts/static-checks.mjs')],
-          { cwd: ROOT, encoding: 'utf8' });
-        return { code: 0, out: '' };
-      } catch (e) {
-        return { code: e.status ?? -1, out: String(e.stdout || '') + String(e.stderr || '') };
-      }
-    };
-    const pre = runGate(gate);
-    assert.equal(pre.code, 0, 'check:static must be green before this means anything:\n'
-      + pre.out + '\n--- who to suspect ---\n' + pre.explain());
+test('R674 ⑦ check:static actually goes red for a new round-numbered name on disk', () => {
+  /* ⚠ (mutation-tests-off-tree) IN A PRIVATE COPY OF THE CHECKOUT (tests/helpers/scratch-tree.mjs).
+     The file used to be created in this checkout's tests/ under the tree lock — a name the RUNNER
+     discovers, so it had to exist only for as long as nothing globbed tests/. In the copy no runner
+     and no other test file can see it, and check:static is run from the copy, so it reads the copy. */
+  const SCRATCH = scratchTree();
+  const gate = () => SCRATCH.node('scripts/static-checks.mjs');
+  const pre = runGate(gate, { tree: SCRATCH });
+  assert.equal(pre.code, 0, 'check:static must be green before this means anything:\n'
+    + pre.out + '\n--- who to suspect ---\n' + pre.explain());
 
-    /* ⚠ A FILE THE RUNNER WOULD DISCOVER MUST NOT EXIST EVEN FOR A MOMENT under a name it will
-       then try to execute — this one is created and removed inside the lock, and `node --test`
-       globbed tests/ before any of this ran, so it is never handed to a second runner.
-       ⚠ It carries a SUBJECT on purpose: that form was accepted under #R674 and is refused now. */
-    const victim = join(TESTS, `r${NEW}-some-subject-checks.test.mjs`);
-    let created = false;
-    try {
-      writeFileSync(victim, 'export {};\n');
-      created = true;
-      const r = gate();
-      assert.notEqual(r.code, 0, 'check:static stayed green with a new round-numbered test file');
-      assert.match(r.out, /round-name/, 'it failed, but not for this reason:\n' + r.out);
-    } finally {
-      if (created) unlinkSync(victim);
-    }
-    /* ⚠ The restore is checked, not re-gated: this mutation is one CREATED file, so «the file
-       is gone» is the whole of «the tree is back» — and check:static costs ~45 s a run. */
-    assert.equal(existsSync(victim), false, 'the tree was not restored');
-  });
+  /* ⚠ It carries a SUBJECT on purpose: that form was accepted under #R674 and is refused now. */
+  const victim = `tests/r${NEW}-some-subject-checks.test.mjs`;
+  const r = SCRATCH.mutate([{ file: victim, text: 'export {};\n' }], gate);
+  assert.notEqual(r.code, 0, 'check:static stayed green with a new round-numbered test file');
+  assert.match(r.out, /round-name/, 'it failed, but not for this reason:\n' + r.out);
+  /* ⚠ The restore is checked, not re-gated: this mutation is one CREATED file, so «the file
+     is gone» is the whole of «the copy is back» — and check:static costs ~45 s a run. */
+  assert.equal(SCRATCH.exists(victim), false, 'the copy was not restored');
 });
 }

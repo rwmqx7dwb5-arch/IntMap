@@ -4,7 +4,7 @@
  *  #R399 widened the count rule from a hand-written pair of documents to every document and every
  *  occurrence; #R694 made the _shared/ roster and arch-files judge the FACT rather than a window,
  *  a line start or last year's spelling. Each hole is proved by making the fact wrong and watching
- *  the rule go red. ⚠ Tree mutations under tests/helpers/gate-lock.mjs.
+ *  the rule go red. ⚠ Mutations are made in a PRIVATE COPY of the checkout (tests/helpers/scratch-tree.mjs), never in the tree.
  *
  *  Each block below was one round-numbered file until the tests were regrouped by subject. A block
  *  keeps that file's helpers private to it (a `{ … }` scope), so two rounds' `docFacts()` or
@@ -16,7 +16,7 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -24,11 +24,13 @@ import { CHECKED, claims } from '../scripts/doc-claims.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { auditRoster, inventories, sharedRoster } from '../scripts/shared-roster.mjs';
 import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
+const SCRATCH = scratchTree();
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const read = rd;
 /* a literal anchor that tolerates either line ending — the checkout's, not the author's (#R286/#R283) */
@@ -77,7 +79,7 @@ const WORDS = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fif
 
 function docFacts() {
   try {
-    execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check'], { cwd: ROOT, encoding: 'utf8' });
+    execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check'], { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: '' };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -142,13 +144,13 @@ const CASES = [
 
 test('R399 ① every hole this round closed goes RED when its fact is made wrong', async () => {
   /* ⚠ 木は共有されている。tests/r274 ③ と tests/r280 ② が同じことを同じ理由でやっており、
-     `node --test` は3ファイルを同時に走らせる——tests/helpers/gate-lock.mjs 参照。 */
-  await withTreeLock(() => {
-    /* ⚠ (#R623) この前提が落ちたとき、読み手の前には2つの別々の失敗がある——「ゲートが赤い」と
-       「錠が破れて他人の変異を自分の赤として読んだ」。木ではなく**錠**に訊く: 書き手は全員錠を
-       取るので、「他に誰か書けたか」の答えを持っているのは錠のほうである。
-       判断は `tests/helpers/gate-precondition.mjs`。 */
-    const pre = runGate(docFacts);
+     `node --test` は3ファイルを同時に走らせる——だから (mutation-tests-off-tree) 3つとも木ではなく
+     各自の私有の写し（tests/helpers/scratch-tree.mjs）を壊す。 */
+  {
+    /* ⚠ (#R623) この前提が落ちたとき、読み手の前には2つの別々の失敗があった——「ゲートが赤い」と
+       「錠が破れて他人の変異を自分の赤として読んだ」。いまは後者が構造として起きない: 前提も変異も
+       同じ私有の写しで訊くので、他人は書けない。判断は `tests/helpers/gate-precondition.mjs`。 */
+    const pre = runGate(docFacts, { tree: SCRATCH });
     assert.equal(pre.code, 0, 'check:docs must be green before any of this means anything:\n'
       + pre.out + '\n--- who to suspect ---\n' + pre.explain());
 
@@ -166,23 +168,23 @@ test('R399 ① every hole this round closed goes RED when its fact is made wrong
       }
       assert.notEqual(broken, original, `the «${c.why}» case did not change ${c.file}`);
       try {
-        writeFileSync(join(ROOT, c.file), broken);
+        SCRATCH.write(c.file, broken);
         const r = docFacts();
         assert.equal(r.code, 1, `check:docs stayed GREEN with ${c.file} broken — ${c.why}`);
         assert.ok(r.out.includes(c.rule), `check:docs failed but never named ${c.rule} (${c.why}):\n` + r.out);
       } finally {
-        writeFileSync(join(ROOT, c.file), originalBytes);
+        SCRATCH.write(c.file, originalBytes);
       }
     }
     assert.equal(docFacts().code, 0, 'the restore left the tree failing');
-  });
+  }
 });
 
 test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
   /* Architecture.md §6.2 は本数の正本（docs/README.md）。数を名乗らない形に書き換えると、
      needle は何も拾わない——そこで「拾わなかった」を緑にすると、この回が塞いだ穴が
      そのまま戻る。両方の主張を消してから、報告が正本を名指すことを確かめる。 */
-  await withTreeLock(() => {
+  {
     const originalBytes = rd('Architecture.md');
     const original = readLF(join(ROOT, 'Architecture.md'));
     /* ⚠ (#R699) THIS MUTATION USED TO NAME TWO SENTENCES BY HAND, AND THERE WERE THREE.
@@ -205,7 +207,7 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
     }
     assert.notEqual(silent, original, 'Architecture.md no longer states the count anywhere');
     try {
-      writeFileSync(join(ROOT, 'Architecture.md'), silent);
+      SCRATCH.write('Architecture.md', silent);
       const r = docFacts();
       assert.equal(r.code, 1, 'check:docs stayed green when the 正本 stopped stating the number');
       assert.match(r.out, /edge-count[^\n]*Architecture\.md no longer states/,
@@ -215,10 +217,10 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
       assert.doesNotMatch(r.out, /says «[^»]*2 Edge Functions»/,
         'the §6.2 section number is being read as a count — that is an address, not an inventory:\n' + r.out);
     } finally {
-      writeFileSync(join(ROOT, 'Architecture.md'), originalBytes);
+      SCRATCH.write('Architecture.md', originalBytes);
     }
     assert.equal(docFacts().code, 0, 'the restore left the tree failing');
-  });
+  }
 });
 
 test('R399 ③ a bare "Edge Function 1 本" is not read as an inventory claim', () => {
@@ -390,7 +392,7 @@ test('R694 ④ one file is not an inventory, and a hedge is still honestly parti
 
 const archGate = () => {
   try {
-    execFileSync(process.execPath, [join(ROOT, 'scripts/arch-files-check.mjs'), '--check'], { cwd: ROOT, encoding: 'utf8' });
+    execFileSync(process.execPath, [SCRATCH.path('scripts/arch-files-check.mjs'), '--check'], { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: '' };
   } catch (e) { return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') }; }
 };
@@ -399,7 +401,7 @@ test('R694 ⑤ the _shared roster may be line-wrapped at ANY of its names', asyn
   /* ⚠ これが報告された欠陥そのもの。行頭の綴りで js/ 宣言を見分けていたので、名簿は
      「たまたま js/ にも同名がある 5 つ」でしか改行できなかった。11 本すべてについて、
      その名前から始まる行を作っても門は緑でなければならない。 */
-  await withTreeLock(() => {
+  {
     const P = 'docs/FILES.md';
     const originalBytes = rd(P);
     assert.equal(archGate().code, 0, 'check:archfiles must be green before this means anything');
@@ -411,21 +413,21 @@ test('R694 ⑤ the _shared roster may be line-wrapped at ANY of its names', asyn
         const re = new RegExp('[ \\t\\r\\n]*/[ \\t\\r\\n]*(`?' + escapeRe(name) + '`?)');
         if (!re.test(inv.text)) continue;
         const wrapped = inv.text.replace(re, (_m, g1) => ' /' + nl + g1);
-        writeFileSync(join(ROOT, P), originalBytes.replace(inv.text, () => wrapped));
+        SCRATCH.write(P, originalBytes.replace(inv.text, () => wrapped));
         const r = archGate();
         assert.equal(r.code, 0,
           `check:archfiles went RED because the _shared roster wrapped onto a line starting «${name}» — `
           + 'a formatting constraint leaking out of a checker:\n' + r.out);
       }
     } finally {
-      writeFileSync(join(ROOT, P), originalBytes);
+      SCRATCH.write(P, originalBytes);
     }
     assert.equal(archGate().code, 0, 'the restore left the tree failing');
-  });
+  }
 });
 
 test('R694 ⑥ arch-files is still RED for the defects it exists to catch', async () => {
-  await withTreeLock(() => {
+  {
     const P = 'docs/FILES.md';
     const originalBytes = rd(P);
     assert.equal(archGate().code, 0, 'check:archfiles must be green before this means anything');
@@ -434,28 +436,28 @@ test('R694 ⑥ arch-files is still RED for the defects it exists to catch', asyn
       const victim = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).sort()[0];
       const line = new RegExp('^[ \\t]*' + escapeRe(victim) + '\\b[^\\r\\n]*\\r?\\n', 'm');
       assert.ok(line.test(originalBytes), `${victim} is not described on a line of its own — pick another victim`);
-      writeFileSync(join(ROOT, P), originalBytes.replace(line, () => ''));
+      SCRATCH.write(P, originalBytes.replace(line, () => ''));
       let r = archGate();
       assert.equal(r.code, 1, `check:archfiles stayed GREEN after ${victim} lost its entry`);
       assert.ok(r.out.includes(victim), `the report never named ${victim}:\n` + r.out);
 
       /* (b) js/ の段に、存在しない名前を足す → 「§3 が説明する名前が無い」 */
       const ghost = 'r692-no-such-module.js';
-      writeFileSync(join(ROOT, P), originalBytes.replace(line, (m) => m + ghost + '      存在しない\n'));
+      SCRATCH.write(P, originalBytes.replace(line, (m) => m + ghost + '      存在しない\n'));
       r = archGate();
       assert.equal(r.code, 1, 'check:archfiles stayed GREEN with a name that does not exist');
       assert.ok(r.out.includes(ghost), `the report never named ${ghost}:\n` + r.out);
     } finally {
-      writeFileSync(join(ROOT, P), originalBytes);
+      SCRATCH.write(P, originalBytes);
     }
     assert.equal(archGate().code, 0, 'the restore left the tree failing');
-  });
+  }
 });
 
 test('R694 ⑦ describing a js/ module in the supabase block does not count as describing it', async () => {
   /* 旧実装は §3.1 以下のどこにある綴りでも「記述した」と読んだ。§3 の見出しは
      「この段はどのディレクトリの話か」を宣言しており、それが答えを持っている。 */
-  await withTreeLock(() => {
+  {
     const P = 'docs/FILES.md';
     const originalBytes = rd(P);
     assert.equal(archGate().code, 0, 'check:archfiles must be green before this means anything');
@@ -466,15 +468,15 @@ test('R694 ⑦ describing a js/ module in the supabase block does not count as d
       const moved = originalBytes.replace(line, () => '')
         .replace(/^(  seed\.sql[^\r\n]*\r?\n)/m, (m) => m + victim + '      よそへ移した記述\n');
       assert.notEqual(moved, originalBytes, 'could not move the entry into §3.12 — the anchor moved');
-      writeFileSync(join(ROOT, P), moved);
+      SCRATCH.write(P, moved);
       const r = archGate();
       assert.equal(r.code, 1,
         `check:archfiles counted a §3.12 (supabase/) line as a description of the js/ module ${victim}`);
       assert.ok(r.out.includes(victim), `the report never named ${victim}:\n` + r.out);
     } finally {
-      writeFileSync(join(ROOT, P), originalBytes);
+      SCRATCH.write(P, originalBytes);
     }
     assert.equal(archGate().code, 0, 'the restore left the tree failing');
-  });
+  }
 });
 }

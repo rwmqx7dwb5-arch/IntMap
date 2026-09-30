@@ -13,6 +13,14 @@
  *
  *      await withTreeLock(() => { …mutate, run the gate, restore… });
  *
+ *  ⚠⚠⚠ (mutation-tests-off-tree) NO TEST MUTATES A TRACKED FILE ANY MORE. The lock serialised the
+ *  writers and nothing else: a reader that took no lock still saw the mutant, six files died waiting
+ *  600/900 s for it in one run, and it broke under load (below). Mutation tests now break a PRIVATE
+ *  COPY of the checkout (tests/helpers/scratch-tree.mjs) and run the gate from there, and check:static's
+ *  `tree-writer` rule (scripts/tree-writers.mjs) refuses a test that writes the checkout. What is
+ *  left of this file is kept, with its own tests (tests/gate-lock-checks.test.mjs) and the diagnostic
+ *  in tests/helpers/gate-precondition.mjs; nothing else takes it (tests/mutation-tests-off-tree ⑥).
+ *
  *  ⚠ EVERYTHING THAT MUTATES A TRACKED FILE MUST GO THROUGH THIS — a second writer that does not
  *  take the lock makes the lock useless without making it look broken.
  *

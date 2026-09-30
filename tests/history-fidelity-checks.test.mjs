@@ -17,10 +17,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolveClassSpans } from '../scripts/histadmin/class-dates.mjs';
 import { ciRuns, npmTestRuns } from './helpers/ci-reach.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -104,23 +104,25 @@ test('#R730 ③b one voice is not a class consensus, and a derived span must be 
 
 /* ④ THE GATE FAILS ON THE DEFECT, PUT BACK BYTE FOR BYTE ─────────────────────────────────────
    A gate that has never been shown failing is a gate nobody has tested. This writes the old
-   fossil bound into a copy of the observation file's own subject and requires a non-zero exit. */
+   fossil bound into a copy of the observation file's own subject and requires a non-zero exit.
+   ⚠ (mutation-tests-off-tree) «a copy» is a PRIVATE COPY OF THE CHECKOUT (tests/helpers/scratch-tree.mjs)
+   and the gate is run from it. This used to write data/hist-admin3.js in the working tree without the
+   tree lock, so every file that read the bundle during that second read the fossil. */
 test('#R730 ④ check:histfidelity fails when a row goes back to an unattributable bound', () => {
   const rel = 'data/hist-admin3.js';   /* the smallest tier — the mutation costs 1.1 MB, not 40 */
-  const original = read(rel);
+  const SCRATCH = scratchTree();
+  /* green first, in the same copy — or «red after the mutation» could be the copy missing
+     something the gate reads rather than the gate seeing the fossil */
+  const pre = SCRATCH.node('scripts/hist-fidelity.mjs', ['--check']);
+  assert.equal(pre.code, 0, 'check:histfidelity is not green in the copy before the mutation:\n' + pre.out);
+  const original = SCRATCH.read(rel);
   const d = JSON.parse(original.slice(original.indexOf('=') + 1).replace(/;\s*$/, ''));
   const id = d.feats[0][10];
   d.dates[id] = { start: { raw: null, precision: 'unknown', qualified: false, boundary: 'preserved-display-bound', bound: [-199, 1, 1] }, end: d.dates[id].end };
   d.feats[0][2] = -199; d.feats[0][3] = 1; d.feats[0][4] = 1;
-  fs.writeFileSync(path.join(ROOT, rel), 'window.__HISTADM3=' + JSON.stringify(d) + ';\n');
-  try {
-    let failed = false;
-    try { execFileSync(process.execPath, ['scripts/hist-fidelity.mjs', '--check'], { cwd: ROOT, stdio: 'pipe' }); }
-    catch (_) { failed = true; }
-    assert.ok(failed, 'the gate passed a row drawn from a bound nobody stated');
-  } finally {
-    fs.writeFileSync(path.join(ROOT, rel), original);
-  }
+  const r = SCRATCH.mutate([{ file: rel, text: 'window.__HISTADM3=' + JSON.stringify(d) + ';\n' }],
+    () => SCRATCH.node('scripts/hist-fidelity.mjs', ['--check']));
+  assert.notEqual(r.code, 0, 'the gate passed a row drawn from a bound nobody stated');
 });
 
 /* ⑤ THE MEASUREMENT IS KEPT, NOT THROWN AWAY ────────────────────────────────────────────────

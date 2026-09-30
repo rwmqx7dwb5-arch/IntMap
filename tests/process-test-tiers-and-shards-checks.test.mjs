@@ -19,7 +19,7 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import fs, { cpSync, existsSync, globSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import fs, { cpSync, existsSync, globSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os, { tmpdir } from 'node:os';
 import path, { basename, delimiter, dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -29,7 +29,7 @@ import { entries, entryText, latestEntry, renderIndex } from '../scripts/dev-not
 import { allSpecs, CORE_ALWAYS, CORE_MAX_S, coreNames, fixedCoreNames, tierSpecs } from '../scripts/tiers.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { localCommands } from './helpers/ci-reach.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -522,8 +522,8 @@ test('R771 (7) the gates packed with the build are the ones that cannot run with
      (2) The behavioural version then moved a file in the working tree WITHOUT TAKING THE TREE
      LOCK, in a suite whose mutation tests (r399 / r403 / r500) exist precisely because two
      processes must never edit one tree at once (#R623 measured the breakage). It passed alone and
-     failed in CI's Regression shard, which is exactly how that class of defect presents. Every
-     tree mutation below is inside withTreeLock, like every other tree-editing test in this repo. */
+     failed in CI's Regression shard, which is exactly how that class of defect presents. Nothing
+     below edits this checkout: the gates run in a private copy that has no build output. */
   const plan = cig('--plan', '--of', '3');
   assert.equal(plan.status, 0, plan.stderr);
   const buildLines = plan.stdout.split(/\r?\n/).filter((l) => l.includes('npm run build'));
@@ -535,24 +535,21 @@ test('R771 (7) the gates packed with the build are the ones that cannot run with
   /* The gate scripts are invoked directly rather than through `npm run`: one process instead of
      two, which keeps this inside the tree lock for as short a time as possible. */
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts;
-  const REPORT = join(ROOT, '.perf', 'build-report.json');
-  const hidden = REPORT + '.r771-hidden';
-
-  await withTreeLock(() => {
-    const had = existsSync(REPORT);
-    if (had) renameSync(REPORT, hidden);
-    try {
-      for (const g of packed) {
-        const m = String(pkg[g]).match(/scripts\/[\w.-]+\.mjs/);
-        assert.ok(m, `${g} does not resolve to a script file`);
-        const args = String(pkg[g]).split(/\s+/).slice(2);
-        const r = spawnSync(process.execPath, [join(ROOT, m[0]), ...args],
-          { cwd: ROOT, encoding: 'utf8', timeout: 120000 });
-        assert.notEqual(r.status, 0,
-          `${g} is packed with the build, but passed without the build output — it does not belong there`);
-      }
-    } finally { if (had) renameSync(hidden, REPORT); }
-  });
+  /* ⚠ (mutation-tests-off-tree) «without the build output» is a PRIVATE COPY OF THE CHECKOUT
+     (tests/helpers/scratch-tree.mjs): it carries what git carries and nothing gitignored, so it has
+     no .perf/build-report.json and no dist/ by construction. This used to RENAME this checkout's
+     .perf/build-report.json away under the tree lock — and every other file that read the report
+     during that window found it missing. */
+  const SCRATCH = scratchTree();
+  assert.equal(SCRATCH.exists('.perf/build-report.json'), false, 'the private copy carries a build report — it is not «without the build»');
+  for (const g of packed) {
+    const m = String(pkg[g]).match(/scripts\/[\w.-]+\.mjs/);
+    assert.ok(m, `${g} does not resolve to a script file`);
+    const args = String(pkg[g]).split(/\s+/).slice(2);
+    const r = SCRATCH.node(m[0], args, { timeout: 120000 });
+    assert.notEqual(r.code, 0,
+      `${g} is packed with the build, but passed without the build output — it does not belong there`);
+  }
 
   /* ⚠ WHAT THIS DOES NOT PROVE: that no OTHER gate needs the build. Running all 28 without dist/
      would cost more than the CI job this round exists to shorten. That direction is covered the way

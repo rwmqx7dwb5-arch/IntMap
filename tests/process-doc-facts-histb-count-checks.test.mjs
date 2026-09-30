@@ -2,7 +2,7 @@
  *  IntMap · histb-count reads all nine shipped languages, and grouped numbers whole
  * ----------------------------------------------------------------------------
  *  #R701: the needle was built from en+ja unit words, so 22 of 30 standing claims were outside the
- *  rule, and `1,411` could read as 411. ⚠ Tree mutations under tests/helpers/gate-lock.mjs.
+ *  rule, and `1,411` could read as 411. ⚠ Mutations are made in a PRIVATE COPY of the checkout (tests/helpers/scratch-tree.mjs), never in the tree.
  *
  *  Each block below was one round-numbered file until the tests were regrouped by subject. A block
  *  keeps that file's helpers private to it (a `{ … }` scope), so two rounds' `docFacts()` or
@@ -14,14 +14,16 @@
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
-import { withTreeLock } from './helpers/gate-lock.mjs';
+import { scratchTree } from './helpers/scratch-tree.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/* the private copy every mutation below is made in — built on first use (tests/helpers/scratch-tree.mjs) */
+const SCRATCH = scratchTree();
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const read = rd;
 /* a literal anchor that tolerates either line ending — the checkout's, not the author's (#R286/#R283) */
@@ -70,7 +72,6 @@ const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').repl
  *  **このマシンの全 worktree が同じ錠を共有している**。
  * ==========================================================================*/
 
-const LOCK_MS = 600_000;
 
 /* ⚠ THE UNITS ARE ASSEMBLED, NEVER SPELLED OUT — AND THIS FILE IS WHY THAT HAD TO BE MEASURED.
    #R701 widened the sweep to everything git tracks, so a mutation table that wrote a wrong count
@@ -82,8 +83,8 @@ const dates = (n) => n + ' transition' + ' dat' + 'es';
 
 function docFacts(...extra) {
   try {
-    const out = execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', ...extra],
-      { cwd: ROOT, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, [SCRATCH.path('scripts/doc-facts.mjs'), '--check', ...extra],
+      { cwd: SCRATCH.root, encoding: 'utf8' });
     return { code: 0, out: String(out) };
   } catch (e) {
     return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
@@ -97,17 +98,17 @@ function withBroken(edits, fn) {
   try {
     for (const e of edits) {
       assert.ok(anchorRe(e.from).test(readLF(join(ROOT, e.file))), `${e.file} no longer contains the anchor for «${e.why}»`);
-      writeFileSync(join(ROOT, e.file), readLF(join(ROOT, e.file)).replace(anchorRe(e.from), () => e.to));
+      SCRATCH.write(e.file, readLF(join(ROOT, e.file)).replace(anchorRe(e.from), () => e.to));
     }
     return fn();
   } finally {
-    for (const [f, bytes] of saved) writeFileSync(join(ROOT, f), bytes);
+    for (const [f, bytes] of saved) SCRATCH.write(f, bytes);
   }
 }
 
 test('R701 histb-count reaches all nine shipped languages, and reads grouped numbers whole',
   { timeout: 900_000 }, async (t) => {
-  await withTreeLock(async () => {
+  {
 
     /* 前提: 木は緑。⚠ これ自体が ⑧ の半分である——`DEV-NOTES.md` は #R518 当時の
        「変化日 216 件」を正しく保持しており、`js/time-borders.js` は同じ文の中に
@@ -224,6 +225,6 @@ test('R701 histb-count reaches all nine shipped languages, and reads grouped num
       const r = docFacts('--rule=histb-counts');
       assert.notEqual(r.code, 0, '--rule= with a name no rule has reported success');
     });
-  }, { timeoutMs: LOCK_MS });
+  }
 });
 }
