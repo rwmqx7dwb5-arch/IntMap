@@ -53,7 +53,7 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
-import { callerGate } from "../_shared/rate-limit.js";
+import { callerGate, forceGrant } from "../_shared/rate-limit.js";
 import { parseBbox } from "../_shared/bbox.js";
 import { makeReadBudget } from "../_shared/read-budget.js";
 // Both imported for their side effect: they set globalThis.IntMapAviationCodec / …Model.
@@ -1004,6 +1004,22 @@ function binResponse(bytes, meta) {
    js/aviation-live.js polls the world every 20 s (WORLD_POLL_MS) and the view every 12 s
    (VIEW_POLL_MS), plus one view read per settled pan. ESTIMATED from those timers. */
 const READER_PER_MIN = 30;
+/* (anon-write-guard) HOW MANY FORCED REFRESHES THE WHOLE PROJECT GETS — one bucket for every caller and every
+   isolate (_shared/rate-limit.js forceGrant → public.relay_take, key '*'). `?refresh=1` is what the sweeper
+   sends, and nothing tells the sweeper from anyone else, so the allowance is sized to the SWEEPER and shared:
+     · FORCE_BURST = 10 — the slices one sweep run asks for (`SLICES=10` in .github/workflows/aviation-sweep.yml).
+     · FORCE_PERIOD_S = 300 — the run interval the workflow declares (its cron fires every five minutes).
+   So the project may force at most one run's worth of slices per cron interval, which is exactly what the
+   sweeper asks for; everything above that is served the snapshot like any reader and costs no upstream
+   read. ⚠ OBSERVED (the workflow's own note, #R504): GitHub runs that cron about six times a day, not 288,
+   so the sweeper never comes near this ceiling — it bounds what anyone ELSE can add, not the sweep.
+   CANONICAL: the workflow. Expires when `SLICES` or the cron changes there
+   (tests/anon-write-guard-checks.test.mjs reads both and holds these two numbers to them).
+   A caller who spends the allowance first delays the sweep's slices to the next refill — the reader-side
+   world still advances from viewport reads — which is the price of not holding a secret. */
+export const FORCE_SCOPE = "aviation-feed:refresh:global";
+export const FORCE_BURST = 10;
+export const FORCE_PERIOD_S = 300;
 
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
@@ -1012,6 +1028,14 @@ Deno.serve(async (req) => {
   if (limited) return limited;
 
   const url = new URL(req.url);
+  /* (anon-write-guard) `?refresh=1` IS ASKED OF THE PROJECT-WIDE ALLOWANCE (FORCE_* above), decided here
+     before any work. 'granted' forces a sweep slice as before; 'capped' (the allowance is spent) and
+     'unavailable' (the database did not answer — fail closed) are answered exactly as if refresh=1 had not
+     been sent: the snapshot, with no upstream read. Not a refusal — the status stays 200 and
+     `x-intmap-forced` says which it was, which the sweep's log prints beside the other x-intmap- headers. */
+  const forced = url.searchParams.get("refresh") === "1"
+    ? await forceGrant(FORCE_SCOPE, { capacity: FORCE_BURST, refillPerSec: FORCE_BURST / FORCE_PERIOD_S, env })
+    : null;
   const channel = (url.searchParams.get("ch") || "world").toLowerCase();
   const provider = providerName();
   const now = Date.now();
@@ -1256,7 +1280,8 @@ Deno.serve(async (req) => {
          writes the snapshot, and it is the only caller that pays for a sweep slice. Everyone else
          answers from the snapshot immediately, however old it is, and is TOLD how old it is —
          which is the honest thing to show and the fast thing to serve. */
-      const force = url.searchParams.get("refresh") === "1";
+      /* (anon-write-guard) …and only as often as the project-wide allowance grants (decided at the top). */
+      const force = forced === "granted";
       /* (#R504) how big a slice the sweeper is asking for. Clamped, and then clamped again by the
          bucket inside refreshWorld — a query parameter may ask, it may not grant. */
       const wantTiles = Math.max(1, Math.min(SWEEP_TILES_MAX, Number(url.searchParams.get("tiles")) || WORLD_SLICE_TILES));
@@ -1277,10 +1302,12 @@ Deno.serve(async (req) => {
          hydrate, prune), not re-derived on every request. The cached path serves the SAME bytes
          to everyone, so a per-request scan of up to 50,000 records would buy nothing. */
       const worldOldest = STATE.worldOldestAt ? Date.now() - STATE.worldOldestAt : 0;
-      return binResponse(bytes || CODEC.encode({ seq: 0, serverTimeMs: now, aircraft: [] }), {
+      const res = binResponse(bytes || CODEC.encode({ seq: 0, serverTimeMs: now, aircraft: [] }), {
         provider, count: STATE.world.size, ageMs: age, oldestMs: worldOldest, seq: STATE.worldSeq,
         channel: "world", ttlMs: WORLD_TTL_MS, coverage: coverageLine(provider),
       });
+      if (forced) res.headers.set("x-intmap-forced", forced);
+      return res;
     }
 
     return new Response(JSON.stringify({ error: "ch must be world, view or meta" }),

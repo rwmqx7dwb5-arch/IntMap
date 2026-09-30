@@ -1827,6 +1827,22 @@ table), and by reading it only where the fact is a spelling.
   boundary around observed content in the model prompt and the kernel's confirm step, and the input
   rules of the public relays (bbox range, same-host links, closed query keys, a malformed `%`).
 
+### Anonymous writes and forced refreshes — `tests/anon-write-guard-checks.test.mjs` (anon-write-guard)
+
+Every Edge Function in it is **evaluated**, not read. ② `aviation-feed` and `ais-feed` in a fresh child per
+scenario (a warm isolate): with the project-wide force allowance spent or the database silent, `?refresh=1` answers
+200 with `x-intmap-forced: capped` / `unavailable` and makes **zero** upstream reads (the same as a plain request),
+the allowance is asked with key `'*'` and the function's own `FORCE_*` numbers; granted, it still goes upstream;
+aviation's `FORCE_BURST` / `FORCE_PERIOD_S` are read from the sweep workflow's `SLICES` and cron and compared. ③ `reader-reports` with a stubbed backend: every refusal
+(method, foreign Origin, size, malformed JSON, unknown kind, rating, column ceilings, diagnostics) happens
+before any fetch; an anonymous report takes both `relay_take` buckets before the insert, is keyed by the
+shared HMAC and never carries the caller's address, and drops the body's `user_id` / `created_at` / `id`;
+a signed-in report takes `user_id` / `email` from the Auth server's answer, and a refused token is 401 with
+no token spent; the limiter fails closed. ④ `sendReport` is lifted out of `js/feedback.js` and run: it
+POSTs to `reader-reports` with the session token only when signed in. ⑤ the migration drops both INSERT
+policies and revokes the grant, and touches no row. The database half is
+`supabase/tests/14_anon_write_guard_test.sql` (the census: no table in `public` accepts an INSERT from `anon`).
+
 ### `tests/atlas-agent-repeat-checks.test.mjs` (#R731)
 
 3 本。本物の surface とレジストリの上で `runTurn` を走らせ、同じ呼び出しを返し続けるモデルに対してターンが
@@ -2805,7 +2821,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-one Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese

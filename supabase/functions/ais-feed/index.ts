@@ -38,7 +38,7 @@
  *    Pacific is empty" reads as coverage rather than as fact about the sea.
  * ==========================================================================*/
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
-import { callerGate } from "../_shared/rate-limit.js";
+import { callerGate, forceGrant } from "../_shared/rate-limit.js";
 import { parseBbox } from "../_shared/bbox.js";
 import { makeReadBudget } from "../_shared/read-budget.js";
 
@@ -759,6 +759,16 @@ function hdr(v: unknown): string {
    js/data-layers.js polls ships every 30 s (AIS_POLL_MS), plus one read per settled pan.
    ESTIMATED from that timer. */
 const READER_PER_MIN = 12;
+/* (anon-write-guard) HOW MANY FORCED REFRESHES THE WHOLE PROJECT GETS — one bucket for every caller and every
+   isolate (_shared/rate-limit.js forceGrant → public.relay_take, key '*'). There is no ship sweeper (see
+   the TTL note in the handler), so no caller NEEDS `?refresh=1`: a warm isolate already refreshes once per
+   WORLD_TTL_MS on its own. The allowance is therefore derived from that cadence — ONE forced refresh per
+   WORLD_TTL_MS for the whole project, i.e. forcing can never make the upstream hear from this project more
+   often than one TTL refresh would. CANONICAL: WORLD_TTL_MS (these follow it). Expires if a ship sweeper
+   is ever added — then size it to that sweeper, as aviation-feed does. */
+export const FORCE_SCOPE = "ais-feed:refresh:global";
+export const FORCE_BURST = 1;
+export const FORCE_PERIOD_S = WORLD_TTL_MS / 1000;
 
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
@@ -767,6 +777,14 @@ Deno.serve(async (req) => {
   if (limited) return limited;
   const url = new URL(req.url);
   const now = Date.now();
+  /* (anon-write-guard) `?refresh=1` IS ASKED OF THE PROJECT-WIDE ALLOWANCE (FORCE_* above), decided before
+     any work. The per-isolate bucket below (#R801) bounded one isolate; a caller who spread `?refresh=1`
+     over several was granted a burst by each. 'capped' and 'unavailable' (the database did not answer —
+     fail closed) are served exactly as if refresh=1 had not been sent: what this isolate holds, refreshed
+     only by its own TTL. Not a refusal — the status stays 200, and `x-intmap-forced` says which it was. */
+  const forced = url.searchParams.get("refresh") === "1"
+    ? await forceGrant(FORCE_SCOPE, { capacity: FORCE_BURST, refillPerSec: FORCE_BURST / FORCE_PERIOD_S, env })
+    : null;
 
   try {
     await ensureHydrated();
@@ -801,7 +819,7 @@ Deno.serve(async (req) => {
       }), { headers: { ...CORS, "content-type": "application/json", "cache-control": "no-store" } });
     }
 
-    const force = url.searchParams.get("refresh") === "1";
+    const force = forced === "granted";
     const wsMs = Math.max(1000, Math.min(WS_MS_MAX, Number(url.searchParams.get("ws")) || WS_MS_DEFAULT));
     let age = STATE.builtAt ? now - STATE.builtAt : Infinity;
 
@@ -845,6 +863,7 @@ Deno.serve(async (req) => {
         "x-intmap-coverage": hdr(coverageLine()),
         "x-intmap-save": hdr(STATE.saveNote),
         "x-intmap-note": hdr(STATE.lastNote),
+        ...(forced ? { "x-intmap-forced": forced } : {}),
       },
     });
   } catch (e) {

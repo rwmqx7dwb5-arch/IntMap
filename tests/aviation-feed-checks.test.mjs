@@ -540,7 +540,8 @@ test('R352 ⑥ the oldest-observation age costs nothing per request', () => {
   /* The world channel serves the SAME cached bytes to everyone, so re-deriving this by walking up
      to 50,000 records on each request would buy nothing. It is recorded where the set is already
      being walked. */
-  const start = FEED.indexOf('const force = url.searchParams');
+  /* (anon-write-guard) anchored on the channel's own branch: `force` is no longer read from the URL alone */
+  const start = FEED.indexOf('if (channel === "world")');
   assert.ok(start > 0, 'the world channel is no longer spelled this way');
   const end = FEED.indexOf('channel: "world"', start);
   assert.ok(end > start, 'the world channel no longer names itself in its response');

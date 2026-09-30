@@ -92,7 +92,10 @@ select is(
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  4. A REPORT IS ANONYMOUS OR THE CALLER'S OWN. anon naming user A is refused;
---     A naming B is refused; A naming A and anon naming nobody are accepted.
+--     A naming B is refused. (anon-write-guard) The accepting half of this rule moved into the
+--     reader-reports Edge Function, which takes user_id from the verified session
+--     (tests/anon-write-guard-checks.test.mjs ③): no direct insert is accepted any more, so
+--     anon naming nobody and A naming A are refused here too, and service_role is the writer.
 -- ─────────────────────────────────────────────────────────────────────────────
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
@@ -108,9 +111,9 @@ reset role;
 -- an RLS refusal is SQLSTATE 42501, which the helper spells DENIED
 select is((select v from _cap where k='anon_as_a'),  'DENIED', 'R801: anon cannot file feedback as user A');
 select is((select v from _cap where k='anon_bug_a'), 'DENIED', 'R801: anon cannot file a bug report as user A');
-select is((select v from _cap where k='anon_none'),  'OK',        'R801: anonymous feedback still works');
+select is((select v from _cap where k='anon_none'),  'DENIED',    'anon-write-guard: anonymous feedback is not inserted directly (reader-reports writes it)');
 select is((select v from _cap where k='a_as_b'),     'DENIED',    'R801: A cannot file feedback as B');
-select is((select v from _cap where k='a_as_a'),     'OK',        'R801: A files feedback as A');
+select is((select v from _cap where k='a_as_a'),     'DENIED',    'anon-write-guard: A does not insert feedback directly either');
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  5. AN AUTHOR MAY EDIT THE BODY OF THEIR POST, NOT ITS PROVENANCE.

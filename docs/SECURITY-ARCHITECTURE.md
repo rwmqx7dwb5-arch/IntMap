@@ -278,12 +278,12 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are twenty Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty-one Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All twenty are declared there now
+flag that lives in a comment is not configuration. All twenty-one are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
-`fetch-relay` own-fetch-relay).
+`fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
 `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`) that the CLI bundles into the functions that import it.
@@ -307,9 +307,10 @@ flag that lives in a comment is not configuration. All twenty are declared there
 | `volcano-feed` | false | none — keyless; relays the two volcano feeds that send no CORS headers (Smithsonian/USGS weekly report, volcanic-ash SIGMETs) parsed server-side | — | — |
 | `radiation-feed` | false | none — keyless; merges six national ambient-gamma networks into one array (the registry is `_shared/radiation-sources.js`) | — | — |
 | `fetch-relay` | false | none — keyless public relay of the upstreams in `_shared/fetch-relay-policy.js` (the ones that send no ACAO and have no relay of their own) | — | — |
-| `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
-| `ais-feed` | false | none — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
+| `aviation-feed` | false | none for readers — keyless; serves live ADS-B to signed-out readers. **`?refresh=1` (the sweep) draws from one project-wide allowance** (`relay_take`, key `'*'`: one sweep run per cron interval); beyond it, or with the database silent, the cached answer and no upstream read | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
+| `ais-feed` | false | none for readers — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL. **`?refresh=1` draws from one project-wide allowance** (one per `WORLD_TTL_MS`); beyond it, the cached answer and no upstream read | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
 | `client-errors` | false | none — a reader who is not signed in hits errors too. POST only, a body ceiling, an **Origin allow-list** (production + local preview), two shared token buckets and a row ceiling on the table | `record_client_error` RPC + the two `relay_take` buckets | — |
+| `reader-reports` | false | optional — a signed-out reader may send feedback. A bearer token is **verified with the Auth server** (`/auth/v1/user`) and a refused one is 401; POST only, a body ceiling, the same **Origin allow-list**, two shared token buckets | the `feedback` / `bug_reports` INSERT (the only writer since `20260930090000_anon_write_guard.sql`) + the two `relay_take` buckets | — |
 
 **`aviation-feed` is keyless but is NOT one of the relays**, and the distinction is a security
 property rather than a naming one. A relay forwards a URL **the caller named**, which is why the
@@ -350,8 +351,8 @@ keeps its 20,000 units and adds **one account's share of the day** (the day ÷ `
 limit and no capability. A reader who meets `ai-proxy`'s is refunded the use and told
 `provider_quota` with `meta.ceiling: "project_day"` (503, not 429 — 429 is the reader's own quota).
 
-⚠ **(client-error-log) `client-errors` is the only function a browser WRITES to without a login**, which is why
-it carries four bounds where a relay carries one allow-list. It stores readers' uncaught exceptions in
+⚠ **(client-error-log) `client-errors` and (anon-write-guard) `reader-reports` are the only functions a browser WRITES to
+without a login**, which is why they carry four bounds where a relay carries one allow-list. It stores readers' uncaught exceptions in
 `public.client_errors` (read by admins only). ① **The report is scrubbed twice with one function** —
 `_shared/client-error-shape.js` runs in the browser before sending and again here before storing,
 because a server that trusts a client's scrubbing stores whatever anyone POSTs: web addresses lose
@@ -368,6 +369,41 @@ out, and is not what bounds a scripted caller), a per-caller bucket (30 an hour)
 (5,000 a day, `CLIENT_ERRORS_GLOBAL_PER_DAY`), both **fail closed**, and a ceiling of 10,000 rows
 enforced inside `record_client_error` (a new defect is refused when full; a known one still counts).
 Rows are purged 30 days after they were last seen (pg_cron `client-errors-purge`).
+
+⚠ **(anon-write-guard) `reader-reports` is the same shape for the feedback form and the bug reporter.** Until
+2026-09-30 both inserted into `feedback` / `bug_reports` straight through PostgREST as `anon` or
+`authenticated`: #R155's `len_guard` bounded how long a row was, and nothing bounded how many rows the
+publishable key could write. The migration `20260930090000_anon_write_guard.sql` drops both INSERT policies
+**and** revokes the INSERT grant (the grant layer is what a default privilege would reopen — §8 item 6), and
+the function is now the only writer. ① **Who a report is from is the function's decision**, the rule #R801
+wrote into the dropped policy («anonymous or the caller's own, never somebody else's»): no Authorization,
+or the publishable key, is an anonymous report (`user_id` null, the e-mail the reader typed); a user's
+access token is verified with the Auth server and `user_id` / `email` are **that account's**, whatever
+the body says; a token the Auth server refuses is 401, not a quiet downgrade to anonymous. ② **Only the
+table's columns are read**, each under the `len_guard` ceiling (400 before the database is asked);
+`created_at`, `id` and anything else in the body are ignored. ③ **Bounded, and fail closed**: a 64 KiB
+body, the `Origin` allow-list `client-errors` uses, a per-caller bucket — the verified account (6 an
+hour), or an HMAC of the address (6 × `READERS_PER_ADDRESS` = 60 an hour; the address itself is not
+stored — `_shared/rate-limit.js` `hashedCallerKey`, shared with `client-errors`) — and a project bucket
+(500 a day, `READER_REPORTS_GLOBAL_PER_DAY`). When the send fails the bug reporter keeps the report on
+the device (`js/feedback.js`), so a refusal loses nothing. `supabase/tests/14_anon_write_guard_test.sql`
+holds the DATABASE half as a census over the catalogue: **no table in `public` accepts a direct INSERT
+from `anon`**, whatever it is called.
+
+⚠ **(anon-write-guard) `?refresh=1` on `aviation-feed` and `ais-feed` draws from ONE project-wide allowance.**
+Their read budget (`_shared/read-budget.js`, #R801) bounds one isolate, and a caller who spread `?refresh=1`
+across isolates was granted a burst by each — upstream reads, and a snapshot write per request, that grew with
+the callers, against providers that block the one source address every reader shares. The sweeper cannot be
+told apart from anyone else (it holds no secret, and giving it one would mean a secret registered by hand in
+Supabase and GitHub before a sweep could run), so the allowance belongs to nobody in particular: one
+`relay_take` bucket keyed `'*'` (`_shared/rate-limit.js` `forceGrant`). aviation-feed's is **one sweep run per
+cron interval** — `FORCE_BURST` = the workflow's `SLICES` (10) per `FORCE_PERIOD_S` = its cron interval (300 s);
+the workflow is the 正本 and `tests/anon-write-guard-checks.test.mjs` ② reads both numbers from it. ais-feed has
+no sweeper, so its allowance follows its own TTL: **one forced refresh per `WORLD_TTL_MS`**, project-wide.
+Beyond the allowance — or when the database does not answer (fail closed for the FORCE) — the request is served
+exactly as if `refresh=1` had not been sent: 200, the cached answer, **no upstream read**, and `x-intmap-forced:
+capped` / `unavailable` says so (`granted` when it forced). A caller who spends the allowance first delays the
+sweep's slices to the next refill; readers' viewport reads keep advancing the world meanwhile.
 
 ⚠ **(#R533) `quotes-relay` IS a relay — it forwards a caller-named URL — and its allow-list is
 therefore the whole of its security.** It is written structurally rather than as a prefix test,
@@ -766,6 +802,20 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    needs an identity that costs something (e-mail confirmation, CAPTCHA, or a paid plan), which is a
    product decision, not a code change. The ceilings are also not a PRICE statement: they count
    requests, and the providers bill by token.
+15. **A signed-in reader's own writes are bounded by the account, not by a bucket.** anon-write-guard closed
+   every direct INSERT `anon` had (`feedback`, `bug_reports` — now `reader-reports`, §5; the pgTAP census
+   `14_anon_write_guard_test.sql` keeps it at zero). What `authenticated` may still insert through PostgREST
+   is by design and needs an account: `community_posts`, `community_comments`, `community_votes`,
+   `community_comment_votes`, `community_reports`, `favorites`, `user_prefs`, `saved_news_events`,
+   `donations`, `area_monitors`, and the admin-only `geo_pins` / `dashboard_cards`. Of these the votes and
+   reports are one row per (post, account) by primary key, a saved event one per (event, account), and
+   `area_monitors` is capped by `monitor_limit()`; **posts, comments, favorites (unique per article link,
+   which the caller writes) and donation intents have no count ceiling per account**.
+   An account is not free, though: measured 2026-09-30, production's `GET /auth/v1/settings` answers
+   `mailer_autoconfirm: false` and `anonymous_users: false` — an e-mail sign-up must be confirmed, and the
+   only other provider is Google. Bounding these per account (a trigger over `relay_take`, or moving them
+   behind a function as the reports were) changes how the community board writes, and is left for a
+   decision.
 
 ---
 

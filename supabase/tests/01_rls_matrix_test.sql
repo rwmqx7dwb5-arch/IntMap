@@ -61,7 +61,8 @@ select _sel('anon_aiusage',   'select count(*) from public.ai_usage');          
 select _sel('anon_reports',   'select count(*) from public.community_reports');    -- no grant → DENIED
 select _sel('anon_news',      'select count(*) from public.current_news');         -- public → 2
 select _sel('anon_posts',     'select count(*) from public.community_posts');       -- public → 2
-select _dml('anon_fb_insert', 'insert into public.feedback(rating,comment) values (4,''anon note'')');  -- allowed
+select _dml('anon_fb_insert', 'insert into public.feedback(rating,comment) values (4,''anon note'')');  -- DENIED (anon-write-guard: reader-reports writes it)
+select _dml('anon_bug_insert','insert into public.bug_reports(description) values (''anon bug'')');    -- DENIED
 select _dml('anon_post_insert','insert into public.community_posts(user_id,title) values (''11111111-1111-1111-1111-111111111111'',''x'')'); -- DENIED
 reset role;
 
@@ -97,6 +98,7 @@ select _dml('a_del_b_post',   'delete from public.community_posts where id=2'); 
 select _dml('a_upd_b_post',   'update public.community_posts set title=''HACK'' where id=2'); -- ROWS:0 (RLS)
 select _dml('a_ins_post_as_b','insert into public.community_posts(user_id,title) values (''22222222-2222-2222-2222-222222222222'',''spoof'')'); -- DENIED (WITH CHECK)
 select _dml('a_ins_own_post', 'insert into public.community_posts(user_id,title) values (''11111111-1111-1111-1111-111111111111'',''mine'')');  -- ROWS:1
+select _dml('a_ins_own_fb',   'insert into public.feedback(user_id,rating) values (''11111111-1111-1111-1111-111111111111'',5)');  -- DENIED (anon-write-guard)
 reset role;
 
 -- ─────────────────────────── ADMIN ─────────────────────────────────────────
@@ -131,7 +133,8 @@ select is((select v from _cap where k='anon_aiusage'),   'DENIED', 'anon cannot 
 select is((select v from _cap where k='anon_reports'),   'DENIED', 'anon cannot read community_reports');
 select is((select v from _cap where k='anon_news'),      '2',      'anon CAN read current_news');
 select is((select v from _cap where k='anon_posts'),     '2',      'anon CAN read community_posts');
-select is((select v from _cap where k='anon_fb_insert'), 'ROWS:1', 'anon CAN submit feedback');
+select is((select v from _cap where k='anon_fb_insert'), 'DENIED', 'anon cannot insert feedback directly (anon-write-guard: only reader-reports writes it)');
+select is((select v from _cap where k='anon_bug_insert'),'DENIED', 'anon cannot insert a bug report directly');
 select is((select v from _cap where k='anon_post_insert'),'DENIED','anon cannot create a community post');
 -- user A vs B isolation + escalation
 select is((select v from _cap where k='a_own_profile'), '1',      'A can read own profile');
@@ -163,6 +166,7 @@ select is((select v from _cap where k='a_del_b_post'),  'ROWS:0', 'A cannot dele
 select is((select v from _cap where k='a_upd_b_post'),  'ROWS:0', 'A cannot edit B''s post');
 select is((select v from _cap where k='a_ins_post_as_b'),'DENIED','A cannot post as B (WITH CHECK)');
 select is((select v from _cap where k='a_ins_own_post'),'ROWS:1', 'A can create its own post');
+select is((select v from _cap where k='a_ins_own_fb'),  'DENIED', 'A cannot insert feedback directly, even as itself (anon-write-guard)');
 -- admin
 select ok((select v from _cap where k='admin_feedback')  ~ '^[1-9]', 'admin CAN read feedback');
 select ok((select v from _cap where k='admin_donations') ~ '^[1-9]', 'admin CAN read donations');

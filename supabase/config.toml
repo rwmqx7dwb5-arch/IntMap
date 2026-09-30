@@ -267,3 +267,14 @@ verify_jwt = false
 # It stores no IP, user id, query string or typed text (see the function's own header).
 [functions.client-errors]
 verify_jwt = false
+
+# reader-reports (anon-write-guard) is where the feedback form and the bug reporter write — it replaced
+# the direct PostgREST insert into public.feedback / public.bug_reports, which any holder of the
+# publishable key could repeat without limit (migration 20260930090000_anon_write_guard.sql closes
+# that path). verify_jwt is OFF because a reader who is not signed in can send feedback. What stands
+# in front of it: POST only, a body ceiling, the Origin allow-list client-errors uses, two shared token
+# buckets (per caller — the verified account, or an HMAC of the address — and project-wide per day),
+# and the column ceilings of the #R155 len_guard. A bearer token is verified with the Auth server, and
+# user_id / email come from that account, never from the body.
+[functions.reader-reports]
+verify_jwt = false

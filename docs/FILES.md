@@ -1038,7 +1038,8 @@ flight-sim.js                     フライトシミュレーター IntMapFlight
 street-view.js                    ストリートビューのパネルと実カバレッジ IntMapStreetView
 community.js                      コミュニティのフィード
 community-board.js                コミュニティ板——一覧・カード・投稿・地図層
-feedback.js                       フィードバックとバグ報告のモーダル
+feedback.js                       フィードバックとバグ報告のモーダル。送信先は Edge Function `reader-reports`
+                                  （表へ直接は書かない・anon-write-guard）
 client-error-report.js            未処理の例外を IntMap 自身の記録へ送る（本番のオリジンからだけ・同じ欠陥は
                                   1 ページ読み込みで 1 回・最大 10 件）。洗い方は
                                   `supabase/functions/_shared/client-error-shape.js` と共有（client-error-log）
@@ -1296,11 +1297,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全20本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（32本）。本番変更は必ずここを通す
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
+  migrations/*.sql                DB の唯一の設計図（33本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳。15本）
-  functions/<name>/index.ts       Edge Functions（20本。一覧と各本の役割は Architecture.md §6.2）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数。16本）
+  functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
