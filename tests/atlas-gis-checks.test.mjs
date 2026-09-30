@@ -850,7 +850,7 @@ function registerViewBoundRow(registry, id, label) {
     label: () => label,
     on: () => true,
     time: () => '直近 24 h',
-    source: () => 'airplanes.live',
+    source: () => 'adsb.lol — ODbL 1.0 · ADS-B',
     holds: () => ({ complete: false, viewBound: true, live: true }),
     featuresIn: () => [],
   });

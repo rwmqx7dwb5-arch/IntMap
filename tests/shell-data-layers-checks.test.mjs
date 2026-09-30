@@ -1018,20 +1018,12 @@ const read = (p) => (p === 'js/i18n.js'
 
 /* ── the decisions that were made from measurements ──────────────────────────────────────────── */
 
-/* spelling kept: browser script (js/data-layers.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R186 aircraft: the sweep is paced to what the feed actually tolerates', () => {
-  const src = read('js/data-layers.js');
-  /* Probed against the live API: four-at-a-time lost 9 of 20 requests to bare connection failures,
-     while 14 consecutive requests spaced 1.2 s apart all succeeded and the block lifted after 30 s
-     of quiet. These three constants ARE that measurement. */
-  assert.match(src, /PLANE_GAP_MS\s*=\s*1200\b/, 'the 1.2 s spacing is the measured sustainable pace');
-  assert.match(src, /PLANE_CIRCLE_NM\s*=\s*250\b/, '250 nm is the API maximum (300 answers 403)');
-  /* (#R187) the floor and the cap moved again with the wider budget — see tests/r187-checks */
-  assert.match(src, /PLANES_MIN_ZOOM\s*=\s*2\b/, 'the tiled sweep lowered the floor from z5 to z3 to z2');
-  assert.ok(/PLANE_MAX_AIRCRAFT\s*=\s*50000\b/.test(src), 'the count cap is no longer one circle wide');
-  /* concurrency must be gone — a parallel sweep is what tripped the block */
-  assert.ok(!/PLANE_CONCURRENCY/.test(src), 'the sweep must be sequential');
-});
+/* ⚠ (remove-synthetic-planes) 「R186 aircraft: the sweep is paced to what the feed actually tolerates」
+   pinned the airplanes.live sweep's measured pace (1.2 s), radius (250 nm), zoom floor and count cap.
+   The sweep is removed with its provider (403 to every request since #R341) — nothing in the page
+   paces requests to that host any more because nothing in the page makes them. The pace the feed
+   tolerates is now the server's to keep (supabase/functions/aviation-feed, checked in
+   tests/backend-aviation-checks ⑮). The removal is measured in tests/remove-synthetic-planes-checks.test.mjs. */
 
 /* spelling kept: browser script (js/data-layers.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R186 sea level: nothing between the ramp and the opacity slider', () => {

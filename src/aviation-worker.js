@@ -335,12 +335,15 @@ function passes(slot, nowMs) {
 }
 
 /* ── colour ─────────────────────────────────────────────────────────────── */
-/*  The palette is the layer's existing one: #R244 fixed PLANE_CIV / PLANE_MIL and three test files
- *  pin those two values, so they are carried over verbatim rather than re-chosen. What is new is
- *  the ALTITUDE ramp — at world zoom a single cyan makes a continent one flat smear, and height is
- *  the cheapest dimension that separates cruise from approach. */
+/*  ⚠ THE CIVIL AND MILITARY COLOURS ARE THE READER'S, NOT THIS FILE'S. #R246, verbatim:
+ *  「民間機：シアン #00D9FF 軍用機：鮮赤 #FF3040 両方とも：より太いアウトライン」.
+ *  This comment used to say the palette was «carried over verbatim» while the code drew civil
+ *  traffic on an altitude ramp #35E0FF → #008CFF — no aircraft was ever #00D9FF on this path, and
+ *  the only renderer that honoured the instruction was the synthetic/v1 path removed on 2026-10-01
+ *  (remove-synthetic-planes). The ramp was a design choice nobody asked for; the instruction was
+ *  not. Civil is one cyan. (The outline is js/plane-glyph.js STROKE 2.6, unchanged.) */
 const COL = {
-  civLow: [0x35, 0xE0, 0xFF], civHigh: [0x00, 0x8C, 0xFF],
+  civ: [0x00, 0xD9, 0xFF],
   mil: [0xFF, 0x30, 0x40],
   emerg: [0xFF, 0xD2, 0x3F],
   sel: [0xFF, 0xD2, 0x3F],
@@ -355,17 +358,7 @@ function writeColour(out, o, slot, staleMul) {
   else if (f & CODEC.AC_EMERGENCY) c = COL.emerg;
   else if (f & CODEC.AC_MILITARY) c = COL.mil;
   else if (f & CODEC.AC_ON_GROUND) c = COL.ground;
-  else {
-    const a = S.altFt[slot];
-    /* Unknown altitude sits at the low end and is NOT interpolated to a middle colour — a made-up
-       midpoint would read as a measurement. */
-    const t = (a === a) ? Math.max(0, Math.min(1, a / 40000)) : 0;
-    c = [
-      COL.civLow[0] + (COL.civHigh[0] - COL.civLow[0]) * t,
-      COL.civLow[1] + (COL.civHigh[1] - COL.civLow[1]) * t,
-      COL.civLow[2] + (COL.civHigh[2] - COL.civLow[2]) * t,
-    ];
-  }
+  else c = COL.civ;
   out[o] = c[0] / 255; out[o + 1] = c[1] / 255; out[o + 2] = c[2] / 255;
   out[o + 3] = staleMul;
 }
@@ -498,8 +491,13 @@ async function poll(channel, query) {
   inflight.add(channel);
   try {
     const url = ENDPOINT + '?ch=' + encodeURIComponent(channel) + (query || '');
-    const r = await fetch(url, { headers: { accept: 'application/octet-stream' } });
-    if (!r.ok) throw new Error('http_' + r.status);
+    /* (remove-synthetic-planes) a failure carries the vocabulary js/layer-state.js classifies —
+       `reason` (network / http / parse) and `status` — so the row can say WHICH failure it was
+       rather than one word for every one of them. */
+    let r;
+    try { r = await fetch(url, { headers: { accept: 'application/octet-stream' } }); }
+    catch (e) { throw Object.assign(new Error((e && e.message) || 'network'), { reason: 'network' }); }
+    if (!r.ok) throw Object.assign(new Error('http_' + r.status), { reason: 'http', status: r.status });
     const buf = new Uint8Array(await r.arrayBuffer());
     S.provider = r.headers.get('x-intmap-provider') || S.provider;
     /* ODbL requires the source to be named; the NAME travels with the data so a change of
@@ -512,7 +510,9 @@ async function poll(channel, query) {
     S.ageMs = Number(r.headers.get('x-intmap-age-ms')) || 0;
     S.oldestMs = Number(r.headers.get('x-intmap-oldest-ms')) || 0;
     const t0 = performance.now();
-    const msg = CODEC.decode(buf);
+    let msg;
+    try { msg = CODEC.decode(buf); }
+    catch (e) { throw Object.assign(new Error((e && e.message) || 'decode_failed'), { reason: 'parse' }); }
     const decodeMs = performance.now() - t0;
     const nowMs = Date.now();
     const t1 = performance.now();
@@ -637,6 +637,7 @@ self.onmessage = async (ev) => {
   } catch (e) {
     /* A failure NEVER empties the store. The page keeps the last real aircraft and is told the
        fetch failed, which is what lets it show "not updating" instead of "no aircraft" (§25.2). */
-    self.postMessage({ id: m.id, type: 'error', error: (e && e.message) || 'worker_error' });
+    self.postMessage({ id: m.id, type: 'error', error: (e && e.message) || 'worker_error',
+      reason: (e && e.reason) || null, status: (e && e.status != null) ? e.status : null });
   }
 };

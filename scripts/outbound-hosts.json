@@ -103,21 +103,6 @@
       }
     },
     {
-      "host": "api.airplanes.live",
-      "what": "airplanes.live point query — only on the original aircraft path (?aviation=v1 / intmap_aviation_v2=0)",
-      "sends": {
-        "code": "coordinates",
-        "detail": "centres of the circles covering the map area in view"
-      },
-      "disclosure": {
-        "en": "airplanes.live",
-        "jp": "airplanes.live"
-      },
-      "probe": {
-        "url": "https://api.airplanes.live/v2/point/35.681/139.767/25"
-      }
-    },
-    {
       "host": "api.alternative.me",
       "what": "alternative.me Fear & Greed index",
       "sends": {

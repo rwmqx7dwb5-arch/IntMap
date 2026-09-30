@@ -36,12 +36,9 @@ const clearDefaultLayers = async (page) => {
   });
 };
 
-/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer now has two:
-   the original per-browser sweep that draws `lyr-planes` / `lyr-planes-3d`, and the GPU cloud that
-   replaced it as the default. This file's aircraft test is about the FILL-EXTRUSION geometry — the
-   parts each body is drawn from, the post under an airborne one, the exclusivity of flat vs lifted
-   — so it must boot the path that draws those, and say so rather than depending on which one
-   happens to be the default. The other tests in this file are about volume3d and pass either way. */
+/* (remove-synthetic-planes) `query` was how the aircraft test in this file pinned the airplanes.live
+   sweep (`?aviation=v1`). That path and its test are removed; the parameter stays because boot() is
+   this file's one door to the page, and no remaining test passes one. */
 const boot = async (page, query) => {
   await clearDefaultLayers(page);
   await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
@@ -194,65 +191,10 @@ test('every footprint shape draws, not only the polygon', async ({ page }) => {
   }
 });
 
-test('live aircraft stand at their reported altitude', async ({ page }) => {
-  test.setTimeout(180000);
-  /* A STUBBED ADS-B feed (#R170b): three aircraft with known altitudes, so the assertion is about
-     OUR geometry rather than about who is flying over Frankfurt right now. alt_baro/alt_geom are
-     feet in the real API; 36,000 ft = 10,972.8 m. */
-  await page.route('**/api.airplanes.live/**', route => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ now: Date.now(), ac: [
-      { hex: 'aaa111', flight: 'TEST001 ', lat: 50.03, lon: 8.57, alt_baro: 36000, alt_geom: 36000, gs: 450, track: 90, t: 'A320' },
-      { hex: 'bbb222', flight: 'TEST002 ', lat: 50.10, lon: 8.60, alt_baro: 4000, alt_geom: 4000, gs: 210, track: 270, t: 'B738' },
-      { hex: 'ccc333', flight: 'TEST003 ', lat: 50.05, lon: 8.50, alt_baro: 'ground', gs: 12, track: 0, t: 'E190' },
-    ] }),
-  }));
-  /* ⚠ ?aviation=v1 — see the note on boot(). This test asserts the extrusion geometry, which only
-     the v1 rendering produces; without the pin it waits 30 s for `state().features > 0` on a layer
-     the default no longer draws and times out (measured, #R341). What it checks is unchanged, and
-     the behaviour it stands for — aircraft at their REPORTED altitude — is asserted on the shipping
-     path by tests/r341-live.spec.js ③. */
-  await boot(page, '?aviation=v1');
-  await page.evaluate(() => window.__imap.jumpTo({ center: [8.57, 50.03], zoom: 9, pitch: 70, bearing: 0 }));
-  await page.waitForTimeout(1200);
-  const enabled = await page.evaluate(() => {
-    const cb = document.querySelector('.geo-layer-cb[data-layer="planes"]') || document.getElementById('dl-planes');
-    if (!cb) return false;
-    if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
-    return true;
-  });
-  expect(enabled, 'the aircraft layer has a checkbox to turn on').toBe(true);
-  /* (#R187) ASK FOR THE 3-D BODY. It is no longer the default — 「航空機のマークは最初のデザインに
-     戻して」 put the flat glyph back — but this test is about aircraft standing at their reported
-     altitude, which is the 3-D rendering, so it turns it on rather than relying on a default that
-     the instruction moved. The toggle and everything it draws are unchanged. */
-  await page.evaluate(() => window.IntMapPlanes3D.set(true));
-  await page.waitForFunction(() => { try { return window.IntMapPlanes3D.state().features > 0; } catch (_) { return false; } }, null, { timeout: 30000 });
-  await page.waitForTimeout(800);
-
-  const s = await page.evaluate(() => window.IntMapPlanes3D.state());
-  expect(s.on, 'lifted aircraft are the default').toBe(true);
-  expect(s.visible, 'the 3-D layer is the visible one').toBe(true);
-  expect(s.flatVisible, 'and the flat glyphs are not — one representation at a time').toBe(false);
-  expect(s.planes).toBe(3);
-  expect(s.lifted, 'two are airborne; the third is on the ground and stays on it').toBe(2);
-  expect(s.maxAlt, '36,000 ft = 10,973 m').toBeGreaterThan(10900);
-  expect(s.maxAlt).toBeLessThan(11050);
-  /* (#R183/#R185 built the body from four then ten parts; #R190 WITHDREW all of it — the lifted
-     aircraft is the original silhouette again.) The invariant these lines have always really encoded
-     is stated directly rather than through a magic number: the same number of parts per aircraft,
-     plus exactly one post under each airborne one.
-     (#R191) that number is TWO: the original glyph is a fill AND a 1.6-px white stroke, so the lifted
-     mark is the outline inset by the stroke plus the stroke itself. `aircraft` still counts aeroplanes
-     (it asks for `part:'body'` by name, which is exactly why #R190 made it do that). */
-  expect(s.aircraft, 'three aircraft, however many parts each is drawn from').toBe(3);
-  const parts = (s.features - 2) / s.aircraft;
-  expect(Number.isInteger(parts), 'every aircraft is drawn from the same number of parts').toBe(true);
-  expect(parts, '#R191: the silhouette and the glyph’s own white stroke').toBe(2);
-  expect(s.features, 'bodies + strokes + posts: 2 aircraft are airborne and posted').toBe(s.aircraft * parts + 2);
-
-  // the flat rendering is still one click away, and it is exclusive
-  const flat = await page.evaluate(() => { window.IntMapPlanes3D.set(false); return window.IntMapPlanes3D.state(); });
-  expect(flat.visible).toBe(false);
-  expect(flat.flatVisible).toBe(true);
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */

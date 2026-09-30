@@ -24,8 +24,9 @@
  *  for a BillboardCollection. #R341 wrote the dart into both by TRANSCRIBING it, with nothing
  *  holding the two copies together — the shape of defect this project has now met ten times
  *  (#R345: 「繰り返す欠陥の直し方が1ファイルの中にあると、次の occurrence が来る」). One
- *  declaration, two readers, and a check that the third — the frozen `?aviation=v1` path in
- *  js/data-layers.js, which #R341 deliberately left byte-for-byte alone — still agrees with it.
+ *  declaration, two readers. (The third — the frozen `?aviation=v1` path in js/data-layers.js,
+ *  which #R341 left byte-for-byte alone — was removed with its provider (remove-synthetic-planes);
+ *  this file is now the only declaration of the mark, and a check keeps it the only one.)
  *
  *  ⚠ NOT EAGER. Both readers are lazy (js/aviation-live.js imports the first; js/engine-select.js
  *  dynamically imports the second), so this file costs a MapLibre session that never turns the
@@ -37,7 +38,8 @@ window.IntMapPlaneGlyph = (function () {
   /* The outline, in the artwork's own units with +y DOWN — the axis a 2-D canvas context uses, so
      this array can be traced into a path with no transform beyond a translate. The nose is
      [0,-19]; the half-length 19 and the 44-unit box around it are what `icon-size` was multiplying
-     when the symbol layer drew this. VERBATIM `_PLANE_ORIG` from js/data-layers.js. */
+     when the symbol layer drew this. VERBATIM the `_PLANE_ORIG` js/data-layers.js carried until
+     remove-synthetic-planes. */
   const OUTLINE = [[0, -19], [2.2, -6], [2.2, -3], [17, 5], [17, 9], [2.2, 4.5], [2.2, 12], [6, 16], [6, 18], [0, 15.5],
                    [-6, 18], [-6, 16], [-2.2, 12], [-2.2, 4.5], [-17, 9], [-17, 5], [-2.2, -3], [-2.2, -6]];
 
@@ -60,7 +62,8 @@ window.IntMapPlaneGlyph = (function () {
      metres of ground, which is #R192's answer to four rounds of the two renderings drifting apart:
      「同じマークは同じ画素数」. ⚠ It is not the original ramp untouched — #R247 asked for aircraft
      「少し大きく」 and multiplied every stop by 1.25, so the SHAPE of the growth is the original's
-     and the scale is #R247's. VERBATIM `_PLANE_SIZE` from js/data-layers.js. */
+     and the scale is #R247's. VERBATIM the `_PLANE_SIZE` js/data-layers.js carried until
+     remove-synthetic-planes. */
   const SIZE = [[2, 0.5], [5, 0.725], [9, 0.975]];
 
   /** The artwork's box in CSS pixels at this zoom — `CANVAS × icon-size`, held flat outside the

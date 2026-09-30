@@ -334,7 +334,7 @@ export function makeGisLayers() {
        stated extent and is not view-bound (js/map-ui.js `holds`), and when it actually hands
        features over. A layer registered tomorrow that says the same thing is supplied by saying it.
        ⚠ A VIEW-BOUND ROW IS NOT SUPPLIED, and that is the whole discrimination: the aircraft source
-       holds what the camera asked airplanes.live for, so 「この条件に合うものを全部」 cannot be
+       holds what the camera's rectangle brought in from the feed, so 「この条件に合うものを全部」 cannot be
        answered from it — and answering it anyway, out of what happens to be in the renderer, is
        precisely the defect js/gis-sources.js exists to stop.
        ⚠ WHAT IT CLAIMS, IT DOES. `fields` is NOT claimed (js/gis-sources.js projects, and one

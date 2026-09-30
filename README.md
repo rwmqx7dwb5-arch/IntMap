@@ -326,7 +326,7 @@ Sources include organizations and projects such as:
 * Open-Meteo
 * GDELT
 * Google News
-* airplanes.live (community ADS-B) and Planespotters.net (aircraft photography)
+* adsb.lol (community ADS-B, ODbL 1.0 — read once by IntMap's server and served to every reader) and Planespotters.net (aircraft photography)
 * Other weather, satellite, geographic, and statistical providers
 
 The complete current list is available under **Settings → Data & attribution**.

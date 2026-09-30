@@ -2255,6 +2255,12 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   `OPENSKY_AGREEMENT=1` のときだけ）を**サーバー側で TTL ごとに1回だけ**読み、全利用者へ同じ
   IMAV/1 バイナリを配る。⚠ **上流の負荷が利用者数に比例する構造をやめるための関数である**——
   以前はブラウザが1掃引あたり最大 128 本の点問い合わせを自分で出していた。
+  ⚠ **(remove-synthetic-planes) ページ側の経路はこれ 1 本だけ。** その掃引（`api.airplanes.live`、`?aviation=v1` /
+  localStorage `intmap_aviation_v2=0` で残っていた旧経路）と、掃引が全滅すると乱数で約 270 機を実データとして
+  描いていた `genSyntheticPlanes()`、旧経路だけの MapLibre 描画（`lyr-planes` / `lyr-planes-3d`）は撤去済み。
+  取得に失敗しても機体はこしらえない——在庫が 0 機のときの失敗は `js/aviation-live.js` の `onState` から
+  `js/layer-state.js` の `dl-planes` へ（理由は worker が付ける `http`＋`status` / `network` / `parse`）、
+  基盤が起動できないときは行の要求が `reason:'unsupported'` で reject する。詳細は `docs/AVIATION-ARCHITECTURE.md` §7–§8。
   呼び出し側が選べるのは**チャンネル（`world` / `view` / `meta`）だけ**で、URL は渡せない
   （相手先 URL を allowlist で見る4本の中継とはそこが違う）。正規化と wire format の正本は
   `js/aviation-model.js` / `js/aviation-codec.js` で、`_shared/` の写しとの一致は `npm run check:static`

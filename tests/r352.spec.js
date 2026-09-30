@@ -20,8 +20,9 @@
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
-/* The two records: one carrying the line the layer computed, one shaped like the v1 rollback path
-   (?aviation=v1), whose records have no _srcLine and whose provider really was airplanes.live. */
+/* The two records: one carrying the line the layer computed, and one with no line at all — the
+   shape the removed v1 rollback path (?aviation=v1) built; every record the layer builds now carries
+   one (js/data-layers.js _av2Plane), so this is the branch only a direct open can reach. */
 const WITH_SOURCE = {
   icao24: 'FFFFFE', callsign: 'FIXTURE1', reg: 'X-TEST', type: 'civilian',
   lng: 8.57, lat: 50.04, alt: 10000, hdg: 90, speed: 220,
@@ -57,13 +58,14 @@ test('R352 ① the card prints the source it was handed, and still credits one w
   /* the exact defect: a literal printed regardless of who answered */
   expect(given, 'the card is still printing a hard-coded provider name').not.toContain('airplanes.live');
 
-  /* ⚠ AND THE FALLBACK MUST SURVIVE. Deleting the literal outright would satisfy the assertion
-     above and leave the v1 rollback path — which really did use that provider — crediting nobody,
-     which is the same licence problem pointing the other way. */
+  /* ⚠ AND THE FALLBACK MUST SURVIVE. Deleting the line outright would leave a record without one
+     crediting nothing at all. (remove-synthetic-planes) It no longer names airplanes.live — the path
+     that used that provider is gone — so it says what the data is (ADS-B) and names no provider. */
   const fallback = await read(NO_SOURCE);
   expect(fallback, 'a record with no source line leaves the credit line empty').toBeTruthy();
   expect(fallback.trim().length).toBeGreaterThan(3);
   expect(fallback).not.toContain('fixture-provider.example');
+  expect(fallback, 'the removed provider is not credited, even as a fallback').not.toContain('airplanes.live');
 });
 
 test('R352 ② the live layer reports the age of the ANSWER and the age of the OLDEST OBSERVATION separately', async ({ app }) => {

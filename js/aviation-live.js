@@ -16,7 +16,8 @@
  *    aircraft were on screen, which is the two-lists-disagree shape all over again. Zoom changes
  *    the DETAIL here (see sizeForZoom) and never the fleet.
  *  · It never invents an aircraft. There is no synthetic fallback in this path; a failed poll
- *    keeps the last real data and says so through status().
+ *    keeps the last real data and says so through status() — and a poll that fails while it holds
+ *    NOTHING is handed to the page's `onState`, which puts it on the layer's row (js/layer-state.js).
  *
  *  THE TWO CHANNELS
  *  ----------------
@@ -156,6 +157,11 @@ window.IntMapModules.aviationLive = function (HOST) {
     /* (#R783) the acquisition receipt — the last attempt at the camera-free door, successful or not.
        See the ACQUISITION section below for why a failed attempt has to leave one behind. */
     reach: null,
+    /* (remove-synthetic-planes) the page's callback for «this layer has nothing to draw because the feed
+       failed» — and for «it has recovered». `failShown` is whether the last word said was a failure, so
+       a recovery is said once and a success that follows a success says nothing. */
+    onState: null,
+    failShown: false,
     status: {
       provider: '', attribution: '', coverage: '', serverAgeMs: 0, oldestObservationMs: 0, seq: 0,
       total: 0, rendered: 0, lastPollAt: 0, lastOkAt: 0,
@@ -214,6 +220,24 @@ window.IntMapModules.aviationLive = function (HOST) {
   }
 
   /* ── polling ──────────────────────────────────────────────────────────── */
+  /* (remove-synthetic-planes) WHAT A FAILED POLL TELLS THE PAGE. The layer this replaced answered a dead
+     feed with ~270 aircraft it made up. This one says it could not draw — but only when that is true:
+     while the store still holds aircraft they are real and ageing (status().updating says so), and a
+     layer showing them has not failed to draw. A poll that ANSWERED (it carried a snapshot) after a
+     failure was said is the recovery; a poll that was skipped (another of the same channel in flight,
+     no endpoint) carried nothing and says nothing either way. */
+  function told(err, answered) {
+    if (!ST.onState) return;
+    if (err) {
+      if (ST.status.total > 0) return;
+      ST.failShown = true;
+      try { ST.onState('failed', err); } catch (_) { }
+    } else if (answered && ST.failShown) {
+      ST.failShown = false;
+      try { ST.onState('ok', null); } catch (_) { }
+    }
+  }
+
   /* THE DRAWING'S OWN CHANNEL, and this is the one place in the file where the camera is the
      window — because the picture IS the camera. ⚠ (#R783) THE QUERY STRING IS BUILT IN ONE PLACE
      (MODEL.bboxParam): the acquisition door below asks for a box a caller named, this asks for the
@@ -229,13 +253,14 @@ window.IntMapModules.aviationLive = function (HOST) {
   async function pollWorld() {
     if (!ST.on) return;
     ST.status.lastPollAt = Date.now();
-    try { await W().poll('world'); }
+    try { const r = await W().poll('world'); told(null, !!(r && r.stat)); }
     catch (e) {
       /* ⚠ A FAILED POLL CHANGES NOTHING ON SCREEN. The worker still holds every aircraft it had;
          all that happens is that they age, fade and eventually drop. That is the honest picture —
          emptying the layer would say "there are no aircraft", which is a different claim (§25.2). */
       ST.status.failures++;
       ST.status.lastError = (e && e.message) || 'poll_failed';
+      told(e, false);
     }
   }
 
@@ -244,10 +269,11 @@ window.IntMapModules.aviationLive = function (HOST) {
     const q = bboxQuery();
     if (!q) return;
     ST.status.lastPollAt = Date.now();
-    try { await W().poll('view', q); }
+    try { const r = await W().poll('view', q); told(null, !!(r && r.stat)); }
     catch (e) {
       ST.status.failures++;
       ST.status.lastError = (e && e.message) || 'poll_failed';
+      told(e, false);
     }
   }
 
@@ -555,6 +581,8 @@ window.IntMapModules.aviationLive = function (HOST) {
     if (o.endpoint) ST.endpoint = o.endpoint;
     if (o.opacity != null) ST.opacity = o.opacity;
     if (o.lift != null) ST.lift = !!o.lift;
+    ST.onState = (typeof o.onState === 'function') ? o.onState : null;
+    ST.failShown = false;
 
     if (!W() || !W().available()) return false;
     if (!ensureLayer()) return false;

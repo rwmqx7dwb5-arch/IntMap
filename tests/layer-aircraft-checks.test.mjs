@@ -8,6 +8,8 @@
  *      ブロックの外（このファイルの先頭）には複数のブロックが共有する補助だけを置く。
  *    · ブロックの冒頭コメントはそのラウンドの経緯（実測・理由）で、書き換えていない。
  *  統合元: tests/r187-checks.test.mjs, tests/r188-checks.test.mjs, tests/r190-checks.test.mjs, tests/r506-checks.test.mjs, tests/r175-checks.test.mjs
+ *  ⚠ (remove-synthetic-planes) airplanes.live の旧掃引とその 2 つの描画だけを守っていた 4 本は、守る対象と
+ *    一緒に撤去した（理由は各ブロックの冒頭）。撤去そのものは tests/remove-synthetic-planes-checks.test.mjs が測る。
  * ==========================================================================*/
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -25,156 +27,46 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 {
 /* 綴りのまま残した検査の理由: js/data-layers.js は DOM・MapLibre・fetch に閉じた Layers パネル全体のファクトリで node では組み立てられない */
 /* (#R187) the round's header note is kept with its largest block, in tests/layer-globe-rendering-checks.test.mjs */
+/* ⚠ (remove-synthetic-planes) TWO OF THE THREE ARE WITHDRAWN WITH WHAT THEY GUARDED. 「R187 aircraft:
+   the pick follows the rendering that is on」 pinned `pickPlane` / `_planeDrawAlt`, and 「R187 aircraft:
+   a bigger budget, the same requests per second」 pinned the airplanes.live sweep's circle budget and
+   its measured 1.2 s pace. Both were the per-browser sweep's, which is removed with its provider
+   (403 to every request since #R341); the GPU cloud picks through js/aviation-live.js pick() and
+   asks one server, so neither number has anything left to constrain. The removal is measured in
+   tests/remove-synthetic-planes-checks.test.mjs. What #R187 asked for — THE FIRST MARK — is still
+   checked, of the one place it is declared. */
 
 /* ── 1. the aircraft mark is the FIRST one again ─────────────────────────────────────────────── */
-test('R187 aircraft: the glyph is the original outline, stroke and size ramp', () => {
-  const src = read('js/data-layers.js');
+test('R187 aircraft: the glyph is the original outline, stroke and size ramp', async () => {
   /* The outline shipped from the first commit through #R164. Checked point by point rather than as
-     a blob so a "tidy-up" that nudges a vertex is a failure, not a silent redesign. */
-  const m = /_PLANE_ORIG\s*=\s*\[([\s\S]*?)\];/.exec(src);
-  assert.ok(m, '_PLANE_ORIG must exist');
-  const pts = JSON.parse('[' + m[1].replace(/\s+/g, '') + ']');
-  assert.deepEqual(pts, [[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],
-                         [-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]]);
-  /* a flat fill and a 1.6 px white line — no drop shadow, no white rim, no dark hairline */
-  const fn = /function ensurePlaneIcons\(\)\{[\s\S]*?\n    \}/.exec(src);
-  assert.ok(fn, 'ensurePlaneIcons must exist');
-  /* (#R246) 「両方とも：より太いアウトライン」 — the width is `PLANE_STROKE` now, a constant the flat
-     glyph AND the lifted 3-D body read, so thickening it cannot make the two renderings disagree. */
-  assert.match(fn[0], /lineWidth=PLANE_STROKE/, 'the stroke is the one shared constant');
-  assert.match(fn[0], /const s=44\b/, 'the original 44-unit artwork');
-  assert.ok(!/shadowBlur/.test(fn[0]), 'the #R183 drop shadow is gone');
-  assert.ok(!/lineWidth=2\.6/.test(fn[0]), 'the #R183 white rim is gone');
-  /* the original size ramp */
-  /* (#R192) the ramp is stated once, in _PLANE_SIZE, and BOTH renderings read it — see
-     tests/r192-checks.
-     ⚠ (#R247) the STOPS are the original ones scaled by 1.25 —「航空機の大きさを少し大きく」. What this
-     test is for is that there is ONE table and that its shape (three stops, at z2/z5/z9) is the
-     original ramp's; the scale is the reader's to ask about. */
-  assert.match(src, /const _PLANE_SIZE=\[\[2,0\.5\],\[5,0\.725\],\[9,0\.975\]\];/,
-    'the icon-size ramp — the original stops at 1.25x (#R247)');
-  /* …and the flat glyph is what a default profile SEES: #R185 measured that the lifted 3-D body is
-     shown instead of it, so restoring the glyph without this changes nothing on screen. */
+     a blob so a "tidy-up" that nudges a vertex is a failure, not a silent redesign.
+     (remove-synthetic-planes) js/plane-glyph.js is the one declaration since #R379, evaluated. */
+  const had = Object.prototype.hasOwnProperty.call(globalThis, 'window');
+  if (!had) globalThis.window = {};
+  let G;
+  try { await import('../js/plane-glyph.js'); G = globalThis.window.IntMapPlaneGlyph; }
+  finally { if (!had) delete globalThis.window; }
+  assert.deepEqual(G.OUTLINE, [[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],
+                               [-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]]);
+  /* (#R246) 「両方とも：より太いアウトライン」 — the white line is one constant, thicker than 1.6 */
+  assert.ok(G.STROKE > 1.6, 'the stroke is the one shared, thicker constant');
+  assert.equal(G.CANVAS, 44, 'the original 44-unit artwork');
+  /* ⚠ (#R247) the STOPS are the original ones scaled by 1.25 —「航空機の大きさを少し大きく」. */
+  assert.deepEqual(G.SIZE, [[2, 0.5], [5, 0.725], [9, 0.975]], 'the size ramp — the original stops at 1.25x (#R247)');
   /* (#R189) the key is generation-bumped so a '1' stored under the R172–R186 default-TRUE era can
      no longer override the default — see r189-checks for the migration itself */
+  const src = read('js/data-layers.js');
   assert.match(src, /let planes3D=true;[\s\S]{0,200}getItem\(PLANES3D_KEY\)/,
-    '3-D aircraft bodies must default OFF');
-});
-
-/* ── 1b. …and the click still finds the aircraft it can now see ──────────────────────────────── */
-test('R187 aircraft: the pick follows the rendering that is on', () => {
-  const src = read('js/data-layers.js');
-  /* Caught by tests/r175 — which is about the DETAIL CARD and not about 3-D at all. `pickPlane`
-     opened with `if(!planes3D) return null`, so the moment the flat glyph became the default again,
-     clicking an aircraft selected nothing, opened no card and drew no track. A default change is not
-     allowed to take a feature with it. */
-  assert.ok(!/function pickPlane\(pt\)\{\s*\n?\s*if\(!planes3D/.test(src),
-    'pickPlane must not bail out when the flat glyph is the rendering');
-  assert.match(src, /function _planeDrawAlt\(d\)\{[\s\S]{0,200}if\(!planes3D\|\|d\.onGround\) return 0;/,
-    'the drawn altitude is 0 for the flat glyph and the reported altitude for the 3-D body');
-  /* the pick and the "where is it drawn" diagnostic must BOTH go through it — a pick that used a
-     different offset would look for the aeroplane somewhere it is not (#R174) */
-  const uses = src.match(/_planeDrawAlt\(d\)/g) || [];
-  assert.ok(uses.length >= 2, `only ${uses.length} caller(s) of _planeDrawAlt — pick and screenPos must agree`);
-});
-
-/* ── 2. the sweep is wider, and still paced at the measured rate ─────────────────────────────── */
-test('R187 aircraft: a bigger budget, the same requests per second', () => {
-  const src = read('js/data-layers.js');
-  assert.match(src, /PLANE_CIRCLE_NM\s*=\s*250\b/, '250 nm is still the API maximum (300 answers 403)');
-  assert.match(src, /PLANE_GAP_MS\s*=\s*1200\b/, 'the measured sustainable spacing must NOT move with the budget');
-  /* ⚠ (#R668) the PREDICATE moved and the NUMBERS did not: which sweep a device may run is a
-     question about the device, not about the window's width (`isMobile()` is a 768 px media query,
-     so a phone in landscape was authorised the 128-circle sweep on the same radio and the same
-     memory the 24 was measured for). So this reads the two branches and their numbers — the fact —
-     and tolerates any spelling of the device predicate that js/mem-budget.js owns. */
-  const b = /PLANE_CIRCLE_BUDGET=\(\)=>\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?(\d+):(\d+)\)/.exec(src);
-  assert.ok(b, 'the budget must be a two-branch phone/desktop constant decided by the DEVICE '
-    + '(_phoneDev()/IntMapMemBudget.deviceIsPhone), not by a width media query');
-  /* (#R188) raised again, to 128 / 24, together with a triangular covering lattice — the report came
-     back a third time. What this test is really guarding is that the budget only ever GROWS and that
-     the pace never moves with it, so the numbers are checked as a floor rather than as an equality
-     (tests/r188-checks.test.mjs pins the current values). */
-  assert.ok(+b[2] >= 48, `desktop budget ${b[2]} must not fall below #R187's 48`);
-  assert.ok(+b[1] >= 12, `mobile budget ${b[1]} must not fall below #R187's 12`);
-  /* the poll interval has to be able to EXPRESS the full sweep — a clipped ceiling would mean
-     polling faster than the pace that was measured to be sustainable */
-  const cl = /Math\.max\(20000,Math\.min\((\d+),Math\.round\(n\*(\d+)\)\)\)/.exec(src);
-  assert.ok(cl, 'the poll interval must stay a clamped n×rate rule');
-  assert.ok(+cl[1] >= +b[2] * +cl[2], `a ${b[2]}-circle sweep needs ${+b[2] * +cl[2]} ms but the ceiling is ${cl[1]} ms`);
+    'the real-altitude setting has its default and reads its own key');
 });
 }
 
 /* ══════════ from tests/r188-checks.test.mjs — 2 of its 7 test(s) ══════════ */
-{
-/* 綴りのまま残した検査の理由: js/data-layers.js は DOM・MapLibre・fetch に閉じた Layers パネル全体のファクトリで node では組み立てられない */
-/* ============================================================================
- *  R188 — source-level checks (no browser)
- * ----------------------------------------------------------------------------
- *  Six instructions, every one of them a re-report. What each of these guards is
- *  the MEASUREMENT that finally named the cause, so a later tidy-up cannot quietly
- *  put the same defect back.
- * ==========================================================================*/
-
-/* ── 1. live aircraft: a triangular covering, a bigger budget, the SAME pace ─────────────────── */
-test('R188 aircraft: the lattice is triangular, so each request covers 1.36× the sky', () => {
-  const src = read('js/data-layers.js');
-  /* The optimal covering of a plane by equal circles: neighbours at r√3, rows at that × √3/2.
-     #R186/#R187 stepped by the inscribed SQUARE (r√2), which keeps 2r² of a circle's πr². */
-  assert.match(src, /const stepKm=rKm\*Math\.sqrt\(3\)\*PLANE_LATTICE_MARGIN;/,
-    'centres must be spaced r√3 — the covering lattice, not the inscribed square');
-  assert.match(src, /const rowKm=stepKm\*Math\.sqrt\(3\)\/2;/, 'rows at √3/2 of the step');
-  assert.match(src, /const off=\(j&1\)\?dLng\/2:0;/, 'alternate rows offset by half a step');
-  assert.ok(!/Math\.SQRT2\*0\.94/.test(src), 'the inscribed-square step must be gone');
-
-  /* the area arithmetic the round claims, checked rather than asserted in a comment */
-  const r = 250 * 1.852, margin = 0.96;
-  const step = r * Math.sqrt(3) * margin, row = step * Math.sqrt(3) / 2;
-  const hex = step * row, square = Math.pow(r * Math.SQRT2 * 0.94, 2);
-  assert.ok(hex / square > 1.3, `covering gain ${(hex / square).toFixed(2)}× should be ~1.36`);
-
-  /* ⚠ the pace is a MEASUREMENT and must not move: 34 circles at 1,200 ms all answered 200, the
-     same 34 at 700 ms gave 12 successes and then 16 consecutive hard failures. */
-  assert.match(src, /const PLANE_GAP_MS=1200;/, 'the measured spacing is 1.2 s and is unchanged');
-  assert.match(src, /const PLANE_CIRCLE_NM=250;/, 'r=250 is the API maximum (300/500 answer 403)');
-  /* ⚠ (#R668) the two numbers are the measurement and are pinned exactly; the predicate in front of
-     them is not a spelling this test owns, only a REQUIREMENT that it be the device one — the width
-     media query handed a phone in landscape (844 px) the desktop sweep. */
-  assert.match(src, /PLANE_CIRCLE_BUDGET=\(\)=>\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?24:128\)/,
-    'the budget is 128 circles (phone 24), and which arm a device takes is decided by the device');
-  assert.match(src, /_phoneDev=\(\)=>\{[\s\S]{0,120}window\.IntMapMemBudget\.deviceIsPhone\(/,
-    'and the local `_phoneDev` really delegates to the single owner in js/mem-budget.js');
-  /* the long-run rate is 3.5 s a circle whatever the budget — so the ceiling has to clear it */
-  const poll = /return Math\.max\(20000,Math\.min\((\d+),Math\.round\(n\*3500\)\)\);/.exec(src);
-  assert.ok(poll, 'planePollMs must keep the 3.5 s-a-circle rule');
-  assert.ok(+poll[1] >= 128 * 3500,
-    `poll ceiling ${poll[1]} ms clips a 128-circle sweep (${128 * 3500} ms) — that would ask FASTER than measured`);
-});
-
-test('R188 aircraft: a 154-second sweep publishes as it goes, centre first', () => {
-  const src = read('js/data-layers.js');
-  assert.match(src, /const PLANE_PUBLISH_MS=4000;/, 'the sweep publishes every few seconds');
-  /* ⚠ (#R245) …and the FIRST success publishes without waiting for that interval — `lastPub` starts
-     at the sweep's own start, so the centre circle's aircraft used to sit in `byHex` for four
-     seconds with nothing on screen (「表示されるまでが遅い」). The cadence after it is unchanged. */
-  assert.match(src, /if\(ok>0&&\(published===0 \? circles\.length>1 : Date\.now\(\)-lastPub>=PLANE_PUBLISH_MS\)\) publish\(false\);/,
-    '…from inside the circle loop, first success immediately, then every PLANE_PUBLISH_MS');
-  /* a carried-over aircraft is dropped only once the sweep has RE-ASKED about its patch of sky */
-  assert.match(src, /function planeCellOf\(lat,lng\)\{/, 'the lattice must answer "which cell is this"');
-  assert.match(src, /if\(cell!=null&&swept\.has\(cell\)\) continue;/,
-    'carry-over must be resolved by "was this cell asked?", not by age alone');
-  /* …and the cell key travels with the circle, because rows beyond ±88° are skipped */
-  assert.match(src, /out\.push\(\[Math\.max\(-89\.9,Math\.min\(89\.9,lat\)\),lng,j\*nx\+i\]\);/,
-    'each circle carries its cell key');
-  /* centre-out order: measured row-major, the first four circles landed in the mid-Atlantic */
-  assert.match(src, /out\.sort\(\(a,b\)=>\{/, 'circles must be ordered by distance from the view centre');
-  /* a sweep the camera has left behind is abandoned — safe only because it already published */
-  assert.match(src, /if\(Math\.abs\(dLng\)<cv\.coverKmX\/2&&Math\.abs\(dLat\)<cv\.coverKmY\/2\) return;/,
-    'a new request takes over when the centre has moved more than half the covered block');
-  assert.match(src, /finally \{ if\(mine===_planeSweep\) _planeBusy=false; \}/,
-    'only the owning sweep may clear the busy flag');
-});
-}
+/* ⚠ (remove-synthetic-planes) BOTH WITHDRAWN. 「R188 aircraft: the lattice is triangular…」 and
+   「R188 aircraft: a 154-second sweep publishes as it goes, centre first」 pinned the planner, the
+   pace and the carry-over rule of the per-browser airplanes.live sweep — the only thing in the app
+   that fetched through them, removed with its provider. tests/remove-synthetic-planes-checks.test.mjs
+   measures that none of it is left. */
 
 /* ══════════ from tests/r190-checks.test.mjs — 1 of its 10 test(s) ══════════ */
 {
@@ -182,30 +74,16 @@ test('R188 aircraft: a 154-second sweep publishes as it goes, centre first', () 
 /* (#R190) the round's header note is kept with its largest block, in tests/layer-simulators-checks.test.mjs */
 
 /* ── 1 · the aircraft mark, in BOTH renderings ───────────────────────────────────────────────── */
+/* (remove-synthetic-planes) The lifted fill-extrusion body this pinned was the airplanes.live
+   sweep's second rendering, removed with it. The two halves of #R190 that outlive it — ONE
+   original outline for the mark, and 「at real altitudeはデフォルトで選択状態に」 — are asked of where
+   they live: js/plane-glyph.js, and the setting js/data-layers.js hands to the cloud as `lift`. */
 test('R190 aircraft: the lifted body is the original glyph, and "at real altitude" is the default', () => {
   const src = read('js/data-layers.js');
-  /* the 3-D silhouette and the 2-D icon are literally the same outline now */
-  assert.match(src, /const _PLANE_OUTLINE=_PLANE_ORIG;/,
-    'the lifted body draws the outline the flat glyph draws');
-  assert.match(src, /const _PLANE_ORIG=\[\[0,-19\]/, 'and that outline is the original one');
-  /* …declared ABOVE both uses. #R167/#R183/#R189 all lost a module to this exact TDZ. */
-  assert.ok(src.indexOf('const _PLANE_ORIG=') < src.indexOf('const _PLANE_OUTLINE=_PLANE_ORIG'),
-    '_PLANE_ORIG must be declared before the alias that reads it');
-  assert.ok(src.indexOf('const _PLANE_ORIG=') < src.indexOf('function ensurePlaneIcons'),
-    '…and before the icon factory, or the module dies in its own temporal dead zone');
-  /* the #R183/#R185 construction is gone with the plan-form it was grown from */
-  assert.doesNotMatch(src, /_P_LEVELS/, 'the part-height table is gone');
-  assert.doesNotMatch(src, /_PLANE_PLAN/, 'and the airliner plan-form it was grown from');
-  assert.doesNotMatch(src, /DETAIL_MAX_AIRCRAFT/, 'and the budget that switched between the two bodies');
-  assert.doesNotMatch(src, /rgba\(255,255,255,0\.97\)/, 'the white rim plate is gone');
-  /* one aeroplane per aircraft, at the #R172 size.
-     (#R191) the body ring is now the shared outline INSET by the glyph's own stroke and a second ring
-     carries the stroke itself (see _PLANE_CORE / _PLANE_RIM) — still the one silhouette this test is
-     about, and still one aeroplane per aircraft. The stroke's own geometry is pinned in tests/r191. */
-  assert.match(src, /coordinates:\[planeRingPts\(d\.lng,d\.lat,d\.heading,half,_PLANE_CORE\)\]/, 'one aeroplane per aircraft');
-  /* (#R192) the size is the GLYPH's own ramp now, at every zoom — the 60 m floor was making the
-     lifted mark 2.7x too big past z14.5. See tests/r192-checks. */
-  assert.match(src, /const half=iconHalfPx\*mpp;/, 'and the original 13-px half-length');
+  assert.match(read('js/plane-glyph.js'), /const OUTLINE = \[\[0, -19\]/, 'the mark is the original outline, declared once');
+  assert.doesNotMatch(src, /_PLANE_ORIG|_PLANE_OUTLINE|_PLANE_PLAN|_P_LEVELS|DETAIL_MAX_AIRCRAFT/,
+    'js/data-layers.js builds no body of its own — neither the original copy nor the #R183/#R185 airliner');
+  assert.match(src, /lift:planes3D/, 'the setting is what the cloud is told to draw');
   /* the default, and the storage generation that makes the default reachable */
   assert.match(src, /const PLANES3D_KEY='intmap_planes3d3';/, 'a new key generation');
   assert.match(src, /let planes3D=true;/, 'default ON — 「at real altitudeはデフォルトで選択状態に」');
@@ -411,14 +289,16 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
      makes the code MORE correct. So the claim is the one this test's own name makes — the branch
      that opens the card is the branch that stands the tooltip down — and it is asserted of BOTH
      places that branch exists (the label click and the 3-D body click). */
+  /* (remove-synthetic-planes) ONE click path now: the airplanes.live sweep's own click (and the
+     poll-driven card refresh it did in recordTracks) went with that sweep. The path that is left —
+     the GPU cloud's pick in _av2Click — keeps both halves of the claim. */
   const clicks = [...dl.matchAll(/if\(openPlaneCard\(d\)\)\{([^}]*)\}/g)];
-  assert.equal(clicks.length, 2, 'the two click paths that can open the card are still two');
+  assert.equal(clicks.length, 1, 'the one click path that can open the card');
   for (const c of clicks) {
     assert.match(c[1], /hideMapTooltip\(HOST\.mapTooltipEl\)/,
       'a click opens the card and stands the tooltip down — through the one setter (#R499)');
   }
   assert.ok(dl.includes('else { const el=ensureMapTooltip();'), 'and falls back to the pinned tooltip if the card module is absent');
-  assert.match(dl, /P\.update\(d,\{track:_trackCard\(d\.icao24\)\}\)/, 'the open card is refreshed by the live poll');
   /* ⚠ (#R311) THE CARD IS FETCHED WHEN THE AIRCRAFT IS CLICKED, so the factory call moved out of
      js/app-body.js into js/lazy-modules.js's mount and the boot guard can no longer see the key.
      The two things this asserted — «the factory is instantiated exactly once with the shared host»

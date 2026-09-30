@@ -122,7 +122,14 @@ test.describe.configure({ mode: 'parallel' });
    whole-link test rather than in a test of its own: both are layers a link carries, so a separate test
    paid a second pair of boots to re-prove a subset of what the one below proves — and the suite's time
    ceiling is a total (scripts/test-budget.mjs). */
-const REPORTED = [['dl-planes', 'lyr-planes'], ['dl-radar', 'lyr-radar']];
+/* (remove-synthetic-planes) `lyr-planes`, which the report named, was the removed airplanes.live
+   sweep's symbol layer — since #R341 created hidden and never drawn, and now not created at all. What
+   the aircraft row still adds SYNCHRONOUSLY — the add the report was about («Style is not done
+   loading») — is the observed track's source and layers (js/data-layers.js setupPlanes), so
+   `lyr-plane-track` is the witness. The aircraft themselves are the GPU cloud, a MapLibre CUSTOM layer,
+   which `getStyle()` does not serialise — measured: `lyr-aircraft-cloud` is absent from that list on a
+   normal boot too, while `IntMapGeoEngine.layers.hasAircraftCloud()` answers true. */
+const REPORTED = [['dl-planes', 'lyr-plane-track'], ['dl-radar', 'lyr-radar']];
 
 test('every layer a link can carry: holding the style back costs no layer', async ({ browser }) => {
   test.setTimeout(240000);

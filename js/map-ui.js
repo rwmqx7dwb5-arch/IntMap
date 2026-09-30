@@ -239,8 +239,10 @@ window.IntMapModules.layerRegistry=function(HOST){
       if(/Polygon/.test(String(g.type||''))){ try{ return !!window._imPipGeo(w,s,g); }catch(_){ return false; } }
       return false; }
     function _srcFeatsIn(srcId,bounds){ try{ const d=GE().layers.sourceData(srcId); if(!d||!Array.isArray(d.features)) return null;
+      return _featsIn(d.features,bounds); }catch(_){ return null; } }
+    function _featsIn(features,bounds){ try{
       const b=bounds||GE().camera.getBounds(); const w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
-      return d.features.filter(f=>{ try{ return _geomInBox(f&&f.geometry,w,e,so,n); }catch(_){ return false; } }); }catch(_){ return null; } }
+      return features.filter(f=>{ try{ return _geomInBox(f&&f.geometry,w,e,so,n); }catch(_){ return false; } }); }catch(_){ return null; } }
     function register(id,impl){ REG[id]=impl||{}; }
     function list(){ return Object.keys(REG); }
     function activeIds(){ return Object.keys(REG).filter(id=>{ try{ const r=REG[id]; return r.on?!!r.on():isOn(id); }catch(_){ return false; } }); }
@@ -486,14 +488,26 @@ window.IntMapModules.layerRegistry=function(HOST){
     const _aisOwnKey=()=>{ let own=''; try{ own=localStorage.getItem('intmap_ais_key')||''; }catch(_){} return !!own; };
     const _radNets=()=>{ try{ return (window.IntMapRadiationObs.sources()||[]).filter(s=>s.read); }catch(_){ return []; } };
     const _lyrVis=id=>{ try{ return !!(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')==='visible'); }catch(_){ return false; } };
+    /* (remove-synthetic-planes) the aircraft ON THE MAP are the GPU cloud's — js/aviation-live.js
+       snapshotFor() reads the very buffers the renderer draws. The `src-planes` GeoJSON this row used to
+       read belonged to the per-browser airplanes.live sweep, which is removed; since #R341 it had held
+       nothing, so this row answered 「no aircraft」 over a sky full of them. */
+    const _av=()=>{ try{ return window.IntMapAviation||null; }catch(_){ return null; } };
+    const _acFeats=()=>{ try{ const A=_av(); if(!A||!A.isOn()) return null;
+      return (A.snapshotFor(Infinity)||[]).map(a=>({ type:'Feature', geometry:{type:'Point',coordinates:[a.lon,a.lat]},
+        properties:{ hex:a.hex, altFt:a.altFt, track:a.track } })); }catch(_){ return null; } };
+    const _acCredit=()=>{ try{ const s=_av()&&_av().stats(); return (s&&(s.attribution||s.provider))||''; }catch(_){ return ''; } };
     register('aircraft',{ label:()=>L5('Live aircraft','航空機（リアルタイム）','Live-Flugverkehr','Самолёты (онлайн)','Aviones en vivo'),
-      on:()=>_lyrVis('lyr-planes'), featuresIn:b=>_srcFeatsIn('src-planes',b),
-      /* ⚠ (#R756) THE OPPOSITE STATEMENT, AND IT IS EXACTLY AS IMPORTANT. js/aviation-live.js asks
-         airplanes.live for the CAMERA'S rectangle, so this source holds the aircraft that were in
-         view when it last refreshed — never the world's traffic. Saying so is what makes an analysis
+      on:()=>{ try{ const A=_av(); return !!(A&&A.isOn()); }catch(_){ return false; } },
+      featuresIn:b=>{ const f=_acFeats(); return f?_featsIn(f,b):null; },
+      /* ⚠ (#R756) THE OPPOSITE STATEMENT, AND IT IS EXACTLY AS IMPORTANT. js/aviation-live.js's drawn
+         set is filled by the feed's world channel and by the CAMERA'S rectangle, so what is on the map
+         is never the world's traffic. Saying so is what makes an analysis
          over it read 「表示範囲に限られる」 instead of 「宣言が無い」: two different silences. */
       holds:()=>({complete:false,viewBound:true,live:true}),
-      summary:()=>{ const f=_srcFeatsIn('src-planes',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'airplanes.live ADS-B', rights:()=>({publisher:'airplanes.live'}) });
+      summary:()=>{ const a=_acFeats(); const f=a?_featsIn(a,null):null; return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; },
+      /* the provider the feed names in x-intmap-attribution (ODbL requires it), never a literal */
+      source:()=>{ const c=_acCredit(); return c?(c+' · ADS-B'):'ADS-B'; }, rights:()=>{ const c=_acCredit(); return c?{publisher:c}:null; } });
     register('ships',{ label:()=>L5('Live ships','船舶（リアルタイム）','Live-Schiffe','Суда (онлайн)','Barcos en vivo'),
       on:()=>_lyrVis('lyr-ships'), featuresIn:b=>_srcFeatsIn('src-ships',b),
       /* ⚠ (#R756) THE AIS SUBSCRIPTION CARRIES THE CAMERA'S BOX (js/data-layers.js aisBBox), and the

@@ -27,11 +27,9 @@ const clearDefaultLayers = async (page) => {
   });
 };
 
-/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
-   original per-browser sweep that draws `lyr-planes-3d` / `lyr-plane-track-3d` / `lyr-planes-post`,
-   and the GPU cloud that replaced it as the default. ③ below picks an aircraft out of those layers
-   and reads its track off them, so it names the path that draws them rather than depending on which
-   one happens to be the default. ① and ② are the cockpit and the volume, and pass either way. */
+/* (remove-synthetic-planes) `query` was how the aircraft test in this file pinned the airplanes.live
+   sweep (`?aviation=v1`). That path and its test are removed; the parameter stays because boot() is
+   this file's one door to the page, and no remaining test passes one. */
 const boot = async (page, query) => {
   await clearDefaultLayers(page);
   await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
@@ -201,116 +199,10 @@ test('the 3-D volume is a closed body — one solid, with a floor', async ({ pag
   }
 });
 
-test('a lifted aircraft can be hovered and clicked where it is drawn, and its track appears', async ({ page }) => {
-  test.setTimeout(180000);
-  let tick = 0;
-  /* the stub flies for four fixes and then holds station: the track needs movement, the pick needs
-     the aeroplane to still be where it was projected a moment ago. */
-  await page.route('**/api.airplanes.live/**', route => { const t = Math.min(tick++, 4);
-    route.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
-        lat: 35.60 + t * 0.02, lon: 139.60 + t * 0.03, alt_baro: 36000, alt_geom: 36100,
-        gs: 480, track: 55, seen: 1, dbFlags: 0 }] }) }); });
-  /* ⚠ ?aviation=v1 — see the note on boot(). Every reading below comes out of `lyr-planes-3d`,
-     `lyr-plane-track-3d` and `lyr-planes-post`, which the default rendering ships at
-     visibility:'none'; without the pin `state().lifted` is 0 where 1 is expected (measured, #R341).
-     Nothing it checks is changed, and the behaviour it stands for — an aircraft picked WHERE IT IS
-     DRAWN — is asserted on the shipping path by tests/r341-live.spec.js ②. */
-  await boot(page, '?aviation=v1');
-  await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
-  await page.evaluate(() => window.__imap.jumpTo({ center: [139.72, 35.68], zoom: 9.5, pitch: 60, bearing: 0 }));
-  await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
-  /* (#R187) a LIFTED aircraft is the 3-D rendering, which is no longer the default (the first flat
-     glyph is, per 「最初のデザインに戻して」) — so this test asks for it by name. */
-  await page.evaluate(() => window.IntMapPlanes3D.set(true));
-  await page.waitForTimeout(3500);
-  for (let i = 0; i < 3; i++) { await page.evaluate(() => window.__imap.fire('moveend')); await page.waitForTimeout(2000); }
-
-  const s = await page.evaluate(() => window.IntMapPlanes3D.state());
-  expect(s.lifted, 'the aircraft is standing at its reported altitude').toBe(1);
-  expect(s.maxAlt, '36,100 ft of GPS altitude is 11,003 m').toBe(11003);
-
-  // MapLibre answers a point query only at the FOOTPRINT — this is the bug the round fixed
-  const pos = await page.evaluate(() => { const p = window.IntMapPlanes3D.screenPos('ABC123');
-    return p ? { x: Math.round(p.x), y: Math.round(p.y) } : null; });
-  expect(pos, 'the engine can say where an aircraft at 11 km is drawn').not.toBeNull();
-  const ground = await page.evaluate(() => { const m = window.__imap;
-    const f = m.queryRenderedFeatures({ layers: ['lyr-planes-3d'] });
-    const g = m.project(f[0].geometry.coordinates[0][0]); return { y: Math.round(g.y) }; });
-  expect(Math.abs(pos.y - ground.y), 'and it is nowhere near its ground position').toBeGreaterThan(40);
-
-  expect(await page.evaluate(p => window.IntMapPlanes3D.pickAt(p), pos), 'the pick finds it there').toBe('ABC123');
-
-  await page.mouse.move(pos.x, pos.y); await page.waitForTimeout(700);
-  const hovered = await page.evaluate(() => [...document.querySelectorAll('div')].some(e => e.offsetParent && /TEST123/.test(e.textContent)));
-  expect(hovered, 'hovering the lifted aircraft shows its readout').toBe(true);
-
-  await page.mouse.click(pos.x, pos.y); await page.waitForTimeout(1200);
-  const sel = await page.evaluate(() => window.IntMapPlanes3D.state());
-  expect(sel.selected, 'clicking it selects it').toBe('ABC123');
-  expect(sel.trackVisible, 'and its track is on screen').toBe(true);
-  expect(sel.track.fixes, 'made of the fixes actually received').toBeGreaterThan(2);
-  expect(sel.track.maxAlt, 'at the altitude they were received at').toBe(11003);
-
-  // the track is drawn in 3-D: one ribbon per leg, extruded at that leg's altitude
-  const legs = await page.evaluate(() => window.__imap.queryRenderedFeatures({ layers: ['lyr-plane-track-3d'] })
-    .map(f => Math.round(f.properties.alt)));
-  expect(legs.length, 'the track has legs standing in the air').toBeGreaterThan(1);
-  expect(Math.min(...legs), 'each at the altitude it was flown at').toBeGreaterThan(10000);
-
-  /* ══ ⚠⚠⚠ (#R700) 「どこも無いところ」は #map の実測矩形から取る ═══════════════════════════════
-     ここは `page.mouse.click(60, 700)` という字面だった。700 は `#map` が 720 px のビューポートの
-     下端まで伸びていたころの数で、#R485 が `#map-credit` を通常フローに入れてから `#map` は
-     697 px までしかない——つまりこのクリックは**地図の外**（クレジット帯）に落ちており、
-     「選択が外れる」を一度も試さないまま緑を返せる位置にいた（実測: 選択は外れなかった）。
-     ⚠ 新しい数を書かない。空いている場所は地図自身の矩形から測り、機体からも十分離す。 */
-  const mapBox = await page.locator('#map').boundingBox();
-  expect(mapBox, 'the map has a box to click inside').not.toBeNull();
-  const away = { x: Math.round(mapBox.x + 60), y: Math.round(mapBox.y + mapBox.height - 20) };
-  expect(Math.hypot(away.x - pos.x, away.y - pos.y),
-    'the empty spot really is away from the aircraft').toBeGreaterThan(60);
-  await page.mouse.click(away.x, away.y); await page.waitForTimeout(900);
-  expect(await page.evaluate(() => window.IntMapPlanes3D.selected()), 'clicking away puts it back').toBeNull();
-
-  /* …and the aeroplane's FOOTPRINT — the post standing under it — selects it too. This is the case that
-     caught a real defect on production: the pick and the renderer's own footprint hit were two separate
-     click handlers and each of them TOGGLED, so a click that satisfied both selected the aircraft and
-     deselected it in the same event. One handler, one decision. */
-  /* (#R183) Aim at the aircraft's GROUND POSITION, taken from the data, rather than at the centroid
-     of whichever polygon a render query happens to return. The post is deliberately a hairline —
-     max(6 m, 1.1 px) — so it is only about two pixels across on screen, and the old centroid only
-     ever hit it by being coincidentally close: the silhouette's average vertex sits a little aft of
-     the aircraft, and once the body became four parts (fuselage/wing/stabiliser/fin) the fuselage's
-     average moved a couple of pixels forward and the click fell off the post. The position the test
-     MEANS is the aircraft's own lng/lat, so that is what it now projects. */
-  const post = await page.evaluate(() => { const m = window.__imap;
-    /* the post's own square is centred exactly on the aircraft's lng/lat, so its centroid IS the
-       ground point — aim at the thing being tested rather than at a proxy for it */
-    const pf = m.queryRenderedFeatures({ layers: ['lyr-planes-post'] }).find(x => (x.properties || {}).post === 1);
-    let ll;
-    if (pf) { const r = pf.geometry.coordinates[0].slice(0, 4);
-      const c = r.reduce((a, p2) => [a[0] + p2[0], a[1] + p2[1]], [0, 0]);
-      ll = [c[0] / r.length, c[1] / r.length];
-    } else {
-      /* ⚠ (#R341) ASK THE LAYER WHERE THE AIRCRAFT IS, rather than naming a coordinate.
-         This was the literal [139.72, 35.68] — the stub's position at t=4, which it only reaches
-         after its FIFTH request, because `tick++` advances one step per request. Two of those five
-         used to come from somewhere else entirely: js/layer-previews.js fetched
-         api.airplanes.live on every page load for its thumbnail, that fetch went through this same
-         page.route stub, and it was quietly advancing the counter. #R341 stopped the preview
-         fetching a provider that answers 403 to everything, the stub reached only t=3, and the
-         click landed ~34 px west of the aeroplane (measured: branch 4 requests, main 5).
-         The paragraph above already says what this line MEANS — "the position the test means is
-         the aircraft's own lng/lat" — so it now reads that instead of a number that happened to
-         equal it, and no longer depends on how many unrelated requests reach the stub. */
-      const sd = window.IntMapGeoEngine.layers.sourceData('src-planes-3d');
-      const sf = ((sd && sd.features) || []).find(x => (x.properties || {}).post === 1);
-      if (sf) { const r2 = sf.geometry.coordinates[0].slice(0, 4);
-        const c2 = r2.reduce((a, p2) => [a[0] + p2[0], a[1] + p2[1]], [0, 0]);
-        ll = [c2[0] / r2.length, c2[1] / r2.length];
-      } else { ll = [139.72, 35.68]; }
-    }
-    const g = m.project(ll); return { x: Math.round(g.x), y: Math.round(g.y) }; });
-  await page.mouse.click(post.x, post.y); await page.waitForTimeout(1200);
-  expect(await page.evaluate(() => window.IntMapPlanes3D.selected()), 'the post under an aircraft selects it').toBe('ABC123');
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */

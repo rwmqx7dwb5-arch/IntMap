@@ -776,6 +776,11 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   自分で失敗を捕まえる腕（雨雲レーダー・火災・カラー標高・海面上昇・等高線・合計特殊出生率・人工衛星の読み込み）は
   `layerState.report(箱, err, {told:true})` で同じ記録へ（すでにトーストしたので読み上げは重ねない）。
   `rowUntilObserved` の再試行中は `loading` のまま `reason:'timeout'`・`retries` を持つ。
+  ライブ航空機（`dl-planes`）は行の要求が基盤の起動（`_av2Start`）で、起動できなければ `reason:'unsupported'` で
+  reject する。起動後の poll の失敗は `js/aviation-live.js` が**在庫が 0 機のときだけ** `onState` で渡し
+  （`js/data-layers.js` `_av2State` → `layerState.report('dl-planes', err)`。理由は worker が付ける
+  `http`＋`status` / `network` / `parse`）、snapshot を運んだ次の poll が `ok` に戻す。在庫がある間の失敗は
+  本物の機体が古くなりつつあるだけで「描けなかった」ではない。⚠ 合成機の予備は無い（remove-synthetic-planes で撤去）。
   行には名前の後ろに pill（`Couldn't load`／`読み込めません`、`No reply`／`応答なし`。詳細は title と aria-label）、
   同じ箱のタイル（`.lst-tile[data-lid]`）にも同じ pill。箱の次の `change` で消える。
 - **整合器は事象で走り、周期では走らない（layer-failure-state）。** 掃除（2,500 ms の心拍・#R41）と監査

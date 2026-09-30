@@ -376,7 +376,10 @@ test('R499 ④ the map tooltip is shown and hidden through ONE guarded setter', 
   /* ⚠ #R498's lesson stated as a number. `setMapTooltipHTML` was available for eleven rounds and
      ONE file of eight used it, so "the helper exists" is not the claim worth holding — "every site
      that had the defect uses it" is. */
-  assert.ok(sites >= 37, `only ${sites} call sites use the guarded setter; the conversion covered 37`);
+  /* (remove-synthetic-planes) 37 → 31: six of the converted sites were the hover / click / pick
+     tooltips of the airplanes.live sweep's two MapLibre renderings (js/data-layers.js), removed with
+     that sweep — not reverted to a direct write. The offenders list above is what holds the rule. */
+  assert.ok(sites >= 31, `only ${sites} call sites use the guarded setter; the conversion covered 37, six of them in the removed aircraft renderings`);
   assert.ok(adopters >= 7, `only ${adopters} files adopted it; the defect was spread over 7`);
 });
 

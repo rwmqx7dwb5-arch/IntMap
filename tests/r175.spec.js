@@ -27,11 +27,9 @@ const EAGER_GLOBALS = (() => {
     .filter((g) => /^IntMap/.test(g)).sort();
 })();
 
-/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
-   original per-browser sweep, which owns `window.IntMapPlanes3D` and its screen positions, and the
-   GPU cloud that replaced it as the default. ③ below clicks an aircraft where `IntMapPlanes3D` says
-   it is drawn, so it names the path that fills that model rather than depending on which one happens
-   to be the default. ① ② ④ are the tilt dolly, the tooltip and the bundle, and pass either way. */
+/* (remove-synthetic-planes) `query` was how the aircraft test in this file pinned the airplanes.live
+   sweep (`?aviation=v1`). That path and its test are removed; the parameter stays because boot() is
+   this file's one door to the page, and no remaining test passes one. */
 const boot = async (page, query) => {
   await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
@@ -119,101 +117,13 @@ test('a tall hover tooltip stays inside the map wherever the pointer is', async 
   expect(res.out.find(c => c.name === 'middle').below, 'with room above it keeps the original look').toBe(false);
 });
 
-/* ── ③ the aircraft detail card, driven off a STUBBED feed so the test never depends on what is
-       actually flying over Tokyo (or on airplanes.live being reachable from CI). */
-test('clicking an aircraft opens its card, and the card flies from its own conditions', async ({ page }) => {
-  test.setTimeout(180000);
-  await page.route('**/api.airplanes.live/**', route => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ now: Date.now(), ac: [{
-      hex: 'abc123', flight: 'TEST123 ', r: 'JA-TEST', t: 'B738', desc: 'BOEING 737-800',
-      /* feet, as the feed reports them: 20,000 ft = 6,096 m. Deliberately far from BOTH numbers a
-         broken hand-off would produce — the simulator's 2,500 m default and its 1,500 m spawn lift. */
-      lat: 35.68, lon: 139.767, alt_baro: 19500, alt_geom: 20000, gs: 260, ias: 240, tas: 300, mach: 0.62,
-      track: 90, true_heading: 92, mag_heading: 85, baro_rate: -600, squawk: '1234', category: 'A0',
-      oat: -20, nav_qnh: 1013, roll: 1.2, wd: 270, ws: 40, rssi: -8.5, messages: 4242, seen: 0.2, type: 'adsb_icao',
-    }] }),
-  }));
-  await page.route('**/api.planespotters.net/**', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ photos: [] }),
-  }));
-  /* ⚠ ?aviation=v1 — see the note on boot(). The stubbed feed above is api.airplanes.live, which is
-     the sweep's provider and nobody else's: on the default path nothing fetches it, `state().planes`
-     stays 0 and the wait below times out at 60 s (measured, #R341). What the card is asserted to
-     contain, and what the flight is asserted to start FROM, are untouched. */
-  await boot(page, '?aviation=v1');
-  /* (#R209) the card's Fly button hands over to `window.IntMapFlightSim`, and js/flight-sim.js is no
-     longer in the boot bundle — it arrives when a door asks for it. js/aircraft-detail.js awaits
-     `IntMapLazy.need('flightSim')` on the click; this test reads `FS._st()` straight afterwards, so
-     it asks for the module the way the app does rather than waiting longer for a global that would
-     never appear on its own. What the flight is asserted to start FROM is untouched. */
-  await loadLazyModules(page);
-
-  await page.evaluate(async () => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    window.__imap.jumpTo({ center: [139.767, 35.68], zoom: 10.5, pitch: 0, bearing: 0 });
-    const cb = document.getElementById('dl-planes');
-    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
-    for (let i = 0; i < 40; i++) { await wait(400); if (window.IntMapPlanes3D.state().planes) break; }
-  });
-  await page.waitForFunction(() => window.IntMapPlanes3D.state().planes > 0, null, { timeout: 60000 });
-
-  const card = await page.evaluate(async () => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    const m = window.__imap, P3 = window.IntMapPlanes3D;
-    const pt = P3.screenPos('ABC123'); if (!pt) return { err: 'aircraft not drawn' };
-    const cv = m.getCanvas(), r = cv.getBoundingClientRect();
-    cv.dispatchEvent(new MouseEvent('click', { clientX: r.left + pt.x, clientY: r.top + pt.y, bubbles: true, cancelable: true, view: window, detail: 1 }));
-    await wait(1200);
-    const P = window.IntMapAircraftPanel, b = document.getElementById('acp-body');
-    return {
-      open: P.isOpen(), forId: P.current(), selected: P3.selected(),
-      title: (document.getElementById('acp-title') || {}).textContent,
-      rows: [...b.querySelectorAll('.acp-row')].map(x => x.querySelector('.acp-k').textContent + '=' + x.querySelector('.acp-v').textContent),
-      noPhoto: !!b.querySelector('.acp-photo-none'),
-      fly: (b.querySelector('.acp-fly-s') || {}).textContent,
-      ic: P.initialConditions(P.__cur || { lng: 139.767, lat: 35.68, geoAlt: 6096, tas: 300, trueHdg: 92, desc: 'BOEING 737-800', acType: 'B738', category: 'A0', type: 'civilian' }),
-    };
-  });
-
-  expect(card.open, 'the click opened the detail card').toBe(true);
-  expect(card.forId).toBe('ABC123');
-  expect(card.selected, 'and selected the aircraft, so its track is drawn').toBe('ABC123');
-  expect(card.title).toContain('TEST123');
-  expect(card.noPhoto, 'no photo for this airframe → it says so rather than showing someone else’s').toBe(true);
-  const rows = card.rows.join('\n');
-  expect(rows).toContain('BOEING 737-800');
-  expect(rows).toContain('JA-TEST');
-  expect(rows, 'the fields the tooltip never had room for').toMatch(/240 kn/);      // IAS
-  expect(rows).toMatch(/M 0\.620/);                                                  // Mach
-  expect(rows).toMatch(/-20 °C/);                                                    // OAT
-  expect(rows).toMatch(/270° 40 kn/);                                                // wind at the aircraft
-  expect(rows, 'A0 means "no information" — it is not printed as a fact').not.toMatch(/A0/);
-  expect(card.ic.key, 'a 737 flies as the airliner, not the trainer').toBe('airliner');
-
-  // the button: a real flight, from this aircraft's own numbers
-  const flown = await page.evaluate(async () => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    document.querySelector('#acp-body .acp-fly').click();
-    await wait(2500);
-    const FS = window.IntMapFlightSim, st = FS._st();
-    return { active: FS.active(), cardClosed: !window.IntMapAircraftPanel.isOpen(),
-      alt: st && st.alt, hdg: st && (st.psi * 180 / Math.PI), V: st && st.V, keepAlt: st && !!st._keepAlt,
-      lng: st && st.lng, lat: st && st.lat };
-  });
-  expect(flown.active, 'the simulator started').toBe(true);
-  expect(flown.cardClosed).toBe(true);
-  expect(flown.keepAlt, 'the caller supplied the altitude, so the +1,500 m spawn lift is opted out of').toBe(true);
-  /* the feed reports FEET (alt_geom: 20,000 ft = 6,096 m) — the flight starts at the aircraft's real
-     altitude in metres, and specifically NOT at the simulator's 1,500 m airborne spawn clearance nor
-     at its 2,500 m default, which are the two numbers a broken hand-off would land on. */
-  expect(flown.alt, 'at the aircraft’s own GPS altitude, 20,000 ft = 6,096 m').toBeGreaterThan(5900);
-  expect(flown.alt).toBeLessThan(6300);
-  expect(flown.hdg, 'on its own true heading').toBeGreaterThan(88);
-  expect(flown.hdg).toBeLessThan(96);
-  expect(Math.abs(flown.lng - 139.767)).toBeLessThan(0.2);
-  await page.evaluate(() => window.IntMapFlightSim.stop());
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
 /* ── ④ the build ships the same app ─────────────────────────────────────────────────────── */
 test('the Vite bundle boots the whole app', async ({ page }) => {

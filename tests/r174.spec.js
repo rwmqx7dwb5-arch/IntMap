@@ -9,13 +9,9 @@
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
 
-/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
-   original per-browser sweep, whose track is `src-plane-track` / `lyr-plane-track-3d` over
-   `src-planes-3d`, and the GPU cloud that replaced it as the default. The two aircraft tests below
-   are about THAT track — the legs it hands the renderer over high ground, and its survival across a
-   double-click zoom — so they name the path that draws it rather than depending on which one happens
-   to be the default. The flight simulator, the tilt ceiling, the volume and the drone planner are
-   nothing to do with the live-aircraft layer and pass either way. */
+/* (remove-synthetic-planes) `query` was how the aircraft test in this file pinned the airplanes.live
+   sweep (`?aviation=v1`). That path and its test are removed; the parameter stays because boot() is
+   this file's one door to the page, and no remaining test passes one. */
 const boot = async (page, query) => {
   /* (#R224) the Atlas kernel is fetched on demand — reach for it the way a reader's first click
      does, so a spec that drives an Atlas action finds `window.IntMapConsole` where it expects it. */
@@ -119,146 +115,21 @@ test('with the tilt ceiling lifted, zooming in still moves the viewpoint', async
    clamped to 0 — and the track then DROPPED every leg (`if(!(alt>0)) continue`) while the aircraft glyph
    survived, because that one is pushed whatever its altitude. The machine stays, its trail goes.
    Measured over Mt Fuji with the aircraft at 5,000 ft: 0 legs at every zoom from z10.5 to z14.3. */
-test('the track survives zooming in over high ground with 3-D terrain on', async ({ page }) => {
-  /* (#R184) 240 s was never a budget, it was a coin toss. This test boots the app with 3-D terrain,
-     streams DEM tiles over Mt Fuji, waits out five moveend cycles and then six wheel steps — and it
-     has been measured at 3.8 min against a 4.0 min ceiling on EVERY CI run for rounds, on main and
-     on this branch alike. A 5 % margin survives only while nothing else is competing for the runner.
-     #R184 added 33 browser tests (a second engine booted several times, Overpass and DEM work), and
-     the same unchanged test went 3.8 → 4.2 min and failed three attempts in a row ON THE TIMEOUT,
-     not on an assertion. Nothing it checks has changed and nothing it checks is relaxed here; it is
-     given a budget with real margin instead of one it was always about to miss. */
-  test.setTimeout(480000);
-  let tick = 0;
-  await page.route('**/api.airplanes.live/**', route => { const t = Math.min(tick++, 8);
-    route.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
-        lat: 35.36 + t * 0.004, lon: 138.68 + t * 0.006, alt_baro: 5000, alt_geom: 5000,
-        gs: 200, track: 55, seen: 1, dbFlags: 0 }] }) }); });
-  /* ⚠ ?aviation=v1 — see the note on boot(). What is captured below is what `src-plane-track` and
-     `src-planes-3d` are handed, and the default rendering feeds neither: without the pin the sources
-     do not exist and `getSource(…)` answers null (measured, #R341). #R341 changed no assertion. */
-  await boot(page, '?aviation=v1');
-  await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
-  await page.evaluate(() => { const b = document.getElementById('btn-view-3d'); if (b && !b.classList.contains('active')) b.click(); });
-  await page.evaluate(() => window.__imap.jumpTo({ center: [138.72, 35.38], zoom: 10.5, pitch: 45, bearing: 0 }));
-  await page.waitForTimeout(2500);
-  await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
-  /* ══ ⚠⚠⚠ THE TRACK IS BUILT BY WAITING FOR ITS FIXES, NOT BY COUNTING NUDGES ══════════════════════
-     This used to be «wait 3 s, then five × (fire moveend, wait 2 s)», on the premise that each moveend
-     is one more poll and so one more fix. The module does not promise that, on purpose: a view change
-     while a sweep of the same sky is still in flight yields to that sweep (fetchPlanes, #R186/#R188),
-     and one inside the refetch gap is not a request at all. MEASURED: the nightly deep tier failed here
-     on its first attempt six nights running (2026-09-22 → 27) with legs=2 or 3 at z10.5 — and a local
-     run whose stub answers 2.5 s late gives exactly that, legs=2 with 3 requests served and legs=3 with
-     4: every request the module made became a fix; the missing fixes are requests it rightly never
-     made. So the precondition — a track of LEGS_BEFORE_ZOOM legs — is now waited for as a fact: one
-     nudge only when the module says it would start a sweep for it (state().refetch), then wait for that
-     fix to be recorded. Nothing asserted below is relaxed; the 480 s budget is unchanged. */
-  const LEGS_BEFORE_ZOOM = 5;   /* what 1 + 5 polls built here since #R174; the stub has 9 distinct positions */
-  const fixes = () => page.evaluate(() => window.IntMapPlanes3D.track('ABC123').length);
-  for (let n = await fixes(); n < LEGS_BEFORE_ZOOM + 1; n = await fixes()) {
-    await page.waitForFunction(() => { const r = window.IntMapPlanes3D.state().refetch;
-      return !r.busy && Date.now() - r.lastAt > r.gapMs; });
-    await page.evaluate(() => window.__imap.fire('moveend'));
-    /* a sweep the module's own 20 s poll starts in between answers just as well — either lands a fix */
-    await page.waitForFunction(k => window.IntMapPlanes3D.track('ABC123').length > k, n);
-  }
-
-  /* Capture what the module hands the renderer. queryRenderedFeatures cannot answer this: with terrain on
-     it reports 0 for the aircraft too, while the aeroplane is plainly drawn on screen.
-     ⚠ Captured at the ENGINE CONTRACT (IntMapGeoEngine.layers.setSourceData), which is where the module
-     hands it over — not at the MapLibre source's setData. The adapter declines to re-post a collection
-     the renderer already holds (#R322, skipData in js/geo-command-log.js), and from about z12.7 the
-     ribbons sit on their 25 m floor, so a zoom step's redraw is identical to the last one: MEASURED, the
-     source saw no post at z13.24 and z13.79 at all. A capture there cannot tell «redrawn, unchanged»
-     from «not redrawn».
-     `zoomEnds` / `trackAfter` say whether the track in hand was drawn AFTER the latest zoom finished
-     (the module redraws it on zoomend — the ribbons are sized from the scale): a fixed 1.4 s after a
-     wheel step could read the previous zoom's drawing under load and pass without measuring the step. */
-  await page.evaluate(() => { const m = window.__imap, L = window.IntMapGeoEngine.layers;
-    window.__cap = { zoomEnds: 0, trackAfter: -1 };
-    m.on('zoomend', () => { window.__cap.zoomEnds++; });
-    const keyOf = { 'src-plane-track': 'track', 'src-planes-3d': 'planes' }, orig = L.setSourceData;
-    L.setSourceData = (id, d, o) => { const k = keyOf[id];
-      if (k) { try { window.__cap[k] = JSON.parse(JSON.stringify(d));
-        if (k === 'track') window.__cap.trackAfter = window.__cap.zoomEnds; } catch (_) {} }
-      return orig(id, d, o); }; });
-  await page.evaluate(() => window.IntMapPlanes3D.select('ABC123'));   /* draws the track synchronously */
-
-  const snap = () => page.evaluate(() => { const m = window.__imap, c = m.getCenter();
-    const g = m.queryTerrainElevation ? m.queryTerrainElevation({ lng: c.lng, lat: c.lat }) : null;
-    const t = window.__cap.track, p = window.__cap.planes;
-    return { zoom: +m.getZoom().toFixed(2), centreGround: g == null ? null : Math.round(g),
-      legs: t ? t.features.filter(f => f.properties.kind === 'leg').length : -1,
-      fixes: window.IntMapPlanes3D.track('ABC123').length,
-      /* (#R183) one aircraft is FOUR extrusions now (fuselage/wing/stabiliser/fin), so counting
-         non-post features counts PARTS. The aircraft is counted the way the module counts it — by
-         its fuselage, or by the single silhouette when the body is drawn plainly. */
-      bodies: p ? p.features.filter(f => !f.properties.post && (!f.properties.part || f.properties.part === 'body')).length : -1 }; });
-
-  const box = await page.evaluate(() => { const c = document.getElementById('map').getBoundingClientRect();
-    return { x: Math.round(c.x + c.width / 2), y: Math.round(c.y + c.height / 2) }; });
-  await page.mouse.move(box.x, box.y);
-  const seen = [await snap()];
-  for (let i = 0; i < 6; i++) {
-    const ends = await page.evaluate(() => window.__cap.zoomEnds);
-    await page.mouse.wheel(0, -300);
-    await page.waitForFunction(e => { const c = window.__cap;
-      return c.zoomEnds > e && c.trackAfter === c.zoomEnds && !window.__imap.isMoving(); }, ends);
-    seen.push(await snap());
-  }
-
-  expect(seen[0].centreGround, 'the map centre really is standing on high ground').toBeGreaterThan(1500);
-  for (const s of seen) {
-    expect(s.bodies, `the aircraft is drawn at z${s.zoom}`).toBe(1);
-    expect(s.legs, `and so is its track at z${s.zoom} — this was 0 at every step`).toBeGreaterThanOrEqual(LEGS_BEFORE_ZOOM);
-    /* the track survives = every leg between two recorded fixes is handed to the renderer, none dropped */
-    expect(s.legs, `every recorded leg is drawn at z${s.zoom}`).toBe(s.fixes - 1);
-  }
-  expect(seen[seen.length - 1].zoom, 'the zoom really did go in').toBeGreaterThan(seen[0].zoom + 2);
-});
-
-test('a double-click zoom keeps the aircraft track on screen', async ({ page }) => {
-  test.setTimeout(180000);
-  let tick = 0;
-  await page.route('**/api.airplanes.live/**', route => { const t = Math.min(tick++, 6);
-    route.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
-        lat: 35.660 + t * 0.004, lon: 139.700 + t * 0.006, alt_baro: 4000, alt_geom: 4000,
-        gs: 200, track: 55, seen: 1, dbFlags: 0 }] }) }); });
-  /* ⚠ ?aviation=v1 — see the note on boot(). This one queries `lyr-plane-track-3d` directly, which
-     the default rendering ships at visibility:'none' (measured, #R341). Unchanged otherwise. */
-  await boot(page, '?aviation=v1');
-  await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
-  await page.evaluate(() => window.__imap.jumpTo({ center: [139.71, 35.67], zoom: 11, pitch: 45, bearing: 0 }));
-  await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
-  /* (#R187) this asserts on `lyr-plane-track-3d`, i.e. the 3-D track — no longer the default since
-     the first flat glyph was restored, so it is asked for by name. */
-  await page.evaluate(() => window.IntMapPlanes3D.set(true));
-  await page.waitForTimeout(3500);
-  for (let i = 0; i < 4; i++) { await page.evaluate(() => window.__imap.fire('moveend')); await page.waitForTimeout(2000); }
-  await page.evaluate(() => window.IntMapPlanes3D.select('ABC123'));
-  await page.waitForTimeout(1000);
-  expect(await page.evaluate(() => window.IntMapPlanes3D.selected())).toBe('ABC123');
-
-  const box = await page.evaluate(() => { const c = document.getElementById('map').getBoundingClientRect();
-    return { x: Math.round(c.x + c.width / 2), y: Math.round(c.y + c.height / 2) }; });
-  const z0 = await page.evaluate(() => window.__imap.getZoom());
-  await page.mouse.dblclick(box.x, box.y);
-  await page.waitForTimeout(2000);
-  const after = await page.evaluate(() => ({ sel: window.IntMapPlanes3D.selected(), zoom: window.__imap.getZoom(),
-    legs: window.__imap.queryRenderedFeatures({ layers: ['lyr-plane-track-3d'] }).length }));
-  expect(after.zoom, 'the double-click really did zoom').toBeGreaterThan(z0 + 0.5);
-  expect(after.sel, 'and the aircraft is still selected — this used to go null').toBe('ABC123');
-  expect(after.legs, 'so its track is still drawn').toBeGreaterThan(0);
-
-  // a plain click on empty map still deselects — the deferral must not break that
-  await page.mouse.click(60, 690);
-  await page.waitForTimeout(900);
-  expect(await page.evaluate(() => window.IntMapPlanes3D.selected())).toBeNull();
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
 test('the 3-D volume survives the globe→flat handover at z12', async ({ page }) => {
   test.setTimeout(180000);

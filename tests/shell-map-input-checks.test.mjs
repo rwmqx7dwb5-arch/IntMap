@@ -132,7 +132,9 @@ test('R210 ③: a click can be claimed, and the label side asks after everyone e
   for (const [f, why] of [['js/data-layers.js', 'aircraft'], ['js/satellites-live.js', 'satellites'],
     ['js/seismic.js', 'the seismic panel'], ['js/tsunami.js', 'the tsunami read-out'],
     ['js/terrain-water.js', 'the terrain brush']]) {
-    assert.match(rd(f), /claimClick&&[^;]{0,40}claimClick\(e\)/, `${why} claims the click it consumes`);
+    /* (remove-synthetic-planes) `claimClick&&…` or `if(…claimClick) …claimClick(e)` — the aircraft's
+       one click handler is the GPU cloud's _av2Click now, which spells the guard as an `if` */
+    assert.match(rd(f), /claimClick(?:&&|\)\s*)[^;]{0,40}claimClick\(e\)/, `${why} claims the click it consumes`);
   }
 });
 }

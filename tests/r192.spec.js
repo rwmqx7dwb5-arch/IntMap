@@ -22,16 +22,10 @@ test.describe.configure({ mode: 'serial' });
 let page;
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
-  /* ⚠ (#R341) ?aviation=v1 — ① IS ABOUT THE LIFTED MARK'S OWN PIXELS, and the aircraft layer has two
-     renderings now: the original sweep, which is where `halfPx` / `glyphHalfPx` / `thickPx` come
-     from, and the GPU cloud that replaced it as the default and reports none of them. On the default
-     path `state().aircraft` never leaves 0, so ① waited out its 90 s and then `test.skip`'d — 95 s of
-     a green run asserting nothing (measured, #R341).
-     ⚠ IT IS THE FILE'S BOOT because the file HAS one boot: #R206 removed the other three on purpose
-     (see the note above), and giving ① a page of its own would put one straight back. The other
-     three tests never look at aircraft — they are the seismic field (②③), the tsunami model (④) and
-     the satellite tile worker (⑤) — so which aviation path is armed is nothing to them. */
-  await page.goto('/?aviation=v1', { waitUntil: 'domcontentloaded' });
+  /* (remove-synthetic-planes) this boot used to pin `?aviation=v1` for ①, the lifted mark's pixels on
+     the airplanes.live sweep's rendering. That path and ① are removed; the other tests never look at
+     aircraft, so the page boots the way a reader's does. */
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.IntMapCanDraw && window.IntMapCanDraw(), null, { timeout: 60000 });
   /* ⚠ (#R209) …AND THEN ASK FOR THE ON-DEMAND MODULES, THE WAY A CLICK DOES. `IntMapSeismic` (②③)
      and `IntMapTsunami` (④) left the boot bundle for js/lazy-modules.js, so they no longer exist
@@ -45,39 +39,13 @@ test.beforeAll(async ({ browser }) => {
 test.afterAll(async () => { if (page) await page.close(); });
 
 /* ── ① the mark is the same number of pixels in both renderings ──────────────────────────────── */
-test('R192 aircraft: the lifted mark draws the glyph’s own half-length at every zoom', async () => {
-  test.setTimeout(180000);
-  await page.evaluate(() => {
-    const cb = document.getElementById('dl-planes');
-    if (cb && !cb.checked) { const row = cb.closest('label') || cb.parentElement;
-      ['pointerdown', 'pointerup'].forEach(t => row.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1 }))); }
-    window.IntMapGeoEngine.camera.jumpTo({ center: [8.57, 50.05], zoom: 10.5, pitch: 0, bearing: 0 });
-  });
-  /* the sizes are computed when the layer refreshes, which needs aircraft — but the FEED is not what
-     this test is about, so it accepts a synthetic set too and only skips when nothing was drawn */
-  await page.waitForFunction(() => { try { return window.IntMapPlanes3D.state().aircraft > 0; } catch (_) { return false; } },
-    null, { timeout: 90000 }).catch(() => { });
-  const r = await page.evaluate(async () => {
-    const out = [];
-    for (const z of [2, 5, 9, 13, 17]) {
-      window.IntMapGeoEngine.camera.jumpTo({ center: [8.57, 50.05], zoom: z, pitch: 0, bearing: 0 });
-      await new Promise(s => setTimeout(s, 900));
-      const st = window.IntMapPlanes3D.state();
-      out.push({ z, halfPx: st.halfPx, glyphHalfPx: st.glyphHalfPx, thickPx: st.thickPx, aircraft: st.aircraft });
-    }
-    return out;
-  });
-  test.skip(!r.some(x => x.aircraft > 0), 'no aircraft were drawn here — the feed, not the mark');
-  for (const row of r.filter(x => x.halfPx != null)) {
-    /* THE contract of four rounds of 「同じデザインに」: the two renderings are the same size */
-    expect(Math.abs(row.halfPx - row.glyphHalfPx), 'z' + row.z + ': lifted vs glyph half-length').toBeLessThan(0.05);
-    /* …and the extrusion is sub-pixel thick, so a tilted camera sees a mark and not a block */
-    expect(row.thickPx, 'z' + row.z + ': the body has no visible wall').toBeLessThan(1);
-  }
-  /* the glyph's own ramp really does vary — a test that only saw one zoom would pass on a constant */
-  const lo = r.find(x => x.z === 2), hi = r.find(x => x.z === 13);
-  if (lo && hi && lo.glyphHalfPx && hi.glyphHalfPx) expect(hi.glyphHalfPx).toBeGreaterThan(lo.glyphHalfPx * 1.5);
-});
+/* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
+   airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that
+   host stubbed. The sweep is removed with its provider (HTTP 403 to every request since #R341), and
+   so are the layers the test read; there is nothing left for it to boot. The aircraft layer is the
+   GPU cloud now: the platform is gated by tests/r341.spec.js and tests/r379.spec.js, the card by
+   tests/r352.spec.js, what the page does when the feed fails by
+   tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
 /* ── ② + ③ the intensity field ───────────────────────────────────────────────────────────────── */
 test('R192 seismic: the field is bounded by what can be felt, and never covers the sea', async () => {
