@@ -390,13 +390,20 @@ test('R175 ③: every root asset the site references is in the build’s copy li
 });
 
 test('R175 ③: production publishes the build output, not the sources', () => {
-  const dep = readFileSync(join(ROOT, '.github/workflows/deploy.yml'), 'utf8');
-  assert.match(dep, /run: npm run build/, 'the deploy builds');
-  assert.match(dep, /cp -r dist\/\. _site\//, 'and publishes dist/');
-  assert.doesNotMatch(dep, /git archive HEAD \| tar -x -C _site/, 'the raw-tree publish is gone');
+  /* (ci-build-once) two workflows publish: ci.yml's `pages` job (every green push to main) and
+     deploy.yml (the manual button). Both must publish a build, never the sources. */
+  for (const wf of ['ci.yml', 'deploy.yml']) {
+    const dep = readFileSync(join(ROOT, '.github/workflows', wf), 'utf8');
+    assert.match(dep, /run: npm run build/, `${wf}: the deploy builds`);
+    assert.match(dep, /cp -r dist\/\. _site\//, `${wf}: and publishes dist/`);
+    assert.doesNotMatch(dep, /git archive HEAD \| tar -x -C _site/, `${wf}: the raw-tree publish is gone`);
+  }
   const pw = readFileSync(join(ROOT, 'playwright.config.js'), 'utf8');
   assert.match(pw, /npm run build && node scripts\/serve\.mjs --port \$\{PORT\} --root dist/,
     'the browser tests run against the built site, so a build-only failure cannot reach production');
+  /* …and when CI hands the run's one build in, it is still dist/ that is served */
+  assert.match(pw, /PREBUILT \? `node scripts\/serve\.mjs --port \$\{PORT\} --root dist`/,
+    'a prebuilt run still serves dist/, not the sources');
 });
 }
 

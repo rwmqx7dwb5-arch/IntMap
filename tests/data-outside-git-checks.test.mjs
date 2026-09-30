@@ -271,8 +271,8 @@ test('③ check:assets is RED when dist/ lacks a set, and when dist/ holds a lin
 /* ══ THE PLACES THAT MUST FETCH BEFORE THEY READ ══════════════════════════════════════════════ */
 /* The readers are found in the workflow text by WHAT THEY RUN — a build (vite copies data/), the gate
    planner, the node suite, the era generator — not by job name, so a job added tomorrow that builds
-   the site is held to the same rule. The browser tier builds too, and fetches inside its own
-   composite action — that one is checked below, on the action's text. */
+   the site is held to the same rule. The browser tier is checked below, on the action's text (since
+   ci-build-once it is handed the run's build rather than making one). */
 const READERS = /npm run build|scripts\/ci-gates\.mjs|test:checks|scripts\/build-hist-eras\.mjs|scripts\/build-border-detail\.mjs/;
 const FETCH = /actions\/data-assets|scripts\/data-assets\.mjs pull/;
 /** Each step as the text it runs or uses, in order — from the YAML itself, not from indentation. */
@@ -295,9 +295,21 @@ test('every workflow job that reads the datasets fetches them FIRST', () => {
     }
   }
   assert.ok(readers >= 5, `only ${readers} reading job(s) found — this rule would pass measuring nothing`);
-  const bt = stepsOf(yaml.load(rd('.github/actions/browser-tier/action.yml')).runs.steps);
-  const btFetch = firstIndex(bt, FETCH);
-  assert.ok(btFetch >= 0 && btFetch < firstIndex(bt, /playwright test/), 'the browser tier builds dist/ — it must fetch the datasets before running');
+  /* (ci-build-once) the browser tier no longer builds: it serves the run's one build, downloaded. The
+     rule is kept as the condition it always was — WHATEVER builds dist/ fetches first — so it now
+     asks: either this tier is handed a prebuilt dist/ (downloaded before the run, IM_PREBUILT_DIST=1
+     on the run step, so playwright.config.js builds nothing), or it fetches before it runs. */
+  const btSteps = yaml.load(rd('.github/actions/browser-tier/action.yml')).runs.steps;
+  const bt = stepsOf(btSteps);
+  const runAt = firstIndex(bt, /playwright test/);
+  const prebuilt = runAt >= 0 && String((btSteps[runAt].env || {}).IM_PREBUILT_DIST) === '1';
+  if (prebuilt) {
+    assert.ok(firstIndex(bt, /actions\/download-artifact@/) >= 0 && firstIndex(bt, /actions\/download-artifact@/) < runAt,
+      'the browser tier says its dist/ is prebuilt — it must download that build before running');
+  } else {
+    const btFetch = firstIndex(bt, FETCH);
+    assert.ok(btFetch >= 0 && btFetch < runAt, 'the browser tier builds dist/ — it must fetch the datasets before running');
+  }
   const da = yaml.load(rd('.github/actions/data-assets/action.yml')).runs.steps;
   const cache = da.find((st) => /^actions\/cache@/.test(st.uses || ''));
   const pull = da.find((st) => /data-assets\.mjs pull/.test(st.run || ''));

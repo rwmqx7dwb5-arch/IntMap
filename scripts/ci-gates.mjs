@@ -52,7 +52,21 @@
  *      node scripts/ci-gates.mjs --shard 2/3         run bin 2 of 3 (what CI calls)
  *      node scripts/ci-gates.mjs --check             the bins partition the declared gates
  *      node scripts/ci-gates.mjs --planned           the gate names a shard run would reach (JSON)
+ *      node scripts/ci-gates.mjs --needs-build 2/3   `true` / `false`: does this shard read the build?
  *      node scripts/ci-gates.mjs --update <f…>       fold measured timings back into the ledger
+ *
+ *  ══ (ci-build-once) IN CI THE BUILD IS HANDED IN, NOT MADE HERE ═══════════════════════════════
+ *  One CI run used to build the site up to four times: the gate shard holding the build task, and
+ *  every browser shard (playwright.config.js' webServer). ci.yml now builds ONCE, in its `build` job,
+ *  and hands `dist/` + `.perf/build-report.json` to whoever reads them as an artifact. So:
+ *    · IM_PREBUILT_DIST=1 says «the build was made elsewhere and placed here». The build task then
+ *      does NOT run `npm run build`; it checks the two files are present and runs its gates.
+ *    · ⚠ IM_PREBUILT_DIST=1 WITH THE FILES MISSING IS A FAILURE, NOT A CUE TO BUILD. A silent
+ *      fallback would bring the second build back exactly when the artifact transfer broke, and
+ *      the run would stay green while measuring a different dist/ than the browser shards served.
+ *    · Unset (a developer's machine, `npm test`, a throw-away tree) — the build runs here as before.
+ *  `--needs-build` is what lets the workflow download the artifact on only the shard that reads it
+ *  (it is ~755 MB); it answers from the same plan `--shard` executes, so the two cannot disagree.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -107,6 +121,24 @@ function plan(of) {
   return lpt(tasks(), of, (t) => t.cost, (t) => t.gates[0]).map((b) => ({ tasks: b.items, cost: b.cost }));
 }
 
+/** The two files the build-reading gates read (READS_BUILD in scripts/gate-universe.mjs names both). */
+const BUILT_FILES = [join('dist', 'index.html'), join('.perf', 'build-report.json')];
+
+/** (ci-build-once) `null` when this process should build; otherwise the prebuilt files that are missing. */
+function prebuiltMissing() {
+  if (process.env.IM_PREBUILT_DIST !== '1') return null;
+  return BUILT_FILES.filter((f) => !existsSync(join(ROOT, f)));
+}
+
+/** Parse «i/n» (both 1-based) or exit with the usage line. */
+function shardSpec(spec, flagName) {
+  const m = String(spec).match(/^(\d+)\/(\d+)$/);
+  if (!m) { console.error(`usage: ${flagName} <i>/<n>`); process.exit(1); }
+  const [i, of] = [+m[1], +m[2]];
+  if (i < 1 || i > of) { console.error(`shard ${i} is outside 1..${of}`); process.exit(1); }
+  return [i, of];
+}
+
 function run(cmd, args) {
   const t0 = Date.now();
   execFileSync(cmd, args, { cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32' });
@@ -136,10 +168,7 @@ function cmdPlan(of) {
  * simply refuses to hide the gates behind the failure.
  */
 function cmdShard(spec, timingsOut) {
-  const m = String(spec).match(/^(\d+)\/(\d+)$/);
-  if (!m) { console.error('usage: --shard <i>/<n>'); process.exit(1); }
-  const [i, of] = [+m[1], +m[2]];
-  if (i < 1 || i > of) { console.error(`shard ${i} is outside 1..${of}`); process.exit(1); }
+  const [i, of] = shardSpec(spec, '--shard');
 
   const bin = plan(of)[i - 1];
   const measured = {};
@@ -151,7 +180,17 @@ function cmdShard(spec, timingsOut) {
        measuring a dist/ that was never written, and «failed because nothing was built» is not a
        finding about those gates. The other tasks in this bin still run. */
     if (t.build) {
-      try { measured[BUILD] = run('npm', ['run', 'build']); } catch { failed.push(BUILD); continue; }
+      const missing = prebuiltMissing();
+      if (missing === null) {
+        try { measured[BUILD] = run('npm', ['run', 'build']); } catch { failed.push(BUILD); continue; }
+      } else if (missing.length) {
+        console.error(`\n✗ IM_PREBUILT_DIST=1 だが build の成果物が無い: ${missing.join(', ')}`
+          + '（CI の build ジョブの artifact が届いていない。ここでは build し直さない）');
+        failed.push(BUILD);
+        continue;
+      } else {
+        console.log(`\n── ${BUILD} ── 省略: IM_PREBUILT_DIST=1、${BUILT_FILES.join(' と ')} は CI の build ジョブが作ったもの`);
+      }
     }
     for (const g of t.gates) {
       console.log(`\n── ${g} ──`);
@@ -221,7 +260,10 @@ const argv = process.argv.slice(2);
 const flag = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };
 const of = +(flag('--of') || 3);
 
-if (argv.includes('--planned')) console.log(JSON.stringify(plan(of).flatMap((b) => b.tasks.flatMap((t) => t.gates))));
+if (argv.includes('--needs-build')) {
+  const [i, of] = shardSpec(flag('--needs-build'), '--needs-build');
+  console.log(String(plan(of)[i - 1].tasks.some((t) => t.build)));
+} else if (argv.includes('--planned')) console.log(JSON.stringify(plan(of).flatMap((b) => b.tasks.flatMap((t) => t.gates))));
 else if (argv.includes('--shard')) cmdShard(flag('--shard'), flag('--timings'));
 else if (argv.includes('--check')) cmdCheck(of);
 else if (argv.includes('--update')) cmdUpdate(argv.slice(argv.indexOf('--update') + 1));

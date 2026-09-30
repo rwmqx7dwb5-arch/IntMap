@@ -242,7 +242,10 @@ test('R304 ⑤ ci.yml runs the deep tier nightly and raises an issue when it is 
   assert.match(ci, /browser-deep:/, 'the deep matrix is still there');
   assert.match(ci, /deep-alarm:/, 'and the alarm job with it');
   const alarm = ci.slice(ci.indexOf('deep-alarm:'));
-  assert.match(alarm, /needs: \[browser-deep\]/, 'the alarm reads the deep tier\'s result');
+  /* (ci-build-once) …and the build's: the deep tier now needs the run's one build, so a red nightly
+     build SKIPS it — the alarm must still fire on that night, not read «skipped» and stay quiet. */
+  assert.match(alarm, /needs: \[(?:[\w-]+, )*browser-deep(?:, [\w-]+)*\]/, 'the alarm reads the deep tier\'s result');
+  assert.match(alarm, /needs: \[[^\]]*\bbuild\b[^\]]*\][\s\S]*?needs\.build\.result != 'success'/, 'a red build must wake the alarm, not skip it');
   assert.match(alarm, /github\.event_name == 'schedule'/, 'it is the NIGHTLY that is reported on');
   assert.match(alarm, /always\(\)/, 'and it runs whether that job passed or failed');
   assert.match(alarm, /issues: write/, 'it may open an issue');

@@ -25,6 +25,11 @@ inputs:
   of:
     description: how many groups the pool is packed into
     required: true
+  dist-artifact:
+    description: >-
+      The name of the artifact ci.yml's `build` job uploaded (dist/ + .perf/build-report.json). This
+      machine serves THAT build; it does not build its own (ci-build-once).
+    required: true
   allow-empty:
     description: >-
       'true' lets this shard plan NOTHING and skip the run, instead of failing. Only for the core
@@ -45,8 +50,11 @@ runs:
         cache: npm
     - run: npm ci
       shell: bash
-    # (data-outside-git) the datasets outside git — the build this tier tests copies them into dist/
-    - uses: ./.github/actions/data-assets
+    # ⚠ (ci-build-once) NO data-assets HERE ANY MORE. It was here because this machine BUILT dist/, and
+    # vite copies data/ into it. It no longer builds: the dist/ it serves already holds the datasets as
+    # bytes (check:assets proves that on the same artifact), and no spec reads data-assets' sets off the
+    # disk — MEASURED 2026-09-30: the only spec that reads data/ directly reads data/hist-cities.json,
+    # which is tracked. Restoring ~700 MB of store per machine to use none of it was the cost removed.
     # Cache the Playwright browser binaries between runs (keyed on the lockfile).
     - name: Cache Playwright browsers
       id: pw-cache
@@ -100,6 +108,14 @@ runs:
         FILES=$(node scripts/shard-plan.mjs --tier ${{ inputs.tier }} --pool ${{ inputs.suite }} --group ${{ inputs.shard }} --of ${{ inputs.of }} $EMPTY)
         echo "files=$FILES" >> "$GITHUB_OUTPUT"
         if [ -z "$FILES" ]; then echo "this machine runs nothing: the change touched no spec in this pool"; else echo "this machine runs:" && printf '%s\n' $FILES; fi
+    # (ci-build-once) THE BUILD THIS MACHINE TESTS IS THE RUN'S ONE BUILD — downloaded, not rebuilt.
+    # Only when there is something to run: an empty cesium plan has no use for ~755 MB.
+    - name: The run's build (dist/ + .perf/build-report.json)
+      if: ${{ steps.plan.outputs.files != '' }}
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+      with:
+        name: ${{ inputs.dist-artifact }}
+        path: .
     # ⚠ `playwright test` with NO paths runs the whole suite, so an empty plan must skip the step,
     # never reach it (the planner only returns empty under --allow-empty).
     - name: Run Playwright tests (smoke + internal QA)
@@ -108,6 +124,8 @@ runs:
       env:
         IM_SUITE: ${{ inputs.suite }}
         IM_TIER: ${{ inputs.tier }}
+        # playwright.config.js' webServer serves the downloaded dist/ and builds nothing (ci-build-once)
+        IM_PREBUILT_DIST: '1'
       run: npx playwright test ${{ steps.plan.outputs.files }}
     # (#R195) …and say, right here, which of the failures main does NOT have. The rule is to prove
     # a failure is yours before touching it, and the way that was carried out was to re-run main by

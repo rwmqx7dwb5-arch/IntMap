@@ -132,8 +132,10 @@ jobs:
               if gh pr merge "$PR" --squash --delete-branch=false; then
                 echo "catalogue landed on main"
                 # ⚠⚠ LANDING ON MAIN IS NOT REACHING READERS. This merge is made with GITHUB_TOKEN,
-                # and a push made with GITHUB_TOKEN starts no other workflow — deploy.yml listens for
-                # `push` — so the catalogue sat on main until a person happened to push. Measured
+                # and a push made with GITHUB_TOKEN starts no other workflow — the publish on push to main
+                # (ci.yml's «Deploy to Pages», after its gates) never runs for it, and before
+                # ci-build-once deploy.yml's own `push` trigger did not either — so the catalogue sat on
+                # main until a person happened to push. Measured
                 # 2026-09-27: 19 of 19 bot commits since 09-10 had no push-triggered run at all;
                 # #773 (built 09-26 08:36) was still not on the Pages site the next day, and one
                 # earlier catalogue took 11.5 h. workflow_dispatch is the documented exception that

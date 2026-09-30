@@ -17,6 +17,16 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 > the plugins that run after it — the build report's brotli-11 pass over the eager chunks and the
 > copy of `data/` and Cesium's runtime tree into `dist/`. (Vite 6 measured 20–22 s for the bundle
 > alone on 2026-08-20.)
+>
+> **In CI the build is made once per run, not once per machine (ci-build-once).** `ci.yml`'s
+> `build` job runs `npm run build` and uploads `dist/` + `.perf/build-report.json` as one artifact.
+> The gate shard that reads the build (`node scripts/ci-gates.mjs --needs-build i/n` says which) and
+> every browser machine download it and run with `IM_PREBUILT_DIST=1`: `ci-gates.mjs` then skips its
+> build task's `npm run build`, and `playwright.config.js`' webServer serves `dist/` without building.
+> With `IM_PREBUILT_DIST=1` and the files missing, both **refuse** rather than build a second copy.
+> Unset — every local run, `npm test` — both build exactly as before. On a green `main` run the same
+> `dist/` is what the `pages` job publishes. `tests/ci-build-once-checks.test.mjs` holds the rule that
+> no other step in `ci.yml` (composite actions and npm scripts expanded) can build.
 
 ## What runs
 
@@ -3036,7 +3046,8 @@ error from IntMap's **own** code fails the build. This is what lets CI stay gree
 upstream data API is rate-limited or down.
 
 The only test that talks to the real internet is the **production smoke** (`prod-smoke`),
-which runs against the deployed URL from `deploy.yml` (after every deploy) and from
+which runs against the deployed URL from `ci.yml`'s `post-smoke` (after every publish from a green
+`main` run), from `deploy.yml` (after a manual re-publish) and from
 `rollback.yml` (after a rollback). It tolerates transient upstream failures via retries and the
 same benign-error classification.
 
@@ -3174,7 +3185,7 @@ in principle, detect that the shipped wiring is broken.
 ### What only production can answer (#R333)
 
 `prod-smoke` is also the only place that can catch **half a commit reaching production**. The
-front end is published by pushing to `main` (`deploy.yml` -> Pages); an Edge Function is published
+front end is published by pushing to `main` (`ci.yml` -> Pages, once that run is green); an Edge Function is published
 only when someone runs `supabase functions deploy`. Nothing else compares the two.
 
 #R318 shipped the `x-intmap-turn` request header on both sides of that line and only the front end
