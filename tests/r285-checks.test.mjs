@@ -300,12 +300,12 @@ function plannerPromptSize() {
   /* ⚠ (atlas-one-declaration) AND SO DO THE INDEX AND THE TOOLS THEMSELVES. This used to call `SYS()` with no tools and let
      the Proxy answer `_capIndex` with '' — so the measured prompt had no capability index at all and an empty [TOOLS] line,
      2,677 characters under what the browser sends. The browser calls `SYS(_tools)` with `TOOLS.baseTools()`; so does this,
-     and `_capIndex` / `_directCaps` / `_toolBlock` are the shipped function bodies (lifted below) over the real registry. */
+     and `_capIndex` / `_directCaps` are the shipped function bodies (lifted below) over the real registry. (atlas-legacy-protocol-removal) `_toolBlock` went with the one-string transport. */
   const CAPS = makeAtlasCapabilities({});
   const TOOLS = makeAtlasToolSurface({ capabilities: CAPS, schemas: makeAtlasSchemas(), runAction: () => {} });
   const tools = TOOLS.baseTools();
   const src = lines.join('\n');
-  const lifted = ['_capIndex', '_directCaps', '_toolBlock'].map((n) => liftFunction(src, n)).join('\n');
+  const lifted = ['_capIndex', '_directCaps'].map((n) => liftFunction(src, n)).join('\n');
   const env = {
     personaPrompt,
     POLICY: makeAtlasPolicy(),
@@ -318,19 +318,16 @@ function plannerPromptSize() {
     moduleCatalog: () => 'x'.repeat(1482),
     Object, String, JSON,
   };
-  /* ⚠ (atlas-native-tools) SYS() HAS TWO FORMS NOW, and the bound must hold for the LARGER. By default the tools
-     travel as the provider's functions and are not pasted into the system text; the one-string
-     envelope an older ai-proxy still speaks (`_aiProto === 'legacy'`) pastes them, as before. Both
-     are measured, so this check does not start passing merely because the default form shrank. */
-  const size = (proto) => {
-    const stub = new Proxy(Object.assign({}, env, { _aiProto: proto }), { has: () => true, get: (t, k) => (k === Symbol.unscopables ? undefined : (k in t ? t[k] : (typeof k === 'string' ? () => '' : undefined))) });
-    /* `new Function` bodies are sloppy-mode, so `with` is available even from this ES module. */
-    /* the tools travel IN the stub: it answers every name, so a parameter would be shadowed by its () => '' */
-    return new Function('__stub', 'with(__stub){ ' + lifted + '\n' + lines.slice(s, e + 1).join('\n') + ' return SYS(__baseTools); }')(stub).length;
-  };
-  const native = size(''), legacy = size('legacy');
-  assert.ok(legacy > native, 'the legacy form no longer carries the tool block — the two forms were meant to differ by exactly it');
-  return Math.max(native, legacy);
+  /* ⚠ (atlas-native-tools) the tools travel as the provider's functions and are not pasted into the system text.
+     (atlas-legacy-protocol-removal) SYS() had a second, larger form for the one-string envelope an older
+     ai-proxy spoke, and the bound was held for the larger; that form was removed with the transport
+     (measured 2026-10-01: 25,262 characters against 14,181), so there is one form to measure. */
+  const stub = new Proxy(env, { has: () => true, get: (t, k) => (k === Symbol.unscopables ? undefined : (k in t ? t[k] : (typeof k === 'string' ? () => '' : undefined))) });
+  /* `new Function` bodies are sloppy-mode, so `with` is available even from this ES module. */
+  /* the tools travel IN the stub: it answers every name, so a parameter would be shadowed by its () => '' */
+  const out = new Function('__stub', 'with(__stub){ ' + lifted + '\n' + lines.slice(s, e + 1).join('\n') + ' return SYS(__baseTools); }')(stub);
+  assert.match(out, /\[TOOLS\] The functions you hold \(/, 'the measured prompt names the functions it holds — the tools were measured, not stubbed away');
+  return out.length;
 }
 
 test('R285 (8) ai-proxy admits the whole planner prompt, with room to grow', () => {

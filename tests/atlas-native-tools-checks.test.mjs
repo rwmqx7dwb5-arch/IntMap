@@ -22,7 +22,7 @@
  *    ④ every call the model made is answered — a native function_call with no output is a request
  *      the provider refuses, and `.slice(0, maxPerStep)` used to drop the rest in silence;
  *    ⑤ the proxy's fence is above the client's budget, keeps the request and the turn, and reports;
- *    ⑥ the reply is read from the provider's items, and the final shape is TURN_SCHEMA without calls;
+ *    ⑥ the reply is read from the provider's items, and the written shape carries no calls;
  *    ⑦ the header states the model the code runs.
  * ==========================================================================*/
 import test from 'node:test';
@@ -117,8 +117,9 @@ test('atlas-native-tools ①: this turn\'s tool results reach the model — a 48
   /* the request itself is there, unchanged, and after whatever history survived */
   const req = last.input[last.requestIndex];
   assert.equal(req.content, '[MAP STATE WHEN THE REQUEST ARRIVED]\nstate\n\n[REQUEST]\nQ');
-  /* what this CAUSED under the old transport: the same content as one string, sliced at 24,000 */
-  const oneString = AGENT.legacyPrompt(last);
+  /* what this CAUSED under the old transport: the same content as one string, sliced at 24,000.
+     (atlas-legacy-protocol-removal) the flattener that transport used is gone; the items in order are the same content */
+  const oneString = last.input.map((it) => String(it.content || it.output || it.arguments || '')).join('\n');
   assert.ok(oneString.slice(0, 24000).indexOf('RESULT-5-END') < 0, 'the fixture reproduces the defect: a 24,000 slice of the same content loses the turn\'s results');
   /* and the total fits the budget the composer promises */
   const total = last.input.reduce((a, it) => a + String(it.content || it.output || it.arguments || '').length, 0);
@@ -142,10 +143,11 @@ test('atlas-native-tools ②: the prefix is byte-identical from one step to the 
     assert.equal(JSON.stringify(b.slice(0, stable.length)), JSON.stringify(stable), 'byte-identical, not merely equal');
     assert.equal(seen[k + 1].tools, seen[k].tools, 'the tool list is the same on every step — the final one included');
   }
-  /* the console computes the system text once per turn and re-reads it only when the transport changes */
+  /* the console computes the system text once per turn. (atlas-legacy-protocol-removal) It used to be re-read once
+     more where the transport fell back to the one-string envelope; there is no fallback, so it is a constant */
   const con = rd('js/atlas-console.js');
-  assert.match(con, /let _sys=SYS\(_tools\); const _c0=_agentCtx\(\);/, 'SYS and the request context are fixed for the turn');
-  assert.equal((con.match(/_sys=SYS\(_tools\)/g) || []).length, 2, 'SYS is rebuilt only where the transport falls back');
+  assert.match(con, /const _sys=SYS\(_tools\); const _c0=_agentCtx\(\);/, 'SYS and the request context are fixed for the turn');
+  assert.equal((con.match(/_sys=SYS\(_tools\)/g) || []).length, 1, 'SYS is built once per turn and never rebuilt');
 });
 
 /* ══ ③ ════════════════════════════════════════════════════════════════════════════════════════ */
@@ -265,17 +267,19 @@ test('atlas-native-tools ⑤b: a root anyOf is not sent to a provider, it is SAI
 });
 
 /* ══ ⑥ ════════════════════════════════════════════════════════════════════════════════════════ */
-test('atlas-native-tools ⑥: the reply is the provider\'s items; the final shape is TURN_SCHEMA without the calls', () => {
+test('atlas-native-tools ⑥: the reply is the provider\'s items; the written shape carries no calls', () => {
   const r = nativeReply([{ id: 'call_A', name: 'map_view', args: { place: 'Rome' } }], 'moving');
   assert.equal(r.toolCalls[0].id, 'call_A', 'the provider\'s own id');
   assert.deepEqual(r.toolCalls[0].arguments, { place: 'Rome' });
   assert.ok(r.items && r.items.length === 2, 'the items are kept for the next step to replay');
   assert.equal(r.turnState, 'continuing');
-  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties).sort(), Object.keys(AGENT.TURN_SCHEMA.properties).filter((k) => k !== 'tool_calls').sort());
-  assert.deepEqual(AGENT.FINAL_SCHEMA.required, AGENT.TURN_SCHEMA.required);
-  /* an envelope reply (an older proxy) is still read as it always was */
+  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'final_text']);
+  assert.deepEqual(AGENT.FINAL_SCHEMA.required, ['final_text']);
+  /* (atlas-legacy-protocol-removal) an envelope reply is no longer a way to call: its calls are REPORTED, not run —
+     tests/atlas-legacy-protocol-removal-checks.test.mjs drives what the loop then does with them */
   const legacy = AGENT.readReply({ final_text: '', tool_calls: [{ name: 'map_view', arguments_json: '{"place":"Rome"}' }] }, '', JSON.parse);
-  assert.equal(legacy.toolCalls[0].arguments.place, 'Rome');
+  assert.equal(legacy.toolCalls.length, 0);
+  assert.deepEqual(legacy.callsInText, ['map_view']);
 });
 
 /* ══ ⑦ ════════════════════════════════════════════════════════════════════════════════════════ */

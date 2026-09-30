@@ -84,11 +84,14 @@ export function catalogueText(lines) {
      described somewhere Atlas can reach it — so the corpus is SYS() plus the tool surface plus the
      blocks that surface serves. ⚠ Both additions are conditional on the real markers being present,
      so tests/atlas-dispatch-checks.test.mjs #R278 ① keeps feeding it a synthetic file and keeps getting the old behaviour. */
+  /* (atlas-legacy-protocol-removal) THE MARKER IS THE INDEX NOW. It was `_toolBlock(`, the tools written out into the
+     prompt — which only the retired one-string transport did; the tools travel as the provider's functions
+     (js/atlas-toolsurface.js) and SYS() carries `_capIndex(`, the index find_capability serves. */
   let corpus = body;
-  if (/_toolBlock\(/.test(body)) {
+  if (/_capIndex\(/.test(body)) {
     try { corpus += '\n' + fs.readFileSync(path.join(ROOT, 'js/atlas-toolsurface.js'), 'utf8'); } catch { /* absent in a fixture */ }
   }
-  if (!/_DOCS\.text\(/.test(body) && !/_toolBlock\(/.test(body)) return corpus;
+  if (!/_DOCS\.text\(/.test(body) && !/_capIndex\(/.test(body)) return corpus;
   let blocks = '';
   try { blocks = fs.readFileSync(path.join(ROOT, 'js/atlas-catalog-text.js'), 'utf8'); }
   catch { throw new Error('js/atlas-catalog-text.js is missing — SYS() composes its catalogue from it'); }

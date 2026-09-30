@@ -366,10 +366,17 @@ window.IntMapModules.aiCore=function(HOST){
       /* (#R113) a typed PROVIDER error (502/503) is NOT the IntMap daily limit — surface a clear, distinct message
          (and never mislabel a Google-side 429 as "out of free uses"). */
       let ej=null; try{ ej=await r.json(); }catch(_){}
-      if(ej&&ej.error){ const _e=new Error(aiProviderErrMsg(ej.error, ej.message)); _e.code=String(ej.error); throw _e; }   /* (atlas-native-tools) the proxy's own code travels with the message — js/atlas-console.js tells an older proxy by `empty` */
+      if(ej&&ej.error){ const _e=new Error(aiProviderErrMsg(ej.error, ej.message)); _e.code=String(ej.error); throw _e; }   /* (atlas-native-tools) the proxy's own code travels with the message */
       throw new Error('AI '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
     }
     const j=await r.json().catch(()=>null);
+    /* ⚠ (atlas-legacy-protocol-removal) A TURN THAT ASKED FOR PROTOCOL 2 AND DID NOT GET IT DID NOT GET AN ANSWER. The
+       Atlas turn used to read this as «an ai-proxy older than protocol 2» and switch the session to a
+       one-string transport; every deployed ai-proxy speaks protocol 2, so what reaches here now is a
+       body that did not parse or carries no meta — a malformed answer, said as one, never an empty
+       reply for the loop to hand back to the model as if it had written nothing. */
+    if(opts&&opts.protocol===2&&!(j&&typeof j==='object'&&j.meta&&j.meta.protocol===2)){ try{ aiResyncUsage(); }catch(_){}   /* the row, not a guess: a body that did not parse carries no count */
+      const _e=new Error(aiProviderErrMsg('provider_malformed')); _e.code='provider_malformed'; throw _e; }
     if(j==null) return {text:'',meta:null,citations:[],callId,turnId:String((opts&&opts.turnId)||''),task:String((opts&&opts.task)||'free_text')};
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
     if(typeof j.glossUsed==='number') aiSetGlossUsage(j.glossUsed, j.glossLimit);   /* (#R491) the gloss lane names its own numbers; the question mirror above never sees them */

@@ -231,8 +231,8 @@ test('R543 ⑧: "mixed" is satisfied by EITHER output — a widening, so nothing
 
 test('R543 ⑨: the vocabulary widened and the gate stayed ONE gate', () => {
   assert.deepEqual(AGENT.ANSWER_MODES, ['text', 'map', 'chart', 'mixed']);
-  assert.deepEqual(AGENT.TURN_SCHEMA.properties.answer_mode.enum, AGENT.ANSWER_MODES, 'the schema reads the same list');
-  assert.deepEqual(AGENT.TURN_SCHEMA.required, ['final_text'], 'declaring a mode is still not required');
+  assert.deepEqual(AGENT.FINAL_SCHEMA.properties.answer_mode.enum, AGENT.ANSWER_MODES, 'the schema reads the same list');
+  assert.deepEqual(AGENT.FINAL_SCHEMA.required, ['final_text'], 'declaring a mode is still not required');
   const agent = R('js/atlas-agent.js');
   /* the whole point of the round: adding a modality did not add a second bounce beside the first */
   assert.equal((agent.match(/gateBounces\+\+/g) || []).length, 1, 'there is exactly one place a final is handed back');

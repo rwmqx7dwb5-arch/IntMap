@@ -183,7 +183,6 @@ window.IntMapModules.atlasConsole=function(HOST){
        BARE STRING: `s` is what the model reads, `t` is the turn that produced it — the array is capped at 16, so an
        absolute position means nothing, and an edited message must rewind history as far as it rewinds the chat. */
     let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
-    let _aiProto='';   /* (atlas-native-tools) '' = ai-proxy speaks protocol 2 (items + native functions); 'legacy' once THIS session has observed a proxy that does not (it answered without meta.protocol 2, or refused the item request as `empty`). Set only by that observation; see _model in run(). Remove with js/atlas-agent.js legacyPrompt. */
     let _curPlanCites=[];   /* (#R350) the citations of THIS turn's planner call. The `answer` action used to read window._aiLastCitations at render time — a second Atlas turn finishing in between handed it the other turn's sources. */
     let _turnSeq=0, _curTurn=0, _curTurnKey='', _atlSentNames=[], _atlRecallImgs=[], _atlRecallAtts=null; const _atlTurnImgs=(frames,recalled)=>{ const a=(frames||[]).concat(recalled||[]); return a.length?a:null; };   /* ⚠⚠⚠ (#R779) `VFRAMES.urls()` は空のとき null を返す契約（その理由は js/atlas-view-capture.js の urls() に書いてある）。#R773 がここに .concat を足したとき契約が一緒に運ばれず、inspect を通らない普通の初回送信が毎回 null.concat で死んだ。空なら null のまま返す——[] は「画像が無い」ではなく「空の一覧を送る」になる */
     /* (#R86c) multi-stop route optimisation (TSP): order N points shortest-first via nearest-neighbour + 2-opt on
@@ -1162,7 +1161,6 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
     const { clickId, controlCatalog, controlEffect, doBaseDisplay, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
-    const { TURN_SCHEMA } = AGENT;   /* (#R406) the reply shape of one step — js/atlas-agent.js */
     /* (#R406) ONE tool surface for the module, not one per turn. What IS per-turn is where a call
        lands: `_turnRunAction` is the running turn's executor, so the surface can be built (and
        inspected) the moment Atlas loads rather than only once a question is in flight. */
@@ -2043,31 +2041,25 @@ window.IntMapModules.atlasConsole=function(HOST){
        catalogue alone sent 41,178 characters for 「ありがとう」. What is left is who Atlas is, what
        it decides (js/atlas-policy.js), how to end a turn, and the tools — with their real schemas,
        which is the only part a model needs in order to call one correctly. */
-    /* (atlas-native-tools) TWO TRANSPORTS, ONE INSTRUCTION. By default the tools are the provider's own FUNCTIONS (ai-proxy protocol 2) and what the model WRITES is only the declarations and the words \u2014 FINAL_SCHEMA in js/atlas-agent.js \u2014 so the tool block is not pasted here a second time. `legacy` is the one-string envelope an ai-proxy that predates protocol 2 still speaks (see _aiProto): the same sentences, with the calls inside the JSON and the tools written out. It is read from `_aiProto` rather than passed, because scripts/atlas-catalog.mjs and tests/r285 find this function by its one-parameter signature. */
-    function SYS(tools){ const legacy=(_aiProto==='legacy'), say=legacy?String:(t=>t.replace(/\btool_calls\b/g,'function calls'));
+    /* (atlas-native-tools) THE TOOLS ARE THE PROVIDER'S OWN FUNCTIONS (ai-proxy protocol 2) and what the model WRITES is only the declarations and the words — FINAL_SCHEMA in js/atlas-agent.js — so the tool block is not pasted here a second time. (atlas-legacy-protocol-removal) The second form this function had — the one-string envelope for an ai-proxy that predated protocol 2, with the calls inside the JSON and every tool written out (25,262 characters against 14,181, measured 2026-10-01) — was removed with that transport: every deployed ai-proxy speaks protocol 2 on all three providers. */
+    function SYS(tools){
       return personaPrompt('the general intelligence and operating layer of IntMap, an interactive world map')
         +POLICY.all()
-        +(legacy?'REPLY FORMAT: one strict JSON object and nothing else \u2014 {"turn":"final"|"continuing","tool_calls":[{"name":string,"arguments":object}],"answer_mode":"text"|"map"|"chart"|"mixed","final_text":string}. '
-          :'REPLY FORMAT: you operate IntMap by calling its tools as FUNCTIONS \u2014 every call in one reply is run, in order, and its result comes back to you as that call\'s output. What you WRITE is one strict JSON object and nothing else \u2014 {"turn":"final"|"continuing","answer_mode":"text"|"map"|"chart"|"mixed","final_text":string}. ')
-        +say('The fields are in the order the decision is made: what this reply IS, what it DOES, then what it SAYS. turn "final" means final_text is the complete answer and the turn ends here; turn "continuing" means final_text is NOT the answer yet and the work goes on in tool_calls \u2014 so a reply that says what you are about to do is "continuing", and the calls that do it belong in that SAME reply (a "continuing" reply that issued no call comes back to you like a rejected call, because nothing would have happened). A reply with no tool_calls ENDS the turn, and final_text is what the reader sees. answer_mode says what KIND of answer this is \u2014 "text": the map is untouched; "map": the map IS the answer and final_text frames it; "mixed": the words and the map each carry part. You decide it; but a "map"/"mixed" final is accepted only after something in this turn actually drew on or moved the map (compose_map draws a whole explanation in one call) \u2014 otherwise it comes back to you like a rejected call, and you either draw or answer as "text". To operate IntMap, '
-        +'to look something up, or to search the web, put one or more calls in tool_calls: IntMap runs them and returns what '
+        +'REPLY FORMAT: you operate IntMap by calling its tools as FUNCTIONS \u2014 every call in one reply is run, in order, and its result comes back to you as that call\'s output. What you WRITE is one strict JSON object and nothing else \u2014 {"turn":"final"|"continuing","answer_mode":"text"|"map"|"chart"|"mixed","final_text":string}. '
+        +'The fields are in the order the decision is made: what this reply IS, what it DOES, then what it SAYS. turn "final" means final_text is the complete answer and the turn ends here; turn "continuing" means final_text is NOT the answer yet and the work goes on in function calls \u2014 so a reply that says what you are about to do is "continuing", and the calls that do it belong in that SAME reply (a "continuing" reply that issued no call comes back to you like a rejected call, because nothing would have happened). A reply with no function calls ENDS the turn, and final_text is what the reader sees. answer_mode says what KIND of answer this is \u2014 "text": the map is untouched; "map": the map IS the answer and final_text frames it; "mixed": the words and the map each carry part. You decide it; but a "map"/"mixed" final is accepted only after something in this turn actually drew on or moved the map (compose_map draws a whole explanation in one call) \u2014 otherwise it comes back to you like a rejected call, and you either draw or answer as "text". To operate IntMap, '
+        +'to look something up, or to search the web, put one or more calls in function calls: IntMap runs them and returns what '
         +'it OBSERVED, and you then decide whether to call more tools or to answer. Arguments are checked against each '
-        +'tool\'s schema before anything runs; a rejected call comes back to you to fix and is never shown to the reader. ')
-        +_capIndex(tools)+(legacy?'[TOOLS] These, plus find_capability and run_capability, are the whole call surface. Every one below you call DIRECTLY by name; every id in the index above is reached through those two.\n'+_toolBlock(tools)+'\n'
-          :'[TOOLS] The functions you hold ('+Object.keys(tools||{}).join(', ')+') are the whole call surface; every id in the index above is reached through find_capability and run_capability.\n')
+        +'tool\'s schema before anything runs; a rejected call comes back to you to fix and is never shown to the reader. '
+        +_capIndex(tools)+'[TOOLS] The functions you hold ('+Object.keys(tools||{}).join(', ')+') are the whole call surface; every id in the index above is reached through find_capability and run_capability.\n'
         /* (atlas-one-declaration) LAST, because it is the only line of this prompt that depends on the reader's language: everything above it is
            the same bytes in every language, so it is one cacheable prefix instead of one per language. It used to stand above the capability index. */
         +'Write final_text in '+_langLine()+'.\n';
     }
-    /* The tools as compact JSON \u2014 name, one line of purpose, and the schema its arguments must match.
-       js/atlas-toolsurface.js builds them; `find_capability` reaches the other hundred-odd. */   function _capIndex(tools){ try{ return String(CAPS.index(_directCaps(tools))||''); }catch(_){ return ''; } }   /* (#R733) the argument is the set of capabilities THIS prompt already hands over as typed tools, so the index can stop telling Atlas to go looking for the nine it is holding — js/atlas-capabilities.js has the production measurement.   (#R582) the registry's OWN index of every capability id, derived from js/atlas-capabilities.js. Without it SYS() named the door (find_capability) and not one thing behind it, so every decision Atlas took BEFORE deciding to search was taken about an IntMap with nine tools in it. ⚠ ON THIS LINE because the kernel has no headroom — same reason as the GLOSS import above. */
+    /* The capability index. The tools themselves travel as the provider's functions, which js/atlas-toolsurface.js
+       builds; `find_capability` reaches the other hundred-odd. */   function _capIndex(tools){ try{ return String(CAPS.index(_directCaps(tools))||''); }catch(_){ return ''; } }   /* (#R733) the argument is the set of capabilities THIS prompt already hands over as typed tools, so the index can stop telling Atlas to go looking for the nine it is holding — js/atlas-capabilities.js has the production measurement.   (#R582) the registry's OWN index of every capability id, derived from js/atlas-capabilities.js. Without it SYS() named the door (find_capability) and not one thing behind it, so every decision Atlas took BEFORE deciding to search was taken about an IntMap with nine tools in it. ⚠ ON THIS LINE because the kernel has no headroom — same reason as the GLOSS import above. */
     /* (#R733) which capabilities this prompt ALREADY hands over by name, read off the surface itself — the
        index must stop telling Atlas to search for them (js/atlas-capabilities.js has the measurement). */
     function _directCaps(tools){ var out=[]; try{ Object.keys(tools||{}).forEach(function(k){ var id=tools[k]&&tools[k].capabilityId; if(id) out.push(id); }); }catch(_){} return out; }
-    function _toolBlock(tools){ try{
-      return Object.keys(tools||{}).map(function(k){ var t=tools[k];
-        return JSON.stringify({ name:t.name, description:t.description, parameters:t.parameters }); }).join('\n');
-    }catch(_){ return ''; } }
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     let _atlImgs=[];   /* (#R149) pending pasted/attached image data-URLs to send with the next message (vision) */
@@ -2812,7 +2804,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         return { ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:(rec.act&&rec.act.__exec)||null }; };
       _turnRunAction=_runOne;
       const _tools=TOOLS.baseTools();   /* (atlas-turn-engine) the same declarations every turn — nothing on the page is written into them */
-      let _sys=SYS(_tools); const _c0=_agentCtx();
+      const _sys=SYS(_tools); const _c0=_agentCtx();
       /* ⚠ (atlas-turn-engine) THE REAL LAYER NAMES, AS INPUT AND AS A CHECK — NOT AS PART OF THE DECLARATION. They were set as set_layer's `name.enum`, which made the tool list (and ai-proxy's prompt-cache key, a hash of it) move whenever the page did. js/atlas-toolsurface.js liveEnum keeps them enforced (js/atlas-agent.js `reject` reads `check`) and returns the sentence that puts them in front of the model in the request item — input, after the cached prefix */
       try{ _c0.text+=TOOLS.liveEnum(_tools,'set_layer','name',layerCatalogText().split(';').map(s2=>s2.trim()).filter(Boolean)); }catch(_){}   /* (atlas-native-tools) both fixed for the turn, so every step re-sends the same prefix — see _agentCtx */
       /* ⚠⚠⚠ (atlas-native-tools) THE TRANSPORT IS NATIVE FUNCTION CALLING. What stood here said the opposite, and was
@@ -2822,18 +2814,16 @@ window.IntMapModules.atlasConsole=function(HOST){
          as the provider's own functions, and returns the provider's output items; readReply turns each
          function_call into a call with its id, and the next step replays them. `webMode:'auto'` still
          means the model — not a regular expression here — decides whether this turn needs the live web.
-         ⚠ A PROXY THAT PREDATES PROTOCOL 2 is recognised by what it DID — it answered without
-         meta.protocol 2, or refused the item request as `empty` (it reads only `prompt`) — and from then
-         on this session speaks the envelope it understands: the same items flattened by legacyPrompt,
-         SYS re-read under `_aiProto`. That is the deploy in which the page reached the reader before the
-         function did; it costs that one call once, and cannot happen once the function is deployed. */
+         ⚠ (atlas-legacy-protocol-removal) THERE IS NO SECOND TRANSPORT. A page used to recognise an ai-proxy that
+         predated protocol 2 by what it did and fall back, for the session, to the same items flattened into one
+         string with the calls written into the JSON. Every deployed ai-proxy speaks protocol 2 on all three
+         providers (scripts/release-state.mjs: 21 of 21 functions matched the source on 2026-10-01), so that path
+         was reachable only by a malformed answer — which it then misread as an old server. An answer that is not
+         protocol 2 is now a transport failure (js/ai-core.js aiCallServerFull), reported as one. */
       const _model=async(req)=>{ try{ PROG.phase(ai,(req&&req.final)?'write':'think'); }catch(_){}   /* ⚠ (#R723) THE PLANNER WAIT IS THE LARGEST PART OF A TURN AND IT WAS THE PART WITH NO ROW. Measured on a real six-operation turn: 57.2 s total, 13.6 s of it inside operations — the other 43 s was eight round-trips to the model, and the trace said nothing about any of them. onStep fires AFTER the reply, so it can only CLOSE a thinking row; this is the only place that knows one has started. */
         const built=_agentInput(req,q,_c0), _tImgs=_atlTurnImgs(VFRAMES.urls(),_atlRecallImgs), _o={task:'atlas_turn',files:_atts.files,docs:_atts.docs,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)};
-        let env=null;
-        if(_aiProto!=='legacy'){ try{ env=await askAIJSONEnvelope('',_sys,_tImgs,Object.assign({},_o,{ protocol:2, input:built.input, schema:AGENT.FINAL_SCHEMA, toolChoice:(req&&req.final)?'none':undefined,
-            tools:((req&&req.tools)||[]).concat(built.cut?[AGENT.READ_RESULT_TOOL]:[]).map(t=>({name:t.name,description:t.description,parameters:t.parameters,promoted:t.promoted?true:undefined})) })); }catch(e){ if(!(e&&e.code==='empty')) throw e; }   /* read_result only on a step whose input was cut: the tool list is the start of the cached prefix */
-          if(!(env&&env.meta&&env.meta.protocol===2)){ _aiProto='legacy'; _sys=SYS(_tools); env=null; } }
-        if(!env) env=await askAIJSONEnvelope(AGENT.legacyPrompt(built),_sys,_tImgs,Object.assign({},_o,{schema:TURN_SCHEMA}));   /* ⚠ (#R493) `_tImgs`: THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */
+        const env=await askAIJSONEnvelope('',_sys,_tImgs,Object.assign({},_o,{ protocol:2, input:built.input, schema:AGENT.FINAL_SCHEMA, toolChoice:(req&&req.final)?'none':undefined,
+            tools:((req&&req.tools)||[]).concat(built.cut?[AGENT.READ_RESULT_TOOL]:[]).map(t=>({name:t.name,description:t.description,parameters:t.parameters,promoted:t.promoted?true:undefined})) }));   /* ⚠ (#R493) `_tImgs`: THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */   /* read_result only on a step whose input was cut: the tool list is the start of the cached prefix */
         try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
         const _r=AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON, env&&env.meta, env&&env.output); if(built.trim.droppedHistory||built.cut) _r.inputTrim=built.trim; return _r; };   /* (#R801) THIS call's meta (webUsed/webAttached), not window._aiLastMeta — the #R350 reason, one reader over. (atlas-native-tools) `output` = the provider's items; `inputTrim` = what the composer gave up, recorded in the trace by runTurn */
       try{

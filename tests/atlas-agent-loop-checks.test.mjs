@@ -581,14 +581,17 @@ test('R406-turn ⑫: when everything fails the turn still ends with one answer a
 });
 
 /* ── ⑬ THE WIRE FORMAT ────────────────────────────────────────────────────────────────────── */
-test('R406-turn ⑬: the envelope parses both an arguments object and an arguments_json string', async () => {
-  const a = AGENT.readReply({ final_text: '', tool_calls: [{ name: 'map_view', arguments: { place: 'Rome' } }] }, '', JSON.parse);
-  const b = AGENT.readReply({ final_text: '', tool_calls: [{ name: 'map_view', arguments_json: '{"place":"Rome"}' }] }, '', JSON.parse);
+test('R406-turn ⑬: a function call parses both an arguments object and an arguments string', async () => {
+  /* (atlas-legacy-protocol-removal) the calls are the provider's function_call items — the only transport there is */
+  const fc = (args) => [{ type: 'function_call', call_id: 'c1', name: 'map_view', arguments: args }];
+  const a = AGENT.readReply({ final_text: '' }, '', JSON.parse, { protocol: 2 }, fc({ place: 'Rome' }));
+  const b = AGENT.readReply({ final_text: '' }, '', JSON.parse, { protocol: 2 }, fc('{"place":"Rome"}'));
   assert.deepEqual(a.toolCalls, b.toolCalls);
   assert.equal(a.toolCalls[0].arguments.place, 'Rome');
+  assert.equal(a.toolCalls[0].id, 'c1', 'the provider\'s own id');
   /* an unparseable arguments string is an EMPTY argument set, which the schema check then rejects
      and hands back — never a crash, and never a silently half-applied call */
-  const c = AGENT.readReply({ final_text: '', tool_calls: [{ name: 'map_view', arguments_json: '{oops' }] }, '', JSON.parse);
+  const c = AGENT.readReply({ final_text: '' }, '', JSON.parse, { protocol: 2 }, fc('{oops'));
   assert.deepEqual(c.toolCalls[0].arguments, {});
   /* final_text alone is a complete reply */
   const d = AGENT.readReply({ final_text: 'hello' }, '', JSON.parse);
@@ -607,7 +610,7 @@ test('R406-turn ⑭: the envelope schema is strictly expressible, so the enforce
     const keys = Object.keys(node.properties || {});
     return keys.length > 0 && keys.every((k) => expressible(node.properties[k]));
   };
-  assert.ok(expressible(AGENT.TURN_SCHEMA), 'TURN_SCHEMA would be rejected by the proxy and silently downgraded');
+  assert.ok(expressible(AGENT.FINAL_SCHEMA), 'FINAL_SCHEMA would be rejected by the proxy and silently downgraded');
 });
 }
 
@@ -712,13 +715,13 @@ test('R511 ③: after maxOutputGate bounces a "mixed" final with nothing drawn i
 });
 
 /* ══ ④ readReply: the declaration is read off the envelope; anything else is no declaration ════════ */
-test('R511 ④: readReply reads answer_mode and TURN_SCHEMA declares it as an enum', () => {
+test('R511 ④: readReply reads answer_mode and FINAL_SCHEMA declares it as an enum', () => {
   assert.equal(AGENT.readReply({ final_text: 'a', answer_mode: 'map' }, '', JSON.parse).answerMode, 'map');
   assert.equal(AGENT.readReply({ final_text: 'a', answer_mode: 'MIXED' }, '', JSON.parse).answerMode, 'mixed');
   assert.equal(AGENT.readReply({ final_text: 'a', answer_mode: 'picture' }, '', JSON.parse).answerMode, '');
   assert.equal(AGENT.readReply({ final_text: 'a' }, '', JSON.parse).answerMode, '');
-  assert.deepEqual(AGENT.TURN_SCHEMA.properties.answer_mode.enum, ['text', 'map', 'chart', 'mixed']);   /* (#R543) 'chart' joined the vocabulary; the gate below it became one gate over a SET rather than a second gate beside the first */
-  assert.deepEqual(AGENT.TURN_SCHEMA.required, ['final_text'], 'declaring a mode is not required — an ordinary answer stays an ordinary answer');
+  assert.deepEqual(AGENT.FINAL_SCHEMA.properties.answer_mode.enum, ['text', 'map', 'chart', 'mixed']);   /* (#R543) 'chart' joined the vocabulary; the gate below it became one gate over a SET rather than a second gate beside the first */
+  assert.deepEqual(AGENT.FINAL_SCHEMA.required, ['final_text'], 'declaring a mode is not required — an ordinary answer stays an ordinary answer');
   assert.deepEqual(AGENT.ANSWER_MODES, ['text', 'map', 'chart', 'mixed']);
 });
 
@@ -1081,30 +1084,33 @@ const ran = () => { const calls = []; return { calls, execute: async (c) => { ca
 /* ══ ① THE DECLARATION EXISTS ON THE WIRE, AND SAYING NOTHING IS STILL A COMPLETE REPLY ═════════ */
 test('R663 ①: readReply reads `turn`, the schema declares the vocabulary, and it is NOT required', () => {
   assert.deepEqual(AGENT.TURN_STATES, ['final', 'continuing']);
-  assert.deepEqual(AGENT.TURN_SCHEMA.properties.turn.enum, AGENT.TURN_STATES, 'the schema reads the same list');
+  assert.deepEqual(AGENT.FINAL_SCHEMA.properties.turn.enum, AGENT.TURN_STATES, 'the schema reads the same list');
   assert.equal(AGENT.readReply({ final_text: 'a', turn: 'continuing' }, '', JSON.parse).turnState, 'continuing');
   assert.equal(AGENT.readReply({ final_text: 'a', turn: 'FINAL' }, '', JSON.parse).turnState, 'final');
   assert.equal(AGENT.readReply({ final_text: 'a', turn: 'halfway' }, '', JSON.parse).turnState, '', 'a word outside the vocabulary is no declaration');
   assert.equal(AGENT.readReply({ final_text: 'a' }, '', JSON.parse).turnState, '', 'and neither is silence');
   /* ⚠ THE POINT OF THIS LINE: a model that never says the word behaves exactly as it did before, and
      no reply Atlas could make before is refused now (CONSTITUTION.md §5). */
-  assert.deepEqual(AGENT.TURN_SCHEMA.required, ['final_text'], 'declaring what the reply is stays optional');
+  assert.deepEqual(AGENT.FINAL_SCHEMA.required, ['final_text'], 'declaring what the reply is stays optional');
   /* the schema must still be strictly expressible or supabase/functions/ai-proxy drops the WHOLE
      thing to bare json_object and the enum stops being enforced at all (tests/r406-turn ⑭'s rule) */
   const expressible = (n) => !n || typeof n !== 'object' ? false
     : n.type === 'array' ? expressible(n.items)
       : n.type !== 'object' ? true
         : Object.keys(n.properties || {}).length > 0 && Object.keys(n.properties).every((k) => expressible(n.properties[k]));
-  assert.ok(expressible(AGENT.TURN_SCHEMA));
+  assert.ok(expressible(AGENT.FINAL_SCHEMA));
 });
 
 /* ══ ② THE ORDER OF THE FIELDS IS THE ORDER OF THE DECISION ════════════════════════════════════
       A strict json_schema is generated in property order, so this is not cosmetic: it is what stops
       the sentence being committed to before the calls exist. ═══════════════════════════════════ */
 test('R663 ②: the reply is generated decision-first — what it IS, what it DOES, then what it SAYS', () => {
-  const keys = Object.keys(AGENT.TURN_SCHEMA.properties);
+  const keys = Object.keys(AGENT.FINAL_SCHEMA.properties);
   assert.equal(keys[0], 'turn');
-  assert.ok(keys.indexOf('tool_calls') < keys.indexOf('final_text'), 'the calls are chosen before the prose is written');
+  /* (atlas-legacy-protocol-removal) the calls are not a field any more: they are the provider's function_call items,
+     emitted beside the message rather than after the prose inside it */
+  assert.equal(keys.indexOf('tool_calls'), -1, 'no call rides in the written JSON');
+  assert.deepEqual(keys, ['turn', 'answer_mode', 'final_text']);
   assert.equal(keys[keys.length - 1], 'final_text');
 });
 
@@ -1124,7 +1130,7 @@ test('R663 ③: a reply that calls itself mid-turn and issued no call is handed 
   /* the note is mechanical and names the contradiction, never a word of the prose */
   const notes = model.seen[1].messages.filter((m) => m.role === 'tool').map((m) => m.content[0]);
   assert.equal(notes[0].error, 'no_calls_issued');
-  assert.match(notes[0].message, /tool_calls was empty/);
+  assert.match(notes[0].message, /this reply made none, so nothing ran/);
 });
 
 /* ══ ④ NOTHING WAS TAKEN AWAY: an undeclared or "final" zero-call reply still ends on step 0 ════ */
@@ -1423,6 +1429,6 @@ test('R742 ⑥: the third contradiction joined the same gate, and the loop still
   /* the declaration stayed optional: making `turn` required would force a word out of every reply
      without holding anyone to it — a model that answers "final" to the same promise is refused
      nothing by this gate, which reads the record instead (tests/r511 ④, tests/r663 ①) */
-  assert.deepEqual(AGENT.TURN_SCHEMA.required, ['final_text']);
+  assert.deepEqual(AGENT.FINAL_SCHEMA.required, ['final_text']);
 });
 }

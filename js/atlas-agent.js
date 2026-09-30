@@ -115,16 +115,15 @@ export function makeAtlasAgent() {
     };
 
     /* ── THE WIRE SHAPE OF ONE STEP ────────────────────────────────────────────────────────────
-       Two fields, and either may be the whole reply. `final_text` alone ends the turn — the shape
-       the old PLAN_SCHEMA had no way to express, which is why every ordinary question had to be
-       dressed up as an `answer` action.
-       ⚠ `arguments_json` IS A STRING ON PURPOSE. A tool's arguments differ per tool, so the field
-       is a free-form object — and OpenAI's strict json_schema mode cannot express one: an object
-       with no declared properties makes strictJsonSchema() return null, which drops the WHOLE
-       schema to plain json_object mode and takes the enforcement of `name` down with it. Carrying
-       the arguments as JSON text keeps every other field strictly checked, and is what native
-       function calling does with them anyway. The caller accepts an object too, for a model that
-       sends one regardless. */
+       A reply is the provider's own function calls plus what the model WRITES, and either may be the
+       whole reply. `final_text` alone ends the turn — the shape the old PLAN_SCHEMA had no way to
+       express, which is why every ordinary question had to be dressed up as an `answer` action.
+       ⚠ (atlas-legacy-protocol-removal) THE CALLS ARE NOT IN WHAT THE MODEL WRITES. Until 2026-10-01
+       a second transport existed — the calls written into the JSON as `tool_calls[].arguments_json`,
+       for an ai-proxy that predated protocol 2 — and was reached only by observing such a proxy.
+       Every deployed ai-proxy speaks protocol 2 on all three providers, so it was removed; a reply
+       that still writes calls into its JSON is read by `readReply` as `callsInText` and handed back
+       by the output gate in runTurn (nothing ran — said, not dropped). */
     /* ══ ⚠⚠⚠ (#R511) `answer_mode` — THE MAP AS AN OUTPUT MODALITY, DECLARED BY ATLAS ═════════════
        #R406 removed «do not finish a location-rich answer having mapped nothing» because a place
        NAME is not a reason to draw (「フランス革命はなぜ起きたのか」 names Paris and wants prose), and
@@ -195,36 +194,29 @@ export function makeAtlasAgent() {
        ⚠ IT IS NOT REQUIRED (see `required` below, unchanged). A model that never declares it behaves
           exactly as it did before, and no reply Atlas could make is refused — CONSTITUTION.md §5. */
     const TURN_STATES = ['final', 'continuing'];
-    const TURN_SCHEMA = {
+    /* ══ ⚠⚠⚠ (atlas-native-tools) THE CALLS LEFT THE ENVELOPE; THE DECLARATIONS DID NOT ════════════════════════
+       With native function calling the provider carries the calls as `function_call` items, each with
+       its own id. What is left for the message itself is exactly what #R511 / #R663 / #R742 hold a
+       final to — what this reply IS, what KIND of answer it is, and the words. In the order of ① above,
+       the calls sit between the first and the last of these: they are the provider's items, decided
+       before the words are written.
+       ⚠ (atlas-legacy-protocol-removal) This was derived from a TURN_SCHEMA that also carried
+       `tool_calls`, the shape of the one-string transport; with that transport gone, this is the one
+       schema, and `turn`'s description names the function calls rather than a field that no longer
+       exists — the sentence SYS() already said ("function calls") and the schema did not. */
+    const FINAL_SCHEMA = {
       type: 'object',
       required: ['final_text'],
       properties: {
         turn: { type: 'string', enum: TURN_STATES,
           description: 'What THIS reply is. "final": final_text is the complete answer and the turn ends here. '
-            + '"continuing": final_text is NOT the answer yet — the work continues in tool_calls, which must not be '
+            + '"continuing": final_text is NOT the answer yet — the work continues in function calls, which must not be '
             + 'empty. A reply that says what you are about to do is "continuing", and the calls that do it belong in '
             + 'this same reply.' },
-        tool_calls: {
-          type: 'array',
-          items: {
-            type: 'object',
-            required: ['name', 'arguments_json'],
-            properties: { name: { type: 'string' }, arguments_json: { type: 'string' } },
-          },
-        },
         answer_mode: { type: 'string', enum: ANSWER_MODES },
         final_text: { type: 'string' },
       },
     };
-    /* ══ ⚠⚠⚠ (atlas-native-tools) THE CALLS LEFT THE ENVELOPE; THE DECLARATIONS DID NOT ════════════════════════
-       With native function calling the provider carries the calls as `function_call` items, each with
-       its own id, so `tool_calls` / `arguments_json` are no longer the way a call is made. What is
-       left for the message itself is exactly what #R511 / #R663 / #R742 hold a final to — what this
-       reply IS, what KIND of answer it is, and the words — so FINAL_SCHEMA is TURN_SCHEMA without the
-       calls, DERIVED from it so the two cannot drift. TURN_SCHEMA stays: it is the shape of the
-       transitional one-string transport (`legacyPrompt` below) and of what an older proxy returns. */
-    const FINAL_SCHEMA = { type: 'object', required: TURN_SCHEMA.required.slice(), properties: {} };
-    Object.keys(TURN_SCHEMA.properties).forEach(function (k) { if (k !== 'tool_calls') FINAL_SCHEMA.properties[k] = TURN_SCHEMA.properties[k]; });
 
     /* ══ ⚠⚠⚠ (atlas-native-tools) THE INPUT IS ITEMS, AND NOTHING IS CUT WITHOUT SAYING SO ════════════════════
        MEASURED before this: js/atlas-console.js built ONE string per step — map state, pinned point,
@@ -390,31 +382,6 @@ export function makeAtlasAgent() {
       input.push({ type: 'attachments', channels: ['images'] });
       return { input: input, requestIndex: requestIndex, trim: trim,
         cut: !!(trim.truncated.length || trim.squeezed.length) };
-    }
-
-    /* (atlas-native-tools) THE SAME ITEMS AS ONE STRING — for a proxy that does not yet speak items (a deploy in
-       which the page reached the reader before the function did). Nothing new is said here: it is the
-       projection the old `_agentPrompt` made, rebuilt from the items so there is ONE composer. ⚠ Remove
-       with `TURN_SCHEMA`'s transport role once no deployed ai-proxy answers without meta.protocol 2. */
-    function legacyPrompt(built) {
-      const input = (built && built.input) || [];
-      const ri = (built && built.requestIndex) || 0;
-      const lines = [];
-      input.slice(0, ri).forEach(function (it) {
-        if (it.type === 'message') lines.push((it.role === 'user' ? 'User: ' : 'Atlas: ') + it.content);
-      });
-      let p = lines.length ? '[RECENT CONVERSATION] (oldest→newest)\n' + lines.join('\n') + '\n\n' : '';
-      p += String((input[ri] && input[ri].content) || '') + '\n\n';
-      const steps = [], after = [];
-      input.slice(ri + 1).forEach(function (it) {
-        if (it.type === 'function_call') steps.push('you called: ' + it.name + ' ' + it.arguments + ' (call ' + it.call_id + ')');
-        else if (it.type === 'function_call_output') steps.push('IntMap observed (call ' + it.call_id + '): ' + it.output);
-        else if (it.type === 'message' && it.role === 'assistant') steps.push('you wrote: ' + it.content);
-        else if (it.type === 'message') after.push(it.content);
-      });
-      if (steps.length) p += '[THIS TURN SO FAR — IntMap\'s mechanical record. It did not correct, substitute or reinterpret anything; those decisions are yours.]\n' + steps.join('\n') + '\n\n';
-      if (after.length) p += after.join('\n\n') + '\n';
-      return p;
     }
 
     /* ── The mechanical verdict on ONE proposed call. No meaning, only shape. ──────────────────
@@ -704,6 +671,17 @@ export function makeAtlasAgent() {
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
       const startedAt = now();
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
+      /* ⚠ (atlas-legacy-protocol-removal) THE NOTE FOR CALLS WRITTEN INTO THE MESSAGE. Nothing written there runs, and
+         the model is TOLD so — one-pass-or-a-reason §2's second cause is a result that never reaches the
+         next step, and a call dropped in silence is the same defect with no result at all. `alone`: the
+         reply made no function call either, so the whole reply did nothing. */
+      const inTextNote = (names, alone) => 'This reply wrote ' + names.length + (names.length === 1 ? ' call' : ' calls')
+        + ' (' + names.join(', ') + ') into its JSON message. Nothing written there runs — IntMap runs only the calls '
+        + 'you make as functions — so ' + (names.length === 1 ? 'it did' : 'none of them did') + ' not run'
+        + (alone ? ' and nothing changed. Make them now as function calls in this reply; or, if the answer needs no tool, '
+          + 'reply with final_text alone.'
+          : '; the function calls you made did, and their results are above. If you still need '
+          + (names.length === 1 ? 'it' : 'them') + ', make ' + (names.length === 1 ? 'it' : 'them') + ' as function calls.');
       /* ⚠ THE RESULT IS A TYPED NOTE TO ATLAS, NOT AN ABORT. A tool that overran its deadline is
          abandoned — the turn stops WAITING for it — and what goes into the transcript is the same
          mechanical record every other outcome gets, so the next step is chosen by Atlas knowing what
@@ -772,6 +750,9 @@ export function makeAtlasAgent() {
         /* (#R663) what Atlas said THIS reply is — a fact about this step, so unlike `answerMode` it
            does not carry over to the next one. '' when it did not say. */
         const turnState = (reply && TURN_STATES.indexOf(reply.turnState) >= 0) ? reply.turnState : '';
+        /* (atlas-legacy-protocol-removal) the calls this reply WROTE into its JSON rather than made — see readReply */
+        const inText = (reply && Array.isArray(reply.callsInText)) ? reply.callsInText : [];
+        if (inText.length) (trace.callsInText = trace.callsInText || []).push({ step, names: inText.slice() });
         /* ⚠ (#R663) A SENTENCE ATLAS MARKED AS NOT-THE-ANSWER IS NOT THE ANSWER. The reader was
            shown 「まず〜を確認します」 as the reply to their question partly because any non-empty text
            from any step became the turn's answer, so a note-to-self written on the way through
@@ -819,7 +800,12 @@ export function makeAtlasAgent() {
              composes a sentence: if the bounces run out with the answer still empty, the turn says
              so (`stopped` below), and what the reader sees stays the shell's decision. */
           const answerHere = (reply && typeof reply.text === 'string' && reply.text.trim()) ? reply.text : text;
-          const code = (need && !made) ? (GATE_CODE[answerMode] || 'output_not_produced')
+          /* ⚠ (atlas-legacy-protocol-removal) …OR WROTE ITS CALLS INTO THE MESSAGE. A reply whose only calls are
+             `tool_calls` in its JSON made no call — the transport that ran those is gone — so it is the
+             same contradiction as `no_calls_issued` seen from the record: the reply meant work and
+             nothing ran. First, because it is the most specific thing the record says. */
+          const code = inText.length ? 'calls_in_text'
+            : (need && !made) ? (GATE_CODE[answerMode] || 'output_not_produced')
             : ((turnState === 'continuing') ? 'no_calls_issued'
               : (!String(answerHere || '').trim() ? 'no_answer_written' : ''));
           if (code && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
@@ -834,14 +820,15 @@ export function makeAtlasAgent() {
                reply was the answer after all. Neither branch tells Atlas what to conclude. */
             /* (#R742) …and for the third: the turn is ending and final_text is empty. The note says
                what the machine recorded and what the two ways out are — it does not say what to write. */
-            const msg = (code === 'no_answer_written')
-              ? 'This reply ends the turn — tool_calls is empty — and final_text is empty too, so the reader '
+            const msg = (code === 'calls_in_text') ? inTextNote(inText, true)
+              : (code === 'no_answer_written')
+              ? 'This reply ends the turn — it made no function calls — and final_text is empty too, so the reader '
                 + 'asked a question and would be shown nothing at all. Answer them now in final_text, in their '
                 + 'language; or, if the answer needs work first, make those calls in this reply (find_capability '
                 + 'finds anything the core tools do not cover, and run_capability runs it) and answer after.'
               : (code === 'no_calls_issued')
               ? 'You marked this reply "continuing" — final_text is not the answer yet and the work goes on in '
-                + 'tool_calls — but tool_calls was empty, so nothing ran, and the reader would be left with a sentence '
+                + 'function calls — but this reply made none, so nothing ran, and the reader would be left with a sentence '
                 + 'about something that has not happened. Make those calls now, in this reply (find_capability finds '
                 + 'anything the nine core tools do not cover, and run_capability runs it); or, if the answer is '
                 + 'already complete as it stands, mark this reply "final".'
@@ -1160,6 +1147,8 @@ export function makeAtlasAgent() {
         trace.steps.push({ step, toolCalls: calls.length, executed: executedHere });
         transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: allCalls, items: (reply && reply.items) || undefined });
         observe(stepResults);
+        /* (atlas-legacy-protocol-removal) the function calls ran; the ones written into the message did not, and that is said */
+        if (inText.length) observe([{ ok: false, error: 'calls_in_text', message: inTextNote(inText, false) }]);
 
         if (ended) {
           stopped = 'awaiting_user';
@@ -1274,8 +1263,8 @@ export function makeAtlasAgent() {
     }
 
     /**
-     * readReply(data, text, parseJSON) -> {text, toolCalls}
-     * The one place the envelope is turned into a step. Kept here rather than in js/atlas-console.js
+     * readReply(data, text, parseJSON, meta, output) -> {text, toolCalls, callsInText, …}
+     * The one place a provider's answer is turned into a step. Kept here rather than in js/atlas-console.js
      * so tests/atlas-agent-loop-checks.test.mjs (#R406) checks the parsing the browser actually uses.
      */
     function readReply(data, text, parseJSON, meta, output) {
@@ -1285,21 +1274,24 @@ export function makeAtlasAgent() {
       const webUsed = !!(meta && (meta.webUsed || meta.webAttached));
       /* (atlas-native-tools) NATIVE CALLS: ai-proxy (meta.protocol 2) returns the provider's output items, and every
          `function_call` among them is a call with the provider's own id. They are also kept whole as
-         `items`, so the next step replays exactly what the model produced (its reasoning included). */
+         `items`, so the next step replays exactly what the model produced (its reasoning included).
+         ⚠ (atlas-legacy-protocol-removal) THEY ARE THE ONLY CALLS. `tool_calls` inside the written JSON was the
+         one-string transport's, and is no longer read as a call: it has no provider id, so its output
+         would answer a function_call the provider never issued. It is reported instead (`callsInText`). */
       const native = Array.isArray(output) ? output.filter((it) => it && typeof it === 'object' && it.type) : null;
-      const raw = native ? native.filter((it) => it.type === 'function_call')
-        .map((it) => ({ id: String(it.call_id || ''), name: it.name, arguments_json: typeof it.arguments === 'string' ? it.arguments : undefined, arguments: typeof it.arguments === 'object' ? it.arguments : undefined }))
-        : ((d && Array.isArray(d.tool_calls)) ? d.tool_calls : []);
       const calls = [];
-      raw.forEach((c, i) => {
-        if (!c || !c.name) return;
-        let args = c.arguments;
-        if (args === undefined && typeof c.arguments_json === 'string') {
-          try { args = typeof parseJSON === 'function' ? parseJSON(c.arguments_json) : JSON.parse(c.arguments_json); } catch (_) { args = null; }
+      (native || []).forEach((it, i) => {
+        if (it.type !== 'function_call' || !it.name) return;
+        let args = it.arguments;
+        if (typeof args === 'string') {
+          try { args = typeof parseJSON === 'function' ? parseJSON(args) : JSON.parse(args); } catch (_) { args = null; }
         }
+        /* an unparseable arguments string is an EMPTY argument set, which the schema check then rejects and hands back */
         if (!args || typeof args !== 'object' || Array.isArray(args)) args = {};
-        calls.push({ id: c.id ? String(c.id) : 't' + i, name: String(c.name), arguments: args });
+        calls.push({ id: it.call_id ? String(it.call_id) : 't' + i, name: String(it.name), arguments: args });
       });
+      const callsInText = (d && Array.isArray(d.tool_calls))
+        ? d.tool_calls.filter((c) => c && typeof c === 'object' && c.name).map((c) => String(c.name)) : [];
       /* (#R511) the declared kind of answer; anything outside the vocabulary is simply not a declaration */
       const am = d ? String(d.answer_mode || d.answerMode || '').toLowerCase() : '';
       /* (#R663) …and what this reply IS, read the same way: a word outside the vocabulary, or none
@@ -1315,8 +1307,10 @@ export function makeAtlasAgent() {
       /* no regular expression here — this loop matches no pattern against a reply (tests/atlas-agent-loop-checks.test.mjs #R663 ③); the
          shape is read with indexOf on the schema's own quoted keys */
       const opens = prose.trimStart().charAt(0) === '{';
+      /* (atlas-legacy-protocol-removal) "tool_calls" / "arguments_json" are the retired envelope's keys, kept here: a model
+         that still writes that shape, unparseably, is writing machine text all the same */
       const machine = opens && ['"tool_calls"', '"turn"', '"final_text"', '"answer_mode"', '"arguments_json"'].some(function (k) { return prose.indexOf(k) >= 0; });
-      return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls,
+      return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls, callsInText,
         answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
         turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '', webUsed,
         items: native && native.length ? native : undefined,
@@ -1324,8 +1318,8 @@ export function makeAtlasAgent() {
         serverTrim: (meta && meta.inputTrimmed) || undefined };
     }
 
-    const API = { LIMITS, TURN_SCHEMA, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
-      runTurn, reject, readReply, validateAgainst, composeInput, legacyPrompt, resultText };
+    const API = { LIMITS, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
+      runTurn, reject, readReply, validateAgainst, composeInput, resultText };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
