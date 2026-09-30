@@ -17,8 +17,47 @@ window.IntMapModules.newsFeed=function(HOST){
   /* (#R372) «has anybody asked for news yet» — declared HERE, above both readers, because a `let`
      below a function that reads it is a TDZ waiting for the first caller that runs early. */
   let _asked=false;
+  /* ══ A REDRAW OF THE LIST THE READER IS ALREADY READING IS NOT A RESET ═══════════════════════
+     startNews() is called by every background event that might have changed what the list shows —
+     the auth listener (js/auth-ui.js), a settings save, a language switch, a realtime row — and it
+     used to answer every one of them by emptying the feed and drawing the first NEWS_BATCH cards.
+     MEASURED (2026-10-01, a genuine SIGNED_OUT from supabase-js): a reader 60 cards deep, scrolled
+     into the second batch, was put back to 30 cards; the deep tier saw the same thing ~3.3 s after
+     opening the tab from the boot's own auth event. Nothing in the list had changed.
+     ⚠ The rule is about the LIST, not about the caller: if the cards on screen are the first N of
+     the new filtered list (same items, same order — the same identity the ★ uses: an Event's
+     public id, an article's link), the new list is drawn N deep and the card the reader was looking
+     at is put back where it was. The cards themselves are still rebuilt, because what a card says
+     also depends on the language, the date format and the ★ state, and a hand list of those would
+     be wrong the day a card reads one more setting. A list whose head DID change (a new query, a
+     new category, fresh articles at the top) starts from the top as before. */
+  function _newsKey(it){ return (it&&it._event&&it._event.publicId)?('ev:'+it._event.publicId):('ln:'+(it&&it.link)); }
+  function _readingPlace(feed){
+    const prev=HOST.newsFiltered||[], n=HOST.renderedCount|0, cards=feed.children;
+    /* the feed must be showing exactly the rendered prefix of that list — not the loading line, not
+       another tab's fallback content, not a count someone reset underneath it */
+    if(!n||cards.length!==n) return null;
+    for(let i=0;i<n;i++) if(!prev[i]||prev[i]._cardEl!==cards[i]) return null;
+    let idx=-1, off=0;
+    try{ const top=feed.getBoundingClientRect().top;
+      for(let i=0;i<n;i++){ const r=cards[i].getBoundingClientRect(); if(r.height>0&&r.bottom>top){ idx=i; off=top-r.top; break; } } }catch(_){}
+    return { keys:prev.slice(0,n).map(_newsKey), depth:n, idx, off, scrollTop:feed.scrollTop };
+  }
+  function _samePrefix(place,list){
+    if(!place||list.length<place.depth) return false;
+    for(let i=0;i<place.depth;i++) if(_newsKey(list[i])!==place.keys[i]) return false;
+    return true;
+  }
+  function _restorePlace(feed,place){
+    while(HOST.renderedCount<place.depth&&HOST.renderedCount<HOST.newsFiltered.length){ const had=HOST.renderedCount; HOST.appendNewsBatch(); if(HOST.renderedCount===had) break; }
+    const card=place.idx>=0?feed.children[place.idx]:null;
+    if(card){ const ft=feed.getBoundingClientRect().top, ct=card.getBoundingClientRect().top; feed.scrollTop=feed.scrollTop+(ct-ft)+place.off; }
+    else feed.scrollTop=place.scrollTop;
+  }
   function startNews(){
-    const feed=document.getElementById('live-news-feed'); HOST.clearMarkers(); feed.innerHTML=''; HOST.renderedCount=0;
+    const feed=document.getElementById('live-news-feed');
+    const place=(HOST.globalData.length&&feed)?_readingPlace(feed):null;
+    HOST.clearMarkers(); feed.innerHTML=''; HOST.renderedCount=0;
     /* ⚠⚠ (#R372 追記) OPENING THE NEWS SURFACE *IS* THE GESTURE, AND NOTHING ELSE WAS ASKING.
        #R372 stopped the boot from fetching news for a reader who never opened the tab. But
        setMode() only calls renderUI() — it has never called fetchData() — so the tab worked purely
@@ -45,7 +84,9 @@ window.IntMapModules.newsFeed=function(HOST){
     /* (#R79b) don't paint pins for a hidden News window (they'd appear with no window controlling them) */
     /* (#R171) source data through IntMapGeoEngine — this file no longer names the renderer. */
     try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST._wsNewsHidden()?[]:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} } }catch(_){}
-    HOST.appendNewsBatch(); HOST.updateOcclusion();
+    HOST.appendNewsBatch();
+    if(_samePrefix(place,HOST.newsFiltered)) _restorePlace(feed,place);
+    HOST.updateOcclusion();
     maybeAutoEnrich();
   }
   /* ══ (#R416) ONE PIN BUILDER, AND A PIN THAT KNOWS WHAT IT STANDS FOR ═══════════════════════

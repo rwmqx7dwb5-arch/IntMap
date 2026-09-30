@@ -66,6 +66,13 @@ and one subscription across legend rebuilds;
 `tests/layer-koppen-checks.test.mjs` (#R708) checks obsolete image/bitmap completion, immediate canvas release,
 and unchanged resolution and image fallback. These count released resources; they do not claim device RSS savings.
 
+`tests/news-list-keeps-position-checks.test.mjs` (news-list-keeps-position) evaluates the real
+`startNews()` of `js/news-feed.js` against a small layout model of the feed (fixed-height cards, a
+clamped `scrollTop`): a redraw of the same list keeps the rendered depth and the card the reader was on,
+a list whose head changed starts from the top, and a counter reset underneath the cards never produces
+duplicates. The browser half is `tests/r169.spec.js` #3b, which drives a genuine supabase-js `SIGNED_OUT`
+through the auth listener and checks that 45 cards and the reading position survive it.
+
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-09-25): the **core** tier that
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
