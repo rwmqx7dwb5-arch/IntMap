@@ -153,6 +153,33 @@ test('R169 #3 WRITE-THROUGH: appendNewsBatch advances renderedCount past the fir
   expect(res.unique, 'every card is distinct — the counters really advanced').toBe(45);
 });
 
+test('R169 #3b an auth event does not take the reader back to the first batch', async () => {
+  // MEASURED 2026-10-01: the auth listener (js/auth-ui.js) redrew the list from the top, so the
+  // 45 cards #3 reached went back to 30 and the reader lost their place. A genuine supabase-js
+  // SIGNED_OUT drives the real path (listener → renderUI → startNews). The node half is
+  // tests/news-list-keeps-position-checks.test.mjs.
+  const where = () => page.evaluate(() => {
+    const f = document.getElementById('live-news-feed'); const top = f.getBoundingClientRect().top;
+    const c = [...f.querySelectorAll('.news-item')].find((x) => x.getBoundingClientRect().bottom > top);
+    return { n: f.querySelectorAll('.news-item').length,
+      card: c ? c.querySelector('.news-title').textContent : null, off: c ? Math.round(top - c.getBoundingClientRect().top) : null };
+  });
+  await page.evaluate(() => { const f = document.getElementById('live-news-feed'); const c = f.querySelectorAll('.news-item')[33]; f.scrollTop += c.getBoundingClientRect().top - f.getBoundingClientRect().top + 12; });
+  const before = await where();
+  expect(before.n).toBe(45);
+  const redrawn = page.evaluate(() => new Promise((res) => {
+    const f = document.getElementById('live-news-feed');
+    const mo = new MutationObserver(() => { mo.disconnect(); setTimeout(res, 300); }); mo.observe(f, { childList: true });
+    setTimeout(res, 5000);
+  }));
+  await page.evaluate(() => window.sb.auth.signOut());
+  await redrawn;
+  const after = await where();
+  expect(after.n, 'the second batch is still rendered').toBe(45);
+  expect(after.card, 'the reader is on the same card').toBe(before.card);
+  expect(Math.abs(after.off - before.off), 'at the same offset into it').toBeLessThanOrEqual(1);
+});
+
 test('R169 #4 WRITE-THROUGH: the grid toggle round-trips through HOST.isGridOn', async () => {
   // index.html keeps `toggleGrid(){ setGrid(!isGridOn); }` and reads the BARE closure variable;
   // js/map-readout.js owns setGrid and writes HOST.isGridOn. If that write were a silent no-op the

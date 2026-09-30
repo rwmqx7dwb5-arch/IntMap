@@ -770,7 +770,9 @@ window.IntMapModules.authUi=function(HOST){
          so the auth lock is released first. */
       setTimeout(async()=>{
         await refreshCurrentUser(session||null); await loadFavorites();
-        try{ if(HOST.mode==='news'||HOST.mode==='saved') HOST.startNews(); }catch(_){}
+        /* The News list is NOT redrawn here: renderUI() below does it (its News/Saved branch ends in
+           startNews()), and calling both drew the list twice per auth event — measured 2026-10-01,
+           two feed clears 12 ms apart on one SIGNED_OUT. startNews() keeps the reader's place. */
         try{ if(HOST.mode==='community') HOST.loadCommunity(); }catch(_){}
         try{ const am=document.getElementById('auth-modal'); if(HOST.user && am && am.style.display!=='none') am.style.display='none'; }catch(_){}   /* close the login modal once signed in */
         try{ HOST.renderUI(); }catch(_){}            /* reflect the new auth state in the active tab immediately */
