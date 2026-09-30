@@ -18,6 +18,7 @@ import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
 import { makeAtlasCatalogText } from '../js/atlas-catalog-text.js';
 import { makeAtlasSchemas } from '../js/atlas-schemas.js';
 import { codeOnly, codeOnly as noComments } from '../scripts/code-only.mjs';
+import { liftFunction } from './helpers/lift-function.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -383,9 +384,21 @@ test('#R284 ⑥ every ECMWF layer has its own legend box and its own title', () 
   assert.match(src, /class="dl-op-row"/,
     '…as is the opacity, which css/intmap.css hides in the Layers panel (#R16)');
   /* the tiler has to be able to see them, or a legend sits on top of the one below it (#R276) */
+  /* EVALUATED (#R505): the shipped discovery is run against a document holding boxes built the way
+     js/weather.js `newBox` builds them — class `data-legend`, id `data-legend-<layer id>` — under ids
+     no list in js/data-layers.js names, so only an id-PREFIX match can find them */
   const DL = codeOnly(read('js/data-layers.js'));
-  assert.match(DL, /querySelectorAll\('\[id\^="data-legend-ec-"\]'\)/,
-    'tileLegends matches the ECMWF boxes by id prefix rather than naming one element');
+  const boxes = ['ec-slp', 'ec-t2m-later-added'].map((id) => ({ id: 'data-legend-' + id }));
+  const other = { id: 'data-legend-nightsat' };
+  const doc = { getElementById: () => null,
+    getElementsByClassName: (c) => (c === 'data-legend' ? [other, ...boxes] : []) };
+  const lgd = (liftFunction(DL, 'discoverLegends').match(/\blgd[A-Z]\w*/g) || []);
+  /* eslint-disable no-new-func */
+  const discover = new Function('document', ...new Set(lgd), liftFunction(DL, 'discoverLegends') + '\nreturn discoverLegends;')(doc);
+  const found = discover().filter(Boolean);
+  assert.deepEqual(found.filter((el) => boxes.includes(el)), boxes,
+    'the tiler does not see every ECMWF box by id prefix — a box it cannot see sits on top of the one below it (#R276/#R284)');
+  assert.ok(!found.includes(other), 'a .data-legend that is neither an ECMWF box nor a generic one was taken as one');
 });
 
 /* ── ⑦ the player's five buttons are five different pictures ─────────────────────────────────

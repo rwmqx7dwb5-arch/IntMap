@@ -197,12 +197,13 @@ test('② the relay probe reads «relay up, upstream refusing» as not dead', ()
    ══════════════════════════════════════════════════════════════════════════════════════════ */
 const DL = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
 const DL_DECL = DL.replace('window._minimizeOpenLegends=function(', 'function minimizeOpenLegends(');
-const DL_BODY = ['legendShown', 'toggleLegendMin', 'ensureLegendMinimize', 'tileLegends'].map((n) => liftFunction(DL, n))
+const DL_BODY = ['legendShown', 'toggleLegendMin', 'ensureLegendMinimize', 'discoverLegends', 'placeLegends'].map((n) => liftFunction(DL, n))
   .concat([liftFunction(DL_DECL, 'minimizeOpenLegends')]).join('\n');
-/* the free names tileLegends reads are DISCOVERED from its own body, not listed here */
-const TILE = liftFunction(DL, 'tileLegends');
+/* the free names the discovery reads are DISCOVERED from its own body, not listed here */
+const TILE = liftFunction(DL, 'discoverLegends');
 const LGD = [...new Set(TILE.match(/\blgd[A-Z]\w*/g) || [])];
-const STUBS = ['ensureLegendOpacity', 'ensureContourSwitch', 'ensureContourDensity', 'watchLegendSize'];
+/* `tileLegends` is the next-frame request (legend-layout-frame); the placement is `placeLegends` */
+const STUBS = ['ensureLegendOpacity', 'ensureContourSwitch', 'ensureContourDensity', 'watchLegendSize', 'tileLegends'];
 
 function legend(id, { inline = '', computed = 'block', hidden = false, docked = false } = {}) {
   const cls = new Set(docked ? ['im-docked'] : []);
@@ -223,7 +224,7 @@ function legend(id, { inline = '', computed = 'block', hidden = false, docked = 
 function run(legends) {
   const document = {
     getElementById: (id) => (id === 'map-container' ? { getBoundingClientRect: () => ({ height: 900, width: 1100 }) } : null),
-    querySelectorAll: (sel) => (sel === '.data-legend.generic-legend' ? legends : []),
+    getElementsByClassName: (c) => (c === 'data-legend generic-legend' || c === 'data-legend' ? legends : []),
     querySelector: () => null,
     createElement: () => { const e = { tagName: 'BUTTON', className: '', style: {}, textContent: '', title: '' };
       e.classList = { contains: (c) => String(e.className).split(/\s+/).includes(c) }; return e; },
@@ -233,7 +234,7 @@ function run(legends) {
   /* the page's computed style, per element — what the stylesheet says, which the inline value may not */
   const getComputedStyle = (el) => ({ display: el.__computed });
   /* eslint-disable no-new-func */
-  const make = new Function('document', 'window', 'getComputedStyle', 'HOST', ...LGD, ...STUBS, DL_BODY + '\nreturn { tileLegends, minimizeOpenLegends, legendShown };');
+  const make = new Function('document', 'window', 'getComputedStyle', 'HOST', ...LGD, ...STUBS, DL_BODY + '\nreturn { placeLegends, minimizeOpenLegends, legendShown };');
   return make(document, window, getComputedStyle, { lang: 'en' }, ...LGD.map(() => null), ...STUBS.map(() => () => {}));
 }
 
@@ -247,7 +248,7 @@ test('③ tap-to-fold folds exactly the legends the tiler places — the two spe
     legend('docked', { inline: 'block', computed: 'block', docked: true }),
   ];
   const api = run(legends);
-  api.tileLegends();
+  api.placeLegends();
   const tiled = new Set(legends.filter((el) => el.hasMinButton).map((el) => el.id));
   assert.deepEqual([...tiled].sort(), ['by-stylesheet', 'docked', 'plain'], 'the tiler\'s own verdict');
   api.minimizeOpenLegends();
