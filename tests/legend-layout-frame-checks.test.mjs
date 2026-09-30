@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { installDevice } from './helpers/ui-device.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DL = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
@@ -116,6 +117,7 @@ test('② fifty requests against a page of six legends: one frame, each legend m
   };
   const R = frameRegister();
   const window = { IntMapRuntime: R, innerHeight: 900, innerWidth: 1440, matchMedia: () => ({ matches: false }) };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   const watched = [];
   const make = new Function('document', 'window', 'getComputedStyle', 'requestAnimationFrame', 'watchLegendSize',
     'ensureLegendOpacity', 'ensureContourSwitch', 'ensureContourDensity', 'ensureLegendMinimize', ...LGD,
@@ -234,6 +236,7 @@ test('⑥ a box stopped at the container\'s edge settles in a few passes, howeve
     querySelector: () => null, body: { classList: { contains: () => false } },
   };
   const window = { innerHeight: mcH, innerWidth: mcW, matchMedia: () => ({ matches: false }) };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   const place = new Function('document', 'window', 'getComputedStyle', 'watchLegendSize',
     'ensureLegendOpacity', 'ensureContourSwitch', 'ensureContourDensity', 'ensureLegendMinimize', ...LGD,
     lift('legendShown', 'discoverLegends', 'placeLegends') + '\nreturn placeLegends;')(

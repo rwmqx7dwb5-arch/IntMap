@@ -128,7 +128,7 @@ export function makeGisPanel(HOST) {
     /* ── chrome ───────────────────────────────────────────────────────────────────────────────
        ⚠ OPAQUE BY DEFAULT (#R261): `--card-bg` rather than `--popup-bg`, because this panel carries
        a TABLE, and digits read through 26 % of a moving map are not digits. */
-    const CSS_PANEL = 'position:absolute;top:84px;right:24px;width:min(360px,94vw);max-height:min(74vh,660px);z-index:1500;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:16px;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,0.42);font-size:12.5px;color:var(--text-main,#f2f2f7);';
+    const CSS_PANEL = 'position:absolute;top:84px;right:24px;width:min(360px,94vw);max-height:min(74vh,660px);z-index:calc(var(--z-sheet) - 150);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:16px;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,0.42);font-size:12.5px;color:var(--text-main,#f2f2f7);';
     const CSS_HEAD = 'flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg,rgba(120,120,128,0.18));cursor:move;';
     const CSS_BODY = 'flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;padding:11px 12px 15px;display:flex;flex-direction:column;gap:14px;';
     const CSS_SECT = 'display:flex;flex-direction:column;gap:7px;min-width:0;';

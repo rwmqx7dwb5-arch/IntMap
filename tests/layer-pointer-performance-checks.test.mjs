@@ -453,20 +453,21 @@ test('R499 ⑤ …and it still moves when the point it is pinned to moves', () =
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
    ⑥ js/app-body.js — a phone with a stylus is still a phone
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
+/* (ui-layer-owner) the predicate's body moved to js/ui-device.js (`phoneBudget`) and js/app-body.js's
+   `_imPhoneClass` is that owner's answer — so the OWNER is evaluated, one fresh page per question
+   (it keeps its MediaQueryLists for the life of the page, as a browser's are live). */
 function phoneClass() {
   const line = CODE('js/app-body.js').split('\n').find((l) => l.includes('const _imPhoneClass='));
-  assert.ok(line, '_imPhoneClass is no longer declared on one line in js/app-body.js');
-  const g = { Math, console };
-  g.window = g;
-  vm.createContext(g);
-  vm.runInContext(`function isMobile(){ return 'FELL BACK'; }
-    ${line.trim()}
-    globalThis.__ask = function(q){
-      window.matchMedia = (s) => ({ matches: !!q[s] });
-      window.screen = q.screen;
-      return _imPhoneClass();
-    };`, g, { filename: 'phone-class.js' });
-  return g.__ask;
+  assert.ok(line && /window\.IntMapDevice\.phoneBudget\(\)/.test(line), '_imPhoneClass no longer asks js/ui-device.js');
+  const src = readFileSync(join(ROOT, 'js/ui-device.js'), 'utf8');
+  return function (q) {
+    const g = { Math, Set, Object, console, screen: q.screen };
+    g.window = g;
+    g.matchMedia = (s) => ({ matches: !!q[s], addEventListener() { } });
+    vm.createContext(g);
+    vm.runInContext(src, g, { filename: 'ui-device.js' });
+    return g.IntMapDevice.phoneBudget();
+  };
 }
 
 test('R499 ⑥ a fine pointer IN ADDITION to a coarse one no longer buys the desktop budget', () => {

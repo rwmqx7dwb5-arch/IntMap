@@ -215,19 +215,19 @@ window.IntMapModules.flightSim=function(HOST){
       return { start, stop, update, toggleMute, isMuted:()=>muted, active:()=>on };
     })();
     function css(){ if(styled) return; styled=true; const s=document.createElement('style'); s.id='fs-style';
-      s.textContent='#fs-hud{position:fixed;left:0;right:0;bottom:0;top:0;z-index:6002;pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
+      s.textContent='#fs-hud{position:fixed;left:0;right:0;bottom:0;top:0;z-index:calc(var(--z-toast) + 3002);pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
         /* (#R85c) INDEPENDENT FULLSCREEN cockpit ("既存画面にオーバーレイするのではなく独立した全画面で"): the map is
            lifted to cover the whole viewport above all app chrome, map controls are hidden, and a HUD vignette frames it.
            (#R102) z-index raised to 6000+ so the cockpit sits ABOVE the workspace-mode top menu bar (5990) and ticker (5985). */
         +'body.fs-flying{overflow:hidden !important;}'
         /* (#R174) #R173's painted sky is GONE — 「空を勝手に描くな！不自然」. The sky belongs to the renderer
            (see the setSky call in start()); the sim draws nothing behind the map. */
-        +'body.fs-flying #map-container{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:6000 !important;border-radius:0 !important;}'
+        +'body.fs-flying #map-container{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:calc(var(--z-toast) + 3000) !important;border-radius:0 !important;}'
         /* (#R102) WORKSPACE MODE: the map lives inside a .ws-win (z-index:900) whose stacking context TRAPS the promoted
            #map-container — so the fullscreen map was hidden behind the sibling windows/ticker/menu ("開始すると画面が
            真っ黒"). Lift the whole MAP WINDOW to fullscreen above every chrome layer, hide its title bar/grip, and hide the
            other windows + menu + ticker for the duration of the flight (fullscreen WITHIN IntMap, not desktop fullscreen). */
-        +'body.fs-flying .ws-win.ws-map{position:fixed !important;inset:0 !important;left:0 !important;top:0 !important;width:100vw !important;height:100vh !important;z-index:6000 !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:#000 !important;}'
+        +'body.fs-flying .ws-win.ws-map{position:fixed !important;inset:0 !important;left:0 !important;top:0 !important;width:100vw !important;height:100vh !important;z-index:calc(var(--z-toast) + 3000) !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:#000 !important;}'
         +'body.fs-flying .ws-win.ws-map .ws-tb,body.fs-flying .ws-win.ws-map .ws-grip{display:none !important;}'
         +'body.fs-flying #ws-menu,body.fs-flying #ticker-bar,body.fs-flying .ws-win:not(.ws-map){display:none !important;}'
         +'body.fs-flying #map-search,body.fs-flying .map-controls-top,body.fs-flying .maplibregl-control-container,body.fs-flying #coord-readout,body.fs-flying #layer-sidebar-r,body.fs-flying #lsr-toggle,body.fs-flying .sat-controller,body.fs-flying #sat-controller,body.fs-flying .btn-toggle-sidebar,body.fs-flying .data-legend,body.fs-flying .koppen-legend,body.fs-flying #news-timeline,body.fs-flying .maplibregl-popup{display:none !important;}'   /* (#R117) + any already-open feature popup stays hidden during flight */   /* (#R103) hide the time-machine button during flight */
@@ -242,20 +242,20 @@ window.IntMapModules.flightSim=function(HOST){
         +'#fs-hud .fs-thrfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#34c759,#ffd60a,#ff453a);}'
         +'#fs-hud .fs-thrlbl{position:absolute;left:14px;bottom:174px;font-size:10px;color:#8fb8e0;}'
         +'#fs-hud .fs-hint{position:absolute;left:64px;bottom:16px;font-size:10.5px;color:#bcd6f0;text-align:left;line-height:1.6;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.3);border-radius:9px;padding:7px 10px;}'   /* (#R100) moved off the bottom-right so it no longer overlaps the minimap */
-        +'#fs-hud .fs-warn{position:absolute;left:50%;top:116px;transform:translateX(-50%);font-size:22px;font-weight:800;color:#ff453a;text-shadow:0 2px 8px #000;display:none;background:rgba(6,10,18,0.55);border-radius:8px;padding:2px 14px;white-space:nowrap;z-index:8;}'   /* (#R117) fixed slot BELOW the heading tape + badge + config chips — no more overlap with the fighter heading tape */
+        +'#fs-hud .fs-warn{position:absolute;left:50%;top:116px;transform:translateX(-50%);font-size:22px;font-weight:800;color:#ff453a;text-shadow:0 2px 8px #000;display:none;background:rgba(6,10,18,0.55);border-radius:8px;padding:2px 14px;white-space:nowrap;z-index:calc(var(--z-inset) + 8);}'   /* (#R117) fixed slot BELOW the heading tape + badge + config chips — no more overlap with the fighter heading tape */
         +'#fs-hud .fs-x{position:absolute;right:14px;top:112px;pointer-events:auto;background:rgba(255,69,58,0.85);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}'   /* (#R100) below the altitude panel (was overlapping it) */
         +'#fs-hud .fs-heading{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:22px;font-weight:700;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.35);border-radius:9px;padding:4px 14px;}'
-        +'#fs-hud .fs-btns{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;gap:26px;pointer-events:auto;z-index:9;}'
+        +'#fs-hud .fs-btns{position:absolute;left:50%;bottom:calc(14px + var(--safe-bottom));transform:translateX(-50%);display:none;gap:26px;pointer-events:auto;z-index:calc(var(--z-inset) + 9);}'
         +'#fs-hud .fs-btns button{min-width:64px;height:44px;border-radius:22px;border:1px solid rgba(120,190,255,0.4);background:rgba(6,14,24,0.55);color:#e8f4ff;font-size:12px;font-weight:700;padding:0 12px;}'
         /* (#R216) the four-way pad (right thumb) — a 3×3 grid so the arrows sit where the fingers
            expect them, 46 px targets, and `touch-action:none` so a press never scrolls anything */
-        +'#fs-hud .fs-dpad{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:none;grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;pointer-events:auto;touch-action:none;z-index:9;}'
+        +'#fs-hud .fs-dpad{position:absolute;right:calc(14px + var(--safe-right));bottom:calc(14px + var(--safe-bottom));display:none;grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;pointer-events:auto;touch-action:none;z-index:calc(var(--z-inset) + 9);}'
         +'#fs-hud .fs-dp{border-radius:12px;border:1.5px solid rgba(120,190,255,0.42);background:rgba(6,14,24,0.58);color:#dcefff;font-size:16px;line-height:1;padding:0;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;}'
         +'#fs-hud .fs-dp:active{background:rgba(120,190,255,0.32);border-color:rgba(160,215,255,0.9);}'
         +'#fs-hud .fs-dp-u{grid-column:2;grid-row:1;} #fs-hud .fs-dp-l{grid-column:1;grid-row:2;} #fs-hud .fs-dp-r{grid-column:3;grid-row:2;} #fs-hud .fs-dp-d{grid-column:2;grid-row:3;}'
-        +'@media(hover:none){#fs-hud .fs-btns{display:flex;left:calc(70px + env(safe-area-inset-left,0px));transform:none;} #fs-hud .fs-dpad{display:grid;} #fs-hud .fs-adi{bottom:70px;}'
-          +'#fs-hud .fs-thr{width:40px;pointer-events:auto;touch-action:none;height:140px;bottom:calc(20px + env(safe-area-inset-bottom,0px));} #fs-hud .fs-thrlbl{bottom:calc(166px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-minimap{left:8px;right:auto;bottom:calc(170px + env(safe-area-inset-bottom,0px));} #fs-hud .fs-act{min-width:48px;height:44px;}}'
+        +'@media(hover:none){#fs-hud .fs-btns{display:flex;left:calc(70px + var(--safe-left));transform:none;} #fs-hud .fs-dpad{display:grid;} #fs-hud .fs-adi{bottom:70px;}'
+          +'#fs-hud .fs-thr{width:40px;pointer-events:auto;touch-action:none;height:140px;bottom:calc(20px + var(--safe-bottom));} #fs-hud .fs-thrlbl{bottom:calc(166px + var(--safe-bottom));}'
+          +'#fs-hud .fs-minimap{left:8px;right:auto;bottom:calc(170px + var(--safe-bottom));} #fs-hud .fs-act{min-width:48px;height:44px;}}'
         /* (#R118) LANDSCAPE phones — verified zone layout: top band = panels/badge/tape · centre band = instruments ·
            bottom band = throttle(L) / rudder(C) / minimap+stick(R); deck = 2-col column on the centre-left. */
         +'@media(hover:none) and (max-height:480px){'
@@ -281,7 +281,7 @@ window.IntMapModules.flightSim=function(HOST){
            and waits, instead of drawing a cockpit nobody can fly. */
         /* (#R218) …and the same id is now a HINT CHIP, not a gate: bottom-centre, one line, tappable
            away, fading on its own. It does not cover the deck and it never stops the flight. */
-        +'#fs-rotate{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:10001;display:none;align-items:center;gap:8px;white-space:nowrap;pointer-events:auto;transition:opacity .4s ease;padding:7px 13px;border-radius:999px;background:rgba(6,14,24,0.82);border:1px solid rgba(120,190,255,0.45);color:#dcefff;font-size:12px;font-weight:600;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}'
+        +'#fs-rotate{position:fixed;left:50%;bottom:calc(84px + var(--safe-bottom));transform:translateX(-50%);z-index:calc(var(--z-modal) + 1);display:none;align-items:center;gap:8px;white-space:nowrap;pointer-events:auto;transition:opacity .4s ease;padding:7px 13px;border-radius:999px;background:rgba(6,14,24,0.82);border:1px solid rgba(120,190,255,0.45);color:#dcefff;font-size:12px;font-weight:600;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}'
         +'#fs-rotate .fs-rot-icon{font-size:15px;display:inline-block;animation:fsRot 2.2s ease-in-out infinite;}'
         +'@keyframes fsRot{0%,45%{transform:rotate(0deg)}55%,100%{transform:rotate(-90deg)}}'
         +'@media(prefers-reduced-motion:reduce){#fs-rotate .fs-rot-icon{animation:none;}}'
@@ -293,47 +293,47 @@ window.IntMapModules.flightSim=function(HOST){
         +'#fs-hud .fs-hdg-box{position:absolute;left:50%;top:28px;transform:translateX(-50%);background:rgba(6,14,24,0.7);border:1px solid #ffd60a;border-radius:5px;padding:1px 8px;font-size:14px;font-weight:700;color:#ffd60a;}'
         +'#fs-hud .fs-ladder-g line{stroke:#63ff9b;stroke-width:2.4;} #fs-hud .fs-ladder-g text{fill:#63ff9b;font-family:ui-monospace,monospace;font-size:19px;font-weight:600;} #fs-hud .fs-ladder-g .fs-dive{stroke-dasharray:14 10;}'
         /* (#R96) moving-map / nav-display: a small track-up map that follows the aircraft (like a car-nav / FlightRadar mini-map) */
-        +'#fs-hud .fs-minimap{position:absolute;right:14px;bottom:74px;width:174px;height:174px;border-radius:14px;overflow:hidden;border:1.5px solid rgba(120,190,255,0.5);box-shadow:0 4px 16px rgba(0,0,0,0.55);background:#0a1420;pointer-events:none;z-index:7;}'
+        +'#fs-hud .fs-minimap{position:absolute;right:14px;bottom:74px;width:174px;height:174px;border-radius:14px;overflow:hidden;border:1.5px solid rgba(120,190,255,0.5);box-shadow:0 4px 16px rgba(0,0,0,0.55);background:#0a1420;pointer-events:none;z-index:calc(var(--z-inset) + 7);}'
         +'#fs-hud .fs-mm-map{position:absolute;inset:0;} #fs-hud .fs-minimap .maplibregl-ctrl-attrib,#fs-hud .fs-minimap .maplibregl-control-container{display:none !important;}'
-        +'#fs-hud .fs-mm-ac{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 3px rgba(0,0,0,0.95));z-index:2;}'
-        +'#fs-hud .fs-mm-n{position:absolute;left:8px;top:7px;width:18px;height:18px;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 2px #000);}'
-        +'#fs-hud .fs-mm-lbl{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;color:#cfe6ff;background:rgba(6,14,24,0.62);text-align:center;padding:2px 0;pointer-events:none;letter-spacing:0.02em;z-index:2;}'
+        +'#fs-hud .fs-mm-ac{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 3px rgba(0,0,0,0.95));z-index:calc(var(--z-inset) + 2);}'
+        +'#fs-hud .fs-mm-n{position:absolute;left:8px;top:7px;width:18px;height:18px;pointer-events:none;z-index:calc(var(--z-inset) + 2);filter:drop-shadow(0 1px 2px #000);}'
+        +'#fs-hud .fs-mm-lbl{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;color:#cfe6ff;background:rgba(6,14,24,0.62);text-align:center;padding:2px 0;pointer-events:none;letter-spacing:0.02em;z-index:calc(var(--z-inset) + 2);}'
         +'@media(max-width:640px){#fs-hud .fs-minimap{width:118px;height:118px;bottom:150px;right:8px;}}'
         +'@media(max-height:720px) and (min-width:641px){#fs-hud .fs-minimap{width:128px;height:128px;}}'   /* (#R117) shorter desktop windows: smaller map keeps clear of the 2-col deck */
         +'#fs-hud .fs-sky{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% -10%, rgba(10,30,80,0.0), rgba(4,10,30,0.0) 60%, rgba(2,6,20,0.55) 100%);opacity:0;transition:opacity .4s ease;}'
         +'#fs-hud .fs-boost{position:absolute;left:44px;bottom:20px;width:8px;height:150px;background:rgba(6,14,24,0.42);border:1px solid rgba(255,140,60,0.4);border-radius:5px;overflow:hidden;}'
         +'#fs-hud .fs-boostfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ff9f0a,#ff453a);height:0;}'
         /* (#R119) PAPI lights (shown on approach to the spawn runway: white=high, red=low, 2+2=on the 3° path) */
-        +'#fs-hud .fs-papi{position:absolute;left:14px;bottom:196px;display:none;align-items:center;gap:4px;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:5px 8px;pointer-events:none;z-index:5;}'
+        +'#fs-hud .fs-papi{position:absolute;left:14px;bottom:196px;display:none;align-items:center;gap:4px;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:5px 8px;pointer-events:none;z-index:calc(var(--z-inset) + 5);}'
         +'#fs-hud .fs-papi i{width:10px;height:10px;border-radius:50%;background:#ff3b30;box-shadow:0 0 5px currentColor;display:block;}'
         +'#fs-hud .fs-papi .fs-papi-lbl{font-size:8.5px;color:#8fb8e0;margin-left:3px;letter-spacing:0.05em;}'
-        +'@media(max-width:640px){#fs-hud .fs-papi{left:8px;bottom:calc(286px + env(safe-area-inset-bottom,0px));}}'
+        +'@media(max-width:640px){#fs-hud .fs-papi{left:8px;bottom:calc(286px + var(--safe-bottom));}}'
         /* (#R120) ILS box — crosshair + fly-to localizer (vertical bar, moves left/right) & glide-slope (horizontal bar, moves up/down) */
-        +'#fs-hud .fs-ils{position:absolute;left:14px;bottom:236px;display:none;flex-direction:column;align-items:center;gap:3px;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:6px 8px;pointer-events:none;z-index:5;}'
+        +'#fs-hud .fs-ils{position:absolute;left:14px;bottom:236px;display:none;flex-direction:column;align-items:center;gap:3px;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:6px 8px;pointer-events:none;z-index:calc(var(--z-inset) + 5);}'
         +'#fs-hud .fs-ils-scale{position:relative;width:54px;height:54px;}'
         +'#fs-hud .fs-ils-scale::before{content:"";position:absolute;left:0;top:50%;width:100%;height:0;border-top:1px dotted rgba(143,184,224,0.55);}'
         +'#fs-hud .fs-ils-scale::after{content:"";position:absolute;top:0;left:50%;height:100%;width:0;border-left:1px dotted rgba(143,184,224,0.55);}'
         +'#fs-hud .fs-ils-loc{position:absolute;top:4%;left:50%;width:3px;height:92%;margin-left:-1.5px;background:#63ff9b;border-radius:2px;box-shadow:0 0 5px rgba(99,255,155,0.7);transition:left 0.15s linear;}'
         +'#fs-hud .fs-ils-gs{position:absolute;left:4%;top:50%;height:3px;width:92%;margin-top:-1.5px;background:#63ff9b;border-radius:2px;box-shadow:0 0 5px rgba(99,255,155,0.7);transition:top 0.15s linear;}'
         +'#fs-hud .fs-ils-lbl{font-size:8.5px;color:#8fb8e0;letter-spacing:0.05em;white-space:nowrap;}'
-        +'@media(max-width:640px){#fs-hud .fs-ils{left:8px;bottom:calc(326px + env(safe-area-inset-bottom,0px));}}'
+        +'@media(max-width:640px){#fs-hud .fs-ils{left:8px;bottom:calc(326px + var(--safe-bottom));}}'
         /* (#R94p) aircraft badge + configuration chips (flaps/gear/camera) + side control decks */
         +'#fs-hud .fs-acbadge{position:absolute;left:50%;top:52px;transform:translateX(-50%);background:rgba(6,14,24,0.52);border:1px solid rgba(120,190,255,0.32);border-radius:8px;padding:3px 12px;font-size:12px;font-weight:700;color:#cfe6ff;white-space:nowrap;}'
         +'#fs-hud .fs-config{position:absolute;left:50%;top:80px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none;}'
         +'#fs-hud .fs-cfg{font-size:10px;font-weight:700;letter-spacing:0.03em;color:#8fb8e0;background:rgba(6,14,24,0.45);border:1px solid rgba(120,190,255,0.25);border-radius:6px;padding:2px 7px;white-space:nowrap;}'
         +'#fs-hud .fs-cfg.on{color:#04120a;background:#63ff9b;border-color:#63ff9b;}'
         +'#fs-hud .fs-mach{font-size:10px;color:#8fb8e0;margin-left:9px;padding-left:9px;border-left:1px solid rgba(120,190,255,0.3);}'   /* (#R99) separate the EAS/Mach from the aircraft name — they used to run together */
-        +'#fs-hud .fs-aircraft{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:6;}'
+        +'#fs-hud .fs-aircraft{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:calc(var(--z-inset) + 6);}'
         +'#fs-hud .fs-acchip{font-size:11px;font-weight:600;color:#cfe6ff;background:rgba(6,14,24,0.55);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left;white-space:nowrap;transition:.15s;}'
         +'#fs-hud .fs-acchip.on{background:#0a84ff;border-color:#0a84ff;color:#fff;}'
-        +'#fs-hud .fs-deck{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:repeat(2,minmax(60px,1fr));gap:5px;pointer-events:auto;z-index:6;}'   /* (#R117) 2-column grid — half the height, so the deck no longer reaches down into the minimap on shorter windows */
+        +'#fs-hud .fs-deck{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:repeat(2,minmax(60px,1fr));gap:5px;pointer-events:auto;z-index:calc(var(--z-inset) + 6);}'   /* (#R117) 2-column grid — half the height, so the deck no longer reaches down into the minimap on shorter windows */
         +'#fs-hud .fs-act{min-width:60px;height:38px;font-size:11px;font-weight:700;color:#e8f4ff;background:rgba(6,14,24,0.55);border:1px solid rgba(120,190,255,0.32);border-radius:9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;transition:.15s;}'
         +'#fs-hud .fs-act small{font-size:8.5px;color:#8fb8e0;font-weight:600;}'
         +'#fs-hud .fs-act.on{background:#34c759;border-color:#34c759;color:#04120a;} #fs-hud .fs-act.on small{color:#04120a;}'
         +'#fs-hud .fs-act.amber.on{background:#ff9f0a;border-color:#ff9f0a;}'
-        +'@media(max-width:640px){#fs-hud .fs-deck{top:auto;bottom:calc(158px + env(safe-area-inset-bottom,0px));transform:none;right:8px;} #fs-hud .fs-act{min-width:48px;height:44px;} #fs-hud .fs-hint{display:none;}}'   /* (#R117) ≥44px touch targets; the deck sits above the stick zone */
+        +'@media(max-width:640px){#fs-hud .fs-deck{top:auto;bottom:calc(158px + var(--safe-bottom));transform:none;right:8px;} #fs-hud .fs-act{min-width:48px;height:44px;} #fs-hud .fs-hint{display:none;}}'   /* (#R117) ≥44px touch targets; the deck sits above the stick zone */
         /* (#R101) analog SIX-PACK (Cessna / warbird / glider) — 2×3 round gauges, bottom-centre */
-        +'#fs-hud .fs-sixpack{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,90px);grid-auto-rows:90px;gap:9px;pointer-events:none;z-index:5;}'
+        +'#fs-hud .fs-sixpack{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,90px);grid-auto-rows:90px;gap:9px;pointer-events:none;z-index:calc(var(--z-inset) + 5);}'
         +'#fs-hud .fs-g6{position:relative;width:90px;height:90px;background:radial-gradient(circle at 50% 40%,#212832,#0a0e13);border:2px solid #313b46;border-radius:50%;box-shadow:0 3px 10px rgba(0,0,0,0.6),inset 0 0 0 3px #05080b;}'
         +'#fs-hud .fs-g6 svg{position:absolute;inset:0;width:100%;height:100%;}'
         +'#fs-hud .fs-g6-cap{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:7.5px;font-weight:700;color:#8ea3b8;letter-spacing:0.06em;}'
@@ -352,12 +352,12 @@ window.IntMapModules.flightSim=function(HOST){
           +'#fs-hud .fs-x{top:8px;right:8px;padding:5px 10px;font-size:11px;}'
           +'#fs-hud .fs-panel.fs-tl{left:8px;top:100px;min-width:0;padding:5px 8px;} #fs-hud .fs-panel.fs-tr{right:8px;top:100px;min-width:0;padding:5px 8px;}'
           +'#fs-hud .fs-tl .fs-v,#fs-hud .fs-tr .fs-v{font-size:15px;}'
-          +'#fs-hud .fs-minimap{left:8px;right:auto;bottom:calc(170px + env(safe-area-inset-bottom,0px));width:104px;height:104px;}'
+          +'#fs-hud .fs-minimap{left:8px;right:auto;bottom:calc(170px + var(--safe-bottom));width:104px;height:104px;}'
           +'#fs-hud .fs-adi{width:110px;height:110px;bottom:auto;top:146px;}'
           +'#fs-hud .fs-htape{width:56vw;}'
         +'}'
         /* (#R101) glass PFD (airliner) — speed tape · attitude · altitude tape · heading strip (the ND is the moving-map) */
-        +'#fs-hud .fs-pfd{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:296px;height:300px;background:#090d13;border:2px solid #1c2530;border-radius:10px;overflow:hidden;pointer-events:none;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,0.6);}'
+        +'#fs-hud .fs-pfd{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:296px;height:300px;background:#090d13;border:2px solid #1c2530;border-radius:10px;overflow:hidden;pointer-events:none;z-index:calc(var(--z-inset) + 5);box-shadow:0 6px 20px rgba(0,0,0,0.6);}'
         +'#fs-hud .pfd-att{position:absolute;left:54px;right:54px;top:0;bottom:22px;overflow:hidden;}'
         +'#fs-hud .pfd-att svg{position:absolute;inset:0;width:100%;height:100%;}'
         +'#fs-hud .pfd-tape{position:absolute;top:0;bottom:22px;width:54px;overflow:hidden;background:rgba(8,13,20,0.74);}'
@@ -365,12 +365,12 @@ window.IntMapModules.flightSim=function(HOST){
         +'#fs-hud .pfd-strip{position:absolute;left:0;right:0;top:50%;will-change:transform;}'
         +'#fs-hud .pfd-tk{position:absolute;right:5px;font-size:11px;color:#cfe0f0;transform:translateY(-50%);font-family:ui-monospace,monospace;white-space:nowrap;}'
         +'#fs-hud .pfd-alt .pfd-tk{left:6px;right:auto;}'
-        +'#fs-hud .pfd-box{position:absolute;left:1px;right:1px;top:50%;transform:translateY(-50%);height:24px;background:#000;border:1px solid #39cfff;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;z-index:2;font-family:ui-monospace,monospace;}'
+        +'#fs-hud .pfd-box{position:absolute;left:1px;right:1px;top:50%;transform:translateY(-50%);height:24px;background:#000;border:1px solid #39cfff;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;z-index:calc(var(--z-inset) + 2);font-family:ui-monospace,monospace;}'
         +'#fs-hud .pfd-hdg{position:absolute;left:54px;right:54px;bottom:0;height:22px;background:rgba(8,13,20,0.82);overflow:hidden;border-top:1px solid #1c2530;}'
         +'#fs-hud .pfd-hdg-strip{position:absolute;top:3px;left:0;will-change:transform;}'
         +'#fs-hud .pfd-htk{position:absolute;font-size:10px;color:#cfe0f0;transform:translateX(-50%);white-space:nowrap;}'
         +'#fs-hud .pfd-hdg-ptr{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#ffd60a;transform:translateX(-50%);}'
-        +'#fs-hud .pfd-cap{position:absolute;top:3px;left:0;right:0;text-align:center;font-size:8.5px;color:#7fa8cc;letter-spacing:0.08em;z-index:3;pointer-events:none;}'
+        +'#fs-hud .pfd-cap{position:absolute;top:3px;left:0;right:0;text-align:center;font-size:8.5px;color:#7fa8cc;letter-spacing:0.08em;z-index:calc(var(--z-inset) + 3);pointer-events:none;}'
         +'@media(max-width:640px){#fs-hud .fs-pfd{width:206px;height:220px;left:6px;} #fs-hud .pfd-att,#fs-hud .pfd-hdg{left:46px;right:46px;} #fs-hud .pfd-tape{width:46px;}}'
         /* ══ ⚠⚠ (#R218) THE PHONE DECK — ONE INSTRUMENT PER QUANTITY ═══════════════════════════════════
            「フライトシミュレーターはスマホ画面ではUIが潰れている。徹底的に整理し、洗練されたモバイル最適化
@@ -397,26 +397,26 @@ window.IntMapModules.flightSim=function(HOST){
         +'@media(hover:none){'
           +'#fs-hud .fs-sixpack,#fs-hud .fs-pfd,#fs-hud .fs-boost,#fs-hud .fs-hint{display:none !important;}'
           /* the top band: speed · heading · altitude, one line each, nothing overlapping */
-          +'#fs-hud .fs-panel.fs-tl{left:calc(8px + env(safe-area-inset-left,0px));top:8px;min-width:0;padding:4px 9px;border-radius:9px;}'
-          +'#fs-hud .fs-panel.fs-tr{right:calc(8px + env(safe-area-inset-right,0px));top:8px;min-width:0;padding:4px 9px;border-radius:9px;}'
+          +'#fs-hud .fs-panel.fs-tl{left:calc(8px + var(--safe-left));top:8px;min-width:0;padding:4px 9px;border-radius:9px;}'
+          +'#fs-hud .fs-panel.fs-tr{right:calc(8px + var(--safe-right));top:8px;min-width:0;padding:4px 9px;border-radius:9px;}'
           +'#fs-hud .fs-tl .fs-v,#fs-hud .fs-tr .fs-v{font-size:16px;} #fs-hud .fs-tl .fs-k,#fs-hud .fs-tr .fs-k{font-size:9px;}'
           +'#fs-hud .fs-htape{top:8px;width:min(240px,42vw);height:24px;}'
           +'#fs-hud .fs-hdg-box{top:26px;font-size:12px;padding:0 7px;}'
           +'#fs-hud .fs-heading{display:none;}'
           /* the exit, and the deck, tucked under the altitude panel rather than across the view */
-          +'#fs-hud .fs-x{right:calc(8px + env(safe-area-inset-right,0px));top:58px;padding:5px 10px;font-size:11px;}'
-          +'#fs-hud .fs-deck{top:58px;left:calc(8px + env(safe-area-inset-left,0px));right:auto;bottom:auto;transform:none;'
-            +'grid-template-columns:repeat(2,44px);gap:4px;z-index:6;}'
+          +'#fs-hud .fs-x{right:calc(8px + var(--safe-right));top:58px;padding:5px 10px;font-size:11px;}'
+          +'#fs-hud .fs-deck{top:58px;left:calc(8px + var(--safe-left));right:auto;bottom:auto;transform:none;'
+            +'grid-template-columns:repeat(2,44px);gap:4px;z-index:calc(var(--z-inset) + 6);}'
           +'#fs-hud .fs-act{min-width:44px;height:38px;font-size:11px;}'
           /* the bottom band: throttle at the left thumb, pad at the right thumb, nothing between them */
-          +'#fs-hud .fs-thr{left:calc(8px + env(safe-area-inset-left,0px));width:36px;height:132px;bottom:calc(10px + env(safe-area-inset-bottom,0px));pointer-events:auto;touch-action:none;}'
-          +'#fs-hud .fs-thrlbl{left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(148px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-dpad{right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));'
+          +'#fs-hud .fs-thr{left:calc(8px + var(--safe-left));width:36px;height:132px;bottom:calc(10px + var(--safe-bottom));pointer-events:auto;touch-action:none;}'
+          +'#fs-hud .fs-thrlbl{left:calc(8px + var(--safe-left));bottom:calc(148px + var(--safe-bottom));}'
+          +'#fs-hud .fs-dpad{right:calc(8px + var(--safe-right));bottom:calc(10px + var(--safe-bottom));'
             +'grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;}'
-          +'#fs-hud .fs-btns{left:calc(52px + env(safe-area-inset-left,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:none;gap:8px;}'
+          +'#fs-hud .fs-btns{left:calc(52px + var(--safe-left));bottom:calc(10px + var(--safe-bottom));transform:none;gap:8px;}'
           +'#fs-hud .fs-btns button{min-width:52px;height:40px;font-size:11px;padding:0 10px;}'
-          +'#fs-hud .fs-adi{left:50%;transform:translateX(-50%);width:92px;height:92px;bottom:calc(10px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-minimap{left:auto;right:calc(160px + env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:11px;}'
+          +'#fs-hud .fs-adi{left:50%;transform:translateX(-50%);width:92px;height:92px;bottom:calc(10px + var(--safe-bottom));}'
+          +'#fs-hud .fs-minimap{left:auto;right:calc(160px + var(--safe-right));bottom:calc(10px + var(--safe-bottom));width:96px;height:96px;border-radius:11px;}'
           +'#fs-hud .fs-warn{top:56px;font-size:15px;padding:2px 10px;}'
         +'}'
         /* ══ ⚠⚠ (#R220) THE DECK WAS SITTING ON THE READOUT — 「UIが潰れている」, WITH A PHOTOGRAPH ═══
@@ -444,31 +444,31 @@ window.IntMapModules.flightSim=function(HOST){
            (verified: `.fs-deck-t` bounding box [0,0,0,0]) which took the whole action deck off the
            screen rather than putting it behind a key. */
         +'#fs-hud .fs-deck-t{position:absolute;display:none;align-items:center;justify-content:center;'
-          +'left:calc(8px + env(safe-area-inset-left,0px));bottom:calc(152px + env(safe-area-inset-bottom,0px));'
+          +'left:calc(8px + var(--safe-left));bottom:calc(152px + var(--safe-bottom));'
           +'width:36px;height:34px;border-radius:10px;border:1px solid rgba(120,190,255,0.42);'
-          +'background:rgba(6,14,24,0.62);color:#dcefff;font-size:15px;font-weight:700;pointer-events:auto;z-index:12;cursor:pointer;}'
+          +'background:rgba(6,14,24,0.62);color:#dcefff;font-size:15px;font-weight:700;pointer-events:auto;z-index:calc(var(--z-inset) + 12);cursor:pointer;}'
         +'#fs-hud[data-deck="1"] .fs-deck-t{background:#0a84ff;border-color:#0a84ff;color:#fff;}'
         +'@media(hover:none){'
           +'#fs-hud .fs-deck-t{display:flex;}'
           +'#fs-hud:not([data-deck="1"]) .fs-deck{display:none;}'
-          +'#fs-hud[data-deck="1"] .fs-deck{top:auto;bottom:calc(58px + env(safe-area-inset-bottom,0px));'
-            +'left:calc(52px + env(safe-area-inset-left,0px));right:auto;transform:none;'
+          +'#fs-hud[data-deck="1"] .fs-deck{top:auto;bottom:calc(58px + var(--safe-bottom));'
+            +'left:calc(52px + var(--safe-left));right:auto;transform:none;'
             +'grid-template-columns:repeat(4,52px);gap:5px;background:rgba(4,10,18,0.72);padding:7px;border-radius:12px;'
-            +'border:1px solid rgba(120,190,255,0.3);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:11;}'
+            +'border:1px solid rgba(120,190,255,0.3);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:calc(var(--z-inset) + 11);}'
           +'#fs-hud[data-deck="1"] .fs-act{min-width:52px;height:44px;}'
           /* the exit and the readouts share the top row and cannot reach each other */
-          +'#fs-hud .fs-x{top:calc(6px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));'
-            +'padding:5px 9px;font-size:10.5px;border-radius:9px;z-index:12;}'
-          +'#fs-hud .fs-panel.fs-tr{right:calc(64px + env(safe-area-inset-right,0px));}'
+          +'#fs-hud .fs-x{top:calc(6px + var(--safe-top));right:calc(8px + var(--safe-right));'
+            +'padding:5px 9px;font-size:10.5px;border-radius:9px;z-index:calc(var(--z-inset) + 12);}'
+          +'#fs-hud .fs-panel.fs-tr{right:calc(64px + var(--safe-right));}'
           /* the badge: clamped, and out of the compass tape's row */
-          +'#fs-hud .fs-acbadge{top:auto;bottom:calc(112px + env(safe-area-inset-bottom,0px));max-width:62vw;'
+          +'#fs-hud .fs-acbadge{top:auto;bottom:calc(112px + var(--safe-bottom));max-width:62vw;'
             +'overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:2px 9px;}'
-          +'#fs-hud .fs-config{top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-config{top:auto;bottom:calc(90px + var(--safe-bottom));}'
           +'#fs-hud .fs-cfg{font-size:9px;padding:1px 6px;}'
         +'}'
         /* the rotate gate — see _syncRotate(). It covers the HUD, has nothing to confirm, and leaves
            by itself when the phone is turned. */
-        +'#fs-gate{position:fixed;inset:0;z-index:10005;display:none;align-items:center;justify-content:center;'
+        +'#fs-gate{position:fixed;inset:0;z-index:calc(var(--z-modal) + 5);display:none;align-items:center;justify-content:center;'
           +'background:rgba(3,8,16,0.94);color:#dcefff;font-family:ui-monospace,Menlo,Consolas,monospace;'
           +'-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);text-align:center;padding:24px;}'
         +'#fs-gate .fs-gate-in{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px;}'
@@ -502,44 +502,44 @@ window.IntMapModules.flightSim=function(HOST){
         +'@media(hover:none) and (orientation:landscape){'
           /* the deck opens as a 2 × 4 column beside the throttle, never across the view */
           +'#fs-hud[data-deck="1"] .fs-deck{grid-template-columns:repeat(2,54px);grid-auto-rows:40px;'
-            +'left:calc(50px + env(safe-area-inset-left,0px));right:auto;top:auto;transform:none;'
-            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+            +'left:calc(50px + var(--safe-left));right:auto;top:auto;transform:none;'
+            +'bottom:calc(8px + var(--safe-bottom));}'
           +'#fs-hud[data-deck="1"] .fs-act{min-width:54px;height:40px;font-size:10px;}'
           /* the rudder chips and the badge share the band to the RIGHT of the deck column, clear of
              the ADI in the centre (measured: the ADI occupies x 384…460 at 844 px wide) */
-          +'#fs-hud .fs-btns{left:calc(186px + env(safe-area-inset-left,0px));right:auto;transform:none;'
-            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-acbadge{left:calc(186px + env(safe-area-inset-left,0px));right:auto;transform:none;'
-            +'bottom:calc(96px + env(safe-area-inset-bottom,0px));max-width:min(34vw,280px);font-size:9.5px;}'
-          +'#fs-hud .fs-config{left:calc(186px + env(safe-area-inset-left,0px));right:auto;transform:none;'
-            +'bottom:calc(120px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-btns{left:calc(186px + var(--safe-left));right:auto;transform:none;'
+            +'bottom:calc(8px + var(--safe-bottom));}'
+          +'#fs-hud .fs-acbadge{left:calc(186px + var(--safe-left));right:auto;transform:none;'
+            +'bottom:calc(96px + var(--safe-bottom));max-width:min(34vw,280px);font-size:9.5px;}'
+          +'#fs-hud .fs-config{left:calc(186px + var(--safe-left));right:auto;transform:none;'
+            +'bottom:calc(120px + var(--safe-bottom));}'
           /* ⚠ the exit needs its own column or it lands on the altitude panel: measured, `.fs-tr` at
              right:64px ends at x 780 and `.fs-x` starts at 770. */
-          +'#fs-hud .fs-panel.fs-tr{right:calc(80px + env(safe-area-inset-right,0px));}'
-          +'#fs-hud .fs-panel.fs-tl,#fs-hud .fs-panel.fs-tr{top:calc(5px + env(safe-area-inset-top,0px));padding:3px 8px;}'
+          +'#fs-hud .fs-panel.fs-tr{right:calc(80px + var(--safe-right));}'
+          +'#fs-hud .fs-panel.fs-tl,#fs-hud .fs-panel.fs-tr{top:calc(5px + var(--safe-top));padding:3px 8px;}'
           +'#fs-hud .fs-tl .fs-v,#fs-hud .fs-tr .fs-v{font-size:14px;} #fs-hud .fs-tl .fs-k,#fs-hud .fs-tr .fs-k{font-size:8px;}'
-          +'#fs-hud .fs-htape{top:calc(5px + env(safe-area-inset-top,0px));width:min(210px,28vw);height:20px;}'
-          +'#fs-hud .fs-htick{font-size:9.5px;top:3px;} #fs-hud .fs-hdg-box{top:calc(23px + env(safe-area-inset-top,0px));font-size:11px;padding:0 6px;}'
+          +'#fs-hud .fs-htape{top:calc(5px + var(--safe-top));width:min(210px,28vw);height:20px;}'
+          +'#fs-hud .fs-htick{font-size:9.5px;top:3px;} #fs-hud .fs-hdg-box{top:calc(23px + var(--safe-top));font-size:11px;padding:0 6px;}'
           /* ⚠ BELOW the altitude panel, not beside it: measured, the two boxes overlapped by 32 × 23 px
              and the AGL figure was under the map. 74 px is `.fs-tr`'s own measured bottom. */
-          +'#fs-hud .fs-minimap{top:calc(74px + env(safe-area-inset-top,0px));bottom:auto;right:calc(8px + env(safe-area-inset-right,0px));left:auto;width:84px;height:84px;border-radius:10px;}'
-          +'#fs-hud .fs-deck-t{bottom:calc(130px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-adi{width:80px;height:80px;bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-thr{height:110px;bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-thrlbl{bottom:calc(122px + env(safe-area-inset-bottom,0px));font-size:9px;}'
-          +'#fs-hud .fs-dpad{grid-template-columns:repeat(3,44px);grid-auto-rows:44px;gap:4px;bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-btns{bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:6px;}'
+          +'#fs-hud .fs-minimap{top:calc(74px + var(--safe-top));bottom:auto;right:calc(8px + var(--safe-right));left:auto;width:84px;height:84px;border-radius:10px;}'
+          +'#fs-hud .fs-deck-t{bottom:calc(130px + var(--safe-bottom));}'
+          +'#fs-hud .fs-adi{width:80px;height:80px;bottom:calc(8px + var(--safe-bottom));}'
+          +'#fs-hud .fs-thr{height:110px;bottom:calc(8px + var(--safe-bottom));}'
+          +'#fs-hud .fs-thrlbl{bottom:calc(122px + var(--safe-bottom));font-size:9px;}'
+          +'#fs-hud .fs-dpad{grid-template-columns:repeat(3,44px);grid-auto-rows:44px;gap:4px;bottom:calc(8px + var(--safe-bottom));}'
+          +'#fs-hud .fs-btns{bottom:calc(8px + var(--safe-bottom));gap:6px;}'
           +'#fs-hud .fs-btns button{min-width:46px;height:36px;font-size:10px;padding:0 8px;}'
-          +'#fs-hud .fs-warn{top:calc(46px + env(safe-area-inset-top,0px));font-size:14px;}'
+          +'#fs-hud .fs-warn{top:calc(46px + var(--safe-top));font-size:14px;}'
           +'#fs-hud .fs-papi,#fs-hud .fs-ils{display:none;}'
           
         +'}'
         /* a phone held UPRIGHT has no room for a row of thumb targets beside a 92-px ADI, so the two
            stack: instruments above, controls below, and the minimap goes with the readouts. */
         +'@media(hover:none) and (orientation:portrait){'
-          +'#fs-hud .fs-adi{bottom:calc(158px + env(safe-area-inset-bottom,0px));width:84px;height:84px;}'
-          +'#fs-hud .fs-btns{left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-minimap{right:calc(8px + env(safe-area-inset-right,0px));bottom:auto;top:106px;width:88px;height:88px;}'
+          +'#fs-hud .fs-adi{bottom:calc(158px + var(--safe-bottom));width:84px;height:84px;}'
+          +'#fs-hud .fs-btns{left:50%;transform:translateX(-50%);bottom:calc(150px + var(--safe-bottom));}'
+          +'#fs-hud .fs-minimap{right:calc(8px + var(--safe-right));bottom:auto;top:106px;width:88px;height:88px;}'
           +'#fs-hud .fs-deck{grid-template-columns:repeat(3,44px);}'
           +'#fs-hud .fs-htape{width:min(200px,54vw);}'
         +'}'
@@ -582,14 +582,14 @@ window.IntMapModules.flightSim=function(HOST){
              block (#R220), and an element with BOTH top and bottom set is stretched between them —
              measured on the first run of this layout, the badge's box came out 338 × 258 px and its
              invisible half covered the whole left of the sky, swallowing taps meant for the map. */
-          +'#fs-hud .fs-acbadge{left:calc(8px + env(safe-area-inset-left,0px));right:auto;transform:none;'
-            +'top:calc(60px + env(safe-area-inset-top,0px));bottom:auto;max-width:min(58vw,320px);'
+          +'#fs-hud .fs-acbadge{left:calc(8px + var(--safe-left));right:auto;transform:none;'
+            +'top:calc(60px + var(--safe-top));bottom:auto;max-width:min(58vw,320px);'
             +'font-size:10px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
-          +'#fs-hud .fs-config{left:calc(8px + env(safe-area-inset-left,0px));right:auto;transform:none;'
-            +'top:calc(82px + env(safe-area-inset-top,0px));bottom:auto;gap:4px;}'
+          +'#fs-hud .fs-config{left:calc(8px + var(--safe-left));right:auto;transform:none;'
+            +'top:calc(82px + var(--safe-top));bottom:auto;gap:4px;}'
           +'#fs-hud .fs-cfg{font-size:9px;padding:2px 6px;}'
           /* ① the exit is a square, not a banner */
-          +'#fs-hud .fs-x{top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));'
+          +'#fs-hud .fs-x{top:calc(8px + var(--safe-top));right:calc(8px + var(--safe-right));'
             +'width:34px;height:34px;padding:0;font-size:0;border-radius:10px;display:flex;align-items:center;justify-content:center;'
             +'background:rgba(255,69,58,0.72);}'
           +'#fs-hud .fs-x::before{content:"\\00d7";font-size:19px;font-weight:400;color:#fff;}'
@@ -599,57 +599,57 @@ window.IntMapModules.flightSim=function(HOST){
         /* ④ the rails, in the orientation a flight is actually flown in */
         +'@media(hover:none) and (orientation:landscape){'
           /* the top band, right edge in: altitude block shifts left of the × so the two never touch */
-          +'#fs-hud .fs-panel.fs-tr{right:calc(50px + env(safe-area-inset-right,0px));}'
+          +'#fs-hud .fs-panel.fs-tr{right:calc(50px + var(--safe-right));}'
           /* ⚠ 78px, NOT 52: `.fs-tr` measures 64 px tall from y=5 (altitude AND AGL), so a map at 52
              covered the AGL figure — measured, 17 px of overlap, with the number under the map. */
-          +'#fs-hud .fs-minimap{top:calc(78px + env(safe-area-inset-top,0px));bottom:auto;'
-            +'right:calc(8px + env(safe-area-inset-right,0px));left:auto;width:92px;height:92px;border-radius:11px;}'
+          +'#fs-hud .fs-minimap{top:calc(78px + var(--safe-top));bottom:auto;'
+            +'right:calc(8px + var(--safe-right));left:auto;width:92px;height:92px;border-radius:11px;}'
           /* ② …and in landscape the identity line goes back to the CENTRE, under the tape: the left
              column is the airspeed block, which is four rows tall on a fighter (speed, V/S, load,
              AoA) and reaches y≈160 — measured, the left-aligned badge landed on top of it. */
           +'#fs-hud .fs-acbadge{left:50%;right:auto;transform:translateX(-50%);'
-            +'top:calc(42px + env(safe-area-inset-top,0px));bottom:auto;max-width:min(46vw,320px);}'
+            +'top:calc(42px + var(--safe-top));bottom:auto;max-width:min(46vw,320px);}'
           +'#fs-hud .fs-config{left:50%;right:auto;transform:translateX(-50%);'
-            +'top:calc(66px + env(safe-area-inset-top,0px));bottom:auto;}'
+            +'top:calc(66px + var(--safe-top));bottom:auto;}'
           /* left rail — throttle, its boost bar beside it, the two rudder keys above them */
-          +'#fs-hud .fs-thr{left:calc(8px + env(safe-area-inset-left,0px));width:40px;'
-            +'height:min(150px,42vh);bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-thrlbl{left:calc(8px + env(safe-area-inset-left,0px));'
-            +'bottom:calc(min(150px,42vh) + 12px + env(safe-area-inset-bottom,0px));font-size:9px;}'
-          +'#fs-hud .fs-boost{display:block;left:calc(52px + env(safe-area-inset-left,0px));width:8px;'
-            +'height:min(150px,42vh);bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-btns{left:calc(68px + env(safe-area-inset-left,0px));transform:none;gap:8px;'
-            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-thr{left:calc(8px + var(--safe-left));width:40px;'
+            +'height:min(150px,42vh);bottom:calc(8px + var(--safe-bottom));}'
+          +'#fs-hud .fs-thrlbl{left:calc(8px + var(--safe-left));'
+            +'bottom:calc(min(150px,42vh) + 12px + var(--safe-bottom));font-size:9px;}'
+          +'#fs-hud .fs-boost{display:block;left:calc(52px + var(--safe-left));width:8px;'
+            +'height:min(150px,42vh);bottom:calc(8px + var(--safe-bottom));}'
+          +'#fs-hud .fs-btns{left:calc(68px + var(--safe-left));transform:none;gap:8px;'
+            +'bottom:calc(8px + var(--safe-bottom));}'
           +'#fs-hud .fs-btns button{min-width:58px;height:42px;font-size:11px;padding:0 10px;}'
           /* between the rails: the attitude ball, lifted clear of both */
           +'#fs-hud .fs-adi{left:50%;transform:translateX(-50%);width:84px;height:84px;'
-            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));}'
+            +'bottom:calc(8px + var(--safe-bottom));}'
           /* right rail — the pad, and the deck key beside it rather than across the sky */
-          +'#fs-hud .fs-dpad{right:calc(8px + env(safe-area-inset-right,0px));'
-            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;}'
-          +'#fs-hud .fs-deck-t{right:calc(158px + env(safe-area-inset-right,0px));left:auto;top:auto;'
-            +'bottom:calc(8px + env(safe-area-inset-bottom,0px));width:44px;height:44px;}'
-          +'#fs-hud[data-deck="1"] .fs-deck{right:calc(158px + env(safe-area-inset-right,0px));left:auto;top:auto;'
-            +'bottom:calc(58px + env(safe-area-inset-bottom,0px));transform:none;'
+          +'#fs-hud .fs-dpad{right:calc(8px + var(--safe-right));'
+            +'bottom:calc(8px + var(--safe-bottom));grid-template-columns:repeat(3,46px);grid-auto-rows:46px;gap:5px;}'
+          +'#fs-hud .fs-deck-t{right:calc(158px + var(--safe-right));left:auto;top:auto;'
+            +'bottom:calc(8px + var(--safe-bottom));width:44px;height:44px;}'
+          +'#fs-hud[data-deck="1"] .fs-deck{right:calc(158px + var(--safe-right));left:auto;top:auto;'
+            +'bottom:calc(58px + var(--safe-bottom));transform:none;'
             +'grid-template-columns:repeat(2,56px);grid-auto-rows:42px;gap:5px;}'
           /* the approach aids stack above the throttle, where nothing else is */
-          +'#fs-hud .fs-papi{display:flex;left:calc(8px + env(safe-area-inset-left,0px));'
-            +'bottom:calc(min(150px,42vh) + 30px + env(safe-area-inset-bottom,0px));padding:3px 6px;}'
-          +'#fs-hud .fs-ils{left:calc(8px + env(safe-area-inset-left,0px));right:auto;'
-            +'bottom:calc(min(150px,42vh) + 58px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-warn{top:calc(50px + env(safe-area-inset-top,0px));font-size:15px;}'
+          +'#fs-hud .fs-papi{display:flex;left:calc(8px + var(--safe-left));'
+            +'bottom:calc(min(150px,42vh) + 30px + var(--safe-bottom));padding:3px 6px;}'
+          +'#fs-hud .fs-ils{left:calc(8px + var(--safe-left));right:auto;'
+            +'bottom:calc(min(150px,42vh) + 58px + var(--safe-bottom));}'
+          +'#fs-hud .fs-warn{top:calc(50px + var(--safe-top));font-size:15px;}'
         +'}'
         /* upright: the same four zones, stacked — the rails move to the bottom third */
         +'@media(hover:none) and (orientation:portrait){'
-          +'#fs-hud .fs-minimap{top:calc(108px + env(safe-area-inset-top,0px));bottom:auto;'
-            +'right:calc(8px + env(safe-area-inset-right,0px));width:88px;height:88px;}'
+          +'#fs-hud .fs-minimap{top:calc(108px + var(--safe-top));bottom:auto;'
+            +'right:calc(8px + var(--safe-right));width:88px;height:88px;}'
           +'#fs-hud .fs-adi{left:50%;transform:translateX(-50%);width:84px;height:84px;'
-            +'bottom:calc(150px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-btns{left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));}'
-          +'#fs-hud .fs-deck-t{right:calc(8px + env(safe-area-inset-right,0px));left:auto;top:auto;'
-            +'bottom:calc(150px + env(safe-area-inset-bottom,0px));width:44px;height:44px;}'
+            +'bottom:calc(150px + var(--safe-bottom));}'
+          +'#fs-hud .fs-btns{left:50%;transform:translateX(-50%);bottom:calc(96px + var(--safe-bottom));}'
+          +'#fs-hud .fs-deck-t{right:calc(8px + var(--safe-right));left:auto;top:auto;'
+            +'bottom:calc(150px + var(--safe-bottom));width:44px;height:44px;}'
           +'#fs-hud[data-deck="1"] .fs-deck{left:50%;right:auto;transform:translateX(-50%);top:auto;'
-            +'bottom:calc(200px + env(safe-area-inset-bottom,0px));grid-template-columns:repeat(4,52px);grid-auto-rows:42px;gap:5px;}'
+            +'bottom:calc(200px + var(--safe-bottom));grid-template-columns:repeat(4,52px);grid-auto-rows:42px;gap:5px;}'
         +'}';
       document.head.appendChild(s); }
     /* (#R94p) refresh the non-numeric HUD chrome (aircraft name, flap/gear/camera chips, button highlights) —
@@ -947,7 +947,7 @@ window.IntMapModules.flightSim=function(HOST){
         else where=' · '+LL('off-field','場外着陸','abseits','вне полосы','fuera de pista'); }
       const col=ok?'#34c759':'#ff453a', title=(ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('× CRASHED','× 墜落','× ABGESTÜRZT','× КРУШЕНИЕ','× ACCIDENTE'))+where;
       const ov=document.createElement('div'); ov.id='fs-result';
-      ov.style.cssText='position:fixed;inset:0;z-index:6060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';   /* (#R102) above ws menu bar */
+      ov.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-toast) + 3060);background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';   /* (#R102) above ws menu bar */
       const stat=(l,v)=>'<div><div style="font-size:10px;color:#8fb8e0;">'+l+'</div><b style="font-size:14px;">'+v+'</b></div>';
       ov.innerHTML='<div style="width:min(470px,95vw);background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid '+col+';border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">'
         +'<div style="font-size:22px;font-weight:800;color:'+col+';margin-bottom:12px;">'+title+'</div>'
@@ -999,7 +999,7 @@ window.IntMapModules.flightSim=function(HOST){
     function _closeAtlas(){ try{ if(window.IntMapConsole&&IntMapConsole.close) IntMapConsole.close(); }catch(_){} try{ const ap=document.getElementById('atlas-panel'); if(ap) ap.style.display='none'; }catch(_){} }
     function setup(opts){ if(on||document.getElementById('fs-setup')) return; opts=opts||{}; _closeAtlas();
       if(!document.getElementById('fss-style')){ const s=document.createElement('style'); s.id='fss-style';
-        s.textContent='#fs-setup{position:fixed;inset:0;z-index:6050;background:rgba(4,10,20,0.74);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'   /* (#R102) z-index above the workspace menu bar (5990) so the pre-flight popup comes to the front in ws mode */
+        s.textContent='#fs-setup{position:fixed;inset:0;z-index:calc(var(--z-toast) + 3050);background:rgba(4,10,20,0.74);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'   /* (#R102) z-index above the workspace menu bar (5990) so the pre-flight popup comes to the front in ws mode */
           +'.fss-card{width:min(460px,94vw);max-height:92vh;overflow:auto;background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid rgba(120,190,255,0.32);border-radius:18px;padding:20px 20px 18px;box-shadow:0 20px 60px rgba(0,0,0,0.6);}'
           +'.fss-h{font-size:19px;font-weight:800;margin:0 0 14px;letter-spacing:.02em;}'
           +'.fss-lbl{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8fb8e0;margin:14px 0 7px;}'

@@ -140,9 +140,11 @@ test('#R254 ⑧ the panel under the pointer is named, so a popup with no z-index
     assert.ok(mq >= 0 && at - mq < 400,
       'the raise is not inside the desktop media block — on a phone the bottom sheet (1700) has to stay above the panel'); }
 
-  const ui = code(read('js/map-ui.js'));
+  /* (ui-layer-owner) the mark is moved by js/ui-stack.js (window.IntMapStack) now; «one at a time» and
+     «a sidebar takes it away» are EVALUATED in tests/ui-layer-owner-checks.test.mjs ① */
+  const ui = code(read('js/ui-stack.js'));
   assert.match(ui, /classList\.add\('im-front'\)/, 'nothing marks the panel');
   assert.match(ui, /querySelectorAll\('\.im-front'\)/, 'the previous panel is never un-marked — two panels would claim the front');
-  assert.match(ui, /raise\(null\)/, 'a pointerdown in a sidebar does not drop the mark');
+  assert.match(ui, /function back\(\) \{[^\n]*mark\(null\)/, 'a pointerdown in a sidebar does not drop the mark');
 });
 }

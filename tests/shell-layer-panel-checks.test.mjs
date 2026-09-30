@@ -751,8 +751,8 @@ test('R408 ①b: 入力が来たら次のスライスを止め、静かになっ
 /* spelling kept: browser script (js/layer-previews.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R408 ①c: 携帯では起動経路が門を開かない。ただしパネルを開けば全部出る', () => {
   const s = rd('js/layer-previews.js');
-  assert.match(s, /const _bootMobile=\(\)=>\{[\s\S]{0,200}max-width:768px/,
-    '携帯判定はアプリ自身の 768px メディアクエリと同じ文字列');
+  assert.match(s, /const _bootMobile=\(\)=>\{[\s\S]{0,200}window\.IntMapDevice\.compact\(\)/,
+    '携帯判定はアプリ自身の答え（js/ui-device.js の 768px 境界）と同じ');
   assert.match(s, /if\(_bootMobile\(\)\) return;[\s\S]{0,400}setTimeout\(go,6000\)/,
     '起動 IIFE は携帯で早期 return し、idle+400ms も 6 秒天井も張らない');
   /* ⚠⚠⚠ CONSTITUTION §0.3 — 機能を減らしていないこと。パネル経由の入口 kick() は無傷で、

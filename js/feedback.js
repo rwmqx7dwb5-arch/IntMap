@@ -53,7 +53,7 @@ window.IntMapModules.feedback=function(HOST){
       ['other',  LA('Other','その他','Sonstiges','Другое','Otro')]];
     function ensure(){ if(modal) return modal;
       modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='feedback-modal';
-      modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
+      modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:calc(var(--z-toast) + 2200);align-items:center;justify-content:center;padding:20px;';
       modal.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;width:100%;max-width:400px;max-height:92vh;overflow-y:auto;box-sizing:border-box;position:relative;" id="fb-card"></div>';
       document.body.appendChild(modal);
       modal.addEventListener('click',(e)=>{ if(e.target===modal) closeM(); });
@@ -143,7 +143,7 @@ window.IntMapModules.feedback=function(HOST){
     let modal=null;
     function ensure(){ if(modal) return modal;
       modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='bug-modal';
-      modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
+      modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:calc(var(--z-toast) + 2200);align-items:center;justify-content:center;padding:20px;';
       modal.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;width:100%;max-width:420px;box-sizing:border-box;position:relative;max-height:88dvh;overflow-y:auto;" id="bug-card"></div>';
       document.body.appendChild(modal);
       modal.addEventListener('click',(e)=>{ if(e.target===modal) close(); });

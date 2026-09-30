@@ -665,7 +665,7 @@ window.IntMapWidgetLayout = (function () {
         if (e.target.closest && e.target.closest('button')) return;
         dragging = true; hx = e.clientX; hy = e.clientY;
         before = ST.raw().map(function (x) { return x.i; });
-        card.style.zIndex = '8'; card.style.pointerEvents = 'none'; card.style.opacity = '0.96';
+        card.style.zIndex = 'calc(var(--z-inset) + 8)'; card.style.pointerEvents = 'none'; card.style.opacity = '0.96';
         card.style.transition = 'transform 0.12s ease'; card.style.transform = 'scale(1.04)';
         if (e.preventDefault) e.preventDefault();
         moveH = onMove; upH = function () { end(false); };

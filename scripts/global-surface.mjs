@@ -105,9 +105,67 @@ export function windowPublications(root) {
         const name = raw.slice(start, start + m[1].length).trim().replace(/^['"`]|['"`]$/g, '');
         if (/^[A-Za-z_$][\w$]*$/.test(name) && !names.has(name)) names.set(name, dir + '/' + f);
       }
+      for (const name of aliasedPublications(raw)) if (!names.has(name)) names.set(name, dir + '/' + f);
     }
   }
   return names;
+}
+
+/* ⚠ THE SPELLING `window.X =` IS ONE WAY TO PUBLISH A GLOBAL, NOT THE FACT. Measured 2026-09-30: five
+   modules published through `globalThis.X =` and three through an IIFE handed the global object
+   (`(function (G) { G.X = … })(typeof window !== 'undefined' ? window : globalThis)`) — none of them was
+   in the register, so this ratchet could not see them grow. The fact is «an assignment to a property
+   of the global object»; it is asked of the parse tree: the object is `window` / `globalThis` / `self`,
+   or a parameter of a function that is CALLED with one of those (or a conditional of them) in that
+   position. A file that does not parse is left to the spelling rule above. */
+const GLOBAL_OBJECT = new Set(['window', 'globalThis', 'self']);
+function isGlobalObjectExpr(n) {
+  if (!n) return false;
+  if (n.type === 'Identifier') return GLOBAL_OBJECT.has(n.name);
+  if (n.type === 'ConditionalExpression') return isGlobalObjectExpr(n.consequent) || isGlobalObjectExpr(n.alternate);
+  if (n.type === 'LogicalExpression') return isGlobalObjectExpr(n.left) || isGlobalObjectExpr(n.right);
+  return false;
+}
+export function aliasedPublications(raw) {
+  let ast = null;
+  for (const sourceType of ['module', 'script']) {
+    try { ast = acorn.parse(raw, { ecmaVersion: 'latest', sourceType, allowHashBang: true, allowReturnOutsideFunction: true }); break; } catch (_) { /* try the other */ }
+  }
+  if (!ast) return [];
+  const out = new Set();
+  const FN = new Set(['FunctionExpression', 'ArrowFunctionExpression', 'FunctionDeclaration']);
+  (function visit(node, aliases) {
+    if (!node || typeof node.type !== 'string') return;
+    let scope = aliases;
+    if (node.type === 'CallExpression' && FN.has(node.callee.type)) {
+      const fn = node.callee, add = [];
+      fn.params.forEach((p, i) => { if (p.type === 'Identifier' && isGlobalObjectExpr(node.arguments[i])) add.push(p.name); });
+      if (add.length) fn.__imAliases = add;
+    }
+    if (FN.has(node.type)) {
+      /* a parameter of this function shadows an outer alias of the same name unless the call handed it the global */
+      const own = new Set(node.__imAliases || []);
+      const shadow = node.params.filter((p) => p.type === 'Identifier').map((p) => p.name);
+      scope = new Set([...aliases].filter((a) => !shadow.includes(a) || own.has(a)));
+      own.forEach((a) => scope.add(a));
+    }
+    if (node.type === 'AssignmentExpression' && node.left.type === 'MemberExpression' && node.left.object.type === 'Identifier') {
+      const o = node.left.object.name, L = node.left;
+      if (o !== 'window' && o !== 'self' && (GLOBAL_OBJECT.has(o) || scope.has(o))) {
+        const name = !L.computed && L.property.type === 'Identifier' ? L.property.name
+          : (L.computed && L.property.type === 'Literal' && typeof L.property.value === 'string' ? L.property.value : null);
+        /* a worker installing a `window` shim on its own global (js/gis-runtime.js) is not a page publication */
+        if (name && !GLOBAL_OBJECT.has(name) && /^[A-Za-z_$][\w$]*$/.test(name)) out.add(name);
+      }
+    }
+    for (const k of Object.keys(node)) {
+      if (k === '__imAliases') continue;
+      const v = node[k];
+      if (Array.isArray(v)) v.forEach((c) => visit(c, scope));
+      else if (v && typeof v.type === 'string') visit(v, scope);
+    }
+  })(ast, new Set());
+  return [...out];
 }
 
 /* ══ (dead-code-removal) A PUBLICATION THAT NOTHING READS ═══════════════════════════════════════

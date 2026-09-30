@@ -27,6 +27,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { installDevice } from './helpers/ui-device.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -231,6 +232,7 @@ function run(legends) {
     body: { classList: { contains: () => false } },
   };
   const window = { innerHeight: 900, innerWidth: 1100, matchMedia: () => ({ matches: false }), IntMapLang: { t: (...a) => a[1] } };
+  installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   /* the page's computed style, per element — what the stylesheet says, which the inline value may not */
   const getComputedStyle = (el) => ({ display: el.__computed });
   /* eslint-disable no-new-func */

@@ -44,13 +44,13 @@ window.IntMapModules.playground=function(HOST){
     const ensureCountries=(cb)=>ensureCountryGeo(loadCountryData,cb);   /* (#R754) the shared one, bound to this host's loader */
     // ---- shared modal shell ----
     function shell(maxw){ const ov=document.createElement('div'); ov.className='pg-overlay';
-      ov.style.cssText='position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);padding:18px;';
-      const card=document.createElement('div'); card.style.cssText='position:relative;width:min('+(maxw||520)+'px,100%);max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card-bg);color:var(--text-main);border-radius:18px;box-shadow:var(--shadow);padding:22px 22px max(22px,env(safe-area-inset-bottom));box-sizing:border-box;';
+      ov.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-toast) + 3000);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);padding:18px;';
+      const card=document.createElement('div'); card.style.cssText='position:relative;width:min('+(maxw||520)+'px,100%);max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card-bg);color:var(--text-main);border-radius:18px;box-shadow:var(--shadow);padding:22px 22px max(22px,var(--safe-bottom));box-sizing:border-box;';
       ov.appendChild(card); ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov);
       /* (a11y-shared-dialog) every playground card is a registered dialog — Escape, Tab trap, focus back; named by its heading.
          focus:false — the card is filled AFTER this returns, so the owner's own first control is not there yet */
       window.IntMapDialog.open(ov,{ panel:card, focus:false }); return {ov,card}; }
-    function xbtn(onclick){ const b=document.createElement('button'); b.textContent='×'; b.style.cssText='position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;z-index:2;'; b.setAttribute('aria-label',L('Close','閉じる','Schließen','Закрыть','Cerrar')); b.onclick=onclick; return b; }
+    function xbtn(onclick){ const b=document.createElement('button'); b.textContent='×'; b.style.cssText='position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;z-index:calc(var(--z-inset) + 2);'; b.setAttribute('aria-label',L('Close','閉じる','Schließen','Закрыть','Cerrar')); b.onclick=onclick; return b; }
     function pill(txt,bg){ const s=document.createElement('span'); s.textContent=txt; s.style.cssText='display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:'+(bg||'var(--primary-fill)')+';color:#fff;'; return s; }
 
     /* ===================== HUB ===================== */
@@ -87,7 +87,7 @@ window.IntMapModules.playground=function(HOST){
     };
 
     /* ===================== floating toast / breaking-news ===================== */
-    function pgNews(html, kind){ let host=document.getElementById('pg-news-host'); if(!host){ host=document.createElement('div'); host.id='pg-news-host'; host.style.cssText='position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(440px,92vw);'; document.body.appendChild(host); }
+    function pgNews(html, kind){ let host=document.getElementById('pg-news-host'); if(!host){ host=document.createElement('div'); host.id='pg-news-host'; host.style.cssText='position:fixed;top:max(12px,var(--safe-top));left:50%;transform:translateX(-50%);z-index:calc(var(--z-toast) + 3200);display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(440px,92vw);'; document.body.appendChild(host); }
       const n=document.createElement('div'); n.style.cssText='pointer-events:auto;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-left:4px solid '+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';border-radius:12px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:10px 14px;font-size:12.5px;line-height:1.4;opacity:0;transform:translateY(-8px);transition:opacity .3s,transform .3s;max-width:100%;';
       n.innerHTML='<b style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:'+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';">'+(window.IntMapLang.t(HOST.lang,"Breaking","速報","Eilmeldung","Срочно","Última hora"))+'</b><br>'+html;
       host.appendChild(n); requestAnimationFrame(()=>{ n.style.opacity='1'; n.style.transform='none'; }); setTimeout(()=>{ n.style.opacity='0'; n.style.transform='translateY(-8px)'; setTimeout(()=>n.remove(),350); }, 5200);
@@ -107,8 +107,8 @@ window.IntMapModules.playground=function(HOST){
         /* (#R33) The playground HUDs must sit ABOVE everything and not reserve any bottom-sheet space, so they
            are never hidden under / crushed by the mobile sheet. Panels go full-width on phones. */
         'body.pg-we,body.pg-sim{--sheet-cover:0px !important;--peek-h:0px !important;}'+
-        '#pg-we-panel,#pg-pan-hud{z-index:6300 !important;}'+
-        '@media(max-width:768px){'+
+        '#pg-we-panel,#pg-pan-hud{z-index:calc(var(--z-toast) + 3300) !important;}'+
+        '@media'+window.IntMapDevice.COMPACT+'{'+
         /* (#R34) Hide the MAIN bottom sheet (#sidebar) on phones during these focused modes. The rule above
            only hides the secondary .m-sheet option sheets — on mobile the #sidebar IS the bottom sheet and
            .collapsed (a desktop mechanism) doesn\'t move it, so it kept covering the HUD ("ボトムシートの下に
@@ -155,8 +155,8 @@ window.IntMapModules.playground=function(HOST){
         try{ const sat=document.getElementById('btn-view-sat'); if(sat&&typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat') sat.click(); }catch(_){}
         /* (#R31) Don't pop the satellite controller panel each round ("毎回satelliteのポップアップが出るのを辞めて"). */
         try{ if(typeof HOST.satPanelDismissed!=='undefined') HOST.satPanelDismissed=true; const sp=document.getElementById('sat-controller'); if(sp) sp.style.display='none'; }catch(_){}
-        const black=document.createElement('div'); black.style.cssText='position:fixed;inset:0;z-index:5800;background:#000;transition:opacity .6s;'; document.body.appendChild(black);
-        const bt=document.createElement('div'); bt.textContent=window.IntMapLang.t(HOST.lang,"Dropping you somewhere…","どこかへ移動中…","Sie werden irgendwohin gesetzt…","Переносим вас куда-нибудь…","Le dejamos en algún lugar…"); bt.style.cssText='position:fixed;inset:0;z-index:5801;display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
+        const black=document.createElement('div'); black.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-toast) + 2800);background:#000;transition:opacity .6s;'; document.body.appendChild(black);
+        const bt=document.createElement('div'); bt.textContent=window.IntMapLang.t(HOST.lang,"Dropping you somewhere…","どこかへ移動中…","Sie werden irgendwohin gesetzt…","Переносим вас куда-нибудь…","Le dejamos en algún lugar…"); bt.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-toast) + 2801);display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
         let pin=null; const onZoom=()=>{ try{ minZoom=Math.min(minZoom, GE().camera.getZoom()); }catch(_){} };
         setTimeout(()=>{ try{ GE().camera.jumpTo({center:[target.lng,target.lat],zoom:START_Z,bearing:0,pitch:0}); }catch(_){}
           /* (#R34) RE-ASSERT satellite after the drop — World Explorer is a satellite where-am-I game, but a
@@ -168,7 +168,7 @@ window.IntMapModules.playground=function(HOST){
           try{ GE().events.on('zoom',onZoom); }catch(_){}
           setTimeout(()=>{ black.style.opacity='0'; bt.remove(); setTimeout(()=>black.remove(),650); }, 900); }, 250);
         const panel=document.createElement('div'); panel.id='pg-we-panel';
-        panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom));z-index:5810;display:flex;gap:8px;align-items:center;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:8px 10px 8px 16px;font-size:13px;font-weight:600;max-width:calc(100vw - 24px);';
+        panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,var(--safe-bottom));z-index:calc(var(--z-toast) + 2810);display:flex;gap:8px;align-items:center;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:8px 10px 8px 16px;font-size:13px;font-weight:600;max-width:calc(100vw - 24px);';
         const lab=document.createElement('span'); lab.textContent=window.IntMapLang.t(HOST.lang,"Where are you?","ここはどこ？","Wo sind Sie?","Где вы?","¿Dónde está?"); panel.appendChild(lab);
         const homeB=document.createElement('button'); homeB.title=window.IntMapLang.t(HOST.lang,"Back to start","開始地点へ戻る","Zurück zum Start","Вернуться к началу","Volver al inicio"); homeB.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>'; homeB.style.cssText='border:none;border-radius:50%;width:34px;height:34px;background:var(--input-bg);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;'; homeB.onclick=()=>{ try{ GE().camera.flyTo({center:[target.lng,target.lat],zoom:START_Z,duration:700}); }catch(_){} }; panel.appendChild(homeB);
         const guessB=document.createElement('button'); guessB.textContent=window.IntMapLang.t(HOST.lang,"Make a guess","回答する","Tippen abgeben","Сделать предположение","Adivinar"); guessB.style.cssText='border:none;border-radius:999px;background:var(--primary-fill);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;'; panel.appendChild(guessB);
@@ -584,7 +584,7 @@ window.IntMapModules.playground=function(HOST){
         function stop(){ running=false; clearTimeout(timer); }
 
         const hud=document.createElement('div'); hud.id='pg-pan-hud';
-        hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(540px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;max-height:70dvh;overflow-y:auto;';
+        hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,var(--safe-bottom));z-index:calc(var(--z-toast) + 2810);width:min(540px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;max-height:70dvh;overflow-y:auto;';
         (document.getElementById('map-container')||document.body).appendChild(hud);
         function fmt(n){ n=Math.round(n); if(n>=1e9)return (n/1e9).toFixed(2)+'B'; if(n>=1e6)return (n/1e6).toFixed(2)+'M'; if(n>=1e3)return (n/1e3).toFixed(1)+'k'; return ''+n; }
         function grp(n){ try{ return Math.round(n).toLocaleString(window.IntMapLang.htmlLang?window.IntMapLang.htmlLang(HOST.lang):undefined); }catch(_){ return fmt(n); } }

@@ -27,6 +27,13 @@
  *      node scripts/z-layers.mjs            report (literals per file, the resolved stack)
  *      node scripts/z-layers.mjs --check    compare with the ledger (exit 1 on any difference)
  *      node scripts/z-layers.mjs --update   rewrite the ledger from the tree
+ *    · WHY (ui-layer-owner) — a file whose count is above zero must say, in the ledger's `why`, why it
+ *      cannot read a layer (another document without css/intmap.css, a file another work item owns).
+ *      MEASURED 2026-09-30: 147 bare numbers in 47 files; the migration to named layers left 11 in 7.
+ *    · NAMES (ui-layer-owner) — every `var(--z-…)` js/ or the markup writes, and every layer
+ *      `IntMapStack.z('…')` (js/ui-stack.js) is asked for, is a layer :root defines. A misspelt
+ *      layer is not an error in a browser: the declaration is dropped and the element paints at
+ *      `auto`, which is how a named layer would fail silently where a number never could.
  *  scripts/static-checks.mjs runs the comparison as its `z-layers` rule.
  * ==========================================================================*/
 import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from 'node:fs';
@@ -126,6 +133,20 @@ export function stack(css) {
 const fmt = (s) => `${s.selector} → ${s.value}${s.important ? ' !important' : ''}`;
 const total = (m) => Object.values(m).reduce((a, b) => a + b, 0);
 
+/** [[path, layerName]] for every `var(--z-name)` in js/ and the root *.html (code only) and every
+    `IntMapStack.z('name')` — the names a file asks for */
+export function layerNamesUsed(root) {
+  const R = root || ROOT, out = [];
+  const rel = (p) => p.slice(R.length + 1).replace(/\\/g, '/');
+  const scan = (p, text) => {
+    for (const re of [/var\(\s*--z-([a-z0-9-]+)/g, /IntMapStack\.z\(\s*['"`]([a-z0-9-]+)/g]) {
+      re.lastIndex = 0; let m; while ((m = re.exec(text))) out.push([rel(p), m[1]]);
+    }
+  };
+  for (const p of walkJs(join(R, 'js'), [])) { const c = stripJsComments(readFileSync(p, 'utf8')); if (c != null) scan(p, c); }
+  for (const f of readdirSync(R).filter((x) => x.endsWith('.html')).sort()) { const p = join(R, f); scan(p, stripHtmlComments(readFileSync(p, 'utf8'))); }
+  return out;
+}
 /** @returns {{ ok: boolean, lines: string[], literals: object, total: number, stack: string[] }} */
 export function check(root, ledgerPath) {
   const R = root || ROOT, P = ledgerPath || LEDGER, lines = [];
@@ -148,6 +169,19 @@ export function check(root, ledgerPath) {
       break;
     }
   }
+  /* (ui-layer-owner) a count above zero has to say why */
+  const why = was.why || {};
+  for (const f of Object.keys(now)) {
+    if (!(typeof why[f] === 'string' && why[f].trim().length > 20))
+      lines.push(`${f}: ${now[f]} bare z-index number(s) and the ledger does not say why this file cannot read a layer — write one sentence under "why" in tests/z-layers-baseline.json`);
+  }
+  for (const f of Object.keys(why)) if (!now[f]) lines.push(`${f}: the ledger explains bare numbers this file no longer has — delete its "why" (node scripts/z-layers.mjs --update does)`);
+  /* (ui-layer-owner) every layer asked for is a layer the stylesheet defines */
+  try {
+    const tok = tokens(readFileSync(join(R, STYLESHEET), 'utf8'));
+    for (const [f, name] of layerNamesUsed(R)) if (tok['--z-' + name] == null)
+      lines.push(`${f}: reads the layer --z-${name}, which css/intmap.css :root does not define — the browser drops the declaration and the element paints at auto`);
+  } catch (e) { lines.push(String(e.message || e)); }
   return { ok: lines.length === 0, lines, literals: now, total: total(now), stack: st };
 }
 
@@ -156,9 +190,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (arg === '--update') {
     const lit = measureLiterals();
     const st = stack(readFileSync(join(ROOT, STYLESHEET), 'utf8')).map(fmt);
+    const was = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, 'utf8')) : {};
+    const why = {};
+    for (const [f, s] of Object.entries(was.why || {})) if (lit[f]) why[f] = s;   /* kept; written by hand */
     writeFileSync(LEDGER, JSON.stringify({
-      '//': 'written by scripts/z-layers.mjs --update — bare z-index numbers per file (ratcheted both ways) and every z-index of css/intmap.css resolved, in order (any change fails); held by check:static',
-      total: total(lit), literals: lit, stack: st,
+      '//': 'written by scripts/z-layers.mjs --update — bare z-index numbers per file (ratcheted both ways; every file above zero says why under "why", kept by --update and written by hand) and every z-index of css/intmap.css resolved, in order (any change fails); held by check:static',
+      total: total(lit), literals: lit, why, stack: st,
     }, null, 1) + '\n');
     console.log(`z-layers: ledger written — ${total(lit)} bare numbers across ${Object.keys(lit).length} files, ${st.length} stylesheet declarations`);
   } else if (arg === '--check') {

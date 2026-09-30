@@ -390,8 +390,9 @@ test('R302 ⑨ every path into addField has already asked whether the key is liv
 const CSS = () => read('css/intmap.css');
 const rtpDesktop = () => {
   const s = CSS();
-  const a = s.indexOf('@media (min-width:768px){', s.indexOf('.rtp{'));
-  const b = s.indexOf('@media (max-width:767px){', a);
+  /* (ui-layer-owner) the one boundary: the desktop side is 769, the phone side 768 */
+  const a = s.indexOf('@media (min-width:769px){', s.indexOf('.rtp{'));
+  const b = s.indexOf('@media (max-width:768px){', a);
   if (!(a > 0 && b > a)) throw new Error('the route panel desktop block could not be delimited');
   return s.slice(a, b);
 };
@@ -427,7 +428,7 @@ test('R302 ⑪ the route panel shrinks where its height is actually decided', ()
   }
   /* ⚠ AND THE PHONE IS UNTOUCHED. A finger is a finger: tests/smoke.spec.js measures 44 px tap
      targets and 13 px text at 320×640, and none of the above may reach that block. */
-  const phone = CSS().slice(CSS().indexOf('@media (max-width:767px){', CSS().indexOf('.rtp{')));
+  const phone = CSS().slice(CSS().indexOf('@media (max-width:768px){', CSS().indexOf('.rtp{')));
   assert.match(phone, /\.rtp-btn-ico\{ width:44px; height:44px/, 'the phone keeps its 44 px buttons');
   assert.match(phone, /\.rtp-in\{[^}]*height:48px/, '…and its 48 px fields');
 });

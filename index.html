@@ -93,7 +93,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     if(!(q||pv||mf)) return;
     var r=document.createElement('div');
     r.setAttribute('data-intmap-staging','1');
-    r.style.cssText='position:fixed;left:0;right:0;top:0;z-index:100000;background:#a15c00;color:#fff;font:700 12px/1.5 system-ui,sans-serif;text-align:center;padding:4px 8px;letter-spacing:.04em;pointer-events:none;box-shadow:0 1px 6px rgba(0,0,0,.3);';
+    r.style.cssText='position:fixed;left:0;right:0;top:0;z-index:calc(var(--z-overlay) + 10);background:#a15c00;color:#fff;font:700 12px/1.5 system-ui,sans-serif;text-align:center;padding:4px 8px;letter-spacing:.04em;pointer-events:none;box-shadow:0 1px 6px rgba(0,0,0,.3);';
     r.textContent='STAGING / TEST BUILD — not production';
     (document.body||document.documentElement).appendChild(r);
   }catch(e){} });
@@ -540,7 +540,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
 
 <div class="modal-overlay" id="settings-modal">
   <div class="modal-content" style="position:relative;">
-    <button id="settings-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="settings-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:calc(var(--z-inset) + 2);">×</button>
     <!-- (#R39) The settings body scrolls inside .settings-scroll so the scrollbar gutter lives INSIDE the
          scroll area, not beside the sticky footer. That removes the ~11px gap to the right of the Apply
          footer's rounded corner ("Apply UIの右下が角丸で隙間がある"). The footer is now a flush flex child. -->
@@ -763,7 +763,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
 <!-- (#R9) Support / "Buy me a blueberry" -->
 <div class="modal-overlay" id="blueberry-modal">
   <div class="modal-content" style="position:relative;max-width:440px;text-align:center;">
-    <button id="blueberry-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="blueberry-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:calc(var(--z-inset) + 2);">×</button>
     <div id="blueberry-emoji" style="display:none;font-size:46px;line-height:1;margin:6px 0 12px;"></div>
     <h3 id="blueberry-title" style="margin:0 0 12px;font-size:17px;font-weight:500;">Support IntMap</h3>
     <p id="blueberry-body" style="font-size:13.5px;line-height:1.65;color:var(--text-main);white-space:pre-line;margin:0 0 18px;"></p>
@@ -775,7 +775,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
 <!-- Terms of Service / Privacy Policy -->
 <div class="modal-overlay" id="legal-modal">
   <div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;">
-    <button id="legal-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="legal-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:calc(var(--z-inset) + 2);">×</button>
     <div style="display:flex;gap:6px;margin:0 0 14px;">
       <button id="legal-tab-terms" class="ios-segment-btn" data-i18n="legalTabTerms" style="flex:1;">Terms</button>
       <button id="legal-tab-privacy" class="ios-segment-btn" data-i18n="legalTabPrivacy" style="flex:1;">Privacy</button>
@@ -791,7 +791,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
        WIDER than its width — so the modal was 340 px no matter what this said. That is the report
        「データ出典のポップアップが小さすぎる」: a list of ~90 sources in a 340 px column. -->
   <div class="modal-content" style="position:relative;overflow-y:auto;">
-    <button id="sources-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="sources-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:calc(var(--z-inset) + 2);">×</button>
     <h3 style="margin:0 0 6px 0; font-size:18px;" id="sources-title">Data sources</h3>
     <p style="margin:0 0 8px;color:var(--text-muted);font-size:12px;line-height:1.5;" id="sources-sub"></p>
     <!-- (#R212) the full page: the same registry, grouped, with licences, live-vs-bundled and the

@@ -722,7 +722,7 @@ window.IntMapModules.los=function(HOST){
       if(r) report(r); else if(r===null&&runSeq) report(null);
       return r; }
     function open(lngLat,o){ site=[lngLat.lng,lngLat.lat];
-      const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:250px;';
+      const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:calc(var(--z-sheet) - 50);width:250px;';
       render(); setSite();
       if(o&&o.run) run(o);
       return true; }

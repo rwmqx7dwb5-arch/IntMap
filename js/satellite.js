@@ -208,7 +208,7 @@ window.IntMapModules.satellite=function(HOST){
          ("それ以外の場所を操作し始めたら自動で消える"); it re-opens via the Satellite button (which resets
          satPanelDismissed). On mobile it lives inside the sheet (not floating), so leave that one alone. */
       const _satDismiss=()=>{ try{ const p=document.getElementById('sat-controller');
-        if(p && p.style.display==='block' && !(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)){ HOST.satPanelDismissed=true; p.style.display='none'; } }catch(_){} };
+        if(p && p.style.display==='block' && !(window.IntMapDevice.compact())){ HOST.satPanelDismissed=true; p.style.display='none'; } }catch(_){} };
       try{ GE().events.on('dragstart',_satDismiss); GE().events.on('zoomstart',(e)=>{ if(e&&e.originalEvent) _satDismiss(); }); }catch(_){}
       document.addEventListener('pointerdown',(e)=>{ try{ const p=document.getElementById('sat-controller');
         if(p && p.style.display==='block' && e.target && !e.target.closest('#sat-controller') && !e.target.closest('#btn-view-sat')) _satDismiss(); }catch(_){} }, true);

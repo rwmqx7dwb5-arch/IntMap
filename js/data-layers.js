@@ -252,7 +252,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
-      .koppen-legend{ box-sizing:border-box; display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:220px; min-width:180px; max-width:460px; font-size:10.4px; }   /* (#R155) box-sizing:border-box is load-bearing — the width _fitKoppenLegend sets now INCLUDES the 20px padding + 2px border, so the panel really hugs the text (the old content-box math under-counted them → "テキスト以上に横幅伸ばして…行の幅変わってない" dead space). max-width raised 340→460 so the longest German/Russian names are no longer clipped ("行の幅が狭すぎる"). width:220 is the pre-JS fallback. */
+      .koppen-legend{ box-sizing:border-box; display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:calc(var(--z-controls) + 100); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:220px; min-width:180px; max-width:460px; font-size:10.4px; }   /* (#R155) box-sizing:border-box is load-bearing — the width _fitKoppenLegend sets now INCLUDES the 20px padding + 2px border, so the panel really hugs the text (the old content-box math under-counted them → "テキスト以上に横幅伸ばして…行の幅変わってない" dead space). max-width raised 340→460 so the longest German/Russian names are no longer clipped ("行の幅が狭すぎる"). width:220 is the pre-JS fallback. */
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; scrollbar-gutter:stable; }   /* (#R151) reserve the scrollbar gutter ALWAYS so climate-name rows keep a constant width while the legend is resized ("気候名の行幅が勝手に動かないように") — the appearing/disappearing scrollbar was stealing ~15px and reflowing the row text */
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
@@ -274,7 +274,7 @@ window.IntMapModules.dataLayers=function(HOST){
       .layer-popup-x{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:4px 6px; border-radius:6px; line-height:1; }
       .layer-popup-x:hover{ background:var(--input-bg); color:var(--info-mil); }
       /* Generic color-scale legend (HDI/Dem/Pop/NATO) */
-      .data-legend{ display:none; position:absolute; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:178px; font-size:10.5px; }
+      .data-legend{ display:none; position:absolute; left:24px; right:auto; z-index:calc(var(--z-controls) + 100); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:178px; font-size:10.5px; }
       .data-legend h4{ margin:0 0 5px; font-size:11px; padding-right:18px; }
       .data-legend .dl-bar{ height:8px; border-radius:4px; margin:4px 0 3px; border:1px solid rgba(0,0,0,0.1); }
       .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:9.5px; }
@@ -393,14 +393,14 @@ window.IntMapModules.dataLayers=function(HOST){
       .legend-collapsed .legend-min::before{ width:12px; height:12px; background:none; border:1.8px solid currentColor; border-radius:3px; transform:translate(-50%,-50%); }
       .data-legend .dl-drag, .koppen-legend .kl-drag{ top:8px; left:7px; font-size:12px; }
       /* Köppen criteria popup (#25) */
-      .koppen-info-pop{ display:none; position:absolute; z-index:1300; width:236px; max-width:calc(100vw - 24px); background:var(--glass-fill); border:1px solid var(--glass-border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); font-size:12px; }
+      .koppen-info-pop{ display:none; position:absolute; z-index:var(--z-dropdown); width:236px; max-width:calc(100vw - 24px); background:var(--glass-fill); border:1px solid var(--glass-border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); font-size:12px; }
       .koppen-info-pop .kip-x{ position:absolute; top:6px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; line-height:1; padding:4px 6px; border-radius:6px; }
       .koppen-info-pop .kip-x:hover{ background:var(--input-bg); }
       .koppen-info-pop .kip-h{ display:flex; align-items:center; gap:7px; font-weight:600; font-size:13px; padding-right:22px; margin-bottom:6px; }
       .koppen-info-pop ul{ margin:0; padding-left:16px; color:var(--text-muted); line-height:1.5; } .koppen-info-pop li{ margin:2px 0; }
       /* (#R8b) Phones just enlarge the same drawn icons to 30px tap targets with a clear gap; the SHAPES
          (centerd bars) come from the global rules above, so desktop & mobile are identical & aligned. */
-      @media(max-width:768px){
+      @media${window.IntMapDevice.COMPACT}{
         /* (#R18) ONE size for EVERY mobile ×/–: 32px. The R17 40px boxes made the legend buttons huge
            while the rest stayed small ("×の大きさがバラバラ。凡例はデカすぎる") and bloated the minimized
            legend. 32px is still a comfortable tap target and identical across legends, popups and panels. */
@@ -1683,7 +1683,7 @@ window.IntMapModules.dataLayers=function(HOST){
        its fixed-height chip row keeps the R32 no-reflow guarantee. */
     window._placeActiveSection=function(){
       try{ const act=document.getElementById('layer-active-section'); if(!act) return;
-        const isM = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+        const isM = window.IntMapDevice.compact();
         if(isM){ const sc=document.querySelector('#mo-sheet .m-sheet-scroll'); if(sc && sc.firstChild!==act) sc.insertBefore(act,sc.firstChild); }
         /* (#R70) while the right tile sidebar is open, the Active-layers bar lives at ITS top */
         else if(document.body.classList.contains('lsr-open')){ const bd=document.querySelector('#layer-sidebar-r .lsr-body'); if(bd && bd.firstChild!==act) bd.insertBefore(act,bd.firstChild); }
@@ -1959,7 +1959,7 @@ window.IntMapModules.dataLayers=function(HOST){
         /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
         ['ec-mount','cmp-mount','ugj-mount'].forEach(id=>{ const w=document.getElementById(id); if(w) w.remove(); });
         /* (#R29) Mobile: "Others (beta)" is a pulldown — collapse it by default (unless the user opened it). */
-        try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const _oh=dd.querySelector(':scope > .lyr-head[data-i18n="lyrGrpOthers"]'); if(_oh && !_oh.dataset.userToggled) _collapseGroup(_oh); } }catch(_){}
+        try{ if(window.IntMapDevice.compact()){ const _oh=dd.querySelector(':scope > .lyr-head[data-i18n="lyrGrpOthers"]'); if(_oh && !_oh.dataset.userToggled) _collapseGroup(_oh); } }catch(_){}
         try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
         try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* (#R34) move the bar to the sheet scroller on mobile */
         /* ⚠ (#R766) …AND THE TOOLS STRIP AFTER IT, FOR THE SAME REASON: the loop above re-appended
@@ -3247,7 +3247,7 @@ window.IntMapModules.dataLayers=function(HOST){
       lg=lg||document.getElementById('koppen-legend'); if(!lg) return;
       const cs=getComputedStyle(lg);
       if(cs.display==='none' || lg.classList.contains('legend-collapsed')) return;
-      if(window.innerWidth<=768) return;
+      if(window.IntMapDevice.compact()) return;
       /* (#R154) WIDTH HUGS THE CONTENT (per language). Measure the widest zone row (code + " · name") with an off-screen
          span in the legend's own font, then size the panel to exactly that + row chrome + the reserved scrollbar gutter,
          clamped 176–324px and to what fits right of the panel. Ends BOTH width complaints at once: no dead space when the
@@ -3287,7 +3287,7 @@ window.IntMapModules.dataLayers=function(HOST){
       lg.style.maxHeight=Math.max(150, mh)+'px';
     }catch(_){} }
     window._fitKoppenLegend=_fitKoppenLegend;
-    (function(){ let _klRz=null; window.addEventListener('resize',()=>{ if(_klRz) return; _klRz=setTimeout(()=>{ _klRz=null; try{ const lg=document.getElementById('koppen-legend'); if(!lg||getComputedStyle(lg).display==='none') return; if(window.innerWidth<=768) lg.style.maxHeight=''; else _fitKoppenLegend(lg); }catch(_){} },200); }); })();
+    (function(){ let _klRz=null; window.addEventListener('resize',()=>{ if(_klRz) return; _klRz=setTimeout(()=>{ _klRz=null; try{ const lg=document.getElementById('koppen-legend'); if(!lg||getComputedStyle(lg).display==='none') return; if(window.IntMapDevice.compact()) lg.style.maxHeight=''; else _fitKoppenLegend(lg); }catch(_){} },200); }); })();
     /* Decode a Köppen code into its defining criteria (#25) — letter by letter, EN + JP. */
     /* ══ ⚠ (#R236) THE KÖPPEN CRITERIA WERE ENGLISH AND JAPANESE ONLY ══════════════════════════════
        「ドイツ語、ロシア語、スペイン語について、すべての面において対応が完璧かどうか最終点検し、
@@ -3568,7 +3568,7 @@ window.IntMapModules.dataLayers=function(HOST){
          opened by hand before the tab shows anything. So the auto-collapse is scoped to the case it
          was written for. */
       const inDock=(window.imDockPanels==='on')||!!(el.classList&&el.classList.contains('im-docked'));
-      if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && !inDock && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
+      if(window.IntMapDevice.compact() && !inDock && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
       /* (#R742) the tiler asks for a fold when the container has run out of room for expanded
          legends. It is the reader's OWN toggle — nothing is closed, nothing is hidden, and the
          legend is one click from being read again. */
@@ -3704,7 +3704,7 @@ window.IntMapModules.dataLayers=function(HOST){
     function placeLegends(_refold){
       const all=discoverLegends();
       const ws=document.body.classList.contains('ws-mode');
-      const mobile = !ws && window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+      const mobile = !ws && window.IntMapDevice.compact();
       /* ══ ⚠⚠⚠ WHETHER A LEGEND IS ON SCREEN IS ASKED OF THE PAGE, NOT OF ONE SPELLING OF `display` ══
          This was `el.style.display==='block'` (and `'flex'` on phones only). The Köppen card is shown as
          `flex`, so on the desktop the stack was built as if it were not there. MEASURED in production and
@@ -4316,7 +4316,7 @@ window.IntMapModules.dataLayers=function(HOST){
     function zoomHintEl(id,onClickZoom){
       let el=document.getElementById(id);
       if(!el){ el=document.createElement('button'); el.id=id; el.type='button';
-        el.style.cssText='position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:1200;display:none;white-space:nowrap;background:rgba(18,18,20,0.82);color:#fff;border:none;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,0.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
+        el.style.cssText='position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:calc(var(--z-dropdown) - 100);display:none;white-space:nowrap;background:rgba(18,18,20,0.82);color:#fff;border:none;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,0.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
         el.onclick=()=>{ if(GE().hasRenderer()) GE().camera.easeTo({zoom:onClickZoom,duration:600}); };
         const mc=document.getElementById('map-container'); if(mc) mc.appendChild(el);
       }

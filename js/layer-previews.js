@@ -860,8 +860,11 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        stopped being protected by it as soon as the reader rotated. js/mem-budget.js is published on
        `window` — reachable from a host-less module, which is what the old paragraph needed and did
        not have — and it answers with js/app-body.js's own `_imPhoneClass`. The width test stays as
-       the fallback for the boot window before the shell publishes it. */
-    const _bootMobile=()=>{ const own=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); }catch(_){ return false; } };
+       the fallback for the boot window before the shell publishes it.
+       (ui-layer-owner) …and that width test is no longer written out here: js/ui-device.js publishes
+       the layout answer on `window` before any module runs (`IntMapDevice.compact()`, the same
+       768 px `MOBILE_MQ` held), which is the host-less owner the first paragraph did not have. */
+    const _bootMobile=()=>{ const own=()=>{ try{ return window.IntMapDevice.compact(); }catch(_){ return false; } };
       try{ return !!window.IntMapMemBudget.deviceIsPhone(own); }catch(_){ return own(); } };
     (function(){ const go=()=>{ if(typeof requestIdleCallback==='function') requestIdleCallback(_openQueue,{timeout:9000}); else setTimeout(_openQueue,5000); };
       /* ⚠ (#R408) …AND ON A PHONE THE BOOT PATH DOES NOT OPEN THE GATE AT ALL. The two automatic

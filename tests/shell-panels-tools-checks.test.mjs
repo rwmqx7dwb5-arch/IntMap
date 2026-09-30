@@ -135,7 +135,7 @@ test('#R252 ① the WorldPop progress bar is inserted after the action ROW, not 
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('#R252 ⑧ the seismic panel’s default box clears the coord readout and the sidebar handle', () => {
   const sq = code(read('js/seismic.js'));
-  assert.match(sq, /if\(window\.innerWidth<=768\) return \{ left:16, top:80, cut:96 \};/,
+  assert.match(sq, /if\(window\.IntMapDevice\.compact\(\)\) return \{ left:16, top:80, cut:96 \};/,   /* (ui-layer-owner) the layout owner's answer, the same 768 px */
     'the phone default changed — nothing about the report is a phone (94vw + a shift right runs off the edge)');
   const d = /return \{ left, top:(\d+), cut:(\d+) \};/.exec(sq);
   assert.ok(d, 'the desktop default box is no longer a {left,top,cut} — re-derive this check');

@@ -1116,6 +1116,22 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   (`z-index:12`, `zIndex = '12'`, `{ zIndex: 12 }`, `setProperty('z-index', …)`; comments excluded).
   Regression and mutation cases for both: `tests/map-a11y-structure-checks.test.mjs`; the browser's
   own resolution of every declaration against the ledger: `tests/map-a11y-structure.spec.js` ③.
+  (ui-layer-owner) A file whose count is above zero must carry one sentence in the ledger's `why`
+  (kept by `--update`, written by hand), and every layer `js/` or the markup reads — `var(--z-…)` and
+  `IntMapStack.z('…')` — must be one `:root` defines: a misspelt layer is dropped by the browser and
+  paints at `auto`, silently.
+- **The screen's two owners** (`ui-owners`, ui-layer-owner) — `scripts/ui-owners.mjs` refuses a
+  `max-width:767px` / `min-width:768px` query anywhere in `css/` or in the CSS `js/` builds (the phone
+  layout is `max-width:768px`, the other side `min-width:769px`, as `js/ui-device.js` `COMPACT`/`WIDE`
+  say), and ratchets per file, both ways, the layout boundary written as a number in `js/` (a
+  768-ish width query or an `innerWidth` comparison; the owner itself is not counted) and
+  `env(safe-area-inset-*)` read anywhere but the four `--safe-*` declarations of `css/intmap.css`
+  `:root`. Every file above zero says why in `tests/ui-owners-baseline.json`. The owners themselves —
+  window order inside the band, the one front mark, #R508's exemption, #824's outermost context,
+  #823's `clipOf`, the four device kinds, the landscape phone's layout and budget — are EVALUATED in
+  `tests/ui-layer-owner-checks.test.mjs` against a small DOM; the browser half is
+  `tests/map-a11y-structure.spec.js` ⑤⑦ (clip and window order) and `tests/r668.spec.js` (the same
+  iPhone upright and sideways: budget, layout and the classes on `<body>`).
 - **Test discovery** (#R529, `scripts/static-checks.mjs`) — `test:checks` is
   `node --test "tests/**/*.test.mjs"`, so the runner finds the files itself and a file cannot be
   left out of a list that no longer exists. Until #R529 it **was** a list: one hand-written literal

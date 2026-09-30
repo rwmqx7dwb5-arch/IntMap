@@ -855,7 +855,7 @@ window.IntMapModules.droneNav=function(HOST){
     /* placed ONCE. Atlas calls open() on every `plan`, and re-applying the default position would drag the
        panel back out from wherever the user had put it each time. */
     if(!p.dataset.placed){ p.dataset.placed='1';
-      p.style.cssText+=';left:16px;top:74px;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 120px);overflow:auto;z-index:1500;'; }
+      p.style.cssText+=';left:16px;top:74px;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 120px);overflow:auto;z-index:calc(var(--z-sheet) - 150);'; }
     try{ HOST.bringToFront&&HOST.bringToFront(p); }catch(_){}
     if(lastResult) draw(lastResult);
     return true; }

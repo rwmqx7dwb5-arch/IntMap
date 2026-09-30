@@ -204,7 +204,7 @@ window.IntMapModules.layerHoverPopup=function(HOST){
     /* (#R29.1) Styled to MATCH the map's iOS control language (frosted `--popup-bg` pill, the same border
        & shadow as the view buttons / coord readout, primary-tinted icon) — not a foreign-looking chip. */
     function ensurePop(){ if(pop) return pop; pop=document.createElement('button'); pop.id='label-isolate-btn';
-      pop.style.cssText='display:none;position:absolute;z-index:1650;transform:translate(-50%,calc(-100% - 12px));background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.18);border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);white-space:nowrap;display:none;align-items:center;gap:7px;letter-spacing:0.01em;';
+      pop.style.cssText='display:none;position:absolute;z-index:var(--z-sheet);transform:translate(-50%,calc(-100% - 12px));background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.18);border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);white-space:nowrap;display:none;align-items:center;gap:7px;letter-spacing:0.01em;';
       (document.getElementById('map-container')||document.body).appendChild(pop); return pop; }
     GE().events.on('movestart',hide);
     GE().events.on('click',(e)=>{
@@ -229,7 +229,7 @@ window.IntMapModules.layerHoverPopup=function(HOST){
         const pad=12;
         b.style.maxWidth=Math.max(160,(mr.width-2*pad))+'px';
         b.style.display='inline-flex'; b.style.left='50%'; b.style.right='auto'; b.style.top='auto';
-        b.style.bottom='calc(env(safe-area-inset-bottom, 0px) + 92px)';
+        b.style.bottom='calc(var(--safe-bottom) + 92px)';
         b.style.transform='translateX(-50%)';
         b.onclick=(ev)=>{ ev.stopPropagation(); hide(); try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(ll.lng,ll.lat,name); }catch(_){} };
         clearTimeout(hideT); hideT=setTimeout(hide,4500);   /* auto-dismiss if ignored */

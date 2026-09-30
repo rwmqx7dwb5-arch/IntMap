@@ -688,145 +688,10 @@ window.IntMapModules.layerSidebar=function(HOST){
   const layerCbInfo=HOST.layerCbInfo, saveSettings=HOST.saveSettings, renderLayerFavs=HOST.renderLayerFavs;
   window.IntMapLayerSidebar=(function(){
     let sb=null,built=false;
-    const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
-    /* ══ ⚠ (#R253) FRONT-MOST FOLLOWS THE POINTER, NOT THE STYLESHEET ═══════════════════════════════
-       「サイドバーをあけたときに、ポップアップ等がサイドバーの後ろに隠れるように。ポップアップ内で
-         なんらかの操作したら、ポップアップが前部に来るように。サイドバー内をクリックした場合はまた
-         サイドバーを前部に。」 The z-index band itself is in css/intmap.css beside the other
-         `body.lsr-open` rules; this is the one bit of state it reads.
-       ⚠ «A FLOATING PANEL» IS ASKED OF THE LAYOUT, NOT OF A LIST OF SELECTORS. Walking up for the
-       first positioned ancestor catches every panel this app has and every one a later module adds —
-       a hand-written list would be one more place to forget, which is the shape this project keeps
-       paying for. The map's own canvas container is positioned too and is explicitly NOT a panel:
-       clicking the map is what OPENS a popup, and the report says a fresh popup belongs BEHIND the
-       sidebar. Capture phase, so a handler that stops propagation cannot hide the gesture. */
-    /* ══ ⚠⚠ (#R254) …AND A MAP POPUP COULD NEVER COME TO THE FRONT, BECAUSE IT HAS NO z-index ═══════
-       「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。サイドバー内をクリック
-         した場合はまたサイドバーを前部に。」 — reported again, and the half above is why. MEASURED on
-       the shipped build: `getComputedStyle('.maplibregl-popup').zIndex` is **auto**, its parent is
-       `#map`, and #map / #map-container / .operation-room are all `z-index:auto`, so a popup takes
-       part in the ROOT stacking context at level 0. `body.im-float-front` drops the sidebar from
-       2600 to its base **1000** — which is still above 0. So the demotion worked exactly as #R253
-       measured it for the panels that carry an explicit z-index (legends 1100, popovers 1300-1500,
-       cards 2200), and could not possibly work for a MapLibre popup.
-       ⚠ DEMOTING THE SIDEBAR IS NOT ENOUGH; THE THING BEING USED HAS TO BE NAMED. The panel under
-       the pointer is now marked `.im-front` and rises above the whole band on its own, whatever its
-       own z-index was (or wasn't). One element carries the mark at a time — it moves with the
-       pointer, and a pointerdown in a sidebar or on the map takes it away, which is the other two
-       sentences of the instruction. */
-    const _FRONT_SIDE='.sidebar,#layer-sidebar-r,.btn-toggle-sidebar,#lsr-toggle';
-    /* ══ ⚠ (#R255) THE SHELL IS NOT A PANEL, AND «SOME OPERATION» IS NOT ONLY A POINTERDOWN ═════════
-       「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。」— reported a third
-       time. #R253 built the demotion and #R254 named the raised element; MEASURED on this build both
-       do exactly what they say (a `.data-legend` goes 1100 → 2650 and the sidebar 2600 → 1000; a
-       MapLibre popup goes `auto` → 2650 and back). Two holes were left, and both are «operations»:
-
-       ① A WHEEL SCROLL AND A KEYSTROKE ARE NOT POINTERDOWNS. Reading a long card by scrolling it, or
-          typing into a field inside it, are the plainest cases of 「なんらかの操作」 there are, and
-          neither raised anything. `wheel` and `focusin` now count.
-       ② `#map-container` AND `.operation-room` ARE `position:relative` (css/intmap.css), so they are
-          positioned ancestors — and `panelOf` returns the FIRST one it finds. Anything inside the map
-          shell that is not itself positioned and not under the canvas therefore resolved to the SHELL,
-          and marking that `.im-front` puts the whole map (and every sidebar inside `.operation-room`)
-          into one 2650 box. The walk now refuses the shell by name as well as the canvas. */
-    /* ══ ⚠ (#R258) …AND A PANEL THAT SITS ABOVE THE BAND CAN NEVER BE COVERED BY THE SIDEBAR ════════
-       「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。左サイドバー内をクリック
-         した場合はまた左サイドバーを前部に。」— a FOURTH time. MEASURED on this build, the mechanism
-       #R254/#R255 built does work end to end: a pointerdown inside `#country-popup` takes it
-       `auto → .im-front → 2650` with the sidebar at 1000; a pointerdown in the left sidebar puts it
-       back (`popup 2200 / sidebar 2600`, and `elementFromPoint` over the overlap returns the
-       sidebar's row); a wheel inside the popup raises it again. What it cannot do is cover a panel
-       whose own z-index is ABOVE the band, and there was one: **`#compare-window` at 4000** — a
-       draggable, resizable window, i.e. exactly the kind of thing one «reaches into», sitting
-       permanently in front of both sidebars. It is in the card band (2200) now, so the sidebar
-       covers it and `.im-front` raises it, like every other panel. See js/compare.js.
-       Two more holes closed here:
-       ① `keydown` counts as an operation. `focusin` fires once; a panel re-rendered under the
-          caret (the trade / crop panels rebuild their body on every change) leaves the reader
-          typing into something that never announced itself.
-       ② A panel positioned `relative`/`sticky` WITH A Z-INDEX OF ITS OWN is a panel. `panelOf`
-          only accepted `absolute`/`fixed`, so a pointerdown inside such a panel found nothing and
-          took the DEMOTE branch — it pushed the panel being used behind the sidebar. A plain flow
-          element has `z-index:auto` and is still skipped, which is what keeps this narrow.
-          ⚠ Both sidebars are `relative` + `z-index:2600`, so they are named in `_NOT_PANEL` as
-          well as in `_FRONT_SIDE`: they are the shell this band is measured against, never a
-          panel inside it. */
-    /* == (#R508) <FRONT-MOST> IS A RAISE. IT MUST NEVER LOWER ANYTHING ==========================
-       「Terms of Service ・ Privacy Policy をクリックして読もうとしても、設定に邪魔されて読めない。」
-       MEASURED on the shipped build: opening Terms from the Settings footer is correct (both
-       overlays are `.modal-overlay` z-index 9999 and the legal one is later in the DOM, so it
-       paints on top) — and ONE wheel notch inside the terms text sinks it behind Settings:
-
-           afterOpen   legal 9999            / settings 9999
-           afterWheel  legal 2650 .im-front  / settings 9999
-
-       `#legal-modal` is `position:fixed`, so `panelOf` accepts it as «a floating panel» and marks
-       it. `.im-front` is `z-index:2650 !important`, and !important beats the class's own 9999 —
-       the mark that exists to bring a panel FORWARD pushed this one nine thousand levels BACK,
-       under a dialog nobody had touched. EVERY dialog in this app is at 9999 and every one of them
-       is marked the moment the reader scrolls, clicks or types inside it; it only becomes VISIBLE
-       when two of them are stacked, which is exactly the Settings → Terms path the report names.
-       ⚠ #R258 met the same shape from the other side (`#compare-window` at 4000 could never be
-       COVERED by the sidebar) and answered it by moving that window down INTO the band. A modal
-       cannot be moved into the band — it is above the band on purpose — so the invariant is stated
-       here instead: a layer already above `.im-front`'s own level is not a member of this band, and
-       the machinery neither raises nor demotes on account of it. Asked of the LAYOUT (#R253) rather
-       than of a list of dialog ids, so every later overlay inherits the answer for free.
-       ⚠ `_FRONT_Z` IS THE SAME NUMBER as `.im-front` in css/intmap.css. Two files stating one fact
-       is the shape this project keeps paying for, so tests/shell-css-surface-checks.test.mjs (#R508) reads both and
-       refuses a build where they have drifted. */
-    const _FRONT_Z=2650;
-    /* strictly ABOVE the band: a panel that currently carries the mark computes to exactly _FRONT_Z
-       and must stay demotable, so its own mark is skipped by class as well as by number. */
-    const _aboveBand=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
-        if(n.classList&&n.classList.contains('im-front')) continue;
-        let z=''; try{ z=getComputedStyle(n).zIndex; }catch(_){}
-        if(z&&z!=='auto'&&+z>_FRONT_Z) return true; }
-      return false; };
-    const _NOT_PANEL='#map,#map-container,.operation-room,.maplibregl-map,.maplibregl-canvas-container,'
-      +'.maplibregl-control-container,canvas,.sidebar,#sidebar,#layer-sidebar-r';
-    function _wireFrontMost(){ if(window.__imFrontMostWired) return; window.__imFrontMostWired=1;
-      /* the floating panel an event landed in — the first positioned ancestor, asked of the LAYOUT
-         rather than of a list of selectors (#R253). The map's own canvas is explicitly not one. */
-      /* ⚠ (front-mark-outer-context) THE MARK GOES WHERE ITS z-index COMPETES. The first positioned
-         ancestor is the panel only when nothing above it traps its z-index. A dropdown inside a pill
-         that is itself a stacking context (`#ms-results` inside the fixed, z-indexed `#map-search`)
-         got the mark and could not leave its parent's context: measured in production 2026-09-30, the
-         pointerdown on a search result set im-float-front, the Köppen legend (1100) rose over the pill
-         (1002), the pointerup landed on the legend and the result was never chosen. So after the
-         innermost positioned element, the walk keeps climbing and moves the mark to every ancestor
-         that FORMS A STACKING CONTEXT and can take a z-index (positioned: fixed/sticky always, abs/rel
-         with a z-index or a transform/filter/opacity) — the outermost one is the element that stands
-         in the band. It still stops at the map and the shell (_NOT_PANEL), keeping what it found. */
-      const trapsZ=(cs)=>{ const p=cs.position; if(p==='fixed'||p==='sticky') return true;
-          if(p!=='absolute'&&p!=='relative') return false;
-          return (cs.zIndex&&cs.zIndex!=='auto')||cs.transform!=='none'||cs.filter!=='none'||+cs.opacity<1; };
-      const panelOf=(el)=>{ let found=null;
-        for(let n=el; n&&n!==document.body; n=n.parentElement){
-          if(n.matches&&n.matches(_NOT_PANEL)) return found;
-          let cs=null; try{ cs=getComputedStyle(n); }catch(_){}
-          if(!cs) continue;
-          const p=cs.position, z=cs.zIndex;
-          if(!found){
-            if(p==='absolute'||p==='fixed') found=n;
-            else if((p==='relative'||p==='sticky')&&z&&z!=='auto') found=n;
-          } else if(trapsZ(cs)) found=n; }
-        return found; };
-      const raise=(el)=>{ try{ document.querySelectorAll('.im-front').forEach(n=>{ if(n!==el) n.classList.remove('im-front'); }); }catch(_){}
-        if(el) el.classList.add('im-front'); };
-      const act=(t,mayDemote)=>{ if(!t||!t.closest) return;
-        if(_aboveBand(t)) return;   /* (#R508) a dialog is above this band — raising it would sink it */
-        if(t.closest(_FRONT_SIDE)){ document.body.classList.remove('im-float-front'); raise(null); return; }
-        const p=panelOf(t);
-        /* a wheel over the map must not clear a panel the reader is using — only a POINTERDOWN on the
-           map means «I have moved on». So the passive signals raise, and never demote. */
-        if(!p){ if(!mayDemote) return; document.body.classList.remove('im-float-front'); raise(null); return; }
-        document.body.classList.add('im-float-front'); raise(p); };
-      document.addEventListener('pointerdown',(e)=>{ try{ act(e.target,true); }catch(_){} },true);
-      document.addEventListener('wheel',(e)=>{ try{ act(e.target,false); }catch(_){} },{capture:true,passive:true});
-      document.addEventListener('focusin',(e)=>{ try{ act(e.target,false); }catch(_){} },true);
-      document.addEventListener('keydown',(e)=>{ try{ act(e.target,false); }catch(_){} },true);   /* (#R258) typing is an operation */
-    }
+    const isMob=()=>window.IntMapDevice.compact();
+    /* ══ (#R253–#R258, #R508, front-mark-outer-context) WHO IS IN FRONT — the sidebar, or the panel being
+       used — is decided by js/ui-stack.js (window.IntMapStack), which also orders the floating
+       windows among themselves. The reasoning of every round that shaped it moved there with the code. */
     const T=window.IntMapLang.pick(()=>HOST.lang);
     /* ⚠ (#R459) AN ATTRIBUTE THAT OUTLIVES A LANGUAGE CHANGE NEEDS BOTH HALVES. The text is right the
        moment the element is built; the KEY is what js/app-body.js's updateI18n() re-applies on every
@@ -849,15 +714,15 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'body.lsr-avail .operation-room{position:relative;}'
         /* (#R154) LEFT-EDGE drag-resizer — mirror of the left sidebar's #sb-resizer so the right sidebar is
            left-right adjustable too ("左サイドバーと同様に左右に調整"). Grows as the cursor moves LEFT. Desktop only. */
-        +'#layer-sidebar-r .lsr-resizer{position:absolute;top:0;left:-3px;width:8px;height:100%;cursor:col-resize;z-index:1200;touch-action:none;}'
+        +'#layer-sidebar-r .lsr-resizer{position:absolute;top:0;left:-3px;width:8px;height:100%;cursor:col-resize;z-index:calc(var(--z-dropdown) - 100);touch-action:none;}'
         +'#layer-sidebar-r .lsr-resizer:hover{background:linear-gradient(to left,transparent,rgba(0,122,255,0.35),transparent);}'
-        +'@media(max-width:768px){#layer-sidebar-r .lsr-resizer{display:none;}}'
+        +'@media'+window.IntMapDevice.COMPACT+'{#layer-sidebar-r .lsr-resizer{display:none;}}'
         /* (#R160) The right sidebar now OVERLAYS the map on DESKTOP too (previously it pushed the map with
            margin-right, which resized + recentred the map = "地図領域の位置が動く"). The map-container keeps its
            fixed full width; the panel slides over the right strip. The right-anchored HUD slides left to clear
            it (rules above). Mobile already overlaid — this just makes desktop match. */
-        +'@media(max-width:768px){#layer-sidebar-r{z-index:1460;box-shadow:-6px 0 30px rgba(0,0,0,0.32);}#lsr-toggle{display:none !important;}}'
-        +'#layer-sidebar-r{position:absolute;top:0;right:0;bottom:0;width:var(--lsr-w);z-index:1000;background:var(--sidebar-bg);backdrop-filter:blur(25px) saturate(160%);-webkit-backdrop-filter:blur(25px) saturate(160%);border-left:1px solid rgba(128,128,128,0.18);display:flex;flex-direction:column;box-sizing:border-box;transform:translateX(102%);transition:transform .38s cubic-bezier(0.25,1,0.5,1);min-height:0;pointer-events:none;visibility:hidden;}'
+        +'@media'+window.IntMapDevice.COMPACT+'{#layer-sidebar-r{z-index:calc(var(--z-dropdown) + 160);box-shadow:-6px 0 30px rgba(0,0,0,0.32);}#lsr-toggle{display:none !important;}}'
+        +'#layer-sidebar-r{position:absolute;top:0;right:0;bottom:0;width:var(--lsr-w);z-index:var(--z-controls);background:var(--sidebar-bg);backdrop-filter:blur(25px) saturate(160%);-webkit-backdrop-filter:blur(25px) saturate(160%);border-left:1px solid rgba(128,128,128,0.18);display:flex;flex-direction:column;box-sizing:border-box;transform:translateX(102%);transition:transform .38s cubic-bezier(0.25,1,0.5,1);min-height:0;pointer-events:none;visibility:hidden;}'
         +'#layer-sidebar-r.open{transform:translateX(0);pointer-events:auto;visibility:visible;}'
         /* ══ (#R191) THE LAYER SIDEBAR FOLLOWS THE APPEARANCE SETTING LIKE EVERY OTHER SURFACE ═══════
            「レイヤーサイドバーは無条件で透過するな。」 The rule above paints it with --sidebar-bg, which
@@ -870,7 +735,7 @@ window.IntMapModules.layerSidebar=function(HOST){
            frosted material above untouched, which is the other half of the instruction: not
            unconditionally opaque either. */
         +'body:not(.sidebar-translucent):not(.sidebar-glass2) #layer-sidebar-r{background:var(--panel-bg,var(--card-bg));backdrop-filter:none;-webkit-backdrop-filter:none;}'
-        +'#layer-sidebar-r .lsr-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;padding-top:max(14px,env(safe-area-inset-top));}'
+        +'#layer-sidebar-r .lsr-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;padding-top:max(14px,var(--safe-top));}'
         +'#layer-sidebar-r .lsr-head b{font-size:16px;color:var(--text-main);}'
         +'#layer-sidebar-r .lsr-x{background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;border-radius:8px;padding:2px 8px;}'
         +'#layer-sidebar-r .lsr-x:hover{background:var(--input-bg);color:var(--text-main);}'
@@ -1070,7 +935,7 @@ window.IntMapModules.layerSidebar=function(HOST){
            uses, so the two can no longer disagree, and in the two FROSTED appearances `--panel-bg` is
            undefined and the fallback keeps #R115's rule («Active layers is OPAQUE — never transparent»)
            byte-for-byte. */
-        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--panel-bg,var(--card-bg));z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'   /* (#R115) opaque — never transparent */
+        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--panel-bg,var(--card-bg));z-index:calc(var(--z-inset) + 6);margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'   /* (#R115) opaque — never transparent */
         /* ══ ⚠⚠⚠ (#R469) 「フロストガラス時に、『表示中のレイヤー』の背景の色が濃すぎ。」 ═══════════════
            MEASURED, frosted + dark, same moment: this bar computed to `rgb(28,28,30)` — FULLY OPAQUE —
            sitting on a panel computed at `rgba(28,28,30,0.85)` with a 25 px blur. The rule above is why:
@@ -1087,13 +952,13 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r #layer-active-section .active-lyr-chips{display:none;}'
         +'#layer-sidebar-r .lsr-body{padding-top:0;}'   /* (#R106) flush the Search box to the Active-layers bar (was a 2px see-through seam) */
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
-        +'#lsr-toggle{position:fixed;top:50%;right:0;z-index:1460;background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(128,128,128,0.18);border-right:none;color:var(--text-muted);width:22px;height:64px;padding:0;border-radius:10px 0 0 10px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:-4px 0 16px rgba(0,0,0,0.12);transition:right 0.38s cubic-bezier(0.25,1,0.5,1),background .2s,color .2s;transform:translateY(-50%);}'
+        +'#lsr-toggle{position:fixed;top:50%;right:0;z-index:calc(var(--z-dropdown) + 160);background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(128,128,128,0.18);border-right:none;color:var(--text-muted);width:22px;height:64px;padding:0;border-radius:10px 0 0 10px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:-4px 0 16px rgba(0,0,0,0.12);transition:right 0.38s cubic-bezier(0.25,1,0.5,1),background .2s,color .2s;transform:translateY(-50%);}'
         +'body.lsr-avail #lsr-toggle{display:flex;}'
         +'body.lsr-open #lsr-toggle{right:var(--lsr-w);}'
         +'#lsr-toggle:hover{background:var(--card-bg);color:var(--primary-color);}'
         +'#lsr-toggle .chev{width:7px;height:7px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform 0.38s cubic-bezier(0.25,1,0.5,1);}'
         +'body.lsr-open #lsr-toggle .chev{transform:rotate(-135deg);}'
-        +'@media(max-width:768px){ #layer-sidebar-r{display:none;} #lsr-toggle{display:none !important;} }';
+        +'@media'+window.IntMapDevice.COMPACT+'{ #layer-sidebar-r{display:none;} #lsr-toggle{display:none !important;} }';
       document.head.appendChild(st); }
     /* ⚠⚠⚠ (#R251) THE PANEL FOLLOWS THE LANGUAGE. `build()` runs once and `sb.innerHTML` carries the
        panel title, the close button's tooltip and the search placeholder, so a reader who switched
@@ -1152,7 +1017,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       const tg=document.createElement('button'); tg.id='lsr-toggle'; titleKey(tg,'ttlLayersPanel'); tg.innerHTML='<span class="chev"></span>';
       tg.addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
       document.body.appendChild(tg); }
-    _wireFrontMost();
+    window.IntMapStack.wire();
     /* ---- (#R70) tile-grid builder: the classic dropdown is the data source, never the UI ---- */
     function rowsFromDropdown(){ const dd=document.getElementById('layer-dropdown'); const out=[]; if(!dd) return out;
       /* ══ (layer-manifest) THE ROWS ARE LISTED BY THE MANIFEST, NOT FOUND BY WALKING THE REGISTRY ═════════════
@@ -2129,7 +1994,7 @@ window.IntMapModules.ticker=function(HOST){
   window.IntMapTicker=(function(){
     const T=window.IntMapLang.pick(()=>HOST.lang);
     const esc=window.IntMapSafe.html;   /* the one encoder (index.html IntMapSafe) — the local copy here did not encode ' */
-    const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+    const isMob=()=>window.IntMapDevice.compact();
     let bar=null,track=null,built=false,timer=0,mkt=[],news=[];
     /* (#R102) which symbols / items the ticker shows is user-configurable in Settings ("表示銘柄や表示項目を設定から
        変更可能に"). Each market instrument carries a stable key; `cfg.syms` is the enabled set, `cfg.news` gates the
@@ -2165,7 +2030,7 @@ window.IntMapModules.ticker=function(HOST){
          rounding) that can ever make the bar overlap the map. */
       st.textContent='body.ticker-on{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}'
         +'body.ticker-on .operation-room{flex:1 1 auto;min-height:0;height:auto !important;}'
-        +'#ticker-bar{position:relative;flex:0 0 30px;width:100%;height:30px;z-index:500;display:flex;align-items:center;background:var(--bg-color);border-top:1px solid rgba(128,128,128,0.25);overflow:hidden;font-size:12px;font-variant-numeric:tabular-nums;box-sizing:border-box;}'
+        +'#ticker-bar{position:relative;flex:0 0 30px;width:100%;height:30px;z-index:calc(var(--z-marker) + 400);display:flex;align-items:center;background:var(--bg-color);border-top:1px solid rgba(128,128,128,0.25);overflow:hidden;font-size:12px;font-variant-numeric:tabular-nums;box-sizing:border-box;}'
         +'#ticker-bar .tk-track{display:inline-flex;white-space:nowrap;will-change:transform;animation:tkScroll var(--tk-dur,70s) linear infinite;align-items:center;}'
         +'#ticker-bar:hover .tk-track{animation-play-state:paused;}'
         +'@keyframes tkScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}'
@@ -2180,7 +2045,7 @@ window.IntMapModules.ticker=function(HOST){
         +'#ticker-bar .tk-scroll{flex:1 1 auto;min-width:0;height:100%;overflow:hidden;display:flex;align-items:center;}'
         +'#ticker-bar .tk-hide{flex:0 0 auto;width:28px;align-self:stretch;display:flex;align-items:center;justify-content:center;background:transparent;border-left:1px solid rgba(128,128,128,0.22);color:var(--text-muted);cursor:pointer;font-size:15px;line-height:1;padding:0;}'
         +'#ticker-bar .tk-hide:hover{color:var(--text-main);background:var(--input-bg);}'
-        +'@media(max-width:768px){ #ticker-bar{display:none !important;} body.ticker-on{display:block;} body.ticker-on .operation-room{height:100vh !important;height:100dvh !important;} }';
+        +'@media'+window.IntMapDevice.COMPACT+'{ #ticker-bar{display:none !important;} body.ticker-on{display:block;} body.ticker-on .operation-room{height:100vh !important;height:100dvh !important;} }';
       document.head.appendChild(st); }
     async function loadMarkets(){ const out=[];
       /* ⚠ ER-API FIRST. Measured in production: api.fxratesapi.com answers 429 with
@@ -3881,7 +3746,7 @@ window.IntMapModules.share=function(HOST){
     const L=window.IntMapLang.pick(()=>HOST.lang);
     let panel=null, styled=false;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
-      s.textContent='#share-panel{position:absolute;z-index:1800;left:50%;top:80px;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:16px 18px;font-size:13px;}'
+      s.textContent='#share-panel{position:absolute;z-index:calc(var(--z-sheet) + 150);left:50%;top:80px;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:16px 18px;font-size:13px;}'
         +'#share-panel h4{margin:0 0 4px;font-size:15px;font-weight:700;}'
         +'#share-panel .sh-x{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--text-muted);font-size:20px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:8px;}'
         +'#share-panel .sh-x:hover{background:var(--input-bg);color:var(--text-main);}'
@@ -3893,7 +3758,7 @@ window.IntMapModules.share=function(HOST){
         +'#share-panel .sh-btn:active{transform:scale(0.96);}'
         +'#share-panel .sh-inc{margin-top:13px;font-size:11px;color:var(--text-muted);line-height:1.6;border-top:1px solid rgba(128,128,128,0.16);padding-top:10px;}'
         +'#share-panel .sh-inc b{color:var(--text-main);font-weight:600;}'
-        +'@media(max-width:768px){#share-panel{left:8px;right:8px;width:auto;transform:none;top:auto;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px);}}';
+        +'@media'+window.IntMapDevice.COMPACT+'{#share-panel{left:8px;right:8px;width:auto;transform:none;top:auto;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px);}}';
       document.head.appendChild(s); }
     function close(){ if(panel) panel.style.display='none'; }
     function open(){

@@ -87,7 +87,7 @@ export function makeLayerDropdown(HOST, CTX) {
     layerDropdown.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option, :scope > hr, :scope > .lyr-others-note, :scope > .lyr-head, :scope > .layer-group-title').forEach(el=>{ if(el.style && el.style.display==='none') el.style.display=''; });
     /* (#R29) On mobile, re-collapse ONLY "Others (beta)" so it stays a pulldown ("Others(beta)だけプルダウン")
        — unless the user has explicitly opened it this session. Every other group stays expanded. */
-    try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const oh=Array.from(layerDropdown.querySelectorAll('.lyr-head')).find(h=>h.getAttribute('data-i18n')==='lyrGrpOthers'); if(oh && !oh.dataset.userToggled) _collapseGroup(oh); } }catch(_){}
+    try{ if(window.IntMapDevice.compact()){ const oh=Array.from(layerDropdown.querySelectorAll('.lyr-head')).find(h=>h.getAttribute('data-i18n')==='lyrGrpOthers'); if(oh && !oh.dataset.userToggled) _collapseGroup(oh); } }catch(_){}
   }catch(_){} };
   /* ⚠ (#R296) THREE LISTENERS ON THE REGISTRY WENT WITH THE SURFACE — a click handler on a node that
      is permanently `display:none` can never fire, and #R268's lesson is that a line nothing calls is

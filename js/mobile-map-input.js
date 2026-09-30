@@ -92,19 +92,19 @@ window.IntMapModules.mobileMapInput=function(HOST){
    measurement tool is active (so right-click still drives the menu). ===== */
     (function(){
   if(!GE().hasRenderer()) return;
-  const mob=()=>{ try{ return HOST.isMobile(); }catch(_){ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); } };
+  const mob=()=>{ try{ return HOST.isMobile(); }catch(_){ return window.IntMapDevice.compact(); } };
   const mc=document.getElementById('map-container')||document.body;
   const st=document.createElement('style'); st.textContent=`
-    #m-crosshair{ display:none; position:absolute; top:50%; left:50%; width:28px; height:28px; margin:-14px 0 0 -14px; pointer-events:none; z-index:600; }
+    #m-crosshair{ display:none; position:absolute; top:50%; left:50%; width:28px; height:28px; margin:-14px 0 0 -14px; pointer-events:none; z-index:calc(var(--z-map-overlay) - 300); }
     #m-crosshair::before,#m-crosshair::after{ content:''; position:absolute; background:rgba(255,255,255,0.6); box-shadow:0 0 1.5px rgba(0,0,0,0.7); }
     #m-crosshair::before{ left:50%; top:0; width:1.4px; height:100%; margin-left:-0.7px; }
     #m-crosshair::after{ top:50%; left:0; height:1.4px; width:100%; margin-top:-0.7px; }
-    #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:1200; background:var(--primary-fill); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
+    #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:calc(var(--z-dropdown) - 100); background:var(--primary-fill); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
     #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
     /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
        smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */
     /* (#R18) The always-on readout hugs the sheet — only a sliver of a gap ("ボトムシートとの間にわずかに隙間がある程度まで下げて"). */
-    @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 4px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
+    @media${window.IntMapDevice.COMPACT}{ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 4px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
       .coord-readout span{ white-space:nowrap; flex-shrink:0; }
       /* (#R16) The crosshair must mark the center of the VISIBLE map space — the area NOT covered by the
          bottom sheet — not the center of the phone screen. Sit it halfway down the uncovered area. */

@@ -23,7 +23,7 @@ window.IntMapModules.onboarding=function(HOST){
       /* (#R16) Skip the auto-demo on phones: it eagerly loaded 4 heavy layers (incl. Köppen) on the very
          first visit — slowing the mobile startup the user called slow, and adding to the Köppen OOM risk.
          Mobile gets a clean, fast first paint instead. Desktop keeps the showcase. */
-      try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return; }catch(_){}
+      try{ if(window.IntMapDevice.compact()) return; }catch(_){}
     }
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     try{ const old=document.getElementById('im-demo-pill'); if(old) old.remove(); }catch(_){}
@@ -37,7 +37,7 @@ window.IntMapModules.onboarding=function(HOST){
     let idx=-1,timer=null,paused=false,demoToggling=false,done=false,curId=null;
     const gcb=(id)=>document.getElementById(id);
     const pill=document.createElement('div'); pill.id='im-demo-pill';
-    pill.style.cssText='position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--sheet-cover, 20px) + 20px);z-index:1300;display:flex;align-items:center;gap:9px;padding:7px 13px;border-radius:999px;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.22);box-shadow:var(--shadow);backdrop-filter:blur(14px);font-size:12.5px;color:var(--text-main);max-width:92vw;';
+    pill.style.cssText='position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--sheet-cover, 20px) + 20px);z-index:var(--z-dropdown);display:flex;align-items:center;gap:9px;padding:7px 13px;border-radius:999px;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.22);box-shadow:var(--shadow);backdrop-filter:blur(14px);font-size:12.5px;color:var(--text-main);max-width:92vw;';
     (document.getElementById('map-container')||document.body).appendChild(pill);
     const setOff=(id)=>{ const c=id&&gcb(id); if(c&&c.checked){ demoToggling=true; c.checked=false; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
     const setOn=(id)=>{ const c=gcb(id); if(c&&!c.checked){ demoToggling=true; c.checked=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
@@ -104,9 +104,9 @@ window.IntMapModules.onboarding=function(HOST){
     const de=HOST.lang==='de';   /* (#R35) welcome screen now full 3-language (was jp/en only → leaked English in DE) */
     const isM=(typeof isMobile==='function' && isMobile());
     const ov=document.createElement('div'); ov.id='im-welcome';
-    ov.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;justify-content:center;'+(isM?'align-items:flex-end;':'align-items:center;')+'background:rgba(0,0,0,0.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;transition:opacity 0.28s ease;';
+    ov.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-overlay) + 10);display:flex;justify-content:center;'+(isM?'align-items:flex-end;':'align-items:center;')+'background:rgba(0,0,0,0.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;transition:opacity 0.28s ease;';
     const card=document.createElement('div');
-    card.style.cssText='width:min(440px,100%);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--popup-bg);color:var(--text-main);box-shadow:0 18px 60px rgba(0,0,0,0.4);padding:26px 24px max(24px,env(safe-area-inset-bottom)) 24px;box-sizing:border-box;'+(isM?'border-radius:22px 22px 0 0;animation:mSheetUp 0.42s var(--sheet-ease);':'border-radius:22px;margin:16px;');
+    card.style.cssText='width:min(440px,100%);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--popup-bg);color:var(--text-main);box-shadow:0 18px 60px rgba(0,0,0,0.4);padding:26px 24px max(24px,var(--safe-bottom)) 24px;box-sizing:border-box;'+(isM?'border-radius:22px 22px 0 0;animation:mSheetUp 0.42s var(--sheet-ease);':'border-radius:22px;margin:16px;');
     if(isM){ const g=document.createElement('div'); g.style.cssText='width:38px;height:5px;border-radius:3px;background:rgba(128,128,128,0.4);margin:-8px auto 14px;'; card.appendChild(g); }
     /* (#R30) Clean SF-Symbol-style line icons instead of emojis ("中途半端にダサい絵文字を入れるな"). */
     const ICONS={

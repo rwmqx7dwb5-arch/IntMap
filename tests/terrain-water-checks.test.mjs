@@ -43,6 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { tokens as zTokens } from '../scripts/z-layers.mjs';
 import { lazyFiles } from './app-source.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 
@@ -604,14 +605,14 @@ test('R270 ① the terrain panel joins the window band and is placed against a M
   assert.match(m[1], /#sidebar/, 'the left sidebar is the thing that covered it');
   assert.match(m[1], /_twMoved/, 'a position the reader chose must not be overwritten');
 
-  /* the band itself is the window manager's, and it is still below the sidebars */
-  const wm = codeOnly(read('js/window-manager.js'));
-  const b = /WIN_Z_BASE=(\d+),\s*WIN_Z_CAP=(\d+)/.exec(wm);
-  assert.ok(b, 'the window band must be declared in one place');
-  const z = /panel\.style\.zIndex='(\d+)'/.exec(s);
-  assert.ok(z, 'the panel must state its z-index');
-  assert.ok(+z[1] >= +b[1] && +z[1] <= +b[2],
-    `the panel's z-index (${z[1]}) must be inside the window band ${b[1]}–${b[2]}`);
+  /* the band itself is the stacking owner's (js/ui-stack.js, ui-layer-owner): the --z-window layer of
+     css/intmap.css, under --z-shell-front — the panel asks the owner for a level inside it */
+  const tok = zTokens(read('css/intmap.css'));
+  const z = /panel\.style\.zIndex=window\.IntMapStack\.z\('window',\s*(\d+)\)/.exec(s);
+  assert.ok(z, 'the panel must take its z-index from the stacking owner');
+  const lv = tok['--z-window'] + (+z[1]);
+  assert.ok(lv > tok['--z-window'] && lv < tok['--z-shell-front'],
+    `the panel's z-index (${lv}) must be inside the window band ${tok['--z-window']}–${tok['--z-shell-front'] - 1}`);
 });
 
 test('R270 ① one row height in the panel, and the disclosures are on the list', () => {

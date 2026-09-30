@@ -113,7 +113,7 @@ export function makeThemeSky(HOST, CTX) {
     const satCont=document.getElementById('map-container'), satPanel=document.getElementById('sat-controller');
     /* (#R101) mobile: the panel is docked in the tools sheet → keep it available. desktop: show only when the
        user has explicitly opened it (satPanelDismissed=false), never merely because the basemap is Satellite. */
-    if(satPanel){ const _satMob=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; satPanel.style.display=(sat&&(_satMob||!HOST.satPanelDismissed))?'block':'none'; }
+    if(satPanel){ const _satMob=window.IntMapDevice.compact(); satPanel.style.display=(sat&&(_satMob||!HOST.satPanelDismissed))?'block':'none'; }
     if(satCont) satCont.classList.toggle('sat-on',sat);
     [0,1].forEach(i=>{ const L='sat-fx-'+i; if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',(sat&&i===HOST.satActive)?'visible':'none'); });
     if(sat){ try{ satRenderController(); }catch(_){} }

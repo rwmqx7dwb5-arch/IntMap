@@ -182,12 +182,19 @@ export function makeMapNarrator(HOST, CTX) {
   const schedule = () => { clearTimeout(timer); timer = setTimeout(() => { ensureFocusable(); speak(summarise()); }, 1200); };
 
   let moved = 0;
+  let pressing = false;   /* true only while step() is inside its own pressAt */
   const wire = () => {
     try { GE().events.on('moveend', () => { moved++; schedule(); }); } catch (_) {}
     /* a pointer press on a walkable feature is the selection too — observed, never claimed */
     try {
       GE().events.on('click', (e) => {
         try {
+          /* the keyboard walk's own press (step → pressAt, synchronous) has already set `selected` and
+             said «Feature k of n». Scheduling a summary for it too replaced that sentence 1.2 s later —
+             and at once when the press's other click owners held the main thread past the timer
+             (measured on CI 2026-09-30: the status read the summary 1.5 s after Alt+N, so the walk's
+             own announcement could be replaced before it was ever read out). */
+          if (pressing) return;
           const ids = walkable(); if (!ids.length || !e || !e.point) return;
           const hit = (GE().coords.queryRenderedFeatures([e.point.x, e.point.y], { layers: ids }) || [])[0];
           selected = hit ? featureName(hit) : ''; schedule();
@@ -254,7 +261,8 @@ export function makeMapNarrator(HOST, CTX) {
     selected = featureName(c.feature);
     const label = selected || tr(lang(), 'unnamed feature', '名前のない地物');
     speak(tr(lang(), 'Feature ' + (at + 1) + ' of ' + list.length + ': ' + label, '地物 ' + (at + 1) + ' / ' + list.length + ': ' + label));
-    try { GE().events.pressAt({ x: c.x, y: c.y }); } catch (_) {}
+    pressing = true;
+    try { GE().events.pressAt({ x: c.x, y: c.y }); } catch (_) {} finally { pressing = false; }
     return true;
   }
   document.addEventListener('keydown', (e) => {

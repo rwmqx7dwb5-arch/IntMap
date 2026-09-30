@@ -210,7 +210,7 @@ window.IntMapModules.communityBoard=function(HOST){
   /* Public profile card (#28) — tap a community author to see their name, avatar & bio. */
   async function imViewProfile(uid,author){
     let m=document.getElementById('profile-modal');
-    if(!m){ m=document.createElement('div'); m.id='profile-modal'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5200;padding:20px;'; m.onclick=e=>{ if(e.target===m) m.style.display='none'; }; document.body.appendChild(m); }
+    if(!m){ m=document.createElement('div'); m.id='profile-modal'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2200);padding:20px;'; m.onclick=e=>{ if(e.target===m) m.style.display='none'; }; document.body.appendChild(m); }
     let bio='', avatar='', name=author||'';
     if(uid && HOST.DB){ try{
       /* (#R134) Read the PUBLIC-safe projection (profiles_public = id/display_name/bio/avatar_url only) so a

@@ -801,7 +801,7 @@ window.IntMapModules.tsunami=function(HOST){
       /* (#R189, re-learned in #R192) 「ポップアップは透過するな」 — --card-bg is OPAQUE in both
          themes; --popup-bg is rgba with no backdrop-filter, and the sidebar read straight through it.
          Right-hand side, because the left is where the app's own sidebar lives. */
-      panel.style.cssText='position:fixed;right:16px;top:150px;width:min(340px,92vw);z-index:1403;display:none;flex-direction:column;'
+      panel.style.cssText='position:fixed;right:16px;top:150px;width:min(340px,92vw);z-index:calc(var(--z-dropdown) + 103);display:none;flex-direction:column;'
         +'background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       document.body.appendChild(panel);
       return panel;

@@ -82,11 +82,11 @@ interface IntMapPublished {
   __imSpaceBody: any;
   /** js/lazy-modules.js — index.html's vite:preloadError listener asks it which reload prompt is true (stale-tab-chunks) */
   __imChunkFailed: () => void;
+  /** js/safe-html.js — the XSS output encoder (#R138); published through the global its IIFE is handed */
+  IntMapSafe: any;
 }
 
 interface PublishedElsewhere {
-  /** index.html's inline <script> (the XSS output encoder, #R138) */
-  IntMapSafe: any;
   /** maplibre-contour's older UMD global name; `mlcontour` is the current one */
   maplibreContour: any;
 }

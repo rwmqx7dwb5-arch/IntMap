@@ -45,8 +45,8 @@ window.IntMapPick=(function(){
     bar=document.createElement('div'); bar.id='im-pick-bar';
     /* ⚠ NOT a wide bar. It has to name the gesture without becoming the next thing that covers the
        map, so it is one line, centred, and pinned under the top chrome. */
-    bar.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);'
-      +'z-index:1600;display:none;align-items:center;gap:10px;max-width:min(440px,92vw);padding:8px 10px 8px 13px;'
+    bar.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--safe-top) + 64px);'
+      +'z-index:calc(var(--z-sheet) - 50);display:none;align-items:center;gap:10px;max-width:min(440px,92vw);padding:8px 10px 8px 13px;'
       +'border-radius:999px;background:var(--card-bg,#1c1c1e);color:var(--text-main,#fff);'
       +'border:1px solid var(--glass-border,rgba(128,128,128,0.3));box-shadow:0 10px 30px rgba(0,0,0,0.4);'
       +'font-size:12.5px;font-weight:600;pointer-events:auto;';

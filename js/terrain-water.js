@@ -1981,7 +1981,7 @@ window.IntMapModules.terrainWater=function(HOST){
              'Elevación real. El agua se integra en el tiempo con las ecuaciones de aguas someras en forma inercial local (Bates 2010, esquema centrado en q de de Almeida 2012) y fricción de Manning n = 0,035: una onda de crecida tarda lo que tarda. El mismo modelo cubre todo el recorrido: la malla se extiende hacia donde va el agua, con el mismo tamaño de celda. ⏭ sigue integrando hasta que el agua se detiene.')
           +'</div></details>'
         +'</div>'
-        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:'+TW_PAD+';padding-bottom:calc('+TW_GAP+' + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:'+TW_GAP+';background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
+        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:'+TW_PAD+';padding-bottom:calc('+TW_GAP+' + var(--safe-bottom));display:flex;flex-direction:column;gap:'+TW_GAP+';background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
         /* ══ (#R258) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
@@ -2422,7 +2422,7 @@ window.IntMapModules.terrainWater=function(HOST){
         panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:min(82vh,calc(100vh - 104px));display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel);
         try{ HOST.registerWindow&&HOST.registerWindow(panel); }catch(_){}
-        try{ panel.style.zIndex='2400'; }catch(_){} }
+        try{ panel.style.zIndex=window.IntMapStack.z('window',200); }catch(_){} }
       placeClear();
       panel.style.display='flex'; opened=true; render();
       try{ HOST.bringToFront&&HOST.bringToFront(panel); }catch(_){}

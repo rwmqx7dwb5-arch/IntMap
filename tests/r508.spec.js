@@ -29,8 +29,9 @@ test.beforeAll(async ({ browser }) => {
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
-  /* the front-most machinery is wired by js/map-ui.js, and the legal modal by js/legal.js */
-  await page.waitForFunction(() => window.__imFrontMostWired === 1 && typeof window.openLegal === 'function',
+  /* the front-most machinery is wired by js/ui-stack.js (ui-layer-owner; it was js/map-ui.js's
+     `__imFrontMostWired`), and the legal modal by js/legal.js */
+  await page.waitForFunction(() => !!(window.IntMapStack && window.IntMapStack.wired()) && typeof window.openLegal === 'function',
     null, { timeout: 45_000 });
   /* ⚠ THE FIXTURE IS «SETTINGS IS OPEN AND TERMS WAS OPENED FROM IT», and it is built HERE rather
      than inside ①. Reaching that state is the boot cost every spec pays for its own setup (see

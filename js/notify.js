@@ -24,7 +24,7 @@
  *      and what was folded into the message already showing, so the claim is measurable.
  *  The six functions are kept and delegate here (the brief: 「関数は消さない」). The one exception to
  *  the LOOK is js/playground.js `majorToast`, which keeps the simulator's own «Breaking» card at the
- *  top of the screen (its HUD sits above the toast layer, z-index 6300 against --z-toast 3000) and
+ *  top of the screen (its HUD sits above the toast layer at calc(var(--z-toast) + 3300)) and
  *  hands its text to this region with `visual:false` so it is announced like everything else.
  * ==========================================================================*/
 

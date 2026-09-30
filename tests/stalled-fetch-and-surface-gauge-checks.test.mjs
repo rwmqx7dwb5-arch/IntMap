@@ -256,7 +256,15 @@ test('② (cont.) the gauge reads a tree through the same codeOnly — regex lit
 });
 
 /* ── ③ the register agrees with the grammar ────────────────────────────────────────────────────── */
-test('③ every window.X assignment in js/ and src/ is in the register, and the register holds nothing else', () => {
+/* ⚠ The fact is «an assignment to a property of the global object», not the spelling `window.X =`
+   (ui-layer-owner, measured 2026-09-30: nine modules publish through `globalThis.X =` or through an IIFE
+   handed the global — `(function (root) { root.X = … })(typeof globalThis !== 'undefined' ? globalThis : this)`).
+   This walk is written apart from scripts/global-surface.mjs on purpose: it is the second witness. The
+   object is `window` / `globalThis`, or a parameter of a function CALLED with one of them (or a
+   conditional / logical of them) in that position, unless an inner function's own parameter shadows it.
+   `self.X =` is a worker's own global (the `self.onmessage` of src/*-worker.js), not a page publication,
+   and a name that is itself the global object (js/gis-runtime.js installing `globalThis.window`) is a shim. */
+test('③ every assignment to a property of the global object in js/ and src/ is in the register, and the register holds nothing else', () => {
   const ast = new Set();
   for (const d of ['js', 'src']) {
     if (!existsSync(join(ROOT, d))) continue;
@@ -264,16 +272,32 @@ test('③ every window.X assignment in js/ and src/ is in the register, and the 
       const src = readFileSync(join(ROOT, d, f), 'utf8');
       let tree;
       try { tree = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module', allowHashBang: true }); } catch (_) { tree = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'script' }); }
-      (function walk(n) {
+      const isGlobal = (e) => !!e && ((e.type === 'Identifier' && (e.name === 'window' || e.name === 'globalThis'))
+        || (e.type === 'ConditionalExpression' && (isGlobal(e.consequent) || isGlobal(e.alternate)))
+        || (e.type === 'LogicalExpression' && (isGlobal(e.left) || isGlobal(e.right))));
+      const isFn = (e) => !!e && (e.type === 'FunctionExpression' || e.type === 'ArrowFunctionExpression');
+      const unshadowed = (names, fn) => new Set([...names].filter((a) => !fn.params.some((p) => p.type === 'Identifier' && p.name === a)));
+      (function walk(n, names) {
         if (!n || typeof n !== 'object') return;
-        if (Array.isArray(n)) { n.forEach(walk); return; }
-        if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression' && n.left.object.type === 'Identifier' && n.left.object.name === 'window') {
+        if (Array.isArray(n)) { n.forEach((c) => walk(c, names)); return; }
+        if (typeof n.type !== 'string') return;
+        if (n.type === 'CallExpression' && isFn(n.callee)) {
+          /* the callee's parameters that receive the global are names for it inside its body */
+          const inner = unshadowed(names, n.callee);
+          n.callee.params.forEach((p, i) => { if (p.type === 'Identifier' && isGlobal(n.arguments[i])) inner.add(p.name); });
+          walk(n.callee.body, inner);
+          walk(n.arguments, names);
+          return;
+        }
+        if (isFn(n) || n.type === 'FunctionDeclaration') { walk(n.body, unshadowed(names, n)); return; }
+        if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression' && n.left.object.type === 'Identifier'
+            && (n.left.object.name === 'window' || n.left.object.name === 'globalThis' || names.has(n.left.object.name))) {
           const p = n.left.property;
           const name = !n.left.computed ? p.name : (p.type === 'Literal' && typeof p.value === 'string' ? p.value : null);
-          if (name && /^[A-Za-z_$][\w$]*$/.test(name)) ast.add(name);
+          if (name && name !== 'window' && name !== 'globalThis' && name !== 'self' && /^[A-Za-z_$][\w$]*$/.test(name)) ast.add(name);
         }
-        for (const k of Object.keys(n)) if (k !== 'type' && k !== 'start' && k !== 'end') walk(n[k]);
-      })(tree);
+        for (const k of Object.keys(n)) if (k !== 'type' && k !== 'start' && k !== 'end') walk(n[k], names);
+      })(tree, new Set());
     }
   }
   const reg = new Set(windowPublications(ROOT).keys());

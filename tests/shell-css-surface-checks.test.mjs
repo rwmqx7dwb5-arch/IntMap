@@ -259,38 +259,43 @@ test('R485 ⑤ nothing else in the map column was moved to make room', () => {
 
 /* ── ① ONE NUMBER, TWO FILES ─────────────────────────────────────────────────────────────────── */
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
-test('#R508 ① the front-band level in js/map-ui.js is the level css/intmap.css actually applies', () => {
+/* (ui-layer-owner) THERE IS ONE COPY NOW. js/map-ui.js kept `_FRONT_Z=2650` beside the stylesheet's
+   own, and this check existed to catch the two drifting. The guard moved to js/ui-stack.js, which
+   READS the level (`level('front')` → the --z-front custom property), and the stylesheet applies that
+   same token — so what is asserted is that there is nothing left to drift. */
+test('#R508 ① the front-band level the guard compares with is the level css/intmap.css applies', () => {
   const css = read('css/intmap.css');
   const fromCssM = /\.im-front\{\s*z-index:([^;!}]+?)\s*!important/.exec(css);
   assert.ok(fromCssM, '.im-front no longer sets a z-index — the guard has nothing to compare against');
-  const fromCss = [fromCssM[0], String(zResolve(fromCssM[1], zTokens(css)))];   /* (map-a11y-structure) a named layer, resolved */
+  assert.equal(fromCssM[1].trim(), 'var(--z-front)', '.im-front applies a number of its own instead of the --z-front layer the guard reads');
+  assert.ok(Number.isInteger(zTokens(css)['--z-front']), '--z-front is not declared in :root');
 
-  const ui = code(read('js/map-ui.js'));
-  const fromJs = /const\s+_FRONT_Z\s*=\s*(\d+)/.exec(ui);
-  assert.ok(fromJs, '_FRONT_Z is gone from js/map-ui.js — re-derive this check against whatever replaced it');
-
-  assert.equal(fromJs[1], fromCss[1],
-    `the two copies of the front-band level have drifted: js/map-ui.js says ${fromJs[1]}, css/intmap.css applies ${fromCss[1]}`);
+  const ui = code(read('js/ui-stack.js'));
+  assert.match(ui, /const F = level\('front'\);/, 'the guard no longer READS the front level from the stylesheet');
+  assert.doesNotMatch(ui, /_FRONT_Z|2650/, 'a copy of the front level is back in js/');
+  assert.doesNotMatch(code(read('js/map-ui.js')), /_FRONT_Z/, 'js/map-ui.js keeps its own copy again');
 });
 
 /* ── ② THE GUARD IS ASKED OF THE LAYOUT, AND IT RUNS FIRST ───────────────────────────────────── */
 /* spelling kept: browser script (js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('#R508 ② a layer above the band is exempted, by measurement rather than by name', () => {
-  const ui = code(read('js/map-ui.js'));
+  /* (ui-layer-owner) the guard lives in js/ui-stack.js now; its behaviour is also EVALUATED there
+     (tests/ui-layer-owner-checks.test.mjs ①: a 9999 dialog is neither marked on wheel nor on pointerdown) */
+  const ui = code(read('js/ui-stack.js'));
 
-  const guard = /const\s+_aboveBand\s*=\s*\(el\)\s*=>\s*\{([\s\S]*?)\n\s{6}return false; \};/.exec(ui);
-  assert.ok(guard, 'the _aboveBand walk is gone');
-  assert.match(guard[1], /getComputedStyle\(n\)\.zIndex/,
+  const guard = /function aboveBand\(el\) \{([\s\S]*?)\n  \}/.exec(ui);
+  assert.ok(guard, 'the aboveBand walk is gone');
+  assert.match(guard[1], /cs\(n\)[^\n]*\.zIndex/,
     'the guard no longer READS the resolved z-index — a hand-written list of dialog ids is the shape #R253 refused');
-  assert.match(guard[1], />\s*_FRONT_Z/,
+  assert.match(guard[1], /> F\)/,
     'the comparison is not strictly above the band: a panel already wearing .im-front computes to exactly that level and must stay demotable');
   assert.match(guard[1], /contains\('im-front'\)/,
     'the walk no longer skips the mark it set itself — a raised panel would exempt itself for ever');
 
   /* it has to be the FIRST thing act() does: below the demote branch it would still clear the mark */
-  const act = /const\s+act\s*=\s*\(t,\s*mayDemote\)\s*=>\s*\{([\s\S]*?)raise\(p\); \};/.exec(ui);
+  const act = /function act\(t, mayDemote\) \{([\s\S]*?)front\(p\);\n  \}/.exec(ui);
   assert.ok(act, 'act() no longer has the shape this check was written against');
-  const iGuard = act[1].indexOf('_aboveBand(t)');
+  const iGuard = act[1].indexOf('aboveBand(t)');
   const iPanel = act[1].indexOf('panelOf(t)');
   assert.ok(iGuard >= 0, 'act() no longer consults _aboveBand — the machinery is back to marking dialogs');
   assert.ok(iGuard < iPanel, 'the guard runs after the panel is chosen; it has to run before anything else in act()');
@@ -308,7 +313,7 @@ test('#R508 ③ the fix did not lower the dialogs into the band to get out of th
   assert.ok(overlayM, '.modal-overlay no longer carries a z-index');
   const overlay = [overlayM[0], zResolve(overlayM[1], zTokens(css))];
   assert.ok(+overlay[1] > band,
-    `.modal-overlay is at ${overlay[1]}, at or below the front band (${band}) — a dialog must outrank every panel, and the exemption in js/map-ui.js is written for that`);
+    `.modal-overlay is at ${overlay[1]}, at or below the front band (${band}) — a dialog must outrank every panel, and the exemption in js/ui-stack.js is written for that`);
 });
 }
 
@@ -471,18 +476,19 @@ test('#R253 ④ an open sidebar out-ranks the floating panels, and the pointer m
   assert.match(css, /@media\(min-width:769px\)\{[^}]*body:not\(\.im-float-front\)/s,
     'the band is not scoped to desktop — on a phone the bottom sheet (1700) has to stay above the panel');
 
-  const ui = code(read('js/map-ui.js'));
+  /* (ui-layer-owner) the machinery is js/ui-stack.js's now (window.IntMapStack) */
+  const ui = code(read('js/ui-stack.js'));
   /* ⚠ (#R255) the pointerdown handler delegates to `act()`, which `wheel` and `focusin` also call
      — scrolling or typing inside a panel is 「なんらかの操作」 too and used to raise nothing. The
      property #R253 asserted is unchanged: a pointer gesture is what sets and clears the class. */
-  assert.match(ui, /addEventListener\('pointerdown',\(e\)=>\{ try\{ act\(e\.target,true\)/,
+  assert.match(ui, /addEventListener\('pointerdown', \(e\) => \{[^\n]*act\(e\.target, true\)/,
     'nothing toggles im-float-front on a pointer, so the class can never change');
   assert.match(ui, /im-float-front/, 'the demotion class is gone entirely');
   /* ⚠ (#R255) …and the exclusion is a NAMED LIST now, because the canvas was not the only trap:
      #map / #map-container / .operation-room are position:relative, so anything inside the map shell
      that is not itself positioned resolved to the SHELL — marking that .im-front lifts the whole map
      (and the sidebars inside .operation-room) into one 2650 box. */
-  assert.match(ui, /_NOT_PANEL=/, 'the map shell exclusion list is gone');
+  assert.match(ui, /const NOT_PANEL = /, 'the map shell exclusion list is gone');
   assert.match(ui, /maplibregl-canvas-container/,
     'the map canvas is not excluded — clicking the map would raise the map itself over the sidebar');
   assert.match(ui, /,\s*true\s*\)/, 'the listener is not in the capture phase — a handler that stops propagation would hide the gesture');

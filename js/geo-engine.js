@@ -170,7 +170,7 @@ function _m(){ return window.__imap||null; }
   function _mountCredit(mm,extra){
     const host=mm.getContainer(), doc=host.ownerDocument||document;
     const el=doc.createElement('div'); el.className='map-credit-view';
-    el.style.cssText='position:absolute;right:0;bottom:0;z-index:3;max-width:100%;box-sizing:border-box;padding:1px 7px;'+
+    el.style.cssText='position:absolute;right:0;bottom:0;z-index:calc(var(--z-inset) + 3);max-width:100%;box-sizing:border-box;padding:1px 7px;'+
       'border-top-left-radius:7px;font-size:10px;line-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+
       'background:var(--card-bg,rgba(255,255,255,0.72));color:var(--text-muted,#555);pointer-events:auto;';
     el.hidden=true; host.appendChild(el);

@@ -170,7 +170,7 @@ window.IntMapModules.companyFacilities=function(HOST){
   function setInsets(o){ _insets=o?{top:+o.top||0,right:+o.right||0,bottom:+o.bottom||0,left:+o.left||0}:null; }
   function _measured(){ const out={top:0,right:0,bottom:0,left:0};
     try{
-      const mob=!!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches);
+      const mob=window.IntMapDevice.compact();
       const sb=document.getElementById('sidebar');
       if(sb&&!sb.classList.contains('collapsed')&&getComputedStyle(sb).display!=='none'){
         const r=sb.getBoundingClientRect();

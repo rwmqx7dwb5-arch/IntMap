@@ -1408,7 +1408,7 @@ window.IntMapModules.spaceBody=function(HOST){
            The bar is then five things: leave, which view, which scale, what is drawn, and when. */
         +'<span class="sp-showwrap" style="position:relative;display:inline-flex;">'
         +'<button class="sp-show" style="'+BTN+'">'+L('Show','表示','Anzeige','Показать','Mostrar')+' ▾</button>'
-        +'<span class="sp-showmenu" style="display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;'
+        +'<span class="sp-showmenu" style="display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:calc(var(--z-inset) + 5);'
           +'flex-direction:column;gap:4px;padding:8px;border-radius:12px;min-width:190px;'
           +'background:rgba(12,12,16,0.94);border:1px solid rgba(255,255,255,0.18);'
           +'-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);">'
@@ -1530,7 +1530,7 @@ window.IntMapModules.spaceBody=function(HOST){
            — and the panel grows upward above it. Pressing ⓘ to close now means pressing exactly where
            you pressed to open. The panel also gets its own surface and a × of its own, because a
            scrolling wall of grey text over a starfield was not readable either. */
-        +'<div class="sp-notewrap" style="position:absolute;left:10px;bottom:8px;right:10px;z-index:6;'
+        +'<div class="sp-notewrap" style="position:absolute;left:10px;bottom:8px;right:10px;z-index:calc(var(--z-inset) + 6);'
           +'display:flex;flex-direction:column-reverse;align-items:flex-start;gap:6px;pointer-events:none;">'
         +'<button class="sp-noteb" style="'+BTN+'font-size:10px;padding:3px 8px;flex:0 0 auto;pointer-events:auto;">ⓘ '+L('Sources','出典','Quellen','Источники','Fuentes')+'</button>'
         +'<div class="sp-note" style="display:none;width:min(560px,100%);max-height:34vh;overflow:auto;pointer-events:auto;'
@@ -2277,7 +2277,7 @@ window.IntMapModules.spaceBody=function(HOST){
          stops (`--sp-sheet-h`) and the drag speak about the same box. */
       try{
         const col=root.querySelector('.sp-col'), th=root.querySelector('.sp-sheet-t');
-        const _phone=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
+        const _phone=()=>{ try{ return window.IntMapDevice.compact(); }catch(_){ return false; } };
         if(col&&_phone()) col.classList.add('sp-min');
         if(th&&col){
           const PEEK=34;
@@ -2400,7 +2400,7 @@ window.IntMapModules.spaceBody=function(HOST){
     function ensure(){
       if(root) return true;
       root=document.createElement('div'); root.id='space-view';
-      root.style.cssText='position:fixed;inset:0;z-index:4200;background:#000;display:none;overflow:hidden;';
+      root.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-toast) + 1200);background:#000;display:none;overflow:hidden;';
       cv=document.createElement('canvas'); cv.id='space-gl';
       cv.style.cssText='position:absolute;inset:0;display:block;';
       ov=document.createElement('canvas'); ov.id='space-ov';
