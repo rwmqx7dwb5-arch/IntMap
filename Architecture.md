@@ -299,6 +299,15 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   これらが**黙って効かなくなっていないこと**は、`tests/maplibre-6-migration-checks.test.mjs`
   （アダプタが Map に対して呼ぶ全メソッドが入っている版に実在する・内部には 2 つの口からしか触れない）と
   `tests/maplibre-6-migration.spec.js`（動いているレンダラに訊く）が測る。
+- **地形の高さを読む側は、読んだ回数や時計ではなく標高ソースの状態で読み終える。** 3-D 体積
+  （`js/volume3d.js` の `chaseGround`）は `queryTerrainElevation` が標高タイル到着前に **0**（海面と
+  区別できない）を返すので、地形ソース（`scene.getTerrain().source`——`js/terrain-water.js` が差し替える）の
+  `sourcedata` を合図に次の `render` で読み直し、動いたら塗り直す。`isSourceLoaded` を言った後の 1 フレーム、
+  または `idle` で読み終え、次のタイル（視点移動・細かいズーム）で再び読む。地形ソースの `error` は
+  `state().groundError` に上流の失敗として残し、`groundState`（off／reading／read）と分けて述べる。
+  保存済みの立体（下書きが無くても）も同じ読み直しを受ける。⚠ 以前の「400 ms × 16 回、または 2 回連続で
+  一致したら打ち切り」は、タイル到着前の 0 が 2 回続いて「一致」し、その後に届いた実値（富士山上で
+  3,666 m）を二度と読まなかった（観測できなかったことを諦めていた）。
 - **「レイヤーを足してよいか」は `canDraw()`（スタイルが解析済みか）、それを待つのは `whenCanDraw()`**
   （ファサードの1か所。`js/data-layers.js`・`js/time-borders.js`・`js/time-admin1.js` の `whenStyleReady()`
   はこれを返すだけ）。`styledata`/`load`/`idle` の購読と 150 ms のポーリングで、待ち手が何人いても
