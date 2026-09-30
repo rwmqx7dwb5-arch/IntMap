@@ -47,6 +47,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { TERRAIN_TILES } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
@@ -72,6 +73,7 @@ export const GOVERNANCE = (() => {
   const rec = {
     publisher: 'AWS Terrain Tiles (terrarium)',
     url: HOSTS[0] + '/{z}/{x}/{y}.png',
+    ...TERRAIN_TILES,
     builtBy: 'scripts/build-bathymetry.mjs',
   };
   return { 'data/bathymetry.png': rec, 'data/bathymetry.json': rec };

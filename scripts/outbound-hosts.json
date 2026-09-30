@@ -1,5 +1,5 @@
 {
-  "note": "Every host the browser code can request (discovered by scripts/outbound-hosts.mjs from string and template literals — never from comments), with what it is asked for, what it is SENT, and the words of Privacy §4 (js/legal-text.js, en AND jp) that say so. A host that is only ever a link carries `link` with the reason instead. `npm run check:datagov` (rule outbound-disclosed) fails on a requested host missing here, on disclosure words absent from either language, and on a row whose host the code no longer requests. This is a statement of fact about the code, not an exemption: adding a row without the policy saying it is impossible.",
+  "note": "Every host the browser code can request (discovered by scripts/outbound-hosts.mjs from string and template literals — never from comments), with what it is asked for, what it is SENT, and the words of Privacy §4 (js/legal-text.js, en AND jp) that say so. A host that is only ever a link carries `link` with the reason instead. `npm run check:datagov` (rule outbound-disclosed) fails on a requested host missing here, on disclosure words absent from either language, and on a row whose host the code no longer requests. This is a statement of fact about the code, not an exemption: adding a row without the policy saying it is impossible. Every row the browser actually requests (disclosure / removedBy) also carries `probe`: one representative request { url, expect?, why? } — a non-2xx `expect` must say why it means the host is answering — which scripts/upstream-liveness.mjs asks nightly and classifies alive / refused / dead / unobserved; link and dormant rows are never fetched and carry none. check:datagov (rule probe-declared) fails on a requested row without one.",
   "sendsCodes": "nothing | coordinates | area | query-text | url | identifier | credential-prefix | content | page-visit (scripts/outbound-hosts.mjs SENDS)",
   "hosts": [
     {
@@ -12,6 +12,9 @@
       "disclosure": {
         "en": "CARTO",
         "jp": "CARTO"
+      },
+      "probe": {
+        "url": "https://c.basemaps.cartocdn.com/light_all/4/8/5.png"
       }
     },
     {
@@ -24,6 +27,9 @@
       "disclosure": {
         "en": "Wikipedia/Wikimedia (article checks and summaries",
         "jp": "Wikipedia/Wikimedia（記事の有無チェック"
+      },
+      "probe": {
+        "url": "https://de.wikipedia.org/api/rest_v1/page/summary/Tokio"
       }
     },
     {
@@ -36,6 +42,9 @@
       "disclosure": {
         "en": "CARTO",
         "jp": "CARTO"
+      },
+      "probe": {
+        "url": "https://a.basemaps.cartocdn.com/light_all/4/8/5.png"
       }
     },
     {
@@ -48,6 +57,9 @@
       "disclosure": {
         "en": "OpenRailwayMap",
         "jp": "OpenRailwayMap"
+      },
+      "probe": {
+        "url": "https://a.tiles.openrailwaymap.org/standard/4/8/5.png"
       }
     },
     {
@@ -65,6 +77,9 @@
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",
         "jp": "標高・気象API（Open-Meteo"
+      },
+      "probe": {
+        "url": "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=35.681&longitude=139.767&current=us_aqi,pm2_5,pm10,ozone"
       }
     },
     {
@@ -82,6 +97,9 @@
       "disclosure": {
         "en": "Observatory of Economic Complexity",
         "jp": "Observatory of Economic Complexity"
+      },
+      "probe": {
+        "url": "https://api-v2.oec.world/tesseract/cubes"
       }
     },
     {
@@ -94,6 +112,9 @@
       "disclosure": {
         "en": "airplanes.live",
         "jp": "airplanes.live"
+      },
+      "probe": {
+        "url": "https://api.airplanes.live/v2/point/35.681/139.767/25"
       }
     },
     {
@@ -106,6 +127,9 @@
       "disclosure": {
         "en": "alternative.me",
         "jp": "alternative.me"
+      },
+      "probe": {
+        "url": "https://api.alternative.me/fng/?limit=30"
       }
     },
     {
@@ -118,6 +142,9 @@
       "disclosure": {
         "en": "CoinGecko",
         "jp": "CoinGecko"
+      },
+      "probe": {
+        "url": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true"
       }
     },
     {
@@ -130,6 +157,9 @@
       "disclosure": {
         "en": "api.frankfurter.dev",
         "jp": "api.frankfurter.dev"
+      },
+      "probe": {
+        "url": "https://api.frankfurter.dev/v1/latest?base=USD"
       }
     },
     {
@@ -142,6 +172,9 @@
       "disclosure": {
         "en": "fxratesapi",
         "jp": "fxratesapi"
+      },
+      "probe": {
+        "url": "https://api.fxratesapi.com/latest?base=USD&currencies=JPY,EUR,GBP,CNY"
       }
     },
     {
@@ -154,6 +187,9 @@
       "disclosure": {
         "en": "GDELT (the worldwide news search",
         "jp": "GDELT（Atlasのブリーフ"
+      },
+      "probe": {
+        "url": "https://api.gdeltproject.org/api/v2/doc/doc?query=news&mode=artlist&maxrecords=1&format=json&timespan=1d"
       }
     },
     {
@@ -166,6 +202,9 @@
       "disclosure": {
         "en": "gold-api",
         "jp": "gold-api"
+      },
+      "probe": {
+        "url": "https://api.gold-api.com/price/XAU"
       }
     },
     {
@@ -178,6 +217,9 @@
       "disclosure": {
         "en": "api.ioda.inetintel.cc.gatech.edu",
         "jp": "api.ioda.inetintel.cc.gatech.edu"
+      },
+      "probe": {
+        "url": "https://api.ioda.inetintel.cc.gatech.edu/v2/entities/query?entityType=country&entityCode=JP"
       }
     },
     {
@@ -190,6 +232,13 @@
       "disclosure": {
         "en": "Mapbox or Sentinel Hub",
         "jp": "Mapbox または Sentinel Hub"
+      },
+      "probe": {
+        "url": "https://api.mapbox.com/v4/mapbox.satellite/4/8/5@2x.jpg90",
+        "expect": [
+          401
+        ],
+        "why": "only reached with the reader's own token; without one, 401 «Not Authorized - No Token» is Mapbox answering"
       }
     },
     {
@@ -202,6 +251,9 @@
       "disclosure": {
         "en": "MET Norway",
         "jp": "MET Norway"
+      },
+      "probe": {
+        "url": "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=35.681&lon=139.767"
       }
     },
     {
@@ -214,6 +266,9 @@
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",
         "jp": "標高・気象API（Open-Meteo"
+      },
+      "probe": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m"
       }
     },
     {
@@ -226,6 +281,9 @@
       "disclosure": {
         "en": "api.opentopodata.org",
         "jp": "api.opentopodata.org"
+      },
+      "probe": {
+        "url": "https://api.opentopodata.org/v1/gebco2020?locations=35.0,140.0"
       }
     },
     {
@@ -238,6 +296,9 @@
       "disclosure": {
         "en": "Planespotters.net",
         "jp": "Planespotters.net"
+      },
+      "probe": {
+        "url": "https://api.planespotters.net/pub/photos/hex/86d6c3"
       }
     },
     {
@@ -250,6 +311,9 @@
       "disclosure": {
         "en": "sends only the first five characters of that hash",
         "jp": "そのハッシュの先頭5文字だけ"
+      },
+      "probe": {
+        "url": "https://api.pwnedpasswords.com/range/21BD1"
       }
     },
     {
@@ -262,6 +326,9 @@
       "disclosure": {
         "en": "RainViewer",
         "jp": "RainViewer"
+      },
+      "probe": {
+        "url": "https://api.rainviewer.com/public/weather-maps.json"
       }
     },
     {
@@ -274,6 +341,9 @@
       "disclosure": {
         "en": "Transport for London (TfL JamCams)",
         "jp": "Transport for London（TfL JamCams）"
+      },
+      "probe": {
+        "url": "https://api.tfl.gov.uk/Place/Type/JamCam"
       }
     },
     {
@@ -286,6 +356,9 @@
       "disclosure": {
         "en": "api.transitous.org",
         "jp": "api.transitous.org"
+      },
+      "probe": {
+        "url": "https://api.transitous.org/api/v1/plan?fromPlace=52.520008,13.404954&toPlace=52.516275,13.377704"
       }
     },
     {
@@ -298,6 +371,9 @@
       "disclosure": {
         "en": "the Australian Bureau of Meteorology",
         "jp": "オーストラリア気象局"
+      },
+      "probe": {
+        "url": "https://api.weather.bom.gov.au/v1/warnings"
       }
     },
     {
@@ -310,6 +386,9 @@
       "disclosure": {
         "en": "Environment and Climate Change Canada",
         "jp": "カナダ環境・気候変動省"
+      },
+      "probe": {
+        "url": "https://api.weather.gc.ca/collections/weather-alerts/items?f=json&limit=1"
       }
     },
     {
@@ -322,6 +401,9 @@
       "disclosure": {
         "en": "the US National Weather Service",
         "jp": "米国立気象局"
+      },
+      "probe": {
+        "url": "https://api.weather.gov/alerts/active?status=actual&message_type=alert"
       }
     },
     {
@@ -334,6 +416,9 @@
       "disclosure": {
         "en": "wheretheiss.at",
         "jp": "wheretheiss.at"
+      },
+      "probe": {
+        "url": "https://api.wheretheiss.at/v1/satellites/25544"
       }
     },
     {
@@ -346,6 +431,9 @@
       "disclosure": {
         "en": "Wikimedia's on-this-day and featured-article feeds",
         "jp": "Wikimedia の「今日は何の日」と「今日の記事」のフィード"
+      },
+      "probe": {
+        "url": "https://api.wikimedia.org/feed/v1/wikipedia/en/onthisday/events/1/1"
       }
     },
     {
@@ -358,6 +446,9 @@
       "disclosure": {
         "en": "statistics APIs (World Bank, IMF DataMapper",
         "jp": "統計データAPI（世界銀行・IMF DataMapper"
+      },
+      "probe": {
+        "url": "https://api.worldbank.org/v2/country/JP/indicator/SP.POP.TOTL?format=json&per_page=5"
       }
     },
     {
@@ -370,6 +461,9 @@
       "disclosure": {
         "en": "api.worldpop.org",
         "jp": "api.worldpop.org"
+      },
+      "probe": {
+        "url": "https://api.worldpop.org/v1/services"
       }
     },
     {
@@ -382,6 +476,9 @@
       "disclosure": {
         "en": "Brazil's INMET",
         "jp": "ブラジル INMET"
+      },
+      "probe": {
+        "url": "https://apiprevmet3.inmet.gov.br/avisos/ativos"
       }
     },
     {
@@ -394,6 +491,9 @@
       "disclosure": {
         "en": "archive-api.open-meteo.com",
         "jp": "archive-api.open-meteo.com"
+      },
+      "probe": {
+        "url": "https://archive-api.open-meteo.com/v1/archive?latitude=35.68&longitude=139.77&start_date=2024-01-01&end_date=2024-01-01&hourly=temperature_2m"
       }
     },
     {
@@ -406,6 +506,9 @@
       "disclosure": {
         "en": "atlas.ripe.net",
         "jp": "atlas.ripe.net"
+      },
+      "probe": {
+        "url": "https://atlas.ripe.net/api/v2/probes/?status=2&is_public=true&page_size=1&format=json"
       }
     },
     {
@@ -423,6 +526,9 @@
       "disclosure": {
         "en": "CARTO",
         "jp": "CARTO"
+      },
+      "probe": {
+        "url": "https://b.basemaps.cartocdn.com/light_all/4/8/5.png"
       }
     },
     {
@@ -435,6 +541,9 @@
       "disclosure": {
         "en": "OpenRailwayMap",
         "jp": "OpenRailwayMap"
+      },
+      "probe": {
+        "url": "https://b.tiles.openrailwaymap.org/standard/4/8/5.png"
       }
     },
     {
@@ -447,6 +556,9 @@
       "disclosure": {
         "en": "OpenRailwayMap",
         "jp": "OpenRailwayMap"
+      },
+      "probe": {
+        "url": "https://c.tiles.openrailwaymap.org/standard/4/8/5.png"
       }
     },
     {
@@ -464,6 +576,9 @@
       "disclosure": {
         "en": "the jsDelivr CDN",
         "jp": "jsDelivr CDN"
+      },
+      "probe": {
+        "url": "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson"
       }
     },
     {
@@ -476,6 +591,9 @@
       "disclosure": {
         "en": "celestrak.org",
         "jp": "celestrak.org"
+      },
+      "probe": {
+        "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"
       }
     },
     {
@@ -493,6 +611,9 @@
       "disclosure": {
         "en": "Caltrans",
         "jp": "Caltrans"
+      },
+      "probe": {
+        "url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json"
       }
     },
     {
@@ -510,6 +631,9 @@
       "disclosure": {
         "en": "the Hong Kong Observatory",
         "jp": "香港天文台"
+      },
+      "probe": {
+        "url": "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en"
       }
     },
     {
@@ -532,6 +656,9 @@
       "disclosure": {
         "en": "Nager.Date",
         "jp": "Nager.Date"
+      },
+      "probe": {
+        "url": "https://date.nager.at/api/v3/NextPublicHolidays/JP"
       }
     },
     {
@@ -544,6 +671,9 @@
       "disclosure": {
         "en": "OurAirports",
         "jp": "OurAirports"
+      },
+      "probe": {
+        "url": "https://davidmegginson.github.io/ourairports-data/countries.csv"
       }
     },
     {
@@ -556,6 +686,9 @@
       "disclosure": {
         "en": "DeepStateMap",
         "jp": "DeepStateMap"
+      },
+      "probe": {
+        "url": "https://deepstatemap.live/api/history/last"
       }
     },
     {
@@ -573,6 +706,9 @@
       "disclosure": {
         "en": "USGS (earthquake feeds)",
         "jp": "USGS（地震データの取得）"
+      },
+      "probe": {
+        "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson"
       }
     },
     {
@@ -585,6 +721,9 @@
       "disclosure": {
         "en": "terrarium",
         "jp": "terrarium"
+      },
+      "probe": {
+        "url": "https://elevation-tiles-prod.s3.amazonaws.com/terrarium/4/8/5.png"
       }
     },
     {
@@ -597,6 +736,9 @@
       "disclosure": {
         "en": "terrarium",
         "jp": "terrarium"
+      },
+      "probe": {
+        "url": "https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/4/8/5.png"
       }
     },
     {
@@ -609,6 +751,9 @@
       "disclosure": {
         "en": "terrarium",
         "jp": "terrarium"
+      },
+      "probe": {
+        "url": "https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/4/8/5.png"
       }
     },
     {
@@ -621,6 +766,9 @@
       "disclosure": {
         "en": "Wikipedia/Wikimedia (article checks and summaries",
         "jp": "Wikipedia/Wikimedia（記事の有無チェック"
+      },
+      "probe": {
+        "url": "https://en.wikipedia.org/api/rest_v1/page/summary/Tokyo"
       }
     },
     {
@@ -643,6 +791,9 @@
       "disclosure": {
         "en": "flagcdn.com",
         "jp": "flagcdn.com"
+      },
+      "probe": {
+        "url": "https://flagcdn.com/h24/jp.png"
       }
     },
     {
@@ -655,6 +806,9 @@
       "disclosure": {
         "en": "fonts.googleapis.com and fonts.gstatic.com",
         "jp": "fonts.googleapis.com と fonts.gstatic.com"
+      },
+      "probe": {
+        "url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400&display=swap"
       }
     },
     {
@@ -667,6 +821,9 @@
       "disclosure": {
         "en": "fonts.googleapis.com and fonts.gstatic.com",
         "jp": "fonts.googleapis.com と fonts.gstatic.com"
+      },
+      "probe": {
+        "url": "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"
       }
     },
     {
@@ -679,6 +836,9 @@
       "disclosure": {
         "en": "OpenMapTiles",
         "jp": "OpenMapTiles"
+      },
+      "probe": {
+        "url": "https://fonts.openmaptiles.org/Open%20Sans%20Regular/0-255.pbf"
       }
     },
     {
@@ -691,6 +851,9 @@
       "disclosure": {
         "en": "FAO GAEZ",
         "jp": "FAO GAEZ"
+      },
+      "probe": {
+        "url": "https://gaez-services.fao.org/server/rest/services/res06/ImageServer?f=json"
       }
     },
     {
@@ -703,6 +866,9 @@
       "disclosure": {
         "en": "Alibaba Cloud DataV",
         "jp": "Alibaba Cloud DataV"
+      },
+      "probe": {
+        "url": "https://geo.datav.aliyun.com/areas_v3/bound/100000.json"
       }
     },
     {
@@ -715,6 +881,9 @@
       "disclosure": {
         "en": "VLIZ",
         "jp": "VLIZ"
+      },
+      "probe": {
+        "url": "https://geo.vliz.be/geoserver/MarineRegions/wms?service=WMS&version=1.1.1&request=GetCapabilities"
       }
     },
     {
@@ -727,6 +896,9 @@
       "disclosure": {
         "en": "geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot)",
         "jp": "地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot"
+      },
+      "probe": {
+        "url": "https://geocoding-api.open-meteo.com/v1/search?name=Tokyo&count=1"
       }
     },
     {
@@ -739,6 +911,9 @@
       "disclosure": {
         "en": "NASA GIBS",
         "jp": "NASA GIBS"
+      },
+      "probe": {
+        "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetCapabilities"
       }
     },
     {
@@ -751,6 +926,9 @@
       "disclosure": {
         "en": "Eurostat GISCO",
         "jp": "Eurostat GISCO"
+      },
+      "probe": {
+        "url": "https://gisco-services.ec.europa.eu/distribution/v2/nuts/nuts-2021-files.json"
       }
     },
     {
@@ -768,6 +946,9 @@
       "disclosure": {
         "en": "Hacker News",
         "jp": "Hacker News"
+      },
+      "probe": {
+        "url": "https://hacker-news.firebaseio.com/v0/topstories.json"
       }
     },
     {
@@ -790,6 +971,9 @@
       "disclosure": {
         "en": "The Space Devs",
         "jp": "The Space Devs"
+      },
+      "probe": {
+        "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=1&mode=list"
       }
     },
     {
@@ -802,6 +986,9 @@
       "disclosure": {
         "en": "Germany's DWD",
         "jp": "ドイツ DWD"
+      },
+      "probe": {
+        "url": "https://maps.dwd.de/geoserver/dwd/ows?service=WFS&version=2.0.0&request=GetCapabilities"
       }
     },
     {
@@ -814,6 +1001,9 @@
       "disclosure": {
         "en": "embedded Street View and its coverage overlay (Google",
         "jp": "ストリートビューの埋め込みとカバレッジ（Google"
+      },
+      "probe": {
+        "url": "https://maps.google.com/maps?q=&layer=c&cbll=35.681,139.767&cbp=11,0,0,0,0&output=svembed"
       }
     },
     {
@@ -826,6 +1016,9 @@
       "disclosure": {
         "en": "embedded Street View and its coverage overlay (Google",
         "jp": "ストリートビューの埋め込みとカバレッジ（Google"
+      },
+      "probe": {
+        "url": "https://maps.googleapis.com/maps/api/js/GeoPhotoService.SingleImageSearch?pb=!1m5!1sapiv3!5sUS!11m2!1m1!1b0!2m4!1m2!3d35.681!4d139.767!2d50!3m18!2m2!1sen!2sUS!9m1!1e2!11m12!1m3!1e2!2b1!3e2!1m3!1e3!2b1!3e2!1m3!1e10!2b1!3e2!4m6!1e1!1e2!1e3!1e4!1e8!1e6&callback=cb"
       }
     },
     {
@@ -838,6 +1031,9 @@
       "disclosure": {
         "en": "boundaries those warnings refer to, from NOAA",
         "jp": "区域の境界を NOAA"
+      },
+      "probe": {
+        "url": "https://mapservices.weather.noaa.gov/static/rest/services/nws_reference_maps/nws_reference_map/MapServer/?f=json"
       }
     },
     {
@@ -850,6 +1046,9 @@
       "disclosure": {
         "en": "elevation/weather APIs (Open-Meteo",
         "jp": "標高・気象API（Open-Meteo"
+      },
+      "probe": {
+        "url": "https://marine-api.open-meteo.com/v1/marine?latitude=35&longitude=141&current=sea_surface_temperature"
       }
     },
     {
@@ -862,6 +1061,9 @@
       "disclosure": {
         "en": "administrative-boundary data (geoBoundaries via GitHub",
         "jp": "行政境界データ（geoBoundaries／GitHub"
+      },
+      "probe": {
+        "url": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/LUX/ADM1/geoBoundaries-LUX-ADM1_simplified.geojson"
       }
     },
     {
@@ -874,6 +1076,9 @@
       "disclosure": {
         "en": "mempool.space",
         "jp": "mempool.space"
+      },
+      "probe": {
+        "url": "https://mempool.space/api/blocks/tip/height"
       }
     },
     {
@@ -886,6 +1091,9 @@
       "disclosure": {
         "en": "mghydro.com",
         "jp": "mghydro.com"
+      },
+      "probe": {
+        "url": "https://mghydro.com/app/watershed_api?lat=48.2&lng=16.4&precision=low"
       }
     },
     {
@@ -903,6 +1111,9 @@
       "disclosure": {
         "en": "Google's Street-View coverage tiles (mts.google.com)",
         "jp": "ストリートビュー・カバレッジ・タイル（mts.google.com）"
+      },
+      "probe": {
+        "url": "https://mts0.google.com/vt?hl=en&src=api&x=0&y=0&z=0&lyrs=svv&style=40,18"
       }
     },
     {
@@ -920,6 +1131,9 @@
       "disclosure": {
         "en": "Google News RSS as the search term",
         "jp": "Google News RSSに送信されます"
+      },
+      "probe": {
+        "url": "https://news.google.com/rss/search?q=weather&hl=en-US&gl=US&ceid=US:en"
       }
     },
     {
@@ -937,6 +1151,9 @@
       "disclosure": {
         "en": "OpenStreetMap Nominatim",
         "jp": "OpenStreetMap Nominatim"
+      },
+      "probe": {
+        "url": "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=Tokyo"
       }
     },
     {
@@ -954,6 +1171,9 @@
       "disclosure": {
         "en": "ER-API",
         "jp": "ER-API"
+      },
+      "probe": {
+        "url": "https://open.er-api.com/v6/latest/USD"
       }
     },
     {
@@ -981,6 +1201,9 @@
       "disclosure": {
         "en": "openmeteo.s3.amazonaws.com",
         "jp": "openmeteo.s3.amazonaws.com"
+      },
+      "probe": {
+        "url": "https://openmeteo.s3.amazonaws.com/data_spatial/dwd_icon/latest.json"
       }
     },
     {
@@ -993,6 +1216,9 @@
       "disclosure": {
         "en": "Our World in Data",
         "jp": "Our World in Data"
+      },
+      "probe": {
+        "url": "https://ourworldindata.org/grapher/life-expectancy.csv?csvType=filtered&useColumnShortNames=true&country=~JPN"
       }
     },
     {
@@ -1005,6 +1231,9 @@
       "disclosure": {
         "en": "overpass-api.de",
         "jp": "overpass-api.de"
+      },
+      "probe": {
+        "url": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%3Bnode(1)%3Bout%3B"
       }
     },
     {
@@ -1017,6 +1246,9 @@
       "disclosure": {
         "en": "overpass-api.openhistoricalmap.org",
         "jp": "overpass-api.openhistoricalmap.org"
+      },
+      "probe": {
+        "url": "https://overpass-api.openhistoricalmap.org/api/interpreter?data=%5Bout%3Ajson%5D%3Bnode(1)%3Bout%3B"
       }
     },
     {
@@ -1029,6 +1261,9 @@
       "disclosure": {
         "en": "overpass.kumi.systems",
         "jp": "overpass.kumi.systems"
+      },
+      "probe": {
+        "url": "https://overpass.kumi.systems/api/interpreter?data=%5Bout%3Ajson%5D%3Bnode(1)%3Bout%3B"
       }
     },
     {
@@ -1041,6 +1276,9 @@
       "disclosure": {
         "en": "overpass.private.coffee",
         "jp": "overpass.private.coffee"
+      },
+      "probe": {
+        "url": "https://overpass.private.coffee/api/interpreter?data=%5Bout%3Ajson%5D%3Bnode(1)%3Bout%3B"
       }
     },
     {
@@ -1053,6 +1291,9 @@
       "disclosure": {
         "en": "Photon/Komoot",
         "jp": "Photon/Komoot"
+      },
+      "probe": {
+        "url": "https://photon.komoot.io/api/?q=Tokyo&limit=1&lang=en"
       }
     },
     {
@@ -1070,6 +1311,9 @@
       "disclosure": {
         "en": "the Wikidata Query Service",
         "jp": "Wikidataクエリサービス"
+      },
+      "probe": {
+        "url": "https://query.wikidata.org/sparql?format=json&query=SELECT%20%3Fx%20WHERE%20%7B%20BIND(1%20AS%20%3Fx)%20%7D"
       }
     },
     {
@@ -1082,6 +1326,9 @@
       "disclosure": {
         "en": "Yahoo Finance",
         "jp": "Yahoo Finance"
+      },
+      "probe": {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=1d&interval=1d"
       }
     },
     {
@@ -1094,6 +1341,9 @@
       "disclosure": {
         "en": "first asks Jina AI's reader service (r.jina.ai)",
         "jp": "Jina AI の読み取りサービス（r.jina.ai）"
+      },
+      "probe": {
+        "url": "https://r.jina.ai/https://example.com/"
       }
     },
     {
@@ -1111,6 +1361,9 @@
       "disclosure": {
         "en": "raw.githubusercontent.com",
         "jp": "raw.githubusercontent.com"
+      },
+      "probe": {
+        "url": "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json"
       }
     },
     {
@@ -1123,6 +1376,9 @@
       "disclosure": {
         "en": "terrarium",
         "jp": "terrarium"
+      },
+      "probe": {
+        "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/4/8/5.png"
       }
     },
     {
@@ -1135,6 +1391,9 @@
       "disclosure": {
         "en": "terrarium",
         "jp": "terrarium"
+      },
+      "probe": {
+        "url": "https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/4/8/5.png"
       }
     },
     {
@@ -1147,6 +1406,9 @@
       "disclosure": {
         "en": "Esri, NASA GIBS and EOX",
         "jp": "Esri・NASA GIBS・EOX"
+      },
+      "probe": {
+        "url": "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/4/5/8"
       }
     },
     {
@@ -1159,6 +1421,9 @@
       "disclosure": {
         "en": "volcano hazard zones hosted on Esri's ArcGIS Online",
         "jp": "Esri の ArcGIS Online 上で公開されている火山ハザード区域"
+      },
+      "probe": {
+        "url": "https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/Volcano_Hazard_Zones/FeatureServer/0?f=json"
       }
     },
     {
@@ -1171,6 +1436,9 @@
       "disclosure": {
         "en": "Esri, NASA GIBS and EOX",
         "jp": "Esri・NASA GIBS・EOX"
+      },
+      "probe": {
+        "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/4/5/8"
       }
     },
     {
@@ -1188,6 +1456,13 @@
       "disclosure": {
         "en": "Mapbox or Sentinel Hub",
         "jp": "Mapbox または Sentinel Hub"
+      },
+      "probe": {
+        "url": "https://services.sentinel-hub.com/ogc/wmts/00000000-0000-0000-0000-000000000000?service=WMTS&request=GetCapabilities",
+        "expect": [
+          400
+        ],
+        "why": "only reached with the reader's own instance id; asked for an id that does not exist, the WMTS service answers 400 — which is the service answering"
       }
     },
     {
@@ -1200,6 +1475,9 @@
       "disclosure": {
         "en": "NOAA Space Weather Prediction Center",
         "jp": "NOAA Space Weather Prediction Center"
+      },
+      "probe": {
+        "url": "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
       }
     },
     {
@@ -1212,6 +1490,9 @@
       "disclosure": {
         "en": "stat.ripe.net",
         "jp": "stat.ripe.net"
+      },
+      "probe": {
+        "url": "https://stat.ripe.net/data/country-resource-stats/data.json?resource=JP"
       }
     },
     {
@@ -1224,6 +1505,9 @@
       "disclosure": {
         "en": "Digitraffic",
         "jp": "Digitraffic"
+      },
+      "probe": {
+        "url": "https://tie.digitraffic.fi/api/weathercam/v1/stations"
       }
     },
     {
@@ -1236,6 +1520,13 @@
       "disclosure": {
         "en": "RainViewer",
         "jp": "RainViewer"
+      },
+      "probe": {
+        "url": "https://tilecache.rainviewer.com/",
+        "expect": [
+          404
+        ],
+        "why": "every tile path carries a frame timestamp that exists for about two hours (read from api.rainviewer.com's weather-maps.json), so no fixed tile URL stays valid; the root is asked, and its healthy answer is 404 from the tile CDN"
       }
     },
     {
@@ -1248,6 +1539,9 @@
       "disclosure": {
         "en": "NASA GIBS and EOX",
         "jp": "NASA GIBS・EOX"
+      },
+      "probe": {
+        "url": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/4/5/8.jpg"
       }
     },
     {
@@ -1260,6 +1554,9 @@
       "disclosure": {
         "en": "tiles.openfreemap.org",
         "jp": "tiles.openfreemap.org"
+      },
+      "probe": {
+        "url": "https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/0-255.pbf"
       }
     },
     {
@@ -1272,6 +1569,9 @@
       "disclosure": {
         "en": "OpenSeaMap",
         "jp": "OpenSeaMap"
+      },
+      "probe": {
+        "url": "https://tiles.openseamap.org/seamark/7/63/42.png"
       }
     },
     {
@@ -1289,6 +1589,9 @@
       "disclosure": {
         "en": "unpkg.com",
         "jp": "unpkg.com"
+      },
+      "probe": {
+        "url": "https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js"
       }
     },
     {
@@ -1301,6 +1604,9 @@
       "disclosure": {
         "en": "upload.wikimedia.org",
         "jp": "upload.wikimedia.org"
+      },
+      "probe": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png"
       }
     },
     {
@@ -1313,6 +1619,9 @@
       "disclosure": {
         "en": "valhalla1.openstreetmap.de",
         "jp": "valhalla1.openstreetmap.de"
+      },
+      "probe": {
+        "url": "https://valhalla1.openstreetmap.de/status"
       }
     },
     {
@@ -1325,6 +1634,9 @@
       "disclosure": {
         "en": "volcano.si.edu",
         "jp": "volcano.si.edu"
+      },
+      "probe": {
+        "url": "https://volcano.si.edu/gallery/photos/GVP-01501.jpg"
       }
     },
     {
@@ -1337,6 +1649,9 @@
       "disclosure": {
         "en": "USGS volcano notices",
         "jp": "USGS の火山情報"
+      },
+      "probe": {
+        "url": "https://volcanoes.usgs.gov/hans-public/api/volcano/getMonitoredVolcanoes"
       }
     },
     {
@@ -1349,6 +1664,13 @@
       "disclosure": {
         "en": "Supabase (database/auth/hosting/server-side processing)",
         "jp": "Supabase（DB/認証/ホスティング/サーバー処理）"
+      },
+      "probe": {
+        "url": "https://vpekfwdpurzejrrmacac.supabase.co/auth/v1/health",
+        "expect": [
+          401
+        ],
+        "why": "IntMap's own gateway: the product sends the anon key and the probe does not, and 401 «No API key found» is the gateway answering — a dead project answers 5xx or not at all"
       }
     },
     {
@@ -1361,6 +1683,9 @@
       "disclosure": {
         "en": "OpenHistoricalMap",
         "jp": "OpenHistoricalMap"
+      },
+      "probe": {
+        "url": "https://vtiles.openhistoricalmap.org/maps/ohm/0/0/0.pbf"
       }
     },
     {
@@ -1373,6 +1698,9 @@
       "disclosure": {
         "en": "Digitraffic",
         "jp": "Digitraffic"
+      },
+      "probe": {
+        "url": "https://weathercam.digitraffic.fi/C0150301.jpg"
       }
     },
     {
@@ -1385,6 +1713,9 @@
       "disclosure": {
         "en": "Terrascope",
         "jp": "Terrascope"
+      },
+      "probe": {
+        "url": "https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetCapabilities"
       }
     },
     {
@@ -1474,6 +1805,9 @@
       "disclosure": {
         "en": "administrative-boundary data (geoBoundaries via GitHub",
         "jp": "行政境界データ（geoBoundaries／GitHub"
+      },
+      "probe": {
+        "url": "https://www.geoboundaries.org/api/current/gbOpen/LUX/ADM1/"
       }
     },
     {
@@ -1486,6 +1820,9 @@
       "disclosure": {
         "en": "favicon fetching (Google",
         "jp": "ファビコン取得（Google"
+      },
+      "probe": {
+        "url": "https://www.google.com/s2/favicons?domain=wikipedia.org&sz=64"
       }
     },
     {
@@ -1530,6 +1867,9 @@
       "disclosure": {
         "en": "IMF DataMapper",
         "jp": "IMF DataMapper"
+      },
+      "probe": {
+        "url": "https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH?periods=2024"
       }
     },
     {
@@ -1542,6 +1882,9 @@
       "disclosure": {
         "en": "the Japan Meteorological Agency",
         "jp": "気象庁"
+      },
+      "probe": {
+        "url": "https://www.jma.go.jp/bosai/volcano/data/warning.json"
       }
     },
     {
@@ -1579,6 +1922,9 @@
       "disclosure": {
         "en": "China's National Meteorological Centre read through our fetch-relay",
         "jp": "中国中央気象台の警報は当方の fetch-relay 経由で読みます"
+      },
+      "probe": {
+        "url": "https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=1&signaltype=&signallevel=&province="
       }
     },
     {
@@ -1631,6 +1977,9 @@
       "disclosure": {
         "en": "TeleGeography's submarine cable map",
         "jp": "TeleGeography の海底ケーブル地図"
+      },
+      "probe": {
+        "url": "https://www.submarinecablemap.com/api/v3/cable/cable-geo.json"
       }
     },
     {
@@ -1668,6 +2017,9 @@
       "disclosure": {
         "en": "www.who.int",
         "jp": "www.who.int"
+      },
+      "probe": {
+        "url": "https://www.who.int/api/news/diseaseoutbreaknews?$top=1"
       }
     },
     {
@@ -1685,6 +2037,9 @@
       "disclosure": {
         "en": "youtube-nocookie.com",
         "jp": "youtube-nocookie.com"
+      },
+      "probe": {
+        "url": "https://www.youtube-nocookie.com/embed/jfKfPfyJRdk"
       }
     },
     {

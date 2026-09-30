@@ -73,7 +73,16 @@ export const GOVERNANCE = (() => {
   /* ⚠ A CITATION IS NOT A LICENCE, AND NOT A PUBLISHER. This build states Slab2's citation
      (Hayes et al. 2018) and its ScienceBase distribution, and nothing about terms; both facets
      stay silent. */
-  const rec = { url: SB, builtBy: 'scripts/build-slab2.mjs' };
+  const rec = {
+    url: SB,
+    cadence: 'static',
+    cadenceBasis: {
+      observed: 'Slab2 is a published model (Hayes et al. 2018) whose ScienceBase release has not been superseded',
+      expires: 'if USGS publishes a Slab3 or a revised Slab2 release on ScienceBase',
+      canon: 'this record (the only builder that reads Slab2)',
+    },
+    builtBy: 'scripts/build-slab2.mjs',
+  };
   return { 'data/slab2.bin.gz': rec, 'data/slab2.json': rec };
 })();
 

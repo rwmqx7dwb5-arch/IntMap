@@ -65,6 +65,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { WIKIDATA } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -81,6 +82,19 @@ const RASTER_REPO = 'Asukana/Ryoseikoku_20230626_TSV';
 const RASTER_SRC = 'https://github.com/' + RASTER_REPO + ' (CC0 1.0) · vectorised by scripts/build-hist-kuni.mjs';
 const NAME_SRC = 'Wikidata (CC0)';
 const SRC = 'Derived: ' + RASTER_SRC + ' · names from ' + NAME_SRC;
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/hist-kuni.js': {
+    /* ⚠ TWO UPSTREAMS, ONE OF WHICH NEVER CHANGES. The raster is a fixed CC0 release (RASTER_REPO);
+       the names and dates come from Wikidata, which is edited daily — so Wikidata's cadence governs. */
+    ...WIKIDATA,
+    builtBy: 'scripts/build-hist-kuni.mjs',
+  },
+};
 
 /* the ring/polygon assembler is js/ohm-rings.js — one owner, evaluated, never copied (#R669) */
 const OHMR = (function () {

@@ -1,0 +1,77 @@
+# (upstream-liveness) Are the hosts the reader's browser talks to still there?
+#
+# uptime.yml watches IntMap's own site and its own relays. Nothing watched the 113 third-party hosts
+# the browser code actually requests (scripts/outbound-hosts.json): measured by hand on 2026-09-30,
+# api.airplanes.live answered 403 and two of the three Overpass mirrors js/overpass.js falls back to
+# were silent for 20 s — each a layer that draws nothing, found by accident. Every requested row of
+# that ledger now declares one representative probe, and scripts/upstream-liveness.mjs asks them
+# all once a night and classifies each answer alive / refused / dead / unobserved.
+#
+# ⚠ WHAT TURNS THE RUN RED IS A CHANGE, CONFIRMED — NOT A STATE. The previous night's result is
+# downloaded from this workflow's last completed run and handed to the script, which carries each
+# host's streak forward and exits 1 only on the run where a host that had been up has now been down
+# for two runs in a row. A host that is dead for weeks is listed in every summary and turns nothing
+# red; a single bad hour (measured: overpass-api.de answered 200 and then 504 on the same day) is
+# reported as «failing» and turns nothing red either. A job that is red every night is a job nobody
+# reads.
+#
+# ⚠ 「確認できなかった」 IS NOT 「死んでいる」. If this runner reaches no host at all, every verdict is
+# `unobserved`, no streak moves, and nothing turns red.
+#
+# The result is the artifact `upstream-liveness` (kept 90 days — it is also the time series) and
+# the job summary. docs/MONITORING.md explains how to read both.
+name: Upstream liveness (nightly)
+
+on:
+  schedule:
+    - cron: '41 4 * * *'        # 04:41 UTC, away from the uptime (xx:23) and TLE (03:17 / 15:17) runs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read                 # to download the previous run's result artifact
+
+concurrency:
+  group: upstream-liveness
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe every declared upstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      # No `npm ci`: the probe uses nothing but the runtime.
+      - name: Fetch the previous result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          # the newest COMPLETED run of this workflow on main — red or green, both carry a result
+          RUN="$(gh run list --workflow upstream-liveness.yml --branch main --status completed --limit 10 \
+                  --json databaseId,conclusion --jq '[.[]|select(.conclusion=="success" or .conclusion=="failure")][0].databaseId')"
+          if [ -n "$RUN" ] && [ "$RUN" != "null" ]; then
+            gh run download "$RUN" --name upstream-liveness --dir previous && echo "compared with run $RUN"
+          else
+            echo "no previous run — this result starts the series and nothing can turn red"
+          fi
+          exit 0
+      - name: Probe
+        run: |
+          node scripts/upstream-liveness.mjs \
+            --previous previous/upstream-liveness.json \
+            --out upstream-liveness.json \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --fail-on-transition
+      - name: Keep the result (it is also tomorrow's baseline)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: upstream-liveness
+          path: upstream-liveness.json
+          if-no-files-found: warn
+          retention-days: 90

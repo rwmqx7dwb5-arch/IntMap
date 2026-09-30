@@ -30,6 +30,14 @@
 # It does NOT weaken `main` — the same ruleset, the same two required checks, the same PR. What
 # changed is who presses the button. If GitHub ever refuses the approval to `GITHUB_TOKEN`, this
 # step FAILS LOUDLY rather than leaving another silent fifteen days.
+#
+# (upstream-liveness) THIS IS ALSO WHERE EVERY OTHER UNATTENDED DATA REFRESH LANDS. Everything above
+# — a bot PR on a ruleset-protected main, approving the runs it caused, merging, dispatching the
+# deploy — is the hard part of refreshing ANY bundle, and a second workflow would have needed a copy
+# of all of it. So the catalogue's job carries the other bundles that are due (the step
+# «Rebuild the other bundles …» below) in the same pull request. Which bundles, and why those, is
+# declared per builder (`autoRefresh` in its GOVERNANCE) and explained in docs/DATA-GOVERNANCE.md.
+# The file keeps its name because tests and documents address it by it.
 name: TLE snapshot
 
 on:
@@ -56,32 +64,62 @@ jobs:
           node-version: 20
       - name: Rebuild data/tle from the live sources
         run: node scripts/build-tle-snapshot.mjs
-      - name: Open a pull request when the catalogue actually moved
+      # ── (upstream-liveness) THE OTHER BUNDLES THAT ARE DUE RIDE THE SAME PULL REQUEST ───────────
+      # Before this step the catalogue was the only bundle anything rebuilt on a schedule (measured
+      # 2026-09-30: spacecraft and small-bodies last written 2026-08-10, the GIBS date ranges 08-21).
+      # scripts/data-refresh.mjs runs the builders whose GOVERNANCE declares `autoRefresh` — light,
+      # keyless, every response checked before a byte is written (check:datagov, rule refresh-safe)
+      # — and only when a bundle is `aging` or `stale` by its own declared cadence, so a monthly
+      # upstream is asked monthly although this job runs twice a day. A builder that fails leaves its
+      # bundle as it was and prints a warning; it does not stop the catalogue.
+      # ⚠ `!cancelled()`, NOT THE DEFAULT `success()`: the catalogue failing (CelesTrak and SatNOGS
+      # both down) must not also stop the other bundles, and the job stays red for the catalogue
+      # exactly as before — the step that failed is still the one that failed.
+      # ⚠ No `npm ci`: data-refresh.mjs reads declarations with nothing but the runtime (the one npm
+      # dependency of check:datagov, acorn, is imported only where it is used).
+      - name: Rebuild the other bundles whose declared cadence says they are due
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}      # a shallow clone dates its bytes by asking GitHub
+        run: node scripts/data-refresh.mjs --run --summary refresh-summary.md --paths-out refresh-paths.txt
+      - name: Open a pull request when the catalogue or a due bundle actually moved
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- data/tle; then
-            echo "catalogue unchanged — nothing to propose"
+          if git diff --quiet -- data; then
+            echo "nothing under data/ moved — nothing to propose"
             exit 0
           fi
           BRANCH="data/tle-refresh"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
-          git add data/tle
-          git commit -m "data: refresh the bundled satellite catalogue
-
-          Rebuilt by .github/workflows/tle-refresh.yml (#R185). Source and object count are in
-          data/tle/catalogue.json."
+          # only what the two rebuild steps wrote: the catalogue, and the paths data-refresh reported
+          git add data/tle $(cat refresh-paths.txt 2>/dev/null)
+          {
+            echo "data: refresh the bundled satellite catalogue and the bundles that were due"
+            echo
+            echo "Rebuilt by .github/workflows/tle-refresh.yml (#R185). Source and object count are in"
+            echo "data/tle/catalogue.json; the other bundles were chosen by scripts/data-refresh.mjs."
+            echo
+            cat refresh-summary.md 2>/dev/null || true
+          } > commit-message.txt
+          git commit -F commit-message.txt
           git push --force origin "$BRANCH"
           if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            BODY="$(node -e 'const m=require("./data/tle/catalogue.json");console.log(`Rebuilt by the scheduled \`TLE snapshot\` workflow.\n\n| | |\n|---|---|\n| source | ${m.source} |\n| objects | ${m.objects} |\n| newest epoch | ${m.newestEpoch} |\n| median element age | ${m.medianElementAgeHours} h |\n\nThis is the copy the live-satellite layer falls back to when CelesTrak cannot be reached (#R185). Real element sets, propagated by SGP4 in real time; the app reports their age.`)')"
+            BODY="$BODY
+
+          $(cat refresh-summary.md 2>/dev/null || true)"
             gh pr create --base main --head "$BRANCH" \
-              --title "data: refresh the bundled satellite catalogue" \
-              --body "$(node -e 'const m=require("./data/tle/catalogue.json");console.log(`Rebuilt by the scheduled \`TLE snapshot\` workflow.\n\n| | |\n|---|---|\n| source | ${m.source} |\n| objects | ${m.objects} |\n| newest epoch | ${m.newestEpoch} |\n| median element age | ${m.medianElementAgeHours} h |\n\nThis is the copy the live-satellite layer falls back to when CelesTrak cannot be reached (#R185). Real element sets, propagated by SGP4 in real time; the app reports their age.`)')"
+              --title "data: refresh the bundled satellite catalogue and the bundles that were due" \
+              --body "$BODY"
           else
-            echo "an open pull request already tracks this branch — it now carries the newer catalogue"
+            echo "an open pull request already tracks this branch — it now carries the newer catalogue and bundles"
           fi
       - name: Approve the checks this job caused, wait for them, and land the catalogue
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: data/tle-refresh

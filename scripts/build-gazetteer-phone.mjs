@@ -36,6 +36,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { GEONAMES } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'data', 'gazetteer-world.json.gz');
@@ -51,6 +52,7 @@ export const GOVERNANCE = {
        states them. Restating the licence here would be a second spelling of one fact, so only the
        publisher and the derivation are declared. */
     publisher: 'GeoNames',
+    ...GEONAMES,
     builtBy: 'scripts/build-gazetteer-phone.mjs',
   },
 };

@@ -39,6 +39,7 @@
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { JPL_SATELLITES } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'moons.json');
@@ -57,6 +58,7 @@ export const GOVERNANCE = {
     /* ⚠ NO LICENCE STATEMENT IS READ BY THIS BUILD. What it does carry is the one fact that makes
        the table usable — the stated epoch and frame, per satellite — and that is `asOf` per row
        rather than a property of the bundle, so it is not lifted here. */
+    ...JPL_SATELLITES,
     builtBy: 'scripts/build-moons.mjs',
   },
 };

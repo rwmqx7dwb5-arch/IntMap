@@ -61,7 +61,16 @@ export const GOVERNANCE = (() => {
   /* ⚠ CITATION AND DISTRIBUTION ONLY. Bird (2003) PB2002 is cited by the manifest this build
      writes; neither the paper's publisher nor the redistribution terms of the fraxen mirror are
      stated anywhere here. */
-  const rec = { url: BASE, builtBy: 'scripts/build-tectonics.mjs' };
+  const rec = {
+    url: BASE,
+    cadence: 'static',
+    cadenceBasis: {
+      observed: 'PB2002 is a published plate model (Bird 2003); measured 2026-09-30, the fraxen/tectonicplates mirror has had no commit since 2014-10-06',
+      expires: 'if the mirror is revised or the builder moves to a newer plate model',
+      canon: 'this record (the only builder that reads PB2002)',
+    },
+    builtBy: 'scripts/build-tectonics.mjs',
+  };
   return { 'data/tectonics.bin.gz': rec, 'data/tectonics.json': rec };
 })();
 const D = Math.PI / 180, RE = 6371.0;

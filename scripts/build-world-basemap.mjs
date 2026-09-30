@@ -32,7 +32,10 @@ const OUT_DIR = path.join(process.cwd(), 'data');
 const WIDTH = Number(process.env.WORLD_BASE_W || 2048);
 const HEIGHT = WIDTH / 2;
 const LAYER = process.env.WORLD_BASE_LAYER || 'BlueMarble_ShadedRelief_Bathymetry';
-const URL_ = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi'
+/* the WMS endpoint alone, so that GOVERNANCE can state it without reading the environment (the
+   size and layer below are run-time choices; the upstream is not) */
+const WMS = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+const URL_ = WMS
   + '?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&CRS=EPSG:4326'
   + '&LAYERS=' + encodeURIComponent(LAYER)
   + '&BBOX=-90,-180,90,180&WIDTH=' + WIDTH + '&HEIGHT=' + HEIGHT + '&FORMAT=image/jpeg';
@@ -44,9 +47,15 @@ export const GOVERNANCE = (() => {
   /* the header states it: NASA Blue Marble shaded relief and bathymetry, 「in the public domain」 */
   const rec = {
     publisher: 'NASA EOSDIS GIBS — Blue Marble: Shaded Relief and Bathymetry',
-    url: URL_,
+    url: WMS,
     licence: 'public domain',
     attribution: false,
+    cadence: 'static',
+    cadenceBasis: {
+      observed: 'Blue Marble: Shaded Relief and Bathymetry is a single composite (NASA Visible Earth, 2004) served by GIBS without a time dimension; there is no later image of it',
+      expires: 'if the builder moves to a GIBS layer that has a time dimension',
+      canon: 'this record (the only builder that reads this layer)',
+    },
     builtBy: 'scripts/build-world-basemap.mjs',
   };
   return { 'data/world-basemap.jpg': rec, 'data/world-basemap.json': rec };

@@ -58,6 +58,20 @@ import {
   haversine, lineLength, unwrap, splitAntimeridian, simplify, dedupe, chaikin,
   corridorAxes, axisFit, densify, dLon,
 } from './subcables/geo.mjs';
+import { TELEGEOGRAPHY } from './lib/upstream-cadence.mjs';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = (() => {
+  /* ⚠ THE TERMS OF THE FOUR SOURCES ARE STATED IN scripts/subcables/sources.mjs (LICENCES) and in the
+     bundle's own meta; this declaration adds what nothing else said — which bundles, and how often
+     the inventory they follow (TeleGeography's) publishes. */
+  const rec = { publisher: 'TeleGeography Submarine Cable Map', ...TELEGEOGRAPHY, builtBy: 'scripts/build-subcables.mjs' };
+  return { 'data/subcables.json': rec, 'data/subcables-lp.json': rec, 'data/subcables-meta.json': rec };
+})();
+
 
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
 const flag = (k) => process.argv.includes('--' + k);

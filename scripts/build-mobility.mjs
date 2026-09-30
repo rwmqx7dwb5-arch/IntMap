@@ -87,6 +87,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { OURAIRPORTS } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'data', 'mobility.json');
@@ -111,7 +112,7 @@ export const GOVERNANCE = (() => {
     { publisher: 'mledoze/countries', url: MLEDOZE, licence: 'ODbL 1.0',
       paidBy: 'Country facts — mledoze/countries (capital, currency, languages, land borders, UN membership, demonym; ODbL 1.0, build time only)' },
   ];
-  return { 'data/mobility.json': { upstreams, builtBy: 'scripts/build-mobility.mjs' } };
+  return { 'data/mobility.json': { upstreams, ...OURAIRPORTS, builtBy: 'scripts/build-mobility.mjs' } };
 })();
 
 /* the reader-visible credit lines, DERIVED from those values */

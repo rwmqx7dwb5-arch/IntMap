@@ -29,6 +29,8 @@
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
+import { fetchChecked } from './lib/upstream.mjs';
+import { SIMBAD } from './lib/upstream-cadence.mjs';
 
 const OUT = path.join(process.cwd(), 'data', 'deep-sky.json');
 const TAP = 'https://simbad.u-strasbg.fr/simbad/sim-tap/sync';
@@ -43,24 +45,29 @@ export const GOVERNANCE = {
     /* ⚠ SIMBAD ASKS TO BE CITED, which this build writes into the bundle's `attribution`. That is a
        CREDIT LINE and not, as read here, a statement about the licence's terms — so `licence` stays
        silent and the boolean 「表記が再配布の条件か」 is not answered either. */
+    ...SIMBAD,
+    /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
+    autoRefresh: 'four SIMBAD TAP queries, no key; every answer is checked (status, JSON, the data array) and the 80-object floor is asked before the write',
     builtBy: 'scripts/build-deepsky.mjs',
   },
 };
 
 const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
+/* ⚠ (upstream-liveness) A QUERY THAT DID NOT ANSWER THROWS; IT NEVER RETURNS null.
+   This used to read the body without asking the status and return `null` after four failures, and
+   every caller below treated null as «no rows»: a SIMBAD outage during the named-object or distance
+   query shipped a bundle with those objects missing or every distance null — a shorter file that
+   looked like a smaller sky (check:datagov, rule update-failure). fetchChecked refuses a non-2xx,
+   an empty body, a body that is not JSON, and a JSON body without the `data` array the TAP service
+   returns (SIMBAD's error document is a VOTable, not JSON); only a dead answer is asked again.
+   The whole build then exits non-zero and data/deep-sky.json is not touched. */
 async function adql(query){
-  for(let a=0;a<4;a++){
-    try{
-      const body = new URLSearchParams({ REQUEST:'doQuery', LANG:'ADQL', FORMAT:'json', QUERY:query });
-      const r = await fetch(TAP, { method:'POST', body, headers:{ 'content-type':'application/x-www-form-urlencoded' } });
-      const t = await r.text();
-      if(t.trim().startsWith('{')){ const j = JSON.parse(t); if(j.data) return j; }
-      console.warn('  SIMBAD:', t.slice(0,200).replace(/\s+/g,' '));
-    }catch(e){ /* transient */ }
-    await sleep(2000*(a+1));
-  }
-  return null;
+  const body = new URLSearchParams({ REQUEST:'doQuery', LANG:'ADQL', FORMAT:'json', QUERY:query });
+  return fetchChecked(TAP, { method:'POST', body, headers:{ 'content-type':'application/x-www-form-urlencoded' } }, {
+    as:'json', attempts:4, backoffMs:2000,
+    validate:(j)=> (j && Array.isArray(j.data)) ? true : 'no `data` array in the TAP answer',
+  });
 }
 
 /* Beyond Messier: the Local Group, the nearest big galaxies, the naked-eye southern sky, and the
@@ -115,7 +122,6 @@ const main = async () => {
   const mess = await adql(`SELECT id.id AS ident, b.main_id, b.ra, b.dec, b.otype_txt, b.galdim_majaxis
      FROM ident AS id JOIN basic AS b ON b.oid = id.oidref
      WHERE id.id LIKE 'M %'`);
-  if(!mess){ console.error('failed'); process.exit(1); }
   console.log(mess.data.length + ' rows');
   await sleep(600);
 
@@ -126,12 +132,12 @@ const main = async () => {
   const extra = await adql(`SELECT id.id AS ident, b.main_id, b.ra, b.dec, b.otype_txt, b.galdim_majaxis
      FROM ident AS id JOIN basic AS b ON b.oid = id.oidref
      WHERE id.id IN (${inList})`);
-  console.log((extra ? extra.data.length : 0) + ' rows');
+  console.log(extra.data.length + ' rows');
   await sleep(600);
 
   const rows = [];
   const seen = new Map();
-  const take = (src, label)=>{ if(!src) return;
+  const take = (src, label)=>{
     for(const r of src.data){
       const [ident, main_id, ra, dec, otype, maj] = r;
       if(ra===null || dec===null) continue;
@@ -150,7 +156,7 @@ const main = async () => {
     const j = await adql(`SELECT b.main_id, d.dist, d.unit
        FROM basic AS b JOIN mesDistance AS d ON d.oidref = b.oid
        WHERE ${where}`);
-    console.log((j?j.data.length:0) + ' measurements');
+    console.log(j.data.length + ' measurements');
     await sleep(600);
     return j;
   };
@@ -158,7 +164,7 @@ const main = async () => {
   const dExtra = await wantDist(`b.oid IN (SELECT oidref FROM ident WHERE id IN (${inList}))`, 'named');
 
   const byMain = new Map();
-  for(const j of [dMess, dExtra]){ if(!j) continue;
+  for(const j of [dMess, dExtra]){
     for(const [main_id, dist, unit] of j.data){
       const k = String(main_id); if(!byMain.has(k)) byMain.set(k, []);
       byMain.get(k).push({ dist, unit });
@@ -187,9 +193,13 @@ const main = async () => {
     count: rows.length, withDistance: withDist,
     objects: rows,
   };
+  /* ⚠ THE FLOOR IS ASKED BEFORE THE WRITE, NOT AFTER IT. It used to exit 1 after writing, which
+     left the short file on disk for the next `git add` to pick up. 80 is the file's own floor: the
+     Messier catalogue alone is 110 objects, so fewer than 80 rows is a query that did not finish,
+     never a sky that shrank. */
+  if(rows.length < 80){ console.error(`only ${rows.length} objects — refusing to write ${OUT}`); process.exit(1); }
   fs.writeFileSync(OUT, JSON.stringify(out));
   console.log(`\n→ ${OUT}  (${rows.length} objects, ${withDist} with a published distance, ${(fs.statSync(OUT).size/1024).toFixed(0)} KB)`);
-  if(rows.length < 80) process.exit(1);
 };
 
 main().catch(e=>{ console.error(e); process.exit(1); });

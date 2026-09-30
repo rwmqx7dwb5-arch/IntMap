@@ -53,6 +53,7 @@ import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildWater } from './bordercoast/water.mjs';
 import { ringArea } from './histborders/geom.mjs';
+import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'border-coast.js');
@@ -69,6 +70,10 @@ export const GOVERNANCE = {
     url: 'https://www.naturalearthdata.com/',
     licence: 'public domain',
     attribution: false,
+    /* ⚠ THE CADENCE IS THE OUTLINES', NOT THE COAST'S. Natural Earth's coastline changes at most once a
+       year; the rings this bundle marks come from data/hist-*.js, which are OpenHistoricalMap snapshots,
+       and those are the material that changes. */
+    ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-border-coast.mjs',
   },
 };

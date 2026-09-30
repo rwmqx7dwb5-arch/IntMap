@@ -40,6 +40,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { NATURAL_EARTH, US_PRESIDENTIAL } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_E = join(ROOT, 'data', 'us-elections.json');
@@ -58,6 +59,7 @@ export const GOVERNANCE = {
     /* the payload this build writes states it in the same words: 1:110m admin-1, public domain */
     licence: 'public domain',
     attribution: false,
+    ...NATURAL_EARTH,
     builtBy: 'scripts/build-us-elections.mjs',
   },
   'data/us-elections.json': {
@@ -68,6 +70,7 @@ export const GOVERNANCE = {
       { publisher: 'National Archives / American Presidency Project (UCSB), compiled via zonination/election-history', url: CSV_URL },
       { publisher: 'tonmcg/US_County_Level_Election_Results_08-24', url: 'https://github.com/tonmcg/US_County_Level_Election_Results_08-24' },
     ],
+    ...US_PRESIDENTIAL,
     builtBy: 'scripts/build-us-elections.mjs',
   },
 };

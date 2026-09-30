@@ -51,6 +51,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync, gunzipSync } from 'node:zlib';
+import { NATURAL_EARTH } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'coastline.json.gz');
@@ -67,6 +68,7 @@ export const GOVERNANCE = {
     /* the manifest this build writes says the same words, from this value */
     licence: 'public domain',
     attribution: false,
+    ...NATURAL_EARTH,
     builtBy: 'scripts/build-coastline.mjs',
   },
 };

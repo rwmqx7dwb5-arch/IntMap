@@ -27,6 +27,8 @@
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
+import { fetchChecked } from './lib/upstream.mjs';
+import { JPL_SBDB } from './lib/upstream-cadence.mjs';
 
 const OUT = path.join(process.cwd(), 'data', 'small-bodies.json');
 const QUERY = 'https://ssd-api.jpl.nasa.gov/sbdb_query.api';
@@ -42,6 +44,9 @@ export const GOVERNANCE = {
     /* the bundle's own attribution line states these terms verbatim */
     licence: 'U.S. Government work — not subject to copyright',
     attribution: false,
+    ...JPL_SBDB,
+    /* (upstream-liveness) on the unattended refresh roster — scripts/data-refresh.mjs */
+    autoRefresh: 'about ninety paced SBDB requests, no key; every answer is checked, a sweep that returns no rows is refused, and the 100-body floor is asked before the write',
     builtBy: 'scripts/build-smallbodies.mjs',
   },
 };
@@ -49,13 +54,20 @@ const F = FIELDS.split(',');
 
 const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
-async function getJSON(url){
-  for(let a=0;a<4;a++){
-    try{ const r = await fetch(url,{headers:{accept:'application/json'}}); const j = await r.json(); if(j && !j.error) return j; if(j&&j.error) console.warn('  SBDB:', j.error); }
-    catch(e){ /* transient */ }
-    await sleep(1200*(a+1));
-  }
-  return null;
+/* ⚠ (upstream-liveness) «NOT ANSWERED» AND «ANSWERED: NO SUCH OBJECT» ARE TWO THINGS.
+   This used to read the body without asking the status and return `null` after four failures;
+   query() then returned `[]`, so an SBDB outage during a sweep shipped a bundle with that whole
+   class missing — a shorter file that looked like a smaller solar system (check:datagov, rule
+   update-failure). Now a non-2xx, an empty body, a non-JSON body or an `error` envelope THROWS and
+   the build exits without writing. What SBDB SAYS is kept as an answer: the lookup API reports an
+   unknown designation as HTTP 200 `{"message":"specified object was not found"}` and an ambiguous
+   one as HTTP 300 with a `list` (both measured 2026-09-30), and those two remain «not resolved»
+   in the curated list's report, exactly as before. */
+async function getJSON(url, expect){
+  return fetchChecked(url, { headers:{ accept:'application/json' } }, {
+    as:'json', attempts:4, backoffMs:1200, expect,
+    validate:(j)=> (j && typeof j === 'object' && !j.error) ? true : ('SBDB error: ' + String(j && j.error).slice(0,160)),
+  });
 }
 
 async function query(params){
@@ -63,7 +75,7 @@ async function query(params){
   u.searchParams.set('fields', FIELDS);
   for(const [k,v] of Object.entries(params)) u.searchParams.set(k, v);
   const j = await getJSON(u.toString());
-  if(!j || !Array.isArray(j.data)) return [];
+  if(!Array.isArray(j.data)) throw new Error('SBDB query answered without a `data` array: ' + u);
   return j.data.map(row=>{ const o={}; F.forEach((f,i)=>{ o[f]=row[i]; }); return o; });
 }
 
@@ -76,8 +88,9 @@ async function lookup(sstr){
   u.searchParams.set('sstr', sstr);
   u.searchParams.set('full-prec', 'true');
   u.searchParams.set('phys-par', 'true');
-  const j = await getJSON(u.toString());
-  if(!j || !j.orbit || !Array.isArray(j.orbit.elements) || !j.object) return null;
+  /* 300 is SBDB's own «more than one object matches» — an answer, not a failure */
+  const j = await getJSON(u.toString(), [200, 300]);
+  if(!j.orbit || !Array.isArray(j.orbit.elements) || !j.object) return null;
   const el = {}; for(const e of j.orbit.elements) el[e.name] = e.value;
   const ph = {}; for(const p of (j.phys_par||[])) ph[p.name] = p.value;
   return {
@@ -149,6 +162,10 @@ function pack(o, curated){
 
 const main = async () => {
   const byId = new Map();
+  /* ⚠ A SWEEP THAT RETURNS NO ROWS IS REFUSED. Each of the four is defined by a measured property
+     that hundreds of catalogued bodies have (the committed bundle carries 1,142 bodies), so zero rows is
+     a query that went wrong, never a class of object that ceased to exist. */
+  const sweep = (rows, label)=>{ if(!rows.length) throw new Error('SBDB sweep «' + label + '» returned no rows'); return rows; };
   const add = (rows, curated)=>{ let n=0; for(const r of rows){ const p = pack(r, curated); if(!p) continue;
     const prev = byId.get(p.id); if(prev && !curated) continue;
     if(prev && curated) { prev.pick = 1; continue; }
@@ -156,24 +173,24 @@ const main = async () => {
 
   /* 1 — every asteroid at least 150 km across. A size cut, not a popularity cut. */
   process.stdout.write('SBDB: asteroids ≥150 km … ');
-  console.log(add(await query({ 'sb-kind':'a', 'sb-cdata':'{"AND":["diameter|GE|150"]}', limit:'400' })));
+  console.log(add(sweep(await query({ 'sb-kind':'a', 'sb-cdata':'{"AND":["diameter|GE|150"]}', limit:'400' }), 'asteroids ≥150 km')));
   await sleep(800);
 
   /* 2 — the intrinsically brightest trans-Neptunian objects (H < 5.5 ≈ the dwarf-planet class). */
   process.stdout.write('SBDB: bright TNOs … ');
-  console.log(add(await query({ 'sb-class':'TNO', 'sb-cdata':'{"AND":["H|LT|5.5"]}', limit:'400' })));
+  console.log(add(sweep(await query({ 'sb-class':'TNO', 'sb-cdata':'{"AND":["H|LT|5.5"]}', limit:'400' }), 'bright TNOs')));
   await sleep(800);
 
   /* 3 — every NUMBERED comet. Numbering means the return has been observed, so this is the set of
         comets that are known to come back rather than the set that has ever been seen once. */
   process.stdout.write('SBDB: numbered comets … ');
-  console.log(add(await query({ 'sb-kind':'c', 'sb-ns':'n', limit:'900' })));
+  console.log(add(sweep(await query({ 'sb-kind':'c', 'sb-ns':'n', limit:'900' }), 'numbered comets')));
   await sleep(800);
 
   /* 4 — potentially hazardous asteroids brighter than H 18 (≈ 1 km and up). These are the ones on
         every impact-monitoring list, so a user looking for "the dangerous ones" finds them. */
   process.stdout.write('SBDB: PHAs H<18 … ');
-  console.log(add(await query({ 'sb-kind':'a', 'sb-group':'pha', 'sb-cdata':'{"AND":["H|LT|18"]}', limit:'400' })));
+  console.log(add(sweep(await query({ 'sb-kind':'a', 'sb-group':'pha', 'sb-cdata':'{"AND":["H|LT|18"]}', limit:'400' }), 'PHAs H<18')));
   await sleep(800);
 
   /* 5 — the editorial list, last so it can mark entries the sweeps already found.
@@ -185,7 +202,14 @@ const main = async () => {
   process.stdout.write('SBDB: curated … ');
   let got = 0, missed = [];
   for(const des of CURATED){
-    let rows = await query({ 'sb-cdata':JSON.stringify({AND:[`pdes|EQ|${des}`]}), limit:'2' });
+    /* ⚠ (upstream-liveness) A 400 HERE IS SBDB ANSWERING THE QUESTION, NOT SBDB BEING DOWN. Its query
+       grammar cannot express a designation with a space: measured 2026-09-30, `pdes|EQ|1998 KY26`
+       answers HTTP 400 «bad character(s) in sb-cdata EQ argument for field 'pdes'». That is the case
+       the lookup API below exists for, so only that refusal falls through to it; anything else
+       (a 5xx, a timeout, a body that is not JSON) still stops the build. */
+    let rows;
+    try { rows = await query({ 'sb-cdata':JSON.stringify({AND:[`pdes|EQ|${des}`]}), limit:'2' }); }
+    catch(e){ if(e && e.status === 400) rows = []; else throw e; }
     /* ⚠ The QUERY api indexes an unnumbered comet under its bare provisional designation
        ("1995 O1"), not the form everyone writes ("C/1995 O1"), and the interstellar objects are
        filed with a `prefix` that pdes does not carry at all. The LOOKUP api resolves the same
@@ -213,9 +237,10 @@ const main = async () => {
     count: bodies.length,
     bodies,
   };
+  /* the floor is asked BEFORE the write (it used to be asked after, leaving the short file behind) */
+  if(bodies.length < 100){ console.error(`only ${bodies.length} bodies — refusing to write ${OUT}`); process.exit(1); }
   fs.writeFileSync(OUT, JSON.stringify(out));
   console.log(`\n→ ${OUT}  (${bodies.length} bodies, ${(fs.statSync(OUT).size/1024).toFixed(0)} KB)`);
-  if(bodies.length < 100) process.exit(1);
 };
 
 main().catch(e=>{ console.error(e); process.exit(1); });

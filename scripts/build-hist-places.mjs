@@ -14,18 +14,24 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
+import { PLEIADES } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RECORD = path.join(ROOT, 'scripts/histplaces/pleiades-record.json');
 const OUTPUT = path.join(ROOT, 'data/hist-places.json');
-export const SOURCE = Object.freeze({
+/* ⚠ (upstream-liveness) THE FIELDS ARE A PLAIN LITERAL SO THAT check:datagov CAN READ THEM without
+   running this file; `SOURCE` is the same object, frozen. Before this split the declaration below
+   read `SOURCE.publisher` through a call (`Object.freeze`), which the gate cannot evaluate, and the
+   declaration was recorded as 「読めなかった」 in data/governance-ledger.json. */
+const SOURCE_FIELDS = {
   publisher: 'Pleiades and its contributors',
   url: 'https://pleiades.stoa.org/',
   download: 'https://atlantides.org/downloads/pleiades/json/pleiades-places-latest.json.gz',
   licence: 'CC BY 3.0', licenceUrl: 'https://creativecommons.org/licenses/by/3.0/',
   coordinates: 'https://pleiades.stoa.org/help/representative-points',
   periods: 'https://pleiades.stoa.org/vocabularies/time-periods',
-});
+};
+export const SOURCE = Object.freeze(SOURCE_FIELDS);
 
 /* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
    npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
@@ -33,13 +39,14 @@ export const SOURCE = Object.freeze({
 export const GOVERNANCE = {
   'data/hist-places.json': {
     /* ⚠ EVERY FIELD HERE IS `SOURCE` READ, NOT RE-TYPED — one declaration, two readers. */
-    publisher: SOURCE.publisher,
-    url: SOURCE.url,
-    licence: SOURCE.licence,
-    licenceUrl: SOURCE.licenceUrl,
+    publisher: SOURCE_FIELDS.publisher,
+    url: SOURCE_FIELDS.url,
+    licence: SOURCE_FIELDS.licence,
+    licenceUrl: SOURCE_FIELDS.licenceUrl,
     /* CC BY 3.0: credit is a condition, and #R689 is what it costs when the obligation is prose. */
     attribution: true,
     paidBy: 'Pleiades — a gazetteer of past places (CC BY 3.0)',
+    ...PLEIADES,
     builtBy: 'scripts/build-hist-places.mjs',
   },
 };

@@ -36,6 +36,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RAW, SOURCE_STAMP, j, useCache, countryFiles, isoIndex, isoOf, shortNameOf,
   pairs, REALNAME, yearOf, bucket } from './lib/factbook.mjs';
+import { FACTBOOK } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -52,6 +53,7 @@ export const GOVERNANCE = {
     attribution: false,
     /* ⚠ THE COPY IS READ FROM factbook/factbook.json, whose own terms this build does not state;
        SOURCE_STAMP.via records which mirror answered. */
+    ...FACTBOOK,
     builtBy: 'scripts/build-culture.mjs',
   },
 };

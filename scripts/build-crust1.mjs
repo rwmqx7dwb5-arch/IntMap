@@ -54,7 +54,16 @@ export const GOVERNANCE = (() => {
   /* ⚠ NEITHER A PUBLISHER NOR A LICENCE IS STATED ANYWHERE IN THIS BUILD. What it has is a
      CITATION (Laske, Masters, Ma & Pasyanos 2013) and a distribution URL, and a citation is not a
      licence. Both facets stay silent rather than being guessed at. */
-  const rec = { url: SRC, builtBy: 'scripts/build-crust1.mjs' };
+  const rec = {
+    url: SRC,
+    cadence: 'static',
+    cadenceBasis: {
+      observed: 'CRUST1.0 is a finished global model (Laske, Masters, Ma & Pasyanos 2013) distributed as one tarball that has not been revised',
+      expires: 'if a CRUST2 or a revised CRUST1.0 is published at the distribution URL',
+      canon: 'this record (the only builder that reads CRUST1.0)',
+    },
+    builtBy: 'scripts/build-crust1.mjs',
+  };
   return { 'data/crust1.bin.gz': rec, 'data/crust1.json': rec };
 })();
 

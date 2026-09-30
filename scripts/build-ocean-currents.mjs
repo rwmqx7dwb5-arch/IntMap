@@ -84,6 +84,7 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { NOAA_CLIMATOLOGY } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'ocean-currents.json');
@@ -156,6 +157,7 @@ export const GOVERNANCE = (() => {
   });
   const rec = {
     upstreams: [...VEL_SOURCES.map(one), one(WIND_SOURCE), one(SST_SOURCE)],
+    ...NOAA_CLIMATOLOGY,
     builtBy: 'scripts/build-ocean-currents.mjs',
   };
   return {

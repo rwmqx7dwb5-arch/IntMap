@@ -23,6 +23,21 @@ import { join, dirname } from 'node:path';
 import { ROOT, sparql, entities, claims, best, dvItem, dvStr, dvQuantity, qid, val, label } from './wd.mjs';
 import { curatedManifest, slugify, uniqueSlug } from './manifest.mjs';
 import { hostOf, orgClasses } from './resolve.mjs';
+import { WIKIDATA } from '../lib/upstream-cadence.mjs';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/companies/manifest.json': {
+    /* which companies are covered is Wikidata's answer (revenue, market cap, headquarters) */
+    publisher: 'Wikidata',
+    ...WIKIDATA,
+    builtBy: 'scripts/companies/discover.mjs',
+  },
+};
+
 
 const argv = process.argv.slice(2);
 const arg = (f, d) => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : d; };

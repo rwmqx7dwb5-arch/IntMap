@@ -53,6 +53,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, httpJSON, cacheGet, cachePut, chunk, qid, claims, best, dvItem, dvCoord, dvQuantity, wdDate, label } from './companies/wd.mjs';
+import { WIKIDATA } from './lib/upstream-cadence.mjs';
 
 /* The identity Wikimedia's user-agent policy asks for. `httpJSON` merges the
    headers it is given OVER its own defaults, so this is the string the upstream
@@ -75,6 +76,7 @@ export const GOVERNANCE = {
     licence: 'CC0-1.0',
     /* CC0 waives the conditions, so no DATA_SOURCES row is owed for this bundle. */
     attribution: false,
+    ...WIKIDATA,
     builtBy: 'scripts/build-npp-registry.mjs',
   },
 };

@@ -55,6 +55,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { SMITHSONIAN_GVP } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -86,6 +87,7 @@ export const GOVERNANCE = (() => {
     url: WFS,
     attribution: true,
     paidBy: 'Smithsonian GVP',
+    ...SMITHSONIAN_GVP,
     builtBy: 'scripts/build-volcanoes.mjs',
   };
   return { 'data/volcanoes_gvp.json': rec, 'data/volcano-detail.json.gz': rec };

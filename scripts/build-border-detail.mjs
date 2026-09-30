@@ -15,6 +15,22 @@ import { loadGeom } from './histborders/fetch.mjs';
 import { geometryOf } from './histborders/precision.mjs';
 import { markRing, water, closedRing, INLAND_KM } from './build-border-coast.mjs';
 import { requireData, placed, readManifest } from './data-assets.mjs';
+import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/border-detail/index.json': {
+    /* geometry-only detail for the OHM-derived bundles in this tree (it never downloads), so it
+       follows their upstream */
+    publisher: 'OpenHistoricalMap',
+    ...OPENHISTORICALMAP,
+    builtBy: 'scripts/build-border-detail.mjs',
+  },
+};
+
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data/border-detail');

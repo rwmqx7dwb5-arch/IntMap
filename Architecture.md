@@ -5557,7 +5557,8 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 |---|---|
 | 何をどう試験するか・層・tier・テスト予算・`check:*` ゲートの一覧 | [`docs/TESTING.md`](docs/TESTING.md) |
 | リリース手順・ロールバック・着地確認 | [`docs/RELEASE.md`](docs/RELEASE.md) |
-| 稼働監視・アラート | [`docs/MONITORING.md`](docs/MONITORING.md) |
+| 稼働監視・アラート（上流ホストの夜間の死活を含む） | [`docs/MONITORING.md`](docs/MONITORING.md) |
+| 同梱データの出自・権利・鮮度と自動更新の名簿 | [`docs/DATA-GOVERNANCE.md`](docs/DATA-GOVERNANCE.md) |
 | 障害対応（サイト・DB・鍵） | [`docs/INCIDENT-RESPONSE.md`](docs/INCIDENT-RESPONSE.md) |
 | CI／検査スクリプトのファイル一覧 | [`docs/FILES.md`](docs/FILES.md) §3.12 |
 | **作業終了処理**（commit / push → 原本の最新化 → USB への完全ミラーと検証） | [`AGENTS.md`](AGENTS.md) §11 ＋ `scripts/master-sync.mjs` ＋ `scripts/backup-usb.ps1` |
@@ -5659,6 +5660,28 @@ DB（migration）。`main` が緑であることは、その 3 つが同じ組�
 Issue 1 本に書き直される。セッションは Secret のリフレッシュトークンから作り（パスワードは扱わない）、
 回転したトークンを次の晩のために保存する。**正本は [`docs/TESTING.md`](docs/TESTING.md)「Atlas evaluation」、
 読み手は [`docs/MONITORING.md`](docs/MONITORING.md) §1d。**
+
+### 15.7 上流の死活と、同梱データの鮮度
+
+- **鮮度は「束のバイトが最後に書かれた日 × その束に宣言された周期」で判定する**
+  （`npm run check:datagov` の `freshness-stated`・`scripts/data-governance.mjs` の `freshnessOf`）。
+  周期は上流についての事実なので builder の `GOVERNANCE` に（上流ごとの値は
+  `scripts/lib/upstream-cadence.mjs` に 1 回だけ、builder は展開する。builder が居ない束は
+  `scripts/data-unbuilt.mjs`）、日付はバイトについての事実なので束の in-band 記録か、そのバイトを
+  最後に変えたコミットから取る。どの周期も根拠（observed / expires / canon）を持ち、`static` にも
+  理由が要る。周期の無い束は落第、古いのは note、日付が測れない（shallow clone）のも note。
+- **上流の応答は 1 つの判定で読む。** `scripts/lib/upstream.mjs` の `classify()`（alive / refused / dead /
+  unobserved）と `fetchChecked()`（非 2xx・空・JSON でない・スキーマ違反を拒み、再試行は dead と 429 だけ）。
+  `data/` へ書く builder はこれを通し、上流が答えなければ**書かずに非 0 で終わる**。
+- **ブラウザが話すホストは毎晩訊く。** `scripts/outbound-hosts.json` の要求される行はどれも代表の
+  `probe` を持ち（`check:datagov` の `probe-declared`）、`.github/workflows/upstream-liveness.yml` が
+  `scripts/upstream-liveness.mjs` で全部を 1 回ずつ訊く。赤になるのは up だったホストが 2 晩続けて
+  down になった晩だけで、ずっと死んでいるホストと、どこにも届かなかった runner は赤にしない。
+- **期限の来た束の一部は無人で取り直す。** `autoRefresh` を宣言した builder（軽い・鍵なし・全応答を
+  確かめる——`check:datagov` の `refresh-safe` が確かめる）を、`tle-refresh.yml` の 1 段として
+  `scripts/data-refresh.mjs` が期限（宣言された周期）の来たときだけ走らせ、衛星カタログと同じ PR に載せる。
+- 正本: [`docs/DATA-GOVERNANCE.md`](docs/DATA-GOVERNANCE.md) §4.4〜§4.6（何を・なぜ）、
+  [`docs/MONITORING.md`](docs/MONITORING.md) §1e（読み方）。
 
 ---
 

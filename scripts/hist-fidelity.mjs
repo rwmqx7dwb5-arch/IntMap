@@ -43,11 +43,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DERIVED_FROM_THE_REPOSITORY } from './lib/upstream-cadence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const has = (k) => process.argv.includes(k);
 const OBSERVED = 'data/hist-fidelity.json';
+
+/* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
+   npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
+   「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+export const GOVERNANCE = {
+  'data/hist-fidelity.json': {
+    /* the observation ledger of npm run check:histfidelity, measured over the hist-* bundles here */
+    ...DERIVED_FROM_THE_REPOSITORY,
+    builtBy: 'scripts/hist-fidelity.mjs',
+  },
+};
 
 /* ── the shipped bundles, read the way the browser reads them ───────────────────────────── */
 const load = (rel) => {
