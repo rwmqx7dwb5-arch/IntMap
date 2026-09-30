@@ -191,11 +191,15 @@ test('R372 ⑧ Architecture.md §10.1 states the MEASURED open gap', () => {
 
 /* 綴りのまま: 対象は CI の workflow・文書で、実行されるのは GitHub 上（ここでは記述を確かめるしかない） */
 test('R372 ⑨ the TLE snapshot finishes the job it starts', () => {
-  const y = raw('.github/workflows/tle-refresh.yml');
+  const wf = raw('.github/workflows/tle-refresh.yml');
+  /* (perf-baseline-auto-tighten) the landing moved into a local composite action shared with
+     perf-ceiling.yml; the workflow must still reach it, and the lander must still do every step. */
+  assert.match(wf, /uses:\s*\.\/\.github\/actions\/land-bot-pr/, 'the catalogue is landed by the shared lander');
+  const y = raw('.github/actions/land-bot-pr/action.yml');
   /* Opening the PR was never the last step: a PR authored by github-actions[bot] has its checks
      parked at `action_required`, so EVERY scheduled run from 2026-08-01 came back at 0 s and the
      three that ever landed landed because a person clicked Approve. */
-  assert.match(y, /actions:\s*write/, 'it may approve the runs it caused');
+  assert.match(wf, /actions:\s*write/, 'it may approve the runs it caused');
   assert.match(y, /actions\/runs\/\$\{?RUN\}?\/approve/, 'and does');
   assert.match(y, /gh pr merge/, 'and lands the catalogue rather than leaving it open');
   /* ⚠ a cancelled run is NOT a red one — ci.yml cancels in-progress runs when the branch moves,

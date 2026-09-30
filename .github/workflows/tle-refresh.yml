@@ -118,95 +118,23 @@ jobs:
           else
             echo "an open pull request already tracks this branch — it now carries the newer catalogue and bundles"
           fi
+      # (perf-baseline-auto-tighten) THE LANDING LIVES IN .github/actions/land-bot-pr — moved there, not
+      # copied, when a second workflow (perf-ceiling.yml) needed it. Approving the parked runs, waiting
+      # for them, telling «not reported yet» and «cancelled» apart from red, merging, and dispatching
+      # deploy.yml are all there, with the measurements that put each of them there.
       - name: Approve the checks this job caused, wait for them, and land the catalogue
+        id: land
         if: ${{ !cancelled() }}
+        uses: ./.github/actions/land-bot-pr
+        with:
+          branch: data/tle-refresh
+          what: the catalogue
+      - name: The catalogue did not land this time — is main's copy stale?
+        if: ${{ !cancelled() && steps.land.outputs.result == 'lost' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          BRANCH: data/tle-refresh
         run: |
           set -u
-          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
-          if [ -z "$PR" ]; then echo "no open pull request — the catalogue did not move"; exit 0; fi
-
-          # `main` requires the branch to be up to date (strict_required_status_checks_policy), and
-          # this repo merges often enough that a five-minute CI run can fall behind. Each attempt
-          # therefore re-syncs, re-approves whatever that created, and waits again.
-          for attempt in 1 2 3 4; do
-            echo "── attempt $attempt ─────────────────────────────────────────"
-            STATE="$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus)"
-            if [ "$STATE" = "BEHIND" ]; then
-              echo "behind main — updating the branch"; gh pr update-branch "$PR" || true; sleep 20
-            fi
-            SHA="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
-            echo "head $SHA"
-
-            # ⚠⚠ WAIT FOR THE RUNS BEFORE JUDGING THEM. GitHub creates the parked runs a few seconds
-            # AFTER the push that caused them, and the first version of this step read `gh pr checks`
-            # in that window: it printed «no checks reported», exited non-zero, and the step called a
-            # catalogue red whose checks had not been created yet, let alone run. Measured on the
-            # dispatch that was meant to prove this step works — the PR was opened at 07:13:22, the
-            # runs appeared at 07:13:25, and the step had already given up at 07:13:26.
-            for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-              SEEN="$(gh run list --branch "$BRANCH" --limit 20 --json headSha --jq "[.[]|select(.headSha==\"$SHA\")]|length")"
-              [ "${SEEN:-0}" -gt 0 ] && break
-              echo "no run on $SHA yet ($i)"; sleep 10
-            done
-
-            # Approve every run GitHub parked on THIS head. Without this they stay at 0 s forever
-            # and the required checks below can never report.
-            for RUN in $(gh run list --branch "$BRANCH" --limit 20 --json databaseId,conclusion,headSha \
-                          --jq ".[]|select(.headSha==\"$SHA\" and .conclusion==\"action_required\")|.databaseId"); do
-              echo "approving run $RUN"
-              gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN}/approve" \
-                || { echo "::error::GITHUB_TOKEN could not approve run ${RUN}. The catalogue cannot land unattended; see the #R372 note at the top of this file."; exit 1; }
-            done
-
-            # ⚠ `gh pr checks` says «no checks reported» — and exits NON-ZERO — both when the checks
-            # have not been created yet and when there are none at all. That sentence is "not yet",
-            # never "red", so it is caught here rather than falling through to the failure branch.
-            OUT="$(gh pr checks "$PR" --watch --interval 20 2>&1)" && RC=0 || RC=$?
-            echo "$OUT" | tail -20
-            if [ "$RC" = "0" ]; then
-              if gh pr merge "$PR" --squash --delete-branch=false; then
-                echo "catalogue landed on main"
-                # ⚠⚠ LANDING ON MAIN IS NOT REACHING READERS. This merge is made with GITHUB_TOKEN,
-                # and a push made with GITHUB_TOKEN starts no other workflow — the publish on push to main
-                # (ci.yml's «Deploy to Pages», after its gates) never runs for it, and before
-                # ci-build-once deploy.yml's own `push` trigger did not either — so the catalogue sat on
-                # main until a person happened to push. Measured
-                # 2026-09-27: 19 of 19 bot commits since 09-10 had no push-triggered run at all;
-                # #773 (built 09-26 08:36) was still not on the Pages site the next day, and one
-                # earlier catalogue took 11.5 h. workflow_dispatch is the documented exception that
-                # GITHUB_TOKEN may start, so the deploy is asked for by name. A refusal is RED: a
-                # catalogue that cannot reach readers is the failure this job exists to report.
-                gh workflow run deploy.yml --ref main \
-                  || { echo "::error::the catalogue landed on main but deploy.yml could not be dispatched — it will not reach the Pages site until the next push."; exit 1; }
-                echo "deploy.yml dispatched for main"; exit 0
-              fi
-              echo "checks passed but the merge was refused — re-syncing and trying again"
-              continue
-            fi
-            if echo "$OUT" | grep -qi 'no checks reported'; then
-              echo "the checks have not reported yet — waiting and looking again"; sleep 30; continue
-            fi
-
-            # ⚠ A CANCELLED RUN IS NOT A RED ONE, and `gh pr checks` cannot tell them apart:
-            # ci.yml carries `cancel-in-progress: true`, so moving this branch kills its own
-            # in-flight run, and the aggregating job then reports `core: cancelled` as exit 1.
-            # Measured while writing this step — the first attempt read a cancellation as a
-            # failure and refused a catalogue whose checks had never actually finished. Re-run
-            # the cancelled ones on the same commit and look again.
-            CANCELLED="$(gh run list --branch "$BRANCH" --limit 20 --json databaseId,conclusion,headSha \
-                          --jq ".[]|select(.headSha==\"$SHA\" and .conclusion==\"cancelled\")|.databaseId")"
-            if [ -n "$CANCELLED" ]; then
-              for RUN in $CANCELLED; do echo "re-running cancelled run $RUN"; gh run rerun "$RUN" || true; done
-              sleep 20; continue
-            fi
-
-            echo "::error::the pull request's checks are red — NOT merging. The bundled catalogue stays as it is."
-            exit 1
-          done
-
           # ⚠⚠ LOSING THE RACE IS NOT THE FAILURE THIS JOB EXISTS TO REPORT. Measured: the approvals
           # work, the checks run and they pass — but CI takes ~6 minutes and this repository merges
           # every few minutes, so `update-branch` can be overtaken before the merge button is

@@ -65,27 +65,36 @@ test('r311 ① a heavier EAGER entry fails; a heavier ASYNC chunk fails; the two
   assert.ok(judge(fatAsync, base).errors.some((s) => s.startsWith('async.raw grew')));
 });
 
-test('r311 ② a ceiling that stopped following the measurement is itself a failure', () => {
+test('r311 ② a ceiling that stopped following the measurement is SAID, and lowered on main — not failed in the PR', () => {
+  /* (perf-baseline-auto-tighten) Until 2026-10-01 this required an ERROR from an eager improvement,
+     so every pull request that shrank start-up had to edit tests/perf-baseline.json — the conflict
+     of four to five parallel PRs a day (measured 2026-09-30). #R194's rule still holds: a ceiling
+     with permanent headroom asserts nothing. What moved is who lowers it — main's CI
+     (tighten(), .github/workflows/perf-ceiling.yml); tests/perf-baseline-auto-tighten-checks.test.mjs
+     holds that side. Here: the PR is green, and the slack is reported rather than hidden. */
   const base = M();
   const better = M(); better.eager.raw = Math.round(base.eager.raw * 0.8);
-  const errs = judge(better, base).errors;
-  assert.ok(errs.some((s) => s.includes('eager.raw IMPROVED')),
-    'an improvement that leaves the ceiling behind must say so — a ceiling with permanent headroom asserts nothing (#R194)');
-  /* ⚠ and the ASYNC half must NOT do this: it may shrink freely, or every unrelated round would
-     have to edit the baseline. */
+  const r = judge(better, base);
+  assert.deepEqual(r.errors, [], 'an improvement is not a failure of the pull request that made it');
+  const l = r.loose.find((x) => x.what === 'eager.raw');
+  assert.ok(l && l.due && l.by === base.eager.raw - better.eager.raw, 'the slack is measured, and marked due for main to lower');
+  assert.ok(r.notes.some((n) => /main's CI lowers/.test(n)), 'and said: ' + JSON.stringify(r.notes));
   const smallerAsync = M(); smallerAsync.async.raw = Math.round(base.async.raw * 0.5);
   assert.equal(judge(smallerAsync, base).errors.length, 0, 'async shrinking is not a failure');
 });
 
-test('r311 ③ the two COUNT metrics are gated exactly — a byte-sized slack would swallow them', () => {
+test('r311 ③ the two COUNT metrics have a band of zero — a byte-sized slack would swallow them', () => {
   const base = M();
   for (const k of ['requests', 'modules']) {
     const more = M(); more.eager[k] = base.eager[k] + 1;
     assert.ok(judge(more, base).errors.some((s) => s.startsWith('eager.' + k + ' grew')),
       `one more ${k} must fail: with a 2 kB absolute slack, no value a count can take could ever exceed it`);
+    /* (perf-baseline-auto-tighten) …and one fewer is green in the PR, and due on main at once —
+       a count has no churn band, so it is followed down by even one. */
     const fewer = M(); fewer.eager[k] = base.eager[k] - 1;
-    assert.ok(judge(fewer, base).errors.some((s) => s.includes('eager.' + k + ' IMPROVED')),
-      `one fewer ${k} must ratchet the ceiling down`);
+    const r = judge(fewer, base);
+    assert.deepEqual(r.errors, [], `one fewer ${k} is not a failure of the PR`);
+    assert.ok(r.loose.some((x) => x.what === 'eager.' + k && x.due), `one fewer ${k} is due for main to lower`);
   }
 });
 

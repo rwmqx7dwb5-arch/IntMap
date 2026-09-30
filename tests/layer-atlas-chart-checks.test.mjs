@@ -261,7 +261,7 @@ test('R543 ⑩: chart.compose is reachable by every route Atlas actually has', (
     'the dispatch door is an entry with a run — scripts/atlas-catalog.mjs reads the entries');
   for (const sp of ['chartCompose', 'plot', 'graph']) assert.equal(CAPS.dispatchName(sp), 'chart', `every spelling the row declares reaches that door (atlas-one-declaration): ${sp}`);
   assert.match(con, /IntMapLazy\.need\('atlasChart'\)/, 'and it is lazy');
-  /* the renderer must NOT be in the boot graph: tests/perf-baseline.json pins eager.modules exactly */
+  /* the renderer must NOT be in the boot graph: check:perf fails on even one more eager module (tests/perf-baseline.json) */
   assert.ok(!/^import .*atlas-chart\.js/m.test(con), 'no static import of the renderer');
   const lazy = R('js/lazy-modules.js');
   assert.equal(LAZY_REGISTRY["atlasChart"].publishes, 'IntMapAtlasChart', 'the published global is declared');   /* (#R798) */

@@ -174,10 +174,20 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   raw / gzip / brotli とモジュール別の内訳を
   `.perf/build-report.json`（追跡対象外）へ書く。`npm run check:perf`（`scripts/perf-budget.mjs`）が
   それを `tests/perf-baseline.json` と突き合わせる。
-  ⚠ **2つの半分は別々の規則で見る。** eager は**両方向のラチェット**——増えれば退行、減ったのに
-  天井が残っていれば「天井が古い」として落とす。async chunk と `dist/` の合計は**天井だけ**で、
-  縮むのは自由。**最大 chunk は Cesium（4.7 MB）だが既定セッションは1バイトも取らない**ので、
+  ⚠ **2つの半分は別々に見る。** eager・async（合計と chunk ごと）・`dist/` の合計が、それぞれの天井を持つ。
+  **最大 chunk は Cesium（4.7 MB）だが既定セッションは1バイトも取らない**ので、
   「いちばん大きい chunk」を見るゲートは起動費用について何も言っていない。
+  ⚠ **天井を上げるのは PR、下げるのは `main` の CI。** PR が落ちるのは、ある行が天井＋幅
+  （`max(天井×0.5 %, 2 kB)`。`requests`・`modules` は個数なので幅 0）を**超えて増えた**ときだけで、
+  減った・幅の中で動いた PR は天井ファイルに触れずに緑。上げる判断は PR が `--update` で述べる
+  （**超えた行だけ**を書き換える）。`main` への push ごとに CI の `build` ジョブがそのビルドの実測を
+  artifact に残し、`.github/workflows/perf-ceiling.yml` がそれに `--tighten`（全行を `min(天井, 実測)`・
+  新しい chunk に天井・消えた chunk の行を削除。**上げない**）をかけ、幅を超えて下回った行があれば
+  bot の PR にして `.github/actions/land-bot-pr`（衛星カタログの着地と共有）で着地させる。
+  着地は `require-current`——測った `main` の上にまだ乗っているときだけ merge し、`main` が動いたら
+  次の run に譲る。着地後、どの天井も実測より幅 1 つを超えて上には残らない（`check:perf` が毎回、
+  天井の上に何行あるかと最も緩い行を幅の単位で印字する）。⚠ 周期は「`main` の CI が走る次の push」で、
+  `GITHUB_TOKEN` の merge（bot 自身・衛星カタログ）は CI を起こさないので、その間は次の人の push まで延びる。
 - **共有窓口の広さも計器で見る。** `npm run check:surface`（`scripts/global-surface.mjs`）が、
   `js/app-body.js` の `IM_HOST` の項目（getter／setter／後付けの代入）と、`js/`・`src/` が
   `window.*` に代入する公開名を**名前で** `tests/global-surface-baseline.json` と両方向に照合する。
@@ -5822,7 +5832,9 @@ artifact としてゲートの shard（build を読む `check:perf`・`check:ass
 Pages の artifact も組み、`build`・「Static checks」・「Regression suite」・「Browser smoke + internal QA」が
 すべて success のときだけ `pages` ジョブが公開し、`post-smoke` が実 URL を検査する。`main` の run が
 赤なら公開しない。nightly と手動実行の run は公開しない。`.github/workflows/deploy.yml` は手動の
-再公開ボタン（自前でビルドする）だけが残る。着地の確認は
+再公開ボタン（自前でビルドする）だけが残る。bot の PR（衛星カタログ `tle-refresh.yml`・起動予算の天井
+`perf-ceiling.yml`）は `.github/actions/land-bot-pr` が merge し、`GITHUB_TOKEN` の push は CI を
+起こさないので、同じ手が続けて `deploy.yml` を起動する。着地の確認は
 `curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` の `sha` が
 `git rev-parse origin/main` と一致すること。ロールバックは `.github/workflows/rollback.yml`
 （履歴に実在する ref のみ・対象 ref を **Vite ビルドして `dist` を配信**）。

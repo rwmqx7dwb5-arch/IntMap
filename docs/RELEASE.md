@@ -104,7 +104,8 @@ never be mistaken for production. Production never shows it.
   is now also what decides whether it ships (`DECISIONS.md`).
 - **Manual re-publish:** `deploy.yml` has only a **Run workflow** button now. It re-publishes
   `main`'s current commit with its own build and static gates (no browser tier). Use it when a
-  green `main` did not reach Pages; `tle-refresh.yml` dispatches it after a bot merge, because a
+  green `main` did not reach Pages; the bot lander (`.github/actions/land-bot-pr`, used by
+  `tle-refresh.yml` and `perf-ceiling.yml`) dispatches it after a bot merge, because a
   push made with `GITHUB_TOKEN` starts no workflow. It is not a way around a red `main`.
 - **(#R175) What is published is now a BUILD, not the repo tree.** `dist/` is the Vite output:
   one hashed, minified, code-split bundle per entry, the CSS extracted and hashed, and the
