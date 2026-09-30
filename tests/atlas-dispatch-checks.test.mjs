@@ -39,18 +39,19 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { appSource } from './app-source.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 /* (#R278) its own comment stripper, kept: it leaves string literals in place, which ⑤/⑥ read */
-const ATLAS = () => read('js/atlas-console.js');
+const ATLAS = () => (read('js/atlas-console.js') + '\n' + capsSource());
 const TOOLS = () => stripComments(read('js/map-tools.js'));
 const src = (p) => codeOnly(readLF(join(ROOT, p)));   /* (#R726's reader) */
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
 const { makeAtlasSchemas } = await import('../js/atlas-schemas.js');
-const CONSOLE = src('js/atlas-console.js');
+const CONSOLE = (src('js/atlas-console.js') + '\n' + capsSource());
 const CAPS_SRC = src('js/atlas-capabilities.js');
 const SURF = src('js/atlas-toolsurface.js');
 /* ── ① THE GATE CAN GO RED. ────────────────────────────────────────────────────────────────────
@@ -64,16 +65,16 @@ const fakeAtlas = (catalogued) => [
   `      return 'ACTIONS: {"type":"flyTo","place":str}${catalogued ? '; {"type":"walkshed","place":str}' : ''}.\\n'`,
   "        +'Other controls: '+controlCatalog();",
   '    }',
-  '        case \'flyTo\': { return 1; }',
-  '        case \'walkshed\': case \'reachable2\': { return 2; }',
 ].join('\n').split('\n');
+/* (atlas-capability-modules) what the dispatch can run is DATA too — one group per capability entry */
+const FAKE_CAPS = [{ line: 1, names: ['flyTo'], src: 'return 1;' }, { line: 2, names: ['walkshed', 'reachable2'], src: 'return 2;' }];
 
 test('R278 ① the catalogue gate names an uncatalogued capability, and only then goes quiet', () => {
-  const red = auditLines(fakeAtlas(false), { minCaps: 2 });
+  const red = auditLines(fakeAtlas(false), { minCaps: 2, caps: FAKE_CAPS });
   assert.equal(red.missing.length, 1, 'an action with a dispatch case and no catalogue entry must be reported');
   assert.deepEqual(red.missing[0].names, ['walkshed', 'reachable2'], 'and reported by every spelling it answers to');
 
-  const green = auditLines(fakeAtlas(true), { minCaps: 2 });
+  const green = auditLines(fakeAtlas(true), { minCaps: 2, caps: FAKE_CAPS });
   assert.equal(green.missing.length, 0, 'catalogued → silent');
 
   /* and the match is on the QUOTED name the planner would emit, not on the word appearing in prose:
@@ -81,10 +82,10 @@ test('R278 ① the catalogue gate names an uncatalogued capability, and only the
      state earthReplay was in for dozens of rounds. */
   const prose = fakeAtlas(false).slice();
   prose[1] = prose[1].replace('.\\n', '. You can also show a walkshed around a place.\\n');
-  assert.equal(auditLines(prose, { minCaps: 2 }).missing.length, 1, 'prose mentioning the word is not a catalogue entry');
+  assert.equal(auditLines(prose, { minCaps: 2, caps: FAKE_CAPS }).missing.length, 1, 'prose mentioning the word is not a catalogue entry');
 
   /* an empty or moved dispatch must fail loudly rather than pass on an empty set */
-  assert.throws(() => auditLines(fakeAtlas(true).filter((l) => !/^ {8}case/.test(l)), { minCaps: 2 }), /dispatch cases/);
+  assert.throws(() => auditLines(fakeAtlas(true), { minCaps: 2, caps: [] }), /dispatch cases/);
 });
 
 /* ── ② EVERY LIVE CAPABILITY IS DESCRIBED TO THE PLANNER ───────────────────────────────────────
@@ -115,9 +116,9 @@ test('R278 ② no capability is implemented and invisible', () => {
     assert.ok(sys.includes(`{"type":"${t}"`), `${t} must be catalogued as an emittable action`);
   }
   assert.ok(!sys.includes('{"type":"earthReplay"'), 'and earthReplay is described nowhere, having been removed');
-  assert.ok(!ATLAS().includes("case 'earthReplay':"), '…including in the dispatch');
+  assert.ok(!capabilityEntry('earthReplay'), '…including in the dispatch');
   assert.ok(!sys.includes('{"type":"slope"'), 'and neither is slope, deleted in #R469');
-  assert.ok(!ATLAS().includes("case 'slope':"), '…including in the dispatch');
+  assert.ok(!capabilityEntry('slope'), '…including in the dispatch');
   /* The mirror question — «does the catalogue offer anything the dispatch cannot run?» — is NOT
      asserted here, and the reason is worth writing down rather than leaving as an omission: the
      catalogue uses {"type":…} for NESTED schemas too, not only for actions. Running it once found
@@ -126,7 +127,7 @@ test('R278 ② no capability is implemented and invisible', () => {
      have to be taught the difference by a list of exceptions, and a list of exceptions is how a
      gate stops asserting anything. The six spellings each capability answers to are covered instead:
      if a `case` is renamed, ② fails on the name that vanished. */
-  assert.ok(dispatchCapabilities(lines).some((c) => c.names.includes('isochrone')), 'the isochrone case is still the one being catalogued');
+  assert.ok(dispatchCapabilities().some((c) => c.names.includes('isochrone')), 'the isochrone case is still the one being catalogued');
 });
 
 /* ── ③ A TRAVEL-TIME QUESTION IS NOT A CIRCLE ──────────────────────────────────────────────────
@@ -155,10 +156,8 @@ test('R278 ③ the radius entry forbids standing in for a travel-time answer', (
    centre. Every sibling handler reads lng/lat first; this one now does too. */
 test('R278 ⑤ the isochrone action honours explicit lng/lat', () => {
   /* kept as a spelling: the dispatch cases and the map tools are closure code inside js/atlas-console.js / js/map-tools.js, which need the page and the map */
-  const s = stripComments(ATLAS());
-  const i = s.indexOf("case 'isochrone':");
-  assert.ok(i > 0);
-  const body = s.slice(i, s.indexOf("case 'route':", i));
+  const body = stripComments((capabilityEntry('isochrone') || {}).run || '');   /* (atlas-capability-modules) the run of routing.isochrone */
+  assert.ok(body);
   const iLL = body.indexOf('const ll=');
   assert.ok(iLL > 0, 'the origin is still resolved into `ll`');
   const decl = body.slice(iLL, body.indexOf(';', iLL + 40));
@@ -260,7 +259,7 @@ test('R726 ⑦ the base-display preset is a capability Atlas can reach, with a s
   assert.deepEqual(S.schemaFor('layers.baseDisplay').properties.mode.enum, ['default', 'clean', 'custom']);
   const docs = (await import('../js/atlas-catalog-text.js')).makeAtlasCatalogText({}, {});
   assert.match(docs.text(['layers.baseDisplay']), /"type":"baseDisplay"/, 'documented to the planner');
-  assert.match(CONSOLE, /case 'baseDisplay': return doBaseDisplay\(a\);/, 'and the dispatch answers it');
+  assert.match(capabilityEntry('baseDisplay').run, /return doBaseDisplay\(a\);/, 'and the dispatch answers it');
   assert.match(liftFunction(src('js/atlas-controls.js'), 'doBaseDisplay'), /IntMapBaseDisplay/, 'through the panel\'s own owner, not a second copy of the rows');
 });
 
@@ -294,7 +293,7 @@ test('R726 ⑫ an empty find_capability result ends the search instead of inviti
 /* ── ⑨ the facts a tool's panel shows are in its result ────────────────────────────────────── */
 test('R726 ⑨ satellites: sub-satellite point, the observer the reader named, and the next pass', () => {
   /* kept as a spelling: the dispatch cases and the map tools are closure code inside js/atlas-console.js / js/map-tools.js, which need the page and the map */
-  const block = CONSOLE.slice(CONSOLE.indexOf("case 'satellites':")).slice(0, 9000);
+  const block = codeOnly(capabilityEntry('satellites').run);
   assert.match(block, /resolveObserver\(a,\{geocode,herePoint/, 'the observer is resolved from the arguments, the pin, the centre');
   const facts = src('js/atlas-result-facts.js');
   assert.match(liftFunction(facts, 'resolveObserver'), /a\.place \|\| a\.observer/, 'the place is read from the arguments');
@@ -306,7 +305,7 @@ test('R726 ⑨ satellites: sub-satellite point, the observer the reader named, a
 
 test('R726 ⑨ weather: the current conditions and the daily forecast, from the panel\'s own source', () => {
   /* kept as a spelling: the dispatch cases and the map tools are closure code inside js/atlas-console.js / js/map-tools.js, which need the page and the map */
-  const block = CONSOLE.slice(CONSOLE.indexOf("case 'weather':")).slice(0, 4000);
+  const block = codeOnly(capabilityEntry('weather').run);
   assert.match(block, /WX\.point\(ll\.lat,\s*ll\.lng/, 'js/weather.js IntMapWx.point — the same request the panel makes');
   assert.match(block, /weatherFacts\(j, WP&&WP\.describe, L\)/, 'the sky is named in the panel\'s own words');
   assert.match(src('js/weather.js'), /return \{ open, close, describe:/, 'js/weather.js exposes describe()');
@@ -314,7 +313,7 @@ test('R726 ⑨ weather: the current conditions and the daily forecast, from the 
 
 test('R726 ⑨ routing: the journey is on the result, for the transit and the road branch alike', () => {
   /* kept as a spelling: the dispatch cases and the map tools are closure code inside js/atlas-console.js / js/map-tools.js, which need the page and the map */
-  const block = CONSOLE.slice(CONSOLE.indexOf("case 'directions':"), CONSOLE.indexOf("case 'streetview':"));
+  const block = codeOnly(capabilityEntry('directions').run);
   assert.match(src('js/atlas-result-facts.js'), /export function routeFacts\(r\)/);
   const n = (block.match(/exec:\{route:routeFacts\(r\)\}/g) || []).length;
   assert.equal(n, 2, 'both success returns carry it');
@@ -349,7 +348,7 @@ test('R726 ⑬ map.clear is verified against the map AND the panels, and an alre
   const none = cap.verify({}, { what: 'pins' }, { paint: { poly: 0 }, panels: [] }, { paint: { poly: 0 }, panels: [] }, { ok: true, html: 'x', exec: { cleared: [] } });
   assert.equal(none.status, 'completed');
   assert.equal(none.code, 'already_clear');
-  const block = CONSOLE.slice(CONSOLE.indexOf("case 'clear': {"), CONSOLE.indexOf("case 'fullscreen':"));
+  const block = codeOnly(capabilityEntry('clear').run);
   assert.match(block, /WP\.close\(\)/, 'the weather card closes through its owner');
   assert.match(block, /SP\.close\(\)/, 'so does the satellite card');
   assert.match(block, /exec:\{cleared:did\.slice\(\)\}/, 'and what was cleared is on the result');
@@ -365,8 +364,9 @@ test('R150 #7 geo-target: ONE ambiguity gate; confirmation never co-displays wit
   /* kept as a spelling: the dispatch cases and the map tools are closure code inside js/atlas-console.js / js/map-tools.js, which need the page and the map */
   assert.match(html, /const _hlAmbigConfirm=\(ambigArr, clearNames\)=>\{/, 'single shared confirmation builder');
   // BOTH paths gate on ambiguity BEFORE painting and return a stop
-  assert.match(html, /if\(gAmbig\.length\)\{ if\(_hlMyGen!==_hlGen\) return R\(true,''\); return R\(false, _hlAmbigConfirm\(gAmbig/, 'multi-region path gates before paint');
-  assert.match(html, /if\(ambig\.length\)\{ if\(_hlMyGen!==_hlGen\) return R\(true,''\); const clear=/, 'single-colour path gates before paint');
+  /* (atlas-capability-modules) `_hlGen` is a kernel `let`, so the run reads it live as `K._hlGen` */
+  assert.match(html, /if\(gAmbig\.length\)\{ if\(_hlMyGen!==K\._hlGen\) return R\(true,''\); return R\(false, _hlAmbigConfirm\(gAmbig/, 'multi-region path gates before paint');
+  assert.match(html, /if\(ambig\.length\)\{ if\(_hlMyGen!==K\._hlGen\) return R\(true,''\); const clear=/, 'single-colour path gates before paint');
   // the old co-display (ambiguous shown as a warning alongside the painted success) is GONE
   assert.ok(!/if\(gAmbig\.length\) hh\+=warn/.test(html), 'multi-region no longer appends an ambiguous warning to a painted reply');
   assert.ok(!/if\(ambig\.length\) hh\+=warn/.test(html), 'single-colour no longer appends an ambiguous warning to a painted reply');

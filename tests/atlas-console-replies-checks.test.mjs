@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { execFileSync } from 'node:child_process';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -51,7 +52,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
  * ==========================================================================*/
 
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const ATLAS = () => codeOnly(read('js/atlas-console.js'));
+const ATLAS = () => codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
 
 /* The analyze reply is built by appending to `html`; what OPENS it is whatever sits between the
    declaration and the call that renders the model's prose. Returns that opening text, or null when
@@ -169,7 +170,7 @@ test('R313 ① the particle switch is one published function, and the legend / A
   const wx = code('js/weather.js');
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
-  const at = code('js/atlas-console.js') + '\n' + code('js/atlas-catalog-text.js');
+  const at = (code('js/atlas-console.js') + '\n' + capsSource()) + '\n' + code('js/atlas-catalog-text.js');
 
   /* the module publishes exactly one door in and one door out */
   assert.match(wx, /particles\s*:\s*partsAreOn/, 'window.Wind publishes a particle READ');
@@ -201,7 +202,7 @@ test('R313 ① the particle switch is one published function, and the legend / A
   assert.match(start, /_applyParts\(\)/, 'start() defers to it');
 
   /* AGENTS.md §3-3: a feature reaches Atlas in the SAME change — catalogue, dispatch and controls */
-  assert.match(at, /case\s*'windParticles'/, 'Atlas can dispatch it');
+  assert.ok(capabilityEntry('windParticles'), 'Atlas can dispatch it');
   assert.match(at, /windParticles[\s\S]{0,400}?window\.Wind[\s\S]{0,40}?setParticles/,
     'and the dispatch calls the SAME published function the legend does');
   assert.match(at, /"type"\s*:\s*"windParticles"/, 'and the planner is told the capability exists');
@@ -266,7 +267,7 @@ test('R313 ② the chips are a fact-gated pool, every candidate is reachable by 
 test('R313 ③ all three ways of answering remove the picker, and only the picker', () => {
   /* read, not run: the picker is built and removed by the kernel's DOM code, which only a browser can
      drive. */
-  const at = code('js/atlas-console.js');
+  const at = (code('js/atlas-console.js') + '\n' + capsSource());
 
   /* the picker is wrapped where it is built … */
   assert.match(at, /class="atl-choice-ui"/, 'the chips + free-text box are wrapped as one node');
@@ -504,7 +505,7 @@ test('R313 ⑧ one indicator, shimmering the label itself, and every selector th
      js/atlas-console.js would have let the assertions below pass BY DELETION — the shimmer, the marker
      and the guard would each be 「not found, therefore not violated」. What each one states is a fact
      about the indicator, not about a file, so the universe is the two files that now hold it. */
-  const at = code('js/atlas-console.js') + '\n' + code('js/atlas-progress.js');
+  const at = (code('js/atlas-console.js') + '\n' + capsSource()) + '\n' + code('js/atlas-progress.js');
   /* ⚠ the panel's stylesheet is js/atlas-styles.js since this round — the kernel's line ceiling is
      never raised, so a subject left instead. The RULES are asked of that file; the MARKUP and the
      selectors that scan for a working bubble are asked of the kernel. */
@@ -627,7 +628,7 @@ const RENAMES = [
   ['js/data-layers.js', `'Turn all off','すべて解除'`, `'Clear all','すべて解除'`],
   ['js/widget-defs-markets.js', `L('Economy fee', '低速'`, `L('Economy', '低速'`],
   ['js/satellite-detail.js', `L('Elevation angle','仰角'`, `L('Elevation','仰角'`],
-  ['js/atlas-console.js', `L('Source term','放出量'`, `L('Source','放出量'`],
+  ['js/atlas-cap-sim.js', `L('Source term','放出量'`, `L('Source','放出量'`],   /* (atlas-capability-modules) the call site moved with sim.radiation's run */
   ['js/aircraft-detail.js', `L('Signal source','信号種別'`, `L('Source','信号種別'`],
   ['js/osm-facilities.js', `LA('Wind power','風力'`, `LA('Wind','風力'`],
   ['js/world-packs.js', `LA('Wind power','風力'`, `LA('Wind','風力'`],
@@ -652,7 +653,7 @@ const RENAMES = [
   ['js/seismic.js', `L('Place it','置く'`, `L('Place','置く'`],
   ['js/sims.js', `SN('Selected day','この日'`, `SN('Today','この日'`],
   ['js/widget-defs-map.js', `L('watchlist', 'ウォッチ'`, `L('watch', 'ウォッチ'`],
-  ['js/atlas-console.js', `L('map points','地点'`, `L('points','地点'`],
+  ['js/atlas-cap-map.js', `L('map points','地点'`, `L('points','地点'`],
 ];
 test('#R370 ④ every R370 rename is present, and the key it replaced is gone from that site', () => {
   /* read, not run: the claim is which English KEY each call site spells — the key is the text itself

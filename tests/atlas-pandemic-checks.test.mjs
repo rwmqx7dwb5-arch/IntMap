@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { after } from 'node:test';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -207,7 +208,7 @@ test('R754 ⑧: every spelling of both capabilities reaches a dispatch case', as
   const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
   const { dispatchGroups } = await import('../scripts/atlas-capability-audit.mjs');
   const C = makeAtlasCapabilities({});
-  const doors = new Set(dispatchGroups(read('js/atlas-console.js').split(/\r?\n/)).flatMap((g) => g.names));
+  const doors = new Set(dispatchGroups().flatMap((g) => g.names));
   for (const id of ['sim.pandemicRun', 'map.pandemicDay']) {
     const cap = C.resolve(id);
     assert.ok(cap, id + ' is not in the registry');

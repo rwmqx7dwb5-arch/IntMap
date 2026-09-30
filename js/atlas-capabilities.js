@@ -87,10 +87,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var API = {};
 
     /* ══ THE TABLE ═══════════════════════════════════════════════════════════════════════════════
-       One row per capability. Columns:
+       One row per capability, declared in js/atlas-cap-<namespace>.js (see below). Columns:
          0 id          canonical, language-independent, stable. The planner, the audit, the UI and
                        the tests all name a capability by THIS, never by a spelling.
-         1 legacy      the `a.type` js/atlas-console.js's dispatch still answers to. '' = none.
+         1 legacy      the `a.type` the dispatch answers to — the key its entry's `run` is found by. '' = none.
          2 aliases     every OTHER spelling the dispatch accepts, comma-separated.
          3 category    for grouping in the catalogue and for relevance search.
          4 observer    which observer/verifier pair watches it (see OBSERVERS below).
@@ -111,327 +111,163 @@ export function makeAtlasCapabilities(HOST, OPTS) {
                        'explicit' asks. A row that omits the cell ingests nothing external.
        ⚠ COLUMN 9 IS THE #R302 REGRESSION CONDITION. A capability whose target is required and whose
        arguments do not carry one answers `needs_input` — it does NOT quietly take the map centre. */
+    /* (atlas-capability-modules) THE ROWS ARE DECLARED WITH THEIR CAPABILITIES. Each one is the `row` of
+       its entry in js/atlas-cap-<namespace>.js, beside its argument schema and the function the dispatch
+       runs for it, so a capability is written in one place. The rows are COPIED here, between the two
+       markers, by `node scripts/atlas-caps.mjs --write` and held to the entries by check:capabilities,
+       because this file is EAGER (a capability is discoverable before Atlas loads) and the entries, which
+       carry the executors, are not — importing them would put every run on the boot path, and a module
+       of its own would be one more module there. The columns above are read by build() below, and only there. */
+    /* ⚠ GENERATED ROWS — BEGIN. Written by `node scripts/atlas-caps.mjs --write` from js/atlas-cap-<namespace>.js — do not edit by hand. */
     var T = [
-      /* id                          legacy            aliases                                                        cat        obs        writes                    produces               risk       confirm   target      lazy        [ingests] */
-      ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight,map.compose',          'map',                 'session', 'none',   '',         ''],
-      ['layers.toggle',              'layer',          '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
-      ['layers.opacity',             'opacity',        '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
-      ['view.projection',            'projection',     '',                                                            'view',    'camera',  'camera',                 'map',                 'session', 'none',   '',         ''],
-      ['view.basemap',               'base',           '',                                                            'view',    'layer',   'map.basemap',            'map',                 'session', 'none',   '',         ''],
-      ['panel.compare',              'compare',        '',                                                            'panel',   'panel',   'panel.compare',          'panel',               'session', 'none',   '',         ''],
-      ['view.flyTo',                 'flyTo',          '',                                                            'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   'place',    ''],
-      ['data.weather',               'weather',        '',                                                            'data',    'panel',   'panel.weather',          'panel,explanation',   'read',    'none',   'place',    ''],
-      ['research.brief',             'brief',          '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'place?',   '', 'external'],
-      /* (#R491) the term gloss. It writes nothing and paints nothing — it opens a card beside the
-         text and produces an explanation, which is why its observer is 'none' and its risk 'read'. */
-      ['reader.gloss',               'gloss',          'explainTerm,defineTerm',                                      'research','none',    '',                       'explanation',         'read',    'none',   'text',     '', 'external'],
-      ['research.askHere',           'askHere',        '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
-      /* ⚠⚠ (#R495) THE JOIN. Every row above answers about ONE dataset — rank a metric, read a point,
-         sum an area, score countries — and 「人口100万人以上で、年間降水量500mm未満、海から200km以上、
-         過去30日でM5以上の地震があった都市」 is a question about four at once. `read` and `none`: it
-         measures and pins, it changes no setting the reader has to undo. */
-      ['data.query',                 'query',          'crossQuery,dataQuery',                                        'data',    'queryRows','map.object',           'map,explanation',     'session','none',   '',         'atlasQuery', 'external'],
-      /* ⚠⚠ (#R743) THE OTHER HALF OF THE LINE ABOVE. `data.query` READS the datasets a reader has
-         imported; nothing could ask for one to be MADE. So every spatial analysis Atlas could
-         perform was one somebody had already built as a feature of the app, and a request like
-         「施設から5km圏を作り、統合し、その範囲の人口を集計して地図に出して」 had no door at all.
-         ⚠ ONE ROW, NOT ONE PER OP. js/gis-ops.js declares its ops — inputs, accepted geometry,
-         payload kind, parameters, types — and js/gis-atlas.js hands the planner THAT declaration
-         rather than a copy of it. A row per op here would be the hand-written list this project
-         keeps re-learning not to write: the op added to DECL tomorrow would answer run() and be
-         invisible to the planner. `writes` is 'map.object' only because a step may be asked to draw
-         its result; the analysis itself changes no setting the reader has to undo. */
-      ['data.gis',                   'gis',            'gisRun,spatialOp,runGisOp',                                   'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'gisCore'],
-      /* ⚠ (#R743) AND DRAWING IS ITS OWN PROMISE. A step that draws only when asked cannot
-         honestly declare 'map.object': the observer would measure a map that did not move and
-         call a correct answer not_rendered — the shape #R736/#R737 measured, where 21 tool calls
-         went into re-drawing a map that had been right from the first. One capability computes
-         and promises nothing about the map; this one draws and promises exactly that. */
-      ['map.drawDataset',            'gisDraw',        'drawDataset,showDataset',                                     'map',     'paint',   'map.object',             'map',                 'session','none',   '',         'gisCore'],
-      /* ⚠⚠ (#R543) THE CHART — the second thing an answer is allowed to BE. #R511 made the map an
-         output of the answer rather than a side effect of it; the numbers stayed prose. Every row
-         above that ranks, compares, relates or queries produces values, and the only way any of them
-         reached the reader as a picture was if one of three panels happened to be the thing opened.
-         `writes` is empty and `risk` is `read` on purpose: a chart changes nothing the reader has to
-         undo — it is drawn INTO the reply, which is also why its observer is `chart` and not `paint`
-         (nothing on the map moves, so a map observer would call every chart `not_rendered`). */
-      ['chart.compose',              'chart',          'chartCompose,plot,graph',                                     'data',    'chart',   '',                       'chart,explanation',   'read',    'none',   '',         'atlasChart'],
-      ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
-      ['data.ratio',                 'ratio',          '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
-      ['data.relate',                'relate',         '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
-      ['map.choropleth',             'mapMetric',      'choropleth',                                                  'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   'metric',   ''],
-      ['settings.theme',             'theme',          '',                                                            'settings','setting', 'settings.theme',         'setting',             'persist', 'explicit','',        ''],
-      ['settings.accent',            'accent',         'accentColor,accentColour',                                    'settings','setting', 'settings.accent',        'setting',             'persist', 'explicit','',        ''],
-      ['settings.language',          'language',       '',                                                            'settings','setting', 'settings.language',      'setting',             'persist', 'explicit','',        ''],
-      ['view.terrain3d',             'terrain3d',      '',                                                            'view',    'layer',   'map.terrain',            'map',                 'session', 'none',   '',         ''],
-      ['view.grid',                  'grid',           '',                                                            'view',    'layer',   'map.grid',               'map',                 'session', 'none',   '',         ''],
-      ['view.resetNorth',            'resetNorth',     'resetView',                                                   'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
-      ['view.zoom',                  'zoom',           '',                                                            'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
-      ['view.bearing',               'bearing',        'rotate',                                                      'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
-      ['view.pitch',                 'pitch',          'tilt',                                                        'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
-      ['view.pan',                   'pan',            'move',                                                        'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
-      ['panel.tab',                  'tab',            '',                                                            'panel',   'panel',   'panel.tab',              'panel',               'session', 'none',   '',         ''],
-      ['layers.countryInfo',         'countryInfo',    '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
-      ['data.countryCard',           'selectCountry',  'country',                                                     'data',    'panel',   'panel.country',          'panel',               'session', 'none',   'country',  ''],
-      ['data.timeSeries',            'timeSeries',     'timeseries',                                                  'data',    'panel',   'panel.timeseries',       'panel',               'session', 'none',   'country',  ''],
-      ['map.isolateCountry',         'isolate',        '',                                                            'map',     'paint',   'map.isolate',            'map',                 'session', 'none',   'country',  ''],
-      ['sim.lineOfSight',            'los',            'lineOfSight',                                                 'sim',     'sim',     'map.los',                'map',                 'session', 'none',   'place',    'los'],
-      ['data.populationIn',          'population',     'populationIn,popIn',                                          'data',    'none',    '',                       'explanation',         'read',    'none',   'area',     ''],
-      /* (#R760) WHICH FIRST-LEVEL UNITS A SHAPE COVERS — prefectures, states, provinces, oblasts.
-         Answered entirely from the bundled data/admin1-world.json.gz (4,515 units, in the repository
-         since #R290), so it reaches no network: measured in this worktree at 32 prefectures in 121 ms
-         for a 500 km circle on Tokyo.
-         ⚠ OBSERVER 'none', AND THAT IS THE POINT (#R743). Computing which units a shape covers and
-         PAINTING them are two capabilities. This one writes nothing and produces prose; an observer
-         that measured the map would report a perfectly correct run as not_rendered, which is the
-         defect #R743 removed from the GIS ops. Painting is map.highlight, given the names this returns.
-         ⚠ COLUMN 9 IS EMPTY, NOT 'area'. The two argument shapes the case accepts — place + km, and a
-         bare ring in points — are not both spellings of one target kind: hasTarget('area') reads
-         area/target/place/region/polygon/radiusKm/km/bbox and NOT points, so a ring-only call would
-         answer needs_input. Widening that list would widen it for data.populationIn as well. What
-         refuses an argument-less call is the anyOf in js/atlas-schemas.js — before anything runs,
-         which is what #R406 required of every capability that cannot act on an empty object. */
-      ['data.coverage',              'admin1Coverage', 'subdivisionsCovered,regionsCovered',                          'data',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
-      ['data.satelliteCompare',      'satelliteCompare','satCompare,satChange',                                       'data',    'panelPaint','panel.satcompare',     'panel,map',           'session', 'none',   'place',    ''],
-      ['data.layerValues',           'layerData',      'layerValue,layerQuery',                                       'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
-      ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'explicit','',        ''],
-      /* ⚠ (#R740) `isochrone`, NOT `paint` — a reachable area that is on the map is rendered whether
-         or not the count moved. The measurement and the general rule are at the observer below. */
-      ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'isochrone','map.isochrone',         'map',                 'session', 'none',   'place',    ''],
-      ['routing.setEndpoints',       'route',          '',                                                            'routing', 'route',   'map.route',              'panel',               'session', 'none',   'place',    ''],
-      ['routing.optimizeStops',      'optimizeRoute',  'tsp,multiStop,optimize,optimizeStops',                        'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'points',   ''],
-      ['routing.route',              'directions',     'roadRoute,navigate,drivingRoute,walkingRoute,transitRoute',   'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'place',    'routeUi'],
-      ['panel.streetView',           'streetview',     'streetView,pano',                                             'panel',   'panel',   'panel.streetview',       'panel',               'session', 'none',   'point',    'streetView'],
-      ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    ''],
-      ['sim.flightSim',              'flightSim',      'flightsim,flightsimulator,flysim,pilot',                      'sim',     'sim',     'camera,map.flightsim',   'map,camera',          'session', 'none',   'place?',   'flightSim'],
-      ['data.runways',               'runway',         'airports',                                                    'data',    'panel',   'panel.runway',           'panel',               'read',    'none',   'place',    ''],
-      ['panel.education',            'edu',            'learn',                                                       'panel',   'panel',   'panel.edu',              'panel',               'session', 'none',   '',         ''],
-      ['panel.ecmwf',                'ecmwf',          'weatherLayers',                                               'panel',   'panel',   'panel.ecmwf',            'panel',               'session', 'none',   '',         ''],
-      ['data.wxModel',               'wxModel',        'weatherModel,forecastModel',                                  'data',    'wxModel', 'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         ''],
-      ['layers.railAxis',            'railAxis',       'railwayAxis,gaugeAxis',                                       'data',    'paint',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         'railways'],
-      ['panel.widgets',              'widgets',        '',                                                            'panel',   'panel',   'panel.widgets',          'panel',               'session', 'none',   '',         ''],
-      ['panel.screenshot',           'screenshot',     '',                                                            'panel',   'panel',   'panel.screenshot',       'panel,file',          'session', 'none',   '',         ''],
-      ['panel.share',                'share',          '',                                                            'panel',   'panel',   'panel.share',            'panel',               'session', 'none',   '',         ''],
-      ['panel.search',               'search',         '',                                                            'panel',   'panel',   'panel.search',           'panel',               'session', 'none',   'text',     ''],
-      ['settings.tempUnit',          'tempUnit',       '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
-      ['settings.units',             'units',          '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
-      ['time.travel',                'timeTravel',     'setTime,timeSet',                                             'time',    'time',    'time',                   'map,time',            'session', 'none',   '',         ''],
-      ['map.pin',                    'pin',            '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
-      ['map.tool',                   'tool',           '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
-      ['map.radius',                 'radius',         '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
-      ['map.volume3d',               'volume3d',       'volume',                                                      'map',     'object',  'map.object,map.volume',             'object,map',          'session', 'none',   'place',    ''],
-      ['routing.drone',              'drone',          '',                                                            'routing', 'route',   'map.drone',              'route,map,panel',     'session', 'none',   '',         ''],
-      /* ══ (#R347) ACTIVE NAVIGATION — §34 ═════════════════════════════════════════════════════
-         「「AtlasにはできるがUIからできない」「UIにはできるがAtlasにはできない」という状態を原則なくす。」
-         Five, not one, because they differ in every column that matters: starting needs the route to
-         exist and the reader to grant a permission (`external` risk — a position leaves the device);
-         asking how long is left is a pure READ; stopping is neither.
-         ⚠ `navigation.start` IS THE ONLY 'external' RISK IN THE ROUTING CATEGORY. It turns on a sensor
-         and sends one position to a router. Atlas may do it on a plain instruction, but the risk column
-         is what makes that visible in the plan rather than buried in an executor.
-         ⚠ (#R801) WHAT LEAVES, TO WHOM: the device's position, to the routing relay — so column 8 is
-         'explicit': on a plain instruction it still runs; on the model's say-so after outside content
-         (a page, an article, an attachment) has been in the turn, the reader is asked first
-         (js/atlas-executor.js 4b). */
-      ['navigation.start',           'startNavigation','startNav,beginNavigation,guideMe,driveThere',           'routing', 'route',   'map.route,navigation',   'route,map,panel',     'external','explicit','',        'navigation'],
-      ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'none',    'navigation',             'panel',               'session', 'none',   '',         ''],
-      ['navigation.status',          'navStatus',      'howLongLeft,etaNow,remaining,nextTurn,arrivalTime',           'routing', 'none',    '',                       'explanation',         'read',    'none',   '',         ''],
-      ['navigation.camera',          'navCamera',      'recenter,overview,followMe,northUp',                          'routing', 'camera',  'camera,camera.follow',                 'map,camera',          'session', 'none',   '',         ''],
-      ['navigation.voice',           'navVoice',       'mute,unmute,voiceGuidance',                                   'routing', 'setting', 'navigation',             'setting',             'session', 'none',   '',         ''],
-      /* ⚠ `measure` ARMS the tool; the line appears when the USER clicks. Declaring 'map' here made
-         the verifier promise a drawing that correctly is not there yet (§6's panel rule). */
-      ['map.measure',                'measure',        '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
-      ['panel.correlate',            'correlate',      '',                                                            'panel',   'panel',   'panel.correlate',        'panel',               'session', 'none',   '',         ''],
-      ['panel.settings',             'settings',       '',                                                            'panel',   'panel',   'panel.settings',         'panel',               'session', 'none',   '',         ''],
-      ['panel.workspace',            'workspace',      'windows,windowMode,windowWorkspace',                          'panel',   'panel',   'panel.workspace',        'panel',               'session', 'none',   '',         ''],
-      ['panel.shortcuts',            'shortcuts',      'keyboard,hotkeys',                                            'panel',   'panel',   'panel.shortcuts',        'panel',               'session', 'none',   '',         ''],
-      ['map.objectList',             'objects',        'objectList,manageObjects,listObjects,myObjects',              'map',     'panel',   'panel.objects',          'panel',               'session', 'none',   '',         ''],
-      ['sim.rfCoverage',             'rfCoverage',     'coverage,radioCoverage,signalCoverage,reception,viewshed',    'sim',     'sim',     'map.coverage',           'map',                 'session', 'none',   'point',    'los'],
-      ['sim.sunPosition',            'sun',            'shadow,shadows,sunlight,sunPosition,daylight,insolation',     'sim',     'sim',     'map.sun',                'map',                 'session', 'none',   'point',    ''],
-      ['sim.terrainWater',           'terrainWater',   'waterFlow,terrainEdit,watershedSim,sculpt',                   'sim',     'sim',     'map.terrainWater',       'map',                 'session', 'none',   'point',    'terrainWater'],
-      ['sim.earthquake',             'earthquake',     'seismic,quakeSim,seismicWaves,earthquakeSim',                 'sim',     'sim',     'map.seismic',            'map',                 'session', 'none',   'point',    'seismic'],
-      ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    ''],
-      ['sim.nightSky',               'nightSky',       'starsFromHere,skyFromHere,stargazing,standHere,skyStanding',  'sim',     'sim',     'map.nightsky',           'map',                 'session', 'none',   'point',    'nightSky'],
-      ['sim.space',                  'space',          'solarSystem,planet,planets,explore Space',                    'sim',     'sim',     'map.space',              'map',                 'session', 'none',   '',         ''],
-      ['sim.tsunami',                'tsunami',        'tsunamiSim,tsunamiPropagation',                               'sim',     'sim',     'map.tsunami',            'map',                 'session', 'none',   'point',    'tsunami'],
-      ['system.diagnose',            'diagnose',       'health,selfCheck,systemStatus,status',                        'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
-      ['map.clearAll',               'clearAll',       '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'explicit','',        ''],
-      ['map.outline',                'outline',        'extent,showExtent',                                           'map',     'paint',   'map.highlight,map.outline',          'object,map',          'session', 'none',   'place',    ''],
-      /* ══ ⚠⚠⚠ (#R754) THE SIMULATOR ITSELF, NOT THE SCREEN IT IS DRAWN ON ═══════════════════════
-         The row above opens the Playground PANEL, and until this round that was the only thing Atlas
-         could do about a pandemic: asked to simulate one from Lagos it answered, correctly given what
-         it had been told, that IntMap has no transmission simulator (#R747 §6). It has had one since
-         #R575. What it had no door to was placing a seed, advancing days and reading a day back.
-         ⚠ TWO ROWS, NOT ONE, FOR #R743'S REASON. Computing promises the map nothing; drawing promises
-         exactly that. One row declaring both would make the observer measure an unmoved map on every
-         run nobody asked to draw and call a correct answer not_rendered — #R736/#R737's 21 wasted
-         calls, and #R742's 52 failures in 207. The vocabulary (presets, parameters, ranges) is
-         js/pandemic-model.js's PANDEMIC_PARAMS, handed to the planner by js/pandemic-atlas.js
-         declaration() rather than copied into a list here. */
-      ['sim.pandemicRun',            'pandemicRun',    'simulatePandemic,runPandemic,pandemicSimulate,outbreakSim',   'sim',     'none',    '',                       'explanation',         'read',    'none',   'place',    'pandemicSim'],
-      ['map.pandemicDay',            'pandemicDraw',   'drawPandemic,showPandemicDay,pandemicMap',                    'map',     'pandemic','map.object',             'map',                 'session', 'none',   '',         'pandemicSim'],
-      ['panel.playground',           'playground',     'game',                                                        'panel',   'panel',   'panel.playground',       'panel',               'session', 'none',   '',         'playground'],
-      ['panel.news',                 'news',           '',                                                            'panel',   'panel',   'panel.news',             'panel',               'session', 'none',   '',         ''],
-      ['panel.account',              'account',        'login',                                                       'panel',   'panel',   'panel.account',          'panel',               'session', 'none',   '',         ''],
-      ['panel.donate',               'donate',         '',                                                            'panel',   'panel',   'panel.donate',           'panel',               'session', 'none',   '',         ''],
-      ['panel.feedback',             'feedback',       '',                                                            'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
-      ['panel.bugReport',            'bugReport',      'bug',                                                         'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
-      ['map.highlight',              'highlight',      '',                                                            'map',     'paint',   'map.highlight',          'map',                 'session', 'none',   '',         ''],
-      /* (#R511) one map explanation in one call — numbered places with roles, arcs between them,
-         shaded regions, one frame, a legend. `paint`: the observer counts its own source
-         (`atl-compose-src`, in paintNow below) to know it drew. Writes the highlight key too,
-         because a shaded item goes through the highlight path. */
-      ['map.compose',                'compose',        'mapCompose,composeMap,explainOnMap',                          'map',     'mapCompose', 'map.compose,map.highlight', 'map,explanation', 'session', 'none',   '',         ''],
-      /* (#R546) one earthquake's ground-motion FIELD from USGS ShakeMap — the contours, the painted
-         intensity surface, and who was inside which shaking. `paint`: the observer counts the contour
-         source, which is the one every metric produces (a metric USGS ships no palette for has lines
-         and no surface, and `state().painted` is how Atlas tells those two apart). Lazy: js/shakemap.js. */
-      ['map.shakemap',               'shakemap',       'shakeMap,groundShaking,intensityMap,shaking',                  'map',     'paint',   'map.shakemap',           'map,explanation',     'session', 'none',   '',         'shakeMap'],
-      ['data.value',                 'value',          'stat,lookup',                                                 'data',    'none',    '',                       'explanation',         'read',    'none',   'country',  ''],
-      ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
-      ['map.clear',                  'clear',          '',                                                            'map',     'clear',   'map.all',                'map',                 'session', 'none',   '',         ''],
-      /* (atlas-observer-undo) PUT THE MAP BACK THE WAY IT WAS BEFORE A TURN. ONE mechanism, not one undo
-         per capability: js/atlas-state.js snapshots every restorable section when a turn opens (camera,
-         clock, layer switches, Atlas's own drawings, the object list, the claimed surfaces) and this
-         puts the snapshot back. Column 5 is what it touches — and therefore what `hasUndo` below
-         reports for every other row: a capability whose effects all fall inside it is reversible. What
-         it cannot put back (a drawing the turn REPLACED, an object it deleted) the verdict names. */
-      ['map.undo',                   'undo',           'undoTurn,undoLast,revertTurn',                                'map',     'undo',    'camera,time,map.basemap,map.layer,map.highlight,map.choropleth,map.polygon,map.line,map.poi,map.object,map.isochrone,map.fly,map.ballistic,map.elevation,map.factions,map.compose,map.shakemap', 'map', 'session', 'none', '', ''],
-      ['view.fullscreen',            'fullscreen',     '',                                                            'view',    'none',    'view.fullscreen',        'view',                'session', 'none',   '',         ''],
-      /* ⚠ (#R801) WHAT LEAVES, TO WHOM: the device's position, read from the sensor and returned to
-         the MODEL as a fact ({lat,lng,accuracyM}, #R413) — column 8 'explicit', same rule as
-         navigation.start above. */
-      ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera,map.location',                 'camera,map',          'session', 'explicit','',        ''],
-      /* ⚠ (#R493) THE ONLY CAPABILITY WHOSE RESULT IS A PICTURE. Every other row hands Atlas facts
-         it can already read off the state ledger; this one hands it the PIXELS — the frame the
-         reader is looking at, attached to the next model call as a real image. It writes nothing
-         and moves nothing (observer `none`, empty `writes`), so it holds no conflict key and can
-         run beside anything. risk='read' for the same reason.
-         ⚠ (#R801) WHAT LEAVES, TO WHOM: the pixels on the reader's screen, to the MODEL as an image
-         — column 8 'explicit' (js/atlas-executor.js 4b). */
-      ['view.inspect',               'inspect',        'lookAtMap,seeMap,viewInspect,readScreen',                     'view',    'none',    '',                       'explanation',         'read',    'explicit','',        ''],
-      ['map.poi',                    'poi',            'mapPois,facilities',                                          'map',     'paint',   'map.poi',                'map',                 'session', 'none',   'place?',   ''],
-      ['research.mapReport',         'mapReport',      'newsMap,reportMap',                                           'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
-      ['research.situationMap',      'researchMap',    'research_map,situationMap',                                   'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
-      ['sim.ballistic',              'missile',        'ballistic,ballisticMissile,strike,icbm',                      'sim',     'sim',     'map.ballistic',          'map',                 'session', 'none',   'place',    ''],
-      ['map.elevationHighlight',     'elevationBelow', 'belowSeaLevel,elevationHighlight,elevationScan',              'map',     'paint',   'map.elevation',          'map',                 'session', 'none',   'place',    ''],
-      ['research.historicalMap',     'historicalMap',  'historical,powerMap,allianceMap',                             'research','factions','map.factions',           'map,explanation',     'session', 'none',   '',         ''],
-      ['sim.flyAnimate',             'fly',            'flight,trajectory',                                           'sim',     'sim',     'camera,map.fly',         'camera,map',          'session', 'none',   'place',    ''],
-      ['map.drawLine',               'drawLine',       'line',                                                        'map',     'paint',   'map.line',               'object,map',          'session', 'none',   'points',   ''],
-      ['map.drawPolygon',            'drawPolygon',    'polygon',                                                     'map',     'paint',   'map.polygon',            'object,map',          'session', 'none',   'points',   ''],
-      ['ui.inlineControls',          'controls',       '',                                                            'ui',      'none',    '',                       'panel',               'session', 'none',   '',         ''],
-      ['dialog.ask',                 'ask',            'choose,clarify,options',                                      'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
-      /* ⚠ (#R773) 添付は会話に属する。読者が前のターンで付けた画像や PDF は、費用（1 件 8 MB）の
-         ため毎ターンは載せない——在ることだけを述べ、要ると Atlas が決めたときにこれが**次の一手の
-         目の前へ戻す**。地図も設定も触らないので observer は 'none'、writes は空、risk は 'read'。 */
-      /* ⚠⚠ (#R783) COLUMN 9 IS EMPTY, AND IT HAS TO BE. It said 'text', and `hasTarget('text')`
-         accepts query/text/question/value/place/term — this capability's only argument is `name`
-         (js/atlas-schemas.js), so the one call its own schema declares sufficient could not satisfy
-         its own target: every `run_capability{id:'attach.recall',args:{name:'paper.pdf'}}` answered
-         `needs_input` 「使用する値を教えてください」 and the recall #R773 implemented never once
-         reached the dispatch. ⚠ THE FIX IS NOT A WIDER `hasTarget` — adding `name` to the text list
-         would loosen what «the reader gave me something to work on» means for every other capability
-         that targets text. What refuses an argument-less call is `required:['name']` in
-         js/atlas-schemas.js, enforced on what Atlas sends by js/atlas-toolsurface.js, exactly as for
-         data.coverage above (#R760). tests/atlas-capabilities-checks.test.mjs #R783 ①/② measure
-         both halves of that for all 145 rows rather than for these two. */
-      /* ⚠ (#R801) WHAT LEAVES, TO WHOM: a file the reader attached in an EARLIER turn, back into
-         the MODEL's next input — column 8 'explicit' (js/atlas-executor.js 4b). */
-      ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'explicit','',        '', 'external'],
-      ['research.analyze',           'analyze',        'research,synthesize',                                         'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
-      ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'explicit','',        ''],
-      ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
-      ['settings.eyeAltitude',       'eyeAltitude',    '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
-      /* (#R313) the animated streaks inside the Wind layer, on their own switch — the colour
-         raster and the particles come from one forecast field and are toggled separately. */
-      ['layers.windParticles',       'windParticles',  'windAnimation',                                               'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
-      /* (#R439) the 4 hPa contours over the sea-level-pressure field — a switch inside that layer's
-         legend, so it is its own verb rather than a layer name (js/weather.js `sub`). */
-      ['layers.isobars',             'isobars',        'pressureContours,isolines',                                   'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
-      /* The base-display preset the layer panel offers as a radio — Default / Clean / Custom
-         (js/data-layers.js IntMapBaseDisplay). It was a control the reader had and Atlas did not:
-         「基本表示をデフォルトに戻して」 sent Atlas through nine find_capability calls and out of
-         steps with nothing done (measured on production, 2026-09-15). */
-      ['layers.baseDisplay',         'baseDisplay',    'baseMode,basemapMode,basicDisplay,basePreset,defaultDisplay,cleanDisplay,displayPreset', 'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'persist', 'none',   '',         ''],
-      ['layers.nightSide',           'nightSide',      '',                                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
-      ['layers.planeAltitude',       'planeAltitude',  'aircraftAltitude',                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
-      ['layers.aircraftTrack',       'aircraftTrack',  'planeTrack',                                                  'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
-      ['layers.satellites',          'satellites',     'satellite,sats,orbit',                                        'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
-      ['panel.ticker',               'ticker',         '',                                                            'panel',   'panel',   'panel.ticker',           'panel',               'session', 'none',   '',         ''],
-      ['data.compareStats',          'compareStats',   'compareCountries,statsCompare',                               'data',    'panel',   'panel.compare',          'panel',               'session', 'none',   'country',  ''],
-      ['map.scoreMap',               'scoreMap',       'customLayer,evaluate',                                        'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   '',         ''],
-      ['data.exploreRelated',        'explore',        'findRelated,relatedMetrics',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   'metric',   ''],
-      ['research.impact',            'impact',         'impactAnalysis,nearbyCritical',                               'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   '', 'external'],
-      ['research.events',            'events',         'newsEvents,groupNews',                                        'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   'newsEvents', 'external'],
-      /* (#R386) 出来事のカテゴリで News の一覧と地図を同時に絞る。docs/NEWS-EVENTS.md §9/§10。
-         ⚠ observer は `paint`、produces は `map,explanation` ——research.events と同じ形である。
-            最初は `panel` / `panel,map` と書いたが、capability audit の `map-verified` が
-            **正しく赤くした**: 地図を約束するなら、地図を見る観測者でなければならない。
-            この操作が実際に変えるのは `news-points` のピンと、返す件数の説明である。
-         ⚠ `lazy` は js/lazy-modules.js に実在する id でなければならない（#R347 が 4 件の
-            「存在しない lazy を名指しした行」を測っている）。`newsEvents` はそこに在る。 */
-      ['news.category',              'newsCategory',   'newsFilter,eventCategory',                                    'data',    'paint',   'panel.news',             'map,explanation',     'session', 'none',   'text',     'newsEvents', 'external'],
-      ['system.module',              'module',         '',                                                            'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
-      ['system.monitor',             'monitor',        '',                                                            'system',  'none',    '',                       '',                    'read',    'none',   '',         ''],
-      ['system.control',             'control',        '',                                                            'system',  'control', 'ui.any',                 'panel',               'session', 'none',   '',         ''],
-      /* (#R395) THE VOLCANO SUBSYSTEM WAS RUNNABLE AND UNREACHABLE. js/beta-overlays.js has
-         registered volcano.* kernel commands since #R353, and the registry had no row for any of
-         them — so a reader could press the buttons and Atlas could not, which is precisely the
-         five-disagreeing-lists failure this file exists to end. `data.layerValues` already answers
-         «how many volcanoes are on screen» and these two do not overlap it: one opens the record for
-         a NAMED volcano, the other narrows the catalog to a question.
-         ⚠ THESE ROWS SIT ABOVE `dialog.answer` ON PURPOSE — tests/geo-navigation-checks.test.mjs #R347 ㉒ reads the `lazy`
-         column with a regex that only matches rows ending in a comma, and the last row has none, so
-         a row appended after it would never have its lazy module checked. */
-      ['data.volcano',               'volcano',        'volcanoCard,volcanoInfo',                                     'data',    'panel',   'panel.volcano',          'panel',               'session', 'none',   'text',     'volcanoIntel'],
-      ['map.volcanoFilter',          'volcanoFilter',  'volcanoMode,volcanoTime',                                     'map',     'paint',   'map.volcano',            'map',                 'session', 'none',   '',         'volcanoIntel'],
-      /* (#R567) THE WORLD HERITAGE PAIR, and it is the volcano pair's shape for the volcano pair's
-         reason: one opens the record for a NAMED property, the other narrows which properties are
-         drawn. Column 10 is empty because the layer is not lazy — it lives in js/beta-overlays.js,
-         which is eager, so both commands exist from boot rather than after a download. */
-      ['data.heritage',              'heritage',       'worldHeritage,heritageInfo',                                  'data',    'panel',   'panel.heritage',         'panel',               'session', 'none',   'text',     ''],
-      ['map.heritageFilter',         'heritageFilter', '',                                                            'map',     'paint',   'map.heritage',           'map',                 'session', 'none',   '',         ''],
-      /* (#R585) MEASURED radiation. Two rows, and they are not one row: switching the layer on is a
-         claim about the MAP, while «what are the instruments around Zaporizhzhia reading» is a claim
-         about DATA and must be answerable without the reader having the layer on. The same split
-         volcano needed for the same reason.
-         ⚠ NEITHER OF THESE IS THE PLUME SIMULATION. `sim.radiation` models where material would go;
-         these report what was measured. Keeping them distinct in the registry is what stops the
-         planner answering a question about a real reading with a model — docs/RADIATION.md. */
-      ['map.radiation',              'radiationObserved','radiationLayer,doseRate,gammaDoseRate',                     'map',     'paint',   'map.radiation',          'map',                 'session', 'none',   '',         'radiationLayer'],
-      /* ⚠⚠ (#R783) AND COLUMN 9 IS EMPTY HERE FOR THE SAME REASON, ONE SPELLING DOWN. It said
-         'point', and `hasTarget('point')` reads `lng`+`lat`; this case reads `a.lon`
-         (js/atlas-controls.js), its schema requires `lat`+`lon` (js/atlas-schemas.js) and the
-         catalogue shows the reader-facing shape as `"lon"` (js/atlas-catalog-text.js) — so the
-         coordinate every other reader of this capability calls `lon` was the one the target gate
-         could not see, and a call carrying exactly what the schema demanded answered `needs_input`
-         asking for the coordinate it had just been given. ⚠ THE SPELLING CONVERGES ON THE CASE,
-         NOT ON THE GATE: teaching `hasTarget('point')` to accept `lon` would let a lat/lon call
-         past the gate into the nine other point capabilities whose cases read `a.lng` only — the
-         false refusal would move one level down instead of going away. With the column empty the
-         gate is `required:['lat','lon']`, and the case still names its own refusal 「中心となる
-         座標を指定してください」 rather than quietly taking the map centre (#R302). */
-      ['data.radiationNear',         'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'radiationLayer'],
-      /* (#R527) 「山並み写真から撮影地点・撮影方向を探す」 — js/photo-geo.js. It traces the ridge in a
-         photograph and matches it against the TERRAIN; an EXIF coordinate in the file is shown and
-         never used as the answer, which is the whole honesty of the feature.
-         ⚠ COLUMN 9 IS EMPTY ON PURPOSE, AND THAT IS NOT «no input needed». The two things this
-         needs — a photograph and a search rectangle — are ones only the READER can hand over, so
-         there is no place name that starts it and nothing for the map centre to stand in for
-         (#R302). An argument-less call opens the panel and asks; it does not refuse in a sentence.
-         `panel` observes it because the panel IS what one call delivers: the sweep that follows is
-         minutes long and is reported through the `photoGeo` state section (js/atlas-state.js). */
-      ['photo.locate',               'photoLocate',    'photoGeolocate,whereWasThisTaken,skylineMatch',               'photo',   'panel',   'panel.photoGeo',         'panel,explanation',   'session', 'none',   '',         'photoGeo'],
-      /* (#R650) WHO Disease Outbreak News as an event layer — js/outbreaks.js. It PAINTS (one
-         circle per country the window holds items for) and it EXPLAINS (the counts, the leading
-         countries, and the items themselves in `meta.items`), which is why column 7 carries both.
-         ⚠ COLUMN 11 IS EMPTY BECAUSE THE MODULE IS EAGER, not because it was forgotten: the layer
-         row has to exist before anyone can ask for it, so js/outbreaks.js rides the shell the way
-         js/industry-web.js and js/ocean-currents.js do. The 3,195-item archive it reads is the part
-         that is deferred — nothing is fetched until the layer is switched on. */
-      ['map.outbreaks',              'outbreaks',      'diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap', 'map', 'paint', 'map.outbreaks',          'map,explanation',     'session', 'none',   '',         ''],
-      ['dialog.answer',              'answer',         '',                                                            'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         '']
+      ["map.clearHighlights","reset","","map","paint","map.highlight,map.compose","map","session","none","",""],
+      ["layers.toggle","layer","","layers","layer","map.layer","map","session","none","layer",""],
+      ["layers.opacity","opacity","","layers","layer","map.layer","map","session","none","layer",""],
+      ["view.projection","projection","","view","camera","camera","map","session","none","",""],
+      ["view.basemap","base","","view","layer","map.basemap","map","session","none","",""],
+      ["panel.compare","compare","","panel","panel","panel.compare","panel","session","none","",""],
+      ["view.flyTo","flyTo","","view","camera","camera","camera,map","session","none","place",""],
+      ["data.weather","weather","","data","panel","panel.weather","panel,explanation","read","none","place",""],
+      ["research.brief","brief","","research","none","","explanation","read","none","place?","","external"],
+      ["reader.gloss","gloss","explainTerm,defineTerm","research","none","","explanation","read","none","text","","external"],
+      ["research.askHere","askHere","","research","none","","explanation","read","none","point",""],
+      ["data.query","query","crossQuery,dataQuery","data","queryRows","map.object","map,explanation","session","none","","atlasQuery","external"],
+      ["data.gis","gis","gisRun,spatialOp,runGisOp","data","none","","explanation","read","none","","gisCore"],
+      ["map.drawDataset","gisDraw","drawDataset,showDataset","map","paint","map.object","map","session","none","","gisCore"],
+      ["chart.compose","chart","chartCompose,plot,graph","data","chart","","chart,explanation","read","none","","atlasChart"],
+      ["data.rank","rank","","data","paint","map.choropleth","map,explanation","session","none","metric",""],
+      ["data.ratio","ratio","","data","paint","map.choropleth","map,explanation","session","none","metric",""],
+      ["data.relate","relate","","data","paint","map.choropleth","map,explanation","session","none","metric",""],
+      ["map.choropleth","mapMetric","choropleth","map","paint","map.choropleth","map","session","none","metric",""],
+      ["settings.theme","theme","","settings","setting","settings.theme","setting","persist","explicit","",""],
+      ["settings.accent","accent","accentColor,accentColour","settings","setting","settings.accent","setting","persist","explicit","",""],
+      ["settings.language","language","","settings","setting","settings.language","setting","persist","explicit","",""],
+      ["view.terrain3d","terrain3d","","view","layer","map.terrain","map","session","none","",""],
+      ["view.grid","grid","","view","layer","map.grid","map","session","none","",""],
+      ["view.resetNorth","resetNorth","resetView","view","camera","camera","camera","session","none","",""],
+      ["view.zoom","zoom","","view","camera","camera","camera","session","none","",""],
+      ["view.bearing","bearing","rotate","view","camera","camera","camera","session","none","",""],
+      ["view.pitch","pitch","tilt","view","camera","camera","camera","session","none","",""],
+      ["view.pan","pan","move","view","camera","camera","camera","session","none","",""],
+      ["panel.tab","tab","","panel","panel","panel.tab","panel","session","none","",""],
+      ["layers.countryInfo","countryInfo","","layers","layer","map.layer","map","session","none","",""],
+      ["data.countryCard","selectCountry","country","data","panel","panel.country","panel","session","none","country",""],
+      ["data.timeSeries","timeSeries","timeseries","data","panel","panel.timeseries","panel","session","none","country",""],
+      ["map.isolateCountry","isolate","","map","paint","map.isolate","map","session","none","country",""],
+      ["sim.lineOfSight","los","lineOfSight","sim","sim","map.los","map","session","none","place","los"],
+      ["data.populationIn","population","populationIn,popIn","data","none","","explanation","read","none","area",""],
+      ["data.coverage","admin1Coverage","subdivisionsCovered,regionsCovered","data","none","","explanation","read","none","",""],
+      ["data.satelliteCompare","satelliteCompare","satCompare,satChange","data","panelPaint","panel.satcompare","panel,map","session","none","place",""],
+      ["data.layerValues","layerData","layerValue,layerQuery","data","none","","explanation","read","none","point",""],
+      ["map.object","object","mapObject","map","object","map.object","object","session","explicit","",""],
+      ["routing.isochrone","isochrone","reach,reachability,reachable,catchment","routing","isochrone","map.isochrone","map","session","none","place",""],
+      ["routing.setEndpoints","route","","routing","route","map.route","panel","session","none","place",""],
+      ["routing.optimizeStops","optimizeRoute","tsp,multiStop,optimize,optimizeStops","routing","route","map.route","route,map,panel","session","none","points",""],
+      ["routing.route","directions","roadRoute,navigate,drivingRoute,walkingRoute,transitRoute","routing","route","map.route","route,map,panel","session","none","place","routeUi"],
+      ["panel.streetView","streetview","streetView,pano","panel","panel","panel.streetview","panel","session","none","point","streetView"],
+      ["sim.radiation","radiation","fallout,dispersion,plume,radiationSim","sim","sim","map.radiation","map","session","none","place",""],
+      ["sim.flightSim","flightSim","flightsim,flightsimulator,flysim,pilot","sim","sim","camera,map.flightsim","map,camera","session","none","place?","flightSim"],
+      ["data.runways","runway","airports","data","panel","panel.runway","panel","read","none","place",""],
+      ["panel.education","edu","learn","panel","panel","panel.edu","panel","session","none","",""],
+      ["panel.ecmwf","ecmwf","weatherLayers","panel","panel","panel.ecmwf","panel","session","none","",""],
+      ["data.wxModel","wxModel","weatherModel,forecastModel","data","wxModel","map.layer,map.layerOption","map,explanation","session","none","",""],
+      ["layers.railAxis","railAxis","railwayAxis,gaugeAxis","data","paint","map.layer,map.layerOption","map,explanation","session","none","","railways"],
+      ["panel.widgets","widgets","","panel","panel","panel.widgets","panel","session","none","",""],
+      ["panel.screenshot","screenshot","","panel","panel","panel.screenshot","panel,file","session","none","",""],
+      ["panel.share","share","","panel","panel","panel.share","panel","session","none","",""],
+      ["panel.search","search","","panel","panel","panel.search","panel","session","none","text",""],
+      ["settings.tempUnit","tempUnit","","settings","setting","settings.units","setting","persist","explicit","",""],
+      ["settings.units","units","","settings","setting","settings.units","setting","persist","explicit","",""],
+      ["time.travel","timeTravel","setTime,timeSet","time","time","time","map,time","session","none","",""],
+      ["map.pin","pin","","map","object","map.object","object,map","session","none","place",""],
+      ["map.tool","tool","","map","panel","map.tool","panel","session","none","",""],
+      ["map.radius","radius","","map","object","map.object","object,map","session","none","place",""],
+      ["map.volume3d","volume3d","volume","map","object","map.object,map.volume","object,map","session","none","place",""],
+      ["routing.drone","drone","","routing","route","map.drone","route,map,panel","session","none","",""],
+      ["navigation.start","startNavigation","startNav,beginNavigation,guideMe,driveThere","routing","route","map.route,navigation","route,map,panel","external","explicit","","navigation"],
+      ["navigation.stop","stopNavigation","endNavigation,stopNav","routing","none","navigation","panel","session","none","",""],
+      ["navigation.status","navStatus","howLongLeft,etaNow,remaining,nextTurn,arrivalTime","routing","none","","explanation","read","none","",""],
+      ["navigation.camera","navCamera","recenter,overview,followMe,northUp","routing","camera","camera,camera.follow","map,camera","session","none","",""],
+      ["navigation.voice","navVoice","mute,unmute,voiceGuidance","routing","setting","navigation","setting","session","none","",""],
+      ["map.measure","measure","","map","panel","map.tool","panel","session","none","",""],
+      ["panel.correlate","correlate","","panel","panel","panel.correlate","panel","session","none","",""],
+      ["panel.settings","settings","","panel","panel","panel.settings","panel","session","none","",""],
+      ["panel.workspace","workspace","windows,windowMode,windowWorkspace","panel","panel","panel.workspace","panel","session","none","",""],
+      ["panel.shortcuts","shortcuts","keyboard,hotkeys","panel","panel","panel.shortcuts","panel","session","none","",""],
+      ["map.objectList","objects","objectList,manageObjects,listObjects,myObjects","map","panel","panel.objects","panel","session","none","",""],
+      ["sim.rfCoverage","rfCoverage","coverage,radioCoverage,signalCoverage,reception,viewshed","sim","sim","map.coverage","map","session","none","point","los"],
+      ["sim.sunPosition","sun","shadow,shadows,sunlight,sunPosition,daylight,insolation","sim","sim","map.sun","map","session","none","point",""],
+      ["sim.terrainWater","terrainWater","waterFlow,terrainEdit,watershedSim,sculpt","sim","sim","map.terrainWater","map","session","none","point","terrainWater"],
+      ["sim.earthquake","earthquake","seismic,quakeSim,seismicWaves,earthquakeSim","sim","sim","map.seismic","map","session","none","point","seismic"],
+      ["sim.sunHours","sunHours","shadeHours,terrainShadow,solarHours,insolationYear","sim","sim","map.sunhours","map","session","none","point",""],
+      ["sim.nightSky","nightSky","starsFromHere,skyFromHere,stargazing,standHere,skyStanding","sim","sim","map.nightsky","map","session","none","point","nightSky"],
+      ["sim.space","space","solarSystem,planet,planets,explore Space","sim","sim","map.space","map","session","none","",""],
+      ["sim.tsunami","tsunami","tsunamiSim,tsunamiPropagation","sim","sim","map.tsunami","map","session","none","point","tsunami"],
+      ["system.diagnose","diagnose","health,selfCheck,systemStatus,status","system","none","","explanation","read","none","",""],
+      ["map.clearAll","clearAll","","map","paint","map.all","map","session","explicit","",""],
+      ["map.outline","outline","extent,showExtent","map","paint","map.highlight,map.outline","object,map","session","none","place",""],
+      ["sim.pandemicRun","pandemicRun","simulatePandemic,runPandemic,pandemicSimulate,outbreakSim","sim","none","","explanation","read","none","place","pandemicSim"],
+      ["map.pandemicDay","pandemicDraw","drawPandemic,showPandemicDay,pandemicMap","map","pandemic","map.object","map","session","none","","pandemicSim"],
+      ["panel.playground","playground","game","panel","panel","panel.playground","panel","session","none","","playground"],
+      ["panel.news","news","","panel","panel","panel.news","panel","session","none","",""],
+      ["panel.account","account","login","panel","panel","panel.account","panel","session","none","",""],
+      ["panel.donate","donate","","panel","panel","panel.donate","panel","session","none","",""],
+      ["panel.feedback","feedback","","panel","panel","panel.feedback","panel","session","none","",""],
+      ["panel.bugReport","bugReport","bug","panel","panel","panel.feedback","panel","session","none","",""],
+      ["map.highlight","highlight","","map","paint","map.highlight","map","session","none","",""],
+      ["map.compose","compose","mapCompose,composeMap,explainOnMap","map","mapCompose","map.compose,map.highlight","map,explanation","session","none","",""],
+      ["map.shakemap","shakemap","shakeMap,groundShaking,intensityMap,shaking","map","paint","map.shakemap","map,explanation","session","none","","shakeMap"],
+      ["data.value","value","stat,lookup","data","none","","explanation","read","none","country",""],
+      ["layers.allOff","layersOff","allLayersOff","layers","layer","map.layer","map","session","explicit","",""],
+      ["map.clear","clear","","map","clear","map.all","map","session","none","",""],
+      ["map.undo","undo","undoTurn,undoLast,revertTurn","map","undo","camera,time,map.basemap,map.layer,map.highlight,map.choropleth,map.polygon,map.line,map.poi,map.object,map.isochrone,map.fly,map.ballistic,map.elevation,map.factions,map.compose,map.shakemap","map","session","none","",""],
+      ["view.fullscreen","fullscreen","","view","none","view.fullscreen","view","session","none","",""],
+      ["view.locate","locate","myLocation,whereAmI","view","camera","camera,map.location","camera,map","session","explicit","",""],
+      ["view.inspect","inspect","lookAtMap,seeMap,viewInspect,readScreen","view","none","","explanation","read","explicit","",""],
+      ["map.poi","poi","mapPois,facilities","map","paint","map.poi","map","session","none","place?",""],
+      ["research.mapReport","mapReport","newsMap,reportMap","research","paint","map.poi","map,explanation","session","none","",""],
+      ["research.situationMap","researchMap","research_map,situationMap","research","paint","map.poi","map,explanation","session","none","",""],
+      ["sim.ballistic","missile","ballistic,ballisticMissile,strike,icbm","sim","sim","map.ballistic","map","session","none","place",""],
+      ["map.elevationHighlight","elevationBelow","belowSeaLevel,elevationHighlight,elevationScan","map","paint","map.elevation","map","session","none","place",""],
+      ["research.historicalMap","historicalMap","historical,powerMap,allianceMap","research","factions","map.factions","map,explanation","session","none","",""],
+      ["sim.flyAnimate","fly","flight,trajectory","sim","sim","camera,map.fly","camera,map","session","none","place",""],
+      ["map.drawLine","drawLine","line","map","paint","map.line","object,map","session","none","points",""],
+      ["map.drawPolygon","drawPolygon","polygon","map","paint","map.polygon","object,map","session","none","points",""],
+      ["ui.inlineControls","controls","","ui","none","","panel","session","none","",""],
+      ["dialog.ask","ask","choose,clarify,options","dialog","none","","explanation","read","none","",""],
+      ["attach.recall","recallAttachment","recall_attachment,recallFile,reopenAttachment","dialog","none","","explanation","read","explicit","","","external"],
+      ["research.analyze","analyze","research,synthesize","research","none","","explanation","read","none","","","external"],
+      ["settings.engine","engine","","settings","setting","settings.engine","setting","persist","explicit","",""],
+      ["settings.tiltLimit","tiltLimit","","settings","setting","settings.camera","setting","persist","explicit","",""],
+      ["settings.eyeAltitude","eyeAltitude","","settings","setting","settings.camera","setting","persist","explicit","",""],
+      ["layers.windParticles","windParticles","windAnimation","layers","layer","map.layer,map.layerOption","map","session","none","",""],
+      ["layers.isobars","isobars","pressureContours,isolines","layers","layer","map.layer,map.layerOption","map","session","none","",""],
+      ["layers.baseDisplay","baseDisplay","baseMode,basemapMode,basicDisplay,basePreset,defaultDisplay,cleanDisplay,displayPreset","layers","layer","map.layer,map.layerOption","map","persist","none","",""],
+      ["layers.nightSide","nightSide","","layers","layer","map.layer,map.layerOption","map","session","none","",""],
+      ["layers.planeAltitude","planeAltitude","aircraftAltitude","layers","layer","map.layer,map.layerOption","map","session","none","",""],
+      ["layers.aircraftTrack","aircraftTrack","planeTrack","layers","layer","map.layer,map.layerOption","map","session","none","",""],
+      ["layers.satellites","satellites","satellite,sats,orbit","layers","layer","map.layer,map.layerOption","map","session","none","",""],
+      ["panel.ticker","ticker","","panel","panel","panel.ticker","panel","session","none","",""],
+      ["data.compareStats","compareStats","compareCountries,statsCompare","data","panel","panel.compare","panel","session","none","country",""],
+      ["map.scoreMap","scoreMap","customLayer,evaluate","map","paint","map.choropleth","map","session","none","",""],
+      ["data.exploreRelated","explore","findRelated,relatedMetrics","data","none","","explanation","read","none","metric",""],
+      ["research.impact","impact","impactAnalysis,nearbyCritical","research","paint","map.poi","map,explanation","session","none","place?","","external"],
+      ["research.events","events","newsEvents,groupNews","research","paint","map.poi","map,explanation","session","none","place?","newsEvents","external"],
+      ["news.category","newsCategory","newsFilter,eventCategory","data","paint","panel.news","map,explanation","session","none","text","newsEvents","external"],
+      ["system.module","module","","system","panel","panel.any","panel","session","none","",""],
+      ["system.monitor","monitor","","system","none","","","read","none","",""],
+      ["system.control","control","","system","control","ui.any","panel","session","none","",""],
+      ["data.volcano","volcano","volcanoCard,volcanoInfo","data","panel","panel.volcano","panel","session","none","text","volcanoIntel"],
+      ["map.volcanoFilter","volcanoFilter","volcanoMode,volcanoTime","map","paint","map.volcano","map","session","none","","volcanoIntel"],
+      ["data.heritage","heritage","worldHeritage,heritageInfo","data","panel","panel.heritage","panel","session","none","text",""],
+      ["map.heritageFilter","heritageFilter","","map","paint","map.heritage","map","session","none","",""],
+      ["map.radiation","radiationObserved","radiationLayer,doseRate,gammaDoseRate","map","paint","map.radiation","map","session","none","","radiationLayer"],
+      ["data.radiationNear","radiationNear","measuringStations,doseNear","data","none","","explanation","read","none","","radiationLayer"],
+      ["photo.locate","photoLocate","photoGeolocate,whereWasThisTaken,skylineMatch","photo","panel","panel.photoGeo","panel,explanation","session","none","","photoGeo"],
+      ["map.outbreaks","outbreaks","diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap","map","paint","map.outbreaks","map,explanation","session","none","",""],
+      ["dialog.answer","answer","","dialog","none","","explanation","read","none","",""],
     ];
+    /* ⚠ GENERATED ROWS — END */
 
     /* Capabilities that are DELIBERATELY not offered to the planner, with the reason and the proof.
        ⚠ THE ENTRY IS THE ONLY WAY TO BE ABSENT. The audit fails on anything else that is missing. */

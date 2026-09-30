@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { codeOnly, codeOnly as code, codeOnly as noComments } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -112,7 +113,7 @@ const rd = (p) => (p === 'js/i18n.js'
 test('R184 #8: the new drone and routing capabilities are reachable from Atlas and documented in SYS', () => {
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
-  const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
+  const atlas = (rd('js/atlas-console.js') + '\n' + capsSource()) + '\n' + rd('js/atlas-catalog-text.js');
   /* drone: the operational checks and the three route actions */
   for (const act of ['prepare', 'compare', 'rth', 'conflicts']) {
     assert.ok(atlas.includes(`act==='${act}'`), `the drone action "${act}" is dispatched`);

@@ -30,6 +30,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction, liftLiteral } from './helpers/lift-function.mjs';
+import { capsSource, dispatchRuns } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
@@ -43,18 +44,16 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
 const BEFORE = JSON.parse(read('tests/fixtures/atlas-one-declaration-before.json'));
 const CAPS = makeAtlasCapabilities({});
-const CON_SRC = read('js/atlas-console.js');
+const CON_SRC = (read('js/atlas-console.js') + '\n' + capsSource());
 const CON = codeOnly(CON_SRC);
 
 /* the dispatch's fall-through label runs, read from the switch that calls the resolver */
+/* (atlas-capability-modules) the switch became ONE lookup — `CAP_RUN[CAPS.dispatchName(a.type)]` — over the entries in
+   js/atlas-cap-<namespace>.js, so a «run» is now the spellings whose entries name the same run (a spelling that used
+   to fall through to the next case's body names that body's function). */
 function liveRuns() {
-  const head = 'switch(CAPS.dispatchName(a.type)){';
-  const start = CON.indexOf(head);
-  assert.ok(start >= 0, 'the dispatch no longer switches on CAPS.dispatchName(a.type) — the aliases would stop arriving');
-  const end = CON.indexOf('default: { if(a.target||a.name)', start);
-  assert.ok(end > start, 'the dispatch default moved — this reader has to follow it');
-  return [...CON.slice(start, end).matchAll(/(?:case '([A-Za-z_][\w ]*)'\s*:\s*)+/g)]
-    .map((m) => [...m[0].matchAll(/case '([A-Za-z_][\w ]*)'\s*:/g)].map((x) => x[1]));
+  assert.ok(/CAPS\.dispatchName\(a\.type\)/.test(codeOnly(read('js/atlas-console.js'))), 'the dispatch no longer asks CAPS.dispatchName(a.type) — the aliases would stop arriving');
+  return dispatchRuns();
 }
 
 /* ── ① every spelling the dispatch answered still reaches the same case ─────────────────────── */

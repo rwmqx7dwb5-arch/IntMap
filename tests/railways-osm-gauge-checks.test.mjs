@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { RailSchema } from '../js/rail-schema.js';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const {
   AXES, UNKNOWN_COLOUR, gaugeOf, speedOf, freqOf, tracksOf, voltageOf, elecOf,
@@ -283,12 +284,12 @@ test('R388 ⑨ the layer ids the opacity registration, the self-heal and Compare
 /* ── ⑩ the layer is reachable from Atlas, and so is the one it displaced ──── */
 test('R388 ⑩ Atlas can name this layer, the basemap reference keeps its own words', () => {
   /* ⚠ READ, NOT RUN: the Atlas alias table and catalogue live in the Atlas kernel. */
-  const ac = code('js/atlas-console.js');
+  const ac = (code('js/atlas-console.js') + '\n' + capsSource());
   assert.match(ac, /'railways':'beta-dl-rail'/, 'the bare word still points at the basemap reference line, which is ON by default');
   assert.match(ac, /'鉄道':'beta-dl-rail'/);
   assert.match(ac, /'railway reference':'cb-rail2'/, 'cb-rail2 lost its only route out of Atlas');
-  assert.match(ac, /case 'railAxis'/);
-  const caps = read('js/atlas-capabilities.js');
+  assert.ok(capabilityEntry('railAxis'));
+  const caps = capabilityEntry('layers.railAxis').row;   /* (atlas-capability-modules) the row is declared in its entry */
   assert.match(caps, /'layers\.railAxis'/);
   assert.match(caps, /'railways'\]/, 'the railAxis capability must declare the lazy module it needs at execution');
   const cat = read('js/atlas-catalog-text.js');

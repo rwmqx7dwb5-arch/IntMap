@@ -29,6 +29,7 @@ import * as walk from 'acorn-walk';
 import { asClassicScript } from './app-source.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { decodeStarCatalogue } from '../js/star-catalogue.js';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -248,8 +249,8 @@ test('R208 ⑤d: it borrows the catalogue, the ephemeris, the DEM and the clock'
   assert.ok(/window\.IntMapNightSky&&window\.IntMapNightSky\.open/.test(read('js/tool-panel.js')),
     'the right-click menu opens it');
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it. */
-  const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
-  assert.ok(/case 'nightSky':/.test(atlas), 'Atlas can open it');
+  const atlas = (read('js/atlas-console.js') + '\n' + capsSource()) + '\n' + read('js/atlas-catalog-text.js');
+  assert.ok(capabilityEntry('nightSky'), 'Atlas can open it');
   assert.ok(/NIGHT SKY FROM A POINT/.test(atlas),
     '…and it is in the SYS catalogue — an action the catalogue does not list does not exist to the planner (#R115)');
 });

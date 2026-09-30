@@ -26,6 +26,7 @@ import { skyColour } from '../js/sky-model.js';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { appShell, asClassicScript } from './app-source.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -550,8 +551,8 @@ test('R196 ④ the night side is a zoom expression, and builds nothing until it 
 /* spelling kept: browser script (js/atlas-console.js, js/atlas-catalog-text.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R196 ⑤b the night side is an Atlas action, in the dispatch AND in the catalogue', () => {
   /* (#R318) …plus js/atlas-catalog-text.js, where the action catalogue lives now. */
-  const a = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
-  assert.match(a, /case 'nightSide': \{/, 'the dispatch handles it');
+  const a = (rd('js/atlas-console.js') + '\n' + capsSource()) + '\n' + rd('js/atlas-catalog-text.js');
+  assert.ok(capabilityEntry('nightSide'), 'the dispatch handles it');
   assert.match(a, /window\.IntMapNightSide\.setEnabled\(want\)/, 'and really drives the module');
   assert.match(a, /nightSide:\{ lbl:\(\)=>L\('Night side of the Earth'/, 'it is a listed on/off surface');
   assert.match(a, /\{"type":"nightSide","on":bool\}/, 'and the SYS catalogue declares it');

@@ -29,6 +29,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { histScale, clockFloor } from './helpers/hist-scale.mjs';
 import { eraBundle } from './helpers/hist-eras.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
@@ -122,7 +123,7 @@ test('R380 ①: every place that TELLS a reader how far the clock reaches names 
 /* ⚠ SPELLING, ON PURPOSE: the deep-time guard is one branch of the Atlas console's command closure
    (it needs the whole console, a DOM and a model turn to reach); the claim is the shape of that line. */
 test('R380 ②: Atlas refuses a too-early year with the floor it actually tested against', () => {
-  const src = R('js/atlas-console.js');
+  const src = (R('js/atlas-console.js') + '\n' + capsSource());
   const i = src.indexOf("if(y<T.min) return R(false,");
   assert.ok(i > 0, 'the deep-time guard is gone or was renamed — this check has to follow it');
   const line = src.slice(i, src.indexOf('\n', i));

@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { join, dirname, resolve } from 'node:path';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -502,7 +503,7 @@ test('R350 ⑦c: a figure from IntMap\'s own data still shows a citation', () =>
 test('R350 ⑨a: the SOURCES: line and the PLACES: trailer no longer exist', () => {
   /* read, not run: the subject is the Atlas kernel (js/atlas-console.js), a closure over the whole HOST
      that only a browser can build; the claim is that the trailer parsers are absent. */
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(!/SOURCES\?\?\s*\[/.test(src) && !/SOURCES\?\\s\*\[:：\]/.test(src), 'the SOURCES regex is still there');
   assert.ok(!/replace\(\/\\n\?\\s\*PLACES/.test(src), 'the PLACES trailer is still peeled off the prose');
   assert.ok(!src.includes('output "SOURCES:'), 'the model is still told to write a SOURCES line');
@@ -513,7 +514,7 @@ test('R350 ⑨b: no Atlas answer reads the globals a concurrent call overwrites'
   /* read, not run: same kernel as ⑨a — the analyse path and the window._aiLast* reads live inside it. */
   /* ⚠ COMMENTS STRIPPED FIRST. The replacement code explains what it replaced, and a check that
      greps the raw file finds its own epitaph and calls it a relapse. */
-  const src = codeOnly(read('js/atlas-console.js'));
+  const src = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
   const analyze = src.slice(src.indexOf('const sys2=_analysisSystemPrompt'), src.indexOf('const sys2=_analysisSystemPrompt') + 6000);
   assert.match(analyze, /runStructuredAnswer\(/, 'the analyse path does not go through the contract pipeline');
   assert.ok(!/_aiLastMeta|_aiLastCitations/.test(src),
@@ -703,7 +704,7 @@ test('R472 ④: 回答を書き換える／問い直す機構がソースから�
   const asks = pipe.match(/await\s+ask\(/g) || [];
   assert.equal(asks.length, 1, 'パイプラインの ask() が ' + asks.length + ' か所ある');
   assert.ok(!/atl-degraded/.test(render), '劣化バナーの綴りが renderer に残っている');
-  assert.ok(!/atl-degraded/.test(CODE('js/atlas-console.js')), '劣化バナーの綴りが kernel に残っている');
+  assert.ok(!/atl-degraded/.test((CODE('js/atlas-console.js') + '\n' + capsSource())), '劣化バナーの綴りが kernel に残っている');
 });
 
 /* ── ⑤ 読者の保護は 1 つも減っていない ───────────────────────────────────────────────

@@ -20,6 +20,7 @@ import { dirname, join } from 'node:path';
 /* (#R763) the acquisition vocabulary, from the module that owns it — see realLayers() below */
 import { makeGisLayers } from '../js/gis-layers.js';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does is its entry in js/atlas-cap-<namespace>.js */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
@@ -166,8 +167,7 @@ test('R752 ③ every field the draw door reads is a field the schema declares', 
      `{countries:[…the same 16]}` succeeded, because two readers of one request each had their own
      list of field names. The half only one of them knew about evaporated. Here the two halves are
      js/atlas-schemas.js (what a planner may write) and js/gis-atlas.js (what the door reads). */
-  const schema = read('js/atlas-schemas.js');
-  const line = schema.split('\n').find((l) => l.includes("'map.drawDataset':"));
+  const line = (capabilityEntry('map.drawDataset') || {}).schema || '';   /* (atlas-capability-modules) the schema is declared in its entry */
   assert.ok(line, 'the drawDataset schema is gone');
   const declared = new Set();
   const props = /properties:\s*\{([^}]*)\}/.exec(line);
@@ -690,8 +690,7 @@ test('#R759 ⑧ coverage に足された欄は、その日のうちに planner �
 
 test('#R759 ⑨ data.gis の schema は op を要求せず、acquire を宣言している', async () => {
   /* kept as a spelling: the schema line is the declaration the planner receives; its text IS the declaration */
-  const src = read('js/atlas-schemas.js');
-  const line = src.split('\n').find((l) => l.indexOf("'data.gis':") >= 0);
+  const line = (capabilityEntry('data.gis') || {}).schema || '';   /* (atlas-capability-modules) the schema is declared in its entry */
   assert.ok(line, 'data.gis の schema が無い');
   assert.ok(/acquire:\s*obj\(\)/.test(line), 'acquire が宣言されていない＝planner には存在しない');
   assert.ok(/required:\s*\['inputs'\]/.test(line), 'op を要求したままでは取得だけの依頼が送れない');

@@ -16,6 +16,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -48,7 +49,7 @@ const noJs = (s) => codeOnly(String(s));
 
 /* ── ⑤ Atlas ─────────────────────────────────────────────────────────────────────────────────── */
 test('R232 Atlas: the place name is printed once, not twice', () => {
-  const k = noJs(read('js/atlas-console.js'));
+  const k = noJs((read('js/atlas-console.js') + '\n' + capsSource()));
   assert.doesNotMatch(k, /<div style="font-weight:600;margin:2px 0 5px;">'\+esc\(nm3\)/,
     "the brief no longer prints the place name above a bubble that already says it");
   assert.match(k, /const bodyB=dropLeadTitle\(txtB,nm3\)/, "…and the model's own copy is stripped");
@@ -71,7 +72,7 @@ test('R232 Atlas: a heading is not spaced twice, and a source card must be about
   assert.match(read('js/atlas-styles.js'), /\.atl-p\{margin:0 0 1\.5em;/, 'the paragraph gap is a margin that can collapse');
   assert.match(rep, /function _atlTopicKeys\(topic\)/, 'relevance judges against the topic');
   assert.match(rep, /cross-script: TWO tokens/, 'the cross-script fallback needs two, not none');
-  assert.match(read('js/atlas-console.js'), /linkCards\(srcSink,txtB,nm3\+' \/ '\+String\(a\.place\|\|''\)\)/,
+  assert.match((read('js/atlas-console.js') + '\n' + capsSource()), /linkCards\(srcSink,txtB,nm3\+' \/ '\+String\(a\.place\|\|''\)\)/,
     'the brief passes both spellings of the topic');
 });
 
@@ -81,6 +82,6 @@ test('R232 Atlas: a sent picture opens full-screen, from its own module', () => 
   assert.match(m, /el.className = 'atl-lightbox';/, 'the overlay');
   assert.match(m, /history\.pushState/, 'Back closes the picture, not the map');
   assert.match(m, /document\.body\.appendChild\(el\)/, 'it lives on <body>, not inside the panel');
-  assert.match(read('js/atlas-console.js'), /attachLightbox\(chatEl,/, 'the chat delegates to it');
+  assert.match((read('js/atlas-console.js') + '\n' + capsSource()), /attachLightbox\(chatEl,/, 'the chat delegates to it');
 });
 }

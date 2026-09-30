@@ -40,6 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { makeViewGround } from '../js/atlas-view-ground.js';
 import { makeAtlasAnswerRender } from '../js/atlas-answer-render.js';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const _saved = { document: globalThis.document };
 after(() => { globalThis.document = _saved.document; });
@@ -60,14 +61,14 @@ const { dispatchGroups } = await import('../scripts/atlas-capability-audit.mjs')
 
 const CAPS = makeAtlasCapabilities({});
 const SCHEMAS = makeAtlasSchemas();
-const CONSOLE_SRC = codeOnly(read('js/atlas-console.js'));
+const CONSOLE_SRC = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
 
 /* ══ ① ONE CAPTURE, TWO CALLERS ═══════════════════════════════════════════════════════════════ */
 
 test('R493 ①: Atlas and the screenshot button take the SAME picture, by running the same code', () => {
   const cap = read('js/atlas-view-capture.js');
   const shot = read('js/screenshot.js');
-  const atlas = read('js/atlas-console.js');
+  const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
 
   /* the module really is the capture: the WebGL-inside-a-render-tick read, the #R231 single
      coordinate system, and the overlay pass all live here */
@@ -286,7 +287,7 @@ test('R493 ③: view.inspect is registered, typed, documented, offered and dispa
   assert.ok(!tools[core.name].endsTurn, 'looking does not end the turn');
 
   /* the switch — every spelling the registry promises */
-  const spellings = new Set(dispatchGroups(lines('js/atlas-console.js')).flatMap((g) => g.names));
+  const spellings = new Set(dispatchGroups().flatMap((g) => g.names));
   for (const s of ['inspect'].concat(cap.aliases || [])) {
     assert.ok(spellings.has(CAPS.dispatchName(s)), `the dispatch has no case for "${s}", which the registry promises`);   /* (atlas-one-declaration) through the resolver the dispatch calls */
   }

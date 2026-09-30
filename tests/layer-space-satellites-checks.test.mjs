@@ -18,6 +18,7 @@ import { makeAtlasCatalogText } from '../js/atlas-catalog-text.js';
 import { byKey } from './helpers/layer-groups.mjs';
 import { uiLocale, langCodes } from './helpers/layer-locale-tables.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -144,9 +145,9 @@ test('R184 #7: the satellite layer is registered, grouped, legended and toggled'
      The question below is unchanged; the read follows the answer to where it lives now. */
   /* spelling kept: js/atlas-console.js is the Atlas panel itself (DOM, renderer, network) and cannot
      be evaluated here, so its alias table and its dispatch door are read as source */
-  const atlas = rd('js/atlas-console.js');
+  const atlas = (rd('js/atlas-console.js') + '\n' + capsSource());
   assert.match(atlas, /'satellites':'dl-sats'/, 'the Atlas layer alias table knows it');
-  assert.match(atlas, /case 'satellites':/, 'and there is an action');
+  assert.ok(capabilityEntry('satellites'), 'and there is an action');
   /* (consolidation) EVALUATED: the SYS catalogue is what makeAtlasCatalogText hands the planner */
   const DOCS = makeAtlasCatalogText({}, {});
   assert.match(DOCS.text(DOCS.idsCovered()), /LIVE SATELLITES: \{"type":"satellites"/,

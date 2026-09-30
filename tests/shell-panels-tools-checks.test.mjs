@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { appShell } from './app-source.mjs';
 import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
 import { codeOnly as code, codeOnly as noComments, codeOnly as stripComments } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -424,7 +425,7 @@ test('#R170 the 3-D volume tool is wired from menu to renderer', () => {
      through) and the Atlas `volume3d` action, which reads the global itself */
   assert.match(INDEX, /IntMapLazy\.need\('volume3d'\)\.then\(\(\)=>\{ setTool\('volume'\)/,
     'the Measure-menu button must fetch the tool before switching to it — the panel reads the global synchronously');
-  assert.match(stripComments(R('js/atlas-console.js')), /await window\.IntMapLazy\.need\('volume3d'\);/,
+  assert.match(stripComments((R('js/atlas-console.js') + '\n' + capsSource())), /await window\.IntMapLazy\.need\('volume3d'\);/,
     'the Atlas volume3d action must fetch the tool before reading window.IntMapVolume3D');
   /* (#R171) release() = clear() plus handing the drag gesture back, now that the freehand / circle /
      rectangle shapes take the drag while they are armed. Closing the tool must do both. */
@@ -471,8 +472,8 @@ test('#R170 the volume tool compensates for 3-D terrain instead of trusting the 
 test('#R170 Atlas can drive the 3-D volume, and the action is in the SYS catalogue', () => {
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
-  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
-  assert.match(atlas, /case 'volume3d': \{/, 'the dispatch action must exist');
+  const atlas = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
+  assert.ok(capabilityEntry('volume3d'), 'the dispatch action must exist');
   assert.equal(dispatchName('volume'), 'volume3d', '…and `volume` reaches it through its row (atlas-one-declaration)');
   assert.match(atlas, /\{"type":"volume3d","place":str/, 'and be catalogued — an uncatalogued action does not exist to the planner (#R115)');
   assert.match(atlas, /"name":"measure"\|"radius"\|"draw"\|"volume"/, 'the tool action must accept the volume tool too');

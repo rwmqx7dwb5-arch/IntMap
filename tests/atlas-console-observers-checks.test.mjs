@@ -31,6 +31,7 @@ import { makeAtlasAdmin1 } from '../js/atlas-admin1.js';
 import { makeAtlasGeoLedger } from '../js/atlas-geo-ledger.js';
 import { makeAtlasAgent } from '../js/atlas-agent.js';
 import { NominatimGate as GATE } from '../js/nominatim-gate.js';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the sections below (each used to declare its own copy) */
 const R = (p) => readLF(join(ROOT, p));
@@ -280,7 +281,7 @@ test('R397 ④a: the pinning step reads a coordinate off the place it was handed
     'the mapper does not build a GeoObject — lng/lat/provenance are dropped exactly as they were before #R397');
   /* The console must hand the place over WHOLE. Re-flattening to {n,c,k} one line earlier is what
      discarded the coordinate that normalizeAnswer had just merged in. */
-  const console_ = codeOnly(read('js/atlas-console.js'));
+  const console_ = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
   assert.ok(!/_pinReplyPlaces\(\(_env\.places\|\|\[\]\)\.map\(/.test(console_),
     'the analyze path still re-flattens _env.places before pinning — the merged coordinate is discarded one line before it is needed');
 });
@@ -322,14 +323,14 @@ test('R397 ⑦a: the policy clauses exist, are reachable, and say what they must
   assert.ok(/resolved_place_centroid/.test(all),
     'the model is never told what a representative centroid means, so it can read one as an exact spot');
   /* And SYS() must actually include them. */
-  const c = codeOnly(read('js/atlas-console.js'));
+  const c = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
   assert.ok(/POLICY\.all\(\)/.test(c), 'SYS() does not include the policy clauses — they exist and are never sent');
 });
 
 test('R397 ⑦b: the old forced-grounding framing is gone', () => {
   /* read, not run: the grounding text is assembled inside the Atlas kernel, which only a browser can
      build. */
-  const c = read('js/atlas-console.js');
+  const c = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(c.indexOf('not a generic chatbot reply') < 0,
     'the MAPPING MANDATE still derives a reason to operate the map from IntMap being a map product');
   /* The anti-fabrication rule must NOT have gone with it. */
@@ -457,7 +458,7 @@ test('R397 ⑪e: the ranking is wired to the real feed, not to a fixture', () =>
   /* read, not run: the wiring to the live USGS feed is inside the kernel; the ranking itself is RUN in
      ⑪a–⑪d. */
   /* ⚠ AGENTS.md §3.3 forbids a placeholder implementation. A scorer nothing calls is one. */
-  const c = codeOnly(read('js/atlas-console.js'));
+  const c = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
   assert.ok(/ANOM\.fromUsgs\(/.test(c), 'nothing converts the live USGS rows into ranking candidates');
   assert.ok(/ANOM\.rank\(/.test(c), 'the cross-domain ranking is never computed in the app');
   assert.ok(/ANOM\.promptBlock\(/.test(c), 'the ranking is computed and never given to the model');
@@ -695,7 +696,7 @@ test('R441 ⑦ blank and empty fields do not change what an operation is', () =>
 test('R441 ⑧ js/atlas-console.js composes through the module and keeps no second copy', () => {
   /* read, not run: the composition happens inside the kernel's _atlCompose, which only a browser can
      build; the module's decisions are RUN in ①–⑦. */
-  const atlas = codeOnly(R('js/atlas-console.js'));
+  const atlas = codeOnly((R('js/atlas-console.js') + '\n' + capsSource()));
   assert.match(atlas, /import\s*\{\s*makeAtlasTurnResults\s*\}\s*from\s*'\.\/atlas-turn-results\.js'/, 'js/atlas-console.js does not import the module');
   assert.match(atlas, /makeAtlasTurnResults\(\s*\{\s*norm\s*:\s*_lnorm\b[^}]*\}\s*\)/, 'the module is not given the console\'s own `_lnorm`');   /* (atlas-one-declaration) it is given the registry too */
   assert.match(atlas, /const\s+keep\s*=\s*TRES\.keep\(results\)/, '_atlCompose no longer composes from the module');
@@ -711,12 +712,9 @@ test('R441 ⑧ js/atlas-console.js composes through the module and keeps no seco
 test('R441 ⑨ every successful route answer carries its journey identity', () => {
   /* read, not run: the route case is a branch of the kernel's dispatch, which needs the routing engine
      and a map. */
-  const atlas = codeOnly(R('js/atlas-console.js'));
-  const i = atlas.indexOf("case 'directions':");
-  assert.ok(i > 0, "the directions case is gone from js/atlas-console.js");
-  const j = atlas.indexOf("case 'streetview':", i);
-  assert.ok(j > i, 'the end of the directions case could not be found');
-  const body = atlas.slice(i, j);
+  const atlas = codeOnly((R('js/atlas-console.js') + '\n' + capsSource()));
+  const body = codeOnly((capabilityEntry('directions') || {}).run || '');   /* (atlas-capability-modules) the run of routing.route */
+  assert.ok(body, 'the directions capability has no run');
   assert.match(body, /const\s+_jKey\s*=\s*'routing\.route\|'\s*\+\s*mode/, 'the route case no longer builds a journey identity');
   const exits = body.match(/return R\(true, h[^)]*\)/g) || [];
   assert.equal(exits.length, 2, `expected the transit and road answers, found ${exits.length}`);
@@ -727,7 +725,7 @@ test('R441 ⑨ every successful route answer carries its journey identity', () =
    Two runs whose endpoints agree to ~11 m are the same journey; 10 km apart is not. The check runs
    the shipped expression, lifted out of the case, rather than a re-derivation of it. */
 test('R441 ⑩ the journey identity is coordinate-based, at ~11 m', () => {
-  const atlas = codeOnly(R('js/atlas-console.js'));
+  const atlas = codeOnly((R('js/atlas-console.js') + '\n' + capsSource()));
   const line = (atlas.split('\n').find((l) => l.includes("const _jKey='routing.route|'")) || '').trim();
   assert.ok(line, 'the journey identity is no longer one expression');
   const make = new Function('mode', 'A', 'B', 'via', '_avoid', '_tmodes', '_mw', '_areas', 'a',
@@ -1011,7 +1009,7 @@ test('R489 ⑮: a call that FAILED is not frozen — the turn may try it again',
 test('R489 ⑯: the console consults the ledger and the shipped index before the network', () => {
   /* read, not run: the resolution ladder is the kernel's resolveHlTarget, which only a browser can
      drive; each rung is RUN in ①–⑨. */
-  const src = CODE('js/atlas-console.js');
+  const src = (CODE('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(/makeAtlasGeoLedger/.test(src) && /makeAtlasAdmin1/.test(src), 'both modules are imported');
   assert.ok(/ADM1\.hlTarget\(nm,\{ledger:GLEDGER\}\)/.test(src),
     'resolveHlTarget tries the local first-level index, with the ledger for the country and the identifier');
@@ -1025,7 +1023,7 @@ test('R489 ⑯: the console consults the ledger and the shipped index before the
 test('R489 ⑰: a pin carries what it is, all the way to the marker', () => {
   /* read, not run: the pin travels kernel → shell (js/app-body.js) → popup DOM, all of which boot only
      in a browser. */
-  const con = CODE('js/atlas-console.js');
+  const con = (CODE('js/atlas-console.js') + '\n' + capsSource());
   const body = CODE('js/app-body.js');
   const schema = CODE('js/atlas-schemas.js');
   assert.ok(/addPin\(ll\.lng,ll\.lat,_pm\)/.test(con), 'the pin action passes its metadata to the map');
@@ -1035,14 +1033,15 @@ test('R489 ⑰: a pin carries what it is, all the way to the marker', () => {
   assert.ok(/IntMapSafe\.html\(pmT\)/.test(body) && /IntMapSafe\.html\(pmD\)/.test(body),
     'every Atlas-supplied string reaches innerHTML through the encoder (#R272 SEC)');
   assert.ok(/IntMapSafe\.url\(String\(pm\.url\)\)/.test(body), 'and the link through the URL allow-list');
-  assert.ok(/'map\.pin':[^\n]*description: str\(\)/.test(schema), 'the schema advertises the description');
-  assert.ok(/'map\.pin':[^\n]*country: str\(\)/.test(schema),
+  const pinSchema = capabilityEntry('map.pin').schema;   /* (atlas-capability-modules) declared in its entry, beside the run */
+  assert.ok(/description: str\(\)/.test(pinSchema), 'the schema advertises the description');
+  assert.ok(/country: str\(\)/.test(pinSchema),
     'and the country, because a settlement name on its own is a query that cannot succeed');
 });
 
 test('R489 ⑱: a second paint in the same turn adds to the map instead of erasing it', () => {
   /* read, not run: the paint paths are the kernel's, which only a browser can drive. */
-  const src = CODE('js/atlas-console.js');
+  const src = (CODE('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(/const _hlAdd=\(a\)=>\{ const g=\(a&&a\.__paintRun\)/.test(src), 'the highlight paths read which run the action belongs to');
   assert.ok(/const _poiAdd=\(a\)=>\{ const g=\(a&&a\.__paintRun\)/.test(src), 'and so do the pin paths');
   /* ⚠ THE STAMP IS ON THE ACTION, so a bare IntMapOS.dispatch — the diagnostics door, and the one
@@ -1060,7 +1059,7 @@ test('R489 ⑱: a second paint in the same turn adds to the map instead of erasi
 
 test('R489 ⑲: a failed boundary lookup is not reported as a place that does not exist', () => {
   /* read, not run: the messages are the kernel's highlight replies, which only a browser can produce. */
-  const src = CODE('js/atlas-console.js');
+  const src = (CODE('js/atlas-console.js') + '\n' + capsSource());
   assert.equal(/'Nothing found for','見つかりません'/.test(src), false,
     'the highlight miss message used to blame the world for a lookup’s failure');
   assert.ok(/'No boundary could be resolved for','境界データを解決できませんでした'/.test(src));
@@ -1080,7 +1079,7 @@ test('R489 ⑳: the new modules are shipped, documented and reachable', () => {
   assert.ok(url.test(CODE('js/atlas-admin1.js')) && url.test(CODE('js/world-packs.js')));
   assert.ok(existsSync(join(ROOT, 'data/admin1-world.json.gz')));
   /* imported once and built once — no second geographic ledger anywhere in the app */
-  const con = R('js/atlas-console.js');
+  const con = (R('js/atlas-console.js') + '\n' + capsSource());
   assert.equal((con.match(/makeAtlasGeoLedger\(/g) || []).length, 1, 'exactly one ledger is built');
   assert.ok(/^import \{ makeAtlasGeoLedger \} from '\.\/atlas-geo-ledger\.js';/m.test(con)
     && /^import \{ makeAtlasAdmin1 \} from '\.\/atlas-admin1\.js';/m.test(con),

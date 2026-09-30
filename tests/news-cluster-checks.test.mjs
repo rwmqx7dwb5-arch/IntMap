@@ -18,6 +18,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { CATEGORIES, DEFAULTS, tokenise, normaliseTitle, normaliseUrl, pairVerdict, clusterArticles, countIndependentSources, geoClass, lngOf, latOf, kindOf } from '../supabase/functions/_shared/news-cluster.js';
 import { makeNewsCluster } from '../js/news-cluster.js';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ════════ #R334 — from tests/r334-checks.test.mjs ════════ */
 {
@@ -426,15 +427,14 @@ test('#R340 ④ a country representative point does not fuse its articles', () =
 /* ── ⑤ the relaxation is gone, and no second implementation grew back ──────── */
 /* 綴りのまま: 対象は Atlas カーネル（js/atlas-console.js）の case の中で、ブラウザの Atlas からしか走らない */
 test('#R340 ⑤ #R76\'s relaxed branch no longer exists, and there is ONE grouper', () => {
-  const atlas = read('js/atlas-console.js');
-  const evCase = atlas.slice(atlas.indexOf("case 'events':"));
-  assert.ok(evCase.startsWith("case 'events'"), 'the events case is gone from js/atlas-console.js');
+  const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
+  const evCase = (capabilityEntry('events') || {}).run || '';   /* (atlas-capability-modules) the run of research.events */
+  assert.ok(evCase, 'the events capability has no run');
   /* ⚠ (#R386) END AT THE NEXT CASE, not at `case 'module':`. This used to slice all the way to
      `module` because `events` happened to be the case before it; the moment another case was
      added between them (news.category), the slice swallowed it and the size ceiling fired on
      code this check is not about. The subject is the EVENTS case, so the boundary is its own end. */
-  const nextCase = evCase.slice(1).search(/\n\s{8}case '/);
-  const body = nextCase > 0 ? evCase.slice(0, nextCase + 1) : evCase.slice(0, evCase.indexOf("case 'module':"));
+  const body = evCase;   /* the run IS the case: it ends where the capability ends */
   assert.ok(body.length > 200 && body.length < 12000, 'could not isolate the events case — this check needs rewriting');
   /* ⚠ (#R386) …and in EVENT mode it must not group at all: the server already did, over the whole
      window, and a second grouping is a second implementation running (docs/NEWS-EVENTS.md). */
@@ -571,9 +571,8 @@ test('#R340 ⑨ the same articles always produce the same events', () => {
 /* ── ⑩ the results say which half of «map,explanation» actually happened ───── */
 /* 綴りのまま: 対象は Atlas カーネル（js/atlas-console.js）の case の中で、ブラウザの Atlas からしか走らない */
 test('#R340 ⑩ every research.events return carries meta', () => {
-  const atlas = read('js/atlas-console.js');
-  const evCase = atlas.slice(atlas.indexOf("case 'events':"));
-  const body = evCase.slice(0, evCase.indexOf("case 'module':"));
+  const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
+  const body = (capabilityEntry('events') || {}).run || '';
   const returns = body.match(/return R\(/g) || [];
   assert.ok(returns.length >= 3, `only ${returns.length} returns found in the events case — this check needs rewriting`);
   const withMeta = body.match(/return R\([^;]*?\{meta:\{/g) || [];
@@ -582,9 +581,9 @@ test('#R340 ⑩ every research.events return carries meta', () => {
   for (const code of ['PLACE_NOT_FOUND', 'NO_ARTICLES', "code:'OK'"]) {
     assert.ok(body.includes(code), `the events case never reports ${code}`);
   }
-  const caps = read('js/atlas-capabilities.js');
+  const caps = capabilityEntry('research.events').row;   /* (atlas-capability-modules) the row is declared in its entry */
   assert.match(caps, /'research\.events',\s*'events',\s*'newsEvents,groupNews'/, 'research.events left the capability table');
-  assert.match(caps.slice(caps.indexOf("'research.events'")), /'map,explanation'/, 'research.events no longer declares map,explanation');
+  assert.match(caps, /'map,explanation'/, 'research.events no longer declares map,explanation');
   assert.match(body, /produced:\(_evMapped\?\['map','explanation'\]:\['explanation'\]\)/, 'the OK return claims the map regardless of whether the pins drew');
   /* the footnote must quote the rule the code applies, not a remembered one */
   assert.match(body, /EVENT_RULES\.HOURS/, 'the footnote hard-codes the time window');

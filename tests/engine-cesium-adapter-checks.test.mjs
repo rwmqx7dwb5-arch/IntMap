@@ -26,6 +26,7 @@ import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { PbfWriter } from 'pbf';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = new URL('../', import.meta.url);
 const R = (p) => readFileSync(new URL(p, ROOT), 'utf8');
@@ -109,8 +110,8 @@ test('R180 ③: every new user-visible string exists in all five languages', () 
 /* ⚠ READ, NOT RUN: the SYS catalogue TEXT is what the planner reads, so its wording is the artefact. */
 test('R180 ③: Atlas can operate the engine, and the planner knows the action exists', () => {
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it. */
-  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
-  assert.match(atlas, /case 'engine':/, 'the dispatcher handles it');
+  const atlas = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
+  assert.ok(capabilityEntry('engine'), 'the dispatcher handles it');
   /* #R115's rule: an action parameter not in the SYS catalogue does not exist to the planner */
   assert.match(atlas, /\{"type":"engine","name":"maplibre"\|"cesium"\}/,
     'and the SYS catalogue declares it, or Atlas can never emit it');

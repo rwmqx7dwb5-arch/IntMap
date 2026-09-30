@@ -39,6 +39,7 @@ import * as catalogModule from '../js/atlas-catalog-text.js';
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 /* (#R406) the tool surface is what SYS() carries now, so the measurement needs the real one */
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
@@ -57,7 +58,9 @@ const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
    service"… — i.e. exactly the ones that had drifted furthest from Atlas. The predicate below
    is the one that found the rest, and it is the one that keeps them found. */
 const EXPECTED_CALLS = {
-  'js/atlas-console.js': 9,          /* analyze, researchMap, brief, mapReport, historical, planner, vision, region outline, region units */
+  /* (atlas-capability-modules) three of the kernel's nine moved with their capabilities' runs */
+  'js/atlas-console.js': 6,          /* analyze, mapReport, planner, vision, region outline, region units */
+  'js/atlas-cap-research.js': 3,     /* brief, researchMap, historical */
   /* (#R322) the two prompts moved with the AI-research body when js/analysis-panels.js was split
      into an eager shell and five lazy implementations. Same two calls, same file's worth of code —
      only the file name changed, and the count is what this table is actually about. */
@@ -249,7 +252,7 @@ test('R285 (6) the Japanese register rule appears once, and the language lock su
   }
   assert.deepEqual(dupes, [], 'a second copy of the register rule survives — it belongs only in js/atlas-persona.js: ' + dupes.join(' | '));
 
-  const console_ = codeOnly(read('js/atlas-console.js'));
+  const console_ = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
   assert.ok(!/です・ます/.test(console_), 'js/atlas-console.js still carries its own copy of the register rule');
   assert.ok(!/unless the user is clearly casual/i.test(console_), 'the superseded "unless the user is casual" escape is still in the prompts');
 
@@ -275,7 +278,7 @@ test('R285 (7) the Edge Function copy is byte-identical to the source of truth',
 const LIVE_CATALOGUES = 3727 + 3750 + 1482;   /* controls + layers + modules, measured */
 
 function plannerPromptSize() {
-  const lines = read('js/atlas-console.js').split(/\r?\n/);
+  const lines = (read('js/atlas-console.js') + '\n' + capsSource()).split(/\r?\n/);
   /* (#R318) SYS takes the capability selection now — `SYS(sel)`, where a null selection means the
      WHOLE catalogue, i.e. the prompt this check has always measured. */
   const s = lines.findIndex((l) => /^\s*function SYS\(\w*\)\s*\{/.test(l));

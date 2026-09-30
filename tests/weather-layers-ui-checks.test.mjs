@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ════════ #R290 — from tests/r290-checks.test.mjs (5 of its 16 tests) ════════ */
 {
@@ -433,7 +434,7 @@ test('R337 ① the preference lives in the temperature legend, has one door, and
   /* ⚠ ONE STATE, ONE DOOR: the legend box, Atlas's dispatch and Atlas's inline toggle must all
      reach the same function, or two of them can hold different ideas of the answer (#R313 ①) */
   assert.match(wx, /window\._imWxTempParts=\(v\)=>/, 'the preference has exactly one published door');
-  const ac = code('js/atlas-console.js');
+  const ac = (code('js/atlas-console.js') + '\n' + capsSource());
   /* ⚠ (#R439) THE DISPATCH RESOLVES `over` TO A LAYER FIRST, so it writes through the general door
      `_imWxParts(layerId, v)`. That is the SAME state — `_imWxTempParts` is the temperature layer's
      own name for it and both call `setParts('ec-temp', …)`. What #R337 pinned is that Atlas does not

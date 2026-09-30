@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { codeOnly, codeOnly as code, codeOnly as noComments } from '../scripts/code-only.mjs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -48,7 +49,7 @@ test('R231 Monitors: the tab and all four routes to it are closed', () => {
   const ws = read('js/workspace.js');
   assert.ok(!/\{id:'monitors',/.test(noJs('js/workspace.js')), 'no workspace window');
   assert.ok(!/monitors:flo\(/.test(noJs('js/workspace.js')), 'and no default rect for one');
-  const atlas = read('js/atlas-console.js');
+  const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(!/\+'AREA MONITORS \(saved SERVER-SIDE/.test(atlas), 'the planner is not offered the action');
   assert.match(atlas, /FEATURE_WITHDRAWN/, 'and if one arrives anyway the reply says so rather than claiming success');
   /* ⚠ WITHDRAWN, NOT DELETED — 一旦撤去. The feature must still be here to come back. */
@@ -59,7 +60,7 @@ test('R231 Monitors: the tab and all four routes to it are closed', () => {
 /* ── ⑨ Atlas: an attached picture is not a speech bubble ────────────────────────────────────── */
 /* spelling kept: stylesheet rule (js/atlas-styles.js) — Node has no cascade or layout to evaluate it in. */
 test('R231 Atlas: the image row is its own element, the text keeps the bubble', () => {
-  const src = read('js/atlas-console.js');
+  const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.match(src, /if\(imgs\.length\) bubble\('u','<div class="atl-imgrow-in">/, 'images get their own row');
   assert.match(src, /classList\.add\('atl-imgrow'\)/, 'marked so the bubble styling comes off');
   assert.match(src, /if\(q\|\|files\.length\) bubble\('u',/, 'and no empty bubble when there is no text');
@@ -68,7 +69,7 @@ test('R231 Atlas: the image row is its own element, the text keeps the bubble', 
      rules moved, so the two halves of this test now read the two files. The «crop is gone» half asks
      BOTH, or it would pass by looking where the CSS no longer is. */
   assert.match(read('js/atlas-styles.js'), /\.atl-b\.u\.atl-imgrow\{background:none;box-shadow:none;padding:0/, 'no fill, no shadow, no padding');
-  assert.ok(!/object-fit:cover;border-radius:8px/.test(noJs('js/atlas-console.js') + noJs('js/atlas-styles.js')), 'the 74 px square crop is gone');
+  assert.ok(!/object-fit:cover;border-radius:8px/.test((noJs('js/atlas-console.js') + '\n' + capsSource()) + noJs('js/atlas-styles.js')), 'the 74 px square crop is gone');
 });
 
 /* ── ⑩ the AI research reply does not open by naming the place ──────────────────────────────── */
@@ -91,7 +92,7 @@ test('R231 AI research: the leading place-name line is asked against AND removed
   /* spelling kept: that the reply is PASSED through the strip, and what the prompt tells the model, are the text of a lazy browser panel. */
   assert.match(ap, /md\(_dropLeadTitle\(out\|\|'',name\)\)/, 'and is applied to the reply');
   assert.match(ap, /Do NOT open with a heading or bold line that merely repeats the place name/, 'the model is told too');
-  const at = read('js/atlas-console.js');
+  const at = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.match(at, /_titleIsJustThePlace/, 'the Atlas researchMap title does the same');
   assert.match(at, /_bare\(_tt\)===_bare\(place\)/, 'by equality');
 });
@@ -105,7 +106,7 @@ test('R231 AI research: the leading place-name line is asked against AND removed
 /* ═══ ⑩ THE ATLAS ROUTE REPLY ════════════════════════════════════════════════════════════════ */
 /* spelling kept: browser script (js/atlas-console.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R296 ⑩ the route reply opens with the answer, and says one honest sentence', () => {
-  const a = read('js/atlas-console.js');
+  const a = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.match(a, /const _hdr='';/, 'the header is empty');
   assert.doesNotMatch(code(a), /_rmodes\(/, 'the mode-switch row is not built…');
   assert.doesNotMatch(code(a), /class="atl-route-modes"/, '…and its markup is not emitted');
@@ -127,7 +128,7 @@ test('R296 ⑩ the route reply opens with the answer, and says one honest senten
    from the kernel only by name, and attached to the reader's bubble and to Atlas's reply alike. */
 /* spelling kept: stylesheet rule (js/atlas-styles.js) — Node has no cascade or layout to evaluate it in. */
 test('R296 ⑪ a reader’s own message can be copied, by the same button', () => {
-  const a = read('js/atlas-console.js');
+  const a = (read('js/atlas-console.js') + '\n' + capsSource());
   const m = read('js/atlas-msg-tools.js');
   assert.match(m, /function copyBtn\(src\)\{/, 'there is ONE copy button');
   assert.doesNotMatch(code(a), /function copyBtn\s*\(/, 'and the kernel did not keep a second copy of it');
@@ -187,7 +188,7 @@ test('R296 ⑪ a reader’s own message can be copied, by the same button', () =
    centre was the view the reader had BEFORE they asked. */
 /* spelling kept: browser script (js/atlas-console.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R302 ⑭ Atlas passes the coordinate it resolved, and asks when it has none', () => {
-  const a = noComments(read('js/atlas-console.js'));
+  const a = noComments((read('js/atlas-console.js') + '\n' + capsSource()));
   assert.ok(!/IntMapSun\.open\(\);/.test(a), 'the resolved place must not be dropped on the floor');
   assert.ok(!/IntMapSun\.open\(ll\|\|undefined\)/.test(a), '…nor turned back into «no argument»');
   assert.equal((a.match(/IntMapSun\.open\(\{lng:ll\.lng,lat:ll\.lat\}\)/g) || []).length, 2,
@@ -240,7 +241,7 @@ test('r309 ③ the starter chips are resolved from the map, not from a fixed lis
   const ex = fnBody(AC, 'examples');
   assert.ok(/exFacts\(\)/.test(ex), 'examples() asks what is true of what is on screen');
   /* and the console reaches it through an import, not a copy */
-  const con = code('js/atlas-console.js');
+  const con = (code('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(/from '\.\/atlas-examples\.js'/.test(con), 'js/atlas-console.js imports the subject');
   assert.ok(!/function examples\(/.test(con), 'and does not keep a second copy of it');
   const place = fnBody(AC, 'exFacts');

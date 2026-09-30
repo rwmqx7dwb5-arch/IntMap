@@ -19,6 +19,7 @@ import { makeAtlasCatalogText } from '../js/atlas-catalog-text.js';
 import { makeAtlasSchemas } from '../js/atlas-schemas.js';
 import { codeOnly, codeOnly as noComments } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,7 +67,7 @@ const ECRAW = read('js/wx-ecmwf.js');
 const EC = codeOnly(ECRAW);
 const WX = codeOnly(read('js/weather.js'));
 const DL = read('js/data-layers.js');
-const AC = codeOnly(read('js/atlas-console.js'));
+const AC = codeOnly((read('js/atlas-console.js') + '\n' + capsSource()));
 const MU = codeOnly(read('js/map-ui.js'));
 /* (consolidation) the capability table, the schemas and the planner's catalogue are ASKED — they
    are modules with factories, so what is checked is what they answer, not how a file spells it */
@@ -268,7 +269,7 @@ test('R439 ⑥ the retired isobar id still resolves — share link, alias and a 
   assert.ok(!/'dl-ec-isobars'/.test(AC), 'Atlas names no retired checkbox id');
   assert.match(AC, /'等圧線':'dl-ec-slp'/, '「等圧線」 resolves to the row the contours live in');
   /* a switch needs a verb — dispatch, schema, capability row and SYS sentence, in one change */
-  assert.match(AC, /case 'isobars': \{ const want=/, 'Atlas can dispatch it');
+  assert.match(capabilityEntry('isobars').run, /\{ const want=/, 'Atlas can dispatch it');
   assert.match(AC, /window\._imWxIsobars\(want\)/, '…through the one published door');
   assert.match(AC, /isobars:\{ lbl:\(\)=>L\('Isobars'/, 'and a reply can carry the switch inline');
   assert.ok(SCH.schemaFor('layers.isobars'), 'the schema knows the action');

@@ -66,7 +66,7 @@ const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');
 const { makeAtlasResults } = await import('../js/atlas-results.js');
 const { makeAtlasState } = await import('../js/atlas-state.js');
 const { installAtlasKernel } = await import('../js/atlas-executor.js');
-const { auditWith, dispatchGroups } = await import('../scripts/atlas-capability-audit.mjs');
+const { auditWith, dispatchGroups, kernelLines } = await import('../scripts/atlas-capability-audit.mjs');
 
 const CAPS = makeAtlasCapabilities({});
 const DOCS = makeAtlasCatalogText({}, {});
@@ -90,8 +90,8 @@ function kernel() {
 /* ══ ① THE REGISTRY IS THE ONE LIST ══════════════════════════════════════════════════════════ */
 
 test('R318 ①a: every live dispatch spelling resolves to a canonical capability', () => {
-  const groups = dispatchGroups(lines('js/atlas-console.js'));
-  assert.ok(groups.length >= 110, `only ${groups.length} dispatch groups found — the switch moved and this test would pass on nothing`);
+  const groups = dispatchGroups();   /* (atlas-capability-modules) one group per capability entry — what the dispatch's lookup reads */
+  assert.ok(groups.length >= 110, `only ${groups.length} dispatch groups found — the entries moved and this test would pass on nothing`);
   /* (atlas-one-declaration) a case carries one spelling now; the others reach it through the row that declares them, so the
      spellings the dispatch answers are the labels plus every declared spelling the dispatch's own resolver sends to one of them */
   const labels = groups.flatMap((g) => g.names), live = new Set(labels);
@@ -102,7 +102,7 @@ test('R318 ①a: every live dispatch spelling resolves to a canonical capability
 });
 
 test('R318 ①b: the registry adds nothing that cannot run, and misses nothing that can', () => {
-  const groups = dispatchGroups(lines('js/atlas-console.js'));
+  const groups = dispatchGroups();
   const implemented = new Set(groups.flatMap((g) => g.names));
   const orphans = CAPS.all().filter((c) => !c.withdrawn && c.legacy && !implemented.has(c.legacy));
   assert.deepEqual(orphans.map((c) => c.id), [], 'registered with no dispatch case behind it');
@@ -163,7 +163,8 @@ test('R318 ①e: a non-equivalent substitution is recorded as forbidden', () => 
 function auditOn(over) {
   return auditWith(Object.assign({
     caps: CAPS, docs: DOCS,
-    atlas: lines('js/atlas-console.js'),
+    atlas: kernelLines(),   /* (atlas-capability-modules) the kernel is js/atlas-console.js and its capability modules */
+    groups: dispatchGroups(),
     controls: read('js/atlas-controls.js'),
     capSrc: read('js/atlas-capabilities.js'),
     execSrc: read('js/atlas-executor.js'),
@@ -189,11 +190,13 @@ test('R318 ②a: the audit is green on the tree as it stands, except where it is
 });
 
 test('R318 ②b: it goes red on an unreachable dispatch label', () => {
-  const damaged = lines('js/atlas-console.js').slice();
-  const i = damaged.findIndex((l) => /^ {8}case 'flyTo'/.test(l));
-  assert.ok(i > 0, 'the flyTo case moved');
-  damaged.splice(i + 1, 0, "        case 'flyTo': { return 1; }");
-  assert.ok(failing(auditOn({ atlas: damaged }), 'alias-coverage').length,
+  /* (atlas-capability-modules) js/atlas-caps.js refuses a second entry for one spelling at load, so the defect is
+     handed to the audit as DATA — the check must still name it if the groups ever carry it */
+  const damaged = dispatchGroups().slice();
+  const i = damaged.findIndex((g) => g.names.includes('flyTo'));
+  assert.ok(i >= 0, 'the flyTo entry moved');
+  damaged.splice(i + 1, 0, { names: ['flyTo'], id: 'view.flyTo', file: '(fixture)', line: '(fixture)', src: 'return 1;' });
+  assert.ok(failing(auditOn({ groups: damaged }), 'alias-coverage').length,
     'a second case for a spelling an earlier case already claims is dead code and must be reported');
 });
 
@@ -243,13 +246,11 @@ test('R318 ②g: it goes red when the registry truncates its own population', ()
 });
 
 test('R318 ②h: it goes red when a withdrawal quietly ends', () => {
-  const damaged = lines('js/atlas-console.js').map((l) =>
-    /^ {8}case 'monitor'/.test(l) ? "        case 'monitor': { return R(true, 'ok'); }" : l);
-  const i = damaged.findIndex((l) => /^ {8}case 'monitor'/.test(l));
-  assert.ok(i > 0, 'the monitor case moved');
-  /* the four lines the proof may live in must not carry it any more */
-  for (let k = i; k < i + 4 && k < damaged.length; k++) damaged[k] = damaged[k].replace(/FEATURE_WITHDRAWN/g, 'OK');
-  assert.ok(failing(auditOn({ atlas: damaged }), 'withdrawal-honest').length,
+  /* (atlas-capability-modules) the proof lives in the monitor entry's run; take it out of that run */
+  const damaged = dispatchGroups().map((g) => (g.names.includes('monitor') ? Object.assign({}, g, { src: "return R(true, 'ok');" }) : g));
+  assert.ok(damaged.some((g) => g.names.includes('monitor')), 'the monitor entry moved');
+  assert.ok(/FEATURE_WITHDRAWN/.test(dispatchGroups().find((g) => g.names.includes('monitor')).src), 'the undamaged run carries the proof — the fixture removes something real');
+  assert.ok(failing(auditOn({ groups: damaged }), 'withdrawal-honest').length,
     'an exception that stops being true must stop being an exception');
 });
 
@@ -400,7 +401,7 @@ test('R318 ⑦a: the model is told the language it must answer in, in ENGLISH, f
 test('R318 ⑦b: the five-language tables inside Atlas are gone', () => {
   /* read, not run: the tables were in the Atlas kernel (js/atlas-console.js), a closure over the whole
      HOST that only a browser can build; the claim is that they are absent. */
-  const atlas = codeOnly(read('js/atlas-console.js'));
+  const atlas = codeOnly(kernelLines().join('\n'));   /* (atlas-capability-modules) the `language` action's run is in js/atlas-cap-settings.js */
   assert.doesNotMatch(atlas, /\{Japanese:'jp',German:'de',Russian:'ru',Spanish:'es',English:'en'\}/,
     'the reply-language mirror still knows only five languages');
   assert.doesNotMatch(atlas, /\{jp:'Japanese',de:'German',ru:'Russian',es:'Spanish',en:'English'\}/,
@@ -604,7 +605,7 @@ test('R318 ⑨f: the prompt state is trimmed by whole sections, and says which i
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-const { auditWith } = await import('../scripts/atlas-capability-audit.mjs');
+const { auditWith, dispatchGroups, kernelLines } = await import('../scripts/atlas-capability-audit.mjs');
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
 /* (#R406) the audit reads the real argument schemas the same way scripts/atlas-capability-audit.mjs does */
 const SCHEMAS = (await import('../js/atlas-schemas.js')).makeAtlasSchemas();
@@ -700,7 +701,7 @@ test('R320 ①c: the audit can go red on a silent cap', () => {
   assert.notEqual(damaged, CONTROLS, 'the fixture did not change anything — the announcement moved');
   const checks = auditWith({
     caps: makeAtlasCapabilities({}), docs: makeAtlasCatalogText({}, {}),
-    atlas: read('js/atlas-console.js').split(/\r?\n/), controls: damaged,
+    atlas: kernelLines(), groups: dispatchGroups(), controls: damaged,
     capSrc: read('js/atlas-capabilities.js'), execSrc: read('js/atlas-executor.js'),
     stateSrc: read('js/atlas-state.js'),
     resultsSrc: read('js/atlas-results.js'),
@@ -800,7 +801,7 @@ test('R320 ③c: every lazy module the loader publishes is a name the catalogue 
 test('R320 ④: the capability audit is still green, and still asks twenty-three questions', () => {
   const checks = auditWith({
     caps: makeAtlasCapabilities({}), docs: makeAtlasCatalogText({}, {}),
-    atlas: read('js/atlas-console.js').split(/\r?\n/), controls: CONTROLS,
+    atlas: kernelLines(), groups: dispatchGroups(), controls: CONTROLS,
     capSrc: read('js/atlas-capabilities.js'), execSrc: read('js/atlas-executor.js'),
     stateSrc: read('js/atlas-state.js'),
     resultsSrc: read('js/atlas-results.js'),

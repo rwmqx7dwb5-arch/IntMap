@@ -17,6 +17,7 @@ import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
 import { dispatchName } from './helpers/dispatch-spelling.mjs';   /* (atlas-one-declaration) a spelling reaches its case through the registry */
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -265,8 +266,8 @@ test('R197 ②b nothing opens a tsunami inside the disaster simulator', () => {
   assert.doesNotMatch(tsu, /openInundation/, 'and the button that did is gone');
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
-  const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
-  assert.match(atlas, /case 'tsunami':/,
+  const atlas = (rd('js/atlas-console.js') + '\n' + capsSource()) + '\n' + rd('js/atlas-catalog-text.js');
+  assert.ok(capabilityEntry('tsunami'),
     'Atlas routes tsunami to its own model');
   for (const sp of ['tsunamiSim', 'tsunamiPropagation']) assert.equal(dispatchName(sp), 'tsunami', `…under every spelling its row declares (atlas-one-declaration): ${sp}`);
   /* ⚠ (#R296) the free-text forward stood in the `disaster` case, which is gone with its module —

@@ -38,6 +38,7 @@ import * as acorn from 'acorn';
 import { LAZY_NAMES, LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { codeOnly } from '../scripts/code-only.mjs';   /* (#R497) the forbidden names below appear in that round's own COMMENT explaining them */
 import { makeAtlasTurnResults } from '../js/atlas-turn-results.js';
+import { capsSource, capabilityEntry, runAst } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -193,10 +194,10 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
   const docs = makeAtlasCatalogText({}, {});
   assert.ok(docs.idsCovered().includes('data.query'), 'the catalogue block the planner is shown');
   assert.match(docs.text(['data.query']), /CROSS-DATASET QUERY/, '…and it says what it is');
-  const spellings = new Set(dispatchGroups(read('js/atlas-console.js').split(/\r?\n/)).flatMap((g) => g.names));
+  const spellings = new Set(dispatchGroups().flatMap((g) => g.names));
   for (const s of ['query', 'crossQuery', 'dataQuery']) assert.ok(spellings.has(CAPS.dispatchName(s)), 'the dispatch door answers «' + s + '»');   /* (atlas-one-declaration) through the resolver the dispatch calls */
   /* the door fetching the engine lazily is closure code inside js/atlas-console.js — a spelling */
-  assert.match(read('js/atlas-console.js'), /IntMapLazy\.need\('atlasQuery'\)/, '…which fetches the engine');
+  assert.match((read('js/atlas-console.js') + '\n' + capsSource()), /IntMapLazy\.need\('atlasQuery'\)/, '…which fetches the engine');
   /* (#R798) one registry entry holds what it publishes, how to fetch it and how to mount it */
   const e = LAZY_REGISTRY.atlasQuery;
   assert.ok(e && e.publishes === 'IntMapQuery', 'the lazy registry knows what it publishes');
@@ -621,16 +622,10 @@ test('R620 ④c: the shipped dispatch actually hands the key to the turn', () =>
   /* kept as a spelling: the caps, the cost order and the borrowed fields are wiring inside js/atlas-query.js / js/gazetteer.js / js/precip-annual.js that only a network-backed run would exercise; the catalogue text is what the planner is shown */
   /* ⚠ MEASURED ON THE WIRING THAT SHIPS, not on a copy of it (#R552): a key the engine builds and
      the door drops is a key nothing has. */
-  const src = read('js/atlas-console.js');
-  const tree = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'module', ranges: true });
-  let seen = null;
-  (function walk(n) {
-    if (!n || typeof n !== 'object') return;
-    if (n.type === 'SwitchCase' && n.test && n.test.type === 'Literal' && n.test.value === 'query') {   /* (atlas-one-declaration) the one label; `dataQuery` reaches it through the registry */
-      seen = src.slice(n.range[0], n.range[1]);
-    }
-    for (const k in n) { const v = n[k]; if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v.type === 'string') walk(v); }
-  })(tree);
+  /* (atlas-capability-modules) the door is data.query's run — parsed, so a comment cannot stand in for it */
+  const ast = runAst('query');
+  const e = capabilityEntry('query');
+  const seen = ast ? codeOnly(e.run) : null;
   assert.ok(seen, 'the data.query dispatch case must still be reachable in the parse tree');
   assert.match(seen, /resultKey/, 'the door reads the key the engine declared');
   assert.match(seen, /meta\s*[:=]\s*\{\s*resultKey/, 'and passes it as meta, which is where opKey looks');

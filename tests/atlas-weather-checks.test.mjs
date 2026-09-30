@@ -41,6 +41,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(resolve(ROOT, p));
@@ -55,9 +56,10 @@ test('R376 ① a raster-source capability is not verified by counting features',
   /* kept as a spelling: js/weather.js, js/map-readout.js and js/wx-ecmwf.js are built with the page (map, legend DOM, tile protocol); the catalogue text is what the planner is shown */
   const caps = codeOnly(CAPS());
   /* the row names the observer that reads the displayed model */
-  assert.match(caps, /\['data\.wxModel',\s*'wxModel',[^\]]*'wxModel',/,
+  const wxRow = capabilityEntry('data.wxModel').row;   /* (atlas-capability-modules) the row is declared in its entry */
+  assert.match(wxRow, /\['data\.wxModel',\s*'wxModel',[^\]]*'wxModel',/,
     'data.wxModel is observed by the wxModel observer, not by paint');
-  assert.ok(!/\['data\.wxModel',[^\]]*'paint',/.test(caps),
+  assert.ok(!/\['data\.wxModel',[^\]]*'paint',/.test(wxRow),
     'and NOT by paint — paintNow() counts features, and a raster swap changes none');
 
   /* the observer exists, and it reads the DISPLAYED model rather than the requested one */
@@ -184,7 +186,7 @@ test('R376 ⑤ the round records that every repository gate was green while all 
    パーティクルをオンできるように。(これもデフォルトでオン)。」 (formerly tests/r455-checks.test.mjs)
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 const WXS = read('js/weather.js');      /* (#R455 read it as a string; #R376's WX() reads it per call) */
-const ACS = read('js/atlas-console.js');
+const ACS = (read('js/atlas-console.js') + '\n' + capsSource());
 const rd = read;
 test('R455 ②a four layers can ask for the streaks, and ec-precip is one of them', () => {
   /* kept as a spelling: js/weather.js, js/map-readout.js and js/wx-ecmwf.js are built with the page (map, legend DOM, tile protocol); the catalogue text is what the planner is shown */

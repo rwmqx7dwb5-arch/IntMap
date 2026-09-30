@@ -18,6 +18,7 @@ import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { buildTaxonIndex, toEvent, eventName, donName, readCorpus, WHO_ITEM_BASE } from '../scripts/build-who-don.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -253,9 +254,11 @@ test('#R650 ⑧ the case count is never encoded in a visual channel, because it 
 
 test('#R650 ⑨ Atlas can reach it, and the catalogue tells the planner the two things that mislead', () => {
   /* ⚠ READ, NOT RUN: the capability, schema and dispatcher live in the Atlas kernel, which needs a browser and a map. */
-  assert.match(read('js/atlas-capabilities.js'), /\['map\.outbreaks',/);
-  assert.match(read('js/atlas-schemas.js'), /'map\.outbreaks':/);
-  assert.match(read('js/atlas-console.js'), /case 'outbreaks':/);
+  const e = capabilityEntry('map.outbreaks');   /* (atlas-capability-modules) row, schema and run are one entry */
+  assert.match(e.row, /\['map\.outbreaks',/);
+  assert.ok(e.schema, 'map.outbreaks declares its arguments');
+  assert.equal(e.spelling, 'outbreaks');
+  assert.ok(e.run, 'and the dispatch has a run for it');
   const cat = read('js/atlas-catalog-text.js');
   assert.match(cat, /ids: \['map\.outbreaks'\]/);
   assert.match(cat, /NULL IS NOT ZERO/, 'a missing case count must never be reported as no deaths');

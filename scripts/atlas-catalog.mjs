@@ -21,9 +21,10 @@
  *  the UI and unreachable by asking for it, which is the exact opposite of 「Atlas is the control
  *  plane」. This file is the check that was missing.
  *
- *  WHAT IT DOES. It reads js/atlas-console.js only — no browser, no bundle, ~40 ms:
- *    1. the dispatch: every line of the form `        case 'x': case 'y': …` inside `switch(a.type)`
- *       is ONE capability, whatever number of spellings it answers to;
+ *  WHAT IT DOES. It reads the Atlas kernel's source — no browser, no bundle:
+ *    1. the dispatch: every capability entry in js/atlas-cap-<namespace>.js (its dispatch spelling and
+ *       its run) is ONE capability. (atlas-capability-modules) These were the `case 'x':` lines of
+ *       `switch(a.type)` in js/atlas-console.js; the switch is now one lookup of the same entries;
  *    2. the catalogue: the body of `function SYS()`, which is the prompt the planner is given;
  *    3. a capability is CATALOGUED when at least one of its spellings appears in that body inside
  *       double quotes — i.e. as `"isochrone"`, the way `{"type":"isochrone"…}` is written. Matching a
@@ -41,6 +42,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dispatchGroups } from './atlas-capability-audit.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FILE = 'js/atlas-console.js';
@@ -93,25 +95,21 @@ export function catalogueText(lines) {
   return corpus + '\n' + blocks;
 }
 
-/* Every capability the dispatch can execute: one entry per `case` line inside switch(a.type). */
-export function dispatchCapabilities(lines) {
-  const out = [];
-  lines.forEach((line, i) => {
-    if (!/^ {8}case '/.test(line)) return;
-    const names = [...line.matchAll(/case '([A-Za-z_][\w]*)'\s*:/g)].map((m) => m[1]);
-    /* `src` is the case line plus the first lines of its body: a one-line case (`case 'monitor':`)
-       carries its evidence on the NEXT line, and the withdrawal proof has to be able to see it. */
-    if (names.length) out.push({ line: i + 1, names, src: lines.slice(i, i + 4).join('\n') });
-  });
-  return out;
+/* Every capability the dispatch can execute: one per capability entry in js/atlas-cap-<namespace>.js —
+   { line, names: [its dispatch spelling], src: what the dispatch runs for it }. (atlas-capability-modules)
+   These were the `case` lines of switch(a.type) in js/atlas-console.js; the switch is now one lookup of
+   the same entries, so this reads what that lookup reads (scripts/atlas-capability-audit.mjs dispatchGroups).
+   `src` is the whole run, so a withdrawal proof can see what the capability answers. */
+export function dispatchCapabilities() {
+  return dispatchGroups().map((g) => ({ line: g.line, names: g.names.slice(), src: g.src }));
 }
 
 /* auditLines() takes the source as data so tests can prove this gate FAILS on a capability that is
    not catalogued — a green gate that has never been seen to go red is not evidence of anything. */
-export function auditLines(lines, { minCaps = 50 } = {}) {
+export function auditLines(lines, { minCaps = 50, caps = dispatchCapabilities() } = {}) {
   const sys = catalogueText(lines);
-  const caps = dispatchCapabilities(lines);
-  if (caps.length < minCaps) throw new Error(`${FILE}: only ${caps.length} dispatch cases found — the switch moved or changed shape; this gate would pass on an empty set`);
+  /* `caps` is DATA too (default: the entries), so a fixture can hand the gate a capability that is not catalogued */
+  if (caps.length < minCaps) throw new Error(`js/atlas-cap-*.js: only ${caps.length} dispatch cases found — the entries moved or changed shape; this gate would pass on an empty set`);
   const rows = caps.map((c) => {
     const hit = c.names.find((n) => sys.includes(`"${n}"`)) || null;
     const wd = c.names.map((n) => WITHDRAWN[n]).find(Boolean) || null;

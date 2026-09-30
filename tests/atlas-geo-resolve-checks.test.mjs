@@ -44,6 +44,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -251,7 +252,7 @@ test('R413 ⑧: the reader\'s own position is a tool Atlas always has, wired to 
 
   /* the dispatch hands the coordinates back as a FACT: js/atlas-toolsurface.js forwards `exec` and
      nothing else, so a coordinate that exists only in rendered HTML is one Atlas never learns */
-  const dispatch = rd('js/atlas-console.js');
+  const dispatch = (rd('js/atlas-console.js') + '\n' + capsSource());
   assert.match(dispatch, /exec:\{lat,lng,accuracyM:Math\.round\(\+p2\.coords\.accuracy\|\|0\),provenance:'device_location'\}/,
     'the locate case returns lat/lng/accuracy in `exec`');
   assert.match(dispatch, /_selfLocSeed\(\{lng,lat,acc:\+p2\.coords\.accuracy\|\|0\}\)/,
@@ -276,7 +277,7 @@ test('R413 ⑨: the caps this round removed have not come back', async () => {
   assert.match(state, /var RENDER_LIMITS = \{ maxTitle: \d+, maxBody: \d+ \};/,
     'only the headline and the article body are still clipped, and the comment above says why');
 
-  const console_ = code(rd('js/atlas-console.js'));
+  const console_ = code((rd('js/atlas-console.js') + '\n' + capsSource()));
   /* ⚠ (atlas-native-tools) THE RECORD IS BUILT IN js/atlas-agent.js NOW, AND IT IS MEASURED BY RUNNING IT. The
      old assertion read the spelling of one line of `_agentPrompt`; that line was unclipped and the
      transport cut the whole string at 24,000 characters anyway. What this guards is the fact: a
@@ -513,7 +514,7 @@ test('R667 ②: the sentence is translated in all nine languages, not five', () 
 /* ══ ③ ONE OWNER, NOT THIRTY-TWO EDITED SENTENCES ═════════════════════════════════════════════ */
 test('R667 ③: the ambiguous refusals go through the one helper, and it lives beside geocode()', () => {
   /* a spelling on purpose: «one owner, and every refusal asks it» is a claim about where the code IS — no run can count call sites */
-  const con = R('js/atlas-console.js');
+  const con = (R('js/atlas-console.js') + '\n' + capsSource());
   const uses = (con.match(/whereMiss\(L\(/g) || []).length;
   assert.ok(uses >= 8, 'every "where?" refusal that could not tell the two apart now asks the helper (found ' + uses + ')');
   /* the helper is defined ONCE, in the module that owns the resolution */
@@ -535,7 +536,7 @@ test('R667 ④: open() returns what the runtime returns, and a promise is still 
   assert.match(fn, /return RT\.activate\('sim\.tsunami'/, 'the promise is returned, not discarded');
   assert.ok(!/;\s*return true;/.test(fn), 'no synchronous true stands in front of an async activation');
   /* the caller that drives the panel immediately afterwards now waits for it */
-  const con = R('js/atlas-console.js');
+  const con = (R('js/atlas-console.js') + '\n' + capsSource());
   assert.match(con, /try\{ await T\.open\(\{ lng:ll\.lng/, 'the tsunami case awaits activation before driving the module');
   /* ⚠ and the reason a promise is safe here: every existing caller reads the result as truthy */
   assert.ok(!!Promise.resolve(true), 'a promise is truthy');

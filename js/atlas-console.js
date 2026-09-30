@@ -28,14 +28,13 @@ import { atlasPanelCSS } from './atlas-styles.js';   /* (#R313) the panel's styl
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
 import { makeAtlasControls } from './atlas-controls.js';
 import { makeAtlasSources } from './atlas-sources.js';
-import { ATLAS_BUDGETS, settleWithin, lateNote, makeFetchJSON, newTurnController } from './atlas-deadlines.js';   /* (#R452) the turn's clocks — Atlas had two private, unbounded copies of the relay ladder */
+import { ATLAS_BUDGETS, settleWithin, makeFetchJSON, newTurnController } from './atlas-deadlines.js';   /* (#R452) the turn's clocks — Atlas had two private, unbounded copies of the relay ladder */
 import { makeAtlasSims } from './atlas-sims.js';
 import { peekOwnRelay } from './proxy-fetch.js';   /* the self-diagnosis asks OUR relay what the upstream last said, instead of asking the upstream (see _PROBES) */
 import { makeAtlasVerify } from './atlas-verify.js';
 import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) normally js/app-body.js has already built the registry at boot; this is the fallback for a boot that did not get that far, so Atlas is never the thing that has no capabilities */
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
 import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
-import { resolveObserver, satelliteFacts, weatherFacts, routeFacts } from './atlas-result-facts.js';   /* (#R726) the facts a tool's panel shows, on the tool's result */
 import { makeEraHighlight } from './atlas-era-highlight.js';
 import { makeHighlightTargets } from './atlas-country-ids.js';   /* (#R742) every ISO notation the border store declares */   /* (#R726) the map's year applied to a country highlight */
 import { makeAtlasMetrics } from './atlas-metrics.js';
@@ -58,8 +57,11 @@ import { makeAtlasGeoLedger } from './atlas-geo-ledger.js';   /* (#R489) the pla
 import { makeAtlasAdmin1 } from './atlas-admin1.js';   /* (#R489) first-level boundaries out of the file we already ship, so fourteen oblasts cost ONE request between them */
 import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤) */   import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */   /* ⚠ (#R495) ON THIS LINE because js/atlas-console.js is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and this round adds a dispatch case. js/runtime.js is imported at line-start by 31 other modules, so scripts/js-reachability.mjs still sees it — the exact test #R489 applied before sharing a line. */
 import { makeAtlasProgress } from './atlas-progress.js';   /* (#R723) the work trace — what Atlas is doing, as a list that keeps what already happened. ⚠ ITS OWN LINE, and the room for it came from DELETING the fifteen lines the one-word indicator occupied here: this file is at a shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and the subject that leaves is the one being replaced. */
+import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capability-modules) every capability: its row, its schema and what the dispatch runs for it */
+import { capabilityRunners, unknownAction } from './atlas-caps.js';
 import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
 window.IntMapModules=window.IntMapModules||{};
+const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
 window.IntMapModules.atlasConsole=function(HOST){
   /* (#R318) THE KERNEL, published by js/app-body.js before Atlas is ever fetched. Named here so the
      capability registry, the observed-result shape, the executor and the state ledger are reached by
@@ -1711,2200 +1713,245 @@ window.IntMapModules.atlasConsole=function(HOST){
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
     const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } } });   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
-    /* (atlas-one-declaration) EACH CASE CARRIES ONE SPELLING — the capability's column 1 in js/atlas-capabilities.js.
-       Every other spelling reaches it because its row declares it (`CAPS.dispatchName`), not because a label here
-       repeats it: 222 labels used to copy the row, and 12 declared spellings reached no case at all.
-       ⚠ `a.type` IS NOT REWRITTEN — a case that tells two of its spellings apart (`walkingRoute`, `standHere`) still reads the one it was sent. */
-    async function dispatch(a,dctx){ if(!a||!a.type) return R(true,''); switch(CAPS.dispatchName(a.type)){
-        case 'gloss': return GLOSS.dispatch(a);   /* (#R491) 「この言葉の意味は」 — the same card the reader raises by right-clicking a phrase. Spends the gloss lane, not a question; paints nothing */ case 'photoLocate': { let PG=null; try{ await window.IntMapLazy.need('photoGeo'); PG=window.IntMapPhotoGeo; }catch(_){} if(!PG||typeof PG.open!=='function') return R(false,warn('⚠ '+L('The photo-location tool could not be loaded.','写真の撮影地点ツールを読み込めませんでした。','Das Werkzeug für den Aufnahmeort konnte nicht geladen werden.','Инструмент поиска места съёмки не загрузился.','No se pudo cargar la herramienta de lugar de la foto.'))); const pgAct=String(a.action||'').toLowerCase(); if(pgAct==='abort'){ PG.abort(); return R(true,note(L('The search was stopped. The places it had already reached are still listed.','探索を中止しました。ここまでに見つかった候補はそのまま残しています。','Die Suche wurde gestoppt; die bereits gefundenen Orte bleiben stehen.','Поиск остановлен; уже найденные места остались в списке.','Se detuvo la búsqueda; los lugares ya encontrados siguen en la lista.')),{exec:PG.state()}); } const pgAr=(a.area&&['south','north','west','east'].every(k=>isFinite(+a.area[k])))?{south:+a.area.south,north:+a.area.north,west:+a.area.west,east:+a.area.east}:null; if(pgAr) PG.setArea(pgAr); await PG.open(); let pgS=PG.state(); if(pgAct==='select'||a.select!=null){ const pgN=Math.max(1,Math.round(+(a.select||1))), pgC=(pgS.candidates||[])[pgN-1]; if(!pgC) return R(true,note(L('There is no candidate with that number yet — the search has to run first.','その番号の候補はまだありません。先に探索を実行してください。','Diesen Kandidaten gibt es noch nicht — die Suche muss zuerst laufen.','Такого кандидата ещё нет — сначала нужно выполнить поиск.','Todavía no hay un candidato con ese número: primero hay que buscar.')),{exec:pgS}); PG.select(pgN-1); pgS=PG.state(); return R(true,note(L('Candidate','候補','Kandidat','Кандидат','Candidato')+' '+pgN+' · '+pgC.lat+', '+pgC.lon+' · '+L('view direction','撮影方向','Blickrichtung','направление съёмки','dirección de la vista')+' '+pgC.bearingDeg+'°'),{exec:pgS}); } if(!PG.hasPhoto()||!PG.hasArea()||!pgS.skyline) return R(true,note(L('The panel is open on the map. The photograph, the rectangle to search and the traced ridge are given there — none of the three can come from me.','パネルを地図上に開きました。写真・探索範囲・稜線のトレースはそこで指定してください（いずれも私からは供給できません）。','Das Panel ist offen. Foto, Suchrechteck und die gezeichnete Kammlinie werden dort angegeben — nichts davon kann von mir kommen.','Панель открыта. Фотография, прямоугольник поиска и обведённый гребень задаются там — ничего из этого я предоставить не могу.','El panel está abierto. La fotografía, el rectángulo de búsqueda y la cresta trazada se indican allí; nada de eso puede venir de mí.')),{exec:pgS}); if(pgS.phase==='searching') return R(true,note(L('The search is already running.','探索はすでに実行中です。','Die Suche läuft bereits.','Поиск уже выполняется.','La búsqueda ya está en marcha.')),{exec:pgS}); if(pgAct!=='search') return R(true,note(L('The photograph and the search area are both ready; say the word and I will start the search.','写真と探索範囲はそろっています。指示があれば探索を開始します。','Foto und Suchbereich liegen vor; auf ein Wort starte ich die Suche.','Фотография и область поиска готовы; по команде запущу поиск.','La foto y el área están listas; a su señal inicio la búsqueda.')),{exec:pgS}); const pgP=PG.search(); if(pgP&&pgP.catch) pgP.catch(()=>{}); pgS=PG.state(); if(pgS.phase!=='searching') return R(false,warn('⚠ '+L('The search did not start — the panel says why, and the usual reason is that too little of the traced ridge can be scored.','探索は開始されませんでした。理由はパネルに出ています（多くは、トレースできた稜線が短すぎる場合です）。','Die Suche startete nicht — das Panel nennt den Grund; meist ist zu wenig der gezeichneten Kammlinie auswertbar.','Поиск не начался — причина указана в панели; чаще всего обведённого гребня слишком мало для оценки.','La búsqueda no se inició — el panel indica el motivo; casi siempre es que la cresta trazada da muy poco que evaluar.')),{exec:pgS}); return R(true,note(L('Searching the terrain for the viewpoint that produces this skyline.','この稜線が見える視点を、地形の側から探索しています。','Suche im Gelände den Standort, der diese Kammlinie ergibt.','Ищу в рельефе точку, из которой видна эта линия горизонта.','Buscando en el terreno el punto que produce esta línea de cumbres.')+((pgS.plan&&pgS.plan.points!=null)?(' · '+pgS.plan.points.toLocaleString()+' pts · '+pgS.plan.spacingM+' m'):'')),{exec:pgS}); }   /* (#R527) photo.locate — js/photo-geo.js. ⚠ THE TWO INPUTS ARE THE READER'S: a photograph and a rectangle on the map. No place name starts this and the map centre may never stand in for one (#R302), so a call carrying neither OPENS THE PANEL and says where they go — the #R299 shape, not a sentence refusing a feature that exists. The sweep is deliberately NOT awaited: it is minutes of terrain work, and its phase, progress, verdict and candidates are read off the state ledger as 'photoGeo' (js/atlas-state.js). ⚠ ON THIS LINE because js/atlas-console.js stands at 4,909 against a shrink-only ceiling of 4,910 (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b): the file can hold this case, but not one more line. */
-        case 'compose': return await COMPOSE.run(a,dctx);   /* (#R551) the execution context — which TURN this is — reaches the module, so two composes in one turn are two revisions of ONE map rather than two maps */   case 'shakemap': { await window.IntMapLazy.need('shakeMap'); const _sk=await window.IntMapShakeMap.run(a); return R(_sk.ok,_sk.html,_sk.meta); }   /* (#R546) map.shakemap — js/shakemap.js owns the body BECAUSE this file has no line left */   /* (#R511) map.compose — js/atlas-map-compose.js. ⚠ THE LINE CAME FROM A BLANK ONE ABOVE THE TIME-AXIS BLOCK: this file is at its ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) */
-        case 'chart': { await window.IntMapLazy.need('atlasChart'); const _CH=window.IntMapAtlasChart; if(!_CH) return R(false, warn('⚠ '+L('The chart renderer could not be loaded.','グラフ描画モジュールを読み込めませんでした。','Der Diagramm-Renderer konnte nicht geladen werden.','Не удалось загрузить модуль диаграмм.','No se pudo cargar el renderizador de gráficos.'))); const _cr=_CH.render(a); return _cr.ok ? R(true,_cr.html,{meta:{chart:{kind:_cr.kind,plotted:_cr.plotted}}}) : R(false, warn('⚠ '+_cr.detail), {meta:{code:_cr.reason}}); }   /* (#R543) chart.compose — js/atlas-chart.js. The renderer is LAZY (tests/perf-baseline.json pins eager.modules at 284) so there is no import line and no factory line, only this door. ⚠ THE LINE CAME FROM THE FILE'S LAST BLANK LINE — the ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ, r419 ⓓ, r511 ⑨) is shrink-only and is now at zero: the next capability has to move a SUBJECT out, the way js/atlas-styles.js and js/atlas-sims.js were born. */
-        case 'reset': clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); try{ COMPOSE.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.')), _CLEARED('countries','polys','lines','choro'));
-        case 'layer': {
-          /* (#R73) SELF-VERIFICATION ("レイヤーのオンオフが実情と対応していない" / vision §16): snapshot the
-             style's visible layers (+ overlay canvas count) BEFORE the toggle, then verify the map actually
-             changed. No change after a grace poll → re-fire the toggle once; still nothing → say so honestly
-             instead of reporting success. */
-          const preSnap=_visSnapshot();
-          const r=toggleLayer(a.name,a.on!==false); if(!r.ok){ const c=doControl({target:a.name,on:a.on}); if(c.ok) return c; return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); }
-          let verifyNote='', unverified=false;
-          if(!r.already){ let changed=false;
-            for(let i2=0;i2<6&&!changed;i2++){ await new Promise(r2=>setTimeout(r2,700)); changed=_visDelta(preSnap,_visSnapshot()); }
-            if(!changed&&r.want){ /* one honest retry: re-fire THIS checkbox's change handler (r.cb — never a re-resolved guess) */
-              try{ if(r.cb&&r.cb.checked){ r.cb.checked=false; r.cb.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r2=>setTimeout(r2,250)); r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
-              for(let i2=0;i2<4&&!changed;i2++){ await new Promise(r2=>setTimeout(r2,700)); changed=_visDelta(preSnap,_visSnapshot()); } }
-            /* (#R142) a turn-ON that never changed the map is UNVERIFIED — flag it so runActions suppresses the planner's
-               optimistic "…をオンにしました" say (#2); the honest ⚠ note below leads instead. */
-            /* ⚠⚠⚠ (#R747) A LAYER ASKED TO GO OFF IS NOT EVIDENCE ABOUT PAINTING. `unverified` already
-               asked only of a turn-ON; the WARNING did not, so 「✓ Waves★ — off」 shipped followed by
-               「⚠ Could not confirm the layer actually painted … toggling it again may help」 (measured
-               on production 2026-09-15). The 「— off」 line already states the outcome. */
-            if(!changed&&r.want){ unverified=true; verifyNote=warn('⚠ '+L('Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help','地図上で実際に描画されたことを確認できませんでした（データ読込中またはソース障害の可能性）。地図をご確認ください。もう一度切り替えると直る場合があります','Konnte nicht bestätigen, dass die Ebene wirklich gezeichnet wurde','Не удалось подтвердить отрисовку слоя на карте','No se pudo confirmar que la capa se dibujó en el mapa')); }
-            else if(r.want) verifyNote=note('☑ '+L('verified on the map','地図上での描画を確認','auf der Karte bestätigt','отрисовка подтверждена','verificado en el mapa')); }
-          const onTxt=r.want?L('on','オン','an','вкл','activado'):L('off','オフ','aus','выкл','desactivado');
-          /* (#R72/#R142) a WORKING inline toggle appears right in the reply — for BOTH on AND off (turning a layer off still
-             leaves a re-toggle switch, #9) — reading THIS exact checkbox r.cb so the switch's default state is the real one
-             (#17), never a fuzzy re-resolve. The opacity slider is only meaningful while the layer is on. */
-          let ctl=''; try{ if(r.cb){ const cbRef=' data-cb="'+esc(r.cb.id||'')+'"';
-            ctl='<div style="display:flex;flex-direction:column;gap:6px;margin:5px 0 2px;">'
-            +'<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(r.label)+'</span><button class="atl-ctl-toggle'+(r.cb.checked?' on':'')+'" data-layer="'+esc(r.label)+'"'+cbRef+' role="switch" aria-checked="'+(r.cb.checked?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>';
-            if(r.want){ const sl=layerOpacityControl(r.cb);
-              if(sl) ctl+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+L('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(r.label)+'"'+cbRef+' min="0" max="1" step="0.05" value="'+esc(sl.value)+'"></div>'; }
-            ctl+='</div>'; } }catch(_){}
-          return R(true, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl, unverified?{meta:{unverified:true}}:undefined); }
-        case 'opacity': { const r=resolveLayer(a.name); if(!r) return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note('🎚 '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn('⚠ '+L('No opacity control: ','不透明度の調整なし: ','Keine Deckkraft: ','Нет управления непрозрачностью: ','Sin opacidad: ')+esc(r.label))); }
-        case 'projection': { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo')))+_featTogHtml('globe'):warn('⚠')); }   /* (#R151) offer the 3D-globe on/off switch */
-        case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa')))+_featTogHtml('satellite'):warn('⚠')); }   /* (#R147) offer the Satellite on/off button */
-        case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))+_featTogHtml('compare')); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); }   /* (#R151) offer the Compare on/off switch */
-        /* ⚠⚠⚠ (#R740) THE MOVER DECLARES WHERE IT ACTUALLY SENT THE CAMERA (`meta.dest`, read by js/atlas-capabilities.js). Without it a re-flight to where the reader already was answered `no_change`, i.e. FAILED, and 「ヨーロッパの気温を…」 spent 7 steps and 92 s flying to Europe four times (it even switched language) before `repeated_calls` ended the turn. Every branch that moves declares; a branch that resolved nothing declares nothing, which is the honest 「cannot be measured」 and leaves the old verdict. #R736's rule, on the camera. */
-        case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim(); let _dst=null; const _D=()=>_dst?{meta:{dest:_dst}}:null;
-          /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
-          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ const _c=GE().camera.getCenter(); _dst={lng:+_c.lng,lat:20,zoom:(exZ!=null?exZ:1.4)}; GE().camera.flyTo({center:[_dst.lng,20],zoom:_dst.zoom,duration:1100}); }catch(_){ _dst=null; try{ GE().camera.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero')), _D()); }
-          if(a.lng!=null&&a.lat!=null){ _dst={lng:+a.lng,lat:+a.lat,zoom:exZ!=null?exZ:Math.max(GE().camera.getZoom(),6)}; GE().camera.flyTo({center:[_dst.lng,_dst.lat],zoom:_dst.zoom,duration:1100}); return R(true, note((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2)), _D()); }
-          /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
-          if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
-            if(ext){ try{ _setLast(ext); }catch(_){} const _fb=!!(ext.box&&flyToBox(ext.box)); if(!_fb){ GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); } _dst={lng:ext.lng,lat:ext.lat,box:_fb?ext.box:null,name:ext.name||placeStr}; return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ext.lng,ext.lat), _D()); } }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
-          /* deixis / explicit zoom / footprint-miss → gazetteer + Japanese names; use its bbox if present. */
-          const ll=await geocode(placeStr);
-          if(ll){ if(exZ!=null){ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); _dst={lng:ll.lng,lat:ll.lat,zoom:exZ,name:ll.name||placeStr}; }
-            else if(ll.bbox&&_bboxOK(ll.bbox)){ const _fb=flyToBox(ll.bbox); if(!_fb) GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); _dst={lng:ll.lng,lat:ll.lat,box:_fb?ll.bbox:null,name:ll.name||placeStr}; }
-            else { GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); _dst={lng:ll.lng,lat:ll.lat,name:ll.name||placeStr}; }
-            return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ll.lng,ll.lat), _D()); }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
-          return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
-        case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)});
-          let facts=''; try{ const WX=window.IntMapWx, WP=window.IntMapWeather; const j=WX&&WX.point?await WX.point(ll.lat,ll.lng,{days:5,uv:false,gusts:true,ttl:300000}):null; facts=weatherFacts(j, WP&&WP.describe, L); }catch(_){}   /* the card's own numbers on the result (js/atlas-result-facts.js) — it used to say only 「🌤 大阪市」 */
-          return R(ok, ok?note('🌤 '+esc(ll.name||a.place)+esc(facts)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
-        case 'brief': { /* (#R62) AI Brief is INTEGRATED into Atlas — same structured brief, rendered inline in this chat. */
-          const ll=(a.lng!=null&&a.lat!=null)?{lng:+a.lng,lat:+a.lat,name:String(a.place||'')}:await geocode(a.place);
-          const nm3=(ll&&ll.name)||String(a.place||'').trim(); if(!nm3) return R(false, warn('⚠ '+esc(a.place||'')));
-          if(ll&&isFinite(ll.lng)){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),4),duration:900}); }catch(_){} try{ _setLast(ll); }catch(_){} }
-          const today=new Date().toISOString().slice(0,10); const langB=_langLine();
-          const srcSink=[];   /* (#R79) collect real article URLs → ChatGPT-style source cards under the brief */
-          let hl2=''; try{ const heads=_newsData(ll&&isFinite(ll.lng)?{lng:ll.lng,lat:ll.lat}:null,nm3,srcSink); if(heads) hl2='\n\nRecent nearby news headlines — reflect these in "Recent developments":\n'+heads; }catch(_){}
-          /* (#R113d) recent-news evidence for "Recent developments": GDELT (exact phrase → unquoted fallback, last 7
-             days for wider coverage than 72 h) + Google News, in parallel. Empty results just leave the section honest
-             (no fabrication) — but the quoted-only, 3-day, no-fallback version was returning nothing for topics like
-             "South China Sea", which is why the section came back empty. */
-          try{ const [gd,gn]=await Promise.all([
-              /* ⚠ (#R464) SEQUENTIAL, so the pair shares ONE budget — otherwise it costs two (js/atlas-deadlines.js) */
-              (async()=>{ const b0=Date.now(); const bLeft=()=>WEB_BUDGET_MS-(Date.now()-b0); let v=await _gdeltNews('"'+nm3+'"',srcSink,'7d',bLeft()); if(!v&&bLeft()>0) v=await _gdeltNews(nm3,srcSink,'7d',bLeft()); return v; })().catch(()=>null),
-              _gnewsNews(nm3,srcSink).catch(()=>null)
-            ]);
-            if(gd) hl2+='\n\nLive web news search results (GDELT, last 7 days) — use for "Recent developments":\n'+gd;
-            if(gn) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+gn;
-          }catch(_){}
-          /* (#R114) LUNA: the brief PROMISES latest developments, so it now really searches. The old prompt
-             attached the tool (webMode) yet ordered the model "do NOT call any tool" — a Gemini-era contradiction
-             that left 0 web searches run. Prompt is now tool-CONDITIONAL (use search if attached; else the supplied
-             headlines) and the call is webMode:'required' so the proxy forces the search. */
-          const sysB=personaPrompt('working here as IntMap\'s geopolitical and area-studies research desk')/* (#R285) this opened with a DIFFERENT character from the one answering two panels away; the task role stays, the name and the character are Atlas's */+'The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content. Respond in '+langB+'.';
-          const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
-          let txtB='', _envB=null; try{ _envB=await askAIJSONEnvelope(pB,sysB,null,{task:'brief',webMode:'required',turnId:_curTurnKey}); txtB=(_envB&&_envB.text)||''; }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
-          if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
-          /* ⚠⚠ (#R232) 「返答の最初に地名だけ」 — re-sent: #R231 fixed the OTHER panel; this branch printed it itself (#R69). */
-          /* (#R232) …and the TOPIC with it — resolved name AND typed string (often different scripts). */
-          let srcCardsB=''; try{ srcCardsB=linkCards(srcSink,txtB,nm3+' / '+String(a.place||'')); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards; (#R152/#R153) relevance now runs INSIDE linkCards (after host-clean) so the section is never blanked by an only-SNS coincidence */
-          /* (#R103) the per-message "AI-generated — verify" note is dropped — the single static note under the input bar
-             now carries that disclaimer (毎メッセージに書くな). */
-          /* (#R114) honest recency footer: show the as-of date, and flag when a LIVE web search actually ran
-             (meta.webUsed) so a search-less brief is never mistaken for fresh "latest" intelligence. */
-          let asofB=''; try{ const _m=(_envB&&_envB.meta)||{};   /* (#R350) THIS call's meta, not window._aiLastMeta — a concurrent Atlas turn used to decide whether this brief said 「ライブWeb検索」 */ asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
-          /* (#R232) …and the model's own version of it — dropLeadTitle is in js/atlas-reply.js. */
-          const bodyB=dropLeadTitle(txtB,nm3); try{ if(window.IntMapWidgetBriefStore) window.IntMapWidgetBriefStore.remember({place:nm3,text:bodyB,at:Date.now()}); }catch(_){}   /* (#R292) the widget board is SHOWN this brief and never asks for one — see js/widget-defs-map.js. ⚠ ON THIS LINE because #R199's ceiling is never raised (#R272): the file had one line of headroom and this addition pays for itself. */
-          return R(true,'<div class="atl-md">'+mdMini(bodyB)+'</div>'+asofB+srcCardsB); }
-        case 'askHere': { /* (#R83) absorbed into Atlas — pin the point HERE so the ongoing conversation resolves
-            "here/there" to it; if a concrete question came with it, answer it straight away via analyze. */
-          let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place);
-          if(!ll) return R(false, warn('⚠ '+esc(a.place||'')));
-          _herePoint={lng:+ll.lng,lat:+ll.lat,name:ll.name||''}; try{ _lastPlace={lng:+ll.lng,lat:+ll.lat,name:ll.name||''}; }catch(_){}
-          try{ GE().camera.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(GE().camera.getZoom(),5),duration:900}); }catch(_){}
-          const qq=String(a.question||a.query||'').trim();
-          if(qq) return await dispatch({type:'analyze',question:qq,place:'there'});
-          return R(true, note(esc(ll.name||(ll.lat.toFixed(3)+', '+ll.lng.toFixed(3)))+' — '+L('ask me anything about this spot','この地点について何でも聞いてください','fragen Sie mich alles zu diesem Ort','спросите что угодно об этом месте','pregúntame lo que sea sobre este lugar'))); }
-        case 'query': { await window.IntMapLazy.need('atlasQuery'); const _Q=window.IntMapQuery; if(!_Q) return R(false, warn('⚠ '+L('The query engine could not be loaded.','クエリエンジンを読み込めませんでした。','Die Abfrage-Engine konnte nicht geladen werden.','Не удалось загрузить движок запросов.','No se pudo cargar el motor de consultas.'))); await ensureData(); _Q.bind({lang:()=>_mirrorLang(), countryStats:()=>countryStats, ensureData, fillMetric:_fillMetric, metricSpec:metSpec, fmtVal, countryName:nm, fetchJSON:_fetchJSON, overpassPOIs, wikidataPOIs, resolveArea:async n2=>{ const c2=resolveCountrySync(n2); let e2=null; try{ e2=await _nomExtent((c2&&c2.name)||n2); }catch(_){} return {osmRel:(e2&&e2.osmType==='relation')?e2.osmId:null, iso3:(c2&&c2.code)||null, box:(e2&&e2.box&&_bboxOK(e2.box))?e2.box:null}; }}); const _qr=await _Q.answer(a,{}); /* ⚠⚠ (#R620) THE RESULT DECLARES WHAT IT RESOLVED. Without a `resultKey`, js/atlas-turn-results.js identifies this operation by its ARGUMENTS, and `show` is an argument — so asking the same question twice while asking for one more column printed the same rows in two tables. The engine builds the key from the table, conditions, scope, joins, ordering and limit, which is exactly «what it did» and not «how it rendered». */ const _qx={}; if(_qr.objectIds&&_qr.objectIds.length) _qx.objectIds=_qr.objectIds; if(_qr.resultKey) _qx.meta={resultKey:_qr.resultKey}; return R(_qr.ok, _qr.html, Object.keys(_qx).length?_qx:null); }   /* ⚠⚠ (#R495) THE CROSS-DATASET QUERY — the action every multi-condition question needed and none of the 126 above could serve. The engine, the tables, the columns and the honesty rules are js/atlas-query.js; this line is the door and the argument binding, because the file it sits in may not grow (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ). */
-        case 'gis': { await window.IntMapLazy.need('gisCore'); const _G=window.IntMapGis&&window.IntMapGis.atlas; if(!_G) return R(false, warn('⚠ '+L('The GIS engine could not be loaded.','GIS エンジンを読み込めませんでした。','Die GIS-Engine konnte nicht geladen werden.','Не удалось загрузить GIS-движок.','No se pudo cargar el motor GIS.'))); const _gr=await _G.run(a); return _gr.ok ? R(true,_gr.html,{meta:{gis:{op:_gr.op,dataset:_gr.dataset.id,count:_gr.dataset.count,drawn:!!_gr.drawn}}}) : R(false, warn(_gr.html)); }
-        case 'gisDraw': { await window.IntMapLazy.need('gisCore'); const _GD=window.IntMapGis&&window.IntMapGis.atlas; if(!_GD) return R(false, warn('⚠ '+L('The GIS engine could not be loaded.','GIS エンジンを読み込めませんでした。','Die GIS-Engine konnte nicht geladen werden.','Не удалось загрузить GIS-движок.','No se pudo cargar el motor GIS.'))); const _gd=await _GD.draw(a); return _gd.ok ? R(true,_gd.html,{meta:{gis:{dataset:_gd.dataset.id,drawn:true}}}) : R(false, warn(_gd.html)); }   /* (#R743) the second door: drawing a dataset is a separate promise from making one, because an observer that measures the map must be declared by something that always moves it. */   /* ⚠⚠ (#R743) THE OTHER HALF OF THE LINE ABOVE — 「読める」 に対する 「作らせられる」. The ops, their declarations, the input resolution and the reply are js/gis-atlas.js, which sits inside the gisCore chunk BECAUSE THE OPS DECLARE THEMSELVES: a list of ops written here would be invisible to the op added to DECL tomorrow. This line is the door and the argument binding, because the file it sits in may not grow (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ). */
-        /* ⚠ (#R740) THE KEY IS RESOLVED BEFORE ANYTHING USES IT. `_fillMetric(a.metric)` was handed
-           whatever the planner typed, so 「life expectancy」 fetched nothing and the rank then said
-           the metric was unavailable — a real metric reported as missing data. */
-        case 'rank': { await ensureData(); const _sp=metSpec(a.metric); if(!_sp) return unknownMetric(a.metric);
-          try{ await _fillMetric(_sp.key); }catch(_){}   /* (#R105) load lazy WB metrics (lifeExp/internet/tfr) before ranking so it never falsely reports "metric unavailable" */
-          const n=clampN(a.n); const list=rank(_sp.key,a.order==='bottom'?'bottom':'top',n); const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+lx(_sp.m.label); return R(!!(list&&list.length), listHtml(t,list,_sp.key)); }
-        case 'ratio': { await ensureData(); const _a=metSpec(a.metricA),_b=metSpec(a.metricB); if(!_a) return unknownMetric(a.metricA); if(!_b) return unknownMetric(a.metricB);
-          try{ await _fillMetric(_a.key); await _fillMetric(_b.key); }catch(_){}
-          const n=clampN(a.n); const list=ratio(_a.key,_b.key,a.order==='bottom'?'bottom':'top',n); const t=lx(_a.m.label)+' / '+lx(_b.m.label); return R(!!(list&&list.length), listHtml(t,(list||[]).map(r=>({code:r.code,name:r.name,val:r.val})),'_ratio')); }
-        case 'relate': { await ensureData(); const _y=metSpec(a.metricY),_x=metSpec(a.metricX); if(!_y) return unknownMetric(a.metricY); if(!_x) return unknownMetric(a.metricX);
-          try{ await _fillMetric(_y.key); await _fillMetric(_x.key); }catch(_){}
-          const n=clampN(a.n); const list=relate(_y.key,_x.key,a.find==='high'?'high':'low',n);
-          const t=(a.find==='high'?L('High ','高い ','Hoch ','Высокий ','Alto '):L('Low ','低い ','Niedrig ','Низкий ','Bajo '))+lx(_y.m.label)+' '+L('relative to','に対する','relativ zu','относительно','en relación con')+' '+lx(_x.m.label);
-          return R(!!(list&&list.length), listHtml(t,list,_y.key)); }
-        case 'mapMetric': { await ensureData(); const _sp=metSpec(a.metric); if(!_sp) return unknownMetric(a.metric);
-          try{ await _fillMetric(_sp.key); }catch(_){}   /* (#R740) lifeExp/internet/tfr arrive from the World Bank on demand — shade AFTER they are in countryStats, or a real metric reports "not enough data" */
-          return drawChoro(_sp.key,a.order,a.color); }
-        case 'theme': { const m=({dark:'dark',light:'light',auto:'auto',system:'auto'})[String(a.mode||'').toLowerCase()]||'auto'; const ok=setSel('setting-theme',m); try{ if(typeof HOST.userTheme!=='undefined'){ HOST.userTheme=m; if(typeof applyTheme==='function') applyTheme(); } }catch(_){} return R(ok||(typeof HOST.userTheme!=='undefined'&&HOST.userTheme===m), note('✓ '+L('Theme','テーマ','Thema','Тема','Tema')+': '+m)); }
-        case 'accent': {   /* (#R114) recolour the UI accent (--primary-color) */
-          const raw=String(a.color||a.value||a.mode||a.name||'').trim().toLowerCase();
-          const NAMED={blue:'#0a84ff',indigo:'#5e5ce6',purple:'#af52de',violet:'#af52de',magenta:'#bf5af2',pink:'#ff2d55',rose:'#ff2d55',red:'#ff3b30',orange:'#ff9500',amber:'#ff9500',green:'#34c759',teal:'#30b0c7',cyan:'#30b0c7',mint:'#00c7be',graphite:'#8e8e93',gray:'#8e8e93',grey:'#8e8e93'};
-          let val=null;
-          if(/^(default|reset|auto|none|off)$/.test(raw)) val='default';
-          else if(/^#[0-9a-f]{6}$/.test(raw)) val=raw;
-          else if(/^#[0-9a-f]{3}$/.test(raw)) val='#'+raw.slice(1).split('').map(c=>c+c).join('');
-          else if(NAMED[raw]) val=NAMED[raw];
-          if(!val) return R(false, warn('⚠ '+L('Unknown color','不明な色','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color||a.value||a.mode||'')));
-          try{ window.imAccent=val; if(typeof applyAccent==='function') applyAccent(); if(typeof window._syncAccentPicker==='function') window._syncAccentPicker(); if(typeof saveSettings==='function') saveSettings(); }catch(_){}
-          return R(true, note(L('Accent color','アクセントカラー','Akzentfarbe','Акцентный цвет','Color de acento')+': '+(val==='default'?L('default','デフォルト','Standard','по умолчанию','predeterminado'):val))); }
-        /* (#R318) NINE, FROM THE REGISTRY. The hand-written table below covered five, so 「한국어로して」
-           and «passe en français» were answered with 「非対応の言語」 by an app that has both. Every
-           spelling a language row knows — its code, its aliases, its own name, its English name — now
-           resolves, and a tenth language needs no edit here. */
-        case 'language': { const lg=_langCode(a.lang); if(lg){ let ok=false; try{ setLang(lg); ok=true; }catch(_){ ok=clickId('lang-'+lg); } return R(ok, note('✓ '+L('Language','言語','Sprache','Язык','Idioma')+': '+lg)); } return R(false, warn('⚠ '+L('Unsupported language','非対応の言語','Sprache nicht unterstützt','Язык не поддерживается','Idioma no admitido')+': '+esc(a.lang||''))); }
-        case 'terrain3d': { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on'))+_featTogHtml('terrain3d'):warn('⚠')); }
-        case 'grid': { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on'))+_featTogHtml('grid'):warn('⚠')); }
-        case 'resetNorth': { const ok=clickId('btn-compass'); return R(ok, ok?note('✓ '+L('Reset north','北を上に','Norden zurücksetzen','Сброс на север','Restablecer norte')):warn('⚠')); }
-        case 'zoom': { let tz=null; try{ const GE=IntMapGeoEngine.camera; if(a.to!=null){ tz=+a.to; GE.zoomTo(tz,{duration:600}); } else if(a.delta!=null){ tz=GE.getZoom()+(+a.delta); GE.zoomTo(tz,{duration:400}); } else if(String(a.dir||'')==='out'){ tz=GE.getZoom()-1; GE.zoomOut(); } else { tz=GE.getZoom()+1; GE.zoomIn(); } }catch(_){}   /* (#R160) zoom control via IntMapGeoEngine (renderer abstraction) */
-          /* (#R61) report the TARGET, not the pre-animation zoom (the old note read the camera mid-flight and
-             printed a stale value — a false "done" report). */
-          return R(true, note('✓ '+L('Zoom','ズーム','Zoom','Зум','Zoom')+' → '+(tz!=null&&isFinite(tz)?(+tz).toFixed(1):IntMapGeoEngine.camera.getZoom().toFixed(1)))); }
-        case 'bearing': { let tb=null; try{ const GE=IntMapGeoEngine.camera; const DIRB={north:0,n:0,northeast:45,ne:45,east:90,e:90,southeast:135,se:135,south:180,s:180,southwest:225,sw:225,west:270,w:270,northwest:315,nw:315,'北':0,'北東':45,'東':90,'南東':135,'南':180,'南西':225,'西':270,'北西':315}; const dd=DIRB[String(a.dir||a.toward||'').toLowerCase().trim()]; tb=(a.deg!=null)?+a.deg:(dd!=null?dd:(a.delta!=null?(GE.getBearing()+(+a.delta)):0)); GE.easeTo({bearing:tb,pitch:a.pitch!=null?+a.pitch:GE.getPitch(),duration:600}); }catch(_){}   /* (#R152/#R160) camera read+drive via IntMapGeoEngine (renderer abstraction) */
-          return R(true, note('✓ '+L('Bearing','方位','Ausrichtung','Азимут','Rumbo')+' → '+Math.round(tb!=null&&isFinite(tb)?tb:IntMapGeoEngine.camera.getBearing())+'°')); }
-        /* (#R171) the ceiling comes from the CAMERA now, not a literal 85 — with Settings ▸ "Map tilt limit"
-           set to Unlimited, Atlas can tilt as far as the map itself can, and an angle past the top is resolved
-           into the equivalent (pitch, bearing) instead of being clamped flat. */
-        case 'pitch': { let tp=null; try{ const GE=IntMapGeoEngine.camera; tp=(a.deg!=null)?+a.deg:(a.delta!=null?(GE.getPitch()+(+a.delta)):(a.on===false?0:60));
-            const _T=window.IntMapTilt, _cap=_T?_T.ceiling():85, opt={duration:600};
-            if(_T&&_T.isUnlimited()&&tp>180){ const r=_T.fromAngle(tp,GE.getBearing()); opt.pitch=r.pitch; opt.bearing=r.bearing; }
-            else { tp=Math.max(0,Math.min(_cap,tp)); opt.pitch=tp; }
-            GE.easeTo(opt); }catch(_){}   /* (#R152/#R160) camera read+drive via IntMapGeoEngine */
-          return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:IntMapGeoEngine.camera.getPitch())+'°')); }
-        case 'pan': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=GE().render.container&&GE().render.container(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; GE().camera.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
-        case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
-          const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.atlas':'btn-community','tab.community':'btn-community'}[cmd];
-          if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
-        case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))+_featTogHtml('countryInfo')); } return R(false, warn('⚠')); }
-        case 'selectCountry': { await ensureData(); const c=await resolveCountry(a.country||a.name||a.place); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} if(c.ll){ try{ GE().camera.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(GE().camera.getZoom(),3.5),duration:1000}); }catch(_){} } return R(true, note('🏳 '+esc(c.name))); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.name||a.place||''))); }
-        case 'timeSeries': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} let ok=false; try{ if(window.IntMapTimeSeries&&window.IntMapTimeSeries.open){ window.IntMapTimeSeries.open(); ok=true; } }catch(_){} return R(ok, ok?note('📈 '+L('Time-series','時系列','Zeitreihe','Динамика','Series temporales')+': '+esc(c.name)):warn('⚠')); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||''))); }
-        case 'isolate': { if(a.on===false||/^(off|exit|clear)$/i.test(String(a.country||''))){ try{ window.IntMapIsolate&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Isolate off','分離解除','Isolierung aus','Изоляция выкл','Aislar: off'))); } const c=await resolveCountry(a.country||a.place); if(c){ if(c.ll){ try{ GE().camera.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(GE().camera.getZoom(),4)}); }catch(_){} } let ok=false; try{ if(c.code&&window.IntMapIsolate&&window.IntMapIsolate.enter){ window.IntMapIsolate.enter(c.code); ok=true; } else if(c.ll&&window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(c.ll.lng,c.ll.lat,c.name); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Isolate','分離','Isolieren','Изолировать','Aislar')+': '+esc(c.name||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.country||a.place||''))); }
-        case 'los': { const ll=await geocode(a.place||a.from); if(ll){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),8)}); }catch(_){} await window.IntMapLazy.need('los'); let ok=false; try{ if(window.IntMapLOS&&window.IntMapLOS.open){ if(window.IntMapLOS.setMode) window.IntMapLOS.setMode('los');   /* (#R296) the merged panel has two analyses; 「見通し線」 is this one */
-          window.IntMapLOS.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('📡 '+L('Line of sight','見通し線','Sichtlinie','Линия видимости','Línea de visión')+': '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||a.from||''))); }
-        /* (#R118) POPULATION inside an area — drawn polygon / radius circles / a named place / an explicit radius
-           around a place. Real WorldPop 100m-grid sum (IntMapPopArea), never an AI guess. */
-        case 'population': {
-          try{
-            let geom=null, label='';
-            const tgt=String(a.target||a.area||'').toLowerCase();
-            if(tgt==='drawn'||tgt==='area'||tgt==='polygon'||(!a.place&&typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length>=3&&!a.radiusKm)){
-              if(typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints.length>=3){ geom={type:'Polygon',coordinates:[[...HOST.measurePoints,HOST.measurePoints[0]]]}; label=L('the drawn area','描画した範囲','das gezeichnete Gebiet','нарисованная область','el área dibujada'); } }
-            if(!geom&&(tgt==='radius'||tgt==='circle'||(!a.place&&typeof HOST.radiusItems!=='undefined'&&HOST.radiusItems&&HOST.radiusItems.length))&&typeof HOST.radiusItems!=='undefined'&&HOST.radiusItems&&HOST.radiusItems.length&&!a.place){
-              let tot=0; for(const c of HOST.radiusItems){ const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r2=await window.IntMapPopArea.estimate(g); tot+=r2.pop; }
-              return R(true, note('👥 '+L('Population inside the circle(s): ','円内の人口: ','Bevölkerung im Kreis: ','Население в круге: ','Población en el círculo: ')+'<b>'+tot.toLocaleString()+'</b> · WorldPop 2020 (100m)'+(HOST.radiusItems.length>1?(' · '+L('sum of circles (overlaps counted twice)','複数円の合算（重なりは二重計上）','Summe der Kreise','сумма кругов','suma de círculos')):''))); }
-            if(!geom&&a.place){ const km=+a.radiusKm||+a.km||0;
-              if(km>0){ const ll=await geocode(a.place); if(!ll) return R(false, warn('⚠ '+esc(a.place)));
-                geom=window.IntMapPopArea.circleGeom([ll.lng,ll.lat],km); label=esc(ll.name||a.place)+' · '+km+' km'; }
-              else{ let e=null; try{ e=await _nomExtent(a.place); }catch(_){}
-                if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'')){ geom=e.geojson; label=esc(e.name||a.place); }
-                else return R(false, warn('⚠ '+L('No boundary polygon found for','境界ポリゴンが見つかりません','Keine Grenze gefunden für','Не найдена граница','Sin límite para')+' '+esc(a.place))); } }
-            if(!geom) return R(false, warn('⚠ '+L('Draw an area / place a circle first, or name a place.','先に範囲を描くか円を置くか、地名を指定してください。','Erst Gebiet zeichnen / Kreis setzen oder Ort nennen.','Сначала нарисуйте область/круг или укажите место.','Dibuja un área / círculo o indica un lugar.')));
-            const r=await window.IntMapPopArea.estimate(geom);
-            return R(true, note('👥 '+(label?label+' — ':'')+L('population: ','人口: ','Bevölkerung: ','население: ','población: ')+'<b>'+r.pop.toLocaleString()+'</b> · '+esc(r.src)+' '+r.year));
-          }catch(e){ return R(false, warn('⚠ '+L('Population lookup failed (WorldPop busy) — try again.','人口を取得できませんでした（WorldPop混雑）— 再試行してください。','Bevölkerungsabfrage fehlgeschlagen — erneut.','Не удалось получить население — повторите.','Fallo al obtener población — reintenta.'))); } }
-        /* (#R119) SATELLITE CHANGE DETECTION inside the Atlas thread (absorbs the standalone panel feature —
-           same capture + vision pipeline, result returned as a normal reply with both frames embedded). */
-        case 'satelliteCompare': {
-          if(!window._imSatCapture) return R(false, warn('⚠'));
-          if(a.place){ const ll=await geocode(a.place); if(ll){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),11),duration:800}); }catch(_){} await new Promise(r=>setTimeout(r,1400)); } }
-          const va=String(a.dateA||a.before||a.from||'').slice(0,10), vb=String(a.dateB||a.after||a.to||'').slice(0,10);
-          if(!va||!vb) return R(false, warn('⚠ '+L('Give two dates (dateA / dateB, YYYY-MM-DD).','2つの日付（dateA / dateB、YYYY-MM-DD）を指定してください。','Zwei Daten angeben (dateA/dateB).','Укажите две даты (dateA/dateB).','Indica dos fechas (dateA/dateB).')));
-          const cap=await window._imSatCapture(va,vb);
-          if(cap.err) return R(false, warn('⚠ '+esc(cap.err)));
-          let txt2=''; try{ txt2=await window._imSatAnalyze(va,vb,cap.imgA,cap.imgB); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
-          let hh='<div style="display:flex;gap:6px;margin:4px 0;"><figure style="margin:0;flex:1;"><img src="'+esc(IntMapSafe.url(cap.imgA,{allowData:true}))+'" style="width:100%;border-radius:8px;" alt=""><figcaption style="font-size:10px;color:var(--text-muted);text-align:center;">'+esc(va)+'</figcaption></figure>'
-            +'<figure style="margin:0;flex:1;"><img src="'+esc(IntMapSafe.url(cap.imgB,{allowData:true}))+'" style="width:100%;border-radius:8px;" alt=""><figcaption style="font-size:10px;color:var(--text-muted);text-align:center;">'+esc(vb)+'</figcaption></figure></div>'
-            +'<div style="font-size:12px;line-height:1.6;">'+mdMini(txt2||'')+'</div>';
-          return R(true, hh); }
-        /* (#R119) LAYER DATA — read the REAL values of displayed layers at a point, or the real features in view.
-           This is the query side of the IntMapLayers contract. */
-        case 'layerData': {
-          const LY=window.IntMapLayers; if(!LY) return R(false, warn('⚠'));
-          const asked=a.layer?[String(a.layer)]:(Array.isArray(a.layers)?a.layers.map(String):null); const doors=asked?asked.map(s=>({q:s,d:layerDoor(s)})):null; const ids=doors?doors.map(x=>x.d&&x.d.read).filter(Boolean):null;   /* ⚠⚠⚠ (#R802) THE NAME ATLAS HOLDS IS THE PANEL'S NAME, AND THIS DOOR ONLY EVER ACCEPTED THE READING REGISTER'S OWN ids. Measured on production 2026-09-17, 「Compare the population density of Tokyo, Delhi and Lagos on the map.」: `data.layerValues` ran SEVENTEEN times, failed seventeen times and died at `step_budget`, while 「Population density (1 km grid)」 was on and drawn — `REG['Population density (1 km grid)']` is undefined, so `sampleAt` skipped it and this case told a reader who already had the layer on to turn a layer on. `layerDoor` reconciles the two registers; the sentences below say WHICH of five things went wrong. */
-          /* point resolution: explicit place → geocode; "here" pin; else map centre */
-          let px=null,py=null,pname='';
-          if(a.place){ const ll=await geocode(a.place); if(ll){ px=ll.lng; py=ll.lat; pname=ll.name||a.place; } else return R(false, warn('⚠ '+L('IntMap could not place «','IntMap は「','IntMap konnte «','IntMap не смог найти «','IntMap no pudo ubicar «')+esc(String(a.place))+L('», so there is no point to read the layers at. Give coordinates, or name a place IntMap holds.','」を地図上に特定できなかったため、レイヤーを読む地点がありません。座標を指定するか、IntMap が持つ地名で言い直してください。','» verorten — kein Punkt, an dem die Ebenen gelesen werden könnten.','» — нет точки для чтения слоёв.','», así que no hay punto donde leer las capas.'))); }   /* ⚠⚠⚠ (#R802) A NAMED PLACE THAT DID NOT RESOLVE IS NOT 「the map centre」. Measured on this round's local build: `layerData {place:'Korean Peninsula'}` and `{place:'Amazon Basin'}` fell through to the camera centre and answered 「◈ map center — BWh · Hot desert」 — a reading of wherever the reader happened to be looking, handed back as an answer about the place they named. Falling through to the centre is right when NO place was named (#R119's 「here」 reading) and wrong the moment one was: it is the same sentence the layer half of this case says one line down about a named layer that resolved to nothing. */
-          if(px==null&&a.lng!=null&&isFinite(+a.lng)){ px=+a.lng; py=+a.lat; }
-          if(px==null&&_herePoint&&isFinite(_herePoint.lng)){ px=_herePoint.lng; py=_herePoint.lat; pname=_herePoint.name||''; }
-          if(px==null){ const c3=GE().camera.getCenter(); px=c3.lng; py=c3.lat; pname=L('map center','地図中心','Kartenmitte','центр карты','centro del mapa'); }
-          const rows=(asked&&!ids.length)?[]:(await LY.sampleAt(px,py,(ids&&ids.length)?ids:null)); const vals=rows.filter(v=>v&&v.value!=null); const featLines=[];   /* (#R763) a row that was asked and could not answer carries `failed` and no value — 「訊けなかった」 is not a reading */   /* ⚠ (#R802) a NAMED layer that resolved to nothing is NOT widened back to 「all the active layers」: that answers a question nobody asked. */
-          ((ids&&ids.length)?ids:LY.active()).forEach(id=>{ try{ const fs=LY.featuresIn(id,null); if(fs&&fs.length){ const nm2=(LY.state(id)||{}).label||id;
-            const names=fs.slice(0,8).map(f=>{ const p2=f.properties||{}; const nm3=String(p2.name||((p2.mag!=null&&p2.place)?p2.place:'')||p2.title||p2.NAME||p2.callsign||p2.ident||p2.place||'').slice(0,40); return (p2.mag!=null&&nm3)?('M'+(+p2.mag).toFixed(1)+' '+nm3).slice(0,46):nm3; }).filter(Boolean);   /* (#R120) aircraft have a callsign, not a name; (#R121) quakes = M{mag} + place (their `title` already repeats the magnitude) */
-            featLines.push(nm2+': '+fs.length+(names.length?(' — '+names.join(', ')+(fs.length>names.length?', …':'')):'')); } }catch(_){} });
-          if(!vals.length&&!featLines.length){ const miss=(doors||[]).filter(x=>!x.d), mute=(doors||[]).filter(x=>x.d&&!x.d.read), off=(doors||[]).filter(x=>x.d&&x.d.read&&!x.d.on), nore=rows.filter(v=>v&&v.asked&&v.value==null&&!v.failed), blew=rows.filter(v=>v&&v.failed); const _dl=xs=>xs.map(x=>esc(x.d?x.d.label:x.q)).join(', '), _rl=xs=>xs.map(v=>esc(v.label||v.id)).join(', ');   /* ⚠ (#R802) FIVE DIFFERENT FACTS, FIVE DIFFERENT SENTENCES. The one sentence this case used to print told a reader with the layer already on to turn it on — the shape .agents/rules/one-pass-or-a-reason.md §2-1 calls 「the observer lied」, and Atlas rephrased and fired again seventeen times. ⚠ NONE OF THEM MOVES THE CAMERA: this capability is `read` in the CAPS table and must not change the map, so the fourth one STATES the repair and leaves the next step to Atlas. */
-            if(miss.length) return R(false, warn('⚠ '+L('There is no layer called '+_dl(miss)+'. Name it as it appears in the layer panel, or ask for the layer list first.','「'+_dl(miss)+'」というレイヤーはありません。レイヤーパネルの表記で指定するか、先にレイヤー一覧を尋ねてください。','Es gibt keine Ebene namens '+_dl(miss)+'. Verwende die Bezeichnung aus dem Ebenen-Panel oder frage zuerst die Ebenenliste ab.','Слоя с именем '+_dl(miss)+' нет. Укажите название как в панели слоёв или сначала запросите список слоёв.','No existe ninguna capa llamada '+_dl(miss)+'. Usa el nombre del panel de capas o pide primero la lista de capas.')));   if(mute.length) return R(false, warn('⚠ '+L(_dl(mute)+': IntMap draws this layer but does not sample it at a point, so there is no value to read here. Ask for the features in view instead.',_dl(mute)+'：IntMap はこのレイヤーを描画しますが、地点の値としては提供していないため、ここで読み取れる値はありません。表示範囲内の地物を尋ねてください。',_dl(mute)+': IntMap zeichnet diese Ebene, tastet sie aber nicht punktweise ab — hier gibt es keinen Wert zu lesen.',_dl(mute)+': IntMap рисует этот слой, но не измеряет его в точке — значения здесь нет.',_dl(mute)+': IntMap dibuja esta capa pero no la muestrea en un punto, así que aquí no hay valor que leer.')));   if(off.length) return R(false, warn('⚠ '+L(_dl(off)+' can be read, but it is switched off, so nothing is loaded for it. Turn it on, then ask again.','「'+_dl(off)+'」は読み取り可能ですが、いまオフなのでデータが読み込まれていません。オンにしてからもう一度お尋ねください。',_dl(off)+' ist lesbar, aber ausgeschaltet — schalte sie ein und frage erneut.',_dl(off)+' читается, но слой выключен — включите его и спросите снова.',_dl(off)+' se puede leer, pero está apagada — actívala y vuelve a preguntar.')));
-            if(nore.length) return R(false, warn('⚠ '+L(_rl(nore)+' was asked at '+esc(pname||(py.toFixed(3)+', '+px.toFixed(3)))+' and returned no value there. A raster layer only answers where its tiles are loaded, so if that point is off-screen or the map is zoomed out, move the map onto it first and ask again — this reading never moves the camera itself.','「'+_rl(nore)+'」に '+esc(pname||(py.toFixed(3)+', '+px.toFixed(3)))+' を問い合わせましたが、そこに値はありませんでした。ラスターのレイヤーはタイルが読み込まれている場所しか答えません。その地点が画面外、または縮尺が小さい場合は、先に地図をそこへ移動してからもう一度お尋ねください（この読み取り自体はカメラを動かしません）。',_rl(nore)+' wurde hier abgefragt und lieferte keinen Wert. Eine Rasterebene antwortet nur dort, wo ihre Kacheln geladen sind — bewege die Karte auf den Punkt und frage erneut.',_rl(nore)+' был опрошен здесь и не дал значения. Растровый слой отвечает только там, где загружены его тайлы — переместите карту на эту точку и спросите снова.',_rl(nore)+' fue consultada aquí y no devolvió valor. Una capa ráster solo responde donde sus teselas están cargadas — mueve el mapa sobre ese punto y vuelve a preguntar.')));   if(blew.length) return R(false, warn('⚠ '+L('Reading '+_rl(blew)+' failed at this point — the layer\'s own sampler threw. Try again in a moment.','「'+_rl(blew)+'」の読み取りに失敗しました（レイヤー側のサンプラが例外を返しました）。少し時間を置いてお試しください。','Das Lesen von '+_rl(blew)+' ist hier fehlgeschlagen — bitte gleich noch einmal versuchen.','Не удалось считать '+_rl(blew)+' в этой точке — повторите попытку.','La lectura de '+_rl(blew)+' falló en este punto — inténtalo de nuevo en un momento.')));
-            return R(false, warn('⚠ '+(LY.active().length?L('The layers that are on publish no readable value at this point.','現在オンのレイヤーは、この地点で読み取れる値を持っていません。','Die eingeschalteten Ebenen liefern an diesem Punkt keinen lesbaren Wert.','Включённые слои не дают читаемого значения в этой точке.','Las capas activas no dan ningún valor legible en este punto.'):L('No readable data on the active layers here. Turn a data layer on first.','ここで読み取れる表示中レイヤーのデータがありません。先にデータレイヤーをオンにしてください。','Keine lesbaren Layer-Daten hier.','Нет читаемых данных слоёв здесь.','Sin datos de capas legibles aquí.')   /* ⚠ (#R802) #R119's ORIGINAL SENTENCE, KEPT WORD FOR WORD — and now printed only on the ONE branch where it is true: no data layer is on at all, so 「turn a data layer on first」 asks for something the reader has not already done. Nine languages already carry this key (CONSTITUTION.md §0-3: narrowing what IntMap writes next is not licence to delete what a reader has); the four branches above are what used to be said in its place. */))); }
-          let hh=note('◈ '+esc(pname||(py.toFixed(3)+', '+px.toFixed(3))));
-          if(vals.length) hh+=note(vals.map(v=>'<b>'+esc(v.label)+'</b>: '+esc(String(v.value))).join('<br>'));   if(featLines.length) hh+=note(featLines.map(esc).join('<br>'));
-          return R(true, hh); }
-        case 'volcano': case 'volcanoFilter': return doVolcano(a);   case 'outbreaks': { const _r=await window.IntMapOutbreaks.run(a); return R(_r.ok,_r.html,_r.meta); }   /* (#R650) map.outbreaks — js/outbreaks.js owns the body for the same reason shakemap does: this file has no line left */   case 'heritage': case 'heritageFilter': return doHeritage(a);   /* (#R567) ON THIS LINE, not a new one: js/atlas-console.js stands at 4,908 against a ceiling of 4,910 that only ever comes down (#R199/#R318/#R491), and a subject whose answers are thirty lines long belongs in js/atlas-controls.js beside doVolcano anyway. */   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */   case 'radiationObserved': case 'radiationNear': return doRadiationObs(a);   /* (#R585) MEASURED radiation — the body is in js/atlas-controls.js for the same ceiling reason. ⚠ NOT the plume simulation, which is `sim`/`radiation` above; docs/RADIATION.md says why they must stay two answers */
-        /* (#R118) MAP-OBJECT operations by id (see IntMapObjects.list in the state context) */
-        case 'object': {
-          const O=window.IntMapObjects; if(!O||!O.list) return R(false, warn('⚠'));
-          const op=String(a.op||a.action||'list').toLowerCase();
-          if(op==='list'){ const ls=O.list(); return R(true, note(ls.length?ls.map(o=>o.kind+' · '+esc(o.name)+' <span style="color:var(--text-muted);">id='+esc(o.id)+'</span>').join('<br>'):L('No objects on the map.','地図上にオブジェクトはありません。','Keine Objekte.','Объектов нет.','Sin objetos.'))); }
-          let id=a.id!=null?String(a.id):null;
-          if(!id&&(a.kind||a.index!=null)){ const ls=O.list().filter(o=>!a.kind||o.kind===String(a.kind)); const idx=(a.index!=null?(+a.index-1):(ls.length-1)); if(ls[idx]) id=ls[idx].id; }
-          if(!id) return R(false, warn('⚠ '+L('Which object? Give its id (see the map-object list).','どのオブジェクト？idを指定してください。','Welches Objekt? id angeben.','Какой объект? Укажите id.','¿Qué objeto? Indica su id.')));
-          let ok=false;
-          if(op==='remove'||op==='delete') ok=O.remove(id);
-          else if(op==='focus'||op==='zoom') ok=O.focus(id);
-          else if(op==='rename') ok=O.rename(id,a.name||a.to||'');
-          return R(ok, ok?note('✓ '+op+' · '+esc(id)):warn('⚠ '+L('No object on the map has that id — it may already be gone','そのidのオブジェクトは地図上にありません（すでに消えている可能性があります）','Kein Objekt mit dieser id auf der Karte','На карте нет объекта с таким id','Ningún objeto del mapa tiene ese id')+': '+esc(id))); }   /* ⚠ (#R736) the failure arm printed the BARE INTERNAL ID and nothing else — measured in production, the reader was shown 「⚠ r_1789464310159_keui」 */
-        case 'isochrone': {   /* ⚠ (#R278) lng/lat used to be DROPPED here: every sibling case (rfCoverage, earthquake, tsunami, nightSky, sunHours…) reads explicit coordinates first, this one only ever called geocode(a.place||…), and geocode('') falls back to the last place or the map centre. So {type:'isochrone',lng:136.934,lat:35.133} answered «✓ 60分の到達圏» and drew it at 10°E 20°N — measured, not supposed. A wrong place reported as success is the same lie as a circle reported as a reach. */
-          /* ⚠ (#R299) …AND WITH NO PLACE NAMED IT ASKED `geocode('')`, whose documented answer is the last place or THE MAP CENTRE
-             (js/atlas-geo-resolve.js): 「到達圏」 alone drew an area around whatever was on screen and reported it. A name, a coordinate or the reader's own pinned point — otherwise the question comes back. */
-          const _org=a.place||a.from||a.origin||a.center; const ll=(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat))?{lng:+a.lng,lat:+a.lat,name:String(a.place||a.from||'')}:(_org?await geocode(_org):((typeof _herePoint!=='undefined'&&_herePoint)?_herePoint:null)); if(!ll) return R(false, warn('⚠ '+whereMiss(L('From where? Give a place.','どこから？地点を指定してください。','Von wo? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.')+' '+esc(a.place||a.from||''), a.place||a.from||a.origin||a.center)));
-          const rawM=String(a.mode||a.profile||a.by||'').toLowerCase();
-          if(/transit|train|rail|metro|subway|tram|電車|鉄道|地下鉄|列車|公共/.test(rawM)){   /* (#R91) rail reachability isochrone */
-            let tmin=Array.isArray(a.minutes)?Math.max.apply(null,a.minutes.map(Number)):(+a.minutes||+a.time||+a.mins||60);
-            try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(8,11-tmin/20)}); }catch(_){}
-            let tr=null; try{ tr=await window.IntMapTransitReach.open({lng:ll.lng,lat:ll.lat},tmin); }catch(_){}
-            if(tr&&tr.ok) return R(true, note('🚆 '+esc(ll.name||a.place||'')+' — '+tr.minutes+' '+L('min by rail','分・鉄道到達圏','Min per Bahn','мин по ж/д','min en tren'))+note(tr.stations.length+' '+L('stations reachable within the time budget, riding the REAL OSM rail network (edge time = length ÷ line-class speed) — colored green→orange by minutes. Not a live timetable.','駅に時間内で到達可能。実在のOSM鉄道網を辿り（所要＝距離÷路線種別速度）、緑→橙で所要時間を色分け。実時刻表ではありません。','Bahnhöfe im Zeitbudget erreichbar (echtes OSM-Bahnnetz).','станций достижимо (реальная ж/д сеть OSM).','estaciones alcanzables (red ferroviaria real OSM).')));
-            return R(false, warn('🚆 '+L('No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.','この時間で到達できる鉄道が見つかりません（またはデータ混雑）。駅の近くや車・徒歩をお試しください。','Kein Bahnnetz erreichbar.','Ж/д недоступна.','Sin ferrocarril alcanzable.')));
-          }
-          const mode=/walk|foot|徒歩|pedestr|zu ?fu|пешк|a ?pie/.test(rawM)?'pedestrian':(/bike|bicycle|cycl|自転車|\brad\b|вело|bici/.test(rawM)?'bicycle':'auto');
-          let mins=[]; if(Array.isArray(a.minutes)) mins=a.minutes.map(Number); else if(a.minutes!=null) mins=[+a.minutes]; else if(a.time!=null) mins=[+a.time]; else if(a.mins!=null) mins=[+a.mins];
-          const _asked=mins.length; mins=mins.filter(x=>isFinite(x)&&x>0&&x<=120); if(!mins.length&&_asked) return R(false, warn('🎯 '+L('The reachable area is computed for 1 to 120 minutes — ask again inside that range.','到達圏は1〜120分の範囲で計算します。その範囲で指定してください。','Erreichbarkeit wird für 1 bis 120 Minuten berechnet — bitte in diesem Bereich fragen.','Зона доступности считается на 1–120 минут — укажите время в этом диапазоне.','El área alcanzable se calcula de 1 a 120 minutos — pídelo dentro de ese rango.')));   /* ⚠ (#R278) it used to silently fall back to [15,30] here, so 「3時間で行ける範囲」 drew a 30-minute area under a ✓ — the same lie as the circle */ if(!mins.length) mins=[15,30];
-          try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(9,12-Math.max.apply(null,mins)/15)}); }catch(_){}
-          let r=null; try{ r=await window.IntMapIsochrone.run({lng:ll.lng,lat:ll.lat},{mode,minutes:mins}); }catch(_){}
-          const ic=mode==='pedestrian'?'🚶':mode==='bicycle'?'🚲':'🚗';
-          if(r&&r.ok) return R(true, note('🎯 '+ic+' '+esc(ll.name||a.place||'')+' — '+r.minutes.join(' / ')+' '+L('min reachable','分の到達圏','Min erreichbar','мин зона','min alcanzable'))
-            +note(L('Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the 🎯 panel.','実際の道路網に沿った到達圏（Valhalla／OpenStreetMap）— 車・徒歩・自転車で、距離の円ではありません。モードと時間は🎯パネルで調整できます。','Erreichbarkeit entlang des echten Straßennetzes (Valhalla/OSM) — Auto/Fuß/Rad, kein Distanzkreis.','Зона доступности по реальной дорожной сети (Valhalla/OSM) — авто/пешком/вело, не круг.','Área alcanzable por la red vial real (Valhalla/OSM) — coche/pie/bici, no un círculo.')));
-          return R(false, warn('🎯 '+((r&&r.reason==='render')?L('The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.','到達圏は計算できましたが、地図レイヤーを作成できませんでした（地図の読み込み中）— 少し待って再試行してください。','Die Erreichbarkeit wurde berechnet, aber die Kartenebene konnte nicht angelegt werden (Kartenstil lädt noch) — gleich erneut versuchen.','Зона доступности рассчитана, но слой карты не удалось создать (стиль карты ещё загружается) — повторите через момент.','El área alcanzable se calculó, pero no se pudo crear la capa del mapa (el estilo aún se está cargando) — inténtalo en un momento.'):L('Could not compute the reachable area (routing service busy) — try again.','到達圏を算出できませんでした（サービス混雑）— 再試行してください。','Erreichbarkeit fehlgeschlagen — erneut versuchen.','Не удалось рассчитать — попробуйте снова.','No se pudo calcular — reintenta.')))); }
-        case 'route': { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ GE().camera.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note('🚢 '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn('⚠ '+L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
-        case 'optimizeRoute': {
-          let names=[]; if(Array.isArray(a.places)) names=a.places; else if(Array.isArray(a.points)) names=a.points; else if(Array.isArray(a.stops)) names=a.stops; else if(typeof a.places==='string') names=a.places.split(/[,、，]/); else if(typeof a.stops==='string') names=a.stops.split(/[,、，]/);
-          names=names.map(x=>String(x).trim()).filter(Boolean).slice(0,12);
-          const rawM2=String(a.mode||a.profile||'').toLowerCase(); const mode2=/walk|foot|徒歩|zu ?fu|пешк|a ?pie/.test(rawM2)?'walking':(/bike|bicycle|cycl|自転車|\brad\b|вело|bici/.test(rawM2)?'cycling':'driving');
-          let pts=[];
-          if(names.length){ for(const nm of names){ try{ const g=await geocode(nm); if(g) pts.push({lng:g.lng,lat:g.lat,name:g.name||nm}); }catch(_){} } }
-          else if(typeof HOST.userPins!=='undefined' && HOST.userPins && HOST.userPins.length>=2){ pts=HOST.userPins.map((p,i)=>({lng:p.lng,lat:p.lat,name:L('Pin','ピン','Pin','Метка','Pin')+' '+(i+1)})); }
-          if(pts.length<2) return R(false, warn('⚠ '+L('Give me at least 2 places to visit (comma-separated), or drop pins first.','巡回する地点を2つ以上（カンマ区切り）指定するか、先にピンを置いてください。','Mind. 2 Orte (kommagetrennt) angeben oder Pins setzen.','Укажите ≥2 места через запятую или поставьте метки.','Indica ≥2 lugares separados por comas o coloca pines.')));
-          const ord=_tspOrder(pts); const seq=ord.map(i=>pts[i]);
-          const mi=mode2==='walking'?'🚶':mode2==='cycling'?'🚲':'🚗';
-          let r=null; try{ r=await window.IntMapRouting.route({lng:seq[0].lng,lat:seq[0].lat},{lng:seq[seq.length-1].lng,lat:seq[seq.length-1].lat},{mode:mode2,via:seq.slice(1,-1).map(p=>({lng:p.lng,lat:p.lat}))}); }catch(_){}
-          const listHtml=seq.map((p,i)=>'<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--primary-fill);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+(i+1)+'</span><span style="flex:1;min-width:0;font-size:12.5px;">'+esc(p.name)+'</span></div>').join('');
-          let summ=''; if(r&&r.ok&&r.distance!=null){ const km=r.distance/1000, mn=Math.round(r.duration/60), h=Math.floor(mn/60), rm=mn%60; summ=mi+' <b>'+(h?(h+' h '+rm+' min'):(mn+' min'))+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km'; }
-          else { try{ GE().camera.fitBounds([[Math.min.apply(null,seq.map(p=>p.lng)),Math.min.apply(null,seq.map(p=>p.lat))],[Math.max.apply(null,seq.map(p=>p.lng)),Math.max.apply(null,seq.map(p=>p.lat))]],{padding:70,duration:900}); }catch(_){} }
-          return R(true, note('🧭 '+L('Optimized order','最短順路','Optimierte Reihenfolge','Оптимальный порядок','Orden óptimo')+' · '+pts.length+' '+L('stops','地点','Stopps','точек','paradas'))
-            +(summ?('<div style="font-size:13px;margin:3px 0 4px;">'+summ+'</div>'):'')
-            +'<div>'+listHtml+'</div>'
-            +note(r&&r.ok? L('Ordered shortest-first (nearest-neighbor + 2-opt), then driven on the OSM road network (OSRM). The first stop is fixed as the start.','最近傍＋2-optで最短順に並べ替え、OSMの道路網（OSRM）で経路化。最初の地点を起点に固定します。','Kürzeste Reihenfolge (Nächster-Nachbar + 2-opt), auf dem OSM-Straßennetz (OSRM).','Кратчайший порядок (ближайший сосед + 2-opt) по дорожной сети OSM (OSRM).','Orden más corto (vecino más cercano + 2-opt) por la red vial OSM (OSRM).')
-              : L('Ordered shortest-first (nearest-neighbor + 2-opt). Road routing is busy — the optimized ORDER is shown; try again for the drawn route.','最近傍＋2-optで最短順に並べ替えました。道路経路サービスが混雑中 — 順路は表示済み、描画は再試行してください。','Reihenfolge optimiert; Straßenrouting ausgelastet.','Порядок оптимизирован; дорожный маршрут занят.','Orden optimizado; el enrutamiento está ocupado.'))); }
-        case 'directions': {
-          /* (#R85d) FULL Google/Apple-Maps-style routing UI INSIDE the Atlas message — NO popup ("よけいなポップアップを
-             増設するな。Atlas内のメッセージでUIやれ"). */
-          /* ⚠⚠ (#R296) 「交通手段選択タブを表示しないように」「返答の冒頭の文言は削除」 — both were the header:
-             the question restated and a second mode switch in a transcript. EMPTIED not deleted: six branches prefix it. */
-          /* ⚠⚠ (#R299) A BARE 「経路案内」 OPENS THE PANEL — the parser rule that lands here says so in as many words («open the empty
-             directions panel»), and this branch only ever printed a sentence: the one ask that is a REQUEST FOR THE TOOL got told to type more. `IntMapRouteUI` is lazy — fetched as js/map-ui.js's row does. */
-          if(!a.from&&!a.to&&!a.place){ let ok=false; try{ await window.IntMapLazy.need('routeUi'); ok=!!(window.IntMapRouteUI&&window.IntMapRouteUI.open()); }catch(_){}
-            return R(true, note('🧭 '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))+(ok?note(L('The route planner is open on the map — fill in the two fields there, or say the places here.','経路パネルを地図上に開きました。パネルに入力するか、ここで地点を伝えてください。','Der Routenplaner ist geöffnet — dort ausfüllen oder die Orte hier nennen.','Планировщик маршрута открыт — заполните поля там или назовите места здесь.','El planificador de rutas está abierto — complétalo allí o dime los lugares aquí.')):'')); }
-          /* (#R125) endpoint resolution hardened for rail asks: an exact Shinkansen-station name resolves to the
-             REAL station (geocode fuzzy-matched 仙台駅 to a POI named 仙太鮨…), and a query ending in 駅/station
-             whose geocode hit doesn't even CONTAIN the base name retries with the base (city) name instead. */
-          const _geoEP=async q=>{ q=String(q||'').trim(); if(!q) return null;
-            try{ const st=window.IntMapRouting.stationLL&&window.IntMapRouting.stationLL(q); if(st) return st; }catch(_){}
-            let g=null; try{ g=await geocode(q); }catch(_){}
-            const m=q.match(/^(.{2,}?)(駅|\s+station)$/i);
-            if(m){ const base=m[1].trim();
-              if(!g||(g.name&&String(g.name).indexOf(base)<0)){ try{ const g2=await geocode(base); if(g2) g=g2; }catch(_){} } }
-            /* (#R126) 経路10-10 §6.3: SAME-NAME disambiguation — if the hit is far from the current view (>500 km)
-               and a same-name candidate exists near the view, prefer the near one ("Potsdam" from a Germany view must
-               be Potsdam DE, not Potsdam NY; verified the old path picked the US village). */
-            try{ if(g&&GE().hasRenderer()&&GE().camera.getCenter){ const c=GE().camera.getCenter(); const dKm=(a,b)=>{const R=6371,x=(b[0]-a[0])*Math.PI/180*Math.cos((a[1]+b[1])/2*Math.PI/180),y=(b[1]-a[1])*Math.PI/180;return R*Math.sqrt(x*x+y*y);};
-              if(dKm([c.lng,c.lat],[+g.lng,+g.lat])>500&&window.IntMapRouting.geoNear){ const n=await window.IntMapRouting.geoNear(q);
-                if(n&&dKm([c.lng,c.lat],[+n.lng,+n.lat])<dKm([c.lng,c.lat],[+g.lng,+g.lat])/3) g=n; } } }catch(_){}
-            return g; };
-          const A=await _geoEP(a.from); const B=await _geoEP(a.to||a.place||a.destination);   /* the journey rides on the result (js/atlas-result-facts.js routeFacts) — with only the cards, Atlas re-ran the route seven times for the duration */
-          const rawMode=String(a.mode||a.profile||(a.type==='walkingRoute'?'walking':a.type==='transitRoute'?'transit':'')).toLowerCase();
-          const isTr=/transit|train|rail|public|metro|subway|tram|bus|ferry|電車|鉄道|地下鉄|バス|公共|列車/.test(rawMode);
-          const mode=isTr?'transit':(({car:'driving',drive:'driving',driving:'driving',foot:'walking',walk:'walking',walking:'walking',bike:'cycling',cycle:'cycling',cycling:'cycling'})[rawMode]||'driving');
-          /* (#R296) still recorded: a follow-up 「徒歩で」 re-routes the last journey through this. */
-          _lastRouteCtx={from:a.from,to:(a.to||a.place||a.destination),via:a.via};
-          const _hdr='';
-          if(!A||!B) return R(false, _hdr+warn('⚠ '+L('Could not find one of those places','地点を特定できませんでした','Ort nicht gefunden','Место не найдено','Lugar no encontrado')));
-          let via=[]; if(Array.isArray(a.via)){ for(const v of a.via.slice(0,6)){ try{ const g=await geocode(String(v)); if(g) via.push({lng:g.lng,lat:g.lat}); }catch(_){} } }
-          /* (#R132) §7.3: parse an avoid list (array or comma/space string) → toll/motorway/ferry for OSRM exclude= */
-          let _avoid=null; { let av=a.avoid||a.avoids||a.exclude; if(typeof av==='string') av=av.split(/[,、\s]+/); if(Array.isArray(av)){ _avoid=av.map(x=>{ x=String(x).toLowerCase(); return /toll|有料/.test(x)?'toll':/motorway|highway|freeway|高速/.test(x)?'motorway':/ferry|フェリー/.test(x)?'ferry':''; }).filter(Boolean); if(!_avoid.length) _avoid=null; } }
-          /* (#R184) the three request-shaping options this round added, passed straight through:
-             a keep-out AREA (Valhalla exclude_polygons — road modes only), the transit modes MOTIS may
-             use, and a walking cap. Each is validated here rather than trusted, because they come from
-             a planner's JSON. */
-          const _areas=(Array.isArray(a.avoidAreas)?a.avoidAreas:(a.avoidArea?[a.avoidArea]:[]))
-            .map(r2=>Array.isArray(r2)?r2.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]):[])
-            .filter(r2=>r2.length>=4).slice(0,8);
-          const _TM=['RAIL','SUBWAY','TRAM','BUS','FERRY'];
-          const _tmodes=(Array.isArray(a.transitModes)?a.transitModes:[])
-            .map(x=>String(x).toUpperCase()).filter(x=>_TM.indexOf(x)>=0);
-          const _mw=(isFinite(+a.maxWalkM)&&+a.maxWalkM>0)?Math.min(5000,+a.maxWalkM):null;
-          /* ⚠ (#R441) THE JOURNEY'S OWN IDENTITY, FROM WHAT WAS RESOLVED — not from how it was spelled. 「ここから」 and the
-             coordinates `my_location` just returned are the same starting point, so a turn that looks the reader up and then
-             routes must not draw the same five itineraries twice under two different `data-rset` nonces. Rounded to ~11 m,
-             which is finer than any geocoder disagrees by and coarser than float noise. js/atlas-turn-results.js reads it. */
-          const _jKey='routing.route|'+mode+'|'+[[A.lng,A.lat]].concat(via.map(v=>[v.lng,v.lat]),[[B.lng,B.lat]]).map(p=>(+p[0]).toFixed(4)+','+(+p[1]).toFixed(4)).join(';')+'|'+((_avoid||[]).join(',')||'-')+'|'+(_tmodes.join(',')||'-')+'|'+(_mw||'-')+'|'+(_areas.length||'-')+'|'+String(a.time||a.datetime||a.depart||a.arrive||'-')+'|'+((a.arriveBy||a.arrive)?'arrive':'depart');
-          let r=null; try{ r=await window.IntMapRouting.route({lng:A.lng,lat:A.lat},{lng:B.lng,lat:B.lat},
-            Object.assign({mode,via,time:a.time||a.datetime||a.depart||a.arrive,arriveBy:!!(a.arriveBy||a.arrive),avoid:_avoid},
-              _areas.length?{avoidAreas:_areas}:{},
-              (_tmodes.length&&_tmodes.length<5)?{transitModes:_tmodes}:{},
-              _mw?{maxWalkM:_mw}:{})); }catch(_){}
-          if(r&&r.transit){
-            const totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min'); const tf=r.transfers||0;
-            const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?'🚶':/SUBWAY|METRO/.test(m)?'🚇':/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?'🚊':/BUS|COACH/.test(m)?'🚌':/FERRY|BOAT/.test(m)?'⛴':/HIGHSPEED|LONG_DISTANCE/.test(m)?'🚄':/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?'🚆':'🚈'; };
-            const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
-            const seq=(r.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
-            /* ⚠ (#R291) NOT WRITTEN HERE ANY MORE (§17): this and js/routing.js's `legRows()` had drifted apart — Atlas badged a live leg, the panel did not. */
-            const _cardOpt=()=>({lang:HOST.lang,units:(typeof HOST.unitMode!=='undefined'?HOST.unitMode:'metric'),tz:(HOST.userTZ&&HOST.userTZ!=='auto')?HOST.userTZ:''});
-            const _legRow=(l)=>window.IntMapRouteCards.legRows([l],_cardOpt());
-            const legHtml=(r.legs||[]).map(_legRow).join('');
-            const summ=r.railEstimate?('<b>~'+dur+'</b> · '+Math.round(r.railKm).toLocaleString()+' km'+(r.lines&&r.lines.length?(' · '+r.lines.slice(0,3).map(esc).join(' → ')):(' '+L('by rail','鉄道','per Bahn','по ж/д','por vía')))):('<b>'+(r.jrEstimate?'~':'')+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):''));
-            /* (#R86) list EVERY alternative itinerary (Google/Apple-Maps style — the Berlin→Amsterdam screenshot); the
-               selected one is expanded, tapping another redraws it on the map via IntMapRouting.selectAlt. */
-            const alts=(!r.railEstimate&&r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
-            let body;
-            if(alts){ const selI=r.sel||0;
-              /* ⚠ (#R291) the SHARED cards (§17) — one renderer, two surfaces. */
-              /* ⚠ (#R298) …and the SAME SHAPE: the chosen card OPENS, exactly as it does in the panel.
-                 It was a sibling block here and an in-card block there — one renderer, two layouts. */
-              body=window.IntMapRouteCards.altCards(alts,Object.assign(_cardOpt(),{sel:selI,setId:r.routeSetId,transit:true,
-                detail:(i2,a2)=>window.IntMapRouteCards.legRows(a2.legs,_cardOpt())}));
-            } else { body='<div style="font-size:13px;margin:3px 0 3px;">'+summ+'</div><div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'; }
-            let h=_hdr+(alts?('<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+alts.length+' '+L('options — tap one to show it on the map','件の候補 — タップで地図に表示','Optionen — zum Anzeigen antippen','вариантов — нажмите, чтобы показать','opciones — toca para ver en el mapa')+'</div>'):'')+body
-              +note(r.jrEstimate
-                ? L('Intercity Japan rail: real Shinkansen lines and stations, with times estimated from the operators’ published timetables (express pattern + service frequency) — not live times. Local segments use open GTFS (Transitous) where available; where none exists (e.g. Nagoya) they are distance-based estimates, marked as such. The line between stations is schematic.','日本の都市間鉄道: 実在の新幹線路線・停車駅に基づき、所要時間は各社の公表時刻表（速達パターン＋運行頻度）からの概算です（リアルタイムではありません）。ローカル区間は公開GTFS（Transitous）があれば実データ、無い地域（例: 名古屋圏）は距離ベースの目安と明記しています。駅間の線形は概略です。','Japan-Fernverkehr: echte Shinkansen-Linien/Bahnhöfe, Zeiten aus den veröffentlichten Fahrplänen geschätzt (kein Echtzeitfahrplan). Lokale Abschnitte per offenem GTFS, sonst gekennzeichnete Distanzschätzung. Linienverlauf zwischen Bahnhöfen schematisch.','Междугородние ж/д Японии: реальные линии и станции синкансэна, время — оценка по опубликованным расписаниям (не в реальном времени). Местные участки — открытый GTFS, иначе помеченная оценка по расстоянию. Линия между станциями схематична.','Tren interurbano de Japón: líneas y estaciones reales de Shinkansen, tiempos estimados de los horarios publicados (no en vivo). Tramos locales con GTFS abierto o estimación marcada. Trazado entre estaciones esquemático.')
-                : r.railEstimate
-                ? L('Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って路線名・駅名まで特定した「列車が走る経路」です（最寄り駅までは徒歩）。JR・新幹線等は公開時刻表（GTFS）が無いため、所要時間は路線種別（新幹線／在来線）の標準速度からの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM), mit echten Linien- und Bahnhofsnamen — Zeit ist aus typischen Geschwindigkeiten geschätzt, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) с реальными названиями линий и станций — время оценено по типовым скоростям, не расписание.','Trazado por la red ferroviaria real (OSM), con nombres reales de líneas y estaciones — tiempo estimado por velocidades típicas, no horario.')
-                : r.realtime
-                ? L('Public-transit routing (Transitous / MOTIS) — includes REAL-TIME updates for this trip (live departures / delays where the operator publishes them).','公共交通の経路検索（Transitous／MOTIS）— この旅程はリアルタイム運行情報（事業者が公開する実時刻・遅延）を含みます。','ÖPNV (Transitous/MOTIS) — mit ECHTZEIT-Daten für diese Verbindung (Live-Abfahrten/Verspätungen).','Транзит (Transitous/MOTIS) — с данными в РЕАЛЬНОМ ВРЕМЕНИ по этому маршруту (задержки/отправления).','Transporte (Transitous/MOTIS) — con datos en TIEMPO REAL para este viaje (salidas/retrasos).')
-                : L('Public-transit routing (Transitous / MOTIS) — timetable-based (no real-time data for this trip).','公共交通の経路検索（Transitous／MOTIS）— 時刻表ベース（この旅程のリアルタイム情報はありません）。','ÖPNV (Transitous/MOTIS) — fahrplanbasiert (keine Echtzeitdaten für diese Verbindung).','Транзит (Transitous/MOTIS) — по расписанию (без данных реального времени).','Transporte (Transitous/MOTIS) — según horario (sin datos en tiempo real para este viaje).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request; (#R132) §2.4/§9.6 honest live-vs-timetable */
-            if(r.shapeGap) h+=note(L('Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).','一部の乗車区間の形状を取得できませんでした — 該当区間は行程に表示しますが、地図には描画しません（直線での代用はしません）。','Einige Fahrt-Abschnittsformen fehlen — diese Abschnitte stehen in der Liste, werden aber nicht gezeichnet (kein Geraden-Ersatz).','Форма части участков недоступна — они в списке, но не рисуются на карте (без замены прямыми).','No se pudo obtener la forma de algunos tramos — se listan pero no se dibujan (sin sustitutos en línea recta).'));
-            return R(true, h, {meta:{resultKey:_jKey}, exec:{route:routeFacts(r)}}); }
-          if(!r||!r.ok){ const stt=(r&&r.status)||'';
-            /* (#R126) 経路10-10 §2.5/§16.8: typed statuses get their OWN honest message instead of one "not found" */
-            if(stt==='cancelled') return R(true, _hdr+note(L('Superseded by a newer route request.','新しい経路リクエストに置き換えられました。','Durch eine neuere Routenanfrage ersetzt.','Заменено более новым запросом маршрута.','Sustituido por una solicitud de ruta más reciente.')));
-            if(stt==='provider_timeout'||stt==='provider_unavailable'||stt==='rate_limited'){
-              const m2=stt==='rate_limited'?L('Too many requests — wait a moment and try again.','リクエストが多すぎます — 少し待って再試行してください。','Zu viele Anfragen — kurz warten und erneut versuchen.','Слишком много запросов — подождите и повторите.','Demasiadas solicitudes — espera y reintenta.')
-                :stt==='provider_timeout'?L('The routing service timed out — try again.','経路サービスがタイムアウトしました — 再試行してください。','Zeitüberschreitung beim Routingdienst — erneut versuchen.','Тайм-аут сервиса маршрутов — повторите.','El servicio de rutas agotó el tiempo — reintenta.')
-                :L('The routing service is unreachable right now (outage or network) — the route was NOT computed. Try again shortly.','経路サービスに接続できません（障害またはネットワーク）— 経路は計算されていません。しばらくして再試行してください。','Routingdienst nicht erreichbar — Route NICHT berechnet. Später erneut versuchen.','Сервис маршрутов недоступен — маршрут НЕ рассчитан. Повторите позже.','Servicio de rutas no disponible — la ruta NO se calculó. Reintenta en breve.');
-              return R(false, _hdr+warn('⚠ '+m2)); }
-            if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
-            const snapTx=(r&&r.snapKm)?(' '+L('One point is ~'+r.snapKm+' km from the nearest routable road (outside road-data coverage / across water).','一方の地点が最寄りの経路可能な道路から約'+r.snapKm+' km離れています（道路データ対象外／水域越えの可能性）。','Ein Punkt liegt ~'+r.snapKm+' km von der nächsten routbaren Straße (außerhalb der Abdeckung).','Точка в ~'+r.snapKm+' км от ближайшей дороги (вне покрытия).','Un punto está a ~'+r.snapKm+' km de la carretera más cercana (fuera de cobertura).')):'';
-            return R(true, _hdr+warn('⚠ '+L('No route found (no road connection between these points).','経路が見つかりません（この2地点間に陸路の接続がありません）。','Keine Route gefunden (keine Straßenverbindung).','Маршрут не найден (нет дорожного соединения).','Sin ruta (sin conexión por carretera).')+snapTx)); }
-          /* (#R132) 経路10-10 §7.1/§10/§12/§16: road reply mirrors transit — selectable alternative cards
-             (fastest/shortest/+X min) in the SAME .atl-trips/.atl-trip structure the existing selectAlt handler
-             drives (data-rset), plus rich turn-by-turn (IntMapRouting.maneuver) with lane guidance and step→map. */
-          const _rdur=sec=>{ const t=Math.round(sec/60),hh=Math.floor(t/60),mm=t%60; return hh?(hh+' h '+mm+' min'):(t+' min'); };
-          const _rkm=m=>{ const k=m/1000; return (k<10?k.toFixed(1):Math.round(k).toLocaleString())+' km'; };
-          const _mvr=s=>{ try{ return window.IntMapRouting.maneuver(s); }catch(_){ return {icon:'↑',text:String(s.name||''),lane:''}; } };
-          /* ⚠ (#R291) same rule as `_legRow`: one step renderer, so glyphs, lanes and units match. `data-si` is unchanged. */
-          const _cardOpt2=()=>({lang:HOST.lang,units:(typeof HOST.unitMode!=='undefined'?HOST.unitMode:'metric'),tz:(HOST.userTZ&&HOST.userTZ!=='auto')?HOST.userTZ:''});
-          const _stepList=(steps)=>window.IntMapRouteCards.stepRows(steps,Object.assign(_cardOpt2(),{maneuver:_mvr}));
-          const ralts=(r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
-          let h=_hdr;
-          if(ralts){ h+='<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+ralts.length+' '+L('routes — tap one to show it on the map','経路候補 — タップで地図に表示','Routen — zum Anzeigen antippen','маршрутов — нажмите, чтобы показать','rutas — toca para ver en el mapa')+'</div>'
-              /* ⚠ (#R291) THE SAME CARDS THE PANEL DRAWS (§17), with the same `data-rset` / `data-ai`. */
-              +window.IntMapRouteCards.altCards(ralts,Object.assign(_cardOpt2(),{sel:0,setId:r.routeSetId,transit:false,
-                detail:(i2,a2)=>_stepList(a2.steps)}));   /* (#R298) the card opens — see routing-cards.refreshDetail */
-          } else { h+='<div style="font-size:13px;margin:3px 0 5px;"><b>'+_rdur(r.duration)+'</b> · '+_rkm(r.distance)+'</div>'
-              +'<div style="max-height:220px;overflow:auto;font-size:11.5px;line-height:1.5;" class="atl-rsteps" data-rset="'+esc(r.routeSetId||'')+'">'+_stepList(r.steps)+'</div>'; }
-          h+=note(r.provider==='valhalla'
-            /* ⚠ (#R296) 「「所要時間は交通状況を含まない標準値です。」だけでいい」 — it drops the provider's name and a phrase the reader knows. */
-            ? L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).')
-            : L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).'));
-          if(r.avoidDropped) h+=warn('⚠ '+L('Could not apply the avoid options (routing service busy) — showing the normal route.','回避条件を適用できませんでした（経路サービス混雑）— 通常経路を表示。','Meiden-Optionen nicht anwendbar (Dienst ausgelastet) — normale Route.','Не удалось применить исключения — обычный маршрут.','No se pudieron aplicar las exclusiones — ruta normal.'));
-          return R(true, h, {meta:{resultKey:_jKey}, exec:{route:routeFacts(r)}}); }
-        case 'streetview': {
-          /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
-          if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))+_featTogHtml('streetview')); }   /* (#R150) offer the toggle to flip it back on */
-          const wantCov=/^(coverage|layer|mode|map|roads?)$/i.test(String(a.mode||''))||a.coverage===true||(!a.place&&a.lng==null&&!(_herePoint&&isFinite(_herePoint.lng)));
-          if(wantCov){ await window.IntMapLazy.need('streetView'); let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir'))+_featTogHtml('streetview'):warn('⚠')); }
-          let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(_herePoint&&isFinite(_herePoint.lng)) ll={lng:_herePoint.lng,lat:_herePoint.lat,name:_herePoint.name||''};
-          if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar'), a.place||a.at||a.location)));
-          try{ GE().camera.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(GE().camera.getZoom(),15),duration:900}); }catch(_){}
-          await window.IntMapLazy.need('streetView'); let ok=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.open) ok=window.IntMapStreetView.open({lng:+ll.lng,lat:+ll.lat},ll.name||''); }catch(_){}
-          return R(ok, ok?note('🧍 '+L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+': '+esc(ll.name||((+ll.lat).toFixed(4)+', '+(+ll.lng).toFixed(4)))):warn('⚠')); }
-        case 'radiation': {
-          /* (#R85b) robust source resolution ("福島第一原発 → Where is the release source?"): explicit coords →
-             built-in nuclear-site gazetteer → online geocode → simplified retry → source-preset default coords. */
-          const _place=String(a.place||a.from||a.at||a.source||'').trim();
-          let ll=(a.lng!=null&&isFinite(+a.lng)&&a.lat!=null)?{lng:+a.lng,lat:+a.lat,name:a.place||''}:null;
-          if(!ll){ try{ ll=window.IntMapRadiation.resolveSite&&await window.IntMapRadiation.resolveSite(_place); }catch(_){} }   /* (#R585) the nuclear gazetteer is now the discovered registry (data/npp.json) and resolving is async — the rung below this one already awaited */
-          if(!ll&&_place){ try{ ll=await geocode(_place); }catch(_){} }
-          if(!ll&&_place){ /* strip generic words the geocoder chokes on (原発/nuclear/power plant/npp…) and retry */
-            const _clean=_place.replace(/(原子力発電所|原発|発電所|nuclear\s*power\s*(plant|station)?|power\s*(plant|station)|nuclear|npp|reactor|станция|аэс)/ig,'').replace(/\s{2,}/g,' ').trim();
-            if(_clean&&_clean!==_place){ try{ ll=window.IntMapRadiation.resolveSite&&await window.IntMapRadiation.resolveSite(_clean); }catch(_){} if(!ll){ try{ ll=await geocode(_clean); }catch(_){} } } }
-          if(!ll){ const _sp=(window.IntMapRadiation.SOURCES||{})[String(a.source||'').toLowerCase()]; if(_sp&&_sp.ll) ll={lng:_sp.ll[0],lat:_sp.ll[1],name:_sp.n}; }   /* fall back to the preset's own location */
-          if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where is the release source? Name a plant/place, or right-click a point.','放出源はどこですか？（原発名・地名の指定、または地点を右クリック）','Wo ist die Quelle?','Где источник выброса?','¿Dónde está la fuente?'), _place)));
-          /* (#R85) selectable source term / emission duration / isotope / start date-time + a FINAL deposition map
-             with real dose zones ("放出量や放出時間、日時等も選べるように … 最終的な飛散もマッピング … 地点によってどの程度の
-             放射線被害があるかも説明"). */
-          const SRCS=window.IntMapRadiation.SOURCES||{}, ISOS=window.IntMapRadiation.ISOTOPES||{};
-          /* (#R568) the source term is source × ISOTOPE — an accident has no single activity. Why, and where each figure comes from: docs/RADIATION-MODEL.md §1. A preset with no published figure for the chosen nuclide does not appear rather than borrowing another's. */ const _radPresetTerm=(sk,ik)=>{ try{ return (window.IntMapRadiation.sourceTerm&&window.IntMapRadiation.sourceTerm(sk,ik))||null; }catch(_){ return null; } }, _radPresetBq=(sk,ik)=>{ const t=_radPresetTerm(sk,ik); return t?t.bq:undefined; }; const _radBqOptions=(ik)=>{ const out=[]; for(const k of ['chernobyl','fukushima','dirtybomb','research']){ const t=_radPresetTerm(k,ik); if(!t||!(t.bq>0)) continue; out.push([t.bq,((SRCS[k]&&SRCS[k].n)||k)+' · '+((ISOS[ik]&&ISOS[ik].n)||ik)+' · '+fmtBq(t.bq)]); } out.push([1e15,'1 PBq'],[1e12,'1 TBq']); return out; };
-          const srcKey=String(a.source||'').toLowerCase(); const srcPreset=SRCS[srcKey];
-          const opts={ seconds:a.seconds, hours:a.hours, emitHours:a.emitHours, halfLifeHours:a.halfLifeHours||a.halfLife,
-            isotope:a.isotope, source:a.source, date:a.date||a.datetime||a.when,
-            /* ⚠ `srcPreset.bq` no longer exists and must not come back (see above). */ bq:(a.bq!=null?+a.bq:(a.becquerel!=null?+a.becquerel:(a.pbq!=null?+a.pbq*1e15:(a.tbq!=null?+a.tbq*1e12:_radPresetBq(srcKey,String(a.isotope||'cs137').toLowerCase()))))) };
-          let r=null; try{ r=await window.IntMapRadiation.run({lng:ll.lng,lat:ll.lat,name:ll.name},opts); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'error'))); }
-          if(!r||!r.ok) return R(false, warn('⚠ '+((r&&r.reason==='wind')?L('Could not fetch the live wind data the dispersion model needs','拡散モデルに必要な風データを取得できませんでした','Konnte keine Live-Winddaten abrufen','Не удалось получить данные о ветре','No se pudieron obtener datos de viento'):L('The dispersion simulation could not run (map still loading)','拡散シミュレーションを実行できませんでした（地図読込中）','Simulation nicht möglich','Симуляция не запустилась','No se pudo ejecutar la simulación'))));
-          const dirName=d=>{ const names=[L('north','北','Nord','север','norte'),L('northeast','北東','Nordost','северо-восток','noreste'),L('east','東','Ost','восток','este'),L('southeast','南東','Südost','юго-восток','sureste'),L('south','南','Süd','юг','sur'),L('southwest','南西','Südwest','юго-запад','suroeste'),L('west','西','West','запад','oeste'),L('northwest','北西','Nordwest','северо-запад','noroeste')]; return names[Math.round(((d%360)/45))%8]; };
-          const fmtBq=v=>{ v=+v; if(!isFinite(v)) return '?'; if(v>=1e15) return (v/1e15).toFixed(1)+' PBq'; if(v>=1e12) return (v/1e12).toFixed(0)+' TBq'; if(v>=1e9) return (v/1e9).toFixed(0)+' GBq'; return v.toExponential(1)+' Bq'; };
-          /* ⚠⚠⚠ (#R568 ⑩) THE ANNUAL DOSE IS NO LONGER EXTRAPOLATED HERE. It used to be «rate × 8766 × 0.5», i.e. «this dose rate holds for a year» — false for every nuclide and absurd for I-131. The model integrates against decay AND weathering and returns `firstYearMSv`; this side only prints it (docs/RADIATION-MODEL.md §6). */ let h='<div style="font-weight:600;">☢ '+esc(ll.name||a.place)+' — '+L('radioactive dispersion & fallout','放射性物質の拡散・降下','radioaktive Ausbreitung & Fallout','рассеивание и выпадение','dispersión y lluvia radiactiva')+'</div>'
-            +'<div style="font-size:12.5px;line-height:1.72;margin-top:3px;">'
-            +'<div>☢ '+L('Source term','放出量','Quellterm','Выброс','Término fuente')+': <b>'+fmtBq(r.bq)+'</b> '+esc(r.iso)+' · '+L('released over','放出時間','über','за','durante')+' '+r.emitHours+' h</div>'
-            +(r.startISO?('<div>🕒 '+L('Release start','放出開始','Freisetzungsbeginn','Начало','Inicio')+': '+esc(new Date(r.startISO).toLocaleString(window.IntMapLang.locale(HOST.lang,"en-GB")))+'</div>'):'')
-            +'<div>💨 '+L('Surface wind','地上風','Bodenwind','Приземный ветер','Viento')+': '+r.windSpeed.toFixed(1)+' m/s '+L('toward the','→ ','Richtung ','на ','hacia el ')+dirName(r.windToward)+' · '+L('plume reach','到達','Reichweite','дальность','alcance')+' ~'+r.reachKm+' km</div>'
-            +'<div>🌧 '+L('Wet deposition','湿性沈着（降雨洗浄）','Nassdeposition','Влажное осаждение','Deposición húmeda')+': '+(r.wet?L('active — rain washing particles down','あり — 降雨が粒子を洗い落とし','aktiv','активно','activa'):L('none in area','領域内でなし','keine','нет','ninguna'))+'</div>'
-            +'</div>';   h+=await radiationChain(ll);   /* (#R585) the measured half of the chain — the body is in js/atlas-controls.js, because this file shrinks only by MOVING (tests/atlas-turn-checks.test.mjs #R419 ⑨d, tests/atlas-agent-loop-checks.test.mjs #R511 ⑨) */
-          /* final deposition dose zones */
-          const zLbls=r.zones||[]; const rows=[];
-          for(let z=0;z<zLbls.length;z++){ const km2=(r.zoneKm2&&r.zoneKm2[z])||0; if(km2<=0) continue;
-            rows.push('<div style="display:flex;align-items:center;gap:7px;padding:2px 0;"><span style="width:12px;height:12px;border-radius:3px;flex:0 0 auto;background:'+zLbls[z].c+';"></span><span style="flex:1;">'+esc(window.IntMapLang.pick(()=>HOST.lang).arr(zLbls[z].n))+'</span><span style="color:var(--text-muted);">≥'+zLbls[z].min+' kBq/m² · '+km2.toFixed(km2<10?1:0)+' km²</span></div>'); }
-          /* ⚠ (#R568 ⑨) the heading no longer says «Cs-137-equivalent» over an iodine deposit: which ladder is drawn is the model's answer, because a deposition-density statute exists for Cs-137 and Sr-90 and does NOT exist for I-131 or Cs-134 (docs/RADIATION-MODEL.md §3). */ h+='<div style="font-weight:600;margin:6px 0 2px;font-size:12px;">'+(r.zonesAreLegal ? (L('Final ground deposition — statutory zones','最終的な地表沈着—法定区分','Endgültige Bodendeposition — gesetzliche Zonen','Итоговое выпадение — законодательные зоны','Deposición final — zonas legales')+(r.zoneJurisdiction==='ua'?' (UA)':'')) : L('Final ground deposition — density only (this nuclide has no statutory zoning)','最終的な地表沈着—密度のみ（この核種に法定区分はない）','Endgültige Bodendeposition — nur Dichte','Итоговое выпадение — только плотность','Deposición final — sólo densidad'))+'</div>';
-          h+=rows.length?('<div style="font-size:11.5px;">'+rows.join('')+'</div>'):('<div style="font-size:11.5px;color:var(--text-muted);">'+L('Deposition stays below mapped thresholds in this run (winds carried most activity out of the modeled area).','この条件では地図化しきい値未満（大半が領域外へ運ばれました）。','unter den Schwellen','ниже порогов','por debajo de umbrales')+'</div>');
-          /* ⚠⚠⚠ (#R568 ⑦) A PEAK CELL IS AN ESTIMATE AND NOW SAYS SO — `peakRelSE` ≈ 1/√n is its error bar and below `minPeakN` no figure is headlined at all, because a number with no error bar is read as having none. ⚠ And the external dose is not universal: Sr-90 → Y-90 are pure beta, so `externalMeaningful` is false and this says so rather than printing a µSv/h that would be read as the hazard (docs/RADIATION-MODEL.md §2, §7). */ if(r.peakKBqM2>0){ const uH=r.peakDoseUSvH, yr=r.firstYearMSv, se=Math.round((r.peakRelSE||0)*100), pk=r.peakKBqM2>=1?Math.round(r.peakKBqM2).toLocaleString():r.peakKBqM2.toFixed(2); h+='<div style="font-size:11.5px;margin-top:4px;">📈 '+L('Peak deposition','最大沈着','Spitzendeposition','Пик','Pico')+': <b>'+pk+' kBq/m²</b>' +(r.peakWellSampled?(' <span style="color:var(--text-muted);">±'+se+'%</span>'):(' <span style="color:var(--text-muted);">— '+L('too few particles reached this cell to quote a value','この地点に到達した粒子が少なく、数値として示せません','zu wenige Partikel für einen Wert','слишком мало частиц для оценки','muy pocas partículas para un valor')+'</span>')) +(r.externalMeaningful ? (' → '+L('external dose rate','外部被ばく線量率','Dosisleistung','мощность дозы','tasa de dosis')+' ≈ <b>'+(uH>=1?uH.toFixed(1):uH.toFixed(2))+' µSv/h</b> ('+L('first year','初年度','erstes Jahr','первый год','primer año')+' ≈ '+(yr>=1?Math.round(yr):yr.toFixed(2))+' mSv)') : (' · '+L('external dose from this deposit is minor — Sr-90/Y-90 are beta emitters, and the hazard is ingestion, not ground shine','この沈着からの外部被ばくは小さい（Sr-90/Y-90 はベータ核種で、危険は地表からの放射線ではなく摂取）','externe Dosis gering — Beta-Strahler','внешняя доза мала — бета-излучатели','dosis externa menor — emisores beta'))) +'</div>';
-            /* ⚠ (#R568 ④⑥) WHAT IS NOT ON THE MAP. The old run settled half of everything still airborne onto the ground and clamped straying particles to the domain edge, so the map always LOOKED complete. Both are gone, so it can now be honestly incomplete — and that is a fact about the figures above it. */ const away=[]; if(r.escapedMassFrac>0.02) away.push(Math.round(r.escapedMassFrac*100)+'% '+L('left the modelled area','領域外へ流出','außerhalb','вышло за область','fuera del área')); if(r.airborneFrac>0.02) away.push(Math.round(r.airborneFrac*100)+'% '+L('still airborne when the window closed','計算終了時にまだ大気中','noch in der Luft','ещё в воздухе','aún en el aire')); if(away.length) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">🌬 '+L('Not on this map','この地図に含まれないもの','Nicht auf dieser Karte','Не на этой карте','No en este mapa')+': '+away.join(' · ')+'</div>';
-            h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+L('For reference: natural background ≈ 2–3 mSv/yr; Japan\'s Fukushima evacuation criterion was 20 mSv/yr; Chernobyl\'s permanent-exclusion zone ≥1480 kBq/m².','参考：自然放射線 約2–3 mSv/年、福島の避難基準 20 mSv/年、チェルノブイリの永久立入禁止 1480 kBq/m²以上。','Referenz: Untergrund ≈2–3 mSv/a.','Для справки: фон ≈2–3 мЗв/год.','Referencia: fondo ≈2–3 mSv/año.')+'</div>'; }
-          /* (#R85d) FULL inline configuration IN the message ("こちらで設定できない項目が多すぎる" — no popup): isotope,
-             source term, emission duration, simulation hours, start time — each re-runs the model in place. */
-          _lastRadCtx={place:(a.place||a.from||a.source||ll.name),lng:ll.lng,lat:ll.lat,bq:r.bq,isotope:String(opts.isotope||'cs137').toLowerCase(),emitHours:r.emitHours,hours:r.hours,date:opts.date||''};
-          const cur=_lastRadCtx;
-          const _rb=(o,lbl)=>'<button class="atl-traj-btn" data-rad=\''+esc(JSON.stringify(o))+'\'>'+esc(lbl)+'</button>';
-          const _sel=(key,list,val)=>'<select class="atl-rad-sel" data-radp="'+key+'">'+list.map(o=>'<option value="'+o[0]+'"'+((''+o[0])===(''+val)||(key==='bq'&&Math.abs(+o[0]-+val)<+o[0]*0.03)?' selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select>';
-          const _step=(key,val,delta,min,max,unit,label)=>'<div class="atl-rad-ctl"><span>'+label+'</span><button class="atl-traj-btn atl-rad-mini" data-rad=\''+esc(JSON.stringify({[key]:Math.max(min,val-delta)}))+'\'>−</button><b>'+val+unit+'</b><button class="atl-traj-btn atl-rad-mini" data-rad=\''+esc(JSON.stringify({[key]:Math.min(max,val+delta)}))+'\'>＋</button></div>';
-          h+='<div class="atl-rad-cfg">'
-            +'<div class="atl-rad-ctl"><label style="display:contents;"><span>'+L('Isotope','核種','Isotop','Изотоп','Isótopo')+'</span>'+_sel('isotope',[['cs137','Cs-137 (30y)'],['i131','I-131 (8d)'],['cs134','Cs-134 (2y)'],['sr90','Sr-90 (29y)']],cur.isotope)+'</label></div>'
-            /* ⚠⚠⚠ (#R568 ⑧) THE SOURCE-TERM MENU IS BUILT FROM THE CHOSEN ISOTOPE. It used to be five hard-coded pairs — «Chernobyl · 85 PBq», «Fukushima · 15 PBq» — which are Cs-137 figures wearing an accident's name, so switching the isotope above left them saying the same thing about a completely different inventory. Now the accident presets come from the model's source × isotope table and are LABELLED with what they are, and the two generic magnitudes stay generic because that is all they ever were. */ +'<div class="atl-rad-ctl"><label style="display:contents;"><span>'+L('Source term','放出量','Quellterm','Выброс','Término fuente')+'</span>'+_sel('bq',_radBqOptions(cur.isotope),cur.bq)+'</label></div>'
-            +_step('emitHours',cur.emitHours,2,0.5,72,'h',L('Emission','放出時間','Freisetzung','Выброс','Emisión'))
-            +_step('hours',cur.hours,12,6,80,'h',L('Sim window','計算時間','Zeitfenster','Окно','Ventana'))
-            +'</div>';
-          h+='<div class="atl-traj-row">'+_rb({source:'chernobyl',emitHours:10,hours:60},L('Chernobyl','チェルノブイリ級','Tschernobyl','Чернобыль','Chernóbil'))
-            +_rb({source:'fukushima',emitHours:8,hours:48},L('Fukushima','福島級','Fukushima','Фукусима','Fukushima'))
-            +_rb({source:'dirtybomb',isotope:'cs137',emitHours:0.5,hours:24},L('Dirty bomb','ダーティボム','Schmutzige Bombe','Грязная бомба','Bomba sucia'))+'</div>';
-          h+=note(L('Lagrangian particle model on LIVE Open-Meteo wind/temperature/precipitation (or the ERA5 archive for a past date): advection + stability-scaled turbulent diffusion + wet & dry deposition + radioactive decay. The source term (Bq), emission duration, isotope half-life and start time are yours to set; the colored ground zones are the final deposition classified by the real Chernobyl Cs-137 thresholds, and the dose figures assume a Cs-137 ground-shine conversion. EDUCATIONAL approximation, NOT an operational forecast — in a real emergency follow official authorities (SPEEDI / IAEA / local government).','ラグランジュ粒子モデル。Open-Meteoのライブ風・気温・降水（過去日はERA5アーカイブ）で移流＋安定度依存の乱流拡散＋湿性乾性沈着＋放射性崩壊を計算。放出量(Bq)・放出時間・核種半減期・開始時刻を指定できます。色分けゾーンは最終沈着を実際のチェルノブイリのCs-137しきい値で分類、線量はCs-137地表γ線換算です。教育目的の近似であり運用予報ではありません。実際の緊急時は公的機関（SPEEDI／IAEA／自治体）に従ってください。','Lagrange-Partikelmodell mit Live-Wetter — Bildungsnäherung.','Лагранжева модель с реальной погодой — образовательная.','Modelo lagrangiano con clima real — educativo.'));
-          return R(true, h); }
-        case 'flightSim': {
-          if(a.on===false||/^(stop|exit|off|quit|end|land)$/i.test(String(a.mode||a.action||''))){ try{ window.IntMapFlightSim&&window.IntMapFlightSim.stop&&window.IntMapFlightSim.stop(); }catch(_){} return R(true, note('✓ '+L('Flight simulator stopped','飛行シミュレーターを終了しました','Flugsimulator beendet','Авиасимулятор остановлен','Simulador de vuelo detenido'))); }
-          const opts={}; let nm=''; let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place||a.over||a.from){ try{ ll=await geocode(a.place||a.over||a.from); }catch(_){} }
-          if(ll){ opts.lng=ll.lng; opts.lat=ll.lat; nm=ll.name||a.place||''; try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:11,duration:500}); }catch(_){} }
-          if(a.alt!=null&&isFinite(+a.alt)) opts.alt=+a.alt;
-          /* (#R94p) pick the aircraft by name (explicit field only — never the geocoded place) */
-          const _acs=String(a.aircraft||a.plane||a.craft||a.mode||'').toLowerCase();
-          if(/fighter|f-?16|戦闘機|jäger|истреб|caza/.test(_acs)) opts.aircraft='fighter';
-          else if(/airliner|a320|737|旅客機|verkehr|авиалайнер|avión|ジェット/.test(_acs)) opts.aircraft='airliner';
-          else if(/cessna|trainer|セスナ|練習|schul|учебн|escuela/.test(_acs)) opts.aircraft='cessna';
-          else if(/glider|sailplane|グライダー|滑空|segelflug|планёр|planeador/.test(_acs)) opts.aircraft='glider';
-          else if(/mustang|p-?51|warbird|大戦|マスタング|大戦機/.test(_acs)) opts.aircraft='warbird';
-          await window.IntMapLazy.need('flightSim'); let ok=false; try{ if(window.IntMapFlightSim&&window.IntMapFlightSim.setup){ window.IntMapFlightSim.setup(opts); ok=true; } else if(window.IntMapFlightSim&&window.IntMapFlightSim.start){ ok=window.IntMapFlightSim.start(opts); } }catch(_){}
-          return R(ok, ok?note('✈ '+L('Flight simulator — pick your aircraft & runway, then START','飛行シミュレーター — 機体と滑走路を選んで START','Flugsimulator — Flugzeug & Piste wählen, dann START','Авиасимулятор — выберите самолёт и полосу, затем СТАРТ','Simulador — elige avión y pista, luego INICIAR')+(nm?(' · '+esc(nm)):'')):warn('⚠ '+L('Could not start the flight simulator','飛行シミュレーターを開始できませんでした','Konnte den Flugsimulator nicht starten','Не удалось запустить','No se pudo iniciar')), ok?{meta:{opened:'flightSim'}}:null); }   /* (#R760) the window IS the deliverable here — js/atlas-capabilities.js `sim` reads this instead of asking a map surface that cannot hold it */
-        case 'runway': { const ll=await geocode(a.place); if(ll){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),7)}); }catch(_){} let ok=false; try{ if(window.RunwaySearch&&window.RunwaySearch.open){ window.RunwaySearch.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('🛬 '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
-        case 'edu': { let ok=false; try{ if(window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-edu'); return R(ok, ok?note('🎓 '+L('Learn','学ぶ','Lernen','Обучение','Aprender')):warn('⚠')); }
-        case 'ecmwf': { let ok=false; try{ if(window.IntMapWeatherEC&&window.IntMapWeatherEC.open){ window.IntMapWeatherEC.open(); ok=true; } }catch(_){} return R(ok, ok?note('🌦 '+L('Weather layers','気象レイヤー','Wetterebenen','Погодные слои','Capas meteorológicas')):warn('⚠')); }
-        case 'wxModel': { const W=window.IntMapWeatherEC; if(!W||!W.setModel) return R(false,warn('⚠')); const want=String(a.layer||a.name||'').trim(), mid=String(a.model||'').trim(); const cfg=W.layerFor(want)||W.layerFor('ec-'+want.replace(/^(dl-)?(ec-)?/,'')); if(!cfg) return R(false,warn('⚠ '+L('no such weather layer','その気象レイヤーはありません','keine solche Wetterebene','нет такого слоя погоды','no existe esa capa meteorológica'))); return W.setModel(cfg.id,mid).then(r=>R(!!(r&&r.ok), (r&&r.ok)?note('🌦 '+(r.modelName||mid)+' · '+cfg.id+(r.validTime?(' · '+r.validTime):'')):warn('⚠ '+((r&&r.code)||'')))); }
-        case 'railAxis': { const RM=window.IntMapRailways; if(!RM||!RM.setAxis) return R(false,warn('⚠')); const want=String(a.axis||a.name||a.by||'').trim().toLowerCase(); const SYN={gauge:'gauge','track gauge':'gauge','軌間':'gauge',electrification:'electrification',electrified:'electrification',electric:'electrification',power:'electrification','電化':'electrification',speed:'speed',maxspeed:'speed','line speed':'speed','最高速度':'speed',tracks:'tracks','track count':'tracks','single track':'tracks','double track':'tracks','複線':'tracks',traffic:'traffic',passenger:'traffic',freight:'traffic','旅客':'traffic','貨物':'traffic',status:'status',construction:'status','運行状態':'status','建設中':'status',kind:'kind',type:'kind','line type':'kind','線種':'kind'}; const known=RM.axes().map(x=>x[0]); const ax=(known.indexOf(want)>=0)?want:(SYN[want]||''); if(!ax) return R(false,warn('⚠ '+L('no such railway view','その鉄道の塗り分けはありません','keine solche Bahn-Ansicht','нет такого вида для железных дорог','no existe esa vista ferroviaria'))); RM.setAxis(ax); const lbl=(RM.axes().find(x=>x[0]===ax)||[ax,ax])[1]; return R(true,note('🚆 '+lbl)); }   /* (#R388) one layer, one option, named in words — same shape as wxModel; the axis is resolved through the module's OWN list so this table cannot drift from the legend */
-        case 'widgets': { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('⚠')); }
-        case 'screenshot': { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('⚠')); }
-        case 'share': { let ok=false; try{ if(window.IntMapShare&&window.IntMapShare.open){ window.IntMapShare.open(); ok=true; } else ok=clickId('btn-share'); }catch(_){} return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
-        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ GE().camera.flyTo({center:[GE().camera.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn('⚠ '+esc(q))); }
-        case 'tempUnit': { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ const ok=setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} return R(ok, note('✓ °'+String(u).toUpperCase())); } return R(false, warn('⚠ '+esc(a.unit||''))); }
-        case 'units': { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ const ok=setSel('setting-units',m); try{ if(typeof HOST.unitMode!=='undefined') HOST.unitMode=m; }catch(_){} return R(ok, note('✓ '+esc(m))); } return R(false, warn('⚠ '+esc(a.mode||''))); }
-        /* (#R94) time-travel now drives the WHOLE spacetime OS (IntMapTime): news, the Countries statistics,
-           borders, the climate era, NATO/EU accession & the day/night terminator all move together. Accepts a
-           year (deep time back to `IntMapTime.min` — AD 1 since #R604), an exact date, or daysAgo; "now/reset" returns everything to live. */
-        case 'timeTravel': { try{ const T=window.IntMapTime;
-          const synced=L('the whole map (news, countries, borders, climate era) moves with it','地図全体（ニュース・国データ・国境・気候区分）が同期します','die ganze Karte bewegt sich mit','вся карта движется вместе','todo el mapa se mueve con él');
-          const nowMsg=()=>R(true, note('✓ '+L('Back to now','現在に戻しました','Zurück zu jetzt','Вернулись в настоящее','Volvimos al presente')));
-          if(!T){ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650,da=(a.daysAgo!=null)?Math.round(+a.daysAgo):null; if(da==null&&a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)) da=Math.round((Date.now()-t0)/86400000); } if(da!=null) v=Math.max(0,Math.min(3650,3650-da)); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); } return R(true, note(L('Time set','時刻を設定しました','Zeit gesetzt','Время задано','Hora establecida'))); }   /* (#R108) explained, not a bare ✓ */
-          if(a.reset||a.now||a.live){ T.setNow({source:'atlas'}); return nowMsg(); }
-          const curY=new Date().getFullYear();
-          let y=(a.year!=null)?Math.round(+a.year):null;
-          if(y==null&&typeof a.date==='string'){ const m=a.date.match(/^\s*(\d{3,4})\s*$/); if(m) y=+m[1]; }
-          /* ⚠⚠ (#R380) THE GUARD READ THE KERNEL AND THE SENTENCE BESIDE IT DID NOT. `y<T.min` has always
-             been the real test, but the words were the literal 1900 in all nine languages — so when #R349
-             moved the floor to 1850 (and #R604 to AD 1) this refusal went on telling every reader that 1875, a year the
-             next statement accepts, is out of reach. The number now comes from the same place the test does. */
-          if(y!=null){ if(y>=curY){ T.setNow({source:'atlas'}); return nowMsg(); } if(y<T.min) return R(false, warn('⚠ '+L('Chronos reaches back to {y}','Chronosは{y}年まで遡れます','Bis {y} zurück','До {y} года','Hasta {y}').replace(/\{y\}/g,String(T.min)))); T.setYear(y,{source:'atlas'}); return R(true, note(y+' — '+synced)); }
-          if(a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)){ if(t0>Date.now()){ T.setNow({source:'atlas'}); return nowMsg(); } T.set(new Date(t0),{source:'atlas'}); return R(true, note(ymdISO(new Date(t0))+' — '+synced)); } }
-          if(a.daysAgo!=null){ const da=Math.round(+a.daysAgo); if(da<=0){ T.setNow({source:'atlas'}); return nowMsg(); } T.setDaysAgo(da,{source:'atlas'}); return R(true, note(ymdISO(T.when())+' — '+synced)); }
-          if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note(ymdISO(T.when()))); }
-          return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
-        }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
-        case 'pin': { const _pm={title:String(a.title||a.name||'').trim(),description:String(a.description||a.summary||a.note||a.text||'').trim(),source:String(a.source||a.src||'').trim(),url:String(a.url||'').trim(),when:String(a.date||a.when||'').trim(),confidence:String(a.confidence||'').trim()}; const _pk=GLEDGER.resolve(a.place); const _pp=String(a.place||'').trim(), _pc=String(a.country||'').trim(); const _pq=(_pc&&_pp&&_lnorm(_pp).indexOf(_lnorm(_pc))<0)?(_pp+', '+_pc):_pp;   /* ⚠ (#R489) THE COUNTRY IS APPENDED ONLY WHEN IT IS NOT ALREADY THERE. Measured on the live endpoint: 「Kotovsk, Russia」 returns 1 result and 「Kotovsk, Russia, Russia」 returns 0 — and a model that fills both `place` and `country` writes the doubled form every time. */ const ll=(_pk&&_pk.lng!=null)?{lng:_pk.lng,lat:_pk.lat,name:_pk.canonicalName||_pk.name}:await geocode(_pq||a.place);   /* ⚠⚠ (#R489) A PIN CAN SAY WHAT IT IS, AND THAT IS THE WHOLE OF THE SECOND REPORT. `pin` accepted a place and nothing else, and `addPin(lng,lat)` made a marker whose popup reads 「Pin #3」 — so a turn asked for 「これらの着弾地点を説明付きでピンして」 had NO action that could carry the explanation, and improvised: research → bare pin → research again → pin again, four independent passes whose conclusions disagreed because each one re-searched. The description travels with the marker now. ⚠ AND THE PLACE IS ASKED FOR WITH ITS COUNTRY (js/atlas-geo-ledger.js first, so a name this conversation already resolved is not geocoded a second time) — 「オクチャブリスキー」 with no parent oblast and no country code is a query that cannot succeed, which is what the transcript shows it doing. */
-          if(ll){ try{ addPin(ll.lng,ll.lat,_pm); }catch(_){} try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)}); }catch(_){} try{ GLEDGER.record({kind:String(a.kind||ll.kind||'point'),name:String(a.place||''),canonicalName:ll.name||String(a.place||''),countryCode:String(a.countryCode||''),countryName:String(a.country||''),lng:ll.lng,lat:ll.lat,role:_pm.title||'pin',summary:_pm.description,source:'pin',provenance:'geocoded_point'}); }catch(_){}
-          let _oid=null; try{ _oid=(HOST.userPins&&HOST.userPins.length)?String(HOST.userPins[HOST.userPins.length-1].id):null; }catch(_){}   /* (#R119) creating actions return the created object's id */
-          return R(true, note(esc(_pm.title||ll.name||a.place||'')+(_pm.description?('<br><span style="font-size:11px;opacity:0.85;">'+esc(_pm.description)+'</span>'):'')), _oid?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
-        /* (#R172) …and "volume". The catalogue has advertised {"type":"tool","name":"volume"} since #R170, but
-           there was no branch for it, so it fell through to doControl() and quietly did nothing. */
-        /* (#R176) The drone planner lost its toolbar button (「どこにも置くな」), so it can no longer be
-           reached by clicking an id — it is called directly. Everything else still routes through the
-           button it owns, because that button is where the tool's own state lives. */
-        case 'tool': { const n=String(a.name||'').toLowerCase();
-          if(/drone|ドローン|无人机|무인기/.test(n)){ let ok=false; try{ ok=!!(window.IntMapDrone&&window.IntMapDrone.toggle()); }catch(_){} return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); }
-          const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/volume|立体|体積/.test(n)?'btn-tool-volume':/measur|dist|area/.test(n)?'btn-tool-measure':/grid/.test(n)?'btn-tool-grid':null; if(id){ const ok=clickId(id); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
-        case 'admin1Coverage': { const _cv=await ADM1.coverageAnswer(a,{L,esc,note,warn,geocode}); return R(_cv.ok,_cv.html,_cv.meta?{meta:_cv.meta}:null); }   /* ⚠ (#R760) WHICH first-level subdivisions a shape covers — 「which prefectures does a 500 km buffer round Tokyo cover」 spent 4 m 42 s on production 2026-09-16 and listed none, because the shipped index (4,515 units) could only be asked BY NAME. The body is js/atlas-admin1.js `coverageAnswer`; it does NOT paint (#R743) — the names go to `map.highlight`. */
-        case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof HOST.radiusKm!=='undefined') HOST.radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ HOST.radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} let _oid=null; try{ _oid=(HOST.radiusItems&&HOST.radiusItems.length)?String(HOST.radiusItems[HOST.radiusItems.length-1].id):null; }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw, (ok&&_oid)?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
-        /* (#R170) 3-D VOLUME — the Atlas face of Measure ▸ 3-D volume (js/volume3d.js). base/top are ALTITUDES
-           ABOVE SEA LEVEL in metres; the module compensates for 3-D terrain so the band lands where it was asked for. */
-        case 'volume3d': { const ll=await geocode(a.place); if(!ll) return R(false, warn('⚠ '+esc(a.place||''))); await window.IntMapLazy.need('volume3d');   /* (#R311) on-demand: fetch before reading the global */
-          const V=window.IntMapVolume3D; if(!V) return R(false, warn('⚠ '+L('3-D volume tool unavailable','3D立体ツールを使えません','3-D-Volumen nicht verfügbar','Инструмент 3-D недоступен','Herramienta 3-D no disponible')));
-          const km=Math.max(0.2,Math.min(500,+a.km||5));
-          /* (#R172) base/top may now be given in any of the tool's units, and there is no ceiling — a
-             geostationary shell at 35,786 km is a legitimate thing to ask for. */
-          const UF={m:1,km:1000,ft:0.3048,mi:1609.344};
-          const un=UF[String(a.unit||'m').toLowerCase()]?String(a.unit||'m').toLowerCase():'m';
-          const base=(+a.base)*UF[un], top=(+a.top)*UF[un];
-          if(!isFinite(base)||!isFinite(top)) return R(false, warn('⚠ '+L('Need a base and a top altitude','下端と上端の高度が必要です','Basis- und Obergrenze nötig','Нужны нижняя и верхняя высота','Se necesitan altitud inferior y superior')));
-          /* (#R171) the footprint can be a CIRCLE now, not only the square — the shapes the panel offers are
-             reachable from Atlas too, along with the colour and opacity. */
-          const round=/^(circle|round|circular|円|丸)$/i.test(String(a.shape||''));
-          let ring;
-          if(round){ ring=V.circleRing([ll.lng,ll.lat], km*500, 96); }   /* km is the DIAMETER, as for the square */
-          else { /* square footprint `km` on a side, centred on the place (longitude scaled by latitude) */
-            const dLat=km/2/110.574, dLng=km/2/(111.320*Math.max(0.02,Math.cos(ll.lat*Math.PI/180)));
-            ring=[[ll.lng-dLng,ll.lat-dLat],[ll.lng+dLng,ll.lat-dLat],[ll.lng+dLng,ll.lat+dLat],[ll.lng-dLng,ll.lat+dLat]]; }
-          try{ if(typeof setTool==='function') setTool('volume'); if(typeof HOST.measurePoints!=='undefined') HOST.measurePoints=[];
-            if(V.setUnit) V.setUnit(un);
-            /* (#R174) the "solid" parameter is gone with the checkbox — a volume is a closed body, and an
-               option nobody can act on is worse than no option at all. */
-            V.setAltitudes(base,top);
-            if(a.color||a.opacity!=null) V.setStyle(a.color||null, a.opacity!=null?+a.opacity:null);
-            V.setRing(ring);
-            if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel();
-            /* (#R172) no re-set needed any more: syncClicks() refuses to replace a ring it did not create,
-               so the panel rebuild above can no longer wipe an Atlas footprint (it used to, for the square). */
-          }catch(_){}
-          try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),pitch:Math.max(GE().camera.getPitch(),55)}); }catch(_){}
-          const st=V.state();
-          return R(!!st.points, st.points?note('🧊 '+esc(ll.name||a.place||'')+' · '+V.fmtAlt(Math.min(base,top))+'–'+V.fmtAlt(Math.max(base,top))+' · '+V.fmtVolume()):warn('⚠')); }
-        /* ══ (#R347) ACTIVE NAVIGATION — §34 ════════════════════════════════════════════
-           「Atlasが独自 route state を持つことは禁止。RouteStore / NavigationStore を唯一の正本に。」
-           Every number below is READ from window.IntMapNavStore through IntMapNavigation.summary().
-           Atlas holds no copy, derives no distance and predicts no arrival — it phrases what the store
-           already decided. That is why 「あと何分？」 works while a reroute is in flight: the answer comes
-           from the same object the nav UI is rendering. */
-        case 'startNavigation': {
-          let N=window.IntMapNavigation;
-          if(!N){ try{ await window.IntMapLazy.need('navigation'); N=window.IntMapNavigation; }catch(_){} }
-          if(!N) return R(false, warn('⚠ '+L('Navigation is unavailable in this session.','このセッションでは案内を使えません。','Navigation ist nicht verfügbar.','Навигация недоступна.','La navegación no está disponible.')));
-          /* ⚠ A ROUTE HAS TO EXIST FIRST, AND SAYING SO IS MORE USE THAN FAILING. #R278's lesson: a
-             capability that answers 「その機能は実行できません」 without naming what is missing is a dead end. */
-          if(!N.canStart()) return R(false, warn('⚠ '+L('Plan a route first — tell me where from and where to.','先に経路を検索してください。出発地と目的地を教えてください。','Erst eine Route planen — nenne Start und Ziel.','Сначала постройте маршрут.','Primero planifica una ruta.')));
-          const _sim=!!(a.simulate||a.sim);
-          const _started=await (_sim?N.simulate({speedMultiplier:+a.speed||5}):N.start({}));
-          if(!_started){ const _s=N.summary()||{}; const _c=(_s.error&&_s.error.code)||'NO_LOCATION';
-            return R(false, warn('⚠ '+esc(window.IntMapRouteErrors.message(_c)))); }
-          const _s0=N.summary();
-          return R(true, note(L('Navigation started','案内を開始しました','Navigation gestartet','Навигация начата','Navegación iniciada')
-            +(_s0.destination&&_s0.destination.name?(' · '+esc(_s0.destination.name)):'')
-            +(_sim?(' · '+L('simulated','シミュレーション','simuliert','симуляция','simulado')):'')));
-        }
-        case 'stopNavigation': {
-          const N=window.IntMapNavigation;
-          if(!N||N.state()==='idle') return R(true, note(L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
-          N.stop();
-          return R(true, note(L('Navigation stopped.','案内を停止しました。','Navigation beendet.','Навигация остановлена.','Navegación detenida.')));
-        }
-        case 'navStatus': {
-          const N=window.IntMapNavigation;
-          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
-          const _st=N.summary(), _C=window.IntMapRouteCards, _o={lang:HOST.lang};
-          const _dist=_C.distance(_st.remainingDistance,_o), _dur=_C.duration(_st.remainingDuration,_o);
-          const _eta=_st.eta?_C.clock(new Date(_st.eta),_o):'';
-          let _h=note(esc(_dur)+' · '+esc(_dist)+(_eta?(' · '+L('arrive ','到着 ','Ankunft ','прибытие ','llegada ')+esc(_eta)):''));
-          if(_st.nextManeuver) _h+=note(esc(_C.distance(_st.nextManeuver.distance,_o))+' · '+esc(_st.nextManeuver.road||_st.currentRoad||''));
-          /* ⚠ THE HONESTY LINE (§6). Without a traffic provider the duration is the router's own
-             estimate and the reply says so — 「渋滞考慮」 may never be printed on a number that has none. */
-          _h+=note((_st.etaMeta&&_st.etaMeta.traffic)
-            ? L('Traffic-aware.','交通状況を反映しています。','Verkehrsabhängig.','С учётом пробок.','Con tráfico.')
-            : L('Standard travel time — traffic not included.','標準所要時間です（交通状況未反映）。','Standardfahrzeit — ohne Verkehr.','Обычное время — без пробок.','Tiempo estándar — sin tráfico.'));
-          if(_st.offRoute) _h+=warn('⚠ '+L('Off route.','経路を外れています。','Abseits der Route.','Вне маршрута.','Fuera de ruta.'));
-          return R(true, _h);
-        }
-        case 'navCamera': {
-          const N=window.IntMapNavigation;
-          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
-          if(t==='recenter'&&!a.mode){ N.recenter(); return R(true, note(L('Following your position again.','現在地の追従を再開しました。','Folge wieder deiner Position.','Снова слежу за позицией.','Siguiendo tu posición de nuevo.'))); }
-          const _w=String(a.mode||a.camera||(t==='overview'?'overview':t==='northUp'?'north':'follow')).toLowerCase();
-          const _ok=N.setCamera(_w==='north'?'north':_w==='overview'?'overview':_w==='free'?'free':'follow');
-          return R(!!_ok, _ok?note(esc(_w)):warn('⚠'));
-        }
-        case 'navVoice': {
-          const N=window.IntMapNavigation;
-          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
-          const _w=t==='mute'?'off':t==='unmute'?'guidance':String(a.mode||a.voice||'guidance').toLowerCase();
-          const _ok=N.setVoice(_w==='off'?'off':_w==='alerts'?'alerts':'guidance');
-          return R(!!_ok, _ok?note(esc(_w)):warn('⚠'));
-        }
-        /* (#R174) DRONE NAVIGATION — the Atlas face of js/drone-nav.js. Every number in the reply comes
-           from the same compute() the panel shows; Atlas never re-derives one, and it never claims a
-           route is flyable when the planner said otherwise. */
-        case 'drone': { const D=window.IntMapDrone;
-          if(!D) return R(false, warn('⚠ '+L('Drone planner unavailable','ドローン航法を使えません','Drohnenplaner nicht verfügbar','Планировщик дрона недоступен','Planificador de dron no disponible')));
-          const act=String(a.action||(a.from||a.to?'plan':'open')).toLowerCase();
-          if(act==='close'){ D.close(); return R(true, note('🛸 '+L('Closed','閉じました','Geschlossen','Закрыто','Cerrado'))); }
-          if(act==='clear'){ D.clearRoute(); D.open(); return R(true, note('🛸 '+L('Route cleared','経路を消去しました','Route gelöscht','Маршрут очищен','Ruta borrada'))); }
-          if(act==='plan'){
-            const names=[a.from].concat(Array.isArray(a.via)?a.via:(a.via?[a.via]:[])).concat([a.to]).filter(x=>x!=null&&String(x).trim()!=='');
-            if(names.length<2) return R(false, warn('⚠ '+L('Need a start and a destination','出発地と目的地が必要です','Start und Ziel nötig','Нужны старт и цель','Se necesitan origen y destino')));
-            const pts=[]; for(const n of names){ const ll=await geocode(n); if(!ll) return R(false, warn('⚠ '+esc(String(n)))); pts.push(ll); }
-            D.newRoute();
-            if(a.aircraft) D.usePreset(String(a.aircraft).toLowerCase());
-            const ref=(String(a.ref||'agl').toLowerCase()==='amsl')?'amsl':'agl';
-            D.setTypedRef(ref);
-            const alt=isFinite(+a.alt)?+a.alt:80;
-            pts.forEach(p=>D.addWaypoint(p.lng,p.lat,alt,ref));
-            if(a.name) D.setRoute(Object.assign(D.route(),{name:String(a.name).slice(0,60)}));
-            D.open();
-            const res=await D.compute();
-            try{ const lats=pts.map(p=>p.lat), lngs=pts.map(p=>p.lng);
-              GE().camera.fitBounds([[Math.min.apply(null,lngs),Math.min.apply(null,lats)],[Math.max.apply(null,lngs),Math.max.apply(null,lats)]],
-                {padding:90,pitch:Math.max(GE().camera.getPitch(),55),duration:900}); }catch(_){}
-            if(!res) return R(false, warn('⚠'));
-            const bad=res.violations.filter(v=>v.severity==='critical'||v.severity==='error');
-            const head='🛸 '+esc(D.route().name)+' · '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+Math.round(res.batteryPct)+'% '+L('battery','バッテリー','Akku','батарея','batería');
-            return R(true, (bad.length?warn('⚠ '+head+'\n'+bad.map(v=>'· '+esc(v.text)).join('\n')):note(head+' · ✓ '+L('all conditions met','全条件を満たします','alle Bedingungen erfüllt','все условия выполнены','todas las condiciones cumplidas')))); }
-          if(act==='followterrain'||act==='follow'){ D.open(); const res=await D.followTerrain();
-            if(!res) return R(false, warn('⚠ '+L('No route to adjust','調整する経路がありません','Keine Route','Нет маршрута','No hay ruta')));
-            return R(true, note('⛰ '+L('Adjusted to the terrain','地形に沿わせました','An das Gelände angepasst','Подогнано под рельеф','Ajustado al terreno')+' · '+D.route().wp.length+' '+L('waypoints','ウェイポイント','Wegpunkte','точек','puntos'))); }
-          if(act==='compute'||act==='recompute'){ D.open(); const res=await D.compute();
-            if(!res) return R(false, warn('⚠ '+L('No route yet','経路がまだありません','Noch keine Route','Маршрута ещё нет','Aún no hay ruta')));
-            return R(true, note('🛸 '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+res.violations.length+' '+L('findings','指摘','Hinweise','замечаний','hallazgos'))); }
-          /* (#R184) the operational checks and the three route actions. Everything below reads its
-             answer back out of IntMapDroneOps rather than restating the request, so a reply cannot
-             claim a check that did not run. */
-          const O=window.IntMapDroneOps;
-          const needOps=/^(wind|link|radio|nofly|restricted|reserve|return|sites|landing|prepare|check|compare|variants|rth|returnhome|returntohome|conflicts|conflict|traffic)$/.test(act);
-          if(needOps&&!O) return R(false, warn('⚠ '+L('The drone operations module is unavailable','ドローンの運航条件モジュールを利用できません','Das Betriebsmodul ist nicht verfügbar','Модуль эксплуатации недоступен','El módulo de operaciones no está disponible')));
-          if(needOps) D.open();
-          if(act==='prepare'||act==='check'||act==='wind'||act==='link'||act==='radio'||act==='nofly'||act==='restricted'||act==='reserve'||act==='return'||act==='sites'||act==='landing'){
-            /* naming ONE check turns that check on; "prepare"/"check" runs whatever is already on */
-            const only={ wind:'wind', link:'link', radio:'link', nofly:'nofly', restricted:'nofly',
-                         reserve:'reserve', return:'reserve', sites:'sites', landing:'sites' }[act];
-            if(only){ const patch={}; patch[only]=true; O.setEnabled(patch); }
-            await O.prepare();
-            const s=O.state();
-            const bits=[];
-            if(s.enabled.wind&&s.wind.report) bits.push(L('wind','風','Wind','ветер','viento')+' '+(Math.round(s.wind.report.maxSpeed*10)/10)+' m/s ('+(s.wind.src||'—')+')');
-            if(s.enabled.link&&s.link.report&&s.link.report.worstMarginDb!=null) bits.push(L('link margin','リンク余裕','Funkreserve','запас связи','margen del enlace')+' '+Math.round(s.link.report.worstMarginDb)+' dB, '+s.link.report.losBreaks+' '+L('line-of-sight breaks','箇所で視通が途切れ','Sichtabbrüche','разрывов видимости','cortes de visión'));
-            if(s.enabled.nofly&&s.nofly.report) bits.push(s.nofly.report.hits+' '+L('restricted areas within their buffers','件の制限区域が離隔内','Sperrgebiete im Richtabstand','запретных зон в пределах буфера','zonas restringidas dentro del margen'));
-            if(s.enabled.sites) bits.push(s.sites.reachable+'/'+s.sites.n+' '+L('landing sites reachable','件の着陸地点に到達可能','erreichbare Landeplätze','достижимых площадок','lugares de aterrizaje alcanzables'));
-            if(s.enabled.reserve&&s.reserve&&s.reserve.roundTripWh!=null) bits.push(L('round trip','往復','Umlauf','круг','ida y vuelta')+' '+s.reserve.roundTripWh.toFixed(1)+' Wh');
-            const res2=D.result();
-            const bad2=res2?res2.violations.filter(v=>v.severity==='critical'||v.severity==='error'):[];
-            return R(true, (bad2.length?warn('⚠ '):note('✓ '))+esc(bits.join(' · ')||L('checks run','点検しました','geprüft','проверено','comprobado'))
-              +(bad2.length?('\n'+bad2.map(v=>'· '+esc(v.text)).join('\n')):'')); }
-          if(act==='compare'||act==='variants'){
-            const c=await O.compareVariants();
-            if(!c) return R(false, warn('⚠ '+L('Need a route with at least two waypoints','ウェイポイントが2点以上の経路が必要です','Route mit mindestens zwei Wegpunkten nötig','Нужен маршрут минимум с двумя точками','Se necesita una ruta con dos puntos')));
-            const line=c.variants.map(v=>v.name+': '+(v.dist3DM/1000).toFixed(2)+' km · '+Math.round(v.timeS/60)+' min · '+v.energyWh.toFixed(1)+' Wh · '+v.violations+' ⚠').join('\n· ');
-            return R(true, note('⇄ '+L('Route comparison','経路の比較','Routenvergleich','Сравнение маршрутов','Comparación de rutas')+'\n· '+esc(line))); }
-          if(act==='rth'||act==='returnhome'||act==='returntohome'){
-            const rr=await O.returnToHome();
-            if(!rr) return R(false, warn('⚠ '+L('No route to return from','帰投元の経路がありません','Keine Route','Нет маршрута','No hay ruta')));
-            if(rr.alreadyHome) return R(true, note('✓ '+L('The route already ends at the launch point','経路はすでに離陸地点で終わっています','Die Route endet bereits am Startpunkt','Маршрут уже заканчивается в точке взлёта','La ruta ya termina en el punto de despegue')));
-            return R(true, note('⤺ '+L('Return leg added','帰投区間を追加しました','Rückflug ergänzt','Возврат добавлен','Tramo de regreso añadido')+' — '+Math.round(rr.safeAmsl)+' m AMSL · '+(rr.result?((rr.result.dist3DM/1000).toFixed(2)+' km · '+Math.round(rr.result.batteryPct)+'%'):''))); }
-          if(act==='conflicts'||act==='conflict'||act==='traffic'){
-            const cf=await O.checkConflicts();
-            if(!cf) return R(false, warn('⚠ '+L('No route to check','点検する経路がありません','Keine Route','Нет маршрута','No hay ruta')));
-            if(!cf.checked) return R(true, note('✓ '+L('There is no other saved route to check against','照合できる保存済みの経路がありません','Keine zweite gespeicherte Route','Нет второго сохранённого маршрута','No hay otra ruta guardada')));
-            if(!cf.conflicts) return R(true, note('✓ '+L('No conflict with the '+cf.checked+' other saved route(s)','ほかの保存済み経路 '+cf.checked+' 本との干渉はありません','Kein Konflikt mit '+cf.checked+' anderen Routen','Конфликтов с '+cf.checked+' маршрутами нет','Sin conflicto con las otras '+cf.checked+' rutas')));
-            return R(true, warn('⚠ '+cf.conflicts+' '+L('conflict(s)','件の干渉','Konflikte','конфликтов','conflictos')+'\n'
-              +cf.minima.filter(m=>m.conflict).map(m=>'· '+esc(m.name||m.route)+': '+Math.round(m.horizM)+' m / '+Math.round(m.vertM)+' m / '+Math.round(m.timeS)+' s').join('\n'))); }
-          D.open(); return R(true, note('🛸 '+L('Drone planner open','ドローン航法を開きました','Drohnenplaner geöffnet','Планировщик открыт','Planificador abierto'))); }
-        case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof HOST.measurePoints!=='undefined') HOST.measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ GE().camera.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(GE().camera.getZoom()-1,2)}); }catch(_){} let _mr=null; try{ _mr=HOST.measureReading&&HOST.measureReading([[A.lng,A.lat],[B.lng,B.lat]]); }catch(_){}   /* (#R747) the figure travels with the result — see HOST.measureReading in js/app-body.js */
-          return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||'')+(_mr?(' · '+esc(_mr.text)+' · '+esc(Math.round(_mr.bearing))+'° '+esc(_mr.bearingText||'')):''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
-        case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
-        case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
-        /* (#R85) workspace (floating-window) mode via Atlas ("ワークスペースモードの切り替えがAtlasでできない") */
-        case 'workspace': {
-          if(!window.IntMapWorkspace) return R(false, warn('⚠'));
-          const active=!!(window.IntMapWorkspace.active&&window.IntMapWorkspace.active());
-          const m=String(a.mode||a.action||a.state||'').toLowerCase();
-          const want = (a.on===false||/^(off|exit|close|normal|stop|disable|leave)$/.test(m)) ? false
-                     : (a.on===true ||/^(on|enter|open|start|enable|switch)$/.test(m)) ? true
-                     : !active;   /* unspecified → toggle */
-          if(want===active) return R(true, note('✓ '+(active?L('Already in workspace mode','すでにワークスペースモードです','Bereits im Workspace-Modus','Уже в оконном режиме','Ya en modo espacio'):L('Already in normal mode','すでに通常モードです','Bereits im Normalmodus','Уже в обычном режиме','Ya en modo normal'))));
-          let ok=false; try{ if(want){ ok=(window.IntMapWorkspace.open()!==false); } else { window.IntMapWorkspace.close(); ok=true; } }catch(_){}
-          return R(ok, ok? note(want?'🗔 '+L('Workspace mode on — News, Countries, the map, layers and Atlas are now free-floating windows','ワークスペースモードをオン — ニュース・国・地図・レイヤー・Atlasが自由なウィンドウになりました','Workspace-Modus an','Оконный режим включён','Modo espacio activado')
-                                   :'✓ '+L('Back to the normal layout','通常レイアウトに戻しました','Zurück zum Normal-Layout','Обычный вид','De vuelta al diseño normal'))
-                       : warn('⚠ '+L('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio'))); }
-        case 'shortcuts': { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note(L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
-        /* (#R88) universal object list — see & manage every pin/drawing/radius/route/upload/isochrone in one panel */
-        case 'objects': { let n=0; try{ if(window.IntMapObjects){ n=window.IntMapObjects.count(); window.IntMapObjects.open(); } }catch(_){}
-          return R(true, note('🗂 '+L('Objects','オブジェクト一覧','Objekte','Объекты','Objetos')+' · '+n+' '+L('on the map','件','Objekte','объектов','objetos'))+note(L('Manage every pin, drawing, radius, route, uploaded layer and reachable-area here — rename, recolor, hide or delete.','ピン・図形・半径・経路・アップロード・到達圏をここで一括管理（名称変更・色変更・非表示・削除）。','Alle Objekte hier verwalten.','Управляйте всеми объектами здесь.','Gestiona todos los objetos aquí.'))); }
-        /* (#R89) RF / radio coverage from an antenna */
-        /* (#R318) `lineOfSight` WAS ALSO LISTED HERE, AND WAS UNREACHABLE. A switch enters the FIRST
-           matching case and `case 'los': case 'lineOfSight':` above already claims that spelling, so
-           this label had never once been entered. Removing a label the language cannot reach cannot
-           change behaviour; leaving it said IntMap had a route to the viewshed by that name when
-           every such request had always gone to the line-of-sight tool instead. */
-        case 'rfCoverage': {
-          /* ⚠ (#R299) NO MAST IS PLANTED AT THE CAMERA'S CENTRE — 「勝手に地図中心を選択している…のを辞めろ」. The service area, the farthest
-             sight line and the terrain shadow are all functions of ONE coordinate, and the fallback here was wherever the reader happened to be looking. It asks now, the way `tsunami` below does. */
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
-          if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where? Give the transmitter site (place, or lng/lat).','送信点はどこですか（地名または経緯度）。','Wo? Senderstandort angeben.','Где передатчик?','¿Dónde? Indica el emplazamiento del emisor.'), a.place||a.at||a.location)));
-          /* ⚠ (#R296) ONE PANEL — 「電波・通信圏と見通し線解析を統合して」. `IntMapRF` is gone; this is `IntMapLOS` with a frequency. */
-          try{ if(window.IntMapLOS){ const L2=window.IntMapLOS;
-            if(L2.setMode) L2.setMode(/^(los|lineOfSight|viewshed)$/.test(String(a.type||''))?'los':'radio');
-            if(L2.setParams) L2.setParams((+a.height||+a.antennaHeight||null), null, null, 1.3333, (+a.frequency||+a.freq||null));
-            L2.open(ll); } }catch(_){}
-          return R(true, note('📡 '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+' — '+L('line-of-sight service area over real terrain. Set antenna height / power / frequency in the panel; click to move the mast.','実地形上の見通し到達域。パネルでアンテナ高・出力・周波数を設定、クリックで基地局を移動。','Sichtlinie über echtem Gelände.','зона прямой видимости.','área de línea de vista.'))); }
-        /* (#R90) sun & shadow */
-        case 'sun': {
-          /* ⚠ (#R302) THE RESOLVED PLACE WAS THROWN AWAY — geocoded, flown to, then `open()` WITH NO ARGUMENT, so the panel answered for the camera's centre, which `flyTo` had not even reached yet. It is handed over now, and with none the reply asks. */
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ ll={lng:g.lng,lat:g.lat}; try{ GE().camera.flyTo({center:[g.lng,g.lat],zoom:Math.max(GE().camera.getZoom(),15)}); }catch(_){} } } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){} if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where? Give the point (place, or lng/lat).','どの地点ですか（地名または経緯度）。','Wo? Punkt angeben (Ort oder Länge/Breite).','Где? Укажите точку (место или координаты).','¿Dónde? Indica el punto (lugar o lng/lat).'), a.place||a.at||a.location)));
-          try{ if(window.IntMapSun){ window.IntMapSun.open({lng:ll.lng,lat:ll.lat}); if(a.date||a.time||a.datetime){ const d=new Date(a.datetime||((a.date||'')+(a.time?('T'+a.time):''))); if(!isNaN(d)) window.IntMapSun.setTime(d); } } }catch(_){}
-          return R(true, note('🌇 '+L('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+' — '+L('pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.','日時を選択。表示中の建物（拡大時）が実際の影を落とし、3Dは太陽方向から照らされます。▶で一日を再生。','Datum/Zeit wählen — echte Gebäudeschatten.','выберите дату/время — реальные тени зданий.','elige fecha/hora — sombras reales.'))); }
-        /* (#R176) terrain sculpting + water routing */
-        case 'terrainWater': {
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
-          await window.IntMapLazy.need('terrainWater'); let ok=false; try{ if(window.IntMapTerrainWater){ await window.IntMapTerrainWater.open(ll?{lng:ll.lng,lat:ll.lat,refit:true}:{refit:true}); ok=true;
-            if(a.rainMm!=null) window.IntMapTerrainWater.setRain(+a.rainMm||0);
-            if(a.flowM3s!=null&&window.IntMapTerrainWater.setFlow) window.IntMapTerrainWater.setFlow(+a.flowM3s);   /* (#R189) channel discharge */
-            if(a.waterM3!=null&&ll) window.IntMapTerrainWater.addSource(ll.lng,ll.lat,+a.waterM3||0);
-            if(a.raiseM!=null&&ll) window.IntMapTerrainWater.brush(ll.lng,ll.lat,'raise',{heightM:+a.raiseM,radiusM:+a.radiusM||undefined});
-            if(a.lowerM!=null&&ll) window.IntMapTerrainWater.brush(ll.lng,ll.lat,'lower',{heightM:+a.lowerM,radiusM:+a.radiusM||undefined});
-            if(a.mode) window.IntMapTerrainWater.setMode(String(a.mode));
-            const _tw=window.IntMapTerrainWater;   /* (#R211) the continuous pour and the terrain-only reset — every feature is operable from Atlas */
-            if(a.resetTerrain&&_tw.resetTerrain) _tw.resetTerrain();
-            if((a.pour!=null||a.pourRateM3s!=null||a.timeSpeed!=null)&&_tw.pour) _tw.pour({ mode:(a.pour==='cont'||a.pour==='continuous')?'cont':(a.pour==='once'?'once':undefined), rateM3s:a.pourRateM3s!=null?+a.pourRateM3s:undefined, speed:a.timeSpeed!=null?+a.timeSpeed:undefined, run:(a.pour==='stop'||a.pour===false)?false:((a.pour==='cont'||a.pour==='continuous')?true:undefined) });
-          } }catch(_){}
-          const st=(()=>{ try{ return window.IntMapTerrainWater.state().result; }catch(_){ return null; } })();
-          return R(ok, ok?note('⛰💧 '+L('Terrain & water','地形編集・水流','Gelände & Wasser','Рельеф и вода','Terreno y agua')+' — '
-            +(st?(L('ponded','湛水','aufgestaut','затоплено','embalsado')+' '+Math.round(st.storedM3).toLocaleString()+' m³ · '+st.floodKm2.toFixed(2)+' km² · '
-              +(st.breaches?(st.breaches+' '+L('spill points','箇所で越流','Überströmstellen','точек перелива','desbordes')):L('nothing overtopping','越流なし','kein Überströmen','без перелива','sin desborde'))+' · ')
-              :'')
-            +L('brush the ground up or down, draw a levee, drop water — the flow paths, the ponding and the breach direction follow.','ブラシで盛る・削る、堤防を線で引く、水を落とす——流下経路・湛水域・決壊方向がそのまま追随します。','Gelände formen, Deich zeichnen, Wasser fallen lassen.','лепите рельеф, рисуйте дамбу, лейте воду.','esculpa el terreno, dibuje un dique, suelte agua.')):warn('⚠')); }
-        /* (#R176) seismic wave propagation */
-        case 'earthquake': {
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location||a.epicentre||a.epicenter){ const g=await geocode(a.place||a.at||a.location||a.epicentre||a.epicenter); if(g) ll={lng:g.lng,lat:g.lat,name:g.name}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
-          await window.IntMapLazy.need('seismic'); let ok=false; try{ if(window.IntMapSeismic){
-            window.IntMapSeismic.open(ll?{lng:ll.lng,lat:ll.lat,depth:(a.depth!=null?+a.depth:null),mw:(a.magnitude!=null?+a.magnitude:(a.mw!=null?+a.mw:null))}:{});
-            if(a.real) await window.IntMapSeismic.loadReal();
-            if(a.site) window.IntMapSeismic.setSite(String(a.site));
-            if(a.scale&&window.IntMapSeismic.setScale) window.IntMapSeismic.setScale(String(a.scale).toLowerCase());   /* (#R189) mmi | jma */
-            if(a.speed!=null&&window.IntMapSeismic.setSpeed) window.IntMapSeismic.setSpeed(+a.speed);                  /* (#R189) playback rate */
-            if(a.slip!=null) window.IntMapSeismic.setParams({slip:+a.slip});                                           /* (#R189) rupture slip */
-            if(a.t!=null||a.seconds!=null) window.IntMapSeismic.setParams({t:+(a.t!=null?a.t:a.seconds)});
-            /* (#R190) the new controls, reachable the same way every other one is (#R82) */
-            if(a.opacity!=null&&window.IntMapSeismic.setOpacity) window.IntMapSeismic.setOpacity(+a.opacity>1?(+a.opacity/100):+a.opacity);
-            if(a.tsunami&&window.IntMapSeismic.openTsunami) window.IntMapSeismic.openTsunami();
-            /* (#R192) the propagation model's own controls, once the hand-off has opened it */
-            try{ const T=window.IntMapTsunami;
-              if(a.tsunami&&T){
-                if(a.hours!=null&&T.setHours) T.setHours(+a.hours);
-                if(a.maximum!=null&&T.showMaximum) T.showMaximum(!!a.maximum);
-                /* (#R193) the two controls the rebuild added: the amplitude the ramp saturates at,
-                   and the hourly travel-time contours */
-                if(a.amplitude!=null&&T.setAmplitude) T.setAmplitude(+a.amplitude);
-                if(a.contours!=null&&T.showContours) T.showContours(!!a.contours);
-                if(a.play&&T.play) T.play();
-              } }catch(_){}
-            ok=true; } }catch(_){}
-          /* ⚠ (#R302) 「ここへP波◯秒」 IS A SECOND POINT AND NOBODY HAD CHOSEN IT EITHER — read at `GE().camera.getCenter()` and naming no place at all. Only a point the reader really named answers now (`_herePoint`, which the system prompt's [PINNED POINT] line DEFINES 「ここ」 as), carrying its own name; with none the reply asks. */
-          let extra='', ask='', h=null; try{ h=(typeof _herePoint!=='undefined'&&_herePoint&&isFinite(_herePoint.lng))?_herePoint:null; const at=h?window.IntMapSeismic.at(h.lng,h.lat):null;
-            if(at&&at.tP!=null) extra=' · '+L('P here in','ここへP波','P hier in','P здесь через','P aquí en')+' '+Math.round(at.tP)+' s, S '+Math.round(at.tS)+' s ('+esc(h.name||((+h.lat).toFixed(3)+', '+(+h.lng).toFixed(3)))+')'; else if(!h) ask=warn('⚠ '+L('Arrival times need a point — name a place, or tap the map first.','到達時刻には地点が必要です。地名を指定するか、先に地図をタップしてください。','Ankunftszeiten brauchen einen Punkt — Ort nennen oder zuerst auf die Karte tippen.','Для времени прихода нужна точка — укажите место или сначала коснитесь карты.','Los tiempos de llegada necesitan un punto — indica un lugar o toca antes el mapa.')); }catch(_){}
-          /* (#R232) 🌐 removed with the panel header's — same feature, same instruction. */
-          return R(ok, ok?(note(L('Seismic waves','地震波','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+' — '
-            +L('P, S and surface wavefronts ray-traced through the IASP91 Earth model, with arrival time, shaking duration and Modified-Mercalli intensity for the places around it.','P波・S波・表面波の波面をIASP91地球モデルでレイトレーシングし、周辺地点への到達時刻・揺れの継続時間・改正メルカリ震度を表示します。','P-, S- und Oberflächenwellen durch IASP91.','волны P, S и поверхностные по модели IASP91.','frentes P, S y superficiales por IASP91.')+extra)+ask):warn('⚠')); }
-        /* (#R176) terrain shade + the annual sunlight budget (the Sun panel owns the controls) */
-        case 'sunHours': {
-          /* ⚠ (#R302) AND THE `else` THAT ENDED THIS LINE TOOK THE CAMERA'S CENTRE — after which the block below ran the WHOLE-YEAR horizon analysis on it and printed the hours: 「勝手に地図中心を選択しているものとして結果を出す」 at its most expensive. It asks now. */
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ ll={lng:g.lng,lat:g.lat}; try{ GE().camera.flyTo({center:[g.lng,g.lat],zoom:Math.max(GE().camera.getZoom(),12)}); }catch(_){} } } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){} if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where? Give the point (place, or lng/lat).','どの地点ですか（地名または経緯度）。','Wo? Punkt angeben (Ort oder Länge/Breite).','Где? Укажите точку (место или координаты).','¿Dónde? Indica el punto (lugar o lng/lat).'), a.place||a.at||a.location)));
-          let ok=false, txt='';
-          /* ⚠ (#R298) THE PANEL IS OPENED ON THE POINT THIS ACTION RESOLVED. `open()` with no argument
-             named the camera's centre in its own heading, and the `flyTo` above has not landed yet, so
-             the reader was shown a heading for the place they were looking at BEFORE they asked. */
-          try{ if(window.IntMapSun){ window.IntMapSun.open({lng:ll.lng,lat:ll.lat}); ok=true;
-            if(a.solstice){ await window.IntMapSun.solsticeShade(); }
-            else if(a.terrainOnly){ window.IntMapSun.terrainShadow(true); }
-            else if(ll){ const r=await window.IntMapSun.analysePoint(ll.lng,ll.lat);
-              if(r) txt=' — '+Math.round(r.annualHours).toLocaleString()+' h/'+L('year','年','Jahr','год','año')
-                +' ('+L('open horizon','遮蔽なし','offener Horizont','открытый горизонт','horizonte abierto')+' '+Math.round(r.annualOpenHours).toLocaleString()+' h, −'+r.lossPct.toFixed(0)+'%) · '
-                +L('winter solstice','冬至','Wintersonnenwende','солнцестояние','solsticio')+' '+r.winterSolstice.toFixed(1)+' h'; }
-          } }catch(_){}
-          return R(ok, ok?note('🌇 '+L('Sunlight hours & terrain shade','日照時間・地形の影','Sonnenstunden & Geländeschatten','Часы солнца и тень рельефа','Horas de sol y sombra')+txt):warn('⚠')); }
-        /* (#R208) 「ある地点からの星空」— reachable from Atlas as well as the right-click item (#R112) */
-        case 'nightSky': {   /* (#R214) +「立った」モード */
-          await window.IntMapLazy.need('nightSky'); const NS=window.IntMapNightSky; if(!NS||!NS.open) return R(false, warn('⚠'));
-          /* ⚠ (#R299) 「ここからの星空」 IS NOT 「ここを見ている星空」 — the sky, the measured skyline and the rise
-             times belong to ONE standing point, and the reply quoted the centre back as though it were chosen. */
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
-          if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where from? Give a place (or lng/lat).','どこからの空ですか（地名または経緯度）。','Von wo aus? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.'), a.place||a.at||a.location)));
-          await NS.open({lng:ll.lng, lat:ll.lat, when:(a.when||a.time||a.date||null), az:a.az, alt:a.alt, fov:a.fov, bearing:a.bearing, mode:(a.type==='standHere'||a.type==='skyStanding')?'stand':a.mode, view:a.view, stand:a.stand});   /* (#R214) the view is a parameter — js/night-sky.js resolves the spellings */
-          if(a.rate!=null&&NS.setRate) NS.setRate(+a.rate); if(a.play&&NS.play) NS.play(true);   /* (#R208) */
-          const st=NS.state(), facing=(st.mode==='stand'&&st.look)?(' · '+L('facing','向き','Blick','взгляд','mirando')+' '+Math.round(st.look.az)+'°'):''; return R(true, note((st.mode==='stand'?'🧍 ':'✨ ')+L('Sky from','星空：','Himmel von','Небо от','Cielo desde')+' '+ll.lat.toFixed(3)+'°, '+ll.lng.toFixed(3)+facing+(st.last?' — '+st.last.starsDrawn.toLocaleString()+' '+L('stars above the measured skyline','個が実測した稜線の上に','Sterne über der Skyline','звёзд над горизонтом','estrellas sobre el horizonte'):''))); }
-        /* (#R197) the space explorer — the same surface the button at the zoom floor opens */
-        case 'space': {
-          const S=window.IntMapSpace;
-          if(!S||!S.open) return R(false, warn('⚠ '+L('The space explorer is not available in this build.','宇宙探索はこのビルドで利用できません。','Weltraum-Explorer nicht verfügbar.','Космический обозреватель недоступен.','El explorador espacial no está disponible.')));
-          const raw=String(a.body||a.planet||a.target||'').toLowerCase().trim();
-          const ALIAS={ sun:'sun','太陽':'sun', mercury:'mercury','水星':'mercury', venus:'venus','金星':'venus',
-            earth:'earth','地球':'earth', moon:'moon','月':'moon', luna:'moon', mars:'mars','火星':'mars',
-            jupiter:'jupiter','木星':'jupiter', saturn:'saturn','土星':'saturn', uranus:'uranus','天王星':'uranus',
-            neptune:'neptune','海王星':'neptune', pluto:'pluto','冥王星':'pluto' };
-          const body=ALIAS[raw]||null;
-          const mode=(a.type==='planet'||a.mode==='body'||(body&&a.type!=='solarSystem'&&a.type!=='space'))?'body':'system';
-          let when=null; if(a.date||a.when||a.datetime){ const d=new Date(a.date||a.when||a.datetime); if(!isNaN(d)) when=d; }
-          try{ S.open({ body:body||undefined, mode, scale:(a.scale==='real'||a.scale==='true')?'real':(a.scale==='model'?'model':undefined), when:when||undefined });
-            if(a.rate!=null&&S.setRate) S.setRate(+a.rate);
-          }catch(_){}
-          const nm={sun:'the Sun',mercury:'Mercury',venus:'Venus',earth:'Earth',moon:'the Moon',mars:'Mars',
-            jupiter:'Jupiter',saturn:'Saturn',uranus:'Uranus',neptune:'Neptune',pluto:'Pluto'}[body||'earth'];
-          return R(true, note('🪐 '+L('Space explorer','宇宙探索','Weltraum-Explorer','Космос','Explorador espacial')+' — '
-            +(mode==='body'?L('viewing '+nm+' as a globe, with its IAU place names.','を球体として表示（IAU地名付き）。','als Globus.','как шар.','como globo.')
-                            :L('the solar system at the chosen instant, from published orbital elements.','指定時刻の太陽系を、公表軌道要素から計算して表示。','das Sonnensystem zum gewählten Zeitpunkt.','Солнечная система на выбранный момент.','el sistema solar en el instante elegido.')))); }
-        /* ⚠ (#R197) `tsunami` IS NOT A HAZARD OF THE DISASTER SIMULATOR ANY MORE — it is its own model.
-           「勝手に災害シミュレータ内の津波シミュレータを起動するな」. Both the type and the free-text
-           `hazard` field used to land on js/sims.js's bathtub; they now open the propagation simulator
-           (js/tsunami.js), which is the only tsunami this app has. It needs an epicentre, a magnitude and
-           a focal depth rather than a coastal wave height, so the defaults are the ones the panel itself
-           uses and every one of them is overridable in the same call. */
-        case 'tsunami': {
-          await window.IntMapLazy.need('tsunami'); const T=window.IntMapTsunami;
-          if(!T||!T.open) return R(false, warn('⚠ '+L('The tsunami propagation simulator is not available in this build.','津波伝播シミュレーターはこのビルドで利用できません。','Tsunami-Simulator nicht verfügbar.','Симулятор цунами недоступен.','El simulador de tsunamis no está disponible.')));
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat,name:g.name}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
-          if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where? Give an epicenter (place, or lng/lat).','震源はどこですか（地名または経緯度）。','Wo? Epizentrum angeben.','Где эпицентр?','¿Dónde? Indica el epicentro.'), a.place||a.at||a.location)));
-          const mag=(a.magnitude!=null?+a.magnitude:(a.mw!=null?+a.mw:8.5));
-          /* ⚠ (#R204) THE SCOPE IS SET BEFORE open() RUNS THE SOLVE. `open()` starts the run itself, so
-             a setScope() after it would re-render the panel while the WRONG domain was already being
-             integrated — the same "the fix has no path to the thing it fixes" shape as #R183. */
-          const nearScope=(a.scope!=null)?(/^near/i.test(String(a.scope))) : (a.near===true||/high|近傍|высок|alta|hoch/i.test(String(a.resolution||'')));   /* ⚠⚠⚠ (#R667) AWAITED, BECAUSE open() DELEGATES TO THE RUNTIME AND THE RUNTIME IS ASYNC. Measured: immediately after this call returned, state() still reported `open:false` and the PREVIOUS epicentre — activation lands a tick later — so every line below it drove a module that had not adopted this event, `build()` found no epicentre, and the reader got nothing while the tool reported it had run. `run:false` itself is right (#R204: the scope must be settled before the solve starts); what was wrong was not waiting for the module to exist. */
-          try{ await T.open({ lng:ll.lng, lat:ll.lat, mw:mag, depth:(a.depth!=null?+a.depth:20),
-                        scope:nearScope?'near':'global', run:false });
-            if(a.hours!=null&&T.setHours) T.setHours(+a.hours);
-            if(T.run) T.run();
-            if(a.maximum!=null&&T.showMaximum) T.showMaximum(!!a.maximum);
-            if(a.amplitude!=null&&T.setAmplitude) T.setAmplitude(+a.amplitude);
-            if(a.contours!=null&&T.showContours) T.showContours(!!a.contours);
-            if(a.play&&T.play) T.play();
-          }catch(_){}
-          return R(true, note('🌊 '+L('Tsunami propagation','津波伝播','Tsunami-Ausbreitung','Распространение цунами','Propagación del tsunami')+' — M'+mag.toFixed(1)+' '+(ll.name||(ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)))+'. '
-            +L('Shallow-water long waves over the whole ocean; the frames stream in as they are solved.','全球の海洋上を伝わる浅水長波。解けたフレームから順に届きます。','Flachwasser-Langwellen über den ganzen Ozean.','Длинные волны по всему океану.','Ondas largas en todo el océano.'))); }
-        /* ⚠⚠ (#R296) TWO CASES STOOD HERE. `disaster`/`flood`/`ashfall` — 「4つのうち、放射性物質拡散シミュ
-           レーションを残し全削除」: what survives is `radiation`, its own capability; the tsunami spelling it
-           forwarded is `tsunami`. `earthReplay` — 「存在意義が不明だから全削除」: `timeTravel` sets the date. */
-        /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
-        case 'diagnose': {
-          const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
-          let h='<div style="font-weight:600;margin:2px 0 6px;">'+L('Data & connection status','データ・接続状態','Daten- & Verbindungsstatus','Данные и соединение','Estado de datos y conexión')+'</div><div style="font-size:12px;line-height:1.75;">';
-          h+=dot(!H.news.stale)+' '+L('News feed','ニュース','Nachrichten','Новости','Noticias')+': '+(H.news.count?(H.news.count+' '+L('articles','件','Artikel','статей','artículos')+(H.news.ageH==null?(' — '+L('undated','日付なし','ohne Datum','без дат','sin fecha')):(' — '+L('newest','最新','neuste','свежесть','más reciente')+' '+H.news.ageH+'h'))+(H.news.stale?(' ⚠ '+L('may have stopped updating','更新停止の可能性','evtl. keine Updates','возможно не обновляется','quizá no se actualiza')):'')):L('not loaded yet','未読込','noch nicht geladen','ещё не загружено','no cargado'))+'<br>';
-          h+=dot(H.layers.bad===0)+' '+L('Layers','レイヤー','Ebenen','Слои','Capas')+': '+H.layers.on+' '+L('on','オン','an','вкл','activas')+(H.layers.bad?(' ⚠ '+H.layers.bad+' '+L('not painting','未描画','nicht gezeichnet','не отрисованы','sin pintar')+(H.layers.badN.length?(' ('+H.layers.badN.map(esc).join(', ')+')'):'')):(' — '+L('all painting','全て描画','alle ok','все ок','todas ok')))+'<br>';
-          if(H.endpoints){ Object.keys(H.endpoints).forEach(k=>{ const e=H.endpoints[k]; if(e.ok==null){ h+='⚪ '+esc(k)+': '+L('not observed yet','未観測')+'<br>'; return; } h+=dot(e.ok)+' '+esc(k)+': '+(e.ok?(L('reachable','到達可能','erreichbar','доступно','accesible')+' · '+e.ms+'ms'):(e.status===429?(L('rate-limited','レート制限','ratenbegrenzt','лимит запросов','límite de tasa')+' (429)'):e.status?(L('error','エラー','Fehler','ошибка','error')+' '+e.status):(L('unreachable','到達不可','nicht erreichbar','недоступно','inaccesible'))))+'<br>'; }); }
-          else h+='⚪ '+L('Live APIs: not probed','ライブAPI: 未確認','Live-APIs: nicht geprüft','Живые API: не проверены','APIs: sin comprobar')+'<br>';
-          h+='</div>';
-          h+=note(H.ok?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):('⚠ '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));
-          return R(true, h); }
-        /* (atlas-observer-undo) put the map back to before a turn — the ONE undo, js/atlas-state.js `undo()`. The verdict re-reads every section (js/atlas-capabilities.js OBSERVERS.undo). */
-        case 'undo': { const u=await ASTATE.undo((dctx&&dctx.turnId!=null)?dctx.turnId:null,{turn:(a.turn!=null&&a.turn!=='')?+a.turn:null});
-          if(!u.ok) return R(false, warn('⚠ '+L('There is no earlier change to the map to undo.','元に戻せる地図の変更がありません。')), {meta:{code:'nothing_to_undo',permanent:true}});
-          if(u.already) return R(true, note('✓ '+L('The map was already put back in this turn.','このターンですでに地図を元に戻しています。')), {exec:{already:true,turnId:u.turnId}});
-          return R(true, note('✓ '+L('Put the map back to how it was before: ','次の依頼の前の状態に地図を戻しました: ')+esc(u.question||''))+(u.unresolved.length?warn('⚠ '+L('Could not put back','戻せなかったもの')+': '+esc(u.unresolved.join(', '))):''), {exec:{turnId:u.turnId,restored:u.restored.slice(),unresolved:u.unresolved.slice()}}); }
-        case 'clearAll': { _herePoint=null; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ COMPOSE.clear(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ clearElev(); }catch(_){} try{ clearFac(); }catch(_){} try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); }catch(_){} try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); }catch(_){} try{ window.IntMapArc3D&&window.IntMapArc3D.hide(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado')), _CLEARED('countries','era','polys','lines','choro','outline','poi')); }   /* (#R802) …and the markers, which this case takes off (`clearPois()` above) and did not declare */   /* ⚠ (#R760) THE OTHER HALF OF #R747's DECLARATION, WHICH `reset` GOT AND THIS DID NOT: clearing an already-clear map moves no count, so `paint.verify` fell to its last line and called it `not_rendered`. Measured on production 2026-09-16, 「Actually, go back to the previous view」: `map.clearAll` → `not_rendered` while the map was in fact clear. */
-        case 'outline': { if(a.on===false||/^(off|clear|hide|none)$/i.test(String(a.place||a.country||''))){ try{ window.IntMapOutline&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Outline cleared','範囲表示を消去','Umriss gelöscht','Контур очищен','Contorno borrado')), _CLEARED('outline')); }
-          const place=String(a.place||a.country||a.name||'').trim(); if(!place) return R(false, warn('⚠ '+L('Which place to outline?','どの場所の範囲？','Welcher Ort?','Какое место?','¿Qué lugar?')));
-          if(!window.IntMapOutline||!window.IntMapOutline.show) return R(false, warn('⚠'));
-          let ocw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ window.IntMapOutline.setColor&&window.IntMapOutline.setColor(pc); }catch(_){} } else ocw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
-          let ext=null; try{ ext=await placeExtent(place); }catch(_){}
-          /* (#R59) outline = the REAL boundary only (point-in-polygon via ext's point; NO rectangle for regions that
-             have no polygon — the user: "領域がわからない地名は全部長方形になるとかクソ"). */
-          const ctx=ext?{lng:ext.lng,lat:ext.lat,fit:true}:{fit:true};
-          let ok=false; try{ ok=await window.IntMapOutline.show((ext&&ext.name)||place, ctx); }catch(_){} let _olName=null; try{ const _c=window.IntMapOutline.current&&window.IntMapOutline.current(); _olName=(_c&&_c.name)||null; }catch(_){ _olName=null; }   /* (#R760) the name the outline SETTLED on, not the one we asked for: a declaration naming something the reading cannot find is worse than none */
-          return R(!!ok, (ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place))+(ext?_ambigNote(place,ext.lng,ext.lat):''):warn('⚠ '+L('No precise boundary for','正確な境界がありません','Keine genaue Grenze für','Нет точной границы для','Sin límite preciso para')+': '+esc((ext&&ext.name)||place)))+ocw, (ok&&_olName)?{objectIds:['outline'],meta:{painted:{outline:[String(_olName)]}}}:(ok?{objectIds:['outline']}:null)); }   /* (#R120) the outline is a referencable object */
-        /* (#R52) features the user could not reach reliably through the fuzzy "control" path are now FIRST-CLASS
-           actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
-           publisher", "log in", "donate", "send feedback", "report a bug" execute deterministically. */
-        case 'pandemicRun': { await window.IntMapLazy.need('pandemicSim'); const _P=window.IntMapPandemicAtlas; if(!_P) return R(false, warn('⚠ '+L('The pandemic engine could not be loaded.','パンデミックエンジンを読み込めませんでした。','Die Pandemie-Engine konnte nicht geladen werden.','Не удалось загрузить движок пандемии.','No se pudo cargar el motor de pandemia.'))); await ensureData(); _P.bind({loadCountryData, countryStats:()=>countryStats, lang:()=>HOST.lang}); const _pr=await _P.run(a); return _pr.ok ? R(true,_pr.html,{meta:{pandemic:_pr.meta}}) : R(false, warn(_pr.html), {meta:{code:(_pr.meta&&_pr.meta.code)||'failed'}}); }   /* ⚠⚠ (#R754) THE DOOR TO THE MODEL — the row above opens the SCREEN. Asked to simulate a pandemic from Lagos, Atlas made zero tool calls and said IntMap has no transmission simulator (#R747 §6); it has had one since #R575 and no way in. The engine, the world, the parameter vocabulary and the reply are js/pandemic-atlas.js, because the file this line sits in may not grow (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ). Computing declares NO map — see the second door below. */   /* ⚠⚠ (#R754) THESE TWO DOORS SHARE A ROW WITH THE ONE BELOW, and the sharing is the point: tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ budgets THIS FILE BY LINE, and raising a ceiling to fit one's own change is the move that check exists to catch (js/lazy-modules.js folds for the same reason, in the same words). They sit beside `playground` because that is the same feature: the row below opens the SCREEN, these two drive the MODEL. ⚠ THE ROW MUST STILL BEGIN WITH `case '` — scripts/atlas-catalog.mjs and scripts/atlas-capability-audit.mjs read dispatch labels off line STARTS, so a door folded into the middle of a block is a door they cannot see (measured: both went red). */   case 'pandemicDraw': { await window.IntMapLazy.need('pandemicSim'); const _P=window.IntMapPandemicAtlas; if(!_P) return R(false, warn('⚠ '+L('The pandemic engine could not be loaded.','パンデミックエンジンを読み込めませんでした。','Die Pandemie-Engine konnte nicht geladen werden.','Не удалось загрузить движок пандемии.','No se pudo cargar el motor de pandemia.'))); _P.bind({loadCountryData, countryStats:()=>countryStats, lang:()=>HOST.lang}); const _pd=await _P.draw(a); return _pd.ok ? R(true,_pd.html,{meta:{pandemic:_pd.meta,painted:true}}) : R(false, warn(_pd.html), {meta:{code:(_pd.meta&&_pd.meta.code)||'failed'}}); }   /* (#R754) the second door: drawing a run is a separate promise from computing one, because an observer that measures the map must be declared by something that ALWAYS moves it — #R743's finding, and the shape that made #R742 call 52 of 207 correct calls failures. */   case 'playground': { const m=String(a.mode||a.name||'').toLowerCase(); let ok=false, lbl='Playground';
-          try{ await window.IntMapLazy.need('playground'); if(/world|explorer|geo|satellite|drop|guess|どこ|地理/.test(m)&&window._pgWorldExplorer){ window._pgWorldExplorer(); ok=true; lbl='World Explorer'; }   /* ⚠⚠ (#R666) THE MODULE IS FETCHED BEFORE THE MODE IS CHOSEN, NOT INSTEAD OF IT. The two named-mode arms below test `window._pgWorldExplorer` / `window._pgPandemic`, and js/playground.js's factory — which since #R209 runs only when the module is ASKED FOR — is what installs them. So on a page where nobody had opened the Playground yet, both arms were false and 「パンデミック・シミュレーターを開いて」 fell through to the `else`, which fetched the module and opened THE HUB: Atlas answered a request for one simulator with a menu of four. */
-            else if(/pandemic|virus|outbreak|epidemic|disease|感染|パンデミック|эпидеми|pandemia/.test(m)&&window._pgPandemic){ window._pgPandemic(); ok=true; lbl='Pandemic Simulator'; }
-            else if(/quiz|test|クイズ|викторин|cuestionario/.test(m)&&window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; lbl='Quiz'; }
-            else if(window._openPlayground){ window._openPlayground(); ok=true; } }catch(_){}
-          return R(ok, ok?note('🎮 '+esc(lbl)):warn('⚠ '+L('Playground unavailable','プレイグラウンドを開けません','Playground nicht verfügbar','Playground недоступен','Playground no disponible'))); }
-        case 'news': { const m=String(a.mode||a.name||'').toLowerCase(); let id=null,lbl='';
-          /* (#R416) `pinmode-pub` / `pinmode-loc` are gone — the pin is where the story happened. */
-          if(/saved|favorit|bookmark|保存|ブックマーク|сохран|guardad/.test(m)){ id='newsfilter-saved'; lbl=L('Saved','保存','Gespeichert','Сохранённые','Guardados'); }
-          else if(/all|unsaved|すべて|全部|все|todo/.test(m)){ id='newsfilter-all'; lbl=L('All','すべて','Alle','Все','Todo'); }
-          else if(/translat|翻訳|перевод|traduc/.test(m)){ id='ai-translate-btn'; lbl=L('Translate','翻訳','Übersetzen','Перевод','Traducir'); }
-          if(id){ const ok=clickId(id); return R(ok, ok?note('📰 '+esc(lbl)):warn('⚠')); }
-          const ok=clickId('btn-news'); return R(ok, ok?note('📰 '+L('News','ニュース','Nachrichten','Новости','Noticias')):warn('⚠')); }
-        case 'account': { const ok=clickId('btn-account'); return R(ok, ok?note('👤 '+L('Account','アカウント','Konto','Аккаунт','Cuenta')):warn('⚠')); }
-        case 'donate': { const ok=clickId('btn-blueberry'); return R(ok, ok?note('💙 '+L('Donate','寄付','Spenden','Поддержать','Donar')):warn('⚠')); }
-        case 'feedback': { let ok=false; try{ if(window._openFeedback){ window._openFeedback(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-feedback-hdr'); return R(ok, ok?note('✓ '+L('Feedback','フィードバック','Feedback','Отзыв','Comentarios')):warn('⚠')); }
-        case 'bugReport': { let ok=false; try{ if(window._openBugReport){ window._openBugReport(); ok=true; } }catch(_){} return R(ok, ok?note('🐞 '+L('Bug report','バグ報告','Fehlerbericht','Сообщить об ошибке','Reportar error')):warn('⚠')); }
-        /* (#R60) FINE-GRAINED first-class actions ("Atlasで、まだ使えない操作がある。特に細かい指示や操作"):
-           highlight named countries, look up ONE country's actual figure, all-layers-off, SELECTIVE clear,
-           fullscreen and real GPS locate — plus relative opacity ("delta"), compass-direction bearing and
-           date-based timeTravel handled in their existing cases above. Every branch runs REAL engine code. */
-        case 'highlight': { const _hlMyGen=++_hlGen;   /* (#R143) a newer highlight supersedes this one → stale async paints bail */
-          if(a.on===false||/^(off|clear|none|解除)$/i.test(String(Array.isArray(a.countries)?'':(a.countries||a.country||'')))){ clearHl(); clearPolyHl(); clearLineHl(); return R(true, note('✓ '+L('Highlights cleared','ハイライトを消去しました','Hervorhebungen gelöscht','Выделение снято','Resaltado quitado')), _CLEARED('countries','polys','lines')); }
-          /* (#R61) COLOR is honoured for real ("赤でハイライトしてといっても色が変わらない") — parse it, apply it to
-             the live paint, and if we cannot parse it SAY SO instead of silently claiming success. */
-          let cwarn=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc) setHlColor(pc); else cwarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
-          await ensureData();
-          /* (#R157) GPT-DECIDED TARGETS — the model already interpreted the concept ("ゲルマン諸国" → the Germanic
-             countries) and returned explicit ISO3 codes, optionally as several labelled groups. The code's job:
-             VALIDATE the codes against the real border data, draw REAL national borders, verify the paint, and
-             report honestly stating the interpretation used. This runs BEFORE the legacy name resolver, so a
-             country-SET concept never touches regionGroup / resolveHlTarget. `on:false`/recolor were handled above. */
-          if(!(a.on===false)){ const _gGroups=_hlReadGptGroups(a);
-            if(_gGroups){ if(_hlMyGen!==_hlGen) return R(true,'');
-              const _single=(a.color!=null&&String(a.color).trim()!=='')?parseColor(a.color):null;
-              const _FBL=L('Highlighted countries','ハイライトした国','Hervorgehobene Länder','Выделенные страны','Países resaltados');
-              const G=[]; const gUnresolved=[]; const _resolvedIso=[]; const gSeen=new Set();
-              _gGroups.forEach((grp,gi)=>{ (grp.unresolved||[]).forEach(u=>{ if(u) gUnresolved.push(u); });   /* (#R158) unresolved = OBSERVED, reported to Terra — never silently skipped */
-                if(!grp.codes.length) return;
-                const cg=_codesGeo(grp.codes);
-                (cg.miss||[]).forEach(mc=>gUnresolved.push({name:'',iso3:String(mc),reason:'no_border_geometry',availableIdentifiers:[]}));   /* a valid-looking code with no border feature → observed, not dropped */
-                if(!cg.geo||!cg.hit.length) return;
-                const vg=_validGeo(cg.geo,{trusted:true,autoclose:true});
-                if(!vg.ok){ (cg.hit||[]).forEach(hc=>gUnresolved.push({name:'',iso3:String(hc),reason:'invalid_geometry:'+(vg.reason||'?'),availableIdentifiers:[]})); return; }   /* real borders → trusted */
-                const key='codes:'+cg.hit.slice().sort().join(','); if(gSeen.has(key)) return; gSeen.add(key);
-                cg.hit.forEach(hc=>{ if(_resolvedIso.indexOf(hc)<0) _resolvedIso.push(hc); });
-                const label=String(grp.label||'').trim();
-                G.push({name:label||('set'+(gi+1)),displayName:label||_FBL,kind:'set',geo:cg.geo,codes:cg.hit.slice(),nCountries:cg.hit.length,basisShort:L('national borders','国境','Staatsgrenzen','госграницы','fronteras')}); });
-              /* (#R158) the MECHANICAL execution result — the structured contract the repair loop feeds back to Terra so it,
-                 not IntMap, decides how to recover (correct identifiers / re-search / ask / adopt partial). IntMap only OBSERVES. */
-              const _unrSum=arr=>arr.slice(0,14).map(u=>(u.name||u.iso3||'?')+(u.availableIdentifiers&&u.availableIdentifiers.length?(' → '+u.availableIdentifiers.join('/')):'')).join(', ');
-              const _mkExec=(painted,features,verified)=>({ status:(gUnresolved.length?'partial_or_failed':'ok'), action:{type:'highlight', interpretation:(a.interpretation||''), originalTargets:(a.groups||a.targets||a.iso3||a.codes||a.countries||null)},
-                resolved:_resolvedIso.map(c=>({iso3:c})), unresolved:gUnresolved.slice(0,60),
-                renderState:{painted:!!painted, features:(features!=null?features:0), verified:!!verified},
-                capabilities:{ identifierScheme:'ISO 3166-1 alpha-3', validIdentifierCount:_hlValidCodeSet().size } });
-              if(!G.length){   /* nothing valid to draw → return the STRUCTURED result (not a dead-end) so Terra corrects the identifiers */
-                return R(false, warn('⚠ '+L('None of those identifiers could be matched to a boundary in the data IntMap holds — the places may well exist','いずれの識別子も、IntMapが保持する境界データに一致させられませんでした（場所自体は実在する可能性があります）','Keiner dieser Bezeichner ließ sich den vorhandenen Grenzdaten zuordnen — die Orte können durchaus existieren','Ни один идентификатор запроса не сопоставлен с реальной границей','Ninguno de los identificadores de esa solicitud se resolvió a una frontera real'))+(gUnresolved.length?note(esc(_unrSum(gUnresolved))):'')+cwarn, {meta:{partial:true}, exec:_mkExec(false,0,false)}); }
-              const _keepA=_hlAdd(a); const _prevA=_keepA?_hlPolys.slice():[]; if(!_keepA){ clearHl(); clearLineHl(); _hlLines=[]; } clearPolyHl();   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
-              _hlPolys=_prevA.concat(G.map((g,i)=>{ g.color=_single||_hlPaletteColor(_prevA.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:1,op:0.42}; }));   /* the palette continues from what is already drawn, so the second action's groups are not the first action's colours */
-              let paintedP=paintPolys();
-              for(let i5=0;i5<8&&!paintedP;i5++){ await new Promise(r5=>setTimeout(r5,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
-              if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn, {exec:_mkExec(false,0,false)});
-              const ver=_verifyPolyPaint(_hlPolys.length);   /* (#R489) …which is G plus whatever this same turn already drew */
-              if(!_fitGroups(_hlPolys)){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
-              const totalC=G.reduce((s2,g)=>s2+g.nCountries,0);
-              let hh=note('✦ '+G.map(g=>esc(g.displayName)).join(', '))+_hlLegendHtml(G);
-              /* (#R157) STATE THE DEFINITION USED (the work order's "採用した定義を結果に明示"). */
-              hh+=note(L('Interpreted from your request and drawn from real national borders — '+totalC+' countries.','ご依頼を解釈し、実際の国境データから描画しました — '+totalC+'か国。','Aus Ihrer Anfrage interpretiert und aus realen Staatsgrenzen gezeichnet — '+totalC+' Länder.','Интерпретировано по вашему запросу и построено по реальным госграницам — стран: '+totalC+'.','Interpretado a partir de tu solicitud y dibujado con fronteras reales — '+totalC+' países.'));
-              if(gUnresolved.length) hh+=warn('⚠ '+L('Some targets could not be matched to border data — checking with the model','一部の対象を国境データに一致させられませんでした — モデルに確認しています','Einige Ziele ließen sich den Grenzdaten nicht zuordnen — Rückfrage beim Modell','Некоторые цели не сопоставлены с данными границ — уточняем у модели','Algunos objetivos no coincidieron con los datos de fronteras — consultando al modelo')+': '+esc(_unrSum(gUnresolved)));
-              if(ver&&!ver.ok) hh+=warn('⚠ '+L('Could not verify the drawn shapes on the map','描画結果を地図上で確認できませんでした','Gezeichnete Formen nicht verifizierbar','Не удалось проверить фигуры на карте','No se pudieron verificar las formas'));
-              try{ _wctx.highlight={ name:G.map(g=>g.displayName||g.name).join(', ').slice(0,160), n:totalC, basis:null }; }catch(_){}
-              const _partial=!!(gUnresolved.length||(ver&&!ver.ok));
-              /* ⚠⚠⚠ (#R742) SAY WHAT WAS PAINTED, so the verdict can hold the map against it instead of
-                 against a count. js/atlas-capabilities.js `PAINT_GOAL` reads this and asks whether those
-                 names are in the painter's own reading (js/atlas-era-highlight.js `paintState().ids`),
-                 using the SAME key `polys` both sides already use. Without it a highlight that redraws the
-                 same number of shapes is 「not_rendered」 however perfectly it drew them — measured on
-                 production 2026-09-15: three correct highlights, three verdicts of not_rendered, ten steps
-                 and 26.2 seconds for 「Which countries border Kazakhstan?」. Declaring is not claiming: the
-                 verdict verifies this against the map and refuses it when the shapes are not there. */
-              const _painted={polys:_hlPolys.map(p=>p&&p.name).filter(Boolean)};
-              return R(true, hh+cwarn, {meta:Object.assign({painted:_painted}, _partial?{partial:true}:null), exec:_mkExec(true,(ver&&ver.n)||totalC,!!(ver&&ver.ok))});
-            } }
-          /* (#R150 · geo-target unification) SINGLE ambiguity decision shared by BOTH the multi-region and the
-             single-colour paths below. ROOT CAUSE the user reported: candidate-confirmation ("did you mean the
-             country or the US state?") was appended as a mere WARNING *alongside* the painted success + not-found
-             failures — so confirmation, partial execution, success and failure all showed at once. The spec:
-             "意味が排他的なら確認質問を出して実行を停止" — an exclusive/ambiguous name must produce ONE coherent
-             confirmation that STOPS execution (paints nothing), never mixed with a success/partial. This helper
-             renders that single confirmation; both paths gate on it BEFORE painting. No per-name hardcoding — it is
-             driven entirely by resolveHlTarget's ambiguous verdict, so it applies uniformly to admin regions,
-             historical regions, natural regions and same-name places. */
-          const _hlAmbigConfirm=(ambigArr, clearNames)=>{
-            const body=(ambigArr||[]).map(t=>'<b>'+esc(t.name)+'</b>:<br>• '+((t.candidates||[]).slice(0,4).map(c=>esc(String((c&&c.name)||c||'')+((c&&c.country)?(' — '+c.country):'')+((c&&c.note)?(' ('+c.note+')'):''))).join('<br>• ')||esc(String(t.name)))).join('<br>');
-            const head=(ambigArr&&ambigArr.length>1)
-              ? L('These names are ambiguous — which did you mean for each?','これらの名称には複数の候補があります。それぞれどれを指しますか？','Diese Namen sind mehrdeutig — welchen jeweils?','Названия неоднозначны — какой в каждом случае?','Estos nombres son ambiguos — ¿cuál en cada caso?')
-              : L('That name is ambiguous — which did you mean?','その名称には複数の候補があります。どれを指しますか？','Der Name ist mehrdeutig — welchen meinen Sie?','Название неоднозначно — какой вариант?','Ese nombre es ambiguo — ¿cuál quiere decir?');
-            let extra=''; const cn=(clearNames||[]).filter(Boolean);
-            if(cn.length) extra='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L(
-              'Nothing was drawn on a guess — clarify the above and I\'ll highlight everything (incl. '+esc(cn.slice(0,4).join(', '))+') together.',
-              '推測では描画していません。上記を確定いただければ '+esc(cn.slice(0,4).join(', '))+' などまとめてハイライトします。',
-              'Nichts wurde geraten — nach der Klärung hebe ich alles (auch '+esc(cn.slice(0,4).join(', '))+') zusammen hervor.',
-              'Ничего не нарисовано наугад — уточните, и я выделю всё (включая '+esc(cn.slice(0,4).join(', '))+') сразу.',
-              'No se dibujó nada por conjetura — aclara y resaltaré todo (incl. '+esc(cn.slice(0,4).join(', '))+') junto.')+'</div>';
-            return warn('⚠ '+head)+note(body)+extra; };
-          /* (#R104) RANK + FILTER → highlight ("人口5M未満は除外したGDP per capita上位10ヵ国をハイライトして"): when a
-             ranking metric is given instead of explicit country names, compute the ranked, optionally
-             population-filtered top/bottom-N DETERMINISTICALLY from the real country data and highlight exactly
-             those (no AI guessing which countries). */
-          const _rmRaw=a.metric||a.rankBy||a.rankMetric||a.by;
-          const _hlExplicit=_hlReadNames(a).length;   /* (#R157) a.query = a concrete single feature from the model (admin region / river / basin) · (#R747) same one reading as `raw` below — a metric must not win over members the caller actually named */
-          if(_rmRaw&&!_hlExplicit){
-            const _sp=metSpec(_rmRaw);
-            if(!_sp||!_sp.m) return R(false, warn('⚠ '+L('Unknown ranking metric','ランキングの指標を認識できません','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')+': '+esc(String(_rmRaw)))+cwarn);
-            try{ await _fillMetric(_sp.key); }catch(_){}   /* lazy WB fields (tfr/lifeExp/internet) → filled before ranking */
-            const _n=Math.max(1,Math.min(40,parseInt(a.n||a.top||a.count||10,10)||10));
-            const _bottom=/^(bottom|low|lowest|least|worst)$/i.test(String(a.order||''))||/下位|最下位|ワースト|少ない|低い/.test(String(a.order||'')+String(a.rankOrder||''));
-            const _pn=v=>{ if(v==null) return null; v=String(v).replace(/[, _]/g,'').toLowerCase(); const mm=v.match(/^([\d.]+)\s*(m|million|mn|百万|k|thousand|千|b|billion|bn|億)?$/); if(!mm) return (v!==''&&isFinite(+v))?+v:null; let x=+mm[1]; const u=mm[2]||''; if(/^(m|million|mn|百万)$/.test(u))x*=1e6; else if(/^(k|thousand|千)$/.test(u))x*=1e3; else if(/^(b|billion|bn)$/.test(u))x*=1e9; else if(u==='億')x*=1e8; return x; };
-            const _minPop=_pn(a.minPop!=null?a.minPop:(a.excludeBelowPop!=null?a.excludeBelowPop:(a.filter&&a.filter.minPop!=null?a.filter.minPop:null)));
-            const _maxPop=_pn(a.maxPop!=null?a.maxPop:(a.filter&&a.filter.maxPop!=null?a.filter.maxPop:null));
-            const _rowsF=[];
-            for(const cd in countryStats){ const s=countryStats[cd]; if(!s||s.sov===false||!s.nameEn) continue;
-              const v=_sp.m.get(s); if(v==null||isNaN(v)) continue;
-              if(_minPop!=null&&!(s.pop>=_minPop)) continue;
-              if(_maxPop!=null&&!(s.pop<=_maxPop)) continue;
-              _rowsF.push({code:cd,name:nm(s),val:+v}); }
-            _rowsF.sort((x,y)=>y.val-x.val);
-            const _picked=_bottom?_rowsF.slice(-_n).reverse():_rowsF.slice(0,_n);
-            if(!_picked.length) return R(false, warn('⚠ '+L('No countries match that filter','条件に合う国がありません','Keine Länder passen zum Filter','Нет стран по фильтру','Ningún país cumple el filtro'))+cwarn);
-            const _codes=_picked.map(p=>p.code);
-            clearPolyHl(); _hlPolys=[]; clearLineHl(); _hlLines=[];
-            let _painted=highlight(_codes);
-            for(let i3=0;i3<8&&!_painted;i3++){ await new Promise(r3=>setTimeout(r3,700)); _painted=highlight(_codes); }
-            if(!_painted) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung fehlgeschlagen (Karte lädt) — erneut','Не удалось нарисовать (карта загружается) — повторите','No se pudo dibujar (mapa cargando) — reintenta'))+cwarn);
-            const _ub=unionBox(_codes,[]); if(_ub){ try{ GE().camera.fitBounds(_ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else { try{ fitTo(_codes); }catch(_){} }
-            const _ord=_bottom?L('Lowest','下位','Niedrigste','Минимум','Menor'):L('Top','上位','Top','Топ','Top');
-            let _hh=note('✦ '+_ord+' '+_picked.length+' · '+esc(lx(_sp.m.label))+(_minPop!=null?(' · '+L('excl. pop <','人口<','Bev. <','нас. <','pob. <')+' '+fmtVal('pop',_minPop)):'')+(_maxPop!=null?(' · '+L('excl. pop >','人口>','Bev. >','нас. >','pob. >')+' '+fmtVal('pop',_maxPop)):''));
-            _hh+=note(_picked.map((p,i)=>(i+1)+'. '+esc(p.name)+' <span style="color:var(--text-muted);">'+fmtVal(_sp.key,p.val)+'</span>').join('<br>'));
-            return R(true, _hh+cwarn);
-          }
-          const raw=_hlReadNames(a);   /* (#R157) a.query = model-supplied concrete single feature (falls to the resolveHlTarget ladder) · ⚠ (#R747) THIS LIST USED TO BE WRITTEN OUT HERE AND IT OMITTED `targets`, so the very shape js/atlas-catalog-text.js documents first died between the two readers. js/atlas-country-ids.js REQUEST_FIELDS is now the only place that says which fields carry the request, and both readers take it. */
-          const pc2=(a.color!=null&&String(a.color).trim()!=='')?parseColor(a.color):null;
-          if(!raw.length){ if(a.color&&!cwarn&&(_hl.size||_hlPolys.length)){ if(pc2&&_hlPolys.length){ _hlPolys.forEach(p=>{ p.color=pc2; }); paintPolys(); } return R(true, note('🎨 '+L('Recolored the current highlights','ハイライトの色を変更しました','Hervorhebungen umgefärbt','Цвет выделения изменён','Resaltado recoloreado'))); }
-            if(a.color&&!cwarn) return R(false, warn('⚠ '+L('Nothing is highlighted yet — name the countries or regions','ハイライト中の対象がありません。国名や地域名を指定してください','Noch nichts hervorgehoben — Länder oder Regionen nennen','Ничего не выделено — укажите страны или регионы','Nada resaltado aún — indica países o regiones')));
-            return R(false, warn('⚠ '+L('Which countries or regions?','どの国・地域をハイライトしますか？','Welche Länder oder Regionen?','Какие страны или регионы?','¿Qué países o regiones?'))+cwarn); }
-          /* (#R143) MULTI-REGION grouping: expand compound directional forms ("東西南北欧" → the four M49 sub-regions)
-             and, when the command names 2+ distinct targets, NO single explicit colour is given, none is a river/basin,
-             AND at least one target is a country-SET or a REGION, draw each target as its OWN colour group with a
-             legend (凡例). Country sets resolve to REAL national borders (UN M49 where applicable); every shape is
-             VALIDATED before drawing; the reply is composed from what actually painted, with successes and failures
-             kept separate. Anything else falls through to the single-colour path below. */
-          const rawX=_expandRegionCompound(raw);
-          if(rawX.length>=2 && !pc2 && !rawX.some(n=>basinIntent(n)||riverIntent(n))){
-            const G=[], gMiss=[], gAmbig=[], gRej=[]; const gSeen=new Set();
-            for(const nm3 of rawX){ let t3=null; try{ t3=await resolveHlTarget(nm3); }catch(_){}
-              if(t3&&t3.ambiguous&&Array.isArray(t3.candidates)&&t3.candidates.length){ gAmbig.push({name:t3.name||nm3,candidates:t3.candidates}); continue; }
-              let kind='',codes=null,gj=null; const nm4=(t3&&((t3.poly&&t3.poly.name)||t3.name))||nm3; let composed=false,osm=false,derived=false,approx=false,verified=false,basis='';
-              if(t3&&t3.code){ codes=[t3.code]; kind='country'; }
-              else if(t3&&t3.codes){ codes=t3.codes.slice(); kind='set'; basis=t3.basis||''; }
-              else if(t3&&t3.poly&&t3.poly.geo){ gj=t3.poly.geo; kind='region'; composed=!!t3.composed; osm=(t3.rrMethod==='osm_polygon'); derived=(t3.rrMethod==='derived_anchors'); approx=!!(t3.soft||t3.approx); verified=!!t3.verified; }
-              else { gMiss.push(nm3); continue; }
-              let nC=0; if(codes){ const cg=_codesGeo(codes); gj=cg.geo; nC=cg.hit.length; if(!gj){ gMiss.push(nm4); continue; } }
-              const trusted=(kind==='country'||kind==='set'||osm||composed);
-              const vg=_validGeo(gj,{trusted,autoclose:true});
-              if(!vg.ok){ gRej.push({name:nm4,reason:vg.reason}); continue; }
-              const key=(kind==='region')?('poly:'+nm4):('codes:'+codes.join(',')); if(gSeen.has(key)) continue; gSeen.add(key);
-              const basisShort = composed?L('admin borders','行政界','Verwalt.-grenzen','адм. границы','límites adm.')
-                : osm?'OpenStreetMap' : derived?('⬡ '+L('web-derived','Web由来','Web-abgeleitet','из веба','de la web'))
-                : approx?('⬡ '+L('approx.','近似','ca.','прибл.','aprox.'))
-                : (kind==='country'||kind==='set')?L('national borders','国境','Staatsgrenzen','госграницы','fronteras'):'';
-              G.push({name:nm4,displayName:_regionLabel(nm4),kind,geo:gj,codes,nCountries:nC,composed,osm,derived,approx,verified,basis,basisShort}); }
-            /* (#R150) AMBIGUITY GATE — an exclusive/ambiguous target STOPS the whole request: ask ONE confirmation,
-               paint nothing (no partial + confirmation co-display). Gate before the paint so it applies whether or
-               not the multi-region branch would have drawn. */
-            if(gAmbig.length){ if(_hlMyGen!==_hlGen) return R(true,''); return R(false, _hlAmbigConfirm(gAmbig, G.map(g=>g.displayName||g.name).concat(gMiss)), {meta:{partial:true}}); }
-            if(G.length>=2 && G.some(g=>g.kind==='set'||g.kind==='region')){
-              if(_hlMyGen!==_hlGen) return R(true,'');   /* superseded by a newer highlight → don't overwrite it */
-              const _keepB=_hlAdd(a); const _prevB=_keepB?_hlPolys.slice():[]; if(!_keepB){ clearHl(); clearLineHl(); _hlLines=[]; } clearPolyHl();   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
-              _hlPolys=_prevB.concat(G.map((g,i)=>{ g.color=_hlPaletteColor(_prevB.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:(g.kind!=='region'||g.composed)?1:0,op:0.42}; }));
-              let paintedP=paintPolys();
-              for(let i4=0;i4<8&&!paintedP;i4++){ await new Promise(r4=>setTimeout(r4,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
-              if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
-              const ver=_verifyPolyPaint(_hlPolys.length);   /* (#R489) …which is G plus whatever this same turn already drew */
-              if(!_fitGroups(_hlPolys)){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
-              let hh=note('✦ '+G.map(g=>esc(g.displayName||g.name)).join(', '))+_hlLegendHtml(G);
-              if(G.some(g=>g.kind==='set'||g.kind==='country')) hh+=note(L('Country sets drawn from real national borders (UN M49 standard where applicable)','国集合は実際の国境データから描画（該当時はUN M49標準）','Ländergruppen aus realen Staatsgrenzen (ggf. UN-M49-Standard)','Наборы стран построены по реальным госграницам (при наличии — стандарт UN M49)','Conjuntos de países con fronteras reales (estándar UN M49 cuando aplica)'));
-              if(G.some(g=>g.composed)) hh+=note(L('Some regions built from member administrative boundaries','一部の地域は構成行政区画の境界から構築','Einige Regionen aus Verwaltungsgrenzen der Teilgebiete','Некоторые регионы построены из адм. границ','Algunas regiones a partir de límites administrativos'));
-              if(G.some(g=>g.osm)) hh+=note(L('Some regions from real OpenStreetMap boundaries','一部の地域は実際のOpenStreetMap境界','Einige Regionen aus realen OpenStreetMap-Grenzen','Некоторые регионы — реальные границы OSM','Algunas regiones de límites reales de OpenStreetMap'));
-              if(G.some(g=>g.derived||g.approx)) hh+=note(L('⬡ = approximate extent (no official boundary exists)','⬡ = 近似範囲（公式境界が存在しない）','⬡ = ungefähre Ausdehnung (keine offizielle Grenze)','⬡ = приблизительный контур (нет офиц. границы)','⬡ = extensión aproximada (sin límite oficial)'));
-              /* (#R150) gAmbig is now impossible here — the ambiguity gate above returned before painting. Only
-                 honest "drawn, but these couldn't be located/were invalid" disclosure remains (no pending question). */
-              if(gRej.length) hh+=warn('⚠ '+L('Rejected — invalid/degenerate shape (not drawn)','不正・退化した形状のため未描画','Abgelehnt — ungültige/entartete Form','Отклонено — некорректная форма','Rechazado — forma inválida')+': '+esc(gRej.map(r=>r.name).join(', ')));
-              if(gMiss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(gMiss.join(', ')));
-              if(ver&&!ver.ok) hh+=warn('⚠ '+L('Could not verify the drawn shapes on the map','描画結果を地図上で確認できませんでした','Gezeichnete Formen nicht verifizierbar','Не удалось проверить фигуры на карте','No se pudieron verificar las formas'));
-              try{ _wctx.highlight={ name:G.map(g=>g.displayName||g.name).join(', ').slice(0,160), n:G.length, basis:(G.map(g=>g.basis).filter(Boolean).join(' / ')||null) }; }catch(_){}
-              const partial=!!(gRej.length||gMiss.length||(ver&&!ver.ok));
-              return R(true, hh+cwarn, partial?{meta:{partial:true}}:undefined);
-            }
-            /* not multi-region-eligible (1 shape drew, or a plain country list) → single-colour path below */
-          }
-          /* (#R62) countries AND subdivisions AND fuzzy regions, freely mixed.
-             (#R64) + country GROUPS (旧ソ連諸国, EU…) and real-boundary COMPOSITIONS (東海地方, 肥沃な三日月帯…).
-             (#R65) + RIVERS as their real course (line) and BASINS (tributaries + faint basin fill) — judged
-             BEFORE any admin-unit logic. */
-          const found=[],polys=[],lines=[],lineNames=[],miss=[],ambig=[],rejected=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false,anyOsm=false,anyDerived=false,anyAdm1=false;
-          for(const nm2 of rawX){
-            const bi=basinIntent(nm2);
-            if(bi){ let B=null; try{ B=await buildBasin(bi.base); }catch(_){}
-              if(!B||(!B.river&&!B.basin)){ miss.push(nm2); continue; }
-              if(B.basin){ const bp={name:nm2,geo:B.basin.geo,op:0.14,comp:true}; if(pc2) bp.color=pc2; polys.push(bp); if(B.approx) anyApprox=true; }
-              if(B.trib&&B.trib.geo) lines.push({geo:B.trib.geo,w:1.1,op:0.75,color:pc2||null});
-              if(B.river) lines.push({geo:B.river.geo,w:3.2,color:pc2||null,name:B.river.name});
-              if(!B.basin&&B.river) lineNames.push(B.river.name);
-              basinInfo={trib:(B.trib&&B.trib.n)||0, trunc:!!(B.trib&&B.trib.truncated), noBasin:!B.basin, noTrib:!B.trib, src:B.src||''};
-              continue; }
-            if(riverIntent(nm2)){ let rl=null; try{ rl=await fetchRiverLine(nm2); }catch(_){}
-              if(rl){ lines.push({geo:rl.geo,w:3.2,color:pc2||null,name:rl.name}); lineNames.push(rl.name); continue; } }
-            let t2=null; try{ t2=await resolveHlTarget(nm2); }catch(_){}
-            if(t2&&t2.verified) anyVerified=true;   /* (#R130) at least one target's location was web-search-verified */
-            if(t2&&t2.ambiguous&&Array.isArray(t2.candidates)&&t2.candidates.length){ ambig.push({name:t2.name||nm2, candidates:t2.candidates}); }   /* (#R132) ambiguous → ask instead of guessing */
-            else if(t2&&t2.code){ if(!seen.has(t2.code)){ seen.add(t2.code); found.push(t2); } }
-            else if(t2&&t2.codes){ let nAdd=0; t2.codes.forEach(cd=>{ if(!seen.has(cd)){ seen.add(cd); found.push({code:cd,_grp:1}); nAdd++; } }); grpNames.push(_regionLabel(t2.name||nm2)+' ('+nAdd+')'); if(t2.basis) grpBases.push(t2.basis); }
-            else if(t2&&t2.poly&&t2.poly.geo){
-              /* (#R143) VALIDATE before drawing — reject unclosed rings, degenerate "giant triangles", abnormal long
-                 edges, self-intersections, whole-world blobs, tiny slivers. Real OSM/admin/composed borders are trusted
-                 (skip the crude-approximation heuristics); AI/derived/soft outlines get the full battery. A rejected
-                 shape is reported honestly (never drawn as a "close enough" blob). */
-              const _tr=!(t2.soft||t2.approx||t2.rrMethod==='derived_anchors'); const _vg=_validGeo(t2.poly.geo,{trusted:_tr,autoclose:true});
-              if(!_vg.ok){ rejected.push({name:t2.poly.name||nm2,reason:_vg.reason}); }
-              else { if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true;
-                /* (#R132) precise BASIS per method — real OSM boundary vs web-anchor-derived vs curated gazetteer/AI outline */
-                if(t2.rrMethod==='admin1_index') anyAdm1=true; else if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; } }
-            else miss.push(nm2); }
-          /* (#R150) AMBIGUITY GATE (shared decision with the multi-region path via _hlAmbigConfirm): ANY ambiguous
-             target STOPS the request with ONE confirmation and paints nothing — never "highlighted A" + "did you
-             mean B or C?" + "not found: D" at once. What WOULD be drawn is listed so the user sees nothing was guessed. */
-          if(ambig.length){ if(_hlMyGen!==_hlGen) return R(true,''); const clear=found.filter(c=>!c._grp).map(c=>c.name).concat(grpNames).concat(polys.map(p=>p.name)).concat(lineNames).concat(miss); return R(false, _hlAmbigConfirm(ambig, clear)+cwarn, {meta:{partial:true}}); }
-          if(!found.length&&!polys.length&&!lines.length){
-            if(rejected.length) return R(false, warn('⚠ '+L('The shape resolved for that region was invalid (degenerate/self-intersecting) and was not drawn','その地域の形状が不正（退化・自己交差）なため描画しませんでした','Die aufgelöste Form dieser Region war ungültig (entartet/selbstschneidend)','Форма региона оказалась недействительной (вырожденная/самопересекающаяся)','La forma resuelta para esa región no era válida (degenerada/autointersecante)')+': '+esc(rejected.map(r=>r.name).join(', ')))+cwarn);
-            return R(false, warn('⚠ '+L('No boundary could be resolved for','境界データを解決できませんでした','Keine Grenze auflösbar für','Не удалось разрешить границу для','No se pudo resolver la frontera de')+': '+esc(raw.join(', ')))+cwarn); }   /* ⚠ (#R489) IT SAYS WHAT FAILED. 「見つかりません」 reads as 「その場所は無い」, and the reported case was the opposite: Belgorod Oblast exists, has a real administrative outline, and the lookup returned the CITY. A message that blames the world for a lookup's failure sends the next turn off to re-verify a place that was never in doubt. */
-          /* (#R61) VERIFY the paint really happened (style may still be loading) — bounded retry, then honesty. */
-          if(_hlMyGen!==_hlGen) return R(true,'');   /* (#R143) superseded by a newer highlight */
-          const _keepC=_hlAdd(a); const _prevP=_keepC?_hlPolys.slice():[], _prevL=_keepC?_hlLines.slice():[], _prevC=_keepC?Array.from(_hl):[]; clearPolyHl(); clearLineHl(); _hlPolys=_prevP.concat(polys); _hlLines=_prevL.concat(lines);   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
-          const codes2=found.map(c=>c.code); const _allC=_prevC.concat(codes2.filter(c=>_prevC.indexOf(c)<0));   /* `highlight()` clears the feature-state set before it paints, so the countries this turn already lit have to be asked for again */
-          let painted=(_allC.length?highlight(_allC):(_keepC?true:(clearHl(),true))); let paintedP=paintPolys(); let paintedL=paintLines();
-          for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(_hlMyGen!==_hlGen) return R(true,''); if(codes2.length&&!painted) painted=highlight(_allC); if(polys.length&&!paintedP) paintedP=paintPolys(); if(lines.length&&!paintedL) paintedL=paintLines(); }
-          const ub=unionBox(_allC,_hlPolys.concat(_hlLines)); if(ub){ try{ GE().camera.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(_allC.length){ const fitOk=fitTo(_allC);   /* (#R489) frame EVERYTHING this turn drew — framing only the last action's target is how fourteen oblasts ended as a close-up of one */
-            /* (#R64) antimeridian-spanning sets (旧ソ連諸国: Chukotka wraps the date line) defeat a bbox fit —
-               zoom out to the planet so the highlight is actually visible instead of silently not moving. */
-            if(!fitOk){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} } }
-          if((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL)) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
-          const shown=found.filter(c=>!c._grp).map(c=>esc(c.name)).concat(grpNames.map(esc)).concat(polys.map(p=>esc(p.name))).concat(lineNames.map(esc));
-          let hh=note((found.length?'✦ ':'')+shown.join(', '));
-          /* (#R118) HISTORICAL-membership basis stated up front + remembered — kills the "それは何年のもの？"
-             death-spiral: the reply itself says what year-basis the highlight uses, and follow-up questions can
-             read it from the working context instead of guessing (or citing the time-travel date). */
-          if(grpBases.length){ hh+=note('◷ '+grpBases.map(esc).join('<br>◷ ')); }
-          try{ _wctx.highlight={ name:(grpNames.concat(polys.map(p=>p.name),found.filter(c=>!c._grp).map(c=>c.name)).join(', ')).slice(0,160), n:codes2.length+polys.length+lines.length, basis:(grpBases.join(' / ')||null) }; }catch(_){}
-          if(basinInfo){
-            if(basinInfo.trib) hh+=note(L(basinInfo.trib+' tributary/branch waterways drawn (every river/canal tagged in OpenStreetMap inside the basin)','支流・分流 '+basinInfo.trib+' 本を描画（流域内にOSM登録された河川・運河すべて）','' +basinInfo.trib+' Nebenflüsse gezeichnet (alle in OSM erfassten Wasserläufe im Einzugsgebiet)','Нарисовано притоков: '+basinInfo.trib+' (все реки/каналы OSM в бассейне)','Dibujados '+basinInfo.trib+' afluentes (todos los ríos/canales de OSM en la cuenca)'));
-            if(basinInfo.trunc) hh+=note(L('Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)','注: 表示上限により最小級の細流の一部のみ省略（主要な支流はすべて描画済み）','Hinweis: nur ein kleiner Teil der kleinsten Bäche wurde am Limit ausgelassen','Примечание: опущена лишь малая часть мельчайших ручьёв','Nota: solo se omitió una pequeña parte de los arroyos más pequeños'));
-            if(basinInfo.src&&basinInfo.src!=='AI outline') hh+=note(L('Basin boundary: real hydrological data — ','流域界: 実測の水文データ — ','Beckengrenze: reale Hydrologiedaten — ','Граница бассейна: реальные гидрологические данные — ','Límite de cuenca: datos hidrológicos reales — ')+esc(basinInfo.src));
-            if(basinInfo.noBasin) hh+=warn('⚠ '+L('Basin outline unavailable — main stem only','流域の輪郭を取得できませんでした（本流のみ描画）','Beckenumriss nicht verfügbar — nur Hauptstrom','Контур бассейна недоступен — только главное русло','Contorno de la cuenca no disponible — solo el cauce principal'));
-            else if(basinInfo.noTrib) hh+=note(L('No tributaries returned by OpenStreetMap here','OpenStreetMapから支流を取得できませんでした','Keine Nebenflüsse von OSM','OSM не вернул притоков','OSM no devolvió afluentes'));
-          }
-          if(anyComposed) hh+=note(L('Drawn from the real administrative boundaries of the region\'s member units','構成する行政区画の実際の境界データから描画','Aus den realen Verwaltungsgrenzen der Teilgebiete gezeichnet','Построено из реальных административных границ','Dibujado a partir de los límites administrativos reales'));
-          /* (#R132) explicit BASIS lines for the general resolver */
-          if(anyAdm1) hh+=note(L('Drawn from real first-level administrative boundaries (the bundled Natural Earth index)','実際の第1レベル行政境界（同梱のNatural Earth索引）から描画','Aus realen Verwaltungsgrenzen der ersten Ebene gezeichnet (mitgelieferter Natural-Earth-Index)','Построено по реальным границам регионов первого уровня (встроенный индекс Natural Earth)','Dibujado con fronteras administrativas reales de primer nivel (índice Natural Earth incluido)'));   /* (#R489) js/atlas-admin1.js */ if(anyOsm) hh+=note(L('Drawn from real OpenStreetMap boundary data','実際のOpenStreetMapの境界データから描画','Aus realen OpenStreetMap-Grenzdaten gezeichnet','Построено по реальным границам OpenStreetMap','Dibujado a partir de límites reales de OpenStreetMap'));
-          if(anyDerived) hh+=note(L('⬡ = approximate extent derived from web-verified boundary anchors (no official boundary exists for this region)','⬡ = 近似範囲（公式境界が存在しない地域を、Web検索で照合した境界アンカーから構築）','⬡ = ungefähre Ausdehnung aus web-verifizierten Grenzankern (keine offizielle Grenze)','⬡ = приблизительный контур из проверенных веб-поиском опорных точек (официальной границы нет)','⬡ = extensión aproximada a partir de anclas verificadas por búsqueda web (no hay límite oficial)'));
-          if(anyPartial) hh+=warn('⚠ '+L('Some member boundaries could not be fetched — the shape may be missing pieces','一部の構成区画の境界を取得できませんでした（欠けがある可能性）','Einige Teilgrenzen fehlen','Часть границ получить не удалось','Faltan algunos límites'));
-          if(anyApprox) hh+=note(L('⬡ = approximate extent (no official boundary exists — AI-traced outline)','⬡ = 近似輪郭（公式境界が存在しない地域のAIトレース）','⬡ = ungefähre Ausdehnung (KI-Umriss)','⬡ = приблизительный контур (ИИ)','⬡ = contorno aproximado (IA)'));
-          if(anyVerified) hh+=note('✓ '+L('location web-verified','位置をWeb検索で照合','Standort per Websuche geprüft','местоположение проверено веб-поиском','ubicación verificada con búsqueda web'));
-          /* (#R150) ambig is impossible here — the ambiguity gate above stopped and asked before any painting. */
-          if(miss.length) hh+=warn('⚠ '+L('No boundary resolved','境界を解決できず','Keine Grenze aufgelöst','Граница не разрешена','Sin frontera resuelta')+': '+esc(miss.join(', ')));   /* (#R489) the same correction as above — this lists what could not be DRAWN, not what does not exist */
-          if(rejected.length) hh+=warn('⚠ '+L('Rejected — invalid/degenerate shape (not drawn)','不正・退化した形状のため未描画','Abgelehnt — ungültige/entartete Form','Отклонено — некорректная форма','Rechazado — forma inválida')+': '+esc(rejected.map(r=>r.name).join(', ')));   /* (#R143) */
-          /* (#R142) PARTIAL result → the planner's pre-written "…をハイライトしました" over-claims the targets that were NOT
-             drawn. Flag partial so runActions suppresses that say (#3) and lets this honest body — which lists exactly what
-             WAS drawn plus "Not found: X" / "Ambiguous: Y" — lead. (Total miss already returns ok:false above.) */
-          return R(true,hh+cwarn, (miss.length||ambig.length||rejected.length)?{meta:{partial:true}}:undefined); }
-        case 'value': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name);
-          if(!c||!c.code||!countryStats[c.code]) return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||a.name||'')));
-          const s=countryStats[c.code]; const mk=String(a.metric||a.what||'').trim();
-          try{ highlight([c.code]); fitTo([c.code]); }catch(_){}
-          const TXTF={capital:LA('Capital','首都','Hauptstadt','Столица','Capital'),currency:LA('Currency','通貨','Währung','Валюта','Moneda'),languages:LA('Languages','言語','Sprachen','Языки','Idiomas'),flag:LA('Flag','国旗','Flagge','Флаг','Bandera')};
-          if(TXTF[mk]){ const v=s[mk]; return R(v!=null&&v!=='', '<div style="font-size:12.5px;line-height:1.6;"><b>'+esc(c.name)+'</b> — '+esc(lx(TXTF[mk]))+': <b>'+esc(v||'—')+'</b></div>'); }
-          const _vs=metSpec(mk);   /* (#R740) XMET too — 「日本の平均寿命は？」 fell through to the stat card, which does not carry it */
-          if(_vs){ try{ await _fillMetric(_vs.key); }catch(_){} const v=_vs.m.get(s); if(v==null||isNaN(v)) return R(false, warn('⚠ '+esc(c.name)+': '+L('no data for this metric','この指標のデータがありません','keine Daten für diese Kennzahl','нет данных по показателю','sin datos para esta métrica')));
-            return R(true,'<div style="font-size:12.5px;line-height:1.6;"><b>'+esc(c.name)+'</b> — '+esc(lx(_vs.m.label))+': <b>'+esc(fmtVal(_vs.key,v))+'</b></div>'); }
-          /* no / unknown metric → full compact stat card from everything we hold */
-          let rowsH=''; for(const k in METRICS){ const v=METRICS[k].get(s); if(v==null||isNaN(v)) continue; rowsH+='<div style="display:flex;justify-content:space-between;gap:10px;"><span style="color:var(--text-muted);">'+esc(lx(METRICS[k].label))+'</span><b>'+esc(fmtVal(k,v))+'</b></div>'; }
-          for(const k of ['capital','currency','languages']){ if(s[k]) rowsH+='<div style="display:flex;justify-content:space-between;gap:10px;"><span style="color:var(--text-muted);">'+esc(lx(TXTF[k]))+'</span><b>'+esc(s[k])+'</b></div>'; }
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc((s.flag?s.flag+' ':'')+c.name)+'</div><div style="font-size:12px;line-height:1.7;">'+rowsH+'</div>'); }
-        case 'layersOff': { const keepBase=a.all!==true; let n=0;
-          layerCatalog().forEach(c=>{ if(!c.cb.checked) return; if(keepBase&&/^(cb-borders|cb-coast|cb-names|cb-countries)$/.test(c.cb.id||'')) return; try{ c.cb.checked=false; c.cb.dispatchEvent(new Event('change',{bubbles:true})); n++; }catch(_){} });
-          return R(true, note('✓ '+L(n+' layer(s) turned off','レイヤーを '+n+' 件オフにしました',n+' Ebene(n) ausgeschaltet','Слоёв выключено: '+n,n+' capa(s) desactivada(s)'))); }
-        case 'clear': { const w=String(a.what||a.target||'all').toLowerCase(); const did=[]; const all=/^(all|everything|全部|すべて|todo|alles|всё)$/.test(w); const wants=re=>all||re.test(w);
-          if(wants(/pin|ピン|метк|pines/)){ try{ if(typeof clearAllPins==='function'){ clearAllPins(); did.push(L('pins','ピン','Pins','метки','pines')); } }catch(_){} }
-          if(wants(/radius|circle|半径|円|круг|círculo/)){ try{ if(window.clearAllRadius){ window.clearAllRadius(); did.push(L('circles','円','Kreise','круги','círculos')); } }catch(_){} }
-          if(wants(/highlight|shad|choro|ハイライト|濃淡|色分け|выделен|resalt/)){ try{ clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); did.push(L('highlights','ハイライト','Hervorhebungen','выделение','resaltado')); }catch(_){} }
-          if(wants(/outline|contour|輪郭|範囲|контур/)){ try{ if(window.IntMapOutline&&window.IntMapOutline.clear){ window.IntMapOutline.clear(); did.push(L('outline','輪郭','Umriss','контур','contorno')); } }catch(_){} }
-          if(wants(/measure|draw|tool|volume|計測|測定|描画|ツール|立体|инструмент|объём|volumen|herramienta/)){   /* (#R170) +the 3-D volume box (exitTool drops it) */ try{ if(typeof exitTool==='function'){ exitTool(); did.push(L('tools','ツール','Werkzeuge','инструменты','herramientas')); } }catch(_){} }
-          if(wants(/isolat|分離|изоляц|aisla/)){ try{ if(window.IntMapIsolate&&window.IntMapIsolate.exit){ window.IntMapIsolate.exit(); did.push(L('isolate','分離','Isolierung','изоляция','aislar')); } }catch(_){} }
-          if(wants(/poi|facilit|marker|施設|マーカー|объект|instalacion|report|レポート|調査/)){ try{ clearPois(); did.push(L('facilities','施設マーカー','Einrichtungen','объекты','instalaciones')); }catch(_){} }
-          if(wants(/fly|flight|trajector|missile|ballistic|飛行|軌道|ミサイル|弾道|полёт|полет|vuelo|trayector|misil/)){ try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ window.IntMapArc3D&&window.IntMapArc3D.hide(); }catch(_){} did.push(L('flight path','飛行経路','Flugbahn','траектория','trayectoria')); }
-          if(wants(/lines?|polygons?|drawing|ライン|線|ポリゴン|描画|линии|líneas|polígono/)){ try{ clearLineHl(); clearPolyHl(); did.push(L('drawings','描画','Zeichnungen','рисунки','dibujos')); }catch(_){} }
-          if(wants(/route|directions|経路|ルート|道順|путь|маршрут|ruta|weg|route/)){ try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); did.push(L('route','経路','Route','маршрут','ruta')); }catch(_){} }
-          if(wants(/radiation|fallout|dispersion|plume|放射|拡散|радиац|radiac/)){ try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); did.push(L('dispersion','拡散','Ausbreitung','рассеивание','dispersión')); }catch(_){} }
-          if(wants(/elevation|sea ?level|標高|海抜|elevación|höhe|высот/)){ try{ clearElev(); did.push(L('elevation shading','標高ハイライト','Höhenschattierung','высотная заливка','sombreado de elevación')); }catch(_){} }
-          if(wants(/faction|historical|alliance|power ?map|勢力|歴史|同盟|historisch|históric|историческ/)){ try{ clearFac(); did.push(L('historical map','歴史地図','historische Karte','историческая карта','mapa histórico')); }catch(_){} }
-          /* (#R176) the three simulators this round added — each paints a raster, so each needs a way off */
-          if(wants(/water|terrain ?edit|sculpt|levee|dam|水|流|地形編集|堤防|ダム|вод|дамб|agua|dique/)){ try{ if(window.IntMapTerrainWater&&window.IntMapTerrainWater.isOpen()){ window.IntMapTerrainWater.close(); did.push(L('terrain & water','地形編集・水流','Gelände & Wasser','рельеф и вода','terreno y agua')); } }catch(_){} }
-          if(wants(/quake|seismic|earthquake|地震|震源|波|землетряс|сейсм|sismo|sísmic|beben/)){ try{ if(window.IntMapSeismic){ window.IntMapSeismic.close(); did.push(L('seismic waves','地震波','seismische Wellen','сейсмические волны','ondas sísmicas')); } }catch(_){} }
-          if(wants(/sun|shad|shade|insolation|日照|日射|影|солн|тен|sol|sombra|sonne|schatten/)){ try{ if(window.IntMapInsolation) window.IntMapInsolation.clear(); if(window.IntMapSun) window.IntMapSun.close(); did.push(L('sun & shadow','日照・影','Sonne & Schatten','солнце и тень','sol y sombra')); }catch(_){} }
-          if(wants(/sight|viewshed|coverage|見通し|視通|圏|видимост|visión|sicht/)){ try{ if(window.IntMapLOS) window.IntMapLOS.clear(); did.push(L('line of sight','見通し線','Sichtlinie','линия видимости','línea de visión')); }catch(_){} }
-          if(wants(/weather|forecast|天気|予報|wetter|погод|tiempo|clima|panel|card|パネル|カード/)){ try{ const WP=window.IntMapWeather; const el=document.getElementById('weather-panel'); if(WP&&WP.close&&el&&el.style.display!=='none'){ WP.close(); did.push(L('weather card','天気パネル','Wetterkarte','карточка погоды','tarjeta del tiempo')); } }catch(_){} } if(wants(/satellite|衛星|satellit|спутник|satélite|panel|card|パネル|カード/)){ try{ const SP=window.IntMapSatPanel; const el=document.getElementById('sat-popup'); if(SP&&SP.close&&el&&el.style.display!=='none'){ SP.close(); did.push(L('satellite card','衛星パネル','Satellitenkarte','карточка спутника','tarjeta del satélite')); } }catch(_){} }   /* the two floating cards Atlas opens close through the same verb (measured 2026-09-15: nothing could reach the weather card) */
-          if(!did.length) return R(false, warn('⚠ '+L('Nothing to clear for','消去対象がありません','Nichts zu löschen für','Нечего очищать','Nada que borrar')+': '+esc(w)));
-          return R(true, note('✓ '+L('Cleared','消去','Gelöscht','Очищено','Borrado')+': '+did.join(', ')), {exec:{cleared:did.slice()}}); }
-        case 'fullscreen': { const want=!(a.on===false||/^(off|exit)$/i.test(String(a.mode||'')));
-          try{ if(want){ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }
-            else if(document.fullscreenElement&&document.exitFullscreen) await document.exitFullscreen();
-            return R(true, note('✓ '+L('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa')+': '+(want?'on':'off'))+_featTogHtml('fullscreen')); }   /* (#R152) offer the fullscreen on/off switch */
-          catch(_){ return R(false, warn('⚠ '+L('Fullscreen unavailable here','全画面にできませんでした','Vollbild nicht möglich','Полный экран недоступен','Pantalla completa no disponible'))); } }
-        case 'locate': { if(!navigator.geolocation) return R(false, warn('⚠ '+L('Geolocation unavailable','この環境では位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible')));
-          /* (#R155) "求めればいいだけ": on a fresh session getCurrentPosition ASKS (the browser prompt). It
-             is a browser rule that a HARD-DENIED site is never re-prompted — so rather than a dead-end,
-             detect that state up front and tell the user exactly how to re-enable it. */
-          let _pstate='prompt'; try{ if(navigator.permissions&&navigator.permissions.query){ const st=await navigator.permissions.query({name:'geolocation'}); _pstate=st.state; } }catch(_){}
-          if(_pstate==='denied') return R(false, warn('⚠ '+L('Location is blocked for this site. Turn it on in your browser (tap the lock/permissions icon in the address bar), then ask me again.','この端末で位置情報がブロックされています。ブラウザで許可（アドレスバーの鍵アイコン→権限）してから、もう一度お尋ねください。','Der Standort ist für diese Seite blockiert. Erlaube ihn im Browser (Schloss-Symbol in der Adressleiste → Berechtigungen) und frag mich erneut.','Геолокация заблокирована для сайта. Включите её в браузере (значок замка в адресной строке → разрешения) и спросите снова.','La ubicación está bloqueada para este sitio. Actívala en el navegador (icono de candado en la barra → permisos) y vuelve a preguntar.')));
-          return await new Promise(res=>{ let fin0=false; const fin=r2=>{ if(!fin0){ fin0=true; res(r2); } };
-            try{ navigator.geolocation.getCurrentPosition(p2=>{ const lng=+p2.coords.longitude, lat=+p2.coords.latitude;
-                try{ GE().camera.flyTo({center:[lng,lat],zoom:Math.max(GE().camera.getZoom(),11),duration:1100}); }catch(_){}
-                /* (#R137) also drop the live accent dot + accuracy circle that follow the user */
-                try{ window.IntMapLocate&&window.IntMapLocate.start({fly:false}); }catch(_){}
-                try{ _lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
-                try{ _selfLocSeed({lng,lat,acc:+p2.coords.accuracy||0}); }catch(_){}   /* (#R413) the next 「現在地から…」 resolves from this fix instead of spending another 25 s on the GPS — ⚠⚠⚠ (#R413) `exec` IS WHY THIS WAS UNUSABLE: js/atlas-toolsurface.js forwards `res.exec` and nothing else, so the note below reaches the READER while the turn that located them learned only `ok:true`. */
-                fin(R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')'),{exec:{lat,lng,accuracyM:Math.round(+p2.coords.accuracy||0),provenance:'device_location'}}));
-              }, err=>{ const denied=err&&err.code===1;   /* 1=PERMISSION_DENIED, 2=UNAVAILABLE, 3=TIMEOUT */
-                fin(R(false, warn('⚠ '+(denied
-                  ? L('Location permission was denied. Re-enable it in your browser settings, then ask again.','位置情報の許可が拒否されました。ブラウザ設定で再度許可してから、もう一度お尋ねください。','Standortzugriff wurde verweigert. Aktiviere ihn in den Browsereinstellungen und frag erneut.','Доступ к геолокации отклонён. Включите его в настройках браузера и спросите снова.','Se denegó el permiso de ubicación. Vuelve a activarlo en el navegador y pregunta de nuevo.')
-                  : L('Couldn\'t get your location — please try again.','位置情報を取得できませんでした。もう一度お試しください。','Standort konnte nicht ermittelt werden — bitte erneut versuchen.','Не удалось определить местоположение — повторите попытку.','No se pudo obtener tu ubicación: inténtalo de nuevo.')))));
-              }, {enableHighAccuracy:true,timeout:25000,maximumAge:0});   /* (#R155) 9s→15s so the permission prompt has time to be answered; (#R170) high accuracy + no cached fix (a 2-min-old coarse fix could be a different city) — 25 s because a GPS cold start after the prompt genuinely takes that long */
-            }catch(_){ fin(R(false, warn('⚠'))); }
-            setTimeout(()=>fin(R(false, warn('⚠ '+L('Location timed out','位置情報の取得がタイムアウトしました','Standort-Timeout','Тайм-аут геолокации','Tiempo de ubicación agotado')))),28000); }); }   /* (#R170) must outlast the 25 s getCurrentPosition budget above, or this outer guard would report a timeout while the GPS was still converging */
-        case 'recallAttachment': { const _r=ATTACH_LOG.find(_curTurn,a&&a.name); if(!_r){ const _n=ATTACH_LOG.names(_curTurn); return R(false,warn(L('No attachment called that. In this conversation: '+(_n.join(', ')||'none'),'その名前の添付はありません。この会話にあるのは: '+(_n.join('、')||'なし'),'Kein Anhang mit diesem Namen. In diesem Gespräch: '+(_n.join(', ')||'keine'),'Вложения с таким именем нет. В этом разговоре: '+(_n.join(', ')||'нет'),'No hay ningún adjunto con ese nombre. En esta conversación: '+(_n.join(', ')||'ninguno')))); } let _pg=null; if(_r.kind==='image') _atlRecallImgs.push(_r.dataUrl); else if(_r.kind==='doc'){ if(_atlRecallAtts) _atlRecallAtts.docs.push({name:String(_r.name||'file'),mime:String(_r.mime||''),b64:String(_r.b64||'')}); } else if(_atlRecallAtts){ _pg=ATTACH_LOG.page(_r,a&&a.offset,ATL_FILE.LIMITS.textPerFile); _atlRecallAtts.files.push({name:String(_r.name||'file'),text:_pg.text,truncated:_pg.more}); } return R(true,note(L('Brought back '+_r.name+' — it is in front of you on the next step.','「'+_r.name+'」を取り戻しました。次の一手で目の前にあります。',_r.name+' wurde zurückgeholt — beim nächsten Schritt liegt es vor dir.','Вложение '+_r.name+' возвращено — оно перед вами на следующем шаге.','Se recuperó '+_r.name+' — lo tendrás delante en el siguiente paso.')),{exec:_pg?{recalled:_r.name,kind:_r.kind,offset:_pg.offset,next:_pg.more?_pg.next:null,total:_pg.total,more:_pg.more}:{recalled:_r.name,kind:_r.kind}}); }   /* ⚠⚠⚠ (#R773) 取り戻したものは**次のモデル呼び出しのチャネルに載る**（画像は vision、PDF は文書、テキストは添付チャネル）。tool の結果テキストに入れないのは #R493 と同じ理由——プロンプト本文に置いた data URL は画像ではなく数十万文字の base64 である。 ⚠⚠⚠ (#R790) テキストは窓で戻る（js/atlas-attach-log.js の page()）——`exec.more` が真なら、`exec.next` を次回の `offset` に渡せば続きが読める。 */
-        case 'inspect': { const _vf=await VFRAMES.captureFrame(a); return _vf.ok?R(true,_vf.html,{exec:_vf.facts}):R(false,warn('⚠ '+esc(_vf.message))); }   /* ⚠⚠⚠ (#R493) THE ONE CASE WHOSE RESULT IS A PICTURE. `facts` is the mechanical record Atlas reads — bbox, zoom, bearing, pitch, layers, all exact; the PIXELS stay in the ledger and ride the vision channel, because js/atlas-agent.js serialises every tool result into the prompt TEXT and a data URL put there is not an image, it is half a megabyte of base64. The capture itself is the screenshot button's, unchanged: js/atlas-view-capture.js. */
-        case 'poi': { /* (#R62) "○○にある石油施設を表示して" → REAL facilities mapped from OpenStreetMap */
-          const kindStr=String(a.kind||a.query||a.what||a.name||'').trim();
-          if(!kindStr) return R(false, warn('⚠ '+L('What kind of facilities?','どんな施設を表示しますか？','Welche Einrichtungen?','Какие объекты?','¿Qué instalaciones?')));
-          let box=null,pname='',areaRel=null,isoPoi=null; const placeStr2=String(a.place||'').trim();
-          if(placeStr2&&!WORLD_RE.test(placeStr2)&&!DEIXIS_RE.test(placeStr2)){ let ext=null; try{ ext=await placeExtent(placeStr2); }catch(_){} if(!ext){ try{ ext=await geocode(placeStr2); }catch(_){} }
-            if(!ext) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr2)));
-            pname=ext.name||placeStr2;
-            /* (#R64) real admin area → search the WHOLE territory via an Overpass area query (fixes "ロシアの
-               石油精製施設 → 一部地域だけ": the old 30°×24° bbox clamp cut most of a large country away). */
-            const cSync=resolveCountrySync(placeStr2);
-            if(cSync&&cSync.code) isoPoi=cSync.code;   /* (#R69) ISO3 → country-wide Wikidata query */
-            if(ext.osmType==='relation'&&ext.osmId&&(ext.adminPoly||cSync)) areaRel=ext.osmId;
-            else if(cSync){ try{ const e2=await _nomExtent(cSync.name||placeStr2); if(e2&&e2.osmType==='relation'&&e2.osmId){ areaRel=e2.osmId; if(e2.box&&_bboxOK(e2.box)) box=e2.box; } }catch(_){} }
-            if(!box){ if(ext.box&&_bboxOK(ext.box)) box=ext.box; else if(ext.lng!=null&&isFinite(ext.lng)){ const d2=1.2; box=[[ext.lng-d2,ext.lat-d2*0.8],[ext.lng+d2,ext.lat+d2*0.8]]; } } }
-          if(!box){ try{ const b2=GE().camera.getBounds(); box=[[b2.getWest(),b2.getSouth()],[b2.getEast(),b2.getNorth()]]; }catch(_){} pname=pname||L('the current view','現在の表示範囲','der aktuellen Ansicht','текущая область','la vista actual'); }
-          if(!box) return R(false, warn('⚠'));
-          /* clamp to a sane Overpass area ONLY for raw-bbox searches (area queries cover the full territory) */
-          if(!areaRel){ const cx2=(box[0][0]+box[1][0])/2, cy2=(box[0][1]+box[1][1])/2; const sx2=Math.min(30,box[1][0]-box[0][0])||1, sy2=Math.min(24,box[1][1]-box[0][1])||1; box=[[cx2-sx2/2,cy2-sy2/2],[cx2+sx2/2,cy2+sy2/2]]; }
-          if(a.color!=null&&String(a.color).trim()!==''){ const pc3=parseColor(a.color); if(pc3) _poiColor=pc3; }
-          /* (#R63/#R64) staged search: full area/bbox Overpass union → lite retry (2 selectors, 60 s) → bbox
-             fallback if the area query failed → AI-known facilities.
-             (#R69) Wikidata runs in PARALLEL as an independent second source and is merged in. */
-          const wdP=wikidataPOIs(kindStr,box,isoPoi);
-          let res=await overpassPOIs(kindStr,box,false,areaRel);
-          if(res===null) res=await overpassPOIs(kindStr,box,true,areaRel);
-          if(res===null&&areaRel) res=await overpassPOIs(kindStr,box,true,null);
-          let wd=null; try{ wd=await wdP; }catch(_){}
-          const osmN=(res&&res.length)||0; let wdN=0;
-          if(wd&&wd.length){
-            const normN=s2=>{ try{ return String(s2||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,''); }catch(_){ return String(s2||'').toLowerCase().replace(/\W+/g,''); } };
-            const have=new Set((res||[]).map(p2=>normN(p2.name)).filter(Boolean));
-            const merged=(res||[]).slice();
-            for(const w of wd){ const nw=normN(w.name);
-              if(nw&&have.has(nw)) continue;                                                    /* same facility, same name */
-              if(merged.some(p2=>Math.abs(p2.lat-w.lat)<0.02&&Math.abs(p2.lng-w.lng)<0.03)) continue;   /* same site ~2 km */
-              merged.push(w); have.add(nw); wdN++; }
-            res=merged;
-          }
-          let aiUsed=false;
-          if(!res||!res.length){ try{ const aiL=await aiFacilities(kindStr,pname,box); if(aiL&&aiL.length){ res=aiL; aiUsed=true; } }catch(_){} }
-          if(res===null) return R(false, warn('⚠ '+L('Facility search failed (OpenStreetMap Overpass busy, Wikidata had no match) — try again shortly','施設検索に失敗しました（Overpass混雑・Wikidataにも該当なし）。少し待って再試行してください','Suche fehlgeschlagen (Overpass ausgelastet, Wikidata ohne Treffer) — später erneut','Поиск не удался (Overpass занят, в Wikidata нет совпадений) — попробуйте позже','Búsqueda fallida (Overpass ocupado, sin coincidencias en Wikidata) — reintenta luego')));
-          clearPois(); _pois=res; let okP=paintPois();
-          for(let i2=0;i2<6&&!okP;i2++){ await new Promise(r2=>setTimeout(r2,700)); okP=paintPois(); }
-          try{ flyToBox(box); }catch(_){}
-          if(!okP) return R(false, warn('⚠ '+L('Could not draw the markers (map still loading) — try again','マーカーを描画できませんでした（地図読込中）。もう一度お試しください','Marker konnten nicht gezeichnet werden (Karte lädt)','Не удалось отрисовать маркеры (карта загружается)','No se pudieron dibujar los marcadores (mapa cargando)')));
-          if(!res.length) return R(true, note('◌ '+L('Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of','見つかりませんでした — OpenStreetMapにもWikidataにも該当がなく、AIも確実な施設を知りません','Nichts gefunden — weder in OpenStreetMap noch Wikidata erfasst, KI kennt keine sicheren','Ничего не найдено — нет ни в OpenStreetMap, ни в Wikidata; ИИ также не уверен','Nada encontrado — ni en OpenStreetMap ni en Wikidata, y la IA no conoce ninguno con certeza')+' ("'+esc(kindStr)+'" @ '+esc(pname)+')'));
-          const names5=res.filter(p=>p.name).slice(0,5).map(p=>esc(p.name)).join(' · ');
-          /* (#R64) state the BASIS explicitly ("何の根拠に選んでいるのかもわからない"): what was searched, over
-             what area, and whether the result set is complete or capped. */
-          const areaTxt=areaRel||isoPoi
-            ?L('the whole territory of '+pname,pname+'の全域','das gesamte Gebiet von '+pname,'вся территория: '+pname,'todo el territorio de '+pname)
-            :L('the shown search box','表示範囲のボックス','der gezeigte Suchbereich','показанная область поиска','el área mostrada');
-          /* (#R69) per-source counts — OSM live tags + Wikidata curated entities ("何の根拠に選んでいるのか").
-             wd===null → the Wikidata query itself failed/didn't apply; wdN counts only NON-duplicate additions. */
-          const wdTxt=(wd===null)
-            ?L('Wikidata n/a','Wikidata照会なし','Wikidata n. v.','Wikidata недоступна','Wikidata no disponible')
-            :L('Wikidata +'+wdN+' additional','Wikidata追加 '+wdN+'件','Wikidata +'+wdN+' zusätzlich','Wikidata +'+wdN,'Wikidata +'+wdN+' adicionales');
-          const scopeTxt=L('OpenStreetMap tags ('+osmN+') + '+wdTxt+' across '+areaTxt,'OpenStreetMapの登録施設 '+osmN+'件 + '+wdTxt+'（検索範囲: '+areaTxt+'）','OpenStreetMap-Tags ('+osmN+') + '+wdTxt+' in '+areaTxt,'теги OpenStreetMap ('+osmN+') + '+wdTxt+' — '+areaTxt,'etiquetas de OpenStreetMap ('+osmN+') + '+wdTxt+' en '+areaTxt);
-          const truncTxt=(res._truncated)?('<br>'+L('⚠ Capped at 600 results — zoom into a sub-region for the rest','⚠ 600件で打ち切り — 残りは範囲を絞って再検索してください','⚠ Bei 600 Ergebnissen gekappt — Region eingrenzen für den Rest','⚠ Ограничено 600 результатами — сузьте область','⚠ Limitado a 600 — acota la zona para ver el resto')):'';
-          const srcTxt=aiUsed
-            ?L('Source: AI-estimated (neither OpenStreetMap nor Wikidata had matching entries here — positions are approximate, verify before relying on them)','出典: AI推定（OpenStreetMapにもWikidataにも該当が無かったため。位置は概算です — 重要な用途では確認してください）','Quelle: KI-Schätzung (weder OSM- noch Wikidata-Treffer — Positionen ungefähr)','Источник: оценка ИИ (нет ни в OSM, ни в Wikidata — координаты приблизительны)','Fuente: estimación de IA (sin coincidencias en OSM ni Wikidata — posiciones aproximadas)')
-            :(L('Basis','根拠','Basis','Основание','Base')+': '+scopeTxt+' · '+L('click a pin for details · say "clear facilities" to remove','ピンをクリックで詳細 ·「施設を消して」で削除','Pin anklicken für Details','клик по метке — детали','clic en un pin para detalles'));
-          return R(true, note('📌 '+res.length+' '+L('facilities mapped','件の施設をマッピングしました','Einrichtungen kartiert','объектов нанесено на карту','instalaciones mapeadas')+' — '+esc(kindStr)+' @ '+esc(pname)+(names5?('<br>'+names5+(res.length>5?' …':'')):'')+truncTxt+'<br><span style="opacity:0.75;">'+srcTxt+'</span>'), _PINNED()); }   /* (#R802) the facilities are declared by the painter that placed them — reaching this line means `paintPois()` succeeded (the `!okP` guard above returns) */
-        case 'mapReport': { /* (#R72) research mapped ONTO the map ("地図上にまとめて" /
-          "銃犯罪を調べて→地図上にマッピングし、そこから簡易的な説明やニュース記事にアクセス"): live web/news evidence
-          → AI geolocates the concrete events/places → pins with an AI summary + article link in each popup. */
-          const topic=String(a.topic||a.question||a.query||'').trim();
-          if(!topic) return R(false, warn('⚠ '+L('What should I map?','何を地図にまとめますか？','Was soll kartiert werden?','Что нанести на карту?','¿Qué mapeo?')));
-          /* (#R74) requested item count ("10件表示してといったところ、10件ですと言って7件しか出なかった"):
-             honour an explicit N — from the action's "count" or parsed out of the topic/last message. */
-          let wantN=null; try{ if(a.count!=null&&isFinite(+a.count)) wantN=Math.max(1,Math.min(20,Math.round(+a.count)));
-            if(wantN==null){ const cm=(topic+' '+String(_lastUserMsg||'')).match(/(\d{1,2})\s*(?:件|事例|例|个|つ|カ所|か所|箇所)|(?:top|first|last)\s+(\d{1,2})\b|\b(\d{1,2})\s+(?:incidents?|cases?|events?|items?|examples?|shootings?|attacks?)/i);
-              if(cm){ const nv=+(cm[1]||cm[2]||cm[3]); if(isFinite(nv)&&nv>=1&&nv<=20) wantN=nv; } } }catch(_){}
-          let ctx=null; const plc=String(a.place||'').trim();
-          if(plc&&!WORLD_RE.test(plc)){ try{ ctx=await placeExtent(plc); }catch(_){} if(!ctx){ try{ ctx=await geocode(plc); }catch(_){} } }
-          /* (#R113) EVIDENCE-BASED, NO web-search tool. IntMap gathers the evidence (GDELT + Google News + loaded
-             IntMap news), normalises it into ID'd records, and Gemini 3.5 Flash Low only CLASSIFIES/SUMMARISES it +
-             names the place — it does NOT search, invent coordinates, or invent URLs/sources. Coordinates come from
-             the cited evidence's known location or IntMap's geocoder; url/source/date come from the cited evidence. */
-          const langR=_langLine();
-          const evSink=[]; const evJobs=[];
-          evJobs.push(_gdeltNews(topic,evSink).catch(()=>{}));
-          evJobs.push(_gnewsNews(topic,evSink).catch(()=>{}));
-          try{ _newsData(ctx,topic,evSink); }catch(_){}
-          await Promise.all(evJobs);
-          /* dedupe by URL, assign stable evidence IDs (e1, e2, …), cap the set. */
-          const evidence=[]; const _seenU=new Set(); const evById={};
-          for(const r of evSink){ if(!r||!r.title) continue; const u=String(r.url||''); if(u&&_seenU.has(u)) continue; if(u) _seenU.add(u);
-            const rec={id:'e'+(evidence.length+1),title:String(r.title).slice(0,180),source:String(r.src||'').slice(0,60),url:u,date:String(r.date||''),loc:(r.loc&&isFinite(+r.loc[0])?[+r.loc[0],+r.loc[1]]:null),place:String(r.place||'').slice(0,80)};
-            evidence.push(rec); evById[rec.id]=rec; if(evidence.length>=40) break; }
-          if(!evidence.length) return R(false, warn('⚠ '+L('No live news evidence could be gathered for this topic right now — nothing was invented. Try a broader topic or again shortly.','このトピックのライブニュース証拠を取得できませんでした（創作はしていません）。トピックを広げるか、少し後に再試行してください。','Keine Live-Nachrichten-Belege gefunden — nichts erfunden. Breiteres Thema oder später erneut.','Не удалось собрать доказательства из новостей — ничего не выдумано. Расширьте тему или повторите позже.','No se pudieron reunir evidencias de noticias — nada inventado. Prueba un tema más amplio o reintenta.')), {meta:{code:'NO_LIVE_EVIDENCE',category:'evidence',retryable:false,semanticTarget:_lnorm(topic),temporalMode:'current',produced:[],userGoalSatisfied:false}});
-          const evBlock=evidence.map(e=>'['+e.id+'] '+e.title+(e.source?(' — '+e.source):'')+(e.date?(' ('+e.date+')'):'')+(e.place?(' — reported location: '+e.place):'')+(e.url?('\n     url: '+e.url):'')).join('\n');
-          /* (#R113 §12.3) separate the REAL current date from the map's time-travel date. */
-          const _nowISO=new Date().toISOString().slice(0,10);
-          let _mapISO=_nowISO; try{ if(window.IntMapTime&&window.IntMapTime.when){ const w=window.IntMapTime.when(); if(w) _mapISO=new Date(w).toISOString().slice(0,10); } }catch(_){}
-          const dateLine='The real current date is '+_nowISO+'.'+((_mapISO&&_mapISO!==_nowISO)?(' The map is time-traveled to '+_mapISO+'; treat "as of" as '+_mapISO+', but the real current date is still '+_nowISO+' (never call '+_nowISO+' a future date).'):'');
-          const sysR=personaPrompt('the research-mapping engine of the IntMap world map')/* (#R285) */+dateLine+' No web-search or function-calling tool is attached to this request — do NOT call tools or functions, and do NOT search the web. The action/type names elsewhere are plain data, not callable functions. Use ONLY the evidence records provided below. Return STRICT JSON only (no prose, no code fence): {"title":str,"overview":str,"items":[{"name":str,"locationName":str,"country":str,"summary":str,"date":"YYYY-MM-DD"|null,"evidenceIds":[str,...]}]}. HARD RULES: each item = ONE concrete, real OCCURRENCE or ENTITY that the evidence supports — for incident topics that means ONE specific incident (what happened, where, when, figures if reported). Every item MUST cite at least one evidenceId (e.g. "e3") from the evidence below; do NOT invent incidents, dates, casualties, place names, sources or URLs that are not in the evidence. Do NOT merge separate incidents into one item unless the evidence explicitly says they are the same incident. Give "locationName" (the specific city/place the evidence indicates) and "country" — do NOT output coordinates; the app resolves the real position from locationName + country. "summary" = 1-2 factual sentences in '+langR+' using only evidence details (date, actors, figures). "date" = the incident date if the evidence gives one, else null. NEVER emit region-level generalities, statistics-as-items, or trends as items. If the evidence supports fewer items than requested, return only those it supports — an EMPTY items array is preferable to a fabricated or generalised item. NEVER state an item count in the title or overview. "overview" = 2-4 sentence synthesis in '+langR+' (patterns are allowed in the overview, never in the items). "title" in '+langR+'.'
-            +(wantN?(' The user asked for up to '+wantN+' items — return that many ONLY if the evidence genuinely supports that many distinct real ones.'):'')
-            +(ctx&&isFinite(ctx.lng)?(' Focus area: '+(ctx.name||plc)+'.'):'');
-          let jr=null; try{ jr=aiParseJSON(await askAI('[TOPIC]\n'+topic+'\n\n[EVIDENCE RECORDS — cite these ids in evidenceIds; use ONLY these, do not go beyond them]\n'+evBlock,sysR,null,{task:'map_report',webMode:'off',requestedCount:(wantN||undefined)})); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
-          /* validate: keep only items that cite a REAL evidence id and name a place (no fabricated evidenceIds). */
-          let raw=(jr&&Array.isArray(jr.items))?jr.items.filter(it=>it&&it.name&&it.locationName&&Array.isArray(it.evidenceIds)&&it.evidenceIds.some(id=>evById[id])):[];
-          if(wantN&&raw.length>wantN) raw=raw.slice(0,wantN);
-          /* resolve coordinates OUTSIDE the model: cited evidence's known location first, else IntMap geocode of
-             locationName + country. Items whose position can't be verified are shown in the list but NOT pinned. */
-          const _seenXY=[]; const items=[];
-          for(const it of raw){ const cites=it.evidenceIds.filter(id=>evById[id]).map(id=>evById[id]);
-            let lng=null,lat=null; const withLoc=cites.find(e=>e.loc); if(withLoc){ lng=+withLoc.loc[0]; lat=+withLoc.loc[1]; }
-            if(lng==null){ const qn=[String(it.locationName||'').trim(),String(it.country||'').trim()].filter(Boolean).join(', ');
-              let g=null; try{ const _k=GLEDGER.resolve(it.locationName,{countryName:it.country}); if(_k&&_k.lng!=null) g={lng:_k.lng,lat:_k.lat,name:_k.canonicalName||_k.name}; }catch(_){}   /* (#R489) a place this conversation already resolved is not geocoded again */
-              if(!g){ try{ g=await geocode(qn); }catch(_){} } if(!g&&it.locationName){ try{ g=await geocode(String(it.locationName).trim()); }catch(_){} }
-              if(g&&isFinite(+g.lng)){ lng=+g.lng; lat=+g.lat; try{ GLEDGER.record({kind:'city',name:String(it.locationName||''),canonicalName:g.name||String(it.locationName||''),countryName:String(it.country||''),lng,lat,role:'incident',summary:String(it.summary||''),when:{start:String(it.date||''),end:String(it.date||'')},source:'evidence',provenance:'event_location'}); }catch(_){} } }
-            const mappable=(lng!=null&&isFinite(lng)&&isFinite(lat)&&Math.abs(lat)<=90&&Math.abs(lng)<=180);
-            if(mappable&&_seenXY.some(p=>Math.abs(p[0]-lng)<0.02&&Math.abs(p[1]-lat)<0.02)) continue;   /* dedupe same spot */
-            if(mappable) _seenXY.push([lng,lat]);
-            const first=cites[0];
-            items.push({ name:String(it.name).slice(0,90), locationName:String(it.locationName||''), country:String(it.country||''),
-              summary:String(it.summary||'').slice(0,400), date:(/^\d{4}-\d{2}-\d{2}$/.test(String(it.date||''))?String(it.date):(first&&first.date||'')),
-              lng, lat, mappable, url:(first&&/^https?:\/\//i.test(first.url)?first.url.slice(0,300):''), src:(first?String(first.source||'').slice(0,40):'') }); }
-          if(!items.length) return R(false, warn('⚠ '+L('The evidence did not support any concrete mappable items — nothing was invented','証拠から具体的にマッピングできる項目は得られませんでした（創作はしていません）','Die Belege ergaben keine konkreten kartierbaren Einträge — nichts erfunden','Доказательства не дали конкретных объектов для карты — ничего не выдумано','La evidencia no dio elementos mapeables concretos — nada inventado')), {meta:{code:'NO_MAPPABLE_ITEMS',category:'evidence',retryable:false,semanticTarget:_lnorm(topic),temporalMode:'current',produced:[],userGoalSatisfied:false}});
-          const mappableItems=items.filter(i=>i.mappable); const unmappable=items.length-mappableItems.length;
-          const _kpR=_poiAdd(a); const _pvR=_kpR?_pois.slice():[]; clearPois();   /* ⚠ (#R489) A SECOND mapReport IN THE SAME TURN USED TO ERASE THE FIRST'S PINS. The reported transcript ran four research-and-map passes for one request and each said 「地図に表示中」; only the last one's pins existed. Accumulating within the turn is what makes that claim true — see the note beside `_poiAdd`. */
-          _pois=_pvR.concat(mappableItems.map(it=>({lng:+it.lng,lat:+it.lat,name:String(it.name).slice(0,90),kind:[it.date,it.src].filter(Boolean).join(' · ').slice(0,60),
-            sum:String(it.summary||''),url:it.url,src:it.src})));
-          let okR=paintPois(); for(let i2=0;i2<6&&!okR&&_pois.length;i2++){ await new Promise(r2=>setTimeout(r2,700)); okR=paintPois(); }
-          try{ if(_pois.length){ let a2=180,b2=90,c2=-180,d2=-90; _pois.forEach(p=>{ a2=Math.min(a2,p.lng);b2=Math.min(b2,p.lat);c2=Math.max(c2,p.lng);d2=Math.max(d2,p.lat); });
-            if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:9,duration:1100}); } }catch(_){}
-          const listHtml2=items.map((p,i)=>{ const mi=p.mappable?mappableItems.indexOf(p):-1; const pu=_atlCleanUrl(p.url); return '<div class="atl-rp-item"'+(mi>=0?(' data-i="'+mi+'"'):'')+' style="display:flex;gap:7px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.12);'+(mi>=0?'cursor:pointer;':'')+'"><span style="flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:'+(p.mappable?(_poiColor||'#ff453a'):'rgba(128,128,128,0.5)')+';position:relative;top:-1px;"></span><span style="flex:1;min-width:0;"><span style="font-weight:600;font-size:12px;">'+esc(p.name)+'</span>'+((p.date||p.src)?' <span style="font-size:10px;color:var(--text-muted);">'+esc([p.date,p.src].filter(Boolean).join(' · '))+'</span>':'')+(p.summary?'<br><span style="font-size:11px;line-height:1.5;color:var(--text-main);opacity:0.9;">'+esc(p.summary.length>150?p.summary.slice(0,150)+'…':p.summary)+'</span>':'')+(pu?' <a href="'+esc(IntMapSafe.url(pu.url))+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>':'')   /* (#R153) inline evidence link goes through _atlCleanUrl too (decode GNews aggregator → real article, drop SNS) — was raw p.url, the "無関係リンク／SNS" leak */+(!p.mappable?' <span style="font-size:9.5px;color:var(--text-muted);">('+L('location unverified','位置未確認','Ort unbestätigt','место не подтв.','ubicación no verif.')+')</span>':'')+'</span></div>'; }).join('');
-          return R(true,'<div style="font-weight:600;margin:2px 0 4px;">'+esc(jr.title||topic)+'</div>'
-            +(jr.overview?'<div style="font-size:12.5px;line-height:1.6;margin-bottom:6px;">'+esc(jr.overview)+'</div>':'')
-            +'<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">📌 '+_pois.length+' '+L('points mapped — click a pin (or an item below) for the summary & article','地点をマッピングしました — ピンまたは下の項目をクリックすると要約と記事を開けます','Punkte kartiert — Pin anklicken für Zusammenfassung & Artikel','точек на карте — клик по метке открывает сводку и статью','puntos mapeados — clic en un pin para el resumen y artículo')+'</div>'
-            +((wantN&&items.length<wantN)?('<div style="font-size:11px;color:#ff9f0a;font-weight:600;margin:2px 0 4px;">⚠ '+L('You asked for '+wantN+' — the gathered evidence only supported '+items.length+' real item(s); nothing was padded with generalities','要求は'+wantN+'件でしたが、収集した証拠で裏付けられたのは'+items.length+'件のみです（一般論での水増しはしていません）','Angefragt: '+wantN+' — die Belege stützten nur '+items.length+' echte(n) Eintrag/Einträge','Запрошено '+wantN+' — доказательства подтвердили только '+items.length+' реальн.','Pediste '+wantN+' — la evidencia solo respaldó '+items.length+' elemento(s) reales')+'</div>'):'')
-            +(unmappable?('<div style="font-size:10.5px;color:var(--text-muted);margin:1px 0 3px;">'+L(unmappable+' item(s) had no verifiable location and are listed without a pin.',unmappable+'件は位置を確認できず、ピンなしで一覧のみ表示しています。',unmappable+' Eintrag/Einträge ohne bestätigten Ort — nur gelistet.',unmappable+' без подтверждённого места — только в списке.',unmappable+' sin ubicación verificable — solo en la lista.')+'</div>'):'')
-            +listHtml2
-            +linkCards(items.filter(p=>p.url).map(p=>({url:p.url,title:p.name,src:p.src})))   /* (#R74) article cards (ChatGPT-style) */
-            +note(L('Mapped from IntMap-gathered news evidence (GDELT + Google News + loaded news); positions are city-level — verify important facts.','IntMapが収集したニュース証拠（GDELT＋Google News＋読み込み済みニュース）に基づきます。位置は都市レベルの精度です — 重要な事実は確認してください。','Aus von IntMap gesammelten Nachrichtenbelegen (GDELT + Google News + geladene News); Positionen auf Stadtebene — wichtige Fakten prüfen.','На основе собранных IntMap новостных доказательств (GDELT + Google News + загруженные новости); позиции с точностью до города — проверяйте факты.','A partir de evidencias de noticias reunidas por IntMap (GDELT + Google News + noticias cargadas); posiciones a nivel de ciudad — verifica los datos.')), _PINNED({meta:{code:'OK',category:'ok',retryable:false,semanticTarget:_lnorm(topic),temporalMode:'current',produced:['explanation','map'],userGoalSatisfied:true}},okR)); }   /* (#R802) …and the pins it placed, so a second pass over the same subject reads as `already_there` rather than `not_rendered` */
-        case 'researchMap': {
-          /* (#R135) GENERAL research-onto-the-map action for HISTORICAL / CURRENT / MIXED questions — the text answer
-             and the map are produced INDEPENDENTLY (§11): the explanation is returned even when the map cannot be
-             drawn (a sea/gulf with no polygon still frames its bbox/centre and pins the related places). Evidence is
-             switched by mode (§6): historical = established history + Wikipedia, NOT live news; current = live news;
-             mixed = both, separated. The model never outputs coordinates — locationName+country resolve client-side. */
-          const topic=String(a.topic||a.question||a.query||'').trim();
-          const place=String(a.place||a.region||a.location||'').trim();
-          if(!topic&&!place) return R(false, warn('⚠ '+L('What should I research and map?','何を調べて地図に示しますか？','Was recherchieren & kartieren?','Что исследовать и нанести на карту?','¿Qué investigo y mapeo?')), {meta:{code:'PLACE_NOT_FOUND',category:'input',retryable:false,userGoalSatisfied:false,produced:[]}});
-          let live=true; try{ if(window.IntMapTime) live=window.IntMapTime.isLive(); }catch(_){}
-          let mode=String(a.temporalMode||a.temporal||'').toLowerCase(); if(!/^(historical|current|mixed)$/.test(mode)) mode=(!live?'historical':'current');
-          let year=(a.year!=null&&isFinite(+a.year))?Math.round(+a.year):null;
-          if(year==null&&mode!=='current'){ try{ if(window.IntMapTime&&!live) year=window.IntMapTime.year(); }catch(_){} }
-          if(mode==='current') year=null;
-          let evid=String(a.evidenceMode||'').toLowerCase(); if(!/^(historical|live|mixed)$/.test(evid)) evid=(mode==='historical'?'historical':mode==='mixed'?'mixed':'live');
-          const semTarget=_lnorm(place||topic);
-          /* 1) TEXT (independent of the map) */
-          const research=await _buildResearchAnswer({topic,place,mode,year,evid});
-          /* 2) MAP (independent, non-fatal) */
-          let mapRes={rendered:false,method:'',name:(place||topic),pinCount:0,pinsDrawn:false,hasExtent:false,pinIdx:[]};
-          try{ mapRes=await _tryMapResearch(place||topic, research.items, {mode,year,act:a}); }catch(_){}
-          /* 3) compose — the explanation ALWAYS wins; the map is reported honestly (§11/§13) */
-          if(!research.ok){
-            if(mapRes.rendered) return R(true, note('🗺 '+esc(mapRes.name)+' — '+L('shown on the map. I could not compile a written summary this time — try rephrasing the question.','を地図に表示しました。今回は文章の要約を作成できませんでした。質問を言い換えてお試しください。','auf der Karte gezeigt. Konnte diesmal keine Textzusammenfassung erstellen.','показано на карте. На этот раз не удалось составить текстовую сводку.','mostrado en el mapa. No pude redactar un resumen esta vez.')), _PINNED({meta:{code:(evid==='live'?'NO_LIVE_EVIDENCE':'NO_HISTORICAL_EVIDENCE'),category:'evidence',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:['map'],userGoalSatisfied:false}},mapRes.pinsDrawn));
-            return R(false, warn('⚠ '+esc(research.error||L('Could not research this right now','今回は調べられませんでした','Konnte das gerade nicht recherchieren','Не удалось исследовать сейчас','No se pudo investigar ahora'))), {meta:{code:(evid==='live'?'NO_LIVE_EVIDENCE':'NO_HISTORICAL_EVIDENCE'),category:'evidence',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:[],userGoalSatisfied:false}});
-          }
-          /* (#R231) 「返答の最初にその地名だけ…やらなくていい」 — a "title" that is only the place the
-             user just typed is dropped. ⚠ EQUALITY, NEVER CONTAINMENT: "Okhotsk in 1905" is a real
-             title and stays. The temporal basis survives on its own line. */
-          const _bare=(s)=>String(s||'').replace(/[\s:：・.,、。()（）"'“”「」]/g,'').toLowerCase();
-          const _tt=String(research.title||'').trim();
-          const _titleIsJustThePlace=!!_tt&&(_bare(_tt)===_bare(place)||_bare(_tt)===_bare(topic));
-          let h='';
-          if(_tt&&!_titleIsJustThePlace){
-            h='<div style="font-weight:600;margin:2px 0 4px;">'+esc(_tt)+(research.temporalBasis?(' <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;">· '+esc(research.temporalBasis)+'</span>'):'')+'</div>';
-          } else if(research.temporalBasis){
-            h='<div style="font-size:10.5px;color:var(--text-muted);margin:2px 0 4px;">'+esc(research.temporalBasis)+'</div>';
-          }
-          h+='<div class="atl-md" style="margin-bottom:6px;">'+mdMini(research.explanation)+'</div>';
-          if(mapRes.rendered){ const ml=mapRes.pinCount?L(mapRes.pinCount+' related place(s) shown on the map',mapRes.pinCount+'件の関連地点を地図に表示しました',mapRes.pinCount+' zugehörige Orte auf der Karte',mapRes.pinCount+' связанных мест на карте',mapRes.pinCount+' lugares relacionados en el mapa'):(mapRes.method==='bbox'?L('Framed the area on the map','対象範囲を地図に表示しました','Gebiet auf der Karte eingerahmt','Область показана на карте','Área enmarcada en el mapa'):L('Centered the map on the location','地図を対象地点に移動しました','Karte auf den Ort zentriert','Карта отцентрирована','Mapa centrado en el lugar'));
-            h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+esc(ml)+((!mapRes.hasExtent&&mapRes.pinCount)?(' · '+L('the region outline was not available, so related places are shown as points','海域・地域の輪郭は取得できなかったため関連地点を表示','Regionsumriss nicht verfügbar — Punkte stattdessen','контур недоступен — показаны точки','sin contorno — se muestran puntos')):'')+'</div>'; }
-          else h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+L('The map view could not be updated for this, but the explanation above stands.','この件では地図表示を更新できませんでしたが、上の説明は有効です。','Kartenansicht nicht aktualisierbar — die Erklärung oben gilt.','Не удалось обновить карту — пояснение выше остаётся в силе.','No se pudo actualizar el mapa, pero la explicación anterior es válida.')+'</div>';
-          if(research.items&&research.items.length){ h+='<div style="font-size:11.5px;color:var(--text-muted);margin:5px 0 2px;font-weight:600;">'+L('Related places','関連地点','Zugehörige Orte','Связанные места','Lugares relacionados')+'</div>';
-            h+=research.items.map((it,i)=>{ const mi=(mapRes.pinIdx&&mapRes.pinIdx[i]!=null)?mapRes.pinIdx[i]:-1; return '<div class="atl-rp-item"'+(mi>=0?(' data-i="'+mi+'"'):'')+' style="display:flex;gap:7px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.12);'+(mi>=0?'cursor:pointer;':'')+'"><span style="flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:'+((mi>=0)?(_poiColor||'#ff453a'):'rgba(128,128,128,0.5)')+';position:relative;top:-1px;"></span><span style="flex:1;min-width:0;"><span style="font-weight:600;font-size:12px;">'+esc(it.name)+'</span>'+(it.dateOrPeriod?' <span style="font-size:10px;color:var(--text-muted);">'+esc(it.dateOrPeriod)+'</span>':'')+(it.summary?'<br><span style="font-size:11px;line-height:1.5;opacity:0.9;">'+esc(it.summary)+'</span>':'')+'</span></div>'; }).join(''); }
-          if(research.limitations&&research.limitations.length) h+=note(L('Note','注記','Hinweis','Примечание','Nota')+': '+esc(research.limitations.join(' · ')));
-          h+=note(mode==='historical'?L('Historical overview from established sources — borders and figures are approximate.','歴史的知見に基づく概説です。国境や数値は概略です。','Historischer Überblick aus etablierten Quellen — Grenzen/Zahlen näherungsweise.','Исторический обзор по установленным источникам — границы и цифры приблизительны.','Panorama histórico de fuentes establecidas — fronteras y cifras aproximadas.'):(mode==='mixed'?L('Combines a historical overview with current live-news evidence.','歴史的概説と現在のライブニュース証拠を組み合わせています。','Kombiniert historischen Überblick mit aktuellen Live-Nachrichten.','Сочетает исторический обзор с текущими новостями.','Combina un panorama histórico con noticias en vivo actuales.'):L('Compiled from current live-news evidence IntMap gathered.','IntMapが収集した現在のライブニュース証拠に基づきます。','Aus aktuellen Live-Nachrichten von IntMap.','На основе собранных IntMap текущих новостей.','A partir de noticias en vivo reunidas por IntMap.')));
-          return R(true, h, _PINNED({meta:{code:'OK',category:'ok',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:(mapRes.rendered?['explanation','map']:['explanation']),userGoalSatisfied:true,geographicRelevance:(mapRes.rendered?1:0.5),temporalMatch:true}},mapRes.pinsDrawn)); }   /* ⚠ (#R802) THE SIX-TIMES CASE. Measured on production 2026-09-17, 「1914年のヨーロッパの国境…」: this line returned `ok` and `not_rendered` ALTERNATELY for one subject, because a repin of the same places moves no feature count. The pins now name themselves. */
-        case 'missile': {
-          /* (#R83) proper ballistic-missile simulation (real Keplerian minimum-energy trajectory + Kepler-timed
-             flight + to-scale altitude profile + honest physics numbers; optional warhead-effect rings). */
-          const A=await geocode(a.from); const B=await geocode(a.to||a.place||a.target);
-          if(!A||!B) return R(false, warn('⚠ '+L('Need a launch site and a target','発射地点と目標が必要です','Startort & Ziel nötig','Нужны точка пуска и цель','Se necesita origen y objetivo')));
-          const km=_gcKm(A,B); const cls=missileClass(a.missile||a.weapon||a.name);
-          let rangeWarn=''; if(cls&&cls.range&&km>cls.range*1.02) rangeWarn=warn('⚠ '+L(esc(cls.name)+' max range is ~'+cls.range.toLocaleString()+' km, but this shot is '+Math.round(km).toLocaleString()+' km — beyond its reach','「'+esc(cls.name)+'」の最大射程は約'+cls.range.toLocaleString()+' kmですが、この距離は'+Math.round(km).toLocaleString()+' kmで射程外です',esc(cls.name)+' Reichweite ~'+cls.range.toLocaleString()+' km, Schuss '+Math.round(km).toLocaleString()+' km — außer Reichweite',esc(cls.name)+' дальность ~'+cls.range.toLocaleString()+' км, а тут '+Math.round(km).toLocaleString()+' км — вне досягаемости',esc(cls.name)+' alcance ~'+cls.range.toLocaleString()+' km, pero son '+Math.round(km).toLocaleString()+' km — fuera de alcance'));
-          /* (#R85) selectable trajectory (min-energy / lofted / depressed), Coriolis ground track, MaRV weave and a
-             world-scale 3-D altitude arc. Real Keplerian core + Allen–Eggers drag for the impact speed. */
-          const loft=(a.loft||a.trajectory||a.traj||(/^(lofted|depressed|minenergy|min-energy|minimum-energy|flat|high|low)$/i.test(String(a.mode||''))?a.mode:'')||'minenergy');
-          const marv=!!(a.marv||a.maneuver||a.maneuvering||/marv|maneuv|機動/i.test(String(a.mode||'')+' '+String(a.missile||'')));
-          const sol=ballisticSolve(km, loft); const mm=Math.floor(sol.tof/60), ss=Math.round(sol.tof%60);
-          _lastMissileCtx={from:a.from,to:(a.to||a.place||a.target),missile:(a.missile||a.weapon||a.name||''),yieldKt:(a.yield!=null?+a.yield:((a.blast||a.warhead||a.nuclear)&&cls?cls.yield:0)),marv};
-          try{ clearFly(); }catch(_){}
-          const N=Math.max(80,Math.min(400,Math.round(km/40)));
-          const track=_ballTrack(A,B,sol,N,{coriolis:a.coriolis!==false, marv}); const pts=track.pts, alts=track.alts;
-          try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); });
-            if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:{top:160,bottom:80,left:80,right:80},maxZoom:6,duration:900}); }catch(_){}
-          const secs=Math.max(10,Math.min(40,+a.seconds||Math.round(9+km/900)));
-          try{ window.IntMapArc3D.show({pts,alts,apogee:sol.apogee,prog:0}); setTimeout(()=>{ try{ window.IntMapArc3D.animate(secs); }catch(_){} },950); }catch(_){}
-          /* optional warhead-effect rings at the impact point */
-          clearBlast(); let rings=null; const Y=(a.yield!=null&&isFinite(+a.yield))?+a.yield:((a.blast||a.warhead||a.nuclear)&&cls?cls.yield:0);
-          if(Y>0){ rings=drawBlastRings(B,Y); }
-          const nm=cls?(' · '+esc(cls.name)):'';
-          const modeLbl={minenergy:L('Minimum-energy','最小エネルギー','Minimalenergie','Мин. энергия','Energía mínima'),lofted:L('Lofted','ロフテッド','Gelobt','Настильная','Elevada'),depressed:L('Depressed','ディプレスト','Flach','Пониженная','Deprimida')}[sol.mode]||sol.mode;
-          const angDeg=(sol.gammaL*180/Math.PI);
-          let h='<div style="font-weight:600;margin:2px 0 3px;">🚀 '+esc(A.name||a.from)+' → '+esc(B.name||a.to||a.place)+nm+' · '+esc(modeLbl)+(marv?(' · MaRV'):'')+'</div>';
-          h+=ballisticProfileSVG(sol,km);
-          h+='<div style="font-size:12px;line-height:1.7;">'
-            +'<div>'+L('Ground range','地上射程','Bodenreichweite','Дальность','Alcance')+': <b>'+Math.round(km).toLocaleString()+' km</b></div>'
-            +'<div>'+L('Apogee (peak altitude)','アポジー（最高高度）','Apogäum','Апогей','Apogeo')+': <b>'+Math.round(sol.apogee).toLocaleString()+' km</b></div>'
-            +'<div>'+L('Launch angle','打上げ角','Startwinkel','Угол пуска','Ángulo de lanzamiento')+': <b>'+angDeg.toFixed(1)+'°</b> '+L('above horizontal','（水平から）','über Horizont','над горизонтом','sobre horizontal')+'</div>'
-            +'<div>'+L('Burnout velocity','ブーストアウト速度','Brennschlussgeschw.','Скорость выгорания','Velocidad de apagado')+': <b>'+sol.vLaunch.toFixed(2)+' km/s</b> (Mach '+Math.round(sol.vLaunch/0.34)+')</div>'
-            +'<div>'+L('Re-entry velocity (100 km)','再突入速度（高度100km）','Wiedereintritt (100 km)','Скорость входа (100 км)','Reentrada (100 km)')+': <b>'+sol.vEntry.toFixed(2)+' km/s</b></div>'
-            +'<div>'+L('Impact velocity (after drag)','着弾速度（空気抵抗後）','Aufschlag (nach Luftwiderstand)','Скорость удара (с трением)','Impacto (con rozamiento)')+': <b>'+sol.vImpact.toFixed(2)+' km/s</b> (Mach '+Math.round(sol.vImpact/0.34)+')</div>'
-            +'<div>'+L('Coriolis cross-range','コリオリ横偏差','Coriolis-Querablage','Кориолис (боковой снос)','Desvío Coriolis')+': <b>'+Math.round(track.crossRangeKm).toLocaleString()+' km</b></div>'
-            +'<div>'+L('Flight time','飛翔時間','Flugzeit','Время полёта','Tiempo de vuelo')+': <b>'+mm+' min '+ss+' s</b></div>'
-            +'</div>';
-          if(rings){ h+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;">💥 '+L('Warhead','弾頭','Sprengkopf','Боеголовка','Ojiva')+' '+Y.toLocaleString()+' kt — '+rings.map(rg=>esc(rg.l)+' ('+rg.r.toFixed(1)+' km)').join(' · ')+'</div>'; }
-          /* (#R85) trajectory-preset buttons ("軌道もボタンで変更可能にしろ") — re-fly the SAME shot on a different profile */
-          const _tb=(m,lbl)=>'<button class="atl-traj-btn'+(sol.mode===m?' on':'')+'" data-traj="'+m+'">'+esc(lbl)+'</button>';
-          h+='<div class="atl-traj-row">'+_tb('minenergy',L('Min-energy','最小エネルギー','Min-Energie','Мин.','Mín'))+_tb('lofted',L('Lofted','ロフテッド','Gelobt','Настильн.','Elevada'))+_tb('depressed',L('Depressed','ディプレスト','Flach','Пониж.','Deprimida'))
-            +'<button class="atl-traj-btn'+(marv?' on':'')+'" data-traj="marv">MaRV '+(marv?'✓':'')+'</button></div>';
-          h+=note(L('Keplerian two-body core with a selectable launch angle, plus Allen–Eggers atmospheric drag on the re-entry vehicle, an Earth-rotation (Coriolis) ground track and an optional MaRV terminal weave. Boost thrust is treated as an impulsive burnout at ~200 km; the 3-D arc is drawn to real world scale. Educational estimate — not an operational tool.','ケプラー二体問題を核に、打上げ角を可変化し、再突入体にアレン–エッグスの空気抵抗、地球自転（コリオリ）による地上軌跡、任意で機動再突入体（MaRV）の終末機動を加えています。ブースト推力は高度約200kmでの瞬間的な燃焼終了として近似。立体軌道は実スケールで描画。教育目的の概算であり運用ツールではありません。','Kepler-Zweikörperkern mit wählbarem Startwinkel, Allen–Eggers-Luftwiderstand, Coriolis-Bodenspur und optionalem MaRV-Endmanöver. Bildungsschätzung.','Кеплерова задача двух тел с выбираемым углом пуска, аэродинамическим торможением (Аллен–Эггерс), кориолисовой трассой и опциональным манёвром MaRV. Образовательная оценка.','Núcleo kepleriano con ángulo de lanzamiento variable, rozamiento de reentrada (Allen–Eggers), traza de Coriolis y maniobra MaRV opcional. Estimación educativa.'));
-          return R(true, rangeWarn+h); }
-        case 'elevationBelow': {
-          clearElev();
-          const place=String(a.place||a.region||a.around||a.country||'').trim();
-          let ext=null; if(place&&!WORLD_RE.test(place)){ try{ ext=await placeExtent(place); }catch(_){} if(!ext){ try{ ext=await geocode(place); }catch(_){} } }
-          let box=null; if(ext&&ext.box){ const bx=ext.box; if(Array.isArray(bx[0])) box=[[+bx[0][0],+bx[0][1]],[+bx[1][0],+bx[1][1]]]; else if(bx.length===4) box=[[+bx[0],+bx[1]],[+bx[2],+bx[3]]]; }
-          if(!box&&ext&&isFinite(ext.lng)){ const d=(a.km!=null&&isFinite(+a.km))?(+a.km/111):3; box=[[ext.lng-d*1.5,Math.max(-84,ext.lat-d)],[ext.lng+d*1.5,Math.min(84,ext.lat+d)]]; }
-          if(!box){ try{ const b=GE().camera.getBounds(); box=[[b.getWest(),b.getSouth()],[b.getEast(),b.getNorth()]]; }catch(_){} }
-          if(!box) return R(false, warn('⚠ '+L('Which area should I scan?','どの範囲を調べますか？','Welches Gebiet?','Какую область?','¿Qué área?')));
-          const spanX=Math.abs(box[1][0]-box[0][0]); if(spanX>64){ const cx=(box[0][0]+box[1][0])/2; box[0][0]=cx-32; box[1][0]=cx+32; }
-          const thr=(a.threshold!=null&&isFinite(+a.threshold))?+a.threshold:(a.meters!=null&&isFinite(+a.meters)?+a.meters:0);
-          const above=(a.above===true||/above|以上|higher|超え|over/i.test(String(a.mode||a.dir||'')));
-          const grid=await elevGrid(box,850); const hw=grid.dx/2, hh=grid.dy/2;
-          const feats=[]; let cnt=0,mn=1e9,mx=-1e9;
-          grid.pts.forEach(p=>{ if(p.el==null) return; const hit=above?(p.el>=thr):(p.el<=thr); if(!hit) return; cnt++; mn=Math.min(mn,p.el); mx=Math.max(mx,p.el);
-            const col=above?_mixc('#ffe08a','#7a1500',Math.min(1,(p.el-thr)/2500)):_mixc('#7fc8ff','#001a4a',Math.min(1,(thr-p.el)/150));
-            feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[p.lng-hw,p.lat-hh],[p.lng+hw,p.lat-hh],[p.lng+hw,p.lat+hh],[p.lng-hw,p.lat+hh],[p.lng-hw,p.lat-hh]]]},properties:{color:col}}); });
-          if(!cnt) return R(false, warn('⚠ '+L('No sampled points '+(above?'above':'below')+' '+thr+' m in this area','この範囲に'+thr+'m'+(above?'以上':'以下')+'の地点は見つかりませんでした','Keine Punkte '+(above?'über':'unter')+' '+thr+' m in diesem Gebiet','Нет точек '+(above?'выше':'ниже')+' '+thr+' м в этой области','Sin puntos '+(above?'sobre':'bajo')+' '+thr+' m')));
-          ensureElevLayers(); try{ GE().layers.setSourceData('nlq-elev-src',{type:'FeatureCollection',features:feats}); }catch(_){}
-          try{ GE().camera.fitBounds(box,{padding:50,duration:900}); }catch(_){}
-          return R(true, note('🌊 '+esc((ext&&ext.name)||place||L('current view','現在の表示','aktuelle Ansicht','текущий вид','vista actual'))+' — '+cnt+' '+L('map points','地点','Kartenpunkte','точек карты','puntos del mapa')+' '+(above?'≥':'≤')+' '+thr+' m · '+L('lowest','最低','tiefster','минимум','mínimo')+' '+Math.round(mn)+' m'+(above?(' · '+L('highest','最高','höchster','максимум','máximo')+' '+Math.round(mx)+' m'):''))
-            +note(L('Elevation sampled live on a grid from the Copernicus DEM (Open-Meteo) — cells are graduated by depth/height.','標高はCopernicus DEM（Open-Meteo）からグリッド状にライブ取得。セルの濃淡は深さ・高さに応じた段階表示です。','Höhen live vom Copernicus-DEM (Open-Meteo) im Raster.','Высоты в реальном времени из Copernicus DEM (Open-Meteo) по сетке.','Elevación en vivo del DEM Copernicus (Open-Meteo).'))); }
-        case 'historicalMap': {
-          clearFac();
-          const era=String(a.era||a.date||a.title||a.topic||a.question||a.place||'').trim();
-          const key=histMatch(era)||histMatch(a.question||'');
-          if(key&&HIST_SCENARIOS[key]){ const sc=HIST_SCENARIOS[key]; const n=paintFactions(sc.factions);
-            for(let i2=0;i2<6&&!n;i2++){ await new Promise(r2=>setTimeout(r2,600)); if(paintFactions(sc.factions)) break; }
-            try{ GE().camera.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
-            let h='<div style="font-weight:600;margin:2px 0 5px;">'+esc(sc.title)+'</div>'
-              +'<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">'+sc.factions.map(f=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;background:'+f.color+';display:inline-block;flex:0 0 auto;"></span><span>'+esc(f.name)+'</span> <span style="color:var(--text-muted);font-size:10.5px;">('+f.codes.length+')</span></div>').join('')+'</div>'
-              +note(sc.note);
-            return R(paintFactions(sc.factions)>0, h); }
-          /* fallback: build the faction set for ANY era via AI, then paint onto modern borders */
-          const sysH=personaPrompt('working here as the historical-geography engine of the IntMap world map')/* (#R285) was "a historical-geography engine" — a third character */+'Build a political/alliance map for the exact historical moment the user names. Output ONLY strict JSON (no prose/fence): {"title":str,"factions":[{"name":str,"color":"#rrggbb","countries":[ISO3,...]},...],"note":str}. Map the powers of that date onto MODERN ISO3 codes (an empire → every modern country in its territory; e.g. Austria-Hungary → AUT,HUN,CZE,SVK,SVN,HRV,BIH,…). 2-6 factions, distinct colors. "note" must say it is approximate on modern borders. Title, faction names & note in '+_langLine()+'.';
-          let jr=null; try{ jr=aiParseJSON(await askAI('Historical political/alliance/power map for: '+era,sysH,null,{})); }catch(_){}
-          if(!jr||!Array.isArray(jr.factions)||!jr.factions.length) return R(false, warn('⚠ '+L('Could not build that historical map — try naming the war/year more specifically','その歴史地図を作成できませんでした。戦争名や年をより具体的に指定してください','Konnte diese historische Karte nicht erstellen','Не удалось построить эту историческую карту','No se pudo construir ese mapa histórico')));
-          const groups=jr.factions.slice(0,6).map(f=>({name:String(f.name||''),color:(parseColor(f.color)||'#8a8f98'),codes:(Array.isArray(f.countries)?f.countries.map(c=>String(c).toUpperCase()):[])}));
-          let n=paintFactions(groups); for(let i2=0;i2<6&&!n;i2++){ await new Promise(r2=>setTimeout(r2,600)); n=paintFactions(groups); }
-          try{ GE().camera.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
-          let h='<div style="font-weight:600;margin:2px 0 5px;">'+esc(jr.title||era)+'</div>'
-            +'<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">'+groups.map(f=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;background:'+f.color+';display:inline-block;flex:0 0 auto;"></span><span>'+esc(f.name)+'</span> <span style="color:var(--text-muted);font-size:10.5px;">('+f.codes.length+')</span></div>').join('')+'</div>'
-            +note(jr.note||L('Approximate — historical powers mapped onto modern borders.','概略 — 歴史上の勢力を現代の国境上に表示。','Näherung — auf modernen Grenzen.','Приблизительно — на современных границах.','Aproximado — sobre fronteras actuales.'));
-          return R(n>0, h); }
-        case 'fly': { /* (#R72) animated camera flight ("モスクワからワシントンまで
-          ICBMの視点と速度、運動で飛行して") — great-circle path, drawn trajectory, camera follows with a
-          mode-specific altitude/pitch profile. */
-          /* (#R83) ballistic modes now run the REAL missile simulator (the old icbm mode was just a parabolic
-             camera zoom — "粗悪すぎる"); plane/cruise stay cinematic camera flights. */
-          if(/^(icbm|missile|ballistic|rocket|弾道|ミサイル)$/i.test(String(a.mode||'')) ) return await dispatch({type:'missile',from:a.from,to:a.to,seconds:a.seconds,missile:a.missile,yield:a.yield,blast:a.blast});
-          const A=await geocode(a.from); const B=await geocode(a.to);
-          if(!A||!B) return R(false, warn('⚠ '+L('Need start & destination','出発地と目的地が必要です','Start & Ziel nötig','Нужны старт и цель','Se necesitan origen y destino')));
-          const mode=({plane:'plane',aircraft:'plane',jet:'plane',cruise:'cruise',drone:'cruise',bird:'plane'})[String(a.mode||'').toLowerCase()]||'plane';
-          const secs=Math.max(6,Math.min(90,+a.seconds||22));
-          const r=await flyAnimate(A,B,mode,secs);
-          return R(r.ok, r.ok?note('🚀 '+esc(A.name||a.from)+' → '+esc(B.name||a.to)+' · '+Math.round(r.km).toLocaleString()+' km · '+r.real):warn('⚠ '+L('Flight could not start','飛行を開始できませんでした','Flug konnte nicht starten','Полёт не запустился','No se pudo iniciar el vuelo'))); }
-        case 'drawLine': { /* (#R72) free line drawing — AI-supplied coordinates or place names */
-          let pts=[]; if(Array.isArray(a.points)) pts=a.points.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
-          if(!pts.length&&Array.isArray(a.places)){ for(const pn of a.places.slice(0,12)){ const g=await geocode(String(pn)); if(g) pts.push([g.lng,g.lat]); } }
-          if(pts.length<2) return R(false, warn('⚠ '+L('Need at least two points','2点以上必要です','Mindestens zwei Punkte nötig','Нужно минимум две точки','Se necesitan al menos dos puntos')));
-          const col=a.color?parseColor(a.color):null;
-          /* ⚠⚠⚠ (#R747) A LINE IS ITS COURSE, NOT ITS CAPTION — the rule `addPin` and `_radiusFromPoint`
-             take in js/app-body.js. Measured: 「нарисуй линию」 Lisbon→Cape Town drew the SAME line five
-             times because each retry carried a different label and colour. A redraw is a restyling. */
-          /* ⚠ (#732) …AND A COURSE HAS NO DIRECTION: Cape Town→Reykjavik is the line Reykjavik→Cape Town already on the map, so the key is the smaller of the two readings */
-          const _lnK=ps=>{ const f=ps.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)), b=f.slice().reverse().join(' '), a=f.join(' '); return a<b?a:b; }, _lnKey=_lnK(pts);
-          const _lnSame=_hlLines.find(l=>l&&l.geo&&l.geo.type==='LineString'&&_lnK(l.geo.coordinates||[])===_lnKey);
-          let _lnObj; if(_lnSame){ _lnObj=_lnSame; _lnSame.key=_lnKey; _lnSame.color=col||undefined; _lnSame.w=(a.width!=null&&isFinite(+a.width))?+a.width:3; if(String(a.label||'')) _lnSame.name=String(a.label||''); } else { _lnObj={geo:{type:'LineString',coordinates:pts},key:_lnKey,color:col||undefined,w:(a.width!=null&&isFinite(+a.width))?+a.width:3,name:String(a.label||'')}; _hlLines.push(_lnObj); }   /* (#R760) the course IS the identity (see the note above) — js/atlas-era-highlight.js reads `name || key` */
-          const okL=paintLines(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
-          return R(okL, okL?note('✏️ '+L('Line drawn','ラインを描画しました','Linie gezeichnet','Линия нарисована','Línea dibujada')+(a.label?(' — '+esc(a.label)):'')+' ('+pts.length+' pts)'):warn('⚠'), okL?{meta:{painted:{lines:[_lnObj.name||_lnObj.key]},resultKey:'map.line:'+_lnKey}}:null); }   /* (#732) `resultKey` = WHAT this call did, and a caption is not what it did: js/atlas-agent.js reads it to tell Atlas that a relabelled redraw is the line it already drew */   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/atlas-agent-repeat-checks.test.mjs (#R760) */
-        case 'drawPolygon': { let pts=[]; if(Array.isArray(a.points)) pts=a.points.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
-          if(!pts.length&&Array.isArray(a.places)){ for(const pn of a.places.slice(0,12)){ const g=await geocode(String(pn)); if(g) pts.push([g.lng,g.lat]); } }
-          if(pts.length<3) return R(false, warn('⚠ '+L('Need at least three points','3点以上必要です','Mindestens drei Punkte nötig','Нужно минимум три точки','Se necesitan al menos tres puntos')));
-          if(pts[0][0]!==pts[pts.length-1][0]||pts[0][1]!==pts[pts.length-1][1]) pts.push([pts[0][0],pts[0][1]]);
-          const colP=a.color?parseColor(a.color):null;
-          const _pgKey=pts.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)).join(' '); let _pgObj=_hlPolys.find(p=>p&&p.key===_pgKey); if(_pgObj){ _pgObj.color=colP||undefined; if(String(a.label||'')) _pgObj.name=String(a.label||''); } else { _pgObj={geo:{type:'Polygon',coordinates:[pts]},key:_pgKey,color:colP||undefined,name:String(a.label||'')}; _hlPolys.push(_pgObj); }   /* ⚠ (#R760) THE RING IS THE IDENTITY, AND A REDRAW OF IT IS A RESTYLING — the rule #R747 gave the line, which drawPolygon never got: measured locally, two identical `map.drawPolygon` calls left TWO polygons stacked on the map and both were reported `ok`, so nothing anywhere said the second one was the first one again */
-          const _pgId=(window._imHlPolys&&window._imHlPolys.tagId)?window._imHlPolys.tagId(_pgObj):null;   /* (#R120) drawn polygon becomes a referencable map-object */
-          const okPg=paintPolys(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
-          return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn('⚠'), okPg?Object.assign({meta:{painted:{polys:[_pgObj.name||_pgObj.key]},resultKey:'map.polygon:'+_pgKey}},_pgId?{objectIds:[_pgId]}:null):null); }
-        case 'controls': { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") */
-          const items=Array.isArray(a.items)?a.items.slice(0,8):[];
-          if(!items.length) return R(false, warn('⚠'));
-          let h='<div style="display:flex;flex-direction:column;gap:7px;margin:4px 0 2px;">'; let any=false;
-          for(const it of items){ const kind=String((it&&it.kind)||'').toLowerCase();
-            if(kind==='layertoggle'||kind==='layer'){ const rl=resolveLayer(String(it.layer||it.name||'')); if(!rl) continue; any=true;
-              h+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(rl.label)+'</span><button class="atl-ctl-toggle'+(rl.cb.checked?' on':'')+'" data-layer="'+esc(rl.label)+'" data-cb="'+esc(rl.cb.id||'')+'" role="switch" aria-checked="'+(rl.cb.checked?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>'; }
-            else if(kind==='opacity'||kind==='slider'){ const rl=resolveLayer(String(it.layer||it.name||'')); if(!rl) continue; const sl=layerOpacityControl(rl.cb); if(!sl) continue; any=true;
-              h+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(rl.label)+' · '+L('opacity','不透明度','Deckkraft','непрозрачность','opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(rl.label)+'" data-cb="'+esc(rl.cb.id||'')+'" min="0" max="1" step="0.05" value="'+esc(sl.value)+'"></div>'; }
-            else if(kind==='button'){ const lbl=String(it.label||'').slice(0,40); const cmd=String(it.run||it.command||'').slice(0,160); if(!lbl||!cmd) continue; any=true;
-              h+='<button class="atl-ctl-btn" data-run="'+esc(encodeURIComponent(cmd))+'">'+esc(lbl)+'</button>'; } }
-          h+='</div>';
-          return R(any, any?h:warn('⚠')); }
-        case 'ask': {
-          /* (#R84) SELECTION-STYLE clarification ("ユーザーが十分な情報を提示しない場合…選択形式で聞く"):
-             a question + clickable option chips + a free-text box. Picking a chip (or typing) sends it back to Atlas. */
-          const q=String(a.question||a.text||a.say||a.prompt||'').trim();
-          const opts=Array.isArray(a.options)?a.options.map(o=>String((o&&o.label)||o||'').trim()).filter(Boolean).slice(0,6):[];
-          const allowText=a.allowText!==false&&a.freeText!==false;
-          if(!q&&!opts.length) return R(false, warn('⚠'));
-          /* ══ ⚠⚠ (#R313) THE QUESTION STAYS, THE PICKER GOES ════════════════════════════════
-             「ユーザーが回答したら、そのUIは消してください。…きいた文章とユーザーの回答自体は
-               そのままでいいけど、選択するためのUIはいらないですよねって話」 Nothing removed or
-             disabled these after an answer, so a finished clarification kept a live menu in the
-             transcript that could be re-clicked for ever — and re-clicking it asked a question that
-             had already been answered further down the page. The chips and the free-text box are
-             the PICKER; the sentence above them is the RECORD. Only the picker is wrapped, and only
-             the picker is removed (see the `.atl-choice-ui` handler further down). */
-          let hh='<div style="font-size:12.5px;line-height:1.6;margin-bottom:7px;">'+esc(q||L('Which one?','どれにしますか？','Welche?','Какой вариант?','¿Cuál?'))+'</div>';
-          const _wrapOpen='<div class="atl-choice-ui">', _wrapClose='</div>';
-          hh+=_wrapOpen;
-          if(opts.length){ hh+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:'+(allowText?'8px':'2px')+';">'
-            +opts.map(o=>'<button class="atl-choice" data-choice="'+esc(encodeURIComponent(o))+'" style="text-align:left;border:1px solid var(--glass-border,rgba(128,128,128,0.32));background:var(--input-bg);color:var(--text-main);border-radius:10px;padding:8px 12px;font-size:12px;cursor:pointer;">'+esc(o)+'</button>').join('')+'</div>'; }
-          if(allowText){ hh+='<div class="atl-choice-txt" style="display:flex;gap:6px;"><input type="text" class="atl-choice-in" placeholder="'+esc(L('or type your own answer…','または自由に入力…','oder eigene Antwort…','или введите свой ответ…','o escribe tu respuesta…'))+'" style="flex:1;min-width:0;height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;box-sizing:border-box;"><button class="atl-choice-go" title="'+L('Send','送信','Senden','Отправить','Enviar')+'" style="flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,0.08);background:#fff;color:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 1px 4px rgba(0,0,0,0.14);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'; }   /* (#R149) white bg + BLACK icon + a real up-arrow SVG (was accent bg + plain-text "→") — "白背景黒文字に。plain textの→はやめて" */
-          hh+=_wrapClose;
-          return R(true, hh); }
-        case 'analyze': { const q=String(a.question||a.query||a.text||'').trim();
-          if(!q) return R(false, warn('⚠ '+L('What should I analyze?','何を分析しますか？','Was soll analysiert werden?','Что проанализировать?','¿Qué analizo?')));
-          await ensureData();
-          const use=Array.isArray(a.use)?a.use.map(x=>String(x||'').toLowerCase()):null;
-          const wantD=k=>use?use.indexOf(k)>=0:null;   /* null = "not specified" → sensible defaults below */
-          /* place context (filters news/quakes + anchors point values); "there" resolves via deixis. */
-          let ctx=null; const placeStr=String(a.place||'').trim();
-          if(placeStr&&!WORLD_RE.test(placeStr)){ try{ ctx=await placeExtent(placeStr); }catch(_){} if(!ctx){ try{ ctx=await geocode(placeStr); }catch(_){} } }
-          const pt=(ctx&&ctx.lng!=null&&isFinite(ctx.lng))?ctx:null;
-          /* countries for stats: explicit list, else the country under the place point. */
-          let codes=[]; const cnames=Array.isArray(a.countries)?a.countries:(a.country?[a.country]:[]);
-          for(const n2 of cnames){ try{ const c=await resolveCountry(n2); if(c&&c.code&&codes.indexOf(c.code)<0) codes.push(c.code); }catch(_){} }
-          if(!codes.length&&pt){ const cd=codeAtPoint(pt.lng,pt.lat); if(cd) codes.push(cd); }
-          /* (#R74) officeholder questions: find the country IN the question when none was passed, so the
-             live Wikidata incumbent block below can anchor the answer. */
-          const isOffice=OFFICE_RE.test(q);
-          if(isOffice&&!codes.length){ try{ for(const cd in countryStats){ const s3=countryStats[cd]; if(!s3) continue;
-            const en3=String(s3.nameEn||''), jp3=String(s3.nameJp||'');
-            if((en3.length>3&&q.toLowerCase().indexOf(en3.toLowerCase())>=0)||(jp3.length>1&&q.indexOf(jp3)>=0)){ codes.push(cd); if(codes.length>=3) break; } } }catch(_){} }
-          /* gather — defaults: news + quakes + stats(+weather when a place anchors it); air/marine/elevation on request. */
-          const got={}, missing=[], srcSink=[];   /* (#R79) srcSink collects real article {url,title,src} for ChatGPT-style source cards */
-          if(wantD('news')!==false){ if(typeof HOST.globalData!=='undefined'&&(!HOST.globalData||!HOST.globalData.length)){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
-            got.news=_newsData(ctx,q,srcSink); if(!got.news) missing.push(L('loaded news','読み込み済みニュース','geladene News','загруженные новости','noticias cargadas')); }
-          const jobs=[];
-          /* (#R62) LIVE WEB SEARCH is now a first-class dataset (default ON) — the loaded RSS feed alone produced
-             honest-but-useless "insufficient data" answers (the Taiwan report). GDELT covers current events across
-             the world's outlets; Wikipedia supplies stable background. */
-          if(wantD('web')!==false){ const topic=(ctx&&ctx.name)||placeStr||'';
-            /* (#R64) GDELT needs an ENGLISH topic (a Japanese place name returned nothing → the Greece report's
-               "取得不可: ライブWebニュース"); Google News RSS covers the user's own language. Both run.
-               (#R131) MULTI-COUNTRY FIX (root cause of the missing Kazakhstan/Turkmenistan coverage): the old
-               code OVERRODE the topic with codes[0]'s English name, so "Central Asia (5 countries)" silently
-               searched only Kazakhstan. Now: search the REGION and an OR of the REQUESTED countries, so every
-               requested country can surface — without an unbounded per-country search explosion. */
-            const cnEn=[]; try{ codes.forEach(c=>{ const s5=countryStats[c]; if(s5&&s5.nameEn&&cnEn.indexOf(s5.nameEn)<0) cnEn.push(s5.nameEn); }); }catch(_){}
-            const multi=cnEn.length>1;
-            let regionQ=''; if(topic) regionQ='"'+topic.replace(/"/g,'')+'"'; else if(cnEn.length===1) regionQ='"'+cnEn[0].replace(/"/g,'')+'"';
-            if(!regionQ&&!multi){ try{ regionQ=q.split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>3).slice(0,4).join(' '); }catch(_){ regionQ=q.slice(0,60); } }
-            const orQ=multi?('('+cnEn.map(n=>'"'+n.replace(/"/g,'')+'"').join(' OR ')+')'):'';
-            jobs.push((async()=>{ let any=false;
-              /* ⚠⚠ (#R452) GOOGLE NEWS IS A DIFFERENT HOST, SO IT STARTS NOW AND IS AWAITED LAST — all three were in one file, so own-language news waited out every GDELT attempt first, and the file exists for GDELT's per-IP limit, which says nothing about news.google.com */
-              const gnQ=topic||cnEn.join(' OR ')||q.slice(0,60);
-              const wNotes=[],nn=()=>{ const n={}; wNotes.push(n); return n; }; const gn=_gnewsNews(gnQ,srcSink,nn).catch(()=>null);   /* 3) user-language Google News — started first, awaited last. ⚠⚠⚠ (#R769) ONE NOTE PER ATTEMPT, never one shared object — the ladder states its own verdict (js/proxy-fetch.js opts.note) and a shared note lets the LAST engine to finish speak for all of them */
-              const w0=Date.now(); const wLeft=()=>WEB_BUDGET_MS-(Date.now()-w0);
-              /* ⚠⚠ (#R464) wLeft() is HANDED to each call, not just consulted before it — consulting alone gated only whether to START one, so 3×14 s ran inside a 「20 s」 budget (js/atlas-deadlines.js)
-                 1) region-wide GDELT (the whole area) — runs sequentially with (2) to stay gentle on GDELT's rate limit */
-              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink,null,wLeft(),nn()); if(!v&&regionQ.indexOf('"')>=0&&wLeft()>0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink,null,wLeft(),nn()); if(v){ got.web=v; any=true; } }
-              /* 2) a search that INCLUDES the explicit countries (OR of the requested set), so no country is dropped */
-              if(orQ&&wLeft()>0){ let v3=await _gdeltNews(orQ,srcSink,null,wLeft(),nn()); if(v3){ got.web3=v3; any=true; } }
-              const v2=await gn;
-              if(v2){ got.web2=v2; any=true; }
-              if(!any) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')+(wNotes.some(n=>n&&n.reason==='ok')?L(' — sources answered, no matching story',' — 各取得先は応答、該当記事なし',' — Quellen antworteten, kein Treffer',' — источники ответили, совпадений нет',' — las fuentes respondieron, sin coincidencias'):L(' — no source could be reached',' — どの取得先にも到達できず',' — keine Quelle erreichbar',' — ни один источник недоступен',' — ninguna fuente accesible')));   /* ⚠ (#R769) THE TEST IS 「did ANY source answer」, not 「did any attempt fail」 — a ladder that reached Google News and found no matching story is the world saying no; a ladder where nothing answered is IntMap saying nothing, and only the second is ours to fix. ⚠ The base string is UNCHANGED so the readers who already have it keep it (CONSTITUTION.md §0-3); the clause is what is new */ })());
-            if(topic) jobs.push(_wikiSummary(topic).then(v=>{ if(v) got.wiki=v; })); }
-          if(wantD('weather')===true||(wantD('weather')===null&&pt)){ if(pt) jobs.push(_weatherData(pt.lng,pt.lat).then(v=>{ if(v) got.weather=v; else missing.push(L('weather','天気','Wetter','погода','tiempo')); })); else missing.push(L('weather (no place given)','天気（場所未指定）','Wetter (kein Ort)','погода (нет места)','tiempo (sin lugar)')); }
-          if(wantD('airquality')===true||wantD('air')===true){ if(pt) jobs.push(_airData(pt.lng,pt.lat).then(v=>{ if(v) got.air=v; else missing.push(L('air quality','大気質','Luftqualität','качество воздуха','calidad del aire')); })); else missing.push(L('air quality (no place given)','大気質（場所未指定）','Luftqualität (kein Ort)','воздух (нет места)','aire (sin lugar)')); }
-          if(wantD('marine')===true||wantD('sst')===true){ if(pt) jobs.push(_sstData(pt.lng,pt.lat).then(v=>{ if(v) got.sst=v; else missing.push(L('sea temperature','海水温','Meerestemperatur','темп. моря','temp. del mar')); })); else missing.push(L('sea temperature (no place given)','海水温（場所未指定）','Meerestemperatur (kein Ort)','море (нет места)','mar (sin lugar)')); }
-          if(wantD('elevation')===true){ if(pt) jobs.push(_elevData(pt.lng,pt.lat).then(v=>{ if(v) got.elev=v; else missing.push(L('elevation','標高','Höhe','высота','elevación')); })); else missing.push(L('elevation (no place given)','標高（場所未指定）','Höhe (kein Ort)','высота (нет места)','elevación (sin lugar)')); }
-          if(isOffice&&codes.length) jobs.push(_leaderData(codes).then(v=>{ if(v) got.leaders=v; }).catch(()=>{}));   /* (#R74) live incumbents */
-          if(wantD('quakes')!==false) jobs.push(_quakeData(ctx).then(v=>{ if(v) got.quakes=v; else missing.push(L('earthquakes','地震','Erdbeben','землетрясения','sismos')); }));
-          /* (#R119) the DISPLAYED layers' live values at the anchor point become first-class evidence */
-          if(pt&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(pt.lng,pt.lat).then(v=>{ if(v&&v.length) got.layers=v.filter(x=>x&&x.value!=null).map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
-          /* (#R119) scope:"drawn-area" — the old standalone area-summary is absorbed here: news inside the user's
-             drawn polygon / circle(s) + layer values at its centroid feed the SAME analyze pipeline. */
-          try{ const scope=String(a.scope||'').toLowerCase();
-            if(/drawn|area|circle|radius/.test(scope)&&typeof turf!=='undefined'){
-              let inside=null, ctr=null;
-              if(typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length>=3){ const poly=turf.polygon([[...HOST.measurePoints,HOST.measurePoints[0]]]); inside=(x,y)=>{ try{ return turf.booleanPointInPolygon(turf.point([x,y]),poly); }catch(_){ return false; } }; try{ const c4=turf.centroid(poly).geometry.coordinates; ctr={lng:c4[0],lat:c4[1]}; }catch(_){} }
-              else if(typeof HOST.radiusItems!=='undefined'&&HOST.radiusItems&&HOST.radiusItems.length){ inside=(x,y)=>HOST.radiusItems.some(c=>{ try{ return turf.distance(turf.point(c.center),turf.point([x,y]),{units:'kilometers'})<=c.radiusKm; }catch(_){ return false; } }); ctr={lng:HOST.radiusItems[0].center[0],lat:HOST.radiusItems[0].center[1]}; }
-              if(inside){ const rows=[];
-                try{ (typeof HOST.globalData!=='undefined'?(HOST.globalData||[]):[]).forEach(it=>{ const lc=it&&it.analysis&&it.analysis.loc; if(lc&&isFinite(lc[0])&&inside(+lc[0],+lc[1])&&rows.length<24) rows.push('- '+String(it.title||'').slice(0,120)+(it.pubDate?(' ('+String(it.pubDate).slice(0,16)+')'):'')); }); }catch(_){}
-                got.areaNews=(rows.length?rows.join('\n'):L('(no loaded news points inside the drawn area)','（描画範囲内に読み込み済みニュース地点なし）','(keine geladenen News im Gebiet)','(нет новостей в области)','(sin noticias en el área)'));
-                if(ctr&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(ctr.lng,ctr.lat).then(v=>{ if(v&&v.length) got.layersArea=v.filter(x=>x&&x.value!=null).map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
-                try{ if(window.IntMapPopArea&&typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length>=3){ jobs.push(window.IntMapPopArea.estimate({type:'Polygon',coordinates:[[...HOST.measurePoints,HOST.measurePoints[0]]]}).then(v=>{ if(v) got.areaPop=v.pop.toLocaleString()+' (WorldPop 2020, 100m grid)'; }).catch(()=>{})); } }catch(_){}
-              } } }catch(_){}
-          if(wantD('stats')!==false){ got.stats=_statsData(codes); if(!got.stats&&(wantD('stats')===true||codes.length)) missing.push(L('country stats','国別統計','Länderstatistik','статистика стран','estadísticas')); }
-          { const late=await settleWithin(jobs,GATHER_BUDGET_MS); if(late) missing.push(lateNote(late,GATHER_BUDGET_MS)); }
-          /* build the DATA block + synthesize with ONE text-AI call (answers ONLY from this data). */
-          /* (#R131) Give the model a REAL clock + requested time window (the old prompt passed only a UTC date, so
-             it had no way to reject out-of-window items) and, for a multi-country request, the explicit country set
-             it must report coverage for. */
-          const nowCtx=_nowContext(); const freshness=_analyzeFreshness(q);
-          const analysisWebMode=(freshness.critical||(use&&use.indexOf('web')>=0))?'required':'auto';   /* (#R131) freshness-critical → FORCE live web verification; (#R158) an explicit use:['web'] (e.g. an informational answer routed here for sources) also forces it, so sources are never zero */
-          const covNames=[]; try{ codes.forEach(c=>{ const s6=countryStats[c]; if(s6&&(s6.nameEn||nm(s6))) covNames.push(s6.nameEn||nm(s6)); }); }catch(_){}
-          if(!covNames.length&&cnames.length) cnames.forEach(n7=>{ const t7=String(n7||'').trim(); if(t7) covNames.push(t7); });
-          const coverage={ region:(placeStr||(ctx&&ctx.name)||''), countries:covNames };
-          let block=''; const parts=[];   /* ⚠⚠⚠ (#732) each DATA block is a part with its reader label, and becomes an evidence record the answer's claims can cite (js/atlas-answer-pipeline.js) — 「使用データ」 is read off those citations below, no longer off what was put in the prompt */
-          const push2=(tag,lbl,v)=>{ if(v){ parts.push(block,{tag:tag,label:lbl,text:v}); block=''; } };
-          /* TIME CONTEXT + REQUESTED COVERAGE first — the model reads the clock (and the country set it must cover)
-             before the evidence. Shared with the regression harness via _analyzeHeaderBlock so they never drift. */
-          block+=_analyzeHeaderBlock(nowCtx, freshness, coverage);
-          /* (#R131) ONE dated NEWS EVIDENCE block (loaded + GDELT + Google News), newest-first, each stamped with
-             its date_type and event_date:unknown — replaces the 3 undated headline dumps that let the model read a
-             publication/seen date as the event date. */
-          const evRecs=_analyzeEvidence(srcSink);
-          /* ⚠⚠⚠ (atlas-find-semantic) ONE NUMBERING. This list and the pipeline's EVIDENCE RECORDS list the same articles, and the
-             registry is what resolves a citation — so the list is written from the registry's ids (a part that is a function of
-             it, js/atlas-answer-pipeline.js), and the registry is handed the articles in this list's order, newest first. */
-          if(evRecs.length){ parts.push(block, reg=>'[NEWS EVIDENCE — headlines IntMap gathered'+(ctx&&ctx.name?(', around '+ctx.name):'')+'. Each item is a LEAD, not a confirmed event: article_date/date_type = when the ARTICLE appeared; event_date is UNKNOWN unless the wording itself verifies it. Ordered newest-first by article date. The ids are the EVIDENCE RECORDS ids below.]\n'+POLICY.turnMechanics.fence.wrap(_evidenceBlock(evRecs,reg.idOf))+'\n\n'); block='';   /* (#R801) outside text, fenced — see _agentPrompt */ }
-          else if(got.news) push2('LATEST NEWS (loaded in IntMap'+(ctx&&ctx.name?(', filtered to '+ctx.name):'')+')',_newsLbl('loaded'),POLICY.turnMechanics.fence.wrap(got.news));
-          else if(freshness.critical) missing.push(L('in-window verified events','対象期間内の確認済み出来事','verifizierte Ereignisse im Zeitfenster','подтверждённые события в окне','eventos verificados en la ventana'));
-          push2('CURRENT NATIONAL LEADERS (Wikidata LIVE query, P6/P35 — authoritative for who currently holds office)','Wikidata',got.leaders);
-          push2('BACKGROUND (Wikipedia)','Wikipedia',got.wiki);
-          push2('CURRENT WEATHER'+(pt&&(pt.name||placeStr)?(' @ '+(pt.name||placeStr)):''),L('weather','天気','Wetter','погода','tiempo'),got.weather);
-          push2('AIR QUALITY',L('air quality','大気質','Luftqualität','воздух','aire'),got.air);
-          push2('SEA SURFACE',L('sea temperature','海水温','Meerestemperatur','темп. моря','mar'),got.sst);
-          push2('ELEVATION',L('elevation','標高','Höhe','высота','elevación'),got.elev);
-          push2('ACTIVE MAP LAYER VALUES @ the anchor point (live values of the layers the user is displaying)',L('displayed-layer values','表示レイヤーの実値','Layer-Werte','значения слоёв','valores de capas'),got.layers);
-          push2('NEWS INSIDE THE USER-DRAWN AREA (loaded news points whose location falls in the drawn polygon / circles)',L('area news','範囲内ニュース','Gebiets-News','новости области','noticias del área'),got.areaNews);
-          push2('LAYER VALUES @ the drawn-area center',L('area layer values','範囲のレイヤー実値','Gebiets-Layerwerte','значения слоёв области','valores de capas del área'),got.layersArea);
-          push2('POPULATION INSIDE THE DRAWN AREA',L('area population','範囲内人口','Gebietsbevölkerung','население области','población del área'),got.areaPop);
-          push2('EARTHQUAKES (USGS, last 24 h'+(ctx?', in the area':'')+')',L('earthquakes','地震','Erdbeben','землетрясения','sismos'),got.quakes);
-          /* (#R397) …AND THE SAME EVENTS ON ONE SCALE WITH EVERYTHING ELSE. The block above is a sorted
-             list of magnitudes; every other hazard arrives as prose, which is why 「世界の異常TOP3」 came
-             back as three earthquakes — they were the only rows that could be ORDERED. This adds the
-             cross-domain ranking, with each score's components, so the comparison is IntMap's and not
-             an artefact of which feed happens to publish numbers. */
-          try{ const _cands=ANOM.fromUsgs(_lastQuakeFeatures||[],Date.now())
-                 .concat(ANOM.fromAlerts((window.__wpAlerts&&typeof window.__wpAlerts.at==='function'&&pt)?window.__wpAlerts.at(pt.lng,pt.lat):[],Date.now()));
-               const _rk=ANOM.rank(_cands,{nowMs:Date.now(),n:5}); if(_rk.length) block+=ANOM.promptBlock(_rk); }catch(_){}
-          push2('COUNTRY STATISTICS',L('country stats','国別統計','Länderstatistik','статистика','estadísticas'),got.stats);
-          const st=stateContext(); if(st) block+='[CURRENT MAP STATE]\n'+st+'\n\n';
-          /* (#R113) IntMap already ran the live web-news search (GDELT + Google News) into the DATA blocks above;
-             the model does NOT have its own web-search tool by default, so it works from that evidence and answers
-             honestly when the evidence is thin (rather than the old "the model MUST search" assertion). */
-          const lang=_langLine();
-          /* (#R64) REPORT quality ("クソみたいなレポート出力してんじゃねーよ"): lead with what is actually happening
-             (news, dated), analyse rather than recite — no weather/quake/statistics dumps unless they answer the
-             question.
-             (#R69) the old prompt said "use ONLY the DATA blocks", which actively FORBADE the model from using its
-             web_search results → the "ギリシャの近況" non-answer ("特筆すべきニュースなし"). The web search is now a
-             REQUIRED evidence source whenever the blocks are thin, and no-news answers without a search are banned. */
-          const sys2=_analysisSystemPrompt(nowCtx, freshness, coverage, lang);
-          /* ══ (#R350) THE ANSWER IS A CONTRACT, NOT A STRING ══════════════════════════════════
-             What stood here: ONE askAI for prose, a regex that peeled a "PLACES:" JSON trailer off
-             the end, a second regex that peeled a "SOURCES:" line off the end, and then
-             window._aiLastMeta / window._aiLastCitations — the globals whichever call answered LAST
-             overwrites — read AFTER the await. Every defect of the reported China answer was ALLOWED
-             by that shape rather than caused by one bad generation: an opening sentence nothing could
-             compare with the body, three meanings of 「支えている」 carried by one word, two statistical
-             series chained inside one sentence, and a URL the model invented rendered as a live link.
-             The orchestration is js/atlas-answer-pipeline.js, the rules are js/atlas-answer-audit.js,
-             the drawing is js/atlas-answer-render.js. This is the CALL SITE and nothing more — the
-             kernel is under a shrink-only ceiling (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤) and new logic goes to a module. */
-          let RES=null;
-          try{ RES=await runStructuredAnswer({
-              question:q, dataBlock:parts.concat([block]), systemPrompt:sys2, language:lang,
-              /* (#R406) ATLAS says whether this is about now or about the past, as an argument on the
-                 call. It used to be _requestProfile(q) — a regular expression over the reader's
-                 sentence, which is the layer this round removed. */
-              temporalMode:String((a&&a.temporalMode)||'unspecified'),
-              requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
-              turnId:_curTurnKey, webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
-              appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
-              ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
-          catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
-          const _env=RES.env, _reg=RES.registry;
-          if(!String((_env.answer.directAnswer&&_env.answer.directAnswer.text)||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
-          /* ⚠ THE FULL TRACE IS A DEVELOPER FACILITY AND CARRIES NO PROMPT, NO TOKEN AND NO ARTICLE
-             BODY — call ids, audit codes and counts only, so turning it on in production leaks
-             nothing. window.IntMapAtlasDev is the same switch the rest of Atlas debugging uses. */
-          try{ if(window.IntMapAtlasDev) window.IntMapAtlasTrace=Object.assign({},RES.trace,{errors:RES.audit.errors.map(x=>x.code),warnings:RES.audit.warnings.map(x=>x.code)}); }catch(_){}
-          let html='<div class="atl-md">'+renderAnswer(_env,_reg,{L,esc,mdMini,linkCards})+'</div>';
-          /* (#R150) prose↔map reconciliation is unchanged in intent — it now reads the STRUCTURE's
-             places instead of a JSON line scraped off the end of the prose. */
-          /* ⚠ (#R397) PASS THE PLACE, NOT THREE OF ITS FIELDS. This re-flattened every place to
-             {n,c,k} — so the coordinate and provenance `normalizeAnswer` had just merged in were
-             discarded ONE LINE before the pinning step that needed them, and the name was resolved
-             again from scratch. `_env.places` are already GeoObjects; hand them over whole. */
-          try{ html+=await _pinReplyPlaces(_env.places||[],{text:answerPlainText(_env),citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
-          /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
-             assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
-             confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into
-             the tool-free fallback (webUsed stays false). */
-          if(freshness.critical&&!RES.webUsed) html+='<div style="margin-top:8px;padding:7px 10px;border:1px solid var(--warn-color,#c98a00);border-radius:8px;background:rgba(201,138,0,.09);font-size:11px;line-height:1.5;color:var(--text-main);">⚠ '+L(
-            'Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.',
-            '時間依存の質問に対しライブWeb検証を完了できなかったため、これは取得済みの見出しを中心とした暫定評価です。各項目は確認済みの直接的証拠ではなく手がかりとして扱ってください。',
-            'Die Live-Web-Verifizierung wurde für diese zeitkritische Frage nicht abgeschlossen — dies ist eine VORLÄUFIGE Einschätzung, überwiegend auf bereits gesammelten Schlagzeilen; als Hinweise, nicht als bestätigte Belege behandeln.',
-            'Проверка в реальном времени по этому чувствительному ко времени вопросу не завершилась — это ПРЕДВАРИТЕЛЬНАЯ оценка, в основном по уже собранным заголовкам; считайте их зацепками, а не подтверждёнными доказательствами.',
-            'No se completó la verificación web en vivo para esta pregunta sensible al tiempo, por lo que es una evaluación PROVISIONAL basada sobre todo en titulares ya recopilados; trátalos como indicios, no como evidencia directa confirmada.')+'</div>';
-          const usedAll=[]; citedRecords(_env,_reg).forEach(r=>{ if(r.label&&usedAll.indexOf(r.label)<0) usedAll.push(r.label); });   /* (#732) what the rendered claims CITE (js/atlas-answer-render.js citedRecords) — not every block that was put in the prompt */
-          if(RES.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
-          if(usedAll.length) html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+'</div>';   /* (#R118) no data → NO empty "Data used:" line */
-          const _am=auditMeta(_env); return _am?R(true,html,{meta:_am}):R(true,html); }   /* ⚠ (#R419/#R472) THE ANSWER IS RENDERED IN FULL AND ATLAS IS TOLD WHAT THE AUDIT NOTICED — codes, not a verdict, and never a claim that something was removed (nothing is). auditMeta() in js/atlas-answer-pipeline.js. */
-        /* (#R180) THE RENDERING ENGINE — Atlas is the control plane (STANDING RULE since #R82),
-           so the second engine is selectable from here too. It cannot take effect on the live
-           scene for the same reason the Settings panel reloads: a renderer swap is a rebuild.
-           So this reports honestly — what is stored, what is DRAWING, and that a reload is what
-           applies it — rather than claiming a change that has not happened yet. */
-        case 'engine': {
-          const ES=window.IntMapEngineSelect;
-          if(!ES) return R(false,warn('⚠ '+L('The engine selector is unavailable.','エンジン選択が利用できません。','Die Engine-Auswahl ist nicht verfügbar.','Выбор движка недоступен.','El selector de motor no está disponible.')));
-          const nameOf=id=>ES.label(id,(HOST.lang||'en'));
-          const asked=String(a.name||a.engine||a.mode||'').toLowerCase();
-          const live=ES.active(), stored=ES.choice();
-          if(!asked||/^(what|which|status)$/.test(asked)){
-            let h=note('✓ '+L('Map engine','地図エンジン','Karten-Engine','Движок карты','Motor del mapa')+': '+nameOf(live));
-            if(live!==stored) h+=note(L('Selected','選択中','Ausgewählt','Выбрано','Seleccionado')+': '+nameOf(stored)+' — '+L('reload to apply','再読み込みで適用','zum Anwenden neu laden','перезагрузите, чтобы применить','recarga para aplicar'));
-            const f=ES.failure(); if(f) h+=warn('⚠ '+L('Cesium could not start','Cesiumを起動できませんでした','Cesium konnte nicht starten','Cesium не запустился','Cesium no pudo iniciarse')+' ('+f+')');
-            return R(true,h);
-          }
-          const want=/cesium|セシウム|3d ?globe/.test(asked)?'cesium':'maplibre';
-          ES.set(want);
-          if(want===live) return R(true,note('✓ '+L('Already running on','すでに動作中','Läuft bereits mit','Уже работает на','Ya funciona con')+': '+nameOf(want)));
-          /* the reload is the ACTION, so it is announced and then performed — not silently queued */
-          try{ setTimeout(()=>{ try{ location.reload(); }catch(_){} },900); }catch(_){}
-          return R(true,note('✓ '+L('Switching to','切り替え先','Wechsel zu','Переключение на','Cambiando a')+': '+nameOf(want)+' — '+L('reloading…','再読み込み中…','wird neu geladen…','перезагрузка…','recargando…')));
-        }
-        /* (#R171) the two new Map-behaviour settings, operable from Atlas like every other feature. */
-        case 'tiltLimit': { const want=!(a.on===false||/^(off|standard|normal)$/i.test(String(a.mode||''))); let ok=false; try{ if(window.IntMapTilt){ window.IntMapTilt.set(want); ok=true; } }catch(_){}
-          const cap=(()=>{ try{ return Math.round(window.IntMapTilt.ceiling()); }catch(_){ return want?180:78; } })();
-          return R(ok, ok?note('✓ '+L('Map tilt limit','地図の傾き制限','Neigungsgrenze','Предел наклона','Límite de inclinación')+': '+(want?L('unlimited','無制限','unbegrenzt','без предела','sin límite'):L('standard','標準','Standard','стандарт','estándar'))+' ('+cap+'°)')+_featTogHtml('tiltLimit'):warn('⚠')); }
-        case 'eyeAltitude': { const want=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let ok=false;
-          try{ if(window.IntMapEyeAlt){ window.IntMapEyeAlt.set(want); ok=true; } }catch(_){}
-          const now=(()=>{ try{ const v=window.IntMapEyeAlt.altitude(); return (v==null)?'':' — '+window.IntMapEyeAlt.text(); }catch(_){ return ''; } })();
-          return R(ok, ok?note('✓ '+L('Viewpoint altitude in the readout','常時表示欄の視点高度','Kamerahöhe in der Anzeige','Высота камеры в строке','Altitud del punto de vista')+': '+(want?'on':'off')+(want?now:''))+_featTogHtml('eyeAltitude'):warn('⚠')); }
-        /* (#R196) the day/night side of the planet, and the city lights on it */
-        case 'nightSide': { const want=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let ok=false, st=null;
-          try{ if(window.IntMapNightSide){ window.IntMapNightSide.setEnabled(want); st=window.IntMapNightSide.state(); ok=true; } }catch(_){}
-          try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){}   /* (#R232) the Layers row + the Settings picker follow */
-          const detail=(want&&st)?(' — '+(st.built?L('drawn','描画中','gezeichnet','нарисовано','dibujado'):L('appears as you zoom out','ズームアウトすると現れます','erscheint beim Herauszoomen','появится при отдалении','aparece al alejar'))
-            +(st.lights?(' · '+L('city lights loaded','夜間光を読み込み済み','Nachtlichter geladen','ночные огни загружены','luces nocturnas cargadas')):'')):'';
-          return R(ok, ok?note('✓ '+L('Night side of the Earth','地球の夜側','Nachtseite der Erde','Ночная сторона Земли','Lado nocturno de la Tierra')+': '+(want?'on':'off')+detail)+_featTogHtml('nightSide'):warn('⚠')); }
-        /* (#R172) aircraft at their reported altitude, or flat on the map */
-        /* ⚠ (#R313) the animated streaks inside the Wind layer, on their own switch — the reader put
-           a box for it in the wind legend and AGENTS.md §3-3 says a feature reaches Atlas in the same
-           change: dispatch here, the sentence in the SYS catalogue below, and the inline toggle in
-           `_FEAT_TOG` so a reply can carry the switch. All three call window.Wind.setParticles — the
-           legend box calls it too, so no two of them can hold different ideas of the state. */
-        case 'windParticles': { const want=!(a.on===false||/^(off|hide|none|static)$/i.test(String(a.mode||''))); let ok=false;
-          /* ⚠ (#R337) 「気温レイヤーでも、風レイヤーのパーティクルをオンオフできるトグルを付けて。」
-             `over` names the layer the streaks are wanted OVER. The two switches are two questions
-             (js/weather.js): 「does the Wind layer animate」 and 「is the wind drawn over the
-             temperature field」, so this branch writes the one the reader named and never both. */
-          const OVER=[['ec-temp',/temp|気温|気溫|temperatur|температ/,'tempWindParticles'],['ec-gust',/gust|突風|瞬間風速|böe|boe|порыв|racha/,'gustWindParticles'],['ec-slp',/press|気圧|luftdruck|druck|давлен|presi/,'slpWindParticles'],['ec-precip',/precip|降水|雨|niederschlag|regen|осадк|lluvia|precipit/,'precipWindParticles']];   /* ⚠ (#R455) A FOURTH LAYER CAN ASK — the forecast-precipitation raster. ⚠ IT IS LAST ON PURPOSE: `presi`/`precip` both begin with `pre`, and `ec-slp`'s row is tested first, so a bare 'precipitation' must not be caught by the pressure pattern — it is not, because `presi` does not match 'precip', but the ORDER is what keeps that true if either pattern is ever widened. */   /* ⚠ (#R439) THREE LAYERS CAN ASK NOW, each remembering its own answer, so `over` resolves to WHICH one rather than to a boolean. One door: window._imWxParts(layerId,v). ⚠ THE LABEL IS NOT REPEATED HERE — `_FEAT_TOG` already declares one per layer and the reply reads it from there, which is the same rule the legend follows. docs/MAP-LAYERS.md §7.10 */
-          const over=String(a.over||a.layer||a.on_layer||'').toLowerCase(), hit=over?OVER.find(o=>o[1].test(over)):null;
-          if(hit){ try{ if(window._imWxParts){ window._imWxParts(hit[0],want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG[hit[2]].lbl()+': '+(want?'on':'off'))+_featTogHtml(hit[2]):warn('⚠')); }
-          try{ if(window.Wind&&window.Wind.setParticles){ window.Wind.setParticles(want); ok=true; } }catch(_){}
-          return R(ok, ok?note('✓ '+L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento')+': '+(want?'on':'off'))+_featTogHtml('windParticles'):warn('⚠')); }
-        case 'isobars': { const want=!(a.on===false||/^(off|hide|none)$/i.test(String(a.mode||''))); let ok=false,lit=false; if(want){ try{ const cb=document.getElementById('dl-ec-slp'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); lit=true; } }catch(_){} } try{ if(window._imWxIsobars){ window._imWxIsobars(want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG.isobars.lbl()+': '+(want?'on':'off')+(lit?(' · '+L('sea-level pressure switched on','海面気圧をオンにしました','Luftdruck eingeschaltet','слой давления включён','presión al nivel del mar activada')):''))+_featTogHtml('isobars'):warn('⚠')); }   /* ⚠ (#R439) THE ISOBARS ARE A SWITCH, SO ATLAS GETS A SWITCH — a control inside the sea-level-pressure legend rather than a row, so a layer name resolves to nothing. It switches that layer on too, because contours of a field that is not on the map are nothing at all, and the reply says both halves. docs/MAP-LAYERS.md §7.10 */
-        case 'baseDisplay': return doBaseDisplay(a);   /* the Default / Clean / Custom preset — js/atlas-controls.js, through js/data-layers.js IntMapBaseDisplay */
-        case 'planeAltitude': { const want=!(a.on===false||/^(off|flat|2d)$/i.test(String(a.mode||''))); let ok=false;
-          try{ if(window.IntMapPlanes3D){ window.IntMapPlanes3D.set(want); ok=true; } }catch(_){}
-          const st=(()=>{ try{ const s=window.IntMapPlanes3D.state(); return s.lifted?(' — '+s.lifted+' '+L('airborne, up to','機が飛行中・最高','in der Luft, bis','в воздухе, до','en vuelo, hasta')+' '+s.maxAlt.toLocaleString()+' m'):''; }catch(_){ return ''; } })();
-          return R(ok, ok?note('✓ '+L('Aircraft at real altitude','航空機を実際の高度で描画','Flugzeuge in echter Höhe','Самолёты на реальной высоте','Aviones a su altitud real')+': '+(want?'on':'off')+(want?st:''))+_featTogHtml('planeAltitude'):warn('⚠')); }
-        /* (#R173) the track of ONE aircraft — the same thing a click on it draws. "clear" (or on:false)
-           puts it away. The track is what this browser has observed since the layer came on; there is no
-           history feed behind it, so the reply says how many fixes and how long it covers. */
-        case 'aircraftTrack': {
-          const P=window.IntMapPlanes3D; if(!P) return R(false,warn('⚠'));
-          const off=(a.on===false)||/^(off|clear|hide|none)$/i.test(String(a.mode||a.aircraft||''));
-          if(off){ try{ P.select(null); }catch(_){} return R(true,note('✓ '+L('Aircraft track cleared','航空機の軌跡を消去','Flugspur entfernt','Трек убран','Traza borrada'))); }
-          const q=String(a.aircraft||a.callsign||a.flight||a.reg||a.icao24||'').trim();
-          const key=q?((await P.find(q))||null):(P.selected()||null);
-          if(!key) return R(false,warn('⚠ '+L('No aircraft matching','該当する航空機がありません','Kein Flugzeug gefunden','Самолёт не найден','Ningún avión coincide')+(q?' “'+esc(q)+'”':'')));
-          let ok=false; try{ await P.select(key); ok=true; }catch(_){}   /* (#R506) awaited — find/select are worker round trips now, and trackStats below would read an empty track if it ran first */
-          const s2=(()=>{ try{ const t=P.trackStats(key); return ' — '+t.fixes+' '+L('fixes','点','Punkte','точек','puntos')+' · '+t.minutes+' '+L('min','分','min','мин','min')+(t.maxAlt?(' · '+L('up to','最高','bis','до','hasta')+' '+t.maxAlt.toLocaleString()+' m'):''); }catch(_){ return ''; } })();
-          return R(ok, ok?note('✓ '+L('Track of','軌跡','Spur von','Трек','Traza de')+' '+esc(q||key)+s2):warn('⚠')); }
-        /* (#R184) LIVE SATELLITES — the same three verbs the aircraft layer answers, applied to orbit:
-           turn the layer on, choose which CelesTrak catalogue it propagates, and single out one object
-           (which draws its footprint + ground track and opens the detail card). Every number in the
-           reply is read back out of the layer's own state, so a reply can never claim a satellite the
-           map is not showing. */
-        case 'satellites': {
-          await window.IntMapLazy.need('satellitesLive'); const A=window.IntMapSatellites; if(!A) return R(false,warn('⚠'));   /* (#R311) on-demand, and the OFF branch reads A too */
-          const offS=(a.on===false)||/^(off|hide|stop|clear|none)$/i.test(String(a.mode||''));
-          if(offS){ try{ const cb=document.getElementById('dl-sats'); if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } else A.stop(); }catch(_){}
-            return R(true,note('✓ '+L('Live satellites off','人工衛星レイヤーを非表示にしました','Live-Satelliten aus','Спутники выключены','Satélites en vivo desactivados'))); }
-          /* the group first, so a request that names both ("show me the GPS satellites") loads the right
-             catalogue before the layer starts propagating the wrong one */
-          const gWant=String(a.group||a.catalogue||a.kind||'').toLowerCase().trim();
-          let gSet=null;
-          if(gWant){ const GM={'visual':'visual','bright':'visual','brightest':'visual','naked eye':'visual','肉眼':'visual',
-              'stations':'stations','space stations':'stations','iss':'stations','宇宙ステーション':'stations',
-              'weather':'weather','気象':'weather','geo':'geo','geostationary':'geo','静止':'geo',
-              'gps':'gps-ops','gps-ops':'gps-ops','navstar':'gps-ops','galileo':'galileo',
-              'science':'science','科学':'science','starlink':'starlink','active':'active','all':'active','すべて':'active'};
-            const gid=GM[gWant]||(A.groups().some(g=>g.id===gWant)?gWant:null);
-            if(gid){ try{ gSet=A.setGroup(gid); }catch(_){} } }
-          let okS=false;
-          try{ const cb=document.getElementById('dl-sats');
-            if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); okS=true; }
-            else { A.start(); okS=true; } }catch(_){}
-          const q=String(a.name||a.satellite||a.object||a.norad||'').trim();
-          let found=null;
-          if(q){
-            /* the catalogue may have only just been asked for — wait for it rather than answering
-               "not found" about a list that is still in flight */
-            for(let k=0;k<24&&!found;k++){ found=A.find(q); if(found) break; await new Promise(r=>setTimeout(r,250)); }
-            /* ⚠⚠⚠ (#R747) ONE OBJECT NAMED IS NOT A REQUEST FOR THE WHOLE SKY. `name` chose a focus and
-               only `group` chose what is propagated, so 「put a SINGLE marker on the ISS」 drew 16,010
-               dots while the reply said it had drawn one (measured on production 2026-09-15). Which
-               catalogue holds a named object is a fact about the catalogues: js/satellites-live.js
-               `narrow`. ⚠ Not a hidden filter — #R266 removed that; the catalogue is named in the reply. */
-            if(!gWant&&found===null){ try{ found=await A.narrow(q); }catch(_){} }
-            if(!found) for(let k=0;k<8&&!found;k++){ found=A.find(q); if(found) break; await new Promise(r=>setTimeout(r,250)); }
-            if(!found) return R(okS, warn('⚠ '+L('No satellite matching','該当する衛星がありません','Kein Satellit gefunden','Спутник не найден','Ningún satélite coincide')+' “'+esc(q)+'”'
-              +' — '+L('the loaded catalog is','読み込み中のカタログは','geladener Katalog:','загруженный каталог:','el catálogo cargado es')+' '+esc(A.group())));
-            try{ A.select(found.id); }catch(_){}
-            try{ window.IntMapSatPanel&&window.IntMapSatPanel.open(found.id); }catch(_){}
-            try{ GE().camera.easeTo({center:[found.lng,found.lat],duration:900}); }catch(_){} const {obsPt,obsLabel}=await resolveObserver(a,{geocode,herePoint:(typeof _herePoint!=='undefined')?_herePoint:null,L}); const det=satelliteFacts(A,found,obsPt,obsLabel,L);   /* the place the reader named, else their pin, else the map centre; the sub-satellite point and NEXT PASS ride on the result (js/atlas-result-facts.js) */
-            /* ⚠ (#R747) WHAT IS ON THE MAP, SAID IN THE RESULT — the reply claimed 「a single marker」
-               for a map holding thousands, and how many are drawn is not Atlas's to guess. */
-            let _satCat=''; try{ const _st=A.state(); _satCat=' · '+esc(A.groups().filter(g=>g.id===A.group()).map(g=>g.name)[0]||A.group())+(_st&&_st.catalogue?(' · '+_st.catalogue.toLocaleString()+' '+L('objects','機','Objekte','объектов','objetos')):''); }catch(_){}
-            return R(true,note('✓ '+esc(found.name||('#'+found.id))+esc(det))+note(_satCat.replace(/^ · /,'')));
-          }
-          const st=A.state();
-          return R(okS, okS?note('✓ '+L('Live satellites on','人工衛星レイヤーを表示しました','Live-Satelliten an','Спутники включены','Satélites en vivo activados')
-              +' — '+esc(A.groups().filter(g=>g.id===(gSet||A.group())).map(g=>g.name)[0]||A.group())
-              +(st.catalogue?(' · '+st.catalogue.toLocaleString()+' '+L('objects','機','Objekte','объектов','objetos')):'')):warn('⚠')); }
-        case 'ticker': { const onT=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let okT=false;
-          try{ if(window.IntMapTicker){ window.imTicker=onT?'on':'off'; window.IntMapTicker.apply(); okT=true; try{ if(typeof saveSettings==='function') saveSettings(); }catch(_){} } }catch(_){}
-          return R(okT, okT?note('✓ '+L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior')+': '+(onT?'on':'off'))+_featTogHtml('ticker'):warn('⚠')); }   /* (#R149) offer the ticker on/off toggle */
-        case 'compareStats': { await ensureData(); await window.IntMapLazy.need('statsCompare');   /* (#R311) BEFORE _cmpMetricKeys — that resolver asks the panel for its real IND keys */
-          const rawC=Array.isArray(a.countries)?a.countries:String(a.countries||a.country||'').split(/,|、|;| and | und | y | и |と| vs\.? |対/i).map(x=>x.trim()).filter(Boolean);
-          const cds=[],missC=[]; for(const nm2 of rawC){ const c=await resolveCountry(nm2); if(c&&c.code){ if(cds.indexOf(c.code)<0) cds.push(c.code); } else missC.push(nm2); }
-          if(!cds.length) return R(false, warn('⚠ '+L('Which countries should I compare?','どの国を比較しますか？','Welche Länder vergleichen?','Какие страны сравнить?','¿Qué países comparo?')));
-          const viewM=({bar:'bar',bars:'bar',timeseries:'ts',ts:'ts','time-series':'ts',table:'table',pivot:'table'})[String(a.view||a.mode||'').toLowerCase()]||null;   /* (#R70) open straight into a view */
-          /* (#R115) honour the REQUESTED indicators ("Compare … — GDP, defense and population" ignored them):
-             resolve names/keys tolerantly (5 languages + synonyms) onto the panel's real IND keys. */
-          const rawM=Array.isArray(a.metrics)?a.metrics.map(x=>String(x)):(a.metrics?[String(a.metrics)]:[]);
-          const mkeys=[],missM=[];
-          rawM.forEach(mm=>{ const mr=_cmpMetricKeys(mm); mr.keys.forEach(k=>{ if(mkeys.indexOf(k)<0) mkeys.push(k); }); mr.miss.forEach(x=>missM.push(x)); });
-          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,10),mkeys.length?mkeys:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM); okC=true; } }catch(_){}
-          /* (#R108/#R115) plain text, NO emoji in Atlas replies; name the indicators actually selected. */
-          let mlbl=''; try{ if(okC&&mkeys.length&&window.IntMapStatsCompare.indLabel) mlbl=' — '+mkeys.map(k=>window.IntMapStatsCompare.indLabel(k)).join(', '); }catch(_){}
-          let h2=okC?note(L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+Math.min(10,cds.length)+')'+esc(mlbl)):warn('⚠');
-          if(cds.length>10) h2+=warn('⚠ '+L('Only the first 10 countries are compared','比較は最大10か国です','Nur die ersten 10 Länder','Только первые 10 стран','Solo los primeros 10 países'));
-          if(missC.length) h2+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(missC.join(', ')));
-          if(missM.length) h2+=warn('⚠ '+L('Not an available indicator','比較指標にない項目','Kein verfügbarer Indikator','Нет такого показателя','Indicador no disponible')+': '+esc(missM.join(', ')));
-          return R(okC,h2); }
-        case 'scoreMap': { /* (#R75) vision §13 — a NEW evaluation layer composed
-          from weighted real indicators (bundled metrics and/or World-Bank codes), not a canned choropleth. */
-          await ensureData();
-          const comps=Array.isArray(a.components)?a.components.slice(0,8):[];
-          if(comps.length<2) return R(false, warn('⚠ '+L('A custom score needs at least two indicators (components)','カスタム評価には指標が2つ以上必要です','Mindestens zwei Indikatoren nötig','Нужно минимум два показателя','Se necesitan al menos dos indicadores')));
-          const resolved=[],missingC=[];
-          for(const c of comps){ const w=(c&&c.weight!=null&&isFinite(+c.weight))?Math.max(0.1,Math.min(10,+c.weight)):1;
-            const ser=await _seriesFor(c); if(!ser){ missingC.push(String((c&&(c.label||c.metric||c.wb))||'?').slice(0,40)); continue; }
-            resolved.push({ser,norm:_normSeries(ser),w,inv:!!(c&&(c.invert||c.lowerIsBetter))}); }
-          if(resolved.length<2) return R(false, warn('⚠ '+L('Not enough usable indicators','利用可能な指標が足りません','Zu wenige nutzbare Indikatoren','Недостаточно доступных показателей','Indicadores utilizables insuficientes')+(missingC.length?(' — '+L('unavailable','取得不可','nicht verfügbar','недоступно','no disponibles')+': '+esc(missingC.join(', '))):'')));
-          const totW=resolved.reduce((s2,r2)=>s2+r2.w,0);
-          const score={}; let excl=0;
-          for(const cd in countryStats){ if(!isRankableCountry(countryStats[cd])) continue; let sw=0,sv=0;   /* (#R775) same set as every other ranking */
-            resolved.forEach(r2=>{ const nv=r2.norm[cd]; if(nv==null) return; sv+=r2.w*(r2.inv?(1-nv):nv); sw+=r2.w; });
-            if(sw>=totW*0.6) score[cd]=sv/sw; else if(sw>0) excl++; }
-          const codes=Object.keys(score);
-          if(codes.length<10) return R(false, warn('⚠ '+L('Too few countries have enough data for this combination','この組み合わせで十分なデータを持つ国が少なすぎます','Zu wenige Länder mit ausreichenden Daten','Слишком мало стран с данными','Muy pocos países con datos suficientes')));
-          let cW=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc) _choroRamp=rampFrom(pc); else cW=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
-          clearHl(); clearChoro(); clearPolyHl(); clearLineHl();
-          if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
-          try{ GE().layers.setPaint('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
-          let lo=1e9,hi=-1e9; codes.forEach(cd=>{ lo=Math.min(lo,score[cd]); hi=Math.max(hi,score[cd]); }); const span=(hi-lo)||1e-9;
-          codes.forEach(cd=>{ const nv=(score[cd]-lo)/span; _choroState[String(cd)]=nv; try{ GE().layers.setFeatureState({source:'nlq-src',id:String(cd)},{choroV:nv}); }catch(_){} });
-          _choroMetric='__custom'; _customScoreName=String(a.name||'').trim().slice(0,60)||L('Custom score','カスタム評価','Eigener Score','Пользовательская оценка','Puntuación propia');
-          try{ GE().camera.flyTo({zoom:Math.min(GE().camera.getZoom(),2.3),duration:600}); }catch(_){}
-          const rank=codes.map(cd=>({cd,v:score[cd]})).sort((x,y)=>y.v-x.v);
-          const nTop=Math.max(3,Math.min(15,(+a.n||10)));
-          const pct=v=>Math.round((v-lo)/span*100);
-          let html='<div style="font-weight:600;margin:2px 0 5px;">🧮 '+esc(_customScoreName)+' — '+L('custom evaluation layer','カスタム評価レイヤー','eigene Bewertungsebene','пользовательский слой оценки','capa de evaluación propia')+'</div>';
-          html+='<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">'+resolved.map(r2=>esc(r2.ser.label)+(r2.w!==1?(' ×'+r2.w):'')+(r2.inv?' ↓':'')).join(' · ')+'</div>';
-          html+='<div style="height:12px;border-radius:6px;background:linear-gradient(90deg,'+_choroRamp.join(',')+');margin:4px 0;"></div>';
-          html+='<ol style="margin:2px 0 0;padding-left:22px;line-height:1.6;font-size:12px;">'+rank.slice(0,nTop).map(r2=>'<li>'+esc(nm(countryStats[r2.cd]))+' <span style="color:var(--text-muted);">'+pct(r2.v)+'</span></li>').join('')+'</ol>';
-          const worst=rank.slice(-3).reverse().map(r2=>esc(nm(countryStats[r2.cd]))+' ('+pct(r2.v)+')').join(', ');
-          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:5px;">'+L('Lowest','最下位','Niedrigste','Худшие','Más bajos')+': '+worst+'</div>';
-          /* honesty block (vision §15): method, coverage, exclusions, unavailable components */
-          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'
-            +L('Method: each indicator normalized 0–1 (5th–95th percentile clamp'+(resolved.some(r2=>r2.ser.log)?', log scale where marked':'')+'), weighted mean; countries with under 60% of the total weight covered are excluded','算出: 各指標を0–1に正規化（5–95パーセンタイルでクランプ'+(resolved.some(r2=>r2.ser.log)?'・対数指標は対数変換':'')+'）し加重平均。総重みの60%未満しかデータの無い国は除外','Methode: Indikatoren 0–1 normalisiert (5.–95. Perzentil), gewichtetes Mittel; Länder unter 60% Abdeckung ausgeschlossen','Метод: нормализация 0–1 (5–95 перцентиль), взвешенное среднее; страны с покрытием <60% исключены','Método: normalización 0–1 (percentil 5–95), media ponderada; países con <60% de cobertura excluidos')
-            +' · '+codes.length+' '+L('countries scored','か国を評価','Länder bewertet','стран оценено','países evaluados')+(excl?(' · '+excl+' '+L('excluded for missing data','か国はデータ不足で除外','wegen Datenlücken ausgeschlossen','исключено из-за пропусков','excluidos por falta de datos')):'')
-            +(missingC.length?('<br>⚠ '+L('Unavailable components skipped','取得できず除外した指標','Nicht verfügbare Komponenten übersprungen','Недоступные компоненты пропущены','Componentes no disponibles omitidos')+': '+esc(missingC.join(', '))):'')+'</div>';
-          /* (#R104) the "会話で調整できます: 「家賃を重視して」…" hint line was REMOVED per request ("この説明はいらない"). */
-          return R(true, note(html)+cW); }
-        case 'explore': { /* (#R75) vision §10 — which indicators MOVE WITH a
-          target metric, computed on the real country data (Pearson + Spearman), reported without causal claims. */
-          await ensureData();
-          const sp=metSpec(a.metric||a.target||a.key||a.name);
-          if(!sp) return unknownMetric(a.metric||a.target);   /* (#R740) the list was typed here by hand and had already drifted from `METRICS`+`XMET` — it is counted now */
-          await _fillMetric(sp.key); await _fillMetric('lifeExp'); await _fillMetric('internet'); await _fillMetric('tfr');   /* lazy fields → WB bulk (sequential — WB throttles bursts) */
-          const tv={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!isRankableCountry(s)) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; tv[cd]=sp.m.log?Math.log(v):v; }
-          if(Object.keys(tv).length<25) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
-          const ALL=Object.assign({},METRICS,XMET); const out=[];
-          for(const k in ALL){ if(k===sp.key) continue; const m2=ALL[k]; const xs=[],ys=[],cds=[];
-            for(const cd in tv){ const s=countryStats[cd]; let v=m2.get(s); if(v==null||isNaN(v)) continue; if(m2.log&&v<=0) continue; xs.push(m2.log?Math.log(v):v); ys.push(tv[cd]); cds.push(cd); }
-            if(xs.length<25) continue;
-            const r=_pearson(xs,ys); const rho=_pearson(_ranks(xs),_ranks(ys)); if(r==null||rho==null) continue;
-            /* biggest outlier = country least explained by the linear fit (vision §10: 反証となる事例) */
-            let mx2=0,mi=-1; const mxv=xs.reduce((s2,v)=>s2+v,0)/xs.length, myv=ys.reduce((s2,v)=>s2+v,0)/ys.length;
-            const sdx=Math.sqrt(xs.reduce((s2,v)=>s2+(v-mxv)*(v-mxv),0)/xs.length)||1, sdy=Math.sqrt(ys.reduce((s2,v)=>s2+(v-myv)*(v-myv),0)/ys.length)||1;
-            for(let i2=0;i2<xs.length;i2++){ const e=Math.abs(((ys[i2]-myv)/sdy)-r*((xs[i2]-mxv)/sdx)); if(e>mx2){ mx2=e; mi=i2; } }
-            out.push({k,label:lx(m2.label),r,rho,n:xs.length,outlier:mi>=0?nm(countryStats[cds[mi]]):null}); }
-          if(!out.length) return R(false, warn('⚠ '+L('No overlapping data to correlate','相関を計算できる重複データがありません','Keine überlappenden Daten','Нет пересекающихся данных','Sin datos superpuestos')));
-          out.sort((x,y)=>Math.abs(y.rho)-Math.abs(x.rho));
-          const top=out.slice(0,Math.max(3,Math.min(8,(+a.n||5))));
-          let html='<div style="font-weight:600;margin:2px 0 5px;">🔗 '+esc(lx(sp.m.label))+' — '+L('related indicators (all countries)','関連する指標（全カ国データ）','verwandte Indikatoren','связанные показатели','indicadores relacionados')+'</div>';
-          html+=top.map(t2=>{ const dir=t2.rho>0?'↗':'↘'; const st=Math.abs(t2.rho)>=0.7?L('strong','強い','stark','сильная','fuerte'):Math.abs(t2.rho)>=0.4?L('moderate','中程度','mittel','умеренная','moderada'):L('weak','弱い','schwach','слабая','débil');
-            return '<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.12);font-size:12px;"><span style="flex:0 0 auto;font-weight:700;">'+dir+'</span><span style="flex:1;min-width:0;">'+esc(t2.label)+'<br><span style="font-size:10.5px;color:var(--text-muted);">ρ='+t2.rho.toFixed(2)+' · r='+t2.r.toFixed(2)+' · n='+t2.n+(t2.outlier?(' · '+L('biggest exception','最大の例外','größte Ausnahme','главное исключение','mayor excepción')+': '+esc(t2.outlier)):'')+'</span></span><span style="flex:0 0 auto;font-size:10.5px;color:var(--text-muted);">'+st+'</span></div>'; }).join('');
-          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'
-            +L('ρ = Spearman rank correlation, r = Pearson (log scale where the metric is log-distributed). Correlation is NOT causation — third factors (income, region) can drive both sides; the listed exception countries are good places to test any explanation.','ρ=スピアマン順位相関、r=ピアソン（対数分布の指標は対数変換）。相関は因果ではありません — 所得や地域など第三の要因が両方を動かしている可能性があります。「最大の例外」の国は説明を検証する良い材料です。','ρ=Spearman, r=Pearson (log wo markiert). Korrelation ist keine Kausalität.','ρ=Спирмен, r=Пирсон (лог. где отмечено). Корреляция — не причинность.','ρ=Spearman, r=Pearson (log donde corresponde). Correlación no es causalidad.')+'</div>';
-          return R(true, note(html)); }
-        case 'impact': { /* (#R75) vision §11 — WHERE an event's impact
-          spreads: real critical facilities + population context + nearby quakes/news around a point, on the map. */
-          await ensureData();
-          const kmR=Math.max(20,Math.min(1500,(+a.km||300)));
-          let ctr=null,label='',evLine='';
-          const wantQuake=(String(a.event||'').toLowerCase()==='quake')||/地震|earthquake|quake/i.test(String(a.place||a.event||''));
-          if(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)){ ctr={lng:+a.lng,lat:+a.lat}; label=String(a.place||'').trim()||((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2)); }
-          else if(wantQuake){
-            const j=await _fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson');
-            let fs=(j&&j.features)||[]; if(!fs.length) return R(false, warn('⚠ '+L('No M2.5+ earthquakes in the last 24 h','直近24時間にM2.5以上の地震がありません','Keine Beben M2.5+ in 24 h','Нет землетрясений M2.5+ за сутки','Sin sismos M2.5+ en 24 h')));
-            /* nearest to the last referenced place if we have one, else the largest of the day */
-            let f=null; if(_lastPlace&&isFinite(_lastPlace.lng)){ let bd=1e9; fs.forEach(f2=>{ const c=f2.geometry&&f2.geometry.coordinates; if(!c) return; const d=_havKm({lng:+c[0],lat:+c[1]},_lastPlace); if(d<bd){ bd=d; f=f2; } }); if(bd>1500) f=null; }
-            if(!f) f=fs.slice().sort((x,y)=>(((y.properties&&y.properties.mag)||0)-((x.properties&&x.properties.mag)||0)))[0];
-            const c=f.geometry.coordinates; ctr={lng:+c[0],lat:+c[1]}; label=(f.properties&&f.properties.place)||'earthquake';
-            const hAgo=f.properties&&f.properties.time?Math.round((Date.now()-f.properties.time)/3600000):null;
-            evLine='M'+(f.properties&&f.properties.mag!=null?(+f.properties.mag).toFixed(1):'?')+(c[2]!=null?(' · '+L('depth ','深さ','Tiefe ','глубина ','prof. ')+Math.round(c[2])+' km'):'')+(hAgo!=null?(' · '+hAgo+L('h ago','時間前','h zuvor','ч назад','h atrás')):'')+' · USGS';
-            _setLast({lng:ctr.lng,lat:ctr.lat,name:label});
-          } else {
-            const p=String(a.place||'').trim(); let g=null;
-            if(p&&!DEIXIS_RE.test(p)){ try{ g=await placeExtent(p); }catch(_){} if(!g){ try{ g=await geocode(p); }catch(_){} } }
-            else g=await geocode(p);
-            if(!g||!isFinite(+g.lng)) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(p)));
-            ctr={lng:+g.lng,lat:+g.lat}; label=g.name||p;
-          }
-          const d2r=Math.PI/180; const dLat=kmR/111, dLng=kmR/(111*Math.max(0.2,Math.cos(ctr.lat*d2r)));
-          const box=[[ctr.lng-dLng,ctr.lat-dLat],[ctr.lng+dLng,ctr.lat+dLat]];
-          /* focus kinds → the existing real-data POI engine (OSM Overpass, mirror-raced) */
-          const FK={nuclear:'nuclear power plant',dam:'dams',dams:'dams',port:'ports',ports:'ports',airport:'airports',airports:'airports',hospital:'hospitals',hospitals:'hospitals',military:'military bases',power:'power plants'};
-          let kinds=Array.isArray(a.focus)?a.focus.map(x=>FK[String(x||'').toLowerCase()]).filter(Boolean):[];
-          if(!kinds.length) kinds=['nuclear power plant','dams'];
-          kinds=kinds.slice(0,3);
-          const facJobs=kinds.map(k=>overpassPOIs(k,box,false,null).then(r2=>r2===null?overpassPOIs(k,box,true,null):r2).then(r2=>({k,list:r2||[]})).catch(()=>({k,list:[]})));
-          /* real cities/towns with OSM population tags (the honest population anchor).
-             Runs AFTER the facility queries — Overpass rejects parallel requests from one IP (measured live:
-             the same query succeeds alone and 429s beside the facility race). */
-          const cityJob=(async()=>{
-            const bb='('+(ctr.lat-dLat).toFixed(3)+','+(ctr.lng-dLng).toFixed(3)+','+(ctr.lat+dLat).toFixed(3)+','+(ctr.lng+dLng).toFixed(3)+')';
-            const q3='[out:json][timeout:12];node[place~"^(city|town)$"]["population"]'+bb+';out 200;';
-            const j=await overpassRaw(q3).catch(()=>null); if(!j) return null;
-            /* a successful reply with ZERO cities is a real answer (open ocean), not a failure */
-            return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0)})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); });
-          const qkP=_fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').catch(()=>null);
-          const facRes=await Promise.all(facJobs);
-          let cities=await cityJob();   /* sequential — after the facility race frees the Overpass slots */
-          const qk=await qkP;
-          /* distance-filter, sort, annotate */
-          const inR=p2=>{ const d=_havKm(p2,ctr); return d<=kmR?d:null; };
-          const fac=[]; facRes.forEach(fr=>{ (fr.list||[]).forEach(p2=>{ const d=inR(p2); if(d==null) return; fac.push(Object.assign({},p2,{_d:d,_k:fr.k})); }); });
-          fac.sort((x,y)=>x._d-y._d);
-          if(cities){ cities=cities.map(c2=>Object.assign(c2,{_d:inR(c2)})).filter(c2=>c2._d!=null).sort((x,y)=>y.pop-x.pop).slice(0,10); }
-          let qkN=[]; if(qk&&Array.isArray(qk.features)) qkN=qk.features.filter(f2=>{ const c=f2.geometry&&f2.geometry.coordinates; return c&&_havKm({lng:+c[0],lat:+c[1]},ctr)<=kmR; });
-          let news=null; try{ news=_newsData({lng:ctr.lng,lat:ctr.lat,name:label},label); }catch(_){}
-          /* draw: pins (facilities + top cities) + the radius circle + fit */
-          clearPois();
-          _pois=fac.slice(0,50).map(p2=>({lng:p2.lng,lat:p2.lat,name:p2.name||p2._k,kind:p2._k+' · '+Math.round(p2._d)+' km',sum:'',url:'',src:'OpenStreetMap'}))
-            .concat((cities||[]).slice(0,8).map(c2=>({lng:c2.lng,lat:c2.lat,name:c2.name,kind:L('city','都市','Stadt','город','ciudad')+' · '+L('pop ','人口','Bev. ','нас. ','pob. ')+c2.pop.toLocaleString()+' · '+Math.round(c2._d)+' km',sum:'',url:'',src:'OpenStreetMap'})));
-          let okP=_pois.length?paintPois():true; for(let i2=0;i2<6&&!okP;i2++){ await new Promise(r2=>setTimeout(r2,700)); okP=paintPois(); }
-          try{ if(typeof HOST.radiusKm!=='undefined') HOST.radiusKm=kmR; if(window._radiusFromPoint) window._radiusFromPoint(ctr.lng,ctr.lat); }catch(_){}
-          try{ GE().camera.fitBounds(box,{padding:70,duration:1100,maxZoom:9}); }catch(_){}
-          /* report */
-          const cd0=codeAtPoint(ctr.lng,ctr.lat); const cs=cd0&&countryStats[cd0];
-          const popSum=(cities||[]).reduce((s2,c2)=>s2+c2.pop,0);
-          let html='<div style="font-weight:600;margin:2px 0 4px;">🎯 '+esc(label)+' — '+L('impact analysis within ','影響分析（半径','Wirkungsanalyse im Umkreis ','анализ воздействия в радиусе ','análisis de impacto en ')+kmR+' km'+(window.IntMapLang.t(HOST.lang,'','）'))+'</div>';
-          if(evLine) html+='<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:5px;">'+esc(evLine)+'</div>';
-          kinds.forEach(k=>{ const list=fac.filter(p2=>p2._k===k);
-            html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+esc(k)+'</b>: '+list.length+(list.length?(' — '+list.slice(0,3).map(p2=>esc(p2.name||'?')+' ('+Math.round(p2._d)+' km)').join(', ')+(list.length>3?' …':'')):' '+L('(none found in OSM within the radius)','（半径内にOSM登録なし）','(keine in OSM im Radius)','(в OSM не найдено)','(ninguno en OSM en el radio)'))+'</div>'; });
-          if(cities===null) html+='<div style="font-size:11px;color:#ff9f0a;">⚠ '+L('City/population query failed (Overpass busy) — population context unavailable','都市・人口の照会に失敗しました（Overpass混雑）','Stadt-/Bevölkerungsabfrage fehlgeschlagen','Запрос городов не удался','Consulta de ciudades falló')+'</div>';
-          else if(cities.length) html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+L('Population nearby','周辺人口','Bevölkerung','Население рядом','Población cercana')+'</b>: ≈'+popSum.toLocaleString()+' '+L('in ','（','in ','в ','en ')+cities.length+L(' cities/towns w/ OSM population tags','都市・町のOSM人口タグ合計）',' Städten (OSM-Tags)',' городах (теги OSM)',' ciudades (etiquetas OSM)')+' — '+cities.slice(0,3).map(c2=>esc(c2.name)+' '+(c2.pop>=1e6?(c2.pop/1e6).toFixed(1)+'M':Math.round(c2.pop/1000)+'k')).join(', ')+'</div>';
-          else html+='<div style="font-size:11px;color:var(--text-muted);">'+L('No populated cities/towns within the radius (per OSM population tags)','半径内に人口タグ付きの都市・町はありません（OSM基準）','Keine Städte im Radius (OSM)','Городов в радиусе нет (OSM)','Sin ciudades en el radio (OSM)')+'</div>';
-          if(cs) html+='<div style="font-size:11px;color:var(--text-muted);">'+esc(nm(cs))+': '+L('density ','人口密度 ','Dichte ','плотность ','densidad ')+(cs.density!=null?Math.round(cs.density).toLocaleString()+'/km²':'—')+'</div>';
-          if(qkN.length) html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+L('Earthquakes (7 days, in radius)','地震（過去7日・半径内）','Beben (7 Tage)','Землетрясения (7 дней)','Sismos (7 días)')+'</b>: '+qkN.length+' — max M'+Math.max.apply(null,qkN.map(f2=>(f2.properties&&f2.properties.mag)||0)).toFixed(1)+'</div>';
-          if(news) html+='<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">📰 '+L('Loaded news near here','周辺の読み込み済みニュース','Geladene News','Новости рядом','Noticias cercanas')+':<br>'+esc(String(news).split('\n').slice(0,3).join(' · ').slice(0,220))+'</div>';
-          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.','出典: OpenStreetMap（施設・都市人口タグ — 地域によって登録密度が異なります）、USGS（地震）、IntMap国別統計。ピンはクリック可能、円は分析半径です。','Quellen: OpenStreetMap, USGS, IntMap-Statistiken.','Источники: OpenStreetMap, USGS, статистика IntMap.','Fuentes: OpenStreetMap, USGS, estadísticas de IntMap.')+'</div>';
-          if(!okP&&_pois.length) html+=warn('⚠ '+L('Could not draw the markers (map still loading)','マーカーを描画できませんでした（地図読込中）','Marker nicht gezeichnet','Маркеры не отрисованы','Marcadores no dibujados'));
-          return R(true, html, _PINNED(null,okP)); }   /* (#R802) the facilities and cities this analysis pinned, declared by the painter — `okP` is the same witness the sentence above prints */
-        case 'events': { /* (#R76) vision §6 / stage 4 — the loaded news
-          grouped into EVENTS (one real-world occurrence, many articles) instead of a flat article list.
-          (#R340) THE GROUPING ITSELF IS js/news-cluster.js — the one implementation, with the production
-          measurement behind every constant. This case picks the window and the area, draws and writes;
-          it decides nothing about what counts as one event. ⚠ Do not re-inline a copy of it here. */
-          await ensureData();
-          if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
-          /* ⚠⚠ (#R386) 出来事モードでは**ここで束ね直さない**。すでに Event ならそのまま使う——
-             再クラスタリングは「同じ出来事か」を決める場所を 2 つにし、しかもブラウザの 200 件は
-             サーバーが見た窓全体より必ず悪い答えを出す（docs/NEWS-EVENTS.md §4.5/§10）。 */
-          const _evMode=(typeof HOST.newsSurfaceMode==='function')&&HOST.newsSurfaceMode()==='events';
-          let items=(typeof HOST.globalData!=='undefined'&&HOST.globalData)?HOST.globalData.filter(it=>it&&it.analysis&&Array.isArray(it.analysis.loc)&&it.title):[];
-          const hrs=Math.max(6,Math.min(168,(+a.hours||96)));
-          items=items.filter(it=>{ const h=_agoH(it.pubDate); return h==null||h<=hrs; });
-          /* optional place focus */
-          let ctx=null; const plc=String(a.place||'').trim();
-          if(plc&&!WORLD_RE.test(plc)){ if(DEIXIS_RE.test(plc)) ctx=await geocode(plc); else { try{ ctx=await placeExtent(plc); }catch(_){} if(!ctx){ try{ ctx=await geocode(plc); }catch(_){} } }
-            if(!ctx) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(plc)), {meta:{code:'PLACE_NOT_FOUND',category:'input',retryable:false,semanticTarget:plc,produced:[],userGoalSatisfied:false}});
-            /* (#R340) the area filter asks the SAME question the grouper does — where the story IS, not where
-               the pin currently sits (Publisher pin mode moves the pin to the newsroom; see newsSubject). */
-            if(ctx.box&&_bboxOK(ctx.box)){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n2=ctx.box[1][1]; items=items.filter(it=>{ const sj=newsSubject(it.analysis); return sj&&sj.loc[0]>=w&&sj.loc[0]<=e&&sj.loc[1]>=s2&&sj.loc[1]<=n2; }); }
-            else if(isFinite(+ctx.lng)) items=items.filter(it=>{ const sj=newsSubject(it.analysis); return sj&&_havKm({lng:sj.loc[0],lat:sj.loc[1]},ctx)<=800; }); }
-          if(items.length<1) return R(true, note('◌ '+L('No geolocated articles in the loaded news for this window/area','この期間・範囲に地点解析済みの記事がありません','Keine georeferenzierten Artikel','Нет геолоцированных статей','Sin artículos geolocalizados')+' ('+hrs+' h'+(ctx&&ctx.name?(' · '+esc(ctx.name)):'')+')'), {meta:{code:'NO_ARTICLES',category:'evidence',retryable:true,semanticTarget:(ctx&&ctx.name)||'',temporalMode:'current',produced:[],userGoalSatisfied:false}});
-          /* (#R386) サーバーの Event を、この case が使う形へ**翻訳するだけ**。判定はしない。 */
-          const evs=_evMode
-            ? items.map(it=>{ const e=it._event; const mem=(e.members||[]).slice().sort((x,y)=>Date.parse(y.publishedAt||0)-Date.parse(x.publishedAt||0));
-                const g=mem.length?mem.map(m=>({it:{title:m.title,link:m.url,pubDate:m.publishedAt}})):[{it:{title:e.titleShown||e.title,link:it.link,pubDate:e.lastAt}}];
-                return { g, outlets:e.outlets||[], cx:it.analysis.loc[0], cy:it.analysis.loc[1], pname:e.place||'',
-                         oldest:_agoH(e.firstAt), newest:_agoH(e.lastAt), _srcCount:e.sourceCount }; })
-                .sort((a2,b2)=>(b2.g.length-a2.g.length)||((b2._srcCount||0)-(a2._srcCount||0)))
-            : groupNewsEvents(items,{agoH:_agoH,fallbackH:hrs});   /* (#R340) ↳ js/news-cluster.js — the rules, the constants and the measurements that set them */
-          const N=Math.max(3,Math.min(12,(+a.n||8)));
-          const top=evs.slice(0,N);
-          /* one pin per EVENT (not per article) */
-          clearPois();
-          _pois=top.map((e,i2)=>({lng:e.cx,lat:e.cy,name:(i2+1)+'. '+String(e.g[0].it.title).slice(0,70),
-            kind:e.g.length+' '+L('articles','記事','Artikel','статей','artículos')+' · '+e.outlets.length+' '+L('outlets','媒体','Quellen','источников','medios'),
-            sum:e.g.slice(0,3).map(x=>String(x.it.title).slice(0,80)).join(' ⏐ ').slice(0,320),
-            url:(e.g[0].it.link&&/^https?:/i.test(e.g[0].it.link))?e.g[0].it.link:'',src:e.outlets.slice(0,3).join(', ')}));
-          let okE=_pois.length?paintPois():true; for(let i2=0;i2<6&&!okE;i2++){ await new Promise(r2=>setTimeout(r2,700)); okE=paintPois(); }
-          try{ let a2=180,b2=90,c2=-180,d2=-90; _pois.forEach(p2=>{ a2=Math.min(a2,p2.lng);b2=Math.min(b2,p2.lat);c2=Math.max(c2,p2.lng);d2=Math.max(d2,p2.lat); });
-            if(_pois.length&&c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:8,duration:1100}); }catch(_){}
-          const fmtH=h=>h<1?L('<1h ago','1時間以内','<1 h','<1 ч','<1 h'):Math.round(h)+L('h ago','時間前','h','ч назад','h');
-          let html='<div style="font-weight:600;margin:2px 0 4px;">🗞 '+L('Events (grouped news, last ','出来事（ニュースをイベント単位に集約・過去','Ereignisse (letzte ','События (за ','Eventos (últimas ')+hrs+'h'+(window.IntMapLang.t(HOST.lang,')','）'))+(ctx&&ctx.name?(' — '+esc(ctx.name)):'')+'</div>';
-          /* (#R340) the count is the number of articles the events are ACTUALLY built from, not the number
-             loaded: the grouper caps the comparison at 600 (pairs are O(n²)) and skips an article whose
-             subject will not resolve. Printing items.length would claim a coverage nobody delivered (#R320). */
-          const graded=evs.reduce((n2,e)=>n2+e.g.length,0);
-          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+graded+' '+L('articles → ','記事 → ','Artikel → ','статей → ','artículos → ')+evs.length+' '+L('events; the ','イベント。上位','Ereignisse; Top ','событий; топ-','eventos; los ')+top.length+L(' biggest shown — click an item or pin to fly','件を表示 — 項目/ピンをクリックで移動',' angezeigt',' показаны',' mayores mostrados')+'</div>';
-          top.forEach((e,i2)=>{ const first=e.g[e.g.length-1], latest=e.g[0]; const eu=_atlCleanUrl(latest.it.link);
-            html+='<div class="atl-rp-item" data-i="'+i2+'" style="padding:5px 0;border-top:1px solid rgba(128,128,128,0.14);cursor:pointer;">'
-              +'<div style="font-size:12px;font-weight:600;line-height:1.45;">'+(i2+1)+'. '+esc(String(latest.it.title).slice(0,110))+'</div>'
-              +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">'+(e.pname?(esc(e.pname)+' · '):'')+e.g.length+' '+L('articles from ','記事・','Artikel von ','статей от ','artículos de ')+e.outlets.slice(0,4).map(esc).join(', ')+(e.outlets.length>4?' …':'')+' · '+fmtH(e.oldest)+' → '+fmtH(e.newest)+'</div>'
-              +((e.g.length>1&&first.it.title!==latest.it.title)?('<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+L('First report','最初の報道','Erste Meldung','Первое сообщение','Primer reporte')+': '+esc(String(first.it.title).slice(0,90))+'</div>'):'')
-              +(eu?(' <a href="'+esc(IntMapSafe.url(eu.url))+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>'):'')   /* (#R153) inline event link via _atlCleanUrl (real article, no aggregator/SNS) */
-              +'</div>'; });
-          html+=linkCards(top.filter(e=>e.g[0].it.link).slice(0,4).map(e=>({url:e.g[0].it.link,title:e.g[0].it.title,src:e.outlets[0]})));
-          /* (#R340) the numbers in this sentence are READ from the grouper, so the explanation cannot describe
-             a rule the code no longer applies (#R76's copy still said «place ≤150 km» after the rule changed). */
-          /* (#R386) 説明は**実際に通った経路**を印字する（#R340 の「規則が変わったのに説明が古い」の再発防止）。 */
-          const _evR=_evMode
-            ? L('server-side clustering over the full 72-hour window','サーバー側で72時間の窓全体を見たクラスタリング','serverseitiges Clustering über das gesamte 72-Stunden-Fenster','серверная кластеризация по всему 72-часовому окну','agrupación en el servidor sobre toda la ventana de 72 horas')
-            : L('place','位置','Ort','место','lugar')+' × ≤'+EVENT_RULES.HOURS+' h × '+L('headline similarity','見出し類似','Titelähnlichkeit','сходство заголовков','similitud de titulares')+' '+Math.round(EVENT_RULES.SIM_MIN*100)+'–'+Math.round(EVENT_RULES.SIM_MAX*100)+'%';
-          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Grouping is mechanical on the loaded IntMap feed ('+_evR+'). A country-level reference point is not a place, so articles that merely file under the same country face a HIGHER wording bar, not a lower one. One group = reports that likely cover the same occurrence; "first report → latest" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. "analyze event 2".','グループ化は読み込み済みニュースに対する機械的クラスタリング（'+_evR+'）です。国レベルの代表点は「同じ場所」とは見なさないので、同じ国に分類されただけの記事には見出しの一致を<b>より強く</b>求めます。1グループ=同一の出来事を扱うとみられる報道で、「最初の報道→最新」で経過が分かります。報道間の相違や深掘りは「2番の出来事を分析して」のように聞いてください。','Mechanische Gruppierung ('+_evR+'); ein Länder-Referenzpunkt gilt nicht als Ort. Für Analysen: "analysiere Ereignis 2".','Механическая группировка ('+_evR+'); точка-представитель страны местом не считается. Для анализа: «проанализируй событие 2».','Agrupación mecánica ('+_evR+'); un punto representativo de país no cuenta como lugar. Para análisis: "analiza el evento 2".')+'</div>';
-          if(!okE&&_pois.length) html+=warn('⚠ '+L('Could not draw the pins (map still loading)','ピンを描画できませんでした（地図読込中）','Pins nicht gezeichnet','Метки не отрисованы','Pines no dibujados'));
-          /* (#R340) …and the structured half of the same honesty: research.events declares produces='map,explanation',
-             so the result says which of the two actually happened rather than letting the executor assume both. */
-          const _evMapped=!!(okE&&_pois.length);
-          return R(true, html, _PINNED({meta:{code:'OK',category:'ok',retryable:false,produced:(_evMapped?['map','explanation']:['explanation']),userGoalSatisfied:true,partial:!_evMapped}},_evMapped)); }   /* (#R802) …and WHICH events are pinned, so re-grouping the same top events reads as `already_there` rather than `not_rendered` */
-        /* (#R386) news.category — 一覧と地図を同時に絞る（docs/NEWS-EVENTS.md §9/§10）。述語は
-           js/news-events.js の `passes()` 1 本なので片方だけに効く状態が作れない。⚠ **観測してから
-           名乗る**: 件数とピンの本数を state provider から読み、0 件なら `partial` にする。 */
-        case 'newsCategory': {
-          const want=String(a.text||a.category||a.q||'').trim();
-          if(!want) return R(false, warn('⚠ '+L('Name a category','カテゴリ名を指定してください','Kategorie angeben','Укажите категорию','Indique una categoría')), {meta:{code:'NEEDS_INPUT',category:'input',retryable:true,produced:[],userGoalSatisfied:false}});
-          const okLazy=await window.IntMapLazy.need('newsEvents');
-          const E=okLazy&&window.IntMapNewsEvents;
-          if(!E) return R(false, warn('⚠ '+L('The events surface is not available','出来事の一覧が利用できません','Die Ereignisansicht ist nicht verfügbar','Лента событий недоступна','La vista de sucesos no está disponible')), {meta:{code:'MODULE_UNAVAILABLE',category:'capability',retryable:false,produced:[],userGoalSatisfied:false}});
-          if(!(typeof HOST.newsSurfaceMode==='function'&&HOST.newsSurfaceMode()==='events')){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
-          const cats=E.categories();
-          const norm=(x)=>String(x).toLowerCase().replace(/[^a-z0-9]+/g,'');
-          const hit=(norm(want)==='all'||norm(want)===norm(L('All','すべて','Alle','Все','Todas')))
-            ? {key:'all',label:L('All','すべて','Alle','Все','Todas')}
-            : cats.find(c=>norm(c.key)===norm(want)||norm(c.label)===norm(want))
-              || cats.find(c=>norm(c.key).indexOf(norm(want))>=0||norm(c.label).indexOf(norm(want))>=0);
-          if(!hit) return R(false, warn('⚠ '+L('No such event category','そのカテゴリはありません','Keine solche Kategorie','Такой категории нет','No existe esa categoría')+': '+esc(want)+' — '+cats.map(c=>esc(c.label)).join(' · ')), {meta:{code:'NOT_FOUND',category:'input',retryable:true,semanticTarget:want,produced:[],userGoalSatisfied:false}});
-          E.setCategory(hit.key);
-          const st=E.state()||{};
-          const n=st.visibleEventCount||0, pins=st.visiblePinCount||0;
-          let html='<div style="font-weight:600;margin:2px 0 4px;">'+esc(hit.label)+'</div>';
-          html+='<div style="font-size:11px;color:var(--text-muted);line-height:1.55;">'
-            +n+' '+L('matching events','件の出来事','passende Ereignisse','подходящих событий','sucesos coincidentes')+' · '+pins+' '+L('pins','ピン','Pins','меток','pines')
-            +(st.unplacedCount?(' · '+st.unplacedCount+' '+L('with no location','地点不明','ohne Ort','без места','sin ubicación')):'')
-            +(st.multiSourceCount?(' · '+st.multiSourceCount+' '+L('reported by 2+ independent outlets','は独立2媒体以上が報道','von 2+ unabhängigen Quellen','сообщили 2+ независимых источника','con 2+ medios independientes')):'')
-            +'</div>';
-          const produced=[]; if(n) produced.push('panel'); if(pins) produced.push('map');
-          return R(true, html, {meta:{code:n?'OK':'NO_RESULTS',category:n?'ok':'evidence',retryable:!n,semanticTarget:hit.key,
-            produced,userGoalSatisfied:!!n,partial:!(n&&pins)}}); }
-        case 'module': return doModule(a);
-        /* (#R231) 「Monitorsは…一旦撤去」 — the ~120-line body is deleted (it is in git; the file has
-           a line ceiling). It ended in IntMapOS.exec('tab.monitors'), which is no longer registered,
-           so it would have replied "✓ Your monitors" and opened nothing — #R141's own rule forbids
-           claiming a result that did not happen. Nothing can reach this case now; if one ever does,
-           it says so. Restoring the feature: this case, the catalogue note below, the tab button in
-           index.html, and the two routes in js/session-tabs.js. See DEV-NOTES #R231 §Monitors. */
-        case 'monitor':
-          return R(false, warn('⚠ '+window.IntMapLang.t(HOST.lang,'Area monitors are not available right now.','エリア監視は現在ご利用いただけません。','Gebietsmonitore sind derzeit nicht verfügbar.','Мониторы районов сейчас недоступны.','Los monitores de área no están disponibles por ahora.')), {meta:{code:'FEATURE_WITHDRAWN',category:'capability',retryable:false,userGoalSatisfied:false,produced:[]}});
-        case 'control': return doControl(a);
-        case 'answer': { let _ah='<div class="atl-md">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
-          /* (#R156) shared spine: a text answer may also carry a content class + verifiable checks (e.g. the model solved
-             an equation in prose). Verify the checks deterministically, show the honest self-check note, and let the SAME
-             class gate mapping below — so a math/code/document text answer never runs place extraction either. */
-          const _acls=_atlContentClass(a.contentClass); try{ const _cv=_atlVerifyChecks(a.checks); _ah+=_atlChecksNoteHtml(_cv); }catch(_){}
-          /* (#R150) same code-side reconciliation for the planner's direct `answer`: audit the answer text (safety net
-             for an omitted places list), merge with existing pins, honest self-audit + source-concentration note. */
-          { const _acit=_curPlanCites.slice();   /* ⚠ (#R350) from the planner call that produced THIS answer. It used to be window._aiLastCitations, read at RENDER time — so a second Atlas turn finishing in between handed this reply the other turn's sources, under the heading 「Web検証済みソース」. */
-            try{ if(_atlShouldMap(_acls)) _ah+=await _pinReplyPlaces(a.places||[],{text:String(a.text||''),citations:_acit,contentClass:_acls}); }catch(e){ try{ console.warn('answer map audit',e); }catch(_){} }
-            /* (#R153) the planner's direct `answer` used to render ZERO sources even when the model's hosted web search
-               returned citations — the dominant "出展が全くない" (no sources at all) driver. Show the web-verified cards
-               when they exist (anchored to the reply → no relevance gate). When the answer was from the model's own
-               knowledge there simply are no web sources, which is honest — not a bug. */
-            try{ const sc=linkCards(_acit.map(c=>({url:c.url,title:(c.title||c.url),src:''}))); if(sc) _ah+='<div class="atl-src-h">'+L('Web-verified sources','Web検証済みソース','Web-verifizierte Quellen','Проверенные в интернете источники','Fuentes verificadas en la web')+'</div>'+sc; }catch(_){} }
-          return R(true, _ah); }
-        default: { if(a.target||a.name){ const c=doControl({target:a.target||a.name,value:a.value,on:a.on}); if(c.ok) return c; } return R(false, warn('⚠ '+L('Unknown action','不明な操作','Unbekannte Aktion','Неизвестное действие','Acción desconocida')+': '+esc(a.type||''))); }
-      } }
+    /* (atlas-capability-modules) THE DISPATCH IS ONE LOOKUP. What each capability does used to be a `case` of a
+       2,190-line switch here; it is now the `run` of that capability's entry in js/atlas-cap-<namespace>.js, beside its
+       registry row and its argument schema (js/atlas-caps.js says what is derived from the entries).
+       (atlas-one-declaration) A run is found by its row's column 1; every other spelling reaches it because its row
+       declares it (`CAPS.dispatchName`). A spelling no row owns reaches `unknownAction` — the switch's old `default`.
+       ⚠ `a.type` IS NOT REWRITTEN — a run that tells two of its spellings apart (`walkingRoute`, `standHere`) still reads the one it was sent.
+       ⚠ NOT `async`: a run IS an async function, so returning its promise keeps the timing the switch had (a sync
+       stretch up to the first `await`, then one promise) instead of adding a second promise around it.
+       K — WHAT A RUN MAY USE OF THIS KERNEL, NAMED. A run is not a closure over this file any more, so it receives the
+       names it reads as K: one getter per name (a `let` also gets a setter, and a run reads and writes it as
+       `K.name`, so it always sees the live value). Built on the first dispatch, after every name here is initialised.
+       A new capability that needs an internal this list does not name adds ONE getter here. K is not published. */
+    var _capK = null;
+    function capDeps(){ return _capK || (_capK = {
+      get GLOSS(){ return GLOSS; },
+      get R(){ return R; },
+      get warn(){ return warn; },
+      get L(){ return L; },
+      get note(){ return note; },
+      get COMPOSE(){ return COMPOSE; },
+      get clearHl(){ return clearHl; },
+      get clearChoro(){ return clearChoro; },
+      get clearPolyHl(){ return clearPolyHl; },
+      get clearLineHl(){ return clearLineHl; },
+      get _CLEARED(){ return _CLEARED; },
+      get _visSnapshot(){ return _visSnapshot; },
+      get toggleLayer(){ return toggleLayer; },
+      get doControl(){ return doControl; },
+      get esc(){ return esc; },
+      get _visDelta(){ return _visDelta; },
+      get layerOpacityControl(){ return layerOpacityControl; },
+      get resolveLayer(){ return resolveLayer; },
+      get kexec(){ return kexec; },
+      get _featTogHtml(){ return _featTogHtml; },
+      get clickId(){ return clickId; },
+      get WORLD_RE(){ return WORLD_RE; },
+      get GE(){ return GE; },
+      get DEIXIS_RE(){ return DEIXIS_RE; },
+      get placeExtent(){ return placeExtent; },
+      get _setLast(){ return _setLast; },
+      get flyToBox(){ return flyToBox; },
+      get _ambigNote(){ return _ambigNote; },
+      get geocode(){ return geocode; },
+      get _bboxOK(){ return _bboxOK; },
+      get _langLine(){ return _langLine; },
+      get _newsData(){ return _newsData; },
+      get WEB_BUDGET_MS(){ return WEB_BUDGET_MS; },
+      get _gdeltNews(){ return _gdeltNews; },
+      get _gnewsNews(){ return _gnewsNews; },
+      get askAIJSONEnvelope(){ return askAIJSONEnvelope; },
+      get _curTurnKey(){ return _curTurnKey; }, set _curTurnKey(v){ _curTurnKey=v; },
+      get linkCards(){ return linkCards; },
+      get dropLeadTitle(){ return dropLeadTitle; },
+      get mdMini(){ return mdMini; },
+      get _herePoint(){ return _herePoint; }, set _herePoint(v){ _herePoint=v; },
+      get _lastPlace(){ return _lastPlace; }, set _lastPlace(v){ _lastPlace=v; },
+      get dispatch(){ return dispatch; },
+      get ensureData(){ return ensureData; },
+      get _mirrorLang(){ return _mirrorLang; },
+      get countryStats(){ return countryStats; },
+      get _fillMetric(){ return _fillMetric; },
+      get metSpec(){ return metSpec; },
+      get fmtVal(){ return fmtVal; },
+      get nm(){ return nm; },
+      get _fetchJSON(){ return _fetchJSON; },
+      get overpassPOIs(){ return overpassPOIs; },
+      get wikidataPOIs(){ return wikidataPOIs; },
+      get resolveCountrySync(){ return resolveCountrySync; },
+      get _nomExtent(){ return _nomExtent; },
+      get unknownMetric(){ return unknownMetric; },
+      get clampN(){ return clampN; },
+      get rank(){ return rank; },
+      get lx(){ return lx; },
+      get listHtml(){ return listHtml; },
+      get ratio(){ return ratio; },
+      get relate(){ return relate; },
+      get drawChoro(){ return drawChoro; },
+      get setSel(){ return setSel; },
+      get HOST(){ return HOST; },
+      get applyTheme(){ return applyTheme; },
+      get applyAccent(){ return applyAccent; },
+      get saveSettings(){ return saveSettings; },
+      get _langCode(){ return _langCode; },
+      get setLang(){ return setLang; },
+      get setGrid(){ return setGrid; },
+      get resolveCountry(){ return resolveCountry; },
+      get showCountryDetail(){ return showCountryDetail; },
+      get layerDoor(){ return layerDoor; },
+      get doVolcano(){ return doVolcano; },
+      get doHeritage(){ return doHeritage; },
+      get doRadiationObs(){ return doRadiationObs; },
+      get whereMiss(){ return whereMiss; },
+      get _tspOrder(){ return _tspOrder; },
+      get _lastRouteCtx(){ return _lastRouteCtx; }, set _lastRouteCtx(v){ _lastRouteCtx=v; },
+      get radiationChain(){ return radiationChain; },
+      get _lastRadCtx(){ return _lastRadCtx; }, set _lastRadCtx(v){ _lastRadCtx=v; },
+      get ymdISO(){ return ymdISO; },
+      get GLEDGER(){ return GLEDGER; },
+      get _lnorm(){ return _lnorm; },
+      get addPin(){ return addPin; },
+      get ADM1(){ return ADM1; },
+      get parseColor(){ return parseColor; },
+      get setTool(){ return setTool; },
+      get refreshTool(){ return refreshTool; },
+      get updateToolPanel(){ return updateToolPanel; },
+      get t(){ return t; },
+      get healthCheck(){ return healthCheck; },
+      get ASTATE(){ return ASTATE; },
+      get clearPois(){ return clearPois; },
+      get clearFly(){ return clearFly; },
+      get clearBlast(){ return clearBlast; },
+      get clearElev(){ return clearElev; },
+      get clearFac(){ return clearFac; },
+      get clearAllPins(){ return clearAllPins; },
+      get loadCountryData(){ return loadCountryData; },
+      get _hlGen(){ return _hlGen; }, set _hlGen(v){ _hlGen=v; },
+      get setHlColor(){ return setHlColor; },
+      get _hlReadGptGroups(){ return _hlReadGptGroups; },
+      get _codesGeo(){ return _codesGeo; },
+      get _validGeo(){ return _validGeo; },
+      get _hlValidCodeSet(){ return _hlValidCodeSet; },
+      get _hlAdd(){ return _hlAdd; },
+      get _hlPolys(){ return _hlPolys; }, set _hlPolys(v){ _hlPolys=v; },
+      get _hlLines(){ return _hlLines; }, set _hlLines(v){ _hlLines=v; },
+      get _hlPaletteColor(){ return _hlPaletteColor; },
+      get paintPolys(){ return paintPolys; },
+      get _verifyPolyPaint(){ return _verifyPolyPaint; },
+      get _fitGroups(){ return _fitGroups; },
+      get _hlLegendHtml(){ return _hlLegendHtml; },
+      get _wctx(){ return _wctx; },
+      get _hlReadNames(){ return _hlReadNames; },
+      get highlight(){ return highlight; },
+      get unionBox(){ return unionBox; },
+      get fitTo(){ return fitTo; },
+      get _hl(){ return _hl; }, set _hl(v){ _hl=v; },
+      get _expandRegionCompound(){ return _expandRegionCompound; },
+      get basinIntent(){ return basinIntent; },
+      get riverIntent(){ return riverIntent; },
+      get resolveHlTarget(){ return resolveHlTarget; },
+      get _regionLabel(){ return _regionLabel; },
+      get buildBasin(){ return buildBasin; },
+      get fetchRiverLine(){ return fetchRiverLine; },
+      get paintLines(){ return paintLines; },
+      get LA(){ return LA; },
+      get METRICS(){ return METRICS; },
+      get layerCatalog(){ return layerCatalog; },
+      get exitTool(){ return exitTool; },
+      get _selfLocSeed(){ return _selfLocSeed; },
+      get _curTurn(){ return _curTurn; }, set _curTurn(v){ _curTurn=v; },
+      get _atlRecallImgs(){ return _atlRecallImgs; }, set _atlRecallImgs(v){ _atlRecallImgs=v; },
+      get _atlRecallAtts(){ return _atlRecallAtts; }, set _atlRecallAtts(v){ _atlRecallAtts=v; },
+      get VFRAMES(){ return VFRAMES; },
+      get _poiColor(){ return _poiColor; }, set _poiColor(v){ _poiColor=v; },
+      get aiFacilities(){ return aiFacilities; },
+      get _pois(){ return _pois; }, set _pois(v){ _pois=v; },
+      get paintPois(){ return paintPois; },
+      get _PINNED(){ return _PINNED; },
+      get _lastUserMsg(){ return _lastUserMsg; }, set _lastUserMsg(v){ _lastUserMsg=v; },
+      get aiParseJSON(){ return aiParseJSON; },
+      get askAI(){ return askAI; },
+      get _poiAdd(){ return _poiAdd; },
+      get _atlCleanUrl(){ return _atlCleanUrl; },
+      get _buildResearchAnswer(){ return _buildResearchAnswer; },
+      get _tryMapResearch(){ return _tryMapResearch; },
+      get _gcKm(){ return _gcKm; },
+      get missileClass(){ return missileClass; },
+      get ballisticSolve(){ return ballisticSolve; },
+      get _lastMissileCtx(){ return _lastMissileCtx; }, set _lastMissileCtx(v){ _lastMissileCtx=v; },
+      get _ballTrack(){ return _ballTrack; },
+      get drawBlastRings(){ return drawBlastRings; },
+      get ballisticProfileSVG(){ return ballisticProfileSVG; },
+      get elevGrid(){ return elevGrid; },
+      get _mixc(){ return _mixc; },
+      get ensureElevLayers(){ return ensureElevLayers; },
+      get histMatch(){ return histMatch; },
+      get HIST_SCENARIOS(){ return HIST_SCENARIOS; },
+      get paintFactions(){ return paintFactions; },
+      get flyAnimate(){ return flyAnimate; },
+      get codeAtPoint(){ return codeAtPoint; },
+      get OFFICE_RE(){ return OFFICE_RE; },
+      get fetchData(){ return fetchData; },
+      get _wikiSummary(){ return _wikiSummary; },
+      get _weatherData(){ return _weatherData; },
+      get _airData(){ return _airData; },
+      get _sstData(){ return _sstData; },
+      get _elevData(){ return _elevData; },
+      get _leaderData(){ return _leaderData; },
+      get _quakeData(){ return _quakeData; },
+      get _statsData(){ return _statsData; },
+      get GATHER_BUDGET_MS(){ return GATHER_BUDGET_MS; },
+      get _nowContext(){ return _nowContext; },
+      get _analyzeFreshness(){ return _analyzeFreshness; },
+      get _analyzeHeaderBlock(){ return _analyzeHeaderBlock; },
+      get _analyzeEvidence(){ return _analyzeEvidence; },
+      get POLICY(){ return POLICY; },
+      get _evidenceBlock(){ return _evidenceBlock; },
+      get _newsLbl(){ return _newsLbl; },
+      get ANOM(){ return ANOM; },
+      get _lastQuakeFeatures(){ return _lastQuakeFeatures; }, set _lastQuakeFeatures(v){ _lastQuakeFeatures=v; },
+      get stateContext(){ return stateContext; },
+      get _analysisSystemPrompt(){ return _analysisSystemPrompt; },
+      get runStructuredAnswer(){ return runStructuredAnswer; },
+      get _statsFacts(){ return _statsFacts; },
+      get renderAnswer(){ return renderAnswer; },
+      get _pinReplyPlaces(){ return _pinReplyPlaces; },
+      get answerPlainText(){ return answerPlainText; },
+      get citedRecords(){ return citedRecords; },
+      get auditMeta(){ return auditMeta; },
+      get _FEAT_TOG(){ return _FEAT_TOG; },
+      get doBaseDisplay(){ return doBaseDisplay; },
+      get _cmpMetricKeys(){ return _cmpMetricKeys; },
+      get _seriesFor(){ return _seriesFor; },
+      get _normSeries(){ return _normSeries; },
+      get isRankableCountry(){ return isRankableCountry; },
+      get _choroRamp(){ return _choroRamp; }, set _choroRamp(v){ _choroRamp=v; },
+      get rampFrom(){ return rampFrom; },
+      get ensureChoroLayer(){ return ensureChoroLayer; },
+      get _choroFillExpr(){ return _choroFillExpr; },
+      get _choroState(){ return _choroState; }, set _choroState(v){ _choroState=v; },
+      get _choroMetric(){ return _choroMetric; }, set _choroMetric(v){ _choroMetric=v; },
+      get _customScoreName(){ return _customScoreName; }, set _customScoreName(v){ _customScoreName=v; },
+      get XMET(){ return XMET; },
+      get _pearson(){ return _pearson; },
+      get _ranks(){ return _ranks; },
+      get _havKm(){ return _havKm; },
+      get overpassRaw(){ return overpassRaw; },
+      get _agoH(){ return _agoH; },
+      get newsSubject(){ return newsSubject; },
+      get groupNewsEvents(){ return groupNewsEvents; },
+      get EVENT_RULES(){ return EVENT_RULES; },
+      get doModule(){ return doModule; },
+      get _atlContentClass(){ return _atlContentClass; },
+      get _atlVerifyChecks(){ return _atlVerifyChecks; },
+      get _atlChecksNoteHtml(){ return _atlChecksNoteHtml; },
+      get _curPlanCites(){ return _curPlanCites; }, set _curPlanCites(v){ _curPlanCites=v; },
+      get _atlShouldMap(){ return _atlShouldMap; },
+    }); }
+    function dispatch(a,dctx){ try{ if(!a||!a.type) return Promise.resolve(R(true,'')); const t=CAPS.dispatchName(a.type);
+      return ((typeof t==='string'&&CAP_RUN[t])||unknownAction)(a,dctx,capDeps()); }catch(e){ return Promise.reject(e); } }
     /* (#R64) "別の言語で話しかけても、言語設定の言語でしか返答しないのはやめろ" — Atlas answers in the language
        the USER'S MESSAGE is written in. Script/stop-word detection gives the model a strong hint; unclear input
        falls back to the UI language. */

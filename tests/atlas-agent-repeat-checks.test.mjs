@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readFileSync } from 'node:fs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -92,7 +93,7 @@ test('R731 ② a step that asks something different resets the count — nothing
    while doing exactly what this check exists to protect. #R488's shape: a rule fastened to a spelling
    measures the spelling. So the EXPRESSION IS EVALUATED instead, with the four turns that matter. */
 test('R731 ③ the forced final that says nothing leaves the console one honest sentence, in the reader\'s language', () => {
-  const con = codeOnly(readLF(join(ROOT, 'js/atlas-console.js')));
+  const con = codeOnly((readLF(join(ROOT, 'js/atlas-console.js')) + '\n' + capsSource()));
   /* the shipped right-hand side of `ai.__atlSay=`, taken to the end of its statement by matching
      brackets — not by a closing spelling (tests/helpers/lift-function.mjs exists for the same reason) */
   const L = (en) => en;   /* the reader's language is `pick()`'s job; here it is the English slot */
@@ -366,7 +367,7 @@ test('R760 ⑤ a declaration the map does NOT hold is still not_rendered', () =>
 /* ── ③ the painters declare. Read at the source, because the goal is that the
    DECLARATION exists beside the write — a live dispatch needs a map. ── */
 test('R760 ⑥ the painters that hold a named surface declare what they painted', () => {
-  const src = readLF(join(ROOT, 'js', 'atlas-console.js'));
+  const src = (readLF(join(ROOT, 'js', 'atlas-console.js')) + '\n' + capsSource());
   assert.ok(src.includes('meta:{painted:{choro:Object.keys(_choroState)}}'),
     'drawChoro states the countries it shaded');
   /* ⚠ (#732) the declaration is a MEMBER of `meta`, and `meta` may say more than one thing — #732 added
@@ -404,8 +405,8 @@ test('R760 ⑥ the painters that hold a named surface declare what they painted'
     const fn = new RegExp(String.raw`function\s+([A-Za-z0-9_]+)\s*\([^)]*\)\s*\{[^\n]*?` + v + String.raw`\s*=\s*(?:\[\]|\{\}|new Set\(\))`).exec(src);
     if (fn) clearerOf[surface] = fn[1];
   }
-  const caseLine = src.split('\n').find((l) => l.indexOf("case 'clearAll':") >= 0) || '';
-  assert.ok(caseLine, 'the clearAll case is one line');
+  const caseLine = (capabilityEntry('clearAll') || {}).run || '';   /* (atlas-capability-modules) the run of map.clearAll — what used to be its `case` */
+  assert.ok(caseLine, 'map.clearAll has a run');
   const declared = /_CLEARED\(([^)]*)\)/.exec(caseLine);
   assert.ok(declared, 'map.clearAll declares the surfaces it empties');
   const named = declared[1].split(',').map((s2) => s2.trim().replace(/^'|'$/g, ''));
@@ -470,7 +471,7 @@ test('R760 ⓱ a simulator whose deliverable is a window says so, and is not cal
 test('R760 ⓲ the flight simulator declares the window it opened', () => {
   /* read, not run: the opener is a case of the Atlas kernel's dispatch, which only a browser can build
      (the verdict half is run in ⓱). */
-  const src = readLF(join(ROOT, 'js', 'atlas-console.js'));
+  const src = (readLF(join(ROOT, 'js', 'atlas-console.js')) + '\n' + capsSource());
   assert.ok(src.includes("ok?{meta:{opened:'flightSim'}}:null"), 'the opener states what it opened');
 });
 
@@ -575,7 +576,7 @@ test('R760 ⓯ the metric refusal declares itself permanent and still names the 
 test('R760 ⑨ every turn boundary closes the ledger entry it opened', () => {
   /* read, not run: the turn boundaries are the kernel's run() paths (success, error, two cancellations),
      which only a browser can drive; endTurn itself is run in ⑩. */
-  const src = readLF(join(ROOT, 'js', 'atlas-console.js'));
+  const src = (readLF(join(ROOT, 'js', 'atlas-console.js')) + '\n' + capsSource());
   const calls = (src.match(/ASTATE\.endTurn\(turn,/g) || []).length;
   assert.ok(calls >= 4, 'success, error, and both cancellation paths close the turn — found ' + calls);
   assert.ok(src.includes("ASTATE.endTurn(turn,{status:'cancelled'})"), 'a superseded turn says so');

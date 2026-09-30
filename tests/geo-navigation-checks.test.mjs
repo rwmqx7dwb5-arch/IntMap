@@ -424,7 +424,7 @@ test('R347 ㉑ every code the spec names exists, and each carries a decision rat
 });
 
 /* ══ ㉒ TWO LISTS THAT MUST AGREE — the defect this round found (§0) ══════════════════════════ */
-test('R347 ㉒ every capability’s lazyModules names a module IntMapLazy actually has', () => {
+test('R347 ㉒ every capability’s lazyModules names a module IntMapLazy actually has', async () => {
   const caps = read('js/atlas-capabilities.js');
   const lazy = read('js/lazy-modules.js');
   /* the module ids IntMapLazy knows are the keys of PUBLISHES — read from the source, since this
@@ -441,9 +441,11 @@ test('R347 ㉒ every capability’s lazyModules names a module IntMapLazy actual
 
   /* every capability row's ELEVENTH cell is its lazy module (or ''). (#R801) It is no longer the
      last cell: an optional twelfth, `ingests`, follows it — so the cells are counted, not the end. */
-  const rows = [...caps.matchAll(/^\s*\['[a-zA-Z0-9_.]+',[^\n]*\],\s*$/gm)]
-    .map((m) => (m[0].match(/'(?:[^'\\]|\\.)*'/g) || []).map((c) => c.slice(1, -1)))
-    .filter((cells) => cells.length >= 10);
+  /* (atlas-capability-modules) the rows are declared in the entries (js/atlas-cap-<namespace>.js) and copied here as JSON —
+     so the ELEVENTH cell is read off the rows the registry is built from, not matched in one spelling of them */
+  if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+  const { CAPABILITY_MODULES } = await import('../js/atlas-caps-modules.js');
+  const rows = Object.values(CAPABILITY_MODULES).flat().map((e) => e.row).filter((cells) => cells.length >= 10);
   assert.ok(rows.length > 100, `expected the capability table, matched ${rows.length} rows`);
   const bad = rows.map((cells) => cells[10] || '').filter((n) => n && !known.has(n));
   assert.deepEqual(bad, [],

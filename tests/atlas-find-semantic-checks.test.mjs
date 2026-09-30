@@ -12,10 +12,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-const CONSOLE_SRC = codeOnly(readLF(join(ROOT, 'js/atlas-console.js')));
+const CONSOLE_SRC = codeOnly((readLF(join(ROOT, 'js/atlas-console.js')) + '\n' + capsSource()));
 
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
 const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');

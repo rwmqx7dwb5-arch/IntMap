@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { makeAtlasGloss, GLOSS_CSS, GLOSS_CSS_MOBILE } from '../js/atlas-gloss.js';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ⚠ THE SHIPPED FUNCTIONS, NOT A COPY. `makeAtlasGloss` touches nothing at construction time — no
    DOM, no globals, no network — so the factory runs here and hands back the three it decides
@@ -173,7 +174,7 @@ test('R491 ⑦ the gloss counter is its own table, written only by SECURITY DEFI
 test('R491 ⑧ the reader raises the card by gesture and Atlas raises the SAME card by action', () => {
   /* kept as a spelling: ai-proxy is Deno TypeScript, js/ai-core.js needs the signed-in page, the migration needs Postgres; the gesture and the dispatch live in DOM closures */
   const gloss = CODE('js/atlas-gloss.js');
-  const console_ = CODE('js/atlas-console.js');
+  const console_ = (CODE('js/atlas-console.js') + '\n' + capsSource());
 
   /* the gesture: right-click on a selection inside an ANSWER — and nowhere else, or the browser's
      own menu (where Copy lives) would be taken away from the rest of the panel */
@@ -182,14 +183,14 @@ test('R491 ⑧ the reader raises the card by gesture and Atlas raises the SAME c
   assert.match(gloss, /selectionchange/, 'and a touch screen, which has no right-click, gets the pill');
 
   /* the action: one dispatch case, one catalogue entry, one registry row — #R278 / #R318 */
-  assert.match(console_, /case 'gloss': return GLOSS\.dispatch\(a\);/,
-    'ONE line in the kernel — js/atlas-console.js is at its shrink-only ceiling (tests/r318 ⑨b), so the body is in the module');
+  assert.match(capabilityEntry('gloss').run, /return GLOSS\.dispatch\(a\);/,
+    'ONE line in the capability\'s run — the body is in the module (js/atlas-gloss.js)');
   assert.match(gloss, /function dispatch\(a\)/);
   assert.match(gloss, /try \{ open\(term, null\); \}/, 'the action opens the same card the gesture does');
   assert.match(CODE('js/atlas-catalog-text.js'), /"type":"gloss"/,
     'an action the catalogue does not describe does not exist for the planner (#R278)');
-  assert.match(CODE('js/atlas-capabilities.js'), /'reader\.gloss'/);
-  assert.match(CODE('js/atlas-schemas.js'), /'reader\.gloss'/);
+  assert.match(capabilityEntry('reader.gloss').row, /'reader\.gloss'/, 'the registry row (declared in its entry)');
+  assert.ok(capabilityEntry('reader.gloss').schema, 'and its argument schema, in the same entry');
 
   /* the CSS is exported the way js/atlas-msg-tools.js exports its own — the kernel owns the style */
   assert.ok(GLOSS_CSS.includes('.atl-gloss'), 'the card has rules');

@@ -19,6 +19,7 @@ import * as walk from 'acorn-walk';
 import { appShell } from './app-source.mjs';
 import { makeCameraMath } from '../js/camera-math.js';
 import { codeOnly as stripComments } from '../scripts/code-only.mjs';
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const R = (f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 /* (#R175) "the page" is index.html + src/main.js + js/app-body.js (+ js/geo-engine.js) */
@@ -80,9 +81,9 @@ test('#R171 the tilt ceiling is the RENDERER\'s, never a literal', () => {
   assert.equal(liftTilt({ GE: () => cesiumLike, stored: null }).fromAngle(120, 0).pitch, 78, 'and a standard session is held to its ceiling');
   /* ⚠ READ (this half): Atlas's tilt action is a branch of the dispatcher in the booted console */
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it. */
-  const atlas = stripComments(R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js'));
-  assert.match(atlas, /case 'pitch':/, 'the tilt action exists — the probe below is not vacuous (atlas-one-declaration: `tilt` reaches it through the registry)');
-  assert.ok(!/case 'pitch':[\s\S]{0,400}?Math\.min\(85,tp\)/.test(atlas),
+  const atlas = stripComments((R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js'));
+  assert.ok(capabilityEntry('pitch'), 'the tilt action exists — the probe below is not vacuous (atlas-one-declaration: `tilt` reaches it through the registry)');
+  assert.ok(!/Math\.min\(85,tp\)/.test(stripComments(capabilityEntry('pitch').run)),
     'the Atlas tilt action must not clamp to a literal 85 — it has to honour the chosen ceiling');
   assert.match(atlas, /_cap=_T\?_T\.ceiling\(\):85/, 'Atlas reads the ceiling from IntMapTilt');
 });
@@ -141,9 +142,9 @@ test('#R171 the eye altitude is derived from the renderer, not guessed from the 
 /* ⚠ READ, NOT RUN: the SYS catalogue TEXT is what the planner reads (#R115: uncatalogued = nonexistent). */
 test('#R171 every new switch is operable from Atlas AND catalogued', () => {
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it. */
-  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
+  const atlas = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
   for (const a of ['tiltLimit', 'eyeAltitude']) {
-    assert.ok(atlas.includes(`case '${a}':`), `Atlas must implement ${a}`);
+    assert.ok(capabilityEntry(a), `Atlas must implement ${a}`);
     assert.ok(atlas.includes(`{"type":"${a}"`), `${a} must appear in the SYS catalogue or the planner does not know it exists`);
     assert.ok(new RegExp(`\\b${a}:\\{ lbl:`).test(atlas), `${a} should offer an inline on/off switch in the reply`);
   }
