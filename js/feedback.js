@@ -2,7 +2,8 @@
  *  IntMap · Feedback & bug-report modals  (#R167)
  * ----------------------------------------------------------------------------
  *  Two user-facing report surfaces: the star-rated feedback form and the bug reporter that
- *  attaches a diagnostics snapshot (_imDiag). Both post to Supabase through HOST.DB.
+ *  attaches a diagnostics snapshot (_imDiag). Both post to the reader-reports Edge Function
+ *  (sendReport below); HOST.DB is only asked for the session token.
  *  HOST.DB is read at USE time, never at factory time: `const DB` is declared far below this
  *  block's call site, so binding it up front would hit its temporal dead zone.
  *  _imDiag() reports the live theme / tab / projection / basemap, so those four read through
@@ -13,6 +14,27 @@ window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.feedback=function(HOST){
   const escapeHtml=HOST.escapeHtml, isMobile=HOST.isMobile;
+  /* ══ (anon-write-guard) BOTH FORMS WRITE THROUGH reader-reports, NOT THROUGH POSTGREST ══════════════
+     They inserted into `feedback` / `bug_reports` directly as anon or authenticated, and nothing
+     bounded how many rows the publishable key could write. The tables no longer accept that
+     (supabase/migrations/20260930090000_anon_write_guard.sql); the function takes a token from the
+     shared buckets and writes the row. WHO THE REPORT IS FROM is the function's decision: a signed-in
+     reader's access token is sent and verified there, and user_id / email are taken from that
+     account — the page no longer states them. A signed-out reader sends no Authorization at all.
+     → true when the report was stored. The address is derived where every function's is:
+     window.SUPABASE_URL, read at send time (js/client-error-report.js does the same).
+     SEND_DEADLINE_MS — derived, not measured: the function's own bounds are the Auth check (5 s), two
+     limiter takes (3 s each) and the insert (5 s) = 16 s at worst, plus the round trip. A send that has
+     not answered by then is reported as not sent (the bug reporter then keeps the report on the device)
+     instead of leaving the button on «Sending…» for ever. Expires with those bounds in
+     supabase/functions/reader-reports/index.ts and _shared/rate-limit.js. */
+  const SEND_DEADLINE_MS=20000;
+  async function sendReport(kind,fields){
+    const base=String(window.SUPABASE_URL||'').replace(/\/$/,''); if(!base) return false;
+    const headers={'content-type':'application/json'};
+    try{ if(HOST.user&&HOST.DB&&HOST.DB.auth){ const r=await HOST.DB.auth.getSession(); const t=r&&r.data&&r.data.session&&r.data.session.access_token; if(t) headers.authorization='Bearer '+t; } }catch(_){}
+    try{ const res=await fetch(base+'/functions/v1/reader-reports',{method:'POST',headers,credentials:'omit',signal:(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)?AbortSignal.timeout(SEND_DEADLINE_MS):undefined,body:JSON.stringify(Object.assign({},fields,{kind}))}); return res.status===201; }catch(_){ return false; }
+  }
   /* ===== (#R20) Feedback — 5-star + free text, stored in Supabase (`feedback` table,
      supabase_feedback.sql; admins read it in admin.html). 4–5 stars → thank-you + a gentle
      donation ask (Stripe link, fully declinable); 1–3 stars → a plain thank-you. ===== */
@@ -91,11 +113,12 @@ window.IntMapModules.feedback=function(HOST){
       const comment=('['+catEN+'] '+text).trim();   /* category embedded so it stores without a schema change */
       const btn=c.querySelector('#fb-send'); btn.disabled=true; btn.textContent=window.IntMapLang.t(HOST.lang,"Sending…","送信中…","Wird gesendet…","Отправка…","Enviando…");
       let ok=false;
-      try{ if(typeof HOST.DB!=='undefined'&&HOST.DB){
+      try{
         const row={ rating, comment:comment||null, lang:HOST.lang, ua:(navigator.userAgent||'').slice(0,250), page:location.pathname };
-        try{ if(typeof HOST.user!=='undefined'&&HOST.user){ row.user_id=HOST.user.id; row.email=HOST.user.email||null; } else if(enteredEmail) row.email=enteredEmail; }catch(_){}
-        const {error}=await HOST.DB.from('feedback').insert(row); ok=!error;
-      } }catch(_){}
+        /* a signed-in reader's account (and its e-mail) is the function's to verify; only a signed-out reader's typed address is sent */
+        try{ if(!(typeof HOST.user!=='undefined'&&HOST.user) && enteredEmail) row.email=enteredEmail; }catch(_){}
+        ok=await sendReport('feedback',row);
+      }catch(_){}
       if(!ok){ btn.disabled=false; btn.textContent=window.IntMapLang.t(HOST.lang,"Submit","送信","Senden","Отправить","Enviar"); msg.textContent=window.IntMapLang.t(HOST.lang,"Could not send — please try again later.","送信できませんでした。時間をおいてもう一度お試しください。","Senden fehlgeschlagen — bitte später erneut versuchen.","Не удалось отправить — попробуйте позже.","No se pudo enviar; inténtelo de nuevo más tarde."); return; }
       if(rating>=4) renderThanksHigh(); else renderThanksLow(); }
     function renderThanksLow(){ const c=modal.querySelector('#fb-card');
@@ -191,7 +214,7 @@ window.IntMapModules.feedback=function(HOST){
       if(text.length<5){ msg.textContent=window.IntMapLang.t(HOST.lang,"Please describe the bug.","不具合の内容を入力してください。","Bitte beschreiben Sie den Fehler.","Пожалуйста, опишите ошибку.","Describa el error, por favor."); return; }
       const btn=c.querySelector('#bug-send'); btn.disabled=true; btn.textContent=window.IntMapLang.t(HOST.lang,"Sending…","送信中…","Wird gesendet…","Отправка…","Enviando…");
       const row=buildRow(); let ok=false;
-      try{ if(typeof HOST.DB!=='undefined'&&HOST.DB){ const {error}=await HOST.DB.from('bug_reports').insert(row); ok=!error; } }catch(_){}
+      try{ ok=await sendReport('bug',row); }catch(_){}   /* (anon-write-guard) user_id / email / created_at in the row are ignored there — the verified session and the database decide them */
       if(!ok){ /* graceful fallback — never lose the report */
         try{ const k='intmap_bug_reports'; const arr=JSON.parse(localStorage.getItem(k)||'[]'); arr.push(row); localStorage.setItem(k,JSON.stringify(arr.slice(-20))); }catch(_){}
         try{ await navigator.clipboard.writeText(JSON.stringify(row,null,2)); }catch(_){}

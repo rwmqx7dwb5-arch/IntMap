@@ -20,7 +20,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { CHECKED, claims } from '../scripts/doc-claims.mjs';
+import { CHECKED, claims, ENGLISH_CARDINALS } from '../scripts/doc-claims.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { auditRoster, inventories, sharedRoster } from '../scripts/shared-roster.mjs';
 import { declaredEdgeFunctions } from './helpers/edge-functions.mjs';
@@ -69,8 +69,8 @@ const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').repl
  * ==========================================================================*/
 /* (#R699) the test asks the real module which sentences state a count, instead of carrying a
    second copy of the needle — see ② and ④ below. */
-const WORDS = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
-  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
+/* (anon-write-guard) the rule's own table — a copy here stopped at twenty and left EDGE_WORD undefined at 21 */
+const WORDS = ENGLISH_CARDINALS;
 
 /* ⚠ (#R286/#R283) 錨は LF で書いてあり、このチェックアウトはそうとは限らない。`.gitattributes`
    が LF に固定しているのは Linux が実行する拡張子だけで、`*.md` は `core.autocrlf` 任せ。

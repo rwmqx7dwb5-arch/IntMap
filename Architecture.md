@@ -2089,9 +2089,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **20本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **21本**（`_shared/` は関数ではない）
 
-> ⚠ **20本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **21本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
@@ -2346,8 +2346,28 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   （pg_cron `client-errors-purge` が毎日 `purge_client_errors` を呼ぶ）。
   詳細は [`docs/MONITORING.md`](docs/MONITORING.md) §2。
 
+- **`reader-reports`** … **フィードバックとバグ報告の書き込み先**（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の
+  2 つのフォームがここへ POST し、関数が service_role で `feedback` / `bug_reports` に 1 行書く。**表へ直接は書けない**
+  （`anon`・`authenticated` の INSERT policy と grant は `20260930090000_anon_write_guard.sql` が閉じた——
+  以前は公開キーで PostgREST から行数の制限なく書けた）。守りは `client-errors` と同じ形: POST 限定・本文上限
+  64 KiB・Origin（本番と 127.0.0.1 / localhost）・共有 token bucket 2 つ（呼び手ごと＝**検証済みのアカウント**、
+  無ければ**アドレスの HMAC**／プロジェクト全体の 1 日）で、どちらも**閉じて失敗**する。**誰からの報告かは関数が決める**:
+  Authorization が無い（または公開キー）なら匿名（`user_id` は null・メールは読者が入力したもの）、利用者の
+  access token なら Auth サーバー（`/auth/v1/user`）に訊き、`user_id` と `email` は**そのアカウントのもの**
+  （本文の値は捨てる）。Auth が拒んだ token は 401（黙って匿名にしない）。読むのは表の列だけで、各列は
+  `len_guard` 制約の上限で 400 を返す。`created_at` は DB が書く。1 日の上限は `READER_REPORTS_GLOBAL_PER_DAY`。
+  送信が失敗したとき、バグ報告は端末に保存しクリップボードへ写す（従来どおり）。
+
+⚠ **(anon-write-guard) `aviation-feed` と `ais-feed` の `?refresh=1` はプロジェクト全体で 1 つの枠から取る。** 読み取り予算
+（`_shared/read-budget.js`）は isolate ごとなので、isolate にまたがって `?refresh=1` を送ればそれぞれが burst を与えた。
+掃引は秘密を持たず誰とも区別できないので、枠は呼び手を問わない共有バケット 1 つ（`relay_take`・鍵 `'*'`、
+`_shared/rate-limit.js` の `forceGrant`）。aviation は**掃引 1 run 分を cron 間隔ごとに**（`FORCE_BURST`＝ワークフローの
+`SLICES`＝10／`FORCE_PERIOD_S`＝cron 間隔 300 秒。正本はワークフロー）、ais は掃引が無いので **`WORLD_TTL_MS` ごとに 1 回**。
+枠を超えた要求と DB が答えないときの要求は、`refresh=1` が無かったのと同じ答え（200・キャッシュ済み・**上流に触れない**）を返し、
+`x-intmap-forced: capped` / `unavailable`（強制したときは `granted`）で理由を述べる。拒否ではない。
+
 ⚠ **公開の関数はすべて、上流へ出る前に共有 bucket から 1 トークン取る。** `verify_jwt = false` の関数のうち
-秘密で守られた 3 本（`refresh-news`・`news-ingest`・`monitor-run`）と、自前の 2 段の bucket を持つ `client-errors` 以外——
+秘密で守られた 3 本（`refresh-news`・`news-ingest`・`monitor-run`）と、自前の 2 段の bucket を持つ `client-errors`・`reader-reports` 以外——
 `alerts-relay`・`ais-feed`・`aviation-feed`・`cable-geo`・`fetch-relay`・`gdelt-relay`・`news-relay`・`quotes-relay`・
 `radiation-feed`・`sv-cov`・`volcano-feed`・`who-don`（公開 GET）——は `_shared/rate-limit.js` の `callerGate()` で
 `<関数名>:ip` の bucket（`public.relay_rate_buckets`）から取る。容量＝その関数の読者 1 人のページが 1 分に送る最大数
@@ -2356,10 +2376,10 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 拒否は `429 rate_limit`＋`Retry-After`。`<関数名>_PER_IP_PER_MIN` で 1 本の容量を deploy なしに動かせる。
 `routing-relay` は従来どおり自前の fail-closed の全体上限を持つ。
 
-⚠ **`_shared/relay-guard.js` を共有するのは18本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` /
-`fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
-`ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、**残り14本は無認証**。
-`ai-proxy`・`monitor-run`・`client-errors` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
+⚠ **`_shared/relay-guard.js` を共有するのは19本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` /
+`fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
+`ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、`reader-reports` は任意（送られた token だけを Auth サーバーで検証する）、**残り14本は無認証**。
+`ai-proxy`・`monitor-run`・`client-errors`・`reader-reports` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
 POST をヘッダではなく**本文の最後のバイトまで**同じ期限と上限で読む——提供者への要求では `_shared/ai-provider.js` の扉の中で使う）で、URL allowlist の側ではない。
 ⚠ **リダイレクトは手で辿る**（`followRedirects`）。`redirect:"follow"` は最初の 1 ホップにしか allowlist を訊いていなかったので、
 各ホップを同じ https オリジンか、呼び出し側が渡した `allowRedirect(next, from)` で検査し、上限は 3 ホップ（`MAX_REDIRECTS`）。
@@ -2384,6 +2404,7 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
 - atlas-embed: `OPENAI_API_KEY`（ai-proxy と同じ鍵）, `ATLAS_EMBED_MODEL`（任意・既定 `text-embedding-3-small`）,
   `ATLAS_EMBED_GLOBAL_PER_DAY`（任意・プロジェクト全体の 1 日の上限）
 - monitor-run: `MONITOR_SECRET`
+- reader-reports: `READER_REPORTS_GLOBAL_PER_DAY`（任意・プロジェクト全体の 1 日の上限。既定 500）
 - Gemini 経路のみ: `GEMINI_SEARCH_ENABLED`（既定 OFF）
 
 ---
@@ -5490,7 +5511,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 ---
 ## 11. フィードバック・寄付・管理機能
 
-- **フィードバック**：`feedback` テーブル。`recordLogin()` が本物のログインを数え、3回目に既存モーダルを
+- **フィードバック**：`feedback` テーブル（書くのは Edge Function `reader-reports` だけ。§6.2）。`recordLogin()` が本物のログインを数え、3回目に既存モーダルを
   1回表示する（設定からはいつでも開ける）。
 - **寄付**：Stripe リンク（言語別）。記録は `donations` テーブル。
   - EN: `https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en`
@@ -5500,7 +5521,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   ⚠ 公開サインアップは無い。CSP は厳格（`connect-src` は self ＋ `*.supabase.co`）。
   破壊的操作の前に再認証を求める。ログインゲートは利便のためのもので、非 admin が開いても
   **RLS が 0 行しか返さない**。
-- **バグ報告**：`bug_reports`（診断情報 JSON 付き。anon が insert 可・admin が閲覧）。
+- **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。
 
 ---
 
@@ -5684,10 +5705,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を20本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を21本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account atlas-embed; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay; do
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay reader-reports; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```
@@ -5881,10 +5902,10 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（32本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（33本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
-- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持 ＋ 能力ベクトル ＋ SECURITY DEFINER 関数を `anon` が呼べるのは `anon` に効く RLS が呼ぶものだけ ＋ 出自の固定＝SECURITY DEFINER の search_path に呼び手が CREATE できる schema が無い・公開バケットに一覧用の SELECT ポリシーが無い・コミュニティ投稿の著者名と投稿時刻は DB が書く・INSERT は列単位 grant）。
+- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持 ＋ 能力ベクトル ＋ SECURITY DEFINER 関数を `anon` が呼べるのは `anon` に効く RLS が呼ぶものだけ ＋ 出自の固定＝SECURITY DEFINER の search_path に呼び手が CREATE できる schema が無い・公開バケットに一覧用の SELECT ポリシーが無い・コミュニティ投稿の著者名と投稿時刻は DB が書く・INSERT は列単位 grant ＋ 匿名の直接書き込みの全数＝`public` のどの表も `anon` の INSERT を受けない・報告の 2 表は service_role だけが書く）。
 
 ### 16.2 RLS の3大保証（テストで実証）
 

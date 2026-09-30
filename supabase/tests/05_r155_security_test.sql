@@ -119,7 +119,10 @@ select ok(not exists(select 1 from pg_policies where schemaname='public' and tab
           'R155: no profiles SELECT policy uses USING(true) (the PII leak is gone)');
 
 -- Things that MUST still work (regression guard on the re-grant).
-select ok(has_table_privilege('anon','public.feedback','insert'),                   'R155: anon CAN still submit feedback');
+-- (anon-write-guard) feedback is still submitted — through the reader-reports Edge Function, which writes as
+-- service_role behind the shared buckets; the direct grant #R155 re-issued is closed (20260930090000).
+select ok(not has_table_privilege('anon','public.feedback','insert'),               'anon-write-guard: anon no longer inserts feedback directly');
+select ok(has_table_privilege('service_role','public.feedback','insert'),            'anon-write-guard: service_role (reader-reports) still writes feedback');
 select ok(has_table_privilege('anon','public.current_news','select'),               'R155: anon CAN still read current_news');
 select ok(has_table_privilege('authenticated','public.favorites','insert'),         'R155: authenticated CAN still save favorites');
 select ok(has_any_column_privilege('authenticated','public.community_posts','insert'),   'R155: authenticated CAN still post');

@@ -171,8 +171,12 @@ test('R801 ⑧ ais-feed: ?refresh=1 goes upstream only as often as the bucket gr
   assert.ok(BURST >= 1, 'REFRESH_BURST is declared');
   const key = 'abcdef0123456789';
   const r = runEdge('ais-feed', {
-    env: { SUPABASE_URL: 'http://sb.test', AISSTREAM_API_KEY: key, AIS_STORAGE_KEY: 'svc' },
+    /* (anon-write-guard) ?refresh=1 is first asked of the project-wide force allowance (relay_take, key '*');
+       it is granted here, so what this measures is still the per-isolate bucket behind it
+       (tests/anon-write-guard-checks.test.mjs ② measures a spent or silent allowance) */
+    env: { SUPABASE_URL: 'http://sb.test', SUPABASE_SERVICE_ROLE_KEY: 'svc', AISSTREAM_API_KEY: key, AIS_STORAGE_KEY: 'svc' },
     routes: [
+      ['rest/v1/rpc/relay_take', { body: '[{"allowed":true,"remaining":1}]' }],
       ['storage/v1/object/public/', { status: 404, body: 'nope', type: 'text/plain' }],
       ['storage/v1/object/', { body: '{"Key":"ais/world.json"}' }],
       ['storage/v1/bucket', { body: '{"name":"ais"}' }],

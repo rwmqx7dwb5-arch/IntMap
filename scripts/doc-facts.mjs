@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { sharedRoster, auditRoster, inventories } from './shared-roster.mjs';
 import { auditLedger } from './ledger-claims.mjs';
-import { claims, CHECKED } from './doc-claims.mjs';
+import { claims, CHECKED, ENGLISH_CARDINALS } from './doc-claims.mjs';
 import { authoredLangs, carriedLangs } from './lang-policy.mjs';
 import { requireData } from './data-assets.mjs';
 import { namespaceFiles } from './atlas-caps.mjs';
@@ -318,11 +318,8 @@ const FILES = BODY.get('docs/FILES.md') || '';
   }
 
   /* ── 2a. every STATED size of the inventory, in every document, is the real one ─────────── */
-  const WORD = {
-    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
-    eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17,
-    eighteen: 18, nineteen: 19, twenty: 20,
-  };
+  /* (anon-write-guard) composed in scripts/doc-claims.mjs — the hand-written table here stopped at twenty */
+  const WORD = ENGLISH_CARDINALS;
   /* ⚠ (#R699) THIS USED TO BE A HAND-WRITTEN SET OF SEPARATORS —
        `Edge Functions?` · one of 「は を — – - : ： （ (」 · a number · 「本」 —
      and that set, not the documents, decided what the rule could see. MEASURED: `docs/README.md`

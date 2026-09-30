@@ -33,7 +33,7 @@
 //  parses every committed .ts as plain JavaScript.
 // ============================================================================
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient, callerAddress } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, hashedCallerKey } from "../_shared/rate-limit.js";
 import {
   MAX,
   MAX_PER_REQUEST,
@@ -99,15 +99,12 @@ function say(cors, body, status) {
 
 /* The per-caller bucket key: HMAC-SHA-256(service key, address), 32 hex digits. A request with no
    x-forwarded-for shares one bucket with every other such request — the failure direction of an
-   unidentifiable caller is «throttled with everyone else», the rule routing-relay states. */
+   unidentifiable caller is «throttled with everyone else», the rule routing-relay states.
+   (anon-write-guard) The computation is _shared/rate-limit.js hashedCallerKey — reader-reports keys
+   its buckets the same way, so the rule lives in one place. No account is passed: this function
+   verifies none. */
 export async function callerKey(req, secret) {
-  const addr = callerAddress(req);   /* (ai-one-ledger) the address, read where every function reads it */
-  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(secret || "no-secret")),
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const d = new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(addr)));
-  let hex = "";
-  for (let i = 0; i < 16; i++) hex += d[i].toString(16).padStart(2, "0");
-  return hex;
+  return hashedCallerKey(req, secret);
 }
 
 /* The request, validated and shaped. Returns { reports } or { error, status }. */

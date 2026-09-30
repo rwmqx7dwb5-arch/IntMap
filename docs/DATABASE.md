@@ -55,8 +55,8 @@ is the human explanation.
 | Table | Purpose | Read | Write |
 |---|---|---|---|
 | `donations` | Donation intent (**PII: email**). | **Admin only.** | Owner inserts own. |
-| `feedback` | 5-star + free text (**PII: email + text**). | **Admin only.** | Anyone (incl. anon) inserts. |
-| `bug_reports` | Bug reports (**PII: email + diagnostics**). | **Admin only.** | Anyone inserts. |
+| `feedback` | 5-star + free text (**PII: email + text**). | **Admin only.** | **Nobody directly** *(anon-write-guard)* — only service_role, i.e. the `reader-reports` Edge Function, which any reader (signed in or not) sends to; it takes a token from two shared `relay_take` buckets first and sets `user_id` / `email` from the verified session, never from the body. |
+| `bug_reports` | Bug reports (**PII: email + diagnostics**). | **Admin only.** | **Nobody directly** — the same `reader-reports` path as `feedback`. |
 | `client_errors` *(client-error-log)* | Uncaught exceptions / unhandled rejections from readers' browsers, **one row per distinct defect** (`fingerprint`, 32 hex = SHA-256 of kind + message with numbers collapsed + top frame, computed by the Edge Function) with `count`, `first_seen`, `last_seen` and the latest `release` / `path` / `browser` (name + major version). **No PII by construction** — there is no column for an IP, a user, a session, a query string or a raw User-Agent, and message/stack are scrubbed before storage (`supabase/functions/_shared/client-error-shape.js`). Purged 30 days after `last_seen` (pg_cron `client-errors-purge` → `purge_client_errors`). | **Admin only** (`SELECT` policy on `is_admin()`; admins cannot edit it). | **Nobody directly** — only `record_client_error` (service_role, the `client-errors` Edge Function). |
 
 ### Public reference data
@@ -223,6 +223,10 @@ same pgTAP file asserts zero grants.
    name it appears under and the time it was posted are written by `tg_community_stamp_provenance`
    (INSERT) and are not in the UPDATE grant (#R801). A REST call that names `created_at` / `edited_at`
    / `id` is refused by the column grant; a forged `author_name` is overwritten.
+6. **(anon-write-guard) `anon` inserts into nothing.** The last two tables it could write, `feedback` and
+   `bug_reports`, lost their INSERT policy and grant (`20260930090000_anon_write_guard.sql`); a reader's
+   report goes through the `reader-reports` Edge Function, which counts it against shared buckets.
+   `14_anon_write_guard_test.sql` states this over the catalogue (every table in `public`), not over names.
 
 Guarantees 1–3 (and the R144 monitor matrix) are proven by the pgTAP tests
 (`04_monitors_test.sql` simulates the prod default grant; guarantee 5 is
@@ -330,6 +334,12 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   query or a raw User-Agent (measured over `information_schema`, so a later column turns it red);
   a repeated fingerprint **adds to `count`** instead of adding a row; a full table refuses a new
   defect and still counts a known one; the purge removes exactly what was last seen 31 days ago.
+- **`14_anon_write_guard_test.sql`** *(anon-write-guard)* — ① a census over `pg_class` × `pg_policies`: no
+  table in `public` accepts a direct INSERT from `anon` (an INSERT privilege on any column **and** either
+  RLS off or an INSERT/ALL policy for `anon`/PUBLIC); ② `feedback` / `bug_reports` have no INSERT policy and
+  no INSERT privilege for `anon` or `authenticated`, and a direct insert by either — even a signed-in reader
+  naming itself — is DENIED; admin read/delete are unchanged; ③ service_role (the `reader-reports` path)
+  still writes both, and the #R155 length ceiling still stands in front of it.
 
 ### How the checks work (so a failure is readable)
 

@@ -88,7 +88,7 @@ select ok(    has_column_privilege('authenticated','public.profiles','display_na
 -- ── Table-privilege sanity on PII tables ────────────────────────────────────
 select ok(not has_table_privilege('anon','public.feedback','select'),          'anon has no SELECT grant on feedback');
 select ok(    has_table_privilege('authenticated','public.feedback','select'),  'authenticated has SELECT grant on feedback (RLS restricts to admins)');
-select ok(    has_table_privilege('anon','public.feedback','insert'),           'anon may INSERT feedback');
+select ok(not has_table_privilege('anon','public.feedback','insert'),           'anon may not INSERT feedback (anon-write-guard: the reader-reports Edge Function writes it)');
 select ok(not has_table_privilege('anon','public.ai_usage','select'),           'anon has no access to ai_usage');
 
 select * from finish();

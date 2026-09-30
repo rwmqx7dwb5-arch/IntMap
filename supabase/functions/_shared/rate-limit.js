@@ -190,6 +190,30 @@ export function callerKey(req, verifiedUid) {
   return /^uid:/i.test(addr) ? "unknown" : addr;
 }
 
+/* ══ (anon-write-guard) THE SAME KEY, WITHOUT WRITING THE ADDRESS DOWN ═══════════════════════════════
+   hashedCallerKey(req, secret, verifiedUid) → the bucket key for a function that STORES what its
+   callers send (client-errors, reader-reports), as opposed to a relay that only forwards.
+     · a verified account → "uid:<uuid>", exactly as callerKey above;
+     · otherwise HMAC-SHA-256(secret, address), 32 hex digits.
+   WHY NOT THE ADDRESS: relay_rate_buckets holds `key` in the clear and is swept only when idle, and a
+   function whose whole job is to keep a record must not also become a list of its readers' IPs by the
+   back door. The HMAC is one-way without the secret (the service key — never sent anywhere) and stable
+   per address, which is all a bucket needs. It was written inside client-errors (client-error-log);
+   reader-reports needed the same key, so it lives here and both import it rather than one copying it
+   (.agents/rules/no-ad-hoc-hardcoding.md §2.3). A request with no address shares one bucket, as
+   everywhere in this file. */
+export async function hashedCallerKey(req, secret, verifiedUid) {
+  const uid = String(verifiedUid || "").trim();
+  if (UUID_RE.test(uid)) return "uid:" + uid.toLowerCase();
+  const addr = callerAddress(req);
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(secret || "no-secret")),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const d = new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(addr)));
+  let hex = "";
+  for (let i = 0; i < 16; i++) hex += d[i].toString(16).padStart(2, "0");
+  return hex;
+}
+
 function envPositive(env, name, fallback) {
   let v = NaN;
   try { v = Number((typeof env === "function" ? env(name) : "") || ""); } catch (_) { v = NaN; }
@@ -228,4 +252,33 @@ export async function callerGate(req, cors, o) {
       "retry-after": String(Math.max(1, Math.ceil(60 / perMin))),
     },
   });
+}
+
+/* ══ (anon-write-guard) A FORCED REFRESH IS A PROJECT-WIDE ALLOWANCE, NOT A PER-CALLER ONE ══════════
+   forceGrant(scope, { capacity, refillPerSec, env }) → 'granted' | 'capped' | 'unavailable'
+
+   aviation-feed and ais-feed each accept `?refresh=1`, which makes the function go upstream NOW
+   instead of answering from what it holds. Their read budgets (_shared/read-budget.js) live in one
+   isolate, and Supabase runs several: a caller who spread `?refresh=1` across isolates was granted a
+   burst by each, so upstream reads grew with the callers. The caller cannot be told apart from the
+   sweeper — the sweeper holds no secret, and giving it one would mean a secret registered by hand in
+   two places before the sweep could run at all — so the allowance is not per caller: ONE bucket,
+   keyed '*', in `public.relay_take`, shared by every isolate and every caller. Its size is the
+   function's to state and to derive (each says where its number comes from).
+
+   ⚠ A REFUSAL IS NOT AN ERROR. 'capped' and 'unavailable' both mean «answer as if refresh=1 had not
+   been sent»: the reader gets the same cached answer everyone else gets, and nothing goes upstream.
+   ⚠ IT FAILS CLOSED for the FORCE only: a database that does not answer grants no forced refresh
+   (the caller still gets the normal answer, and the function's own TTL refresh still runs). The
+   opposite direction would make a database outage the moment the ceiling disappears. */
+export async function forceGrant(scope, o) {
+  const opts = o || {};
+  const env = typeof opts.env === "function" ? opts.env : () => "";
+  const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
+  if (!db.configured) return "unavailable";
+  const r = await makeLimiter({ db }).take(String(scope || ""), "*", {
+    capacity: opts.capacity, refillPerSec: opts.refillPerSec, cost: 1, onUnavailable: "deny",
+  });
+  if (r.source !== "db") return "unavailable";
+  return r.allowed ? "granted" : "capped";
 }

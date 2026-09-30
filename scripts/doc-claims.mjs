@@ -82,6 +82,24 @@ const LINK = /[\u306e\u306f\u304c\u3092\u3082\u3068\u306b\u3078\u3084\uff1a:\uff
    disagreed», which the needle this replaces could not tell apart. */
 export const CHECKED = ['inventory', 'unlinked'];
 
+/* (anon-write-guard) THE ENGLISH CARDINALS, COMPOSED — NOT LISTED. The edge-count rule and its test each
+   carried a hand-written table that stopped at «twenty», and the English needle below took only the
+   letters after a hyphen: the day a twenty-first Edge Function landed, «twenty-one Edge Functions» was
+   read as ONE and the gate went red on a correct sentence (and the test's anchor word for 21 was
+   undefined). Units, teens and tens compose, so every number to ninety-nine is read the day it is
+   written (scripts/doc-facts.mjs composes the same way for the Sources page, #R717). One table,
+   exported, so the rule and the test that mutates it cannot disagree about which words are numbers. */
+export const ENGLISH_CARDINALS = (() => {
+  const unit = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  const teen = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const ten = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  const m = {};
+  unit.forEach((w, i) => { if (i) m[w] = i; });
+  teen.forEach((w, i) => { m[w] = 10 + i; });
+  ten.forEach((w, t) => { if (!w) return; m[w] = t * 10; unit.slice(1).forEach((u, i) => { m[w + '-' + u] = t * 10 + i + 1; }); });
+  return Object.freeze(m);
+})();
+
 /* `の` is the one link whose IDENTITY matters afterwards: with no noun in between it makes the
    quantity partitive (one OF them) rather than an inventory. */
 const PARTITIVE = '\u306e';
@@ -236,7 +254,8 @@ export function claims(body, subject) {
 
   /* 2 · English: the numeral stands before the noun, so the chain runs the other way. */
   if (subject.words) {
-    const EN = new RegExp('(?<![\\d.\u00a7#])\\**\\b([A-Za-z]+|\\d+)\\b\\**[ \\t]+(?:' + subject.noun + ')\\b', 'g');
+    /* (anon-write-guard) a hyphenated numeral is ONE word: \u00abtwenty-one\u00bb is 21, not the \u00abone\u00bb after its hyphen */
+    const EN = new RegExp('(?<![\\d.\u00a7#-])\\**\\b([A-Za-z]+(?:-[A-Za-z]+)?|\\d+)\\b\\**[ \\t]+(?:' + subject.noun + ')\\b', 'g');
     for (const m of body.matchAll(EN)) {
       const raw = m[1].toLowerCase();
       const n = /^\d+$/.test(raw) ? Number(raw) : subject.words[raw];

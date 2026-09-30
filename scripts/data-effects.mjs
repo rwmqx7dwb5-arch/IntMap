@@ -65,6 +65,16 @@ function chainHas(n, name) {
   return false;
 }
 const literalText = (u) => (u.type === 'Literal' ? String(u.value) : u.type === 'TemplateLiteral' ? u.quasis.map((q) => q.value.cooked).join('${}') : null);
+/* the known text of a URL expression. A request is usually built `base + '/functions/v1/<name>'`, and
+   reading only a whole-literal URL lost exactly that (MEASURED 2026-09-30: the feedback form's send to
+   reader-reports vanished from the writers the day it stopped being a table insert). The parts that are
+   not text read as `${}`, so a concatenation says as much as a template literal does. */
+const urlText = (u) => {
+  if (!u) return null;
+  const t = literalText(u); if (t != null) return t;
+  if (u.type === 'BinaryExpression' && u.operator === '+') return (urlText(u.left) ?? '${}') + (urlText(u.right) ?? '${}');
+  return null;
+};
 
 /** Is this node a write? → a short name of what it writes, or null. */
 export function writeOf(n) {
@@ -75,7 +85,7 @@ export function writeOf(n) {
   if (p === 'invoke' && chainHas(n.callee.object, 'functions')) return 'functions.invoke';
   if (AUTH_WRITES.has(p) && chainHas(n.callee.object, 'auth')) return 'auth.' + p;
   if (n.callee.type === 'Identifier' && n.callee.name === 'fetch' && n.arguments[0]) {
-    const txt = literalText(n.arguments[0]) ?? '';
+    const txt = urlText(n.arguments[0]) ?? '';
     const o = n.arguments[1];
     if (/functions\/v1\//.test(txt) && o && o.type === 'ObjectExpression' && o.properties.some((q) => q.key && (q.key.name || q.key.value) === 'method'
       && q.value.type === 'Literal' && /^(post|put|patch|delete)$/i.test(q.value.value))) return 'edge-function';
