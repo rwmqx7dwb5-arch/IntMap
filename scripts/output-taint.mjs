@@ -81,7 +81,9 @@ export const TRUSTED = [
 
 const FN = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
 const SCOPE = (n) => FN.has(n.type) || n.type === 'Program';
-const ESCAPER_PATH = /(?:^|\.)IntMapSafe\.(?:html|esc|url|text)$/;
+/* `flag` is an encoder too: it returns escaped text, or the one inline-SVG image the flag builders make,
+   rebuilt from its parsed data: URI (js/safe-html.js) — nothing the caller passes reaches the output as markup */
+const ESCAPER_PATH = /(?:^|\.)IntMapSafe\.(?:html|esc|url|text|flag)$/;
 /* methods whose result is a number or a boolean, whatever the receiver */
 const NUM_METHODS = new Set(['toFixed', 'toPrecision', 'toExponential', 'indexOf', 'lastIndexOf', 'findIndex', 'findLastIndex',
   'search', 'charCodeAt', 'codePointAt', 'localeCompare', 'getTime', 'includes', 'some', 'every', 'startsWith', 'endsWith',

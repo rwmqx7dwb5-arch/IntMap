@@ -60,5 +60,21 @@
     d.innerHTML = String(s);
     return d.textContent || '';
   }
-  root.IntMapSafe = { html: html, esc: html, url: url, text: text };
+  /* ══ A FLAG VALUE CARRIES ONE OF TWO THINGS, AND THIS IS THE ONE PLACE THAT TELLS THEM APART ══════
+     `countryStats[*].flag` is an emoji (a modern country, TEXT) for most rows and, for a former state,
+     the inline-SVG image js/history.js / js/time-borders.js draw (MARKUP). One field with two meanings:
+     readers either inserted it raw (safe only because every value happened to be ours) or escaped it
+     (MEASURED 2026-09-30 in production: 13 of 211 rows of the 1900 country list printed
+     `<img class="hist-flag" …` as text). This recognises only the exact image those builders make — a
+     data: URI of percent-encoded SVG, which an <img> renders without running anything — and REBUILDS it
+     from the parsed source; anything else is text and is escaped. */
+  var HIST_FLAG = /^<img class="hist-flag" alt="" src="data:image\/svg\+xml,([A-Za-z0-9%\-_.!~*'()]+)">$/;
+  function flag(v, fallback) {
+    var s = String(v == null ? '' : v);
+    if (!s) return fallback == null ? '' : html(fallback);
+    var m = HIST_FLAG.exec(s);
+    /* the scheme is written HERE, not carried over from the value: only the percent-encoded payload is */
+    return m ? '<img class="hist-flag" alt="" src="data:image/svg+xml,' + m[1] + '">' : html(s);
+  }
+  root.IntMapSafe = { html: html, esc: html, url: url, text: text, flag: flag };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

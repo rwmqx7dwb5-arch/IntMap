@@ -265,7 +265,7 @@ export default [
           /* no / unknown metric → full compact stat card from everything we hold */
           let rowsH=''; for(const k in METRICS){ const v=METRICS[k].get(s); if(v==null||isNaN(v)) continue; rowsH+='<div style="display:flex;justify-content:space-between;gap:10px;"><span style="color:var(--text-muted);">'+esc(lx(METRICS[k].label))+'</span><b>'+esc(fmtVal(k,v))+'</b></div>'; }
           for(const k of ['capital','currency','languages']){ if(s[k]) rowsH+='<div style="display:flex;justify-content:space-between;gap:10px;"><span style="color:var(--text-muted);">'+esc(lx(TXTF[k]))+'</span><b>'+esc(s[k])+'</b></div>'; }
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc((s.flag?s.flag+' ':'')+c.name)+'</div><div style="font-size:12px;line-height:1.7;">'+rowsH+'</div>'); }
+          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+(s.flag?window.IntMapSafe.flag(s.flag)+' ':'')+esc(c.name)+'</div><div style="font-size:12px;line-height:1.7;">'+rowsH+'</div>'); }
     },
   },
   {
