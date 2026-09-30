@@ -323,9 +323,17 @@ test('R520 ③: the anchor is cached on the geometry, so a decade of travel pays
     '_partsOf no longer reads and writes ' + store);
   /* …and it really is cached: Canada (268 rings) deep-cloned into a geometry the cache has never seen */
   const canada = FC.features.find((f) => f.properties.NAME === 'Canada');
-  const fresh = { type: 'FeatureCollection', features: [JSON.parse(JSON.stringify(canada))] };
-  const t0 = process.hrtime.bigint(); const a1 = labelFC(fresh); const cold = Number(process.hrtime.bigint() - t0);
-  const t1 = process.hrtime.bigint(); const a2 = labelFC(fresh); const warm = Number(process.hrtime.bigint() - t1);
+  /* ⚠ ONE SAMPLE EACH WAS A MEASUREMENT OF THE RUNNER, NOT OF THE CACHE. MEASURED on CI 2026-09-30: a warm
+     pass took 30.7 ms against a cold 70.3 ms — a cached pass costs well under a millisecond, so that was a
+     pause (GC, a neighbour on the runner) landing inside the one warm sample. Each side is the FASTEST of
+     several: a pause can only make a sample slower, so the minimum is the cost of the code. The 8× bar is
+     unchanged. */
+  const clone = () => ({ type: 'FeatureCollection', features: [JSON.parse(JSON.stringify(canada))] });
+  const time = (f) => { const t = process.hrtime.bigint(); const r = f(); return [Number(process.hrtime.bigint() - t), r]; };
+  let cold = Infinity, fresh = null, a1 = null;
+  for (let i = 0; i < 3; i++) { const g = clone(); const [dt, r] = time(() => labelFC(g)); if (dt < cold) cold = dt; fresh = g; a1 = r; }
+  let warm = Infinity, a2 = null;
+  for (let i = 0; i < 5; i++) { const [dt, r] = time(() => labelFC(fresh)); if (dt < warm) warm = dt; a2 = r; }
   assert.deepEqual(a2.features[0].geometry.coordinates, a1.features[0].geometry.coordinates, 'the cached anchor is not the computed one');
   assert.ok(warm * 8 < cold, 'the second pass over the same geometry cost ' + warm + 'ns against ' + cold + 'ns — nothing was cached');
 });
