@@ -45,11 +45,16 @@ export function makeAtlasAgent() {
 
     /* ── The technical ceilings. They bound the LOOP; they never decide what it should do. ──────
        ⚠ `maxSteps` COUNTS AGAINST A SERVER BUDGET IT DOES NOT OWN. supabase/functions/ai-proxy
-       charges every call carrying one `x-intmap-turn` key against TURN_MAX_CALLS = 6, and a tool
-       Atlas runs may itself ask the model (analyze → js/atlas-answer-pipeline.js spends ONE; the
-       repair that used to make it two is gone with the audit's power, #R472). Four leaves that room. Going to six here would mean the reader's
-       LAST step — the sentence — is the one that 429s, which is the worst possible place to run
-       out. `stopped:'transport'` below is the belt to this braces. */
+       charges every call carrying one `x-intmap-turn` key against TURN_MAX_CALLS — THAT constant is
+       the number, and it is not written here (it was, as 「= 6」, and stayed 6 in this sentence for as
+       long as the server said 12: the copy the #R413 note below warns about). What this loop spends
+       of it is `maxSteps` model calls plus the ONE forced answer after the loop (`writeAnswer`
+       below), and a tool Atlas runs may itself ask the model (analyze → js/atlas-answer-pipeline.js
+       spends ONE; the repair that used to make it two is gone with the audit's power, #R472). The
+       difference between TURN_MAX_CALLS and maxSteps + 1 is that room; the reader's LAST call — the
+       sentence — must never be the one that 429s. tests/atlas-turn-engine-checks.test.mjs reads the
+       server's number and holds maxSteps + 1 below it. `stopped:'transport'` below is the belt to
+       these braces. */
     /* ⚠ (#R413) `maxSteps` WAS 4, AND IT WAS THE CLIENT BEING STRICTER THAN THE SERVER. The comment
        above is the reasoning that produced it, and it is the reasoning this round is told not to
        repeat: rather than raise the budget it was written against, it lowered Atlas's. Four steps
@@ -98,6 +103,15 @@ export function makeAtlasAgent() {
       maxOutputGate: 2,     /* (#R511→#R543) how many times a final that DECLARED an output it has not produced is handed back before it is accepted as it stands. Was `maxMapGate` while the map was the only output an answer could be */
       toolTimeoutMs: 240000,  /* (#R452) ONE tool call — above the ~200 s a working `analyze` can cost. Past it Atlas is TOLD it did not finish, and chooses again */
       turnBudgetMs: 600000,   /* (#R452) …and the whole turn — three times the longest turn ever measured, so it only ever fires on one that was not going to end */
+      /* (atlas-turn-engine) how many functions one model call may DECLARE — the base tools, the ones
+         promoted from find_capability this turn, and read_result on a step whose input was cut.
+         OBSERVED: it is not this loop's number. supabase/functions/ai-proxy drops every function past
+         MAX_FN_TOOLS (64) and counts it as `droppedTools`; a promotion past that line would be offered
+         here and silently absent at the provider. CANONICAL: ai-proxy's MAX_FN_TOOLS —
+         tests/atlas-turn-engine-checks.test.mjs holds the two equal. EXPIRES WHEN that constant moves.
+         ⚠ NOTHING IS WITHHELD BY IT: a capability not promoted is still one run_capability away, and
+         the result that found it says so. */
+      maxOfferedTools: 64,
     };
 
     /* ── THE WIRE SHAPE OF ONE STEP ────────────────────────────────────────────────────────────
@@ -422,8 +436,12 @@ export function makeAtlasAgent() {
         };
       }
       const errs = [];
+      /* (atlas-turn-engine) `check` is the tool's schema WITH its live values (the layer names on the page
+         right now) — validated here, but never sent as the declaration, so the declaration a provider
+         caches stays the same bytes while the page changes (js/atlas-toolsurface.js liveEnum). */
+      const shape = tool.check || tool.parameters;
       try {
-        validateAgainst(tool.parameters, call.arguments, name, errs);
+        validateAgainst(shape, call.arguments, name, errs);
       } catch (e) {
         errs.push('arguments could not be read: ' + ((e && e.message) || 'unknown'));
       }
@@ -432,10 +450,35 @@ export function makeAtlasAgent() {
           code: 'invalid_arguments',
           message: 'The call to "' + name + '" does not match its schema: ' + errs.slice(0, 6).join('; ')
             + '. Re-issue the SAME call with the arguments corrected.',
-          schema: tool.parameters,
+          schema: shape,
         };
       }
       return null;
+    }
+
+    /* ── (atlas-turn-engine) DOES A LATER CALL OF THE SAME REPLY HAVE TO WAIT FOR AN EARLIER ONE? ──────
+       `a` is earlier than `b`. Read off each call's footprint (runTurn's `footprint`, documented there);
+       no meaning, only overlap. A key overlaps another when it is the same key or one names a part of
+       the other («map» / «map.highlight», «camera» / «camera.follow») — the segments the registry's
+       keys are written in. */
+    function keysOverlap(xs, ys) {
+      return (xs || []).some((x) => (ys || []).some((y) => {
+        const a = String(x), b = String(y);
+        return a === b || b.indexOf(a + '.') === 0 || a.indexOf(b + '.') === 0;
+      }));
+    }
+    function conflicts(a, b) {
+      if (!a || !b || !a.live || !b.live) return false;       /* a call answered without running touches nothing */
+      if (a.ends) return true;                                 /* a question to the reader ends the turn for everything after it */
+      if (a.ckey && a.ckey === b.ckey) return true;            /* the same call twice: the second is answered from the first */
+      const fa = a.fp || { barrier: true }, fb = b.fp || { barrier: true };
+      if (fa.pure || fb.pure) return false;
+      if (fa.barrier || fb.barrier) return true;
+      const wa = fa.writes || [], wb = fb.writes || [];
+      if (!wa.length && !wb.length) return false;              /* two readers */
+      if (!wa.length) return fa.reads == null || keysOverlap(fa.reads, wb);   /* undeclared reads = the whole app */
+      if (!wb.length) return fb.reads == null || keysOverlap(fb.reads, wa);
+      return keysOverlap(wa, wb) || (fa.reads != null && keysOverlap(fa.reads, wb)) || (fb.reads != null && keysOverlap(fb.reads, wa));
     }
 
     /* A JSON-Schema subset check — the same subset js/atlas-executor.js validates operations with:
@@ -526,6 +569,14 @@ export function makeAtlasAgent() {
      *   onStep(info)    optional progress callback (stage dots); never decides anything
      *   externalContent true when the FIRST model input already carries content from outside the
      *                   conversation (an attachment's text, a document) — see `turn` below
+     *   footprint(call) optional (atlas-turn-engine) — what one call may touch, from the registry:
+     *                   {pure:true} (touches no app state) | {barrier:true} (order it against every
+     *                   call) | {writes:[conflictKeys], reads:[…]|null}. Calls of one reply whose
+     *                   footprints do not overlap run at the same time; absent = every call is a
+     *                   barrier, which is the one-after-another loop this replaced.
+     *   promote(result) optional (atlas-turn-engine) — tool definitions a result has made callable
+     *                   by name from the next step (find_capability's matches). A definition may
+     *                   carry `route(args) -> {name, arguments}`: the call it is executed as.
      */
     async function runTurn(opts) {
       opts = opts || {};
@@ -583,6 +634,26 @@ export function makeAtlasAgent() {
       const permanentFails = Object.create(null);   /* (#R760) refusals the capability declared to be about the KIND of request */
       const callById = Object.create(null);         /* (atlas-native-tools) every answered call of this turn, by id — what read_result reads */
       const localTools = Object.assign({}, tools, { read_result: READ_RESULT_TOOL });   /* validated like any tool; offered only when something was cut */
+      /* ══ ⚠⚠⚠ (atlas-turn-engine) WHAT find_capability FOUND BECOMES A TOOL, FROM THE NEXT STEP ON ═══════
+         146 capabilities, 13 of them typed tools; the other 133 were two decisions away — find, then
+         run_capability with the id and the arguments nested one level down. MEASURED
+         (scripts/atlas-eval/questions.json, rail-tokyo-osaka): find_capability EIGHT times, zero
+         operations, `step_budget`. The capability had been found on the first call; what the model
+         held afterwards was a generic envelope, not the tool.
+         So a result that names capabilities (`opts.promote`) adds them to the tools the NEXT model call
+         declares, typed with their own schema. ⚠ NOTHING IS TAKEN: find_capability and run_capability
+         are still there and still reach all 146; a promoted tool is executed AS run_capability (its
+         `route`), so it is the same path, the same second schema check, the same kernel.
+         ⚠ THE ORDER IS THE CACHE. The base tools are a fixed prefix and promotions are APPENDED, in the
+         order they happened, and never removed or reordered within the turn — a provider caches the
+         declarations as a prefix, so what came before an addition is still the same bytes after it.
+         Each promoted definition says `promoted:true`, which ai-proxy leaves out of the prompt-cache
+         key, so the key (the routing of the cache) does not move with them either. */
+      const promote = (typeof opts.promote === 'function') ? opts.promote : null;
+      const footprint = (typeof opts.footprint === 'function') ? opts.footprint : null;
+      const promoted = [];
+      const offered = () => Object.keys(tools).map((k) => tools[k]).concat(promoted);
+      const offeredCount = () => Object.keys(tools).length + promoted.length + 1;   /* + read_result, which a cut step adds */
       /* ══ ⚠⚠⚠ (#R801) HAS THIS TURN'S MODEL INPUT CARRIED CONTENT FROM OUTSIDE THE CONVERSATION? ═══
          A fact about the turn, not a judgment about the request. It becomes true on any of three
          events, each a statement by the thing that knows: ① a tool result stamped `ingests:'external'`
@@ -661,7 +732,7 @@ export function makeAtlasAgent() {
           reply = await model({
             system: opts.system || '',
             messages: transcript.slice(),
-            tools: Object.keys(tools).map((k) => tools[k]),
+            tools: offered(),   /* (atlas-turn-engine) the base tools, then what this turn promoted — see `promoted` */
             step,
             signal: opts.signal,
           });
@@ -812,53 +883,106 @@ export function makeAtlasAgent() {
            The flag lives on the TOOL, not on a name matched here, so the loop still knows nothing
            about what any particular tool means. */
         let ended = '';
-        for (const call of calls) {
+        /* ══ ⚠⚠⚠ (atlas-turn-engine) THE CALLS OF ONE REPLY RUN AT THE SAME TIME WHEN NOTHING ORDERS THEM ══════
+           This was `for (const call of calls) { … out = await runTool(call); … }` — every call of a reply
+           waited for the one before it, whatever it was. MEASURED (#R723, production): a six-operation
+           turn took 57.2 s, 13.6 s of it inside operations; a reply that asks find_capability three things
+           or runs two research questions paid for them end to end. A model that puts several calls in ONE
+           reply has said they belong to one moment; what can order them is the app, not the list.
+           So each call waits only for the EARLIER calls of the same reply it conflicts with — the
+           registry's own conflict keys (js/atlas-capabilities.js column 5, the keys js/atlas-executor.js
+           already locks on), through `footprint` (js/atlas-toolsurface.js footprintOf):
+             · the identical call twice waits for the first, so it is answered from it (#R489 below);
+             · a call that touches no app state (find_capability, read_result) waits for nothing;
+             · a BARRIER — a whole section at once (camera, time, map.all …), a turn-ending question, a
+               capability the surface cannot place — waits for everything before it and holds everything
+               after it, which is exactly the old order;
+             · a call that writes nothing READS the app and waits for every earlier writer;
+             · two writers wait for each other only when their keys overlap.
+           ⚠ WHAT THE MODEL READS IS UNCHANGED IN ORDER: results are filed back by call position, and the
+           turn's `results` receive them in the order the calls were made. ⚠ NOTHING IS TAKEN
+           (CONSTITUTION.md §5): no call is dropped, merged or refused, and no ceiling moved — the
+           budget below is even assigned in call order, before anything starts, exactly as the loop did. */
+        const plans = calls.map((call, i) => {
+          const p = { i, call, live: false, counted: false };
+          if (trace.calls >= lim.maxToolCalls) return p;      /* answered as call_budget_exhausted when its turn comes */
+          trace.calls++; p.counted = true;
+          p.bad = reject(call, localTools);
+          if (p.bad) return p;
+          p.live = true;
+          const tool = localTools[call.name];
+          /* a promoted tool is executed as the call it stands for — the SAME identity (callKey), the
+             same footprint and the same executor as run_capability with that id */
+          let routed = call;
+          if (tool && typeof tool.route === 'function') {
+            try { const r0 = tool.route(call.arguments || {}); if (r0 && r0.name) routed = { id: call.id, name: String(r0.name), arguments: r0.arguments || {} }; } catch (_) { routed = call; }
+          }
+          p.routed = routed;
+          p.ckey = TR.callKey(routed.name, routed.arguments);
+          let fp = null;
+          if (call.name === 'read_result') fp = { pure: true };
+          else if (footprint) { try { fp = footprint(routed); } catch (_) { fp = null; } }
+          p.fp = (fp && typeof fp === 'object') ? fp : { barrier: true };
+          /* a call that may END the turn orders everything after it, however little those touch (#R419 above) */
+          p.ends = !!((tool && tool.endsTurn) || p.fp.endsTurn);
+          return p;
+        });
+        const deps = plans.map((b, j) => plans.slice(0, j).filter((a) => conflicts(a, b)).map((a) => a.i));
+        const toResults = [];                 /* by call position: the records that join `results` */
+        const spans = [];                     /* [start, end] per call that ran — the step's own measurement */
+        const runOne = async (p) => {
+          const call = p.call;
+          /* ⚠ THE SAME ORDER OF QUESTIONS AS THE LOOP THIS REPLACED: a turn that already ended says so
+             first; then the count; then the clock; then the shape. A call answered before it ran gives
+             its budget back, exactly as the old loop never took it. */
           if (ended) {
-            stepResults.push({ id: call && call.id, name: call && call.name, ok: false,
+            if (p.counted) trace.calls--;
+            return { id: call && call.id, name: call && call.name, ok: false,
               error: 'turn_ended',
               message: '"' + ended + '" put a question to the reader, which ends this turn. '
-                + 'Their reply arrives as the next message; issue this call then.' });
-            continue;
+                + 'Their reply arrives as the next message; issue this call then.' };
           }
-          if (trace.calls >= lim.maxToolCalls) {
-            stepResults.push({ id: call && call.id, name: call && call.name, ok: false,
+          if (!p.counted) {
+            return { id: call && call.id, name: call && call.name, ok: false,
               error: 'call_budget_exhausted',
-              message: 'This turn has already run ' + lim.maxToolCalls + ' tools. Answer with what you have.' });
-            continue;
+              message: 'This turn has already run ' + lim.maxToolCalls + ' tools. Answer with what you have.' };
           }
           /* (#R452) …and the same note when it is the clock rather than the count that ran out. */
           if (outOfTime()) {
-            stepResults.push({ id: call && call.id, name: call && call.name, ok: false,
+            trace.calls--;
+            return { id: call && call.id, name: call && call.name, ok: false,
               error: 'time_budget_exhausted',
               message: 'This turn has been running for ' + Math.round(lim.turnBudgetMs / 1000)
-                + ' s. Answer the reader now with what you have.' });
-            continue;
+                + ' s. Answer the reader now with what you have.' };
           }
-          trace.calls++;
-          const bad = reject(call, localTools);
-          if (bad) {
+          if (p.bad) {
             trace.rejected++;
             /* ⚠ THE READER NEVER SEES THIS. It is a typed note to Atlas, which corrects it on the
                next step. The old console printed 「何を分析しますか？」 for exactly this case. */
-            stepResults.push({ id: call.id, name: call.name, ok: false, error: bad.code, message: bad.message, schema: bad.schema });
-            continue;
+            return { id: call.id, name: call.name, ok: false, error: p.bad.code, message: p.bad.message, schema: p.bad.schema };
           }
           /* (#R489) …and the identity check, after `reject` has confirmed the call is well formed
              so a malformed repeat still gets its own schema note. See `doneCalls` above. */
-          const ckey = TR.callKey(call.name, call.arguments);
+          const ckey = p.ckey;
           if (ckey && doneCalls[ckey]) {
             trace.reused++;
-            const rec0 = Object.assign({}, doneCalls[ckey], { id: call.id, name: call.name, reusedFromEarlierCallThisTurn: true,
-              note: 'This turn has ALREADY made this exact call. Above is what it returned — the app has not '
-                + 'changed since, so a second run would search the same sources over the same window and could only '
-                + 'disagree with itself. Use this result, or ask something different.' });
-            stepResults.push(rec0);
+            const prior = doneCalls[ckey];
+            /* (atlas-turn-engine) an UNOBSERVED call is answered the same way, and says why it is not run
+               again: it did run, and the same call on the same page cannot be seen any better. */
+            const rec0 = Object.assign({}, prior, { id: call.id, name: call.name, reusedFromEarlierCallThisTurn: true,
+              note: prior.status === 'unobserved'
+                ? 'This turn has ALREADY made this exact call, and it RAN — IntMap could not observe whether it took effect ('
+                  + String(prior.code || 'unobserved') + '). It was not run a second time: the same call cannot be observed any '
+                  + 'better than the first. Treat it as done and carry on, or tell the reader the effect could not be confirmed.'
+                : 'This turn has ALREADY made this exact call. Above is what it returned — the app has not '
+                  + 'changed since, so a second run would search the same sources over the same window and could only '
+                  + 'disagree with itself. Use this result, or ask something different.' });
             /* ⚠ NOT pushed onto `results`: the original run is already there, and the reply is built
                from `results`. Counting as executed is deliberate — the step DID produce results, and
                `malformedRun` below is about a model emitting calls that go nowhere, which this is
                the opposite of. */
             executedHere++;
-            continue;
+            return rec0;
           }
           /* (atlas-native-tools) the rest of a result the input had to cut. Answered HERE, from this turn's own
              record, through the same `resultText` the cut was made from — no app call, no network. It
@@ -879,15 +1003,17 @@ export function makeAtlasAgent() {
             const rrec = Object.assign({ id: call.id, name: call.name }, rr);
             if (ckey && rrec.ok) doneCalls[ckey] = rrec;
             callById[call.id] = rrec;
-            stepResults.push(rrec); executedHere++; trace.executed++;
-            continue;
+            executedHere++; trace.executed++;
+            return rrec;
           }
           let out = null;
+          const t0 = now();
           try {
-            out = await runTool(call);   /* (#R452) …with a deadline. See `runTool` above. */
+            out = await runTool(p.routed);   /* (#R452) …with a deadline. See `runTool` above. */
           } catch (e) {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
+          spans.push([t0, now()]);
           if (!out || typeof out !== 'object') out = { ok: false, error: 'no_result', message: 'the tool returned nothing' };
           executedHere++;
           trace.executed++;
@@ -902,6 +1028,21 @@ export function makeAtlasAgent() {
              change the arguments, which is precisely how one request became two maps in the reply.
              A call that still owes something must be allowed to be made again. */
           if (ckey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') doneCalls[ckey] = rec;
+          /* ══ ⚠⚠⚠ (atlas-turn-engine) …AND A CALL THAT RAN BUT COULD NOT BE SEEN IS DONE, NOT OWED ═══════════
+             `unobserved` (js/atlas-results.js) used to arrive as `partial` + `not_rendering`, and a partial
+             is exactly what the line above lets be made again — so a draw that had done its whole job on a
+             page that was not compositing was run again, and again (one-pass-or-a-reason §4, the third
+             question: the same call must be able to say 「もう済んでいる」). It is remembered as done, and
+             the model is told in the result itself what it is looking at. `ok` stays false: an effect
+             nobody observed is not claimed, and nothing downstream reads it as produced. */
+          if (rec.status === 'unobserved') {
+            if (!rec.note) {
+              rec.note = 'This call RAN. IntMap could not observe whether it took effect (' + String(rec.code || 'unobserved')
+                + ') — that is not a failure of the request, and making the same call again cannot make it observable. '
+                + 'Treat it as done: carry on, or tell the reader the effect could not be confirmed.';
+            }
+            if (ckey) doneCalls[ckey] = rec;
+          }
           /* (#R760) the same call, answering the same way, is not progress — whatever status it wears */
           if (ckey && rec.status === 'partial') {
             const verdict = String(rec.code || rec.error || '') + '|' + String(rec.status || '');
@@ -919,7 +1060,7 @@ export function makeAtlasAgent() {
              5 m 30 s, no map and no answer). When the capability DECLARES the refusal permanent, the
              class — this tool, this reason — is what has already been refused. Nothing is taken: the
              call still runs, and a capability that declares nothing is unaffected. */
-          if (rec.permanentFailure && rec.ok === false) {
+          if (rec.permanentFailure && rec.ok === false && rec.status !== 'unobserved') {
             const cls = String(call.name || '') + '|' + String(rec.error || '');
             if (permanentFails[cls]) {
               rec.repeatedFailedCallThisTurn = true;
@@ -930,7 +1071,7 @@ export function makeAtlasAgent() {
             permanentFails[cls] = true;
           }
           /* (#R741) the refusal that has already been given, named as such — see `failedCalls` above */
-          if (ckey && rec.ok === false) {
+          if (ckey && rec.ok === false && rec.status !== 'unobserved') {
             if (failedCalls[ckey]) {
               rec.repeatedFailedCallThisTurn = true;
               rec.note = 'This turn has ALREADY made this exact call and it was refused for the reason above. '
@@ -956,12 +1097,58 @@ export function makeAtlasAgent() {
                 + 'same one, and nothing new was produced. Use that result, or do something different.';
             } else if (!doneResults[rid]) doneResults[rid] = ckey || rid;
           }
-          stepResults.push(rec);
-          results.push(rec);
+          toResults[p.i] = rec;
           /* the TOOL may declare it, or the RESULT may — the second is how a generic invoker
              (`run_capability`) reports that the capability it reached was a turn-ending one. */
-          if (out.ok !== false && ((tools[call.name] && tools[call.name].endsTurn) || out.endsTurn === true)) ended = call.name;
+          if (out.ok !== false && ((localTools[call.name] && localTools[call.name].endsTurn) || out.endsTurn === true)) ended = call.name;
+          return rec;
+        };
+        /* each call starts once every earlier call it conflicts with has settled; `runOne` never throws */
+        const settled = [];
+        plans.forEach((p, j) => {
+          settled[j] = Promise.all(deps[j].map((i) => settled[i])).then(() => runOne(p))
+            .then((rec) => { stepResults[j] = rec; }, (e) => {
+              stepResults[j] = { id: p.call && p.call.id, name: p.call && p.call.name, ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
+            });
+        });
+        await Promise.all(settled);
+        toResults.forEach((rec) => { if (rec) results.push(rec); });
+        /* ── (atlas-turn-engine) PROMOTION: what this step found is a tool from the next step on — see
+              `promoted` above. Only a result that RAN and succeeded promotes (a reused one already did). */
+        if (promote) {
+          toResults.forEach((rec) => {
+            if (!rec || rec.ok === false) return;
+            let defs = [];
+            try { defs = promote(rec) || []; } catch (_) { defs = []; }
+            if (!Array.isArray(defs) || !defs.length) return;
+            const added = [], held = [], over = [];
+            defs.forEach((d) => {
+              if (!d || typeof d.name !== 'string' || !d.name) return;
+              if (localTools[d.name]) { held.push(d.name); return; }   /* already a tool — a CORE one, or promoted earlier */
+              if (offeredCount() >= lim.maxOfferedTools) { over.push(d.capabilityId || d.name); return; }
+              const def = Object.assign({}, d, { promoted: true });
+              promoted.push(def); localTools[def.name] = def; added.push(def.name);
+            });
+            if (!added.length && !held.length && !over.length) return;
+            rec.promotedTools = added.concat(held);
+            rec.promotionNote = (added.concat(held).length
+              ? 'From your next reply these are tools you call DIRECTLY by name, with the arguments their schema declares: '
+                + added.concat(held).join(', ') + ' (each is the same as run_capability with its id — use whichever).'
+              : '')
+              + (over.length ? (added.length || held.length ? ' ' : '') + 'Not offered as tools, because a call may declare at most '
+                + lim.maxOfferedTools + ' functions: ' + over.join(', ') + ' — reach them with run_capability.' : '');
+            if (!trace.promoted) trace.promoted = [];
+            added.forEach((n) => trace.promoted.push({ step, tool: n }));
+          });
         }
+        /* the step's own measurement: how long the calls took one after another, and how long the step
+           actually waited — the difference is what running them together saved. A record, never a reason. */
+        const wall = spans.length ? (Math.max.apply(null, spans.map((s) => s[1])) - Math.min.apply(null, spans.map((s) => s[0]))) : 0;
+        const serial = spans.reduce((a, s) => a + (s[1] - s[0]), 0);
+        let peak = 0;
+        spans.forEach((s) => { const n = spans.filter((o) => o[0] < s[1] && o[1] > s[0]).length; if (n > peak) peak = n; });
+        trace.stepTiming = trace.stepTiming || [];
+        trace.stepTiming.push({ step, ran: spans.length, wallMs: wall, serialMs: serial, concurrent: peak });
         /* (atlas-native-tools) the calls past `maxPerStep` — answered as not run, see `allCalls` above */
         allCalls.slice(lim.maxPerStep).forEach(function (c) {
           stepResults.push({ id: c && c.id, name: c && c.name, ok: false, error: 'step_call_limit',
@@ -1057,7 +1244,7 @@ export function makeAtlasAgent() {
                (tool_choice "none"): an empty list would change the prefix the provider caches on
                the one call that re-sends the whole turn, and would leave the transcript naming
                functions the request no longer declares */
-            tools: Object.keys(tools).map((k) => tools[k]), step: lim.maxSteps, signal: opts.signal, final: true,
+            tools: offered(), step: lim.maxSteps, signal: opts.signal, final: true,
           });
           /* ⚠ (#R802) AND A CALL THAT CAME BACK WITH NOTHING DOES NOT ERASE WHAT THE TURN HAD. On the
              empty-`text` path this is the same assignment it always was (「」 over 「」); on the new one
@@ -1137,7 +1324,7 @@ export function makeAtlasAgent() {
         serverTrim: (meta && meta.inputTrimmed) || undefined };
     }
 
-    const API = { LIMITS, TURN_SCHEMA, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL,
+    const API = { LIMITS, TURN_SCHEMA, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
       runTurn, reject, readReply, validateAgainst, composeInput, legacyPrompt, resultText };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;

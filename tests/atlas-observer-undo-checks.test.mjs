@@ -113,7 +113,7 @@ test('⑤ what cannot be observed is not reported as a failure — for every map
   const shaded = CAPS.resolve('map.choropleth');
   const asleep = facade(world({}, { ready: false }));
   const v = withEngine(asleep, () => { const b = shaded.observe(); return shaded.verify({}, {}, b, shaded.observe(), { ok: true, html: '' }); });
-  assert.equal(v.status, 'partial');
+  assert.equal(v.status, 'unobserved', '(atlas-turn-engine) 「could not see」 is its own status, not a partial that may be retried');
   assert.equal(v.code, 'not_rendering', `an unobservable renderer was reported ${v.code}`);
   assert.equal(v.observed.observable, false);
   /* the same nothing, with a renderer that COULD look, is still a refusal */
@@ -130,9 +130,10 @@ test('⑤ what cannot be observed is not reported as a failure — for every map
   for (const c of rows) {
     const r = withEngine(asleep, () => c.verify({}, {}, { same: 1 }, { same: 1 }, { ok: true, html: '' }));
     const out = (r && typeof r.then === 'function') ? null : r;
-    if (!out || out.status !== 'partial') continue;
+    if (!out || (out.status !== 'partial' && out.status !== 'unobserved')) continue;
     assert.notEqual(out.code, 'not_rendered', `${c.id} called an unobservable map not_rendered`);
     assert.notEqual(out.code, 'no_change', `${c.id} called an unobservable map no_change`);
+    if (out.code === 'not_rendering') assert.equal(out.status, 'unobserved', `${c.id} said 「could not see」 but wore ${out.status}, which js/atlas-agent.js lets be re-run`);
   }
 });
 

@@ -168,9 +168,9 @@ export function makeAtlasProgress(HOST, deps) {
   const SVG_CHEV = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
 
   const MARK = { run: '', ok: SVG_OK, fail: SVG_BAD, warn: SVG_WARN, skip: SVG_BAD };
-  /* status → row state. The seven statuses are js/atlas-results.js's, not a set invented here. */
+  /* status → row state. The eight statuses are js/atlas-results.js's, not a set invented here. */
   const STATE_OF = {
-    completed: 'ok', partial: 'warn', needs_input: 'warn', running: 'run',
+    completed: 'ok', partial: 'warn', unobserved: 'warn', needs_input: 'warn', running: 'run',
     failed: 'fail', cancelled: 'skip', superseded: 'skip'
   };
 

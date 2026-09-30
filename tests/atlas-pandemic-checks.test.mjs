@@ -191,7 +191,7 @@ test('R754 ⑦: drawing the same day twice is not a failure, and unreadable is n
     'the verdict must not be a before/after diff — that is what made a correct redraw not_rendered');
   const blind = P.verify({}, {}, { features: 34 }, null, raw);
   assert.notStrictEqual(blind.code, 'not_rendered', 'an unobservable canvas must not be reported as not_rendered: null is not zero');
-  assert.strictEqual(blind.status, 'completed');
+  assert.strictEqual(blind.status, 'unobserved', '(atlas-turn-engine) the canvas could not be read: it ran, and whether it drew is unknown — its own status, which js/atlas-agent.js remembers as done');
   assert.strictEqual(P.verify({}, {}, { features: 0 }, { features: 0 }, raw).code, 'not_rendered',
     'an empty canvas after a draw IS not_rendered');
 });

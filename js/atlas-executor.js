@@ -103,7 +103,7 @@ function makeAtlasExecutor(HOST, CTX) {
 
     var API = {};
     var LIFECYCLE = ['planned', 'validating', 'waiting-input', 'started', 'progress',
-      'completed', 'partial', 'failed', 'cancelled', 'superseded'];
+      'completed', 'partial', 'unobserved', 'failed', 'cancelled', 'superseded'];
     API.LIFECYCLE = LIFECYCLE.slice();
 
     var subs = [];
@@ -274,7 +274,7 @@ function makeAtlasExecutor(HOST, CTX) {
       function settle(r) {
         op.settled = true;
         op.result = r;
-        phase(op, (r.status === 'completed' || r.status === 'partial' || r.status === 'failed' ||
+        phase(op, (r.status === 'completed' || r.status === 'partial' || r.status === 'unobserved' || r.status === 'failed' ||
           r.status === 'cancelled' || r.status === 'superseded') ? r.status : 'started');
         try { if (op.turnId && State) State.recordOperation(op.turnId, {
           operationId: r.operationId, capabilityId: r.capabilityId, args: args,

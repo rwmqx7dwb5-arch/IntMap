@@ -973,7 +973,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
              ⚠ THE READING MAY ONLY WEAKEN A CLAIM. `null` — an engine that cannot answer, or that
              threw — leaves the verdict exactly as it was. Nothing is ever DOWNgraded to a failure on
              the strength of a question we could not get an answer to. */
-          if (_camDrew === false) return { status: 'partial', produced: [], code: 'not_rendering', observed: { camera: after, rendering: false }, html: (raw && raw.html) || '' };
+          if (_camDrew === false) return { status: 'unobserved', produced: [], code: 'not_rendering', observed: { camera: after, rendering: false }, html: (raw && raw.html) || '' };
           /* asked for a view this file cannot measure, and nothing moved: unchanged from before */
           return { status: 'partial', produced: [], code: 'no_change', observed: { camera: after }, html: (raw && raw.html) || '' };
         }
@@ -1272,7 +1272,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         observe: function () { try { var P = window.IntMapPandemicAtlas; return (P && P.painted && P.painted()) || null; } catch (_) { return null; } },
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
-          if (!after) return { status: 'completed', code: 'ok', observed: { pandemic: null }, html: (raw && raw.html) || '' };
+          if (!after) return { status: 'unobserved', produced: [], code: 'not_observable', observed: { pandemic: null }, html: (raw && raw.html) || '' };   /* (atlas-turn-engine) the sentence above said 「unobserved」 and the line said completed — there was no status to say it with */
           if (!after.features) return { status: 'partial', produced: [], code: 'not_rendered', observed: { pandemic: after }, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: { pandemic: after }, html: (raw && raw.html) || '' };
         }
@@ -1367,14 +1367,18 @@ export function makeAtlasCapabilities(HOST, OPTS) {
        the camera, instead of one copy per observer: a negative verdict given while the renderer
        itself answers `observable:false` becomes `not_rendering`. ⚠ ONLY A NEGATIVE CAN BE CHANGED, AND
        ONLY INTO 「unobserved」: a completion is never touched, a renderer that cannot be asked (`null`)
-       changes nothing, and nothing is refused, retried or capped here (CONSTITUTION.md §5). */
+       changes nothing, and nothing is refused, retried or capped here (CONSTITUTION.md §5).
+       ⚠ (atlas-turn-engine) 「unobserved」 IS NOW THE STATUS, NOT A CODE WORN BY `partial`. A partial is a
+       call that still owes something, and js/atlas-agent.js lets it be made again for that reason — so
+       a draw that had done its whole job on a page that was not compositing was re-run. `unobserved`
+       (js/atlas-results.js) is what the loop answers a repeat of with 「already done」 instead. */
     var NEGATIVE_CODES = { not_rendered: 1, no_change: 1 };
     function drawsOnMap(writes) { return (writes || []).some(function (w) { var h = String(w).split('.')[0]; return h === 'map' || h === 'camera'; }); }
     function unobservedOr(v, writes) {
       if (v && typeof v.then === 'function') return v.then(function (x) { return unobservedOr(x, writes); });
       if (!v || v.status !== 'partial' || !NEGATIVE_CODES[v.code] || !drawsOnMap(writes)) return v;
       if (rendererObservable() !== false) return v;
-      return Object.assign({}, v, { code: 'not_rendering', observed: Object.assign({}, v.observed || null, { rendering: false, observable: false }) });
+      return Object.assign({}, v, { status: 'unobserved', code: 'not_rendering', observed: Object.assign({}, v.observed || null, { rendering: false, observable: false }) });
     }
 
     /* ══ BUILD THE DESCRIPTORS ═══════════════════════════════════════════════════════════════════ */
