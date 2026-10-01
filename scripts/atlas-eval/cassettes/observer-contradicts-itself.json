@@ -112,6 +112,7 @@
     "verdict": "fail",
     "failures": [
       "observer"
-    ]
+    ],
+    "map": "unobserved"
   }
 }

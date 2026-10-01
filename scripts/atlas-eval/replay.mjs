@@ -229,6 +229,8 @@ export function validateCassette(cas) {
   if (!cas || !cas.expect || (cas.expect.verdict !== 'pass' && cas.expect.verdict !== 'fail')) bad.push(id + ': expect.verdict is pass or fail');
   if (cas && cas.expect && cas.expect.verdict === 'fail' && !(Array.isArray(cas.expect.failures) && cas.expect.failures.length)) bad.push(id + ': a defect cassette names the failure kinds the judge must find');
   if (cas && cas.question && !(cas.question.set === 'answers' || cas.question.set === 'records')) bad.push(id + ': question.set is answers or records');
+  /* (atlas-eval-map-state) the map axis's verdict, when the cassette declares one */
+  if (cas && cas.expect && cas.expect.map != null && ['match', 'mismatch', 'unobserved'].indexOf(cas.expect.map) < 0) bad.push(id + ': expect.map is match, mismatch or unobserved');
   return bad;
 }
 

@@ -4,7 +4,8 @@
     "A question is here only if its text was recorded (DEV-NOTES.md or the round's own checks). An expectation is here only if the round",
     "that asked the question JUDGED by it. A criterion the record does not supply is left out and its absence is explained in `unset` —",
     "an empty expectation is an honest 'the record does not say', a guessed one is a false alarm or a false pass waiting to happen.",
-    "Field meanings: scripts/atlas-eval/judge.mjs (the only reader). The schema is enforced by tests/atlas-eval-harness-checks.test.mjs."
+    "Field meanings: scripts/atlas-eval/judge.mjs (the only reader). The schema is enforced by tests/atlas-eval-harness-checks.test.mjs.",
+    "(atlas-eval-map-state) `mapState` is a different axis from `expect`: not a criterion a round judged by, but the map the question's OWN WORDS ask for (「鉄道ルートを引いて」「1750年の地図に描いて」), each criterion grounded in the product (which row draws it) or a cited source and checked against the vocabulary scripts/atlas-eval/map-state.mjs discovers. It is graded and reported apart from `expect`."
   ],
   "version": 1,
   "sources": {
@@ -35,6 +36,11 @@
       "unset": {
         "replyMustNotMatch": "R802 judged this turn by its zero operations; it did not record what a correct duration or distance is.",
         "map": "R802 did not record which snapshot field the drawn route appears in, nor judge by it."
+      },
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:route", "min": 1 }, { "path": "atlas.lines", "min": 1 }], "why": "「東京から大阪までの鉄道ルートを引いて」" }
+        ]
       }
     },
     {
@@ -161,6 +167,11 @@
       "expect": {},
       "unset": {
         "map": "R802 recorded that the final map held no pins (objects n=0) because Atlas cleared them; it did not record what a correct 1750 map holds."
+      },
+      "mapState": {
+        "clock": { "year": 1750, "why": "「1750年の地図に描いて」" },
+        "layers": { "on": ["cb-admin1"], "why": "js/time-admin1.js: the State / province borders row (cb-admin1) governs the era units too — with it off, no historical subdivision is drawn" },
+        "era": { "year": 1750, "in": [122, 24, 146, 46], "includes": ["山城国", "武蔵国"], "source": { "title": "Provinces of Japan", "url": "https://en.wikipedia.org/wiki/Provinces_of_Japan", "states": "Provinces of Japan were first-level administrative divisions of Japan from the 600s to 1871." }, "why": "「日本の令制国を1750年の地図に描いて」 — the provinces in force in 1750, in Japan" }
       }
     },
     {
@@ -214,6 +225,11 @@
       "expect": {},
       "unset": {
         "map": "R775 names the layers by their labels; it did not record which snapshot field carries the 1900 boundaries, so a map criterion would be a guess."
+      },
+      "mapState": {
+        "clock": { "year": 1900, "why": "「1900 年の…地図に出して」" },
+        "layers": { "on": ["cb-admin1"], "why": "js/time-admin1.js: the State / province borders row (cb-admin1) governs the era units too — with it off, no historical subdivision is drawn (R775 recorded the turn switching that row off at the end)" },
+        "era": { "year": 1900, "in": [122, 24, 146, 46], "includes": ["滋賀県", "Okinawa Prefecture"], "excludes": { "pattern": "国$", "why": "the ritsuryō provinces ended as administrative divisions with the abolition of the han system (1871-08-29); a 国 drawn in 1900 is the #R730 defect" }, "source": { "title": "Abolition of the han system", "url": "https://en.wikipedia.org/wiki/Abolition_of_the_han_system", "states": "The abolition of the han system in the Empire of Japan and its replacement by a system of prefectures in 1871" }, "why": "「1900 年の日本の行政区分を地図に出して」 — the prefectures in force in 1900, in Japan" }
       }
     },
     {

@@ -1,7 +1,8 @@
 {
   "$comment": [
     "Atlas evaluation questions with ground-truth answers. Every answer was checked on 2026-10-01 against the source recorded with it; each question pins its reference (census year, survey edition, named service, named event).",
-    "Great-circle distances are computed (haversine, R=6371.0088 km) from the coordinates given in each derivation; everything else is a figure stated by the cited source."
+    "Great-circle distances are computed (haversine, R=6371.0088 km) from the coordinates given in each derivation; everything else is a figure stated by the cited source.",
+    "(atlas-eval-map-state) `mapState` — what the FINAL MAP must hold, only where the question's own words ask the map for something (「地図に出して」「Highlight」「Fly to」「線を引いて」…). A coordinate names the source it was read at. Field meanings and the discovered vocabulary: scripts/atlas-eval/map-state.mjs. A question without such words carries none."
   ],
   "version": 1,
   "retrieved": "2026-10-01",
@@ -14,7 +15,19 @@
       "answer": { "kind": "range", "min": 515.4, "max": 552.6, "unit": "km" },
       "source": { "title": "Tokaido Shinkansen", "publisher": "Wikipedia (citing JR Central)", "url": "https://en.wikipedia.org/wiki/Tokaido_Shinkansen", "states": "Line length 515.4 km; fares use the parallel Tokaido Main Line operating distance of 552.6 km." },
       "capabilities": ["routing.route", "map.drawLine"],
-      "note": "515.4 km is the actual track length (実キロ); 552.6 km is the operating kilometre (営業キロ) used for fares. Either is correct."
+      "note": "515.4 km is the actual track length (実キロ); 552.6 km is the operating kilometre (営業キロ) used for fares. Either is correct.",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Tokyo Station", "lng": 139.76694, "lat": 35.68083, "source": "https://www.wikidata.org/wiki/Q283196 (P625, read 2026-10-01)" },
+            { "name": "Shin-Ōsaka Station", "lng": 135.5, "lat": 34.73361, "source": "https://www.wikidata.org/wiki/Q801438 (P625, read 2026-10-01)" }
+          ],
+          "why": "「ルートを地図に出して」 — both ends of the asked route are on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:route", "min": 1 }, { "path": "atlas.lines", "min": 1 }], "why": "「ルートを地図に出して」" }
+        ]
+      }
     },
     {
       "id": "tohoku-shinkansen-tokyo-shinaomori-length",
@@ -23,7 +36,19 @@
       "text": "東北新幹線で東京から新青森までは何 km ある？路線を地図に表示して。",
       "answer": { "kind": "number", "value": 713.7, "unit": "km", "tolerance": { "rel": 0.02 } },
       "source": { "title": "東京駅から新青森駅までの新幹線(はやぶさ)の料金・時間", "publisher": "駅探", "url": "https://ekitan.com/transit/shinkansen/section/sf-2590/st-992/hayabusa", "states": "Tokyo to Shin-Aomori on the Tohoku Shinkansen is 713.7 km." },
-      "capabilities": ["routing.route", "map.drawLine"]
+      "capabilities": ["routing.route", "map.drawLine"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Tokyo Station", "lng": 139.76694, "lat": 35.68083, "source": "https://www.wikidata.org/wiki/Q283196 (P625, read 2026-10-01)" },
+            { "name": "Shin-Aomori Station", "lng": 140.69347, "lat": 40.8275, "source": "https://www.wikidata.org/wiki/Q1187835 (P625, read 2026-10-01)" }
+          ],
+          "why": "「路線を地図に表示して」 — both ends on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:route", "min": 1 }, { "path": "atlas.lines", "min": 1 }], "why": "「路線を地図に表示して」" }
+        ]
+      }
     },
     {
       "id": "trans-siberian-moscow-vladivostok-length",
@@ -33,7 +58,19 @@
       "answer": { "kind": "number", "value": 9288, "unit": "km", "tolerance": { "rel": 0.01 } },
       "source": { "title": "Trans-Siberian Railroad", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/topic/Trans-Siberian-Railroad", "states": "The railroad runs 5,771 miles (9,288 km) between Moscow and Vladivostok." },
       "capabilities": ["routing.route", "map.drawLine", "research.brief"],
-      "note": "9,289 km is also commonly quoted; rel 0.01 covers both."
+      "note": "9,289 km is also commonly quoted; rel 0.01 covers both.",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Moscow Yaroslavsky railway station", "lng": 37.65407, "lat": 55.78379, "source": "https://www.wikidata.org/wiki/Q55658542 (P625, read 2026-10-01)" },
+            { "name": "Vladivostok railway station", "lng": 131.88155, "lat": 43.11116, "source": "https://www.wikidata.org/wiki/Q4112949 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Show the Trans-Siberian Railway from Moscow to Vladivostok on the map\" — both termini on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:route", "min": 1 }, { "path": "atlas.lines", "min": 1 }], "why": "\"Show the Trans-Siberian Railway … on the map\"" }
+        ]
+      }
     },
     {
       "id": "great-circle-jfk-lhr",
@@ -43,7 +80,19 @@
       "answer": { "kind": "number", "value": 5539.5, "unit": "km", "tolerance": { "rel": 0.02 } },
       "source": { "title": "John F. Kennedy International Airport / Heathrow Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/John_F._Kennedy_International_Airport", "states": "Airport reference coordinates: JFK 40.63972 N, 73.77889 W; LHR (https://en.wikipedia.org/wiki/Heathrow_Airport) 51.47750 N, 0.46139 W." },
       "capabilities": ["map.measure", "map.drawLine", "map.pin"],
-      "derivation": "great-circle (haversine, R=6371.0088 km) from JFK 40.63972,-73.77889 and LHR 51.47750,-0.46139 given by Wikipedia airport infoboxes = 5539.5 km"
+      "derivation": "great-circle (haversine, R=6371.0088 km) from JFK 40.63972,-73.77889 and LHR 51.47750,-0.46139 given by Wikipedia airport infoboxes = 5539.5 km",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "JFK", "lng": -73.77889, "lat": 40.63972, "source": "https://en.wikipedia.org/wiki/John_F._Kennedy_International_Airport (infobox coordinates, the ones this row's derivation uses)" },
+            { "name": "LHR", "lng": -0.46139, "lat": 51.4775, "source": "https://en.wikipedia.org/wiki/Heathrow_Airport (infobox coordinates, the ones this row's derivation uses)" }
+          ],
+          "why": "\"Draw a line from New York JFK airport to London Heathrow\" — both ends on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.lines", "min": 1 }, { "path": "atlas.measure", "min": 2 }], "why": "\"Draw a line\"" }
+        ]
+      }
     },
     {
       "id": "great-circle-haneda-new-chitose",
@@ -53,7 +102,19 @@
       "answer": { "kind": "number", "value": 819.7, "unit": "km", "tolerance": { "rel": 0.03 } },
       "source": { "title": "Haneda Airport / New Chitose Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Haneda_Airport", "states": "Airport reference coordinates: HND 35.55333 N, 139.78111 E; CTS (https://en.wikipedia.org/wiki/New_Chitose_Airport) 42.77528 N, 141.69250 E." },
       "capabilities": ["map.measure", "map.pin", "map.drawLine"],
-      "derivation": "great-circle (haversine, R=6371.0088 km) from HND 35.55333,139.78111 and CTS 42.77528,141.69250 given by Wikipedia airport infoboxes = 819.7 km"
+      "derivation": "great-circle (haversine, R=6371.0088 km) from HND 35.55333,139.78111 and CTS 42.77528,141.69250 given by Wikipedia airport infoboxes = 819.7 km",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "HND", "lng": 139.78111, "lat": 35.55333, "source": "https://en.wikipedia.org/wiki/Haneda_Airport (infobox coordinates, the ones this row's derivation uses)" },
+            { "name": "CTS", "lng": 141.6925, "lat": 42.77528, "source": "https://en.wikipedia.org/wiki/New_Chitose_Airport (infobox coordinates, the ones this row's derivation uses)" }
+          ],
+          "why": "「羽田空港と新千歳空港を地図にピンして」 — both on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:pin", "min": 2 }, { "path": "atlas.pins", "min": 2 }], "why": "「地図にピンして」 — two places" }
+        ]
+      }
     },
     {
       "id": "great-circle-sydney-auckland",
@@ -63,7 +124,16 @@
       "answer": { "kind": "number", "value": 2159.5, "unit": "km", "tolerance": { "rel": 0.03 } },
       "source": { "title": "Sydney Airport / Auckland Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Sydney_Airport", "states": "Airport reference coordinates: SYD 33.94611 S, 151.17722 E; AKL (https://en.wikipedia.org/wiki/Auckland_Airport) 37.00806 S, 174.79167 E." },
       "capabilities": ["map.measure", "map.pin", "map.drawLine"],
-      "derivation": "great-circle (haversine, R=6371.0088 km) from SYD -33.94611,151.17722 and AKL -37.00806,174.79167 given by Wikipedia airport infoboxes = 2159.5 km"
+      "derivation": "great-circle (haversine, R=6371.0088 km) from SYD -33.94611,151.17722 and AKL -37.00806,174.79167 given by Wikipedia airport infoboxes = 2159.5 km",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "SYD", "lng": 151.17722, "lat": -33.94611, "source": "https://en.wikipedia.org/wiki/Sydney_Airport (infobox coordinates, the ones this row's derivation uses)" },
+            { "name": "AKL", "lng": 174.79167, "lat": -37.00806, "source": "https://en.wikipedia.org/wiki/Auckland_Airport (infobox coordinates, the ones this row's derivation uses)" }
+          ],
+          "why": "\"Show both on the map\""
+        }
+      }
     },
     {
       "id": "great-circle-haneda-naha",
@@ -73,7 +143,19 @@
       "answer": { "kind": "number", "value": 1554.5, "unit": "km", "tolerance": { "rel": 0.03 } },
       "source": { "title": "Haneda Airport / Naha Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Naha_Airport", "states": "Airport reference coordinates: OKA 26.19583 N, 127.64583 E; HND (https://en.wikipedia.org/wiki/Haneda_Airport) 35.55333 N, 139.78111 E." },
       "capabilities": ["map.measure", "map.drawLine", "map.pin"],
-      "derivation": "great-circle (haversine, R=6371.0088 km) from HND 35.55333,139.78111 and OKA 26.19583,127.64583 given by Wikipedia airport infoboxes = 1554.5 km"
+      "derivation": "great-circle (haversine, R=6371.0088 km) from HND 35.55333,139.78111 and OKA 26.19583,127.64583 given by Wikipedia airport infoboxes = 1554.5 km",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "HND", "lng": 139.78111, "lat": 35.55333, "source": "https://en.wikipedia.org/wiki/Haneda_Airport (infobox coordinates, the ones this row's derivation uses)" },
+            { "name": "OKA", "lng": 127.64583, "lat": 26.19583, "source": "https://en.wikipedia.org/wiki/Naha_Airport (infobox coordinates, the ones this row's derivation uses)" }
+          ],
+          "why": "「線を引いて見せて」 — both ends on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.lines", "min": 1 }, { "path": "atlas.measure", "min": 2 }], "why": "「線を引いて」" }
+        ]
+      }
     },
     {
       "id": "nozomi-tokyo-shinosaka-fastest",
@@ -103,7 +185,19 @@
       "answer": { "kind": "range", "min": 236, "max": 240, "unit": "minutes" },
       "source": { "title": "新幹線 東京―新函館北斗 3時間57分に短縮", "publisher": "日本経済新聞", "url": "https://www.nikkei.com/article/DGKKZO67484820Y0A211C2L41000/", "states": "From the March 2021 timetable revision the fastest Tokyo to Shin-Hakodate-Hokuto time is 3 h 57 min." },
       "capabilities": ["routing.route", "map.drawLine"],
-      "note": "3 h 57 min = 237 min."
+      "note": "3 h 57 min = 237 min.",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Tokyo Station", "lng": 139.76694, "lat": 35.68083, "source": "https://www.wikidata.org/wiki/Q283196 (P625, read 2026-10-01)" },
+            { "name": "Shin-Hakodate-Hokuto Station", "lng": 140.64836, "lat": 41.90469, "source": "https://www.wikidata.org/wiki/Q1039122 (P625, read 2026-10-01)" }
+          ],
+          "why": "「ルートも地図に出して」 — both ends on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:route", "min": 1 }, { "path": "atlas.lines", "min": 1 }], "why": "「ルートも地図に出して」" }
+        ]
+      }
     },
     {
       "id": "mizuho-hakata-kagoshimachuo-fastest",
@@ -143,7 +237,19 @@
       "answer": { "kind": "range", "min": 111, "max": 117, "unit": "minutes" },
       "source": { "title": "London to Brussels by train", "publisher": "Eurostar", "url": "https://www.eurostar.com/us-en/train/london-to-brussels", "states": "Eurostar gives the London to Brussels journey time as 1 hr 53 mins." },
       "capabilities": ["routing.route", "map.drawLine"],
-      "note": "1 h 53 min = 113 min per the operator; range covers the 1 h 51–1 h 57 variants of individual services."
+      "note": "1 h 53 min = 113 min per the operator; range covers the 1 h 51–1 h 57 variants of individual services.",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "St Pancras railway station", "lng": -0.12528, "lat": 51.53, "source": "https://www.wikidata.org/wiki/Q720102 (P625, read 2026-10-01)" },
+            { "name": "Brussels-South railway station", "lng": 4.33583, "lat": 50.83528, "source": "https://www.wikidata.org/wiki/Q800587 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Show the Eurostar route London to Brussels\" — both termini on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:route", "min": 1 }, { "path": "atlas.lines", "min": 1 }], "why": "\"Show the Eurostar route\"" }
+        ]
+      }
     },
     {
       "id": "japan-population-2020-census",
@@ -161,7 +267,12 @@
       "text": "東京都を地図で囲って。2020年国勢調査での東京都の人口は？",
       "answer": { "kind": "number", "value": 14047594, "unit": "people", "tolerance": { "rel": 0.01 } },
       "source": { "title": "令和2年国勢調査人口等基本集計結果概要", "publisher": "東京都", "url": "https://www.spt.metro.tokyo.lg.jp/tosei/hodohappyo/press/2022/01/20/07.html", "states": "Tokyo's population in the 2020 census was 14,047,594." },
-      "capabilities": ["map.outline", "data.populationIn", "data.value"]
+      "capabilities": ["map.outline", "data.populationIn", "data.value"],
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「東京都を地図で囲って」 — an outline of the prefecture" }
+        ]
+      }
     },
     {
       "id": "osaka-pref-population-2020-census",
@@ -170,7 +281,12 @@
       "text": "大阪府をハイライトして、令和2年国勢調査の大阪府の人口を教えて。",
       "answer": { "kind": "number", "value": 8837685, "unit": "people", "tolerance": { "rel": 0.01 } },
       "source": { "title": "令和２年国勢調査 人口等基本集計結果【大阪府 概要版】", "publisher": "大阪府総務部統計課", "url": "https://www.pref.osaka.lg.jp/documents/12026/r2kokutyo_osakahu_kakuhou_toukeihyo.pdf", "states": "Osaka Prefecture population on 1 October 2020: 8,837,685." },
-      "capabilities": ["map.highlight", "data.populationIn", "data.value"]
+      "capabilities": ["map.highlight", "data.populationIn", "data.value"],
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「大阪府をハイライトして」" }
+        ]
+      }
     },
     {
       "id": "hokkaido-population-2020-census",
@@ -207,7 +323,12 @@
       "answer": { "kind": "number", "value": 36991981, "unit": "people", "tolerance": { "rel": 0.01 } },
       "source": { "title": "2021 Census of Population key indicators: Population, 2021", "publisher": "Statistics Canada", "url": "https://www12.statcan.gc.ca/census-recensement/stats/statind2021.cfm?Lang=E", "states": "The 2021 Census counted 36,991,981 people in Canada (reference date 11 May 2021)." },
       "capabilities": ["map.highlight", "data.countryCard", "data.value"],
-      "note": "Census count, not the adjusted population estimate (~38.2 million)."
+      "note": "Census count, not the adjusted population estimate (~38.2 million).",
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.highlightCountries", "min": 1 }, { "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Canada.\"" }
+        ]
+      }
     },
     {
       "id": "england-wales-population-2021-census",
@@ -225,7 +346,15 @@
       "text": "兵庫県南部地震（阪神・淡路大震災）が起きたのはいつ？震源を地図に出して。",
       "answer": { "kind": "date", "value": "1995-01-17" },
       "source": { "title": "兵庫県南部地震 強震観測", "publisher": "気象庁", "url": "https://www.data.jma.go.jp/eqev/data/kyoshin/jishin/hyogo_nanbu/index.html", "states": "JMA named the M7.3 earthquake of 17 January 1995, 05:46, off Awaji Island the 1995 Southern Hyogo Prefecture Earthquake." },
-      "capabilities": ["map.pin", "sim.earthquake", "research.brief"]
+      "capabilities": ["map.pin", "sim.earthquake", "research.brief"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "epicentre of the 1995 Great Hanshin earthquake", "lng": 135.03472, "lat": 34.59833, "source": "https://www.wikidata.org/wiki/Q214866 (P625, read 2026-10-01)" }
+          ],
+          "why": "「震源を地図に出して」"
+        }
+      }
     },
     {
       "id": "tohoku-earthquake-date",
@@ -252,7 +381,15 @@
       "text": "青函トンネルが営業を開始したのはいつ？場所も地図で見せて。",
       "answer": { "kind": "date", "value": "1988-03-13" },
       "source": { "title": "青函トンネル", "publisher": "北海道知内町", "url": "https://www.town.shiriuchi.hokkaido.jp/kanko/meisho/seikantonneru.html", "states": "The 53.85 km Seikan Tunnel began service on 13 March 1988." },
-      "capabilities": ["view.flyTo", "research.brief"]
+      "capabilities": ["view.flyTo", "research.brief"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Seikan Tunnel", "lng": 140.3351, "lat": 41.3157, "source": "https://www.wikidata.org/wiki/Q99250 (P625, read 2026-10-01)" }
+          ],
+          "why": "「場所も地図で見せて」"
+        }
+      }
     },
     {
       "id": "unzen-pyroclastic-flow-date",
@@ -279,7 +416,15 @@
       "text": "On what date was the Berlin Wall opened? Show Berlin on the map.",
       "answer": { "kind": "date", "value": "1989-11-09" },
       "source": { "title": "When did the Berlin Wall fall?", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/question/When-did-the-Berlin-Wall-fall", "states": "East German officials opened the border, including the Berlin Wall, on 9 November 1989." },
-      "capabilities": ["view.flyTo", "research.historicalMap", "time.travel"]
+      "capabilities": ["view.flyTo", "research.historicalMap", "time.travel"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Berlin", "lng": 13.38333, "lat": 52.51667, "source": "https://www.wikidata.org/wiki/Q64 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Show Berlin on the map\""
+        }
+      }
     },
     {
       "id": "channel-tunnel-inauguration-date",
@@ -297,7 +442,15 @@
       "text": "Fly to Mount St. Helens. What was the date of its catastrophic 1980 eruption?",
       "answer": { "kind": "date", "value": "1980-05-18" },
       "source": { "title": "1980 Cataclysmic Eruption", "publisher": "USGS", "url": "https://www.usgs.gov/volcanoes/mount-st.-helens/science/1980-cataclysmic-eruption", "states": "On Sunday 18 May 1980 at 8:32 a.m. the north flank collapsed and the volcano erupted." },
-      "capabilities": ["view.flyTo", "data.volcano"]
+      "capabilities": ["view.flyTo", "data.volcano"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Mount St. Helens", "lng": -122.18944, "lat": 46.20028, "source": "https://www.wikidata.org/wiki/Q4675 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Fly to Mount St. Helens\""
+        }
+      }
     },
     {
       "id": "panama-canal-opening-date",
@@ -333,7 +486,18 @@
       "text": "琵琶湖を地図でハイライトして。面積は何 km²？",
       "answer": { "kind": "number", "value": 669.26, "unit": "km2", "tolerance": { "rel": 0.01 } },
       "source": { "title": "琵琶湖の概要", "publisher": "滋賀県", "url": "https://www.pref.shiga.lg.jp/de51/2878.html", "states": "Lake Biwa covers 669.26 km² (GSI national area survey figure)." },
-      "capabilities": ["map.highlight", "data.value"]
+      "capabilities": ["map.highlight", "data.value"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Lake Biwa", "lng": 136.08, "lat": 35.255, "source": "https://www.wikidata.org/wiki/Q200239 (P625, read 2026-10-01)" }
+          ],
+          "why": "「琵琶湖を地図でハイライトして」 — the lake is on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「ハイライトして」" }
+        ]
+      }
     },
     {
       "id": "hokkaido-area-gsi-2024-10",
@@ -352,7 +516,12 @@
       "text": "Highlight Russia. What is its total area in square kilometres?",
       "answer": { "kind": "number", "value": 17098242, "unit": "km2", "tolerance": { "rel": 0.01 } },
       "source": { "title": "Russia — The World Factbook", "publisher": "CIA World Factbook", "url": "https://theworldfactbook.org/country/russia.html", "states": "Russia's total area is 17,098,242 sq km." },
-      "capabilities": ["map.highlight", "data.countryCard", "data.value"]
+      "capabilities": ["map.highlight", "data.countryCard", "data.value"],
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.highlightCountries", "min": 1 }, { "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Russia.\"" }
+        ]
+      }
     },
     {
       "id": "caspian-sea-area",
@@ -362,7 +531,15 @@
       "answer": { "kind": "number", "value": 371000, "unit": "km2", "tolerance": { "rel": 0.05 } },
       "source": { "title": "The Caspian Sea", "publisher": "European Space Agency", "url": "https://www.esa.int/Applications/Observing_the_Earth/The_Caspian_Sea", "states": "The Caspian Sea covers about 371,000 km² (143,000 sq mi)." },
       "capabilities": ["view.flyTo", "map.highlight", "data.value"],
-      "note": "Surface area varies with water level; 5% tolerance."
+      "note": "Surface area varies with water level; 5% tolerance.",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Caspian Sea", "lng": 50.5, "lat": 42, "source": "https://www.wikidata.org/wiki/Q5484 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Show the Caspian Sea\""
+        }
+      }
     },
     {
       "id": "greenland-area",
@@ -380,7 +557,18 @@
       "text": "Outline Lake Superior on the map and tell me its surface area in km².",
       "answer": { "kind": "number", "value": 82100, "unit": "km2", "tolerance": { "rel": 0.02 } },
       "source": { "title": "Lake Superior", "publisher": "Encyclopaedia Britannica (citing U.S. EPA)", "url": "https://www.britannica.com/place/Lake-Superior-lake-North-America", "states": "Lake Superior's surface area is 31,700 sq mi (82,100 sq km)." },
-      "capabilities": ["map.outline", "data.value"]
+      "capabilities": ["map.outline", "data.value"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Lake Superior", "lng": -87.76002, "lat": 47.52882, "source": "https://www.wikidata.org/wiki/Q1066 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Outline Lake Superior on the map\" — the lake is on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Outline Lake Superior\"" }
+        ]
+      }
     },
     {
       "id": "australia-area",
@@ -398,7 +586,15 @@
       "text": "Fly to Mount Everest. What is its height according to the 2020 China–Nepal survey?",
       "answer": { "kind": "number", "value": 8848.86, "unit": "m", "tolerance": { "abs": 5 } },
       "source": { "title": "8,848.86 metres. That's the height of Mt Everest now", "publisher": "The Kathmandu Post", "url": "https://kathmandupost.com/national/2020/12/08/it-s-official-mount-everest-is-8-848-86-metres-tall", "states": "Nepal and China jointly announced on 8 December 2020 that Everest is 8,848.86 m tall." },
-      "capabilities": ["view.flyTo", "data.value"]
+      "capabilities": ["view.flyTo", "data.value"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Mount Everest", "lng": 86.925, "lat": 27.98806, "source": "https://www.wikidata.org/wiki/Q513 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Fly to Mount Everest\""
+        }
+      }
     },
     {
       "id": "mount-fuji-elevation",
@@ -407,7 +603,15 @@
       "text": "富士山に飛んで。標高は何 m？",
       "answer": { "kind": "number", "value": 3776, "unit": "m", "tolerance": { "abs": 1 } },
       "source": { "title": "衛星測位を基盤とする三角点「富士山」の新しい標高", "publisher": "国土地理院", "url": "https://www.gsi.go.jp/WNEW/PRESS-RELEASE/keikaku61003.html", "states": "Mount Fuji's summit elevation remains 3,776 m; the triangulation point itself was revised to 3,775.56 m in 2025." },
-      "capabilities": ["view.flyTo", "data.value"]
+      "capabilities": ["view.flyTo", "data.value"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Mount Fuji", "lng": 138.7275, "lat": 35.36056, "source": "https://www.wikidata.org/wiki/Q39231 (P625, read 2026-10-01)" }
+          ],
+          "why": "「富士山に飛んで」"
+        }
+      }
     },
     {
       "id": "kitadake-elevation",
@@ -436,7 +640,18 @@
       "answer": { "kind": "number", "value": -86, "unit": "m", "tolerance": { "abs": 2 } },
       "source": { "title": "Badwater Basin", "publisher": "U.S. National Park Service", "url": "https://www.nps.gov/places/badwater-basin.htm", "states": "Badwater Basin is 282 ft (86 m) below sea level, the lowest point in North America." },
       "capabilities": ["map.pin", "data.value"],
-      "note": "Negative: below sea level."
+      "note": "Negative: below sea level.",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Badwater Basin", "lng": -116.82583, "lat": 36.25028, "source": "https://www.wikidata.org/wiki/Q799720 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Pin Badwater Basin\" — the pin is on screen"
+        },
+        "drawn": [
+          { "anyOf": [{ "path": "objects.kind:pin", "min": 1 }, { "path": "atlas.pins", "min": 1 }], "why": "\"Pin Badwater Basin\"" }
+        ]
+      }
     },
     {
       "id": "kilimanjaro-elevation",
@@ -455,7 +670,15 @@
       "answer": { "kind": "number", "value": 423.4, "unit": "m", "tolerance": { "abs": 1 } },
       "source": { "title": "日本一深い田沢湖", "publisher": "秋田県仙北市", "url": "https://www.city.semboku.akita.jp/sightseeing/travel/nature/index.html", "states": "Lake Tazawa's maximum depth is 423.4 m, the deepest in Japan." },
       "capabilities": ["view.flyTo", "data.value"],
-      "note": "Depth expressed as a positive number of metres."
+      "note": "Depth expressed as a positive number of metres.",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Lake Tazawa", "lng": 140.66139, "lat": 39.725, "source": "https://www.wikidata.org/wiki/Q174309 (P625, read 2026-10-01)" }
+          ],
+          "why": "「田沢湖を地図に出して」"
+        }
+      }
     },
     {
       "id": "shinano-river-length",
@@ -464,7 +687,12 @@
       "text": "信濃川を地図でなぞって。幹川流路延長は何 km？",
       "answer": { "kind": "number", "value": 367, "unit": "km", "tolerance": { "rel": 0.01 } },
       "source": { "title": "日本一■信濃川（千曲川）の流路延長（長さ）", "publisher": "長野県", "url": "https://blog.nagano-ken.jp/nihonichi/nature/161.html", "states": "The Shinano River's main-stream length is 367 km, Japan's longest (MLIT class-A river data)." },
-      "capabilities": ["map.highlight", "data.value"]
+      "capabilities": ["map.highlight", "data.value"],
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.lines", "min": 1 }, { "path": "atlas.polygons", "min": 1 }], "why": "「信濃川を地図でなぞって」 — the river traced" }
+        ]
+      }
     },
     {
       "id": "tone-river-length",
@@ -492,7 +720,15 @@
       "answer": { "kind": "number", "value": 1991, "unit": "m", "tolerance": { "abs": 1 } },
       "source": { "title": "4月5日は明石海峡大橋の開通記念日！", "publisher": "明石じゃーなる", "url": "https://akashi-journal.com/city/pearl-bridge/", "states": "The bridge is 3,911 m long with a 1,991 m centre span; it opened on 5 April 1998." },
       "capabilities": ["view.flyTo", "map.measure"],
-      "note": "Centre span, not total length (3,911 m)."
+      "note": "Centre span, not total length (3,911 m).",
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Akashi Kaikyō Bridge", "lng": 135.02028, "lat": 34.61639, "source": "https://www.wikidata.org/wiki/Q184213 (P625, read 2026-10-01)" }
+          ],
+          "why": "「明石海峡大橋を地図に出して」"
+        }
+      }
     },
     {
       "id": "mississippi-river-length",
@@ -512,7 +748,12 @@
       "answer": { "kind": "range", "min": 6600, "max": 6700, "unit": "km" },
       "source": { "title": "Nile River summary", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/summary/Nile-River", "states": "The Nile is about 4,132 miles (6,650 km) long from its remotest headstream to the Mediterranean." },
       "capabilities": ["map.highlight", "data.value"],
-      "note": "Length is disputed by definition of the source; the range covers the commonly cited 6,650 and 6,695 km."
+      "note": "Length is disputed by definition of the source; the range covers the commonly cited 6,650 and 6,695 km.",
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.lines", "min": 1 }, { "path": "atlas.polygons", "min": 1 }], "why": "\"Trace the Nile on the map\"" }
+        ]
+      }
     },
     {
       "id": "thames-length",
@@ -586,7 +827,12 @@
       "text": "Highlight Germany. How many countries share a land border with it?",
       "answer": { "kind": "count", "value": 9 },
       "source": { "title": "How many neighbouring countries does Germany have - and which are they?", "publisher": "deutschland.de (German Federal Foreign Office)", "url": "https://www.deutschland.de/en/topic/politics/germany-nine-neighbours-facts", "states": "Germany borders nine countries: Denmark, Poland, Czechia, Austria, Switzerland, France, Luxembourg, Belgium and the Netherlands." },
-      "capabilities": ["map.highlight", "data.countryCard"]
+      "capabilities": ["map.highlight", "data.countryCard"],
+      "mapState": {
+        "drawn": [
+          { "anyOf": [{ "path": "atlas.highlightCountries", "min": 1 }, { "path": "atlas.polygons", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Germany.\"" }
+        ]
+      }
     },
     {
       "id": "canada-province-count",
@@ -659,7 +905,15 @@
       "text": "What is the capital of Australia? Fly there.",
       "answer": { "kind": "name", "accept": ["Canberra", "キャンベラ"] },
       "source": { "title": "Canberra, the Seat of Government", "publisher": "National Capital Authority (Australian Government)", "url": "https://www.nca.gov.au/education/canberras-history/canberra-seat-government", "states": "Canberra, in the Australian Capital Territory, is the national capital, proclaimed in 1913." },
-      "capabilities": ["view.flyTo", "data.countryCard"]
+      "capabilities": ["view.flyTo", "data.countryCard"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Canberra", "lng": 149.12694, "lat": -35.29306, "source": "https://www.wikidata.org/wiki/Q3114 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Fly there\" — the capital asked about"
+        }
+      }
     },
     {
       "id": "canada-capital-name",
@@ -677,7 +931,15 @@
       "text": "What is the highest mountain in Africa? Show it on the map.",
       "answer": { "kind": "name", "accept": ["Kilimanjaro", "Mount Kilimanjaro", "Mt. Kilimanjaro", "Kibo", "Uhuru Peak", "キリマンジャロ", "キリマンジャロ山"] },
       "source": { "title": "Kilimanjaro", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/place/Kilimanjaro", "states": "Kilimanjaro's Kibo cone (5,895 m) is the highest point in Africa." },
-      "capabilities": ["view.flyTo", "data.rank"]
+      "capabilities": ["view.flyTo", "data.rank"],
+      "mapState": {
+        "view": {
+          "contains": [
+            { "name": "Mount Kilimanjaro", "lng": 37.35917, "lat": -3.06667, "source": "https://www.wikidata.org/wiki/Q7296 (P625, read 2026-10-01)" }
+          ],
+          "why": "\"Show it on the map\" — the mountain the answer names"
+        }
+      }
     },
     {
       "id": "challenger-deep-trench-name",

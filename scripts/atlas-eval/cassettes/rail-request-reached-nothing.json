@@ -1765,7 +1765,25 @@
         }
       }
     ],
-    "snapshot": {}
+    "snapshot": {
+      "objects": {
+        "n": 0,
+        "items": []
+      },
+      "atlas": {
+        "highlightCountries": 0,
+        "highlight": null,
+        "choropleth": null,
+        "customScore": null,
+        "pins": null,
+        "polygons": null,
+        "lines": null,
+        "measure": null,
+        "radius": null,
+        "userPins": null,
+        "tool": ""
+      }
+    }
   },
   "golden": {
     "stopped": "step_budget",
@@ -1810,6 +1828,7 @@
     "failures": [
       "reach",
       "operations"
-    ]
+    ],
+    "map": "mismatch"
   }
 }

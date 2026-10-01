@@ -53,6 +53,7 @@ import {
 import { rubricRequest, readRubric, validateAnswerKey } from './atlas-eval/grade.mjs';
 import { goldenOf } from './atlas-eval/replay.mjs';
 import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
+import { sectionsRead } from './atlas-eval/map-state.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const PROD_URL = 'https://rwmqx7dwb5-arch.github.io/IntMap/';
@@ -150,11 +151,11 @@ const PAGE = {
     return { ms: Date.now() - t0, err };
   },
   stop: () => { try { window.IntMapConsole.stopRun(); } catch (_) { } },
-  observe: () => {
+  observe: (extra) => {
     const S = window.IntMapAtlasState, D = window.IntMapAtlasDebug;
     const t = S && S.lastTurn();
     let dbg = null; try { dbg = D && D.lastPlan(); } catch (_) { }
-    let snap = null; try { snap = S.snapshot({ only: ['atlas', 'activeLayers', 'camera'] }); } catch (_) { }
+    let snap = null; try { snap = S.snapshot({ only: [...new Set(['atlas', 'activeLayers', 'camera'].concat(extra || []))] }); } catch (_) { }
     const b = document.querySelectorAll('.atl-b.a');
     return {
       turn: t ? {
@@ -238,7 +239,7 @@ export function cassetteOf(q, obs, judged, meta) {
     world: { dispatch: obs.dispatches, find, snapshot: obs.snapshot || {} },
     golden: goldenOf({ stopped: obs.stopped, calls: obs.calls, text: obs.reply }),
     /* what the judge concluded live is what the replay must keep concluding */
-    expect: { verdict: kinds.length ? 'fail' : 'pass', failures: kinds.length ? kinds : undefined, grade: judged.metrics.grade ? judged.metrics.grade.verdict : undefined },
+    expect: { verdict: kinds.length ? 'fail' : 'pass', failures: kinds.length ? kinds : undefined, grade: judged.metrics.grade ? judged.metrics.grade.verdict : undefined, map: judged.metrics.map ? judged.metrics.map.verdict : undefined },
   };
 }
 
@@ -325,7 +326,7 @@ async function evaluate() {
       finally { clearTimeout(timer); }
       if (askRes.timedOut) { await page.evaluate(PAGE.stop).catch(() => { }); turns.push(judgeTurn(q, { measured: false, unmeasured: 'harness_timeout', detail: 'no end after ' + Math.round(patienceMs / 1000) + ' s' }, rules)); continue; }
       if (askRes.err && !Number.isFinite(askRes.ms)) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'page_error', detail: askRes.err }, rules)); continue; }
-      const raw = await page.evaluate(PAGE.observe);
+      const raw = await page.evaluate(PAGE.observe, sectionsRead(questions));
       const obs = observeTurn(q, raw, askRes);
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
          asked for (it costs a use), and never for an empty reply (there is nothing to grade; the
