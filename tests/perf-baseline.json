@@ -51,6 +51,8 @@
       "html2canvas.esm": 199257,
       "katex": 259214,
       "katex.min": 0,
+      "layer-time": 8905,
+      "layer-time-decl": 19656,
       "lib": 129791,
       "navigation": 60839,
       "net-health-live": 16816,
@@ -96,7 +98,7 @@
   },
   "dist": {
     "total": 800125309,
-    "data": 742828134,
+    "data": 742828119,
     "assets": 19006921
   }
 }
