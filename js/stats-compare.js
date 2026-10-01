@@ -36,6 +36,13 @@ export function statsCompare(HOST){
        translation instrument. Written as a call, they are ordinary L(…) sites to the audits. */
     const LA=IntMapLang.pickArgs();
     const esc=s=>window.IntMapSafe.html(s);
+    /* (safe-dom-template) the markup tag (js/safe-html.js): a value interpolated into html`…` is escaped for
+       where it lands unless it is markup a template made. The builders below RETURN such markup, so they
+       go into another html`…` — never `+` (a joined string is text again and would be escaped twice).
+       A flag is the one value that may be an <img>: IntMapSafe.flag decides that, and its answer is
+       markup by construction, so it is vouched for here and nowhere else. */
+    const html=window.IntMapSafe.markup;
+    const flagM=f=>window.IntMapSafe.trusted(window.IntMapSafe.flag(f));
     const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a','#5ac8fa','#ffd60a','#ff2d92','#30b0c7','#a2845e'];   /* (#R71) up to 10 countries */
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return (Math.round(v*100)/100).toLocaleString(); }
     const pct=v=>(Math.round(v*100)/100)+'%', usd=v=>'$'+short(v), num=v=>short(v);
@@ -595,7 +602,7 @@ export function statsCompare(HOST){
        drawn whenever the value range crosses zero ("0の位置に補助線があった方が見やすい"). */
     function mChart(ind,serMap,hh){ const _lo=(tsFrom!=null?tsFrom:-Infinity), _hi=(tsTo!=null?tsTo:Infinity);
       const entries=codes.map((cd,i)=>({cd,i,s:(serMap[cd]||[]).filter(p=>p.y>=_lo&&p.y<=_hi)})).filter(e=>e.s&&e.s.length>1);   /* (#R122) clip to the chosen year window */
-      if(!entries.length) return '<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">'+LL('No time-series available','時系列データなし','Keine Zeitreihe','Нет динамики','Sin series')+(tsFrom!=null||tsTo!=null?(' ('+(tsFrom!=null?tsFrom:'…')+'–'+(tsTo!=null?tsTo:'…')+')'):'')+'</div>';
+      if(!entries.length) return html`<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">${LL('No time-series available','時系列データなし','Keine Zeitreihe','Нет динамики','Sin series')}${tsFrom!=null||tsTo!=null?(' ('+(tsFrom!=null?tsFrom:'…')+'–'+(tsTo!=null?tsTo:'…')+')'):''}</div>`;
       let y0=Infinity,y1=-Infinity,v0=Infinity,v1=-Infinity;
       entries.forEach(e=>e.s.forEach(p=>{ if(p.y<y0)y0=p.y; if(p.y>y1)y1=p.y; if(p.v<v0)v0=p.v; if(p.v>v1)v1=p.v; }));
       /* (#R108) SIGNED indicators (any negative value present) get a 0 guide line in the TIME-SERIES too, matching the
@@ -608,22 +615,23 @@ export function statsCompare(HOST){
       const _tsNeg=ind.signed||entries.some(e=>e.s.some(p=>p.v<0))||(v0>=0&&v1>0&&v0<v1*0.9);
       if(_tsNeg){ v0=Math.min(v0,0); v1=Math.max(v1,0); }
       const padL=8,padR=8,padT=10,padB=16; const X=y=>padL+((y-y0)/((y1-y0)||1))*(CW-padL-padR), Y=v=>padT+(1-(v-v0)/((v1-v0)||1))*(CH-padT-padB);
-      let paths=''; const meta=[];
-      if(v0<=0&&v1>=0&&(v1-v0)>0){ const zy=Y(0).toFixed(1); paths+='<line x1="'+padL+'" x2="'+(CW-padR)+'" y1="'+zy+'" y2="'+zy+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4 4" opacity="0.55" vector-effect="non-scaling-stroke"/><text x="'+(padL+2)+'" y="'+(zy-3)+'" font-size="9" fill="var(--text-muted)">0</text>'; }
+      const paths=[]; const meta=[];
+      if(v0<=0&&v1>=0&&(v1-v0)>0){ const zy=Y(0).toFixed(1); paths.push(html`<line x1="${padL}" x2="${CW-padR}" y1="${zy}" y2="${zy}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4 4" opacity="0.55" vector-effect="non-scaling-stroke"/><text x="${padL+2}" y="${zy-3}" font-size="9" fill="var(--text-muted)">0</text>`); }
       entries.forEach(e=>{ let d=''; const pts=[]; e.s.forEach((p,j)=>{ const x=X(p.y),y=Y(p.v); d+=(j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; pts.push([p.y,+x.toFixed(1),+y.toFixed(1),ind.fmt(p.v)]); });
-        paths+='<path d="'+d+'" fill="none" stroke="'+PAL[e.i]+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'; meta.push({i:e.i,cd:e.cd,pts}); });
-      const metaAttr=esc(JSON.stringify(meta));
+        paths.push(html`<path d="${d}" fill="none" stroke="${PAL[e.i]}" stroke-width="2" vector-effect="non-scaling-stroke"/>`); meta.push({i:e.i,cd:e.cd,pts}); });
       const hpx=hh||110;
       /* (#R84) year labels moved OUT of the SVG — with preserveAspectRatio="none" the SVG stretches to the
          container width and squashed the <text> ("年号の数字が潰れている"). As crisp HTML they never distort. */
-      return '<div class="ts-wrap scp-chart" style="margin:0 0 10px;position:relative;" data-m=\''+metaAttr.replace(/'/g,'&#39;')+'\'>'
-        +'<svg class="ts-svg" width="100%" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="none" style="display:block;height:'+hpx+'px;background:var(--input-bg);border-radius:10px;cursor:crosshair;touch-action:none;">'
-        +paths
-        +'<line class="ts-cursor" y1="0" y2="'+CH+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
-        +'</svg>'
-        +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);padding:1px 8px 0;font-variant-numeric:tabular-nums;"><span>'+y0+'</span><span>'+y1+'</span></div>'
-        +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:calc(var(--z-inset) + 5);transform:translate(-50%,-104%);line-height:1.5;"></div>'
-      +'</div>'; }
+      /* the meta rides a single-quoted attribute: the tag escapes ' as well as " there */
+      return html`${[
+        html`<div class="ts-wrap scp-chart" style="margin:0 0 10px;position:relative;" data-m='${JSON.stringify(meta)}'>`,
+        html`<svg class="ts-svg" width="100%" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none" style="display:block;height:${hpx}px;background:var(--input-bg);border-radius:10px;cursor:crosshair;touch-action:none;">`,
+        paths,
+        html`<line class="ts-cursor" y1="0" y2="${CH}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>`,
+        html`</svg>`,
+        html`<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);padding:1px 8px 0;font-variant-numeric:tabular-nums;"><span>${y0}</span><span>${y1}</span></div>`,
+        html`<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:calc(var(--z-inset) + 5);transform:translate(-50%,-104%);line-height:1.5;"></div>`,
+        html`</div>`]}`; }
     function wireM(root){ root.querySelectorAll('.scp-chart').forEach(wrap=>{
       const svg=wrap.querySelector('.ts-svg'), cur=wrap.querySelector('.ts-cursor'), tip=wrap.querySelector('.ts-tip');
       let meta=[]; try{ meta=JSON.parse(wrap.getAttribute('data-m')||'[]'); }catch(_){}
@@ -632,9 +640,9 @@ export function statsCompare(HOST){
         const vx=(cx-r.left)/r.width*CW; let year=null,bd=Infinity,px=0;
         meta.forEach(m=>m.pts.forEach(p=>{ const d=Math.abs(p[1]-vx); if(d<bd){ bd=d; year=p[0]; px=p[1]; } }));
         if(year==null) return; cur.setAttribute('x1',px); cur.setAttribute('x2',px); cur.style.display='';
-        let html='<b>'+year+'</b>';
-        meta.forEach(m=>{ const p=m.pts.find(q=>q[0]===year); if(p){ const s2=countryStats[m.cd]||{}; html+='<br><span style="color:'+PAL[m.i]+';">●</span> '+esc(cName(s2)||m.cd)+': <b>'+esc(p[3])+'</b>'; } });
-        tip.innerHTML=html; tip.style.display='block'; const wr=wrap.getBoundingClientRect();
+        const tipRows=[html`<b>${year}</b>`];
+        meta.forEach(m=>{ const p=m.pts.find(q=>q[0]===year); if(p){ const s2=countryStats[m.cd]||{}; tipRows.push(html`<br><span style="color:${PAL[m.i]};">●</span> ${cName(s2)||m.cd}: <b>${p[3]}</b>`); } });
+        tip.innerHTML=html`${tipRows}`; tip.style.display='block'; const wr=wrap.getBoundingClientRect();
         /* (#R72) keep the tooltip fully INSIDE the panel ("端の方になると端からは隠れて見えなくなってしまう"):
            clamp horizontally to the chart width (it renders translateX(-50%)) and flip it BELOW the crosshair
            when the chart sits so close to the top that the above-anchor tip would be clipped. */
@@ -692,49 +700,52 @@ export function statsCompare(HOST){
       await _histAddSeries(serMap, ind);
       return {ind,serMap,srcName,imfFail}; }
     /* shared block header: label · WB⇄IMF switch · source · 詳細 (focus) button */
-    function secHtml(ind,srcName,extra){ const lbl=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
+    function secHtml(ind,srcName,extra,hideFocus){ const lbl=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
       /* (#R109) the WB/IMF toggle only shows for years IMF WEO actually covers (~1980+; earlier years are World-Bank /
          Maddison only) — "利用可能年度のみ表示". Deep-past travel hides it and shows the real source. */
       const _ty=_ttYear();
+      const imfOn=srcSel[ind.k]==='imf';
       const sw=(ind.imf && (_ty==null || (_ty>=1980 && _ty<=2030)))
-        ?('<span class="scp-srcsw" data-k="'+ind.k+'"><button data-s="wb"'+(srcSel[ind.k]!=='imf'?' class="on"':'')+'>WB</button><button data-s="imf"'+(srcSel[ind.k]==='imf'?' class="on"':'')+'>IMF</button></span>'
-          +'<span class="scp-src">· '+esc(srcName)+'</span>')
-        :('<span class="scp-src">· '+esc(ind.stat?(ind.src||'IntMap'):srcName||'World Bank')+'</span>');
-      return '<div class="scp-sec"><span class="scp-secl">'+esc(lbl)+'</span> '+sw+(extra||'')
-        +'<button class="scp-focus" data-k="'+ind.k+'" title="'+LL('Details','詳細','Details','Подробно','Detalles')+'">'+LL('Details','詳細','Details','Подробно','Detalles')+' ›</button></div>'; }
-    const fmtSigned=(ind,v)=>{ if(!SIGNED[ind.k]) return '<b>'+esc(ind.fmt(v))+'</b>';
+        ?html`<span class="scp-srcsw" data-k="${ind.k}">${imfOn?html`<button data-s="wb">WB</button><button data-s="imf" class="on">IMF</button>`:html`<button data-s="wb" class="on">WB</button><button data-s="imf">IMF</button>`}</span><span class="scp-src">· ${srcName}</span>`
+        :html`<span class="scp-src">· ${ind.stat?(ind.src||'IntMap'):srcName||'World Bank'}</span>`;
+      /* (safe-dom-template) the focus view hides its own 詳細 button by an attribute the template writes —
+         not by a search-and-replace on the finished markup */
+      const detT=LL('Details','詳細','Details','Подробно','Detalles'), det=LL('Details','詳細','Details','Подробно','Detalles');   /* the title and the label, as before */
+      return html`<div class="scp-sec"><span class="scp-secl">${lbl}</span> ${sw}${extra||''}${hideFocus
+        ?html`<button class="scp-focus" style="display:none;" data-k="${ind.k}" title="${detT}">${det} ›</button>`
+        :html`<button class="scp-focus" data-k="${ind.k}" title="${detT}">${det} ›</button>`}</div>`; }
+    const fmtSigned=(ind,v)=>{ if(!SIGNED[ind.k]) return html`<b>${ind.fmt(v)}</b>`;
       const col=v>0?'#30d158':(v<0?'#ff453a':'var(--text-main)');
-      return '<b style="color:'+col+';">'+(v>0?'+':'')+esc(ind.fmt(v))+'</b>'; };
+      return html`<b style="color:${col};">${v>0?'+':''}${ind.fmt(v)}</b>`; };
     /* (#R71) bars — one shared track geometry (fixed name & value columns → identical bar lengths), a REAL
        zero axis for sign-carrying indicators (bars grow left/right from the 0 line), ± colouring, per-value
        year, and a ° marker + note when a gap was filled from the other source / bundled reference. */
     function barsHtml(b){ const entries=codes.map((cd,i)=>({cd,i,e:b.map[cd]||null}));
       const vals=entries.filter(x=>x.e).map(x=>x.e.v);
-      if(!vals.length) return '<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">'+LL('No data','データなし','Keine Daten','Нет данных','Sin datos')+'</div>';
+      if(!vals.length) return html`<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">${LL('No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`;
       const hasNeg=vals.some(v=>v<0);
       const min0=Math.min(0,Math.min.apply(null,vals)), max0=Math.max(0,Math.max.apply(null,vals));
       const range=(max0-min0)||1, zero=(-min0)/range*100;
-      let html='<div class="scp-bars">'+entries.map(x=>{ const s2=_cs(x.cd);
+      const rows=entries.map(x=>{ const s2=_cs(x.cd);
         /* (#R94g) the flag may be an <img> (former states) — insert it RAW, escape only the NAME (an emoji is a
            safe char, but esc() turned the <img> into visible tag text). The title attr gets the plain name. */
-        const nmTxt=cName(s2)||x.cd, nm=(s2.flag?window.IntMapSafe.flag(s2.flag)+' ':'')+esc(nmTxt), nmT=esc(nmTxt);
-        if(!x.e) return '<div class="scp-brow"><span class="scp-bnm" title="'+nmT+'">'+nm+'</span><span class="scp-btrack"'+(hasNeg?' data-z="1"':'')+'>'+(hasNeg?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span>'):'')+'</span><span class="scp-bval" style="color:var(--text-muted);">—</span></div>';
+        const nmTxt=cName(s2)||x.cd, nm=html`${s2.flag?[flagM(s2.flag),' ']:''}${nmTxt}`;
+        if(!x.e) return html`<div class="scp-brow"><span class="scp-bnm" title="${nmTxt}">${nm}</span>${hasNeg?html`<span class="scp-btrack" data-z="1"><span class="scp-zline" style="left:${zero.toFixed(2)}%;"></span></span>`:html`<span class="scp-btrack"></span>`}<span class="scp-bval" style="color:var(--text-muted);">—</span></div>`;
         const v=x.e.v, w=Math.max(0.8,Math.abs(v)/range*100), left=v<0?(zero-w):zero;
         const bar=hasNeg
-          ?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span><span class="scp-bfill" style="left:'+Math.max(0,left).toFixed(2)+'%;width:'+w.toFixed(2)+'%;background:'+(v<0?'#ff453a':PAL[x.i])+';"></span>')
-          :('<span class="scp-bfill" style="left:0;width:'+Math.max(1.2,Math.abs(v)/(max0||1)*100).toFixed(2)+'%;background:'+PAL[x.i]+';"></span>');
-        const yT=x.e.y?('<span class="scp-yr">('+x.e.y+')</span>'):'';
-        const srcM=x.e.src?('<span class="scp-fill" title="'+(x.e.src==='ref'?LL('from bundled reference data','内蔵参照データで補完','aus Referenzdaten','из справочных данных','de datos de referencia'):LL('filled from ','補完: ','ergänzt aus ','дополнено из ','completado de ')+x.e.src)+'">°</span>'):'';
-        return '<div class="scp-brow"><span class="scp-bnm" title="'+nmT+'">'+nm+'</span><span class="scp-btrack">'+bar+'</span><span class="scp-bval">'+fmtSigned(b.ind,v)+srcM+' '+yT+'</span></div>';
-      }).join('')+'</div>';
-      if(b.mixed) html+='<div class="scp-src" style="margin:-4px 0 8px;">° '+LL('gap filled from the other source / bundled reference','欠損値は他ソース・内蔵参照データで補完','Lücke aus anderer Quelle/Referenz ergänzt','пробел дополнен из другого источника','hueco completado de otra fuente/referencia')+'</div>';
-      return html; }
-    function barBlockHtml(b){ return secHtml(b.ind,b.srcName,(b.imfFail?('<span class="scp-src">('+LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')+')</span>'):''))+barsHtml(b); }   /* (#R118) bar view is honest about an IMF fallback too */
+          ?html`<span class="scp-zline" style="left:${zero.toFixed(2)}%;"></span><span class="scp-bfill" style="left:${Math.max(0,left).toFixed(2)}%;width:${w.toFixed(2)}%;background:${v<0?'#ff453a':PAL[x.i]};"></span>`
+          :html`<span class="scp-bfill" style="left:0;width:${Math.max(1.2,Math.abs(v)/(max0||1)*100).toFixed(2)}%;background:${PAL[x.i]};"></span>`;
+        const yT=x.e.y?html`<span class="scp-yr">(${x.e.y})</span>`:'';
+        const srcM=x.e.src?html`<span class="scp-fill" title="${x.e.src==='ref'?LL('from bundled reference data','内蔵参照データで補完','aus Referenzdaten','из справочных данных','de datos de referencia'):LL('filled from ','補完: ','ergänzt aus ','дополнено из ','completado de ')+x.e.src}">°</span>`:'';
+        return html`<div class="scp-brow"><span class="scp-bnm" title="${nmTxt}">${nm}</span><span class="scp-btrack">${bar}</span><span class="scp-bval">${fmtSigned(b.ind,v)}${srcM} ${yT}</span></div>`;
+      });
+      return html`<div class="scp-bars">${rows}</div>${b.mixed?html`<div class="scp-src" style="margin:-4px 0 8px;">° ${LL('gap filled from the other source / bundled reference','欠損値は他ソース・内蔵参照データで補完','Lücke aus anderer Quelle/Referenz ergänzt','пробел дополнен из другого источника','hueco completado de otra fuente/referencia')}</div>`:''}`; }
+    function barBlockHtml(b){ return html`${secHtml(b.ind,b.srcName,(b.imfFail?html`<span class="scp-src">(${LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')})</span>`:''))}${barsHtml(b)}`; }   /* (#R118) bar view is honest about an IMF fallback too */
     function blockHtml(b){
-      let html=secHtml(b.ind,b.srcName,(b.imfFail?('<span class="scp-src">('+LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')+')</span>'):''));
-      html+='<div class="scp-tblwrap"><table class="scp-tbl"><tr><th></th>'+codes.map((cd,i)=>{ const s2=_cs(cd); return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
-      html+='<tr><td>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</td>'+codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return '<td style="color:var(--text-muted);">—</td>'; const last=s2[s2.length-1]; return '<td>'+fmtSigned(b.ind,last.v)+(last.y?' <span style="color:var(--text-muted);">('+last.y+')</span>':'')+'</td>'; }).join('')+'</tr></table></div>';
-      html+=mChart(b.ind,b.serMap); return html; }
+      const head=secHtml(b.ind,b.srcName,(b.imfFail?html`<span class="scp-src">(${LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')})</span>`:''));
+      const ths=codes.map((cd,i)=>{ const s2=_cs(cd); return html`<th><span style="color:${PAL[i]};">●</span> ${cName(s2)||cd}</th>`; });
+      const tds=codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return html`<td style="color:var(--text-muted);">—</td>`; const last=s2[s2.length-1]; return html`<td>${fmtSigned(b.ind,last.v)}${last.y?html` <span style="color:var(--text-muted);">(${last.y})</span>`:''}</td>`; });
+      return html`${head}<div class="scp-tblwrap"><table class="scp-tbl"><tr><th></th>${ths}</tr><tr><td>${LL('Latest','最新値','Aktuell','Последнее','Último')}</td>${tds}</tr></table></div>${mChart(b.ind,b.serMap)}`; }
     /* (#R64) PER-INDICATOR rendering: a source switch re-renders ONLY its own block, from cache when available —
        no full "Loading data…" wipe, no scroll jump ("ソースを切り替えたらいちいち再度すべて読み込み").
        (#R69) each block additionally remembers WHAT it rendered (countries+source signature): re-renders with an
@@ -750,22 +761,23 @@ export function statsCompare(HOST){
          The real list replaces it the moment a series arrives (`_tsAvailYears`), and the series that
          reach furthest back are the Maddison ones, which start where the clock does. */
       if(!ys.length){ /* before any series has loaded: fall back to a full floor→now list so the control isn't empty */
-        let o=''; const nowY=new Date().getFullYear(), lo=((IntMapTime&&+IntMapTime.min)||1850);
-        for(let y=nowY;y>=lo;y--) o+='<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>'; return o; }
-      return ys.map(y=>'<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>').join(''); }
-    function _tsRangeHtml(){ return '<span class="scp-tsl">'+LL('Years','期間','Zeitraum','Годы','Años')+'</span>'
-        +'<select id="scp-tsfrom"><option value="">'+LL('start','開始','Start','начало','inicio')+'</option>'+_yoptsAvail(tsFrom!=null?tsFrom:'')+'</select>'
-        +'<span class="scp-tsdash">–</span>'
-        +'<select id="scp-tsto"><option value="">'+LL('end','終了','Ende','конец','fin')+'</option>'+_yoptsAvail(tsTo!=null?tsTo:'')+'</select>'
-        +((tsFrom!=null||tsTo!=null)?'<button id="scp-tsreset" type="button">'+LL('Reset','リセット','Zurücksetzen','Сброс','Reiniciar')+'</button>':''); }
+        const o=[]; const nowY=new Date().getFullYear(), lo=((IntMapTime&&+IntMapTime.min)||1850);
+        for(let y=nowY;y>=lo;y--) o.push(html`<option value="${y}"${String(selV)===String(y)?' selected':''}>${y}</option>`); return html`${o}`; }
+      return html`${ys.map(y=>html`<option value="${y}"${String(selV)===String(y)?' selected':''}>${y}</option>`)}`; }
+    function _tsRangeHtml(){ return html`${[
+        html`<span class="scp-tsl">${LL('Years','期間','Zeitraum','Годы','Años')}</span>`,
+        html`<select id="scp-tsfrom"><option value="">${LL('start','開始','Start','начало','inicio')}</option>${_yoptsAvail(tsFrom!=null?tsFrom:'')}</select>`,
+        html`<span class="scp-tsdash">–</span>`,
+        html`<select id="scp-tsto"><option value="">${LL('end','終了','Ende','конец','fin')}</option>${_yoptsAvail(tsTo!=null?tsTo:'')}</select>`,
+        (tsFrom!=null||tsTo!=null)?html`<button id="scp-tsreset" type="button">${LL('Reset','リセット','Zurücksetzen','Сброс','Reiniciar')}</button>`:'']}`; }
     function _wireTsRange(bar){ if(!bar) return;
       const f=bar.querySelector('#scp-tsfrom'); if(f) f.onchange=e=>{ tsFrom=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsFrom>tsTo) tsTo=null; render(); };
       const t2=bar.querySelector('#scp-tsto'); if(t2) t2.onchange=e=>{ tsTo=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsTo<tsFrom) tsFrom=null; render(); };
       const rb=bar.querySelector('#scp-tsreset'); if(rb) rb.onclick=()=>{ tsFrom=null; tsTo=null; render(); }; }
     function _refreshTsYearOpts(){ try{ const bar=host&&host.querySelector('#scp-tsrange'); if(!bar) return;
       const f=bar.querySelector('#scp-tsfrom'), t2=bar.querySelector('#scp-tsto');   /* re-fill options in place — keeps the selects + their onchange handlers */
-      if(f) f.innerHTML='<option value="">'+LL('start','開始','Start','начало','inicio')+'</option>'+_yoptsAvail(tsFrom!=null?tsFrom:'');
-      if(t2) t2.innerHTML='<option value="">'+LL('end','終了','Ende','конец','fin')+'</option>'+_yoptsAvail(tsTo!=null?tsTo:''); }catch(_){} }
+      if(f) f.innerHTML=html`<option value="">${LL('start','開始','Start','начало','inicio')}</option>${_yoptsAvail(tsFrom!=null?tsFrom:'')}`;
+      if(t2) t2.innerHTML=html`<option value="">${LL('end','終了','Ende','конец','fin')}</option>${_yoptsAvail(tsTo!=null?tsTo:'')}`; }catch(_){} }
     async function renderInd(k){ if(!host) return; const el=host.querySelector('.scp-blk[data-k="'+k+'"]'); const ind=IND.find(i2=>i2.k===k); if(!el||!ind) return;
       const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode+'|'+(_ttYear()||'now')+'|'+(tsFrom==null?'':tsFrom)+'-'+(tsTo==null?'':tsTo);   /* (#R94) master-clock year; (#R122) time-series year window so a range change re-renders */
       if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
@@ -796,15 +808,10 @@ export function statsCompare(HOST){
       const yset=new Set(); codes.forEach(cd=>{ (sb2.serMap[cd]||[]).forEach(p=>yset.add(p.y)); });
       const years=[...yset].sort((a,b2)=>b2-a).slice(0,24);
       let yt='';
-      if(years.length){ yt='<div class="scp-tblwrap" style="max-height:300px;overflow-y:auto;"><table class="scp-tbl scp-xl"><tr><th>'+LL('Year','年','Jahr','Год','Año')+'</th>'
-          +codes.map((cd,i)=>{ const s2=_cs(cd); return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
-        years.forEach(y2=>{ yt+='<tr><th class="scp-rowh" style="cursor:default;">'+y2+'</th>'+codes.map(cd=>{ const p=(sb2.serMap[cd]||[]).find(q=>q.y===y2); return p?('<td>'+fmtSigned(ind,p.v)+'</td>'):'<td style="color:var(--text-muted);">—</td>'; }).join('')+'</tr>'; });
-        yt+='</table></div>'; }
-      fx.innerHTML='<button class="scp-back" id="scp-fxback">← '+LL('All indicators','指標一覧へ','Alle Kennzahlen','Все показатели','Todos los indicadores')+'</button>'
-        +secHtml(ind,sb2.srcName).replace('scp-focus','scp-focus" style="display:none;')
-        +barsHtml(lb)
-        +mChart(ind,sb2.serMap,240)
-        +yt;
+      if(years.length){ const ths=codes.map((cd,i)=>{ const s2=_cs(cd); return html`<th><span style="color:${PAL[i]};">●</span> ${cName(s2)||cd}</th>`; });
+        const trs=years.map(y2=>html`<tr><th class="scp-rowh" style="cursor:default;">${y2}</th>${codes.map(cd=>{ const p=(sb2.serMap[cd]||[]).find(q=>q.y===y2); return p?html`<td>${fmtSigned(ind,p.v)}</td>`:html`<td style="color:var(--text-muted);">—</td>`; })}</tr>`);
+        yt=html`<div class="scp-tblwrap" style="max-height:300px;overflow-y:auto;"><table class="scp-tbl scp-xl"><tr><th>${LL('Year','年','Jahr','Год','Año')}</th>${ths}</tr>${trs}</table></div>`; }
+      fx.innerHTML=html`<button class="scp-back" id="scp-fxback">← ${LL('All indicators','指標一覧へ','Alle Kennzahlen','Все показатели','Todos los indicadores')}</button>${secHtml(ind,sb2.srcName,'',true)}${barsHtml(lb)}${mChart(ind,sb2.serMap,240)}${yt}`;
       fx.querySelector('#scp-fxback').onclick=()=>{ render(); };
       fx.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=()=>{ srcSel[k]=btn.getAttribute('data-s'); renderFocus(k); }; });
       try{ wireM(fx); }catch(_){}
@@ -816,9 +823,9 @@ export function statsCompare(HOST){
          was "this year's World Bank / IMF figures" (plainly false for e.g. 1939) and carried a 📅 emoji (removed). */
       try{ const tb=v.querySelector('#scp-timebanner'); if(tb){ const ty=_ttYear(), pw=(window._imTimePreWB||null);
         if(ty){ tb.style.display='block';
-          if(ty<1960){ tb.classList.add('warn'); tb.innerHTML='<b>'+ty+'</b> · '+LL('long-run estimates for this year — World Bank / IMF annual series begin in 1960','この年の長期推計値 — 世界銀行・IMFの年次データは1960年以降','Langzeitschätzungen für dieses Jahr — Weltbank-/IWF-Reihen ab 1960','долгосрочные оценки за этот год — ряды Всемирного банка/МВФ с 1960','estimaciones de largo plazo para este año — las series del Banco Mundial/FMI empiezan en 1960'); }
-          else { tb.classList.remove('warn'); tb.innerHTML='<b>'+ty+'</b> · '+LL('each indicator’s value for this year, by its own source','この年の各指標の値（各出典による）','Werte je Kennzahl für dieses Jahr, nach Quelle','значение каждого показателя за этот год, по своему источнику','valor de cada indicador para este año, según su fuente'); } }
-        else if(pw){ tb.style.display='block'; tb.classList.add('warn'); tb.innerHTML='<b>'+pw+'</b> · '+LL('World Bank annual series begin in 1960 — latest available','世界銀行の年次データは1960年以降','Weltbank-Reihen ab 1960','ряды Всемирного банка с 1960','series desde 1960'); }
+          if(ty<1960){ tb.classList.add('warn'); tb.innerHTML=html`<b>${ty}</b> · ${LL('long-run estimates for this year — World Bank / IMF annual series begin in 1960','この年の長期推計値 — 世界銀行・IMFの年次データは1960年以降','Langzeitschätzungen für dieses Jahr — Weltbank-/IWF-Reihen ab 1960','долгосрочные оценки за этот год — ряды Всемирного банка/МВФ с 1960','estimaciones de largo plazo para este año — las series del Banco Mundial/FMI empiezan en 1960')}`; }
+          else { tb.classList.remove('warn'); tb.innerHTML=html`<b>${ty}</b> · ${LL('each indicator’s value for this year, by its own source','この年の各指標の値（各出典による）','Werte je Kennzahl für dieses Jahr, nach Quelle','значение каждого показателя за этот год, по своему источнику','valor de cada indicador para este año, según su fuente')}`; } }
+        else if(pw){ tb.style.display='block'; tb.classList.add('warn'); tb.innerHTML=html`<b>${pw}</b> · ${LL('World Bank annual series begin in 1960 — latest available','世界銀行の年次データは1960年以降','Weltbank-Reihen ab 1960','ряды Всемирного банка с 1960','series desde 1960')}`; }
         else tb.style.display='none'; } }catch(_){}
       const body=v.querySelector('#scp-body');
       /* (#R108) FIX the rare "bar→time-series が切り替わらない（tableを経由すると変わる）" bug: a MODE change must fully
@@ -898,30 +905,30 @@ export function statsCompare(HOST){
       if(tSort&&cols.indexOf(tSort.col)>=0){ const colKey=tSort.col;
         const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const p=cellAt(indK,cd); return p?p.v:null; };
         rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
-      const cLbl=cd=>{ const s2=_cs(cd); return (s2.flag?window.IntMapSafe.flag(s2.flag)+' ':'')+esc(cName(s2)||cd); };
-      const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return i2?esc(LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4])):esc(k2); };
+      const cLbl=cd=>{ const s2=_cs(cd); return html`${s2.flag?[flagM(s2.flag),' ']:''}${cName(s2)||cd}`; };
+      const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return html`${i2?LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4]):k2}`; };
       const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
       const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);
       const _selY=(tYear!=null)?tYear:_ttYear();   /* (#R94) the dropdown reflects the master clock while travelling */
-      let h='<div class="scp-ttools">'
-        +'<button id="scp-flip" title="'+LL('Swap rows/columns','行と列を入れ替え','Zeilen/Spalten tauschen','Поменять строки/столбцы','Intercambiar filas/columnas')+'">⇄ '+LL('Transpose','行列入替','Transponieren','Транспонировать','Transponer')+'</button>'
-        +'<select id="scp-year"><option value=""'+(_selY==null?' selected':'')+'>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</option>'+yrs.map(y2=>'<option value="'+y2+'"'+(_selY===y2?' selected':'')+'>'+y2+'</option>').join('')+'</select>'
-        +'<button id="scp-csv">CSV</button>'
-        +(tSort?('<button id="scp-unsort">'+LL('Clear sort','並べ替え解除','Sortierung aufheben','Сбросить сортировку','Quitar orden')+'</button>'):'')
-        +'<span class="scp-src" style="margin-left:auto;">'+LL('Drag headers to reorder · click to sort','ヘッダーをドラッグで並べ替え・クリックでソート','Header ziehen = umordnen · Klick = sortieren','Перетащите заголовки · клик = сортировка','Arrastra encabezados · clic = ordenar')+'</span></div>';
-      h+='<div class="scp-tblwrap"><table class="scp-tbl scp-xl" id="scp-pivot"><tr><th class="scp-corner"></th>';
+      const h=[html`<div class="scp-ttools">`,
+        html`<button id="scp-flip" title="${LL('Swap rows/columns','行と列を入れ替え','Zeilen/Spalten tauschen','Поменять строки/столбцы','Intercambiar filas/columnas')}">⇄ ${LL('Transpose','行列入替','Transponieren','Транспонировать','Transponer')}</button>`,
+        html`<select id="scp-year"><option value=""${_selY==null?' selected':''}>${LL('Latest','最新値','Aktuell','Последнее','Último')}</option>${yrs.map(y2=>html`<option value="${y2}"${_selY===y2?' selected':''}>${y2}</option>`)}</select>`,
+        html`<button id="scp-csv">CSV</button>`,
+        tSort?html`<button id="scp-unsort">${LL('Clear sort','並べ替え解除','Sortierung aufheben','Сбросить сортировку','Quitar orden')}</button>`:'',
+        html`<span class="scp-src" style="margin-left:auto;">${LL('Drag headers to reorder · click to sort','ヘッダーをドラッグで並べ替え・クリックでソート','Header ziehen = umordnen · Klick = sortieren','Перетащите заголовки · клик = сортировка','Arrastra encabezados · clic = ordenar')}</span></div>`];
+      h.push(html`<div class="scp-tblwrap"><table class="scp-tbl scp-xl" id="scp-pivot"><tr><th class="scp-corner"></th>`);
       cols.forEach((ck,ci)=>{ const srt=(tSort&&tSort.col===ck)?(tSort.dir==='asc'?' ▲':' ▼'):'';
-        h+='<th class="scp-h" draggable="true" tabindex="0" aria-sort="'+((tSort&&tSort.col===ck)?(tSort.dir==='asc'?'ascending':'descending'):'none')+'" data-ax="col" data-i="'+ci+'" data-k="'+esc(ck)+'">'+hLbl(ck,true)+srt+'</th>'; });
-      h+='</tr>';
-      rowOrder.forEach(rk=>{ h+='<tr><th class="scp-h scp-rowh" draggable="true" data-ax="row" data-k="'+esc(rk)+'">'+hLbl(rk,false)+'</th>';
+        h.push(html`<th class="scp-h" draggable="true" tabindex="0" aria-sort="${(tSort&&tSort.col===ck)?(tSort.dir==='asc'?'ascending':'descending'):'none'}" data-ax="col" data-i="${ci}" data-k="${ck}">${hLbl(ck,true)}${srt}</th>`); });
+      h.push(html`</tr>`);
+      rowOrder.forEach(rk=>{ h.push(html`<tr><th class="scp-h scp-rowh" draggable="true" data-ax="row" data-k="${rk}">${hLbl(rk,false)}</th>`);
         cols.forEach(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const i2=IND.find(x=>x.k===indK);
           const p=cellAt(indK,cd);
           /* (#R71) sign-carrying indicators show ±green/red; ° marks a gap-filled value */
-          h+=p?('<td>'+fmtSigned(i2,p.v)+(p.src?'<span class="scp-fill">°</span>':'')+(p.y?' <span class="scp-yr">('+p.y+')</span>':'')+'</td>'):'<td style="color:var(--text-muted);">—</td>'; });
-        h+='</tr>'; });
-      h+='</table></div>';
-      h+='<div class="scp-src" style="margin-top:6px;">'+LL('Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)','出典は指標ごと（世界銀行／IMF WEO／内蔵参照データ — 棒グラフ・時系列表示に明記）','Quellen je Kennzahl: Weltbank / IWF WEO / Referenzdaten','Источники по показателям: Всемирный банк / МВФ / встроенные данные','Fuentes por indicador: Banco Mundial / FMI WEO / datos de referencia')+'</div>';
-      wrap.innerHTML=h;
+          h.push(p?html`<td>${fmtSigned(i2,p.v)}${p.src?html`<span class="scp-fill">°</span>`:''}${p.y?html` <span class="scp-yr">(${p.y})</span>`:''}</td>`:html`<td style="color:var(--text-muted);">—</td>`); });
+        h.push(html`</tr>`); });
+      h.push(html`</table></div>`);
+      h.push(html`<div class="scp-src" style="margin-top:6px;">${LL('Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)','出典は指標ごと（世界銀行／IMF WEO／内蔵参照データ — 棒グラフ・時系列表示に明記）','Quellen je Kennzahl: Weltbank / IWF WEO / Referenzdaten','Источники по показателям: Всемирный банк / МВФ / встроенные данные','Fuentes por indicador: Banco Mundial / FMI WEO / datos de referencia')}</div>`);
+      wrap.innerHTML=html`${h}`;
       wrap.querySelector('#scp-flip').onclick=()=>{ tFlip=!tFlip; tSort=null; renderTable(); };
       wrap.querySelector('#scp-year').onchange=(e)=>{ const v2=e.target.value; tYear=v2?+v2:null; renderTable(); };
       const un=wrap.querySelector('#scp-unsort'); if(un) un.onclick=()=>{ tSort=null; renderTable(); };
