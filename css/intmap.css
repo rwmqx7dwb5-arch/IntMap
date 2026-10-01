@@ -1279,6 +1279,29 @@
     .ntl-player .ecl-b.ecl-play{ background:var(--primary-fill); color:#fff; border-color:transparent; }
     .ntl-player .ecl-b.ecl-now{ min-width:auto; padding:0 9px; font-size:10.5px; font-weight:600; }
     .ntl-player .ecl-b svg{ display:block; margin:0 auto; }
+    /* (time-compare-lapse) the time-lapse player (js/time-lapse.js) — the clock played forward one drawn frame at a
+       time. The panel's own controls: its segmented .ntl-modes for the unit and the speed, the transport's filled
+       play button, inputs the size of #ntl-date. Separated from the forecast transport by a hairline. */
+    .ntl-lapse{ margin-top:8px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.18); display:flex; flex-direction:column; gap:6px; }
+    .ntl-lapse[hidden]{ display:none; }
+    .ntl-lapse-head{ display:flex; align-items:center; gap:8px; }
+    .ntl-lapse-play{ flex:0 0 auto; width:30px; height:30px; display:flex; align-items:center; justify-content:center; padding:0;
+      border:none; border-radius:9px; background:var(--primary-fill); color:#fff; cursor:pointer; font-size:11px; font-weight:600; }
+    .ntl-lapse-play::before{ content:""; display:block; width:10px; height:12px; margin-left:2px; background:currentColor; clip-path:polygon(0 0,100% 50%,0 100%); }
+    .ntl-lapse-play.on::before{ margin-left:0; clip-path:none; background:linear-gradient(90deg,currentColor 0 36%,transparent 36% 64%,currentColor 64% 100%); border-radius:1px; }
+    .ntl-lapse-play:active{ transform:scale(0.95); }
+    .ntl-lapse-title{ font-size:12px; font-weight:600; color:var(--text-main); margin-right:auto; }
+    .ntl-lapse .ntl-mode{ padding:4px 9px; font-size:11px; font-variant-numeric:tabular-nums; }   /* the panel's own segmented control (.ntl-modes), compact */
+    .ntl-lapse .ntl-mode:disabled{ opacity:0.4; cursor:default; }
+    .ntl-lapse-row{ display:flex; align-items:flex-end; gap:6px; flex-wrap:wrap; }
+    .ntl-lapse-f{ display:flex; flex-direction:column; gap:2px; font-size:10.5px; color:var(--text-muted); flex:1 1 0; min-width:0; }
+    .ntl-lapse-in{ width:100%; box-sizing:border-box; height:28px; padding:0 7px; border-radius:8px; border:1px solid rgba(128,128,128,0.28);
+      background:var(--input-bg); color:var(--text-main); font-size:12px; font-variant-numeric:tabular-nums; }
+    .ntl-lapse-step{ max-width:64px; }
+    .ntl-lapse-k{ font-size:10.5px; color:var(--text-muted); }
+    .ntl-lapse-loop{ display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-main); margin-left:auto; cursor:pointer; }
+    .ntl-lapse-status{ min-height:14px; font-size:10.5px; line-height:1.4; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+    .ntl-lapse-note{ font-size:10.5px; line-height:1.4; color:var(--text-muted); }
     /* (#11) bigval fills the left (fixed body width) so the "現在へ戻る" button never shifts as the date text length
        changes ("Dateスライダーを動かすと…激しくUIが動いてしまう"); and the value is NOT bold ("太字にするな"). */
     .ntl-valrow{ display:flex; align-items:center; gap:10px; margin:0; }

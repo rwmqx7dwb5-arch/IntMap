@@ -450,6 +450,7 @@ export function newsTimeline(HOST){
         bStepNext.title=t; bStepNext.setAttribute('aria-label',t); }
       buildZones();
       buildScale();
+      try{ if(_lapse) _lapse.then(c=>{ if(c) c.relabel(); }); }catch(_){}   /* (time-compare-lapse) the lapse row's words, in the panel's language */
     }
     /* the ONE place an instant is turned into 「past」 or 「future」 — both the badge in the panel and
        the subtitle on the collapsed button read it, so they cannot disagree (#R293) */
@@ -680,6 +681,7 @@ export function newsTimeline(HOST){
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
       buildScale(); buildPlayer();
+      try{ if(_lapse) _lapse.then(c=>{ if(c) c.panelMode(m); }); }catch(_){}   /* (time-compare-lapse) the lapse steps in this tab's unit */
       try{ refreshUI(IntMapTime.state()); }catch(_){}
     }
     /* (#R290) 「反映内容を表示する箇所はいらない」 — `buildSynced` built the 「Applied」 label and one
@@ -687,8 +689,16 @@ export function newsTimeline(HOST){
        their own year changes stays declared and does nothing, so a caller that has not been
        rebuilt is not a TypeError (js/time-countries.js calls it defensively already). */
     window._imTimeSyncedRefresh=()=>{};
+    /* (time-compare-lapse) THE TIME-LAPSE — the clock played forward, beside the forecast transport and separate from it
+       (that one steps a model's valid times; this one steps years, days or hours). Its module is fetched the first time
+       the panel opens, and its unit follows this panel's tab while nothing is playing. See js/time-lapse.js. */
+    const lapseEl=document.getElementById('ntl-lapse');
+    let _lapse=null;
+    function lapseMount(){ if(!lapseEl||_lapse) return _lapse;
+      _lapse=import('./time-lapse.js').then(m=>m.mountLapse(lapseEl,{ lang:()=>HOST.lang, mode:()=>mode })).catch(()=>null);
+      return _lapse; }
     /* WRITE side: inputs → kernel */
-    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} } _tmSyncTerminator(); };
+    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
     if(bStepPrev) bStepPrev.onclick=()=>_bsStep(-1);   /* (#R421) */
     if(bStepNext) bStepNext.onclick=()=>_bsStep(1);
@@ -697,7 +707,7 @@ export function newsTimeline(HOST){
     if(modeTime) modeTime.onclick=()=>applyMode('time');   /* (#R137) · (#R293) and the forecast */
     /* the one entry point a weather legend uses to reach this control — it opens the strip on the
        「時刻」 tab, which is where the model's transport now lives (「わざわざ分けるな」, twice over) */
-    window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode('time'); }catch(_){} };
+    window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode('time'); lapseMount(); }catch(_){} };
     slider.addEventListener('input',()=>{ if(_self) return;
       if(mode==='year'){ const y=p2y(parseInt(slider.value,10)); if(y>=curY) IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) IntMapTime.setYear(y,{source:'ui'}); }
       else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */

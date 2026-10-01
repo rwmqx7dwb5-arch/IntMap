@@ -26,6 +26,41 @@ import { clockFor } from './proxy-fetch.js';
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+/* (time-compare-lapse) the main map's clock, and the factory this window makes its own clock with */
+import { IntMapTime, makeClock } from './chronos.js';
+
+/* ══ (time-compare-lapse) THE WINDOW'S TIME, BY IMPORT ═════════════════════════════════════════════════════
+   The comparison window holds a clock of its own (below). The readers of that fact — the share link
+   (js/map-ui.js), Atlas's capability, its observer and its state (js/atlas-cap-time.js,
+   js/atlas-capabilities.js, js/atlas-state.js) — import this face from its owner rather than reaching
+   through `window.IntMapCompare` (scripts/global-surface.mjs counts every such reach). It answers null until
+   js/app-body.js has created the window's controller with `compare(HOST)`. */
+let _cmpApi=null; const _cmpSubs=new Set();
+export const compareTime={
+  /** what the window shows and why — see `timeState` below; null before the window exists */
+  state:()=>(_cmpApi&&_cmpApi.timeState?_cmpApi.timeState():null),
+  /** setTime({ year | date | now | follow | param }) */
+  set:(o)=>(_cmpApi&&_cmpApi.setTime?_cmpApi.setTime(o):null),
+  /** the share link's value ('' while the window follows the main map) */
+  param:()=>(_cmpApi&&_cmpApi.timeParam?_cmpApi.timeParam():''),
+  /** resolves with `state()` once the picked layer has been judged at the window's instant */
+  judged:()=>(_cmpApi&&_cmpApi.judged?_cmpApi.judged():Promise.resolve(null)),
+  open:()=>{ if(_cmpApi) _cmpApi.open(); },
+  /** fn() whenever the window's instant or its follow choice changes; returns the unsubscribe */
+  on:(fn)=>{ if(typeof fn!=='function') return ()=>{}; _cmpSubs.add(fn); return ()=>{ _cmpSubs.delete(fn); }; },
+};
+
+/* (time-compare-lapse) the window's own layer that no main-map layer reads, declared in js/layer-time.js's vocabulary
+   (exported: tests/time-compare-lapse-checks.test.mjs runs it through the same `validate` the gate uses) */
+const LA=/** @type {(...a: string[]) => string[]} */ (IntMapLang.pickArgs());
+/* NASA GIBS's own extent for this product — its DescribeDomains document, read 2026-10-01:
+   1980-01-01/2023-11-01/P1M, then months with holes, the last range ending 2026-06-01. The first month is
+   the bound; the end is left unread here because upstream keeps publishing (a later month it lacks is an
+   empty tile, as on the main map's GIBS rows). */
+export const MERRA2=Object.freeze({ kind:'record', from:'1980-01-01',
+  by:'NASA GIBS WMTS DescribeDomains, MERRA2_2m_Air_Temperature_Monthly (GoogleMapsCompatible_Level6), read 2026-10-01',
+  follows:'js/compare.js dayOf',
+  says:LA('MERRA-2 monthly air temperature (NASA GIBS)','MERRA-2 月平均気温（NASA GIBS）') });
 
 export function compare(HOST){
   const cmpRead=(u)=>jsonWithin(u,clockFor(u),undefined,{idle:true});   /* (fetch-deadline-layer) see the note at the imports */
@@ -52,6 +87,21 @@ export function compare(HOST){
        contract has nowhere to put them. */
     let _wantGlobe=null, _basePoll=0, _baseRetryT=0, _copiesApplied=null;
     const xrayOn=()=>mode==='xray';
+    /* ══ (time-compare-lapse) THIS WINDOW IS A MAP AT ITS OWN INSTANT ═════════════════════════════
+       「1914 年 | 今日」. The window had no clock: every layer in it drew what it fetched, and the
+       historical borders drew whatever year the MAIN map's historical layer last loaded (or 1914,
+       typed). It now holds a clock of its own (js/chronos.js `makeClock`), and every layer in the
+       picker is judged by the SAME rule the main map uses — js/layer-time-kernel.js `verdict(id,
+       clock, drawnBy)` — against THIS clock: a layer whose source states nothing about the instant is
+       not drawn here and the window says why; a layer that follows the clock is asked for the instant.
+       `follow` (the default) keeps the two clocks equal, so a window that was never given a time of
+       its own shows what it always showed beside a map at the same instant. */
+    const CT=makeClock('compare');
+    let follow=true;
+    function mirror(){ if(!follow) return;
+      const d=IntMapTime.get();
+      if(d) CT.set(d,{allowFuture:true,source:'follow'}); else CT.setNow({source:'follow'}); }
+    IntMapTime.on(()=>mirror());
     const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
     /* (#R29.1) Use the MOBILE 4k texture on phones — exactly like the main map's koppenDisplayURL().
        The compare map is a SECOND WebGL context; loading the full-res Köppen PNG there (on top of the main
@@ -59,7 +109,19 @@ export function compare(HOST){
        ⚠ (#R668) …and that fix was only in force in PORTRAIT: asked by width, the phone turned sideways
        took the desktop arm and loaded the full-res PNG into the second context again. It asks the
        device now (`_phoneDev`, above) — the crash came back with the orientation, not with the phone. */
-    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(_phoneDev()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
+    const koppenPeriods=()=>window.KOPPEN_PERIODS||[];   /* js/data-layers.js — the periods and their rasters */
+    function koppenUrl(period){ try{ const want=period||window._koppenPeriod; const p=koppenPeriods().find(x=>x[0]===want); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(_phoneDev()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
+    /* (time-compare-lapse) the Köppen period that holds this window's year — read off js/data-layers.js
+       KOPPEN_PERIODS (`'1901-1930'` …), so the periods are the main map's and are not listed here. On the
+       live clock the reader's own legend choice stands, as it always did; past the newest period the newest
+       is shown (the declaration carries it, `carry: 'last'`, and the verdict says so). */
+    function koppenPeriodAt(clock){ if(clock.isLive()) return null;   /* null → the reader's legend choice (koppenUrl) */
+      const y=clock.when().getUTCFullYear(); const P=koppenPeriods();
+      const span=(k)=>String(k).split('-').map(Number);
+      const hit=P.find(x=>{ const s=span(x[0]); return y>=s[0]&&y<=s[1]; });
+      if(hit) return hit[0];
+      const newest=P.reduce((b,x)=>(!b||span(x[0])[1]>span(b[0])[1])?x:b,null);
+      return newest?newest[0]:null; }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
       /* ⚠ (#R258) 2200, NOT 4000 — the card band css/intmap.css §「WHO IS IN FRONT」 defines. This is a
          window the reader reaches into, so it has to obey the same rule every other one does: an open
@@ -102,6 +164,18 @@ export function compare(HOST){
       '.cmp-picker{flex:0 0 auto;padding:6px 10px 8px;background:var(--sidebar-bg);border-bottom:1px solid rgba(128,128,128,0.14);position:relative;z-index:calc(var(--z-inset) + 8);pointer-events:auto;}'+
       '#compare-window.cmp-xray .cmp-picker{pointer-events:auto !important;z-index:calc(var(--z-inset) + 9);position:relative;}'+   /* (#R33) picker stays clickable in x-ray */
       '.cmp-picker select{width:100%;box-sizing:border-box;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.28);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:600;cursor:pointer;}'+
+      /* (time-compare-lapse) the window's own clock: a segmented follow/own control, a year field and «Now» on one
+         row under the picker; the sentence about the picked layer at that instant under it; and the two instants as a
+         pill on the map («1914 | Today»), the window's own in bold */
+      '.cmp-time{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}'+
+      '.cmp-time .cmp-seg .cmp-btn{padding:5px 9px;}'+
+      '.cmp-year{width:84px;box-sizing:border-box;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.28);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;}'+
+      '.cmp-tnote{margin-top:6px;font-size:11px;line-height:1.4;color:var(--text-muted);}'+
+      '.cmp-tnote.cmp-tnote-held{color:var(--text-main);}'+
+      '.cmp-when{position:absolute;top:8px;right:8px;z-index:calc(var(--z-inset) + 4);display:flex;align-items:baseline;gap:6px;padding:4px 10px;border-radius:999px;background:var(--popup-bg);color:var(--text-muted);border:1px solid rgba(128,128,128,0.25);font-size:11.5px;font-variant-numeric:tabular-nums;backdrop-filter:saturate(180%) blur(10px);-webkit-backdrop-filter:saturate(180%) blur(10px);pointer-events:none;}'+
+      '.cmp-when b{color:var(--text-main);font-size:13px;}'+
+      '.cmp-when.cmp-when-own b{color:var(--primary-color);}'+
+      '.cmp-when-sep{opacity:0.5;}'+
       '.cmp-ctrls{position:absolute;top:8px;left:8px;z-index:calc(var(--z-inset) + 5);display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px);}'+
       '.cmp-ctrls label{font-size:11px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:4px 7px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
       /* (#R27) The select had display:flex applied to a NATIVE <select>, which collapsed its text box so
@@ -225,8 +299,27 @@ export function compare(HOST){
          or any data layer over an independent base). So both Map and Sat now show an opaque, independent base
          in the lens, registered pixel-for-pixel to the main camera. */
       const dark=document.documentElement.getAttribute('data-theme')==='dark';
-      if(xrayOn()){ setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); return; }
-      setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
+      /* (time-compare-lapse) AT AN INSTANT AN ERA RECORD ANSWERS, THE MAP BASE IS PHYSICAL GEOGRAPHY — the main map's rule
+         (js/historical-basemap.js): the CARTO raster draws TODAY's political boundaries and names, which a 1914 window
+         would otherwise state under its 1914 borders. The same layer definitions, on this window's own vector source. */
+      const era=eraAt(CT);
+      if(baseKind==='map'&&era) ensureEraBase(!dark);
+      setVis('cmp-base-carto',baseKind==='map'&&!dark&&!era); setVis('cmp-base-dark',baseKind==='map'&&dark&&!era); setVis('cmp-base-sat',baseKind==='sat');
+      _eraBaseIds.forEach(id=>setVis(id,baseKind==='map'&&era)); }
+    /* is this window's instant one an era record answers? — js/time-borders.js `modernAt`, the rule the main map uses */
+    function eraAt(clock){ try{ return !window.IntMapTimeBorders.modernAt(clock.when(),clock.isLive()); }catch(_){ return false; } }
+    let _eraBaseIds=[], _eraLight=null;
+    function ensureEraBase(light){ const HB=window.IntMapHistoricalBasemap; if(!HB||!HB.definitions) return;
+      try{
+        if(!cmap.layers.hasSource('cmp-ofm')) cmap.layers.addSource('cmp-ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
+        const defs=HB.definitions(light);
+        /* below every overlay the window draws: above its raster bases, before its first data layer */
+        const before=cmap.layers.has('cmp-lyr-worldcover')?'cmp-lyr-worldcover':undefined;
+        defs.forEach(d=>{ const id='cmp-'+d.id;
+          if(!cmap.layers.has(id)) cmap.layers.add(Object.assign({},d,{id,layout:Object.assign({},d.layout,{visibility:'none'})},d.source?{source:'cmp-ofm'}:{}),before);
+          else if(_eraLight!==light) Object.entries(d.paint||{}).forEach(([k,v])=>{ try{ cmap.layers.setPaint(id,k,v); }catch(_){} }); });
+        _eraBaseIds=defs.map(d=>'cmp-'+d.id); _eraLight=light;
+      }catch(_){} }
     function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.render.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600);   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
       /* (#R34) POLL until the wanted base actually shows — a click landing during the cmap style-load
          otherwise no-ops with nothing retrying ("Compare viewで…切り替えができないバグが発生する"). */
@@ -330,13 +423,35 @@ export function compare(HOST){
     const cmpGibsStatic=(layer,lvl,ext)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+layer+'/default/GoogleMapsCompatible_Level'+lvl+'/{z}/{y}/{x}.'+ext];
     function ld(k,fb){ try{ if(typeof layerDates!=='undefined'&&layerDates&&layerDates[k]) return layerDates[k]; }catch(_){} return fb; }
     function addR(id,tiles,maxz,op){ if(cmap.layers.hasSource('cmpx-'+id)) return; cmap.layers.addSource('cmpx-'+id,{type:'raster',tiles:tiles,tileSize:256,maxzoom:maxz||9}); cmap.layers.add({id:'cmpx-'+id,type:'raster',source:'cmpx-'+id,layout:{visibility:'none'},paint:{'raster-opacity':op==null?0.78:op}}); }
+    /* ══ (time-compare-lapse) WHAT TIME EACH LAYER IN THIS WINDOW STATES ══════════════════════════════
+       Every entry below names, as `lid`, the main map's layer whose declaration speaks for the SAME source
+       (js/layer-time-decl.js — what the source states about time is the source's, whichever map draws it),
+       and as `drawnBy`, who applies the instant HERE: this window draws its own copy of each layer, so the
+       main map's module is not the one that follows the clock on this map (js/layer-time-kernel.js
+       `onMap`). An entry with `at()` follows this window's clock; one with `ownDate` shows a date of its
+       own and is said to; one with neither is drawn as it was fetched — exactly the ones the rule
+       withholds at an instant their source does not state.
+       An entry whose source no main-map layer reads carries its own declaration as `time`, in the same
+       vocabulary (js/layer-time.js), and the kernel judges it the same way (`judge`). */
+    /* the day (or month) a GIBS product is asked for on THIS map: on the live clock the day the window has
+       always used (the main map's chosen date for that product, else two days ago); off it, the clock's */
+    function dayOf(k,monthly){ if(CT.isLive()) return ld(k,monthly?'2024-01-01':CMP_DATE);
+      const iso=CT.iso(); return monthly?iso.slice(0,iso.lastIndexOf('-'))+'-01':iso; }
+    /* the historical borders' request counter (a later instant supersedes an earlier answer) and what they drew */
+    let _hbSeq=0, _hbShown=null;
+    /* a GIBS day product that follows this window's clock — the tiles are re-pointed, not the layer rebuilt */
+    function dayEntry(k,n,time,layer,lvl,sfx,monthly){
+      const tiles=()=>cmpGibs(layer,lvl,'png',dayOf(k,monthly)+(sfx||''));
+      return Object.assign({k, n, ids:['cmpx-'+k], drawnBy:{follows:'js/compare.js dayOf'},
+        add(){ addR(k,tiles(),lvl); },
+        at(){ try{ cmap.layers.setSourceTiles('cmpx-'+k,tiles()); }catch(_){} }}, time); }
     const CMP_LAYERS=[
-      {k:'koppen', n:()=>IntMapLang.t(HOST.lang,"Köppen climate","ケッペン気候区分","Köppen-Klima","Климат по Кёппену","Clima de Köppen"), ids:['cmp-lyr-koppen'], add(){ try{ cmap.layers.updateImage('cmp-koppen',{url:koppenUrl(),coordinates:KC}); }catch(_){} }},
-      {k:'worldcover', n:()=>IntMapLang.t(HOST.lang,"Land cover (ESA 2021)","土地被覆 (ESA 2021)","Landbedeckung (ESA 2021)","Земной покров (ESA 2021)","Cobertura del suelo (ESA 2021)"), ids:['cmp-lyr-worldcover'], add(){}},
-      {k:'eco', n:()=>IntMapLang.t(HOST.lang,"Ecoregions","生態地域","Ökoregionen","Экорегионы","Ecorregiones"), ids:['cmp-lyr-eco','cmp-lyr-eco-l'], add(done){
+      {k:'koppen', lid:'dl-climate', drawnBy:{follows:'js/compare.js koppenPeriodAt'}, at(){ try{ cmap.layers.updateImage('cmp-koppen',{url:koppenUrl(koppenPeriodAt(CT)),coordinates:KC}); }catch(_){} }, n:()=>IntMapLang.t(HOST.lang,"Köppen climate","ケッペン気候区分","Köppen-Klima","Климат по Кёппену","Clima de Köppen"), ids:['cmp-lyr-koppen'], add(){ try{ cmap.layers.updateImage('cmp-koppen',{url:koppenUrl(),coordinates:KC}); }catch(_){} }},
+      {k:'worldcover', lid:'eco-dl-worldcover', drawnBy:{ownDate:'js/compare.js cmp-worldcover (the 2021 map)'}, n:()=>IntMapLang.t(HOST.lang,"Land cover (ESA 2021)","土地被覆 (ESA 2021)","Landbedeckung (ESA 2021)","Земной покров (ESA 2021)","Cobertura del suelo (ESA 2021)"), ids:['cmp-lyr-worldcover'], add(){}},
+      {k:'eco', lid:'eco-dl-ecoregions', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Ecoregions","生態地域","Ökoregionen","Экорегионы","Ecorregiones"), ids:['cmp-lyr-eco','cmp-lyr-eco-l'], add(done){
         const addEco=(gj)=>{ if(!gj) return; try{ if(!cmap.layers.hasSource('cmp-eco')){ cmap.layers.addSource('cmp-eco',{type:'geojson',data:gj}); cmap.layers.add({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.layers.add({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',layout:{visibility:'none'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } done&&done(); }catch(_){} };
         if(window.__ECOREGIONS_2017) addEco(window.__ECOREGIONS_2017); else if(window.__loadEcoregions) window.__loadEcoregions(addEco); }},
-      {k:'plates', n:()=>IntMapLang.t(HOST.lang,"Tectonic plates","プレート境界","Tektonische Platten","Тектонические плиты","Placas tectónicas"), ids:['cmpx-plates-f','cmpx-plates-l'], add(done){
+      {k:'plates', lid:'eco-dl-plates', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Tectonic plates","プレート境界","Tektonische Platten","Тектонические плиты","Placas tectónicas"), ids:['cmpx-plates-f','cmpx-plates-l'], add(done){
         if(cmap.layers.hasSource('cmpx-plates')){ done&&done(); return; }
         Promise.all([
           cmpRead('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json'),
@@ -350,20 +465,20 @@ export function compare(HOST){
          what the main map has streamed on desktop since #R20, so the same hillshade was visibly
          coarser here than beside it. It asks the shell for the depth now (window.__imDemMaxZoom),
          so desktop gets terrarium's native 15 and a phone keeps its 13. */
-      {k:'hillshade', n:()=>IntMapLang.t(HOST.lang,"Hillshade","陰影起伏","Schummerung","Отмывка рельефа","Sombreado del relieve"), ids:['cmpx-hill'], add(){ try{ if(!cmap.layers.hasSource('cmpx-dem')) cmap.layers.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:(window.__imDemMaxZoom?window.__imDemMaxZoom():13)});
+      {k:'hillshade', lid:'dl-hillshade', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Hillshade","陰影起伏","Schummerung","Отмывка рельефа","Sombreado del relieve"), ids:['cmpx-hill'], add(){ try{ if(!cmap.layers.hasSource('cmpx-dem')) cmap.layers.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:(window.__imDemMaxZoom?window.__imDemMaxZoom():13)});
         if(!cmap.layers.has('cmpx-hill')) cmap.layers.add({id:'cmpx-hill',type:'hillshade',source:'cmpx-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.55}}); }catch(_){} }},
-      {k:'nightsat', n:()=>IntMapLang.t(HOST.lang,"Night lights (satellite)","夜の光（衛星）","Nachtlichter (Satellit)","Ночные огни (спутник)","Luces nocturnas (satélite)"), ids:['cmpx-nightsat'], add(){ /* (#R550) the THIRD copy of «which year of night lights» used to live
+      {k:'nightsat', lid:'dl-nightsat', drawnBy:{ownDate:'js/night-lights.js tiles (the main map’s epoch)'}, n:()=>IntMapLang.t(HOST.lang,"Night lights (satellite)","夜の光（衛星）","Nachtlichter (Satellit)","Ночные огни (спутник)","Luces nocturnas (satélite)"), ids:['cmpx-nightsat'], add(){ /* (#R550) the THIRD copy of «which year of night lights» used to live
         here as a string replace that spelled 2016 — so the comparison window could contradict the map
         it was opened beside. It asks js/night-lights.js now, like the layer and the globe do. */
         try{ const NL=window.IntMapNightLights; const t=NL.tiles(); if(t.length) addR('nightsat',t,NL.maxzoom(),0.95); }catch(_){} }},
-      {k:'snow', n:()=>IntMapLang.t(HOST.lang,"Snow cover","積雪","Schneedecke","Снежный покров","Cubierta de nieve"), ids:['cmpx-snow'], add(){ addR('snow',cmpGibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',ld('snow',CMP_DATE)),8); }},
-      {k:'aod', n:()=>IntMapLang.t(HOST.lang,"Aerosol (AOD)","エアロゾル","Aerosol (AOD)","Аэрозоль (AOD)","Aerosol (AOD)"), ids:['cmpx-aod'], add(){ addR('aod',cmpGibs('MODIS_Combined_Value_Added_AOD',6,'png',ld('aod',CMP_DATE)),6); }},
-      {k:'sst', n:()=>IntMapLang.t(HOST.lang,"Sea-surface temp","海面水温","Meeresoberflächentemperatur","Температура поверхности моря","Temperatura del mar"), ids:['cmpx-sst'], add(){ addR('sst',cmpGibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',ld('sst',CMP_DATE)),7); }},
-      {k:'temp', n:()=>IntMapLang.t(HOST.lang,"Air temperature (monthly)","気温（月平均）","Lufttemperatur (monatlich)","Температура воздуха (по месяцам)","Temperatura del aire (mensual)"), ids:['cmpx-temp'], add(){ addR('temp',cmpGibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',ld('temp','2024-01-01')),6); }},
-      {k:'precip', n:()=>IntMapLang.t(HOST.lang,"Precipitation","降水量","Niederschlag","Осадки","Precipitación"), ids:['cmpx-precip'], add(){ addR('precip',cmpGibs('IMERG_Precipitation_Rate',6,'png',ld('precip',CMP_DATE)+'T12:00:00Z'),6); }},
-      {k:'thermal', n:()=>IntMapLang.t(HOST.lang,"Thermal anomalies","熱異常（火災）","Wärmeanomalien","Тепловые аномалии","Anomalías térmicas"), ids:['cmpx-thermal'], add(){ addR('thermal',['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+CMP_DATE],9,0.85); }},
-      {k:'popgrid', n:()=>IntMapLang.t(HOST.lang,"Population grid","人口密度グリッド","Bevölkerungsraster","Сетка населения","Malla de población"), ids:['cmpx-popgrid'], add(){ addR('popgrid',cmpGibsStatic('GPW_Population_Density_2020',7,'png'),7,0.8); }},
-      {k:'ukr', n:()=>IntMapLang.t(HOST.lang,"Ukraine frontline","ウクライナ前線","Frontlinie Ukraine","Линия фронта в Украине","Frente de Ucrania"), ids:['cmpx-ukr-f','cmpx-ukr-l'], add(done){
+      dayEntry('snow',()=>IntMapLang.t(HOST.lang,"Snow cover","積雪","Schneedecke","Снежный покров","Cubierta de nieve"),{lid:'dl-snow'},'MODIS_Terra_NDSI_Snow_Cover',8,''),
+      dayEntry('aod',()=>IntMapLang.t(HOST.lang,"Aerosol (AOD)","エアロゾル","Aerosol (AOD)","Аэрозоль (AOD)","Aerosol (AOD)"),{lid:'dl-aod'},'MODIS_Combined_Value_Added_AOD',6,''),
+      dayEntry('sst',()=>IntMapLang.t(HOST.lang,"Sea-surface temp","海面水温","Meeresoberflächentemperatur","Температура поверхности моря","Temperatura del mar"),{lid:'dl-sst'},'GHRSST_L4_MUR_Sea_Surface_Temperature',7,''),
+      dayEntry('temp',()=>IntMapLang.t(HOST.lang,"Air temperature (monthly)","気温（月平均）","Lufttemperatur (monatlich)","Температура воздуха (по месяцам)","Temperatura del aire (mensual)"),{time:MERRA2},'MERRA2_2m_Air_Temperature_Monthly',6,'',true),
+      dayEntry('precip',()=>IntMapLang.t(HOST.lang,"Precipitation","降水量","Niederschlag","Осадки","Precipitación"),{lid:'dl-precip'},'IMERG_Precipitation_Rate',6,'T12:00:00Z'),
+      {k:'thermal', lid:'dl-thermal', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Thermal anomalies","熱異常（火災）","Wärmeanomalien","Тепловые аномалии","Anomalías térmicas"), ids:['cmpx-thermal'], add(){ addR('thermal',['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+CMP_DATE],9,0.85); }},
+      {k:'popgrid', lid:'dl-popgrid', drawnBy:{ownDate:'js/compare.js cmpx-popgrid (GPW 2020)'}, n:()=>IntMapLang.t(HOST.lang,"Population grid","人口密度グリッド","Bevölkerungsraster","Сетка населения","Malla de población"), ids:['cmpx-popgrid'], add(){ addR('popgrid',cmpGibsStatic('GPW_Population_Density_2020',7,'png'),7,0.8); }},
+      {k:'ukr', lid:'beta-dl-ukrfront', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Ukraine frontline","ウクライナ前線","Frontlinie Ukraine","Линия фронта в Украине","Frente de Ucrania"), ids:['cmpx-ukr-f','cmpx-ukr-l'], add(done){
         if(cmap.layers.hasSource('cmpx-ukr')){ done&&done(); return; }
         fetch('https://deepstatemap.live/api/history/last').then(r=>r.json()).then(j=>{ try{
           let fc=(j&&j.map)?j.map:j; if(typeof fc==='string') fc=JSON.parse(fc);
@@ -378,7 +493,7 @@ export function compare(HOST){
           cmap.layers.add({id:'cmpx-ukr-f',type:'fill',source:'cmpx-ukr',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':0.3}});
           cmap.layers.add({id:'cmpx-ukr-l',type:'line',source:'cmpx-ukr',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.3}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
-      {k:'volc', n:()=>IntMapLang.t(HOST.lang,"Volcanoes","火山","Vulkane","Вулканы","Volcanes"), ids:['cmpx-volc'], add(done){
+      {k:'volc', lid:'beta-dl-volc2', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Volcanoes","火山","Vulkane","Вулканы","Volcanes"), ids:['cmpx-volc'], add(done){
         if(cmap.layers.hasSource('cmpx-volc')){ done&&done(); return; }
         loadData('data/volcanoes_gvp.json').then(j=>{ try{   /* (data-one-door) the main map's read, shared — js/data-door.js */
           cmap.layers.addSource('cmpx-volc',{type:'geojson',data:j});
@@ -386,7 +501,7 @@ export function compare(HOST){
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       /* (#R36) parity adds — aurora + earthquakes (the main map has them; compare didn't). Same sources/paint
          as the main map so they are byte-identical, not "low quality" clones. */
-      {k:'aurora', n:()=>IntMapLang.t(HOST.lang,"Aurora forecast","オーロラ予報","Polarlicht-Vorhersage","Прогноз полярных сияний","Previsión de auroras"), ids:['cmpx-aurora-heat','cmpx-aurora-glow'], add(done){
+      {k:'aurora', lid:'l9-dl-aurora', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Aurora forecast","オーロラ予報","Polarlicht-Vorhersage","Прогноз полярных сияний","Previsión de auroras"), ids:['cmpx-aurora-heat','cmpx-aurora-glow'], add(done){
         if(cmap.layers.hasSource('cmpx-aurora')){ done&&done(); return; }
         cmap.layers.addSource('cmpx-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         cmap.layers.add({id:'cmpx-aurora-heat',type:'heatmap',source:'cmpx-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
@@ -404,7 +519,7 @@ export function compare(HOST){
           for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
           if(cmap.layers.hasSource('cmpx-aurora')) cmap.layers.setSourceData('cmpx-aurora',{type:'FeatureCollection',features:feats});
           done&&done(); }catch(_){} }).catch(()=>cmpFail(IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
-      {k:'eq', n:()=>IntMapLang.t(HOST.lang,"Earthquakes (USGS)","地震（USGS）","Erdbeben (USGS)","Землетрясения (USGS)","Terremotos (USGS)"), ids:['cmpx-eq'], add(done){
+      {k:'eq', lid:'bx-eq', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Earthquakes (USGS)","地震（USGS）","Erdbeben (USGS)","Землетрясения (USGS)","Terremotos (USGS)"), ids:['cmpx-eq'], add(done){
         if(cmap.layers.hasSource('cmpx-eq')){ done&&done(); return; }
         cmpRead('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson').then(j=>{ try{
           cmap.layers.addSource('cmpx-eq',{type:'geojson',data:j});
@@ -435,33 +550,52 @@ export function compare(HOST){
             done&&done();
           }catch(_){}
         }
-        function mk(k,nm){ return {k:'ch-'+k, n:nm, ids:['cmp-ch-'+k], add(done){ srcReady(()=>{ try{
+        function mk(k,nm,lid){ return {k:'ch-'+k, n:nm, ids:['cmp-ch-'+k], lid, drawnBy:{ownDate:'js/compare.js srcReady (the statistics baked when the window first drew them)'}, add(done){ srcReady(()=>{ try{
           if(!cmap.layers.has('cmp-ch-'+k)){
             const ramp=['interpolate',['linear'],['to-number',['get',k]]].concat(RAMP[k]);
             cmap.layers.add({id:'cmp-ch-'+k,type:'fill',source:'cmp-choro',layout:{visibility:'none'},paint:{'fill-color':['case',['<=',['to-number',['get',k]],0],'rgba(128,128,128,0.25)',ramp],'fill-opacity':0.7}});
           }
           done&&done(); }catch(_){} }); }}; }
         return [
-          mk('pop',()=>IntMapLang.t(HOST.lang,"Population density","人口密度","Bevölkerungsdichte","Плотность населения","Densidad de población")),
-          mk('gdppc',()=>IntMapLang.t(HOST.lang,"GDP per capita","1人当たりGDP","BIP pro Kopf","ВВП на душу населения","PIB per cápita")),
-          mk('hdi',()=>'HDI'),
-          mk('dem',()=>IntMapLang.t(HOST.lang,"Democracy Index","民主主義指数","Demokratieindex","Индекс демократии","Índice de Democracia")),
-          mk('tfr',()=>IntMapLang.t(HOST.lang,"Fertility rate","合計特殊出生率","Geburtenrate","Суммарный коэффициент рождаемости","Tasa de fecundidad")),
-          mk('milSpend',()=>IntMapLang.t(HOST.lang,"Military spending ($B)","国防費（$B）","Militärausgaben (Mrd. $)","Военные расходы (млрд $)","Gasto militar (miles de mill. $)")),
-          mk('milSpendGDP',()=>IntMapLang.t(HOST.lang,"Military spending (%GDP)","国防費（対GDP）","Militärausgaben (% BIP)","Военные расходы (% ВВП)","Gasto militar (% del PIB)"))
+          mk('pop',()=>IntMapLang.t(HOST.lang,"Population density","人口密度","Bevölkerungsdichte","Плотность населения","Densidad de población"),'dl-pop'),
+          mk('gdppc',()=>IntMapLang.t(HOST.lang,"GDP per capita","1人当たりGDP","BIP pro Kopf","ВВП на душу населения","PIB per cápita"),'dl-gdppc'),
+          mk('hdi',()=>'HDI','dl-hdi'),
+          mk('dem',()=>IntMapLang.t(HOST.lang,"Democracy Index","民主主義指数","Demokratieindex","Индекс демократии","Índice de Democracia"),'dl-dem'),
+          mk('tfr',()=>IntMapLang.t(HOST.lang,"Fertility rate","合計特殊出生率","Geburtenrate","Суммарный коэффициент рождаемости","Tasa de fecundidad"),'dl-tfr'),
+          mk('milSpend',()=>IntMapLang.t(HOST.lang,"Military spending ($B)","国防費（$B）","Militärausgaben (Mrd. $)","Военные расходы (млрд $)","Gasto militar (miles de mill. $)"),'dl-milSpend'),
+          mk('milSpendGDP',()=>IntMapLang.t(HOST.lang,"Military spending (%GDP)","国防費（対GDP）","Militärausgaben (% BIP)","Военные расходы (% ВВП)","Gasto militar (% del PIB)"),'dl-milSpend')
         ];
       })(),
-      {k:'histb', n:()=>IntMapLang.t(HOST.lang,"Historical borders","過去の国境","Historische Grenzen","Исторические границы","Fronteras históricas"), ids:['cmp-hb-f','cmp-hb-l'], add(done){
-        const cur=(window.IntMapBeta&&window.IntMapBeta.hbCurrent)?window.IntMapBeta.hbCurrent():null;
-        if(cmap.layers.hasSource('cmp-hb')){ try{ if(cur&&cur.fc) cmap.layers.setSourceData('cmp-hb',cur.fc); }catch(_){} done&&done(); return; }
-        const use=(fc)=>{ try{ if(!fc||!Array.isArray(fc.features)) return;
-          cmap.layers.addSource('cmp-hb',{type:'geojson',data:fc});
+      /* (time-compare-lapse) THE BORDERS OF THIS WINDOW'S INSTANT, FROM THE SAME RECORDS AS THE MAIN MAP'S.
+         This entry used to draw whichever year the main map's OTHER historical layer had last loaded
+         (js/beta-overlays.js `hbCurrent`), or the historical-basemaps 1914 sheet when it had loaded none —
+         a year the reader never chose, on a window that had no clock. It now asks js/time-borders.js which
+         collection answers THIS window's instant (`collectionAt`: CShapes 2.0 day-exact, then
+         OpenHistoricalMap, then the historical-basemaps sheets — the main map's own chain, one
+         implementation), so 1914 here and 1960 there are two answers of one rule. An instant the records
+         leave to the present-day base map is said, not filled. */
+      {k:'histb', lid:'cb-borders', drawnBy:{self:'js/compare.js histb.at'}, shown:()=>_hbShown, n:()=>IntMapLang.t(HOST.lang,"Historical borders","過去の国境","Historische Grenzen","Исторические границы","Fronteras históricas"), ids:['cmp-hb-f','cmp-hb-l'], add(done){
+        if(!cmap.layers.hasSource('cmp-hb')){ try{
+          cmap.layers.addSource('cmp-hb',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
           cmap.layers.add({id:'cmp-hb-f',type:'fill',source:'cmp-hb',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.3}});
-          cmap.layers.add({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}});
-          done&&done(); }catch(_){} };
-        if(cur&&cur.fc){ use(cur.fc); return; }
-        cmpRead('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(use).catch(()=>cmpFail(IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
-      {k:'rail', n:()=>IntMapLang.t(HOST.lang,"World railways","世界の鉄道","Eisenbahnen","Железные дороги","Ferrocarriles"), ids:['cmp-rail'], add(done){
+          cmap.layers.add({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}}); }catch(_){} }
+        done&&done(); },
+        /* → the sentence the window shows under the picker, or null */
+        at(){ const when=CT.when(), live=CT.isLive(), my=++_hbSeq;
+          const put=(fc)=>{ try{ if(my===_hbSeq&&cmap.layers.hasSource('cmp-hb')) cmap.layers.setSourceData('cmp-hb',fc); }catch(_){} };
+          const TB=window.IntMapTimeBorders;
+          return Promise.resolve().then(()=>TB.collectionAt(when,{live})).then(r=>{
+            if(my!==_hbSeq) return null;
+            _hbShown=r?{key:r.key,features:r.fc?r.fc.features.length:0,names:r.fc?r.fc.features.filter(f=>f&&f.properties&&(f.properties.NAME||f.properties.name)).length:0,modern:!!r.modern}:null;
+            if(r&&r.fc){ put(r.fc); return null; }
+            put({type:'FeatureCollection',features:[]});
+            if(r&&r.modern) return LA('Borders at this instant are today’s — the base map draws them','この日時の国境は現在のもの——ベースマップが描いています');
+            return LA('No border record answers this instant yet','この日時に答える国境の記録はまだ読めていません');
+          },()=>{ if(my!==_hbSeq) return null; _hbShown=null; put({type:'FeatureCollection',features:[]});
+            /* the failure the window has always reported for this layer, in the app's toast */
+            cmpFail(IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."));
+            return LA('The border records could not be read','国境の記録を読めませんでした'); }); }},
+      {k:'rail', lid:'beta-dl-rail', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"World railways","世界の鉄道","Eisenbahnen","Железные дороги","Ferrocarriles"), ids:['cmp-rail'], add(done){
         if(cmap.layers.hasSource('cmp-rail')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('rail',fc=>{ try{ if(cmap.layers.hasSource('cmp-rail')) { done&&done(); return; }
@@ -471,14 +605,14 @@ export function compare(HOST){
              every feature, and the new data has no such property because the bucket is derived. */
           cmap.layers.add({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':(window.IntMapRailways&&window.IntMapRailways.colour?window.IntMapRailways.colour():'#888'),'line-width':1.3,'line-opacity':0.85}});
           done&&done(); }catch(_){} }); }},
-      {k:'dc', n:()=>IntMapLang.t(HOST.lang,"Data centers / cloud","データセンター","Rechenzentren / Cloud","Дата-центры / облако","Centros de datos / nube"), ids:['cmp-dc'], add(done){
+      {k:'dc', lid:'beta-dl-dc', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Data centers / cloud","データセンター","Rechenzentren / Cloud","Дата-центры / облако","Centros de datos / nube"), ids:['cmp-dc'], add(done){
         if(cmap.layers.hasSource('cmp-dc')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('dc',fc=>{ try{ if(cmap.layers.hasSource('cmp-dc')) { done&&done(); return; }
           cmap.layers.addSource('cmp-dc',{type:'geojson',data:fc});
           cmap.layers.add({id:'cmp-dc',type:'circle',source:'cmp-dc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }); }},
-      {k:'pharma', n:()=>IntMapLang.t(HOST.lang,"Pharma & health","医療・製薬","Pharma & Gesundheit","Фармацевтика и здравоохранение","Farmacéuticas y salud"), ids:['cmp-ph'], add(done){
+      {k:'pharma', lid:'beta-dl-pharma', drawnBy:{}, n:()=>IntMapLang.t(HOST.lang,"Pharma & health","医療・製薬","Pharma & Gesundheit","Фармацевтика и здравоохранение","Farmacéuticas y salud"), ids:['cmp-ph'], add(done){
         if(cmap.layers.hasSource('cmp-ph')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('pharma',fc=>{ try{ if(cmap.layers.hasSource('cmp-ph')) { done&&done(); return; }
@@ -486,6 +620,89 @@ export function compare(HOST){
           cmap.layers.add({id:'cmp-ph',type:'circle',source:'cmp-ph',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#2bb3a3'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }); }}
     ];
+    /* ══ (time-compare-lapse) THE PICKED LAYER, JUDGED AT THIS WINDOW'S INSTANT ═══════════════════════ */
+    let curCmpLayer='';
+    const _held=new Set();             /* entries not drawn at this window's instant — their source states nothing about it */
+    let _tv=null, _tNote=null, _tSeq=0; /* the picked layer's last verdict, the sentence shown for it, the request counter */
+    const say=(m)=>{ if(!m) return ''; return Array.isArray(m)?IntMapLang.t(HOST.lang,m[0],m[1]):IntMapLang.t(HOST.lang,m.en,m.jp); };
+    function showLayer(L,on){ L.ids.forEach(id=>setVis(id,!!on&&!_held.has(L.k))); }
+    /* the rule's answer for one entry on THIS map: its main-map layer's declaration with this window as the drawer,
+       or its own declaration — judged against this window's clock (js/layer-time-kernel.js) */
+    async function judge(L){ const LT=window.IntMapLayerTime; if(!LT) return null;
+      await LT.ready();
+      if(L.time) return LT.judge(L.time,CT);
+      if(L.lid) return LT.verdict(L.lid,CT,L.drawnBy||{});
+      return null; }
+    /* the latest judgement in flight — `judged()` resolves when the window has answered for its current instant */
+    let _judging=Promise.resolve();
+    function applyTime(){ _judging=judgeAndShow(); return _judging; }
+    async function judged(){ let p; do{ p=_judging; try{ await p; }catch(_){} }while(p!==_judging); return timeState(); }
+    async function judgeAndShow(){ const my=++_tSeq;
+      const L=built?CMP_LAYERS.find(x=>x.k===curCmpLayer):null;
+      if(!L){ _tv=null; _tNote=null; paintTime(); return; }
+      /* off the present nothing is shown before the rule has answered — the main map's own order (js/layer-time-kernel.js):
+         on the live clock no kind that is held is unstated, so a layer the window already drew keeps drawing while it asks */
+      const sure=_tv&&_tv.k===L.k&&_tv.status!=='unstated';
+      if(!CT.isLive()&&!sure){ _held.add(L.k); showLayer(L,false); }
+      let v=null; try{ v=await judge(L); }catch(_){ v=null; }
+      if(my!==_tSeq) return;
+      _tv=v?{k:L.k,lid:L.lid||null,status:v.status,reason:v.reason,message:v.message||null}:null;
+      if(v&&v.status==='unstated'){ _held.add(L.k); showLayer(L,false); _tNote=v.message; paintTime(); return; }
+      let extra=null;
+      if(typeof L.at==='function'){ try{ extra=await L.at(); }catch(_){ extra=null; } if(my!==_tSeq) return; }
+      _held.delete(L.k); showLayer(L,true);
+      _tNote=extra||((v&&v.status==='carried')?v.message:null);
+      paintTime(); }
+    /* the instant as the reader reads it: «Today», a year (the clock's year convention — mid-June noon UTC,
+       js/chronos.js `setYear`), or the day */
+    const HSc=()=>window.IntMapHistScale;   /* js/hist-scale.js — the year convention and the era-aware year text */
+    function clockLabel(clock){
+      if(clock.isLive()) return IntMapLang.t(HOST.lang,"Today","今日");
+      const d=clock.when(), y=d.getUTCFullYear(); let byYear=false;
+      try{ byYear=HSc().utcAt(y,5,15,12,0,0).getTime()===d.getTime(); }catch(_){ byYear=false; }
+      if(!byYear) return clock.iso();
+      try{ return HSc().yearText(y,IntMapLang.htmlTag(HOST.lang)||'en',HOST.lang==='jp'?'年':null); }catch(_){ return String(y); } }
+    function paintTime(){ if(!win) return;
+      const w=win.querySelector('#cmp-when');
+      if(w){ w.textContent=''; const b=document.createElement('b'); b.textContent=clockLabel(CT);
+        const sep=document.createElement('span'); sep.className='cmp-when-sep'; sep.textContent='|';
+        const m=document.createElement('span'); m.textContent=clockLabel(IntMapTime);
+        w.append(b,sep,m); w.classList.toggle('cmp-when-own',!follow); }
+      win.querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',(x.getAttribute('data-t')==='follow')===follow));
+      const yIn=win.querySelector('#cmp-year');
+      if(yIn&&document.activeElement!==yIn){ yIn.value=CT.isLive()?'':String(CT.when().getUTCFullYear());
+        yIn.placeholder=String(new Date().getUTCFullYear()); try{ yIn.min=String(CT.min); }catch(_){} }
+      const n=win.querySelector('#cmp-tnote');
+      if(n){ const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); const txt=L&&_tNote?say(_tNote):'';
+        n.textContent=txt?(L.n()+' — '+txt):''; n.hidden=!txt;
+        n.classList.toggle('cmp-tnote-held',!!(L&&_held.has(L.k))); } }
+    /* whoever keeps a record of the window's instant is told it moved (js/map-ui.js writes the share link) */
+    function announce(){ _cmpSubs.forEach(f=>{ try{ f(); }catch(_){} }); }
+    /** '' while following the main map; 'now'; a year ('1914', '-500') when the clock is at the year convention; else the ISO day */
+    function timeParam(){ if(follow) return ''; if(CT.isLive()) return 'now';
+      const d=CT.when(), y=d.getUTCFullYear();
+      try{ if(HSc().utcAt(y,5,15,12,0,0).getTime()===d.getTime()) return String(y); }catch(_){}
+      return CT.iso(); }
+    /** setTime({ year | date | now | follow | param }) — the one door the time row, Atlas and the share link use.
+        Anything but `follow:true` holds this window's own clock. → timeState() */
+    function setTime(o){ o=o||{};
+      if(o.param!=null){ const p=String(o.param).trim();
+        o = p===''?{follow:true}: p==='now'?{now:true}: /^[+-]?\d{1,6}$/.test(p)?{year:+p}:{date:p}; }
+      if(o.follow===true){ follow=true; mirror(); paintTime(); announce(); return timeState(); }
+      follow=false;
+      if(o.now) CT.setNow({source:'compare'});
+      else if(o.year!=null&&isFinite(+o.year)) CT.setYear(Math.round(+o.year),{source:'compare'});
+      else if(o.date!=null){ const t0=Date.parse(String(o.date)); if(isFinite(t0)) CT.set(new Date(t0),{source:'compare'}); }
+      paintTime(); announce();
+      return timeState(); }
+    /** what the window shows and why — Atlas's state, the observers, the share link and the specs read this */
+    function timeState(){ const L=CMP_LAYERS.find(x=>x.k===curCmpLayer)||null;
+      return { open:!!(win&&win.style.display!=='none'), follow, live:CT.isLive(), at:CT.isLive()?null:CT.when().toISOString(),
+        iso:CT.isLive()?null:CT.iso(), label:clockLabel(CT), main:{ live:IntMapTime.isLive(), iso:IntMapTime.isLive()?null:IntMapTime.iso(), label:clockLabel(IntMapTime) },
+        layer:L?L.k:null, held:!!(L&&_held.has(L.k)),
+        verdict:_tv?{ status:_tv.status, reason:_tv.reason, why:say(_tv.message)||null }:null,
+        note:_tNote?say(_tNote):null,
+        drawn:(L&&typeof L.shown==='function')?L.shown():null }; }
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
       win.innerHTML='<div class="cmp-head"><span class="cmp-title">'+(IntMapLang.t(HOST.lang,"Compare","比較","Vergleichen","Сравнить","Comparar"))+'</span>'+
@@ -504,8 +721,15 @@ export function compare(HOST){
         '<button class="cmp-btn cmp-icon" id="cmp-close" title="'+t('close')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>'+
         /* (#R31) Layer picker sits in its own row directly UNDER the Map/Sat + Sync/Free/X-ray controls
            ("Select a layerは…欄の下に配置しろ"). */
-        '<div class="cmp-picker"><select id="cmp-layers-sel" title="'+(IntMapLang.t(HOST.lang,"Compare layer","比較レイヤー","Vergleichsebene","Слой сравнения","Capa de comparación"))+'"></select></div>'+
-        '<div class="cmp-body"><div id="compare-map"></div></div>'+
+        '<div class="cmp-picker"><select id="cmp-layers-sel" title="'+(IntMapLang.t(HOST.lang,"Compare layer","比較レイヤー","Vergleichsebene","Слой сравнения","Capa de comparación"))+'"></select>'+
+          /* (time-compare-lapse) this window's clock: follow the main map's, or hold one of its own */
+          '<div class="cmp-time" data-time-intent>'+
+            '<span class="cmp-seg"><button class="cmp-btn on" type="button" data-t="follow">'+IntMapLang.t(HOST.lang,"Main map’s time","メイン地図の時刻")+'</button>'+
+            '<button class="cmp-btn" type="button" data-t="own">'+IntMapLang.t(HOST.lang,"Own time","独自の時刻")+'</button></span>'+
+            '<input id="cmp-year" class="cmp-year" type="number" step="1" inputmode="numeric" aria-label="'+IntMapLang.t(HOST.lang,"Year shown in this window","このウィンドウに表示する年")+'" title="'+IntMapLang.t(HOST.lang,"Year shown in this window","このウィンドウに表示する年")+'">'+
+            '<button class="cmp-btn" type="button" id="cmp-tnow">'+IntMapLang.t(HOST.lang,"Now","現在")+'</button>'+
+          '</div><div class="cmp-tnote" id="cmp-tnote" hidden></div></div>'+
+        '<div class="cmp-body"><div id="compare-map"></div><div class="cmp-when" id="cmp-when" title="'+IntMapLang.t(HOST.lang,"This window | the main map","このウィンドウ｜メイン地図")+'"></div></div>'+
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
         '<div class="cmp-resize" title="'+(IntMapLang.t(HOST.lang,"Drag to resize","高さを調節","Zum Ändern der Höhe ziehen","Потяните, чтобы изменить высоту","Arrastre para ajustar la altura"))+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
@@ -531,7 +755,7 @@ export function compare(HOST){
       win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
       /* (#R20) three EXCLUSIVE modes */
       /* (#R32b) Re-assert the currently-picked layer's visibility (x-ray was losing it on mode/base changes). */
-      function _reshowCmpLayer(){ try{ const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(L){ L.ids.forEach(id=>setVis(id,true)); } }catch(_){} }
+      function _reshowCmpLayer(){ try{ const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(L) showLayer(L,true); }catch(_){} }   /* (time-compare-lapse) never over a layer held for this window's instant */
       function setMode(m){ const prev=mode; mode=m;
         win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')===m));
         win.classList.toggle('cmp-xray',m==='xray');
@@ -549,7 +773,6 @@ export function compare(HOST){
       /* (#R23) compare layer picker = native <select> (one layer at a time). buildLayerDD repopulates it;
          picking a layer hides the previous one and lazily adds + shows the new one. */
       const sel=win.querySelector('#cmp-layers-sel');
-      let curCmpLayer='';
       /* (#R32b) The compare picker offers the SAME high-quality layers as the main map for FREE selection
          (the user's clarification: "同一条件・クオリティのものを選択できるように" — NOT auto-reflect the main
          map's current selection). No auto-mirror; pick any CMP_LAYER (each is the full-quality clone). */
@@ -557,10 +780,22 @@ export function compare(HOST){
       buildLayerDD();
       if(sel) sel.onchange=()=>{
         const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false));
-        curCmpLayer=sel.value; const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(!L) return;
-        const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500);
+        curCmpLayer=sel.value; _tv=null; const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(!L){ applyTime(); return; }
+        /* (time-compare-lapse) shown through `showLayer`, which keeps a layer held for this window's instant hidden —
+           and judged at that instant before anything is drawn off the present (applyTime) */
+        if(!CT.isLive()){ _held.add(L.k); }
+        const show=()=>showLayer(L,true); try{ L.add(()=>{ show(); applyTime(); }); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500);
+        applyTime();
         if(xrayOn()) setTimeout(()=>{ try{ layoutXrayLens(); }catch(_){} },120);   /* (#R32b) re-fit the lens so a newly-picked layer paints inside x-ray */
       };
+      /* (time-compare-lapse) the time row: follow the main map's clock, hold one of this window's own, or the present */
+      win.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ setTime(b.getAttribute('data-t')==='follow'?{follow:true}:{follow:false}); });
+      const yIn=win.querySelector('#cmp-year');
+      if(yIn) yIn.onchange=()=>{ const y=Math.round(+yIn.value); if(yIn.value!==''&&isFinite(y)) setTime({year:y}); };
+      const tNow=win.querySelector('#cmp-tnow'); if(tNow) tNow.onclick=()=>setTime({now:true});
+      CT.on(()=>{ paintTime(); applyTime(); applyBase(); announce(); });
+      IntMapTime.on(()=>paintTime());
+      paintTime();
       /* min / close */
       win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized;
         /* (#R23) the four-corner/grip resizers set an inline height:Xpx !important, which BEAT the
@@ -637,6 +872,7 @@ export function compare(HOST){
       });
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min');
+      paintTime(); applyTime();   /* (time-compare-lapse) the window's instant, and the picked layer judged at it */
       /* (#R30) While compare is open on mobile, MOVE the main-map FAB stack to the bottom-LEFT (CSS on
          body.cmp-open). The compare window is a full-width top panel and its close × sits top-right — exactly
          where the Layers/Map FABs normally live, which caused "×がレイヤー選択ボタンと重なる / 終了できない".
@@ -686,6 +922,9 @@ export function compare(HOST){
       document.addEventListener('click',(e)=>{ try{ if(e.target.closest&&e.target.closest('.btn-toggle-sidebar')) _reclampSoon(); }catch(_){} });
       const _sbEl=document.getElementById('sidebar'); if(_sbEl) _sbEl.addEventListener('transitionend',(e)=>{ if(e.propertyName==='margin-left'||e.propertyName==='width') _reclampSoon(); });
     }catch(_){}
-    return { open, close, _map:()=>cmap };
+    mirror();   /* (time-compare-lapse) a window opened on a travelling map starts at its instant */
+    const api={ open, close, _map:()=>cmap, setTime, timeState, timeParam, judged, clock:()=>CT };
+    _cmpApi=api;
+    return api;
   })();
 }

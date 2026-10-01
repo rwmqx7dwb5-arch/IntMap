@@ -269,6 +269,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["map.outbreaks","outbreaks","diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap","map","paint","map.outbreaks","map,explanation","session","none","",""],
       ["dialog.answer","answer","","dialog","none","","explanation","read","none","",""],
       ["time.coverage","timeCoverage","layerTime,whatCanBeDrawn","time","none","","explanation","read","none","",""],
+      ["time.compare","timeCompare","compareTime,compareYear","time","timeView","panel.compare,time.compare","panel,time","session","none","",""],
+      ["time.lapse","timeLapse","playTime,playYears","time","timeView","time,time.lapse","time","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -1091,6 +1093,42 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           return { status: 'completed', code: 'ok', observed: { time: after }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ (time-compare-lapse) THE COMPARISON WINDOW'S CLOCK AND THE TIME-LAPSE, READ OFF THE TWO THINGS THEMSELVES ══
+         `observe` asks js/compare.js (`timeState`) and js/time-lapse.js (`lapseState`) what they are doing NOW; the
+         capability says, in `raw.want`, the state it set out to reach, in the same shape. Done is «after matches want»
+         — a window that did not take the instant, or a lapse that did not start, is not done; one that already stood
+         there before the call is `already_there` (.agents/rules/one-pass-or-a-reason.md §4). Nothing to ask is
+         `unobserved`, never `completed` and never `failed`. */
+      timeView: {
+        observe: async function () {
+          var out = { compare: null, lapse: null };
+          /* the window's published controller (js/compare.js) — this eager registry imports the clock and the engine only */
+          try { var C = window.IntMapCompare; if (C && typeof C.timeState === 'function') { var s = C.timeState(); out.compare = { open: s.open, follow: s.follow, live: s.live, iso: s.iso }; } } catch (_) { }
+          try { var TL = await import('./time-lapse.js'); var l = TL.lapseState(); out.lapse = { playing: l.playing, at: l.at }; } catch (_) { }
+          return out;
+        },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          var want = raw && raw.want;
+          if (!want) return { status: 'completed', code: 'ok', observed: { timeView: after }, html: html };
+          var holds = function (state) {
+            if (!state) return null;
+            var ok = true;
+            Object.keys(want).forEach(function (part) {
+              var w = want[part], s = state[part];
+              if (!s) { ok = null; return; }
+              Object.keys(w).forEach(function (k) { if (ok !== null && s[k] !== w[k]) ok = false; });
+            });
+            return ok;
+          };
+          var nowHolds = holds(after);
+          if (nowHolds === null) return { status: 'unobserved', produced: [], code: 'not_observable', observed: { timeView: after }, html: html };
+          if (!nowHolds) return { status: 'partial', produced: [], code: 'no_change', observed: { timeView: after, want: want }, html: html };
+          if (holds(before) === true) return { status: 'completed', code: 'already_there', observed: { timeView: after }, html: html };
+          return { status: 'completed', code: 'ok', observed: { timeView: after }, html: html };
         }
       },
       /* ══ ⚠⚠⚠ (#R754) THIS ONE ASKS THE PAINTER, AND IT ASKS AFTER ═════════════════════════════
