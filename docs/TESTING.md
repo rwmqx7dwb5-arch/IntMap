@@ -2581,6 +2581,23 @@ viewport に入るまで**ポーリング**し、入らなかった扉は `reach
 （[[intmap-co-designed-reader-cannot-falsify]]）。実測: `_placeLayerTools` を `return;` で潰すと
 **①②③ すべてが単独実行で赤くなる**（`-g` を使わないと①しか赤く見えない）。
 
+**インストールできるアプリ（installable-app）——smoke の末尾 5 本と node 検査 11 本。**
+
+`tests/smoke.spec.js` の **installable-app ①〜⑤** はブラウザにしか答えられないことを訊く: ① Chromium 自身の
+`Page.getAppManifest`（errors 空）と `Page.getInstallabilityErrors`（空）、アイコンが 200・PNG ② Atlas の
+view.locate がエミュレートした位置へ地図を動かし、**同じ読み取り**から位置の点と精度円を描く ③ 方位磁針の下の
+`#btn-locate` が同じことをし、地図の中心が位置に乗っている間だけ `.on` ④ 許可が無いと「拒否」と言う
+⑤ 殻が満ちてから `setOffline(true)` で開き直すとアプリが開き通知が出て、復帰で「再読み込み」に変わる。
+⚠ **独立した spec にしなかった**——新しいファイルは未計測の p75 で core と全体の天井に課金される（上の前例）。
+①〜④ は smoke の起動を使い、⑤ だけは**自分の起動を払う**: 試験全体の設定は Service Worker を塞いでいる
+（`playwright.config.js`）のに、⑤ の主題は worker そのものなので、`serviceWorkers:'allow'` の文脈を自分で作る。
+最後に置くのは、オフライン往復が共有ページに残らないようにするため（⑤ は別の文脈で、共有ページは触らない）。
+⚠ **位置エミュレーションの実測**: 1 回目の読み取りに続けて同じ文脈で 2 回目を読むと（以前の view.locate →
+`IntMapLocate.start` がそうだった）**2 回目は永久に返らない**。② が「同じ読み取りから描く」を測るのはこのため。
+Node 側は `tests/installable-app-checks.test.mjs`（manifest・アイコン・head の照合、maskable の安全域を実画素で、
+殻の導出と拒否、`sw.js` を評価して install／activate／**オフラインだけの** navigation／不変資産と SWR、
+`requestFix` の 5 理由、view.locate を実際に呼ぶ）。
+
 `tests/shell-layer-panel-checks.test.mjs` (#R766)（4 本・147 ms）は**ソースが答えられることだけ**を測る
 ——運んだノードが捨てられる前に救い出されているか（**順序**）・二重の扉の判定が宣言からの計算の
 ままか・`data-os-act` が実在するコマンドを名乗っているか・帯を動かす各経路のあとに再配置が走るか。

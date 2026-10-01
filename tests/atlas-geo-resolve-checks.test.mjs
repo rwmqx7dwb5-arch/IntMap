@@ -239,7 +239,7 @@ test('R413 ⑦: find_capability does not truncate, so a tie cannot be decided by
   assert.ok((await TOOLS.find('directions')).matches.every((m) => m.schema && m.schema.type === 'object'));
 });
 
-test('R413 ⑧: the reader\'s own position is a tool Atlas always has, wired to the capability that exists', () => {
+test('R413 ⑧: the reader\'s own position is a tool Atlas always has, wired to the capability that exists', async () => {
   /* kept as a spelling: what is pinned is the source (a literal i18n key, the console’s dispatch line), which the i18n audit and the page read as text */
   const tools = TOOLS.baseTools();
   assert.ok(tools.my_location, 'my_location is in the always-present set, not one find_capability away');
@@ -252,11 +252,20 @@ test('R413 ⑧: the reader\'s own position is a tool Atlas always has, wired to 
     'and the asking tool says what it is NOT for');
 
   /* the dispatch hands the coordinates back as a FACT: js/atlas-toolsurface.js forwards `exec` and
-     nothing else, so a coordinate that exists only in rendered HTML is one Atlas never learns */
-  const dispatch = (rd('js/atlas-console.js') + '\n' + capsSource());
-  assert.match(dispatch, /exec:\{lat,lng,accuracyM:Math\.round\(\+p2\.coords\.accuracy\|\|0\),provenance:'device_location'\}/,
+     nothing else, so a coordinate that exists only in rendered HTML is one Atlas never learns.
+     (installable-app) RUN, not read: the capability is called with a device that answers, and what it
+     RETURNS and what it SEEDS are the claims — they do not depend on how the reading is spelled. */
+  const locate = (await import('../js/atlas-cap-view.js')).default.find((e) => e.row[0] === 'view.locate');
+  assert.ok(locate && typeof locate.run === 'function', 'view.locate is a capability with a runner');
+  const FIX = { lng: 135.4959, lat: 34.7016, acc: 18 };
+  const seeded = [];
+  const K = { R: (ok, html, extra) => Object.assign({ ok, html }, extra || {}), warn: (x) => x, note: (x) => x, L: (en) => en,
+    GE: () => ({ camera: { flyTo() {}, getZoom: () => 3 } }), _selfLocSeed: (f) => seeded.push(f) };
+  const res = await withDevice(FIX, () => locate.run({}, {}, K));
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.exec, { lat: FIX.lat, lng: FIX.lng, accuracyM: FIX.acc, provenance: 'device_location' },
     'the locate case returns lat/lng/accuracy in `exec`');
-  assert.match(dispatch, /_selfLocSeed\(\{lng,lat,acc:\+p2\.coords\.accuracy\|\|0\}\)/,
+  assert.deepEqual(seeded, [{ lng: FIX.lng, lat: FIX.lat, acc: FIX.acc }],
     'and seeds the 現在地 resolver so the next place argument costs no second GPS acquisition');
 });
 

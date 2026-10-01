@@ -24,9 +24,10 @@
  *  this arrangement could otherwise have.
  * ==========================================================================*/
 import { defineConfig } from 'vite';
-import { cpSync, createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
+import { cpSync, createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { buildReportPlugin } from './scripts/build-report.mjs';
+import { buildReportPlugin, REPORT_PATH } from './scripts/build-report.mjs';
+import { injectAppShell } from './scripts/app-shell.mjs';
 /* the build stamp in index.html is DERIVED from the commit being built (scripts/build-stamp.mjs) —
    it used to be typed by hand every round, and a forgotten bump left stale caches looking current */
 import { buildStampPlugin } from './scripts/build-stamp.mjs';
@@ -37,6 +38,12 @@ const ROOT = resolve(import.meta.dirname);
    the repo root; a directory is copied whole. Keep in step with tests/r175-checks.test.mjs. */
 export const STATIC_ASSETS = [
   'sw.js',                              // tile-cache service worker (registered by index.html)
+  /* (installable-app) the Web App Manifest and the icons it and index.html name. Generated in the repo by
+     scripts/build-app-manifest.mjs and copied verbatim — index.html links them with `vite-ignore`, because a
+     manifest Vite hashed into assets/ would resolve its own relative icon paths and start_url against
+     assets/. */
+  'manifest.webmanifest',
+  'icons',
   'admin.html',                         // the ops console — its own page, not part of the app bundle
   /* …and the one file admin.html loads that is neither the SDK nor its own inline body: the data-literal
      PARSER that replaced the starter-dataset import's eval. Same reason as js/lang-registry.js below —
@@ -187,6 +194,29 @@ function copyStatic() {
         cpSync(from, join(out, rel), { recursive: statSync(from).isDirectory(), dereference: true,
           filter: (src) => !STATIC_EXCLUDE.some((ex) => src.replace(/\\/g, '/').endsWith('/' + ex)) });
       }
+    },
+  };
+}
+
+/* ── (installable-app) THE APP SHELL, WRITTEN INTO THE WORKER ─────────────────
+   sw.js keeps a copy of what the app needs to open, so an installed IntMap starts without a network.
+   Which files those are is the build's knowledge, not a person's: scripts/app-shell.mjs reads the EAGER
+   set scripts/build-report.mjs measured in generateBundle (this same build), adds what dist/index.html
+   and its manifest name, and writes the list and the build stamp into dist/sw.js. ⚠ It runs after
+   copyStatic, which is what puts sw.js in dist/ (hooks run in plugin order; `sequential` makes that a
+   promise rather than a coincidence of copyStatic being synchronous) — and it throws, failing the build,
+   if the token is gone or a named file is missing, so a worker can never ship with a shell that is not
+   this build's. */
+function appShell() {
+  return {
+    name: 'intmap-app-shell',
+    apply: 'build',
+    closeBundle: {
+      sequential: true,
+      handler() {
+        const shell = injectAppShell(join(ROOT, 'dist'), JSON.parse(readFileSync(REPORT_PATH, 'utf8')));
+        this.info?.(`app shell: ${shell.immutable.length + shell.mutable.length} files, ${(shell.bytes / 1024).toFixed(0)} kB, build ${shell.build}`);
+      },
     },
   };
 }
@@ -649,5 +679,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [buildStampPlugin(ROOT), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
 });

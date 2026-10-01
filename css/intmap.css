@@ -211,6 +211,10 @@
     .im-reload{ position:fixed; left:50%; top:calc(12px + var(--safe-top)); transform:translateX(-50%); z-index:calc(var(--z-system) + 1); display:flex; align-items:center; gap:12px; max-width:min(520px,92vw); padding:10px 12px 10px 16px; border-radius:14px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); color:var(--text-main); font-size:13px; font-weight:500; line-height:1.45; }
     .im-reload > button{ flex:0 0 auto; border:none; border-radius:999px; padding:7px 14px; background:var(--primary-fill); color:#fff; font-size:13px; font-weight:600; white-space:nowrap; }
     .im-reload > button:hover{ filter:brightness(1.06); }
+    /* (installable-app) the offline notice (#im-offline, index.html) wears this same card — it is the same kind of
+       fact: what the reader is looking at is not everything — and, because the card sets display:flex, it has
+       to say [hidden] out loud */
+    .im-offline[hidden]{ display:none; }
     /* the stale-build case is a fault the app already tried and failed to heal (it purged the caches and reloaded once), so it keeps the red of the banner it replaces */
     .im-reload-stale{ border-color:rgba(176,0,32,0.45); } .im-reload-stale > button{ background:#b00020; }
 
@@ -576,6 +580,13 @@
       color:var(--text-main); }
     .compass-btn:hover{ box-shadow:0 6px 18px rgba(0,0,0,0.16); }
     .compass-btn:active{ transform:scale(0.94); }
+    /* (installable-app) #btn-locate wears .compass-btn too — the same 42px circle in the same glass, one rule for
+       both, so nothing here repeats it. .locate-btn adds only the phone FAB's two states (#R232): an outline
+       dart until the map centre sits ON the fix, then solid on the accent. !important for the reason #R23 gives
+       for .m-fab.on — the shared glass list sets background-color !important. */
+    .locate-btn svg polygon{ fill:none; transition:fill 0.2s; }
+    .locate-btn.on{ background:var(--primary-fill) !important; color:#fff; border-color:transparent; }
+    .locate-btn.on svg polygon{ fill:currentColor; }
     /* ⚠ THE WHOLE ROSE COUNTER-ROTATES, TICKS AND ALL, because that is what a compass card does —
        js/map-readout.js writes `rotate(-bearing)` here (#R480 lists the seven callers that know this
        class). transform-origin stays at its default 50% 50%, which is the dial's centre only because

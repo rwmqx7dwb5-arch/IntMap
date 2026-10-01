@@ -194,7 +194,7 @@ test('#R218 ⑤ …and the app fetches those descriptions only when it needs the
 {
 
 /* ── ⑩ the sixth language ─────────────────────────────────────────────────────────────────────── */
-test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the end', () => {
+test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the end', async () => {
   const reg = read('js/lang-registry.js');
   const rows = [...reg.matchAll(/\{\s*code:\s*'([a-z-]+)'/g)].map((m) => m[1]);
   /* ⚠ (#R224) A PREFIX, NOT AN EXACT LIST. #R221's own lesson — 「『5言語ちょうど』を数えるテストは
@@ -238,7 +238,22 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
     return n;
   })();
   assert.ok(enUi > 300, 'the English keyed table was read (got ' + enUi + ')');
-  assert.ok(ui >= enUi, 'the keyed table carries the late-registered keys too (got ' + ui + ' vs en ' + enUi + ')');
+  /* ⚠ (installable-app) «AT LEAST WHAT ENGLISH DECLARES» WAS THE 9-LANGUAGE RULE, and CONSTITUTION.md §7
+     narrowed it on 2026-09-11: IntMap AUTHORS new text in en+jp only (scripts/lang-policy.mjs), and the
+     other seven are CARRIED — held to a floor so what is already written is never lost. Measured on the
+     first change to add keys after the amendment: six new en+jp keys made this read 423 vs 428 and fail,
+     i.e. it forbade exactly what the policy allows. So the invariant is the policy's own, asked of the
+     policy rather than of a typed language list: an AUTHORED zh keeps up with English; a CARRIED zh keeps
+     at least the keyed rows tests/i18n-coverage-floor.json holds it to. `return all;` in lang-policy
+     turns the first branch back on with no edit here. */
+  const { authoredLangs } = await import('../scripts/lang-policy.mjs');
+  if (authoredLangs().includes('zh')) {
+    assert.ok(ui >= enUi, 'the keyed table carries the late-registered keys too (got ' + ui + ' vs en ' + enUi + ')');
+  } else {
+    const floor = JSON.parse(readLF(join(ROOT, 'tests', 'i18n-coverage-floor.json'))).langs.zh;
+    assert.ok(floor && floor.keyed > 300, 'the floor holds zh\'s keyed rows (got ' + JSON.stringify(floor) + ')');
+    assert.ok(ui >= floor.keyed, 'no keyed row zh already carries was dropped (got ' + ui + ' vs floor ' + floor.keyed + ')');
+  }
   assert.ok(inl >= 1800, 'every inline L(…) string has an entry (got ' + inl + ')');
   /* …and it is really Chinese, not a copy of the template */
   const cjk = (zh.match(/[一-鿿]/g) || []).length;
