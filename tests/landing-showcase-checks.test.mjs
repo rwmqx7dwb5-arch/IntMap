@@ -1,0 +1,143 @@
+/* ============================================================================
+ *  landing-showcase — the landing / teacher pages and the example maps, held to what owns them
+ * ----------------------------------------------------------------------------
+ *  The pages are generated (scripts/landing.mjs) from words (scripts/landing-text.mjs), examples
+ *  (js/showcase.js) and facts read from the files that own them. What is asserted here is that each
+ *  of those joins still holds, offline:
+ *    ① the generated files are what the generator writes, and every captured link says what its
+ *      example declares (and nothing more) — and that check really fails when a link drifts;
+ *    ② en and jp say the same things: the same keys, nothing empty, every placeholder known;
+ *    ③ the facts the pages state are the files' own (the clock's floor IS the first era snapshot);
+ *    ④ every asset a page names is copied into dist/ (vite.config.js STATIC_ASSETS), every page and
+ *      the sitemap agree, and the Search Console file is still served;
+ *    ⑤ the ways in: Settings ▸ About links the page in both languages, and Atlas lists every example.
+ *  The browser half — every example opened and asked of the map — is tests/landing-showcase.spec.js.
+ * ==========================================================================*/
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, existsSync, statSync } from 'node:fs';
+import { join, dirname, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { TEXT } from '../scripts/landing-text.mjs';
+import { facts, outputs, showcaseProblems, PAGES, pagePath } from '../scripts/landing.mjs';
+import { SHOWCASE, CAPTURED } from '../js/showcase.js';
+import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
+const GENERATED = Object.keys(outputs());
+const HTML = GENERATED.filter((p) => p.endsWith('.html'));
+
+test('① the generated pages, sitemap and robots.txt are what scripts/landing.mjs writes, and every captured link matches its example', () => {
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/landing.mjs'), '--check'], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr || r.stdout);
+  assert.deepEqual(showcaseProblems(), []);
+});
+
+test('① …and the link check is not vacuous: a drifted date, an undeclared parameter and a missing layer are each caught', () => {
+  const s = SHOWCASE.find((x) => x.at != null && x.layers.length) || SHOWCASE.find((x) => x.at != null);
+  const base = CAPTURED[s.id].hash;
+  const variants = {
+    date: base.replace(/tt=[^&]+/, 'tt=1999-01-01'),
+    extra: base + '&s=eyJ3ZWF0aGVyRUMiOnsidCI6IjIwMjYifX0',
+    layers: s.layers.length ? base.replace(/&l=[^&]+/, '') : base + '&l=dl-climate',
+    camera: base.replace(/^#v=[^,]+/, '#v=0.0000'),
+  };
+  for (const [what, hash] of Object.entries(variants)) {
+    const bad = showcaseProblems({ ...CAPTURED, [s.id]: { ...CAPTURED[s.id], hash } });
+    assert.ok(bad.some((b) => b.startsWith(s.id + ':')), what + ' drift was not reported: ' + hash);
+  }
+});
+
+test('② en and jp carry the same text: same keys, nothing empty, no unknown placeholder', () => {
+  const shape = (o, p = '') => (typeof o === 'string' ? [p]
+    : Array.isArray(o) ? o.flatMap((v, i) => shape(v, p + '[' + i + ']'))
+      : Object.keys(o).sort().flatMap((k) => shape(o[k], p + '.' + k)));
+  assert.deepEqual(shape(TEXT.jp), shape(TEXT.en));
+  const known = new Set(['floorBC', 'snapshots', 'ohmFrom', 'ohmTo', 'csFrom', 'csTo', 'layers']);
+  const walk = (o, p) => {
+    if (typeof o === 'string') {
+      assert.ok(o.trim(), p + ' is empty');
+      for (const m of o.matchAll(/\{(\w+)\}/g)) assert.ok(known.has(m[1]), p + ' names an unknown fact {' + m[1] + '}');
+      return;
+    }
+    for (const [k, v] of Object.entries(o)) walk(v, p + '.' + k);
+  };
+  walk(TEXT, 'TEXT');
+  /* the examples: both languages written for every title, sentence and question */
+  for (const s of SHOWCASE) for (const f of ['title', 'blurb', 'question']) {
+    assert.equal(s[f].length, 2, s.id + '.' + f + ' is an LA(en, jp) tuple');
+    assert.ok(s[f][0].trim() && s[f][1].trim(), s.id + '.' + f);
+  }
+});
+
+test('③ the facts on the page are the app\'s: the clock reaches exactly as far back as the oldest era snapshot', () => {
+  const F = facts();
+  assert.equal(F.floor, F.firstSnap, 'js/hist-scale.js FLOOR is the first data/hist-eras.js snapshot');
+  assert.equal(F.ohmTo + 1, F.csFrom, 'the OpenHistoricalMap band ends where the CShapes band begins');
+  assert.ok(F.layers > 100 && F.snapshots > 10);
+  const about = rd('about.html');
+  assert.ok(about.includes(F.bcYears.toLocaleString('en-US') + ' BC'), 'about.html states the floor it read');
+  assert.ok(rd('ja/about.html').includes('紀元前' + F.bcYears.toLocaleString('ja-JP') + '年'));
+  /* the site address is the one index.html already publishes, and the donation links are the app's own */
+  assert.ok(about.includes('<link rel="canonical" href="' + F.site + 'about.html">'));
+  assert.ok(about.includes(F.stripe.en) && rd('ja/about.html').includes(F.stripe.jp));
+});
+
+test('④ every asset a generated page names is copied into dist/, and the sitemap names every page', () => {
+  const copied = (rel) => {
+    const n = normalize(rel).replace(/\\/g, '/');
+    if (STATIC_EXCLUDE.some((x) => n === x || n.startsWith(x + '/'))) return false;
+    return STATIC_ASSETS.some((a) => n === a || n.startsWith(a + '/')) || /^[^/]+\.png$/.test(n);
+  };
+  for (const page of HTML) {
+    assert.ok(copied(page), page + ' is not in vite.config.js STATIC_ASSETS');
+    const html = rd(page);
+    const dir = dirname(page) === '.' ? '' : dirname(page) + '/';
+    for (const m of html.matchAll(/\s(?:href|src)="([^"#]+)(?:#[^"]*)?"/g)) {
+      const ref = m[1];
+      if (/^(https?:)?\/\//.test(ref) || ref.startsWith('mailto:')) continue;
+      const rel = normalize(dir + ref).replace(/\\/g, '/');
+      assert.ok(existsSync(join(ROOT, rel)), page + ' names ' + ref + ', which does not exist');
+      if (rel !== 'index.html') assert.ok(copied(rel), page + ' names ' + rel + ', which the build does not copy');
+    }
+  }
+  const sitemap = rd('sitemap.xml');
+  const site = facts().site;
+  for (const page of PAGES) for (const dir of ['', 'ja/']) assert.ok(sitemap.includes('<loc>' + site + dir + page + '.html</loc>'), page);
+  /* one share page per example and language, each a complete card: og + twitter, the 1200×630 picture, a self canonical, and the way on to the map */
+  for (const s of SHOWCASE) for (const dir of ['', 'ja/']) {
+    const rel = dir + 's/' + s.id + '.html';
+    assert.ok(sitemap.includes('<loc>' + site + rel + '</loc>'), rel + ' is in the sitemap');
+    const h = rd(rel);
+    assert.ok(h.includes('<link rel="canonical" href="' + site + rel + '">'), rel + ' canonical');
+    assert.ok(h.includes('<meta property="og:image" content="' + site + CAPTURED[s.id].card + '">'), rel + ' og:image');
+    assert.ok(h.includes('<meta property="og:image:width" content="1200">') && h.includes('<meta property="og:image:height" content="630">'), rel + ' card size');
+    assert.ok(h.includes('<meta name="twitter:card" content="summary_large_image">'), rel + ' twitter card');
+    assert.ok(h.includes('<meta property="og:title" content="') && h.includes('<meta property="og:description" content="'), rel + ' og text');
+    const hash = CAPTURED[s.id].hash.replace(/&/g, '&amp;');
+    assert.ok(h.includes('<meta http-equiv="refresh" content="0; url=') && h.includes('index.html' + hash + '"'), rel + ' refreshes to its map');
+  }
+  assert.ok(rd('robots.txt').includes('Sitemap: ' + site + 'sitemap.xml'));
+  assert.ok(existsSync(join(ROOT, 'google0266d9db8efbc48c.html')) && STATIC_ASSETS.includes('google0266d9db8efbc48c.html'), 'the Search Console verification file stays');
+  for (const s of SHOWCASE) assert.ok(statSync(join(ROOT, CAPTURED[s.id].image)).size > 20000, s.id + ': the picture is a real screenshot');
+  void pagePath;
+});
+
+test('⑤ the ways in: Settings links the page, its words exist in en and jp, and Atlas is told every example', async () => {
+  const idx = rd('index.html');
+  assert.match(idx, /<a id="link-about" href="\.\/about\.html"[^>]*data-i18n="viewAboutPage"/);
+  for (const loc of ['js/locales/ui.en.js', 'js/locales/ui.jp.js']) {
+    const t = rd(loc);
+    assert.match(t, /lblAboutIntMap:"[^"]+"/, loc);
+    assert.match(t, /viewAboutPage:"[^"]+"/, loc);
+  }
+  const caps = rd('js/atlas-capabilities.js');
+  assert.ok(caps.includes('["panel.about","about"') && caps.includes('["panel.showcase","showcase"'), 'both capabilities are registry rows');
+  /* the catalogue is built at run time; evaluate it and read what the planner is shown */
+  globalThis.window = globalThis.window || globalThis;
+  const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');
+  const text = makeAtlasCatalogText({ lang: 'en' }, {}).text(['panel.showcase']);
+  for (const s of SHOWCASE) assert.ok(text.includes(s.id + ' — ' + s.title[0]), 'the planner is not told about ' + s.id);
+});

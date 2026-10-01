@@ -22,7 +22,8 @@
  *  invisible features). "Tidying" one is how the correction gets lost. Change a block only to fix
  *  what it says about the app, and say which round and which report in the change.
  * ==========================================================================*/
-import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* (#732) for `placeRules.selfLocWords` only — see `_PHRASES` below. Both files are in js/atlas-console.js's on-demand graph already, so this moves nothing onto the boot path. */
+import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
+import { SHOWCASE } from './showcase.js';   /* (landing-showcase) the example maps are LISTED from their declaration, never typed here — a typed list misses the next example */   /* (#732) for `placeRules.selfLocWords` only — see `_PHRASES` below. Both files are in js/atlas-console.js's on-demand graph already, so this moves nothing onto the boot path. */
 export function makeAtlasCatalogText(HOST, CTX) {
   return (function () {
     var moduleCatalog = (CTX && CTX.moduleCatalog) || function () { return ''; };
@@ -42,6 +43,8 @@ export function makeAtlasCatalogText(HOST, CTX) {
        expressions is what makes this a VERBATIM move rather than a rewrite. The array is rebuilt
        only when the language changes — the catalogue is 58 kB and a session changes language
        approximately never. */
+    /* (landing-showcase) «id — English title» for every example in js/showcase.js (title is an LA(en, jp) tuple) */
+    function showcaseList() { return SHOWCASE.map(function (x) { return x.id + ' — ' + x.title[0]; }).join('; '); }
     var _cacheLang = null, _cache = null;
     function blocks() {
       var lang = langLine();
@@ -181,6 +184,8 @@ export function makeAtlasCatalogText(HOST, CTX) {
         t: 'UNDO — PUT THE MAP BACK TO HOW IT WAS BEFORE A TURN (元に戻す・取り消し・さっきの変更を戻して・undo that, go back, revert): {"type":"undo","turn"?:int} — 元に戻す／取り消し: 直前の依頼で地図に加えた変更を取り消し、その依頼の前の地図に戻す. With no `turn` it takes back the most recent turn that changed the map (a second undo in a later turn walks one further back; a turn that was itself an undo is skipped, so it never redoes). It restores, as they were when that turn began: the camera and the globe/flat/3-D and map/satellite view, the Chronos date, which layers were switched on and their opacity, the highlights, shading, polygons, lines and markers you drew, and it takes off the objects and drawn surfaces that turn added. Its result names every section it could NOT put back and every operation whose effect no snapshot holds (`unresolved` — e.g. a drawing that turn REPLACED, an object it deleted, a forecast-model switch); say so to the reader rather than claiming the map is as it was. Calling it twice in one turn does not rewind twice — the second answers already_there.' },
       /* 41 (#R493) */ { ids: ['view.inspect'],
         t: 'LOOK AT THE MAP (your eyes — the ONLY capability that returns a picture): {"type":"inspect","include":"screen"|"map","reason":str}. It captures the frame the reader is looking at RIGHT NOW and attaches it to your next step as a real image, together with the machine facts of that same instant (bounding box, centre, zoom, bearing, pitch, base, projection, which layers were on, the Chronos time). "include":"screen" (the default) is the map PLUS everything drawn on top of it — legends, the scale bar, markers, the news band, the timebar — and is the only one that can answer a question about those. "include":"map" is the renderer\'s frame alone: cheaper and faster, right when the question is about the data painted on the map itself. USE IT when the request points at something visual — 「これ」「ここ」「見えてるもの」 / "this", "that band", "the thing in the corner" — or asks about colour, shape, density, arrangement, overlap, a label\'s text, whether a layer actually rendered, or what a satellite image or 3D terrain shows. You may also call it AFTER you move the camera or toggle a layer, to see the result of your own action, and more than once in a turn (the frames arrive in order, the most recent ones attached). DO NOT use it for anything the state block above already tells you exactly — coordinates, zoom, layer names, the time, the selection: those numbers are machine-true and the picture can only be read approximately. Read the image for how things LOOK; read the state for what things ARE.' },
+      /* 49 (landing-showcase) */ { ids: ['panel.about', 'panel.showcase'],
+        t: 'ABOUT INTMAP AND THE EXAMPLE MAPS: {"type":"about","page"?:"teachers"} = a link to the page that says what IntMap is (or, with page "teachers", how to teach with it), in the reader’s language — for 「IntMap について」「IntMap とは何か」「先生向けの授業での使い方」, "about IntMap", "for teachers". {"type":"showcase","id":ID} = put the map into one of IntMap’s ready-made example maps — the camera, the date and the layers exactly as the example declares them — and report it opened only once the clock and the layers say so; with no id it lists them. The examples (ID — title): ' + showcaseList() + ' — for 「見本の地図を見せて」「授業で使える地図の例」, "show me an example map", "a map for my class", or a request that matches one of the titles (「1914年のヨーロッパ」 → europe-1914).' },
       ];
       return _cache;
     }

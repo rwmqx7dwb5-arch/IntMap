@@ -78,7 +78,7 @@ through the auth listener and checks that 45 cards and the reading position surv
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**130 measured spec files / 86.6 min** of serial browser time against a ceiling of 86.6 min; and
+**131 measured spec files / 87.3 min** of serial browser time against a ceiling of 87.3 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -99,7 +99,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **124 spec files** — is the whole suite minus core
+**deep** tier — **125 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -877,7 +877,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **124 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **125 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -4424,3 +4424,15 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   従来どおり。
 - ⑥ `SYS()` は 1 つの形しか持たず（`_aiProto` を環境に置いても同じバイト）、道具を JSON で貼らず、
   `tool_calls` という語を含まない。`FINAL_SCHEMA` に呼び出しの欄は無い。
+
+### `tests/landing-showcase-checks.test.mjs` と `tests/landing-showcase.spec.js` (landing-showcase)
+
+紹介・授業ページと見本の地図（`Architecture.md` §8.6）。
+- node: `node scripts/landing.mjs --check` が緑（生成物 26 本が生成器と一致・捕えたリンクが宣言と一致）。リンクの日付・
+  宣言外のパラメータ・レイヤー・カメラのずれを入れると**それぞれ**落ちる。en/jp が同じ鍵、ページの数字が持ち主の値、
+  ページが名指す資産が全部 dist/ へ写る、sitemap に全ページと共有ページ、共有ページが og/twitter/canonical/1200×630・
+  meta refresh を持つ、設定の導線、Atlas の catalogue が全見本を名指す。
+- browser（ヘルメティック・1 起動）: 10 件を共有リンクの復元で開き、時計・カメラ・宣言したレイヤー（と描画）・
+  `drawn` の国名と行政区分を地図に訊く。4 ページのリンク・画像・アンカー、共有ページ 20 本の card と、スクリプト有り
+  （`location.replace`）・無し（meta refresh）の両方で自分の見本の地図へ移ること、320/390 px で横スクロール無し、
+  日本語を選んだ読者だけが ja/ へ移ること。実測 39.4 / 34.8 秒（1 worker）。

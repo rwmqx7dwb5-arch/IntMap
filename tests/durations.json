@@ -1,4 +1,5 @@
 {
+ "tests/landing-showcase.spec.js": 40,
  "tests/map-a11y-structure.spec.js": 13,
  "tests/history-prefetch-on-demand.spec.js": 18,
  "tests/cesium-globe-drag-cesium.spec.js": 49,
