@@ -368,7 +368,7 @@ test('atlas-live-stream ④ a preview is never the answer: the console replaces 
   /* the answer path ends the live state BEFORE it composes, so `__atlSay` is what is rendered */
   assert.ok(con.indexOf("LIVE.end(ai,'answered')") > 0 && con.indexOf("LIVE.end(ai,'answered')") < con.indexOf('_atlCompose(ai); try{ LIVE.answered(ai)'));
   /* a stopped turn keeps its draft marked unfinished; a failed one does not keep it */
-  assert.match(con, /function _markCancelled\(b\)\{ try\{ LIVE\.end\(b,'cancelled'\); \}catch\(_\)\{\}/);
+  assert.match(con, /function _markCancelled\(b\)\{ TCONT\.markCancelled\(b,_cancelledNote\(\)\); try\{ PROG\.done\(b\); \}catch\(_\)\{\} try\{ LIVE\.end\(b,'cancelled'\); \}catch\(_\)\{\} \}/);
   assert.match(con, /LIVE\.end\(ai,'error'\)/);
   const live = read('js/atlas-live.js');
   assert.match(live, /if \(r\.turn === 'continuing' \|\| st\.callNames\.length\) \{ narrate\(ai, st, r\.text\); return; \}/);

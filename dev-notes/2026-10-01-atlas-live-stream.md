@@ -69,5 +69,8 @@ date: 2026-10-01
 - `tests/atlas-live-stream-checks.test.mjs`（21 件）: ① 3 社のストリームを 1〜4096 バイトの切れ目で読み、畳み戻した本文が非ストリームの本文と一致・usage も一致 ② **ai-proxy を実際に走らせて**、3 社とも `done` の本文が素の応答と同一（Gemini の呼び出し id は時刻から作られるので除く）、精算の後に `done`、ストリーム中の失敗は払い戻し＋課金済み使用量の記録、切断しても精算、再試行で `reset`、要約の拒否は 1 回だけ、Atlas 以外はストリームしない ③ `js/ai-core.js` を実際に走らせて、`done` が従来の答えになる・切れたら 1 回だけ素で頼み直す・停止は頼み直さない ④ 下書き走査器（どの切れ目でも・全エスケープ・宣言が文より先）⑤ 両端のイベント名が一致・ループはストリームを知らない。
 - `tests/atlas-live-stream.spec.js`（3 件・本物のページ、偽セッション＋ai-proxy だけを演じる fetch）: 途中の一言は作業一覧へ・回答は書かれている間に見え、確定した回答に置き換わる（文は 1 回だけ）・HUD が操作の終わりを示す／停止で下書きが未完として残る／`done` 前の切断で 1 回だけ素で頼み直して答える。
 - `tests/backend-edge-hardening-checks.test.mjs` R801 ③: 成功の return が値（JSON か `done`）になったので、読む形を広げた（順序そのものは上の ② が実行で測る）。
+- `check:perf`: 遅延チャンク `atlas-console` が 1073.9 → **1084.3 kB（+10.4 kB）**。新しい `js/atlas-live.js`（下書きの走査器・HUD・計測）と `js/atlas-progress.js` の 3 関数がこの塊に入った分で、Atlas を開いたときにだけ読まれる（起動時の eager は不変）。買ったもの: 最初の文字が回答の完成を待たなくなること。行は `--update` で 1 つだけ上げた。
+- `tests/atlas-turn-checks.test.mjs` R419 ⑨c は `_markCancelled` が `TCONT.markCancelled` から始まることを綴りで見ている。`LIVE.end` を先頭に置いた最初の版はそれを崩したので、`LIVE.end` を末尾へ移した（下書きに「未完」の印を付けるだけで、停止の注記と `PROG.done` の順序 #R723 には関わらない）。
+- 文書の数え漏れ 4 か所（`_shared/` の一覧 2 か所に `ai-stream.js`、deep 124 本、計測済み spec 130 本 / 86.6 分）。
 - 予算: spec 1 本ぶん 36 秒を `TOTAL_BUDGET_S` に実測とともに足した（`tests/durations.json` も 36）。deep の本数 123 → 124 を文書 3 か所で。
 - ゲート: `check:static`（z-index は `--z-map-overlay`・セーフエリアは `--safe-*`・携帯の境界は `IntMapDevice.COMPACT`、下書きの markdown は製品の `mdMini` を通るので output-taint の台帳に 2 件）・`check:i18n`（床を更新）・`check:archfiles`・`check:docs`・`check:catalog`・`check:capabilities`・`check:atlasrepeat`・`check:surface`・`check:types`。

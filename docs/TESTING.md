@@ -78,7 +78,7 @@ through the auth listener and checks that 45 cards and the reading position surv
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**129 measured spec files / 86.0 min** of serial browser time against a ceiling of 86.0 min; and
+**130 measured spec files / 86.6 min** of serial browser time against a ceiling of 86.6 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
