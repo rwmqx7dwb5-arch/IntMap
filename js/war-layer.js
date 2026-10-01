@@ -244,6 +244,9 @@ export function warLayer(HOST) {
     const CB = 'dl-' + warId;
 
     let on = false, popup = null;
+    /* (restore-clock-and-elam) switched on by a restore while the clock was outside the war: hidden, and shown
+       by the clock subscription below the moment the clock reaches the record — never by moving the clock */
+    let awaitClock = false;
     let shownKey = null, curDate = null, curFronts = [], curFrame = null;
     let playT = null, stepDays = 5;
 
@@ -733,8 +736,9 @@ export function warLayer(HOST) {
     }
 
     /* ── the switch ───────────────────────────────────────────────────────────────────────────── */
-    async function toggle(want) {
+    async function toggle(want, opts) {
       on = !!want;
+      awaitClock = false;
       if (!on) {
         stopPlay();
         setVis(false);
@@ -765,6 +769,20 @@ export function warLayer(HOST) {
       let clock = null;
       try { clock = IntMapTime.isLive() ? iso(new Date()) : IntMapTime.iso(); } catch (_) { }
       if (!clock || clock < sp[0] || clock > sp[1]) {
+        /* ⚠ (restore-clock-and-elam) …AND ONLY THE READER CHOSE IT. A row a share link or a saved session switched
+           on (js/war-fronts.js passes `restored`, read from the restore's own mark at the moment of the change)
+           arrives with a restore that states the instant itself — and this line runs only after data/wars.json
+           has arrived, which can be after the restore set its clock. Writing the war's first day here then
+           replaced the instant the link named (MEASURED: a link at 1985 ended on 1939-08-23). The restore owns
+           the clock: the war draws nothing for an instant outside its record and leaves the row to the
+           world-at-time hold (js/layer-time-kernel.js), which says why on the row and delivers the row again
+           when the clock reaches the war. */
+        if (opts && opts.restored) {
+          awaitClock = true;
+          setVis(false);
+          try { window.IntMapLayerTime && window.IntMapLayerTime.ready(); } catch (_) { }
+          return true;
+        }
         try { IntMapTime.set(new Date(sp[0] + 'T12:00:00Z'), { source: 'ui' }); } catch (_) { }
         clock = sp[0];
       }
@@ -795,6 +813,7 @@ export function warLayer(HOST) {
         const d = e.isLive ? iso(new Date()) : e.iso;
         if (d < sp[0] || d > sp[1]) return;
         stopPlay();
+        if (awaitClock) { awaitClock = false; if (!ensure()) return; setVis(true); shownKey = null; }
         setDate(d);
       });
     } catch (_) { }
@@ -804,7 +823,7 @@ export function warLayer(HOST) {
     try {
       GE().events.on('styledata', () => {
         if (!on) return;
-        setTimeout(() => { if (!on) return; whenDrawable(() => { if (!on || !ensure()) return; setVis(true); shownKey = null; paint(curDate || spanOf(war() || {})[0]); }); }, 80);
+        setTimeout(() => { if (!on || awaitClock) return; whenDrawable(() => { if (!on || awaitClock || !ensure()) return; setVis(true); shownKey = null; paint(curDate || spanOf(war() || {})[0]); }); }, 80);
       });
     } catch (_) { }
 
@@ -836,7 +855,7 @@ export function warLayer(HOST) {
   /* ⚠ THE FACADE IS BY WAR ID. `toggle(id, want)` rather than `toggle(want)` — js/war-fronts.js and
      tests/atlas-console-kernel-checks.test.mjs #R209 ③ both reach it here, and the id is what tells two identical layers apart. */
   window.__imWarFronts = {
-    toggle: (id, want) => inst(id).toggle(want),
+    toggle: (id, want, opts) => inst(id).toggle(want, opts),
     isOn: (id) => (insts.has(id) ? insts.get(id).isOn() : false),
     date: (id) => (insts.has(id) ? insts.get(id).date() : null),
     setDate: (id, d) => inst(id).setDate(d),
