@@ -58,7 +58,9 @@ const SAFE_ZONE_RADIUS = 0.4;
 /* ── reading what the app already states ─────────────────────────────────────────────────────── */
 const rd = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const attr = (tag, name) => { const m = new RegExp('\\b' + name + '\\s*=\\s*"([^"]*)"', 'i').exec(tag); return m ? m[1] : null; };
-function decodeEntities(s) { return s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>'); }
+/* one pass over the five entities, so "&amp;lt;" decodes to "&lt;" and not to "<" (decoding &amp; first would decode twice) */
+const ENTITIES = { '&amp;': '&', '&quot;': '"', '&#39;': "'", '&lt;': '<', '&gt;': '>' };
+function decodeEntities(s) { return s.replace(/&(?:amp|quot|#39|lt|gt);/g, (e) => ENTITIES[e]); }
 
 export function readDocument(html = rd('index.html')) {
   const title = /<title>([^<]*)<\/title>/i.exec(html);
