@@ -18,6 +18,12 @@
 # they take the archive path, and only when that is verified (an index.html at the root and no Vite
 # build to run). Anything that is neither is refused by name rather than deployed as a guess.
 #
+# publishes-older-by-design: a rollback exists to put an OLDER commit on production, so it does not run
+#   scripts/pages-publish-guard.mjs (which refuses exactly that). Every other job that publishes runs it;
+#   tests/deploy-order-checks.test.mjs reads this line, and without it this job would be held to the guard.
+#   The deployment it creates is recorded at the dispatched ref's head (GITHUB_SHA), so a later push to
+#   main is still «ahead» of it and publishes as usual; a late run of an older commit is still refused.
+#
 # It does NOT revert database state — see docs/INCIDENT-RESPONSE.md.
 name: Rollback (production, Pages)
 

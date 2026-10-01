@@ -106,8 +106,27 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     outputs:
       page_url: ${{ steps.deploy.outputs.page_url }}
+    # (deploy-order) The button and the bot lander dispatch this on main's head at that moment; by the
+    # time the build is done a newer commit may already be live (ci.yml's `pages` job). The guard
+    # refuses to publish an ancestor of the live commit — see scripts/pages-publish-guard.mjs for the
+    # 2026-09-30 measurement where an older run overwrote a newer one.
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+      deployments: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          sparse-checkout: scripts/pages-publish-guard.mjs
+          sparse-checkout-cone-mode: false
+      - id: guard
+        name: Refuse to publish an ancestor of what is live
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/pages-publish-guard.mjs --sha "${GITHUB_SHA}"
       - id: deploy
+        if: ${{ steps.guard.outputs.publish == 'true' }}
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
 
   post-smoke:

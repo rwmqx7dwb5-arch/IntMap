@@ -38,7 +38,10 @@ test('② the publishing job is found in deploy.yml, not named by hand', () => {
   assert.ok(real, 'the real deploy.yml has a job that uses actions/deploy-pages');
   const yml = rd('.github/workflows/deploy.yml').replace(/\r\n/g, '\n');
   const block = yml.slice(yml.indexOf('    name: ' + real));
-  assert.match(block.slice(0, 1200), /uses:\s*actions\/deploy-pages@/, `the job named «${real}» is the one that publishes`);
+  /* the job's own text, up to the next job key — not a fixed window (deploy-order: the guard steps above
+     the publish pushed it past the 1,200 characters this used to read) */
+  const next = block.slice(1).search(/\n  [A-Za-z0-9_-]+:\s*\n/);
+  assert.match(next < 0 ? block : block.slice(0, next + 1), /uses:\s*actions\/deploy-pages@/, `the job named «${real}» is the one that publishes`);
   const fixture = ['jobs:', '  build:', '    name: Build', '    steps:', '      - run: x',
     '  ship:', '    name: "Ship it"', '    steps:', '      - uses: actions/deploy-pages@abc', ''].join('\n');
   assert.equal(pagesJobName(fixture), 'Ship it');

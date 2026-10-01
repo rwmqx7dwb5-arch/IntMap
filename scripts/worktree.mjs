@@ -52,6 +52,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
 import { artefactNames, slugProblem } from './round-names.mjs';
 import { latestEntry, NOTES_DIR } from './dev-notes.mjs';
+import { liveDeployment } from './pages-publish-guard.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -245,10 +246,13 @@ const labelList = (labels) => (labels.length > LABELS_SHOWN
   ? labels.slice(0, LABELS_SHOWN).join(' ') + ` ほか${labels.length - LABELS_SHOWN}件`
   : labels.join(' '));
 
-/* (a) WHAT IS ON PRODUCTION. The deploy workflow is the only thing that puts bytes on the Pages
-   site, so the sha of its last SUCCESSFUL run is what the public is looking at. A newer run that
-   failed is a separate fact and is reported separately: «the deploy is red» and «the deploy has
-   not caught up» have different next moves. Capped at five runs and six seconds, like nightly(). */
+/* (a) WHAT IS ON PRODUCTION. ⚠ (deploy-order) It is the newest `github-pages` DEPLOYMENT whose latest
+   status is success — asked through scripts/pages-publish-guard.mjs, the same rule the publishing jobs
+   use — not «the newest run that published». Runs are ordered by when they STARTED, and the run that
+   started first can publish last: 2026-09-30 this line said production was 8d7e473 (deploy.yml, started
+   20:11:32) while 1a66ec7 (CI, started 20:07:57, published 20:17:32) had overwritten it. The runs are
+   still read, for one separate fact: «the deploy is red» and «the deploy has not caught up» have
+   different next moves. Capped at five runs and six seconds, like nightly(). */
 /** The display name of a workflow's job that publishes (the one using actions/deploy-pages). */
 export function pagesJobName(yml) {
   const lines = String(yml || '').split(/\r?\n/);
@@ -284,7 +288,7 @@ function deployState() {
     let runs; try { runs = JSON.parse(raw); } catch { continue; }
     if (Array.isArray(runs)) for (const r of runs) sources.push({ ...r, file, pagesJob });
   }
-  if (!sources.length) return { known: false };
+  const live = liveOnPages();
   const runs = sources.sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
 
   const jobOk = (r) => {
@@ -311,12 +315,21 @@ function deployState() {
     const pj = newest.file === 'deploy.yml' ? newest.conclusion : jobOk(newest);
     if (pj && pj !== 'success' && pj !== 'skipped') broken = { id: newest.databaseId, what: pj, day: String(newest.createdAt || '').slice(0, 10) };
   }
-  const ok = runs.find(published);
-  if (!ok || !ok.headSha) return { known: false, broken };
+  if (!live || !live.sha) return { known: false, broken };
 
   const target = q(['rev-parse', 'origin/main']);
-  const gap = commitsAfter(ok.headSha, target);
-  return { known: gap.known, broken, sha: ok.headSha, day: String(ok.createdAt || '').slice(0, 10), ...gap };
+  const gap = commitsAfter(live.sha, target);
+  return { known: gap.known, broken, sha: live.sha, day: String(live.at || '').slice(0, 10), ...gap };
+}
+
+/** The live deployment through `gh api` ({owner}/{repo} is filled in by gh from this checkout).
+    Usually two calls (the newest deployment is the live one). 12 s each, not nightly()'s 6: measured
+    2026-10-01 on this machine, one `gh api` call took 4.3–39 s, and an answer that times out is
+    reported as «不明», never guessed from the runs. */
+function liveOnPages() {
+  const getJson = (path) => JSON.parse(execFileSync('gh', ['api', path],
+    { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 12000 }));
+  try { return liveDeployment(getJson, '{owner}/{repo}', { pages: 1 }); } catch { return null; }
 }
 
 /* (b) WHAT HAS BEEN VERIFIED IN PRODUCTION — a receipt, because nothing else can tell «somebody
