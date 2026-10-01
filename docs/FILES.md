@@ -1788,7 +1788,7 @@ scripts/
   atlas-eval/scripted-cassettes.mjs  手で書いたカセットの台本（記録された欠陥の再構成と代表ターン）。`--write` で再録
   atlas-eval/cassettes/*.json     カセット。手書き（scripted）と本番の録画（recorded・`--record`）
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
-  supabase-deploy.mjs             `supabase-deploy.yml` の中身。push の差分から出す関数（名簿は config.toml の
+  supabase-deploy.mjs             `supabase-deploy.yml` の中身。**最後に成功した配備からの**差分で出す関数（起点の読み方は docs/RELEASE.md）（名簿は config.toml の
                                   `[functions.*]`・`_shared/` か config.toml なら全関数）と足された migration を決める。
                                   ⚠ `db push` は `--dry-run` が流すものが**足したものと完全に一致するときだけ**
                                   （本番の履歴は baseline を記録していない）。`--link` は link だけ（ドリフト検査の前段）

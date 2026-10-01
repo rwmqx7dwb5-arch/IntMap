@@ -320,8 +320,9 @@ node --test tests/process-agent-context-checks.test.mjs
 ## 9. Edge Function の deploy に `--use-api` が要る理由（実測）
 
 ⚠ **通常の deploy は CI に移った。** `main` への push で `supabase/functions/**`・`supabase/config.toml`・
-`supabase/migrations/**` が変わると `.github/workflows/supabase-deploy.yml` が変わった関数（`_shared/` か
-`config.toml` なら全関数）と足された migration を出す（正本は [`RELEASE.md`](RELEASE.md) の
+`supabase/migrations/**` が変わると `.github/workflows/supabase-deploy.yml` が**最後に成功した配備から**変わった関数
+（`_shared/` か `config.toml` なら全関数・本番に無い宣言済みの関数は常に）と足された migration を出し、
+宣言された関数が本番に無ければ赤にする（正本は [`RELEASE.md`](RELEASE.md) の
 「Supabase: Edge Functions and migrations」）。secret `SUPABASE_ACCESS_TOKEN` が未登録なら run は赤で
 Issue が名前を述べる（登録は [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md) 「一度だけの登録」）。
 **以下の手での deploy は緊急時の手段**——CI が赤で直すより早く出す必要があるとき・未登録の間だけ使う。

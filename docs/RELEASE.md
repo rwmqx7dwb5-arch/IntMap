@@ -6,7 +6,7 @@
 work branch → Pull Request (auto-merge on green) → CI (green) → squash merge to main
    → ci.yml on main:      build once → gates + browser tier on that build → (all green) publish
                           that same dist/ → post-deploy smoke             ↓ (if broken) rollback
-   → supabase-deploy.yml: changed Edge Functions + added migrations        (only if supabase/ changed)
+   → supabase-deploy.yml: Edge Functions + migrations changed since the last successful deploy (only if supabase/ changed)
 ```
 
 **There is no staging gate.** A PR is opened with auto-merge (`AGENTS.md` §5.1), so the moment CI
@@ -156,8 +156,16 @@ does not wait for `main`'s CI run. On a push to `main` that changes
 `supabase/functions/**`, `supabase/migrations/**` or `supabase/config.toml`,
 [`scripts/supabase-deploy.mjs`](../scripts/supabase-deploy.mjs):
 
-1. reads the push's diff;
-2. applies the migrations the push **added** with `supabase db push` — **only if** `db push
+1. reads the diff **from the last successful deploy** to the pushed commit — not the push's own
+   diff. The base is the `headSha` of this workflow's newest green `push` run (`gh run list`,
+   `actions: read`), trusted only if that commit's copy of the script carries the same rule
+   (`DEPLOY_BASE_CONTRACT`; a green run under the old rule deployed only its own diff). No readable
+   record, or a base that is not an ancestor of the pushed commit → **every function**, and the run
+   stays red while `db push --dry-run` still has migrations to apply (it cannot choose them without
+   a base, and a green run becomes the next base). MEASURED 2026-10-01: #869 and #874 were red and
+   deployed nothing; #878 was green and deployed no function, because #878 changed none —
+   `usage-count` was absent (404) and #874's `_shared/` change undeployed until a manual deploy;
+2. applies the migrations **added** since that base with `supabase db push` — **only if** `db push
    --dry-run` would apply exactly those. Production's history does not record the baseline
    (`MIGRATIONS.md`), so an unguarded `db push` would re-run it against the live database; any
    other pending version makes the run red with nothing applied and no function deployed;
@@ -165,7 +173,10 @@ does not wait for `main`'s CI run. On a push to `main` that changes
    `config.toml` changed (`verify_jwt` lives in `config.toml`; #R806's fix was a config-only
    change) — with `supabase functions deploy <name> --project-ref … --use-api`. The roster is
    `config.toml`'s `[functions.*]`; a changed directory without a header is refused, not deployed
-   with default settings.
+   with default settings. A declared function that `supabase functions list` does not show is
+   deployed whatever the diff says;
+4. lists production again and is **red if a declared function is not there** (or if the list cannot
+   be read — a green run is the next run's base, so it must not be unconfirmed).
 
 **Nightly**, the same workflow's `drift` job runs `node scripts/release-state.mjs --edge --db --check`:
 deployed function source vs `main`, byte for byte, and the remote migration history vs
