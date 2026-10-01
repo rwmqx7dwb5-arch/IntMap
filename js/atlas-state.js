@@ -299,6 +299,13 @@ export function makeAtlasState(HOST) {
         } catch (_) { }
         var HP = GLOBAL('IntMapHistPlaces');
         if (HP && typeof HP.state === 'function') out.historicalPlaces = HP.state();
+        /* (world-at-time) for each ticked layer, whether its source states the instant on the clock —
+           `held` ones are ticked and NOT drawn (js/layer-time-kernel.js). Read off the past only: on the
+           live clock every held kind states the present, and the table is not loaded until it can matter. */
+        try {
+          var LT = GLOBAL('IntMapLayerTime');
+          if (!out.live && LT && typeof LT.active === 'function') { var la = LT.active(); if (la && la.length) out.layers = la; }
+        } catch (_) { }
         return out;
       });
 

@@ -206,7 +206,7 @@ export function cameras(HOST){
       else { _stopRefresh(); try{ window._hideGenericLegend&&window._hideGenericLegend('webcams'); }catch(_){} if(popup){ popup.remove(); popup=null; } } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
     GE().events.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(()=>loadView(false),550); });
-    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','visible'); }catch(_){} }); } },80); });
+    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(on&&ensure()){   /* (world-at-time) `on` again at the timer: an «off» inside these 80 ms (js/layer-time-kernel.js withdraws a box on a styledata-busy map) was undone here — measured: the webcams stayed drawn with their box held */ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ GE().layers.setLayout(id,'visibility','visible'); }catch(_){} }); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-webcams')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-webcams';
       const lab=document.createElement('label'); lab.className='layer-option';

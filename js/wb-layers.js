@@ -16,6 +16,7 @@ import { readWithin, isUnobserved, untilObserved } from './fetch-deadline.js';  
 import { afterTick, tickKey } from './runtime.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';
 
 export function wbLayers(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -289,13 +290,31 @@ export function wbLayers(HOST){
        kept because for a survey indicator reported once a decade it is the only mode that fills the
        map — but it is no longer the default, because 「同一年度で比較しないと意味がない」. */
     const wbYear={};
-    function choroOn(L){ L=V(L); ensureGeo(geo=>{ if(!geo) return;
+    /* ══ (world-at-time) THE YEAR IS THE CLOCK'S ══════════════════════════════════════════════════════
+       MEASURED (2026-10-01): with Chronos at 1914 every one of these 61 rows painted its own default year —
+       2023 values on a 1914 map — because the year was this file's own (`wbYear`, a picker of its own) and
+       nothing here read the clock. docs/architecture/07-map.md §7.4 already says a row keeps no year of its
+       own (「行は自分の年を持たない」, the rule the other choropleths follow through `_legendClockYear`).
+       ⇒ Off the live clock, the year painted is the clock's year; the years the fetched series holds are
+       reported to js/layer-time-kernel.js, which holds a row back (and says why) when the clock is before
+       them. After the last year the series holds, that last year is carried and the legend names it.
+       On the live clock nothing changes: the series' own default, or the reader's «latest per country». */
+    function clockYear(){ try{ const T=IntMapTime; return (T&&!T.isLive())?String(T.year()):null; }catch(_){ return null; } }
+    function yearFor(L,S){ const cy=clockYear();
+      if(cy==null) return (wbYear[L.id]!==undefined)?wbYear[L.id]:((S&&S.best)||'');
+      if(!S||!S.years.length) return cy;
+      const last=S.years[S.years.length-1];
+      return (+cy>+last)?last:cy; }
+    const wbOn=new Set();
+    try{ IntMapTime.on(()=>{ wbOn.forEach(id=>{ const B=wbById[id]; if(B) choroOn(B); }); }); }catch(_){}
+    function choroOn(L){ wbOn.add(L.id); L=V(L); ensureGeo(geo=>{ if(!geo) return;
       /* (unobserved-is-not-refused) a host silent through every retry is LATE, not empty: say so and paint nothing,
          rather than a map of grey «no data» countries; nothing was cached, so switching it on again reads again */
       const LATE={};
       wbSeries(L.code).catch(e=>{ if(!isUnobserved(e)) throw e; try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return LATE; }).then(S=>{ if(S===LATE) return;
       const key=_wbKey(L.code);
-      const year=(wbYear[L.id]!==undefined)?wbYear[L.id]:((S&&S.best)||'');
+      const year=yearFor(L,S);
+      try{ const LT=window.IntMapLayerTime; if(LT&&S&&S.years.length) LT.range('bx-'+L.id,{ from:S.years[0], to:S.years[S.years.length-1], by:'World Bank API '+_wbKey(L.code) }); }catch(_){}
       let m;
       if(S&&year&&S.by[year]){ m={}; const row=S.by[year]; Object.keys(row).forEach(k=>{ m[k]={v:row[k],y:year}; }); }
       else m=wbCache[key]||{};
@@ -345,7 +364,11 @@ export function wbLayers(HOST){
           if(!yr){ yr=document.createElement('div'); yr.className='bx-yearrow'; yr.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
             yr.innerHTML='<label style="display:contents;"><span class="bx-yearlbl"></span><select class="bx-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select></label>';
             el.appendChild(yr);
-            yr.querySelector('.bx-year').addEventListener('change',(e)=>{ wbYear[L.id]=e.target.value; choroOn(L); }); }
+            yr.querySelector('.bx-year').addEventListener('change',(e)=>{ const v=e.target.value;
+              /* (world-at-time) a year chosen here is the MAP's year — it moves the one clock, and every layer
+                 follows it. «Latest per country» is not a year: it returns the clock to now and keeps the mode. */
+              if(v===''){ wbYear[L.id]=''; try{ IntMapTime.setNow({source:'ui'}); }catch(_){} choroOn(L); }
+              else { delete wbYear[L.id]; try{ IntMapTime.setYear(+v,{source:'ui'}); }catch(_){ wbYear[L.id]=v; choroOn(L); } } }); }
           yr.querySelector('.bx-yearlbl').textContent=IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
           const sel=yr.querySelector('.bx-year');
           const latestTxt=IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
@@ -365,7 +388,7 @@ export function wbLayers(HOST){
         let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
         nn.textContent=(IntMapLang.t(HOST.lang,"Source: World Bank · ","出典: 世界銀行 · ","Quelle: Weltbank · ","Источник: Всемирный банк · ","Fuente: Banco Mundial · "))+(Array.isArray(L.code)?L.code.join(' + '):L.code)+(ysp?(' · '+ysp):'')+mode+((L.id==='wbdebt'&&(!year||year==='2024'))?(IntMapLang.t(HOST.lang," + IMF WEO general govt gross debt (gap-fill)"," ＋ IMF WEO（一般政府総債務）で補完"," + IWF WEO Bruttoschuldenstand des Staates (Lückenfüllung)"," + МВФ WEO, валовой долг сектора госуправления (заполнение пробелов)"," + FMI WEO deuda bruta del gobierno general (relleno de huecos)")):''); } } }catch(_){}
     }); }); }
-    function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
+    function choroOff(L){ wbOn.delete(L.id); [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
 
     /* ---------- Earthquakes (USGS realtime feed + historical query) ---------- */
     let eqWin='week', eqClickWired=false;

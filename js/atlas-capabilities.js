@@ -268,6 +268,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["photo.locate","photoLocate","photoGeolocate,whereWasThisTaken,skylineMatch","photo","panel","panel.photoGeo","panel,explanation","session","none","","photoGeo"],
       ["map.outbreaks","outbreaks","diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap","map","paint","map.outbreaks","map,explanation","session","none","",""],
       ["dialog.answer","answer","","dialog","none","","explanation","read","none","",""],
+      ["time.coverage","timeCoverage","layerTime,whatCanBeDrawn","time","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

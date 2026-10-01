@@ -1750,15 +1750,27 @@ export function gibsScience(HOST){
       if(R.to&&v>R.to) v=R.to;
       return v; }
     /* the date this layer is drawing: the reader's choice, else the newest the product HAS */
+    /* ══ (world-at-time) OFF THE LIVE CLOCK, THE DATE IS THE CLOCK'S ═══════════════════════════════════
+       MEASURED (2026-10-01): with Chronos at 1914 these four rows drew 2026 imagery — the date was this
+       file's own (`gxDate`, a picker of its own) and nothing here read the clock, a second clock beside
+       the one the rest of the map follows (docs/architecture/07-map.md §7.4: 2つ目の時計を作らない).
+       Now the clock's day is drawn, snapped to the product's period; outside the archive the measured
+       extent (data/gibs-range.json) is what js/layer-time-kernel.js reads to hold the row back and say
+       why, so `gxClamp` only ever decides a day inside it. The picker and the steppers move the clock. */
+    function gxClock(){ try{ const T=window.IntMapTime; return (T&&!T.isLive())?T.iso():null; }catch(_){ return null; } }
     function gxAt(L){ if(L.staticDate) return L.staticDate;
       const R=gxR(L);
+      const ck=gxClock(); if(ck) return gxClamp(L,ck);
       if(gxDate[L.id]) return gxClamp(L,gxDate[L.id]);
       return (R&&R.to)||GDATE(); }
+    /* a day chosen in the legend is the map's day: it moves the one clock (noon UTC — a GIBS day is a UTC day) */
+    function gxSetDay(L,iso){ const v=gxClamp(L,iso);
+      try{ window.IntMapTime.set(new Date(v+'T12:00:00Z'),{source:'ui'}); }catch(_){ gxDate[L.id]=v; gxRepoint(L); } }
     function gxStep(L,dir){ const R=gxR(L); if(!R) return;
       const per=R.period||1;
       const t=Date.parse(gxAt(L)+'T00:00:00Z')+dir*per*DAYMS;
-      gxDate[L.id]=gxClamp(L,gxIso(t));
-      gxRepoint(L); }
+      gxSetDay(L,gxIso(t)); }
+    try{ window.IntMapTime.on(()=>{ LIST.forEach(L=>{ if(state[L.id]&&!L.staticDate) gxRepoint(L); }); }); }catch(_){}
     function gxRepoint(L){ try{ if(GE().layers.hasSource(srcId(L))) GE().layers.setSourceTiles(srcId(L),[urlFor(L)]); }catch(_){}
       legendNote(L); }
     const urlFor=(L)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+gxAt(L)+'/GoogleMapsCompatible_Level'+L.max+'/{z}/{y}/{x}.'+L.ext;
@@ -1794,7 +1806,7 @@ export function gibsScience(HOST){
             el.appendChild(d);
             d.querySelector('.gx-prev').onclick=()=>gxStep(L,-1);
             d.querySelector('.gx-next').onclick=()=>gxStep(L,1);
-            d.querySelector('.gx-date').addEventListener('change',(e)=>{ gxDate[L.id]=gxClamp(L,e.target.value); gxRepoint(L); });
+            d.querySelector('.gx-date').addEventListener('change',(e)=>{ gxSetDay(L,e.target.value); });
           }
           d.querySelector('.gx-dlbl').textContent=LGX('Date','日付','Datum','Дата','Fecha');
           const inp=d.querySelector('.gx-date');

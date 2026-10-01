@@ -71,7 +71,13 @@ test('atlas-one-declaration ①: all 368 dispatch spellings of the photograph re
   assert.equal(n, BEFORE.dispatchRuns.flat().length);
   assert.ok(n >= 368, `the photograph holds ${n} spellings — it was taken with 368`);
   /* no label moved to another body: every live run is a subset of one run of the photograph */
-  for (const run of runs) assert.ok(BEFORE.dispatchRuns.some((b) => run.every((x) => b.includes(x))), `the run ${run.join(', ')} mixes cases that used to be apart`);
+  /* (world-at-time) a run made only of spellings the photograph never held is a capability added after it
+     (`time.coverage`) — it cannot mix cases that used to be apart, having none of them */
+  const pictured = new Set(BEFORE.dispatchRuns.flat());
+  for (const run of runs) {
+    if (!run.some((x) => pictured.has(x))) continue;
+    assert.ok(BEFORE.dispatchRuns.some((b) => run.every((x) => b.includes(x))), `the run ${run.join(', ')} mixes cases that used to be apart`);
+  }
   /* and a case carries the row's column-1 spelling, never a copy of an alias */
   for (const label of live) {
     const c = CAPS.ofSpelling(label);

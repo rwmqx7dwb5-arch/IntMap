@@ -478,7 +478,7 @@ export function elections(HOST) {
   if (document.readyState !== 'loading') setTimeout(buildRow, 0); else document.addEventListener('DOMContentLoaded', buildRow);
   window.addEventListener('intmap-lang', () => setTimeout(() => { relabel(); if (on) renderPanel(); }, 20));
   /* self-heal across basemap swaps, exactly like the other vector overlays */
-  try { GE().events.on('styledata', () => { if (on) setTimeout(() => { if (ensure()) { setVis(true); paint(); } }, 80); }); } catch (_) {}
+  try { GE().events.on('styledata', () => { if (on) setTimeout(() => { if (on && ensure()) {   /* (world-at-time) `on` again at the timer — an «off» inside these 80 ms was undone here (js/cameras.js has the measurement) */ setVis(true); paint(); } }, 80); }); } catch (_) {}
 
   window.IntMapElections = {
     toggle,

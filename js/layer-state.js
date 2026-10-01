@@ -219,7 +219,13 @@ export function makeLayerState(opts) {
     rec.req = p;
     const mine = () => { const r = recs.get(id); return !!(r && r.req === p); };
     p.then(() => { if (mine() && recs.get(id).state === 'loading') { const r = set(id, 'ok'); if (r) r.req = p; } },
-      (e) => { if (!mine()) return; const r = report(id, e); if (r) r.req = p; });
+      (e) => { if (!mine()) return;
+        /* (world-at-time) a request that settles after its box was held for the instant (js/layer-time-kernel.js
+           sent the module its «off») no longer describes the box — the row says why it is not drawn, and a
+           late refusal from the abandoned request must not overwrite that. MEASURED: the aircraft row read
+           «couldn't load» on a 1960 map, its feed's last request rejecting after the hold. */
+        if (recs.get(id).state === 'nodata') return;
+        const r = report(id, e); if (r) r.req = p; });
   }
 
   /** healed(id, fix) — the self-heal repaired (or tried to repair) this box; kept and readable */

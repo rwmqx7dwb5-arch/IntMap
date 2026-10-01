@@ -77,7 +77,7 @@ test('① (cont.) the newest change for a box is the one in flight', async () =>
 
 /* ── ②③ the reconciler, as shipped ──────────────────────────────────────────────────────────────── */
 const RECONCILER = ['inFlightNow', 'toggleLook', 'audit'].map((n) => liftFunction(DL, n)).join('\n');
-const DEPS = ['layerInflight', 'observable', 'heldNow', '_canDraw', 'idsFor', 'painted', 'healed', 'sus', 'log', 'BASE',
+const DEPS = ['layerInflight', 'observable', 'heldNow', 'timeHeld', '_canDraw', 'idsFor', 'painted', 'healed', 'sus', 'log', 'BASE',
   'fireSyn', 'rearm', 'userTouched', '_auditLearned', 'GE', 'document', 'window'];
 
 function rig() {
@@ -86,7 +86,7 @@ function rig() {
   const boxes = [];
   const env = {
     layerInflight: F,
-    observable: () => true, heldNow: () => false, _canDraw: () => true,
+    observable: () => true, heldNow: () => false, timeHeld: () => false, _canDraw: () => true,
     idsFor: (id) => (id === 'dl-radar' ? ['lyr-radar'] : null),
     painted: (ids) => ids.some((l) => drawn.has(l)),
     healed: {}, sus: {}, log: [], BASE: {},
