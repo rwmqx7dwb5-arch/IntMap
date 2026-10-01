@@ -197,6 +197,18 @@ test('④ the GIBS rows draw the clock\'s day; the picker moves the clock', () =
   assert.match(src, /'\.gx-date'\)\.addEventListener\('change',\(e\)=>\{ gxSetDay\(L,e\.target\.value\); \}\)/);
 });
 
+test('④ a module that waits before drawing asks again whether it is still on — the hold sends its «off» into that wait', () => {
+  /* MEASURED in CI: the war rows were held for 1960 while data/wars.json loaded, then drew and moved the clock when it
+     arrived. The same shape in a styledata timer kept the webcams and both election maps drawn while held. */
+  const war = read('js/war-layer.js');
+  const i = war.indexOf('const ok = await load();');
+  assert.ok(i > 0);
+  assert.ok(war.slice(i, i + 600).includes('if (!on) return false;'), 'the war layer draws after its wait without asking whether it is still on');
+  assert.ok(read('js/cameras.js').includes('setTimeout(()=>{ if(on&&ensure()){'), 'the webcams re-show after a styledata timer without asking');
+  assert.ok(read('js/elections.js').includes('setTimeout(() => { if (on && ensure()) {'), 'the election map re-shows after a styledata timer without asking');
+  assert.ok(read('js/us-elections.js').includes('setTimeout(()=>{ if(on&&ensure()){'), 'the U.S. election map re-shows after a styledata timer without asking');
+});
+
 test('the kernel is not on the boot path: the declarations are fetched when they can matter', () => {
   const k = read('js/layer-time-kernel.js');
   assert.match(k, /import\('\.\/layer-time-decl\.js'\)/);

@@ -743,6 +743,11 @@ export function warLayer(HOST) {
         return false;
       }
       const ok = await load();
+      /* (world-at-time) `on` again after the wait: an «off» that arrived while the record loaded (954 kB — seconds
+         under load) was overwritten here, and the layer then drew AND moved the clock to its own first day.
+         MEASURED in CI: the share link's war rows held for 1960 (js/layer-time-kernel.js sent the «off») were drawn
+         when data/wars.json arrived, and the clock jumped 1960 → 1991. */
+      if (!on) return false;
       const W = war();
       if (!ok || !W) {
         try { HOST.imToast(L('Could not load the war data', '大戦データを読み込めませんでした', 'Kriegsdaten konnten nicht geladen werden', 'Не удалось загрузить данные о войнах', 'No se pudieron cargar los datos de la guerra')); } catch (_) { }
