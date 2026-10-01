@@ -363,7 +363,7 @@ test('R156 #7 ai-proxy: vision_read task + input_image detail:high', () => {
   assert.match(aiproxy, /vision_read: "medium",/, 'vision_read reasoning (effortHint:"high" bumps it)');
   /* (#R350) analysis_structured joined the set — the AnswerEnvelope is a strict JSON task too. */
   /* (#R491) …and "gloss" at the tail: the term card is a strict JSON task too (GLOSS_SCHEMA). */
-  assert.match(aiproxy, /new Set\(\["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read", "gloss"\]\)/, 'vision_read returns strict JSON (#R406 put atlas_turn at the head of the same set)');
+  assert.match(aiproxy, /new Set\(\["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read", "gloss", "atlas_grade"\]\)/, 'vision_read returns strict JSON (#R406 put atlas_turn at the head of the same set; atlas-quality-lab added the grader at the tail)');
   /* (#R722) the neighbouring argument was renamed _isFallback → noFallback when the single fallback
      became a chain, and it changed MEANING with the name: it used to say "this call IS the fallback"
      (a recursion guard), and it now says "the caller forbids substituting another model" — which is

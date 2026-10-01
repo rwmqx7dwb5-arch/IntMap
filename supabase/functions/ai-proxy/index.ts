@@ -1746,6 +1746,8 @@ Deno.serve(async (req) => {
      to report, and answering "you are not the developer" tells a prober what to look for. */
   const devPick = (() => {
     if (!isDev) return null;
+    /* (atlas-quality-lab) the independent grader is never steered — see graderProvider below */
+    if (String(payload.task || "").toLowerCase() === "atlas_grade") return null;
     const pv = String(payload.provider || "").toLowerCase().trim();
     const md = String(payload.model || "").trim();
     const provider = PROVIDERS.includes(pv) ? pv : "";
@@ -1894,7 +1896,7 @@ Deno.serve(async (req) => {
     await refund();
     return json({ error: "no_independent_grader", message: "No provider other than the one answering Atlas is configured, so no independent grade can be given." }, 503);
   }
-  const provider = (graderProvider || devPick?.provider || Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+  const provider = (graderProvider || devPick?.provider || Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();   /* devPick is null for atlas_grade (above) */
   // (#R115) On OpenAI, atlas_plan ALSO runs in JSON mode: the R113c exclusion was a GEMINI-latency
   // workaround (forced responseMimeType slowed the big planner prompt into 45s timeouts). OpenAI's
   // json_object format has no such issue and guarantees parseable plans — a large share of the
@@ -1920,13 +1922,15 @@ Deno.serve(async (req) => {
      provider's default, and only a pick that names a model overrides one. */
   const envProvider = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
   const envModel = provider === envProvider ? (Deno.env.get("AI_MODEL") || "") : "";
-  const model = graderProvider ? PROVIDER_DEFAULT_MODEL[graderProvider] : (devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL);   /* (atlas-quality-lab) the grader runs its provider's default — see graderProvider */
+  /* (atlas-quality-lab) for the grader: devPick is null and envModel is "" (the grader is never
+     AI_PROVIDER), so this is the grader provider's default model */
+  const model = devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL;
   /* /!\ A CHOSEN MODEL DOES NOT FALL BACK. The fallback exists so that a model the PROJECT lost
      access to cannot blanket-kill Atlas for every reader - an unattended substitution is the right
      answer when nobody asked for this model in particular. When the developer asked for this model
      in particular, substituting another one silently answers a different question than the one being
      tested, and the panel would then report a model that never ran. The 403 is the answer. */
-  const noFallbackForPick = !!devPick?.model && !graderProvider;
+  const noFallbackForPick = !!devPick?.model;
   /* (atlas-native-tools) THE PROMPT-CACHE KEY: the same instructions and the same functions produce the same key,
      whoever is asking — it is derived from the prefix OpenAI caches, and names no account (nothing
      about the reader leaves in it; the privacy notice is unchanged). Requests that share a prefix are
@@ -2024,7 +2028,7 @@ Deno.serve(async (req) => {
          visible instead of being believed. */
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
-      meta: { provider, model, modelServed: out.served || "", modelChosenBy: graderProvider ? "grader" : devPick?.model ? "developer" : "server", task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
+      meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
         /* (atlas-native-tools) which protocol answered (js/ai-core.js refuses an Atlas turn answered without 2), and what
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined },

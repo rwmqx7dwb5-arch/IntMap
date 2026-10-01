@@ -120,7 +120,7 @@ test('atlas-quality-lab ③ the grader is a provider other than the one answerin
   assert.match(src, /"atlas_grade",/, 'atlas_grade is an accepted task');
   assert.match(src, /import \{[^}]*graderProviderFor[^}]*\} from "\.\.\/_shared\/atlas-grade-schema\.js"/);
   assert.match(src, /const provider = \(graderProvider \|\| devPick\?\.provider/, 'the grader provider wins over a developer pick');
-  assert.match(src, /const model = graderProvider \? PROVIDER_DEFAULT_MODEL\[graderProvider\]/, 'and its model is that provider\'s default, not AI_MODEL (an id for the answering provider)');
+  assert.match(src, /if \(String\(payload\.task \|\| ""\)\.toLowerCase\(\) === "atlas_grade"\) return null;/, 'a developer\'s pick never reaches the grader — so its model is the grader provider\'s default (envModel is AI_PROVIDER\'s id and the grader is never AI_PROVIDER)');
   assert.match(src, /task === "atlas_grade" \? ATLAS_GRADE_SCHEMA/, 'the server owns the grade\'s shape');
   assert.match(src, /error: "no_independent_grader"/);
 });
