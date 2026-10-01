@@ -14,6 +14,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════════════════════ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { SITE_HOST, SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -81,9 +82,9 @@ test('anonymous-usage-counts ① parse reads only the three positions of each ro
 });
 
 test('anonymous-usage-counts ① the arrival is read from the address, as host names and tags only', () => {
-  assert.equal(S.referrerOf('', 'rwmqx7dwb5-arch.github.io'), 'direct');
-  assert.equal(S.referrerOf('https://www.reddit.com/r/maps/comments/abc?utm=1', 'rwmqx7dwb5-arch.github.io'), 'www.reddit.com');
-  assert.equal(S.referrerOf('https://rwmqx7dwb5-arch.github.io/IntMap/privacy.html', 'rwmqx7dwb5-arch.github.io'), null, 'IntMap\'s own page is not an arrival');
+  assert.equal(S.referrerOf('', SITE_HOST), 'direct');
+  assert.equal(S.referrerOf('https://www.reddit.com/r/maps/comments/abc?utm=1', SITE_HOST), 'www.reddit.com');
+  assert.equal(S.referrerOf(SITE_URL + 'privacy.html', SITE_HOST), null, 'IntMap\'s own page is not an arrival');
   assert.equal(S.referrerOf('http://10.0.0.4:8080/', 'x'), 'other');
   assert.deepEqual(S.campaignOf('?utm_source=Twitter&utm_medium=social&utm_campaign=launch%20day&x=1'),
     [{ m: 'utm_source', d: 'twitter' }, { m: 'utm_medium', d: 'social' }], 'a campaign tag with a space is not stored');
@@ -164,9 +165,9 @@ test('anonymous-usage-counts ② the opt-out order and the arrival rows, evaluat
   assert.equal(U.optOutReason({ origin: PROD, pref: 'off' }), 'off');
   assert.equal(U.optOutReason({ origin: 'http://127.0.0.1:4808' }), 'local');
   assert.equal(U.optOutReason({ origin: PROD + '.evil.example' }), 'local', 'a look-alike origin is not production');
-  assert.deepEqual(U.arrivalRows({ search: '?embed=1&utm_medium=Email', hash: '', navType: 'navigate', referrer: 'https://blog.example.org/post/1', host: 'rwmqx7dwb5-arch.github.io' }),
+  assert.deepEqual(U.arrivalRows({ search: '?embed=1&utm_medium=Email', hash: '', navType: 'navigate', referrer: 'https://blog.example.org/post/1', host: SITE_HOST }),
     [{ m: 'view', d: '' }, { m: 'entry', d: 'embed' }, { m: 'ref', d: 'blog.example.org' }, { m: 'utm_medium', d: 'email' }]);
-  assert.deepEqual(U.arrivalRows({ search: '', hash: '', navType: 'reload', referrer: 'https://rwmqx7dwb5-arch.github.io/IntMap/', host: 'rwmqx7dwb5-arch.github.io' }),
+  assert.deepEqual(U.arrivalRows({ search: '', hash: '', navType: 'reload', referrer: SITE_URL, host: SITE_HOST }),
     [{ m: 'view', d: '' }], 'a reload from IntMap\'s own page is a view and nothing else');
 });
 
@@ -192,7 +193,7 @@ async function bootPage(opts) {
   };
   if (o.windowDnt) globalThis.window.doNotTrack = '1';
   globalThis.document = doc;
-  globalThis.location = { origin: o.origin || PROD, hostname: 'rwmqx7dwb5-arch.github.io', search: o.search || '', hash: o.hash || '' };
+  globalThis.location = { origin: o.origin || PROD, hostname: SITE_HOST, search: o.search || '', hash: o.hash || '' };
   globalThis.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
   Object.defineProperty(globalThis, 'navigator', {
     configurable: true,

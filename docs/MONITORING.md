@@ -139,7 +139,7 @@ second is what a reader gets.
 ### Measured 2026-09-17 — all four rungs down at once
 
 Against `https://example.com/`, a target whose availability is not in question, from
-`Origin: https://rwmqx7dwb5-arch.github.io`:
+the production origin (`Origin:` = `node scripts/site-url.mjs --origin`):
 
 | # | Relay | Status | Time | Body |
 |---|---|---|---|---|
@@ -272,7 +272,7 @@ window 'error' / 'unhandledrejection'
   collapsed to `0`, and the top stack frame (file name + line:column). The same defect on the same
   build lands on one row however often it fires; a new build's bundle names give it a new row, which
   is how "first seen on this release" becomes readable.
-- **Local previews never send** (the reporter is on only at `https://rwmqx7dwb5-arch.github.io`), so
+- **Local previews never send** (the reporter is on only at the site's own origins — `SITE_ORIGINS` in `supabase/functions/_shared/site-origin.js`), so
   development and the test suite write nothing. The function still accepts `127.0.0.1` /
   `localhost` origins, so it can be exercised by hand against a local page.
 - **No per-reader switch.** IntMap has no telemetry-consent setting to follow — the only switch of

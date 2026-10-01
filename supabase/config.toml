@@ -47,6 +47,8 @@ port = 54324
 enabled = true
 # Local dev origin. Production redirect URLs live ONLY in the Supabase dashboard
 # (Authentication → URL Configuration) — they are not reproducible via migrations.
+# The production address itself is supabase/functions/_shared/site-origin.js; the steps that move it
+# (including these dashboard URLs) are docs/RELEASE.md «Moving the site to its own domain».
 site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = ["http://127.0.0.1:3000", "http://localhost:3000"]
 jwt_expiry = 3600

@@ -29,7 +29,7 @@
  * ==========================================================================*/
 import {
   MAX_PER_SESSION,
-  PRODUCTION_ORIGIN,
+  isProductionOrigin,
   fingerprint,
   shapeReport,
 } from '../supabase/functions/_shared/client-error-shape.js';
@@ -44,7 +44,7 @@ export function createReporter(deps) {
   const d = deps || {};
   const seen = new Set();
   let sent = 0;
-  const on = d.origin === PRODUCTION_ORIGIN;
+  const on = isProductionOrigin(d.origin);
   async function report(raw) {
     try {
       if (!on) return 'off';

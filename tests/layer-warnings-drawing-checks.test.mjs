@@ -313,7 +313,7 @@ test('R277 ⑨ Taiwan matches on the stem, and on the township alone when it is 
 
 /* ── ⑫ 追記2: CORS-open is not the same as readable FROM THE DEPLOYED ORIGIN ────────────────
    MEASURED the same second on the same url: `Referer: http://127.0.0.1:4277/` → 200 / 569 KB;
-   `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` → **403**. DataV.GeoAtlas sends
+   `Referer:` the production page → **403**. DataV.GeoAtlas sends
    `Access-Control-Allow-Origin: *` AND guards against hotlinking, so China drew 223 units in the
    local preview and `PLACED.CHN = [0, 1217]` in production. A relay sends no Referer. */
 test('R277 ⑫ the Chinese boundaries are read through the relay, not from the page', () => {

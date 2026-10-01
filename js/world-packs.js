@@ -2994,7 +2994,7 @@ export function worldPacksBody(HOST){
       /* ⚠⚠⚠ (#R277 追記) THROUGH THE RELAY, BECAUSE THE DEPLOYED ORIGIN IS BLOCKED.
          DataV.GeoAtlas is CORS-open and it is ALSO hotlink-guarded: MEASURED the same second on the
          same url, `Referer: http://127.0.0.1:4277/` answers **200 / 569 KB** and
-         `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` answers **403**. The local preview
+         `Referer:` the production page answers **403**. The local preview
          could not see it, so China drew 223 units on 127.0.0.1 and **nothing at all** in production
          — `PLACED.CHN` came back `[0, 1217]`. The relay sends no Referer.
          ⚠ The direct url stays as the fallback for a build with no relay configured (a localhost

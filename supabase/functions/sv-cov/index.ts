@@ -27,6 +27,7 @@
 
 import { corsFor, fetchGuarded, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
+import { SITE_URL } from "../_shared/site-origin.js";
 
 const CORS = corsFor("range");
 /* A 256×256 coverage PNG is a few kilobytes. 2 MB is far above any tile Google serves here and far
@@ -99,7 +100,7 @@ Deno.serve(async (req) => {
       maxBytes: MAX_BYTES,
       headers: {
         // A browser-like UA/Referer keeps Google serving the tiles consistently.
-        "User-Agent": "Mozilla/5.0 (compatible; IntMap/1.0; +https://rwmqx7dwb5-arch.github.io/IntMap/)",
+        "User-Agent": `Mozilla/5.0 (compatible; IntMap/1.0; +${SITE_URL})`,
         "Referer": "https://www.google.com/",
         "Accept": "image/avif,image/webp,image/png,image/*,*/*;q=0.8",
       },

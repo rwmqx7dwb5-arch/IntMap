@@ -625,7 +625,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 - ⚠⚠⚠ **CORS が開いていることと、「本番のオリジンから読める」ことは別である。** 中国の行政区画
   （DataV.GeoAtlas）は `Access-Control-Allow-Origin: *` を返し、**同時に hotlink を防いでいる**——
   実測、同じ秒・同じ URL で `Referer: http://127.0.0.1:4277/` は **200 / 569 KB**、
-  `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` は **403**。ローカルのプレビューでは
+  `Referer:` に本番のページを付けると **403**。ローカルのプレビューでは
   見えないので、中国が 127.0.0.1 では 223 区画描かれ、本番では `PLACED.CHN = [0, 1217]` になった。
   → **relay 経由で読む**（relay は Referer を送らない）。`?cngeo=` は境界データなので**1日**のエッジキャッシュ。
 - ⚠⚠⚠ **座標を1つも持たない図形は「図形」ではない。**（#R344）
