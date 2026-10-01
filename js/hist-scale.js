@@ -484,6 +484,30 @@ window.IntMapHistScale = (function () {
     return POS;
   }
 
-  return { FLOOR, utcAt, ymd, era, fromEra, yearText, dateText, niceTicks, decYear, ohmFilter, inForce,
+  /* ══ ④ A SHEET'S NAME IS ASKED AT THE READER'S YEAR, NOT AT THE SHEET'S ═════
+     (hist-era-span-fidelity) The era record is a series of dated sheets with no
+     span per feature, and two paths put a polity on the map in a year it did not
+     exist: the upstream carries a name forward onto a sheet after the polity's
+     end (world_1600 still draws «Songhai», which fell in 1591), and `nearest()`
+     answers every year of a gap with the closer sheet (world_1600 is drawn from
+     1566, so «Dutch Republic», 1581, appears in 1570). Both end in the same
+     statement — «this polity, in THIS year» — so the rule is asked of the year
+     the reader is on.
+     `row` is one reviewed row of data/hist-era-spans.json: a bound that Wikidata
+     states AND the historical record agrees with (`s` first year, `e` last year,
+     astronomical). The year a bound names is inside the span — a polity that
+     ended in 1591 existed in 1591. A row with no bound on a side says nothing on
+     that side, which is not «always».
+     ⚠ ONE RULE, EVERY READER: js/time-borders.js draws with it and
+     scripts/hist-fidelity.mjs gates with it, so the map and the gate cannot
+     disagree about which years a name is withheld in. */
+  function eraSpanOut(row, y) {
+    if (!row || !Number.isFinite(+y)) return null;
+    if (row.e != null && +y > row.e) return { side: 'end', year: row.e };
+    if (row.s != null && +y < row.s) return { side: 'start', year: row.s };
+    return null;
+  }
+
+  return { FLOOR, utcAt, ymd, era, fromEra, yearText, dateText, niceTicks, decYear, ohmFilter, inForce, eraSpanOut,
            rail: { POS, breaks, toYear, toPos, DEEP_TOP } };
 })();
