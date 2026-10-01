@@ -34,10 +34,10 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 
 /** the units a frame steps by — the Chronos panel's three tabs (year / date / time) */
-export const UNITS = Object.freeze(['year', 'day', 'hour']);
+const UNITS = Object.freeze(['year', 'day', 'hour']);
 /* the rates offered, in frames per second. The slowest is also the rate a reader who asked the system for
    reduced motion is held to. A rate is a ceiling: a frame is never shorter than the map takes to draw it. */
-export const RATES = Object.freeze([0.5, 1, 2, 4]);
+const RATES = Object.freeze([0.5, 1, 2, 4]);
 
 const W = () => (typeof window !== 'undefined' ? /** @type {any} */ (window) : null);
 const D = () => (typeof document !== 'undefined' ? document : null);
@@ -199,7 +199,7 @@ export function lapseState() {
   };
 }
 /** onLapse(fn) — fn(state) on every change; returns the unsubscribe */
-export function onLapse(fn) { if (typeof fn !== 'function') return () => {}; subs.add(fn); return () => { subs.delete(fn); }; }
+function onLapse(fn) { if (typeof fn !== 'function') return () => {}; subs.add(fn); return () => { subs.delete(fn); }; }
 /* a hand on the clock pauses the player — the player is one writer, not the only one */
 IntMapTime.on((e) => { if (st.playing && !ownWrite && e && e.source !== 'lapse') stopLapse('clock-moved'); });
 

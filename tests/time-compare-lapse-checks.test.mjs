@@ -16,6 +16,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { importModule, fileUrl } from './helpers/import-module.mjs';
+/* read by name (scripts/export-readers.mjs counts static imports): the pure rule, and the window's own declaration */
+import { onMap } from '../js/layer-time.js';
+import { MERRA2 } from '../js/compare.js';
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 
@@ -45,20 +48,20 @@ test('① two clocks, two instants — and the main clock is the one it always w
 test('② on another map the source states the same thing; only who applies the instant changes', () => {
   const at = (y) => ({ when: R.toMs(y) + 165 * 864e5, live: false, now: Date.now() });
   /* Köppen follows the clock on the window (it picks the period of the window's year) */
-  const k = R.onMap(TIME['dl-climate'], { follows: 'js/compare.js koppenPeriodAt' });
+  const k = onMap(TIME['dl-climate'], { follows: 'js/compare.js koppenPeriodAt' });
   assert.equal(R.verdict(k, at(1890)).status, 'unstated', '1890 is before the first Köppen period');
   assert.equal(R.verdict(k, at(1950)).status, 'stated');
   assert.equal(R.verdict(k, at(2024)).status, 'carried', 'past 2020 the newest period is carried and said');
   /* the population choropleth on the window bakes the statistics once: inside its years it is «own date»,
      never «stated» — the window does not follow the clock for it */
-  const p = R.onMap(TIME['dl-pop'], { ownDate: 'js/compare.js srcReady' });
+  const p = onMap(TIME['dl-pop'], { ownDate: 'js/compare.js srcReady' });
   assert.equal(R.verdict(p, at(1914)).reason, 'own-date');
   assert.equal(R.verdict(p, at(1800)).status, 'unstated');
   /* a live feed states the present only, on any map */
-  assert.equal(R.verdict(R.onMap(TIME['bx-eq'], {}), at(1914)).status, 'unstated');
+  assert.equal(R.verdict(onMap(TIME['bx-eq'], {}), at(1914)).status, 'unstated');
   /* `self` is removed when the other map's drawer is not the main map's module */
-  assert.equal(R.onMap(TIME['dl-nightsat'], { ownDate: 'x' }).self, undefined);
-  assert.equal(R.onMap(TIME['dl-nightsat'], null), TIME['dl-nightsat'], 'no override must be the declaration as written');
+  assert.equal(onMap(TIME['dl-nightsat'], { ownDate: 'x' }).self, undefined);
+  assert.equal(onMap(TIME['dl-nightsat'], null), TIME['dl-nightsat'], 'no override must be the declaration as written');
 });
 
 test('③ every layer the comparison window offers names a declaration the rule can read', async () => {
@@ -72,7 +75,6 @@ test('③ every layer the comparison window offers names a declaration the rule 
   const rows = (src.match(/\{k:'[^']+',/g) || []).length + (src.match(/\bdayEntry\('[^']+'/g) || []).length + (src.match(/\bmk\('[^']+'/g) || []).length;
   const declared = lids.length + choro.length + (src.match(/\{time:[A-Z0-9_]+\}/g) || []).length;
   assert.equal(declared, rows, 'a comparison-window layer carries no time declaration (lid or time)');
-  const { MERRA2 } = await importModule('js/compare.js');
   assert.deepEqual(R.validate('compare temp', MERRA2), [], 'the window\'s own declaration does not pass the rule');
   const at = (y) => ({ when: R.toMs(y) + 165 * 864e5, live: false, now: Date.now() });
   assert.equal(R.verdict(MERRA2, at(1914)).status, 'unstated', 'MERRA-2 begins in 1980');
