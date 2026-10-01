@@ -747,9 +747,13 @@ jobs:
   #   job whose graph above it holds a skipped job is itself skipped under the implicit success() —
   #   the publish would never run. So the four needs are read by name, and `!cancelled()` keeps a
   #   superseded run from publishing.
-  # ⚠ A NEWER PUSH TO main CANCELS AN OLDER RUN, PUBLISH INCLUDED (the workflow's concurrency). That is
-  #   what stops an older commit's run, finishing late, from overwriting a newer one on production;
-  #   the newer run publishes everything the older one carried.
+  # ⚠ (deploy-order) A NEWER PUSH CANCELLING THE OLDER RUN DID NOT KEEP PRODUCTION IN ORDER. It holds only
+  #   when the newer commit starts a CI run on push, and a bot merge made with GITHUB_TOKEN starts none (the
+  #   lander dispatches deploy.yml instead). MEASURED 2026-09-30: deploy.yml published #849 (8d7e473) at
+  #   20:13:48, then #848's run — its parent, never cancelled — published 1a66ec7 at 20:17:32 over it. The
+  #   `pages-production` group serializes publishes; it does not order them. So the job asks GitHub what
+  #   is live and refuses to publish an ancestor of it (scripts/pages-publish-guard.mjs), inside the group,
+  #   immediately before the publish. A refusal is green: the live commit already carries this one.
   # Nightly and dispatch runs never publish (event_name is not push).
   pages:
     name: Deploy to Pages
@@ -759,6 +763,8 @@ jobs:
     permissions:
       pages: write            # the ONLY job in this workflow that can publish
       id-token: write
+      contents: read          # (deploy-order) the guard's checkout and its compare of live...candidate
+      deployments: read       # (deploy-order) the guard reads which github-pages deployment is live
     concurrency:
       group: pages-production  # shared with deploy.yml and rollback.yml: publishes never overlap
       cancel-in-progress: false
@@ -768,7 +774,17 @@ jobs:
     outputs:
       page_url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          sparse-checkout: scripts/pages-publish-guard.mjs
+          sparse-checkout-cone-mode: false
+      - id: guard
+        name: Refuse to publish an ancestor of what is live
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/pages-publish-guard.mjs --sha "${GITHUB_SHA}"
       - id: deploy
+        if: ${{ steps.guard.outputs.publish == 'true' }}
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
         with:
           artifact_name: ${{ needs.build.outputs.pages }}

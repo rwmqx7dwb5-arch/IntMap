@@ -263,7 +263,8 @@ test('⑥ production is published by ci.yml after main’s run is green, from th
   }
   for (const n of [].concat(p.needs)) assert.ok(cond.includes(`needs.${n}.result == 'success'`), `pages.if does not require ${n} to have succeeded`);
   assert.doesNotMatch(cond, /always\(\)/, 'always() would publish a cancelled run');
-  assert.deepEqual(p.permissions, { pages: 'write', 'id-token': 'write' });
+  /* (deploy-order) + the two READ scopes its guard needs (tests/deploy-order-checks.test.mjs) */
+  assert.deepEqual(p.permissions, { pages: 'write', 'id-token': 'write', contents: 'read', deployments: 'read' });
   assert.deepEqual(p.concurrency, { group: 'pages-production', 'cancel-in-progress': false });
   assert.equal(p.environment.name, 'github-pages');
   const dep = p.steps.find((s) => /^actions\/deploy-pages@/.test(s.uses || ''));

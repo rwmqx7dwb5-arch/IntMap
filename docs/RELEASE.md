@@ -24,8 +24,15 @@ green, publish that same `dist/`** (the `pages` job) → post-deploy smoke again
 (`dist/` since #R175; it published the exact committed tree via `git archive HEAD` until then.)
 A red `main` run publishes nothing — the site stays on the last green commit until a later push
 (or a re-run of the failed jobs) goes green. A newer push to `main` cancels the older run,
-publish included, so an older commit can never overwrite a newer one; the newer run publishes
-both. Confirm a deploy landed with
+publish included — but that alone does not keep production in order: a bot merge made with
+`GITHUB_TOKEN` starts no push run, so nothing cancels its parent's run, and the
+`pages-production` concurrency group serializes publishes without ordering them. So **every
+publishing job runs [`scripts/pages-publish-guard.mjs`](../scripts/pages-publish-guard.mjs)
+immediately before the publish**: it reads the live commit from the newest successful
+`github-pages` deployment and **refuses (green, with a notice) to publish a commit that is an
+ancestor of it**. `rollback.yml` is the one exception, by design. A `workflow_dispatch` of CI on
+`main` runs in its own concurrency group, so it cannot cancel the push run that publishes.
+Confirm a deploy landed with
 `curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` — its `sha` must equal
 `git rev-parse origin/main`. (The older “Deploy from a branch” default is no longer in use; if
 `ENABLE_PAGES_DEPLOY` is ever unset the jobs skip green and Pages would fall back to it.)
