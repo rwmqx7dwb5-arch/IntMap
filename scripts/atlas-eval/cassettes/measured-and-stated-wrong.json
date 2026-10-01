@@ -1,0 +1,76 @@
+{
+  "id": "measured-and-stated-wrong",
+  "text": "羽田空港から那覇空港までの直線距離は何 km？線を引いて見せて。",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "representative: the tool ran and the reply states a distance the source contradicts — the judge alone passed this; the grade must not"
+  },
+  "question": {
+    "set": "answers",
+    "id": "great-circle-haneda-naha"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.measure",
+            "args": {
+              "from": "羽田空港",
+              "to": "那覇空港"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "羽田空港から那覇空港までの直線距離は約1,000 kmです。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "from": "羽田空港",
+          "to": "那覇空港",
+          "type": "measure"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>羽田空港 → 那覇空港 · 1,554 km</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:map.measure",
+        "status": "completed"
+      }
+    ],
+    "text": "羽田空港から那覇空港までの直線距離は約1,000 kmです。"
+  },
+  "expect": {
+    "verdict": "fail",
+    "failures": [
+      "answer"
+    ],
+    "grade": "incorrect"
+  }
+}

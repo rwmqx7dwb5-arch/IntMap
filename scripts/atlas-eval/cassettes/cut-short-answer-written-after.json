@@ -1,0 +1,363 @@
+{
+  "id": "cut-short-answer-written-after",
+  "text": "Show the top 10 countries by GDP per capita as a choropleth, and tell me which of them are NOT in the top 10 by total GDP.",
+  "lang": "en",
+  "origin": {
+    "kind": "scripted",
+    "from": "R802 §8 — the turn ran out with 「I'm comparing the two rankings now.」 as its text; the forced final now writes the answer from the transcript"
+  },
+  "question": {
+    "set": "records",
+    "id": "gdp-per-capita-top10-not-in-total"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp_per_capita",
+              "order": "top",
+              "n": 10
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "I'm comparing the two rankings now.",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp",
+              "order": "top",
+              "n": 10
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp",
+              "order": "top",
+              "n": 12
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp",
+              "order": "top",
+              "n": 15
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp",
+              "order": "top",
+              "n": 20
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp",
+              "order": "top",
+              "n": 25
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp",
+              "order": "top",
+              "n": 30
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.rank",
+            "args": {
+              "metric": "gdp",
+              "order": "top",
+              "n": 35
+            }
+          }
+        }
+      ]
+    },
+    {
+      "final": true,
+      "text": "Of the top 10 by GDP per capita, Luxembourg, Ireland, Switzerland, Norway, Singapore, Iceland, Qatar and Denmark are not in the top 10 by total GDP; the United States is in both lists.",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "metric": "gdp_per_capita",
+          "order": "top",
+          "n": 10,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp_per_capita top 10</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "metric": "gdp",
+          "order": "top",
+          "n": 10,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp top 10</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "metric": "gdp",
+          "order": "top",
+          "n": 12,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp top 12</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "metric": "gdp",
+          "order": "top",
+          "n": 15,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp top 15</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "metric": "gdp",
+          "order": "top",
+          "n": 20,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp top 20</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "metric": "gdp",
+          "order": "top",
+          "n": 25,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp top 25</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "metric": "gdp",
+          "order": "top",
+          "n": 30,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp top 30</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "metric": "gdp",
+          "order": "top",
+          "n": 35,
+          "type": "rank"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>gdp top 35</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "panel"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "step_budget",
+    "calls": [
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:data.rank",
+        "status": "completed"
+      }
+    ],
+    "text": "Of the top 10 by GDP per capita, Luxembourg, Ireland, Switzerland, Norway, Singapore, Iceland, Qatar and Denmark are not in the top 10 by total GDP; the United States is in both lists."
+  },
+  "expect": {
+    "verdict": "pass"
+  }
+}

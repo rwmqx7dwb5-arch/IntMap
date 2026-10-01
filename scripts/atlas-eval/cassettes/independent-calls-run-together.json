@@ -1,0 +1,139 @@
+{
+  "id": "independent-calls-run-together",
+  "text": "羽田空港と新千歳空港を地図にピンして、2点間の直線距離（大圏距離）は何 km？",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "atlas-turn-engine — two pins in one reply touch different things and run together; the measure after them runs once"
+  },
+  "question": {
+    "set": "answers",
+    "id": "great-circle-haneda-new-chitose"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.pin",
+            "args": {
+              "place": "羽田空港"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.pin",
+            "args": {
+              "place": "新千歳空港"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.measure",
+            "args": {
+              "from": "羽田空港",
+              "to": "新千歳空港"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "羽田空港と新千歳空港にピンを立てました。2点間の大圏距離は約820 kmです。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "place": "羽田空港",
+          "type": "pin"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>羽田空港</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "新千歳空港",
+          "type": "pin"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>新千歳空港</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "from": "羽田空港",
+          "to": "新千歳空港",
+          "type": "measure"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>羽田空港 → 新千歳空港 · 820 km</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:map.pin",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:map.pin",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:map.measure",
+        "status": "completed"
+      }
+    ],
+    "text": "羽田空港と新千歳空港にピンを立てました。2点間の大圏距離は約820 kmです。"
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct"
+  }
+}

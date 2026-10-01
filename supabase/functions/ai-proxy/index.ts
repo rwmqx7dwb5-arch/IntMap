@@ -101,6 +101,9 @@ import {
   OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL, PROVIDER_TIMEOUT_MS,
   providerFetch, ProviderFail, spendCeiling, shareCeiling,
 } from "../_shared/ai-provider.js";
+/* (atlas-quality-lab) the independent grader's shape, budget and provider rule — shared with
+   scripts/atlas-eval/grade.mjs, which reads the grade back against the same criteria */
+import { ATLAS_GRADE_SCHEMA, ATLAS_GRADE_MAX_OUTPUT, graderProviderFor } from "../_shared/atlas-grade-schema.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -521,6 +524,7 @@ const TASKS = new Set([
   "atlas_turn", "atlas_plan", "map_report", "analysis", "analysis_structured", "free_text", "json_extract",
   "brief", "geo_verify", "geo_resolve", "research_map", "vision_read",
   "gloss",   /* (#R491) the term gloss - its own lane, its own counter, its own tiny budget */
+  "atlas_grade",   /* (atlas-quality-lab) the evaluation's independent grader — see the provider rule below */
 ]);
 /* A caller-supplied responseSchema is forwarded to the provider, so it is an input too.
    ⚠ (#R397) THE OLD NOTE HERE SAID «Nothing in js/ passes one today». It does, and it did when that
@@ -666,6 +670,7 @@ const TASK_MAX_OUTPUT: Record<string, number> = {
   geo_resolve: 1800, // (#R132) web-search-grounded STRUCTURED region resolution (metadata + boundary anchors, NOT a dense polygon)
   research_map: 2600, // (#R135) time-axis research/situation map: written explanation + related mappable places (historical/current/mixed)
   gloss: 700,        // (#R491) a dictionary card: sense + this-context reading + a short background. Deliberately small - it is a gloss, not an essay.
+  atlas_grade: ATLAS_GRADE_MAX_OUTPUT,   // (atlas-quality-lab) a four-score JSON grade — _shared/atlas-grade-schema.js says why this number
   vision_read: 3000, // (#R156) multimodal read: classify → transcribe → solve (LaTeX/Markdown) → verify-checks → optional places. Needs room for a transcription + working + the checks matrices.
 };
 const FALLBACK_MAX_OUTPUT = 1800;
@@ -687,6 +692,7 @@ const TASK_REASONING: Record<string, string> = {
   geo_verify: "low",   // (#R130) freshness comes from the forced web search, not reasoning
   geo_resolve: "medium",   // (#R132) classifying an ambiguous / natural / historical region + picking a geometry strategy needs real reasoning
   research_map: "medium",   // (#R135) a grounded historical/situation answer + naming real related places needs real reasoning
+  atlas_grade: "low",   // (atlas-quality-lab) comparing a reply with an answer it is GIVEN is reading, not research
   gloss: "low",   // (#R491) naming what a term means in a paragraph the caller supplies is reading, not reasoning
   vision_read: "medium",   // (#R156) reading small text + transcribing + solving a maths problem needs real reasoning (effortHint:"high" bumps it further)
 };
@@ -695,7 +701,7 @@ const TASK_REASONING: Record<string, string> = {
 // (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
 // latency (feeding the 45s timeouts) and the planner worked fine before with prompt-only JSON (aiParseJSON on the
 // client strips any fence). map_report / json_extract keep structured output where it matters most.
-const JSON_TASKS = new Set(["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read", "gloss"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) · (#R350) analysis_structured returns the AnswerEnvelope */
+const JSON_TASKS = new Set(["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read", "gloss", "atlas_grade"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) · (#R350) analysis_structured returns the AnswerEnvelope */
 
 // (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
 // name/locationName/country/summary/date/evidenceIds — the client fills url, source,
@@ -1740,6 +1746,8 @@ Deno.serve(async (req) => {
      to report, and answering "you are not the developer" tells a prober what to look for. */
   const devPick = (() => {
     if (!isDev) return null;
+    /* (atlas-quality-lab) the independent grader is never steered — see graderProvider below */
+    if (String(payload.task || "").toLowerCase() === "atlas_grade") return null;
     const pv = String(payload.provider || "").toLowerCase().trim();
     const md = String(payload.model || "").trim();
     const provider = PROVIDERS.includes(pv) ? pv : "";
@@ -1874,7 +1882,21 @@ Deno.serve(async (req) => {
 
   const maxTokens = maxOutputFor(task, requestedCount);
   // 4) Provider call with the server-held key. (Provider read BEFORE wantJson — see below.)
-  const provider = (devPick?.provider || Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+  /* ══ (atlas-quality-lab) THE GRADER IS NEVER THE ANSWERER ══════════════════════════════════════
+     `atlas_grade` scores an Atlas reply against a verified answer (scripts/atlas-eval/grade.mjs). A model
+     grading its own provider's answer shares its blind spots, so the provider here is chosen by the
+     SERVER — the first one that is not AI_PROVIDER and whose key is set (graderProviderFor) — and a
+     developer's pick does not apply to it: the pick exists to test a model, and pointing the grader at
+     the answering model would make every grade it returns meaningless. With no second provider keyed,
+     the task refuses (and refunds) rather than grading with the answerer. */
+  const graderProvider = task === "atlas_grade"
+    ? graderProviderFor(Deno.env.get("AI_PROVIDER") || "anthropic", (pv: string) => !!Deno.env.get(pv === "openai" ? "OPENAI_API_KEY" : pv === "gemini" ? "GEMINI_API_KEY" : "ANTHROPIC_API_KEY"))
+    : null;
+  if (task === "atlas_grade" && !graderProvider) {
+    await refund();
+    return json({ error: "no_independent_grader", message: "No provider other than the one answering Atlas is configured, so no independent grade can be given." }, 503);
+  }
+  const provider = (graderProvider || devPick?.provider || Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();   /* devPick is null for atlas_grade (above) */
   // (#R115) On OpenAI, atlas_plan ALSO runs in JSON mode: the R113c exclusion was a GEMINI-latency
   // workaround (forced responseMimeType slowed the big planner prompt into 45s timeouts). OpenAI's
   // json_object format has no such issue and guarantees parseable plans — a large share of the
@@ -1884,6 +1906,7 @@ Deno.serve(async (req) => {
   const responseSchema = task === "map_report" ? MAP_REPORT_SCHEMA
     : task === "analysis_structured" ? ANSWER_SCHEMA   // (#R350) server-owned, mirrored by js/atlas-answer-contract.js
     : task === "gloss" ? GLOSS_SCHEMA   // (#R491) server-owned, mirrored by js/atlas-gloss.js
+    : task === "atlas_grade" ? ATLAS_GRADE_SCHEMA   // (atlas-quality-lab) server-owned, read back by scripts/atlas-eval/grade.mjs
     : (wantJson && payload.schema && typeof payload.schema === "object" && schemaOk(payload.schema) ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
   /* (atlas-native-tools) WHICH MODEL ANSWERS, AS THE CODE DECIDES IT — this comment used to say «GPT-5.6 Sol
@@ -1899,6 +1922,8 @@ Deno.serve(async (req) => {
      provider's default, and only a pick that names a model overrides one. */
   const envProvider = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
   const envModel = provider === envProvider ? (Deno.env.get("AI_MODEL") || "") : "";
+  /* (atlas-quality-lab) for the grader: devPick is null and envModel is "" (the grader is never
+     AI_PROVIDER), so this is the grader provider's default model */
   const model = devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL;
   /* /!\ A CHOSEN MODEL DOES NOT FALL BACK. The fallback exists so that a model the PROJECT lost
      access to cannot blanket-kill Atlas for every reader - an unattended substitution is the right
@@ -2003,7 +2028,7 @@ Deno.serve(async (req) => {
          visible instead of being believed. */
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
-      meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
+      meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
         /* (atlas-native-tools) which protocol answered (js/ai-core.js refuses an Atlas turn answered without 2), and what
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined },

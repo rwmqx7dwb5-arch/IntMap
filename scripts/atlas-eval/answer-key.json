@@ -1,0 +1,702 @@
+{
+  "$comment": [
+    "Atlas evaluation questions with ground-truth answers. Every answer was checked on 2026-10-01 against the source recorded with it; each question pins its reference (census year, survey edition, named service, named event).",
+    "Great-circle distances are computed (haversine, R=6371.0088 km) from the coordinates given in each derivation; everything else is a figure stated by the cited source."
+  ],
+  "version": 1,
+  "retrieved": "2026-10-01",
+  "questions": [
+    {
+      "id": "tokaido-shinkansen-tokyo-shinosaka-length",
+      "lang": "jp",
+      "category": "distance",
+      "text": "東海道新幹線の東京駅から新大阪駅までのルートを地図に出して。線路の距離は何 km？",
+      "answer": { "kind": "range", "min": 515.4, "max": 552.6, "unit": "km" },
+      "source": { "title": "Tokaido Shinkansen", "publisher": "Wikipedia (citing JR Central)", "url": "https://en.wikipedia.org/wiki/Tokaido_Shinkansen", "states": "Line length 515.4 km; fares use the parallel Tokaido Main Line operating distance of 552.6 km." },
+      "capabilities": ["routing.route", "map.drawLine"],
+      "note": "515.4 km is the actual track length (実キロ); 552.6 km is the operating kilometre (営業キロ) used for fares. Either is correct."
+    },
+    {
+      "id": "tohoku-shinkansen-tokyo-shinaomori-length",
+      "lang": "jp",
+      "category": "distance",
+      "text": "東北新幹線で東京から新青森までは何 km ある？路線を地図に表示して。",
+      "answer": { "kind": "number", "value": 713.7, "unit": "km", "tolerance": { "rel": 0.02 } },
+      "source": { "title": "東京駅から新青森駅までの新幹線(はやぶさ)の料金・時間", "publisher": "駅探", "url": "https://ekitan.com/transit/shinkansen/section/sf-2590/st-992/hayabusa", "states": "Tokyo to Shin-Aomori on the Tohoku Shinkansen is 713.7 km." },
+      "capabilities": ["routing.route", "map.drawLine"]
+    },
+    {
+      "id": "trans-siberian-moscow-vladivostok-length",
+      "lang": "en",
+      "category": "distance",
+      "text": "Show the Trans-Siberian Railway from Moscow to Vladivostok on the map. How long is it in km?",
+      "answer": { "kind": "number", "value": 9288, "unit": "km", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "Trans-Siberian Railroad", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/topic/Trans-Siberian-Railroad", "states": "The railroad runs 5,771 miles (9,288 km) between Moscow and Vladivostok." },
+      "capabilities": ["routing.route", "map.drawLine", "research.brief"],
+      "note": "9,289 km is also commonly quoted; rel 0.01 covers both."
+    },
+    {
+      "id": "great-circle-jfk-lhr",
+      "lang": "en",
+      "category": "distance",
+      "text": "Draw a line from New York JFK airport to London Heathrow. What's the great-circle distance in km?",
+      "answer": { "kind": "number", "value": 5539.5, "unit": "km", "tolerance": { "rel": 0.02 } },
+      "source": { "title": "John F. Kennedy International Airport / Heathrow Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/John_F._Kennedy_International_Airport", "states": "Airport reference coordinates: JFK 40.63972 N, 73.77889 W; LHR (https://en.wikipedia.org/wiki/Heathrow_Airport) 51.47750 N, 0.46139 W." },
+      "capabilities": ["map.measure", "map.drawLine", "map.pin"],
+      "derivation": "great-circle (haversine, R=6371.0088 km) from JFK 40.63972,-73.77889 and LHR 51.47750,-0.46139 given by Wikipedia airport infoboxes = 5539.5 km"
+    },
+    {
+      "id": "great-circle-haneda-new-chitose",
+      "lang": "jp",
+      "category": "distance",
+      "text": "羽田空港と新千歳空港を地図にピンして、2点間の直線距離（大圏距離）は何 km？",
+      "answer": { "kind": "number", "value": 819.7, "unit": "km", "tolerance": { "rel": 0.03 } },
+      "source": { "title": "Haneda Airport / New Chitose Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Haneda_Airport", "states": "Airport reference coordinates: HND 35.55333 N, 139.78111 E; CTS (https://en.wikipedia.org/wiki/New_Chitose_Airport) 42.77528 N, 141.69250 E." },
+      "capabilities": ["map.measure", "map.pin", "map.drawLine"],
+      "derivation": "great-circle (haversine, R=6371.0088 km) from HND 35.55333,139.78111 and CTS 42.77528,141.69250 given by Wikipedia airport infoboxes = 819.7 km"
+    },
+    {
+      "id": "great-circle-sydney-auckland",
+      "lang": "en",
+      "category": "distance",
+      "text": "How far is it in a straight line (great circle) from Sydney Airport to Auckland Airport? Show both on the map.",
+      "answer": { "kind": "number", "value": 2159.5, "unit": "km", "tolerance": { "rel": 0.03 } },
+      "source": { "title": "Sydney Airport / Auckland Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Sydney_Airport", "states": "Airport reference coordinates: SYD 33.94611 S, 151.17722 E; AKL (https://en.wikipedia.org/wiki/Auckland_Airport) 37.00806 S, 174.79167 E." },
+      "capabilities": ["map.measure", "map.pin", "map.drawLine"],
+      "derivation": "great-circle (haversine, R=6371.0088 km) from SYD -33.94611,151.17722 and AKL -37.00806,174.79167 given by Wikipedia airport infoboxes = 2159.5 km"
+    },
+    {
+      "id": "great-circle-haneda-naha",
+      "lang": "jp",
+      "category": "distance",
+      "text": "羽田空港から那覇空港までの直線距離は何 km？線を引いて見せて。",
+      "answer": { "kind": "number", "value": 1554.5, "unit": "km", "tolerance": { "rel": 0.03 } },
+      "source": { "title": "Haneda Airport / Naha Airport", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Naha_Airport", "states": "Airport reference coordinates: OKA 26.19583 N, 127.64583 E; HND (https://en.wikipedia.org/wiki/Haneda_Airport) 35.55333 N, 139.78111 E." },
+      "capabilities": ["map.measure", "map.drawLine", "map.pin"],
+      "derivation": "great-circle (haversine, R=6371.0088 km) from HND 35.55333,139.78111 and OKA 26.19583,127.64583 given by Wikipedia airport infoboxes = 1554.5 km"
+    },
+    {
+      "id": "nozomi-tokyo-shinosaka-fastest",
+      "lang": "jp",
+      "category": "duration",
+      "text": "東海道新幹線「のぞみ」の最速列車で東京から新大阪まで何分かかる？",
+      "answer": { "kind": "range", "min": 140, "max": 142, "unit": "minutes" },
+      "source": { "title": "デビュー当時の4時間から2時間21分に短縮：東京と新大阪間の所要時間の推移", "publisher": "nippon.com", "url": "https://www.nippon.com/ja/japan-data/h02151/", "states": "The fastest Nozomi links Tokyo and Shin-Osaka in 2 h 21 min at up to 285 km/h." },
+      "capabilities": ["routing.route", "research.brief"],
+      "note": "2 h 21 min = 141 min (fastest Nozomi services)."
+    },
+    {
+      "id": "hayabusa-tokyo-shinaomori-fastest",
+      "lang": "en",
+      "category": "duration",
+      "text": "What's the fastest scheduled Hayabusa time from Tokyo to Shin-Aomori, in minutes?",
+      "answer": { "kind": "range", "min": 177, "max": 180, "unit": "minutes" },
+      "source": { "title": "東京駅から新青森駅までの新幹線(はやぶさ)の料金・時間・時刻表", "publisher": "駅探", "url": "https://ekitan.com/transit/shinkansen/section/sf-2590/st-992/hayabusa", "states": "Fastest Hayabusa Tokyo to Shin-Aomori is 2 h 58 min." },
+      "capabilities": ["routing.route"],
+      "note": "2 h 58 min = 178 min."
+    },
+    {
+      "id": "hokkaido-shinkansen-tokyo-shinhakodatehokuto-fastest",
+      "lang": "jp",
+      "category": "duration",
+      "text": "北海道新幹線で東京から新函館北斗まで最速で何分？ルートも地図に出して。",
+      "answer": { "kind": "range", "min": 236, "max": 240, "unit": "minutes" },
+      "source": { "title": "新幹線 東京―新函館北斗 3時間57分に短縮", "publisher": "日本経済新聞", "url": "https://www.nikkei.com/article/DGKKZO67484820Y0A211C2L41000/", "states": "From the March 2021 timetable revision the fastest Tokyo to Shin-Hakodate-Hokuto time is 3 h 57 min." },
+      "capabilities": ["routing.route", "map.drawLine"],
+      "note": "3 h 57 min = 237 min."
+    },
+    {
+      "id": "mizuho-hakata-kagoshimachuo-fastest",
+      "lang": "jp",
+      "category": "duration",
+      "text": "九州新幹線「みずほ」で博多から鹿児島中央まで最速何分？",
+      "answer": { "kind": "range", "min": 75, "max": 78, "unit": "minutes" },
+      "source": { "title": "博多駅から鹿児島中央駅までの新幹線(みずほ)の料金・時間・時刻表", "publisher": "駅探", "url": "https://ekitan.com/transit/shinkansen/section/sf-7930/st-7886/mizuho", "states": "The fastest Mizuho from Hakata to Kagoshima-Chuo takes 1 h 16 min." },
+      "capabilities": ["routing.route"],
+      "note": "1 h 16 min = 76 min."
+    },
+    {
+      "id": "kagayaki-tokyo-kanazawa-fastest",
+      "lang": "jp",
+      "category": "duration",
+      "text": "北陸新幹線「かがやき」の最速列車だと東京から金沢まで何分？",
+      "answer": { "kind": "range", "min": 144, "max": 145, "unit": "minutes" },
+      "source": { "title": "北陸新幹線、金沢―東京2時間25分に 2分短縮", "publisher": "日本経済新聞", "url": "https://www.nikkei.com/article/DGXZQOCC16AKI0W2A211C2000000/", "states": "Fastest Tokyo–Kanazawa became 2 h 25 min (2023 revision); a 2026-03-14 JR West revision cut it a further minute to 2 h 24 min (北國新聞 via Yahoo News)." },
+      "capabilities": ["routing.route"],
+      "note": "2 h 25 min (from March 2023) or 2 h 24 min (from the 2026-03-14 revision); both accepted."
+    },
+    {
+      "id": "eurostar-london-paris",
+      "lang": "en",
+      "category": "duration",
+      "text": "How long does the Eurostar take from London St Pancras to Paris Gare du Nord, in minutes?",
+      "answer": { "kind": "range", "min": 135, "max": 140, "unit": "minutes" },
+      "source": { "title": "London to Paris by train", "publisher": "Eurostar", "url": "https://www.eurostar.com/us-en/train/london-to-paris", "states": "Eurostar states the London to Paris journey takes 2 hours 16 minutes." },
+      "capabilities": ["routing.route", "map.drawLine"],
+      "note": "2 h 16 min = 136 min per the operator; a few minutes of slack for other fastest services."
+    },
+    {
+      "id": "eurostar-london-brussels",
+      "lang": "en",
+      "category": "duration",
+      "text": "Show the Eurostar route London to Brussels. How many minutes is the journey?",
+      "answer": { "kind": "range", "min": 111, "max": 117, "unit": "minutes" },
+      "source": { "title": "London to Brussels by train", "publisher": "Eurostar", "url": "https://www.eurostar.com/us-en/train/london-to-brussels", "states": "Eurostar gives the London to Brussels journey time as 1 hr 53 mins." },
+      "capabilities": ["routing.route", "map.drawLine"],
+      "note": "1 h 53 min = 113 min per the operator; range covers the 1 h 51–1 h 57 variants of individual services."
+    },
+    {
+      "id": "japan-population-2020-census",
+      "lang": "jp",
+      "category": "population",
+      "text": "令和2年（2020年）国勢調査での日本の総人口は何人？",
+      "answer": { "kind": "number", "value": 126146099, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "令和2年国勢調査 人口等基本集計 結果の要約", "publisher": "総務省統計局", "url": "https://www.stat.go.jp/data/kokusei/2020/kekka/pdf/summary_01.pdf", "states": "Japan's population was 126.146 million (1億2614万6千人) on 1 October 2020." },
+      "capabilities": ["data.countryCard", "data.value"]
+    },
+    {
+      "id": "tokyo-population-2020-census",
+      "lang": "jp",
+      "category": "population",
+      "text": "東京都を地図で囲って。2020年国勢調査での東京都の人口は？",
+      "answer": { "kind": "number", "value": 14047594, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "令和2年国勢調査人口等基本集計結果概要", "publisher": "東京都", "url": "https://www.spt.metro.tokyo.lg.jp/tosei/hodohappyo/press/2022/01/20/07.html", "states": "Tokyo's population in the 2020 census was 14,047,594." },
+      "capabilities": ["map.outline", "data.populationIn", "data.value"]
+    },
+    {
+      "id": "osaka-pref-population-2020-census",
+      "lang": "jp",
+      "category": "population",
+      "text": "大阪府をハイライトして、令和2年国勢調査の大阪府の人口を教えて。",
+      "answer": { "kind": "number", "value": 8837685, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "令和２年国勢調査 人口等基本集計結果【大阪府 概要版】", "publisher": "大阪府総務部統計課", "url": "https://www.pref.osaka.lg.jp/documents/12026/r2kokutyo_osakahu_kakuhou_toukeihyo.pdf", "states": "Osaka Prefecture population on 1 October 2020: 8,837,685." },
+      "capabilities": ["map.highlight", "data.populationIn", "data.value"]
+    },
+    {
+      "id": "hokkaido-population-2020-census",
+      "lang": "jp",
+      "category": "population",
+      "text": "2020年の国勢調査で北海道の人口は何人だった？",
+      "answer": { "kind": "number", "value": 5224614, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "令和２年国勢調査 北海道の人口・世帯数等の概要（確定値）", "publisher": "北海道総合政策部計画局統計課", "url": "https://www.pref.hokkaido.lg.jp/fs/4/8/5/1/3/4/8/_/2020kekkanogaiyou1.pdf", "states": "Hokkaido's 2020 census population was 5,224,614, down 157,119 from 2015." },
+      "capabilities": ["data.populationIn", "data.value"]
+    },
+    {
+      "id": "us-population-2020-census",
+      "lang": "en",
+      "category": "population",
+      "text": "What was the resident population of the United States in the 2020 Census?",
+      "answer": { "kind": "number", "value": 331449281, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "2020 Census Apportionment Results", "publisher": "U.S. Census Bureau", "url": "https://census.gov/newsroom/press-releases/2021/2020-census-apportionment-results.html", "states": "The resident population of the United States on April 1, 2020 was 331,449,281." },
+      "capabilities": ["data.countryCard", "data.value"]
+    },
+    {
+      "id": "australia-population-2021-census",
+      "lang": "en",
+      "category": "population",
+      "text": "How many people did Australia's 2021 Census count?",
+      "answer": { "kind": "number", "value": 25422788, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "Population: Census, 2021", "publisher": "Australian Bureau of Statistics", "url": "https://www.abs.gov.au/statistics/people/population/population-census/latest-release", "states": "The 2021 Census counted 25,422,788 people (excluding overseas visitors)." },
+      "capabilities": ["data.countryCard", "data.value"]
+    },
+    {
+      "id": "canada-population-2021-census",
+      "lang": "en",
+      "category": "population",
+      "text": "Highlight Canada. What population did the 2021 Census of Canada enumerate?",
+      "answer": { "kind": "number", "value": 36991981, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "2021 Census of Population key indicators: Population, 2021", "publisher": "Statistics Canada", "url": "https://www12.statcan.gc.ca/census-recensement/stats/statind2021.cfm?Lang=E", "states": "The 2021 Census counted 36,991,981 people in Canada (reference date 11 May 2021)." },
+      "capabilities": ["map.highlight", "data.countryCard", "data.value"],
+      "note": "Census count, not the adjusted population estimate (~38.2 million)."
+    },
+    {
+      "id": "england-wales-population-2021-census",
+      "lang": "en",
+      "category": "population",
+      "text": "What was the usual resident population of England and Wales on Census Day 2021?",
+      "answer": { "kind": "number", "value": 59597300, "unit": "people", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "Population and household estimates, England and Wales: Census 2021", "publisher": "Office for National Statistics", "url": "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/bulletins/populationandhouseholdestimatesenglandandwales/census2021", "states": "Usual resident population on 21 March 2021 was 59,597,300 (England 56,489,800; Wales 3,107,500)." },
+      "capabilities": ["data.populationIn", "data.value"]
+    },
+    {
+      "id": "great-hanshin-earthquake-date",
+      "lang": "jp",
+      "category": "date",
+      "text": "兵庫県南部地震（阪神・淡路大震災）が起きたのはいつ？震源を地図に出して。",
+      "answer": { "kind": "date", "value": "1995-01-17" },
+      "source": { "title": "兵庫県南部地震 強震観測", "publisher": "気象庁", "url": "https://www.data.jma.go.jp/eqev/data/kyoshin/jishin/hyogo_nanbu/index.html", "states": "JMA named the M7.3 earthquake of 17 January 1995, 05:46, off Awaji Island the 1995 Southern Hyogo Prefecture Earthquake." },
+      "capabilities": ["map.pin", "sim.earthquake", "research.brief"]
+    },
+    {
+      "id": "tohoku-earthquake-date",
+      "lang": "jp",
+      "category": "date",
+      "text": "東北地方太平洋沖地震の発生日は？",
+      "answer": { "kind": "date", "value": "2011-03-11" },
+      "source": { "title": "平成23年（2011年）東北地方太平洋沖地震", "publisher": "気象庁", "url": "https://www.data.jma.go.jp/eqev/data/2011_03_11_tohoku/index.html", "states": "The Mw 9.0 earthquake occurred on 11 March 2011 at 14:46 JST." },
+      "capabilities": ["map.pin", "sim.earthquake", "research.brief"]
+    },
+    {
+      "id": "tokaido-shinkansen-opening-date",
+      "lang": "jp",
+      "category": "date",
+      "text": "東海道新幹線が開業したのは何年何月何日？",
+      "answer": { "kind": "date", "value": "1964-10-01" },
+      "source": { "title": "東海道新幹線 開業60周年にあたって", "publisher": "東海旅客鉄道（JR東海）", "url": "https://jr-central.co.jp/news/release/_pdf/000043174.pdf", "states": "The Tokaido Shinkansen opened on 1 October 1964." },
+      "capabilities": ["research.brief", "time.travel"]
+    },
+    {
+      "id": "seikan-tunnel-opening-date",
+      "lang": "jp",
+      "category": "date",
+      "text": "青函トンネルが営業を開始したのはいつ？場所も地図で見せて。",
+      "answer": { "kind": "date", "value": "1988-03-13" },
+      "source": { "title": "青函トンネル", "publisher": "北海道知内町", "url": "https://www.town.shiriuchi.hokkaido.jp/kanko/meisho/seikantonneru.html", "states": "The 53.85 km Seikan Tunnel began service on 13 March 1988." },
+      "capabilities": ["view.flyTo", "research.brief"]
+    },
+    {
+      "id": "unzen-pyroclastic-flow-date",
+      "lang": "jp",
+      "category": "date",
+      "text": "雲仙普賢岳で43人が犠牲になった大火砕流はいつ発生した？",
+      "answer": { "kind": "date", "value": "1991-06-03" },
+      "source": { "title": "災害対応資料集（1991 雲仙岳噴火）", "publisher": "内閣府 防災情報", "url": "https://www.bousai.go.jp/kaigirep/houkokusho/hukkousesaku/saigaitaiou/output_html_1/case199101.html", "states": "A large pyroclastic flow at Unzen-Fugendake on 3 June 1991 killed or left missing 43 people." },
+      "capabilities": ["data.volcano", "map.pin", "research.brief"]
+    },
+    {
+      "id": "ontake-eruption-date",
+      "lang": "jp",
+      "category": "date",
+      "text": "御嶽山の噴火で多数の登山者が犠牲になったのは何年何月何日？",
+      "answer": { "kind": "date", "value": "2014-09-27" },
+      "source": { "title": "御嶽火山の噴火に関する情報", "publisher": "産総研 地質調査総合センター", "url": "https://www.gsj.jp/hazards/volcano/ontake2014/", "states": "Ontake erupted at about 11:52 on 27 September 2014 (phreatic eruption; 58 dead, 5 missing)." },
+      "capabilities": ["data.volcano", "map.pin"]
+    },
+    {
+      "id": "berlin-wall-opened-date",
+      "lang": "en",
+      "category": "date",
+      "text": "On what date was the Berlin Wall opened? Show Berlin on the map.",
+      "answer": { "kind": "date", "value": "1989-11-09" },
+      "source": { "title": "When did the Berlin Wall fall?", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/question/When-did-the-Berlin-Wall-fall", "states": "East German officials opened the border, including the Berlin Wall, on 9 November 1989." },
+      "capabilities": ["view.flyTo", "research.historicalMap", "time.travel"]
+    },
+    {
+      "id": "channel-tunnel-inauguration-date",
+      "lang": "en",
+      "category": "date",
+      "text": "When was the Channel Tunnel officially inaugurated?",
+      "answer": { "kind": "date", "value": "1994-05-06" },
+      "source": { "title": "English Channel tunnel opens", "publisher": "HISTORY", "url": "https://www.history.com/this-day-in-history/may-6/english-channel-tunnel-opens", "states": "Queen Elizabeth II and President Mitterrand inaugurated the Channel Tunnel on 6 May 1994." },
+      "capabilities": ["research.brief"]
+    },
+    {
+      "id": "mount-st-helens-eruption-date",
+      "lang": "en",
+      "category": "date",
+      "text": "Fly to Mount St. Helens. What was the date of its catastrophic 1980 eruption?",
+      "answer": { "kind": "date", "value": "1980-05-18" },
+      "source": { "title": "1980 Cataclysmic Eruption", "publisher": "USGS", "url": "https://www.usgs.gov/volcanoes/mount-st.-helens/science/1980-cataclysmic-eruption", "states": "On Sunday 18 May 1980 at 8:32 a.m. the north flank collapsed and the volcano erupted." },
+      "capabilities": ["view.flyTo", "data.volcano"]
+    },
+    {
+      "id": "panama-canal-opening-date",
+      "lang": "en",
+      "category": "date",
+      "text": "When did the Panama Canal open to commercial traffic?",
+      "answer": { "kind": "date", "value": "1914-08-15" },
+      "source": { "title": "It's your birthday, Panama Canal!", "publisher": "Smithsonian National Museum of American History", "url": "https://americanhistory.si.edu/explore/stories/its-your-birthday-panama-canal", "states": "The canal opened on 15 August 1914 with the transit of the SS Ancon." },
+      "capabilities": ["view.flyTo", "research.brief"]
+    },
+    {
+      "id": "brasilia-inauguration-date",
+      "lang": "en",
+      "category": "date",
+      "text": "On what date was Brasília inaugurated as the capital of Brazil?",
+      "answer": { "kind": "date", "value": "1960-04-21" },
+      "source": { "title": "Sixty years ago, Brasilia became Brazil's capital", "publisher": "France 24", "url": "https://www.france24.com/en/20200417-sixty-years-ago-brasilia-became-brazil-s-capital", "states": "Brazil inaugurated Brasília as its new capital on 21 April 1960, replacing Rio de Janeiro." },
+      "capabilities": ["view.flyTo", "research.brief"]
+    },
+    {
+      "id": "japan-area-gsi-2024-04",
+      "lang": "jp",
+      "category": "area",
+      "text": "国土地理院の令和6年全国都道府県市区町村別面積調（4月1日時点）で、日本の国土面積は何 km²？",
+      "answer": { "kind": "number", "value": 377974.71, "unit": "km2", "tolerance": { "rel": 0.005 } },
+      "source": { "title": "令和6年 全国都道府県市区町村別面積調（4月1日時点）", "publisher": "国土地理院", "url": "https://www.gsi.go.jp/KOKUJYOHO/MENCHO/backnumber/GSI-menseki20240401.pdf", "states": "Japan's national area as of 1 April 2024 was 377,974.71 km²." },
+      "capabilities": ["data.countryCard", "data.value"]
+    },
+    {
+      "id": "lake-biwa-area",
+      "lang": "jp",
+      "category": "area",
+      "text": "琵琶湖を地図でハイライトして。面積は何 km²？",
+      "answer": { "kind": "number", "value": 669.26, "unit": "km2", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "琵琶湖の概要", "publisher": "滋賀県", "url": "https://www.pref.shiga.lg.jp/de51/2878.html", "states": "Lake Biwa covers 669.26 km² (GSI national area survey figure)." },
+      "capabilities": ["map.highlight", "data.value"]
+    },
+    {
+      "id": "hokkaido-area-gsi-2024-10",
+      "lang": "jp",
+      "category": "area",
+      "text": "国土地理院の面積調（2024年10月1日時点）で北海道の面積は何 km²？",
+      "answer": { "kind": "number", "value": 83422.27, "unit": "km2", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "全国都道府県市区町村別面積調", "publisher": "国土地理院", "url": "https://www.gsi.go.jp/KOKUJYOHO/MENCHO-title.htm", "states": "Hokkaido's area as of 1 October 2024 is 83,422.27 km², including the Northern Territories." },
+      "capabilities": ["map.outline", "data.value"],
+      "note": "Includes the Northern Territories (~5,003 km²), as GSI counts them."
+    },
+    {
+      "id": "russia-area",
+      "lang": "en",
+      "category": "area",
+      "text": "Highlight Russia. What is its total area in square kilometres?",
+      "answer": { "kind": "number", "value": 17098242, "unit": "km2", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "Russia — The World Factbook", "publisher": "CIA World Factbook", "url": "https://theworldfactbook.org/country/russia.html", "states": "Russia's total area is 17,098,242 sq km." },
+      "capabilities": ["map.highlight", "data.countryCard", "data.value"]
+    },
+    {
+      "id": "caspian-sea-area",
+      "lang": "en",
+      "category": "area",
+      "text": "Show the Caspian Sea. What is its surface area in km²?",
+      "answer": { "kind": "number", "value": 371000, "unit": "km2", "tolerance": { "rel": 0.05 } },
+      "source": { "title": "The Caspian Sea", "publisher": "European Space Agency", "url": "https://www.esa.int/Applications/Observing_the_Earth/The_Caspian_Sea", "states": "The Caspian Sea covers about 371,000 km² (143,000 sq mi)." },
+      "capabilities": ["view.flyTo", "map.highlight", "data.value"],
+      "note": "Surface area varies with water level; 5% tolerance."
+    },
+    {
+      "id": "greenland-area",
+      "lang": "en",
+      "category": "area",
+      "text": "How large is Greenland in square kilometres?",
+      "answer": { "kind": "number", "value": 2166086, "unit": "km2", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "The Largest Islands in the World", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/list/the-largest-islands-in-the-world", "states": "Greenland has an area of 836,330 sq mi (2,166,086 sq km)." },
+      "capabilities": ["map.highlight", "data.value"]
+    },
+    {
+      "id": "lake-superior-area",
+      "lang": "en",
+      "category": "area",
+      "text": "Outline Lake Superior on the map and tell me its surface area in km².",
+      "answer": { "kind": "number", "value": 82100, "unit": "km2", "tolerance": { "rel": 0.02 } },
+      "source": { "title": "Lake Superior", "publisher": "Encyclopaedia Britannica (citing U.S. EPA)", "url": "https://www.britannica.com/place/Lake-Superior-lake-North-America", "states": "Lake Superior's surface area is 31,700 sq mi (82,100 sq km)." },
+      "capabilities": ["map.outline", "data.value"]
+    },
+    {
+      "id": "australia-area",
+      "lang": "en",
+      "category": "area",
+      "text": "According to Geoscience Australia, what is the area of Australia in km²?",
+      "answer": { "kind": "number", "value": 7688287, "unit": "km2", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "Area of Australia - States and Territories", "publisher": "Geoscience Australia", "url": "https://www.ga.gov.au/scientific-topics/national-location-information/dimensions/area-of-australia-states-and-territories", "states": "Australia's area is 7,688,287 km² (GEODATA Coast 100K 2004)." },
+      "capabilities": ["data.countryCard", "data.value"]
+    },
+    {
+      "id": "everest-height-2020",
+      "lang": "en",
+      "category": "elevation",
+      "text": "Fly to Mount Everest. What is its height according to the 2020 China–Nepal survey?",
+      "answer": { "kind": "number", "value": 8848.86, "unit": "m", "tolerance": { "abs": 5 } },
+      "source": { "title": "8,848.86 metres. That's the height of Mt Everest now", "publisher": "The Kathmandu Post", "url": "https://kathmandupost.com/national/2020/12/08/it-s-official-mount-everest-is-8-848-86-metres-tall", "states": "Nepal and China jointly announced on 8 December 2020 that Everest is 8,848.86 m tall." },
+      "capabilities": ["view.flyTo", "data.value"]
+    },
+    {
+      "id": "mount-fuji-elevation",
+      "lang": "jp",
+      "category": "elevation",
+      "text": "富士山に飛んで。標高は何 m？",
+      "answer": { "kind": "number", "value": 3776, "unit": "m", "tolerance": { "abs": 1 } },
+      "source": { "title": "衛星測位を基盤とする三角点「富士山」の新しい標高", "publisher": "国土地理院", "url": "https://www.gsi.go.jp/WNEW/PRESS-RELEASE/keikaku61003.html", "states": "Mount Fuji's summit elevation remains 3,776 m; the triangulation point itself was revised to 3,775.56 m in 2025." },
+      "capabilities": ["view.flyTo", "data.value"]
+    },
+    {
+      "id": "kitadake-elevation",
+      "lang": "jp",
+      "category": "elevation",
+      "text": "日本で2番目に高い北岳の標高は何 m？",
+      "answer": { "kind": "number", "value": 3193, "unit": "m", "tolerance": { "abs": 1 } },
+      "source": { "title": "山の標高 全国３位（国土地理院「日本の主な山岳標高」より）", "publisher": "長野県", "url": "https://blog.nagano-ken.jp/nihonichi/viewspots/3524.html", "states": "Per GSI's list of principal mountain elevations, Kita-dake is Japan's 2nd highest at 3,193 m." },
+      "capabilities": ["view.flyTo", "data.value"]
+    },
+    {
+      "id": "denali-elevation-2015",
+      "lang": "en",
+      "category": "elevation",
+      "text": "What is Denali's elevation in metres per the 2015 USGS survey?",
+      "answer": { "kind": "number", "value": 6190, "unit": "m", "tolerance": { "abs": 5 } },
+      "source": { "title": "New Elevation for Nation's Highest Peak", "publisher": "USGS", "url": "https://www.usgs.gov/news/national-news-release/new-elevation-nations-highest-peak", "states": "USGS announced on 2 September 2015 that Denali is 20,310 feet." },
+      "capabilities": ["view.flyTo", "data.value"],
+      "note": "20,310 ft = 6,190.5 m."
+    },
+    {
+      "id": "badwater-basin-elevation",
+      "lang": "en",
+      "category": "elevation",
+      "text": "Pin Badwater Basin in Death Valley. What is its elevation in metres?",
+      "answer": { "kind": "number", "value": -86, "unit": "m", "tolerance": { "abs": 2 } },
+      "source": { "title": "Badwater Basin", "publisher": "U.S. National Park Service", "url": "https://www.nps.gov/places/badwater-basin.htm", "states": "Badwater Basin is 282 ft (86 m) below sea level, the lowest point in North America." },
+      "capabilities": ["map.pin", "data.value"],
+      "note": "Negative: below sea level."
+    },
+    {
+      "id": "kilimanjaro-elevation",
+      "lang": "en",
+      "category": "elevation",
+      "text": "How high is Kilimanjaro (Kibo) in metres?",
+      "answer": { "kind": "number", "value": 5895, "unit": "m", "tolerance": { "abs": 5 } },
+      "source": { "title": "Kilimanjaro", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/place/Kilimanjaro", "states": "Kibo rises to 19,340 ft (5,895 m), the highest point in Africa." },
+      "capabilities": ["view.flyTo", "data.value"]
+    },
+    {
+      "id": "lake-tazawa-max-depth",
+      "lang": "jp",
+      "category": "elevation",
+      "text": "田沢湖を地図に出して。最大水深は何 m？",
+      "answer": { "kind": "number", "value": 423.4, "unit": "m", "tolerance": { "abs": 1 } },
+      "source": { "title": "日本一深い田沢湖", "publisher": "秋田県仙北市", "url": "https://www.city.semboku.akita.jp/sightseeing/travel/nature/index.html", "states": "Lake Tazawa's maximum depth is 423.4 m, the deepest in Japan." },
+      "capabilities": ["view.flyTo", "data.value"],
+      "note": "Depth expressed as a positive number of metres."
+    },
+    {
+      "id": "shinano-river-length",
+      "lang": "jp",
+      "category": "length",
+      "text": "信濃川を地図でなぞって。幹川流路延長は何 km？",
+      "answer": { "kind": "number", "value": 367, "unit": "km", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "日本一■信濃川（千曲川）の流路延長（長さ）", "publisher": "長野県", "url": "https://blog.nagano-ken.jp/nihonichi/nature/161.html", "states": "The Shinano River's main-stream length is 367 km, Japan's longest (MLIT class-A river data)." },
+      "capabilities": ["map.highlight", "data.value"]
+    },
+    {
+      "id": "tone-river-length",
+      "lang": "jp",
+      "category": "length",
+      "text": "利根川の長さは何 km？",
+      "answer": { "kind": "number", "value": 322, "unit": "km", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "日本の川の長さと流域面積について", "publisher": "シマウマ用語集 (citing MLIT 一級河川の河川延長等調査)", "url": "https://makitani.net/shimauma/knowledge/river-length-and-basin-area-in-japan", "states": "The Tone River is 322 km long (2nd in Japan) with the largest basin, 16,840 km²." },
+      "capabilities": ["map.highlight", "data.value"]
+    },
+    {
+      "id": "seikan-tunnel-length",
+      "lang": "jp",
+      "category": "length",
+      "text": "青函トンネルの全長は何 km？",
+      "answer": { "kind": "number", "value": 53.85, "unit": "km", "tolerance": { "rel": 0.01 } },
+      "source": { "title": "青函トンネル", "publisher": "鉄道建設・運輸施設整備支援機構", "url": "https://www.jrtt.go.jp/construction/outline/seikan-tunnel.html", "states": "The Seikan Tunnel crosses the Tsugaru Strait and is 53.85 km long, 23.3 km of it under the sea." },
+      "capabilities": ["map.drawLine", "research.brief"]
+    },
+    {
+      "id": "akashi-kaikyo-bridge-center-span",
+      "lang": "jp",
+      "category": "length",
+      "text": "明石海峡大橋を地図に出して。中央支間長は何 m？",
+      "answer": { "kind": "number", "value": 1991, "unit": "m", "tolerance": { "abs": 1 } },
+      "source": { "title": "4月5日は明石海峡大橋の開通記念日！", "publisher": "明石じゃーなる", "url": "https://akashi-journal.com/city/pearl-bridge/", "states": "The bridge is 3,911 m long with a 1,991 m centre span; it opened on 5 April 1998." },
+      "capabilities": ["view.flyTo", "map.measure"],
+      "note": "Centre span, not total length (3,911 m)."
+    },
+    {
+      "id": "mississippi-river-length",
+      "lang": "en",
+      "category": "length",
+      "text": "How long is the Mississippi River in km?",
+      "answer": { "kind": "number", "value": 3766, "unit": "km", "tolerance": { "rel": 0.03 } },
+      "source": { "title": "Rivers of the World: World's Longest Rivers", "publisher": "USGS Water Science School", "url": "https://www.usgs.gov/water-science-school/science/rivers-world-worlds-longest-rivers", "states": "USGS lists the Mississippi at 2,340 miles (2nd longest in the U.S. after the Missouri)." },
+      "capabilities": ["map.highlight", "data.value"],
+      "note": "2,340 mi = 3,766 km."
+    },
+    {
+      "id": "nile-river-length",
+      "lang": "en",
+      "category": "length",
+      "text": "Trace the Nile on the map. How long is it?",
+      "answer": { "kind": "range", "min": 6600, "max": 6700, "unit": "km" },
+      "source": { "title": "Nile River summary", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/summary/Nile-River", "states": "The Nile is about 4,132 miles (6,650 km) long from its remotest headstream to the Mediterranean." },
+      "capabilities": ["map.highlight", "data.value"],
+      "note": "Length is disputed by definition of the source; the range covers the commonly cited 6,650 and 6,695 km."
+    },
+    {
+      "id": "thames-length",
+      "lang": "en",
+      "category": "length",
+      "text": "What is the length of the River Thames in km?",
+      "answer": { "kind": "number", "value": 346, "unit": "km", "tolerance": { "rel": 0.02 } },
+      "source": { "title": "River Thames", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/River_Thames", "states": "The Thames is 215 miles (346 km) long, the longest river entirely in England." },
+      "capabilities": ["map.highlight", "data.value"]
+    },
+    {
+      "id": "channel-tunnel-length",
+      "lang": "en",
+      "category": "length",
+      "text": "How long is the Channel Tunnel?",
+      "answer": { "kind": "range", "min": 49.6, "max": 50.5, "unit": "km" },
+      "source": { "title": "The Channel Tunnel", "publisher": "Getlink (Eurotunnel)", "url": "https://www.getlinkgroup.com/en/our-group/eurotunnel/channel-tunnel/", "states": "Getlink gives 49.6 km (undersea section 37.9 km); other references give 50.45 km portal-to-portal." },
+      "capabilities": ["map.drawLine", "research.brief"],
+      "note": "Operator and encyclopedias differ by measuring points; range covers 49.6–50.45 km."
+    },
+    {
+      "id": "japan-prefecture-count",
+      "lang": "jp",
+      "category": "count",
+      "text": "日本の都道府県はいくつある？",
+      "answer": { "kind": "count", "value": 47 },
+      "source": { "title": "都道府県", "publisher": "Wikipedia（日本語）", "url": "https://ja.wikipedia.org/wiki/%E9%83%BD%E9%81%93%E5%BA%9C%E7%9C%8C", "states": "Japan has 47 prefectures: 1 to, 1 do, 2 fu and 43 ken." },
+      "capabilities": ["map.choropleth", "data.query"]
+    },
+    {
+      "id": "tokaido-shinkansen-station-count",
+      "lang": "jp",
+      "category": "count",
+      "text": "東海道新幹線の駅は東京から新大阪まで全部でいくつ？",
+      "answer": { "kind": "count", "value": 17 },
+      "source": { "title": "Tokaido Shinkansen", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Tokaido_Shinkansen", "states": "The line has 17 stations from Tokyo to Shin-Osaka; Kodama calls at all of them." },
+      "capabilities": ["map.poi", "routing.route"]
+    },
+    {
+      "id": "yamanote-line-station-count",
+      "lang": "jp",
+      "category": "count",
+      "text": "高輪ゲートウェイ駅開業（2020年）後の山手線の駅数は？",
+      "answer": { "kind": "count", "value": 30 },
+      "source": { "title": "きょう開業の山手線「高輪ゲートウェイ駅」", "publisher": "TRAICY", "url": "https://www.traicy.com/posts/20200314148048/", "states": "Takanawa Gateway opened on 14 March 2020 as the Yamanote Line's 30th station." },
+      "capabilities": ["map.poi"]
+    },
+    {
+      "id": "japan-active-volcano-count",
+      "lang": "jp",
+      "category": "count",
+      "text": "気象庁が定める日本の活火山の数は？地図に表示して。",
+      "answer": { "kind": "count", "value": 111 },
+      "source": { "title": "活火山 噴火記録のある火山や今後噴火する可能性がある火山", "publisher": "政府広報オンライン", "url": "https://www.gov-online.go.jp/article/202508/entry-8512.html", "states": "Japan defines 111 volcanoes as active; JMA monitors 51 of them continuously." },
+      "capabilities": ["data.volcano", "map.pin"],
+      "note": "Count as of 2025 (unchanged since 2017)."
+    },
+    {
+      "id": "un-member-state-count",
+      "lang": "en",
+      "category": "count",
+      "text": "How many member states does the United Nations have (as of 2026)?",
+      "answer": { "kind": "count", "value": 193 },
+      "source": { "title": "About Us", "publisher": "United Nations", "url": "https://www.un.org/en/about-us", "states": "The UN is made up of 193 Member States; the latest admitted was South Sudan in 2011." },
+      "capabilities": ["map.choropleth", "data.query"]
+    },
+    {
+      "id": "germany-neighbour-count",
+      "lang": "en",
+      "category": "count",
+      "text": "Highlight Germany. How many countries share a land border with it?",
+      "answer": { "kind": "count", "value": 9 },
+      "source": { "title": "How many neighbouring countries does Germany have - and which are they?", "publisher": "deutschland.de (German Federal Foreign Office)", "url": "https://www.deutschland.de/en/topic/politics/germany-nine-neighbours-facts", "states": "Germany borders nine countries: Denmark, Poland, Czechia, Austria, Switzerland, France, Luxembourg, Belgium and the Netherlands." },
+      "capabilities": ["map.highlight", "data.countryCard"]
+    },
+    {
+      "id": "canada-province-count",
+      "lang": "en",
+      "category": "count",
+      "text": "How many provinces does Canada have?",
+      "answer": { "kind": "count", "value": 10 },
+      "source": { "title": "Provinces and territories", "publisher": "Government of Canada", "url": "https://www.canada.ca/en/intergovernmental-affairs/services/provinces-territories.html", "states": "Canada has ten provinces and three territories." },
+      "capabilities": ["map.outline", "data.query"],
+      "note": "Provinces only; the 3 territories are not provinces."
+    },
+    {
+      "id": "us-house-seat-count-2020",
+      "lang": "en",
+      "category": "count",
+      "text": "After the 2020 Census apportionment, how many House seats were distributed among the states?",
+      "answer": { "kind": "count", "value": 435 },
+      "source": { "title": "2020 Census Apportionment Results", "publisher": "U.S. Census Bureau", "url": "https://census.gov/newsroom/press-releases/2021/2020-census-apportionment-results.html", "states": "The apportionment formula distributes the 435 seats of the U.S. House among the 50 states." },
+      "capabilities": ["map.choropleth", "data.query"]
+    },
+    {
+      "id": "japan-longest-river-name",
+      "lang": "jp",
+      "category": "name",
+      "text": "日本で一番長い川は？地図に出して。",
+      "answer": { "kind": "name", "accept": ["信濃川", "しなのがわ", "Shinano River", "Shinano", "Shinano-gawa", "信濃川（千曲川）"] },
+      "source": { "title": "日本一■信濃川（千曲川）の流路延長（長さ）", "publisher": "長野県", "url": "https://blog.nagano-ken.jp/nihonichi/nature/161.html", "states": "The Shinano River (367 km) is Japan's longest river." },
+      "capabilities": ["map.highlight", "data.rank"]
+    },
+    {
+      "id": "japan-deepest-lake-name",
+      "lang": "jp",
+      "category": "name",
+      "text": "日本で一番深い湖はどこ？",
+      "answer": { "kind": "name", "accept": ["田沢湖", "たざわこ", "Lake Tazawa", "Tazawa", "Lake Tazawa-ko", "Tazawako"] },
+      "source": { "title": "日本一深い田沢湖", "publisher": "秋田県仙北市", "url": "https://www.city.semboku.akita.jp/sightseeing/travel/nature/index.html", "states": "Lake Tazawa (423.4 m) is Japan's deepest lake." },
+      "capabilities": ["view.flyTo", "data.rank"]
+    },
+    {
+      "id": "japan-largest-lake-name",
+      "lang": "jp",
+      "category": "name",
+      "text": "日本で面積が最大の湖は？",
+      "answer": { "kind": "name", "accept": ["琵琶湖", "びわこ", "Lake Biwa", "Biwa", "Biwako", "Lake Biwa-ko"] },
+      "source": { "title": "琵琶湖の概要", "publisher": "滋賀県", "url": "https://www.pref.shiga.lg.jp/de51/2878.html", "states": "Lake Biwa (669.26 km²) is Japan's largest lake." },
+      "capabilities": ["map.highlight", "data.rank"]
+    },
+    {
+      "id": "honshu-hokkaido-strait-name",
+      "lang": "jp",
+      "category": "name",
+      "text": "本州と北海道の間の海峡の名前は？青函トンネルが通っているところ。",
+      "answer": { "kind": "name", "accept": ["津軽海峡", "つがるかいきょう", "Tsugaru Strait", "Tsugaru", "Tsugaru Channel"] },
+      "source": { "title": "青函トンネル", "publisher": "鉄道建設・運輸施設整備支援機構", "url": "https://www.jrtt.go.jp/construction/outline/seikan-tunnel.html", "states": "The Seikan Tunnel crosses the Tsugaru Strait to link Honshu and Hokkaido." },
+      "capabilities": ["view.flyTo", "map.pin"]
+    },
+    {
+      "id": "japan-second-highest-mountain-name",
+      "lang": "jp",
+      "category": "name",
+      "text": "富士山の次に高い日本の山は？",
+      "answer": { "kind": "name", "accept": ["北岳", "きただけ", "Kita-dake", "Kitadake", "Mount Kita", "Mt. Kita"] },
+      "source": { "title": "山の標高 全国３位（国土地理院「日本の主な山岳標高」より）", "publisher": "長野県", "url": "https://blog.nagano-ken.jp/nihonichi/viewspots/3524.html", "states": "Per GSI, Japan's 2nd highest mountain after Fuji is Kita-dake (3,193 m)." },
+      "capabilities": ["view.flyTo", "data.rank"]
+    },
+    {
+      "id": "australia-capital-name",
+      "lang": "en",
+      "category": "name",
+      "text": "What is the capital of Australia? Fly there.",
+      "answer": { "kind": "name", "accept": ["Canberra", "キャンベラ"] },
+      "source": { "title": "Canberra, the Seat of Government", "publisher": "National Capital Authority (Australian Government)", "url": "https://www.nca.gov.au/education/canberras-history/canberra-seat-government", "states": "Canberra, in the Australian Capital Territory, is the national capital, proclaimed in 1913." },
+      "capabilities": ["view.flyTo", "data.countryCard"]
+    },
+    {
+      "id": "canada-capital-name",
+      "lang": "en",
+      "category": "name",
+      "text": "Which city is the capital of Canada?",
+      "answer": { "kind": "name", "accept": ["Ottawa", "オタワ"] },
+      "source": { "title": "Ottawa", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Ottawa", "states": "Ottawa, Ontario, is the capital city of Canada." },
+      "capabilities": ["view.flyTo", "data.countryCard"]
+    },
+    {
+      "id": "africa-highest-mountain-name",
+      "lang": "en",
+      "category": "name",
+      "text": "What is the highest mountain in Africa? Show it on the map.",
+      "answer": { "kind": "name", "accept": ["Kilimanjaro", "Mount Kilimanjaro", "Mt. Kilimanjaro", "Kibo", "Uhuru Peak", "キリマンジャロ", "キリマンジャロ山"] },
+      "source": { "title": "Kilimanjaro", "publisher": "Encyclopaedia Britannica", "url": "https://www.britannica.com/place/Kilimanjaro", "states": "Kilimanjaro's Kibo cone (5,895 m) is the highest point in Africa." },
+      "capabilities": ["view.flyTo", "data.rank"]
+    },
+    {
+      "id": "challenger-deep-trench-name",
+      "lang": "en",
+      "category": "name",
+      "text": "The Challenger Deep is located in which ocean trench?",
+      "answer": { "kind": "name", "accept": ["Mariana Trench", "Marianas Trench", "Mariana", "マリアナ海溝"] },
+      "source": { "title": "Challenger Deep", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Challenger_Deep", "states": "The Challenger Deep is the deepest known point of the ocean, in the southern Mariana Trench." },
+      "capabilities": ["view.flyTo", "map.pin"]
+    },
+    {
+      "id": "north-america-lowest-point-name",
+      "lang": "en",
+      "category": "name",
+      "text": "What is the lowest point in North America?",
+      "answer": { "kind": "name", "accept": ["Badwater Basin", "Badwater", "Death Valley", "バッドウォーター盆地", "バッドウォーター", "デスバレー"] },
+      "source": { "title": "Badwater Basin", "publisher": "U.S. National Park Service", "url": "https://www.nps.gov/places/badwater-basin.htm", "states": "Badwater Basin in Death Valley, 86 m below sea level, is the lowest point in North America." },
+      "capabilities": ["map.pin", "data.rank"],
+      "note": "'Death Valley' accepted as the containing feature."
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "id": "unobserved-call-is-not-run-twice",
+  "text": "富士山に飛んで。標高は何 m？",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "atlas-turn-engine ① — a camera move on a page that was not compositing is `unobserved`; the model repeating it is answered from the ledger, not run again (#R768 measured seven no_change replies)"
+  },
+  "question": {
+    "set": "answers",
+    "id": "mount-fuji-elevation"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "map_view",
+          "arguments": {
+            "place": "Mount Fuji"
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "map_view",
+          "arguments": {
+            "place": "Mount Fuji"
+          }
+        }
+      ]
+    },
+    {
+      "text": "富士山へ移動しました。標高は3,776 mです（国土地理院）。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "place": "Mount Fuji",
+          "type": "flyTo"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>Mount Fuji</div>",
+          "meta": {
+            "status": "unobserved",
+            "code": "not_rendering",
+            "produced": []
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "map_view",
+        "status": "unobserved",
+        "code": "not_rendering"
+      }
+    ],
+    "text": "富士山へ移動しました。標高は3,776 mです（国土地理院）。"
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "dispatched": 1
+  }
+}

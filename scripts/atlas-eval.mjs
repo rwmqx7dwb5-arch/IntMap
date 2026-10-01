@@ -11,6 +11,16 @@
  *                                  [--only id,id] [--screenshots] [--rotated-token-out <file>] [--headed]
  *      node scripts/atlas-eval.mjs --dry-run [--url <site>]       no question is sent; no session is made
  *      node scripts/atlas-eval.mjs --alarm <report.json> [--run-url <url>] [--print]
+ *      node scripts/atlas-eval.mjs --replay                     (atlas-quality-lab) every cassette, no model, no browser
+ *
+ *  (atlas-quality-lab) ALSO, on a live run:
+ *      --set records|answers|all   which problem set to ask (default all): the questions the manual rounds
+ *                                  recorded (questions.json) and/or the verified answer key (answer-key.json)
+ *      --rubric                    grade every answer-key reply with the INDEPENDENT grader (ai-proxy
+ *                                  `atlas_grade`, a provider other than the one answering; one use per grade)
+ *      --record <dir>              save every measured turn as a cassette (scripts/atlas-eval/replay.mjs) —
+ *                                  the model's replies and what the dispatch returned — to replay with no model
+ *      --deadline-min <n>          start no question that could not finish inside n minutes of the run's start
  *
  *  THE SESSION comes from ATLAS_EVAL_REFRESH_TOKEN (environment only). The page's own Supabase client
  *  exchanges it (`sb.auth.refreshSession`), so the harness never handles a password and never writes the
@@ -40,6 +50,9 @@ import { execFileSync } from 'node:child_process';
 import {
   judgeTurn, judgeProbe, metricsOf, badnessOf, advance, verdictOf, renderMarkdown, validateQuestionSet,
 } from './atlas-eval/judge.mjs';
+import { rubricRequest, readRubric, validateAnswerKey } from './atlas-eval/grade.mjs';
+import { goldenOf } from './atlas-eval/replay.mjs';
+import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const PROD_URL = 'https://rwmqx7dwb5-arch.github.io/IntMap/';
@@ -62,6 +75,18 @@ async function productRules() {
 
 export function loadQuestions() {
   return JSON.parse(readFileSync(join(ROOT, 'scripts/atlas-eval/questions.json'), 'utf8'));
+}
+/** (atlas-quality-lab) the verified answer key — questions with an objective answer and its source */
+export function loadAnswerKey() {
+  return JSON.parse(readFileSync(join(ROOT, 'scripts/atlas-eval/answer-key.json'), 'utf8'));
+}
+/** askable(which) — the questions a run asks, each tagged with the set it came from. An answer-key row
+ *  judges by its answer (judge.mjs grades `q.answer`); it has no recorded expectations of its own. */
+export function askable(which = 'all') {
+  const out = [];
+  if (which === 'all' || which === 'records') for (const q of loadQuestions().questions) out.push(Object.assign({ set: 'records' }, q));
+  if (which === 'all' || which === 'answers') for (const q of loadAnswerKey().questions) out.push(Object.assign({ set: 'answers', sendable: true, expect: {}, unset: {} }, q));
+  return out;
 }
 
 /* A result can be large (a research report). The JUDGE sees all of it; the stored report keeps a
@@ -139,9 +164,34 @@ const PAGE = {
       steps: (dbg && Array.isArray(dbg.steps)) ? dbg.steps.map((s) => ({ step: s.step, calls: s.calls || [] })) : [],
       stopped: dbg ? dbg.stopped : null,
       calls: window.__atlasEvalCalls || [],
+      /* (atlas-quality-lab) the two sides of the turn js/atlas-console.js keeps for --record */
+      replies: (dbg && Array.isArray(dbg.replies)) ? dbg.replies : null,
+      dispatches: (dbg && Array.isArray(dbg.dispatches)) ? dbg.dispatches : null,
       snapshot: snap,
       lastBubble: b.length ? String(b[b.length - 1].innerText || '').slice(0, 400) : '',
     };
+  },
+  /* (atlas-quality-lab) the independent grade: ai-proxy `atlas_grade` with the page's own session, so it is
+     charged and ledgered like every other call. The server chooses the grader (never the answering
+     provider) and owns the schema — this sends only the question, the verified answer and the reply. */
+  grade: async ({ system, prompt }) => {
+    try {
+      const cfg = window.INTMAP_AI_PROXY || {};
+      if (!cfg.url) return { error: 'the page names no ai-proxy url' };
+      const headers = { 'Content-Type': 'application/json' };
+      if (cfg.headerName && cfg.headerValue) headers[cfg.headerName] = cfg.headerValue;
+      if (window.SUPABASE_ANON_KEY) headers.apikey = window.SUPABASE_ANON_KEY;
+      const ss = await window.sb.auth.getSession();
+      const tok = ss && ss.data && ss.data.session && ss.data.session.access_token;
+      if (!tok) return { error: 'no session' };
+      headers.Authorization = 'Bearer ' + tok;
+      const r = await fetch(cfg.url, { method: 'POST', headers, body: JSON.stringify({ task: 'atlas_grade', system, prompt, webMode: 'off', lang: 'en' }) });
+      let j = null; try { j = await r.json(); } catch (_) { j = null; }
+      if (!r.ok) return { error: (j && (j.error || j.message)) || ('HTTP ' + r.status) };
+      let data = null; try { data = JSON.parse(String((j && j.text) || '').replace(/^\s*```(?:json)?|```\s*$/g, '')); } catch (_) { data = null; }
+      const m = (j && j.meta) || {};
+      return { data, model: m.modelServed || m.model || '', provider: m.provider || '' };
+    } catch (e) { return { error: String((e && e.message) || e) }; }
   },
   probe: async ({ asked, lang }) => {
     try {
@@ -167,6 +217,28 @@ export function observeTurn(q, raw, askRes) {
   return {
     measured: true, ms: askRes.ms, stopped: String(t.status || raw.stopped || ''), reply: t.reply,
     operations: t.operations, calls, steps: raw.steps, snapshot: raw.snapshot,
+    replies: raw.replies || null, dispatches: raw.dispatches || null,
+  };
+}
+
+/* (atlas-quality-lab) cassetteOf — one measured turn as a cassette scripts/atlas-eval/replay.mjs replays
+   with no model: the model's replies, what the dispatch returned, the find_capability answers, the final
+   map, and what the turn produced. A turn whose two sides were not both observed is not a cassette —
+   a replay of half a turn would diverge on the half that is missing. */
+export function cassetteOf(q, obs, judged, meta) {
+  if (!obs || !obs.measured || !Array.isArray(obs.replies) || !Array.isArray(obs.dispatches) || !obs.calls) return null;
+  const find = [];
+  for (const c of obs.calls) if (c.name === 'find_capability') { try { find.push({ query: String((c.args && c.args.query) || ''), result: JSON.parse(c.resultText) }); } catch (_) { } }
+  const kinds = [...new Set(judged.failures.map((f) => f.kind))];
+  return {
+    id: q.id + '-' + String(meta.when).slice(0, 10), text: q.text, lang: q.lang,
+    origin: { kind: 'recorded', from: meta.url + (meta.build ? ' (build ' + meta.build + ')' : '') + ' ' + meta.when + (meta.runUrl ? ' ' + meta.runUrl : '') },
+    question: { set: q.set || 'records', id: q.id }, recordedMs: obs.ms,
+    model: obs.replies.map((r) => ({ final: !!r.final, text: r.text || '', turnState: r.turnState || '', answerMode: r.answerMode || '', webUsed: !!r.webUsed, toolCalls: r.toolCalls || [] })),
+    world: { dispatch: obs.dispatches, find, snapshot: obs.snapshot || {} },
+    golden: goldenOf({ stopped: obs.stopped, calls: obs.calls, text: obs.reply }),
+    /* what the judge concluded live is what the replay must keep concluding */
+    expect: { verdict: kinds.length ? 'fail' : 'pass', failures: kinds.length ? kinds : undefined, grade: judged.metrics.grade ? judged.metrics.grade.verdict : undefined },
   };
 }
 
@@ -183,7 +255,15 @@ async function evaluate() {
   }
   const set = loadQuestions();
   const rules = await productRules();
-  const questions = set.questions.filter((q) => !only || only.has(q.id));
+  const which = arg('--set', 'all');
+  if (['all', 'records', 'answers'].indexOf(which) < 0) { console.error('atlas-eval: --set is all, records or answers'); process.exit(2); }
+  const questions = askable(which).filter((q) => !only || only.has(q.id));
+  const rubric = has('--rubric');
+  const recordDir = arg('--record') ? resolve(arg('--record')) : '';
+  const recorded = [];
+  /* the run's own deadline: a question is started only if it can finish — see --deadline-min */
+  const t0run = Date.now();
+  const deadlineMs = (+arg('--deadline-min', '0') || 0) * 60000;
   const probeRows = (set.placeProbes && set.placeProbes.rows) || [];
   /* The harness's patience, not a limit on Atlas: a tool is abandoned at toolTimeoutMs and the turn budget
      is checked between steps, so a live turn ends inside turnBudgetMs plus one tool wait and the closing
@@ -230,6 +310,7 @@ async function evaluate() {
       if (!who.signedIn) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_signed_in', detail: who.error || (/refused/.test(session) ? session : '') }, rules)); continue; }
       if (dryRun) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'dry_run' }, rules)); continue; }
       if (stopAll) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_reached', detail: stopAll }, rules)); continue; }
+      if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
       /* each question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or
          the place probes, which set the geocoder's language — left behind */
       await boot(); await page.evaluate(PAGE.ensureAtlas);
@@ -246,7 +327,18 @@ async function evaluate() {
       if (askRes.err && !Number.isFinite(askRes.ms)) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'page_error', detail: askRes.err }, rules)); continue; }
       const raw = await page.evaluate(PAGE.observe);
       const obs = observeTurn(q, raw, askRes);
+      /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
+         asked for (it costs a use), and never for an empty reply (there is nothing to grade; the
+         deterministic grade already says 「absent」) */
+      if (rubric && q.answer && obs.measured) {
+        if (!String(obs.reply || '').trim()) obs.rubric = { measured: false, reason: 'no reply to grade' };
+        else {
+          const g = await page.evaluate(PAGE.grade, rubricRequest(q, obs.reply)).catch((e) => ({ error: String((e && e.message) || e) }));
+          obs.rubric = g.error ? { measured: false, reason: 'grader: ' + g.error } : Object.assign(readRubric(g.data), { model: g.model, provider: g.provider });
+        }
+      }
       const judged = judgeTurn(q, obs, rules);
+      if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
       if (obs.measured) judged.record = { operations: obs.operations, calls: obs.calls ? trimCalls(obs.calls) : null, steps: obs.steps, reply: obs.reply, snapshot: obs.snapshot };
       turns.push(judged);
       if (!obs.measured && obs.unmeasured === 'gate_refused') stopAll = 'the page refused ' + q.id + ' before Atlas ran: ' + obs.detail;
@@ -278,9 +370,17 @@ async function evaluate() {
     reference: (dryRun || partial) ? ((previous && previous.reference) || {}) : adv.reference,
     turns, probes,
   };
+  /* (atlas-quality-lab) the time series travels in the report itself: the previous night's history with
+     tonight appended (lab.mjs historyOf — a dry or partial run appends nothing) */
+  report.history = historyOf(previous, report);
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, 'atlas-eval.json'), JSON.stringify(report, null, 2) + '\n');
-  writeFileSync(join(outDir, 'atlas-eval.md'), renderMarkdown(report) + '\n');
+  writeFileSync(join(outDir, 'atlas-eval.md'), renderMarkdown(report) + '\n\n' + renderTrend(report.history) + '\n');
+  if (recordDir) {
+    mkdirSync(recordDir, { recursive: true });
+    for (const c of recorded) writeFileSync(join(recordDir, c.id + '.json'), JSON.stringify(c, null, 2) + '\n');
+    console.log('  recorded ' + recorded.length + ' cassette(s) → ' + recordDir + ' (copy the ones worth keeping into scripts/atlas-eval/cassettes/)');
+  }
   const rtOut = arg('--rotated-token-out');
   if (rtOut && rotated) writeFileSync(rtOut, rotated, { mode: 0o600 });   /* ⚠ never printed */
 
@@ -290,6 +390,8 @@ async function evaluate() {
   if (fatal) console.log('  ' + fatal);
   console.log('  turns: ' + M.measured + ' measured of ' + M.questions + (Object.keys(M.unmeasured).length ? ' · not measured: ' + Object.entries(M.unmeasured).map(([k, n]) => k + ' ×' + n).join(', ') : ''));
   console.log('  probes: ' + M.misresolution.probesMeasured + ' measured · misresolved: ' + (M.misresolution.probes.join(', ') || 'none'));
+  if (M.answers.graded) console.log('  answers right ' + M.answers.correct + '/' + M.answers.graded + ' (wrong ' + M.answers.incorrect + ', not stated ' + M.answers.absent + ')' + (M.answers.rubric.graded ? ' · grader pass ' + M.answers.rubric.pass + '/' + M.answers.rubric.graded : ''));
+  if (M.answers.graded) console.log('  answers right ' + M.answers.correct + '/' + M.answers.graded + ' (wrong ' + M.answers.incorrect + ', not stated ' + M.answers.absent + ')' + (M.answers.rubric.graded ? ' · grader pass ' + M.answers.rubric.pass + '/' + M.answers.rubric.graded : ''));
   if (M.measured) console.log('  reach ' + M.reach.reached + '/' + M.reach.of + ' · zero-op ' + M.zeroOpTurns.length + ' · cut ' + M.cutTurns.n + ' · same call again ' + M.secondOfSameOp.total + ' · over budget ' + M.overBudgetTurns.length);
   if (adv.regressions.length) console.log('  regressions: ' + adv.regressions.map((x) => x.key).join(', '));
   console.log('  report: ' + join(outDir, 'atlas-eval.md'));
@@ -307,7 +409,7 @@ function alarm() {
   const runUrl = arg('--run-url') || (report && report.runUrl) || '';
   /* a step before the evaluation can say why there is no report (the workflow's secret gate does) */
   let why = ''; try { why = arg('--why-file') ? readFileSync(arg('--why-file'), 'utf8').trim() : ''; } catch (_) { why = ''; }
-  let body = report ? renderMarkdown(Object.assign({}, report, { runUrl: runUrl || report.runUrl })) : [
+  let body = report ? renderMarkdown(Object.assign({}, report, { runUrl: runUrl || report.runUrl })) + '\n\n' + renderTrend(report.history) : [
     '# Atlas evaluation — no report', '', '* run: ' + (runUrl || '(unknown)'), '',
     why || 'The evaluation step produced no report, so nothing was measured tonight — read the run log.',
   ].join('\n');
@@ -331,15 +433,37 @@ function alarm() {
 
 function validate() {
   const set = loadQuestions();
+  const key = loadAnswerKey();
   return productRules().then(async () => {
     const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
     const C = makeAtlasCapabilities({});
-    return validateQuestionSet(set, (id) => !!C.resolve(id));
+    const has = (id) => !!C.resolve(id);
+    const bad = validateQuestionSet(set, has).concat(validateAnswerKey(key, has));
+    /* one id names one question across both sets — a report row and a cassette refer to it by id alone */
+    const seen = new Set(set.questions.map((q) => q.id));
+    for (const q of key.questions) if (seen.has(q.id)) bad.push('id «' + q.id + '» is in both questions.json and answer-key.json');
+    return bad;
   });
+}
+
+/* (atlas-quality-lab) --replay: every cassette, through the current code, judged — no model, no browser */
+async function replayAll() {
+  const { productModules } = await import('./atlas-eval/replay.mjs');
+  const { evaluateCassettes, loadCassettes, loadSets, renderReplay } = await import('./atlas-eval/lab.mjs');
+  const { pathToFileURL } = await import('node:url');
+  const P = await productModules((p) => import(pathToFileURL(join(ROOT, p)).href));
+  const res = await evaluateCassettes(loadCassettes(ROOT), { P, sets: loadSets(ROOT) });
+  const md = renderReplay(res);
+  const outDir = resolve(arg('--out', join(ROOT, 'test-results', 'atlas-eval')));
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, 'replay.md'), md + '\n');
+  console.log(md);
+  return res.some((r) => r.problems.length) ? 1 : 0;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (has('--alarm')) alarm();
+  else if (has('--replay')) process.exit(await replayAll());
   else if (has('--validate')) {
     const bad = await validate();
     if (bad.length) { for (const b of bad) console.log('  FAIL  ' + b); process.exit(1); }
