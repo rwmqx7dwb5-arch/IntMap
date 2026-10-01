@@ -340,9 +340,9 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 
 ### Edge Function の名簿（**ここが正本**）
 
-**Edge Functions は 21 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` /
+**Edge Functions は 22 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` /
 `client-errors` / `delete-account` / `fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
-`radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）。21 本すべてが
+`radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。22 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 ⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・

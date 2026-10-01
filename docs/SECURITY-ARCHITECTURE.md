@@ -278,12 +278,12 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are twenty-one Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty-two Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All twenty-one are declared there now
+flag that lives in a comment is not configuration. All twenty-two are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
-`fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard).
+`fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
 `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`) that the CLI bundles into the functions that import it.
@@ -311,6 +311,7 @@ flag that lives in a comment is not configuration. All twenty-one are declared t
 | `ais-feed` | false | none for readers — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL. **`?refresh=1` draws from one project-wide allowance** (one per `WORLD_TTL_MS`); beyond it, the cached answer and no upstream read | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
 | `client-errors` | false | none — a reader who is not signed in hits errors too. POST only, a body ceiling, an **Origin allow-list** (production + local preview), two shared token buckets and a row ceiling on the table | `record_client_error` RPC + the two `relay_take` buckets | — |
 | `reader-reports` | false | optional — a signed-out reader may send feedback. A bearer token is **verified with the Auth server** (`/auth/v1/user`) and a refused one is 401; POST only, a body ceiling, the same **Origin allow-list**, two shared token buckets | the `feedback` / `bug_reports` INSERT (the only writer since `20260930090000_anon_write_guard.sql`) + the two `relay_take` buckets | — |
+| `usage-count` | false | none — a signed-out reader is counted too, and a signed-in one is counted the same way (no Authorization is read). POST only, a body ceiling, the **Origin allow-list** `client-errors` uses, two shared token buckets, the declaration's allow-list of metrics and dimension rules (`usage-count/shape.js`) and a per-metric daily ceiling on distinct dimensions | `record_usage_counts` RPC + the two `relay_take` buckets | — |
 
 **`aviation-feed` is keyless but is NOT one of the relays**, and the distinction is a security
 property rather than a naming one. A relay forwards a URL **the caller named**, which is why the
@@ -364,7 +365,7 @@ Sizing (production ledger, 2026-10-01): at most 9 accounts under a week old used
 between them (≤ 192 requests even at 12 per turn); 14 of the 16 accounts ever charged were first charged
 on the day they signed up.
 
-⚠ **(client-error-log) `client-errors` and (anon-write-guard) `reader-reports` are the only functions a browser WRITES to
+⚠ **(client-error-log) `client-errors`, (anon-write-guard) `reader-reports` and (anonymous-usage-counts) `usage-count` are the only functions a browser WRITES to
 without a login**, which is why they carry four bounds where a relay carries one allow-list. It stores readers' uncaught exceptions in
 `public.client_errors` (read by admins only). ① **The report is scrubbed twice with one function** —
 `_shared/client-error-shape.js` runs in the browser before sending and again here before storing,
@@ -402,6 +403,26 @@ stored — `_shared/rate-limit.js` `hashedCallerKey`, shared with `client-errors
 the device (`js/feedback.js`), so a refusal loses nothing. `supabase/tests/14_anon_write_guard_test.sql`
 holds the DATABASE half as a census over the catalogue: **no table in `public` accepts a direct INSERT
 from `anon`**, whatever it is called.
+
+⚠ **(anonymous-usage-counts) `usage-count` adds to anonymous aggregate counters, and the declaration is the allow-list.**
+The operator chose (2026-10-01) to measure what marketing reaches with IntMap's own counters only — no cookie, no
+vendor, no person. ① **What may be counted is declared once**, in `supabase/functions/usage-count/shape.js`, which
+the browser (`js/usage-counts.js`) and the function import alike: a metric that is not declared, or a dimension its
+rule refuses (a campaign tag with `@` or a space, an address literal or a local name as a referrer, a malformed
+layer id), is **dropped on the server** whatever the browser sent, and only the three positions of each row are
+ever read — an extra key or position in the body cannot reach the database. ② **Nothing identifying is read or
+stored, by construction** — the function reads no Authorization (a signed-in reader is counted exactly like a
+signed-out one) and no User-Agent (the device class is a two-valued dimension); the day is the server's UTC
+date; `public.usage_counts` is exactly `(day, metric, dimension, count)` (`supabase/tests/16_usage_counts_test.sql`
+asserts the column set); the per-caller bucket is the same HMAC of the address `client-errors` uses.
+③ **Bounded, and fail closed**: POST only, a 16 KiB body, at most 64 rows, the `Origin` allow-list `client-errors`
+uses, a per-caller bucket (120 requests an hour) and a project bucket (100,000 a day, `USAGE_COUNT_GLOBAL_PER_DAY`),
+a per-request maximum per metric (once per page load, except the number of Atlas questions), and a **per-metric
+daily ceiling on distinct dimensions** enforced inside `record_usage_counts` (a new value is refused at the ceiling,
+a known one still counts) — the bound on what a scripted caller can add to the table. ④ **The reader can stop it**:
+nothing is sent with Do Not Track or Global Privacy Control, and the Settings switch (or Atlas, `settings.usageCounts`)
+stops it at once and discards what was not yet sent. Rows are purged after 400 days (pg_cron `usage-counts-purge`);
+an admin reads totals through `usage_counts_summary`, which is SECURITY INVOKER so the admin-only SELECT policy decides.
 
 ⚠ **(anon-write-guard) `?refresh=1` on `aviation-feed` and `ais-feed` draws from ONE project-wide allowance.**
 Their read budget (`_shared/read-budget.js`, #R801) bounds one isolate, and a caller who spread `?refresh=1`

@@ -278,3 +278,14 @@ verify_jwt = false
 # user_id / email come from that account, never from the body.
 [functions.reader-reports]
 verify_jwt = false
+
+# usage-count (anonymous-usage-counts) is where a reader's browser adds to IntMap's anonymous usage counters —
+# (UTC day, metric, dimension) -> count, declared once in supabase/functions/usage-count/shape.js.
+# verify_jwt is OFF because a reader who is not signed in is counted too (and a signed-in one is
+# counted exactly the same way: no account is read). What stands in front of it: POST only, a body
+# ceiling, the Origin allow-list client-errors uses, two shared token buckets (per caller — an HMAC
+# of the address, never the address — and project-wide per day), the declaration's allow-list of
+# metrics and dimension rules, and a per-metric daily ceiling on distinct dimensions in the table.
+# It stores no IP, user id, session, User-Agent or time finer than the day.
+[functions.usage-count]
+verify_jwt = false
