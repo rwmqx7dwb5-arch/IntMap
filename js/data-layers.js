@@ -178,6 +178,11 @@ export function dataLayers(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
+  /* (safe-dom-template) the markup tag (js/safe-html.js). A value interpolated into html`…` is escaped for
+     where it lands — text, an attribute value, the start of an href/src — unless it is markup a template
+     made, so nothing written through it can be forgotten. A builder that returns html`…` is put into
+     another html`…`, never joined with `+` (that makes it text again, and the next template escapes it). */
+  const html=window.IntMapSafe.markup, flagM=(f)=>{ const S=window.IntMapSafe; return S.trusted(S.flag(f)); };   /* (safe-dom-template) a flag is markup IntMapSafe.flag built — one owner for the three tooltips */
   /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, AND `isMobile()` IS A 768 px MEDIA QUERY ══
      Same rule #R232 established and #R498 swept: an iPhone turned sideways is 844 px wide, so
      `isMobile()` flips FALSE on the very same phone — and every COST / MEMORY / CAPABILITY decision
@@ -550,20 +555,20 @@ export function dataLayers(HOST){
     function _legendDesc(id){
       const d=LEGEND_DESC[id], n=LEGEND_NOTE[id];
       const desc=(d&&d[0])?LDL.arr(d):'';
-      const note=(n&&n[0])?('<div class="dl-caveat">'+LDL.arr(n)+'</div>'):'';
+      const note=(n&&n[0])?html`<div class="dl-caveat">${LDL.arr(n)}</div>`:'';
       if(!desc&&!note) return '';
       /* ⚠ ONE `.dl-desc` WRAPPER, note inside it. ensureGenericLegend() refreshes
          this block on every language change by removing `.dl-desc` and re-adding —
          two siblings would leave the old note behind and the box would grow a
          duplicate paragraph per switch. */
-      return '<div class="dl-desc">'+desc+note+'</div>';
+      return html`<div class="dl-desc">${desc}${note}</div>`;
     }
     window._legendDescHTML=_legendDesc;
     function makeLegend(id,bottomPx,title,gradient,labels,hint){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
       el.style.bottom=bottomPx+'px';
-      const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${IntMapLang.t(HOST.lang,'No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`:'';
-      el.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">×</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
+      const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?html`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${IntMapLang.t(HOST.lang,'No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`:'';
+      el.innerHTML=html`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">×</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?html`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
       mc.appendChild(el);
       el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
       /* Drag (mouse + touch) is wired centrally by wireDrag() once it is defined below, so every
@@ -735,8 +740,8 @@ export function dataLayers(HOST){
       {c:'#E6ECF2',d:1,n:LA('Baselines (archipelagic / straight / normal)','基線（群島・直線・通常）','Basislinien','Исходные линии','Líneas de base')},
       {c:'#C8D0D8',n:LA('Connection line','接続線','Verbindungslinie','Соединительная линия','Línea de conexión')}
     ];
-    const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${LDL.arr(cat.n)}</span></div>`).join('');
-    lgdEEZ.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
+    const eezRows=EEZ_CATS.map(cat=>html`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${LDL.arr(cat.n)}</span></div>`);
+    lgdEEZ.innerHTML=html`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
       <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
       <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${IntMapLang.t(HOST.lang,'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.','EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。','AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.','ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.','ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.')}</div>
       <div class="dl-hint">${IntMapLang.t(HOST.lang,'Source: MarineRegions WMS','出典: MarineRegions WMS','Quelle: MarineRegions WMS','Источник: MarineRegions WMS','Fuente: MarineRegions WMS')}</div>`;
@@ -798,7 +803,7 @@ export function dataLayers(HOST){
     /* Sea-level-rise legend (#24) */
     lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
     const slL=window._seaLevelM||0;
-    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
+    lgdSeaLevel.innerHTML=html`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${IntMapLang.t(HOST.lang,'Flooded (≤ today ','浸水域 (≤ 現海面 ','Überflutet (≤ heute ','Затоплено (≤ текущего ','Inundado (≤ hoy ')}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${HOST.lang==='jp'?')':')'}</div>
       <label style="display:flex; align-items:center; gap:8px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">-150<input type="range" class="sl-legend-range" min="-150" max="70" step="1" value="${Math.max(-150,Math.min(70,slL))}" style="flex:1; accent-color:var(--primary-color);">+70 m</label>
       <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-fill); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${IntMapLang.t(HOST.lang,'Set','設定','Festlegen','Задать','Fijar')}</button></div>
@@ -1127,22 +1132,22 @@ export function dataLayers(HOST){
        legend's as-of text, never a toast (a master-clock sweep would fire five of them). */
     function _dateNote(id){ const a=_dateAsked[id]; if(!a||a===layerDates[id]) return '';
       return a+': '+IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'); }
-    const _CHEV_L='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>';
-    const _CHEV_R='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
+    const _CHEV_L=html`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>`;
+    const _CHEV_R=html`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`;
     /* the calendar and its two steps, ONE markup for both the legend and the Layers-panel row.
        ⚠ THE FIELD IS NAMED HERE, because this is the one place that knows what it is: 「Layer date」 +
        the layer's own name, both REFERENCED rather than copied (aria-labelledby: the field's own
        translated aria-label, then the row's name span), so a language change retitles it through the
        same two mechanisms that retitle what is on screen. A wrapping <label> cannot do it — the first
        labelable thing inside this box is the ‹ step button, so that is what such a label named. */
+    /* (safe-dom-template) the input's extra attributes arrive as values ({cls, style}), not as a string of
+       markup spliced between attributes — the tag places only values, and the class is there or not */
     function _dateBoxHTML(id,inputId,inputAttrs){
-      const b=_dateBounds(id)||{min:'',max:''};
-      const esc=(v)=>window.IntMapSafe.html(v==null?'':v);
-      return '<span class="dl-datebox" data-dl="'+id+'">'
-        +'<button type="button" class="dl-step" data-step="-1">'+_CHEV_L+'</button>'
-        +'<input type="date" id="'+inputId+'" aria-label="'+esc(t('lyrTime'))+'" data-i18n-aria="lyrTime" aria-labelledby="'+inputId+' lyrname-'+id+'" '+(inputAttrs||'')+' value="'+esc(layerDates[id])+'" min="'+esc(b.min)+'" max="'+esc(b.max)+'">'
-        +'<button type="button" class="dl-step" data-step="1">'+_CHEV_R+'</button>'
-        +'</span>';
+      const b=_dateBounds(id)||{min:'',max:''}, a=inputAttrs||{};
+      const input=a.cls
+        ? html`<input type="date" id="${inputId}" aria-label="${t('lyrTime')}" data-i18n-aria="lyrTime" aria-labelledby="${inputId} lyrname-${id}" class="${a.cls}" style="${a.style}" value="${layerDates[id]}" min="${b.min}" max="${b.max}">`
+        : html`<input type="date" id="${inputId}" aria-label="${t('lyrTime')}" data-i18n-aria="lyrTime" aria-labelledby="${inputId} lyrname-${id}" style="${a.style}" value="${layerDates[id]}" min="${b.min}" max="${b.max}">`;
+      return html`<span class="dl-datebox" data-dl="${id}"><button type="button" class="dl-step" data-step="-1">${_CHEV_L}</button>${input}<button type="button" class="dl-step" data-step="1">${_CHEV_R}</button></span>`;
     }
     /* one wiring for both boxes: touching the calendar asks GIBS what it really has, a change is
        snapped onto that product's own grid and WRITTEN BACK into the field (so the value the reader
@@ -1326,8 +1331,7 @@ export function dataLayers(HOST){
               _refreshLegendDates(); }); }
           /* (#R298) the calendar is bounded by what THIS product publishes and carries a one-frame
              step on either side — `max` used to be one shared 今日−2 and there was no `min` at all. */
-          else { w.innerHTML='🕒 '+_dateBoxHTML(id,'lgdt-'+id,'class="dl-date" style="'+inSty+'"')
-              +'<span class="dl-note" data-dl="'+id+'"></span>';
+          else { w.innerHTML=html`🕒 ${_dateBoxHTML(id,'lgdt-'+id,{cls:'dl-date',style:inSty})}<span class="dl-note" data-dl="${id}"></span>`;
             _wireDateBox(id,w); }
           lg.appendChild(w);
         }
@@ -1469,10 +1473,10 @@ export function dataLayers(HOST){
         /* (#R298) 「データのない時間を選べないように」 — the field is bounded by what THIS product
            publishes (DATED_SPEC), with a one-frame step on either side and a line underneath for the
            days it does not have. It used to be `max="今日"` with no `min` and no steps at all. */
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: ${_dateBoxHTML(id,'dt-'+id,'style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"')}</label><div class="dl-note" data-dl="${id}"></div></div>`;
+        extra=html`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: ${_dateBoxHTML(id,'dt-'+id,{style:'padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;'})}</label><div class="dl-note" data-dl="${id}"></div></div>`;
       }
       if(isTraffic){
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('trafficFilter')||'Filter'}: <select id="ft-${id}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="all" data-i18n="filtAll">${t('filtAll')||'All'}</option><option value="civilian" data-i18n="filtCiv">${t('filtCiv')||'Civilian'}</option><option value="military" data-i18n="filtMil">${t('filtMil')||'Military'}</option></select></label></div>`;
+        extra=html`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('trafficFilter')||'Filter'}: <select id="ft-${id}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="all" data-i18n="filtAll">${t('filtAll')||'All'}</option><option value="civilian" data-i18n="filtCiv">${t('filtCiv')||'Civilian'}</option><option value="military" data-i18n="filtMil">${t('filtMil')||'Military'}</option></select></label></div>`;
       }
       const isSeaLevel=(id==='sealevel');
       if(isSeaLevel){
@@ -1482,7 +1486,7 @@ export function dataLayers(HOST){
            becomes a NUMBER before it is ever spliced into markup — Number() is the barrier here, and
            it is also the only thing that makes the clamp below mean anything */
         const _sl=Number(window._seaLevelM)||0;
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${IntMapLang.t(HOST.lang,'Sea-level','海面変動','Meeresspiegel','Уровень моря','Nivel del mar')}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,_sl))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${(_sl>=0?'+':'')+_sl} m</span></label></div>`;
+        extra=html`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${IntMapLang.t(HOST.lang,'Sea-level','海面変動','Meeresspiegel','Уровень моря','Nivel del mar')}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,_sl))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${(_sl>=0?'+':'')+_sl} m</span></label></div>`;
       }
       /* (#R15c) EVERY opacity layer now owns a legend (specific, generic, or the wind legend), so the
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
@@ -1500,7 +1504,7 @@ export function dataLayers(HOST){
       const defOn=(id==='nightside')
         ? (function(){ try{ return !window.IntMapNightSide||window.IntMapNightSide.isOn(); }catch(_){ return true; } })()
         : (window.IntMapDefaultLayers||[]).indexOf('dl-'+id)>=0;
-      w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"${defOn?' checked':''}> <span id="lyrname-${id}" data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" aria-label="${t('opacity')}" data-i18n-aria="opacity" aria-labelledby="op-${id} lyrname-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
+      w.innerHTML=html`<label class="layer-option"><input type="checkbox" id="dl-${id}"${defOn?' checked':''}> <span id="lyrname-${id}" data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" aria-label="${t('opacity')}" data-i18n-aria="opacity" aria-labelledby="op-${id} lyrname-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
       if(defOn){ w.classList.add('on'); const ex0=w.querySelector('.lyr-extras'); if(ex0) ex0.style.display='block'; }
       dd.appendChild(w);
       const cb=w.querySelector('#dl-'+id);
@@ -2134,7 +2138,7 @@ export function dataLayers(HOST){
         if(!e.features.length) return;
         const s=countryStats[e.features[0].id]; if(!s) return;
         const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${meta.label()}: <b style="color:var(--text-main);">${meta.fmt(s)}</b></div>`);
+        window.setMapTooltipHTML(el,String(html`<div style="font-weight:600;font-size:14px;">${s.flag?[flagM(s.flag),' ']:''}${cName(s)}</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${meta.label()}: <b style="color:var(--text-main);">${meta.fmt(s)}</b></div>`));
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave',id+'-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
@@ -2265,8 +2269,8 @@ export function dataLayers(HOST){
         let n=0; Object.keys(joinTable).forEach(code=>{ if(joinTable[code]!==y) return;
           if(upTo!=null&&leftTable&&leftTable[code]&&upTo>=leftTable[code]) return; n++; });
         if(!n) return;
-        rows.push('<span style="display:inline-flex;align-items:center;gap:4px;"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+colors[y]+';"></i>'+y+' ('+n+')</span>'); });
-      return '<div class="dl-yearkey" style="display:flex;flex-wrap:wrap;gap:5px 9px;margin-top:6px;font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums;">'+rows.join('')+'</div>'; }
+        rows.push(html`<span style="display:inline-flex;align-items:center;gap:4px;"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${colors[y]};"></i>${y} (${n})</span>`); });
+      return html`<div class="dl-yearkey" style="display:flex;flex-wrap:wrap;gap:5px 9px;margin-top:6px;font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums;">${rows}</div>`; }
     /* the two-button switch every one of these legends gets. `get`/`set` keep the state with its
        own layer rather than making a second copy here. */
     function styleModeRow(el,cls,get,set){ if(!el) return;
@@ -2275,7 +2279,7 @@ export function dataLayers(HOST){
                  ['byYear', ()=>IntMapLang.t(HOST.lang,'By accession year','加盟年別','Nach Beitrittsjahr','По году вступления','Por año de ingreso')]];
       if(!r){ r=document.createElement('div'); r.className=cls;
         r.style.cssText='display:flex;gap:5px;margin-top:7px;';
-        r.innerHTML=OPT.map(o=>'<button type="button" data-s="'+o[0]+'" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>').join('');
+        r.innerHTML=html`${OPT.map(o=>html`<button type="button" data-s="${o[0]}" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>`)}`;
         const bar=el.querySelector('.dl-scale'); if(bar&&bar.parentNode===el) el.insertBefore(r,bar.nextSibling); else el.appendChild(r);
         r.addEventListener('click',(ev)=>{ const b=ev.target.closest('button[data-s]'); if(b&&r.contains(b)) set(b.getAttribute('data-s')); }); }
       r.querySelectorAll('button[data-s]').forEach(b=>{ const k=b.getAttribute('data-s');
@@ -2359,18 +2363,18 @@ export function dataLayers(HOST){
         const jp=HOST.lang==='jp';
         const row=document.createElement('div'); row.className='nato-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
         if(typeof isMobile==='function'&&isMobile()){
-          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
-            NATO_YEARS.map(y=>'<option value="'+y+'"'+(y===_natoYear?' selected':'')+'>'+y+'</option>').join('')+'</select></label>';
+          row.innerHTML=html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año')} <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">${
+            NATO_YEARS.map(y=>html`<option value="${y}"${y===_natoYear?' selected':''}>${y}</option>`)}</select></label>`;
           row.querySelector('.nato-year-sel').addEventListener('change',(e)=>{ _natoYear=+e.target.value||_natoYear; applyNato(); const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; });
         } else {
           /* (#R27) Only the START and END years are labeled (a flex space-between row), not every
              accession year — the dense per-year ticks collided (1999/2004/2009/2017/2020/2023/2024 all
              bunched at the right) which was the "範囲のテキストが重なるクソUI". The selected year shows in
              the <b> readout, so no information is lost. */
-          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
-            '<input type="range" min="0" max="'+(NATO_YEARS.length-1)+'" step="1" value="'+NATO_YEARS.indexOf(_natoYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
-            '<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+NATO_YEARS[0]+'</span><span>'+NATO_YEARS[NATO_YEARS.length-1]+'</span></span>'+
-            '</span></label> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_natoYear+'</b>';
+          row.innerHTML=html`${[html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año')} <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">`,
+            html`<input type="range" min="0" max="${NATO_YEARS.length-1}" step="1" value="${NATO_YEARS.indexOf(_natoYear)}" style="width:100%;display:block;margin:0;box-sizing:border-box;">`,
+            html`<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>${NATO_YEARS[0]}</span><span>${NATO_YEARS[NATO_YEARS.length-1]}</span></span>`,
+            html`</span></label> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">${_natoYear}</b>`]}`;
           row.querySelector('input').addEventListener('input',(e)=>{ _natoYear=NATO_YEARS[+e.target.value]||_natoYear; const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; clearTimeout(natoLegend._t); natoLegend._t=setTimeout(applyNato,120); });
         }
         el.appendChild(row);
@@ -2404,7 +2408,7 @@ export function dataLayers(HOST){
       let r=el.querySelector('.dl-milmode');
       if(!r){ r=document.createElement('div'); r.className='dl-milmode';
         r.style.cssText='display:flex;gap:5px;margin-top:7px;';
-        r.innerHTML=MIL_MODES.map(m=>'<button type="button" data-m="'+m[0]+'" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>').join('');
+        r.innerHTML=html`${MIL_MODES.map(m=>html`<button type="button" data-m="${m[0]}" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>`)}`;
         const bar=el.querySelector('.dl-scale'); if(bar&&bar.parentNode===el) el.insertBefore(r,bar.nextSibling); else el.appendChild(r);
         r.addEventListener('click',(ev)=>{ const b=ev.target.closest('button[data-m]'); if(b&&r.contains(b)) setMilMode(b.getAttribute('data-m')); }); }
       r.querySelectorAll('button[data-m]').forEach(b=>{ const k=b.getAttribute('data-m');
@@ -2434,10 +2438,10 @@ export function dataLayers(HOST){
       GE().events.onLayer('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
         const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
         const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div>`+
-          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`);
+        window.setMapTooltipHTML(el,String(html`${[html`<div style="font-weight:600;font-size:14px;">${s.flag?[flagM(s.flag),' ']:''}${cName(s)}</div>`,
+          html`<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`,
+          html`<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`,
+          html`<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`]}`));
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','nato-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
@@ -2497,10 +2501,10 @@ export function dataLayers(HOST){
         } else {
           /* (#R27) Same fix as NATO: label only the first/last year (space-between), not every dense
              enlargement year, so the range text no longer overlaps. */
-          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
-            '<input type="range" min="0" max="'+(EU_YEARS.length-1)+'" step="1" value="'+EU_YEARS.indexOf(_euYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
-            '<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+EU_YEARS[0]+'</span><span>'+EU_YEARS[EU_YEARS.length-1]+'</span></span>'+
-            '</span></label> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_euYear+'</b>';
+          row.innerHTML=html`${[html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año')} <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">`,
+            html`<input type="range" min="0" max="${EU_YEARS.length-1}" step="1" value="${EU_YEARS.indexOf(_euYear)}" style="width:100%;display:block;margin:0;box-sizing:border-box;">`,
+            html`<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>${EU_YEARS[0]}</span><span>${EU_YEARS[EU_YEARS.length-1]}</span></span>`,
+            html`</span></label> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">${_euYear}</b>`]}`;
           row.querySelector('input').addEventListener('input',(e)=>{ _euYear=EU_YEARS[+e.target.value]||_euYear; const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; clearTimeout(euLegend._t); euLegend._t=setTimeout(applyEu,120); });
         }
         el.appendChild(row);
@@ -2524,8 +2528,8 @@ export function dataLayers(HOST){
       if(_euHoverWired) return; _euHoverWired=true;
       GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
         const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div>`+
-          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`);
+        window.setMapTooltipHTML(el,String(html`${[html`<div style="font-weight:600;font-size:14px;">${s.flag?[flagM(s.flag),' ']:''}${cName(s)}</div>`,
+          html`<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`]}`));
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','eu-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
@@ -3210,17 +3214,17 @@ export function dataLayers(HOST){
          legend element is not in the DOM at that moment (measured: tests/atlas-shell-ui-checks.test.mjs (#R151) removes it between
          ticks), this wrote innerHTML on null and the whole change handler died uncaught */
       if(!lg) return;
-      const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${IntMapLang.t(HOST.lang,'Clear selection','選択解除','Auswahl aufheben','Снять выделение','Quitar selección')}</button>`:'';
+      const clearBtn=kSelected.size>0?html`<button class="kl-clear" id="kl-clear">${IntMapLang.t(HOST.lang,'Clear selection','選択解除','Auswahl aufheben','Снять выделение','Quitar selección')}</button>`:'';
       const dragTitle=IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover');
       /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
          old code injected it once after setup and buildLegend() wiped it, so the legend "couldn't be
          moved" (#22). */
       /* (#R12) Period pulldown — default present-day, switch to historical eras. */
       const perLabel=IntMapLang.t(HOST.lang,'Period','期間','Zeitraum','Период','Período');
-      const periodSel=`<div class="kl-period"><label for="kl-period">${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
+      const periodSel=html`<div class="kl-period"><label for="kl-period">${perLabel}</label><select id="kl-period">${window.KOPPEN_PERIODS.map(([p])=>html`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`)}</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">×</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return `<div class="kl-item${kSelected.has(code)?' sel':''}" role="button" tabindex="0" aria-pressed="${kSelected.has(code)?'true':'false'}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
+      lg.innerHTML=html`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">×</button><h4>${t('lgdTitle')}</h4>${periodSel}<div class="kl-scroll">${KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return html`<div class="kl-item${kSelected.has(code)?' sel':''}" role="button" tabindex="0" aria-pressed="${kSelected.has(code)?'true':'false'}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?html`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; })}</div>${clearBtn}<div class="kl-hint">${_imTouchPrimary()?(IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -3331,11 +3335,11 @@ export function dataLayers(HOST){
     }
     function showKoppenInfo(code,x,y){
       const info=koppenCriteria(code), nm=window.kName(code);   /* (#R245) the one lookup */
-      const lines=info.map(s=>`<li>${convTempText(s)}</li>`).join('');   /* (#R236) already in the reader's language */
+      const lines=info.map(s=>html`<li>${convTempText(s)}</li>`);   /* (#R236) already in the reader's language */
       const col=(KCOL.find(k=>k[0]===code)||[,[150,150,150]])[1];
       let pop=document.getElementById('koppen-info-pop');
       if(!pop){ pop=document.createElement('div'); pop.id='koppen-info-pop'; pop.className='koppen-info-pop'; mc.appendChild(pop); }
-      pop.innerHTML=`<button class="kip-x" title="${t('close')}">×</button><div class="kip-h"><span class="kl-sw" style="background:rgb(${col[0]},${col[1]},${col[2]})"></span><b>${code}</b> · ${nm}</div><ul>${lines}</ul>`;
+      pop.innerHTML=html`<button class="kip-x" title="${t('close')}">×</button><div class="kip-h"><span class="kl-sw" style="background:rgb(${col[0]},${col[1]},${col[2]})"></span><b>${code}</b> · ${nm}</div><ul>${lines}</ul>`;
       pop.style.display='block';
       const r=mc.getBoundingClientRect();
       pop.style.left=Math.max(8,Math.min((x||0)-r.left, r.width-248))+'px';
@@ -3358,7 +3362,7 @@ export function dataLayers(HOST){
          stays outside it — it repeats the slider's own value, and inside the label the name would
          change on every drag. js/weather.js and js/waves.js build the same row the same way. */
       const row=document.createElement('div'); row.className='dl-op-row';
-      row.innerHTML=`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"></label><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
+      row.innerHTML=html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"></label><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
       const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row);
       const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
@@ -3481,7 +3485,7 @@ export function dataLayers(HOST){
          gets its inline-table entry rather than English at index 0. */
       const nm=LDL.arr(GENERIC_LEG[id]);
       const _dragT=IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите','Arrastra para mover');
-      if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">×</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
+      if(!el.querySelector('h4')){ el.innerHTML=html`<span class="dl-drag" title="${_dragT}">⋮⋮</span><button class="layer-popup-x" data-x="${cbId||id}" title="${t('close')}">×</button><h4>${nm}</h4>`;   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
@@ -3540,7 +3544,7 @@ export function dataLayers(HOST){
       /* (#R40) attach the 1-line "what is this data" explanation to the generic legend too (it was only on the
          dedicated climate legends before). Refreshed each call so it tracks the language; well-known metrics
          (population/GDP/area/density) have no entry and get nothing. */
-      try{ if(window._legendDescHTML){ const dh=window._legendDescHTML(id); const old=el.querySelector('.dl-desc'); if(old) old.remove(); if(dh) el.insertAdjacentHTML('beforeend',dh); } }catch(_){}
+      try{ if(window._legendDescHTML){ const dh=window._legendDescHTML(id); const old=el.querySelector('.dl-desc'); if(old) old.remove(); if(dh) el.insertAdjacentHTML('beforeend',html`${dh}`); } }catch(_){}
       return el;
     }
     window._ensureGenericLegend=ensureGenericLegend;

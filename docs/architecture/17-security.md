@@ -24,6 +24,16 @@
 - `.url(s,{allowData})` ＝ http(s) / mailto / tel（＋ ラスタの `data:image`。SVG は不可）のみ許可し、
   `javascript:` / `data:text/html` 等は `''` にする。href / src / style は `html(url(s))` で包む。
 - `.text(s)` ＝ HTML 断片の文字だけ（不活性な文書で解析。下記）。
+- `.markup` ＝ **タグ付きテンプレート**（各ファイルでは `html` と別名にする）。差し込まれた値は、テンプレートの
+  静的な文面から読んだ**落ちる場所**に応じて既定でエスケープされる——テキストと引用符つき属性値は `html()`、
+  引用符つき `href` / `src` 等の**先頭**の値は `url(v,{allowData:true})`、属性と属性のあいだは裸の属性名だけ
+  （`<option${sel?' selected':''}>`）。タグ名・属性名・引用符の無い値・`on*` 属性・`srcdoc`・SVG アニメーションの `to` 等・`<script>` / `<style>` の中・
+  コメント・タグの途中で終わるテンプレートは**拒否**する（初回使用時の `TypeError`）。`null` / `undefined` は空、
+  配列は要素ごとに同じ規則で連結。戻り値は**マークアップ値**で、別のテンプレートへはそのまま入る（二重に
+  エスケープしない）。⚠ `+` で連結すると文字列に戻り、次のテンプレートでテキストとして扱われる——組み立て関数は
+  ``html`…` `` を返し、受け手も ``html`…` `` に入れ、sink でだけ文字列になる。
+- `.trusted(x)` ＝ テンプレートが作っていないマークアップ（`IntMapSafe.flag` の画像など）を入れる唯一の口。
+  呼び出しは全部、書かれた場所で `x` を門が判定する。
 - **読み込み方は全経路で同じファイル。** アプリは `src/main.js` が固定の 3 枠の直後に import（その 3 枠と
   その依存、`index.html` の inline script は `IntMapSafe` を使わない）、`sources.html`・`admin.html` は描画する
   script より前に `<script src>`（`vite.config.js` がコピー）、ES module は `import './safe-html.js'` して
@@ -49,6 +59,14 @@
   両方向に照合する（増えたら落ち、減ったら `--update` で下げさせる）。**未判定は「危険」ではない**——
   解析が辿れない自前の数値やラベルが大半で、だから拒否でなく台帳である。`--why` は葉を定義まで辿って
   決め手の読み取り（記録の欄・引数・他モジュール）を印字する。
+  同じ規則が `.markup` タグを読む——タグ付きテンプレートは何を差し込んでも安全、`.trusted(x)` は呼ばれた
+  場所で `x` を判定、`trusted` を呼ばずに参照する箇所（別名・コールバック）はそれ自体が未判定の葉。タグ自身の
+  `plan` を全タグ付きテンプレートの静的な文面に走らせ、実行時に拒否されるテンプレートは `check:static` で落ちる。
+  母集合は `js/**/*.js` と、**追跡されている全 `*.html` の inline script**（`git ls-files` で発見し、
+  `scripts/safe-output.mjs` の `inlineScripts` で読む——両規則が同じ読み手）。`js/data-layers.js`・
+  `js/stats-compare.js`・`admin.html` は未判定だった sink を全部タグで組み、未判定の値を持たない。
+  ⚠ 門に見えないもの：別モジュールで引数を sink に渡す関数（`js/map-tooltip.js` の `setMapTooltipHTML`）は
+  そのモジュールの葉 1 つで、呼び手が渡す文字列は測られない。
 - **書き込む操作要素は自分でそう述べる。** Atlas がボタンを押す前の確認（`js/atlas-controls.js`
   `controlEffect` → `js/atlas-executor.js` 4b）は要素の `data-effect` しか読まない。`scripts/data-effects.mjs`
   （`check:static` の `data-effect` 規則）が、Supabase の書き込み・`rpc`・`functions.invoke`・認証の変更・
