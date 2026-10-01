@@ -98,6 +98,8 @@ import { readCapped, RelayError } from "../_shared/relay-guard.js";
    plus the Anthropic prompt-cache breakpoints). */
 import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
 import { usageMeter, withPromptCache } from "../_shared/ai-usage.js";
+/* (supporter-funnel) every value that differs by plan is one column of _shared/plans.js */
+import { planColumn } from "../_shared/plans.js";
 /* (atlas-live-stream) The provider's server-sent events, read twice: as previews for the reader while
    they arrive, and folded back into the body the parsers below already read. */
 import { providerStream, previewSink, sseEncode, HEARTBEAT_MS } from "../_shared/ai-stream.js";
@@ -138,7 +140,9 @@ const json = (body: unknown, status = 200) =>
    body is parsed. Which makes the header a claim about a body nobody has read yet, so it is
    VERIFIED against `task` once the body IS parsed, and a mismatch refunds and 400s. Without that
    check "x-intmap-lane: gloss" would be a cheap door into the expensive tasks. */
-const GLOSS_PLAN_LIMITS: Record<string, number> = { free: 60, plus: 300, pro: 1_000, unlimited: 1_000_000 };
+/* (supporter-funnel) the numbers are the plan table's `aiGlossPerDay` column (_shared/plans.js), not a
+   second table here — a plan added there is a plan this lane knows. */
+const GLOSS_PLAN_LIMITS: Record<string, number> = planColumn("aiGlossPerDay");
 const GLOSS_LANE = "gloss";
 const MAX_GLOSS_PROMPT = 8_000;   // the selection + the sentence around it + the question that produced the answer
 /* (#R318) ONE USER TURN = ONE USE. Atlas finishes one request with up to three calls (planner +

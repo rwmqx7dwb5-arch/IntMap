@@ -22,6 +22,7 @@ import { sharedIds, LAYERS, BASE, HIDDEN, BETA, layerDeclaration } from './layer
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung; (fetch-deadline-layer) and each rung's clock */
 import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
 import { IntMapTime } from './chronos.js';
+import { compareTime } from './compare.js';   /* (time-compare-lapse) the comparison window's own instant, for the share link */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 
@@ -3638,7 +3639,9 @@ export function viewHash(HOST){
       /* (#R101) time-travel state saved as the kernel's ISO instant (mode-independent — the slider is now year-based),
          so a shared link reproduces the exact moment; compare state too. */
       try{ const T=IntMapTime; if(T&&T.state){ const s=T.state(); if(s&&!s.isLive&&s.iso) h+='&tt='+encodeURIComponent(s.iso); } }catch(_){}
-      try{ const cw=document.getElementById('compare-window'); if(cw && getComputedStyle(cw).display!=='none') h+='&cmp='+(cw.classList.contains('cmp-xray')?'x':'1'); }catch(_){}
+      try{ const cw=document.getElementById('compare-window'); if(cw && getComputedStyle(cw).display!=='none'){ h+='&cmp='+(cw.classList.contains('cmp-xray')?'x':'1');
+        /* (time-compare-lapse) …and the compare window's own instant, when it holds one (js/compare.js `timeParam`: '' while it follows the main map) */
+        const ct=compareTime.param(); if(ct) h+='&ct='+encodeURIComponent(ct); } }catch(_){}
       /* (#R42) satellite base view too, so "今の状態をそのまま" share/restore reproduces Map-vs-Satellite. */
       try{ if(typeof HOST.mapType!=='undefined' && HOST.mapType==='sat') h+='&sat=1'; }catch(_){}
       /* (#R211) 「視点の高度と角度」 — bearing and pitch were already in `v`; 3-D terrain was not, and
@@ -3676,7 +3679,10 @@ export function viewHash(HOST){
          switched off, at the newer link's instant, and js/war-layer.js then moved the clock to the war's first
          day. MEASURED: `l=dl-ww2&tt=1942-11-01` and, 1 s later, `tt=1985-07-01` ended on 1939-08-23. So each
          restore takes a generation, and a step whose restore is no longer the latest does nothing. (The
-         hashchange listener below still queues a link that arrives mid-restore rather than calling this.) */
+         hashchange listener below still queues a link that arrives mid-restore; the queued one starts from this
+         restore's closing step, so it takes the next generation and every later step of this one — the 4 s
+         simulator pass included — stops. Every step is staged through `later`: layers, clock, terrain, simulators,
+         the compare window and its own instant `ct`.) */
       const my=++restoreGen; const later=(fn,ms)=>setTimeout(()=>{ if(my===restoreGen) fn(); },ms);
       /* (#R211) a plain reload restores everything too — unless the previous attempt at this very
          hash did not survive, in which case only the view comes back (see `crashed` above). */
@@ -3756,7 +3762,8 @@ export function viewHash(HOST){
         if(sm){ const obj=unpackSims(sm[1]);
           if(obj) [1500,4000].forEach(ms=>later(()=>{ try{ window.IntMapShareState.apply(obj); }catch(_){} },ms)); }
         const cm2=/[#&]cmp=([^&]+)/.exec(H);
-        if(cm2){ later(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); if(cm2[1]==='x'){ later(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
+        const ct2=/[#&]ct=([^&]+)/.exec(H);   /* (time-compare-lapse) the compare window's own instant */
+        if(cm2){ later(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); compareTime.set(ct2?{param:decodeURIComponent(ct2[1])}:{follow:true});   /* no `ct` is a statement too, as no `tt` is (above): the window follows the main map's clock */ if(cm2[1]==='x'){ later(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
       }
       later(()=>{ restoring=false;
         /* (share-embed-distribution) a link that arrived while this one was being applied — see the hashchange listener */
@@ -3764,6 +3771,7 @@ export function viewHash(HOST){
       booted=true;   /* (#R244) the boot restore has read the address — the bar may be written now */
     }
     GE().events.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
+    compareTime.on(()=>{ clearTimeout(t); t=setTimeout(save,300); });   /* (time-compare-lapse) the window's instant is part of the link */
     /* (#R42b) ROOT CAUSE of "コピーしたリンクを開いてもそのままにならない": pasting a link into the SAME tab is a
        hash-only navigation — no reload — so restore() never re-ran. history.replaceState (used by save) does NOT
        fire hashchange, so this can't loop. Re-run a FULL restore on any user hash navigation to a state link. */

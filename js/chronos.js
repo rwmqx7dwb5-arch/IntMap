@@ -39,8 +39,27 @@
  *  to a past instant they all sync to it, and returning to "Now" releases them. ====== */
 /** (module-graph) the declared contract, stated on the EXPORT: readers import this binding now, so this is where
     the compiler holds the object to types/ (it used to be the typed window.* assignment) */
+/* ══ (time-compare-lapse) A CLOCK IS SOMETHING A MAP HAS, NOT SOMETHING THE PAGE IS ══════════════════
+   「1914 年 | 今日」 — the comparison window shows another instant beside the main map, and that is
+   impossible while the clock is ONE object every reader imports: there was nothing a second map could
+   hold. So the body below is a FACTORY, and the main clock is its first product. Nothing about the main
+   clock changed — same members, same floor, same broadcast — and `IntMapTime` is still the one ~30
+   files import. A second map (js/compare.js) makes its own with `makeClock('compare')` and hands it to
+   the same readers the main map uses (js/layer-time-kernel.js `verdict(id, clock)`), which is what makes
+   «the layer states this instant» a question about A MAP'S clock rather than about the page's.
+   ⚠ THE INTENT IS THE PAGE'S, NOT A CLOCK'S. «The reader is heading into the past» (below) warms the
+   history bundles every map draws from, so a second clock set to 1914 fires it exactly as the first does
+   — one signal, held at module level, whichever clock moved. */
+/** the factory, held for `makeClock` below — assigned inside the master clock's own body, which is where it lives */
+/** @type {null | ((name?: string) => import('../types/chronos').Chronos)} */
+let _make=null;
+/** the master clock — the main map's, and the one every reader that holds no map of its own imports.
+    ⚠ STILL ONE IIFE (tests/shell-chronos-clock-checks.test.mjs reads the clock's surface out of it): the factory is
+    a function INSIDE it, and the IIFE returns the factory's first product. */
 /** @type {import('../types/chronos').Chronos} */
 export const IntMapTime=(function(){
+/** @param {string} [name] the map this clock belongs to (diagnostics) @returns {import('../types/chronos').Chronos} */
+function clock(name){
   /* ⚠⚠⚠ (#R679) `toISOString().slice(0,10)` WAS NOT A DATE ONCE THE FLOOR WENT BELOW YEAR 0.
      ECMA-262 writes a year outside 0…9999 in the expanded form, so an instant in 323 BC comes
      back as `-000322-01-01T00:00:00.000Z` and its first ten characters are `-000322-01` — a
@@ -146,42 +165,53 @@ export const IntMapTime=(function(){
     if(days<=0) return OS.setNow(opts);
     const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-days); return OS.set(d,opts); };
   OS.setNow=function(opts){ _when=null; return broadcast((opts||{}).source), OS; };
-  /* ══ THE READER'S INTENT TO LEAVE THE PRESENT — one signal, fired once ══════════════════════════
-     「歴史機能に触れなくても起動直後に約 55 MB の歴史データを先読みして main thread で parse する」のを
-     やめる. Measured 2026-09-29 on a desktop boot: the historical border module warmed data/cshapes.js
-     (and, had it failed, data/hist-eras.js) and the historical subdivision module warmed
-     data/hist-admin1.js with its three companions, at the map's first idle — for every session, whether
-     or not the reader ever touched a year. The byte counts are in dev-notes/2026-09-29-history-prefetch-on-demand.md (they move with every
-     rebuild of those files; this note does not copy them).
-     The head start those warm-ups bought (#R122: the first journey must not wait on a parse) is kept,
-     but it is now bought when the reader shows they are going somewhere: `intent()` is the moment,
-     `onIntent(fn)` is who wants to know.
-       · WHO FIRES IT: the clock itself, the first time it is set to a past year (above), and the time
-         UI — any element that declares `data-time-intent` fires it on the reader's first pointerdown or
-         focus inside it (the listener below), which is earlier than the first year change by the
-         length of a click. The UI declares; this file does not name any control.
-       · WHO LISTENS: whatever has a speculative copy to make. Deciding WHETHER to make it on this
-         device and connection is not this file's question (js/mem-budget.js `maySpeculate`).
-     ⚠ ONCE, AND LATE SUBSCRIBERS ARE NOT LEFT OUT. A module that subscribes after the intent has
-     already fired is called at once — otherwise the order of two imports would decide whether a
-     bundle is warmed, which is the shape `ymin()` above exists to avoid. */
-  let _intent=null; const intentSubs=[];
-  OS.intent=function(source){ if(_intent) return OS;
-    _intent={ source:String(source||'ui'), at:Date.now() };
-    const fs=intentSubs.splice(0); fs.forEach(f=>{ try{ f(_intent); }catch(_){} });
-    try{ if(typeof document!=='undefined'){ document.removeEventListener('pointerdown',_onIntentEvent,true); document.removeEventListener('focusin',_onIntentEvent,true); } }catch(_){}
-    return OS; };
-  OS.intended=()=>_intent?{ source:_intent.source, at:_intent.at }:null;
-  OS.onIntent=function(fn){ if(typeof fn!=='function') return ()=>{};
-    if(_intent){ try{ fn(_intent); }catch(_){} return ()=>{}; }
-    intentSubs.push(fn); return ()=>{ const i=intentSubs.indexOf(fn); if(i>=0) intentSubs.splice(i,1); }; };
-  /** @param {Event} ev */
-  function _onIntentEvent(ev){ try{ const t=/** @type {any} */ (ev.target);
-    if(t&&typeof t.closest==='function'&&t.closest('[data-time-intent]')) OS.intent('ui:'+ev.type); }catch(_){} }
-  try{ if(typeof document!=='undefined'&&document.addEventListener){
-    document.addEventListener('pointerdown',_onIntentEvent,true); document.addEventListener('focusin',_onIntentEvent,true); } }catch(_){}
+  /* the reader's intent to leave the present is the PAGE's (see the note above the factory) — every clock answers it */
+  OS.intent=function(source){ pageIntent(source); return OS; };
+  OS.intended=()=>pageIntended();
+  OS.onIntent=function(fn){ return pageOnIntent(fn); };
   return OS;
+}
+_make=clock;
+return clock('main');
 })();
+/** a clock for another map (js/compare.js) — the same body as the master clock's, a separate instant
+    @param {string} [name] the map it belongs to @returns {import('../types/chronos').Chronos} */
+export function makeClock(name){ return /** @type {(name?: string) => import('../types/chronos').Chronos} */ (_make)(name); }
+
+/* ══ THE READER'S INTENT TO LEAVE THE PRESENT — one signal, fired once ══════════════════════════
+   「歴史機能に触れなくても起動直後に約 55 MB の歴史データを先読みして main thread で parse する」のを
+   やめる. Measured 2026-09-29 on a desktop boot: the historical border module warmed data/cshapes.js
+   (and, had it failed, data/hist-eras.js) and the historical subdivision module warmed
+   data/hist-admin1.js with its three companions, at the map's first idle — for every session, whether
+   or not the reader ever touched a year. The byte counts are in dev-notes/2026-09-29-history-prefetch-on-demand.md (they move with every
+   rebuild of those files; this note does not copy them).
+   The head start those warm-ups bought (#R122: the first journey must not wait on a parse) is kept,
+   but it is now bought when the reader shows they are going somewhere: `intent()` is the moment,
+   `onIntent(fn)` is who wants to know.
+     · WHO FIRES IT: the clock itself, the first time it is set to a past year (above), and the time
+       UI — any element that declares `data-time-intent` fires it on the reader's first pointerdown or
+       focus inside it (the listener below), which is earlier than the first year change by the
+       length of a click. The UI declares; this file does not name any control.
+     · WHO LISTENS: whatever has a speculative copy to make. Deciding WHETHER to make it on this
+       device and connection is not this file's question (js/mem-budget.js `maySpeculate`).
+   ⚠ ONCE, AND LATE SUBSCRIBERS ARE NOT LEFT OUT. A module that subscribes after the intent has
+   already fired is called at once — otherwise the order of two imports would decide whether a
+   bundle is warmed, which is the shape `ymin()` above exists to avoid. */
+let _intent=null; const intentSubs=[];
+function pageIntent(source){ if(_intent) return;
+  _intent={ source:String(source||'ui'), at:Date.now() };
+  const fs=intentSubs.splice(0); fs.forEach(f=>{ try{ f(_intent); }catch(_){} });
+  try{ if(typeof document!=='undefined'){ document.removeEventListener('pointerdown',_onIntentEvent,true); document.removeEventListener('focusin',_onIntentEvent,true); } }catch(_){}
+}
+function pageIntended(){ return _intent?{ source:_intent.source, at:_intent.at }:null; }
+function pageOnIntent(fn){ if(typeof fn!=='function') return ()=>{};
+  if(_intent){ try{ fn(_intent); }catch(_){} return ()=>{}; }
+  intentSubs.push(fn); return ()=>{ const i=intentSubs.indexOf(fn); if(i>=0) intentSubs.splice(i,1); }; }
+/** @param {Event} ev */
+function _onIntentEvent(ev){ try{ const t=/** @type {any} */ (ev.target);
+  if(t&&typeof t.closest==='function'&&t.closest('[data-time-intent]')) pageIntent('ui:'+ev.type); }catch(_){} }
+try{ if(typeof document!=='undefined'&&document.addEventListener){
+  document.addEventListener('pointerdown',_onIntentEvent,true); document.addEventListener('focusin',_onIntentEvent,true); } }catch(_){}
 /* (module-graph) THE COMPAT WINDOW. Every js/ and src/ reader IMPORTS IntMapTime from this file; this one
    publication remains for what cannot import: the browser specs' page.evaluate, the console, and the
    static pages' inline scripts. scripts/global-surface.mjs counts it, and its `reads` register is what

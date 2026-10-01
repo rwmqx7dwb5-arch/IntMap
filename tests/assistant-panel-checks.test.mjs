@@ -95,10 +95,30 @@ test('#R155 Atlas reply-language lock (no "mirror the message, never UI")', () =
   assert.match(index, /NEVER changes the reply language/, 'place names do not change the reply language');
 });
 
-test('#R155 Atlas geolocation asks / gives actionable denial (not a dead-end)', () => {
-  /* spelling kept — Atlas panel / prompt code that runs only with the whole app host; prompt sentences are the behaviour the model reads */
-  assert.match(index, /navigator\.permissions&&navigator\.permissions\.query/, 'permission state pre-check');
-  assert.match(index, /err&&err\.code===1/, 'distinguishes PERMISSION_DENIED');
+test('#R155 Atlas geolocation asks / gives actionable denial (not a dead-end)', async () => {
+  /* (installable-app) RUN, not read. The reading moved to js/locate-me.js (one implementation for every
+     door), so the claims are asked of view.locate itself with a device stub: a site the browser has
+     HARD-blocked is told so without the sensor being asked (#R155 — the browser will never re-prompt),
+     and a refusal at the prompt is told apart from a sensor that simply had no fix. */
+  const locate = (await import('../js/atlas-cap-view.js')).default.find((e) => e.row[0] === 'view.locate');
+  const K = { R: (ok, html, extra) => Object.assign({ ok, html }, extra || {}), warn: (x) => x, note: (x) => x, L: (en) => en,
+    GE: () => ({ camera: { flyTo() {}, getZoom: () => 3 } }), _selfLocSeed() {} };
+  const run = async (nav) => {
+    const had = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { value: nav, configurable: true });
+    try { return await locate.run({}, {}, K); }
+    finally { if (had) Object.defineProperty(globalThis, 'navigator', had); else delete globalThis.navigator; }
+  };
+  let asked = 0;
+  const geo = (code) => ({ getCurrentPosition: (_ok, err) => { asked++; err({ code }); } });
+  const blocked = await run({ geolocation: geo(1), permissions: { query: async () => ({ state: 'denied' }) } });
+  assert.equal(blocked.ok, false);
+  assert.equal(asked, 0, 'permission state pre-check: a hard-blocked site is not asked again');
+  assert.match(blocked.html, /blocked for this site.*browser/i, 'and is told where to turn it back on');
+  const denied = await run({ geolocation: geo(1), permissions: { query: async () => ({ state: 'prompt' }) } });
+  assert.match(denied.html, /permission was denied.*browser settings/i, 'distinguishes PERMISSION_DENIED');
+  const noFix = await run({ geolocation: geo(2), permissions: { query: async () => ({ state: 'granted' }) } });
+  assert.doesNotMatch(noFix.html, /denied|blocked/i, 'a sensor with no fix is not reported as a refusal');
 });
 
 test('#R155 Atlas typography: forceful format mandate + sharper heading render', () => {

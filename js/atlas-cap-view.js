@@ -15,6 +15,7 @@
  * ==========================================================================*/
 import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+import { requestFix, FIX_FAILURE } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — view.locate below */
 
 export default [
   {
@@ -135,27 +136,28 @@ export default [
     row: ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera,map.location',                 'camera,map',          'session', 'explicit','',        ''],
     schema: () => (noArgs('locate')),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, GE = K.GE, _selfLocSeed = K._selfLocSeed, note = K.note;
-      { if(!navigator.geolocation) return R(false, warn('⚠ '+L('Geolocation unavailable','この環境では位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible')));
-          /* (#R155) "求めればいいだけ": on a fresh session getCurrentPosition ASKS (the browser prompt). It
-             is a browser rule that a HARD-DENIED site is never re-prompted — so rather than a dead-end,
-             detect that state up front and tell the user exactly how to re-enable it. */
-          let _pstate='prompt'; try{ if(navigator.permissions&&navigator.permissions.query){ const st=await navigator.permissions.query({name:'geolocation'}); _pstate=st.state; } }catch(_){}
-          if(_pstate==='denied') return R(false, warn('⚠ '+L('Location is blocked for this site. Turn it on in your browser (tap the lock/permissions icon in the address bar), then ask me again.','この端末で位置情報がブロックされています。ブラウザで許可（アドレスバーの鍵アイコン→権限）してから、もう一度お尋ねください。','Der Standort ist für diese Seite blockiert. Erlaube ihn im Browser (Schloss-Symbol in der Adressleiste → Berechtigungen) und frag mich erneut.','Геолокация заблокирована для сайта. Включите её в браузере (значок замка в адресной строке → разрешения) и спросите снова.','La ubicación está bloqueada para este sitio. Actívala en el navegador (icono de candado en la barra → permisos) y vuelve a preguntar.')));
-          return await new Promise(res=>{ let fin0=false; const fin=r2=>{ if(!fin0){ fin0=true; res(r2); } };
-            try{ navigator.geolocation.getCurrentPosition(p2=>{ const lng=+p2.coords.longitude, lat=+p2.coords.latitude;
-                try{ GE().camera.flyTo({center:[lng,lat],zoom:Math.max(GE().camera.getZoom(),11),duration:1100}); }catch(_){}
-                /* (#R137) also drop the live accent dot + accuracy circle that follow the user */
-                try{ window.IntMapLocate&&window.IntMapLocate.start({fly:false}); }catch(_){}
-                try{ K._lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
-                try{ _selfLocSeed({lng,lat,acc:+p2.coords.accuracy||0}); }catch(_){}   /* (#R413) the next 「現在地から…」 resolves from this fix instead of spending another 25 s on the GPS — ⚠⚠⚠ (#R413) `exec` IS WHY THIS WAS UNUSABLE: js/atlas-toolsurface.js forwards `res.exec` and nothing else, so the note below reaches the READER while the turn that located them learned only `ok:true`. */
-                fin(R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')'),{exec:{lat,lng,accuracyM:Math.round(+p2.coords.accuracy||0),provenance:'device_location'}}));
-              }, err=>{ const denied=err&&err.code===1;   /* 1=PERMISSION_DENIED, 2=UNAVAILABLE, 3=TIMEOUT */
-                fin(R(false, warn('⚠ '+(denied
-                  ? L('Location permission was denied. Re-enable it in your browser settings, then ask again.','位置情報の許可が拒否されました。ブラウザ設定で再度許可してから、もう一度お尋ねください。','Standortzugriff wurde verweigert. Aktiviere ihn in den Browsereinstellungen und frag erneut.','Доступ к геолокации отклонён. Включите его в настройках браузера и спросите снова.','Se denegó el permiso de ubicación. Vuelve a activarlo en el navegador y pregunta de nuevo.')
-                  : L('Couldn\'t get your location — please try again.','位置情報を取得できませんでした。もう一度お試しください。','Standort konnte nicht ermittelt werden — bitte erneut versuchen.','Не удалось определить местоположение — повторите попытку.','No se pudo obtener tu ubicación: inténtalo de nuevo.')))));
-              }, {enableHighAccuracy:true,timeout:25000,maximumAge:0});   /* (#R155) 9s→15s so the permission prompt has time to be answered; (#R170) high accuracy + no cached fix (a 2-min-old coarse fix could be a different city) — 25 s because a GPS cold start after the prompt genuinely takes that long */
-            }catch(_){ fin(R(false, warn('⚠'))); }
-            setTimeout(()=>fin(R(false, warn('⚠ '+L('Location timed out','位置情報の取得がタイムアウトしました','Standort-Timeout','Тайм-аут геолокации','Tiempo de ubicación agotado')))),28000); }); }   /* (#R170) must outlast the 25 s getCurrentPosition budget above, or this outer guard would report a timeout while the GPS was still converging */
+      { /* (installable-app) THE READING IS js/locate-me.js's — the permission pre-check (#R155), the 25 s
+           GPS budget and its guard (#R170) and the five reasons a reading ends without a position. This
+           door keeps only what is Atlas's own: the words it says to the reader and the fact it hands the model. */
+        const fix=await requestFix();
+        if(!fix.ok){ const why=fix.reason;
+          return R(false, warn('⚠ '+(why===FIX_FAILURE.UNSUPPORTED
+            ? L('Geolocation unavailable','この環境では位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible')
+            : why===FIX_FAILURE.BLOCKED
+            ? L('Location is blocked for this site. Turn it on in your browser (tap the lock/permissions icon in the address bar), then ask me again.','この端末で位置情報がブロックされています。ブラウザで許可（アドレスバーの鍵アイコン→権限）してから、もう一度お尋ねください。','Der Standort ist für diese Seite blockiert. Erlaube ihn im Browser (Schloss-Symbol in der Adressleiste → Berechtigungen) und frag mich erneut.','Геолокация заблокирована для сайта. Включите её в браузере (значок замка в адресной строке → разрешения) и спросите снова.','La ubicación está bloqueada para este sitio. Actívala en el navegador (icono de candado en la barra → permisos) y vuelve a preguntar.')
+            : why===FIX_FAILURE.DENIED
+            ? L('Location permission was denied. Re-enable it in your browser settings, then ask again.','位置情報の許可が拒否されました。ブラウザ設定で再度許可してから、もう一度お尋ねください。','Standortzugriff wurde verweigert. Aktiviere ihn in den Browsereinstellungen und frag erneut.','Доступ к геолокации отклонён. Включите его в настройках браузера и спросите снова.','Se denegó el permiso de ubicación. Vuelve a activarlo en el navegador y pregunta de nuevo.')
+            : why===FIX_FAILURE.TIMEOUT
+            ? L('Location timed out','位置情報の取得がタイムアウトしました','Standort-Timeout','Тайм-аут геолокации','Tiempo de ubicación agotado')
+            : L('Couldn\'t get your location — please try again.','位置情報を取得できませんでした。もう一度お試しください。','Standort konnte nicht ermittelt werden — bitte erneut versuchen.','Не удалось определить местоположение — повторите попытку.','No se pudo obtener tu ubicación: inténtalo de nuevo.')))); }
+        const lng=fix.lng, lat=fix.lat;
+        try{ GE().camera.flyTo({center:[lng,lat],zoom:Math.max(GE().camera.getZoom(),11),duration:1100}); }catch(_){}
+        /* (#R137) also drop the live accent dot + accuracy circle that follow the user — HANDING OVER the fix
+           just read, so the marker draws it instead of reading the sensor a second time (installable-app) */
+        try{ window.IntMapLocate&&window.IntMapLocate.start({fly:false,fix}); }catch(_){}
+        try{ K._lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
+        try{ _selfLocSeed({lng,lat,acc:fix.acc}); }catch(_){}   /* (#R413) the next 「現在地から…」 resolves from this fix instead of spending another 25 s on the GPS — ⚠⚠⚠ (#R413) `exec` IS WHY THIS WAS UNUSABLE: js/atlas-toolsurface.js forwards `res.exec` and nothing else, so the note below reaches the READER while the turn that located them learned only `ok:true`. */
+        return R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')'),{exec:{lat,lng,accuracyM:Math.round(fix.acc),provenance:'device_location'}}); }
     },
   },
   /* ⚠ (#R493) THE ONLY CAPABILITY WHOSE RESULT IS A PICTURE. Every other row hands Atlas facts

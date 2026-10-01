@@ -10,6 +10,7 @@
 
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { requestFix, FIX_FAILURE } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — IntMapLocate.start below, Atlas's view.locate and 「現在地から…」 */
 
 
 export function locate(HOST){
@@ -109,7 +110,8 @@ export function locate(HOST){
     const _CENTER_PX=4;
     function _mapCenterAtFix(){ const E=M(); if(!E||!active||!last) return false;
       try{ const pc=E.coords.project(E.camera.getCenter()), pf=E.coords.project([last.lng,last.lat]); return Math.hypot(pc.x-pf.x,pc.y-pf.y)<=_CENTER_PX; }catch(_){ return false; } }
-    function _syncFab(){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on', _mapCenterAtFix()); }catch(_){} }
+    /* (installable-app) …and the desktop twin under the compass (#btn-locate) wears the same state */
+    function _syncFab(){ try{ const on=_mapCenterAtFix(); ['m-fab-locate','btn-locate'].forEach(id=>{ const f=document.getElementById(id); if(f) f.classList.toggle('on', on); }); }catch(_){} }
     /* ⚠ (#R232) …AND IT HAS TO RUN WHEN THE *CAMERA* MOVES, NOT ONLY WHEN THE *FIX* DOES.
        「現在地に合わせてないときは中塗りなしの線アイコンで」 — the predicate above is about the distance
        between the map centre and the fix, and the map centre changes far more often than the fix does.
@@ -125,7 +127,10 @@ export function locate(HOST){
       const onPos=p=>{ const lng=+p.coords.longitude, lat=+p.coords.latitude, ac=+p.coords.accuracy||0; last={lng,lat,acc:ac};
         paint(lng,lat,ac); _syncFab();
         if(firstFly){ firstFly=false; try{ E.camera.flyTo({center:[lng,lat],zoom:Math.max(E.camera.getZoom(),14),duration:1100}); }catch(_){} } };
-      const onErr=e=>{ try{ if(typeof imToast==='function'){ const denied=e&&e.code===1;   /* (#R155) distinguish a hard denial (actionable) from a transient failure */
+      /* (installable-app) the reason comes from js/locate-me.js: `blocked` (the browser holds a hard deny and will
+         not ask) and `denied` (the reader just refused) are the actionable pair; the sensor having no fix and
+         a timeout are the transient pair; `unsupported` never reaches here (checked above). */
+      const onErr=why=>{ try{ if(typeof imToast==='function'){ const denied=why===FIX_FAILURE.BLOCKED||why===FIX_FAILURE.DENIED;   /* (#R155) distinguish a hard denial (actionable) from a transient failure */
         imToast('⚠ '+(denied
           ? (IntMapLang.t(HOST.lang,'Location blocked — enable it in your browser settings.','位置情報がブロックされています。ブラウザ設定で許可してください。','Standort blockiert — im Browser erlauben.','Геолокация заблокирована — разрешите в браузере.','Ubicación bloqueada — actívala en el navegador.'))
           : (IntMapLang.t(HOST.lang,'Couldn\'t get your location','位置情報を取得できませんでした','Standort nicht verfügbar','Не удалось получить геолокацию','No se pudo obtener la ubicación')))); } }catch(_){}
@@ -133,7 +138,11 @@ export function locate(HOST){
       /* (#R170) maximumAge 5000/2000 → 0 and a longer first-fix budget: a cached fix is by definition the LAST
          one the device computed (possibly a coarse network fix from another app), so accepting one threw away the
          accuracy enableHighAccuracy had just asked for. The watch keeps refining as the GPS converges. */
-      try{ navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:20000,maximumAge:0}); }catch(_){}
+      /* (installable-app) the FIRST fix is the shared reading (permission pre-check, budget, reasons) — or the one
+         the caller already read and hands over (Atlas's view.locate), so the sensor is not read twice for one
+         request. The watch below keeps refining it as the GPS converges, as before. */
+      const first=(opts.fix&&opts.fix.ok)?Promise.resolve(opts.fix):requestFix();
+      first.then(fix=>{ if(fix.ok) onPos({coords:{longitude:fix.lng,latitude:fix.lat,accuracy:fix.acc}}); else onErr(fix.reason); });
       if(watchId==null){ try{ watchId=navigator.geolocation.watchPosition(onPos,()=>{},{enableHighAccuracy:true,timeout:25000,maximumAge:0}); }catch(_){} }
     }
     function stop(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(_){} watchId=null; } active=false;
@@ -141,6 +150,8 @@ export function locate(HOST){
       _syncFab(); clear(); }
     /* FAB tap: first tap starts + flies; while active it re-centres on the last known fix. */
     function toggleOrRecenter(){ const E=M(); if(active&&last&&E){ try{ E.camera.flyTo({center:[last.lng,last.lat],zoom:Math.max(E.camera.getZoom(),14),duration:900}); }catch(_){} } else start({fly:true}); }
+    /* (installable-app) the desktop control does what the phone's FAB does (js/mobile-ui.js binds that one) */
+    try{ const b=document.getElementById('btn-locate'); if(b) b.addEventListener('click',()=>toggleOrRecenter()); }catch(_){}
     return { start, stop, toggleOrRecenter, _paint:paint, isActive:()=>active, last:()=>last };
   })();
 }

@@ -243,6 +243,10 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
          `map.undo` ran (js/atlas-state.js undoCheck) and holds it against the turn's opening
          snapshot — the camera, the clock and the map sections are what it reads. */
       undo: ['map', 'camera', 'time'],
+      /* (time-compare-lapse) the "timeView" observer asks js/compare.js whether the comparison window is open and
+         at which instant, and js/time-lapse.js whether the clock is being played — a panel and a clock, not the
+         map's pixels, so it observes those two and no more. */
+      timeView: ['panel', 'time'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
 
   /* ⑦ what a capability says it PRODUCES is something its verifier can observe */

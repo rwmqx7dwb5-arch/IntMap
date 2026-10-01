@@ -1578,7 +1578,9 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 ### 7.4a 時刻 T の地図——レイヤーは典拠が述べる範囲でだけ描く
 
 - **1 つの機構**: `js/layer-time.js`（規則・純粋）／`js/layer-time-decl.js`（174 層の宣言・純データ）／
-  `js/layer-time-kernel.js`（`window.IntMapLayerTime`）。時計（`IntMapTime`）の上に乗り、2 つ目の時計は作らない。
+  `js/layer-time-kernel.js`（`window.IntMapLayerTime`）。時計の上に乗る。**時計は地図ごとに 1 つ**
+  （`js/chronos.js` の `makeClock()`）で、メイン地図の時計が `IntMapTime`、比較ウィンドウはもう 1 つを持つ（7.4b）。
+  1 つの地図の中で 2 つ目の時計は作らない。
 - **宣言は 1 層 1 つ**、`TIME[id]`（`js/layer-manifest.js` の id）。1 層の記述の `time` 欄としてそのまま入る形で、
   DOM も `window` も参照しない。語彙は閉じている——`kind`（instant / convention / enduring / record / series /
   snapshot / live / forecast）、時計の当て方（`follows`＝範囲の中で時計の瞬間を描く・`self`＝範囲の外も自分で
@@ -1611,6 +1613,35 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   範囲の中では carried と述べる。
 - 計器は `node scripts/world-at-time.mjs --year <年|now>`（全層の判定と理由）・`--years`（主要年）・`--check`（門）。
   実測と主要年の史実照合は `dev-notes/2026-10-01-world-at-time.md`。
+
+### 7.4b 二時点比較とタイムラプス
+
+- **比較ウィンドウは自分の時計を持つ地図**（`js/compare.js`、`makeClock('compare')`）。既定は「メイン地図の
+  時刻に従う」で、そのときは 2 つの時計が等しい。「独自の時刻」を選ぶ・年を入れる・「現在」を押すと、
+  メイン地図の時計を動かさずにウィンドウだけがその瞬間になる（「1914 年 | 今日」）。地図上の札が
+  ウィンドウの瞬間（太字）とメイン地図の瞬間を並べて示す。
+- **ウィンドウの層も 7.4a と同じ規則で判定する**。各層は、同じ典拠を描くメイン地図の層の宣言（`lid`）と、
+  このウィンドウで瞬間を当てる者（`drawnBy`）を持つ。典拠が述べることは地図が変わっても同じなので宣言は
+  そのまま使い、`follows` / `self` / `ownDate` だけを差し替える（`js/layer-time.js` の `onMap`、
+  カーネルの `verdict(id, clock, drawnBy)`）。メイン地図の層に無い典拠（MERRA-2 の月平均気温）は同じ語彙で
+  自分の宣言を持ち、`judge(decl, clock)` が同じ `validate` を通して判定する。述べない瞬間には描かず、ピッカーの
+  下に理由を出す。時計に従う層（NASA GIBS の日付つき 4 層と MERRA-2・ケッペンの 30 年期間）はその瞬間を取りに行く。
+- **ウィンドウの歴史国境はその瞬間の記録**——メイン地図と同じ連鎖（CShapes 2.0 の日単位 → OpenHistoricalMap
+  → historical-basemaps の枚）を `js/time-borders.js` の `collectionAt(when)` に訊く。現在の基図が答える瞬間
+  （現在・今年・CShapes の最終年より後）はそう述べ、era の線は描かない。era の記録が答える瞬間には、ウィンドウの
+  「地図」基図も**メイン地図と同じ規則で物理地理**に替わる（`js/historical-basemap.js` の層定義をウィンドウ自身の
+  OpenFreeMap ソースで描き、今日の政治境界と国名を持つ CARTO ラスタは隠す）。
+- **共有リンク**は `cmp=` の隣に `ct=`（年・ISO 日・`now`。従っている間は書かない）を運ぶ。
+- **タイムラプス**（`js/time-lapse.js`、Chronos パネルの `#ntl-lapse`）はメイン地図の時計を開始〜終了まで
+  年／日／時の刻みで進める。予報の再生器（モデルの有効時刻を進める）とは別物。**1 コマは描画が追いついてから**
+  ——時間カーネルがその瞬間を判定し（`lastSettled`）、全タイルが届き（`IntMapGeoEngine.ready()`）、その瞬間の
+  国境が画面にある（`collectionAt` と `current()`）——その後に速度ぶん留まって次へ進む。訊ける相手がいない
+  条件はコマを止めない（「観測できない」は「描けていない」ではない）。だから遅いタイルはラプスを遅くするだけで、
+  瞬間を飛ばしも溜めもしない。読者や Atlas が時計を動かすと止まる。`prefers-reduced-motion` では最も遅い速度に
+  固定し、そう述べる。各コマでチェック済みの層の「描き始め／描かれなくなった」を時間カーネルの答えから記録する。
+- **Atlas**: `time.compare`（ウィンドウを開いてその時計を設定）と `time.lapse`（再生・停止）。どちらも観測器
+  `timeView` が実行後にウィンドウと再生器そのものに状態を訊き、狙った状態と一致したときだけ完了とする
+  （既にそうなら `already_there`）。状態（`time` 節）にウィンドウの瞬間と再生の様子が載る。
 
 ### 7.5 ウィジェット基盤
 

@@ -84,16 +84,20 @@ function lang() {
 const tr = (en, jp) => { try { return IntMapLang.t(lang(), en, jp); } catch (_) { return en; } };
 const pickText = (o) => (o ? tr(o.en, o.jp) : '');
 
-/** the instant the clock is at — { when, live, now } */
-function clockAt() {
-  const T = IntMapTime;
+/** the instant a clock is at — { when, live, now }. (time-compare-lapse) A map has its own clock
+    (js/chronos.js `makeClock`): the main map's is the default, and the comparison window hands its own. */
+function clockAt(clock) {
+  const T = clock || IntMapTime;
   const now = Date.now();
   if (!T) return { when: now, live: true, now };
   return { when: T.when().getTime(), live: !!T.isLive(), now };
 }
-/** a caller's instant: a year (number), an ISO date, a Date, or nothing (the clock) */
+/** is this a clock (js/chronos.js) rather than an instant? */
+const isClock = (v) => !!v && typeof v === 'object' && !(v instanceof Date) && typeof v.when === 'function' && typeof v.isLive === 'function';
+/** a caller's instant: a year (number), an ISO date, a Date, a clock, or nothing (the main map's clock) */
 function atOf(when) {
   if (when == null) return clockAt();
+  if (isClock(when)) return clockAt(when);
   if (!R) return null;
   const now = Date.now();
   const ms = (typeof when === 'number' && Math.abs(when) < 1e7) ? R.toMs(Math.round(when)) + 165 * 86400000 + 43200000 : R.toMs(when);
@@ -114,9 +118,10 @@ function label(id) {
   return s || id;
 }
 
-/** verdictOf(id, at) → { status, reason, … , message:{en,jp}, self } (decl must be loaded) */
-function verdictOf(id, at) {
-  const decl = DECL && DECL[id];
+/** verdictOf(id, at, drawnBy?) → { status, reason, … , message:{en,jp}, self } (decl must be loaded).
+    `drawnBy` — who draws the layer on the map asking (js/layer-time.js `onMap`); absent → the main map's module. */
+function verdictOf(id, at, drawnBy) {
+  const decl = (R && drawnBy) ? R.onMap(DECL && DECL[id], drawnBy) : (DECL && DECL[id]);
   if (!decl) return { id, status: 'unknown', reason: DECL ? 'undeclared' : 'not-loaded', message: null, self: false };
   const v = R.verdict(decl, at, rtOf(id));
   return Object.assign({ id, kind: decl.kind, self: !!decl.self, message: R.explain(decl, v, at) }, v);
@@ -290,8 +295,19 @@ const API = {
       MEASURED: the roads reappeared on a 1900 map when the base tiles reloaded (js/app-body.js `_wireRef`). */
   draws: (id) => { const d = D(); const cb = /** @type {any} */ (d && d.getElementById(id)); return !!(cb && cb.checked) && !held.has(id); },
   heldIds: () => Array.from(held.keys()),
-  /** verdict(id, when?) — when: a year, an ISO date, a Date; omitted → the clock */
-  verdict: (id, when) => { const at = atOf(when); return at && DECL ? verdictOf(id, at) : null; },
+  /** verdict(id, when?, drawnBy?) — when: a year, an ISO date, a Date, or a map's clock (js/chronos.js
+      `makeClock`); omitted → the main map's clock. `drawnBy` — who draws the layer on that map (see `onMap`). */
+  verdict: (id, when, drawnBy) => { const at = atOf(when); return at && DECL ? verdictOf(id, at, drawnBy) : null; },
+  /** judge(decl, when?) — a declaration that belongs to no layer of the manifest (a layer only the comparison
+      window draws, js/compare.js), in the same vocabulary and by the same rule. A declaration the rule cannot
+      read is `unknown`, never «stated» (`validate`, as the gate runs it). Needs the rule loaded (`ready()`). */
+  judge: (decl, when) => {
+    const at = atOf(when); if (!at || !R) return null;
+    const bad = R.validate('(declared)', decl);
+    if (bad.length) return { status: 'unknown', reason: 'undeclared', problems: bad, message: null, self: false };
+    const v = R.verdict(decl, at);
+    return Object.assign({ kind: decl.kind, self: !!decl.self, message: R.explain(decl, v, at) }, v);
+  },
   /** a module reports a bound it read at run time — { from?, to?, asOf?, by } */
   range: (id, r) => { if (!id || !r) return; RT.set(id, Object.assign({}, rtOf(id) || {}, r)); settleSoon(); },
   /** coverage(when, { ids, on }) → { at, stated:[…], carried:[…], unstated:[…], unknown:[…] } for every

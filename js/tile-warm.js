@@ -16,6 +16,7 @@
  *  through IM_HOST rather than closed over, which is what makes the move checkable.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
+import { noteShellStatus } from './installable-app.js';   /* (installable-app) the worker also keeps the app shell; the page asks it whether THIS document came out of it — see registerTileSW */
 
 export function tileWarm(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -35,6 +36,10 @@ export function tileWarm(HOST){
       if(location.protocol!=='https:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return; /* SW needs a secure context (file:// can't) */
       navigator.serviceWorker.register('sw.js').then(reg=>{
         _tileSW=navigator.serviceWorker.controller||reg.active||reg.waiting||reg.installing||null;
+        /* (installable-app) a document the worker answered from its shell (offline open) has that worker
+           as its controller; ask it, so the page can say «offline» instead of looking like an empty map.
+           The answer arrives on the message listener below. */
+        try{ const c=navigator.serviceWorker.controller; if(c) c.postMessage({type:'shell-status'}); }catch(_){}
       }).catch(()=>{});
       navigator.serviceWorker.addEventListener('controllerchange',()=>{ _tileSW=navigator.serviceWorker.controller; });
       /* ⚠ THE WORKER'S ALLOW-LIST CAN REFUSE A URL, AND A REFUSAL IS NOT A REASON TO WARM NOTHING.
@@ -50,7 +55,8 @@ export function tileWarm(HOST){
          the coverage it exists to protect. The worker names them, the memo forgets them, and the next
          ring offers them again if the camera still wants them. */
       navigator.serviceWorker.addEventListener('message',(ev)=>{
-        try{ const d=ev&&ev.data; if(!d||!Array.isArray(d.urls)) return;
+        try{ const d=ev&&ev.data; if(d&&d.type==='shell-status'){ noteShellStatus(d); return; }
+          if(!d||!Array.isArray(d.urls)) return;
           if(d.type==='prefetch-dropped'){ d.urls.forEach(u=>{ if(typeof u==='string'&&_pfSeen.delete(u)) _pfDropped.worker++; }); return; }
           if(d.type!=='prefetch-declined') return;
           /* (#R408) a REFUSAL is not an overtake. The worker cannot date these in the page's terms, so
