@@ -105,7 +105,7 @@ Do not debug on production. Restore the last known-good build:
   green.
 - Or run it yourself:
   ```bash
-  PROD_URL=https://rwmqx7dwb5-arch.github.io/IntMap/ npx playwright test --config playwright.prod.config.js
+  PROD_URL="$(node scripts/site-url.mjs)" npx playwright test --config playwright.prod.config.js
   ```
 - Confirm the uptime issue auto-closed (or close it manually after verifying).
 

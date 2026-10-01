@@ -44,6 +44,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { SITE_BASE_PATH, SITE_ORIGIN } from '../supabase/functions/_shared/site-origin.js';
 
 const ARGV = process.argv.slice(2);
 const arg = (name, dflt) => {
@@ -54,7 +55,7 @@ const AS_JSON = ARGV.includes('--json');
 const LIST = ARGV.includes('--list');
 /* ⚠ THE ORIGIN IS PART OF THE REQUEST (#R216): a relay verified from the wrong origin once shipped.
    The probe introduces itself as the deployed site. */
-const ORIGIN = arg('--origin', 'https://rwmqx7dwb5-arch.github.io');
+const ORIGIN = arg('--origin', SITE_ORIGIN);   // (domain-portable) the address is site-origin.js
 /* The project the page talks to is the one src/vendor.js names — read from there, not retyped. */
 function vendorSupabaseUrl() {
   try {
@@ -106,7 +107,8 @@ export async function discover() {
 export async function probe(t) {
   const t0 = Date.now();
   try {
-    const headers = ORIGIN ? { Origin: ORIGIN, Referer: `${ORIGIN.replace(/\/$/, '')}/IntMap/` } : {};
+    /* the page's own URL under that origin — the site's base path (/IntMap/ on Pages, / on a domain of its own) */
+    const headers = ORIGIN ? { Origin: ORIGIN, Referer: new URL(SITE_BASE_PATH, ORIGIN).href } : {};
     const res = await fetch(t.relayUrl, { headers, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     const ct = res.headers.get('content-type') || '';
     let bytes = 0; let snippet = ''; let text = ''; let whole = '';

@@ -67,7 +67,7 @@ node scripts/worktree.mjs status
 
 | 項目 | 値 |
 |---|---|
-| Production | https://rwmqx7dwb5-arch.github.io/IntMap/ |
+| Production | [本番サイト][site:]（正本 `supabase/functions/_shared/site-origin.js`・`node scripts/site-url.mjs`） |
 | GitHub | https://github.com/rwmqx7dwb5-arch/IntMap （**public**・default branch `main`） |
 | Local | `npm run serve` → http://127.0.0.1:4173/ （**`file://` は非対応**） |
 | Admin | `admin.html` |
@@ -86,6 +86,8 @@ node scripts/worktree.mjs status
 | 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE}.md` |
 | Stripe 寄付 (EN) | https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en |
 | Stripe 寄付 (JA) | https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja |
+
+[site:]: https://rwmqx7dwb5-arch.github.io/IntMap/
 
 **エージェント用 IntMap アカウント（Google）の資格情報は `CLAUDE.local.md` にある。**
 このリポジトリは **public** なので、パスワード等の秘密情報を `AGENTS.md` や

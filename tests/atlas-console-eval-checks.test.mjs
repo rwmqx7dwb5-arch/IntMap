@@ -37,7 +37,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 /* ============================================================================
  *  #R733 — 本番で Atlas に複合指示を出して観測した 3 つの欠陥
  * ----------------------------------------------------------------------------
- *  2026-09-15、本番 (rwmqx7dwb5-arch.github.io/IntMap) にログインして実測した 4 ターン。
+ *  2026-09-15、本番にログインして実測した 4 ターン。
  *
  *  ① 「地図を現代に戻したうえで、日本の人口上位5都市にピンを立てて、その人口を棒グラフで比べて」
  *     → 8 ステップすべてが `find_capability`（計 15 回）。`research.analyze` が 3 回（269 秒）。
@@ -254,7 +254,7 @@ test('R733 ④ the other two axes were always tools, so this is the set being co
 /* ============================================================================
  *  R747 — 54 QUESTIONS PUT TO ATLAS ON PRODUCTION, AND WHAT THE READER GOT BACK
  * ----------------------------------------------------------------------------
- *  Measured on https://rwmqx7dwb5-arch.github.io/IntMap/ (build R746), 2026-09-16,
+ *  Measured on production (build R746), 2026-09-16,
  *  signed in, with the answer text, `IntMapAtlasState.lastTurn().operations` and the
  *  screen recorded for every turn. The defects this file pins, each with its turn:
  *
@@ -573,7 +573,7 @@ test('R747 (3): the satellite catalogue is chosen by asking the catalogues, and 
 /* ============================================================================
  *  R775 — 55 QUESTIONS PUT TO ATLAS ON PRODUCTION, AND THE FOUR DEFECTS THAT SURVIVED EVERY GATE
  * ----------------------------------------------------------------------------
- *  Measured on https://rwmqx7dwb5-arch.github.io/IntMap/ , logged in, build 2026-09-17-R769.
+ *  Measured on production, logged in, build 2026-09-17-R769.
  *  `npm test` was green, CI was green, and the reader was still being handed these:
  *
  *  ① 「GDP上位10か国を…1人あたりGDPと比べて」 — `data.rank {metric:"gdp_per_capita"}` answered with
@@ -866,7 +866,7 @@ test('R775 js/atlas-console.js stayed under its shrink-only ceiling', () => {
 {
 /* R802 — what 46 questions put to the production Atlas measured, written as the defects themselves.
  *
- * Every assertion below names a thing a reader SAW on https://rwmqx7dwb5-arch.github.io/IntMap/
+ * Every assertion below names a thing a reader SAW on production
  * (build 2026-09-18-R783, signed in) and not the shape of the repair, because a check written as the
  * repair defends the repair and stops defending the reader — [[intmap-restate-the-defect-not-the-fix]].
  */

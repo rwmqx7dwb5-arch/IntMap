@@ -32,6 +32,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { importModule } from './helpers/import-module.mjs';
+import { SITE_HOST } from '../supabase/functions/_shared/site-origin.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -279,7 +280,7 @@ async function core(respond) {
   const win = { INTMAP_AI_PROXY: { url: 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/ai-proxy' }, SUPABASE_ANON_KEY: 'anon-key' };
   win.window = win;
   const localStorage = { _m: {}, getItem(k) { return this._m[k] ?? null; }, setItem(k, v) { this._m[k] = String(v); } };
-  const location = { protocol: 'https:', hostname: 'rwmqx7dwb5-arch.github.io' };
+  const location = { protocol: 'https:', hostname: SITE_HOST };
   const document = { getElementById() { return null; }, createElement() { return { classList: { add() {}, remove() {} }, style: {}, addEventListener() {}, querySelector() { return null; } }; }, body: { appendChild() {} } };
   const row = () => ({ select() { return this; }, eq() { return this; }, async maybeSingle() { return { data: { count: 0 } }; } });
   win.sb = { auth: { async getSession() { return { data: { session: { access_token: 'jwt' } } }; } }, from() { return row(); } };

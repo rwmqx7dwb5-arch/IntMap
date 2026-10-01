@@ -317,7 +317,7 @@ flag that lives in a comment is not configuration. All twenty-one are declared t
 `fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`) that the CLI bundles into the functions that import it.
+`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -791,7 +791,7 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
 9. **Passkeys are enabled on the project** (`GET /auth/v1/settings` → `passkeys_enabled: true`)
    and `config.toml` says nothing about them. No factor is enrolled (`auth.mfa_factors` is
    empty), so nothing depends on it today. The relying party IS configured: measured 2026-09-27,
-   `POST /auth/v1/passkeys/authentication/options` answers with `rpId: rwmqx7dwb5-arch.github.io`.
+   `POST /auth/v1/passkeys/authentication/options` answers with `rpId` = the production host (`node scripts/site-url.mjs --host`).
    Since supabase-js 2.117 (the first pinned SDK that has the passkey methods) the controls are live
    on production; on any other origin the browser refuses that relying party, and `js/auth-ui.js`
    withdraws the controls for the session and points the reader at the password form (§11.3).
@@ -908,7 +908,7 @@ put a real secret value in the repo, a PR, or a log.**
 - **Auth → URL Configuration**: confirm the production **Site URL** and **Redirect URLs** are
   the real production origins only (no wildcard, no stray localhost) to prevent open-redirect
   on OAuth. The R155 **password-reset** and **email-change** flows email a link back to
-  `location.origin + location.pathname`, so that exact URL (`https://rwmqx7dwb5-arch.github.io/IntMap/`)
+  `location.origin + location.pathname`, so that exact URL (the site's URL, `node scripts/site-url.mjs`)
   MUST be in the Redirect URLs list or those links will bounce.
 - **Auth → Passwords (#R155) — REQUIRED for the breached-password guarantee:** enable
   **"Leaked password protection"** (HIBP, server-side) and set **Minimum password length = 8**
@@ -916,9 +916,9 @@ put a real secret value in the repo, a PR, or a log.**
   The client mirrors this + runs its own HIBP k-anonymity check, but the dashboard toggle is the
   authoritative server-side guard and is NOT reproducible from the repo.
 - **Auth → Passkeys / WebAuthn (#R155) — REQUIRED for passkeys to work:** configure the
-  **Relying Party ID = `rwmqx7dwb5-arch.github.io`** (the bare host; `github.io` is on the public
-  suffix list so the full host must be used) and add the **Relying Party Origin
-  `https://rwmqx7dwb5-arch.github.io`**, then enable passkeys. Until this is set, the client's
+  **Relying Party ID = the site's host** (`node scripts/site-url.mjs --host` — the bare host; on Pages
+  `github.io` is on the public suffix list so the full `<owner>.github.io` host must be used) and add
+  the **Relying Party Origin** = `node scripts/site-url.mjs --origin`, then enable passkeys. Until this is set, the client's
   passkey buttons degrade gracefully to password auth (feature-detected). supabase-js ≥ 2.105 is
   required; the app no longer takes it from a CDN at all — `src/vendor.js` imports the version
   `package.json` pins, so **check that pin** (and `admin.html`'s vendored copy) when this matters.

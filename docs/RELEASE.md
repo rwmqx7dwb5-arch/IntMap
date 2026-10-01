@@ -33,7 +33,7 @@ immediately before the publish**: it reads the live commit from the newest succe
 ancestor of it**. `rollback.yml` is the one exception, by design. A `workflow_dispatch` of CI on
 `main` runs in its own concurrency group, so it cannot cancel the push run that publishes.
 Confirm a deploy landed with
-`curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` — its `sha` must equal
+`curl -s "$(node scripts/site-url.mjs)build-info.json"` — its `sha` must equal
 `git rev-parse origin/main`. (The older “Deploy from a branch” default is no longer in use; if
 `ENABLE_PAGES_DEPLOY` is ever unset the jobs skip green and Pages would fall back to it.)
 
@@ -141,8 +141,8 @@ never be mistaken for production. Production never shows it.
 1. **Settings → Pages → Build and deployment → Source → “GitHub Actions”.**
 2. **Settings → Secrets and variables → Actions → Variables → New repository variable:**
    - Name: `ENABLE_PAGES_DEPLOY`  Value: `true`
-   - (optional) `PROD_URL` = your production URL if it is not
-     `https://rwmqx7dwb5-arch.github.io/IntMap/`.
+   - (optional) `PROD_URL` = an override of the address the post-deploy smoke and the uptime probe
+     use. Without it they use `supabase/functions/_shared/site-origin.js` — the one place the address is written.
 
 Until both are set, `ci.yml`'s `pages` job and `deploy.yml` skip (green no-op), `rollback.yml` is red, and the
 branch publish keeps working. See [`docs/MONITORING.md`](MONITORING.md) for what to check
@@ -330,6 +330,71 @@ only ever be an existing commit — so rollback cannot publish arbitrary/injecte
 
 > Rollback reverts the **frontend only**. It does not undo Supabase schema or data changes.
 > See [`docs/INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md).
+
+## Moving the site to its own domain（独自ドメインへの移行）
+
+**ドメインはまだ無い**（2026-10-01 時点。名前は未定・購入は利用者）。この節は、取得した日に
+上から順にやる手順書である。
+
+### 1 か所の値
+
+本番のアドレスは [`supabase/functions/_shared/site-origin.js`](../supabase/functions/_shared/site-origin.js)
+の **`CUSTOM_DOMAIN`** だけが決める（空＝Pages のアドレス `PAGES_URL`）。そこから導かれるもの:
+
+| 読み手 | 何を導くか |
+|---|---|
+| Edge Function（`_shared/site-origin.js` を直接または `client-error-shape.js` 経由で import するもの） | 受け付ける `Origin`（`SITE_ORIGINS`＝新旧両方）と、上流に名乗る User-Agent の連絡先 |
+| `js/client-error-report.js` | 報告を送るオリジン |
+| `index.html`（ビルド時） | `og:url`・`og:image`（`scripts/site-url.mjs` の Vite プラグインが埋める） |
+| `dist/CNAME`（ビルド時） | 値があれば出す・空なら出さない（⚠ 下の注を参照） |
+| workflow（`ci.yml`・`deploy.yml`・`rollback.yml`・`uptime.yml`） | smoke と uptime の宛先（`node scripts/site-url.mjs`）、公開後の一致検査 |
+| `tests/prod-smoke.spec.js`・`scripts/release-state.mjs`・`scripts/atlas-eval.mjs`・`scripts/probe-relay-ladder.mjs` | 本番の URL・Origin・Referer |
+| `README.md`・`AGENTS.md`・`.agents/roles/intmap-prod-verifier.md` | `[site:<path>]: <url>` の参照定義（`node scripts/site-url.mjs --write` が描く） |
+
+**正本以外にアドレスを書くと `npm run check:static` が赤になる**（規則 `site-address`。例外は
+正本そのもの・`dev-notes/`・`DEV-NOTES-ARCHIVE.md`——過去の記録は「その日のアドレスで測ったこと」
+なので書き換えない——と、正本から描かれた `[site:]` 定義だけ。理由は `scripts/site-url.mjs` の冒頭）。
+ページはベースパスを前提にしない（`vite.config.js` の `base: './'`・`sw.js` は相対 URL で登録）ので、
+`/IntMap/` 配下でもドメインの直下でも同じ `dist/` が動く——`tests/domain-portable-checks.test.mjs` が
+1 つのビルドを両方に置いて確かめる。
+
+⚠ **`CNAME` ファイルはドメインを結ばない。** このリポジトリは GitHub Actions の workflow で公開して
+おり、その場合 GitHub は「既存の `CNAME` ファイルを無視する」（docs.github.com「Managing a custom
+domain for your GitHub Pages site」2026-10-01 に確認）。**結ぶのは Pages の設定（`cname`）**で、
+公開のたびに `node scripts/site-url.mjs --pages-agrees <page_url>` が GitHub の答え（`deploy-pages`
+の `page_url`）と正本を突き合わせ、食い違えば post-deploy の job が赤になる。
+
+### 旧アドレスはどうなるか（実測）
+
+2026-10-01、独自ドメインを持つ project サイト 2 つ（`jekyll.github.io/jekyll/…`・
+`twbs.github.io/bootstrap/…`）で測った: Pages は旧アドレスに **301** を返し、**`/<repo>/` を落とし、
+残りのパスとクエリを保つ**（`/jekyll/docs/installation/?x=1` → `jekyllrb.com/docs/installation/?x=1`）。
+`#` 以降はブラウザが運ぶ。⇒ 旧リンク・ブックマーク・共有 URL は切れない。
+⚠ ただし**オリジンが変わる**ので、オリジンに属するものは新しいアドレスへ移らない:
+`localStorage`・IndexedDB・Cache Storage・Service Worker・**ログインのセッション**。読者は新しい
+アドレスで一度ログインし直す。アカウントに同期されていない手元だけの状態は旧オリジンに残り、旧オリジンは
+301 しか返さないので**取り出す手段が無い**。
+
+### 手順（誰がやるか）
+
+| # | 誰 | やること |
+|---|---|---|
+| 1 | **利用者** | ドメインを購入する。apex（`example.com`）か subdomain（`www.example.com` 等）かを決める。apex にするなら `www` も設定すると GitHub が両者のリダイレクトを自動で作る。 |
+| 2 | **利用者**（GitHub のアカウント設定の画面） | ドメインを**検証**する（Settings → Pages → Verified domains → Add domain）。表示される TXT レコード `_github-pages-challenge-rwmqx7dwb5-arch.<domain>` を DNS に入れて Verify。乗っ取り（takeover）を防ぐためで、TXT は消さない。 |
+| 3 | **利用者**（DNS 事業者） | レコードを入れる。**apex**: `A` を 4 本 `185.199.108.153`・`185.199.109.153`・`185.199.110.153`・`185.199.111.153`、`AAAA` を 4 本 `2606:50c0:8000::153`・`2606:50c0:8001::153`・`2606:50c0:8002::153`・`2606:50c0:8003::153`（または事業者が対応していれば `ALIAS`/`ANAME` → Pages のホスト＝`node scripts/site-url.mjs --pages-host`）。**subdomain**: `CNAME` → Pages のホスト（`node scripts/site-url.mjs --pages-host`。パスは付けない）。**ワイルドカード（`*.example.com`）は作らない**。値は docs.github.com から 2026-10-01 に転記したもの——入れる前に公式の頁で確かめる。 |
+| 4 | エージェント | Pages にドメインを結ぶ: `gh api -X PUT repos/rwmqx7dwb5-arch/IntMap/pages -f cname=<domain>`。DNS の確認は `gh api repos/rwmqx7dwb5-arch/IntMap/pages/health`。⚠ ここから手順 6 の merge までは公開後の一致検査が赤になる（GitHub はもう新しいアドレスを答え、正本はまだ古い）——間を空けない。 |
+| 5 | エージェント | 証明書が出たら HTTPS を強制する: `gh api -X PUT repos/rwmqx7dwb5-arch/IntMap/pages -F https_enforced=true`（出るまで最大 24 時間）。 |
+| 6 | エージェント | PR: `site-origin.js` の `CUSTOM_DOMAIN` を `<domain>` にし、`node scripts/site-url.mjs --write` と `node scripts/agent-sync.mjs --write` を走らせ、`npm test` → merge。公開 run の post-deploy が `--pages-agrees` で一致を確かめる。 |
+| 7 | エージェント | `site-origin.js` を（直接または `client-error-shape.js` 経由で）import する Edge Function を配備し直す——一覧は `git grep -l -e site-origin -e client-error-shape -- "supabase/functions/*/index.ts"` が出す（迷ったら `--all`）: `supabase functions deploy <name> --project-ref vpekfwdpurzejrrmacac --use-api`。版は `supabase functions list` で確かめる。 |
+| 8 | エージェント（Management API の token があれば。無ければ利用者が dashboard で） | Supabase Auth → URL Configuration: **Site URL** を新しい `SITE_URL` に、**Redirect URLs** に新しい `SITE_URL` を足す（旧アドレスは移行が済むまで残す）。API なら `PATCH https://api.supabase.com/v1/projects/vpekfwdpurzejrrmacac/config/auth` の `site_url`・`uri_allow_list`。パスワード再設定とメール変更のリンクは `location.origin + location.pathname` に戻るので、ここが抜けるとリンクが跳ね返される。 |
+| 9 | エージェント（同上） | パスキー: Relying Party ID を新しいホスト（`node scripts/site-url.mjs --host`）、Origin を `--origin` にする。⚠ **パスキーは RP ID に結ばれていて、旧ホストで登録されたものは新しいホストでは使えない。** 切り替える前に登録数を数え、0 でなければ利用者に影響を伝える（2026-09-27 の記録では 0 件——`docs/SECURITY-ARCHITECTURE.md` の「Passkeys are enabled on the project」の項）。 |
+| 10 | **利用者**（Google アカウント） | Google Search Console に新しいアドレスのプロパティを足す。ドメインプロパティなら DNS の TXT で、URL プレフィックスなら HTML ファイルで確認する——サイト直下には今も `google0266d9db8efbc48c.html` が配られている（`vite.config.js` STATIC_ASSETS）。コンソールが別のファイル名を示したら、そのファイルを足して STATIC_ASSETS に載せる（エージェント）。旧アドレスは 301 なので検索エンジンはそれに従う。（「アドレス変更」ツールがサブパスのプロパティで使えるかは未確認。） |
+| 11 | **利用者** | CARTO のアカウントで、basemap キーに申告したドメインを新しいものに変える。キーは申告ドメインに対して発行されるが Referer は強制されない（実測・`js/carto-basemap.js`）ので、変えなくても今日は動く。 |
+| 12 | エージェント | 本番検証（`intmap-prod-verifier`）: 新しいアドレスで地図が出る・旧アドレスが 301 で新しいアドレスへ・`og:url` が新しいアドレス・エラー報告が受理される・ログインと再設定メールのリンクが戻ってくる。 |
+
+⚠ **ロールバック**（`rollback.yml`）は、そのコミットが持つ `CUSTOM_DOMAIN` でビルドする。違う値の
+コミットに戻すと、Pages の設定は変わらないので一致検査が赤になる——ドメインを跨いで戻すときは
+Pages の `cname` も合わせる。
 
 ## Manual steps summary (GitHub UI)
 
