@@ -39,4 +39,8 @@ export interface Chronos {
   setYear(y: number, opts?: ChronosSetOptions): Chronos;
   setDaysAgo(days: number, opts?: ChronosSetOptions): Chronos;
   setNow(opts?: ChronosSetOptions): Chronos;
+  /** the reader is on the way to the past — fired once (js/chronos.js); a late subscriber is called at once */
+  intent(source?: string): Chronos;
+  intended(): { source: string; at: number } | null;
+  onIntent(fn: (i: { source: string; at: number }) => void): () => void;
 }

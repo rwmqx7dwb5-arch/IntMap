@@ -60,18 +60,21 @@ const D = () => (typeof document !== 'undefined' ? document : null);
 const FILES = {};
 function load() {
   if (DECL) return Promise.resolve(DECL);
-  if (!loading) loading = Promise.all([import('./layer-time-decl.js'), import('./layer-time.js')]).then(async ([m, rule]) => {
+  /* ⚠ THE TABLE DOES NOT WAIT FOR THE FILES ITS BOUNDS POINT INTO. Those bounds stay unread («range not yet read»,
+     never «stated») until a file arrives; then they are resolved and the instant is judged again. MEASURED: on the
+     share link carrying every layer, the table arrived ~40 s after the clock left the present while it waited
+     behind a busy page's requests for data/gibs-range.json — 40 s of today's layers on a 1991 map. */
+  if (!loading) loading = Promise.all([import('./layer-time-decl.js'), import('./layer-time.js')]).then(([m, rule]) => {
     R = rule;
     const T = m.TIME;
     const files = Array.from(new Set(Object.keys(T).flatMap((id) => R.pointerFiles(T[id]))));
-    await Promise.all(files.map((f) => {
+    const build = () => { const out = {}; for (const id of Object.keys(T)) out[id] = R.resolve(T[id], FILES); return out; };
+    DECL = build();
+    files.forEach((f) => {
       let u = f; try { u = new URL(f, D().baseURI).toString(); } catch (_) { /* relative */ }
-      /* a file that cannot be read leaves its bounds unread — the verdict says «range not yet read», never «stated» */
-      return jsonWithin(u, clockFor(u)).then((j) => { if (j) FILES[f] = j; }, () => {});
-    }));
-    const out = {};
-    for (const id of Object.keys(T)) out[id] = R.resolve(T[id], FILES);
-    DECL = out; return DECL;
+      jsonWithin(u, clockFor(u)).then((j) => { if (j) { FILES[f] = j; DECL = build(); settleSoon(); } }, () => {});
+    });
+    return DECL;
   });
   return loading;
 }

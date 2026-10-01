@@ -6093,7 +6093,10 @@ export function dataLayers(HOST){
       try{ layerState.useLang(()=>HOST.lang); }catch(_){}   /* (layer-failure-state) the row marks speak the reader's language — HOST.lang is live (#R165) */
       /* `runs()` — how many times each reconciler ran, by trigger (layer-failure-state): the measurement that the
          quiet map runs neither. `states()` — the one owner's record (js/layer-state.js), for a reader already here. */
-      window.IntMapLayerAudit={run:audit,check,log:()=>log.slice(-20),
+      /* (world-at-time) which renderer layers a box owns — the same answer check() reads (the id tables, then the learned
+         ownership), handed out read-only so a reader can tell a layer held for the instant from one the style hold lost */
+      const owned=(cbId)=>{ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):[]; } return ids.slice(); };
+      window.IntMapLayerAudit={run:audit,check,owned,log:()=>log.slice(-20),
         runs:()=>({ sweep:Object.assign({},_reconcileRuns.sweep), audit:Object.assign({},_reconcileRuns.audit) }),
         states:()=>layerState.snapshot()};
     })();
