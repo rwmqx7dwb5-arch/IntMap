@@ -34,6 +34,7 @@ import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gau
 import { readWithin, isUnobserved } from './fetch-deadline.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';
 
 
 /* ══ ⚠ (railways-handover-idempotent) THE BASEMAP-SWAP SELF-HEAL — ONE RULE FOR EVERY PACK IN THIS FILE ══
@@ -1757,7 +1758,7 @@ export function gibsScience(HOST){
        Now the clock's day is drawn, snapped to the product's period; outside the archive the measured
        extent (data/gibs-range.json) is what js/layer-time-kernel.js reads to hold the row back and say
        why, so `gxClamp` only ever decides a day inside it. The picker and the steppers move the clock. */
-    function gxClock(){ try{ const T=window.IntMapTime; return (T&&!T.isLive())?T.iso():null; }catch(_){ return null; } }
+    function gxClock(){ try{ const T=IntMapTime; return (T&&!T.isLive())?T.iso():null; }catch(_){ return null; } }
     function gxAt(L){ if(L.staticDate) return L.staticDate;
       const R=gxR(L);
       const ck=gxClock(); if(ck) return gxClamp(L,ck);
@@ -1765,12 +1766,12 @@ export function gibsScience(HOST){
       return (R&&R.to)||GDATE(); }
     /* a day chosen in the legend is the map's day: it moves the one clock (noon UTC — a GIBS day is a UTC day) */
     function gxSetDay(L,iso){ const v=gxClamp(L,iso);
-      try{ window.IntMapTime.set(new Date(v+'T12:00:00Z'),{source:'ui'}); }catch(_){ gxDate[L.id]=v; gxRepoint(L); } }
+      try{ IntMapTime.set(new Date(v+'T12:00:00Z'),{source:'ui'}); }catch(_){ gxDate[L.id]=v; gxRepoint(L); } }
     function gxStep(L,dir){ const R=gxR(L); if(!R) return;
       const per=R.period||1;
       const t=Date.parse(gxAt(L)+'T00:00:00Z')+dir*per*DAYMS;
       gxSetDay(L,gxIso(t)); }
-    try{ window.IntMapTime.on(()=>{ LIST.forEach(L=>{ if(state[L.id]&&!L.staticDate) gxRepoint(L); }); }); }catch(_){}
+    try{ IntMapTime.on(()=>{ LIST.forEach(L=>{ if(state[L.id]&&!L.staticDate) gxRepoint(L); }); }); }catch(_){}
     function gxRepoint(L){ try{ if(GE().layers.hasSource(srcId(L))) GE().layers.setSourceTiles(srcId(L),[urlFor(L)]); }catch(_){}
       legendNote(L); }
     const urlFor=(L)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+gxAt(L)+'/GoogleMapsCompatible_Level'+L.max+'/{z}/{y}/{x}.'+L.ext;

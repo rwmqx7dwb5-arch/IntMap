@@ -22,10 +22,11 @@
  *  the 61 World Bank rows are one series reader (js/wb-layers.js) and say one thing. A row is not
  *  matched to it by its id's spelling: every id is written out.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';   /* the translation helper, by import (#860) — the same in node: pickArgs() returns the array it is handed */
 
 /* IntMap's own words, en + jp (CONSTITUTION.md §7), held as the translation call the instruments read —
    `pickArgs()` returns the array it is handed, so headless (node, the gate) the same data is the bare array */
-const LA = (function () { try { return window.IntMapLang.pickArgs(); } catch (_) { return (...a) => a; } }());
+const LA = /** @type {(...a: string[]) => string[]} */ (IntMapLang.pickArgs());
 
 /* ── the sources several rows draw from ─────────────────────────────────────────────────────────── */
 

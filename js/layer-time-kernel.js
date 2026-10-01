@@ -29,6 +29,8 @@
  *  the clock leaves the present or someone asks — the table is fetched then, not at boot.
  * ==========================================================================*/
 import { isLayer } from './layer-manifest.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';
 import { layerState } from './layer-state.js';
 import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
@@ -74,14 +76,14 @@ function load() {
   return loading;
 }
 function lang() {
-  try { return W().IntMapLang.normalise(D().documentElement.lang || 'en'); } catch (_) { return 'en'; }
+  try { return IntMapLang.normalise(D().documentElement.lang || 'en'); } catch (_) { return 'en'; }
 }
-const tr = (en, jp) => { try { return W().IntMapLang.t(lang(), en, jp); } catch (_) { return en; } };
+const tr = (en, jp) => { try { return IntMapLang.t(lang(), en, jp); } catch (_) { return en; } };
 const pickText = (o) => (o ? tr(o.en, o.jp) : '');
 
 /** the instant the clock is at — { when, live, now } */
 function clockAt() {
-  const T = W() && W().IntMapTime;
+  const T = IntMapTime;
   const now = Date.now();
   if (!T) return { when: now, live: true, now };
   return { when: T.when().getTime(), live: !!T.isLive(), now };
@@ -223,7 +225,7 @@ let settleQueued = false;
 function settleSoon() {
   if (settleQueued) return; settleQueued = true;
   const run = () => { settleQueued = false; settle(); };
-  const T = W() && W().IntMapTime;
+  const T = IntMapTime;
   /* off the present the table is fetched; ON the present it is waited for if it is already on its way — a
      clock that went back and returned while the table loaded still has rows to hold (a war's record ended) */
   if (!DECL && ((T && !T.isLive()) || loading)) { load().then(run, run); return; }
@@ -253,7 +255,7 @@ function paintLegend(at) {
     try { W()._wireLegendDrag && W()._wireLegendDrag(el); } catch (_) { /* not draggable */ }
   }
   /* built as nodes with textContent — the names and sentences are data, never markup */
-  const day = (W() && W().IntMapTime && W().IntMapTime.iso) ? W().IntMapTime.iso() : '';
+  const day = (IntMapTime && IntMapTime.iso) ? IntMapTime.iso() : '';
   const not = rows.filter((r) => r.v.status === 'unstated'), other = rows.filter((r) => r.v.status === 'carried');
   const node = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
   const list = (rs) => { const ul = node('ul', 'lt-list'); rs.forEach((r) => { const li = node('li'); li.dataset.lid = r.id; li.appendChild(node('b', '', label(r.id))); li.appendChild(d.createTextNode(' — ' + pickText(r.v.message))); ul.appendChild(li); }); return ul; };
@@ -330,7 +332,7 @@ try {
     });
     w.IntMapLayerTime = API;
     const hook = () => {
-      const T = w.IntMapTime; if (!T || typeof T.on !== 'function') return false;
+      const T = IntMapTime; if (!T || typeof T.on !== 'function') return false;
       T.on(() => settleSoon());
       if (!T.isLive()) settleSoon();
       return true;

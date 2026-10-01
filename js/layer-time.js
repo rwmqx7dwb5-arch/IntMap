@@ -56,10 +56,11 @@
  *  claim this repository keeps removing ([[intmap-data-must-not-claim-an-author-it-lacks]]);
  *  `validate` refuses it, and npm run check is red while it is there.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';   /* the translation helper, by import (#860) — the same in node: pickArgs() returns the array it is handed */
 
 /* IntMap's own words are held as the translation call the instruments read (`pickArgs()` returns the array it
    is handed — so headless, the same data is the bare array): a sentence is [en, jp] (CONSTITUTION.md §7) */
-const LA = (function () { try { return window.IntMapLang.pickArgs(); } catch (_) { return (...a) => a; } }());
+const LA = /** @type {(...a: string[]) => string[]} */ (IntMapLang.pickArgs());
 const isPair = (a) => Array.isArray(a) && typeof a[0] === 'string' && !!a[0] && typeof a[1] === 'string' && !!a[1];
 
 export const KINDS = Object.freeze(['instant', 'convention', 'enduring', 'record', 'series', 'snapshot', 'live', 'forecast']);

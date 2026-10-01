@@ -181,7 +181,8 @@ test('③ the enumeration at the key years: nothing of today is «stated» befor
 test('④ the World Bank rows paint the clock\'s year, and report the years they hold', () => {
   const src = read('js/wb-layers.js');
   const body = (name) => { const i = src.indexOf('function ' + name + '('); assert.ok(i >= 0, name); let d = 0, j = src.indexOf('{', i); for (let k = j; k < src.length; k++) { if (src[k] === '{') d++; else if (src[k] === '}') { d--; if (!d) return src.slice(i, k + 1); } } return null; };
-  const make = new Function('window', 'wbYear', body('clockYear') + '\n' + body('yearFor') + '\nreturn yearFor;');
+  /* the clock is the module's import (#860), handed in by name */
+  const make = (win, wbYear) => new Function('IntMapTime', 'wbYear', body('clockYear') + '\n' + body('yearFor') + '\nreturn yearFor;')(win.IntMapTime, wbYear);
   const S = { years: ['1990', '2000', '2022'], best: '2022' };
   const past = (y) => ({ IntMapTime: { isLive: () => false, year: () => y } });
   assert.equal(make(past(2000), {})({ id: 'wbgini' }, S), '2000');
