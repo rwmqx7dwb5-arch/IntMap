@@ -8,7 +8,20 @@
 
 - **フィードバック**：`feedback` テーブル（書くのは Edge Function `reader-reports` だけ。§6.2）。`recordLogin()` が本物のログインを数え、3回目に既存モーダルを
   1回表示する（設定からはいつでも開ける）。
-- **寄付**：Stripe リンク（言語別）。記録は `donations` テーブル。
+- **寄付**：Stripe リンク（言語別。日本語の画面は JPY、他の言語は USD のページ）。リンクの宣言は
+  `js/supporter.js` の `STRIPE_DONATE`、どちらを出すかは `js/app-body.js` の `stripeDonateURL()`。
+  押した記録（意図）は `donations` テーブル（支払いそのものは Stripe が持ち、IntMap には届かない）。
+  - **支援パネル**（設定 ▸ 情報とサポート ▸ サポート、`#blueberry-modal`）は開くたびに**「支援の使い道」**を
+    組み立てる（`renderSupportCosts`）——Atlas の 1 日の上限（プラン表 `_shared/plans.js`）、今月の AI 要求数と
+    トークン数（`public.operating_stats()`。記録開始日つき・IntMap 自身の検証を含むと明記）、その他の運営
+    （Supabase と GitHub Pages）。**金額は出さない**。読めなかった月は「読み込めなかった」と出し、0 にしない。
+  - **提案カード**（`#supporter-offer`。モーダルではない・地図の操作を止めない）は 2 つの瞬間にだけ出る:
+    Atlas の 1 日の上限を告げたとき（`js/ai-core.js` が `intmap:ai-limit` を出す。1 日 1 回まで）と、
+    異なる 7 日目に開いたとき（一度だけ）。「今はしない」で 30 日、「支援について」で 180 日、どちらの提案も
+    出さない（`OFFER`。記録は端末の localStorage だけ）。ダイアログが開いている間は出さない。
+  - **Atlas** からは `donate`（パネルを開く）と `operatingCosts`（パネルを「支援の使い道」で開き、同じ数を
+    Atlas に返す）で届く。Stripe のページを開くのは読者のクリックだけ。
+  - 支援者の名前の表示は**無い**（設計だけ。`PRODUCT.md` §2.4）。
   - EN: `https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en`
   - JA: `https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja`
 - **管理コンソール `admin.html`**：`geo_pins`（ニュース辞書）の追加／編集、`dashboard_cards` 編集、

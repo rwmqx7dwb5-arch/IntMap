@@ -305,10 +305,15 @@ test('R736 ④: a withdrawn model is not OFFERED, is not BLOCKED, and is named e
    shape, the model the shell may not name, the vision task. ai-proxy is Deno TypeScript: what it
    does is asserted on its source; the model table is imported.
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
-test('R147 #13 free AI quota is 10/day on the client and server', () => {
-  /* kept as a spelling: supabase/functions/ai-proxy/index.ts is Deno TypeScript node cannot import, and js/ai-core.js / js/app-body.js run only in the signed-in page */
+test('R147 #13 free AI quota is 10/day on the client and server', async () => {
+  /* kept as a spelling for the CLIENT: js/ai-core.js / js/app-body.js run only in the signed-in page.
+     (supporter-funnel) the SERVER's number is the plan table's aiTurnsPerDay column, imported — _shared/plans.js
+     is plain JavaScript, and _shared/ai-ledger.js's PLAN_LIMITS is that column, not a spelling of its own. */
   assert.match(html, /const AI_FREE_DAILY\s*=\s*10\b/, 'client AI_FREE_DAILY=10');
-  assert.match(RAW('supabase/functions/_shared/ai-ledger.js'), /free:\s*10\b/, 'server PLAN_LIMITS.free=10 (ai-one-ledger: _shared/ai-ledger.js, shared with monitor-run)');
+  const { PLANS } = await import('../supabase/functions/_shared/plans.js');
+  const { PLAN_LIMITS } = await import('../supabase/functions/_shared/ai-ledger.js');
+  assert.equal(PLANS.free.aiTurnsPerDay, 10, 'server free plan = 10 questions a day (_shared/plans.js)');
+  assert.equal(PLAN_LIMITS.free, 10, 'PLAN_LIMITS.free (ai-one-ledger: shared with monitor-run) reads the plan table');
   assert.ok(!/up to 30 uses per day/.test(html), 'no stale "30 uses per day" copy');
   assert.ok(!/1日30回/.test(html), 'no stale JP "1日30回"');
 });
