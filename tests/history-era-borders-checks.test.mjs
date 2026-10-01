@@ -278,7 +278,9 @@ test('#R518 ④ go() serves the day-exact band from the bundle, above the snapsh
   const m = /const HB_MIN=(-?\d+), ?HB_MAX=(\d+);/.exec(TB);
   assert.ok(m, 'go() no longer declares the day-exact band');
   assert.ok(+m[1] <= 1850 && +m[2] >= 1885, 'the declared band no longer contains 1850-1885');
-  const go = TB.slice(TB.indexOf('async function go(when)'));
+  /* (time-compare-lapse) the chain of records is `collectionAt(when)` now — `go` draws what it answers, and the
+     comparison window asks the same function for its own clock, so the order is asserted where the chain lives */
+  const go = TB.slice(TB.indexOf('async function collectionAt(when'), TB.indexOf('async function go(when)'));
   const band = go.indexOf('year>=HB_MIN&&year<=HB_MAX');
   const fall = go.indexOf('const ny=nearest(');
   assert.ok(band > 0, 'go() has no 1850-1885 band');
@@ -545,7 +547,7 @@ test('#R690 ③ HB_MIN and HB_MAX are the bundle\'s own window, to the year', as
    comments come off first — the prose beside the band names `fc.features.length` to explain it. */
 test('#R690 ④ a day inside the band with nothing to draw still reaches the snapshot below', () => {
   const code = codeOnly(TB);
-  const go = code.slice(code.indexOf('async function go(when)'));
+  const go = code.slice(code.indexOf('async function collectionAt(when'), code.indexOf('async function go(when)'));   /* (time-compare-lapse) the chain's own function — see #R518 ④ */
   const band = go.indexOf('year>=HB_MIN&&year<=HB_MAX');
   const guard = go.indexOf('fc&&fc.features.length');
   const fall = go.indexOf('const ny=nearest(');

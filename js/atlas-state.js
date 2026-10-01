@@ -27,6 +27,11 @@
  * ==========================================================================*/
 import { makeViewGround } from './atlas-view-ground.js';   /* (#R589) the coordinate precision the zoom actually earns — see the note at the state line below */
 
+/* (time-compare-lapse) whether the clock is being played — js/time-lapse.js, fetched beside this module (a small chunk of
+   its own). Until it has arrived nothing can have played: the panel and Atlas both load it before they start a lapse. */
+let _lapse = null;
+try { import('./time-lapse.js').then((m) => { _lapse = m; }, () => { }); } catch (_) { }
+
 export function makeAtlasState(HOST) {
   var GROUND = makeViewGround();
   return (function () {
@@ -305,6 +310,19 @@ export function makeAtlasState(HOST) {
         try {
           var LT = GLOBAL('IntMapLayerTime');
           if (!out.live && LT && typeof LT.active === 'function') { var la = LT.active(); if (la && la.length) out.layers = la; }
+        } catch (_) { }
+        /* (time-compare-lapse) the OTHER map's instant — the comparison window holds a clock of its own
+           (js/compare.js) — and whether the main clock is being played (js/time-lapse.js). Read off the two
+           things themselves; reported only while they say something (an open window, a lapse that ran). */
+        try {
+          /* the window's published controller (js/compare.js) — not imported: see js/atlas-cap-time.js `compareAt` */
+          var CM = GLOBAL('IntMapCompare'), cs = (CM && typeof CM.timeState === 'function') ? CM.timeState() : null;
+          if (cs && cs.open) { out.compare = { follow: cs.follow, live: cs.live, iso: cs.iso, label: cs.label, layer: cs.layer, held: cs.held, why: cs.note || (cs.verdict && cs.verdict.why) || null }; }
+        } catch (_) { }
+        try {
+          var ls = _lapse ? _lapse.lapseState() : null;
+          if (ls && (ls.playing || ls.frames)) out.lapse = { playing: ls.playing, at: ls.at, from: ls.from, to: ls.to, unit: ls.unit, step: ls.step, rate: ls.rate, loop: ls.loop, ended: ls.ended,
+            lastChange: ls.changes.length ? ls.changes[ls.changes.length - 1] : null };
         } catch (_) { }
         return out;
       });
@@ -796,6 +814,16 @@ export function makeAtlasState(HOST) {
       var tm = snap.time || {};
       if (tm.travelDate) lines.push('TIME TRAVEL is active — news/imagery around ' + tm.travelDate +
         ' (not today). "now/current" requests may need timeTravel reset. IMPORTANT: this date is a DISPLAY setting of the map. It is NOT the data year of any statistic, highlight or reply — NEVER present it as "the year of the data".');
+      /* (time-compare-lapse) the comparison window's own instant, and the time-lapse */
+      if (tm.compare) lines.push('COMPARISON WINDOW is open at ' + (tm.compare.live ? 'the present' : tm.compare.iso) +
+        (tm.compare.follow ? ' (following the main map’s clock)' : ' (its own clock — the main map is at ' + (tm.travelDate || 'the present') + ')') +
+        (tm.compare.layer ? '; its layer "' + tm.compare.layer + '" is ' + (tm.compare.held ? 'NOT drawn there' : 'drawn') + (tm.compare.why ? ' — ' + tm.compare.why : '') : '') +
+        '. Change it with {"type":"timeCompare",…}.');
+      if (tm.lapse) lines.push('TIME-LAPSE ' + (tm.lapse.playing ? 'PLAYING' : 'stopped' + (tm.lapse.ended ? ' (' + tm.lapse.ended + ')' : '')) +
+        ': ' + tm.lapse.from + ' → ' + (tm.lapse.to || 'the present') + ' by ' + tm.lapse.step + ' ' + tm.lapse.unit + '(s), now at ' + (tm.lapse.at || 'the present') +
+        (tm.lapse.lastChange ? '; at ' + tm.lapse.lastChange.at + ' began to be drawn: ' + (tm.lapse.lastChange.entered.map(function (r) { return r.name; }).join(', ') || 'none') +
+          ', stopped being drawn: ' + (tm.lapse.lastChange.left.map(function (r) { return r.name; }).join(', ') || 'none') : '') +
+        (tm.lapse.playing ? '. Stop it with {"type":"timeLapse","play":false}.' : '.'));
       if (tm.layerDates && tm.layerDates.length) lines.push('Dated raster layers showing: ' +
         tm.layerDates.map(function (d) { return d.layer + '=' + d.date; }).join(', ') + ' (changeable via control "date: <layer>").');
       /* (#R550) …and the night lights say BOTH years, because they are allowed to differ */

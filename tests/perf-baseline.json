@@ -1,15 +1,15 @@
 {
   "eager": {
-    "raw": 4700232,
+    "raw": 4726461,
     "gzip": 1547680,
     "brotli": 1168962,
     "requests": 9,
     "modules": 299,
-    "cssRaw": 362437,
+    "cssRaw": 364543,
     "cssGzip": 59206
   },
   "async": {
-    "raw": 11596753,
+    "raw": 11662904,
     "gzip": 3815212,
     "chunks": {
       "aircraft-detail": 17009,
@@ -22,7 +22,7 @@
       "atlas-answer-view": 2513,
       "atlas-attach": 23189,
       "atlas-chart": 10493,
-      "atlas-console": 1116105,
+      "atlas-console": 1122024,
       "atlas-executor": 56924,
       "atlas-geo-resolve": 49608,
       "atlas-query": 48520,

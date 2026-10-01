@@ -3952,6 +3952,13 @@ core と全体の両方に課金される）: RainViewer の索引を 503 にし
 「何も触らない地図では整合器が走らない」はブラウザで 1 回測って記録した（`dev-notes/2026-09-30-layer-failure-state.md`
 §2）。常設の検査は node の ⑦（`everyTick` に整合器の鍵が無い・見直しは当たり 1 回の箱だけ・静かなら 0 回）。
 
+**二時点比較とタイムラプス**（`dev-notes/2026-10-01-time-compare-lapse.md`）も同じ前例に従い、ブラウザの検査は新しい
+spec ファイルではなく `tests/smoke.spec.js` の末尾の 2 本（time-compare-lapse ①②）に入れた——比較窓 1914 とメイン 1960 が
+別々の記録の国境を描くこと、窓にも年代の規則（滅んだ政体の名前を外す）が効くこと、`ct=` のハッシュ遷移で窓の時刻が戻ること、
+ラプスが 1 年 1 コマで飛ばさず進みケッペンが 1901 年に描き始めること。共有ページなので各検査は時計・窓・箱・パネルを戻し、
+ハッシュ遷移の復元は `js/map-ui.js` の自分の時計が走り終えるまで待つ（待たないと次の検査の箱を外す——実測）。
+node の半分は `tests/time-compare-lapse-checks.test.mjs`（2 つの時計・`onMap`・窓の全層の宣言・ラプスの刻みと停止・`timeView` の判定）。
+
 ## 企業アトラスの門 - `npm run check:companies`
 
 `scripts/companies-audit.mjs`。**他の `check:*` が source を読むのに対し、これは出荷される
