@@ -69,7 +69,9 @@ export function widgets(HOST){
     var b = LAY.el() || (LAY.render(), LAY.el());
     if (!b) return;
     /* the board occupies the sidebar when no tab is open — unchanged behaviour */
-    var noTab = (typeof HOST.mode === 'undefined' || !HOST.mode);
+    /* (share-embed-distribution) …and the board is never shown in an EMBED (js/ui-device.js `embedded()`): the
+       sidebar it lives in is not part of a frame on another site, so its cards would fetch for no reader */
+    var noTab = (typeof HOST.mode === 'undefined' || !HOST.mode) && !window.IntMapDevice.embedded();
     if (noTab) {
       b.style.display = 'block';
       if (!built) { built = true; LAY.render(); }

@@ -447,8 +447,11 @@ test('R276 ⑪ every Open-Meteo request goes through IntMapWx', () => {
 test('R276 ⑫ a shared weather view reproduces the same hour, not the same index', () => {
   const w = WX();
   assert.match(w, /window\.IntMapShareState\.register\('weatherEC',io\)/, 'the weather registers its state');
-  assert.match(w, /const vt=EC\(\)\.validTime\(\); if\(vt&&EC\(\)\.index\(\)!==EC\(\)\.nowIndex\(\)\) o\.t=vt;/,
-    'the valid time travels as an INSTANT, and only when it is not simply "now"');
+  /* (share-embed-distribution) …and only while a weather layer is on: with none on, the hour describes nothing
+     drawn (measured: every link made after the hour moved carried it). tests/restored-layer-before-style.spec.js
+     measures the same thing in a browser. */
+  assert.match(w, /const vt=EC\(\)\.validTime\(\); if\(vt&&anyOn\(\)&&EC\(\)\.index\(\)!==EC\(\)\.nowIndex\(\)\) o\.t=vt;/,
+    'the valid time travels as an INSTANT, only when it is not simply "now", and only while a weather layer is on');
   assert.match(w, /if\(v\.t\)\{ const ms=Date\.parse\([\s\S]{0,80}?EC\(\)\.setIndex\(EC\(\)\.nearestTo\(ms\)\)/,
     'and is restored to the nearest step of whatever run the reader has');
   assert.match(w, /LAYERS\.forEach\(l=>\{ if\(state\[l\.id\]\.on&&state\[l\.id\]\.op!==l\.op\) ops\[l\.id\]=/,

@@ -86,7 +86,7 @@ export const CATALOGUE_SILENT = [
   'settings.language', 'view.terrain3d', 'view.grid', 'view.resetNorth', 'view.zoom', 'view.bearing',
   'view.pitch', 'view.pan', 'panel.tab', 'layers.countryInfo', 'data.countryCard', 'data.timeSeries',
   'map.isolateCountry', 'routing.setEndpoints', 'data.runways', 'panel.education', 'panel.ecmwf',
-  'panel.widgets', 'panel.screenshot', 'panel.share', 'panel.search', 'settings.units', 'map.tool',
+  'panel.widgets', 'panel.screenshot', 'panel.search', 'settings.units', 'map.tool',
   'navigation.stop', 'map.measure', 'panel.correlate', 'panel.settings', 'panel.shortcuts',
   'sim.rfCoverage', 'sim.sunPosition', 'sim.nightSky', 'map.clearAll', 'map.outline',
   'sim.pandemicRun', 'map.pandemicDay', 'panel.playground', 'panel.news', 'panel.account',

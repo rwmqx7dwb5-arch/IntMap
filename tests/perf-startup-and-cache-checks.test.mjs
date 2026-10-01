@@ -401,7 +401,9 @@ test('R224 ⑥b Atlas is on demand, and every entry point fetches it', () => {
      making the first ⌘K wait for a download would be trading one regression for another. */
   assert.match(ld, /const phone = \/Mobi\|Android\|iPhone\|iPad\/\.test\(navigator\.userAgent\);/,
     'the UA decides — a RAM question is not a width question (Architecture §9)');
-  assert.match(ld, /if \(!phone && !save\)/);
+  /* (share-embed-distribution) …and not in an embed, which has no Atlas panel — asked of js/ui-device.js embedded() */
+  assert.match(ld, /const embed = window\.IntMapDevice\.embedded\(\);/);
+  assert.match(ld, /if \(!phone && !save && !embed\)/);
   assert.match(ld, /events\.once\('idle'/, 'never before the app is interactive');
   assert.ok(!/requestIdleCallback\(/.test(ld), 'and not behind an idle callback that may never fire');
 });

@@ -3531,7 +3531,7 @@ export function viewHash(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   (function(){
     if(!GE().hasRenderer()) return;
-    let restoring=false, t=null;
+    let restoring=false, t=null, queued=false;   /* queued: a link that arrived during a restore (share-embed-distribution — see the hashchange listener) */
     /* ══ ⚠⚠⚠ (#R244) THE URL THE READER OPENED IS READ ONCE, BEFORE ANYTHING CAN OVERWRITE IT ═══════
        「再読み込み時に情報が保持されなくなっている。」
 
@@ -3709,7 +3709,13 @@ export function viewHash(HOST){
              ago still CARRIES them — and this loop resolving them by `data-layer` is precisely how the nine
              geopolitics layers kept switching themselves on («大昔に捨てたはずの地政学レイヤーが勝手にオンに
              なる»). Only ids are resolved now, so a retired key finds nothing. */
-          want.forEach(k=>{ const cb=document.getElementById(k); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
+          /* ⚠ (share-embed-distribution) …AND MARKED AS A RESTORE, like js/session-tabs.js marks its own.
+             A layer in js/layer-home.js (EU, NATO, Ukraine, the U.S. election) flies the camera to its
+             data when the READER switches it on, and it tells the two apart only by `__imRestored`.
+             This loop did not set it, so a shared link naming one of those layers opened at the
+             layer's home instead of the view in `v=` — MEASURED: `#v=15,50,3…&l=dl-nato` settled at
+             `#v=-48.1019,54.7064,1.20` — and every embed of such a map showed the wrong place. */
+          want.forEach(k=>{ const cb=document.getElementById(k); if(cb&&!cb.checked){ cb.__imRestored=1; cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
           /* turn OFF any data layer NOT in the link so the shared state is reproduced EXACTLY (matters when a
              link is pasted into a tab that already had layers on). Base toggles (names/borders/…) are untouched. */
           /* (layer-manifest) «any data layer» is the manifest's `share` set — the same rows the link can carry */
@@ -3721,7 +3727,14 @@ export function viewHash(HOST){
         const tt=/[#&]tt=([^&]+)/.exec(H);
         if(tt){ setTimeout(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&IntMapTime) IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
         else { const tm=/[#&]ts=(\d+)/.exec(H);
-          if(tm){ setTimeout(()=>{ try{ if(IntMapTime) IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); } }
+          if(tm){ setTimeout(()=>{ try{ if(IntMapTime) IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); }
+          /* ⚠ (share-embed-distribution) A LINK WITH NO INSTANT IS A LINK AT «NOW». encode() writes `tt` only while
+             the clock is off live, so its absence is a statement, not a silence — and a full restore applies the
+             WHOLE state the link describes. Before this, pasting a no-`tt` link into a tab standing in 1990
+             moved the camera and the layers and left the clock in 1990 (measured: the address bar then read
+             `#v=20,40,4…&tt=1990-06-15`, a link to a different map than the one pasted). The reader's own saved
+             year does not compete with it: js/session-tabs.js asks `carriesState()` below and yields. */
+          else setTimeout(()=>{ try{ if(IntMapTime&&!IntMapTime.isLive()) IntMapTime.setNow({source:'ui'}); }catch(_){} },900); }
         /* (#R211) 3-D terrain, then the simulators' own numbers. The sims go LAST and late: several
            of them are lazy modules that are only fetched when their layer or panel is asked for, so
            applying at 900 ms would reach a module that does not exist yet. Each `set` is expected to
@@ -3734,14 +3747,22 @@ export function viewHash(HOST){
         const cm2=/[#&]cmp=([^&]+)/.exec(H);
         if(cm2){ setTimeout(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); if(cm2[1]==='x'){ setTimeout(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
       }
-      setTimeout(()=>{ restoring=false; },3500);
+      setTimeout(()=>{ restoring=false;
+        /* (share-embed-distribution) a link that arrived while this one was being applied — see the hashchange listener */
+        if(queued){ queued=false; try{ restore({shared:true}); }catch(_){} } },3500);   /* a shared restore reads the live address (H) and does nothing if it names no view */
       booted=true;   /* (#R244) the boot restore has read the address — the bar may be written now */
     }
     GE().events.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
     /* (#R42b) ROOT CAUSE of "コピーしたリンクを開いてもそのままにならない": pasting a link into the SAME tab is a
        hash-only navigation — no reload — so restore() never re-ran. history.replaceState (used by save) does NOT
        fire hashchange, so this can't loop. Re-run a FULL restore on any user hash navigation to a state link. */
-    window.addEventListener('hashchange',()=>{ try{ if(restoring) return; if(/[#&]v=/.test(location.hash)) restore({shared:true}); }catch(_){} });
+    /* ⚠ (share-embed-distribution) …AND A SECOND LINK PASTED WHILE THE FIRST IS STILL BEING APPLIED IS NOT DROPPED.
+       `restoring` covers 3.5 s of staged steps (layers at 700/1800/3200 ms, the clock at 900), and this listener
+       used to `return` inside it — measured: two links 0.8 s apart left the map at the FIRST one while the
+       address bar showed the SECOND. Running the second at once would interleave two sets of staged steps, so
+       it is remembered and applied when the first finishes; it reads the live address then, so of several
+       links pasted in that window the LAST one is the one applied. (`queued` is declared with `restoring`.) */
+    window.addEventListener('hashchange',()=>{ try{ if(!/[#&]v=/.test(location.hash)) return; if(restoring){ queued=true; return; } restore({shared:true}); }catch(_){} });
     /* (#R16) GHOST-LAYER fix: the hash (which restore() re-applies on reload) used to update ONLY on pan,
        so toggling a layer OFF without panning left it in the hash → it "came back" on the next/crash reload
        ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
@@ -3756,7 +3777,10 @@ export function viewHash(HOST){
        the style is parsed is safe, because js/layer-rows.js holds its layer changes until it is. */
     const _boot=()=>{ if(bootRan) return; bootRan=true; try{ restore(); }catch(_){} bootDone=true; booted=true; };
     if(_imCanDraw()) _boot(); else { GE().whenCanDraw().then(_boot); setTimeout(_boot,8000); }
-    window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
+    /* carriesState(): did this document open on a map state (`v=`)? Then the link — not the reader's saved
+       session — owns everything it describes, the clock included (js/session-tabs.js yields its year to it). */
+    window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore,
+      carriesState:()=>/[#&]v=/.test(BOOT_HASH) };
   })();
 }
 
@@ -3779,13 +3803,49 @@ export function share(HOST){
         +'#share-panel .sh-btn:active{transform:scale(0.96);}'
         +'#share-panel .sh-inc{margin-top:13px;font-size:11px;color:var(--text-muted);line-height:1.6;border-top:1px solid rgba(128,128,128,0.16);padding-top:10px;}'
         +'#share-panel .sh-inc b{color:var(--text-main);font-weight:600;}'
+        /* (share-embed-distribution) the Link / Embed segmented control (the Embed tab's own fields: js/embed-mode.js TAB_CSS) */
+        +'#share-panel .sh-tabs{display:flex;gap:2px;margin:10px 0 10px;padding:2px;border-radius:10px;background:var(--input-bg);}'
+        +'#share-panel .sh-tab{flex:1;height:30px;border:none;border-radius:8px;background:none;color:var(--text-muted);font-size:12.5px;font-weight:600;cursor:pointer;}'
+        +'#share-panel .sh-tab[aria-selected="true"]{background:var(--popup-bg);color:var(--text-main);box-shadow:0 1px 3px rgba(0,0,0,0.12);}'
+        +'#share-panel .sh-tab:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px;}'
+        +'#share-panel .sh-pane[hidden]{display:none;}'
+        +'#share-panel{max-height:calc(100vh - 96px);overflow-y:auto;}'
+        /* (share-embed-distribution) the right Layers sidebar overlays the map container (#R160), and the panel was centred
+           on the whole container — at 1280 px with both sidebars open its right third (the Copy and Preview buttons) sat
+           under the Layers list and could not be pressed. Centre it on the map that is VISIBLE, the way the other
+           overlays read --lsr-w (css/intmap.css body.lsr-open rules). */
+        +window.IntMapDevice.media('body.lsr-open:not(.ws-mode) #share-panel{left:calc((100% - var(--lsr-w)) / 2);width:min(440px,calc(100% - var(--lsr-w) - 24px));}',true)
         +'@media'+window.IntMapDevice.COMPACT+'{#share-panel{left:8px;right:8px;width:auto;transform:none;top:auto;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px);}}';
       document.head.appendChild(s); }
-    function close(){ if(panel) panel.style.display='none'; }
-    function open(){
-      ensureStyle();
-      const link=(window.IntMapBookmark&&window.IntMapBookmark.link)?window.IntMapBookmark.link():location.href;
-      if(!panel){ panel=document.createElement('div'); panel.id='share-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); }
+    /* ══ (share-embed-distribution) TWO TABS: THE LINK, AND THE SAME LINK AS AN <iframe> ═══════════════
+       「他サイトへ埋め込む手段が無い。」 The embed is the share link with `?embed=1`, so both tabs read
+       ONE address — link() below, IntMapBookmark.link(), the encoder the address bar is written by —
+       and cannot describe two different maps. The Embed tab itself is js/embed-mode.js
+       (`createEmbedTab`), fetched the first time this panel opens: a session that never shares
+       does not download it, and a normal start-up does not parse it. */
+    let tab='link', embedTab=null, embedLoad=null;
+    function link(){ return (window.IntMapBookmark&&window.IntMapBookmark.link)?window.IntMapBookmark.link():location.href; }
+    function copyText(btn,text,field,label){ return async()=>{ let ok=false;
+      try{ await navigator.clipboard.writeText(text()); ok=true; }catch(_){ try{ field.select(); ok=document.execCommand('copy'); }catch(__){} }
+      btn.textContent=ok?('✓ '+L('Copied!','コピー完了','Kopiert!','Скопировано!','¡Copiado!')):('⚠ Ctrl+C');
+      setTimeout(()=>{ btn.textContent=label(); },1900); }; }
+    function loadEmbedTab(){
+      if(!embedLoad) embedLoad=import('./embed-mode.js').then(m=>(embedTab=m.createEmbedTab({ link, t, copy:copyText })))
+        .catch(e=>{ embedLoad=null; throw e; });   /* a failed fetch is tried again on the next open, not remembered */
+      return embedLoad; }
+    /* → { url, size, interactive, code } for the current map, or null while the tab's module has not arrived */
+    function embed(o){ return embedTab?embedTab.embed(o):null; }
+    function close(){ try{ embedTab&&embedTab.stopPreview(); }catch(_){} if(panel) panel.style.display='none'; }
+    /* open({ tab:'link'|'embed', size, width, height, interactive }) — every field optional; the
+       callers that pass nothing (the Share menu, the tool sheet, the routing card) get the link tab
+       exactly as before. A DOM event handed in by an `onclick=open` is not an options object.
+       → a Promise that settles once the Embed tab is built (Atlas waits for it; the menu does not). */
+    function open(o){
+      ensureStyle(); o=(o&&typeof o==='object'&&!(typeof Event!=='undefined'&&o instanceof Event))?o:{};
+      tab=(o.tab==='embed')?'embed':'link';
+      const lk=link();
+      if(!panel){ panel=document.createElement('div'); panel.id='share-panel'; panel.setAttribute('data-panel','share'); (document.getElementById('map-container')||document.body).appendChild(panel); }
+      try{ embedTab&&embedTab.stopPreview(); }catch(_){}
       panel.style.display='block';
       const inc=L('Includes: position, zoom, projection, base map, every active layer, time-travel & compare state.',
         '含まれる情報: 位置・ズーム・投影・ベースマップ・選択中の全レイヤー・時刻（タイムトラベル）・比較状態。',
@@ -3794,19 +3854,31 @@ export function share(HOST){
         'Incluye: posición, zoom, proyección, mapa base, todas las capas activas, viaje en el tiempo y comparación.');
       panel.innerHTML='<button class="sh-x" title="'+t('close')+'">×</button>'
         +'<h4>🔗 '+L('Share this view','このビューを共有','Diese Ansicht teilen','Поделиться видом','Compartir esta vista')+'</h4>'
-        +'<div style="font-size:11.5px;color:var(--text-muted);">'+L('Anyone who opens this link sees the map exactly as you do now.','このリンクを開くと、今あなたが見ている状態がそのまま再現されます。','Wer den Link öffnet, sieht die Karte genau wie Sie jetzt.','Открывший ссылку увидит карту точно как вы сейчас.','Quien abra el enlace verá el mapa tal como lo ves ahora.')+'</div>'
-        +'<div class="sh-row"><input class="sh-url" type="text" readonly value="'+String(link).replace(/"/g,'&quot;')+'"><button class="sh-btn sh-copy">📋 '+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</button></div>'
-        +(navigator.share?('<div class="sh-row"><button class="sh-btn sec sh-native" style="flex:1;">📤 '+L('Share…','共有…','Teilen…','Поделиться…','Compartir…')+'</button></div>'):'')
-        +'<div class="sh-inc">'+inc+'</div>';
-      const urlEl=panel.querySelector('.sh-url'); try{ urlEl.focus(); urlEl.select(); }catch(_){}
+        +'<div class="sh-tabs" role="tablist">'
+          +'<button class="sh-tab" type="button" role="tab" data-tab="link">'+t('shareTabLink')+'</button>'
+          +'<button class="sh-tab" type="button" role="tab" data-tab="embed">'+t('shareTabEmbed')+'</button></div>'
+        +'<div class="sh-pane" data-pane="link" role="tabpanel">'
+          +'<div style="font-size:11.5px;color:var(--text-muted);">'+L('Anyone who opens this link sees the map exactly as you do now.','このリンクを開くと、今あなたが見ている状態がそのまま再現されます。','Wer den Link öffnet, sieht die Karte genau wie Sie jetzt.','Открывший ссылку увидит карту точно как вы сейчас.','Quien abra el enlace verá el mapa tal como lo ves ahora.')+'</div>'
+          +'<div class="sh-row"><input class="sh-url" type="text" readonly value="'+String(lk).replace(/"/g,'&quot;')+'"><button class="sh-btn sh-copy">📋 '+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</button></div>'
+          +(navigator.share?('<div class="sh-row"><button class="sh-btn sec sh-native" style="flex:1;">📤 '+L('Share…','共有…','Teilen…','Поделиться…','Compartir…')+'</button></div>'):'')
+          +'<div class="sh-inc">'+inc+'</div></div>'
+        +'<div class="sh-pane" data-pane="embed" role="tabpanel"></div>';
+      const urlEl=panel.querySelector('.sh-url'), embedPane=panel.querySelector('.sh-pane[data-pane="embed"]');
+      const show=(name)=>{ tab=name;
+        panel.querySelectorAll('.sh-tab').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.tab===name)));
+        panel.querySelectorAll('.sh-pane').forEach(p=>{ p.hidden=(p.dataset.pane!==name); }); };
+      show(tab);
+      if(tab==='link'){ try{ urlEl.focus(); urlEl.select(); }catch(_){} }
       panel.querySelector('.sh-x').onclick=close;
       const copyBtn=panel.querySelector('.sh-copy');
-      copyBtn.onclick=async()=>{ let ok=false;
-        try{ await navigator.clipboard.writeText(link); ok=true; }catch(_){ try{ urlEl.select(); ok=document.execCommand('copy'); }catch(__){} }
-        copyBtn.textContent=ok?('✓ '+L('Copied!','コピー完了','Kopiert!','Скопировано!','¡Copiado!')):('⚠ Ctrl+C');
-        setTimeout(()=>{ copyBtn.textContent='📋 '+L('Copy','コピー','Kopieren','Копировать','Copiar'); },1900); };
-      const nb=panel.querySelector('.sh-native'); if(nb) nb.onclick=()=>{ try{ navigator.share({title:'IntMap',url:link}); }catch(_){} };
+      copyBtn.onclick=copyText(copyBtn,()=>lk,urlEl,()=>'📋 '+L('Copy','コピー','Kopieren','Копировать','Copiar'));
+      const nb=panel.querySelector('.sh-native'); if(nb) nb.onclick=()=>{ try{ navigator.share({title:'IntMap',url:lk}); }catch(_){} };
+      let built=null;
+      panel.querySelectorAll('.sh-tab').forEach(b=>{ b.onclick=()=>{ try{ embedTab&&embedTab.stopPreview(); }catch(_){}
+        show(b.dataset.tab); if(b.dataset.tab==='embed'&&built) built.refresh(); }; });   /* the map may have moved since the panel opened */
+      return loadEmbedTab().then(c=>{ if(o.tab==='embed') c.embed(o); built=c.render(embedPane); return true; })
+        .catch(()=>{ embedPane.textContent='⚠ '+t('embedUnavailable'); return false; });
     }
-    return { open, close };
+    return { open, close, link, embed };
   })();
 }

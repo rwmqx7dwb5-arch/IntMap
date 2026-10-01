@@ -17,6 +17,8 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapBorderCoast } from './border-coast.js';
+import { jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (hist-era-span-fidelity) the reviewed spans, read under a clock */
+import { clockFor } from './proxy-fetch.js';
 
 /* ══ (#R700) `Base (Gloss)` — ONE DECOMPOSITION, READ BY THE PAGE AND BY THE BUILD ═════════════
    ⚠⚠⚠ THE BRACKET IS NOT DROPPED HERE, AND THAT IS THE WHOLE POINT. Two records write a trailing
@@ -140,7 +142,7 @@ export function timeBorders(HOST){
        2026-09-25 for world_1900.geojson), so the public CORS relays that stood behind it are gone — they only ever
        added a third party between the reader and the file. */
     const PROX=[x=>x];
-    const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the Tibet display-year merge state (see _eraCorrect) */
+    const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the display-year state of the shown sheet — the Tibet merge, and (hist-era-span-fidelity) which names the reader's year withholds (see _eraState) */
     /* (#R410) the YEAR the reader is on (shownY is the SNAPSHOT key, and one aourednik snapshot answers many
        years), and the collection currently on the source — the two things a re-tag of the labels needs. */
     let shownYear=null, shownFC=null;
@@ -543,6 +545,12 @@ export function timeBorders(HOST){
     function _eraCorrect(fc,year){ try{ if(!(year>=1951)||!fc||!Array.isArray(fc.features)) return fc;
       if(!fc.features.some(f=>{ const p=f.properties||{}; return !p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')); })) return fc;
       return _mergeTibet(fc); }catch(_){ return fc; } }
+    /* (hist-era-span-fidelity) everything the READER'S year does to a sheet, in one place — the go()
+       path and the language re-apply both come through here, so neither can drop a step the other takes.
+       `_eraSpan` is declared with the names lane below (function declarations hoist). */
+    function _eraShow(fc,year){ return _eraSpan(_eraCorrect(fc,year),year); }
+    /* the display state a sheet is in at `year` — what go() compares before deciding nothing changed */
+    function _eraState(fc,year){ return (year>=1951)+'|'+(fc?_spanSig(fc,year):''); }
     /* ══ ⚠⚠⚠ (#R679) THE ERA SNAPSHOTS ARE BUNDLED NOW, AND THAT IS WHAT MADE THE DEEP PAST ══════
        REACHABLE AT ALL. Two facts, measured 2026-09-10, and the second is the whole round:
        ⚠ ① The list below said thirty-six. The repository publishes FIFTY-FOUR — the other
@@ -611,6 +619,63 @@ export function timeBorders(HOST){
           .then(j=>{ _hn=j||{}; return _hn; })
           .catch(()=>{ _hn={}; return _hn; });
       }catch(_){ _hn={}; return Promise.resolve(_hn); } }
+    /* ══ ⚠⚠⚠ (hist-era-span-fidelity) A SHEET'S NAME IS ASKED AT THE READER'S YEAR ══════════════
+       「1600 年に Songhai と Watassid Morocco が描かれる。」 Measured 2026-10-01 on the shipped bundle:
+       upstream's world_1600 itself carries both (the Songhai Empire fell in 1591, the Wattasids in
+       1554) and world_1700 still carries «Songhai»; on top of that `nearest()` above answers 1566-1625
+       with world_1600, so «Dutch Republic» (1581) is drawn in 1570 by the gap alone. The sheet has no
+       span per feature, so nothing in the record could say no.
+       data/hist-era-spans.json is the reviewed answer (scripts/histeras/spans.mjs explains why it is
+       reviewed and not a bare Wikidata join): a name, the QID verified to be the unit drawn, and the
+       bound Wikidata states AND history agrees with. The rule that reads it is
+       js/hist-scale.js `eraSpanOut`, the same function scripts/hist-fidelity.mjs gates with.
+       ⚠ WHAT IS WITHHELD IS THE NAME, NOT THE SHAPE. The ground upstream drew is still ground the
+       record has (Saadian Morocco occupies what «Watassid Morocco» outlines); the claim history
+       refutes is «this polity, in this year». So the feature is drawn as an unnamed shape, and its
+       card says which name upstream gave and why it is not drawn (`blankNote`) — never a name
+       IntMap supplies instead.
+       ⚠ AND IT IS NOT A PRECONDITION, like the names table: a failure to fetch it costs the reader
+       the correction, never the map. */
+    let _sp=null, _spBy=null;
+    /* ⚠ «NOT OBSERVED» IS NOT «NOT THERE» (.agents/rules/one-pass-or-a-reason.md §5): a read that ran
+       out of clock is not remembered as an empty ledger, so the next travel asks again; a refusal or a
+       broken body is an answer, and is remembered as «no spans» for the session. */
+    function spLoad(){ if(_sp!==null) return Promise.resolve(_sp);
+      const u='data/hist-era-spans.json';
+      return Promise.resolve().then(()=>jsonWithin(u,clockFor(u),undefined,{idle:true}))
+        .then(j=>{ _sp=(j&&typeof j==='object')?j:{}; _spBy=null; return _sp; },
+              e=>{ if(isUnobserved(e)) return {}; _sp={}; _spBy=null; return _sp; }); }
+    function _spRow(nm){ if(!_sp) return null;
+      if(!_spBy){ _spBy=new Map(); for(const r of (_sp.rows||[])) if(r&&r.name) _spBy.set(r.name,r); }
+      return _spBy.get(nm)||null; }
+    /* the identity's own label, for the card — what Wikidata calls the unit the row is bound to */
+    function _spLabel(q){ try{ const f=_sp&&_sp.facts&&_sp.facts[q]; return (f&&f.en)||null; }catch(_){ return null; } }
+    /* which features of `fc` the reader's year withholds the name of — indices, so the result can key a memo */
+    function _spanOff(fc,year){ const out=[]; try{ const HS=window.IntMapHistScale; if(!HS||!HS.eraSpanOut||!fc||!Array.isArray(fc.features)) return out;
+      fc.features.forEach((f,i)=>{ const p=f.properties||{}; const nm=String(p.NAME||p.name||'').trim(); if(!nm) return;
+        const row=_spRow(nm); const o=row?HS.eraSpanOut(row,year):null; if(o) out.push({i,row,o,nm}); });
+    }catch(_){} return out; }
+    const _spMemo=new WeakMap();
+    /* a NEW collection with those names withheld (the cached sheet stays as the record states it, so the
+       next year asks again); the same object comes back for the same withheld set, so a year inside one
+       state re-sends nothing */
+    function _eraSpan(fc,year){ try{ const off=_spanOff(fc,year); if(!off.length) return fc;
+      const sig=off.map(x=>x.i).join(','); let m=_spMemo.get(fc); if(!m){ m=new Map(); _spMemo.set(fc,m); }
+      const hit=m.get(sig); if(hit) return hit;
+      const by=new Map(off.map(x=>[x.i,x]));
+      const feats=fc.features.map((f,i)=>{ const x=by.get(i); if(!x) return f;
+        const p=Object.assign({},f.properties);
+        /* every lane that would put the name back on the map goes with it: the translations, the
+           description flag, and whatever `tagSame` baked for the label */
+        for(const k of ['name','_i18n','_desc','_locName','_modName','_same']) delete p[k];
+        p.NAME='';
+        /* flat values, because the click hands back what the renderer kept and a nested object does not
+           survive that trip */
+        p._wName=x.nm; p._wQ=x.row.q; p._wSide=x.o.side; p._wYear=x.o.year;
+        const lb=_spLabel(x.row.q); if(lb) p._wLabel=lb;
+        return Object.assign({},f,{properties:p}); });
+      const r={type:'FeatureCollection',features:feats}; m.set(sig,r); return r; }catch(_){ return fc; } }
+    function _spanSig(fc,year){ return _spanOff(fc,year).map(x=>x.i).join(','); }
     /* The nine-language tuple for one drawn feature, or null. `own` is what the RECORD itself
        says (OHM's `name:xx`) and is never overwritten — the table only fills what is empty. */
     function hnFor(record,en,qid,own){
@@ -657,10 +722,12 @@ export function timeBorders(HOST){
        year and upstream file name from the start (`erYears` reads them), and a sheet's rows and rings
        arrive when that sheet is first drawn — `erSheet` below. */
     let _erH=null;
-    function erLoad(){ if(_erD&&_hn!==null) return Promise.resolve(_erD); if(_erP) return _erP;   /* (#R695) the names lane is shared now — `_hn`, not the era-only `_erN` */
+    function erLoad(){ if(_erD&&_hn!==null&&_sp!==null) return Promise.resolve(_erD); if(_erP) return _erP;   /* (#R695) the names lane is shared now — `_hn`, not the era-only `_erN` */
       _erP=Promise.resolve().then(()=>HB().open({file:'data/hist-eras.js',global:'__HISTERAS'}))
         .then(h=>{ if(h){ _erH=h; _erD=h.data; return _erD; } return null; }, ()=>null)
-        .then(d=>hnLoad().then(()=>{ if(!d) _erP=null; return d; }));   /* ⚠ the names never fail the bundle */
+        /* ⚠ the names and the spans never fail the bundle — and the spans are asked even when the bundle
+           failed, because the remote fallback sheets carry the same names and need the same rule */
+        .then(d=>Promise.all([hnLoad(),spLoad()]).then(()=>{ if(!d) _erP=null; return d; }));
       return _erP; }
     /* the sheet for astronomical year `y`, with its rows and the rings they name on the mirror */
     function erSheet(y){ try{ return _erH?_erH.snap(y):Promise.resolve(null); }catch(_){ return Promise.resolve(null); } }
@@ -1615,10 +1682,13 @@ export function timeBorders(HOST){
       if(!_erd&&year<1){ setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); return; }
       const ny=nearest(year,erYears(_erd));
       /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
-      const corr=(year>=1951);
+      /* (#R106) the Tibet merge is DISPLAY-year based, and (hist-era-span-fidelity) so is which names the
+         sheet may carry — the state compared here is both, so 1591→1592 re-applies on the same sheet. A sheet
+         not yet cached cannot be the one on screen, so its state is never the deciding half. */
+      const corr=_eraState(cache.get(ny)||null,year);
       if(shownY===ny&&shownCorr===corr){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===ny&&shownCorr===corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) retry once the style is ready instead of latching absent borders */
       const fc=await fetchFC(ny); if(my!==seq||!active) return;
-      if(fc){ shownY=ny; shownCorr=corr; apply(_eraCorrect(fc,year)); }
+      if(fc){ shownY=ny; shownCorr=_eraState(fc,year); apply(_eraShow(fc,year)); }
       /* (#R126) fetch failed (network hiccup on the first, uncached travel) → the map stayed border-less with no
          retry until the user moved the year again. Retry this same request once conditions allow. */
       else setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); }
@@ -1630,8 +1700,8 @@ export function timeBorders(HOST){
       go._t=setTimeout(()=>{ try{ go(w); }catch(_){} },45); });   /* (#R122) 120→45ms: a single year change applies almost immediately, while a fast slider drag still coalesces */
     /* (#R107) re-localize the era LABELS (renamed states via _locName, unchanged countries via _modName) when the
        language changes WHILE travelling — tagSame bakes those at the current language, so re-apply the shown snapshot
-       (no re-fetch; _eraCorrect reuses the already-computed merge state via shownCorr). */
-    window.addEventListener('intmap-lang',()=>{ try{ if(!active||shownY==null) return; const fc=cache.get(shownY); if(fc) apply(_eraCorrect(fc, shownCorr?1951:1900)); }catch(_){} });
+       (no re-fetch; _eraShow recomputes the display-year state from the reader's year). */
+    window.addEventListener('intmap-lang',()=>{ try{ if(!active||shownY==null) return; const fc=cache.get(shownY); if(fc) apply(typeof shownY==='number'?_eraShow(fc,shownYear):fc); }catch(_){} });   /* (hist-era-span-fidelity) the reader's year, through the one function go() uses — the day-exact tiers (string keys) never had a display-year step */
     /* ⚠ (#R410) …AND THE SAME RE-READ WHEN THE IDENTITIES THEMSELVES ARRIVE. The present-day names live in
        `countryStats`, which comes off the network (Natural Earth attributes) long after the first era snapshot
        is drawn: measured at 1916 with that file 8 s late, `tagSame` found an EMPTY table, returned untagged,
@@ -1691,7 +1761,15 @@ export function timeBorders(HOST){
        (#R94o) pick the LARGEST match, not the first: a broad regex like the British-Raj `/^india$/` also hits a
        tiny mislabeled "India" sliver in the 1900 data (a 28-pt strip near the Iran border), and `.find()` grabbed
        that instead of the whole subcontinent — the "British Raj highlight is a thin strip" bug. */
-    function geomFor(re){ try{ const fc=cache.get(shownY); if(!fc||!re) return null;
+    /* ⚠⚠ (hist-era-span-fidelity) WHAT THE MAP DRAWS, NOT WHAT THE CACHE HOLDS. Every reader below — the
+       click card, Compare, Atlas (`currentFC`), the narrator — used to read `cache.get(shownY)`, the sheet
+       as the record states it, while the source received the display-year collection (the Tibet merge since
+       #R106, and now the names the reader's year withholds). A name withheld on the map would still have
+       been answered by every one of them: the second-reader shape of historical-verification.md §2b. For
+       the day-exact tiers the two are the same object (`apply` is handed the cached collection), so this
+       changes nothing there. */
+    function _drawnFC(){ return shownFC||cache.get(shownY)||null; }
+    function geomFor(re){ try{ const fc=_drawnFC(); if(!fc||!re) return null;
       let best=null,bestA=-1; for(const ff of fc.features){ const n=(ff.properties&&(ff.properties.NAME||ff.properties.name))||''; if(!ff.geometry||!re.test(n)) continue; const a=_bboxArea(ff.geometry); if(isFinite(a)&&a>bestA){ bestA=a; best=ff; } }
       return best?best.geometry:null; }catch(_){ return null; } }
     /* ===== (#R94n) geometry + historical-entity resolution shared by the click popup and the Compare paint ===== */
@@ -1712,7 +1790,7 @@ export function timeBorders(HOST){
     function _fcIdx(fc){ if(fc.__imtbIdx) return fc.__imtbIdx; const idx=fc.features.map(ff=>{ const bb=ff.geometry?_bbox(ff.geometry):null; return { ff, bb, area: bb?((bb[2]-bb[0])*(bb[3]-bb[1])):Infinity }; }); try{ Object.defineProperty(fc,'__imtbIdx',{value:idx,enumerable:false,configurable:true}); }catch(_){ fc.__imtbIdx=idx; } return idx; }
     /* the FULL, untruncated source feature (NAME match, preferring one that contains the click) — the click
        event only ever hands back a tile-clipped copy, so we look the original up in the cached FeatureCollection. */
-    function featureAt(nm,lngLat){ try{ const fc=cache.get(shownY); if(!fc||!fc.features) return null; const low=String(nm||'').toLowerCase().trim(); if(!low) return null;
+    function featureAt(nm,lngLat){ try{ const fc=_drawnFC(); if(!fc||!fc.features) return null; const low=String(nm||'').toLowerCase().trim(); if(!low) return null;
       const named=fc.features.filter(ff=>String((ff.properties&&(ff.properties.NAME||ff.properties.name))||'').toLowerCase().trim()===low);
       if(!named.length) return null; if(named.length===1||!lngLat||!isFinite(lngLat.lng)) return named[0];
       return named.find(ff=>_contains(ff.geometry,lngLat.lng,lngLat.lat))||named[0]; }catch(_){ return null; } }
@@ -2042,7 +2120,7 @@ export function timeBorders(HOST){
        to this code (identical to the click picker), else — only as a last resort — the era polygon that contains an
        interior point of the country's modern shape (so a renamed / border-shifted country paints its THAT-YEAR extent,
        e.g. the German Empire's 1910 borders instead of modern Germany's). */
-    function geomForCode(code){ try{ const fc=cache.get(shownY); if(!fc||!fc.features) return null;
+    function geomForCode(code){ try{ const fc=_drawnFC(); if(!fc||!fc.features) return null;
       const HS=window.IntMapHistStates; const re=HS&&HS.hbRe&&HS.hbRe(code); if(re){ const g=geomFor(re); if(g) return g; }
       const g=window.countryGeo; if(!g||!g.features) return null;
       const cf=g.features.find(f=>String(f.id!=null?f.id:(f.properties&&f.properties.__code))===String(code)); if(!cf||!cf.geometry) return null;
@@ -2161,16 +2239,18 @@ export function timeBorders(HOST){
        learns there is nothing between 10000 BC and 123000 BC without that gap being typed here. */
     function coverage(){ try{
       if(!active||typeof shownY!=='number'||!shownFC||!shownFC.features) return {active:false,era:false};
-      let named=0,blank=0; const ty=new Map();
+      let named=0,blank=0; const ty=new Map(), wh=new Map();
       for(const f of shownFC.features){ const p=f.properties||{};
-        if(p.NAME||p.name) named++; else blank++;
+        /* (hist-era-span-fidelity) a name THIS map withheld is not a shape upstream left unnamed — the
+           sentence below says «upstream leaves unnamed», so the two are counted apart */
+        if(p.NAME||p.name) named++; else if(p._wName){ if(!wh.has(p._wName)) wh.set(p._wName,{name:String(p._wName),side:p._wSide,year:+p._wYear}); } else blank++;
         /* ⚠ upstream spells the same field both ways across its own files (48 `TYPE` / 93 `type`,
            measured in scripts/build-hist-eras.mjs). The bundle folds them to one; the remote
            fallback hands them over as upstream wrote them, so both are read here. */
         const t=p.TYPE||p.type; if(t) ty.set(String(t),(ty.get(String(t))||0)+1); }
       const ys=erYears(_erD)||[], i=ys.indexOf(shownY);
       return { active:true, era:true, year:shownY, asked:shownYear, feats:shownFC.features.length,
-               named, blank, types:[...ty.entries()].sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)),
+               named, blank, withheld:[...wh.values()], types:[...ty.entries()].sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)),
                prev:(i>0)?ys[i-1]:null, next:(i>=0&&i<ys.length-1)?ys[i+1]:null };
     }catch(_){ return {active:false,era:false}; } }
     /* the reader's-language year, through the platform — js/hist-scale.js owns the era convention and
@@ -2184,6 +2264,18 @@ export function timeBorders(HOST){
       const Y=_yTxt(c.year), nb=[c.prev,c.next].filter(y=>y!=null).map(_yTxt).join(' / ');
       const n=String(c.feats), b=String(c.blank);
       const tn=c.types.reduce((s,e)=>s+e[1],0), t=String(tn), lst=c.types.map(e=>e[0]+' ×'+e[1]).join(' · ');
+      return _sheetNote(c,Y,nb,n,b,tn,t,lst)+_withheldNote(c); }
+    /* (hist-era-span-fidelity) the names the reader's year withholds, said where the layer says what it
+       draws — counted off the collection on the source, like the rest of the row. New text: en + jp
+       (CONSTITUTION §7). */
+    function _withheldNote(c){ const w=(c&&c.withheld)||[]; if(!w.length) return '';
+      const A=_yTxt(c.asked), k=String(w.length);
+      const le=w.map(x=>'«'+x.name+'» ('+(x.side==='end'?'ended ':'began ')+_yTxt(x.year)+')').join(', ');
+      const lj=w.map(x=>'「'+x.name+'」（'+_yTxt(x.year)+(x.side==='end'?'に終焉':'に成立')+'）').join('、');
+      return ' '+_LTB.arr(LA(
+        'In ' + A + ', ' + k + ' of the names on this sheet are not drawn, because the polity each names had already ended or had not yet begun (Wikidata, checked against the historical record): ' + le + '. Their shapes are drawn as upstream drew them, without the name.',
+        A + ' には、この枚の名前のうち ' + k + ' 件を描いていない——その名が指す政体が、その年にはもう終わっていたか、まだ始まっていなかったため（Wikidata の日付を史実と照合）: ' + lj + '。形は上流が描いたとおりに、名前を外して描いている。')); }
+    function _sheetNote(c,Y,nb,n,b,tn,t,lst){
       return _LTB.arr(LA(
         'What is drawn is upstream’s ' + Y + ' sheet: this record is a series of dated sheets, not a continuous line' + (nb?'; the sheets beside it are ' + nb : '') + '. It holds ' + n + ' shapes, ' + b + ' of which upstream leaves unnamed — those are drawn without a label rather than dropped or given a name here. ' + (tn?('Upstream states the nature of ' + t + ' of them in its own words (' + lst + ') and says nothing about the rest.'):'Upstream states the nature of none of them.') + ' A shape here is not necessarily a state, and nothing upstream does not say is added.',
         'いま描かれているのは上流の ' + Y + ' の枚。この記録は連続した線ではなく年ごとの枚の連なり' + (nb?'で、隣の枚は ' + nb : '') + '。この枚が持つ形は ' + n + ' 件で、うち ' + b + ' 件は上流が名前を与えていない——捨てるのでも名前を付けるのでもなく、ラベル無しで描いている。' + (tn?('上流自身の言葉でその性質を述べているのは ' + t + ' 件（' + lst + '）で、残りについては何も述べていない。'):'上流は、どの形についてもその性質を述べていない。') + 'ここにある形は必ずしも国家ではなく、上流が言っていないことは足していない。',
@@ -2242,6 +2334,22 @@ export function timeBorders(HOST){
        The nine-language tuples already in this file are frozen, not withdrawn, and `typeNote`'s
        nine reach this card unchanged. */
     function blankNote(f){ const p=(f&&f.properties)||{}, lines=[];
+      /* ══ (hist-era-span-fidelity) A SHAPE WHOSE NAME THE READER'S YEAR WITHHOLDS ══════════════════
+         Upstream DID name it — so the card must not say «upstream draws this without a name», which
+         would be false. It says which name upstream gave, which unit that name is bound to, and the
+         bound that both Wikidata states and history agrees with. Nothing is named in its place. */
+      const wn=String(p._wName||'').trim();
+      if(wn){ const Y=_yTxt(shownYear), B=_yTxt(+p._wYear), q=String(p._wQ||''), lb=String(p._wLabel||'').trim();
+        const id=lb?(lb+', '+q):q;
+        lines.push(p._wSide==='start'
+          ? _LTB.arr(LA('Wikidata ('+id+') states that this polity began in '+B+', and the historical record agrees, so the name is not drawn before that year. The shape is drawn as upstream drew it.',
+                        'Wikidata（'+id+'）はこの政体の成立を '+B+' と述べ、史実もそれと一致する。そのためその年より前はこの名前を描かず、形だけを上流が描いたとおりに描いている。'))
+          : _LTB.arr(LA('Wikidata ('+id+') states that this polity ended in '+B+', and the historical record agrees, so the name is not drawn after that year. The shape is drawn as upstream drew it.',
+                        'Wikidata（'+id+'）はこの政体の終焉を '+B+' と述べ、史実もそれと一致する。そのためその年より後はこの名前を描かず、形だけを上流が描いたとおりに描いている。')));
+        const tn=typeNote(f); if(tn) lines.push(tn);
+        return { title:_LTB.arr(LA('Upstream names this shape «'+wn+'», but that polity did not exist in '+Y,
+                                   '上流はこの形を「'+wn+'」と呼ぶが、その政体は '+Y+' には存在しない')),
+                 lines:lines }; }
       const tn=typeNote(f); if(tn) lines.push(tn);
       const sj=String(p.SUBJECTO||p.subjecto||'').trim();
       if(sj) lines.push(_LTB.arr(LA('Upstream states this is subject to: '+sj,'上流は、これが次に従属すると述べている: '+sj)));
@@ -2279,7 +2387,11 @@ export function timeBorders(HOST){
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
        here so tests/history-era-names-checks.test.mjs (#R686) can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>_drawnFC(), geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
+             /* (hist-era-span-fidelity) a sheet as the reader's year draws it, and the reviewed spans it is
+                drawn under — a real question about the record («which names does 1600 withhold?»), the same
+                kind `histNameFor` answers; scripts/hist-fidelity.mjs gates the map through it */
+             eraShown:(fc,year)=>_eraShow(fc,year), loadEraSpans:spLoad,
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 }

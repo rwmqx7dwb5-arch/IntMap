@@ -238,21 +238,19 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
     return n;
   })();
   assert.ok(enUi > 300, 'the English keyed table was read (got ' + enUi + ')');
-  /* ⚠ (installable-app) «AT LEAST WHAT ENGLISH DECLARES» WAS THE 9-LANGUAGE RULE, and CONSTITUTION.md §7
-     narrowed it on 2026-09-11: IntMap AUTHORS new text in en+jp only (scripts/lang-policy.mjs), and the
-     other seven are CARRIED — held to a floor so what is already written is never lost. Measured on the
-     first change to add keys after the amendment: six new en+jp keys made this read 423 vs 428 and fail,
-     i.e. it forbade exactly what the policy allows. So the invariant is the policy's own, asked of the
-     policy rather than of a typed language list: an AUTHORED zh keeps up with English; a CARRIED zh keeps
-     at least the keyed rows tests/i18n-coverage-floor.json holds it to. `return all;` in lang-policy
-     turns the first branch back on with no edit here. */
+  /* ⚠ «AT LEAST WHAT ENGLISH DECLARES» WAS THE 9-LANGUAGE RULE, and CONSTITUTION.md §7 narrowed it on
+     2026-09-11: IntMap AUTHORS new text in en+jp only (scripts/lang-policy.mjs), so English now grows past the
+     CARRIED languages by design (measured twice: six installable-app keys made this read 423 vs 428, and the
+     share panel's Embed tab added sixteen). ONE RULE, BOTH HALVES (installable-app × share-embed-distribution):
+     ① whatever the policy says, zh keeps every keyed row it HAS — the number the i18n gate already holds,
+       tests/i18n-coverage-floor.json, read here rather than restated;
+     ② and if the policy makes zh a language IntMap WRITES, it keeps up with English as before — asked of the
+       policy, not of a typed list, so `return all;` in lang-policy turns it back on with no edit here. */
+  const floor = JSON.parse(read('tests/i18n-coverage-floor.json')).langs.zh.keyed;
+  assert.ok(floor > 300 && ui >= floor, 'the keyed table keeps every row it carries (got ' + ui + ' vs the floor ' + floor + '; en has ' + enUi + ')');
   const { authoredLangs } = await import('../scripts/lang-policy.mjs');
   if (authoredLangs().includes('zh')) {
-    assert.ok(ui >= enUi, 'the keyed table carries the late-registered keys too (got ' + ui + ' vs en ' + enUi + ')');
-  } else {
-    const floor = JSON.parse(readLF(join(ROOT, 'tests', 'i18n-coverage-floor.json'))).langs.zh;
-    assert.ok(floor && floor.keyed > 300, 'the floor holds zh\'s keyed rows (got ' + JSON.stringify(floor) + ')');
-    assert.ok(ui >= floor.keyed, 'no keyed row zh already carries was dropped (got ' + ui + ' vs floor ' + floor.keyed + ')');
+    assert.ok(ui >= enUi, 'an authored language carries the late-registered keys too (got ' + ui + ' vs en ' + enUi + ')');
   }
   assert.ok(inl >= 1800, 'every inline L(…) string has an entry (got ' + inl + ')');
   /* …and it is really Chinese, not a copy of the template */

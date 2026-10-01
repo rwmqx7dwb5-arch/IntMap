@@ -78,7 +78,7 @@ through the auth listener and checks that 45 cards and the reading position surv
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**130 measured spec files / 86.6 min** of serial browser time against a ceiling of 86.6 min; and
+**131 measured spec files / 86.6 min** of serial browser time against a ceiling of 86.6 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -99,7 +99,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **124 spec files** — is the whole suite minus core
+**deep** tier — **125 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -877,7 +877,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **124 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **125 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -2105,6 +2105,24 @@ POSTs to `reader-reports` with the session token only when signed in. ⑤ the mi
 policies and revokes the grant, and touches no row. The database half is
 `supabase/tests/14_anon_write_guard_test.sql` (the census: no table in `public` accepts an INSERT from `anon`).
 
+### Anonymous usage counts — `tests/anonymous-usage-counts-checks.test.mjs` + `tests/anonymous-usage-counts.spec.js` (anonymous-usage-counts)
+
+Node, everything **evaluated**: ① the declaration (`supabase/functions/usage-count/shape.js`) drops an undeclared
+metric and a dimension its rule refuses (an e-mail-shaped tag, an address literal or a local name as a referrer,
+a URL, a malformed layer id), every layer id the manifest holds passes the server's rule, the browser's FEATURES
+are exactly the declared feature dimensions, and `parse` reads only the three positions of each row.
+② `js/usage-counts.js` installed on a fake page with a production origin: hiding the page sends one text/plain
+beacon whose rows are all inside the declaration — a layer the session restore switched on (untrusted, no user
+activation) is not counted, nor is a box the manifest does not hold; Do Not Track (both spellings), Global
+Privacy Control, the stored «off» and a local origin each send nothing; switching off on a running page discards
+what was pending. ③ the `usage-count` function with a stubbed backend: every refusal happens before any fetch;
+both `relay_take` buckets are taken before the write; the database receives the declared rows with the SERVER's
+ceiling and none of the caller's IP, User-Agent, bearer token, extra keys or question text; the limiter fails
+closed. The spec (one boot) asks the built page what it would send — `IntMapUsage.preview()`, validated with the
+same `acceptRow` — then flips Do Not Track and Global Privacy Control at run time and operates the Settings
+switch, and holds that nothing is beaconed to `usage-count` from a local page. The database half is
+`supabase/tests/16_usage_counts_test.sql`.
+
 ### `tests/atlas-agent-repeat-checks.test.mjs` (#R731)
 
 3 本。本物の surface とレジストリの上で `runTurn` を走らせ、同じ呼び出しを返し続けるモデルに対してターンが
@@ -3101,7 +3119,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty-one Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-two Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese
