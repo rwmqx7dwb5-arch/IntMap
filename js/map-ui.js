@@ -3533,6 +3533,7 @@ export function viewHash(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     let restoring=false, t=null, queued=false;   /* queued: a link that arrived during a restore (share-embed-distribution — see the hashchange listener) */
+    let restoreGen=0;   /* (restore-clock-and-elam) which restore owns the staged steps — see `later` in restore() */
     /* ══ ⚠⚠⚠ (#R244) THE URL THE READER OPENED IS READ ONCE, BEFORE ANYTHING CAN OVERWRITE IT ═══════
        「再読み込み時に情報が保持されなくなっている。」
 
@@ -3670,6 +3671,19 @@ export function viewHash(HOST){
          NAVIGATION (`opts.shared`) is a new intention and reads the live value, as it must. */
       const H=(opts&&opts.shared===true)?location.hash:(bootDone?location.hash:BOOT_HASH);
       const m=/[#&]v=([^&]+)/.exec(H); if(!m){ booted=true; return; } restoring=true;
+      /* ⚠⚠ (restore-clock-and-elam) A NEWER RESTORE SUPERSEDES THE STAGED STEPS OF AN OLDER ONE. Every step below
+         is a timer (layers at 700/1800/3200 ms, the clock at 900, the simulators to 4000), and a restore called
+         while an earlier one was still staged (IntMapBookmark.restore — the door Atlas's showcase and the landing
+         examples use) used to leave the earlier timers running. They
+         re-applied the EARLIER link over the newer one: its layer pass re-ticked a war row the newer link had
+         switched off, at the newer link's instant, and js/war-layer.js then moved the clock to the war's first
+         day. MEASURED: `l=dl-ww2&tt=1942-11-01` and, 1 s later, `tt=1985-07-01` ended on 1939-08-23. So each
+         restore takes a generation, and a step whose restore is no longer the latest does nothing. (The
+         hashchange listener below still queues a link that arrives mid-restore; the queued one starts from this
+         restore's closing step, so it takes the next generation and every later step of this one — the 4 s
+         simulator pass included — stops. Every step is staged through `later`: layers, clock, terrain, simulators,
+         the compare window and its own instant `ct`.) */
+      const my=++restoreGen; const later=(fn,ms)=>setTimeout(()=>{ if(my===restoreGen) fn(); },ms);
       /* (#R211) a plain reload restores everything too — unless the previous attempt at this very
          hash did not survive, in which case only the view comes back (see `crashed` above). */
       const full = (!!(opts&&opts.shared===true) || firstLoad!==false || !crashed);
@@ -3681,8 +3695,8 @@ export function viewHash(HOST){
         /* satellite base view: switch ON if wanted; on a FULL restore also switch back to Map if NOT wanted (so a
            shared link reproduces the base exactly, e.g. pasting a no-sat link over a satellite session). */
         try{ const wantSat=/[#&]sat=1/.test(H);
-          if(wantSat){ const sb=document.getElementById('btn-view-sat'); if(sb&&typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat') setTimeout(()=>{ try{ sb.click(); }catch(_){} },300); }
-          else if(full){ const mb=document.getElementById('btn-view-map'); if(mb&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat') setTimeout(()=>{ try{ mb.click(); }catch(_){} },300); } }catch(_){}
+          if(wantSat){ const sb=document.getElementById('btn-view-sat'); if(sb&&typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat') later(()=>{ try{ sb.click(); }catch(_){} },300); }
+          else if(full){ const mb=document.getElementById('btn-view-map'); if(mb&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat') later(()=>{ try{ mb.click(); }catch(_){} },300); } }catch(_){}
       }catch(_){}
       if(full){
         const lm=/[#&]l=([^&]+)/.exec(H);
@@ -3705,7 +3719,7 @@ export function viewHash(HOST){
         if(wantSet.has('dl-ec-isobars')){ wantSet.delete('dl-ec-isobars');
           if(!wantSet.has('dl-ec-slp')){ wantSet.add('dl-ec-slp'); want.push('dl-ec-slp'); }
           const i=want.indexOf('dl-ec-isobars'); if(i>=0) want.splice(i,1);
-          [900,2000,3400].forEach(ms=>setTimeout(()=>{ try{ window._imWxIsobars&&window._imWxIsobars(true); }catch(_){} },ms)); }
+          [900,2000,3400].forEach(ms=>later(()=>{ try{ window._imWxIsobars&&window._imWxIsobars(true); }catch(_){} },ms)); }
         const apply=()=>{
           /* ⚠ (#R225) A RETIRED KEY MUST STOP BEING READ, NOT MERELY STOP BEING WRITTEN. `activeLayers()` no
              longer WRITES `.geo-layer-cb` keys into the hash, but a link (or an address bar) saved months
@@ -3724,34 +3738,34 @@ export function viewHash(HOST){
           /* (layer-manifest) «any data layer» is the manifest's `share` set — the same rows the link can carry */
           sharedIds().forEach(k=>{ const cb=document.getElementById(k); if(cb && cb.checked && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
         };
-        [700,1800,3200].forEach(ms=>setTimeout(apply,ms));
+        [700,1800,3200].forEach(ms=>later(apply,ms));
         /* (#R101) restore time-travel via the kernel (mode-independent). `tt`=ISO instant; keep `ts` (old day-based
            links) for backward compatibility. */
         const tt=/[#&]tt=([^&]+)/.exec(H);
-        if(tt){ setTimeout(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&IntMapTime) IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
+        if(tt){ later(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&IntMapTime) IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
         else { const tm=/[#&]ts=(\d+)/.exec(H);
-          if(tm){ setTimeout(()=>{ try{ if(IntMapTime) IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); }
+          if(tm){ later(()=>{ try{ if(IntMapTime) IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); }
           /* ⚠ (share-embed-distribution) A LINK WITH NO INSTANT IS A LINK AT «NOW». encode() writes `tt` only while
              the clock is off live, so its absence is a statement, not a silence — and a full restore applies the
              WHOLE state the link describes. Before this, pasting a no-`tt` link into a tab standing in 1990
              moved the camera and the layers and left the clock in 1990 (measured: the address bar then read
              `#v=20,40,4…&tt=1990-06-15`, a link to a different map than the one pasted). The reader's own saved
              year does not compete with it: js/session-tabs.js asks `carriesState()` below and yields. */
-          else setTimeout(()=>{ try{ if(IntMapTime&&!IntMapTime.isLive()) IntMapTime.setNow({source:'ui'}); }catch(_){} },900); }
+          else later(()=>{ try{ if(IntMapTime&&!IntMapTime.isLive()) IntMapTime.setNow({source:'ui'}); }catch(_){} },900); }
         /* (#R211) 3-D terrain, then the simulators' own numbers. The sims go LAST and late: several
            of them are lazy modules that are only fetched when their layer or panel is asked for, so
            applying at 900 ms would reach a module that does not exist yet. Each `set` is expected to
            no-op safely when its module is absent (they all guard). */
         try{ if(/[#&]t3=1/.test(H)){ const tb=document.getElementById('btn-terrain-3d')||document.getElementById('setting-terrain-3d');
-          if(tb) setTimeout(()=>{ try{ if(tb.type==='checkbox'){ if(!tb.checked){ tb.checked=true; tb.dispatchEvent(new Event('change',{bubbles:true})); } } else tb.click(); }catch(_){} },1200); } }catch(_){}
+          if(tb) later(()=>{ try{ if(tb.type==='checkbox'){ if(!tb.checked){ tb.checked=true; tb.dispatchEvent(new Event('change',{bubbles:true})); } } else tb.click(); }catch(_){} },1200); } }catch(_){}
         const sm=/[#&]s=([^&]+)/.exec(H);
         if(sm){ const obj=unpackSims(sm[1]);
-          if(obj) [1500,4000].forEach(ms=>setTimeout(()=>{ try{ window.IntMapShareState.apply(obj); }catch(_){} },ms)); }
+          if(obj) [1500,4000].forEach(ms=>later(()=>{ try{ window.IntMapShareState.apply(obj); }catch(_){} },ms)); }
         const cm2=/[#&]cmp=([^&]+)/.exec(H);
         const ct2=/[#&]ct=([^&]+)/.exec(H);   /* (time-compare-lapse) the compare window's own instant */
-        if(cm2){ setTimeout(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); compareTime.set(ct2?{param:decodeURIComponent(ct2[1])}:{follow:true});   /* no `ct` is a statement too, as no `tt` is (above): the window follows the main map's clock */ if(cm2[1]==='x'){ setTimeout(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
+        if(cm2){ later(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); compareTime.set(ct2?{param:decodeURIComponent(ct2[1])}:{follow:true});   /* no `ct` is a statement too, as no `tt` is (above): the window follows the main map's clock */ if(cm2[1]==='x'){ later(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
       }
-      setTimeout(()=>{ restoring=false;
+      later(()=>{ restoring=false;
         /* (share-embed-distribution) a link that arrived while this one was being applied — see the hashchange listener */
         if(queued){ queued=false; try{ restore({shared:true}); }catch(_){} } },3500);   /* a shared restore reads the live address (H) and does nothing if it names no view */
       booted=true;   /* (#R244) the boot restore has read the address — the bar may be written now */

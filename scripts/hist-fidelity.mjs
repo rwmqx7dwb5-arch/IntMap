@@ -280,6 +280,23 @@ export async function eraContext() {
   _era = { er, ledger, histnames, ranges, found, api, hbLo };
   return _era;
 }
+/* ── (restore-clock-and-elam) the year a `history` sentence names, as it would be written there ─────────
+   An astronomical year ≤ 0 is written «N BCE» (−3199 is 3200 BCE), alone or opening a range («207-204 BCE»);
+   a year of the common era is the bare number, not the head of a BCE range. Used only to ask whether the
+   reviewed sentence states the year the row's `hs` claims it does — so the value and the prose cannot part. */
+export function historyNames(text, y) {
+  const t = String(text || '');
+  if (!Number.isInteger(y)) return false;
+  if (y <= 0) return new RegExp('(?<!\\d)' + (1 - y) + '(?:\\s*[-–]\\s*\\d+)?\\s*BCE\\b').test(t);
+  return new RegExp('(?<!\\d)' + y + '(?!\\d)(?!(?:\\s*[-–]\\s*\\d+)?\\s*BCE)').test(t);
+}
+/* a row whose `history` is «As «Other».» reviews itself through that row's sentence (one unit, two spellings) */
+function historyOf(r, ledger) {
+  const m = /^As «(.+)»\.$/.exec(String(r.history || '').trim());
+  if (!m) return String(r.history || '');
+  const o = (ledger.rows || []).find((x) => x.name === m[1] && x.q === r.q);
+  return o ? String(o.history || '') : '';
+}
 /** a sheet as a FeatureCollection of names only — what `eraShown` decides on is the name, not the ring */
 const sheetFC = (s) => ({ type: 'FeatureCollection', features: s.feats.map((f) => ({ type: 'Feature',
   properties: { NAME: (f[0] && f[0].en) || '' }, geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 1], [0, 0]]] } })) });
@@ -297,6 +314,19 @@ export function eraSpanProblems(ctx) {
     if (!(r.history && String(r.history).trim())) out.push(['era-span-row-unreviewed', tag + ' states no historical check (`history`) — a Wikidata date alone is not history']);
     if (r.e != null && !(fa.e || []).includes(r.e)) out.push(['era-span-row-unstated', tag + ' ends at ' + r.e + ', which Wikidata does not state (it states ' + JSON.stringify(fa.e) + ')']);
     if (r.s != null && !(fa.s || []).includes(r.s)) out.push(['era-span-row-unstated', tag + ' begins at ' + r.s + ', which Wikidata does not state (it states ' + JSON.stringify(fa.s) + ')']);
+    /* ⚠ (restore-clock-and-elam) A START BOUND THAT IS LATER THAN HISTORY WITHHOLDS YEARS THE POLITY EXISTED.
+       MEASURED: «Elam» → Q128904 carried Wikidata's 2700 BCE (the Old Elamite period) as its bound, while the
+       row's own sentence named the Proto-Elamite period, c. 3200 BCE — so the 3000 BCE map drew Elam's shape
+       with no name, and every gate was green: the check above asks only whether Wikidata states the year, and
+       Wikidata stating it is not history (.agents/rules/historical-verification.md §2-2). The reviewer's year
+       is therefore a VALUE, `hs` — the earliest year the `history` sentence places the unit — and the map
+       is asked below whether it withholds the name in any year from `hs` on. A Wikidata start later than
+       history is refuted (`date-disputed`), as «Ur» already was, never kept because the sheets it trims
+       happen to be early. */
+    if (r.s != null) {
+      if (!Number.isInteger(r.hs)) out.push(['era-span-row-no-history-start', tag + ' begins at ' + r.s + ' but states no `hs` — the earliest year its `history` places the unit — so nothing can show the bound withholds no year it existed']);
+      else if (!historyNames(historyOf(r, ledger), r.hs)) out.push(['era-span-row-history-start-unsaid', tag + ' claims history places it from ' + r.hs + ', and its `history` sentence does not say so']);
+    }
     /* the row must still act on something the map draws — a judgement about nothing is a stale photograph */
     const live = found.some((c) => c.name === r.name && c.q === r.q && ((c.side === 'end' && r.e != null) || (c.side === 'start' && r.s != null)));
     if (!live) out.push(['era-span-row-dead', tag + ' no longer crosses any drawn year of any sheet — the record changed; re-judge or remove the row']);
@@ -307,6 +337,11 @@ export function eraSpanProblems(ctx) {
       const bad = [];
       if (r.e != null && rg[1] > r.e) bad.push(Math.max(r.e + 1, rg[0]));
       if (r.s != null && rg[0] < r.s) bad.push(rg[0]);
+      /* the last year this sheet withholds the name in, against the earliest year history places the unit */
+      if (r.s != null && Number.isInteger(r.hs) && rg[0] < r.s && Math.min(rg[1], r.s - 1) >= r.hs) {
+        out.push(['era-span-withholds-history', tag + ' is withheld on sheet ' + s.y + ' in ' + Math.max(rg[0], r.hs) + '..' + Math.min(rg[1], r.s - 1) +
+          ', years its own `history` says it existed (from ' + r.hs + '; Wikidata states ' + r.s + ') — refute the start as `date-disputed`']);
+      }
       for (const y of bad) {
         const shown = api.eraShown(fc, y);
         if (shown.features.some((f) => f.properties.NAME === r.name)) out.push(['era-span-not-enforced', tag + ' is still named by the page at ' + y + ' on sheet ' + s.y]);

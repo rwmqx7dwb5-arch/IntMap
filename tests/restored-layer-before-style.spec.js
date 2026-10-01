@@ -349,5 +349,35 @@ test('share-embed-distribution: the share link in a frame shows only the map, re
   await page.waitForTimeout(800);
   await page.evaluate(() => { location.hash = '#v=-60.0000,-10.0000,4.00,0,0,f'; });
   await expect.poll(async () => Math.round((await camOf(page)).lng), { timeout: 15000 }).toBe(-60);
+
+  /* ⑥ (restore-clock-and-elam) THE RESTORE OWNS THE CLOCK. A war row moves the clock to its record's first day
+     when the READER ticks it (js/war-layer.js), and decides that only after data/wars.json (954 kB) has arrived.
+     (a) the record is held back until well after the restore has set the clock: the link's instant stays.
+     (b) a second restore called while the first is still staged (IntMapBookmark.restore — Atlas's showcase door):
+     the first one's layer passes used to re-tick the war row at the SECOND link's instant, and the war then moved
+     the clock — MEASURED before the fix: `l=dl-ww2&tt=1942-11-01`, then `tt=1985-07-01`, ended on 1939-08-23. */
+  const restoreTo = (h) => page.evaluate((h) => { history.replaceState(null, '', location.pathname + location.search + h); window.IntMapBookmark.restore({ shared: true }); }, h);
+  const clockIs = (d) => page.waitForFunction((d) => window.IntMapTime.iso() === d, d, { timeout: 20000 });
+  const WW2 = '#v=100.0000,30.0000,3.00,0,0,f&l=dl-ww2&tt=1942-11-01', Y1985 = '#v=16.0000,52.0000,3.20,0,0,f&tt=1985-07-01';
+  await page.waitForTimeout(3800);
+  let releaseWars; const warsHeld = new Promise((r) => { releaseWars = r; });
+  await page.route('**/wars.json*', async (route) => { await warsHeld; await route.continue(); });
+  await restoreTo(WW2);
+  await clockIs('1942-11-01');
+  await page.waitForTimeout(1500);   /* past the restore's clock step: the record is still held */
+  releaseWars();
+  await expect.poll(() => page.evaluate(() => window.__imWarFronts && window.__imWarFronts.date('ww2')), { timeout: 60000, message: "the war layer draws the link's day" }).toBe('1942-11-01');
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.IntMapTime.iso()), "(a) the link's instant, not the war record's first day").toBe('1942-11-01');
+  /* (b) */
+  await restoreTo(Y1985); await clockIs('1985-07-01'); await page.waitForTimeout(3800);
+  await restoreTo(WW2); await clockIs('1942-11-01');
+  await restoreTo(Y1985);
+  await page.waitForTimeout(5000);   /* past every staged step of both restores (the last layer pass is at +3.2 s) */
+  expect(await page.evaluate(() => [window.IntMapTime.iso(), document.getElementById('dl-ww2').checked]), '(b) the newer link, whole').toEqual(['1985-07-01', false]);
+  /* the reader's own tick still opens a war on its record */
+  await page.evaluate(() => { const cb = document.getElementById('dl-ww2'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
+  const first = await page.evaluate(() => window.__imWarFronts.span('ww2')[0]);
+  await expect.poll(() => page.evaluate(() => window.IntMapTime.iso()), { timeout: 15000, message: "a reader's tick still moves the clock into the war" }).toBe(first);
   await ctx.close();
 });
