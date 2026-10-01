@@ -750,11 +750,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      this file — and this is the second of two early readers (#R122 already reads the layer list the
      same way). tests/process-map-shell-source-lines-checks.test.mjs (#R195) pins all three literals together: a typo here would fail
      as "the sidebar state was never saved", with nothing in the console to say otherwise. */
-  const _sessUI=(()=>{ try{ const s=JSON.parse(localStorage.getItem('intmap_session2')||'null');
+  const _sessUI=window.IntMapDevice.embedded()?{ left:false, right:false }:(()=>{ try{ const s=JSON.parse(localStorage.getItem('intmap_session2')||'null');
       return { left:(s&&typeof s.sbOpen==='boolean')?s.sbOpen:null,
                right:(s&&typeof s.lsrOpen==='boolean')?s.lsrOpen:null }; }
     catch(_){ return { left:null, right:null }; } })();
-  window._imSessionUI=_sessUI;
+  window._imSessionUI=_sessUI;   /* (share-embed-distribution) an EMBED (js/ui-device.js embedded()) opens neither sidebar: neither is part of a frame, and an open Layers panel buys its thumbnails */
   if(_sessUI.left===null){ if(isMobile()) sidebar.classList.add('collapsed'); }   /* first visit: collapsed on phone */
   else sidebar.classList.toggle('collapsed',!_sessUI.left);
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
@@ -4202,7 +4202,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Settings repopulates the list). Desktop keeps the synchronous boot. */
   (function(){ const heavy=()=>{ try{ rebuildGeoIndex(); }catch(_){} try{ populateTimezones(); }catch(_){} };
     if(typeof isMobile==='function'&&isMobile()&&window.requestIdleCallback) requestIdleCallback(heavy,{timeout:3500}); else heavy(); })();
-  updateI18n(); fetchData({background:true}); everyTick('app-body:news-poll',180000,()=>fetchData({background:true})); bootSupabase();   /* (#R372) background: no upstream, no chunk, until a reader asks — js/news-feed.js */
+  updateI18n(); fetchData({background:true}); everyTick('app-body:news-poll',180000,()=>fetchData({background:true})); if(!window.IntMapDevice.embedded()) bootSupabase();   /* (#R372) background: no upstream, no chunk, until a reader asks — js/news-feed.js. (share-embed-distribution) an EMBED has no account, no search, no Information or Community tab, so the account and data boot (sign-in, geo_pins, dashboard_cards, favourites, community, realtime) does not run there — js/ui-device.js embedded() */
   /* (#R17) Warm the country gazetteer shortly AFTER first paint (idle, non-blocking) so place search has
      strong LOCAL matches (countries/capitals/major places) even if the online geocoders are slow/blocked —
      the search then practically never comes back empty, without delaying initial load. */

@@ -660,8 +660,23 @@ of reach. The chosen posture:
   action by click alone that clickjacking would meaningfully abuse; all `target="_blank"`
   links carry `rel="noopener"` and every `window.open` passes `noopener` (no reverse
   tabnabbing); GitHub Pages is HTTPS-only in practice. If the site is ever moved behind a host
-  that can set headers (e.g. Cloudflare), add `frame-ancestors 'self'` / `X-Frame-Options:
-  SAMEORIGIN` / HSTS there.
+  that can set headers (e.g. Cloudflare), add HSTS there, and `frame-ancestors 'self'` /
+  `X-Frame-Options: SAMEORIGIN` **for every request except `?embed=1`** — see the next item.
+- **(share-embed-distribution) Embedding is a feature now, and it rests on the absence above.**
+  Another site may put the map in an `<iframe>`: the share panel's 「Embed」 tab writes the code,
+  and the frame's address is the share link with `?embed=1` (`js/embed-mode.js`). MEASURED
+  2026-10-01: the production response carries `Server: GitHub.com` and
+  `Access-Control-Allow-Origin: *` and **no** `X-Frame-Options` or `Content-Security-Policy`
+  header, so any page could frame IntMap before this change as well — nothing was opened. What the
+  feature adds is a page that is safe to frame: an embed shows only the map, its legends, the
+  clock's instant, the credits and 「Open in IntMap」 (a `target="_blank" rel="noopener"` link);
+  the reader's own click / right-click / change / input / key events stop before the app's
+  handlers (only pan and zoom reach the renderer, and none at all with `&interactive=0`); it has
+  no sign-in, no form and no Atlas (the desktop Atlas warm-up does not run in an embed). The
+  generated code names no `allow=` feature and sets `referrerpolicy="strict-origin-when-cross-origin"`;
+  its `src` and attributes are encoded by `IntMapSafe.url` / `IntMapSafe.html`.
+  ⚠ A framed page that is NOT `?embed=1` is the full app, exactly as before this change — the
+  residual limitation in the item above is unchanged, and a header-capable host is where it closes.
 
 ---
 

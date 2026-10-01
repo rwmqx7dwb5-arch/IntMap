@@ -876,6 +876,7 @@ export function layerPreviews(countryStats,loadCountryData){
          every tile it ever got, from the same queue, in the same order. Only the opening that
          nobody asked for is gone, and the desktop default is untouched. */
       if(_bootMobile()) return;
+      if(window.IntMapDevice.embedded()) return;   /* (share-embed-distribution) …nor in an EMBED: it has no Layers panel to open (js/embed-mode.js). kick() is unchanged. */
       try{ const E=IntMapGeoEngine; if(E&&E.events&&E.events.once){ E.events.once('idle',()=>setTimeout(go,400)); } }catch(_){}
       setTimeout(go,6000); })();
     function _queueImg(el,id,url){ _imgQ.push({el,id,url}); _imgPump(); }
