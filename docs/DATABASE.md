@@ -35,7 +35,7 @@ is the human explanation.
 |---|---|---|---|
 | `profiles` | One row per user. Public columns (`display_name`, `bio`, `avatar_url`) + private (`email`, `is_admin`, `is_pro`, `plan`, `login_count`). | Owner + admin (full row). Public columns for everyone via `profiles_public` (next row). | Owner may update only `display_name`/`bio`/`avatar_url`/`login_count` (column-level grant → **no self-escalation**). |
 | `profiles_public` | The public author card: `id`, `display_name`, `bio`, `avatar_url` — and physically nothing else. Kept in step with `profiles` by the `profiles_public_sync` trigger. **A table, not a view** (#R507): as a view it had no `security_invoker`, so it read `profiles` with the owner's rights and bypassed that table's RLS, and any column added to it would have inherited that bypass. | Everyone (`SELECT USING (true)` — this data is public by declaration). | **Nobody.** No role holds a write grant; the trigger is the only writer. |
-| `ai_usage` | Daily AI free-use counter (`user_id`, `usage_date`, `count`) — and, since ai-one-ledger, what that day's provider calls COST: `input_tokens` (full-price input, cache reads/writes excluded), `cached_read_tokens`, `cache_write_tokens`, `output_tokens` (reasoning included), `provider_calls`, `unmetered_calls` (answers that reported no usage). The cost columns never change `count`; a developer account, which consumes no use, gets a row with `count` 0 and its costs. | Owner reads own rows. | **RPCs only** (`increment_ai_usage` / `refund_ai_usage` for `count`; `record_ai_usage` for the cost columns; service_role). Users cannot write it. |
+| `ai_usage` | Daily AI free-use counter (`user_id`, `usage_date`, `count`) — and, since ai-one-ledger, what that day's provider calls COST: `input_tokens` (full-price input, cache reads/writes excluded), `cached_read_tokens`, `cache_write_tokens`, `output_tokens` (reasoning included), `provider_calls`, `unmetered_calls` (answers that reported no usage). The cost columns never change `count`; a developer account, which consumes no use, gets a row with `count` 0 and its costs. | Owner reads own rows. | **RPCs only** (`increment_ai_usage` / `refund_ai_usage` for `count`; `record_ai_usage` for the cost columns; service_role). Users cannot write it. `count >= 0` is a CHECK, so not even the table owner can (guarantee 3). |
 | `ai_gloss_usage` | Daily counter for the Atlas **term-gloss** lane (`user_id`, `usage_date`, `count`). Separate from `ai_usage` so looking a word up inside an answer never spends one of the reader's questions — and so spending the questions never stops the lookups. | Owner reads own rows. | **RPCs only** (`consume_ai_gloss` / `refund_ai_gloss`, service_role). |
 | `ai_turns` | One row per (account, AI **turn**) — `(user_id, turn_key)`, `calls`, `charged`, `succeeded`, `started_at`, `settled_at`, and the same six cost columns as `ai_usage` (the turn's own cost while the row lives — it is swept after a day and deleted on refund, which is why `ai_usage` holds the durable total). The first call of a turn charges `ai_usage`; the rest are free up to a server-set ceiling. `succeeded` is set the moment any call of the turn returns a provider answer, and a succeeded turn is never refunded — the audited «answer, then send a bad request under the same turn» sequence used to hand the charge back. | Owner reads own rows. | **RPCs only** (`consume_ai_turn` / `settle_ai_turn` / `refund_ai_turn` / `sweep_ai_turns` / `record_ai_usage`, service_role). |
 | `ai_turn_answers` *(atlas-stream-replay)* | The answer of **one keyed Atlas request**, held so that a page whose stream broke before `done` **receives it again instead of computing it again** — `(user_id, turn_key, replay_key)`, `state` (`running` → `done` / `failed`), `attempts`, `status`, `body` (the `{status, body}` ai-proxy returned; only for `done` — a failure is held as a fact and never replayed), `lease_until` (the running request's heartbeat: renewed every SSE heartbeat, two heartbeats long, so a run whose isolate died is `abandoned`), `expires_at` (the turn key's lifetime, `TURN_TTL_S`). Expired rows are never returned, are deleted by the account's next claim and are swept every 15 minutes (pg_cron `ai-turn-answers-sweep` → `sweep_ai_turn_answers`). | Owner reads own rows. | **RPCs only** (`claim_ai_answer` / `peek_ai_answer` / `beat_ai_answer` / `finish_ai_answer` / `sweep_ai_turn_answers`, service_role). |
@@ -216,7 +216,13 @@ same pgTAP file asserts zero grants.
    grant), so they cannot set their own `is_admin`/`is_pro`/`plan`. Admin is granted only via
    SQL (below) or `service_role`.
 3. **AI quota is tamper-proof.** `ai_usage` — and the separate `ai_gloss_usage` lane — is written only by the SECURITY DEFINER RPCs, and
-   those RPCs are executable only by `service_role`.
+   those RPCs are executable only by `service_role`. ⚠ Grants bind the browser roles, **not the table
+   owner** — the role Studio's table editor and the SQL editor run as. Production held 25 `ai_usage` rows
+   with a negative `count` (min −99,999,938, written by cell edits; a negative count is `limit − count`
+   uses, so it lifted that day's limit). So the value itself is a column CHECK,
+   `ai_usage_count_nonnegative` / `ai_gloss_usage_count_nonnegative` (`count >= 0`), which every role
+   meets; `17_ai_counters_never_negative_test.sql` asserts that every `count` column in `public` has a
+   lower bound. To give an account more uses, set `profiles.plan` (or `DEV_USER_IDS`) — not `count`.
 4. **(#R144) Server-owned run-state.** Monitor run results (`monitor_runs`/`_evidence`/`_reports`/
    `_seen_items`) have no write policy → only `service_role` writes them, so they cannot be forged.
    On `area_monitors`, the run-state columns and `next_run_at` are protected by **both** a column
@@ -351,6 +357,12 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   no INSERT privilege for `anon` or `authenticated`, and a direct insert by either — even a signed-in reader
   naming itself — is DENIED; admin read/delete are unchanged; ③ service_role (the `reader-reports` path)
   still writes both, and the #R155 length ceiling still stands in front of it.
+- **`17_ai_counters_never_negative_test.sql`** *(ai-usage-ledger-sign)* — ① over the catalogue: every base
+  table in `public` with a `count` column carries a `CHECK (count >= n)`; ② the table owner (the role Studio
+  runs as) cannot write a negative `count` into `ai_usage` or `ai_gloss_usage` — by UPDATE, by INSERT, or
+  by the table editor's own `json_populate_record` statement (23514); ③ a refund at 0 stays 0 without an
+  error; ④ a refund never gives back more than was charged: two refunds of one turn decrement once, a
+  settled turn refunds nothing, a turn charged yesterday is refunded to yesterday's row.
 
 ### How the checks work (so a failure is readable)
 
