@@ -955,12 +955,15 @@
     .layer-option .lyr-state{ margin-left:auto; flex-shrink:0; font-size:11px; font-weight:600; line-height:1.4; padding:2px 8px; border-radius:999px; white-space:nowrap; }
     .layer-option .lyr-state[data-state="failed"]{ color:var(--info-mil); background:rgba(255,59,48,0.12); }
     .layer-option .lyr-state[data-state="unobserved"]{ color:var(--info-choke); background:rgba(255,149,0,0.14); }
+    /* (restored-layers-under-load) «nothing to state for this date» is not a fault — a neutral grey, not red / orange */
+    .layer-option .lyr-state[data-state="nodata"]{ color:var(--text-muted); background:rgba(142,142,147,0.16); }
     /* …and on the tile that stands for the same box (js/map-ui.js `.lst-tile[data-lid]` — the face the desktop sidebar and
        the phone's tile mode show instead of the row): a solid pill in the top-left corner, clear of the ★ in the other. */
     .lst-tile > .lyr-state{ position:absolute; top:4px; left:4px; font-size:10px; font-weight:600; line-height:1.3; padding:2px 7px; border-radius:999px; white-space:nowrap; pointer-events:none; color:#fff; }
     .lst-tile.lst-row > .lyr-state{ position:static; flex:0 0 auto; }
     .lst-tile > .lyr-state[data-state="failed"]{ background:var(--info-mil); }
     .lst-tile > .lyr-state[data-state="unobserved"]{ background:var(--info-choke); }
+    .lst-tile > .lyr-state[data-state="nodata"]{ background:rgba(99,99,102,0.92); }
     .sat-keys-hint{ font-size:11px; color:var(--text-muted); margin-bottom:10px; font-weight:400; line-height:1.45; }
     /* News-by-country multi-select pulldown (#R15) */
     .nc-dd{ position:relative; }

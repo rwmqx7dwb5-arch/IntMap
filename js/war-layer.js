@@ -429,20 +429,30 @@ window.IntMapModules.warLayer = function (HOST) {
        ask only the first, so a caller that arrived early — the `styledata` handler is the one that
        does — gave up the moment `ensure()` refused for the other reason. */
     const canBuild = () => !!data && canDraw();
-    let _pending = null, _timer = null, _tries = 0;
+    /* ⚠ (restored-layers-under-load) …AND IT WAITS FOR THE TWO EVENTS, NOT FOR 40 POLLS. The poll gave up
+       after 40 × 300 ms («~12 s; a map that never draws is not our fault to log»); on a page whose main
+       thread was taken — every layer of a share link restored at once, CI measured timers 20 s late — the
+       tries ran out before the style or the record had arrived and the war was silently never drawn. Now
+       it waits for what canBuild() is made of: the record (this file's own latched `load()`) and the
+       renderer (`GE().whenCanDraw()`, which answers on styledata / load / idle and never before it is
+       true — it also covers the «already idle» case the poll was written for). A record that did NOT
+       arrive is an observed failure and is said on the row (js/layer-state.js), not dropped.
+       `_pending` still keeps it to ONE outstanding wait — the newest request is the one that runs. */
+    let _pending = null, _waiting = false;
     function whenDrawable(fn) {
       if (canBuild()) { fn(); return true; }
-      _pending = fn; _tries = 0;
-      if (_timer) return false;
-      const tick = () => {
-        _timer = null;
-        const f = _pending;
+      _pending = fn;
+      if (_waiting) return false;
+      _waiting = true;
+      Promise.all([data ? true : load(), GE().whenCanDraw()]).then(([ok]) => {
+        _waiting = false;
+        const f = _pending; _pending = null;
         if (!f) return;
-        if (canBuild()) { _pending = null; f(); return; }
-        if (++_tries > 40) { _pending = null; return; }   /* ~12 s; a map that never draws is not our fault to log */
-        _timer = setTimeout(tick, 300);
-      };
-      _timer = setTimeout(tick, 300);
+        if (canBuild()) { f(); return; }
+        if (!ok) {
+          try { window.IntMapLayerState && window.IntMapLayerState.report(CB, 'failed', { reason: 'data', message: L('Could not load the war data', '大戦データを読み込めませんでした', 'Kriegsdaten konnten nicht geladen werden', 'Не удалось загрузить данные о войнах', 'No se pudieron cargar los datos de la guerra') }); } catch (_) { }
+        }
+      }, () => { _waiting = false; });
       return false;
     }
 

@@ -4338,7 +4338,10 @@ window.IntMapModules.worldPacksBody=function(HOST){
       function paintCountries(force){
         if(!force){ if(paintT) return; paintT=setTimeout(()=>{ paintT=0; _paintCountriesNow(false); },PUBLISH_MS); return; }
         clearTimeout(paintT); paintT=0; _paintCountriesNow(true); }
-      function _paintCountriesNow(force){ withCountrySource().then(()=>{ if(!on) return;
+      function _paintCountriesNow(force){ withCountrySource().then((ok)=>{ if(!on) return;
+        /* (restored-layers-under-load) the country collection did not arrive (or the renderer refused it) — an
+           observed failure, so the row says it; the units the feeds drew are still drawn */
+        if(!ok){ panel.failed('country-data',L('The country outlines could not be loaded, so countries are not shaded','国境データを読み込めなかったため、国ごとの塗り分けはできません')); return; }
         if(!ensureChoro()) { whenDrawable(()=>{ if(on&&ensureChoro()) paintCountries(true); }); return; }
         if(force){ tierWritten=Object.create(null); _cFeat=Object.create(null); }
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||''); if(!c) return;

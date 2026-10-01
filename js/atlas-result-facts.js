@@ -42,7 +42,9 @@ export function satelliteFacts(A, found, obsPt, obsLabel, L) {
   } catch (_) { pass = null; }
   const fmtT = (ms) => { try { return new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return new Date(ms).toISOString(); } };
   let passTxt = '';
-  if (pass && pass.none) passTxt = L('no pass', '通過なし', 'kein Überflug', 'нет пролёта', 'sin pase') + at + ' ' + L('in the next 24 h', '（今後24時間）', 'in den nächsten 24 h', 'в ближайшие 24 ч', 'en las próximas 24 h');
+  /* (restored-layers-under-load) the element set ends before the search does — no prediction, said as such */
+  if (pass && pass.none && pass.limited) passTxt = L('no pass prediction', '通過予測なし') + at + ' ' + L('— the orbital elements are only good until ' + new Date(pass.elementsTo).toISOString().slice(0, 10), '（軌道要素の有効期限は ' + new Date(pass.elementsTo).toISOString().slice(0, 10) + '）');
+  else if (pass && pass.none) passTxt = L('no pass', '通過なし', 'kein Überflug', 'нет пролёта', 'sin pase') + at + ' ' + L('in the next 24 h', '（今後24時間）', 'in den nächsten 24 h', 'в ближайшие 24 ч', 'en las próximas 24 h');
   else if (pass && pass.inProgress) passTxt = L('pass', '通過', 'Überflug', 'пролёт', 'pase') + at + ' ' + L('in progress now', '現在通過中', 'läuft gerade', 'идёт сейчас', 'en curso ahora');
   else if (pass && isFinite(pass.riseMs)) passTxt = L('next pass', '次の通過', 'nächster Überflug', 'следующий пролёт', 'próximo pase') + at + ' ' + fmtT(pass.riseMs);
   const passDetail = (p) => (isFinite(p.maxEl) ? (', ' + L('max elevation', '最大仰角', 'max. Elevation', 'макс. угол места', 'elevación máx.') + ' ' + p.maxEl.toFixed(0) + '° (' + fmtT(p.maxMs) + ')') : '')

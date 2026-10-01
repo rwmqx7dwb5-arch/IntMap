@@ -140,9 +140,13 @@ test('R185b: the layer implements that guard and reports what it dropped', () =>
      the test first proves both kinds of drop exist there, or it would be comparing two empty lists. */
   const newest = JSON.parse(read('data/tle/catalogue.json')).newestEpoch;
   const when = new Date(Date.parse(newest) + 120 * 86400000);
-  const layer = new Function('SAT', 'sats', 'clockNow', 'sunAt',
+  /* (restored-layers-under-load) the element-set span is a separate rule with its own test
+     (tests/restored-layers-under-load-checks.test.mjs) — 120 days out every set is outside it, so here it is
+     opened wide to keep THIS test about the divergence guard */
+  const everywhere = () => ({ from: -Infinity, to: Infinity });
+  const layer = new Function('SAT', 'sats', 'clockNow', 'sunAt', '_elementSpan',
     `${stmts.sort((a, b) => a.start - b.start).map((n) => src.slice(n.start, n.end)).join('\n')}
-     return { propagateAll, diverged: () => _diverged };`)(SAT, sats, () => when, () => null);
+     return { propagateAll, diverged: () => _diverged };`)(SAT, sats, () => when, () => null, everywhere);
   const drawn = layer.propagateAll(when);
   const reference = propagated(sats, when);
   assert.ok(reference.some((o) => !(o.altKm > 80)) && reference.some((o) => o.altKm > 80 && !keeps(o)),
