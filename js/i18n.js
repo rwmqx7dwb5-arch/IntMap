@@ -23,9 +23,10 @@
  *
  *  Adding a language: see the header of js/lang-registry.js. It is three edits, none of them here.
  * ========================================================================== */
+import { IntMapLang } from './lang-registry.js';
 (function () {
   'use strict';
-  var LANG = window.IntMapLang;
+  var LANG = IntMapLang;
   var out = {};
   if (!LANG) { window.IntMapI18N = { en: {} }; return; }
 

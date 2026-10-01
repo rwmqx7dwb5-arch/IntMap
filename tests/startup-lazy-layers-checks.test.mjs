@@ -29,7 +29,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 import { parseSource } from './helpers/ast.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { LAZY_REGISTRY, lazyBody } from '../js/lazy-modules.js';
@@ -77,9 +77,13 @@ test('startup-lazy-layers ② the eager halves — the rows, the toolkit, the ap
   for (const f of ['js/world-packs-rows.js', 'js/space-approach.js', 'js/star-catalogue.js', 'js/lazy-modules.js']) {
     assert.ok(eager.has(f), `${f} is not reached from the entry — its rows / entry points would not exist at boot`);
   }
-  /* the consumers of the World-data toolkit boot after its owner (they read window.IntMapWorld._ui) */
-  const main = read('src/main.js');
-  assert.ok(main.indexOf("'../js/world-packs-rows.js'") < main.indexOf("'../js/industry-web.js'"), 'the toolkit owner is imported before its first consumer');
+  /* the consumers of the World-data toolkit boot after its owner (they read window.IntMapWorld._ui).
+     (module-graph) the owner publishes that toolkit when its FACTORY runs, and js/app-body.js calls the
+     factories by name in boot order — so «after» is the order of those two calls, not of import lines. */
+  const body = codeOnly(read('js/app-body.js'));
+  const owner = body.indexOf('worldPacks(IM_HOST)'), consumer = body.indexOf('industryWeb(IM_HOST)');
+  assert.ok(owner > 0 && consumer > 0, 'the two factory calls were not found in js/app-body.js — re-derive this check');
+  assert.ok(owner < consumer, 'the toolkit owner is instantiated before its first consumer');
 });
 
 test('startup-lazy-layers ③ lazyBody: asked order, no fetch for «off», synchronous once here, a failure not kept', async () => {
@@ -113,16 +117,19 @@ test('startup-lazy-layers ④ the space facade answers before the explorer, queu
   const w = {
     console, Math, Date, performance: { now: () => 0 }, setTimeout: () => 0, clearTimeout() {},
     document: { getElementById: () => null, body: { appendChild() {} }, createElement: () => ({ style: {}, appendChild() {} }), querySelector: () => null },
-    IntMapLang: { pick: () => (a) => a },
-    IntMapGeoEngine: { camera: { get: () => ({ zoom: 5 }), getMinZoom: () => 0 }, events: { on() {} }, render: {} },
     IntMapLazy: { need: (n) => { calls.push('need:' + n); return new Promise((r) => { resolveNeed = r; }); } },
   };
   w.window = w;
-  const ctx = vm.createContext(w);
-  /* the approach is a module that imports lazyBody; evaluate it with that one binding supplied */
-  const src = read('js/space-approach.js').replace(/^\s*import\s*\{\s*lazyBody\s*\}\s*from\s*'\.\/lazy-modules\.js';\s*$/m, '');
-  vm.runInContext('var lazyBody = ' + lazyBody.toString() + ';\n' + src, ctx, { filename: 'js/space-approach.js' });
-  w.IntMapModules.space({ lang: 'en', proj: 'globe' });
+  /* (module-graph) the approach is IMPORTED: its lazyBody is the real js/lazy-modules.js export (it was
+     spliced in as text), and the renderer and registry stubs are handed at its own import edges */
+  const M = await importModule('js/space-approach.js', {
+    globals: { window: w, document: w.document },
+    mocks: {
+      'js/lang-registry.js': { IntMapLang: { pick: () => (a) => a } },
+      'js/geo-engine.js': { IntMapGeoEngine: { camera: { get: () => ({ zoom: 5 }), getMinZoom: () => 0 }, events: { on() {} }, render: {} } },
+    },
+  });
+  M.space({ lang: 'en', proj: 'globe' });
   const S = w.IntMapSpace;
   assert.equal(typeof S.mount, 'function');
   assert.equal(S.isOpen(), false, 'not open, and asking cost nothing');
@@ -185,25 +192,25 @@ test('startup-lazy-layers ⑥ the build\'s own report agrees: the bodies are asy
 /* ⑦ the Noto sheets no longer block the first paint, so a CJK face can arrive after the renderer has
    rasterised labels with the fallback. When document.fonts reports a CJK face finished loading, the
    glyph cache is emptied once per burst (coalesced to a frame) — and a Latin face asks for nothing.
-   RUN: js/map-typography.js evaluated against a fake document.fonts and engine. */
+   RUN: js/map-typography.js evaluated against a fake document.fonts and engine.
+   (module-graph) IMPORTED: the engine is handed at its geo-engine.js import edge; the page is installed. */
 test('⑦ a CJK face that lands after the first paint refreshes the map glyphs once; a Latin face does not', async () => {
-  const vm = await import('node:vm');
-  const src = readFileSync(join(ROOT, 'js', 'map-typography.js'), 'utf8');
   const listeners = {}; let frames = [];
   let refreshed = 0;
   const win = {
     addEventListener() {}, requestAnimationFrame: (f) => { frames.push(f); return frames.length; },
-    IntMapGeoEngine: { scene: { refreshCjkGlyphs: () => { refreshed++; return true; } } },
   };
+  win.window = win;
   const doc = {
     readyState: 'complete', documentElement: { lang: 'ja' }, head: { appendChild() {} }, baseURI: 'http://x/',
     createElement: () => ({ dataset: {} }),
     fonts: { addEventListener: (t, f) => { listeners[t] = f; }, forEach() {} },
   };
-  const ctx = { window: win, document: doc, requestAnimationFrame: win.requestAnimationFrame, navigator: {}, URL, console, getComputedStyle: () => ({}) };
-  ctx.globalThis = ctx; ctx.self = ctx;
-  vm.createContext(ctx);
-  vm.runInContext(src, ctx);
+  langRegistry();
+  await importModule('js/map-typography.js', {
+    globals: { window: win, document: doc, requestAnimationFrame: win.requestAnimationFrame, getComputedStyle: () => ({}) },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: { scene: { refreshCjkGlyphs: () => { refreshed++; return true; } } } } },
+  });
   assert.equal(typeof listeners.loadingdone, 'function', 'map-typography listens for document.fonts loadingdone');
   const flush = () => { const f = frames; frames = []; f.forEach((x) => x()); };
   listeners.loadingdone({ fontfaces: [{ family: 'Inter' }] }); flush();

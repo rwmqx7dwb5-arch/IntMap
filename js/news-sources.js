@@ -25,19 +25,20 @@
  *  Lives here rather than in js/app-body.js because of standing instruction 13 — new functionality
  *  goes in its own file, and the core only ever shrinks (tests/shell-app-body-modules-checks.test.mjs #R200 ⑤).
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.newsSources=function(HOST,DEPS){
+import { IntMapLang } from './lang-registry.js';
+
+export function newsSources(HOST,DEPS){
   /* (#R207) the country table comes from js/tables.js through the caller, the same way every other
      split module receives what it borrows — see Architecture.md §3.1 and scripts/check-split-scope.mjs.
      ⚠ A FREE REFERENCE HERE WOULD BE A SILENT NO-OP, which is exactly the failure #R194 built that
      gate against: the picker would build zero rows and nothing would say why. */
   const NEWS_COUNTRY_FEEDS=(DEPS&&DEPS.NEWS_COUNTRY_FEEDS)||{};
-  const LNS=window.IntMapLang.pick(()=>HOST.lang);   /* (#R246) the feed names are tuples held as data — see IntMapLang.pickArgs() */
+  const LNS=IntMapLang.pick(()=>HOST.lang);   /* (#R246) the feed names are tuples held as data — see IntMapLang.pickArgs() */
 
   window.IntMapNewsSources=(function(){
     'use strict';
     const esc=(s)=>{ try{ return window.IntMapSafe.html(s==null?'':String(s)); }catch(_){ return ''; } };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
 
     /* the outlets the CURRENT feed carries, with how many headlines each has, most first */
     function counts(){
@@ -198,4 +199,4 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
     return { counts, allows, label, render, commit, syncLabel, relabel,
       renderCountries, commitCountries, countryLabel, countryLabelOf, syncCountryLabel };
   })();
-};
+}

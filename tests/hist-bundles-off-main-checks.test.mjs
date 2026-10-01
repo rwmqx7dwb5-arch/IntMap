@@ -34,8 +34,13 @@ import { readFileSync, readdirSync, openSync, readSync, closeSync } from 'node:f
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker as NodeWorker } from 'node:worker_threads';
+/* (module-graph) this file's own clock. The imported-module harness (scripts/histeras/time-borders.mjs,
+   ⑥) installs the BROWSER it runs in on globalThis — inert timers included — and those globals stay for
+   the rest of the file, so ⑦'s waits and its pages' timers are the process's real ones, by name. */
+import { setTimeout as realSetTimeout, clearTimeout as realClearTimeout } from 'node:timers';
 import { timeBorders } from '../scripts/histeras/time-borders.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { asClassicScript } from './app-source.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -217,18 +222,28 @@ test('hist-bundles-off-main ⑤: an era sheet arrives whole, rings and all', asy
 const recordOf = (fc) => JSON.stringify(fc);
 
 test('hist-bundles-off-main ⑥: js/time-borders.js draws the same collections through the door as from whole bundles', async () => {
-  const whole = timeBorders({ lang: 'en', fetch: serve });
+  const whole = await timeBorders({ lang: 'en', fetch: serve });
   whole.window.__CSHAPES = bundle('cshapes.js'); whole.window.__HISTB = bundle('hist-borders.js'); whole.window.__HISTERAS = bundle('hist-eras.js');
-  const door = timeBorders({ lang: 'en', fetch: serve });
+  const door = await timeBorders({ lang: 'en', fetch: serve });
+  /* (module-graph) the two pages are IMPORTED instances, and an ES module reads the one process-global
+     `window` — so each page is driven with ITS window installed as the page's (otherwise both would read
+     the last one installed, and «whole» would silently go through the door too). js/border-coast.js is
+     the real module now (one per process, imported by js/time-borders.js): both pages hold the shipped
+     marks, as the page does once data/border-coast.js has loaded, so neither waits on a <script> tag
+     this context never fires. */
+  for (const page of [whole, door]) page.window.__IMBCOAST = bundle('border-coast.js');
+  const on = (page) => { globalThis.window = page.window; return page.api; };
   for (const y of YEARS) {
-    await whole.api._go(y); await door.api._go(y);
+    await on(whole)._go(y); await on(door)._go(y);
     assert.equal(String(door.api.current()), String(whole.api.current()), y + ': a different record/epoch answered');
     const a = whole.api.currentFC(), b = door.api.currentFC();
     assert.ok(a && a.features.length > 0, y + ': nothing was drawn from the whole bundles');
     assert.equal(recordOf(b), recordOf(a), y + ': the collection drawn through the door differs');
   }
   /* the stepper's dates, which walk every record, are the same list */
-  assert.deepEqual([...(await door.api.changeDates())].map((d) => d.toISOString()), [...(await whole.api.changeDates())].map((d) => d.toISOString()));
+  const doorDates = [...(await on(door).changeDates())].map((d) => d.toISOString());
+  const wholeDates = [...(await on(whole).changeDates())].map((d) => d.toISOString());
+  assert.deepEqual(doorDates, wholeDates);
 });
 
 function adminHarness({ publish }) {
@@ -241,7 +256,7 @@ function adminHarness({ publish }) {
   const GE = { hasRenderer: () => true, ready: () => true, whenCanDraw: () => new Promise(() => {}), layers: L,
     events: { on: () => {}, once: () => {}, off: () => {} }, camera: { getZoom: () => 3, getBounds: () => null },
     coords: { queryRenderedFeatures: () => [] } };
-  const win = { IntMapGeoEngine: GE, IntMapModules: {}, addEventListener: () => {},
+  const win = { IntMapGeoEngine: GE, addEventListener: () => {},
     IntMapTime: { on: () => {}, onIntent: () => {}, min: 1 },
     IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' },
     IntMapMemBudget: { maySpeculate: () => false } };
@@ -249,21 +264,31 @@ function adminHarness({ publish }) {
   win.IntMapFetchWithin = FW;
   const ctx = vm.createContext({ window: win, console, navigator: {}, fetch: serve, Response, TextDecoder,
     document: { getElementById: () => ({ checked: true, closest: () => null }), createElement: () => ({ style: {} }), head: { appendChild: () => {} } },
-    setTimeout: (f, ms) => { const t = setTimeout(f, ms); if (t.unref) t.unref(); return t; }, clearTimeout });
-  for (const p of ['js/hist-scale.js', 'js/hist-bundles.js', 'js/border-coast.js']) vm.runInContext(rd(p), ctx, { filename: p });
+    setTimeout: (f, ms) => { const t = realSetTimeout(f, ms); if (t.unref) t.unref(); return t; }, clearTimeout: realClearTimeout });
+  /* (module-graph) ⚠ STILL A vm CONTEXT, ON PURPOSE: this check runs TWO pages side by side (the whole
+     bundles and the door) whose async work interleaves, and each page needs its own `window`. An ES
+     module reads the one process global, so two imported instances would read each other's records.
+     js/border-coast.js and js/time-admin1.js are modules now; `asClassicScript` drops their import/export
+     lines and binds each imported name to what THIS page's window holds under it — js/time-admin1.js's
+     IntMapBorderCoast is the instance evaluated here (in a scope of its own on the same page, since both
+     files now declare that name at their top level), reading this page's marks. */
+  for (const p of ['js/hist-scale.js', 'js/hist-bundles.js']) vm.runInContext(rd(p), ctx, { filename: p });
+  const bc = vm.createContext({ window: win, document: ctx.document, console });
+  vm.runInContext(asClassicScript(rd('js/border-coast.js')), bc, { filename: 'js/border-coast.js' });
+  win.IntMapBorderCoast = bc.IntMapBorderCoast;
   win.__IMBCOAST = bundle('border-coast.js');
   if (publish) {
     win.__HISTADM1 = oldSplice(bundle('hist-admin1.js'), GAPS.map((g) => bundle(g.file.slice(5))));
     for (const g of GAPS) win[g.global] = bundle(g.file.slice(5));
   }
-  vm.runInContext(rd('js/time-admin1.js'), ctx, { filename: 'js/time-admin1.js' });
-  const mod = win.IntMapModules.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
+  vm.runInContext(asClassicScript(rd('js/time-admin1.js')), ctx, { filename: 'js/time-admin1.js' });
+  const mod = ctx.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });   /* (module-graph) the exported factory */
   return { mod, sources, win, ctx };
 }
 async function adminAt(H, y) {
   const before = H.mod.current();
   H.mod._go(vm.runInContext(`(() => { const d = new Date(2000, 5, 15, 12); d.setFullYear(${y}); return d; })()`, H.ctx));
-  for (let i = 0; i < 600; i++) { await new Promise((r) => setTimeout(r, 25)); if (H.mod.current() != null && H.mod.current() !== before) break; }
+  for (let i = 0; i < 600; i++) { await new Promise((r) => realSetTimeout(r, 25)); if (H.mod.current() != null && H.mod.current() !== before) break; }
 }
 
 test('hist-bundles-off-main ⑦: js/time-admin1.js writes the same polygons, border runs and gap line through the door', async () => {

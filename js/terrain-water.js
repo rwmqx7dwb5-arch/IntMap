@@ -50,16 +50,18 @@
 import './water-dynamics.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.terrainWater=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function terrainWater(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const isMobile=HOST.isMobile, warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear,
         demElevAt=HOST.demElevAt, _demZoomForSpan=HOST._demZoomForSpan, makeDraggable=HOST.makeDraggable;
 
   window.IntMapTerrainWater=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     const D=Math.PI/180, R_EARTH=6371008.8, CIRC=2*Math.PI*R_EARTH;
     const mX=lng=>(180+lng)/360;
     const mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;
@@ -1918,7 +1920,7 @@ window.IntMapModules.terrainWater=function(HOST){
       _ensureCss();
       panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:'+TW_PAD+';background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:'+TW_FS_H+';font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
-        +'<button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;line-height:1;">×</button></div>'
+        +'<button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;line-height:1;">×</button></div>'
         /* ══ ⚠⚠ (#R275) 「ツールは上部にスティックしろ。」 ═══════════════════════════════════════════
            The tool picker was the first thing INSIDE the scroller, so choosing 🧱 堤防・ダム, scrolling
            down to its settings and then wanting ⛏ 削る meant scrolling back up to find the switch —
@@ -2747,4 +2749,4 @@ window.IntMapModules.terrainWater=function(HOST){
           breaches:result.breaches.length, biggestOver:result.breaches[0]?result.breaches[0].over:0,
           depCount:result.depCount, biggest:result.biggest, totalIn:result.totalIn, solveMs:result.solveMs }:null }) };
   })();
-};
+}

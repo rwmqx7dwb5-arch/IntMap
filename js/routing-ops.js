@@ -45,10 +45,12 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.routingOps=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function routingOps(HOST){
+  const GE=()=>IntMapGeoEngine;
+  const L=IntMapLang.pick(()=>HOST.lang);
   const D2R=Math.PI/180, R_EARTH=6371008.8;
   function distM(a,b){ const la1=a[1]*D2R, la2=b[1]*D2R, dla=(b[1]-a[1])*D2R, dlo=(b[0]-a[0])*D2R;
     const h=Math.sin(dla/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dlo/2)**2;
@@ -235,7 +237,7 @@ window.IntMapModules.routingOps=function(HOST){
             time:f.properties&&f.properties.time, lng:c[0], lat:c[1], km:best/1000, atM:at }); });
         quakes.sort((a,b)=>(b.mag||0)-(a.mag||0)); quakes=quakes.slice(0,6); }
     }catch(e){ quakesErr=(e&&e.reason)||'network';
-      if(quakesErr!=='aborted'){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos")); }catch(_){} } }
+      if(quakesErr!=='aborted'){ try{ HOST.imToast(IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos")); }catch(_){} } }
     /* NEWS — what this session already has, geolocated. No request, and it cannot disagree with the
        pins on the map because it IS the pins on the map. */
     let news=[];
@@ -550,4 +552,4 @@ window.IntMapModules.routingOps=function(HOST){
   };
   window.IntMapRoutingOps=API;
   return API;
-};
+}

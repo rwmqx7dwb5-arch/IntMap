@@ -7,15 +7,16 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.elevationProfile=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+
+export function elevationProfile(HOST){
   async function demSampleAll(points, z, timeoutMs, onProgress){ await HOST.warmDEMTiles(points, z, timeoutMs, onProgress); return points.map(p=>{ if(!p) return null; const v=HOST.demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
   /* ===== (#R9b/#46) Elevation cross-section under a measured line (area uses its perimeter). Below 0 m
      gets a faint blue band so sub-sea segments are obvious. Samples the cached terrarium DEM. ===== */
   /* (#R11) Map cursor that mirrors the hovered point on the elevation chart. */
   /* (#R171) source + layer through IntMapGeoEngine — this file no longer names the renderer.
      canDraw() rather than ready(): adding a layer only needs a parsed style (#R170). */
-  function _elevCursor(coord){ try{ const E=window.IntMapGeoEngine; if(!E) return;
+  function _elevCursor(coord){ try{ const E=IntMapGeoEngine; if(!E) return;
     if(!E.layers.hasSource('elev-cursor')){ if(!E.canDraw()) return;
       E.layers.addSource('elev-cursor',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       E.layers.add({id:'elev-cursor-pt',type:'circle',source:'elev-cursor',paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-opacity':0.55,'circle-stroke-color':'#fff','circle-stroke-width':2}}); }
@@ -75,4 +76,4 @@ window.IntMapModules.elevationProfile=function(HOST){
     }
   }
   return { _openProfilePanel };
-};
+}

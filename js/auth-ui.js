@@ -10,8 +10,9 @@
  *  references to closure variables became HOST.<member> reads (Architecture.md §3.1). The
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.authUi=function(HOST){
+import { IntMapLang } from './lang-registry.js';
+
+export function authUi(HOST){
   /* ---------- DATA: geo_pins -> geoRaw -> rebuildGeoIndex ---------- */
   async function loadGeoFromSupabase(){
     if(!HOST.DB) return;
@@ -30,7 +31,7 @@ window.IntMapModules.authUi=function(HOST){
      is therefore built on first use and kept. Everywhere else the same helper sits inside a nested
      IIFE or function, where calling at that point is exactly what is meant. */
   function _authL(){
-    if(!_authL._p) _authL._p=window.IntMapLang.pick(()=>HOST.lang);
+    if(!_authL._p) _authL._p=IntMapLang.pick(()=>HOST.lang);
     return _authL._p.apply(null,arguments);
   }
 
@@ -173,13 +174,13 @@ window.IntMapModules.authUi=function(HOST){
   function injectAuthUI(){
     const settingsBtn=document.getElementById('btn-open-settings');
     const acct=document.createElement('button');
-    acct.id='btn-account'; acct.className='btn-settings'; acct.style.marginRight='8px'; acct.textContent=(window.IntMapLang.t(HOST.lang,'Log in','ログイン','Anmelden','Войти','Iniciar sesión'));
+    acct.id='btn-account'; acct.className='btn-settings'; acct.style.marginRight='8px'; acct.textContent=(IntMapLang.t(HOST.lang,'Log in','ログイン','Anmelden','Войти','Iniciar sesión'));
     acct.onclick=()=>{ HOST.user ? openAccountMenu() : openAuthModal(); };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(acct,settingsBtn);
     else document.body.appendChild(acct);
     /* (#R122) enter Workspace (floating-window) mode from the Log in / Feedback / Settings row — desktop only. */
     try{ const wsB=document.createElement('button'); wsB.id='btn-ws-enter'; wsB.className='btn-settings'; wsB.style.marginRight='8px';
-      const _wsL=()=>(window.IntMapLang.t(HOST.lang,'Workspace','ワークスペース','Arbeitsbereich','Рабочая область','Espacio'));
+      const _wsL=()=>(IntMapLang.t(HOST.lang,'Workspace','ワークスペース','Arbeitsbereich','Рабочая область','Espacio'));
       wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL());
       wsB.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>';
       window.addEventListener('intmap-lang',()=>{ wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL()); });
@@ -190,8 +191,8 @@ window.IntMapModules.authUi=function(HOST){
     /* (#R20) Feedback button in the header */
     const fb=document.createElement('button');
     fb.id='btn-feedback-hdr'; fb.className='btn-settings'; fb.style.marginRight='8px';
-    fb.textContent=(window.IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios'));
-    window.addEventListener('intmap-lang',()=>{ fb.textContent=(window.IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios')); });
+    fb.textContent=(IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios'));
+    window.addEventListener('intmap-lang',()=>{ fb.textContent=(IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios')); });
     fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(fb,settingsBtn);
     else document.body.appendChild(fb);
@@ -209,9 +210,9 @@ window.IntMapModules.authUi=function(HOST){
       </div>
       <button id="am-oauth-google" style="${oaStyle}"><svg width="17" height="17" viewBox="0 0 48 48" style="flex:0 0 auto;"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/><path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/></svg> Continue with Google</button>
       <div style="display:flex;align-items:center;gap:10px;margin:12px 0 14px;color:var(--text-muted);font-size:12px;"><div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div>or<div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div></div>
-      <input id="am-name" type="text" placeholder="${window.IntMapLang.t(HOST.lang,'Display name','表示名','Anzeigename','Отображаемое имя','Nombre visible')}" autocomplete="nickname" maxlength="40" style="${inStyle}display:none;">
+      <input id="am-name" type="text" placeholder="${IntMapLang.t(HOST.lang,'Display name','表示名','Anzeigename','Отображаемое имя','Nombre visible')}" autocomplete="nickname" maxlength="40" style="${inStyle}display:none;">
       <input id="am-email" type="email" placeholder="you@example.com" autocomplete="username" style="${inStyle}">
-      <input id="am-pass" type="password" placeholder="${window.IntMapLang.t(HOST.lang,'Password','パスワード','Passwort','Пароль','Contraseña')}" autocomplete="current-password" style="${inStyle}margin-bottom:8px;">
+      <input id="am-pass" type="password" placeholder="${IntMapLang.t(HOST.lang,'Password','パスワード','Passwort','Пароль','Contraseña')}" autocomplete="current-password" style="${inStyle}margin-bottom:8px;">
       <div id="am-forgot-row" style="text-align:right;margin:-2px 0 12px;"><a id="am-forgot" data-effect="outward" href="#" style="color:var(--text-muted);font-size:12px;text-decoration:none;">${_authL('Forgot password?','パスワードをお忘れですか？','Passwort vergessen?','Забыли пароль?','¿Olvidaste tu contraseña?')}</a></div>
       <button id="am-submit" data-effect="outward" style="width:100%;background:var(--primary-fill);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">Log In</button>
       <button id="am-passkey" style="width:100%;background:var(--card-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);padding:10px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;margin-top:8px;display:none;">${_authL('Sign in with a passkey','パスキーでログイン','Mit Passkey anmelden','Войти по паскею','Iniciar sesión con passkey')}</button>
@@ -230,8 +231,8 @@ window.IntMapModules.authUi=function(HOST){
       $am('am-tab-signup').style.color = mode==='signup'?selFg:'var(--text-muted)';
       $am('am-name').style.display = mode==='signup'?'block':'none';
       $am('am-pass').setAttribute('autocomplete', mode==='signup'?'new-password':'current-password');
-      $am('am-submit').textContent = mode==='login'?window.IntMapLang.t(HOST.lang,'Log In','ログイン','Anmelden','Войти','Iniciar sesión'):window.IntMapLang.t(HOST.lang,'Create account','アカウント作成','Konto erstellen','Создать аккаунт','Crear cuenta');
-      $am('am-pass').placeholder = mode==='signup'?window.IntMapLang.t(HOST.lang,'Password (min. 8 chars, incl. a number)','パスワード（8文字以上・数字を含む）','Passwort (min. 8 Zeichen, mit Ziffer)','Пароль (мин. 8 символов, с цифрой)','Contraseña (mín. 8, con un número)'):window.IntMapLang.t(HOST.lang,'Password','パスワード','Passwort','Пароль','Contraseña');
+      $am('am-submit').textContent = mode==='login'?IntMapLang.t(HOST.lang,'Log In','ログイン','Anmelden','Войти','Iniciar sesión'):IntMapLang.t(HOST.lang,'Create account','アカウント作成','Konto erstellen','Создать аккаунт','Crear cuenta');
+      $am('am-pass').placeholder = mode==='signup'?IntMapLang.t(HOST.lang,'Password (min. 8 chars, incl. a number)','パスワード（8文字以上・数字を含む）','Passwort (min. 8 Zeichen, mit Ziffer)','Пароль (мин. 8 символов, с цифрой)','Contraseña (mín. 8, con un número)'):IntMapLang.t(HOST.lang,'Password','パスワード','Passwort','Пароль','Contraseña');
       /* (#R155) passkey sign-in + forgot-password only make sense on the LOGIN tab. */
       try{ $am('am-passkey').style.display=(mode==='login'&&_passkeysAvailable())?'block':'none'; }catch(_){}
       try{ $am('am-forgot-row').style.display=mode==='login'?'block':'none'; }catch(_){}
@@ -314,7 +315,7 @@ window.IntMapModules.authUi=function(HOST){
   function openAuthModal(contextMsg){ const m=document.getElementById('auth-modal'); if(!m) return; if(window.__amSetTab) window.__amSetTab('login');
     try{ const sub=document.getElementById('am-sub');
       if(sub){ if(contextMsg){ sub.dataset.ctx='1'; sub.textContent=contextMsg; }
-        else if(sub.dataset.ctx){ delete sub.dataset.ctx; sub.textContent=(window.IntMapLang.t(HOST.lang,'Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.','ログイン／新規登録で、AI機能・設定/ウィジェット/お気に入り/アイコンの端末間同期が使えます。','Melde dich an oder registriere dich für KI-Funktionen und die Synchronisierung von Einstellungen, Widgets, Favoriten und Avatar über Geräte hinweg.','Войдите или создайте аккаунт: ИИ-функции и синхронизация настроек, виджетов, избранного и аватара между устройствами.','Inicia sesión o crea una cuenta para usar la IA y sincronizar ajustes, widgets, favoritos y avatar entre dispositivos.')); } }
+        else if(sub.dataset.ctx){ delete sub.dataset.ctx; sub.textContent=(IntMapLang.t(HOST.lang,'Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.','ログイン／新規登録で、AI機能・設定/ウィジェット/お気に入り/アイコンの端末間同期が使えます。','Melde dich an oder registriere dich für KI-Funktionen und die Synchronisierung von Einstellungen, Widgets, Favoriten und Avatar über Geräte hinweg.','Войдите или создайте аккаунт: ИИ-функции и синхронизация настроек, виджетов, избранного и аватара между устройствами.','Inicia sesión o crea una cuenta para usar la IA y sincronizar ajustes, widgets, favoritos y avatar entre dispositivos.')); } }
     }catch(_){}
     m.style.display='flex'; }
 
@@ -501,7 +502,7 @@ window.IntMapModules.authUi=function(HOST){
         document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(x=>x.classList.remove('sel'));
         try{ await HOST.DB.from('profiles').update({avatar_url:data}).eq('id',HOST.user.id); }catch(_){}
         _acctSyncIcon();
-      }catch(_){ HOST.imToast(window.IntMapLang.t(HOST.lang,'Could not load image','画像を読み込めませんでした','Bild konnte nicht geladen werden','Не удалось загрузить изображение','No se pudo cargar la imagen')); } };
+      }catch(_){ HOST.imToast(IntMapLang.t(HOST.lang,'Could not load image','画像を読み込めませんでした','Bild konnte nicht geladen werden','Не удалось загрузить изображение','No se pudo cargar la imagen')); } };
       /* (#R753) the picture could be replaced but never withdrawn: picking an emoji was the only exit,
          and until ③ above it left the profile row standing. An explicit exit, doing both. */
       const ac=document.getElementById('acct-avatar-clear');
@@ -522,7 +523,7 @@ window.IntMapModules.authUi=function(HOST){
         try{ if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
         try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
         try{ HOST.DB.auth.signOut(); }catch(_){}   /* onAuthStateChange will reconcile favorites/community */
-        try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'Logged out','ログアウトしました','Abgemeldet','Вы вышли из аккаунта','Sesión cerrada')); }catch(_){}
+        try{ HOST.imToast(IntMapLang.t(HOST.lang,'Logged out','ログアウトしました','Abgemeldet','Вы вышли из аккаунта','Sesión cerrada')); }catch(_){}
       };
       /* (#R231) the `acct-save` handler lived here. It wrote display_name + bio; both settings are
          withdrawn, and the only other thing the sheet edits — the icon — has always saved itself the
@@ -814,4 +815,4 @@ window.IntMapModules.authUi=function(HOST){
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */
   return { bootSupabase, _openSetPassword, openAuthModal };
-};
+}

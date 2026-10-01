@@ -39,9 +39,11 @@
  *  company fills the same panel that carries the legend, and closing that window unchecks the layer
  *  row (「ポップアップを消してもレイヤーは選択状態とかやめろ。連動させろ。」).
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.industryWeb = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function industryWeb(HOST) {
+  const GE = () => IntMapGeoEngine;
 
   window.IntMapIndustry = (function () {
     if (!GE().hasRenderer()) return { state: () => ({ on: false }) };
@@ -66,7 +68,7 @@ window.IntMapModules.industryWeb = function (HOST) {
        chain, which is the eleventh shape with a hand-written resolver bolted on: fr/ko/zh/zh-Hans hit
        the final `: i.en` and read English for ever. `LA(…)` is IntMapLang.pickArgs() — same data, and
        `L.arr()` resolves it through pick() itself, so those four reach the inline table. */
-    const LA = window.IntMapLang.pickArgs();
+    const LA = IntMapLang.pickArgs();
     const INDUSTRIES = [
       { q: 'Q190117', nm: LA('Automotive', '自動車', 'Automobil', 'Автомобильная', 'Automoción') },
       { q: 'Q507443', nm: LA('Pharmaceuticals', '医薬品', 'Pharma', 'Фармацевтика', 'Farmacéutica') },
@@ -700,4 +702,4 @@ LIMIT ${limit}`;
       state: () => ({ on, q: qid, status, err, moneyErr: moneyErr.slice(), edgeErr, fx: fxState, nodes: nodes.length, edges: edges.length, sel: sel ? sel.id : null, source: SRC_URL }),
     };
   })();
-};
+}

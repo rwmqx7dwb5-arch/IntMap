@@ -44,6 +44,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { langRegistry } from './helpers/import-module.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -450,12 +451,12 @@ test('R413 ⑫: no test asserts an upper bound on what find_capability returns',
  * ==========================================================================*/
 /* ⚠ the registry reads the language DIRECTORY from a global (js/locales/_langs.js) or from the
    real module graph; without it `pick()` has no index for fr / ko and returns argument 0 —
-   which is exactly the English fallback this test exists to catch, so it must be loaded. */
-await import('../js/locales/_langs.js');
-await import('../js/lang-registry.js');
+   which is exactly the English fallback this test exists to catch, so it must be loaded.
+   (module-graph) the modules imported above already evaluated js/lang-registry.js (their import edges),
+   before any directory existed, so the shipped list is DECLARED on that same instance by langRegistry(). */
+const LANG = langRegistry();
 /* the tables `pick()` answers fr / ko / zh out of — they register themselves on import */
 for (const f of ['ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) await import('../js/locales/ui.' + (f === 'ja' ? 'jp' : f) + '.js');
-const LANG = globalThis.window.IntMapLang;
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

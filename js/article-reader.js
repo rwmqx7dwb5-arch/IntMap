@@ -16,8 +16,9 @@
  *  exactly the declared-but-uncalled function it had before), and the finding is written up in
  *  DEV-NOTES R169 for a decision: re-wire the Read button to it, or delete the feature.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.articleReader=function(HOST){
+import { IntMapLang } from './lang-registry.js';
+
+export function articleReader(HOST){
   const READER_NOISE=new Set(['edit','[edit]','skip to content','watch live','sign in','log in','menu','advertisement','home','news','sport','business','technology','more','share','save','reuters','associated press','follow us','related topics','watch','listen']);
   function cleanReaderMarkdown(md){
     let firstImg=''; let text=md||'';
@@ -147,9 +148,9 @@ window.IntMapModules.articleReader=function(HOST){
        Atlas route belong to the surface itself and are not optional. */
   function readerBar(o){
     o=o||{};
-    const back=o.back||window.IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
+    const back=o.back||IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
     /* the same English key js/tool-panel.js's map「Ask Atlas」uses — its nine translations already exist */
-    const atlas=window.IntMapLang.t(HOST.lang,'Ask Atlas','Atlasに聞く','Atlas fragen','Спросить Atlas','Preguntar a Atlas');
+    const atlas=IntMapLang.t(HOST.lang,'Ask Atlas','Atlasに聞く','Atlas fragen','Спросить Atlas','Preguntar a Atlas');
     return '<div class="nrp-bar"><button class="nrp-back" id="'+(o.backId||'nrp-back-btn')+'">‹ '+HOST.escForReader(back)+'</button>'
       +(o.extra||'')
       +(o.publisher?('<span class="nrp-src">'+HOST.escForReader(o.publisher)+'</span>'):'')
@@ -207,9 +208,9 @@ window.IntMapModules.articleReader=function(HOST){
        globalData is closure-scoped, so bridge the open article onto window (same pattern as window._imLayerDates). */
     try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, kind:'article', title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
     const pane=enterReaderPane(); if(!pane) return;
-    const back=window.IntMapLang.t(HOST.lang,'Back to news','ニュースへ戻る','Zurück zu den News','Назад к новостям','Volver a noticias');
+    const back=IntMapLang.t(HOST.lang,'Back to news','ニュースへ戻る','Zurück zu den News','Назад к новостям','Volver a noticias');
     pane.innerHTML=`${readerBar({back,publisher:item.publisher})}
-      <div class="nrp-loading"><div class="nrp-spinner"></div>${window.IntMapLang.t(HOST.lang,'Loading article…','記事を読み込み中…','Artikel lädt…','Загрузка статьи…','Cargando artículo…')}</div>`;
+      <div class="nrp-loading"><div class="nrp-spinner"></div>${IntMapLang.t(HOST.lang,'Loading article…','記事を読み込み中…','Artikel lädt…','Загрузка статьи…','Cargando artículo…')}</div>`;
     pane.querySelector('#nrp-back-btn').onclick=HOST.closeReaderPane;
     pane.scrollTop=0;
     fetchReadable(item).then(res=>{ if(HOST.readerOpen&&HOST.readerCurrent===item) renderReader(item,res);
@@ -226,4 +227,4 @@ window.IntMapModules.articleReader=function(HOST){
     HOST.renderReaderMode(item,res, hasText?'reader':'web');
   }
   return { enterReaderPane, openArticleInSidebar, readerBar };
-};
+}

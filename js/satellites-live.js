@@ -77,8 +77,11 @@
    (#R796) reached through the ACTIVE SCOPE the register hands to start(), so this file imports nothing
    from it: `S.every('tick', …)` is that wheel, tagged with this capability's name and released on stop. */
 import SATS_LAYER from './layers/dl-sats.js';   /* (layer-descriptor) the layer's declaration — its time contract (`time.bands`) is read below */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.satellitesLive=function(HOST){
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function satellitesLive(HOST){
   /* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
      `satellite.js` is 27 KB gzipped, and a STATIC import puts it in the main bundle for EVERY
      session — including the overwhelming majority that never switch this layer on. The app already
@@ -102,8 +105,8 @@ window.IntMapModules.satellitesLive=function(HOST){
       .catch(e=>{ _satP=null; throw e; });
     return _satP;
   }
-  const GE=()=>window.IntMapGeoEngine;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+  const GE=()=>IntMapGeoEngine;
+  const L=IntMapLang.pick(()=>HOST.lang);
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   const D2R=Math.PI/180, R2D=180/Math.PI;
   const R_EARTH=6378.137;                    /* km, equatorial — the same figure SGP4 uses */
@@ -430,7 +433,7 @@ window.IntMapModules.satellitesLive=function(HOST){
      honesty of this layer rests on that number: an SGP4 fix propagated ten minutes and one
      propagated three weeks are different claims, and travelling makes the second kind common.
      The panel already prints it; it now prints the truth about the frame being drawn. */
-  function clockNow(){ try{ const T=window.IntMapTime; if(T&&T.when) return T.when(); }catch(_){} return new Date(); }
+  function clockNow(){ try{ const T=IntMapTime; if(T&&T.when) return T.when(); }catch(_){} return new Date(); }
   /* ══ ⚠⚠⚠ (restored-layers-under-load) AN ELEMENT SET SPEAKS FOR THE DAYS AROUND ITS EPOCH, NOT FOR AN ERA ══
      An object is computed and drawn only while the instant is inside the span its OWN element set is good
      for, and never before the year its international designator says it was launched. (layer-descriptor)
@@ -913,7 +916,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   function tooltipHTML(f){
     const obs=observer(), la=lookFrom(obs,f);
     const up=!!(la&&la.elDeg>0);
-    const n0=(v)=>Math.round(v).toLocaleString(window.IntMapLang.locale(HOST.lang));
+    const n0=(v)=>Math.round(v).toLocaleString(IntMapLang.locale(HOST.lang));
     return '<div style="font-weight:700;margin-bottom:2px;">🛰 '+S(f.name||('#'+f.id))+'</div>'
       +'<div>'+S(L('Altitude','高度','Höhe','Высота','Altitud'))+': '+n0(f.altKm)+' km'
       +(f.velKmS?(' · '+f.velKmS.toFixed(2)+' km/s'):'')+'</div>'
@@ -1127,4 +1130,4 @@ window.IntMapModules.satellitesLive=function(HOST){
   };
   window.IntMapSatellites=API;
   return API;
-};
+}

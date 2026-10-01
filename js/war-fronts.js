@@ -27,9 +27,10 @@
  *  `span[data-i18n]` or `span.ec-lbl` and falls back to the RAW ID — so the old single row put a
  *  favourite on screen labelled 「wars」 in every language. One class fixes it for both rows.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.warFronts = function (HOST) {
-  const L = window.IntMapLang.pick(() => HOST.lang);
+import { IntMapLang } from './lang-registry.js';
+
+export function warFronts(HOST) {
+  const L = IntMapLang.pick(() => HOST.lang);
 
   /* the rows, and the only place their order, ids, swatches and names are written.
      ⚠ (#R519) `os` IS HERE BECAUSE IT USED TO BE A TERNARY. The IntMapOS labels below were written
@@ -170,4 +171,4 @@ window.IntMapModules.warFronts = function (HOST) {
     _build: (id, d) => (body ? body._build(id, d) : null),
   };
   return window.IntMapWarFronts;
-};
+}

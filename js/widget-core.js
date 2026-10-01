@@ -40,6 +40,9 @@
  *  CSS tooling. Everything the board draws is now in one section of the real stylesheet.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
 window.IntMapWidgetCore = (function () {
   'use strict';
@@ -55,9 +58,9 @@ window.IntMapWidgetCore = (function () {
   /* ── i18n. Shape ④ of scripts/i18n-helpers.mjs: a property bound to IntMapLang.pick(), called
         off an object. Every widget string in this project goes through it, so the i18n gate sees
         all of them and a language added later needs no edit here. ───────────────────────────── */
-  WC.L = window.IntMapLang.pick(function () { return WC.lang(); });
-  WC.LA = window.IntMapLang.pickArgs();
-  WC.locale = function () { try { return window.IntMapLang.locale(WC.lang(), 'en-GB'); } catch (e) { return 'en-GB'; } };
+  WC.L = IntMapLang.pick(function () { return WC.lang(); });
+  WC.LA = IntMapLang.pickArgs();
+  WC.locale = function () { try { return IntMapLang.locale(WC.lang(), 'en-GB'); } catch (e) { return 'en-GB'; } };
 
   /* ── formatting. Intl only — never a hand-rolled table. ──────────────────────────────────── */
   var _nf = {};
@@ -99,7 +102,7 @@ window.IntMapWidgetCore = (function () {
   var _dn = {};
   WC.countryName = function (cc, fallback) {
     try {
-      var tag = window.IntMapLang.locale(WC.lang());
+      var tag = IntMapLang.locale(WC.lang());
       if (_dn[tag] === undefined) { try { _dn[tag] = new Intl.DisplayNames([tag], { type: 'region' }); } catch (e) { _dn[tag] = null; } }
       var n = _dn[tag] && _dn[tag].of(String(cc || '').toUpperCase());
       if (n && n !== cc) return n;
@@ -412,7 +415,7 @@ window.IntMapWidgetCore = (function () {
     c.location = WC.geoState();
     c.map = (function () {
       try {
-        var E = window.IntMapGeoEngine;
+        var E = IntMapGeoEngine;
         if (!E || !E.hasRenderer || !E.hasRenderer()) return null;
         var ctr = E.camera.getCenter(), z = E.camera.getZoom();
         if (!ctr) return null;
@@ -427,7 +430,7 @@ window.IntMapWidgetCore = (function () {
     };
     c.layers = WC.activeLayers();
     c.chronos = (function () {
-      try { var T = window.IntMapTime; if (!T) return null; var s = T.state(); return { when: s.when, iso: s.iso, year: s.year, isLive: s.isLive }; } catch (e) { return null; }
+      try { var T = IntMapTime; if (!T) return null; var s = T.state(); return { when: s.when, iso: s.iso, year: s.year, isLive: s.isLive }; } catch (e) { return null; }
     })();
     /* ⚠ `IntMapRouting` IS THE LAND ROUTER; `IntMapRoute` IS THE SEA-ROUTE TOOL. They are different
        subsystems with similar names, and asking the wrong one is how a card reports "no route" while
@@ -543,8 +546,8 @@ window.IntMapWidgetCore = (function () {
   };
 
   /* ── camera, through the engine contract. This module never names a renderer (check:engine). ── */
-  WC.flyTo = function (o) { try { var E = window.IntMapGeoEngine; if (E && E.hasRenderer()) E.camera.flyTo(o); } catch (e) {} };
-  WC.fitBounds = function (b, o) { try { var E = window.IntMapGeoEngine; if (E && E.hasRenderer()) E.camera.fitBounds(b, o); } catch (e) {} };
+  WC.flyTo = function (o) { try { var E = IntMapGeoEngine; if (E && E.hasRenderer()) E.camera.flyTo(o); } catch (e) {} };
+  WC.fitBounds = function (b, o) { try { var E = IntMapGeoEngine; if (E && E.hasRenderer()) E.camera.fitBounds(b, o); } catch (e) {} };
   WC.toast = function (msg) { try { if (HOST && HOST.imToast) HOST.imToast(msg); } catch (e) {} };
   WC.isMobile = function () { try { return !!(HOST && HOST.isMobile && HOST.isMobile()); } catch (e) { return false; } };
 

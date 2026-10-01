@@ -14,9 +14,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import * as acorn from 'acorn';
-import { lazyFiles } from './app-source.mjs';
+import { lazyFiles, factoryCalls } from './app-source.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const root = new URL('../', import.meta.url);
@@ -33,17 +33,35 @@ const index = R('index.html');
    the versions that were in js/geo-engine.js, modulo the indentation of the move, so every invariant
    below asks the same question of the same program. */
 const body = [R('js/app-body.js'), R('js/geo-engine.js'), R('js/camera-math.js')].join('\n');
-const entry = R('src/main.js');
+/* the entry, src/main.js, is where the import graph below starts */
 /* (#R209) …or fetched on demand. Every assertion below that reads the entry is asking one thing:
    "is this file REACHED — does the feature it carries exist at all?" Eight modules left the entry's
    list this round and are `import()`-ed by js/lazy-modules.js instead, so the same question is now
    asked of both loaders. The lazy list is DERIVED from that loader's own literal specifiers, which
    is the only place they can live (static-checks sees no other form), so this cannot drift. */
 const LAZY = lazyFiles(root);
-const reached = (rel) => entry.includes(`import '../${rel}';`) || LAZY.includes(rel);
-/* …and the same for "is its factory instantiated": the call itself is unchanged (same name, same
-   IM_HOST); it is made from the loader now instead of from the boot closure. */
-const instantiated = () => body + '\n' + R('js/lazy-modules.js');
+/* (module-graph) …and a file the entry no longer names is still REACHED when a module the entry
+   imports imports it: src/main.js dropped the import lines of files app-body.js already imports. So
+   «reached at start-up» is the static import graph from src/main.js, walked, not one file's text. */
+const EAGER = (() => {
+  const seen = new Set();
+  for (const stack = ['src/main.js']; stack.length;) {
+    const rel = stack.pop();
+    if (seen.has(rel) || !existsSync(join(ROOT, rel))) continue;
+    seen.add(rel);
+    for (const st of acorn.parse(R(rel), { ecmaVersion: 'latest', sourceType: 'module' }).body) {
+      if ((st.type === 'ImportDeclaration' || ((st.type === 'ExportNamedDeclaration' || st.type === 'ExportAllDeclaration') && st.source))
+        && st.source.value.startsWith('.')) stack.push(posix.join(posix.dirname(rel), st.source.value));
+    }
+  }
+  return seen;
+})();
+const reached = (rel) => EAGER.has(rel) || LAZY.includes(rel);
+/* …and the same for "is its factory instantiated": (module-graph) the factory is an export now, and
+   app-body.js / the lazy loader CALL it by name with IM_HOST — factoryCalls() reads those calls off
+   the AST (app-body's imported names, each lazy entry's mount). */
+const FACTORIES = factoryCalls(root);
+const instantiated = (file, name) => (FACTORIES[file] || []).includes(name);
 
 const los = R('js/viewshed.js');
 const water = R('js/terrain-water.js');
@@ -67,8 +85,9 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
   assert.doesNotMatch(index, /data-proxy="btn-tool-drone"/, 'not in the mobile tools sheet');
   assert.doesNotMatch(R('js/drone-nav.js'), /getElementById\('btn-tool-drone'\)/, 'and nothing hunts for the button any more');
   /* the feature itself is untouched — the user asked for the BUTTON to go, not the planner */
-  assert.match(entry, /import '\.\.\/js\/drone-nav\.js';/, 'the planner is still loaded');
-  assert.match(body, /window\.IntMapModules\.droneNav\((IM_HOST)\)/, 'and still instantiated');
+  assert.ok(EAGER.has('js/drone-nav.js'), 'the planner is still loaded');
+  assert.ok(instantiated('js/drone-nav.js', 'droneNav'), 'and still instantiated');
+  assert.match(body, /\bdroneNav\((IM_HOST)\)/, '…with the host');
   assert.match(atlas, /window\.IntMapDrone&&window\.IntMapDrone\.toggle\(\)/, 'and Atlas opens it directly now');
   assert.ok(capabilityEntry('drone'), 'the full drone action still exists');
 });
@@ -80,8 +99,9 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
 test('R176 ⑥: terrain shade is a sweep, and the year is read off a real horizon profile', () => {
   /* ⚠ READ, NOT RUN: the shade sweep reads DEM tiles and paints a canvas; the Sun panel is DOM. */
   assert.ok(existsSync(join(ROOT, 'js/insolation.js')), 'the engine has its own file');
-  assert.match(entry, /import '\.\.\/js\/insolation\.js';/, 'loaded by the Vite entry');
-  assert.match(body, /window\.IntMapModules\.insolation\((IM_HOST)\);/, 'and instantiated');
+  assert.ok(EAGER.has('js/insolation.js'), 'loaded by the Vite entry');
+  assert.ok(instantiated('js/insolation.js', 'insolation'), 'and instantiated');
+  assert.match(body, /\binsolation\((IM_HOST)\);/, '…with the host');
   assert.match(insol, /function shadowMask\(g,azCompass,altDeg\)\{/, 'the shadow is one pass over the grid');
   assert.match(insol, /M\[k\]=Math\.max\(z,S\);/, 'carrying max(z, S) along the ray — O(N²), not O(N² · ray)');
   assert.match(insol, /async function horizon\(lng,lat,o\)\{/, 'a point owns a 360° horizon profile');
@@ -135,8 +155,14 @@ test('R176: the new files are modules, with no top-level declarations', () => {
        one top-level form that cannot leak a global (it is module-private by definition, which is the
        whole mechanism #R175 rests on), so it is excluded rather than counted. */
     const ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'module' });
+    /* (module-graph) the factory is now `export function <name>(HOST)` instead of an assignment onto
+       window.IntMapModules — an export is the module's declared interface, not a global, so it is
+       excluded too, but ONLY when it is a function the app actually instantiates (factoryCalls). Any
+       other export, or any other top-level declaration, still counts. */
+    const isFactory = (n) => n.type === 'ExportNamedDeclaration' && n.declaration
+      && n.declaration.type === 'FunctionDeclaration' && instantiated(f, n.declaration.id.name);
     const decls = ast.body.filter((n) => /Declaration$/.test(n.type) && n.type !== 'ExpressionStatement'
-      && n.type !== 'ImportDeclaration');
+      && n.type !== 'ImportDeclaration' && !isFactory(n));
     assert.equal(decls.length, 0,
       `${f} must declare nothing at top level (module scope is private; ${decls.map((d) => d.type).join(',')})`);
     /* …and it must be reachable from the single entry point, or it simply does not run */

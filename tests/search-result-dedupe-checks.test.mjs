@@ -25,15 +25,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { importModule, swappable, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-window.IntMapLang = window.IntMapLang || { locale: () => 'en', t: (_l, en) => en };
+langRegistry();   /* (module-graph) js/search-geocode.js imports the REAL language registry; declare its languages */
 globalThis.IntMapSafe = globalThis.IntMapSafe || { html: (s) => String(s) };
 
 await import(pathToFileURL(join(ROOT, 'js/place-framing.js')).href);
 await import(pathToFileURL(join(ROOT, 'js/atlas-geo-resolve.js')).href);
-await import(pathToFileURL(join(ROOT, 'js/search-geocode.js')).href);
+/* (module-graph) js/search-geocode.js imports IntMapGeoEngine and exports its factory: each search's
+   fake engine is handed at that import edge through one swappable binding */
+const engine = swappable();
+const { searchGeocode } = await importModule('js/search-geocode.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine.value } } });
 /* js/nominatim-gate.js's one-a-second floor is not what is measured here, and it would put Nominatim
    last in every run — the arrival orders below are the variable under test. */
 window.IntMapNominatimGate = { nominatimSlot: () => Promise.resolve(true) };
@@ -79,7 +83,7 @@ function fakeWorld() {
   globalThis.document = { getElementById: (id) => byId[id] || null, createElement: (t) => new El(t) };
   const flights = [];
   let last = null;
-  window.IntMapGeoEngine = {
+  engine.set({
     camera: {
       forBounds: (b) => { last.bounds = b; return { center: [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2], zoom: 10 }; },
       flyTo: () => {}, fitBounds: (b) => { last.bounds = b; },
@@ -87,7 +91,7 @@ function fakeWorld() {
     ui: { marker: () => ({ setLngLat(p) { last.point = p; return this; }, remove() {} }), attach: (m) => m },
     events: { on: () => {}, off: () => {} },
     coords: { project: () => ({ x: 0, y: 0 }) },
-  };
+  });
   const click = (row) => { last = { label: row.textContent, bounds: null, point: null }; row.onclick(); flights.push(last); return last; };
   return { res: byId['ms-results'], input: byId['ms-input'], click, flights };
 }
@@ -107,7 +111,7 @@ async function searchKyoto(order) {
   network(order);
   const W = fakeWorld();
   const HOST = { lang: 'en', countryStats: {}, BUILTIN_GAZETTEER: null, t: (k) => k, fmtLL: () => '', fmtElevVal: () => '' };
-  const S = window.IntMapModules.searchGeocode(HOST);
+  const S = searchGeocode(HOST);
   await S.doGeocode();
   const rows = W.res.children.filter((c) => c.className === 'ms-item');
   const labels = rows.map((r) => r.textContent);

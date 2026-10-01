@@ -14,15 +14,17 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the coverage tile's second way in */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.streetView=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function streetView(HOST){
   /* (#R173) 脱MapLibre 第7段階 — this module is written against the engine facade, never the raw renderer.
      Every call below already existed in the contract (#R152/#R160/#R161); the parameter is kept only
      because the factory signature is shared by all module files. */
-  const GE=()=>window.IntMapGeoEngine;
+  const GE=()=>IntMapGeoEngine;
   const bringToFront=HOST.bringToFront, imToast=HOST.imToast, makeDraggable=HOST.makeDraggable;
   return (function(){
-    const LL=window.IntMapLang.pick(()=>HOST.lang);
+    const LL=IntMapLang.pick(()=>HOST.lang);
     let panel=null, iframe=null;
     function ensure(){ if(panel) return panel;
       panel=document.createElement('div'); panel.id='streetview-panel';
@@ -229,7 +231,7 @@ window.IntMapModules.streetView=function(HOST){
         try{ GE().events.on('click',_covClick); GE().render.setCursor('crosshair'); }catch(_){}
         _covHint=document.createElement('div'); _covHint.id='sv-cov-hint';
         _covHint.style.cssText='position:fixed;left:50%;top:58px;transform:translateX(-50%);z-index:calc(var(--z-dropdown) + 50);background:rgba(18,28,44,0.92);color:#dbeaff;border:1px solid rgba(57,179,255,0.55);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,0.35);';
-        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 水色の線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas celestes son la cobertura real de Google; haz clic para abrir')+'</span><button aria-label="'+window.IntMapLang.t(HOST.lang,'Exit Street View','ストリートビューを終了')+'" id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">×</button>';
+        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 水色の線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas celestes son la cobertura real de Google; haz clic para abrir')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Exit Street View','ストリートビューを終了')+'" id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">×</button>';
         document.body.appendChild(_covHint); const off=_covHint.querySelector('#sv-cov-off'); if(off) off.onclick=()=>coverage(false);
         if(!_covStyled){ _covStyled=true; try{ GE().events.on('styledata',()=>{ if(_cov) setTimeout(()=>{ if(_cov) addCoverageTiles(); },250); }); }catch(_){} }   /* re-add over a basemap/theme switch */
       } else {
@@ -240,4 +242,4 @@ window.IntMapModules.streetView=function(HOST){
       return _cov; }
     return { open, close, coverage, coverageOn:()=>_cov, nearestCoverage:_nearestCoverage, nearestPano:_nearestPano };
   })();
-};
+}

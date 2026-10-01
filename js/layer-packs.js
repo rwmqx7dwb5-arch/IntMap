@@ -32,7 +32,9 @@ import './osm-facilities.js';
 import { everyTick, stopTick } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take */
 import { readWithin, isUnobserved } from './fetch-deadline.js';
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
 
 /* ══ ⚠ (railways-handover-idempotent) THE BASEMAP-SWAP SELF-HEAL — ONE RULE FOR EVERY PACK IN THIS FILE ══
    `styledata` is NOT «the basemap was swapped». MapLibre fires it after ANY change to the style
@@ -59,15 +61,15 @@ function healWhenLost(GE,delay,rows,heal){
   GE().events.on('styledata',onStyle);
 }
 
-window.IntMapModules.earthSky=function(HOST){
+export function earthSky(HOST){
 
-  const LPK=window.IntMapLang.pick(()=>HOST.lang);
+  const LPK=IntMapLang.pick(()=>HOST.lang);
   /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. Four tables in this file held
      their translations JP-first and indexed them with a private `{jp:0,en:1,…}` map, i.e. a second
      copy of the language order that named four languages: every one of these layer names was
      English on es/fr/ko/zh and invisible to every instrument. */
-  const LA=window.IntMapLang.pickArgs();
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const LA=IntMapLang.pickArgs();
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -151,14 +153,14 @@ window.IntMapModules.earthSky=function(HOST){
     function _auroraSyncNote(){ try{ if(!_auroraLegEl) return; let n=_auroraLegEl.querySelector('.l9-aur-note');
       if(!_auroraTime){ if(n) n.remove(); return; }
       if(!n){ n=document.createElement('div'); n.className='l9-aur-note'; n.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; _auroraLegEl.appendChild(n); }
-      n.textContent=(window.IntMapLang.t(HOST.lang,'Forecast time: ','予測時刻: ','Vorhersagezeit: ','Время прогноза: ','Hora del pronóstico: '))+_fmtAuroraTime(_auroraTime); }catch(_){} }
+      n.textContent=(IntMapLang.t(HOST.lang,'Forecast time: ','予測時刻: ','Vorhersagezeit: ','Время прогноза: ','Hora del pronóstico: '))+_fmtAuroraTime(_auroraTime); }catch(_){} }
     async function loadAurora(){ try{
       const r=await fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json'); const j=await r.json();
       try{ const ft=j['Forecast Time']||j['Observation Time']; if(ft){ _auroraTime=ft; _auroraSyncNote(); } }catch(_){}
       const co=j.coordinates||[], feats=[];
       for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
       if(GE().layers.hasSource('l9-aurora')) GE().layers.setSourceData('l9-aurora',{type:'FeatureCollection',features:feats});
-    }catch(e){ try{ imToast(window.IntMapLang.t(HOST.lang,"Aurora forecast unavailable","オーロラ予測を取得できませんでした","Polarlicht-Vorhersage nicht verfügbar","Прогноз полярных сияний недоступен","Previsión de auroras no disponible")); }catch(_){} } }
+    }catch(e){ try{ imToast(IntMapLang.t(HOST.lang,"Aurora forecast unavailable","オーロラ予測を取得できませんでした","Polarlicht-Vorhersage nicht verfügbar","Прогноз полярных сияний недоступен","Previsión de auroras no disponible")); }catch(_){} } }
     const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat','l9-aurora-glow'],seaice:['l9-seaice']};
     let auroraTimer=null;
     function toggle(which,on){ state[which]=on;
@@ -170,7 +172,7 @@ window.IntMapModules.earthSky=function(HOST){
     const L9LBL={dams:LA('Major dams','主要ダム・水インフラ','Große Talsperren','Крупные плотины','Grandes presas'),volcanoes:LA('Active volcanoes','活火山','Aktive Vulkane','Действующие вулканы','Volcanes activos'),aurora:LA('Aurora forecast (NOAA)','オーロラ予測（NOAA）','Polarlicht-Vorhersage (NOAA)','Прогноз полярных сияний (NOAA)','Pronóstico de auroras (NOAA)'),seaice:LA('Sea ice (Arctic/Antarctic)','海氷（北極・南極）','Meereis (Arktis/Antarktis)','Морской лёд (Арктика/Антарктика)','Hielo marino (Ártico/Antártico)'),adiz:LA('Air-defense zones (ADIZ ≈)','防空識別圏 (ADIZ ≈)','Luftverteidigungszonen (ADIZ ≈)','Зоны ПВО (ADIZ ≈)','Zonas de defensa aérea (ADIZ ≈)')};
     const l9Lbl=(k)=>LPK.arr(L9LBL[k]);
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
-      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=window.IntMapLang.t(HOST.lang,"Earth, sky & airspace","地球・大気・空域","Erde, Himmel & Luftraum","Земля, небо и воздушное пространство","Tierra, cielo y espacio aéreo"); dd.appendChild(head);
+      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=IntMapLang.t(HOST.lang,"Earth, sky & airspace","地球・大気・空域","Erde, Himmel & Luftraum","Земля, небо и воздушное пространство","Tierra, cielo y espacio aéreo"); dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       /* (#R20) the curated 42-point volcano layer is REMOVED ("現状を削除したうえで新規追加して") —
          replaced by the full Smithsonian GVP Holocene layer (1,215 volcanoes) in the beta module below. */
@@ -179,20 +181,20 @@ window.IntMapModules.earthSky=function(HOST){
         try{ if(e.target.checked&&window._registerLayerOpacity){ const _el=window._registerLayerOpacity('l9-'+k,L9LBL[k],SETS[k],'l9-dl-'+k); if(k==='aurora'&&_el){ _auroraLegEl=_el; _auroraSyncNote(); } } else if(window._hideGenericLegend){ window._hideGenericLegend('l9-'+k); if(k==='aurora') _auroraLegEl=null; } }catch(_){} }); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Earth, sky & airspace','地球・大気・空域','Erde, Himmel & Luftraum','Земля, небо и воздушное пространство','Tierra, cielo y espacio aéreo'); Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
+    function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=IntMapLang.t(HOST.lang,'Earth, sky & airspace','地球・大気・空域','Erde, Himmel & Luftraum','Земля, небо и воздушное пространство','Tierra, cielo y espacio aéreo'); Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>{ setTimeout(relabel,20); setTimeout(_auroraSyncNote,25); });   /* (#R11) relabel on Settings language change; (#R122) re-localize the aurora forecast-time note */
     window.IntMapLayers9={ toggle };
   })();
-};
+}
 
-window.IntMapModules.landCover=function(HOST){
-  const LPK=window.IntMapLang.pick(()=>HOST.lang);
+export function landCover(HOST){
+  const LPK=IntMapLang.pick(()=>HOST.lang);
   /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. The label table below held
      its translations JP-first and subscripted them with a private `{jp:0,en:1,…}` map: a second
      copy of the language order, naming four languages, invisible to every instrument. */
-  const LA=window.IntMapLang.pickArgs();
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const LA=IntMapLang.pickArgs();
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -302,14 +304,14 @@ window.IntMapModules.landCover=function(HOST){
        code — plus the boundary types that touch it, counted from the boundary file that is already
        loaded. No invented tectonics (標準指示 4). */
     function platePopup(lngLat,p){
-      const nm=plateName(p)||(window.IntMapLang.t(HOST.lang,"(unnamed)","（名称なし）","(ohne Namen)","(без названия)","(sin nombre)"));
+      const nm=plateName(p)||(IntMapLang.t(HOST.lang,"(unnamed)","（名称なし）","(ohne Namen)","(без названия)","(sin nombre)"));
       const code=String(p.Code||p.code||'').trim();
       /* ⚠ `IntMapSafe.html` — the project's ONE sanitizer (#R138). The first draft of this line called
          an `escapeHtml` that does not exist on it: it threw, the catch returned '', and the popup
          opened with an empty name and an empty code under a heading that was still there. Measured on
          the first click. There is no `escapeHtml` anywhere in js/ except that mistake. */
       const esc=(s)=>window.IntMapSafe.html(String(s));   /* (safe-output-single-module) js/safe-html.js is loaded before any layer pack, so the two fallback copies had no reader */
-      const L=window.IntMapLang.pick(()=>HOST.lang);
+      const L=IntMapLang.pick(()=>HOST.lang);
       let html='<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>';
       if(code) html+='<div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">'+L('Plate code','プレートコード','Plattencode','Код плиты','Código de placa')+': <b style="color:var(--text-main);">'+esc(code)+'</b></div>';
       html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('Bird (2002) plate model','Bird (2002) プレートモデル','Plattenmodell nach Bird (2002)','Модель плит Bird (2002)','Modelo de placas de Bird (2002)')+'</div>';
@@ -358,7 +360,7 @@ window.IntMapModules.landCover=function(HOST){
            same fact from the one place that always knows it. */
         try{ if(state.plates) setVis(SETS.plates,true); }catch(_){}
         cb(true);
-      }).catch(()=>{ platesLoading=false; try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load plate data","プレートデータを取得できませんでした","Plattendaten konnten nicht geladen werden","Не удалось загрузить данные о плитах","No se pudieron cargar los datos de placas")); }catch(_){} cb(false); }); }
+      }).catch(()=>{ platesLoading=false; try{ imToast(IntMapLang.t(HOST.lang,"Could not load plate data","プレートデータを取得できませんでした","Plattendaten konnten nicht geladen werden","Не удалось загрузить данные о плитах","No se pudieron cargar los datos de placas")); }catch(_){} cb(false); }); }
     /* ---- Ecoregions (self-hosted GeoJSON) ---- */
     let ecoBuilt=false;
     /* (#R13) The protomaps `resolved_ecoregions_2017.pmtiles` sample was REMOVED from r2-public
@@ -415,7 +417,7 @@ window.IntMapModules.landCover=function(HOST){
     const ECO_URL='data/ecoregions_2017.geojson';
     let ecoErrWired=false;
     function ecoFailed(){
-      try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load ecoregions","生態地域データを読み込めませんでした","Ökoregionen konnten nicht geladen werden","Не удалось загрузить экорегионы","No se pudieron cargar las ecorregiones")); }catch(_){}
+      try{ imToast(IntMapLang.t(HOST.lang,"Could not load ecoregions","生態地域データを読み込めませんでした","Ökoregionen konnten nicht geladen werden","Не удалось загрузить экорегионы","No se pudieron cargar las ecorregiones")); }catch(_){}
       try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){}
       ecoBuilt=false; }
     function ensureEco(cb){ if(GE().layers.hasSource('eco-regions')){ cb(true); return; }
@@ -432,7 +434,7 @@ window.IntMapModules.landCover=function(HOST){
         GE().events.onLayer('mouseenter','eco-regions-fill',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','eco-regions-fill',()=>{ GE().render.canvas().style.cursor=''; });
         GE().events.onLayer('click','eco-regions-fill',(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          const html='<div style="font-size:12px;line-height:1.5;"><b>'+(p.ECO_NAME||'')+'</b><br>'+(window.IntMapLang.t(HOST.lang,"Biome: ","バイオーム: ","Biom: ","Биом: ","Bioma: "))+(p.BIOME_NAME||'—')+'</div>';
+          const html='<div style="font-size:12px;line-height:1.5;"><b>'+(p.ECO_NAME||'')+'</b><br>'+(IntMapLang.t(HOST.lang,"Biome: ","バイオーム: ","Biom: ","Биом: ","Bioma: "))+(p.BIOME_NAME||'—')+'</div>';
           GE().ui.attach(window._ecoPop.setLngLat(e.lngLat).setHTML(html)); });
       }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
     const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
@@ -447,12 +449,12 @@ window.IntMapModules.landCover=function(HOST){
       if(show){
         if(!lg){ lg=document.createElement('div'); lg.className='data-legend'; lg.id='data-legend-worldcover'; lg.style.bottom='140px';
           (document.getElementById('map-container')||document.body).appendChild(lg); }
-        const dragT=window.IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover");
+        const dragT=IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover");
         lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">×</button>'+
           /* (#R268) the year is chosen, so it is no longer baked into the title */
-          '<h4>'+(window.IntMapLang.t(HOST.lang,"Land cover (ESA)","土地被覆 (ESA)","Landbedeckung (ESA)","Земной покров (ESA)","Cobertura del suelo (ESA)"))+'</h4>'+
+          '<h4>'+(IntMapLang.t(HOST.lang,"Land cover (ESA)","土地被覆 (ESA)","Landbedeckung (ESA)","Земной покров (ESA)","Cobertura del suelo (ESA)"))+'</h4>'+
           '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10.5px;color:var(--text-muted);"><label style="display:contents;"><span>'
-            +(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span>'
+            +(IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span>'
             +'<select class="wc-year" style="flex:1;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">'
             +WC_EPOCHS.map(e=>'<option value="'+e[0]+'"'+(e[0]===wcYear?' selected':'')+'>'+e[0]+'</option>').join('')+'</select></label></div>'+
           '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">'+
@@ -499,27 +501,27 @@ window.IntMapModules.landCover=function(HOST){
     const ECLBL={worldcover:LA('Land cover (ESA 2021)','土地被覆 (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)','Cobertura del suelo (ESA 2021)'),ecoregions:LA('Ecoregions (WWF/RESOLVE)','生態地域 (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)','Ecorregiones (WWF/RESOLVE)'),plates:LA('Tectonic plates','プレート境界','Tektonische Platten','Тектонические плиты','Placas tectónicas')};
     const ecoLbl=(k)=>LPK.arr(ECLBL[k]);
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('eco-dl-worldcover')) return;
-      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-ecohead','1'); head.textContent=window.IntMapLang.t(HOST.lang,"Land cover & earth science","土地被覆・地球科学","Landbedeckung & Geowissenschaft","Земной покров и науки о Земле","Cobertura del suelo y ciencias de la Tierra"); dd.appendChild(head);
+      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-ecohead','1'); head.textContent=IntMapLang.t(HOST.lang,"Land cover & earth science","土地被覆・地球科学","Landbedeckung & Geowissenschaft","Земной покров и науки о Земле","Cobertura del suelo y ciencias de la Tierra"); dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       [['worldcover','#4caf50'],['ecoregions','#2f9e44'],['plates','#e8590c']].forEach(([k,sw])=>{ const cb=row('eco-dl-'+k, ecoLbl(k), sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,'Land cover & earth science','土地被覆・地球科学','Bodenbedeckung & Geowissenschaft','Земной покров и науки о Земле','Cobertura del suelo y ciencias de la Tierra'); Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
+    function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=IntMapLang.t(HOST.lang,'Land cover & earth science','土地被覆・地球科学','Bodenbedeckung & Geowissenschaft','Земной покров и науки о Земле','Cobertura del suelo y ciencias de la Tierra'); Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
     window.IntMapEco={ toggle };
   })();
-};
+}
 
-window.IntMapModules.betaPack2=function(HOST){
+export function betaPack2(HOST){
 
-  const LPK=window.IntMapLang.pick(()=>HOST.lang);
+  const LPK=IntMapLang.pick(()=>HOST.lang);
   /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. The label table below held
      its translations JP-first and subscripted them with a private `{jp:0,en:1,…}` map: a second
      copy of the language order, naming four languages, invisible to every instrument. */
-  const LA=window.IntMapLang.pickArgs();
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const LA=IntMapLang.pickArgs();
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -722,7 +724,7 @@ window.IntMapModules.betaPack2=function(HOST){
                  (#R258) each row is a SWITCH for its own class — see IntMapDataCenters.toggleKey. */
               k.innerHTML=DCM.key().map(([c,l,id])=>'<button type="button" class="dc-keyrow" data-k="'+(id||'')+'" style="display:flex;align-items:center;gap:7px;border:none;background:none;color:inherit;font:inherit;padding:1px 0;cursor:pointer;text-align:left;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+c+';"></span>'+l+'</button>').join('')
                 +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;line-height:1.5;">'
-                +window.IntMapLang.t(HOST.lang,
+                +IntMapLang.t(HOST.lang,
                   'Published cloud regions, AI campuses, carrier hotels and TOP500 sites, plus every data centre mapped in OpenStreetMap for the current view (zoom in past z6). Click any point for the full record.',
                   '公表されているクラウドリージョン・AI拠点・接続拠点・TOP500施設に加え、表示範囲の OpenStreetMap に登録された全データセンター（z6 以上で取得）。点をクリックすると詳細が出ます。',
                   'Veröffentlichte Cloud-Regionen, KI-Campus, Carrier-Hotels und TOP500-Standorte plus alle in OpenStreetMap erfassten Rechenzentren im Ausschnitt (ab z6). Punkt anklicken für den vollen Datensatz.',
@@ -746,7 +748,7 @@ window.IntMapModules.betaPack2=function(HOST){
         load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); setVis(['ph-pt','ph-lbl'],on); };
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionsstandorte','Центры фармацевтического производства','Centros de fabricación farmacéutica'),ROW_LAYERS.pharma,'beta-dl-pharma');
-            if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.","主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。","Zentralen und Produktionscluster großer Pharmaunternehmen (repräsentative Standorte). Passt zur Ebene Lebenserwartung.","Штаб-квартиры и производственные кластеры крупных фармкомпаний (репрезентативные точки). Хорошо сочетается со слоем ожидаемой продолжительности жизни.","Sedes y clústeres de fabricación de las grandes farmacéuticas (puntos representativos). Combina con la capa de esperanza de vida."); el.appendChild(d); } }
+            if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=IntMapLang.t(HOST.lang,"Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.","主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。","Zentralen und Produktionscluster großer Pharmaunternehmen (repräsentative Standorte). Passt zur Ebene Lebenserwartung.","Штаб-квартиры и производственные кластеры крупных фармкомпаний (репрезентативные точки). Хорошо сочетается со слоем ожидаемой продолжительности жизни.","Sedes y clústeres de fabricación de las grandes farmacéuticas (puntos representativos). Combina con la capa de esperanza de vida."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
     }
     /* ══ ⚠ (#R388) THE RAILWAY LAYER MOVED OUT — THIS IS THE ROW, NOT THE LAYER ═══════════════════
@@ -785,11 +787,11 @@ window.IntMapModules.betaPack2=function(HOST){
           +RM.key().map(([c,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+esc(c)+';"></span>'+esc(l)+'</div>').join('')
           +'</div><div style="display:flex;flex-direction:column;gap:3px;padding-top:2px;">'
           +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" class="rail-sw" data-s="urban"'+(RM.urban()?' checked':'')+' style="margin:0;">'
-          +esc(window.IntMapLang.t(HOST.lang,'Urban rail (metro, tram, light rail)','都市鉄道（地下鉄・路面電車・ライトレール）','Stadtverkehr (U-Bahn, Straßenbahn, Stadtbahn)','Городской транспорт (метро, трамвай)','Ferrocarril urbano (metro, tranvía)'))+'</label>'
+          +esc(IntMapLang.t(HOST.lang,'Urban rail (metro, tram, light rail)','都市鉄道（地下鉄・路面電車・ライトレール）','Stadtverkehr (U-Bahn, Straßenbahn, Stadtbahn)','Городской транспорт (метро, трамвай)','Ferrocarril urbano (metro, tranvía)'))+'</label>'
           +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" class="rail-sw" data-s="stations"'+(RM.stations()?' checked':'')+' style="margin:0;">'
-          +esc(window.IntMapLang.t(HOST.lang,'Stations and halts (from z8)','駅・停留所（z8 以上）','Bahnhöfe und Haltepunkte (ab z8)','Станции и остановочные пункты (с z8)','Estaciones y apeaderos (desde z8)'))+'</label>'
+          +esc(IntMapLang.t(HOST.lang,'Stations and halts (from z8)','駅・停留所（z8 以上）','Bahnhöfe und Haltepunkte (ab z8)','Станции и остановочные пункты (с z8)','Estaciones y apeaderos (desde z8)'))+'</label>'
           +'</div><div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'
-          +esc(window.IntMapLang.t(HOST.lang,
+          +esc(IntMapLang.t(HOST.lang,
             'Every value is the tag OpenStreetMap carries on that track. Grey means OSM does not state it — nothing is filled in from the country the line runs through. Zoom past z6.5 for full detail, z8 for stations.',
             '各項目は、その線路そのものに付いた OpenStreetMap のタグです。灰色は「OSM に記載なし」——通っている国から補完することはしません。z6.5 以上で詳細、z8 以上で駅が出ます。',
             'Jeder Wert ist ein OpenStreetMap-Tag dieses Gleises. Grau heißt: in OSM nicht angegeben — nichts wird aus dem durchfahrenen Land ergänzt. Ab z6.5 Detail, ab z8 Bahnhöfe.',
@@ -813,28 +815,28 @@ window.IntMapModules.betaPack2=function(HOST){
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850'],
         score:v=>Math.max(0,Math.min(100,v)),
         nm:LA('Corruption (control, WGI)','汚職・腐敗指標（世界銀行WGI）','Korruptionskontrolle (WGI)','Контроль коррупции (WGI)','Control de la corrupción (WGI)'),
-        note:()=>window.IntMapLang.t(HOST.lang,"World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.","世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。","Weltbank-WGI-Wert „Korruptionskontrolle“ (0–100, höher = sauberer) — das Open-API-Gegenstück zum CPI von TI.","Показатель Всемирного банка WGI «Контроль коррупции» (0–100, выше = чище) — аналог CPI от TI с открытым API.","Puntuación WGI del Banco Mundial «Control de la corrupción» (0–100, más alto = más limpio): el equivalente con API abierta al IPC de TI.")},
+        note:()=>IntMapLang.t(HOST.lang,"World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.","世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。","Weltbank-WGI-Wert „Korruptionskontrolle“ (0–100, höher = sauberer) — das Open-API-Gegenstück zum CPI von TI.","Показатель Всемирного банка WGI «Контроль коррупции» (0–100, выше = чище) — аналог CPI от TI с открытым API.","Puntuación WGI del Banco Mundial «Control de la corrupción» (0–100, más alto = más limpio): el equivalente con API abierta al IPC de TI.")},
       lifeexp:{ind:'SP.DYN.LE00.IN',date:'2022',q:'',ids:['wb-le-f','wb-le-l'],src:'wb-le',
         ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
         score:v=>v,
         nm:LA('Life expectancy (years)','平均寿命（年）','Lebenserwartung (Jahre)','Ожидаемая продолжительность жизни (лет)','Esperanza de vida (años)'),
-        note:()=>window.IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank, 2022).","出生時平均余命（世界銀行 2022）。","Lebenserwartung bei Geburt (Weltbank, 2022).","Ожидаемая продолжительность жизни при рождении (Всемирный банк, 2022).","Esperanza de vida al nacer (Banco Mundial, 2022).")},
+        note:()=>IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank, 2022).","出生時平均余命（世界銀行 2022）。","Lebenserwartung bei Geburt (Weltbank, 2022).","Ожидаемая продолжительность жизни при рождении (Всемирный банк, 2022).","Esperanza de vida al nacer (Banco Mundial, 2022).")},
       /* (#R22) New beta choropleths — all live World Bank, keyless + CORS, latest value per country. */
       unemp:{ind:'SL.UEM.TOTL.ZS',date:'',q:'&mrnev=1',ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
         ramp:['interpolate',['linear'],['get','s'],2,'#1a9850',5,'#a6d96a',9,'#fee08b',15,'#f46d43',25,'#a50026'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
         nm:LA('Unemployment rate (%)','失業率（%）','Arbeitslosenquote (%)','Уровень безработицы (%)','Tasa de desempleo (%)'),
-        note:()=>window.IntMapLang.t(HOST.lang,"Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).","失業率（労働力人口比、ILO推計・世界銀行、最新年）。","Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).","Уровень безработицы, всего (% рабочей силы; модель МОТ / Всемирный банк, последний год).","Desempleo total (% de la población activa; estimación modelada OIT / Banco Mundial, último año).")},
+        note:()=>IntMapLang.t(HOST.lang,"Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).","失業率（労働力人口比、ILO推計・世界銀行、最新年）。","Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).","Уровень безработицы, всего (% рабочей силы; модель МОТ / Всемирный банк, последний год).","Desempleo total (% de la población activa; estimación modelada OIT / Banco Mundial, último año).")},
       internet:{ind:'IT.NET.USER.ZS',date:'',q:'&mrnev=1',ids:['wb-internet-f','wb-internet-l'],src:'wb-internet',
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',55,'#fee08b',75,'#74c476',95,'#1a9850'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
         nm:LA('Internet users (%)','インターネット普及率（%）','Internetnutzer (%)','Пользователи интернета (%)','Usuarios de internet (%)'),
-        note:()=>window.IntMapLang.t(HOST.lang,"Individuals using the Internet (% of population; World Bank, latest year).","人口に占めるインターネット利用者の割合（世界銀行、最新年）。","Internetnutzer (% der Bevölkerung; Weltbank, letztes Jahr).","Пользователи интернета (% населения; Всемирный банк, последний год).","Personas que usan Internet (% de la población; Banco Mundial, último año).")},
+        note:()=>IntMapLang.t(HOST.lang,"Individuals using the Internet (% of population; World Bank, latest year).","人口に占めるインターネット利用者の割合（世界銀行、最新年）。","Internetnutzer (% der Bevölkerung; Weltbank, letztes Jahr).","Пользователи интернета (% населения; Всемирный банк, последний год).","Personas que usan Internet (% de la población; Banco Mundial, último año).")},
       precip:{ind:'AG.LND.PRCP.MM',date:'',q:'&mrnev=1',ids:['wb-precip-f','wb-precip-l'],src:'wb-precip',
         ramp:['interpolate',['linear'],['get','s'],100,'#f6e8c3',400,'#c7eae5',800,'#80cdc1',1500,'#35978f',2800,'#01665e'],
         score:v=>v, fmt:v=>Math.round(v)+' mm',
         nm:LA('Annual precipitation (mm)','年降水量（mm）','Jahresniederschlag (mm)','Годовое количество осадков (мм)','Precipitación anual (mm)'),
-        note:()=>window.IntMapLang.t(HOST.lang,"Average annual precipitation (depth in mm, long-term; World Bank).","年間平均降水量（深さmm、長期平均・世界銀行）。","Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).","Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).","Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).")}};
+        note:()=>IntMapLang.t(HOST.lang,"Average annual precipitation (depth in mm, long-term; World Bank).","年間平均降水量（深さmm、長期平均・世界銀行）。","Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).","Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).","Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).")}};
     /* ══ (#R266) THESE FIVE ALSO PAINT ONE YEAR AT A TIME ══════════════════════════════════════════
        「その他、年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and this
        family is the OTHER World-Bank family in the app (corruption / life expectancy / unemployment /
@@ -869,8 +871,8 @@ window.IntMapModules.betaPack2=function(HOST){
             /* (unobserved-is-not-refused) A READ THAT RAN OUT OF TIME IS LATE, NOT «COULD NOT LOAD». An empty result is never
                cached (the refusal branch below returns before the cache line), so the next switch-on reads again either way;
                what differs is what the reader is told. Late → say so and draw nothing. */
-            if(!Object.keys(vals).length&&late){ try{ imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
-            if(!Object.keys(vals).length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
+            if(!Object.keys(vals).length&&late){ try{ imToast(IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
+            if(!Object.keys(vals).length){ try{ imToast(IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
             cache['wb_'+key]=vals;
           }
         }
@@ -904,7 +906,7 @@ window.IntMapModules.betaPack2=function(HOST){
           GE().layers.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
           GE().layers.add({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
           GE().layers.add({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
-          const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(window.IntMapLang.t(HOST.lang," yrs"," 年"," J."," лет"," años"))));
+          const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(IntMapLang.t(HOST.lang," yrs"," 年"," J."," лет"," años"))));
           const _nmOf=(p)=>{ let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){} return nm; };
           /* (#R25) Only show the TAP popup on touch devices. On a hover device the mousemove tooltip below
              already shows the exact same value, so a click popup was redundant ("ホバーでポップアップが出る
@@ -947,7 +949,7 @@ window.IntMapModules.betaPack2=function(HOST){
           +st.map(s=>'<span>'+esc(num(s[0]))+'</span>').join('')+'</div>'
           +'<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;">'
           +'<span style="width:9px;height:9px;border-radius:2px;background:#9aa0a6;opacity:.55;flex:none;"></span>'
-          +esc(window.IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'))+'</div>';
+          +esc(IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'))+'</div>';
         return d; }
       function legend(S,year){ try{ if(window._registerLayerOpacity){ const el=window._registerLayerOpacity('wb-'+key,[W.nm[0],W.nm[1]],W.ids,'beta-dl-'+key);
         if(el&&!el.querySelector('.wb-key')){ const k=rampKey(); if(k) el.appendChild(k); }
@@ -958,16 +960,16 @@ window.IntMapModules.betaPack2=function(HOST){
             yr.innerHTML='<label style="display:contents;"><span class="wb-yearlbl"></span><select class="wb-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select></label>';
             el.appendChild(yr);
             yr.querySelector('.wb-year').addEventListener('change',(e)=>{ wbYr[key]=e.target.value; wbToggle(key,true); }); }
-          yr.querySelector('.wb-yearlbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
+          yr.querySelector('.wb-yearlbl').textContent=IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
           const sel=yr.querySelector('.wb-year');
-          const latestTxt=window.IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
+          const latestTxt=IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
           if(sel.getAttribute('data-built')!==String(S.years.length)){
             sel.innerHTML=S.years.slice().reverse().map(y=>'<option value="'+y+'">'+y+' ('+S.counts[y]+')</option>').join('')
               +'<option value="">'+esc(latestTxt)+'</option>';
             sel.setAttribute('data-built',String(S.years.length)); }
           sel.value=year||''; }
         let d=el&&el.querySelector('.wb-note'); if(el&&!d){ d=document.createElement('div'); d.className='wb-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5;'; el.appendChild(d); }
-        if(d) d.textContent=W.note()+((S&&year&&S.counts[year])?(' · '+year+(window.IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(window.IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos'))):''); } }catch(_){} }
+        if(d) d.textContent=W.note()+((S&&year&&S.counts[year])?(' · '+year+(IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos'))):''); } }catch(_){} }
       build();
     }
     /* ---------- Globe tour — slow endless rotation with the whole earth in view ---------- */
@@ -1024,10 +1026,10 @@ window.IntMapModules.betaPack2=function(HOST){
     }
     window.IntMapBeta2={load,loadable,holdsOf,idOf,acquireBundle,publish,_state:state};
   })();
-};
+}
 
-window.IntMapModules.religionLang=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function religionLang(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const loadCountryData=HOST.loadCountryData, countryStats=HOST.countryStats;
@@ -1037,8 +1039,8 @@ window.IntMapModules.religionLang=function(HOST){
     /* ⚠ (#R248) THIS IIFE HAD NO LANGUAGE HELPER OF ITS OWN — declared at the TOP of the scope on
        purpose ([[intmap-recurring-lessons]] L: a binding added in the middle puts everything above
        it in the temporal dead zone). */
-    const LPK=window.IntMapLang.pick(()=>HOST.lang);
-    const LA=window.IntMapLang.pickArgs();
+    const LPK=IntMapLang.pick(()=>HOST.lang);
+    const LA=IntMapLang.pickArgs();
     const esc=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
     const before=()=>{ try{ return GE().layers.has('tool-poly')?'tool-poly':undefined; }catch(_){ return undefined; } };
     let pop=null;
@@ -1210,7 +1212,7 @@ window.IntMapModules.religionLang=function(HOST){
     const langName=(g)=>{
       if(LANG_FIX[g]) return LPK.arr(LANG_FIX[g]);
       const D=DATA.language; if(!D) return g;
-      const ui=(()=>{ try{ return window.IntMapLang.htmlTag(HOST.lang); }catch(_){ return 'en'; } })();
+      const ui=(()=>{ try{ return IntMapLang.htmlTag(HOST.lang); }catch(_){ return 'en'; } })();
       const base=(ui||'en').split('-')[0];
       const loc=(D.loc&&D.loc[g])||null;
       if(loc){ if(loc[ui]) return loc[ui]; if(loc[base]) return loc[base]; }
@@ -1474,10 +1476,10 @@ window.IntMapModules.religionLang=function(HOST){
       lineage:(g)=>lineageOf(g).map(([code,nm])=>({ g:code, name:nm })),
       noShare:()=>NO_SHARE };
   })();
-};
+}
 
-window.IntMapModules.timeZones=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function timeZones(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -1488,8 +1490,8 @@ window.IntMapModules.timeZones=function(HOST){
     if(!GE().hasRenderer()) return;
     const TZURL='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_time_zones.geojson';
     let on=false, geo=null, loading=false, timer=null;
-    const lbl=()=>window.IntMapLang.t(HOST.lang,'Time zones (live clock)','タイムゾーン（現在時刻）','Zeitzonen (Uhr)','Часовые пояса (время)','Husos horarios (hora)');
-    const T=window.IntMapLang.pick(()=>HOST.lang);
+    const lbl=()=>IntMapLang.t(HOST.lang,'Time zones (live clock)','タイムゾーン（現在時刻）','Zeitzonen (Uhr)','Часовые пояса (время)','Husos horarios (hora)');
+    const T=IntMapLang.pick(()=>HOST.lang);
     function zoneTime(off){ const n=new Date(); const z=new Date(n.getTime()+n.getTimezoneOffset()*60000+off*3600000); const h=z.getHours(),m=z.getMinutes(); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
     function offLabel(off){ const s=off<0?'−':'+'; const a=Math.abs(off); const hh=Math.floor(a); const mm=Math.round((a-hh)*60); return 'UTC'+s+hh+(mm?(':'+(mm<10?'0':'')+mm):''); }
     function bboxOf(f){ if(f.bbox) return f.bbox; let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=r=>r.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; }); const g=f.geometry; if(!g) return null; const polys=g.type==='Polygon'?g.coordinates:g.type==='MultiPolygon'?[].concat.apply([],g.coordinates):[]; polys.forEach(eat); return [mnx,mny,mxx,mxy]; }
@@ -1613,10 +1615,10 @@ window.IntMapModules.timeZones=function(HOST){
     window.IntMapTimeZones=Object.assign(window.IntMapTimeZones||{},{ highlight:(z)=>setHighlight(z), highlighted:()=>hlZone, clear:()=>setHighlight(null) });
     if(document.readyState!=='loading') setTimeout(buildUI,1000); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,1000));
   })();
-};
+}
 
-window.IntMapModules.gibsScience=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function gibsScience(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -1624,7 +1626,7 @@ window.IntMapModules.gibsScience=function(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     const GDATE=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-    const LGX=window.IntMapLang.pick(()=>HOST.lang);
+    const LGX=IntMapLang.pick(()=>HOST.lang);
     /* ⚠ (#R241) THE ORDER USED TO BE [JP, EN, DE, RU] — the registry's is [EN, JP, DE, RU, ES], and a
        table with its own order needs its own index map, which is a second copy of the language list.
        This file had one (`{jp:0,en:1,de:2,ru:3,es:4}`), it named five languages, and every GIBS layer
@@ -1632,7 +1634,7 @@ window.IntMapModules.gibsScience=function(HOST){
        because an array literal is not a call. Written as `LA(en, jp, de, ru, es)` these are ordinary
        L(…) sites: same order as the rest of the app, seen by the audits, and resolved through
        `pick()` so a language past the arguments gets its inline-table entry. */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     const LIST=[
       {id:'gxndvi', gibs:'MODIS_Terra_NDVI_8Day', max:9, ext:'png', sw:'#2e7d32',
         label:LA('Vegetation index (NDVI)','植生指数 (NDVI)','Vegetationsindex (NDVI)','Индекс растительности (NDVI)','Índice de vegetación (NDVI)'),
@@ -1880,4 +1882,4 @@ window.IntMapModules.gibsScience=function(HOST){
     window.addEventListener('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('gx-'+L.id+'-lbl'); if(s) s.textContent=gxLbl(L); }); });
     if(document.readyState!=='loading') setTimeout(buildUI,800); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,800));
   })();
-};
+}

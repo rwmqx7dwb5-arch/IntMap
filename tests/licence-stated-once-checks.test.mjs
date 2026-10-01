@@ -34,23 +34,28 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pageCodes } from '../scripts/i18n-pages-audit.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 
 const LANGS = pageCodes();   /* [{code:'jp', html:'ja'}, …] — the app's code and the page file's tag */
 
-function load() {
+/* (module-graph) the page documents are still classic scripts that publish onto window, so they are run into the
+   fake window; js/reference-data.js is a module now and is IMPORTED with that window as its browser. Its
+   language-registry edge is handed the test's own two-answer registry (the page tag of each code, and the list
+   pageCodes() measures) — the same stub the vm context used to carry on window. */
+async function load() {
   const ctx = { console };
   ctx.window = ctx;
   const tag = Object.fromEntries(LANGS.map((r) => [r.code, r.html]));
-  ctx.IntMapLang = { htmlTag: (c) => tag[c] || c, list: () => LANGS };
+  const IntMapLang = { htmlTag: (c) => tag[c] || c, list: () => LANGS };
   vm.createContext(ctx);
   for (const r of LANGS) vm.runInContext(read(`js/locales/pages.${r.html}.js`), ctx, { filename: `pages.${r.html}.js` });
-  vm.runInContext(read('js/reference-data.js'), ctx, { filename: 'js/reference-data.js' });
-  return { R: ctx.IntMapRefData, docs: ctx.IntMapPageI18N._d };
+  const { IntMapRefData } = await importModule('js/reference-data.js', { globals: { window: ctx }, mocks: { 'js/lang-registry.js': { IntMapLang } } });
+  return { R: IntMapRefData, docs: ctx.IntMapPageI18N._d };
 }
-const { R, docs } = load();
+const { R, docs } = await load();
 const EN = LANGS.find((r) => r.code === 'en');
 const ROWS = R.dataSources.filter((s) => s.lic);
 

@@ -16,15 +16,17 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.flightSim=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function flightSim(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const imToast=HOST.imToast;
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { start(){}, stop(){}, active:()=>false };
-    const LL=window.IntMapLang.pick(()=>HOST.lang);
+    const LL=IntMapLang.pick(()=>HOST.lang);
     /* (#R245) the aircraft names are tuples held as data — see IntMapLang.pickArgs() */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
     /* (#R175) SPAWN CLEARANCE, in one place. An airborne start is normally lifted to ground +1,500 m and
        held above ground +1,200 m until the DEM has settled (#R95) — the pre-flight card gives no altitude,
@@ -1368,7 +1370,7 @@ window.IntMapModules.flightSim=function(HOST){
          per-update camera hook that keeps the viewpoint still while the user tilts; the sim is the sole camera
          controller (#R158) and writes the whole camera every frame, so it wants that hook out of the path
          entirely rather than relying on it to no-op. stop() hands it back to js/view-controls.js. */
-      try{ const GE=window.IntMapGeoEngine; if(GE&&GE.camera&&GE.camera.setTiltPivot) GE.camera.setTiltPivot('target'); }catch(_){}
+      try{ const GE=IntMapGeoEngine; if(GE&&GE.camera&&GE.camera.setTiltPivot) GE.camera.setTiltPivot('target'); }catch(_){}
       /* (#R98) KEEP THE GLOBE — the sim used to force a flat projection; fly on the real curved Earth instead.
          (#R170) …and force the Globe view on entry, so a pilot who took off from the Flat view flies a globe too.
          (#R171) …and then ALSO asked the engine for 'globe-true' (vertical-perspective), because MapLibre's
@@ -2144,4 +2146,4 @@ window.IntMapModules.flightSim=function(HOST){
       return { key:k, name:Object.assign({},a.name), icon:a.icon||'', Vstall:a.Vstall, Vcruise:a.Vcruise, Vne:a.Vne, ceil:a.ceil, prop:!!a.prop, ab:!!a.ab }; }
     return { start, stop, setup, active:()=>on, aircraft:selectAircraft, list:()=>AKEYS.slice(), spec, airports:()=>AIRPORTS.slice(), _st:()=>st,
       _dbg:{ step:(dt)=>{ try{ return physics(dt||0.02); }catch(e){ return {err:String(e)}; } }, key:(k,v)=>{ keys[String(k).toLowerCase()]=!!v; }, clearKeys:()=>{ for(const k in keys) keys[k]=false; }, trim:()=>{ try{ computeTrim(); }catch(_){} } } }; })();
-};
+}

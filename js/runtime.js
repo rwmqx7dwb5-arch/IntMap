@@ -53,7 +53,8 @@
  *  a rule requires it. The early-timer memo below is an ordinary module-scope Map now.)
  * ==========================================================================*/
 
-/** @param {import('../types/im-host').IMHost} HOST */ export function makeRuntime(HOST) {
+/** @param {import('../types/im-host').IMHost} HOST */ import { IntMapGeoEngine } from './geo-engine.js';
+export function makeRuntime(HOST) {
   return (function () {
     const IM_HOST = HOST;
 
@@ -151,7 +152,7 @@
     function _wireCamera() {
       if (_camWired) return;
       /* (#R796) headless: no window is not an error, it is "no engine yet" (tests, scripts/frame-profile.mjs) */
-      let E = null; try { E = window.IntMapGeoEngine; } catch (_) { E = null; }
+      let E = null; try { E = IntMapGeoEngine; } catch (_) { E = null; }
       if (!E || !E.events || !E.hasRenderer || !E.hasRenderer()) return;
       _camWired = true;
       const bump = () => { if (CAM.size) schedule(); };
@@ -178,7 +179,7 @@
       /* the engine may not exist yet at registration time (js/geo-engine.js is imported before the
          map is constructed — #R178). Retry on the load event rather than binding to nothing, which
          is #R170's silent-no-op defect. */
-      if (!_camWired) { try { window.IntMapGeoEngine.events.once('load', _wireCamera); } catch (_) { } }
+      if (!_camWired) { try { IntMapGeoEngine.events.once('load', _wireCamera); } catch (_) { } }
       schedule();
       return () => offCamera(key);
     }

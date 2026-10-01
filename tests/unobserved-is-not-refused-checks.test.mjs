@@ -137,7 +137,8 @@ function radarRow({ fetch: fakeFetch }) {
   const document = { getElementById: (id) => (id === 'dl-radar' ? cb : null) };
   const window = { IntMapLang: { t: (_l, en) => en } };
   const lgdRadar = { style: { display: '' } };
-  /* the host table is replaced (so the test does not wait 6 s per clock); every function that decides is the shipped one */
+  /* the host table is replaced (so the test does not wait 6 s per clock); every function that decides is the shipped one.
+     (module-graph) the lifted code reads the registry as its imported binding `IntMapLang`, handed in by name */
   const clockFor = () => 120;
   const code = [
     varDecl('_unobsGen'), fnDecl('rowUntilObserved'),
@@ -145,9 +146,9 @@ function radarRow({ fetch: fakeFetch }) {
     'return function toggleRadar(){ let req; const id="radar";', radarBranch(), 'return req; };',
   ].join('\n');
   const make = new Function('document', 'window', 'HOST', 'satToast', 'lgdRadar', 'tileLegends', 'whenStyleReady', 'clockFor',
-    'jsonWithin', 'untilObserved', 'afterTick', 'tickKey', 'rvRefreshFrames', 'addRainViewer', 'rvAutoRefresh', code);
+    'jsonWithin', 'untilObserved', 'afterTick', 'tickKey', 'rvRefreshFrames', 'addRainViewer', 'rvAutoRefresh', 'IntMapLang', code);
   const toggle = make(document, window, { lang: 'en' }, (m) => toasts.push(m), lgdRadar, () => {}, () => Promise.resolve(), clockFor,
-    jsonWithin, untilObserved, afterTick, tickKey, () => {}, () => { drawn.push('lyr-radar'); return true; }, () => {});
+    jsonWithin, untilObserved, afterTick, tickKey, () => {}, () => { drawn.push('lyr-radar'); return true; }, () => {}, window.IntMapLang);
   const real = globalThis.fetch;
   globalThis.fetch = fakeFetch;
   return { toggle, cb, row, toasts, drawn, restore: () => { globalThis.fetch = real; } };
@@ -268,6 +269,7 @@ test('⑥ layer-packs: a single-year read that ran out of time is said to be lat
     const scope = inertScope({ readWithin, clockFor: () => 30, isUnobserved, cache, state: {}, wbYr: {},
       WB: { k: { ind: 'X', ids: ['wb-k-fill'], src: 'src-wb-k', score: (v) => v } },
       _imCanDraw: () => true, imToast: (m) => toasts.push(m), HOST: { lang: 'en', countryGeo: { features: [] } },
+      IntMapLang: { t: (_l, en) => en },   /* (module-graph) the lifted code reads its imported registry binding */
       window: { IntMapLang: { t: (_l, en) => en }, IntMapWB: { series, get: () => ({}) } } });
     const wbToggle = new Function('scope', 'with (scope) { ' + liftFunction(src, 'wbToggle') + '\nreturn wbToggle; }')(scope);
     wbToggle('k', true);

@@ -9,8 +9,8 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.companies=function(HOST){
+
+export function companies(HOST){
   return (function(){
     /* rows: [ ticker, name, nameJP(''=use EN), countryISO3, sectorKey, domain, founded, employees, revenueB, netIncomeB,
        sharesOutB (0 = non-US → use snapshot, no live calc), marketCapSnapshotB ]. Money & shares in BILLIONS. */
@@ -412,4 +412,4 @@ window.IntMapModules.companies=function(HOST){
          quote's own time (true) or merely when we fetched it (false). */
       priceAsOf:c=>((c&&c.price>0&&c.priceT)||0), priceAsOfExact:c=>!!(c&&c.priceTexact) };
   })();
-};
+}

@@ -10,9 +10,11 @@
  *  ⚠ The published global is `__imAnalysis…`, not `IntMap…` — js/atlas-controls.js's
  *  moduleCatalog() discovers `window.IntMap*` by enumeration.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.analysisCorrelate=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function analysisCorrelate(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -22,7 +24,7 @@ window.IntMapModules.analysisCorrelate=function(HOST){
   (function(){
     if(typeof countryStats==='undefined') return;
     const L=()=>HOST.lang;
-    const tr=window.IntMapLang.pick(()=>L());
+    const tr=IntMapLang.pick(()=>L());
     /* ⚠⚠⚠ (#R248) THE FOURTEENTH SHAPE — A LANGUAGE→POSITION CHAIN WRITTEN AS A TERNARY ═══════
        `ml` below used to turn the language into an ARRAY POSITION with a ternary chain ending in
        `:0`. It is the eleventh shape's sibling one container further out: #R241 closed the tuple
@@ -34,7 +36,7 @@ window.IntMapModules.analysisCorrelate=function(HOST){
        permanently, with no inline-table fallback to reach for.
        `tr.arr()` IS `pick()` applied to the array (js/lang-registry.js), so the five positional
        slots and the inline table stay the one rule they are everywhere else. */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     function compact(v){ v=+v; const a=Math.abs(v); if(a>=1e12)return (v/1e12).toFixed(1)+'T'; if(a>=1e9)return (v/1e9).toFixed(1)+'B'; if(a>=1e6)return (v/1e6).toFixed(1)+'M'; if(a>=1e3)return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
     const METRICS=[
       {id:'pop',      get:s=>s.pop,      log:true,  fmt:v=>compact(v),       lbl:LA('Population','人口','Bevölkerung','Население','Población')},
@@ -235,7 +237,7 @@ window.IntMapModules.analysisCorrelate=function(HOST){
        become two. */
     const loadFailMsg=()=>tr('Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.');
     function residPill(mx,my,err){ let pill=document.getElementById('corr-resid-pill'); if(!pill){ pill=document.createElement('div'); pill.id='corr-resid-pill'; pill.style.cssText='position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:calc(var(--z-sheet) + 50);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:14px;padding:9px 14px;font-size:11px;box-shadow:var(--shadow);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:stretch;gap:6px;max-width:min(440px,calc(100vw - 24px));'; (document.getElementById('map-container')||document.body).appendChild(pill); }
-      if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+loadFailMsg()+'</span><button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">×</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
+      if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+loadFailMsg()+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">×</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
       /* (#R41) graded diverging legend bar (matches the RdBu fill) + a one-line "what is this" note */
       const grad='linear-gradient(to right,rgb(103,0,31),rgb(178,24,43),rgb(239,138,98),rgb(247,247,247),rgb(103,169,207),rgb(33,102,172),rgb(5,48,97))';
       pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span style="font-weight:600;">'+esc(ml(my))+' '+tr('vs','対','vs','от','vs')+' '+esc(ml(mx))+'</span><button aria-label="'+tr('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;line-height:1;">×</button></div>'
@@ -261,4 +263,4 @@ window.IntMapModules.analysisCorrelate=function(HOST){
     function onLang(){ if(ov){ const sx=ov.querySelector('.corr-sel-x'),sy=ov.querySelector('.corr-sel-y'); if(sx&&sy){ [sx,sy].forEach(sel=>{ [].forEach.call(sel.options,(o,i)=>{ if(METRICS[i]) o.textContent=ml(METRICS[i]); }); }); if(ov.classList.contains('show')) render(); } } }
     window.__imAnalysisCorrelate={open,onLang};
   })();
-};
+}

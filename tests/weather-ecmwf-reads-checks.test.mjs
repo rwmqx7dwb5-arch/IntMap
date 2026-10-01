@@ -364,7 +364,7 @@ test('R276 ⑧ the two forecast players are two views of one state, with differe
      分けるな」 merged the forecast tab into 「時刻」, and both halves of that tab now write the ONE
      thing — the master clock — which js/wx-ecmwf.js follows. Two views of one state, still. */
   assert.match(codeOnly(read('js/news-timeline.js')),
-    /function fcGo\(i\)\{[\s\S]{0,200}window\.IntMapTime\.set\(new Date\(t\),\{allowFuture:true,source:'ui'\}\);/,
+    /function fcGo\(i\)\{[\s\S]{0,200}IntMapTime\.set\(new Date\(t\),\{allowFuture:true,source:'ui'\}\);/,
     '…and the shared one moves the clock, which the model follows');
 });
 
@@ -1010,7 +1010,8 @@ test('#R288 ⑫ the om protocol flag only goes up when the registration happened
   const src = EC();
   const i = src.indexOf('function registerProtocol()');
   const body = src.slice(i, src.indexOf('function ready()', i));
-  assert.match(body, /ok = !!window\.IntMapGeoEngine\.scene\.addProtocol\('om'/, 'addProtocol already returns a boolean');
+  /* (module-graph) the engine is an import, read as the bare binding */
+  assert.match(body, /ok = !!IntMapGeoEngine\.scene\.addProtocol\('om'/, 'addProtocol already returns a boolean');
   assert.match(body, /protoReg = ok;/);
   assert.ok(!/protoReg = true;\s*return true;/.test(body), 'the flag must not latch outside the try');
   const w = WX();

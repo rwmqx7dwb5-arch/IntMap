@@ -53,6 +53,8 @@
    ⚠ AND `execute()` STILL EXISTS FROM BOOT. It returns a Promise — it always did — so the fetch
    hides inside the await a caller was already doing. What a caller can never observe is a
    capability that is missing because its code has not arrived. */
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 export function installCapabilityKernel(OS, HOST, deps) {
   deps = deps || {};
   var caps = makeAtlasCapabilities(HOST);
@@ -313,7 +315,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
        before/after pair plus the raw return into one of the seven statuses. They are shared by
        KIND, because "did a layer actually paint" is one question however many layers ask it.
        ⚠ EVERY ONE OF THESE READS THE APP, NOT THE CALL. That is the whole point of the file. */
-    function GE() { try { return window.IntMapGeoEngine; } catch (_) { return null; } }
+    function GE() { try { return IntMapGeoEngine; } catch (_) { return null; } }
     function hasRenderer() { try { return !!(GE() && GE().hasRenderer()); } catch (_) { return false; } }
     /* ⚠⚠⚠ (#R397) THE THREE OBSERVERS BELOW NAMED THINGS THAT DO NOT EXIST, AND `try{}catch(_){}`
        ATE THE PROOF. This is the #R388 shape — a façade method spelled from memory, a TypeError
@@ -459,7 +461,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       } catch (_) { return null; }
     }
     function timeNow() {
-      try { var T = window.IntMapTime; return T && T.get ? T.get() : null; } catch (_) { return null; }
+      try { var T = IntMapTime; return T && T.get ? T.get() : null; } catch (_) { return null; }
     }
     /* the Atlas-drawn canvases: what each holds right now.
        ⚠ THE SURFACES ARE NO LONGER LISTED HERE. Seven source ids used to be typed on these lines (#R397

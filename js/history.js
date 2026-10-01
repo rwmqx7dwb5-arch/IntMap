@@ -8,8 +8,9 @@
  *  histStates/histId took countryStats from the closure; it is declared once and only ever
  *  mutated in place, so it is passed by reference as an explicit factory parameter.
  * ========================================================================== */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.maddison=function(){
+import { IntMapLang } from './lang-registry.js';
+
+export function maddison(){
     let data=null, promise=null;
     /* ⚠ (#R349) THE FLOOR IS MEASURED FROM THE FILE, NOT DECLARED BESIDE IT. `minYear` was the literal
        1900 and it was right only because the bundle happened to start there; scripts/build-maddison.mjs
@@ -32,7 +33,7 @@ window.IntMapModules.maddison=function(){
       popN:(code,year)=>{ const r=rec(code,year); return (r&&r[1]!=null)?r[1]*1000:null; },              /* absolute persons */
       gdpBil:(code,year)=>{ const r=rec(code,year); return (r&&r[0]!=null&&r[1]!=null)?(r[0]*r[1]/1e6):null; }  /* billions of 2011 int$ */
     };
-};
+}
 
 /* ⚠⚠⚠ (#R380) THESE NAMES ARE TUPLES, AND TWO PLACES WERE READING THEM AS IF THEY WERE OBJECTS.
    #R245 turned every former-state and era name in this file into `LA(en, ja, de, ru, es)` — an ARRAY,
@@ -50,12 +51,12 @@ window.IntMapModules.maddison=function(){
    `_LTB.arr` in js/time-borders.js — the tuple itself is still carried on `name` for them. */
 window.IntMapHistName=function(n,slot){ return Array.isArray(n) ? (n[slot]||n[0]||'') : ((n&&(slot?n.jp:n.en))||''); };
 
-window.IntMapModules.histStates=function(countryStats){
+export function histStates(countryStats){
     const _nmEn=(n)=>window.IntMapHistName(n,0), _nmJp=(n)=>window.IntMapHistName(n,1);
     /* (#R245) the former-state names are tuples held as data — see IntMapLang.pickArgs(). They are
        READ through `pick()` itself in js/time-borders.js, so a language past the five positional
        slots reaches its inline table keyed by the English name rather than falling to English. */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
     const STAR=(cx,cy,s,fill,stroke)=>'<g transform="translate('+cx+','+cy+') scale('+s+')"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="'+fill+'"'+(stroke?(' stroke="'+stroke+'" stroke-width="0.09"'):'')+'/></g>';
     const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
@@ -350,13 +351,13 @@ window.IntMapModules.histStates=function(countryStats){
        disjoint, and `resolveHist` takes the first match that is ACTIVE, so exactly one of each pair can
        ever bind — the pattern names the polygon, the lifespan names the year. */
     return { STATES, CODES, activeAt, succAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
-};
+}
 
-window.IntMapModules.histId=function(countryStats){
+export function histId(countryStats){
     /* (#R245) the renamed-state names are tuples held as data — see IntMapLang.pickArgs()
        ⚠ (#R380) …and they are READ as tuples: see the note above `histStates`. */
     const _nmEn=(n)=>window.IntMapHistName(n,0), _nmJp=(n)=>window.IntMapHistName(n,1);
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
     const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
     const F_GEMP=flag('<rect width="30" height="6.667" fill="#000000"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DD0000"/>');
@@ -436,4 +437,4 @@ window.IntMapModules.histId=function(countryStats){
         s.nameEn=_nmEn(e.name); s.nameJp=_nmJp(e.name); s.name=e.name; s.flag=(e.flag||s.flag); s.wiki=e.wiki; s._histId=true; }   /* (#R117) an entry without an era flag keeps the country's own flag (e.g. Empire of Japan = 日章旗) */
       if(Object.keys(saved).length) _applied=saved; }
     return { at, apply, clear, _applied:()=>_applied };
-};
+}

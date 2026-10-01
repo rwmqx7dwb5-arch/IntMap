@@ -42,11 +42,14 @@
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.volcanoLayers=function(HOST){
-  const L=window.IntMapLang.pick(()=>HOST.lang);
-  const LA=window.IntMapLang.pickArgs();
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function volcanoLayers(HOST){
+  const L=IntMapLang.pick(()=>HOST.lang);
+  const LA=IntMapLang.pickArgs();
+  const GE=()=>IntMapGeoEngine;
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   function canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
@@ -305,7 +308,7 @@ window.IntMapModules.volcanoLayers=function(HOST){
   }
   function setSo2Date(iso){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso||''))) return false; so2Date=iso; so2Repoint(); return true; }
   /* follow the master clock when the reader moves it (js/chronos.js) */
-  try{ window.IntMapTime.on((e)=>{ if(!state.so2) return; const iso=e&&e.isLive?null:(e&&e.iso); if(so2Date!==iso){ so2Date=iso; so2Repoint(); } }); }catch(_){}
+  try{ IntMapTime.on((e)=>{ if(!state.so2) return; const iso=e&&e.isLive?null:(e&&e.iso); if(so2Date!==iso){ so2Date=iso; so2Repoint(); } }); }catch(_){}
 
   /* ══ THE LEGEND ════════════════════════════════════════════════════════════════════════════
      One box per overlay, through the app's own legend registry, so these behave like every other
@@ -383,4 +386,4 @@ window.IntMapModules.volcanoLayers=function(HOST){
   };
   window.IntMapVolcanoLayers=API;
   return API;
-};
+}

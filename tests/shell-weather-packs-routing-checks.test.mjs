@@ -16,9 +16,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
 import { installSafe } from './helpers/safe-html.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 import { codeOnly as code, codeOnly as noComments } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,16 +26,16 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 /* The ONE route renderer, EVALUATED: js/routing-cards.js runs in a fresh context on top of the real
    language registry and the real output encoder. The only stub is the time-zone lookup, which is
-   handed in so the test can say which offset a coordinate has — and see that it was asked. */
-function routeCards(offsetAt) {
+   handed in so the test can say which offset a coordinate has — and see that it was asked.
+   (module-graph) IMPORTED, fresh per call: its registry import is the real shared module. */
+async function routeCards(offsetAt) {
   const w = { console, document: { documentElement: { lang: 'en', setAttribute() { } }, querySelector: () => null, addEventListener() { } } };
   w.window = w;
-  const ctx = vm.createContext(w);
-  for (const p of ['js/locales/_langs.js', 'js/lang-registry.js']) vm.runInContext(read(p), ctx, { filename: p });
+  langRegistry();
   installSafe(w);
   const asked = [];
   w.IntMapTimeZones = { offsetAt: (lng, lat) => { asked.push([lng, lat]); return offsetAt(lng, lat); } };
-  vm.runInContext(read('js/routing-cards.js'), ctx, { filename: 'js/routing-cards.js' });
+  await importModule('js/routing-cards.js', { globals: { window: w, document: w.document } });
   return { C: w.IntMapRouteCards, asked };
 }
 
@@ -79,14 +79,14 @@ test('R296 ③ every route field can use the reader’s own position', () => {
 /* ═══ ④ 「徒歩 → END」 ══════════════════════════════════════════════════════════════════════════
    MOTIS names the two ends of a trip `START` and `END`. They are not place names — they are the API
    saying 「the coordinate you gave me」 — and they were being printed as if they were. */
-test('R296 ④ the provider’s END sentinel never reaches the reader', () => {
+test('R296 ④ the provider’s END sentinel never reaches the reader', async () => {
   /* spelling kept: js/routing.js turns a MOTIS leg into route data inside the router factory (network, live map); what it records is read off its text. */
   const r = read('js/routing.js');
   assert.match(r, /const _sent=\(n\)=>\/\^\(START\|END\)\$\/i\.test/, 'the sentinel is recognised');
   assert.match(r, /toEnd:_sent\(_tN\)&&\/\^END\$\/i\.test\(_tN\)\?1:0/, 'and recorded as a FLAG, not a word');
   /* (tests-by-topic) the renderer is RUN: a walk leg whose end is the flag reads as the word, in
      the reader's language, at render time. */
-  const { C } = routeCards(() => null);
+  const { C } = await routeCards(() => null);
   const leg = { walk: true, mode: 'WALK', toEnd: 1, duration: 300 };
   assert.match(C.legRows([leg], { lang: 'en' }), /Walk → Arrival/, 'the word is chosen at render time…');
   assert.match(C.legRows([leg], { lang: 'jp' }), /徒歩 → 到着/, '…in the language being read now');
@@ -97,11 +97,11 @@ test('R296 ④ the provider’s END sentinel never reaches the reader', () => {
 });
 
 /* ═══ ⑤ 「経路機能で、現地の時刻に合わせろ」 ════════════════════════════════════════════════════ */
-test('R296 ⑤ a route’s clocks are local to the place they happen', () => {
+test('R296 ⑤ a route’s clocks are local to the place they happen', async () => {
   /* (tests-by-topic) THE FORMATTER IS RUN. Tokyo is +9 and New York −5 by the stubbed lookup; the
      same instant must read differently at the two places, and a pinned zone must override both. */
   const TOKYO = [139.7, 35.7], NYC = [-74.0, 40.7];
-  const { C, asked } = routeCards((lng) => (lng > 0 ? 9 : -5));
+  const { C, asked } = await routeCards((lng) => (lng > 0 ? 9 : -5));
   const t0 = Date.UTC(2026, 0, 15, 0, 30);
   assert.equal(C.clock(t0, { lang: 'en' }, TOKYO), '09:30', 'the zone comes from a coordinate');
   assert.deepEqual(asked[0], TOKYO, '…through the app’s own zone lookup');

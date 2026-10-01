@@ -32,6 +32,8 @@
  *  #R323's lesson is that a second table describing the same thing drifts from the first. This file
  *  answers WHICH INSTANT; that one answers HOW TO WRITE IT.
  * ==========================================================================*/
+import { IntMapTime } from './chronos.js';
+import { IntMapLang } from './lang-registry.js';
 window.IntMapRouteClock = (function () {
   'use strict';
 
@@ -43,7 +45,7 @@ window.IntMapRouteClock = (function () {
      identical (positional for five languages, the inline table for the rest). */
   function lang() {
     try {
-      var R = window.IntMapLang;
+      var R = IntMapLang;
       var raw = (window.IM_HOST && window.IM_HOST.lang) || document.documentElement.lang || 'en';
       return (R && typeof R.normalise === 'function') ? R.normalise(raw) : (raw === 'ja' ? 'jp' : raw);
     } catch (_) { return 'en'; }
@@ -56,11 +58,11 @@ window.IntMapRouteClock = (function () {
      fr / ko / zh-Hant / zh-Hans corpus**. The percentage column still read 100 %, because it is a
      percentage OF WHAT THE AUDIT CAN SEE. Same shape as #R251 and #R313's addendum, met a third time.
      The ternary short-circuits exactly as the try/catch did (`window.IntMapLang &&` is the guard). */
-  var L = (window.IntMapLang && window.IntMapLang.pick)
-    ? window.IntMapLang.pick(lang)
+  var L = (IntMapLang && IntMapLang.pick)
+    ? IntMapLang.pick(lang)
     : function () { return arguments[0]; };
 
-  function chronos() { try { return window.IntMapTime || null; } catch (_) { return null; } }
+  function chronos() { try { return IntMapTime || null; } catch (_) { return null; } }
 
   /** is the app's clock pinned away from the wall clock? */
   function isHistorical() {

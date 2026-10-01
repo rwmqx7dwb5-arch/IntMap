@@ -11,9 +11,11 @@
  *  have been what #R621's «run with the REAL language registry» test measured. So:
  *    · every test that mounts a module calls `stage(t, {...})`, which starts from NONE of the page
  *      globals, sets exactly the ones given, and restores the previous values when the test ends;
- *    · js/lang-registry.js, js/geo-engine.js, js/radiation-layer.js and js/sims.js register
- *      themselves on `window` when first IMPORTED, and a module is imported once per process — so
- *      `modules()` takes that first import inside its own stage and keeps what each registered.
+ *    · (module-graph) the layer and the simulator READ the engine, the language registry and the
+ *      clock through `import`, not off `window` — so those three are not page globals any more:
+ *      `stageModule()` hands the test's values in at the module's own import edges and evaluates a
+ *      FRESH js/radiation-layer.js / js/sims.js against them (tests/helpers/import-module.mjs). The
+ *      real registry and engine `modules()` returns are the shared, once-per-process instances.
  *  The order the tests run in cannot change an answer.
  * ==========================================================================*/
 import assert from 'node:assert/strict';
@@ -25,7 +27,8 @@ import * as LM from '../js/layer-manifest.js';
 import { makeRadiationObs } from '../js/radiation-obs-core.js';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
-import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';
+import { importModule } from './helpers/import-module.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -34,7 +37,7 @@ const read = (p) => readLF(join(ROOT, p));
 
 /* ── the page globals, staged per test ──────────────────────────────────────────────────────── */
 const STAGED = ['window', 'document', 'fetch', 'CSS', 'SUPABASE_URL', 'addEventListener',
-  'IntMapGeoEngine', 'IntMapLang', 'IntMapSafe', 'IntMapLabelScale', 'IntMapModules', 'IntMapRuntime',
+  'IntMapGeoEngine', 'IntMapLang', 'IntMapSafe', 'IntMapLabelScale', 'IntMapRuntime',
   'IntMapTime', 'IntMapRadiation', 'IntMapRadiationObs', '_registerLayerOpacity', '_hideGenericLegend'];
 const snapshot = () => STAGED.map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]);
 const restore = (saved) => { for (const [k, d] of saved) { if (d) Object.defineProperty(globalThis, k, d); else delete globalThis[k]; } };
@@ -49,6 +52,16 @@ function stage(t, set) {
   t.after(() => restore(saved));
   clean(set);
 }
+/* (module-graph) the three dependencies the layer and the simulator IMPORT, and the file each comes from */
+const EDGES = { IntMapGeoEngine: 'js/geo-engine.js', IntMapLang: 'js/lang-registry.js', IntMapTime: 'js/chronos.js' };
+/** stage the page globals in `set`, and evaluate a fresh `rel` whose import edges answer with the
+    rest of `set` (a name `set` leaves out is an edge that answers `undefined`) */
+async function stageModule(t, rel, set) {
+  const globals = Object.assign({}, set), mocks = {};
+  for (const [name, file] of Object.entries(EDGES)) { mocks[file] = { [name]: globals[name] }; delete globals[name]; }
+  stage(t, globals);
+  return importModule(rel, { mocks });
+}
 const noop = () => { };
 /* the union of the two DOM shapes the modules were first imported under (#R621's engine surface,
    and the legend's `createElement`) */
@@ -57,23 +70,25 @@ const docStub = () => ({
   querySelector: () => null, addEventListener: noop, readyState: 'complete', body: { appendChild() { } },
 });
 let MODS = null;
-/** the first import of each self-registering module, and what it registered */
+/** the REAL language registry and engine — what each module exports (module-graph: no longer read
+    back off `window` after the import) */
 async function modules() {
   if (MODS) return MODS;
   const saved = snapshot();
   try {
-    clean({ document: docStub(), IntMapModules: {}, addEventListener: noop });
-    await import('../js/lang-registry.js');
-    const lang = globalThis.IntMapLang;
-    await import('../js/geo-engine.js');
-    const engine = globalThis.IntMapGeoEngine;
-    await import('../js/radiation-layer.js');
-    await import('../js/sims.js');
-    MODS = { lang, engine, radiationLayer: globalThis.IntMapModules.radiationLayer, radiation: globalThis.IntMapModules.radiation };
+    clean({ document: docStub(), addEventListener: noop });
+    const { IntMapLang: lang } = await import('../js/lang-registry.js');
+    const { IntMapGeoEngine: engine } = await import('../js/geo-engine.js');
+    MODS = { lang, engine };
   } finally { restore(saved); }
-  assert.equal(typeof MODS.radiationLayer, 'function', 'js/radiation-layer.js must register IntMapModules.radiationLayer');
   assert.equal(typeof MODS.lang.pick, 'function', 'the real language registry did not load');
   return MODS;
+}
+/** a fresh js/radiation-layer.js against `set`, and its exported factory */
+async function layerFactory(t, set) {
+  const { radiationLayer } = await stageModule(t, 'js/radiation-layer.js', set);
+  assert.equal(typeof radiationLayer, 'function', 'js/radiation-layer.js must export its factory radiationLayer');
+  return radiationLayer;
 }
 /* the renderer double #R621 settled on: only what the engine publishes — `popup` deliberately absent
    from the top level, the renderer-owned UI behind `ui` */
@@ -116,16 +131,16 @@ async function legendIn(t, lang) {
   const M = await modules();
   const host = legendHost();
   const { makeRuntime, stopEarlyTimers } = await import('../js/runtime.js');
-  stage(t, {
+  const radiationLayer = await layerFactory(t, {
     document: docStub(), IntMapLang: M.lang, IntMapGeoEngine: engineDouble(),
-    IntMapSafe: { html: (s) => String(s) }, IntMapLabelScale: { sub: (n) => n }, IntMapModules: {},
+    IntMapSafe: { html: (s) => String(s) }, IntMapLabelScale: { sub: (n) => n },
     addEventListener: noop, _registerLayerOpacity: () => host,
     fetch: async () => ({ ok: true, json: async () => LEGEND_FEED }),
     /* (#R797) the layer is a capability of the runtime now — the test mounts the real register, the
        same object the browser builds, and a clock stub for the subscription the active scope owns */
     IntMapRuntime: makeRuntime({}), IntMapTime: { on: () => () => { } },
   });
-  const api = M.radiationLayer({ lang, canDraw: () => true });
+  const api = radiationLayer({ lang, canDraw: () => true });
   api.toggle(true);
   await new Promise((r) => setTimeout(r, 40));   /* let load() settle; it paints and re-legends */
   api.legend();
@@ -149,20 +164,19 @@ async function legendIn(t, lang) {
 
 /* ── evaluate js/radiation-layer.js the way the browser does ──────────────────────────────── */
 async function mountLayer(t) {
-  const M = await modules();
   const layers = {
     _s: new Set(), _l: new Set(),
     hasSource: (id) => layers._s.has(id), addSource: (id) => layers._s.add(id),
     has: (id) => layers._l.has(id), add: (d) => layers._l.add(d && d.id),
     setLayout: noop, setSourceData: noop, getLayout: () => 'none'
   };
-  stage(t, {
+  const radiationLayer = await layerFactory(t, {
     IntMapGeoEngine: { layers, events: { on: noop, onLayer: noop }, ready: () => true, popup: () => null },
     IntMapLang: { pick: () => (v) => (Array.isArray(v) ? v[0] : v), pickArgs: () => (...a) => a },
     IntMapSafe: { html: (s) => String(s) }, IntMapLabelScale: { sub: (n) => n },
-    IntMapModules: {}, addEventListener: noop,
+    addEventListener: noop,
   });
-  return M.radiationLayer({ lang: 'en', canDraw: () => true });
+  return radiationLayer({ lang: 'en', canDraw: () => true });
 }
 
 /* ── ① the ramp is REACHABLE, and it is the one the document describes ─────────────────────── */
@@ -272,23 +286,23 @@ test('#R585 ⑤ every registration point the row needs actually exists', () => {
 
 /* ── ⑦ the nuclear registry replaced the typed list, and it REFUSES rather than guessing ─────── */
 test('#R585 ⑦ resolveSite answers from data/npp.json and refuses a name it does not hold', async (t) => {
-  const M = await modules();
   /* the module fetches its registry; serve the REAL file, so this measures the shipped data and not
      a fixture that happens to contain whatever the assertion wants (#R552). */
   const registry = read('data/npp.json');
-  stage(t, {
+  const { radiation } = await stageModule(t, 'js/sims.js', {
     IntMapLang: { pick: () => (v) => (Array.isArray(v) ? v[0] : v), pickArgs: () => (...a) => a },
     /* ⚠ the factory early-returns a stub when there is no renderer, and that stub has no resolveSite.
        Saying so here rather than stubbing around it: if this assertion starts firing, the module took
        the no-renderer branch and the test would otherwise be measuring the stub. */
     IntMapGeoEngine: { layers: { has: () => false, hasSource: () => false, addSource: noop, add: noop, setLayout: noop, setSourceData: noop, getLayout: () => 'none' }, events: { on: noop, onLayer: noop }, ready: () => true, popup: () => null,
       hasRenderer: () => true, camera: { flyTo: noop, getZoom: () => 3 } },
-    IntMapSafe: { html: (s) => String(s) }, IntMapModules: {},
+    IntMapSafe: { html: (s) => String(s) },
     fetch: async (u) => (String(u).includes('npp.json')
       ? { ok: true, json: async () => JSON.parse(registry) }
       : { ok: false, json: async () => null }),
   });
-  M.radiation({ lang: 'en', canDraw: () => true });
+  assert.equal(typeof radiation, 'function', 'js/sims.js must export its factory radiation');
+  radiation({ lang: 'en', canDraw: () => true });
   const R = globalThis.IntMapRadiation;
   assert.equal(typeof R.resolveSite, 'function', 'js/sims.js must still expose resolveSite (did the factory take the no-renderer branch?)');
 
@@ -507,17 +521,17 @@ test('#R672 the sparkline draws from the shape the FEED emits, not a shape of it
     stations: [{ c: 'de-bfs:1', s: 'de-bfs', n: 'A', y: 50, x: 8, v: 90, t: '2026-09-10T00:00:00Z', q: 'H*(10)', k: 'hourly-mean' }], reference: [] };
   const doc = docStub();
   doc.querySelector = (sel) => (sel === '[data-rad-series="de-bfs:1"]' ? slot : null);
-  stage(t, {
+  const radiationLayer = await layerFactory(t, {
     document: doc, CSS: { escape: (s) => String(s) }, IntMapLang: M.lang,
     IntMapGeoEngine: engineDouble((ev, id, fn) => { if (ev === 'click' && id === 'imrad-obs-pt') click = fn; }),
-    IntMapSafe: { html: (s) => String(s) }, IntMapLabelScale: { sub: (n) => n }, IntMapModules: {},
+    IntMapSafe: { html: (s) => String(s) }, IntMapLabelScale: { sub: (n) => n },
     addEventListener: noop, _registerLayerOpacity: () => null, SUPABASE_URL: 'https://example.invalid',
     IntMapRuntime: makeRuntime({}), IntMapTime: { on: () => () => { } },
     fetch: async (u) => (String(u).includes('mode=series')
       ? { ok: true, json: async () => ({ v: 1, station: 'de-bfs:1', unit: 'nSv/h', series: rows }) }
       : { ok: true, json: async () => feed }),
   });
-  const api = M.radiationLayer({ lang: 'en', canDraw: () => true });
+  const api = radiationLayer({ lang: 'en', canDraw: () => true });
   try {
     const series = await api.series('de-bfs:1');
     assert.equal(series.length, 12, 'the series call did not return the feed rows');

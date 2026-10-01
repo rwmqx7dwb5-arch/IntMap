@@ -64,7 +64,7 @@ const WRITE = process.argv.includes('--write');
    watch it not throw. A check that read this file's TEXT would have passed on the broken version
    ([[intmap-edge-function-must-be-evaluated]]); this one evaluates it. */
 export function cutDeadRows(src, dead, label = 'source') {
-  const ast = parse(src, { ecmaVersion: 2022, locations: true });
+  const ast = parse(src, { ecmaVersion: 2022, sourceType: 'module', locations: true });
   const drop = [];
   walk.simple(ast, {
     Property(n) {
@@ -99,7 +99,7 @@ export function cutDeadRows(src, dead, label = 'source') {
   if (lines1.length !== lines0.length) throw new Error(`${label}: line count moved — a range spanned a newline`);
   const kept = lines1.filter((ln, i) => !killLines.has(i + 1) && !(ln.text.trim() === '' && lines0[i].text.trim() !== ''));
   const text = joinLines(kept);
-  parse(text, { ecmaVersion: 2022 });                        /* it must still parse */
+  parse(text, { ecmaVersion: 2022, sourceType: 'module' });                        /* it must still parse */
   return { text, rows: drop.length, lines: lines0.length - kept.length };
 }
 

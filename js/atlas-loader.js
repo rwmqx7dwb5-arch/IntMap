@@ -26,6 +26,7 @@
  *  ⚠ IT IS ITS OWN FILE BECAUSE js/app-body.js HAS A LINE CEILING (tests/shell-app-body-modules-checks.test.mjs #R200 ⑤, 4,400) whose
  *  whole point is that a new subject goes to a new file (#R199/#R200). This is a new subject.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
 window.IntMapAtlas = (function () {
   'use strict';
   function need() {
@@ -108,7 +109,7 @@ window.IntMapAtlas = (function () {
              out at 45 s waiting for a global that was still queued). What the boot path needs is that
              this cannot run BEFORE first paint; four seconds after the modules land is long past it,
              and the map's own idle brings it forward when the map settles sooner. */
-          try { window.IntMapGeoEngine.events.once('idle', () => setTimeout(A.hint, 1200)); } catch (_) { }
+          try { IntMapGeoEngine.events.once('idle', () => setTimeout(A.hint, 1200)); } catch (_) { }
           setTimeout(A.hint, 4000);
         }
       } catch (_) { }

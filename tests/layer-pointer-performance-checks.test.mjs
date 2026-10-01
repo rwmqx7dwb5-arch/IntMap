@@ -19,6 +19,7 @@ import { makeRuntime } from '../js/runtime.js';
 import { makeWheelZoom } from '../js/wheel-zoom.js';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -293,7 +294,9 @@ test('R499 ② at the default sensitivity MapLibre still owns the pinch and this
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
    ③ js/map-tooltip.js — the tooltip's own size, RUN
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
-function tooltipRig() {
+/* (module-graph) js/map-tooltip.js exports its factory now, so the rig IMPORTS the shipped module with the fake
+   document/ResizeObserver as its browser, instead of running its text in a vm context. */
+async function tooltipRig() {
   const counts = { size: 0, html: 0, disp: 0, mc: 0 };
   const style = new Proxy({}, { set(t, k, v) { if (k === 'display') counts.disp++; t[k] = v; return true; } });
   style.setProperty = () => { };
@@ -304,20 +307,16 @@ function tooltipRig() {
     set innerHTML(v) { counts.html++; this._h = v; }, get innerHTML() { return this._h; },
   };
   const container = { appendChild() { }, getBoundingClientRect() { counts.mc++; return { width: 390, height: 844 }; } };
-  const g = {
-    Math, console, Object,
+  const M = await importModule('js/map-tooltip.js', { globals: {
     document: { createElement: () => tip, getElementById: (id) => (id === 'map-container' ? container : null) },
     ResizeObserver: class { constructor(fn) { this.fn = fn; } observe() { } disconnect() { } },
-  };
-  g.window = g;
-  vm.createContext(g);
-  vm.runInContext(R('js/map-tooltip.js'), g, { filename: 'map-tooltip.js' });
-  const API = g.window.IntMapModules.mapTooltip();
+  } });
+  const API = M.mapTooltip();
   return { API, counts, tip, el: API.ensureMapTooltip() };
 }
 
-test('R499 ③ hovering one feature asks the tooltip for its size ONCE, not once per pointer event', () => {
-  const rig = tooltipRig();
+test('R499 ③ hovering one feature asks the tooltip for its size ONCE, not once per pointer event', async () => {
+  const rig = await tooltipRig();
   rig.API.showMapTooltip(rig.el);
   rig.API.setMapTooltipHTML(rig.el, '<b>Tokyo</b>');
   for (let i = 0; i < 60; i++) rig.API.positionTooltip({ x: 100 + i, y: 200 + i });
@@ -336,8 +335,8 @@ test('R499 ③ hovering one feature asks the tooltip for its size ONCE, not once
   assert.equal(rig.counts.size, 4, 'new markup did not re-measure the tooltip — it would be placed at the old size');
 });
 
-test('R499 ③ the display write happens on the edge, and re-measures when it does', () => {
-  const rig = tooltipRig();
+test('R499 ③ the display write happens on the edge, and re-measures when it does', async () => {
+  const rig = await tooltipRig();
   for (let i = 0; i < 40; i++) rig.API.showMapTooltip(rig.el);
   assert.equal(rig.counts.disp, 1, `display was written ${rig.counts.disp} times to say "block" forty times`);
   for (let i = 0; i < 40; i++) rig.API.hideMapTooltip(rig.el);

@@ -46,12 +46,13 @@ test('R286 ⑥: r280 ②\'s anchor follows the checkout\'s line endings and rela
   assert.ok(m, 'tests/doc-facts-legal-pages-checks.test.mjs (#R280) still builds its anchors through one named helper');
   const anchorRe = new Function(`return (${m[1]});`)();
 
-  const anchor = '<script src="./js/legal-text.js"></script>\n';
-  assert.equal(anchorRe(anchor).test('x<script src="./js/legal-text.js"></script>\ny'), true,
+  /* (module-graph) privacy.html loads the policy text as a module now — the tag is the anchor, so it is spelt so */
+  const anchor = '<script type="module" src="./js/legal-text.js"></script>\n';
+  assert.equal(anchorRe(anchor).test('x<script type="module" src="./js/legal-text.js"></script>\ny'), true,
     'an LF checkout still matches — this is what CI reads');
-  assert.equal(anchorRe(anchor).test('x<script src="./js/legal-text.js"></script>\r\ny'), true,
+  assert.equal(anchorRe(anchor).test('x<script type="module" src="./js/legal-text.js"></script>\r\ny'), true,
     'THE FIX: a CRLF checkout matches the same anchor');
-  assert.equal(anchorRe(anchor).test('x<script src="./js/legal-text.js"></script>y'), false,
+  assert.equal(anchorRe(anchor).test('x<script type="module" src="./js/legal-text.js"></script>y'), false,
     '…and a line break that is genuinely ABSENT is still a failure');
   /* metacharacters stay literal — the widening is about line breaks and nothing else */
   assert.equal(anchorRe('a.c').test('abc'), false, 'a dot in an anchor is a dot');

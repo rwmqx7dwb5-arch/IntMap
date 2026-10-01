@@ -83,7 +83,8 @@ test('R154 #7 Atlas voice input', () => {
   /* ⚠ (#R318) THE INVARIANT IS "RECOGNITION FOLLOWS THE UI LANGUAGE", NOT "there is a table of
      five". The table WAS the defect: IntMap has nine languages and four of them were dictating in
      American English. js/lang-registry.js `locale()` answers for all nine (and for the tenth). */
-  assert.match(html, /rec\.lang=window\.IntMapLang\.locale\(HOST\.lang\)\|\|'en-US';/, 'recognition language follows the UI language');
+  /* (module-graph) the registry is an imported binding now, no longer read off window */
+  assert.match(html, /rec\.lang=IntMapLang\.locale\(HOST\.lang\)\|\|'en-US';/, 'recognition language follows the UI language');
   assert.doesNotMatch(html, /const langMap=\{jp:'ja-JP'/, 'the five-language table must not come back');
   assert.match(html, /L\('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz'\)/, 'mic title localized to 5 languages');
 });

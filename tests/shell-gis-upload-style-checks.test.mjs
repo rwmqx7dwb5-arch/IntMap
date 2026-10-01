@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -28,9 +29,9 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
  *    · registerDataset() ended in `catch(_){}` — a file could be ON THE MAP and absent from the
  *      analysis registry with nothing anywhere saying so.
  *
- *  ⚠ WHAT THIS FILE MEASURES IS BEHAVIOUR, NOT SPELLING. js/map-ui.js is an ES module that publishes
- *  window.IntMapModules.geojsonUpload, so the SHIPPED closure is evaluated here against a recording
- *  renderer and a stub document, and the assertions are made about what it painted and what it said.
+ *  ⚠ WHAT THIS FILE MEASURES IS BEHAVIOUR, NOT SPELLING. js/map-ui.js is an ES module that exports
+ *  the geojsonUpload factory, so the SHIPPED closure is imported here (module-graph) against a recording
+ *  renderer handed at its js/geo-engine.js import edge and a stub document, and the assertions are made about what it painted and what it said.
  *  A test that grepped for `'fill-color'` would stay green the day the line layer stopped being
  *  repainted — which is the exact half-done state this round forbids (the failure shape recorded in
  *  [[intmap-r488-lessons]]: a check that fixes a spelling cannot see a dead rule).
@@ -79,11 +80,8 @@ async function boot() {
   const R = stubRenderer();
   const w = {};
   w.IntMapGeoEngine = R.api;
-  w.IntMapLang = {
-    /* the real one takes the current language's POSITIONAL index; en+jp is what this round writes */
-    t: (lang, ...args) => (lang === 'jp' ? (args[1] || args[0]) : args[0]),
-    locale: () => 'en',
-  };
+  /* (module-graph) the language registry is the REAL one js/map-ui.js imports — not a stub on window */
+  langRegistry();
   globalThis.window = w;
   globalThis.document = {
     createElement: () => stubEl(),
@@ -93,10 +91,12 @@ async function boot() {
   };
   const origWarn = console.warn;
   console.warn = (...a) => { warned.push(a.map(String).join(' ')); };
+  /* (module-graph) the page's one output encoder, as index.html has it before any module renders */
+  await import('../js/safe-html.js'); w.IntMapSafe = globalThis.IntMapSafe;
   const { makeGisDatasets } = await import('../js/gis-datasets.js');
   const rules = makeGisDatasets();          /* the app's one typing rule — handed to the classifier */
-  await import('../js/map-ui.js');
-  w.IntMapModules.geojsonUpload({ lang: 'en', imToast: (m) => toasts.push(m) });
+  const { geojsonUpload } = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: R.api } } });
+  geojsonUpload({ lang: 'en', imToast: (m) => toasts.push(m) });
   console.warn = origWarn;
   booted = { w, R, rules, toasts, warned, UP: w.GeoJSONUpload };
   return booted;
@@ -246,12 +246,12 @@ test('R738 ③ without the data module a colouring is refused BY NAME, never gue
 
 /* ══ ④ 登録の失敗は必ず読者に届く ══════════════════════════════════════════════════════════ */
 
-/* The upload closure, read out of the module that publishes it. The anchor is the registry key
-   index.html loads it by — its identity, not an incidental spelling; if it moves, this fails loudly
-   rather than quietly measuring nothing. */
+/* The upload closure, read out of the module that exports it. The anchor is the exported factory
+   js/app-body.js imports it by (module-graph; it was the window.IntMapModules key) — its identity, not an
+   incidental spelling; if it moves, this fails loudly rather than quietly measuring nothing. */
 function section(src) {
-  const at = src.indexOf('window.IntMapModules.geojsonUpload');
-  assert.ok(at > 0, 'js/map-ui.js no longer publishes the upload module under that name');
+  const at = src.indexOf('export function geojsonUpload(HOST){');
+  assert.ok(at > 0, 'js/map-ui.js no longer exports the upload module under that name');
   let i = src.indexOf('{', at), depth = 0, end = -1;
   for (let k = i; k < src.length; k++) {
     if (src[k] === '{') depth++;

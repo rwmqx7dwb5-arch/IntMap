@@ -211,9 +211,13 @@ test('R195 ④: the satellite protocol lives in js/sat-proto.js and nowhere else
   const needle = "const _satUrl=(z,y,x)=>_SAT_HOSTS[(x+y)&1]";
   assert.ok(satProto.includes(needle), 'js/sat-proto.js really carries the body');
   assert.ok(!appBody.includes(needle), 'js/app-body.js no longer carries a second copy');
-  assert.match(appBody, /window\.IntMapModules\.satProto\(IM_HOST\)/, 'the shell calls the factory');
-  assert.match(mainJs, /import '\.\.\/js\/sat-proto\.js';/, 'it is in the module graph');
-  assert.match(mainJs, /'satProto',/, "…and in MODULE_FACTORIES, or __imModuleCheck stays silent about it");
+  /* (module-graph) the registry is gone: app-body calls the factory by the name it imports it under, and that
+     named import is what puts the file in the module graph AND what replaces MODULE_FACTORIES — a missing
+     file or export is a link error, so nothing can go silently missing */
+  assert.equal((appBody.match(/(?<![\w$.])satProto\(IM_HOST\)/g) || []).length, 1, 'the shell calls the factory');
+  assert.match(appBody, /^import \{ satProto \} from '\.\/sat-proto\.js';$/m, 'it is in the module graph');
+  assert.match(satProto, /^export function satProto\(HOST\)\{/m, "…and exported by name, or the import is a link error rather than a silent gap");
+  assert.doesNotMatch(mainJs, /const MODULE_FACTORIES\b/,'no hand list of factories survives to drift from the imports');
   /* ⚠ the one free reference. Inheriting it would leave it undefined and stop @2x for everyone,
      with no error anywhere — the exact silent failure scripts/check-split-scope.mjs exists for. */
   assert.match(appBody, /get hiDPITiles\(\)\{ return _hiDPITiles; \}/, 'the shell hands the decision over');

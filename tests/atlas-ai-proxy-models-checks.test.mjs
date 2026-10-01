@@ -208,7 +208,8 @@ test('R722 ⑥ the picker speaks through the language registry (CONSTITUTION §7
   const paint = liftFunction(CORE, 'aiPaintModelPicker');
   /* ⚠ NOT «contains Japanese»: a Japanese string with no English beside it is the same defect as an
      English one with no Japanese. Both sides travel together, through t(lang, en, jp). */
-  assert.match(CORE, /const L=\(en,jp\)=>window\.IntMapLang\.t\(HOST\.lang,en,jp\);/);
+  /* (module-graph) the registry is an imported binding now, no longer read off window */
+  assert.match(CORE, /const L=\(en,jp\)=>IntMapLang\.t\(HOST\.lang,en,jp\);/);
   for (const s of ['Server default', 'Chosen: ', 'Using the server default.']) {
     assert.ok(paint.includes("L('" + s + "'"), 'the picker prints «' + s + '» outside the registry');
   }

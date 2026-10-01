@@ -30,11 +30,13 @@
 import { jsonWithin, isUnobserved, untilObserved } from './fetch-deadline.js';   /* (fetch-deadline-layer) the two manifests, under a clock — see manifests(); (unobserved-is-not-refused) and what a silent read means */
 import { afterTick, tickKey } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.precipAnnual = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
-  const L = window.IntMapLang.pick(() => HOST.lang);
-  const LA = window.IntMapLang.pickArgs();
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function precipAnnual(HOST) {
+  const GE = () => IntMapGeoEngine;
+  const L = IntMapLang.pick(() => HOST.lang);
+  const LA = IntMapLang.pickArgs();
   const esc = (v) => { try { return window.IntMapSafe.html(v == null ? '' : String(v)); } catch (_) { return ''; } };
   function canDraw() { try { return !!HOST.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } }
 
@@ -158,8 +160,8 @@ window.IntMapModules.precipAnnual = function (HOST) {
     if (!on) { setVis(false); return; }
     manifests().then((ok) => {
       if (!ok && manifestFail === 'aborted') return;   /* switched off while it waited — nothing to say */
-      if (!ok && isUnobserved(manifestErr)) { legend(); try { HOST.imToast(window.IntMapLang.t(HOST.lang, 'The data did not arrive in time — try again', 'データが時間内に届きませんでした — もう一度お試しください')); } catch (_) { } return; }
-      if (!ok) { legend(); try { HOST.imToast(window.IntMapLang.t(HOST.lang, 'Could not load — toggle again later.', '取得できませんでした — 後でもう一度オンにしてください。', 'Laden fehlgeschlagen — später erneut einschalten.', 'Не удалось загрузить — включите позже ещё раз.', 'No se pudo cargar; vuelva a activarlo más tarde.')); } catch (_) { } return; }   /* (fetch-deadline-layer) the reader is told that nothing came; state().manifestFail says why */
+      if (!ok && isUnobserved(manifestErr)) { legend(); try { HOST.imToast(IntMapLang.t(HOST.lang, 'The data did not arrive in time — try again', 'データが時間内に届きませんでした — もう一度お試しください')); } catch (_) { } return; }
+      if (!ok) { legend(); try { HOST.imToast(IntMapLang.t(HOST.lang, 'Could not load — toggle again later.', '取得できませんでした — 後でもう一度オンにしてください。', 'Laden fehlgeschlagen — später erneut einschalten.', 'Не удалось загрузить — включите позже ещё раз.', 'No se pudo cargar; vuelva a activarlo más tarde.')); } catch (_) { } return; }   /* (fetch-deadline-layer) the reader is told that nothing came; state().manifestFail says why */
       if (year === CLIM) { if (ensure(climURL())) { setVis(true); try { window._raiseLabelLayers && window._raiseLabelLayers(); } catch (_) { } } else { GE().events.once('idle', paint); } legend(); return; }
       loadYear(year).then((got) => {
         if (!got) { year = CLIM; paint(); return; }
@@ -285,4 +287,4 @@ window.IntMapModules.precipAnnual = function (HOST) {
     state: () => ({ on, year, hasClim: !!mmVals, yearsLoaded: Object.keys(yearVals), painted: lastPainted, manifestFail }),   /* (fetch-deadline-layer) why the manifests did not arrive, or null */
   };
   return window.IntMapPrecipAnnual;
-};
+}

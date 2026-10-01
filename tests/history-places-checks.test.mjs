@@ -16,7 +16,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { importModule } from './helpers/import-module.mjs';
 import { compile, eligible, selectRecords, SOURCE } from '../scripts/build-hist-places.mjs';
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 
@@ -67,7 +67,7 @@ test('#R709 eligibility is source-based; modern identity, non-settlements, dates
   assert.equal(compile(small, new Set(['wd-similar-name'])).places.length, 1);
 });
 
-function runtime(payload = data, initialLive = false, fetcher) {
+async function runtime(payload = data, initialLive = false, fetcher) {
   let live = initialLive, date = new Date('0300-06-15T12:00:00Z'), writes = 0, removed = 0;
   const subscribers = new Set(), listeners = new Map(), layerEvents = new Map(), windowEvents = new Map(), readers = new Map();
   let unregistered = 0;
@@ -107,20 +107,27 @@ function runtime(payload = data, initialLive = false, fetcher) {
       popups.push(pop); return pop;
     }, attach: p => p },
   };
-  const ctx = vm.createContext({ console, URL, AbortController, document: { baseURI: 'https://example.invalid/' },
-    fetch: fetcher || (async () => ({ ok: true, json: async () => payload })),
-    IntMapGeoEngine: ge, IntMapLang: { t: (lang, en, jp) => lang === 'jp' ? jp : en, htmlTag: lang => lang === 'jp' ? 'ja' : lang },
+  /* (module-graph) js/hist-places.js is IMPORTED, fresh per runtime: the renderer, the clock and the language
+     registry are stubs handed at its import edges, and `ctx` is the browser window it publishes to and reads
+     its page-level collaborators from (js/hist-scale.js and js/label-scale.js are imported into it first). */
+  const edges = {
+    'js/geo-engine.js': { IntMapGeoEngine: ge },
+    'js/lang-registry.js': { IntMapLang: { t: (lang, en, jp) => lang === 'jp' ? jp : en, htmlTag: lang => lang === 'jp' ? 'ja' : lang } },
+    'js/chronos.js': { IntMapTime: { isLive: () => live, when: () => date, on(fn) { subscribers.add(fn); return () => subscribers.delete(fn); } } },
+  };
+  const ctx = {
     IntMapSafe: { html: v => v.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]) },
     IntMapMapTypography: { readerFont: () => ['Noto Sans Regular'] },
     IntMapPlaceReaders: { register(id, provider) { assert.ok(!readers.has(id)); readers.set(id, provider); return () => { readers.delete(id); unregistered++; }; } },
-    IntMapTime: { isLive: () => live, when: () => date, on(fn) { subscribers.add(fn); return () => subscribers.delete(fn); } },
     addEventListener: (e, fn) => on(windowEvents, e, fn), removeEventListener: (e, fn) => off(windowEvents, e, fn),
-  });
+  };
   ctx.window = ctx;
-  vm.runInContext(read('js/hist-scale.js'), ctx);
-  vm.runInContext(read('js/label-scale.js'), ctx);
-  vm.runInContext(read('js/hist-places.js'), ctx);
-  const host = { lang: 'en' }, api = ctx.IntMapModules.histPlaces(host);
+  const globals = { window: ctx, document: { baseURI: 'https://example.invalid/' },
+    fetch: fetcher || (async () => ({ ok: true, json: async () => payload })) };
+  await importModule('js/hist-scale.js', { globals });
+  await importModule('js/label-scale.js', { globals });
+  const { histPlaces } = await importModule('js/hist-places.js', { globals, mocks: edges });
+  const host = { lang: 'en' }, api = histPlaces(host);
   return { ctx, api, host, layers, sources, popups, subscribers, listeners, layerEvents, windowEvents, readers,
     emit, writes: () => writes, removed: () => removed,
     unregistered: () => unregistered,
@@ -131,7 +138,7 @@ function runtime(payload = data, initialLive = false, fetcher) {
 }
 
 test('#R709 real source population draws only in its periods, inherits city policy and survives style reload without loops', async () => {
-  const h = runtime(); await h.api.ensure();
+  const h = await runtime(); await h.api.ensure();
   assert.ok(h.api.currentFC().features.length > 4000);
   assert.equal(h.api.state().activeRecords, h.api.currentFC().features.length);
   assert.equal(h.api.state().ready, true);
@@ -164,7 +171,7 @@ test('#R709 real source population draws only in its periods, inherits city poli
 test('#R709 the shared source reader opens evidence with scripts, escaping and BCE boundaries and unregisters on disposal', async () => {
   const p = { id: 'pl-123', title: '<Source> ?', lon: 179, lat: 10,
     names: [{ a: 'Ἀθήναι', r: 'Athenae, Athenai', l: 'grc', s: -1, e: 1 }, { a: '別名', r: 'Alias', l: 'ja', s: -1, e: 1 }] };
-  const h = runtime({ ...data, places: [p] }); await h.api.ensure();
+  const h = await runtime({ ...data, places: [p] }); await h.api.ensure();
   h.tick(-1); assert.equal(h.api.currentFC().features.length, 0, 'JS year -1 is 2 BCE, before the -1 source bound');
   h.tick(0); assert.equal(h.api.currentFC().features.length, 1, '1 BCE is JS year zero');
   const feature = h.api.currentFC().features[0];
@@ -194,7 +201,7 @@ test('#R709 the shared source reader opens evidence with scripts, escaping and B
 
 test('#R709 disposing a pending load aborts it and prevents late results restoring layers', async () => {
   let resolve, signal;
-  const h = runtime(data, true, async (url, options) => { signal = options.signal; return new Promise(r => { resolve = r; }); });
+  const h = await runtime(data, true, async (url, options) => { signal = options.signal; return new Promise(r => { resolve = r; }); });
   h.tick(300);
   const ready = h.api.ensure();
   h.api.dispose();
@@ -204,7 +211,7 @@ test('#R709 disposing a pending load aborts it and prevents late results restori
 });
 
 for (const nextYear of [1000, null]) test(`#R709 a clock change to ${nextYear === null ? 'Now' : nextYear} closes source cards while the renderer is not drawable`, async () => {
-  const h = runtime(); await h.api.ensure();
+  const h = await runtime(); await h.api.ensure();
   const first = h.api.currentFC().features[0];
   assert.ok(h.api.open(first.properties.id));
   const closedBefore = h.removed(), writesBefore = h.writes();

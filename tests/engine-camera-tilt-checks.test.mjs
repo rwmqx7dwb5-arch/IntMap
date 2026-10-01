@@ -155,11 +155,14 @@ test('#R171 every new switch is operable from Atlas AND catalogued', () => {
 /* ⚠ READ, NOT RUN: the import list and the factory call are the booted page's loader. */
 test('#R171 the module list, script tag and boot call for view-controls all agree', () => {
   /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes. */
-  assert.match(INDEX, /import '\.\.\/js\/view-controls\.js';/, 'the file must be loaded by the Vite entry');
-  assert.match(INDEX, /window\.IntMapModules\.viewControls\((IM_HOST)\)/, 'the factory must be instantiated with the other module factories');
+  /* (module-graph) the file is reached from the Vite entry through the shell: src/main.js imports
+     js/app-body.js, which imports the factory BY NAME (a missing export is a link error) and calls it. */
+  assert.match(INDEX, /import '\.\.\/js\/app-body\.js';/, 'the shell must be loaded by the Vite entry');
+  assert.match(INDEX, /^import \{ viewControls \} from '\.\/view-controls\.js';/m, 'the file must be loaded by the shell');
+  assert.match(INDEX, /(?<![\w.$])viewControls\((IM_HOST)\)/, 'the factory must be instantiated with the other module factories');
   const src = R('js/view-controls.js');
   /* (#R180) the renderer parameter is gone from every factory — no module receives the raw handle */
-  assert.match(src, /window\.IntMapModules\.viewControls=function\(HOST\)/, 'factory shape');
+  assert.match(src, /export function viewControls\(HOST\)/, 'factory shape');
   assert.match(src, /\(function waitForEngine\(n\)\{/,
     'the factories run before IntMapGeoEngine exists (#R170) — the module must wait for it rather than binding to nothing');
 });

@@ -67,6 +67,7 @@
  *  ⚠ THE CSS IS IN css/intmap.css (`.nvg-*`). No <style>, no long `style="…"` strings.
  *  ⚠ NO RENDERER HANDLE. Everything on the map is js/navigation.js's; this file is DOM only.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 window.IntMapNavUI = (function () {
   'use strict';
 
@@ -87,8 +88,8 @@ window.IntMapNavUI = (function () {
      and `npm run check:i18n` would keep printing 100 % while four languages read English. Measured
      on this file before the change: 0 of its strings appeared in `i18n-report --missing fr`.
      The guard is js/basemap-switch.js's, because a lazy module cannot assume the registry is up. */
-  var L = (window.IntMapLang && window.IntMapLang.pick)
-    ? window.IntMapLang.pick(lang)
+  var L = (IntMapLang && IntMapLang.pick)
+    ? IntMapLang.pick(lang)
     : function () { return arguments[0]; };
   function esc(s) { return window.IntMapSafe.html(s); }   /* the one encoder */
 

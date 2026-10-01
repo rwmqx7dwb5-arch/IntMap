@@ -14,6 +14,7 @@
  *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
  * ==========================================================================*/
 import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 
 export default [
   {

@@ -22,6 +22,7 @@
  *  A card that computed its own severity, its own ETA or its own brief would be a second source of
  *  truth, and the two would drift — which is the defect this whole platform exists to stop.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
 (function () {
   'use strict';
 
@@ -30,7 +31,7 @@
   var el = WC.el;
   var L = WC.L;
 
-  function engine() { try { var E = window.IntMapGeoEngine; return (E && E.hasRenderer && E.hasRenderer()) ? E : null; } catch (e) { return null; } }
+  function engine() { try { var E = IntMapGeoEngine; return (E && E.hasRenderer && E.hasRenderer()) ? E : null; } catch (e) { return null; } }
   function alertsPack() { try { return (window.IntMapWorld && window.IntMapWorld.alertsQuery) ? window.IntMapWorld : null; } catch (e) { return null; } }
   function dms(v, pos, neg) {
     var s = v < 0 ? neg : pos, a = Math.abs(v);

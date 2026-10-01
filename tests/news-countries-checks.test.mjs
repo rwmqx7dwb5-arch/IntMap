@@ -16,8 +16,8 @@ import { dirname, resolve } from 'node:path';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import fs, { readdirSync } from 'node:fs';
-import vm from 'node:vm';
 import { parse } from 'acorn';
+import { importModule, langRegistry, fileUrl } from './helpers/import-module.mjs';
 import * as walk from 'acorn-walk';
 
 /* ════════ #R375 — from tests/r375-checks.test.mjs ════════ */
@@ -132,8 +132,11 @@ async function settle(pred, ms = 6000) {
 async function runLoader({ coarse, fine }) {
   const calls = { reapplyPPP: 0, rebuildGeoIndex: 0, renderStats: 0 };
   const fetched = [];
-  const win = { IntMapLang: { pickArgs: () => ((...a) => a[0]) }, IntMapModules: {} };
-  win.IntMapGeoEngine = {
+  /* (module-graph) the renderer is js/countries-ui.js's geo-engine.js IMPORT now (handed in as a mock below); the
+     language registry and js/tables.js are the real modules it imports */
+  const win = {};
+  win.window = win;
+  const GEO = {
     events: { once: (ev, cb) => { if (ev === 'idle') setTimeout(cb, 0); }, on: () => {} },
     layers: { has: () => false, hasSource: () => false, add: () => {}, addSource: () => {}, setLayout: () => {}, setSourceData: () => {} },
     camera: { getCenter: () => ({ lng: 0, lat: 0 }), getZoom: () => 3 },
@@ -175,19 +178,19 @@ async function runLoader({ coarse, fine }) {
      window.IntMapFetchWithin — the REAL file, evaluated so that the fetch it calls is this stub. The stub
      answers with a body (`text`) because that is what the clock reads. */
   win.IntMapFetchWithin = fetchWithinFor(env.fetch);
-  const run = (src) => new Function(
-    'window', 'document', 'turf', 'fetch', 'navigator', 'requestIdleCallback', 'console', 'localStorage', src,
-  )(win, env.document, env.turf, env.fetch, env.navigator, env.requestIdleCallback, env.console, env.localStorage);
+  /* (module-graph) the loader is IMPORTED, not run from its text: the stubs above are its browser (installed as
+     globals for this case; the real console stays), and js/tables.js is the real module its import resolves to */
+  const globals = { window: win, document: env.document, turf: env.turf, fetch: env.fetch, navigator: env.navigator,
+    requestIdleCallback: env.requestIdleCallback, localStorage: env.localStorage };
 
-  run(read('js/tables.js'));
   /* ⚠ (#R426) js/countries-ui.js now DEPENDS on this: `_mkStat` derives `bbox` (the frame)
      and `bboxAll` (the union) from window.IntMapCountryExtent. src/main.js imports it before
      js/countries-ui.js for exactly this reason, and this harness runs the real loader, so it
      loads it in the same order. Without it every row is built with a null footprint — which
      is what ③ and ⑤ below catch. */
-  run(read('js/country-extent.js'));
-  run(read('js/countries-ui.js'));
-  const mod = win.IntMapModules.countriesUi(HOST);
+  await importModule('js/country-extent.js', { globals });
+  const M = await importModule('js/countries-ui.js', { globals, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GEO } } });
+  const mod = M.countriesUi(HOST);
   await mod.loadCountryData();
   return { HOST, win, calls, fetched, mod };
 }
@@ -509,8 +512,11 @@ async function settle(pred, ms = 6000) {
 }
 
 async function runLoader({ coarse, fine }) {
-  const win = { IntMapLang: { pickArgs: () => ((...a) => a[0]) }, IntMapModules: {} };
-  win.IntMapGeoEngine = {
+  /* (module-graph) the renderer is js/countries-ui.js's geo-engine.js IMPORT now (handed in as a mock below); the
+     language registry and js/tables.js are the real modules it imports */
+  const win = {};
+  win.window = win;
+  const GEO = {
     events: { once: (ev, cb) => { if (ev === 'idle') setTimeout(cb, 0); }, on: () => {} },
     layers: { has: () => false, hasSource: () => false, add: () => {}, addSource: () => {}, setLayout: () => {}, setSourceData: () => {} },
     camera: { getCenter: () => ({ lng: 0, lat: 0 }), getZoom: () => 3 },
@@ -542,13 +548,11 @@ async function runLoader({ coarse, fine }) {
      window.IntMapFetchWithin — the REAL file, evaluated so that the fetch it calls is this stub. The stub
      answers with a body (`text`) because that is what the clock reads. */
   win.IntMapFetchWithin = fetchWithinFor(env.fetch);
-  const run = (src) => new Function(
-    'window', 'document', 'turf', 'fetch', 'navigator', 'requestIdleCallback', 'console', 'localStorage', src,
-  )(win, env.document, env.turf, env.fetch, env.navigator, env.requestIdleCallback, env.console, env.localStorage);
-
-  run(read('js/tables.js'));
-  run(read('js/countries-ui.js'));
-  const mod = win.IntMapModules.countriesUi(HOST);
+  /* (module-graph) imported as in #R375's harness above: the stubs are the browser, the renderer is the mock */
+  const globals = { window: win, document: env.document, turf: env.turf, fetch: env.fetch, navigator: env.navigator,
+    requestIdleCallback: env.requestIdleCallback, localStorage: env.localStorage };
+  const M = await importModule('js/countries-ui.js', { globals, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GEO } } });
+  const mod = M.countriesUi(HOST);
   await mod.loadCountryData();
   return { HOST, mod };
 }
@@ -757,8 +761,10 @@ const HISTORY = 'js/history.js';
    the object that is actually assigned.
    ⚠ (#R443) `sourceType` stays SCRIPT — see ⑩. Four harnesses run this file through
    `new Function(src)`, so it must remain parseable as a classic script, and this parse is the same
-   claim made cheaply. */
-const countriesAst = () => parse(rd(COUNTRIES), { ecmaVersion: 2022 });
+   claim made cheaply.
+   (module-graph) the file imports its collaborators and exports its factory now, so it is parsed as the
+   module it is; the classic-script claim of ⑩ is the part this migration ended. */
+const countriesAst = () => parse(rd(COUNTRIES), { ecmaVersion: 2022, sourceType: 'module' });
 
 /** the properties of an ObjectExpression, as {key, call} — the shape ③ and ④ read */
 const entriesOf = (obj) => obj.properties.map((p) => ({
@@ -799,7 +805,7 @@ function subregionTable() {
 
 /** every `region:'…'` STRING literal js/history.js declares (its `region:S.region` is not one) */
 function historyRegions() {
-  const ast = parse(rd(HISTORY), { ecmaVersion: 2022 });
+  const ast = parse(rd(HISTORY), { ecmaVersion: 2022, sourceType: 'module' });   /* (module-graph) js/history.js imports now */
   const out = new Set();
   walk.simple(ast, {
     Property(n) {
@@ -886,20 +892,13 @@ test('R424 ③ every region is a five-argument L(…) call whose first argument 
    js/lang-registry.js and the four inline locale files are LOADED and RUN here, and each region is
    resolved exactly the way js/countries-ui.js resolves it. de / ru / es come from the call's own
    arguments; fr / ko / zh / zh-hans come from `inline`, keyed by the English string. */
-function resolver() {
-  const ctx = { console, Intl };
-  ctx.window = ctx;
-  ctx.document = {
-    documentElement: { setAttribute() {}, getAttribute() { return null; } },
-    querySelectorAll() { return []; },
-    getElementById() { return null; },
-  };
-  vm.createContext(ctx);
-  const run = (p) => vm.runInContext(rd(p), ctx, { filename: abs(p) });
-  run('js/locales/_langs.js');        /* the language list, before the registry reads it */
-  run('js/lang-registry.js');
-  for (const c of ['fr', 'ko', 'zh', 'zh-hans']) run(`js/locales/ui.${c}.js`);
-  return ctx;
+/* (module-graph) the registry is a module now: it is the REAL js/lang-registry.js (langRegistry() declares the
+   list js/locales/_langs.js publishes), and the four inline locale files are IMPORTED — each one's
+   `IntMapLang.define` lands in that same instance, which is what the app does. */
+async function resolver() {
+  const IntMapLang = langRegistry();
+  for (const c of ['fr', 'ko', 'zh', 'zh-hans']) await import(fileUrl(`js/locales/ui.${c}.js`));
+  return { IntMapLang };
 }
 
 /* ⚠ THREE PAIRS ARE GENUINELY THE SAME WORD, and each is a claim about ONE language — the same rule
@@ -907,8 +906,8 @@ function resolver() {
    Spanish spellings (RAE); «Europe» is the French one. Everything else must differ. */
 const SAME_AS_EN = { es: ['Asia', 'Eurasia'], fr: ['Europe'] };
 
-test('R424 ④ every region resolves in all nine languages, through the app’s own resolver', () => {
-  const ctx = resolver();
+test('R424 ④ every region resolves in all nine languages, through the app’s own resolver', async () => {
+  const ctx = await resolver();
   const codes = ctx.IntMapLang.list().map((r) => r.code);
   assert.equal(codes.length, 9, `the locale directory declares nine languages; it declared ${codes.join(',')}`);
 
@@ -996,8 +995,8 @@ test('R443 ⑦ every subregion is a five-argument call whose first argument is i
 });
 
 /* ══ ⑧ …AND THE APP'S OWN RESOLVER IS ASKED, IN ALL NINE LANGUAGES ════════════════════════════ */
-test('R443 ⑧ every subregion resolves in all nine languages, through the app’s own resolver', () => {
-  const ctx = resolver();
+test('R443 ⑧ every subregion resolves in all nine languages, through the app’s own resolver', async () => {
+  const ctx = await resolver();
   const codes = ctx.IntMapLang.list().map((r) => r.code);
   let lang = 'en';
   const pick = ctx.IntMapLang.pick(() => lang);
@@ -1018,7 +1017,7 @@ test('R443 ⑧ every subregion resolves in all nine languages, through the app�
 });
 
 /* ══ ⑨ the two tables agree where the same place is in both, and that is what the card collapses ═ */
-test('R443 ⑨ CONTINENT and SUBREGION never disagree about a place they both name', () => {
+test('R443 ⑨ CONTINENT and SUBREGION never disagree about a place they both name', async () => {
   const reg = new Map(regionTable().map((r) => [r.key, r.call.arguments.map((a) => a.value)]));
   const sub = new Map(subregionTable().map((r) => [r.key, r.call.arguments.map((a) => a.value)]));
 
@@ -1036,7 +1035,7 @@ test('R443 ⑨ CONTINENT and SUBREGION never disagree about a place they both na
   /* ② …and the card's collapse compares RESOLVED strings, so measure them. Every language except
         English spells both halves of all four pairs identically; English keeps «North America»
         apart from «Northern America», which is the one row of this table that must NOT collapse. */
-  const ctx = resolver();
+  const ctx = await resolver();
   const codes = ctx.IntMapLang.list().map((r) => r.code);
   let lang = 'en';
   const pick = ctx.IntMapLang.pick(() => lang);
@@ -1094,14 +1093,63 @@ test('R443 ⑩ the card resolves the subregion, and no second copy of the table 
   /* (tests-by-topic) this file used to exclude itself, because it only NAMED the two strings. It is
      now the file that holds #R375's and #R423's loader harness too — it really does run
      js/countries-ui.js through `new Function`, so it is counted like every other runner. */
+  /* (module-graph) THAT CONSTRAINT ENDED, and what it protected is now stated the other way round. The file
+     imports its collaborators and EXPORTS its factory, so it is a module and a harness reaches it by import
+     (tests/helpers/import-module.mjs). A harness that still evaluated the file's TEXT would have to strip
+     the import/export lines and fake the edges on `window` — the hand-written dependency list the migration
+     removed. So: it parses as a module, it exports `countriesUi`, and no check file runs its whole text.
+     The discovery is the old one made exact — the old one counted any file that NAMED the path and
+     contained `new Function(` anywhere, which was 13 files, most of them evaluating something else:
+     a whole-file evaluation is an eval call (new Function / vm.run* / new vm.Script, or a local helper
+     that wraps one) on a statement that names the path, or fed a variable that holds the file's whole
+     text. A lifted FRAGMENT (liftFunction / fnBody / slice / match) is not the file and is not counted. */
+  assert.doesNotThrow(() => parse(rd(COUNTRIES), { ecmaVersion: 2022, sourceType: 'module' }),
+    `${COUNTRIES} must parse as the ES module it is`);
+  const ast = parse(rd(COUNTRIES), { ecmaVersion: 2022, sourceType: 'module' });
+  assert.ok(ast.body.some((st) => st.type === 'ExportNamedDeclaration' && st.declaration
+      && st.declaration.type === 'FunctionDeclaration' && st.declaration.id.name === 'countriesUi'),
+    `${COUNTRIES} must export its factory, countriesUi, for the shell and the harnesses to import`);
+
+  const EVAL = /\bnew\s+Function\s*\(|\bvm\.run(?:InContext|InNewContext|InThisContext)\s*\(|\bnew\s+vm\.Script\s*\(/g;
+  const FRAGMENT = /\b(?:liftFunction|liftBody|lift|fnBody|bodyOf)\s*\(|\.slice\(|\.match\(|\.exec\(|indexOf\(/;
+  const PATH = /countries-ui\.js/;
+  const argOf = (code, open) => {   /* the balanced (...) an eval call opens */
+    let depth = 0, q = null, i = open;
+    for (; i < code.length; i++) {
+      const c = code[i];
+      if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+      if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+      if (c === '(') depth++; else if (c === ')' && !--depth) break;
+    }
+    return code.slice(open, i + 1);
+  };
   const tDir = new URL('tests/', root);
-  const runners = fs.readdirSync(tDir)
-    .filter((f) => f.endsWith('.test.mjs'))
-    .filter((f) => { const t = fs.readFileSync(new URL(f, tDir), 'utf8'); return t.includes('countries-ui.js') && t.includes('new Function('); });
-  assert.ok(runners.length >= 3,
-    `only ${runners.length} harness(es) still run js/countries-ui.js as a script — if that is now zero, `
-    + 'this constraint is gone and the table may become a named export');
-  assert.doesNotThrow(() => parse(rd(COUNTRIES), { ecmaVersion: 2022 }),
-    `${COUNTRIES} must stay parseable as a classic script: ${runners.join(', ')} run it with new Function()`);
+  const runners = [];
+  for (const f of fs.readdirSync(tDir).filter((n) => n.endsWith('.test.mjs'))) {
+    const code = codeOnly(fs.readFileSync(new URL(f, tDir), 'utf8'));
+    if (!PATH.test(code)) continue;
+    /* local helpers that wrap an eval call: `const run = (src) => new Function(…)` / `function run(src) { … }` */
+    const helpers = new Set();
+    for (const m of code.matchAll(EVAL)) {
+      const before = code.slice(Math.max(0, m.index - 400), m.index);
+      const defs = [...before.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>|function\s+([A-Za-z_$][\w$]*)\s*\(/g)];
+      const d = defs[defs.length - 1];
+      if (d) helpers.add(d[1] || d[2]);
+    }
+    /* variables holding the file's WHOLE text */
+    const whole = new Set();
+    for (const m of code.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;\n]*)/g)) {
+      if (PATH.test(m[2]) && !FRAGMENT.test(m[2])) whole.add(m[1]);
+    }
+    const mentionsFile = (s) => !FRAGMENT.test(s) && (PATH.test(s) || [...whole].some((v) => new RegExp('\\b' + v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(s)));
+    const calls = [...code.matchAll(EVAL)].map((m) => argOf(code, m.index + m[0].length - 1));
+    for (const h of helpers) {
+      for (const m of code.matchAll(new RegExp('(?<![\\w$.])' + h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\(', 'g'))) calls.push(argOf(code, m.index + m[0].length - 1));
+    }
+    if (calls.some(mentionsFile)) runners.push(f);
+  }
+  assert.deepEqual(runners, [],
+    `${COUNTRIES} is a module: import it (tests/helpers/import-module.mjs) instead of evaluating its text — `
+    + `these check files still run the whole file through new Function / vm: ${runners.join(', ')}`);
 });
 }

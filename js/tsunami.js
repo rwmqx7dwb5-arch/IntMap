@@ -72,9 +72,11 @@
  *  a bathtub fill around one coast — that both this panel and the seismic panel could open. There is
  *  now exactly one tsunami in this app, and it is this one.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.tsunami=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function tsunami(HOST){
+  const GE=()=>IntMapGeoEngine;
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const makeDraggable=HOST.makeDraggable;
   /* ⚠ (#R197) TWO FEWER THINGS BORROWED FROM THE SHELL. `warmDEMTiles` and `demSnapshot` were this
@@ -103,7 +105,7 @@ window.IntMapModules.tsunami=function(HOST){
 
   window.IntMapTsunami=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     const D=Math.PI/180, RE=6371000;
     const DYN='tsu-field', SRC_V='tsu-vec', LYR_EPI='tsu-epi', SRC_ISO='tsu-iso', LYR_ISO='tsu-iso-ln', LYR_ISOL='tsu-iso-lb';
 
@@ -823,7 +825,7 @@ window.IntMapModules.tsunami=function(HOST){
         /* (#R210) same third state as the seismic panel — a solve in flight is not something to
            close just to see the wave it is drawing. See js/seismic.js for the reasoning. */
         +'<button class="tsu-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
-        +'<button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>';
+        +'<button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>';
       /* (#R215) the same two-declaration bug js/seismic.js carried — see the note there. */
       let body='<div class="tsu-body" style="padding:10px 12px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:8px;max-height:74vh;overflow:auto;">';
       if(epi) body+='<div style="font-size:'+FS+';color:var(--text-main);">M '+mw.toFixed(1)+' · '
@@ -1196,4 +1198,4 @@ window.IntMapModules.tsunami=function(HOST){
 
     return API;
   })();
-};
+}

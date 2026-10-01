@@ -21,6 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly as code } from './code-only.mjs';
+import { importModule, swappable } from './lib/import-module.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JS = path.join(ROOT, 'js');
@@ -42,8 +43,11 @@ if (!copies.length) ok('observers: ' + atlas.length + ' Atlas module(s) ask the 
 else no('observers: these write their own render-tick wait instead of asking the engine — ' + copies.join(', '));
 
 /* ── ③ what the shipped verifier actually answers ────────────────────────── */
-if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+/* (module-graph) js/atlas-capabilities.js IMPORTS the engine, so the three renderers below are handed to it
+   at that import edge — one swappable stub, set per case — instead of being written onto window, which the
+   module no longer reads (a stub there would be bypassed and this would measure the real engine). */
+const engineSeat = swappable();
+const { makeAtlasCapabilities } = await importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engineSeat.value } } });
 const fly = makeAtlasCapabilities({ lang: 'en' }).resolve('view.flyTo');
 const CAM = { lng: -21.9, lat: 64.1, zoom: 5, bearing: 0, pitch: 0 };
 const stub = (mode) => ({
@@ -60,9 +64,9 @@ const stub = (mode) => ({
 /* observe → verify, the order js/atlas-executor.js runs them in: the reading 「was the page drawing?」
    is taken beside the AFTER sample, so a verdict asked on its own never saw the map. */
 async function verdictWith(mode) {
-  window.IntMapGeoEngine = stub(mode);
+  engineSeat.set(stub(mode));
   try { await fly.observe(); return fly.verify({}, { place: 'Iceland' }, CAM, CAM, { ok: true }, 'view.flyTo'); }
-  finally { delete window.IntMapGeoEngine; }
+  finally { engineSeat.set(null); }
 }
 const asleep = await verdictWith('asleep');
 const live = await verdictWith('live');

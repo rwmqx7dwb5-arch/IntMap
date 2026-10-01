@@ -42,8 +42,8 @@
  *  through `window.IntMapModules` after setting `globalThis.window` — which is also how it proves
  *  the module EVALUATES rather than merely parses (#R505).
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.atlasAnswerView = function (HOST, CTX) {
+
+export function atlasAnswerView(HOST, CTX) {
   CTX = CTX || {};
   const G = (n) => { try { return window[n]; } catch (_) { return null; } };
   const GE = CTX.GE || (() => G('IntMapGeoEngine'));
@@ -141,4 +141,4 @@ window.IntMapModules.atlasAnswerView = function (HOST, CTX) {
   }
 
   return { apply, SECTIONS };
-};
+}

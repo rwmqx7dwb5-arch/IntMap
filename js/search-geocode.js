@@ -7,9 +7,11 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.searchGeocode=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function searchGeocode(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Map-side global place search (Nominatim) + abstract / natural-language pre-processing =====
    * Handles patterns like:
    *   - "capital of <country>"
@@ -177,7 +179,7 @@ window.IntMapModules.searchGeocode=function(HOST){
     if(!inp._imListbox&&window.IntMapDialog) inp._imListbox=window.IntMapDialog.listbox(inp,res,{
       options:()=>res.style.display==='none'?[]:res.querySelectorAll('.ms-item'),
       pick:(el)=>el.click(), close:()=>{ res.style.display='none'; },
-      label:window.IntMapLang.t(HOST.lang,'Search results','検索結果') });
+      label:IntMapLang.t(HOST.lang,'Search results','検索結果') });
     res.style.display='block';
     /* (#R15e) Make sure the bundled country data is loading so local country/capital matches are available
        (the gazetteer is always loaded; countryStats may not be until Stats is opened). Non-blocking. */
@@ -211,7 +213,7 @@ window.IntMapModules.searchGeocode=function(HOST){
            only by the city it drops when it equals the name; one point is in Minami Ward and the other in
            Shimogyo Ward, and that is what each row now says.
        Painted for the WHOLE card on every arrival, because a row's twin can arrive after it does. */
-    const _kindOf=(cls)=>{ try{ const N=window.IntMapPlaceFraming.classNames(); return (cls&&N[cls])?window.IntMapLang.pick(()=>HOST.lang).arr(N[cls]):''; }catch(_){ return ''; } };
+    const _kindOf=(cls)=>{ try{ const N=window.IntMapPlaceFraming.classNames(); return (cls&&N[cls])?IntMapLang.pick(()=>HOST.lang).arr(N[cls]):''; }catch(_){ return ''; } };
     const _paint=()=>{
       const same=(a,b)=>a!==b&&a.f.cls===b.f.cls&&_nameKey(a.f.name)===_nameKey(b.f.name);
       rows.forEach((r)=>{
@@ -250,7 +252,7 @@ window.IntMapModules.searchGeocode=function(HOST){
        **Open-Meteo geocoding** (fast, robust, fuzzy, works where Nominatim doesn't) AND Nominatim (richer
        coverage). Either one alone yields results, so the search practically never comes back empty. */
     const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },5000);
-    const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${window.IntMapLang.locale(HOST.lang,"en")}&format=json`,{signal:ctrl.signal})
+    const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${IntMapLang.locale(HOST.lang,"en")}&format=json`,{signal:ctrl.signal})
       /* (#R183) `feature_code` is carried under its own name as well as `type`: it is a GeoNames code
          (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
       .then(r=>r.ok?r.json():null).then(async j=>{ const R=await rulesP; (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; if(!_agrees(R,q,{name:p.name}))return;   /* (#R802) */ const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country},within:[p.admin2,p.admin3,p.admin4]}); }); }).catch(()=>{});
@@ -261,7 +263,7 @@ window.IntMapModules.searchGeocode=function(HOST){
        keep answering meanwhile, so the card is never empty while this waits. The 5 s AbortController
        above is still the ceiling, and a search the reader has moved on from is checked for here. */
     const nomP=(window.IntMapNominatimGate?window.IntMapNominatimGate.nominatimSlot():Promise.resolve(true))
-      .then(()=>ctrl.signal.aborted?null:fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${window.IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}))
+      .then(()=>ctrl.signal.aborted?null:fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}))
       .then(r=>(r&&r.ok)?r.json():[]).then(async a=>{ const R=await rulesP; (a||[]).forEach(pl=>{ if(!_agrees(R,pq,pl))return;   /* (#R802) measured against what was SENT — preprocessNLQuery may have turned 「capital of France」 into 「Paris, France」 */ addItem(pl.display_name,+pl.lon,+pl.lat,pl); }); }).catch(()=>{});
     /* (#R19) Third parallel geocoder: Photon (komoot) — TYPO-TOLERANT like a search engine
        ("あいまいな単語を入れても検索できるように"; curl-verified CORS* and that "osakaa" → Osaka). */
@@ -294,12 +296,12 @@ window.IntMapModules.searchGeocode=function(HOST){
        there is no control left that removes it. */
     try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){}
     /* (#R171) events / camera / projection through IntMapGeoEngine — this file no longer names the renderer. */
-    if(searchCardOnMove){ try{ const E=window.IntMapGeoEngine; if(E) E.events.off('move',searchCardOnMove); }catch(_){} searchCardOnMove=null; }
+    if(searchCardOnMove){ try{ const E=IntMapGeoEngine; if(E) E.events.off('move',searchCardOnMove); }catch(_){} searchCardOnMove=null; }
     searchCardData=null;
   }
   function positionSearchCard(){
     if(!searchCardEl||!searchCardData) return;
-    const E=window.IntMapGeoEngine; if(!E) return;
+    const E=IntMapGeoEngine; if(!E) return;
     const pt=E.coords.project([searchCardData.lng,searchCardData.lat]); if(!pt) return;
     searchCardEl.style.left=pt.x+'px';
     searchCardEl.style.top=pt.y+'px';
@@ -348,7 +350,7 @@ window.IntMapModules.searchGeocode=function(HOST){
     }catch(_){}
   }
   async function gotoPlace(lng,lat,displayName,raw,localKind){
-    const GEO=window.IntMapGeoEngine; if(!GEO)return;
+    const GEO=IntMapGeoEngine; if(!GEO)return;
     closeSearchCard();
     /* (#R183) …instead of zoom 9 for a doorway and zoom 9 for a continent. See framingFor above.
        fitBounds is preferred where the geocoder gave a real extent; cameraForBounds is asked first so
@@ -388,8 +390,8 @@ window.IntMapModules.searchGeocode=function(HOST){
         <h4>📍 ${IntMapSafe.html(primary)}</h4>
         <div class="src-sub">${IntMapSafe.html(restAdmin||country||'')}</div>
         <div class="src-row"><span>${HOST.t('coords')}</span><b>${HOST.fmtLL(lng,lat)}</b></div>
-        ${type?`<div class="src-row"><span>${window.IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo')}</span><b>${IntMapSafe.html(type)}</b></div>`:''}
-        <div class="src-row"><span>${HOST.t('elev')}</span><b id="src-elev">${window.IntMapLang.t(HOST.lang,'Loading...','取得中...','Lädt…','Загрузка…','Cargando…')}</b></div>
+        ${type?`<div class="src-row"><span>${IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo')}</span><b>${IntMapSafe.html(type)}</b></div>`:''}
+        <div class="src-row"><span>${HOST.t('elev')}</span><b id="src-elev">${IntMapLang.t(HOST.lang,'Loading...','取得中...','Lädt…','Загрузка…','Cargando…')}</b></div>
         <div class="src-actions">
           <button class="primary" id="src-copy">📋 ${HOST.t('ctxCopy')}</button>
           <button id="src-pin">📍 ${HOST.t('ctxDropPin')}</button>
@@ -435,7 +437,7 @@ window.IntMapModules.searchGeocode=function(HOST){
       const el=searchCardEl&&searchCardEl.querySelector('#src-elev');
       if(el){
         if(typeof e==='number' && e>0.5){ el.textContent=HOST.fmtElevVal(e); }
-        else { const d=await HOST.fetchBathymetry(lat,lng); if(typeof d==='number'){ el.textContent = d<0 ? (HOST.fmtElevVal(Math.abs(d))+' '+(window.IntMapLang.t(HOST.lang,'(depth)','(水深)','(Tiefe)','(глубина)','(profundidad)'))) : HOST.fmtElevVal(d); } else if(typeof e==='number'){ el.textContent=HOST.fmtElevVal(e); } else el.textContent='—'; }
+        else { const d=await HOST.fetchBathymetry(lat,lng); if(typeof d==='number'){ el.textContent = d<0 ? (HOST.fmtElevVal(Math.abs(d))+' '+(IntMapLang.t(HOST.lang,'(depth)','(水深)','(Tiefe)','(глубина)','(profundidad)'))) : HOST.fmtElevVal(d); } else if(typeof e==='number'){ el.textContent=HOST.fmtElevVal(e); } else el.textContent='—'; }
       }
     }catch(_){}
   }
@@ -443,4 +445,4 @@ window.IntMapModules.searchGeocode=function(HOST){
      no renderer), this factory's body may contain only declarations (tests/engine-app-shell-split-checks.test.mjs (#R169) #4), and the
      app-body shim contract pins exactly this return list. */
   return { doGeocode, localFuzzyPlaces };
-};
+}

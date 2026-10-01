@@ -52,6 +52,7 @@
  *  — js/data-layers.js only owns a raster source while the layer is on, and js/night-side.js only
  *  builds at whole-Earth zooms over the satellite basemap.
  * ==========================================================================*/
+import { IntMapTime } from './chronos.js';
 window.IntMapNightLights=(function(){
   'use strict';
   /* ⚠ ONE ROW PER EPOCH, AND EVERY FIELD IS SOMETHING THE READER IS SHOWN OR THE RENDERER USES.
@@ -98,7 +99,7 @@ window.IntMapNightLights=(function(){
     return forYear(t.getFullYear()); }
 
   /* the clock, asked the way every other subsystem asks it */
-  function clockYear(){ try{ const T=window.IntMapTime;
+  function clockYear(){ try{ const T=IntMapTime;
     if(T&&T.isLive&&T.isLive()) return null;
     if(T&&T.year) return T.year(); }catch(_){} return null; }
   function current(){ const y=clockYear(); return (y==null)?EPOCHS[EPOCHS.length-1]:forYear(y); }
@@ -114,7 +115,7 @@ window.IntMapNightLights=(function(){
     lastId=id;
     subs.forEach(f=>{ try{ f(clone(e)); }catch(_){} });
     return true; }
-  try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ announce(); }); }catch(_){}
+  try{ if(IntMapTime&&IntMapTime.on) IntMapTime.on(()=>{ announce(); }); }catch(_){}
 
   return {
     epochs:()=>EPOCHS.map(clone),

@@ -41,6 +41,9 @@ import './plane-glyph.js';
 /* (#R408) …and the one timer wheel. It is the second import for the same reason as the first: the two
    intervals this file used to open are per-VIEW, and a wheel key is global — see _vid below. */
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
 window.IntMapCesiumEngine=(function(){
   'use strict';
@@ -472,7 +475,7 @@ window.IntMapCesiumEngine=(function(){
          replaces — hence the slow heartbeat. 30 s is a quarter of a degree of sidereal rotation. */
       try{
         const syncClock=()=>{ try{
-          const T=window.IntMapTime; const c=this._widget&&this._widget.clock; if(!c) return;
+          const T=IntMapTime; const c=this._widget&&this._widget.clock; if(!c) return;
           let ms=null, live=true;
           /* ⚠ (#R200) `T.now` is not on window.IntMapTime (see js/theme-sky.js), so `ms` stayed null
              and the `if(ms==null) return;` below made this heartbeat a no-op: Cesium's clock — and
@@ -486,7 +489,7 @@ window.IntMapCesiumEngine=(function(){
           this._scene.requestRender();
         }catch(_){} };
         syncClock();
-        try{ if(window.IntMapTime&&window.IntMapTime.on) this._timeOff=window.IntMapTime.on(syncClock); }catch(_){}
+        try{ if(IntMapTime&&IntMapTime.on) this._timeOff=IntMapTime.on(syncClock); }catch(_){}
         /* ⚠ (#R408) the `!document.hidden` test moved INTO the wheel, which applies the same one: it guarded this timer
            and nothing else (syncClock's other two callers — the line above and IntMapTime — are unconditional). */
         this._skyTick=everyTick('cesium-engine:sky-clock:'+this._vid,30000,syncClock);
@@ -3003,7 +3006,7 @@ window.IntMapCesiumEngine=(function(){
         let vv=null; try{ vv=new ViewClass(o); }catch(_){ return null; }
         if(!vv) return null;
         const sub=makeCesiumAdapter(()=>vv,ViewClass);
-        const face=window.IntMapGeoEngine.makeFacade(()=>sub);
+        const face=IntMapGeoEngine.makeFacade(()=>sub);
         face.destroy=()=>{ try{ vv.destroy(); }catch(_){} vv=null; return true; };
         return face;
       },
@@ -3032,7 +3035,7 @@ window.IntMapCesiumEngine=(function(){
       if(o.closeButton!==false){
         closer=document.createElement('button');
         closer.className='maplibregl-popup-close-button'; closer.type='button';
-        closer.setAttribute('aria-label',window.IntMapLang.t(document.documentElement.lang,'Close popup','ポップアップを閉じる','Pop-up schließen','Закрыть всплывающее окно','Cerrar la ventana emergente')); closer.textContent='×';
+        closer.setAttribute('aria-label',IntMapLang.t(document.documentElement.lang,'Close popup','ポップアップを閉じる','Pop-up schließen','Закрыть всплывающее окно','Cerrar la ventana emergente')); closer.textContent='×';
         content.appendChild(closer);
       }
     } else if(o.element){ el.appendChild(o.element); }
@@ -3107,8 +3110,8 @@ window.IntMapCesiumEngine=(function(){
       if(!Cesium||!Cesium.CesiumWidget) return false;
       const ViewClass=viewFactory();
       const adapter=makeCesiumAdapter(()=>window.__imap,ViewClass);
-      if(!(window.IntMapGeoEngine&&window.IntMapGeoEngine.use)) return false;
-      window.IntMapGeoEngine.use(adapter);
+      if(!(IntMapGeoEngine&&IntMapGeoEngine.use)) return false;
+      IntMapGeoEngine.use(adapter);
       /* diagnostics, in the spirit of window.__imap / window.IntMapSatProto — the registered
          scheme handlers are reported so "is the satellite protocol actually wired?" is a
          question with an answer, rather than something inferred from a blank layer */

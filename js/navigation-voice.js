@@ -41,6 +41,7 @@
  *  — and NOTHING here throws in either case, so a caller that never checks still runs correctly with
  *  visual guidance only.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 window.IntMapNavVoice = (function () {
   'use strict';
 
@@ -53,7 +54,7 @@ window.IntMapNavVoice = (function () {
   function lang() {
     try {
       var raw = String(document.documentElement.lang || 'en').toLowerCase();
-      var R = window.IntMapLang;
+      var R = IntMapLang;
       if (!R) return raw;
       if (R.has && R.has(raw)) return R.normalise(raw);
       var rows = R.LANGS || [];
@@ -67,8 +68,8 @@ window.IntMapNavVoice = (function () {
      never reach the inline tables the other four languages are translated in, while the coverage
      report still prints 100 %. The guard is js/basemap-switch.js's, because this file is imported
      before the app has certainly defined the registry. */
-  var L = (window.IntMapLang && window.IntMapLang.pick)
-    ? window.IntMapLang.pick(lang)
+  var L = (IntMapLang && IntMapLang.pick)
+    ? IntMapLang.pick(lang)
     : function () { return arguments[0]; };
 
   var MODES = ['off', 'alerts', 'guidance'];
@@ -222,7 +223,7 @@ window.IntMapNavVoice = (function () {
   }
 
   /** the BCP-47 tag for the app's language — the ONE registry answers it (#R231/#R318) */
-  function tagFor() { try { return window.IntMapLang.locale(lang()); } catch (_) { return 'en-US'; } }
+  function tagFor() { try { return IntMapLang.locale(lang()); } catch (_) { return 'en-US'; } }
 
   /* ⚠ `u.lang` ALONE IS NOT ENOUGH ON EVERY PLATFORM. Some engines honour it; some read whatever
      voice is default and pronounce Japanese with an English one. Naming the voice as well costs a

@@ -33,11 +33,13 @@
  *  · Every value that reaches the DOM goes through window.IntMapSafe (#R138).
  *  · Five languages inline (standing rule 3); the keyed table covers the other four.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.facilities=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
-  const LA=window.IntMapLang.pickArgs();
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function facilities(HOST){
+  const GE=()=>IntMapGeoEngine;
+  const L=IntMapLang.pick(()=>HOST.lang);
+  const LA=IntMapLang.pickArgs();
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   const U=(v)=>{ try{ return window.IntMapSafe.url(String(v||'')); }catch(_){ return ''; } };
   function _canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
@@ -705,4 +707,4 @@ window.IntMapModules.facilities=function(HOST){
 
   window.IntMapFacilities=API;
   return API;
-};
+}

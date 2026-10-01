@@ -12,10 +12,12 @@
  *  `camera.altitude()` were added to the contract this round. The third subsystem built engine-only
  *  from scratch, after the news pins (#R161) and the 3-D volume tool (#R170).
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.viewControls=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function viewControls(HOST){
+  const GE=()=>IntMapGeoEngine;
+  const L=IntMapLang.pick(()=>HOST.lang);
 
   /* =========================================================================================
    *  TILT LIMIT — Settings ▸ Map behaviour ▸ "Tilt limit"
@@ -186,4 +188,4 @@ window.IntMapModules.viewControls=function(HOST){
     }
     if((n||0)<200) setTimeout(()=>waitForEngine((n||0)+1),100);
   })(0);
-};
+}

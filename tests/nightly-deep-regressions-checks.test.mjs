@@ -14,6 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseSummary, normaliseId, classify, windowNights, STREAK } from '../scripts/deep-history.mjs';
+import { importModule, swappable } from './helpers/import-module.mjs';
 
 /* ── ① the summary a job log ends with ─────────────────────────────────────────────────────── */
 const LOG = [
@@ -92,14 +93,15 @@ function fakeEngine() {
   };
   return E;
 }
-/* the language picker is not the subject: the English string is enough for a body's default name */
-globalThis.window = { IntMapModules: {}, IntMapLang: { pick: () => (...forms) => forms[0] } };
-await import('../js/volume3d.js');
+/* (module-graph) the module is IMPORTED: its renderer is the fake engine, handed at its geo-engine.js
+   import edge and swapped per case; the language registry is the real one (the English string names a body) */
+const GE = swappable();
+const { volume3d } = await importModule('js/volume3d.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GE.value } } });
 const make = () => {
   const E = fakeEngine();
-  window.IntMapGeoEngine = E;
+  GE.set(E);
   const HOST = { terrain3D: true, hasTurf: () => false, ringArea: () => 0, lang: 'en' };
-  const V = window.IntMapModules.volume3d(HOST);
+  const V = volume3d(HOST);
   return { E, V, HOST };
 };
 const SQUARE = [[138.70, 35.30], [138.80, 35.30], [138.80, 35.40], [138.70, 35.40]];

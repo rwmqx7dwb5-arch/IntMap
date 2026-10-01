@@ -82,6 +82,7 @@
  * ==========================================================================*/
 import { htmlRows, rowHTML, isLayer } from './layer-manifest.js';
 import { layerState } from './layer-state.js';   /* (layer-failure-state) the outcome of every tracked request is KEPT there — see ⑤ */
+import { IntMapGeoEngine } from './geo-engine.js';
 
 /** write the manifest's own rows into the registry (idempotent: a row already present is left alone) */
 function mountManifestRows(doc) {
@@ -214,4 +215,4 @@ export function inFlight(watch) {
 export const layerInflight = inFlight(layerState);
 
 try { if (typeof document !== 'undefined') mountManifestRows(document); } catch (e) { try { console.warn('[IntMap] layer rows', e); } catch (_) {} }
-try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => window.IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }
+try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }

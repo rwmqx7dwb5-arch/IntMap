@@ -31,12 +31,14 @@
  *  all five languages rather than leaving the user to discover that nothing
  *  happened.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 window.IntMapEngineSelect=(function(){
   'use strict';
   /* ⚠ (#R245) the two engine names are a tuple held as data — see IntMapLang.pickArgs(). This module
      runs at import time, before js/lang-registry.js in some entry orders; `pickArgs()` only ever
      returns «the arguments as an array», so the fallback is the same function, not a stub. */
-  const LA=(window.IntMapLang&&window.IntMapLang.pickArgs())||function(){ return Array.prototype.slice.call(arguments); };
+  const LA=(IntMapLang&&IntMapLang.pickArgs())||function(){ return Array.prototype.slice.call(arguments); };
   const KEY='intmap_engine';
   const VALID=['maplibre','cesium'];
 
@@ -58,7 +60,7 @@ window.IntMapEngineSelect=(function(){
      is that a silent fallback is a feature that vanishes without anyone knowing,
      so the Settings panel reads THIS, not the stored value. */
   function active(){
-    try{ const id=window.IntMapGeoEngine&&window.IntMapGeoEngine.id&&window.IntMapGeoEngine.id();
+    try{ const id=IntMapGeoEngine&&IntMapGeoEngine.id&&IntMapGeoEngine.id();
       return id||'maplibre'; }catch(_){ return 'maplibre'; }
   }
   let _failed=null;
@@ -102,7 +104,7 @@ window.IntMapEngineSelect=(function(){
     label(id,lang){
       const L={ maplibre:LA('MapLibre (default)','MapLibre（既定）','MapLibre (Standard)','MapLibre (по умолчанию)','MapLibre (predeterminado)'),
                 cesium:LA('Cesium — true 3-D globe','Cesium — 真の3D地球儀','Cesium — echter 3-D-Globus','Cesium — настоящий 3D-глобус','Cesium — globo 3-D real') }[id];
-      return (Array.isArray(L)&&L.length)?(window.IntMapLang.pick(()=>lang).arr(L)||id):id;   /* (#R245) */
+      return (Array.isArray(L)&&L.length)?(IntMapLang.pick(()=>lang).arr(L)||id):id;   /* (#R245) */
     } };
   api.begin();
   return api;

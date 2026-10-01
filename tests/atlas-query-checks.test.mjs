@@ -38,6 +38,7 @@ import * as acorn from 'acorn';
 import { LAZY_NAMES, LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { codeOnly } from '../scripts/code-only.mjs';   /* (#R497) the forbidden names below appear in that round's own COMMENT explaining them */
 import { makeAtlasTurnResults } from '../js/atlas-turn-results.js';
+import { importModule } from './helpers/import-module.mjs';
 import { capsSource, capabilityEntry, runAst } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -202,7 +203,17 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
   const e = LAZY_REGISTRY.atlasQuery;
   assert.ok(e && e.publishes === 'IntMapQuery', 'the lazy registry knows what it publishes');
   assert.match(read('js/lazy-modules.js'), /atlasQuery: \{[^\n]*import\('\.\/atlas-query\.js'\)/, '…and how to fetch it');
-  assert.ok(typeof e.mount === 'function' && /window\.IntMapQuery=window\.IntMapModules\.atlasQuery\(IM_HOST\)/.test(String(e.mount)), '…and how to mount it');
+  /* (module-graph) the mount is handed the namespace its own import() resolved to and calls that module's
+     exported factory — RUN here over a recording namespace, and the factory is asked of the module itself */
+  assert.ok(typeof e.mount === 'function', '…and how to mount it');
+  const hadWin = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const HOST0 = { lang: 'en' };
+  try {
+    globalThis.window = {};
+    e.mount(HOST0, { atlasQuery: (h) => ({ mountedWith: h }) });
+    assert.equal(globalThis.window.IntMapQuery && globalThis.window.IntMapQuery.mountedWith, HOST0, '…and how to mount it: window.IntMapQuery is the factory called with IM_HOST');
+  } finally { if (hadWin) Object.defineProperty(globalThis, 'window', hadWin); else delete globalThis.window; }
+  assert.match(read('js/atlas-query.js'), /^export function atlasQuery\(HOST\)\s*\{/m, '…and the module exports the factory the mount calls');
   /* ⚠ MEMBERSHIP, NOT POSITION. This read /'atlasQuery'\]/ — true only because atlasQuery
      happened to be the LAST entry the day it was written, so #R527 broke it merely by appending a
      new lazy factory after it. The property this line exists for is that «the one list of every
@@ -351,11 +362,14 @@ test('R497 ②: js/atlas-query.js reads the keys the file actually has', async (
      elevation-less; so the engine is asked for its volcano rows, with only the fetch of
      data/volcanoes_gvp.json served from disk. */
   const pick = () => { const f = (...a) => a[0]; f.arr = (a) => (Array.isArray(a) ? a[0] : String(a)); return f; };
-  globalThis.window = { IntMapLang: { pick, pickArgs: () => ((...a) => a) }, IntMapModules: {},
-    IntMapGazetteer: { warm: async () => [], worldMeta: () => ({ count: 0, placeKinds: null }) } };
-  globalThis.document = { baseURI: 'http://localhost/' };
-  await import('../js/atlas-query.js?r497-' + Math.random());
-  const API = globalThis.window.IntMapModules.atlasQuery({ lang: 'en', addPin: () => null });
+  /* (module-graph) IMPORTED fresh, its factory read off the namespace; the language picker is handed at
+     its import edge (js/lang-registry.js) instead of being written onto window */
+  const { atlasQuery } = await importModule('js/atlas-query.js', {
+    globals: { window: { IntMapGazetteer: { warm: async () => [], worldMeta: () => ({ count: 0, placeKinds: null }) } },
+      document: { baseURI: 'http://localhost/' } },
+    mocks: { 'js/lang-registry.js': { IntMapLang: { pick, pickArgs: () => ((...a) => a) } } },
+  });
+  const API = atlasQuery({ lang: 'en', addPin: () => null });
   API.bind({ countryStats: () => ({}), countryName: (s) => s.nameEn,
     loadData: async (p) => JSON.parse(read(p)) });   /* (data-one-door) the engine's injection point for data/ reads */
   const all = await API.run({ from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: -20000 }] });
@@ -446,18 +460,21 @@ const gzRow = (en, pop, iso2, gid, fcode, disp) =>
 
 async function engine(rows, placeKinds) {
   const pick = () => { const f = (...a) => a[0]; f.arr = (a) => (Array.isArray(a) ? a[0] : String(a)); return f; };
-  globalThis.window = {
-    IntMapLang: { pick, pickArgs: () => ((...a) => a) },
-    IntMapModules: {},
-    IntMapGazetteer: {
-      warm: async () => rows,
-      worldMeta: () => ({ count: rows.length, placeKinds: placeKinds === undefined ? KINDS : placeKinds }),
+  /* (module-graph) IMPORTED fresh, its factory read off the namespace; the language picker is handed at
+     its import edge (js/lang-registry.js), the gazetteer rows stay on the window the module reads them from */
+  const { atlasQuery } = await importModule('js/atlas-query.js', {
+    globals: {
+      window: {
+        IntMapGazetteer: {
+          warm: async () => rows,
+          worldMeta: () => ({ count: rows.length, placeKinds: placeKinds === undefined ? KINDS : placeKinds }),
+        },
+      },
+      document: { baseURI: 'http://localhost/' },
     },
-  };
-  globalThis.document = { baseURI: 'http://localhost/' };
-  const mod = await import('../js/atlas-query.js?' + Math.random());
-  void mod;
-  const API = globalThis.window.IntMapModules.atlasQuery({ lang: 'en', addPin: () => null });
+    mocks: { 'js/lang-registry.js': { IntMapLang: { pick, pickArgs: () => ((...a) => a) } } },
+  });
+  const API = atlasQuery({ lang: 'en', addPin: () => null });
   /* the two country facts the engine asks its host for, and nothing else */
   API.bind({ countryStats: () => ({ CHN: { a2: 'CN', nameEn: 'China' }, IRQ: { a2: 'IQ', nameEn: 'Iraq' } }),
     countryName: (s) => s.nameEn });

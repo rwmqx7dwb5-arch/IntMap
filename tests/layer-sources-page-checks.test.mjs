@@ -14,8 +14,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -29,21 +29,25 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ── 14. the sources page is the registry, not a copy of it ────────────────────────────────────── */
 test('R212 ⑭: sources.html renders js/reference-data.js and ships with the build', async () => {
   const html = read('sources.html');
-  assert.match(html, /<script src="\.\/js\/reference-data\.js"><\/script>/);
+  /* (module-graph) the static pages load their scripts as modules now */
+  assert.match(html, /<script type="module" src="\.\/js\/reference-data\.js"><\/script>/);
   /* ⚠ (#R218) the renderer moved out of the page into js/sources-list.js — the page is a shell now.
      The invariant is unchanged and is the whole point of this test: ONE list, read, never copied. */
   /* (consolidation) EVALUATED: the page's own scripts (the encoder, the registry, the renderer) run
      in a stub document in the order sources.html loads them, and what is asked is what the renderer
      PRINTS — every registry entry, and an entry added to the registry after load, which a page
      carrying its own copy of the list could not print */
+  /* (module-graph) the encoder is still a classic script that publishes itself; the registry and the renderer are
+     modules, so they are IMPORTED — the renderer by importModule, the registry as the shared instance the
+     renderer's own `import { IntMapRefData }` edge resolves to (an entry pushed onto it is one it must print) */
   const els = {};
   const document = { getElementById: (id) => els[id] || (els[id] = { id, innerHTML: '', textContent: '', value: '', placeholder: '', addEventListener() {} }) };
-  const ctx = { console, document };
-  ctx.window = ctx;
-  vm.createContext(ctx);
-  for (const f of ['js/safe-html.js', 'js/reference-data.js', 'js/sources-list.js']) vm.runInContext(read(f), ctx, { filename: f });
+  const ctx = globalThis;
+  await import('../js/safe-html.js');
+  const { IntMapRefData } = await import('../js/reference-data.js');
+  await importModule('js/sources-list.js', { globals: { document } });
   ctx.IntMapPageI18N = { pick: () => '', normalise: (c) => c };
-  const reg = ctx.IntMapRefData.dataSources;
+  const reg = IntMapRefData.dataSources;
   assert.ok(reg.length > 50, 'the registry evaluates to its list of sources');
   reg.push({ n: 'Consolidation Sentinel Source', u: 'https://example.org/sentinel' });
   ctx.IntMapSourcesList.render('en');

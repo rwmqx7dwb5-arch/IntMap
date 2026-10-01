@@ -418,7 +418,8 @@ test('#R170 the 3-D volume tool is wired from menu to renderer', () => {
      scripts/static-checks.mjs sees no other shape (js/lazy-modules.js's header, gate 1). */
   assert.match(INDEX, /import\('\.\/volume3d\.js'\)/, 'the module must be loaded by the on-demand loader');
   assert.doesNotMatch(INDEX, /import '\.\.\/js\/volume3d\.js';/, 'and not ALSO by the Vite entry — it would be in the boot bundle regardless');
-  assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\((IM_HOST)\)/, 'and instantiated exactly once');
+  /* (module-graph) the loader hands mount() the namespace its own import() resolved to — `m` */
+  assert.match(INDEX, /window\.IntMapVolume3D=m\.volume3d\((IM_HOST)\)/, 'and instantiated exactly once');
   assert.match(INDEX, /id="btn-tool-volume"/, 'the Measure menu needs the entry');
   assert.match(INDEX, /setTool\('volume'\)/, 'which activates the tool');
   /* the two doors: the Measure-menu button (which the mobile tile and Atlas's clickId both reach

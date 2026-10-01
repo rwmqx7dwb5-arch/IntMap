@@ -51,6 +51,7 @@
  * ==========================================================================*/
 import { isUnobserved } from './fetch-deadline.js';
 import { notify } from './notify.js';
+import { IntMapLang } from './lang-registry.js';
 
 /* how many repairs `heals()` keeps — the same bound IntMapLayerAudit.log() uses (js/data-layers.js, 60) */
 const HEAL_MAX = 60;
@@ -68,9 +69,6 @@ export function classify(err) {
 
 /* the words. IntMap's own text: en + jp (CONSTITUTION.md §7) through IntMapLang.t, which falls back to English. */
 function words(lang) {
-  /* the registry the app loads (js/lang-registry.js); headless, English — which is what its own t() falls back to */
-  const IntMapLang = (typeof window !== 'undefined' && window.IntMapLang && typeof window.IntMapLang.t === 'function')
-    ? window.IntMapLang : { t: (_l, en) => en };
   return {
     badge: (st) => (st === 'failed' ? IntMapLang.t(lang, "Couldn't load", '読み込めません')
       : st === 'nodata' ? IntMapLang.t(lang, 'No data for this date', 'この日時のデータなし')
@@ -95,7 +93,7 @@ export function makeLayerState(opts) {
   const doc = o.doc || null;
   const say = o.notify || null;
   let lang = typeof o.lang === 'function' ? o.lang : () => {
-    try { return window.IntMapLang.normalise(doc.documentElement.lang || 'en'); } catch (_) { return 'en'; }
+    try { return IntMapLang.normalise(doc.documentElement.lang || 'en'); } catch (_) { return 'en'; }
   };
   const recs = new Map();
   const heals = [];

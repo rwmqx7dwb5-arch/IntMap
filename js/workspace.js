@@ -12,14 +12,16 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.workspace=function(HOST){
+
+export function workspace(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const bringToFront=HOST.bringToFront, fetchData=HOST.fetchData, i18n=HOST.i18n, imToast=HOST.imToast, loadCommunity=HOST.loadCommunity, registerWindow=HOST.registerWindow, renderCompanies=HOST.renderCompanies, renderDashboard=HOST.renderDashboard, setMode=HOST.setMode, startNews=HOST.startNews;
   return (function(){
     const KEY='intmap_ws4';   /* (#R84) bumped — default restored to Countries·Map·Layers·Atlas (role-based tiling); old saved layouts not carried over */
-    const T=window.IntMapLang.pick(()=>HOST.lang);
+    const T=IntMapLang.pick(()=>HOST.lang);
     const isMob=()=>window.IntMapDevice.compact();
     try{
 
@@ -55,9 +57,9 @@ window.IntMapModules.workspace=function(HOST){
         /* (#R78f) closing the News window must stop its map pins ("永遠に地図にニュース記事や要約ボタンが
            あるまま。news windowを閉じたらやめろ"). (#R430) The "summarize view" half of this is gone with
            #ai-view-summary-btn, which #R101 removed on request — see js/app-body.js. */
-        onHide:()=>{ try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')) E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); }catch(_){} },
+        onHide:()=>{ try{ const E=IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')) E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); }catch(_){} },
         onShow:()=>{ /* restore pins directly (setMode('news') no-ops when currentMode is already 'news') */
-          try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')&&typeof HOST.newsFeatures!=='undefined') E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); }catch(_){} } },
+          try{ const E=IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')&&typeof HOST.newsFeatures!=='undefined') E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); }catch(_){} } },
       /* (#R79b) Countries window now carries its OWN search bar + the compare dock (#stats-compare-fixed),
          stacked in the window body, so its search & country-comparison features work in workspace mode. */
       {id:'countries', sels:['#countries-search-bar','#countries-feed','#stats-compare-fixed'], t:()=>T('Countries','国別統計','Länder','Страны','Países'), min:[300,280],
@@ -477,7 +479,7 @@ window.IntMapModules.workspace=function(HOST){
     /* (#R78e) the map's geographic centre was landing off-window because frosted-sidebar mode sets
        map.setPadding({left: sidebarWidth}) so the optical centre sits right of the overlay — stale in a
        window. Zero the padding here so the map truly centres in its window, then resize. */
-    function fitMap(){ try{ const E=window.IntMapGeoEngine; if(!(E&&E.hasRenderer())) return; try{ E.camera.setPadding({top:0,right:0,bottom:0,left:0},{duration:0}); }catch(_){} E.render.resize(); }catch(_){} }
+    function fitMap(){ try{ const E=IntMapGeoEngine; if(!(E&&E.hasRenderer())) return; try{ E.camera.setPadding({top:0,right:0,bottom:0,left:0},{duration:0}); }catch(_){} E.render.resize(); }catch(_){} }
     function schedSave(){ if(!on) return; clearTimeout(saveT); saveT=setTimeout(saveRects,400); }
     function saveRects(){ if(!on) return; const rects={},vis={},minz={};
       for(const id in wraps){ const w=wraps[id]; if(!w||!w.isConnected) continue;
@@ -776,7 +778,7 @@ window.IntMapModules.workspace=function(HOST){
       /* (#R122) after leaving ws-mode, the map must reflect the NORMAL sidebar — clear the news pins the ws News
          window may have left on the map unless the sidebar is actually on News/Saved ("オフ時にもニュースウィンドウ
          がオンのときの地図表示になる"). */
-      try{ const _m=(typeof HOST.mode!=='undefined')?HOST.mode:null; if(_m!=='news'&&_m!=='saved'){ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')) E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); } }catch(_){}
+      try{ const _m=(typeof HOST.mode!=='undefined')?HOST.mode:null; if(_m!=='news'&&_m!=='saved'){ const E=IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')) E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); } }catch(_){}
       save({on:0}); fitMap(); setTimeout(fitMap,350); try{ syncModeBtn(); }catch(_){}
       try{ window._tileLegends&&window._tileLegends(); setTimeout(()=>{ try{ window._tileLegends&&window._tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) restore legends to their normal position */
     }
@@ -852,4 +854,4 @@ window.IntMapModules.workspace=function(HOST){
       try{ if(wraps.community&&wraps.community.style.display!=='none'&&typeof loadCommunity==='function') loadCommunity(); }catch(_){} });
     return { open:enable, close:disable, toggle, active:()=>on, tickerReflow, syncTicker:()=>{ try{ _syncTicker(); }catch(_){} } };
   })();
-};
+}

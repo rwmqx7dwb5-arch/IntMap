@@ -16,8 +16,8 @@
  *  ② js/label-scale.js `PLACE.era` has had no caller since #R309 moved both era label layers to
  *     `place('country')`, while the comment above it still described it in the present tense.
  *
- *  ⚠ THESE CHECKS EVALUATE THE MODULES, THEY DO NOT READ THEM (#R505). js/time-borders.js runs in
- *  a vm with the shipped data/hist-eras.js, the REAL js/lang-registry.js (#R621: a hand-written
+ *  ⚠ THESE CHECKS EVALUATE THE MODULES, THEY DO NOT READ THEM (#R505). js/time-borders.js is imported
+ *  (module-graph) against a stub window holding the shipped data/hist-eras.js, the REAL js/lang-registry.js (#R621: a hand-written
  *  language stub resolves tuples by a rule of its own and repairs `L(LA(…))`-class bugs on the way
  *  past) and the REAL js/label-scale.js. The renderer stub is a RECORDER: it remembers which layers
  *  were added and which handlers were bound, answers `queryRenderedFeatures` with whatever the test
@@ -35,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import { installSafe } from './helpers/safe-html.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -98,12 +99,11 @@ function makeEngine() {
   };
 }
 
-function loadModule(lang = 'en') {
+async function loadModule(lang = 'en') {
   const noop = () => {};
   const E = makeEngine();
   const win = {
     addEventListener: noop, setTimeout: (f) => { try { f(); } catch (_) {} return 0; }, clearTimeout: noop, setInterval: () => 0,
-    IntMapModules: {}, IntMapGeoEngine: E.eng, IntMapTime: { on: noop },
     _applyBorders: noop,
     /* the other two bundles are honestly absent: a <script> tag in this context fails, which is the
        real degraded path (#R518) and the reason the snapshot tier is the one that answers. */
@@ -118,16 +118,22 @@ function loadModule(lang = 'en') {
   win.window = win;
   installSafe(win);   /* the REAL output encoder — the blank card escapes through window.IntMapSafe */
   const ctx = vm.createContext(win);
-  /* the REAL language registry, over the REAL generated language list */
-  vm.runInContext(rd('js/locales/_langs.js'), ctx);
-  vm.runInContext(rd('js/lang-registry.js'), ctx);
+  /* the REAL language registry, over the REAL generated language list (module-graph: the module imports
+     js/lang-registry.js itself; langRegistry() declares the shipped list on that same instance) */
+  langRegistry();
+  /* the classic scripts it reads off `window` still publish there, so they still run in the window */
   vm.runInContext(rd('js/label-scale.js'), ctx);
   vm.runInContext(rd('js/hist-scale.js'), ctx);
   vm.runInContext(rd('data/hist-eras.js'), ctx);
   vm.runInContext(rd('js/hist-bundles.js'), ctx);   /* (hist-bundles-off-main) the door the module opens its records through */
-  vm.runInContext(rd('js/time-borders.js'), ctx);
+  /* (module-graph) js/time-borders.js is EVALUATED BY IMPORT: the recorder and the clock are handed in at
+     its import edges, and `timeBorders` is its exported factory (there is no window.IntMapModules). */
+  const M = await importModule('js/time-borders.js', {
+    globals: { window: win, document: win.document, navigator: win.navigator },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: E.eng }, 'js/chronos.js': { IntMapTime: { on: noop } } },
+  });
   const HOST = { lang, canDraw: () => true, isMobile: () => false };
-  return { mod: ctx.window.IntMapModules.timeBorders(HOST), bundle: ctx.window.__HISTERAS, win: ctx.window, E, HOST };
+  return { mod: M.timeBorders(HOST), bundle: win.__HISTERAS, win, E, HOST };
 }
 
 /* a sheet the record itself says has unnamed shapes */
@@ -136,8 +142,8 @@ const deepestBlankSheet = (bundle) =>
 
 const strip = (html) => String(html).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
-test('#R707 ① a shape upstream did not name is described by its absence, never given a name', () => {
-  const { mod } = loadModule();
+test('#R707 ① a shape upstream did not name is described by its absence, never given a name', async () => {
+  const { mod } = await loadModule();
   const n = mod.blankNote({ properties: { NAME: '' } });
   assert.ok(n && n.title && n.title.length > 10, 'the heading is a statement, not an empty string');
   assert.ok(Array.isArray(n.lines) && n.lines.length >= 1,
@@ -150,8 +156,8 @@ test('#R707 ① a shape upstream did not name is described by its absence, never
     'an absent feature and a propertyless one say the same thing — there is no third state');
 });
 
-test('#R707 ② the body is upstream\'s own words, and a field upstream does not state produces no line', () => {
-  const { mod } = loadModule();
+test('#R707 ② the body is upstream\'s own words, and a field upstream does not state produces no line', async () => {
+  const { mod } = await loadModule();
   const bare = mod.blankNote({ properties: {} }).lines;
   assert.equal(bare.length, 1, 'nothing stated → exactly the «nothing stated» line, no empty rows');
 
@@ -178,9 +184,9 @@ test('#R707 ② the body is upstream\'s own words, and a field upstream does not
     'and BORDERPRECISION=1 reaches the card through typeNote, which already owns that vocabulary');
 });
 
-test('#R707 ③ the new text is authored in en and jp, and the seven frozen languages fall back rather than break', () => {
+test('#R707 ③ the new text is authored in en and jp, and the seven frozen languages fall back rather than break', async () => {
   const f = { properties: { TYPE: 'culture', SUBJECTO: 'Rome', PARTOF: 'Gaul' } };
-  const en = loadModule('en').mod.blankNote(f), jp = loadModule('jp').mod.blankNote(f);
+  const en = (await loadModule('en')).mod.blankNote(f), jp = (await loadModule('jp')).mod.blankNote(f);
   assert.notEqual(en.title, jp.title, 'the heading is written in both authored languages');
   for (let i = 0; i < en.lines.length; i++) {
     assert.notEqual(en.lines[i], jp.lines[i], 'line ' + i + ' is written in both authored languages');
@@ -191,18 +197,18 @@ test('#R707 ③ the new text is authored in en and jp, and the seven frozen lang
   /* CONSTITUTION §7 / scripts/lang-policy.mjs: the other seven are FROZEN, not deleted — a reader
      of one gets English for text authored after the amendment, and never an empty card. */
   for (const lang of ['de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko']) {
-    const n = loadModule(lang).mod.blankNote(f);
+    const n = (await loadModule(lang)).mod.blankNote(f);
     assert.ok(n.title && n.title.length > 10, lang + ': the heading resolves to something');
     assert.equal(n.lines.length, 3, lang + ': every stated field still produces its line');
   }
   /* and the nine-language text this file already shipped is untouched by the narrowing */
-  const nine = new Set(['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko']
-    .map((l) => loadModule(l).mod.typeNote({ properties: { TYPE: 'culture' } })));
+  const nine = new Set();
+  for (const l of ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko']) nine.add((await loadModule(l)).mod.typeNote({ properties: { TYPE: 'culture' } }));
   assert.equal(nine.size, 9, 'typeNote keeps all nine — the amendment froze authoring, it deleted nothing');
 });
 
 test('#R707 ④ imtb-fill is click-wired, and an unnamed shape answers with what upstream says', async () => {
-  const { mod, bundle, E } = loadModule();
+  const { mod, bundle, E } = await loadModule();
   const snap = deepestBlankSheet(bundle);
   await mod._go(snap.y);
   assert.ok(E.layers.has('imtb-fill'), 'the click target exists');
@@ -230,7 +236,7 @@ test('#R707 ④ imtb-fill is click-wired, and an unnamed shape answers with what
 });
 
 test('#R707 ⑤ a NAMED shape is untouched: the fill opens nothing, and a claimed tap is left alone', async () => {
-  const { mod, bundle, E } = loadModule();
+  const { mod, bundle, E } = await loadModule();
   const snap = deepestBlankSheet(bundle);
   await mod._go(snap.y);
   const fc = mod.currentFC();
@@ -253,7 +259,7 @@ test('#R707 ⑤ a NAMED shape is untouched: the fill opens nothing, and a claime
 });
 
 test('#R707 ⑥ the fill covers the globe, so it yields to every other owner of the tap', async () => {
-  const { mod, bundle, E } = loadModule();
+  const { mod, bundle, E } = await loadModule();
   const snap = deepestBlankSheet(bundle);
   await mod._go(snap.y);
   const blank = mod.currentFC().features.find((f) => !String((f.properties || {}).NAME || '').trim());

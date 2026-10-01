@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -32,10 +33,11 @@ test('R213 ⑦: Settings → Data & attribution is the sources page, and the in-
     'sources.html is linked from the settings group and from inside the dialog, and nowhere else');
 });
 
-/* RUN: the registry and the descriptions are evaluated as the page loads them. */
-test('R213 ⑩: the four new data sources are registered with their attribution and their limits', () => {
-  const w = {}; new Function('window', read('js/reference-data.js'))(w);
-  const list = w.IntMapRefData.dataSources;
+/* RUN: the registry and the descriptions are evaluated as the page loads them. (module-graph) The
+   registry is a module the page loads with type="module", so it is imported and read off its export. */
+test('R213 ⑩: the four new data sources are registered with their attribution and their limits', async () => {
+  const { IntMapRefData } = await importModule('js/reference-data.js', { globals: { window: {} } });
+  const list = IntMapRefData.dataSources;
   /* (#R246) one reader for the descriptions, which live in js/locales/pages.<code>.js */
   const docs = {}; const P = { define: (c, d) => { docs[c] = d; } };
   for (const c of ['en', 'ja']) new Function('window', read(`js/locales/pages.${c}.js`))({ IntMapPageI18N: P });

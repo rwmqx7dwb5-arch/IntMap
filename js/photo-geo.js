@@ -37,11 +37,13 @@ import './photo-geo-vision.js';
 import './photo-geo-exif.js';
 import './photo-geo-search.js';
 import '../src/photo-geo-worker-client.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.photoGeo = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
-  const L = window.IntMapLang.pick(() => HOST.lang);
+
+export function photoGeo(HOST) {
+  const GE = () => IntMapGeoEngine;
+  const L = IntMapLang.pick(() => HOST.lang);
   const esc = (s) => window.IntMapSafe.html(s);   /* the one encoder */
 
   const SRC = 'photogeo-src', LYR_PT = 'photogeo-pt', LYR_SEL = 'photogeo-sel', LYR_VIEW = 'photogeo-view', LYR_LBL = 'photogeo-lbl';
@@ -975,4 +977,4 @@ window.IntMapModules.photoGeo = function (HOST) {
     plan: () => (state && state.plan) || null
   };
   return API;
-};
+}

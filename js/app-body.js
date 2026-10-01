@@ -56,6 +56,76 @@ import { makeScreenshot } from './screenshot.js';
 import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R318) EAGER: the 124 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
 import { makeSessionTabs } from './session-tabs.js';
 import { makeTimeCountries } from './time-countries.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { aiCore } from './ai-core.js';
+import { aiResearch, correlate, edu, timeSeries, worldEvents } from './analysis-panels.js';
+import { articleReader } from './article-reader.js';
+import { authUi } from './auth-ui.js';
+import { betaOverlays } from './beta-overlays.js';
+import { cameras } from './cameras.js';
+import { communityBoard } from './community-board.js';
+import { community } from './community.js';
+import { companiesUi } from './companies-ui.js';
+import { companies } from './companies.js';
+import { compare } from './compare.js';
+import { countriesUi } from './countries-ui.js';
+import { dashExtended } from './dash-extended.js';
+import { dataLayers } from './data-layers.js';
+import { droneNav } from './drone-nav.js';
+import { droneOps } from './drone-ops.js';
+import { elections } from './elections.js';
+import { elevationProfile } from './elevation-profile.js';
+import { feedback } from './feedback.js';
+import { histPlaces } from './hist-places.js';
+import { histId, histStates, maddison } from './history.js';
+import { industryWeb } from './industry-web.js';
+import { insolation } from './insolation.js';
+import { betaPack2, earthSky, gibsScience, landCover, religionLang, timeZones } from './layer-packs.js';
+import { layerPreviews } from './layer-previews.js';
+import { legal } from './legal.js';
+import { annotations, layerHoverPopup, locate, railSeaOverlays, runwaySearch, terrain } from './map-extras.js';
+import { mapReadout } from './map-readout.js';
+import { arc3d, drawTool, isochrone, isolate, moveShape, objectList, outline, projView, seaRoute } from './map-tools.js';
+import { mapTooltip } from './map-tooltip.js';
+import { geojsonUpload, labelPopup, layerPresets, layerRegistry, layerSidebar, share, ticker, viewHash } from './map-ui.js';
+import { mobileMapInput } from './mobile-map-input.js';
+import { layoutReflow, mobileUI } from './mobile-ui.js';
+import { monitors } from './monitors.js';
+import { netHealth } from './net-health.js';
+import { newsContext } from './news-context.js';
+import { newsFeed } from './news-feed.js';
+import { newsSources } from './news-sources.js';
+import { newsTimeline } from './news-timeline.js';
+import { newsUi } from './news-ui.js';
+import { oceanCurrents } from './ocean-currents.js';
+import { onboarding, progressCtl } from './onboarding.js';
+import { facilities } from './osm-facilities.js';
+import { outbreaks } from './outbreaks.js';
+import { placeLabels } from './place-labels.js';
+import { precipAnnual } from './precip-annual.js';
+import { routingOps } from './routing-ops.js';
+import { routing } from './routing.js';
+import { satProto } from './sat-proto.js';
+import { satellite } from './satellite.js';
+import { searchGeocode } from './search-geocode.js';
+import { popArea, radiation, sun, transitReach } from './sims.js';
+import { space } from './space-approach.js';
+import { timeAdmin1 } from './time-admin1.js';
+import { timeBorders } from './time-borders.js';
+import { toolPanel } from './tool-panel.js';
+import { usElections } from './us-elections.js';
+import { viewControls } from './view-controls.js';
+import { warFronts } from './war-fronts.js';
+import { wbLayers } from './wb-layers.js';
+import { weatherEC, weatherPanel, wind } from './weather.js';
+import { widgets } from './widgets.js';
+import { windowManager } from './window-manager.js';
+import { workspace } from './workspace.js';
+import { worldPacks } from './world-packs-rows.js';
+import { IntMapRefData } from './reference-data.js';
+import { IntMapTables } from './tables.js';
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -66,7 +136,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R178) THE renderer handle for this file — the same `const GE=()=>window.IntMapGeoEngine` every
      split module already uses. A getter, not the object: the engine is built inside map.on('load'),
      i.e. long after this line runs (#R170 learned that the hard way). */
-  const GE=()=>window.IntMapGeoEngine;
+  const GE=()=>IntMapGeoEngine;
   /* ===== State ===== */
   /* (#R207) 「初回時にはmapではなくsatelliteに。3Dはオフ。」 The base type has never been persisted —
      nothing writes it to `intmap_settings` and nothing reads it back — so this literal IS the state
@@ -78,7 +148,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
-  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&window.IntMapLang.has(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
+  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&IntMapLang.has(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
   /* (#R242) the app's text — the face, a news band's width, the flag webfont — is js/map-typography.js */
   function MT(){ return window.IntMapMapTypography; }
   let isGridOn=false, toolMode=null, measurePoints=[];
@@ -487,7 +557,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R249) the fifteenth surface — the document's own <title>/<meta description>. The whole of it
        lives in js/lang-registry.js's syncDocument (that file already owns `lang` and the keyed
        table, and this file has a ceiling — [[intmap-recurring-lessons]] K). */
-    try{ window.IntMapLang.syncDocument(currentLang); }catch(_){}
+    try{ IntMapLang.syncDocument(currentLang); }catch(_){}
     document.getElementById('text-settings').innerText=d.settings; document.getElementById('modal-title').innerText=d.modalTitle;
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
     { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch;   /* (#R459) no English fallback: keyed() puts en under every language */ }
@@ -548,7 +618,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   window.applyLabelLang=applyLabelLang;
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {SAT_PROVIDERS}=window.IntMapTables;
+  const {SAT_PROVIDERS}=IntMapTables;
   /* Default to YESTERDAY — the freshest near-real-time imagery that is essentially always
      processed. If a chosen day isn't ready yet, satOnError steps back automatically (below). */
   const satDefaultDay=new Date(Date.now()-1*864e5).toISOString().slice(0,10);
@@ -654,7 +724,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(err||!imgA||!imgB) return {err:(err&&err.message)||t('aiVisCapFail')};
     return {imgA,imgB}; };
   window._imSatAnalyze=async function(va,vb,imgA,imgB){
-    const sys=personaPrompt('working here as the satellite-imagery analyst of IntMap')+(window.IntMapLang.t(currentLang,"Compare two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.","同一地域の2枚の衛星画像を比較してください（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"))+window._aiLangLine();
+    const sys=personaPrompt('working here as the satellite-imagery analyst of IntMap')+(IntMapLang.t(currentLang,"Compare two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.","同一地域の2枚の衛星画像を比較してください（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"))+window._aiLangLine();
     const prompt=currentLang==='jp'?`1枚目の日付: ${va}\n2枚目の日付: ${vb}\nこの2枚を比較し、変化を報告してください。`:`First image date: ${va}\nSecond image date: ${vb}\nCompare the two images and report the changes.`;
     return askAI(prompt,sys,[imgA,imgB]); };
   /* (#R169) moved verbatim to js/satellite.js — see Architecture.md §3.1. */
@@ -781,7 +851,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      and the @2x stitch, moved out whole. Called from exactly here because the style object below
      reads the `window.__imSatProto` flag this sets — see the file header. `_hiDPITiles` is the one
      value it needs from this scope and is handed over explicitly (scripts/check-split-scope.mjs). */
-  try{ window.IntMapModules.satProto(IM_HOST); }catch(_){}
+  try{ satProto(IM_HOST); }catch(_){}
   /* (#R209) …and the loader for the modules that are NOT downloaded at boot. Built here, this early,
      because every entry point below reaches it through window.IntMapLazy rather than through a
      parameter, and an entry point that fires before the loader exists is the silent no-op #R205. */
@@ -792,7 +862,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   makeRuntime(IM_HOST);
   const RT=()=>window.IntMapRuntime;
   /* (#R498) the mobile touch-input surface — long-press, crosshair, centre readout, "Add point". */
-  const IM_MOBIN=window.IntMapModules.mobileMapInput(IM_HOST);
+  const IM_MOBIN=mobileMapInput(IM_HOST);
   /* (#R203) …and the centre is COMPUTED ONCE AND PUBLISHED. A test cannot re-derive it — it moves
      0.25° a minute, so "boot, then compute what the centre should be" is off by however long the
      boot took — and tests/r180-cesium pinned the literal 10 and went red the moment this stopped
@@ -958,40 +1028,40 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  Instantiated HERE, immediately after `map` exists (it is assigned once, in the try above) and
    *  before the first statement that evaluates any of these names eagerly. The factories only DECLARE:
    *  none of them touches closure state while running, so there is no dead zone to fall into. */
-  const IM_COUNTRIES_UI=window.IntMapModules.countriesUi(IM_HOST);
+  const IM_COUNTRIES_UI=countriesUi(IM_HOST);
   function renderStats(){ return IM_COUNTRIES_UI.renderStats.apply(this,arguments); }
   function showCountryDetail(){ return IM_COUNTRIES_UI.showCountryDetail.apply(this,arguments); }
   function renderCountryDetailBody(){ return IM_COUNTRIES_UI.renderCountryDetailBody.apply(this,arguments); }
   function loadCountryData(){ return IM_COUNTRIES_UI.loadCountryData.apply(this,arguments); }
   function addCountryLayers(){ return IM_COUNTRIES_UI.addCountryLayers.apply(this,arguments); }
-  const IM_NEWS_UI=window.IntMapModules.newsUi(IM_HOST);
+  const IM_NEWS_UI=newsUi(IM_HOST);
   function renderUI(){ return IM_NEWS_UI.renderUI.apply(this,arguments); }
   function setupIntelLayers(){ return IM_NEWS_UI.setupIntelLayers.apply(this,arguments); }
   function appendNewsBatch(){ return IM_NEWS_UI.appendNewsBatch.apply(this,arguments); }
   function renderReaderMode(){ return IM_NEWS_UI.renderReaderMode.apply(this,arguments); }
   function _spreadDupNewsPins(){ return IM_NEWS_UI._spreadDupNewsPins.apply(this,arguments); }
-  const IM_COMPANIES_UI=window.IntMapModules.companiesUi(IM_HOST);
+  const IM_COMPANIES_UI=companiesUi(IM_HOST);
   function renderCompanies(){ return IM_COMPANIES_UI.renderCompanies.apply(this,arguments); }
   function showCompanyDetail(){ return IM_COMPANIES_UI.showCompanyDetail.apply(this,arguments); }
   function renderDashboard(){ return IM_COMPANIES_UI.renderDashboard.apply(this,arguments); }
   function _coCmpEnsureCss(){ return IM_COMPANIES_UI._coCmpEnsureCss.apply(this,arguments); }
   function _coCmpRender(){ return IM_COMPANIES_UI._coCmpRender.apply(this,arguments); }
-  const IM_TOOL_PANEL=window.IntMapModules.toolPanel(IM_HOST);
+  const IM_TOOL_PANEL=toolPanel(IM_HOST);
   /* (#R170) Measure ▸ 3-D volume. Exposed globally because the tool panel, exitTool and the Atlas volume3d
      action all drive the same single box. (#R311) Built when the tool is OPENED, by its two doors
      (`#btn-tool-volume` and Atlas's volume3d action); it polls for IntMapGeoEngine itself, so no order changes. */
   /* (#R171) The tilt-limit setting + the eye-altitude readout chip (window.IntMapTilt / window.IntMapEyeAlt).
      Engine-only like volume3d; both wait for IntMapGeoEngine themselves before touching the camera. */
-  window.IntMapModules.viewControls(IM_HOST);
+  viewControls(IM_HOST);
   /* (#R174) DRONE NAVIGATION (window.IntMapDrone). Reads the terrain through HOST's DEM sampler and draws
      through IntMapGeoEngine only; it owns no camera and installs exactly one map click handler, which
      does nothing unless its own "add waypoint" mode is armed. See js/drone-nav.js. */
-  window.IntMapModules.droneNav(IM_HOST);
+  droneNav(IM_HOST);
   /* (#R184) …and the operational layer on top of it (window.IntMapDroneOps): the wind field and the
      hazard sources that #R174 left as declared-but-unfilled seams, plus route comparison,
      return-to-home and the multi-aircraft conflict check. It registers itself INTO the planner, so
      the planner keeps working unchanged if this file is absent. */
-  window.IntMapModules.droneOps(IM_HOST);
+  droneOps(IM_HOST);
   /* (#R175) the live-aircraft DETAIL CARD (window.IntMapAircraftPanel). js/data-layers.js reaches for it by
      name when an aircraft is clicked and falls back to the pinned tooltip if it is not there, so this is a
      pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js.
@@ -1004,11 +1074,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
-  const IM_AUTH_UI=window.IntMapModules.authUi(IM_HOST);
+  const IM_AUTH_UI=authUi(IM_HOST);
   function bootSupabase(){ return IM_AUTH_UI.bootSupabase.apply(this,arguments); }
   function _openSetPassword(){ return IM_AUTH_UI._openSetPassword.apply(this,arguments); }
   function openAuthModal(){ return IM_AUTH_UI.openAuthModal.apply(this,arguments); }
-  const IM_COMMUNITY=window.IntMapModules.community(IM_HOST);
+  const IM_COMMUNITY=community(IM_HOST);
   function renderCommunity(){ return IM_COMMUNITY.renderCommunity.apply(this,arguments); }
   function wireCommList(){ return IM_COMMUNITY.wireCommList.apply(this,arguments); }
   /* ── (#R169) EIGHTH SPLIT — eleven more SUBJECT modules (Architecture.md §3.1 #R169).
@@ -1016,7 +1086,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  with a parser — see tests/engine-app-shell-split-checks.test.mjs (#R169)), so instantiating them all here, once `map`
    *  exists, cannot run app code early. Every name index.html still calls keeps a hoisted `function`
    *  shim, so call sites textually above this line behave exactly as before. */
-  const IM_SAT=window.IntMapModules.satellite(IM_HOST);
+  const IM_SAT=satellite(IM_HOST);
   function aiCaptureSatAt(){ return IM_SAT.aiCaptureSatAt.apply(this,arguments); }
   function satApply(){ return IM_SAT.satApply.apply(this,arguments); }
   function satBuildTiles(){ return IM_SAT.satBuildTiles.apply(this,arguments); }
@@ -1035,7 +1105,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function satSetup(){ return IM_SAT.satSetup.apply(this,arguments); }
   function satStepDay(){ return IM_SAT.satStepDay.apply(this,arguments); }
   function satToast(){ return IM_SAT.satToast.apply(this,arguments); }
-  const IM_AI=window.IntMapModules.aiCore(IM_HOST);
+  const IM_AI=aiCore(IM_HOST);
   function aiDev(){ return IM_AI.aiDev.apply(this,arguments); }
   function aiEsc(){ return IM_AI.aiEsc.apply(this,arguments); }
   function aiFetchUsage(){ return IM_AI.aiFetchUsage.apply(this,arguments); }
@@ -1059,31 +1129,31 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function askAIJSON(){ return IM_AI.askAIJSON.apply(this,arguments); }
   function askAIJSONEnvelope(){ return IM_AI.askAIJSONEnvelope.apply(this,arguments); }
   function askAIGloss(){ return IM_AI.askAIGloss.apply(this,arguments); }   /* (#R491) the term-gloss lane. It answers with its OWN remaining count, so the reader's question counter (HOST.aiUsage) is never read or written for a lookup */
-  const IM_LABELS=window.IntMapModules.placeLabels(IM_HOST);
+  const IM_LABELS=placeLabels(IM_HOST);
   function applyLabelLang(){ return IM_LABELS.applyLabelLang.apply(this,arguments); }
   function ensurePlaceLabels(){ return IM_LABELS.ensurePlaceLabels.apply(this,arguments); }
-  const IM_WINMGR=window.IntMapModules.windowManager(IM_HOST);
+  const IM_WINMGR=windowManager(IM_HOST);
   function addEdgeResize(){ return IM_WINMGR.addEdgeResize.apply(this,arguments); }
   function bringToFront(){ return IM_WINMGR.bringToFront.apply(this,arguments); }
   function makeDraggable(){ return IM_WINMGR.makeDraggable.apply(this,arguments); }
   function registerWindow(){ return IM_WINMGR.registerWindow.apply(this,arguments); }
-  const IM_SEARCH=window.IntMapModules.searchGeocode(IM_HOST);
+  const IM_SEARCH=searchGeocode(IM_HOST);
   function doGeocode(){ return IM_SEARCH.doGeocode.apply(this,arguments); }
   function localFuzzyPlaces(){ return IM_SEARCH.localFuzzyPlaces.apply(this,arguments); }
-  const IM_NEWSCTX=window.IntMapModules.newsContext(IM_HOST);
+  const IM_NEWSCTX=newsContext(IM_HOST);
   function analyzeContext(){ return IM_NEWSCTX.analyzeContext.apply(this,arguments); }
   function rebuildGeoIndex(){ return IM_NEWSCTX.rebuildGeoIndex.apply(this,arguments); }
-  const IM_NEWSFEED=window.IntMapModules.newsFeed(IM_HOST);
+  const IM_NEWSFEED=newsFeed(IM_HOST);
   function aiTranslateTitles(){ return IM_NEWSFEED.aiTranslateTitles.apply(this,arguments); }
   function fetchData(){ return IM_NEWSFEED.fetchData.apply(this,arguments); }
   function loadNewsFromSupabase(){ return IM_NEWSFEED.loadNewsFromSupabase.apply(this,arguments); }
   function startNews(){ return IM_NEWSFEED.startNews.apply(this,arguments); }
   function newsFeatureOf(){ return IM_NEWSFEED.newsFeatureOf.apply(this,arguments); }   /* (#R416) the ONE news-pin builder */
-  const IM_READER=window.IntMapModules.articleReader(IM_HOST);
+  const IM_READER=articleReader(IM_HOST);
   function openArticleInSidebar(){ return IM_READER.openArticleInSidebar.apply(this,arguments); }
   function enterReaderPane(){ return IM_READER.enterReaderPane.apply(this,arguments); }   /* (#R435) the Event detail enters the same surface */
   function readerBar(){ return IM_READER.readerBar.apply(this,arguments); }   /* (#R451) …and wears the same bar */
-  const IM_COMMBOARD=window.IntMapModules.communityBoard(IM_HOST);
+  const IM_COMMBOARD=communityBoard(IM_HOST);
   function cmAddPost(){ return IM_COMMBOARD.cmAddPost.apply(this,arguments); }
   function cmEditPost(){ return IM_COMMBOARD.cmEditPost.apply(this,arguments); }
   function commCatLabel(){ return IM_COMMBOARD.commCatLabel.apply(this,arguments); }
@@ -1093,7 +1163,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function renderCommList(){ return IM_COMMBOARD.renderCommList.apply(this,arguments); }
   function setupCommunityLayer(){ return IM_COMMBOARD.setupCommunityLayer.apply(this,arguments); }
   function visibleCommunityPosts(){ return IM_COMMBOARD.visibleCommunityPosts.apply(this,arguments); }
-  const IM_READOUT=window.IntMapModules.mapReadout(IM_HOST);
+  const IM_READOUT=mapReadout(IM_HOST);
   function _demZoomForSpan(){ return IM_READOUT._demZoomForSpan.apply(this,arguments); }
   function demElevAt(){ return IM_READOUT.demElevAt.apply(this,arguments); }
   function demElevBilinear(){ return IM_READOUT.demElevBilinear.apply(this,arguments); }
@@ -1111,7 +1181,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function updateLayerReadout(){ return IM_READOUT.updateLayerReadout.apply(this,arguments); }
   function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); } function demTilePoints(){ return IM_READOUT.demTilePoints.apply(this,arguments); } function releaseDEMHold(){ return IM_READOUT.releaseDEMHold.apply(this,arguments); }   /* (#R221) one point per DEM TILE, and the pin the intensity field holds them with */
   function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); } function demVoidStats(){ return IM_READOUT.demVoidStats.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames; (#R265) …and the holes in the published elevation data, counted (the shell has a line budget — tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) */
-  const IM_ELEVPROF=window.IntMapModules.elevationProfile(IM_HOST);
+  const IM_ELEVPROF=elevationProfile(IM_HOST);
   function _openProfilePanel(){ return IM_ELEVPROF._openProfilePanel.apply(this,arguments); }
 
   /* Coalesce resizes to one per frame (#32) — the sidebar open/close transition fires the
@@ -1180,7 +1250,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      access, because the world rows (data/gazetteer-world.json) arrive after boot and a captured
      object would be the pre-#R198 table forever. */
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {_ORG_GZ,_DEMONYM_GZ,sourceDict}=window.IntMapTables;
+  const {_ORG_GZ,_DEMONYM_GZ,sourceDict}=IntMapTables;
   /* Precompiled longest-first matchers. Latin keys use word boundaries so short acronyms
      ("AP","RT") don't match inside unrelated words; CJK keys use substring. */
   const _pubMatchers=(()=>{ const cjk=/[　-ヿ㐀-鿿ｦ-ﾟ]/;
@@ -1422,7 +1492,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R9/#51) "News in this area": filter the analyzed news to the drawn radius/polygon and show it in
      the News feed, with a dismissable banner. Reuses the same geometry as the AI area-summary. */
   window._searchNewsInArea=function(){
-    if(!hasTurf()){ try{ imToast(window.IntMapLang.t(currentLang,'Turf.js unavailable','Turf.js（図形計算）を読み込めませんでした')); }catch(_){} return; }
+    if(!hasTurf()){ try{ imToast(IntMapLang.t(currentLang,'Turf.js unavailable','Turf.js（図形計算）を読み込めませんでした')); }catch(_){} return; }
     let test=null;
     if(toolMode==='radius'){ if(!radiusItems.length){ try{ imToast(t('aiSumNoArea')); }catch(_){} return; } const items=radiusItems.slice(); test=(lng,lat)=>items.some(c=>{ try{ return turf.distance(turf.point(c.center),turf.point([lng,lat]),{units:'kilometers'})<=c.radiusKm; }catch(_){ return false; } }); }
     else if(toolMode==='area'){ if(measurePoints.length<3){ try{ imToast(t('aiSumNoArea')); }catch(_){} return; } let poly; try{ poly=turf.polygon([[...measurePoints,measurePoints[0]]]); }catch(_){ return; } test=(lng,lat)=>{ try{ return turf.booleanPointInPolygon(turf.point([lng,lat]),poly); }catch(_){ return false; } }; }
@@ -1437,7 +1507,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let b=document.getElementById('area-news-banner');
     if(!b){ b=document.createElement('div'); b.id='area-news-banner'; b.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between;margin:0 0 8px;padding:7px 11px;border-radius:9px;background:rgba(10,132,255,0.12);border:1px solid var(--primary-color);font-size:12px;color:var(--text-main);';
       const feed=document.getElementById('live-news-feed'); if(feed&&feed.parentNode) feed.parentNode.insertBefore(b,feed); }
-    b.innerHTML='<span>📍 '+(window.IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">× '+(window.IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
+    b.innerHTML='<span>📍 '+(IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">× '+(IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
   }
 
   /* ===== AI FEATURE 3: spatial news summarization (radius / area) =====
@@ -1450,7 +1520,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       rep.setLoading(t('aiThinking'));
       try{
         const lines=uniq.map((p,i)=>`${i+1}. [${p.name||'?'}] ${p.title||''}${p.publisher?' ('+p.publisher+')':''}`).join('\n');
-        const sys = personaPrompt('working here as the geopolitical analyst of IntMap')+(window.IntMapLang.t(currentLang,"Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.","以下は、ある地理的範囲内で報じられているニュース見出しの一覧です。この地域で今何が起きているのかを地政学的観点から、日本語で簡潔に3行程度に要約してください。各行は「・」で始めてください。与えられた見出しの範囲内で述べ、過度な推測は避けてください。"))+window._aiLangLine();
+        const sys = personaPrompt('working here as the geopolitical analyst of IntMap')+(IntMapLang.t(currentLang,"Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.","以下は、ある地理的範囲内で報じられているニュース見出しの一覧です。この地域で今何が起きているのかを地政学的観点から、日本語で簡潔に3行程度に要約してください。各行は「・」で始めてください。与えられた見出しの範囲内で述べ、過度な推測は避けてください。"))+window._aiLangLine();
         const out=await askAI('Headlines:\n'+lines, sys);
         rep.setBody(out||'');
       }catch(e){ rep.setError((e&&e.message)||t('aiError'), run); }
@@ -1503,7 +1573,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Consumers: Atlas state context (per-layer live summary), the `layerData` action, and analyze evidence.
      Register new layers here in the SAME change that adds them (control-plane rule). ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerRegistry(IM_HOST);
+  layerRegistry(IM_HOST);
 
   /* ===== Map event wiring ===== */
   if(GE().hasRenderer()){
@@ -1599,7 +1669,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ window.IntMapNightSide&&window.IntMapNightSide.apply(); }catch(_){}
       /* (#R197/#R201) the space explorer's mount() — three passive input listeners that only add up
          while the camera is standing on the zoom floor; nothing exists until the crossing happens */
-      try{ window.IntMapModules.space(IM_HOST); window.IntMapSpace.mount(); }catch(_){}
+      try{ space(IM_HOST); window.IntMapSpace.mount(); }catch(_){}
       /* (#R186) LAUNCH-SCREEN MILESTONES 4 and 5. 4 is here: the style is parsed and the map is
          usable. 5 is "the default layers are actually painting" — 「完全に準備完了なるまで」 means
          the first thing the user sees should be the finished map, not a bare basemap that grows
@@ -1717,7 +1787,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R152) DESKTOP: right-click the compass → a popup to type an EXACT bearing / pitch (elevation) / zoom, applied to
      the current view ("方位磁針ボタンを右クリックしたら、方角、視点の仰角等を数値で打ち込めるポップアップ"). Left-click still resets north. */
   (function(){ const btn=document.getElementById('btn-compass'); if(!btn) return; let pop=null;
-    const CL=window.IntMapLang.pick(()=>currentLang);
+    const CL=IntMapLang.pick(()=>currentLang);
     function closePop(){ if(pop){ try{ pop.remove(); }catch(_){} pop=null; document.removeEventListener('mousedown',onDoc,true); document.removeEventListener('keydown',onKey,true); } }
     function onDoc(e){ if(pop && !pop.contains(e.target) && e.target!==btn) closePop(); }
     function onKey(e){ if(e.key==='Escape') closePop(); }
@@ -1793,9 +1863,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      into view, max 2 in flight), real member sets (NATO/EU/FSU), the real geoLayersDB geometry (chokepoints,
      island chains, pipelines…), live USGS quakes, a real day/night terminator — and a hand-drawn
      REPRESENTATIVE sketch only where the layer's data is a live stream that cannot be sampled cheaply. ===== */
-  window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);   /* (#R162) moved to js/layer-previews.js — see Architecture.md "File layout". */
+  window.IntMapLayerPreviews=layerPreviews(countryStats,loadCountryData);   /* (#R162) moved to js/layer-previews.js — see Architecture.md "File layout". */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerSidebar(IM_HOST);
+  layerSidebar(IM_HOST);
   /* ===== (#R63) BOTTOM TICKER ("設定から選択すれば、画面下部に最新ニュースや為替、株価やその他指標が取引所の
      ように流れる画面") — a thin exchange-style strip BELOW the map area (the app shell shrinks by 30px; nothing
      overlays the map), scrolling right→left: loaded news headlines (clickable), FX (er-api → fxratesapi fallback — #R372 swapped them; the keyless fxratesapi quota is 61/h and the app was spending it),
@@ -1810,9 +1880,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      with a bottom DOCK to reopen hidden windows, reset the layout, or exit the mode. Layout persists.
      Default OFF; desktop only; disable restores the exact original DOM via placeholders (fully additive). */
   /* (#R164) moved to js/workspace.js — see Architecture.md §3.1. */
-  window.IntMapWorkspace=window.IntMapModules.workspace(IM_HOST);
+  window.IntMapWorkspace=workspace(IM_HOST);
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.ticker(IM_HOST);
+  ticker(IM_HOST);
   /* (#R225) the `.geo-layer-cb` change listener went with the nine geopolitics rows it served —
      see the note in index.html. There are no such checkboxes any more. */
   document.getElementById('cb-names').addEventListener('change',(e)=>{ namesOn=e.target.checked; applyTheme();
@@ -1964,7 +2034,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      forwarders below are function DECLARATIONS on purpose: `IM_HOST`'s getters (see the top of this
      file) name them, and a getter read before this point would hit the temporal dead zone of a
      `const`. */
-  const IM_TIP=window.IntMapModules.mapTooltip();
+  const IM_TIP=mapTooltip();
   function ensureMapTooltip(){ return IM_TIP.ensureMapTooltip(); }
   function positionTooltip(point){ return IM_TIP.positionTooltip(point); }
   let newsFeatures=[], dashFeatures=[];
@@ -1999,7 +2069,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function refreshNewsPill(){ try{ if(!GE().hasRenderer()) return; ensureLabelPill(true);
       const dark=_newsUIDark();
       /* (#R161) news band theming through the engine (Phase-3 subsystem migration) */
-      const _GEp=window.IntMapGeoEngine;
+      const _GEp=IntMapGeoEngine;
       if(_GEp&&_GEp.layers.has('news-labels')){
         _GEp.layers.setPaint('news-labels','text-color', dark?'#15151a':'#ffffff');
         _GEp.layers.setPaint('news-labels','text-halo-color', dark?'rgba(255,255,255,0.55)':'rgba(0,0,0,0.55)');
@@ -2076,7 +2146,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function applyPinMode(a){
     if(!a) return;
     if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; a.ptype=a.subjectType||''; }
-    else { a.loc=hashLocFromString('sub:'+(a._title||'')); a.name=(window.IntMapLang.t(currentLang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida')); a.mapped=false; a.ptype=''; }
+    else { a.loc=hashLocFromString('sub:'+(a._title||'')); a.name=(IntMapLang.t(currentLang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida')); a.mapped=false; a.ptype=''; }
   }
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
   window.flyToLoc=function(lng,lat){ if(GE().hasRenderer())GE().camera.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
@@ -2096,7 +2166,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      (Current-language-only, or Multi with only the UI language ticked) there is nothing to translate, so
      the Translate-titles button is hidden entirely. UI 'jp' maps to news code 'ja'. */
   function _newsHasForeignLang(){
-    try{ const ui = window.IntMapLang.locale(currentLang,"en");
+    try{ const ui = IntMapLang.locale(currentLang,"en");
       if(newsLangMode!=='multi') return false;
       const sel = (Array.isArray(newsLangs)&&newsLangs.length) ? newsLangs : [];
       return sel.some(c=>c!==ui);
@@ -2149,7 +2219,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       /* ⚠ (#R236) German and Spanish fell through to English here — the chain handled jp and ru and
          nothing else, so 「原文」 read '(orig: …)' in two of the five languages. Through the registry
          now, where the five slots are positional and a missing one is visible. */
-      const note=lang?window.IntMapLang.t(currentLang,'(orig: '+lang+')','（原文: '+lang+'）','(Original: '+lang+')','(ориг.: '+lang+')','(orig.: '+lang+')'):'';
+      const note=lang?IntMapLang.t(currentLang,'(orig: '+lang+')','（原文: '+lang+'）','(Original: '+lang+')','(ориг.: '+lang+')','(orig.: '+lang+')'):'';
       return IntMapSafe.html(a.titleTranslated) + (note?`<div class="news-origlang">${IntMapSafe.html(note)}</div>`:'');   /* (#R138 SEC) titleTranslated/lang are AI output → escape */
     }
     return IntMapSafe.html(item.title);   /* (#R138 SEC) news title comes from external RSS → escape (this string is written to innerHTML by the card + rerenderNewsFeedTitles) */
@@ -2271,7 +2341,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      result into the compare set via _toggleCompare (same store the country rows use). */
   (function(){
     let picking=false, bound=null, keyH=null;
-    const _pl=window.IntMapLang.pick(()=>currentLang);
+    const _pl=IntMapLang.pick(()=>currentLang);
     const _btns=()=>[document.getElementById('csearch-pick'),document.getElementById('csearch-pick-ws')].filter(Boolean);
     function resolveAt(lngLat){
       try{ const TB=window.IntMapTimeBorders;
@@ -2323,7 +2393,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R122) COUNTRIES NUMERIC FILTER — filter the list by indicator thresholds (≥ / ≤), combinable with the sort.
      e.g. population ≥ 5M then sort by GDP desc. Conditions persist across re-renders. */
   let statsFilters=[], statsFilterOpen=false;
-  const _sfL=window.IntMapLang.pick(()=>currentLang);
+  const _sfL=IntMapLang.pick(()=>currentLang);
   function _sfParse(str){ let s=String(str==null?'':str).trim().replace(/[, _]/g,'').replace(/%$/,''); if(!s) return NaN;
     const m=s.match(/^(-?\d*\.?\d+)\s*([kmbtKMBT万億兆])?$/); if(!m) return (isFinite(+s)?+s:NaN);
     let v=+m[1]; const u=(m[2]||'').toLowerCase(); const mul={k:1e3,m:1e6,b:1e9,t:1e12,'万':1e4,'億':1e8,'兆':1e12}[u]||1; return v*mul; }
@@ -2336,9 +2406,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window._sfSetOp=(i,op)=>{ if(statsFilters[i]){ statsFilters[i].op=op; _sfRerender(); } };
   window._sfSetVal=(i,raw)=>{ if(statsFilters[i]){ statsFilters[i].raw=raw; statsFilters[i].val=_sfParse(raw); _sfRerender(); } };
   /* (#R163) moved to js/companies.js — see Architecture.md §3.1. */
-  window.IntMapCompanies=window.IntMapModules.companies(IM_HOST);
+  window.IntMapCompanies=companies(IM_HOST);
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
-  const _coL=window.IntMapLang.pick(()=>currentLang);
+  const _coL=IntMapLang.pick(()=>currentLang);
   /* (#R142) Companies COMPARE + TIME MACHINE. Compare mirrors Countries: single-click a row selects it, double-click opens
      detail; a sticky tray shows the selection and opens a side-by-side bar view. Everything reads mcap()/_coVal, which
      follow the time-machine year, so both the ranking and the comparison reflect past statistics. */
@@ -2363,7 +2433,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(cmpOpen){ panel.innerHTML=''; return; }
     if(!coCompareSet.size){ panel.innerHTML=`<div class="scf-empty">${t('coCompareEmpty')}</div>`; return; }
     const items=[...coCompareSet].map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
-    const chips=items.map(c=>`<span class="scb-chip">${IntMapSafe.html(_coName(c))}<button aria-label="${window.IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cx="${IntMapSafe.html(c.tk)}">×</button></span>`).join('');
+    const chips=items.map(c=>`<span class="scb-chip">${IntMapSafe.html(_coName(c))}<button aria-label="${IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cx="${IntMapSafe.html(c.tk)}">×</button></span>`).join('');
     panel.innerHTML=`<div class="scf-head"><span class="scf-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')} (${coCompareSet.size}/10)</span><div style="display:flex;gap:6px;">`+(coCompareSet.size>=2?`<button class="scf-view" data-cv="1">${t('compareView')}</button>`:'')+`<button data-cc="1">${t('compareClear')}</button></div></div><div class="scf-chips">${chips}</div>`;
     panel.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>window._coToggleCompare(b.getAttribute('data-cx')));
     const cv=panel.querySelector('[data-cv]'); if(cv) cv.onclick=()=>window._coShowCompare();
@@ -2418,7 +2488,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!active){ return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
-    const chips=items.map((s)=>`<span class="scb-chip">${window.IntMapSafe.flag(s.flag,'🏳️')} ${cName(s)}<button aria-label="${window.IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
+    const chips=items.map((s)=>`<span class="scb-chip">${window.IntMapSafe.flag(s.flag,'🏳️')} ${cName(s)}<button aria-label="${IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button class="scf-view" onclick="_showCompare()">${t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
@@ -2446,7 +2516,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      to reach into this closure for — `newsDate`, the recent-archive facet every news reader tests.
      Registered FIRST, so «the kernel keeps newsDate in lock-step before anybody else runs» is still
      exactly true. */
-  try{ window.IntMapTime.on(e=>{ try{ newsDate = e.isLive ? null : new Date(e.when); }catch(_){} }); }catch(_){}
+  try{ IntMapTime.on(e=>{ try{ newsDate = e.isLive ? null : new Date(e.when); }catch(_){} }); }catch(_){}
   /* (#R169) moved verbatim to js/news-feed.js — see Architecture.md §3.1. */
   /* (#R40) TEMPORARY per request ("AIで解析済みのニュースをサーバーから取得というシステムは一時的に停止し、
      フロントエンドでの非AI地点解析システムのみを使って。全言語で"): force the client-side, non-AI gazetteer
@@ -2556,7 +2626,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     OS._bindCatalog=function(fn){ if(typeof fn==='function') OS.catalog=fn; };
     OS.ready=function(){ return !!_dispatch; };
     return OS;
-  })();  try{ installCapabilityKernel(window.IntMapOS, IM_HOST, { GE:()=>window.IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas capability registry not installed',e); }catch(_){} }   /* (#R318) execute() and the rest of the capability kernel — js/atlas-executor.js holds the eleven steps AND the reason they are not written out here (the app-shell budget, tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795). ⚠ the lifecycle goes to `emit`, not into the 200-entry syscall ring: one operation emits four to six events and would flush the command log it shares. */
+  })();  try{ installCapabilityKernel(window.IntMapOS, IM_HOST, { GE:()=>IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas capability registry not installed',e); }catch(_){} }   /* (#R318) execute() and the rest of the capability kernel — js/atlas-executor.js holds the eleven steps AND the reason they are not written out here (the app-shell budget, tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795). ⚠ the lifecycle goes to `emit`, not into the 200-entry syscall ring: one operation emits four to six events and would flush the command log it shares. */
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
   /* ══ (#R243) 「自動で左サイドバーをあける動作もやれ」 — one action, not a second mechanism ═══════
      js/window-manager.js has to open this column when a panel arrives in it while the dock mode is
@@ -2607,7 +2677,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const b3=document.getElementById('btn-view-3d');
     const syncBtns=()=>{ if(b3) b3.classList.toggle('active',terrain3D); document.querySelectorAll('[data-proxy="btn-view-3d"]').forEach(b=>b.classList.toggle('active',terrain3D)); };
     if(on){
-      if(!ensureTerrainSource()){ try{ imToast(window.IntMapLang.t(currentLang,'Could not load 3D terrain','3D地形を読み込めませんでした','3D-Gelände konnte nicht geladen werden','Не удалось загрузить 3D-рельеф','No se pudo cargar el terreno 3D')); }catch(_){} return; }
+      if(!ensureTerrainSource()){ try{ imToast(IntMapLang.t(currentLang,'Could not load 3D terrain','3D地形を読み込めませんでした','3D-Gelände konnte nicht geladen werden','Не удалось загрузить 3D-рельеф','No se pudo cargar el terreno 3D')); }catch(_){} return; }
       terrain3D=true; syncBtns();
       try{ GE().scene.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
       /* ⚠ (#R196) THIS NO LONGER SETS THE SKY. It used to install a mercator-only block — a blue dome
@@ -2661,11 +2731,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ⚠ (#R233) THE SWITCH WAITS FOR ITS STRINGS — js/lang-switch.js holds the whole rule and the
      measurement (168 own keys against English's 452 = 「基本的なUIですら言語が混在」). */
   function setLang(lang){
-    if(!window.IntMapLang.codes().includes(lang) || currentLang===lang) return;
-    try{ window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
+    if(!IntMapLang.codes().includes(lang) || currentLang===lang) return;
+    try{ IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
     window.IntMapLangSwitch.when(lang,()=>{ currentLang=lang;
-      try{ document.documentElement.setAttribute('lang', window.IntMapLang.htmlTag(lang)); }catch(_){}
+      try{ document.documentElement.setAttribute('lang', IntMapLang.htmlTag(lang)); }catch(_){}
       globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
       try{ applyLabelLang(); }catch(_){}   /* (#R40) re-apply map place-label language immediately on pill switch (was only on Settings-Apply → RU/ES labels stayed English until Apply) */
       try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){} });   /* modules that relabel on language change */
@@ -2679,11 +2749,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   { const sl=document.getElementById('setting-lang'); if(sl) sl.addEventListener('change',e=>setLang(e.target.value)); }
   /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
   const _nlDN={};   /* (#R246) one Intl.DisplayNames per UI language, built on demand */
-  function newsLangNameOf(c){ try{ const tag=window.IntMapLang.locale(currentLang);
+  function newsLangNameOf(c){ try{ const tag=IntMapLang.locale(currentLang);
       if(_nlDN[tag]===undefined){ try{ _nlDN[tag]=new Intl.DisplayNames([tag],{type:'language'}); }catch(_){ _nlDN[tag]=null; } }
       const n=_nlDN[tag]&&_nlDN[tag].of(c); if(n&&n!==c) return n; }catch(_){} return c; }
   function updateNewsLangLabel(){ const lbl=document.getElementById('newslang-dd-label'); if(!lbl) return;
-    const sel=newsLangs||[]; lbl.textContent = sel.length? sel.map(newsLangNameOf).join(', ') : (window.IntMapLang.t(currentLang,'None selected','未選択','Nichts ausgewählt','Не выбрано','Nada seleccionado')); }
+    const sel=newsLangs||[]; lbl.textContent = sel.length? sel.map(newsLangNameOf).join(', ') : (IntMapLang.t(currentLang,'None selected','未選択','Nichts ausgewählt','Не выбрано','Nada seleccionado')); }
   function renderNewsLangChecks(){
     const wrap=document.getElementById('newslang-multi'), hint=document.getElementById('newslang-hint'), sel=document.getElementById('setting-newslang'), dd=document.getElementById('newslang-dd');
     if(!wrap||!sel) return;
@@ -2697,7 +2767,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          languages appeared checked / a tap didn't stick). */
       wrap.addEventListener('change',(e)=>{ if(e.target&&e.target.type==='checkbox'){ newsLangs=Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(c=>c.value);
           try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} }
-        const lbl=document.getElementById('newslang-dd-label'); if(lbl) lbl.textContent=(newsLangs.length?newsLangs.map(newsLangNameOf).join(', '):(window.IntMapLang.t(currentLang,'None selected','未選択','Nichts ausgewählt','Не выбрано','Nada seleccionado'))); });
+        const lbl=document.getElementById('newslang-dd-label'); if(lbl) lbl.textContent=(newsLangs.length?newsLangs.map(newsLangNameOf).join(', '):(IntMapLang.t(currentLang,'None selected','未選択','Nichts ausgewählt','Не выбрано','Nada seleccionado'))); });
     }
     wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=newsLangs.includes(cb.value); });
     wrap.querySelectorAll('.nlx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=newsLangNameOf(c); });
@@ -2770,7 +2840,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     zones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(!q || disp.toLowerCase().includes(q) || z.toLowerCase().includes(q)) add(z,disp); });
     rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option'); window.IntMapDialog.makeActionable(d);
       d.addEventListener('click',()=>{ _tzSelect(r.v); res.classList.remove('show'); }); res.appendChild(d); });
-    if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(window.IntMapLang.t(currentLang,'No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')); res.appendChild(d); }
+    if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(IntMapLang.t(currentLang,'No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')); res.appendChild(d); }
   }
   (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'), sel=document.getElementById('setting-tz'), res=document.getElementById('tz-results'); if(!inp||!res) return;
     const open=()=>{ populateTimezones(inp.value); res.classList.add('show'); };
@@ -2786,7 +2856,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* Discard-changes guard: any edit inside Settings marks it dirty; closing without Apply asks. */
   let settingsDirty=false;
   function closeSettings(){
-    if(settingsDirty && !confirm(window.IntMapLang.t(currentLang,'You have unsaved changes. Discard them?','変更を保存していません。破棄して閉じますか？','Ungespeicherte Änderungen verwerfen?','Изменения не сохранены. Отменить их?','Hay cambios sin guardar. ¿Descartarlos?'))) return;
+    if(settingsDirty && !confirm(IntMapLang.t(currentLang,'You have unsaved changes. Discard them?','変更を保存していません。破棄して閉じますか？','Ungespeicherte Änderungen verwerfen?','Изменения не сохранены. Отменить их?','Hay cambios sin guardar. ¿Descartarlos?'))) return;
     settingsDirty=false; modal.style.display='none';
     try{ window._accentPending=window.imAccent; applyAccent(); }catch(_){}   /* (#R114) discard any live accent preview → back to the committed colour */
   }
@@ -2803,7 +2873,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){} }); }
   /* (#R21) Tutorial button (top of Settings) — closes the panel and replays the layer showcase. */
   (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
-    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=window.IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）','Tutorial — Ebenen-Rundgang','Обучение — обзор слоёв','Tutorial — recorrido de capas'); };
+    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）','Tutorial — Ebenen-Rundgang','Обучение — обзор слоёв','Tutorial — recorrido de capas'); };
     lbl(); window.addEventListener('intmap-lang',lbl);
     tb.onclick=(e)=>{ e.preventDefault(); settingsDirty=false; modal.style.display='none';
       try{ window._imDemoStop&&window._imDemoStop(); }catch(_){}
@@ -2928,7 +2998,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   })();
 
   /* (#R167) moved to js/feedback.js — see Architecture.md §3.1. */
-  window.IntMapModules.feedback(IM_HOST);
+  feedback(IM_HOST);
 
   /* ============================================================================
      (#R29.1) PLAYGROUND (beta) — experimental interactive modes, all in one hub:
@@ -2939,7 +3009,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/playground.js; (#R209) fetched when Settings ▸ Playground is pressed. */
 
   /* (#R167) moved to js/legal.js — see Architecture.md §3.1. */
-  window.IntMapModules.legal(IM_HOST);
+  legal(IM_HOST);
   _wireCountryPopupClose();
 
   /* ===================== Right-click pins ===================== */
@@ -2986,7 +3056,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const el=document.getElementById('pin-popup'); el.style.display='block';
     let elevHTML='—';
     if(pin.elev!=null){
-      if(pin.elev<0) elevHTML=`<b style="color:var(--info-maritime)">${Math.abs(Math.round(pin.elev))} m ${window.IntMapLang.t(currentLang,'(below sea)','(海中)','(unter Meeresspiegel)','(ниже уровня моря)','(bajo el nivel del mar)')}</b>`;
+      if(pin.elev<0) elevHTML=`<b style="color:var(--info-maritime)">${Math.abs(Math.round(pin.elev))} m ${IntMapLang.t(currentLang,'(below sea)','(海中)','(unter Meeresspiegel)','(ниже уровня моря)','(bajo el nivel del mar)')}</b>`;
       else elevHTML=`<b>${Math.round(pin.elev)} m</b>`;
     }
     let distHTML2='';
@@ -2997,9 +3067,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const brg=bearingDeg([prev.lng,prev.lat],[pin.lng,pin.lat]);
       distHTML2=`<div class="pin-popup-row"><span>${t('ctxDistFrom')}</span><b>${distTXT(km)}</b></div><div class="pin-popup-row"><span>${t('bearing')}</span><b>${brg.toFixed(1)}° ${compassDir(brg)}</b></div>`;
     }
-    const pm=pin.meta||{}, pmT=String(pm.title||'').trim(), pmD=String(pm.description||'').trim(), pmS=[String(pm.when||'').trim(),String(pm.source||'').trim()].filter(Boolean).join(' · '), pmU=pm.url?IntMapSafe.url(String(pm.url)):'';   /* ⚠ (#R489) EVERY VALUE HERE IS AN ATLAS-SUPPLIED STRING, so every one reaches innerHTML through IntMapSafe.html and the link through IntMapSafe.url — http(s)/mailto/tel only (index.html). A pin with no meta renders byte-identically to what it always did. */ const pmH=(pmD?`<div style="font-size:11.5px;line-height:1.55;margin:-2px 0 6px;opacity:.9;">${IntMapSafe.html(pmD)}</div>`:'')+(pmS?`<div style="font-size:10.5px;color:var(--text-muted);margin:-3px 0 6px;">${IntMapSafe.html(pmS)}</div>`:'')+(pmU?`<div style="font-size:10.5px;margin:-3px 0 6px;"><a href="${IntMapSafe.html(pmU)}" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;">${window.IntMapLang.t(currentLang,'source','出典','Quelle','источник','fuente')} ↗</a></div>`:'');
-    el.innerHTML=`<button aria-label="${window.IntMapLang.t(currentLang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" class="pin-popup-close" onclick="window._closePinPopup()">×</button>
-      <div style="font-weight:600; margin-bottom:6px;">📍 ${pmT?IntMapSafe.html(pmT):`${window.IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}`}</div>${pmH}
+    const pm=pin.meta||{}, pmT=String(pm.title||'').trim(), pmD=String(pm.description||'').trim(), pmS=[String(pm.when||'').trim(),String(pm.source||'').trim()].filter(Boolean).join(' · '), pmU=pm.url?IntMapSafe.url(String(pm.url)):'';   /* ⚠ (#R489) EVERY VALUE HERE IS AN ATLAS-SUPPLIED STRING, so every one reaches innerHTML through IntMapSafe.html and the link through IntMapSafe.url — http(s)/mailto/tel only (index.html). A pin with no meta renders byte-identically to what it always did. */ const pmH=(pmD?`<div style="font-size:11.5px;line-height:1.55;margin:-2px 0 6px;opacity:.9;">${IntMapSafe.html(pmD)}</div>`:'')+(pmS?`<div style="font-size:10.5px;color:var(--text-muted);margin:-3px 0 6px;">${IntMapSafe.html(pmS)}</div>`:'')+(pmU?`<div style="font-size:10.5px;margin:-3px 0 6px;"><a href="${IntMapSafe.html(pmU)}" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;">${IntMapLang.t(currentLang,'source','出典','Quelle','источник','fuente')} ↗</a></div>`:'');
+    el.innerHTML=`<button aria-label="${IntMapLang.t(currentLang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" class="pin-popup-close" onclick="window._closePinPopup()">×</button>
+      <div style="font-weight:600; margin-bottom:6px;">📍 ${pmT?IntMapSafe.html(pmT):`${IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}`}</div>${pmH}
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
@@ -3022,17 +3092,17 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   /* (#R164) moved to js/data-layers.js — see Architecture.md §3.1. */
-  window.IntMapModules.dataLayers(IM_HOST);
+  dataLayers(IM_HOST);
   /* ================ END GROUP 3 ================ */
 
   /* (#R200) moved to js/premium-plan.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   makePremiumPlan(IM_HOST, { i18n, satRenderController, satRenderKeyInputs });
   /* (#R167) moved to js/news-timeline.js — see Architecture.md §3.1. */
-  window.IntMapModules.newsTimeline(IM_HOST);
+  newsTimeline(IM_HOST);
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.locate(IM_HOST);
+  locate(IM_HOST);
 
   /* =============================================================================
    *  COMMUNITY TAB — user-placed pins + posts + comments. Uses localStorage.
@@ -3049,7 +3119,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let composeEditId=null, composeCat='general', replyingTo=null;
   let commCollapsed={};              /* postId -> true when its comment thread is collapsed */
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {COMM_CATEGORIES}=window.IntMapTables;
+  const {COMM_CATEGORIES}=IntMapTables;
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   function compressImage(file, maxDim=1100, quality=0.72){
     return new Promise((resolve,reject)=>{
@@ -3070,10 +3140,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const url=URL.createObjectURL(file); const SIZE=260;
       const ov=document.createElement('div'); ov.className='crop-overlay';
       ov.innerHTML=`<div class="crop-card">
-        <div class="crop-title">${window.IntMapLang.t(currentLang,'Crop image','画像をトリミング','Bild zuschneiden','Обрезать изображение','Recortar imagen')}</div>
+        <div class="crop-title">${IntMapLang.t(currentLang,'Crop image','画像をトリミング','Bild zuschneiden','Обрезать изображение','Recortar imagen')}</div>
         <div class="crop-stage" id="crop-stage"><img id="crop-img" alt="" draggable="false"><div class="crop-ring"></div></div>
-        <div class="crop-zoom"><span aria-hidden="true">－</span><input type="range" id="crop-zoom" aria-label="${window.IntMapLang.t(currentLang,'Zoom','ズーム')}" min="1" max="4" step="0.01" value="1"><span aria-hidden="true">＋</span></div>
-        <div class="crop-actions"><button id="crop-cancel">${window.IntMapLang.t(currentLang,'Cancel','キャンセル','Abbrechen','Отмена','Cancelar')}</button><button id="crop-ok" class="crop-ok">${window.IntMapLang.t(currentLang,'Apply','適用','Anwenden','Применить','Aplicar')}</button></div>
+        <div class="crop-zoom"><span aria-hidden="true">－</span><input type="range" id="crop-zoom" aria-label="${IntMapLang.t(currentLang,'Zoom','ズーム')}" min="1" max="4" step="0.01" value="1"><span aria-hidden="true">＋</span></div>
+        <div class="crop-actions"><button id="crop-cancel">${IntMapLang.t(currentLang,'Cancel','キャンセル','Abbrechen','Отмена','Cancelar')}</button><button id="crop-ok" class="crop-ok">${IntMapLang.t(currentLang,'Apply','適用','Anwenden','Применить','Aplicar')}</button></div>
       </div>`;
       document.body.appendChild(ov);
       const stage=ov.querySelector('#crop-stage'), img=ov.querySelector('#crop-img'), zoom=ov.querySelector('#crop-zoom');
@@ -3144,7 +3214,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   document.getElementById('compose-place').onclick=()=>{
     document.getElementById('compose-modal').classList.remove('active');
     communityAddArmed=true;
-    imToast(window.IntMapLang.t(currentLang,'Tap the map to move the pin','地図をタップしてピンを移動','Karte antippen, um den Pin zu verschieben','Коснитесь карты, чтобы переместить метку','Toca el mapa para mover el pin'));
+    imToast(IntMapLang.t(currentLang,'Tap the map to move the pin','地図をタップしてピンを移動','Karte antippen, um den Pin zu verschieben','Коснитесь карты, чтобы переместить метку','Toca el mapa para mover el pin'));
   };
   document.getElementById('compose-submit').onclick=async()=>{
     if(!requireLogin()) return;
@@ -3156,16 +3226,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }
     const title=document.getElementById('compose-post-title').value.trim();
     const body=document.getElementById('compose-post-body').value.trim();
-    if(!title && !body){ imToast(window.IntMapLang.t(currentLang,'Enter a title or some text.','タイトルか本文を入力してください。','Titel oder Text eingeben.','Введите заголовок или текст.','Escribe un título o texto.')); return; }
+    if(!title && !body){ imToast(IntMapLang.t(currentLang,'Enter a title or some text.','タイトルか本文を入力してください。','Titel oder Text eingeben.','Введите заголовок или текст.','Escribe un título o texto.')); return; }
     /* never dead-end on a missing location: fall back to the current map center */
-    if(!pendingPostLoc){ if(GE().hasRenderer()){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(window.IntMapLang.t(currentLang,'Location not set.','位置が設定されていません。','Kein Ort festgelegt.','Местоположение не задано.','Ubicación no establecida.')); return; } }
+    if(!pendingPostLoc){ if(GE().hasRenderer()){ const c=GE().camera.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(IntMapLang.t(currentLang,'Location not set.','位置が設定されていません。','Kein Ort festgelegt.','Местоположение не задано.','Ubicación no establecida.')); return; } }
     const loc=[pendingPostLoc[0],pendingPostLoc[1]], img=pendingImg||'';
     const btn=document.getElementById('compose-submit'); btn.disabled=true;
     try{
       if(composeEditId) await cmEditPost(composeEditId,{ title, body, img, category:composeCat, lat:loc[1], lng:loc[0] });
       else { await cmAddPost(title, body, img, loc[1], loc[0], composeCat); try{ localStorage.setItem('intmap_last_post',Date.now()); }catch(_){} }
     }
-    catch(e){ btn.disabled=false; alert(((composeEditId?(window.IntMapLang.t(currentLang,'Update failed: ','更新に失敗しました: ','Aktualisierung fehlgeschlagen: ','Не удалось обновить: ','Error al actualizar: ')):(window.IntMapLang.t(currentLang,'Post failed: ','投稿に失敗しました: ','Beitrag fehlgeschlagen: ','Не удалось опубликовать: ','Error al publicar: '))))+((e&&e.message)||e)); return; }
+    catch(e){ btn.disabled=false; alert(((composeEditId?(IntMapLang.t(currentLang,'Update failed: ','更新に失敗しました: ','Aktualisierung fehlgeschlagen: ','Не удалось обновить: ','Error al actualizar: ')):(IntMapLang.t(currentLang,'Post failed: ','投稿に失敗しました: ','Beitrag fehlgeschlagen: ','Не удалось опубликовать: ','Error al publicar: '))))+((e&&e.message)||e)); return; }
     btn.disabled=false;
     document.getElementById('compose-modal').classList.remove('active');
     const wasEdit=!!composeEditId; composeEditId=null;
@@ -3180,7 +3250,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(inp){
       inp.addEventListener('change', async (e)=>{
         const f=e.target.files&&e.target.files[0]; if(!f) return;
-        if(!/^image\//.test(f.type||'')){ alert(window.IntMapLang.t(currentLang,'Please choose an image file','画像ファイルを選択してください','Bitte eine Bilddatei wählen','Выберите файл изображения','Elige un archivo de imagen')); e.target.value=''; return; }
+        if(!/^image\//.test(f.type||'')){ alert(IntMapLang.t(currentLang,'Please choose an image file','画像ファイルを選択してください','Bitte eine Bilddatei wählen','Выберите файл изображения','Elige un archivo de imagen')); e.target.value=''; return; }
         try{ pendingImg=await compressImage(f); showComposeImgPreview(pendingImg); }catch(_){ }
         e.target.value='';
       });
@@ -3199,7 +3269,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
-  const initMobileUI=window.IntMapModules.mobileUI(IM_HOST);
+  const initMobileUI=mobileUI(IM_HOST);
 
   /* =====================================================================
    *  SUPABASE INTEGRATION — cloud data loading, auth, community + favorites,
@@ -3214,7 +3284,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      rich even before/without Supabase; merged with any DB cards (deduped by English title).
      Images are lazy-fetched from Wikipedia by applyWikiImageBackground(). */
   /* (#R162) moved to js/reference-data.js — see Architecture.md "File layout". */
-  const DEFAULT_DASH_CARDS=window.IntMapRefData.dashCards;
+  const DEFAULT_DASH_CARDS=IntMapRefData.dashCards;
   async function loadDashFromSupabase(){
     let rows=[];
     if(DB){ const { data, error } = await DB.from('dashboard_cards').select('*').order('sort_order',{ascending:true});
@@ -3245,7 +3315,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.imAvatarHue=function(){ const s=(currentUser&&(currentUser.name||currentUser.email))||'?'; let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h)%360; };
   window.imSetAvatar=function(e){ try{ localStorage.setItem('intmap_avatar',e); }catch(_){} try{ updateAccountButton(); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} };
   function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b){
-      if(!currentUser){ b.textContent=(window.IntMapLang.t(currentLang,'Log in','ログイン','Anmelden','Войти','Iniciar sesión')); }
+      if(!currentUser){ b.textContent=(IntMapLang.t(currentLang,'Log in','ログイン','Anmelden','Войти','Iniciar sesión')); }
       else { const nm=(currentUser.name||currentUser.email.split('@')[0]), img=window.imGetAvatarImg();
         /* (#R30) name wrapped in .acct-name so mobile can show the avatar ONLY (the full name made the
            account / feedback / settings row wrap = "横一列に並ばず改行されてしまう"). */
@@ -3295,7 +3365,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R207) the chosen news OUTLETS — empty = every one. Persisted beside the country list. */
   window.imNewsSources=[];
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {NEWS_COUNTRY_FEEDS}=window.IntMapTables;
+  const {NEWS_COUNTRY_FEEDS}=IntMapTables;
   window.NEWS_COUNTRY_FEEDS=NEWS_COUNTRY_FEEDS;
   /* (#R114) ===== Accent color ===== recolour the UI accent (--primary-color) from Settings.
      window.imAccent = 'default' (theme blue) | '#rrggbb'. A custom value is injected as an !important override on
@@ -3334,7 +3404,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
     window.imAccent=(typeof s.accent==='string'&&s.accent)?s.accent:'default'; try{ applyAccent(); }catch(_){}   /* (#R114) restore accent */
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
-    if(window.IntMapLang.codes().includes(s.lang)){ currentLang=s.lang; window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
+    if(IntMapLang.codes().includes(s.lang)){ currentLang=s.lang; IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.aiModel&&typeof s.aiModel==='object') window.imAiModel=s.aiModel;   /* (#R722) developer model pick. Restored AND saved here: saveSettings() rebuilds the record from these globals, so a key written straight to localStorage is dropped by the next save. It rides in intmap_settings, so user_prefs carries it across devices. It grants nothing — ai-proxy re-decides from the account id. */
     if(s.labelLang) window.imLabelLang=s.labelLang;
@@ -3375,7 +3445,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const _sidebarStyle = makeSidebarStyle({ GE, isMobile });
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layoutReflow(IM_HOST);
+  layoutReflow(IM_HOST);
 
   /* (#R200) moved to js/screenshot.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
@@ -3386,23 +3456,23 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, i18n, saveSettings, t });
 
   /* ---------- Data sources & attribution modal (#37) ---------- */  /* (#R162) the list moved to js/reference-data.js — see Architecture.md "File layout". */
-  const DATA_SOURCES=window.IntMapRefData.dataSources;
+  const DATA_SOURCES=IntMapRefData.dataSources;
   /* (#R246) the descriptions are `sourceUse` in js/locales/pages.<code>.js, lazily fetched, and the lookup
      lives with the registry (js/reference-data.js `useText`/`ensureDocs`) — one implementation, not a copy. */
   function openSourcesModal(){
     const m=document.getElementById('sources-modal'); if(!m) return;
     document.getElementById('sources-title').textContent=t('srcModalTitle'); document.getElementById('sources-sub').textContent=t('srcModalSub');
-    const use=(s)=>window.IntMapRefData.useText(s.n,currentLang);
+    const use=(s)=>IntMapRefData.useText(s.n,currentLang);
     const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span><br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join(''); };
     paint(); m.style.display='flex';
-    window.IntMapRefData.ensureDocs(currentLang,paint); }
+    IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
     const m=document.getElementById('sources-modal'); if(m){ m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); window.IntMapDialog.adopt(m,{ panel:m.querySelector('.modal-content'), labelledby:'sources-title' }); } }   /* (#R218) folded onto one line: tests/shell-app-body-modules-checks.test.mjs #R200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */
 
   /* (#R207) BOTH news pickers (by-country #29, by-outlet new) live in js/news-sources.js — one
      feature, one nc-dd shape, and instruction 13 says new work leaves the core. Thin names only here. */
-  window.IntMapModules.newsSources(IM_HOST,{ NEWS_COUNTRY_FEEDS });
+  newsSources(IM_HOST,{ NEWS_COUNTRY_FEEDS });
   const NS=()=>window.IntMapNewsSources;
   const renderNewsCountryChecks=()=>{ try{ NS().renderCountries(); }catch(_){} };
   const updateNewsCountryLabel=()=>{ try{ NS().syncCountryLabel(); }catch(_){} };
@@ -3484,7 +3554,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   };
   /* (#R94) news + dated-raster + community core now runs on EVERY kernel change (the slider used to call it
      directly; the kernel keeps newsDate in lock-step first, so applyGlobalDate reads the fresh instant). */
-  try{ window.IntMapTime.on(()=>{ try{ applyGlobalDate(); }catch(_){} }); }catch(_){}
+  try{ IntMapTime.on(()=>{ try{ applyGlobalDate(); }catch(_){} }); }catch(_){}
 
   /* ============================================================================
    *  (#R94e) MADDISON PROJECT — authoritative HISTORICAL GDP & population back to 1850 (real GDP in constant
@@ -3494,7 +3564,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  { ISO3|SUN|YUG|CSK : { year : [gdpPerCapita2011intl, populationThousands] } }, lazy-loaded on first travel.
    *  ========================================================================== */
   /* (#R162) moved to js/history.js — see Architecture.md "File layout". */
-  window.IntMapMaddison=window.IntMapModules.maddison();
+  window.IntMapMaddison=maddison();
 
   /* (#R200) moved to js/time-countries.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
@@ -3510,7 +3580,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  period BORDERS come from the Historical-borders layer (aourednik) that the clock already drives. The
    *  table is data-driven, so more former states extend it trivially. ========================================= */
   /* (#R162) moved to js/history.js — see Architecture.md "File layout". */
-  window.IntMapHistStates=window.IntMapModules.histStates(countryStats);
+  window.IntMapHistStates=histStates(countryStats);
 
   /* ============================================================================
    *  (#R94k) HISTORICAL COUNTRY IDENTITY — a modern country whose TERRITORY is roughly the same but whose
@@ -3519,11 +3589,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  the historical name + flag. Multi-nation empires that HID several modern countries live in IntMapHistStates
    *  instead; this is only for single-country renamings. ============================================= */
   /* (#R162) moved to js/history.js — see Architecture.md "File layout". */
-  window.IntMapHistId=window.IntMapModules.histId(countryStats);
+  window.IntMapHistId=histId(countryStats);
 
   /* (#R94) Köppen climate era follows the clock (uses the existing period rasters, no new assets). Only
      reloads the texture when the climate layer is actually on; otherwise just remembers the era. */
-  try{ window.IntMapTime.on(e=>{
+  try{ IntMapTime.on(e=>{
     const on=(()=>{ try{ const c=document.getElementById('dl-climate'); return !!(c&&c.checked); }catch(_){ return false; } })();
     const y=e.year; const era=e.isLive?'1991-2020':(y>=1991?'1991-2020':y>=1961?'1961-1990':y>=1931?'1931-1960':'1901-1930');
     if(window._koppenPeriod===era) return;
@@ -3535,7 +3605,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      VIIRS) now follow the master clock centrally. sst/snow/aod/thermal/precip stay with setGlobalLayerDate
      (called from applyGlobalDate) so each dated layer is refreshed by exactly one subscriber. GIBS lags ~2 d,
      so the request date is clamped back to the freshest processed day. */
-  try{ window.IntMapTime.on(e=>{ try{ const LD=window._imLayerDates; if(!LD) return;
+  try{ IntMapTime.on(e=>{ try{ const LD=window._imLayerDates; if(!LD) return;
     const maxIso=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     let d=e.isLive?maxIso:e.iso; if(d>maxIso) d=maxIso;
     ['no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
@@ -3550,7 +3620,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      one layer the clock did not move.
      ⚠ 「変更された瞬間に」 IS THE REQUIREMENT — this runs on the broadcast, not on whatever redraws
      next. Re-propagating is arithmetic on elements already in hand, so there is nothing to debounce. */
-  try{ window.IntMapTime.on(()=>{
+  try{ IntMapTime.on(()=>{
     try{ if(window.IntMapSatellites&&window.IntMapSatellites.refresh) window.IntMapSatellites.refresh(); }catch(_){}
   }); }catch(_){}
 
@@ -3562,7 +3632,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  own DOM, CSS, projection math and input handling.
    *  ========================================================================== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.projView(IM_HOST);
+  projView(IM_HOST);
 
   /* ---------- Animated wind layer (#9) ---------- */
   /* REAL global 10 m wind field from Open-Meteo (GFS), no key, CORS-enabled (Access-Control-Allow-
@@ -3573,7 +3643,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      through the wind field in degrees, and PROJECTS it with the live map each frame — so the flow is
      correct under any projection/zoom/rotation and pans & zooms locked to the map ("座標ベース"). */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
-  window.IntMapModules.wind(IM_HOST);
+  wind(IM_HOST);
 
   /* ===================== Freehand DRAW / trace tool (#R7) =====================
      Click (or tap) once to start, move the cursor to trace a freehand curve in real time, click again
@@ -3586,20 +3656,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        • Distance = great-circle (turf), area = spherical-excess polygon (ringArea) → correct at any
          latitude, antimeridian/pole-safe like the other tools. ============================= */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.drawTool(IM_HOST);
+  drawTool(IM_HOST);
 
   /* (#R167) moved to js/dash-extended.js — see Architecture.md §3.1. */
-  window.IntMapModules.dashExtended(IM_HOST);
+  dashExtended(IM_HOST);
 
   /* ===== (#R9b/#40/#41/#42/#14) Earth, sky & airspace: major dams, active volcanoes, NOAA aurora
      forecast (live), and approximate Air-Defense Identification Zones. Self-contained, additive. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.earthSky(IM_HOST);
+  earthSky(IM_HOST);
 
   /* ===== (#R11) Land cover & earth science: ESA WorldCover 2021 (WMTS raster), RESOLVE/WWF Ecoregions
      2017 (self-hosted GeoJSON), and tectonic plates (real polygons + boundaries). Self-contained. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.landCover(IM_HOST);
+  landCover(IM_HOST);
 
   /* ===== (#R19) Beta layers — Ukraine frontline (LIVE, DeepState API) · 3D city buildings
      (OpenFreeMap vector building footprints, fill-extrusion) · Historical borders time slider
@@ -3607,7 +3677,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      All three rows are swept into "Others (beta)" by reorganizeLayerPanel. Each registers an
      opacity legend via _registerLayerOpacity. Everything lazy-loads on first toggle. ===== */
   /* (#R164) moved to js/beta-overlays.js — see Architecture.md §3.1. */
-  window.IntMapModules.betaOverlays(IM_HOST);
+  betaOverlays(IM_HOST);
 
   /* ===== (#R21) Beta layer pack 2 — Data centers & AI infra · World railways by gauge · Pharma &
      health (factory hubs + life-expectancy choropleth) · Corruption indicator (World Bank WGI,
@@ -3615,19 +3685,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      reorganize sweep; data is lazy-loaded on first toggle and exposed through
      window.IntMapBeta2.load(key,cb) so the Compare view reuses the same FeatureCollections. ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. (#R254) js/datacenters.js owns the data-center row's layer; (#R311) it is now the eleventh ON-DEMAND module, so the call that used to stand here is js/lazy-modules.js's mount and it runs when `dcToggle` (or Compare's `load('dc')`) asks for it. */
-  window.IntMapModules.betaPack2(IM_HOST);
+  betaPack2(IM_HOST);
 
   /* ===== (#R243) 「それまでのアメリカ大統領選挙の結果をすべて見れるレイヤーを作れ。」 — all sixty
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  window.IntMapModules.usElections(IM_HOST); window.IntMapModules.warFronts(IM_HOST); window.IntMapModules.netHealth(IM_HOST); window.IntMapModules.elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
+  usElections(IM_HOST); warFronts(IM_HOST); netHealth(IM_HOST); elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
      ISO-3 keyed; countries without an entry stay neutral gray — real data, nothing fabricated). ===== */
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.religionLang(IM_HOST);
+  religionLang(IM_HOST);
 
   /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
      A no-op stub remains so any stray reference can't throw. ===== */
@@ -3648,7 +3718,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      weather (Open-Meteo @ map center), FX (open.er-api.com), markets (CoinGecko — keyless+CORS;
      stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labeled). ===== */
   /* (#R164) moved to js/widgets.js — see Architecture.md §3.1. */
-  window.IntMapModules.widgets(IM_HOST);
+  widgets(IM_HOST);
   (function(){
     return; /* widgets disabled */
     if(!GE().hasRenderer() || !GE().hasRenderer()) return;
@@ -3660,24 +3730,24 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function chk(k,label){ return '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-w="'+k+'" '+(cfg[k]?'checked':'')+'> '+label+'</label>'; }
     function render(){ const p=ensure();
       p.style.cssText='display:block;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:calc(var(--z-sheet) - 150);width:240px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(window.IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div id="wdg-clock" style="'+(cfg.clock?'':'display:none;')+'margin-bottom:7px;"></div>'
-        +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(window.IntMapLang.t(currentLang,"Loading weather…","天気を取得中…","Wetter wird geladen…","Загрузка погоды…","Cargando el tiempo…"))+'</div>'
-        +'<div id="wdg-fx" style="'+(cfg.fx?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(window.IntMapLang.t(currentLang,"Loading FX…","為替を取得中…","Wechselkurse werden geladen…","Загрузка курсов валют…","Cargando tipos de cambio…"))+'</div>'
-        +'<div style="border-top:1px solid rgba(128,128,128,0.18);padding-top:7px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--text-muted);">'+chk('clock',window.IntMapLang.t(currentLang,"Clock","時計","Uhr","Часы","Reloj"))+chk('weather',window.IntMapLang.t(currentLang,"Weather","天気","Wetter","Погода","Tiempo"))+chk('fx',window.IntMapLang.t(currentLang,"FX","為替","Devisen","Валюта","Divisas"))+'</div>';
+        +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(IntMapLang.t(currentLang,"Loading weather…","天気を取得中…","Wetter wird geladen…","Загрузка погоды…","Cargando el tiempo…"))+'</div>'
+        +'<div id="wdg-fx" style="'+(cfg.fx?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(IntMapLang.t(currentLang,"Loading FX…","為替を取得中…","Wechselkurse werden geladen…","Загрузка курсов валют…","Cargando tipos de cambio…"))+'</div>'
+        +'<div style="border-top:1px solid rgba(128,128,128,0.18);padding-top:7px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--text-muted);">'+chk('clock',IntMapLang.t(currentLang,"Clock","時計","Uhr","Часы","Reloj"))+chk('weather',IntMapLang.t(currentLang,"Weather","天気","Wetter","Погода","Tiempo"))+chk('fx',IntMapLang.t(currentLang,"FX","為替","Devisen","Валюта","Divisas"))+'</div>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       p.querySelectorAll('input[data-w]').forEach(c=>c.onchange=()=>{ cfg[c.getAttribute('data-w')]=c.checked; save(); render(); });
       updateClock(); refreshData(); }
     function updateClock(){ const el=panel&&panel.querySelector('#wdg-clock'); if(!el||!cfg.clock||(panel&&panel.style.display==='none')) return; const now=new Date(); let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
-      let tstr,dstr; try{ tstr=now.toLocaleTimeString(window.IntMapLang.locale(currentLang,'en-GB'),{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
-      try{ dstr=now.toLocaleDateString(window.IntMapLang.locale(currentLang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
-      el.innerHTML='<div style="font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.1;">'+tstr+'</div><div style="font-size:11px;color:var(--text-muted);">'+dstr+(tz?' · '+tz:'')+'</div>'; }
+      let tstr,dstr; try{ tstr=now.toLocaleTimeString(IntMapLang.locale(currentLang,'en-GB'),{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
+      try{ dstr=now.toLocaleDateString(IntMapLang.locale(currentLang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
+      const _E=window.IntMapSafe.html; /* (module-graph) the zone is the reader's setting (DOM text): encoded like everything else */ el.innerHTML='<div style="font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.1;">'+_E(tstr)+'</div><div style="font-size:11px;color:var(--text-muted);">'+_E(dstr)+(tz?' · '+_E(tz):'')+'</div>'; }
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m',300000); if(!j) throw new Error('wx'); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(window.IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(window.IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=window.IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }
-      if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=window.IntMapLang.t(currentLang,"FX unavailable","為替を取得できません","Wechselkurse nicht verfügbar","Курсы валют недоступны","Tipos de cambio no disponibles"); } }
+      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m',300000); if(!j) throw new Error('wx'); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }
+      if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=IntMapLang.t(currentLang,"FX unavailable","為替を取得できません","Wechselkurse nicht verfügbar","Курсы валют недоступны","Tipos de cambio no disponibles"); } }
     }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=everyTick('app-body:widget-clock',1000,updateClock); if(!dataTick) dataTick=everyTick('app-body:widget-data',300000,()=>{ if(panel&&panel.style.display!=='none') refreshData(); }); } else { p.style.display='none'; } }
     function wire(){ const b=document.getElementById('btn-widgets'); if(b) b.onclick=toggle; }   /* mobile m-tool proxy clicks btn-widgets directly */
@@ -3687,7 +3757,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   })();
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.annotations(IM_HOST);
+  annotations(IM_HOST);
   /* Densify a click-path into a great-circle polyline so the saved annotation matches the drawn arc. */
   function _gcDensify(pts){ if(!hasTurf()||pts.length<2) return pts.slice(); const out=[pts[0].slice()];
     for(let i=1;i<pts.length;i++){ try{ const gc=turf.greatCircle(turf.point(pts[i-1]),turf.point(pts[i]),{npoints:24}); const g=gc.geometry;
@@ -3695,9 +3765,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     return out; }
   window._finalizeMeasurement=function(){
     try{
-      if(toolMode==='measure' && measurePoints.length>=2){ const v=hasTurf()?distHTML(totalDistance(measurePoints)):''; window.IntMapAnnotations.add({type:'LineString',coordinates:_gcDensify(measurePoints)},{color:'#0a84ff',name:(window.IntMapLang.t(currentLang,'Measured line','計測線','Messlinie','Измеренная линия','Línea medida')),value:v}); }
-      else if(toolMode==='area' && measurePoints.length>=3){ const v=hasTurf()?areaHTML(ringArea(measurePoints)):''; window.IntMapAnnotations.add({type:'Polygon',coordinates:[_gcDensify([...measurePoints,measurePoints[0]])]},{color:'#34c759',op:0.18,name:(window.IntMapLang.t(currentLang,'Measured area','計測範囲','Gemessene Fläche','Измеренная площадь','Área medida')),value:v}); }
-      else if(toolMode==='radius' && radiusItems.length){ radiusItems.forEach(c=>{ try{ const v=hasTurf()?(distHTML(c.radiusKm)+' ('+areaHTML(Math.PI*c.radiusKm*c.radiusKm)+')'):''; diskFillPolys(c.center,c.radiusKm,c.radiusKm>3000?200:140).forEach(poly=>{ const g=poly.geometry||poly; window.IntMapAnnotations.add(g,{color:c.color,op:c.opacity,name:(window.IntMapLang.t(currentLang,'Radius ','半径 ','Radius ','Радиус ','Radio '))+c.radiusKm+' km',value:v}); }); }catch(_){} }); }
+      if(toolMode==='measure' && measurePoints.length>=2){ const v=hasTurf()?distHTML(totalDistance(measurePoints)):''; window.IntMapAnnotations.add({type:'LineString',coordinates:_gcDensify(measurePoints)},{color:'#0a84ff',name:(IntMapLang.t(currentLang,'Measured line','計測線','Messlinie','Измеренная линия','Línea medida')),value:v}); }
+      else if(toolMode==='area' && measurePoints.length>=3){ const v=hasTurf()?areaHTML(ringArea(measurePoints)):''; window.IntMapAnnotations.add({type:'Polygon',coordinates:[_gcDensify([...measurePoints,measurePoints[0]])]},{color:'#34c759',op:0.18,name:(IntMapLang.t(currentLang,'Measured area','計測範囲','Gemessene Fläche','Измеренная площадь','Área medida')),value:v}); }
+      else if(toolMode==='radius' && radiusItems.length){ radiusItems.forEach(c=>{ try{ const v=hasTurf()?(distHTML(c.radiusKm)+' ('+areaHTML(Math.PI*c.radiusKm*c.radiusKm)+')'):''; diskFillPolys(c.center,c.radiusKm,c.radiusKm>3000?200:140).forEach(poly=>{ const g=poly.geometry||poly; window.IntMapAnnotations.add(g,{color:c.color,op:c.opacity,name:(IntMapLang.t(currentLang,'Radius ','半径 ','Radius ','Радиус ','Radio '))+c.radiusKm+' km',value:v}); }); }catch(_){} }); }
       else return;
       exitTool();
     }catch(_){}
@@ -3728,15 +3798,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ===== (#R9b/#53) Country isolation — show only the selected country; mask the rest with the globe-style
      background. A floating "Exit isolation" pill restores the full map. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.isolate(IM_HOST);
+  isolate(IM_HOST);
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerHoverPopup(IM_HOST);
+  layerHoverPopup(IM_HOST);
 
   /* ===== (#R9b/#9) Per-country time-series graphs from the World Bank Open Data API (CORS *). Opened
      from the country detail popup; draws a small SVG line chart per indicator. ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.timeSeries(IM_HOST);
+  timeSeries(IM_HOST);
 
   /* ===== (#R62) COUNTRY COMPARISON — rebuilt from the ground up ("根本的な部分から作り変えて"): up to FIVE
      countries side by side, ~20 indicators (multi-select), SOURCE switching (World Bank ⇄ IMF WEO for the
@@ -3760,7 +3830,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      ⚠ (#R209) los / terrainWater / seismic / tsunami are no longer instantiated here — 162 kB of
      minified source that a session which never right-clicks the map never downloads. The four are
      fetched by js/lazy-modules.js from the context-menu items and from Atlas. */
-  window.IntMapModules.insolation(IM_HOST);     /* terrain shade + the year, driven by the Sun panel */
+  insolation(IM_HOST);     /* terrain shade + the year, driven by the Sun panel */
 
   /* ===== (#R12 / #57) Maritime routing & pathfinding engine — click two SEA points → an A* route that
      avoids land, follows open water (a near-coast cost penalty keeps it off the 0 m coastline, per
@@ -3769,7 +3839,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      test); A* runs on that grid; the staircase path is string-pulled along clear-sea sightlines (faithful,
      not an invented curve). Canals (Suez/Panama) are land in the mask → not auto-traversed (documented). ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.seaRoute(IM_HOST);
+  seaRoute(IM_HOST);
 
   /* ===== (#R12 / #20,#21) ECMWF (Open-Meteo data_spatial) weather suite — the official Open-Meteo
      weather-map-layer SDK decodes the ECMWF IFS .om tiles through a MapLibre `om://` protocol and applies
@@ -3779,7 +3849,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Per-layer
      toggle + opacity. ===== */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
-  window.IntMapModules.weatherEC(IM_HOST);
+  weatherEC(IM_HOST);
 
   /* ===== (#R12 / compare) Compare-mode window — a resizable / minimisable / draggable floating window
      holding a SECOND MapLibre instance with its own basemap, projection and data layers, so two states
@@ -3803,13 +3873,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        are not cloned (documented in DEV-NOTES).
      · Resizable from ALL FOUR corners ("四隅でできるように"). */
   /* (#R163) moved to js/compare.js — see Architecture.md §3.1. */
-  window.IntMapCompare=window.IntMapModules.compare(IM_HOST);
+  window.IntMapCompare=compare(IM_HOST);
 
   /* ===== (#R20) LAYER PRESETS — save the current layer set (selection + opacities) under a name and
      re-apply it in one tap ("レイヤーを自分の好きな設定や透明度、複数選択…で保存できる機能").
      Lives in Layers → Tools; persists locally + (when logged in) in the account prefs blob. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerPresets(IM_HOST);
+  layerPresets(IM_HOST);
 
   /* ===== (#R20) ACCOUNT PREFS SYNC — a logged-in user's settings / layer favorites / widget board /
      layer presets live in Supabase `user_prefs` (supabase_user_prefs.sql, own-row RLS) so they follow
@@ -3870,20 +3940,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      recent developments), seeded with the nearby geocoded news headlines so it is stronger on "now"
      than an encyclopedia. Needs an AI key (Settings → AI features); reuses askAI(). ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.aiResearch(IM_HOST);
+  aiResearch(IM_HOST);
 
   /* ===== (#R39) TWO-LAYER CORRELATION / SCATTER — pick any two NUMERIC, ABSOLUTE-SCALE country metrics
      ("数値があるかつ絶対尺度のレイヤーのみ") and see a scatter plot + correlation coefficient over every
      country that has both values. Opened from a button at the bottom of the Layers panel. ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.correlate(IM_HOST);
+  correlate(IM_HOST);
 
   /* ===== (#R20) WORLD EVENTS ARCHIVE — the Information tab gains a Places | Events split
      ("既存カードをplaceとして中分類…eventとして新たな中分類を新設"). Events = curated key moments
      (wars, disasters, revolutions, assassinations, space, economic crises) searchable by TEXT
      (existing search box) and YEAR RANGE, each plotted on the map. ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.worldEvents(IM_HOST);
+  worldEvents(IM_HOST);
 
   /* (#R22) The ACLED conflict-events card was retired from the News tab; its body sat behind an early
      `return` and never ran. Removed as dead code 2026-09-29 (dev-notes/2026-09-29-dead-code-removal.md). */
@@ -3894,7 +3964,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      ("世界地理…を学べるモード。クイズ、解説カード"). Entry: Layers → Tools → 🎓 Learn. Three quiz
      types: flag→country, capital→country, find-the-country-on-the-map (click; point-in-polygon). ===== */
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  window.IntMapModules.edu(IM_HOST);
+  edu(IM_HOST);
 
     /* (#R498) …and the crosshair half, at the position its block occupied — see js/mobile-map-input.js */
   IM_MOBIN.crosshair();
@@ -3903,25 +3973,25 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Country labels fill the real country polygon (point-in-polygon over countryGeo); city/other labels
      drop a red highlight at the point. Non-destructive: layer-scoped handlers fire only on a label. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.labelPopup(IM_HOST);
+  labelPopup(IM_HOST);
 
   /* ===== (#R9/#49) User GeoJSON upload — load any .geojson/.json from the Layers menu OR by dropping
      it on the map. Auto-styles fill/line/point, fits bounds, and each upload is removable. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.geojsonUpload(IM_HOST);
+  geojsonUpload(IM_HOST);
 
   /* ===== (#R40) Comprehensive LIVE weather popup (right-click → "Weather here"). Open-Meteo forecast API
      (free, no key, CORS-enabled) → always-latest current conditions + a 5-day outlook. Self-contained;
      5-language; reuses fmtTemp for the unit setting. CSS is added via cssText with single quotes only (no
      back-tick in a CSS template-literal → no blank-site risk). ===== */
   /* (#R166) moved to js/weather.js — see Architecture.md §3.1. */
-  window.IntMapModules.weatherPanel(IM_HOST);
+  weatherPanel(IM_HOST);
 
   /* ===== (#R8c) View bookmarks — the live map state (center, zoom, bearing, pitch, projection AND the
      set of active data layers) is mirrored into the URL hash, so the address bar is a shareable permalink
      and a reload restores the exact analysis view. "Copy link to this view" lives in the right-click menu. ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.viewHash(IM_HOST);
+  viewHash(IM_HOST);
 
   /* ===== (#R42/#R42b) "Share this view" — a REAL, surfaced share PANEL ("今の状態をそのままURLで共有"). The
      permalink (IntMapBookmark / the address bar) encodes center/zoom/bearing/pitch, projection, satellite base,
@@ -3931,7 +4001,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      the native share sheet + a list of exactly what travels in the URL. 5-language. CSS via cssText with single
      quotes only (no back-tick in CSS → no blank-site risk). ===== */
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
-  window.IntMapModules.share(IM_HOST);
+  share(IM_HOST);
   try{ const _sb=document.getElementById('btn-share'); if(_sb) _sb.onclick=()=>{ try{ window.IntMapShare.open(); }catch(_){} }; }catch(_){}
 
   /* ===== (#R42) "Atlas" — natural-language console (beta) ("自然言語版ターミナル"). Type a request in plain
@@ -3949,30 +4019,30 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      nearest the label (so the "Paris" label near France → France's Paris, not Paris TX). CSS via single-quoted
      cssText (no back-tick → no blank-site risk). 5-language. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.outline(IM_HOST);
+  outline(IM_HOST);
   /* ===== (#R122) MOVE / TRUE-SIZE — drag any outlined place (country or sub-national/region) to a new location. In
      Mercator, projected size distorts with latitude, so as the shape is dragged its vertices rescale by
      cos(lat0)/cos(latNew) to keep its REAL area constant ("メルカトルでは面積一定になるように") — the classic
      "true size of…" comparison. Painted in its own source so it never disturbs the layer state. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.moveShape(IM_HOST);
+  moveShape(IM_HOST);
   /* ===== (#R83) ROAD ROUTING ("Atlasで経路機能を…（Google Map）のような") — real turn-by-turn directions from the
      public OSRM road network (car via router.project-osrm.org; foot/bike via routing.openstreetmap.de). Draws the
      route on the map with start/end pins and returns distance, duration and step-by-step guidance. Separate from
      the existing IntMapRoute (which is a maritime/sea A* route). ===== */
   /* (#R163) moved to js/routing.js — see Architecture.md §3.1. */
-  window.IntMapRouting=window.IntMapModules.routing(IM_HOST);
+  window.IntMapRouting=routing(IM_HOST);
   /* (#R184) the analyses the directions panel runs on a computed route (window.IntMapRoutingOps):
      elevation from the DEM, border crossings from the country polygons, weather/earthquakes/news
      along the way, arrival times, where the alternatives differ, and routing on OSM's record of the
      network as it was in a chosen year. The panel reaches for it by name and simply offers nothing
      if it is absent, so this is an addition to routing rather than a change to it. */
-  window.IntMapModules.routingOps(IM_HOST);
+  routingOps(IM_HOST);
   /* ===== (#R86) ISOCHRONE / 到達圏 — "車で30分" "徒歩15分" "自転車1時間" as a real REACHABILITY AREA that follows the
      road network & terrain (not a distance circle). Keyless public Valhalla (FOSSGIS) /isochrone → time-contour GeoJSON
      polygons for drive / walk / cycle. Opened from the right-click menu or Atlas. Store-siting, evacuation, travel, etc. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.isochrone(IM_HOST);
+  isochrone(IM_HOST);
   /* ===== (#R83) STREET VIEW ("ストリートビューを使えるように") — an embedded, KEYLESS Google Street View panel
      (the classic maps.google.com output=svembed endpoint, no API key/billing) plus an "open in Google Maps" jump.
      Draggable floating window; used from the map context menu and from Atlas. ===== */
@@ -3984,13 +4054,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      radioactive half-life. Rendered as an animated particle plume + concentration heatmap. Not an operational
      forecast — clearly labelled educational. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.radiation(IM_HOST);
+  radiation(IM_HOST);
   /* ===== (#R84) 3-D ARC OVERLAY — a screen-space canvas that lifts a ground track off the map by REAL altitude so
      ballistic trajectories read as a dimensional arc (「地図にのっぺりではなく立体的な軌道」), coloured by altitude.
      MapLibre line layers can't be raised off the surface, so this projects each ground point every frame and
      offsets it upward by its altitude — the arc pans/zooms/rotates with the map. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.arc3d(IM_HOST);
+  arc3d(IM_HOST);
   /* ===== (#R83) FLIGHT SIMULATOR ("Atlasでフライトシミュレーターを使えるように") — a real, flyable arcade flight
      model over the actual world map: coordinated-turn banking, pitch/throttle, stall, gravity and ground/terrain
      collision, with the MapLibre camera as the cockpit view and a live HUD (airspeed, altitude, heading, VSI,
@@ -4002,12 +4072,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   try{ window.IntMapAtlas.wire(); }catch(_){}
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.runwaySearch(IM_HOST);
+  runwaySearch(IM_HOST);
 
   loadSettings();
 
   /* (#R167) moved to js/onboarding.js — see Architecture.md §3.1. */
-  window.IntMapModules.onboarding(IM_HOST);
+  onboarding(IM_HOST);
 
   /* ===== (#R31) NEW BETA LAYERS — 10 real-data additions (≥10 to β, per request) =====
      Self-contained: each row owns a change handler (no edits to the big toggleLayer switch); rows are
@@ -4015,7 +4085,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      up automatically. Data: World Bank Open Data (latest value per country, CORS) + USGS earthquakes
      (realtime feed + historical query) + a news-density "Heat of Attention" heatmap. */
   /* (#R164) moved to js/wb-layers.js — see Architecture.md §3.1. */
-  window.IntMapModules.wbLayers(IM_HOST);
+  wbLayers(IM_HOST);
 
   /* ===== (#R86/#R87) LIVE CAMERAS — REBUILT REAL, then GREATLY EXPANDED ("coverageが限定的すぎる…20倍にしろ").
      EVERY pin genuinely displays live imagery IN-APP (no link-out facade). Sources, all KEYLESS + CORS-open + direct
@@ -4033,7 +4103,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      platform — ~17,000 more live cameras across 13 regions (FL/GA/NY/PA/NC/NV/WI/ID/LA + New England + ON/AB/YT),
      each list proxied ONCE (/map/mapIcons/Cameras) and every image hotlinking directly (/map/Cctv/{id}). ===== */
   /* (#R164) moved to js/cameras.js — see Architecture.md §3.1. */
-  window.IntMapModules.cameras(IM_HOST);
+  cameras(IM_HOST);
 
   /* ===== (#R88) UNIVERSAL OBJECT LIST ("汎用オブジェクト一覧") — ONE place to see & manage EVERY user object on the
      map (pins · radius circles · kept drawings/annotations · uploaded GeoJSON · the active route · the reachable-area
@@ -4041,10 +4111,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      subsystem supports it. Reads the REAL existing state and calls the REAL existing remove APIs (fully additive — no
      subsystem is refactored). A small count-badge button appears bottom-left whenever ≥1 object exists. ===== */
   /* (#R166) moved to js/map-tools.js — see Architecture.md §3.1. */
-  window.IntMapModules.objectList(IM_HOST);
+  objectList(IM_HOST);
 
   /* (#R167) moved to js/onboarding.js — see Architecture.md §3.1. */
-  window.IntMapModules.progressCtl(IM_HOST);
+  progressCtl(IM_HOST);
 
   /* ===== (#R118) PRECISE POPULATION INSIDE A DRAWN AREA ("囲んだ範囲の人口を超正確に算出") =====
      Real gridded-census data, not a country-share guess: the WorldPop Global Project population raster
@@ -4061,13 +4131,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R162) moved to js/monitors.js — see Architecture.md §3.1.
      (#R163) its private host object became the shared IM_HOST, which is a superset of the ten values
      this module reads (lang/user/mode/radiusItems live, plus the six helpers). */
-  window.IntMapMonitors=window.IntMapModules.monitors(IM_HOST);
+  window.IntMapMonitors=monitors(IM_HOST);
 
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.popArea(IM_HOST);
+  popArea(IM_HOST);
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.terrain(IM_HOST);
+  terrain(IM_HOST);
 
   /* ⚠ (#R469) `slope` is gone — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」. The layer row, its
      legend, the Atlas capability and its dispatch case went with it; see the note in js/sims.js. */
@@ -4080,7 +4150,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      into ground-shadow polygons, and maplibre's 3D light is aimed from the sun so extrusions self-shade. Astronomy
      is the standard SunCalc solar-position algorithm. Keyless. ===== */
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.sun(IM_HOST);
+  sun(IM_HOST);
 
   /* ===== (#R91) TRANSIT ISOCHRONE — REACHABLE BY RAIL ("鉄道で1時間以内") — the area you can reach from a point
      within a time budget riding the REAL OSM rail network: fetch rail ways + stations (Overpass), build a welded
@@ -4089,7 +4159,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      is drawn. Complements the drive/walk/cycle Valhalla isochrone. Keyless. ===== */
   /* (#R166) moved to js/sims.js. ⚠ (#R296) it still LOADS and has no row of its own: it is the
      `transit` mode of the reachable-area panel (js/map-tools.js). Only the door moved. */
-  window.IntMapModules.transitReach(IM_HOST);
+  transitReach(IM_HOST);
 
   /* ⚠ (#R296) `disaster` is gone — 「4つのうち、放射性物質拡散シミュレーションを残し全削除」. Its
      fourth hazard only opened `IntMapRadiation`, which has its own row — and, now, its own panel. */
@@ -4097,20 +4167,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ⚠ (#R296) `earthReplay` is gone — 「存在意義が不明だから全削除」. Chronos is that clock. */
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.railSeaOverlays(IM_HOST);
+  railSeaOverlays(IM_HOST);
 
   /* ===== (#R41) Time-zone layer — REAL boundaries (Natural Earth ne_10m_time_zones, loaded on demand from
      jsDelivr, CORS-OK) PLUS the CURRENT local time labelled on every zone, refreshed each minute
      ("タイムゾーンの境界…現在の時間もそれぞれのタイムゾーン上に表示"). Key-free; only fetched when toggled. Layer
      ids are `tzl-*` so they don't collide with the generic dl- orphan sweep (id `tz`). ===== */
-  window.IntMapModules.timeZones(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
+  timeZones(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
 
   /* (#R38) the NASA GIBS science rasters; every tile endpoint curl-verified before wiring, daily layers
      asking for the freshest reliably-processed day (−2 d). ⚠ (#R266) EIGHT OF THEM WERE DELETED BY
      INSTRUCTION (「以下のレイヤーは削除」) — seven remain and the list lives in js/layer-packs.js. */
-  window.IntMapModules.gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
-  window.IntMapModules.worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ window.IntMapModules.precipAnnual(IM_HOST); window.IntMapModules.outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
+  gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
+  worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
+  facilities(IM_HOST); industryWeb(IM_HOST); oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ precipAnnual(IM_HOST); outbreaks(IM_HOST);   /* (#R650) WHO Disease Outbreak News — ON THIS LINE for the same (since retired) shell budget, and after worldPacks for the same toolkit reason as the two above. */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical
@@ -4118,7 +4188,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      before the year; the repo jumps 1960→1994, so 1960 covers the late-Cold-War world incl. the USSR). The
      modern boundary line + country labels are hidden while a past year is shown and restored at "Now". ===== */
   /* (#R163) moved to js/time-borders.js — see Architecture.md §3.1. */
-  window.IntMapTimeBorders=window.IntMapModules.timeBorders(IM_HOST); window.IntMapTimeAdmin1=window.IntMapModules.timeAdmin1(IM_HOST); window.IntMapHistPlaces=window.IntMapModules.histPlaces(IM_HOST); try{ window._applyAdmin1(); }catch(_){}
+  window.IntMapTimeBorders=timeBorders(IM_HOST); window.IntMapTimeAdmin1=timeAdmin1(IM_HOST); window.IntMapHistPlaces=histPlaces(IM_HOST); try{ window._applyAdmin1(); }catch(_){}
 
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an
@@ -4151,7 +4221,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      card no longer appears. The builder (`_imWelcome`) is KEPT so nothing is deleted (still reachable if ever
      wired to a menu), it is simply never auto-invoked on load. */
   /* try{ setTimeout(_imWelcome,900); }catch(_){} */
-  try{ window.IntMapLang.syncChrome(setLang); window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
+  try{ IntMapLang.syncChrome(setLang); IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
 };
   /* (#R180) …and the other half of the barrier. `then(boot, boot)` on purpose: a
      Cesium that fails to load must still give the user the app — on MapLibre,

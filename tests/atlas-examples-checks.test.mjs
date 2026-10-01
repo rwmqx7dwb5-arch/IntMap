@@ -250,8 +250,9 @@ function chips(opts) {
     } : null),
     addEventListener: () => {}
   };
+  /* (module-graph) the gazetteer is an import of js/atlas-view-subject.js now, so a case's own seas are
+     handed through the module's context (`seas`) rather than written onto window, which it no longer reads */
   globalThis.window = {
-    SEA_LABELS: o.seas === null ? null : (o.seas || SEAS),
     IntMapTime: { state: () => ({ isLive: true, year: null }) }
   };
   const GE = () => ({
@@ -287,7 +288,7 @@ function chips(opts) {
         }
         return null;
       },
-      countryStats: STATS, cName: (st) => st.nameEn,
+      countryStats: STATS, cName: (st) => st.nameEn, seas: o.seas === null ? null : (o.seas || SEAS),
       loadCountryData: () => Promise.resolve(), geo: () => GEOFC,
       panelEl: () => null, pick: () => {}
     });
@@ -300,9 +301,9 @@ function chips(opts) {
 /* the redraw signature for one view, straight from the shipped module — no DOM, no chips */
 function viewKeyFor(box, zoom, places) {
   const pw = globalThis.window;
-  globalThis.window = { SEA_LABELS: SEAS };
+  globalThis.window = {};
   try {
-    const V = makeAtlasViewSubject({
+    const V = makeAtlasViewSubject({ seas: SEAS,
       GE: () => ({
         camera: {
           getCenter: () => ({ lng: (box[0] + box[2]) / 2, lat: (box[1] + box[3]) / 2 }),
@@ -434,7 +435,7 @@ test('R392 ② a coast is a fact about the frame — half land, half named water
    ═══════════════════════════════════════════════════════════════════════ */
 test('R392 ③ every row of the shipped sea gazetteer classifies, and no lake is called marine', () => {
   const src = read('js/tables.js');
-  const m = /window\.SEA_LABELS=\[([\s\S]*?)\n\];/.exec(src);
+  const m = /(?:window\.SEA_LABELS=|export const SEA_LABELS = )\[([\s\S]*?)\n\];/.exec(src);   /* (module-graph) an export now */
   assert.ok(m, 'the gazetteer is where this check thinks it is');
   const rows = [...m[1].matchAll(/\[\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*,\s*([\d.]+)\s*,\s*'([^']+)'/g)]
     .map((x) => ({ lng: +x[1], lat: +x[2], z: +x[3], en: x[4] }));
@@ -860,7 +861,7 @@ test('R455 ①b `null` and `0` are different answers, and the pool is written to
      (`out[id] = f ? f.length : null;` …); js/atlas-view-subject.js is pure given a registry and an
      engine, so the three states are handed to it and its answers are read. */
   const pw = globalThis.window;
-  globalThis.window = { SEA_LABELS: [],
+  globalThis.window = {
     IntMapLayers: { featuresIn: (id) => (id === 'aircraft' ? [] : (id === 'ships' ? [{}, {}, {}] : null)) } };
   try {
     const box = [0, 0, 10, 10];
@@ -871,7 +872,7 @@ test('R455 ①b `null` and `0` are different answers, and the pool is written to
         layers: { hasSource: () => false, sourceData: () => null },
         coords: { querySourceFeatures: () => [] }
       }),
-      geo: () => ({ type: 'FeatureCollection', features: [] }), countryStats: {}, cName: (st) => st.nameEn, lang: () => 'en'
+      geo: () => ({ type: 'FeatureCollection', features: [] }), countryStats: {}, cName: (st) => st.nameEn, lang: () => 'en', seas: []
     });
     const c = V.contentInView({ w: 0, s: 0, e: 10, n: 10 });
     assert.equal(c.news, null, 'an uncountable layer yields null, not 0');

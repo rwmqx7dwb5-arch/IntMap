@@ -40,6 +40,7 @@
  *  `--check` exits non-zero if any convertible chain is left, which is what tests/shell-i18n-locales-checks.test.mjs (#R231) asserts.
  * ==========================================================================*/
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { ensureImport } from './module-graph.mjs';   /* (module-graph) what this writes imports the registry */
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
@@ -173,18 +174,18 @@ for (const f of files) {
     claimed.push([node.start, node.end]);
     if (a.kind === 'locale') {
       const tail = (a.enTag === 'en-US') ? '' : `,${JSON.stringify(a.enTag)}`;
-      edits.push([node.start, node.end, `window.IntMapLang.locale(${a.subject}${tail})`]);
+      edits.push([node.start, node.end, `IntMapLang.locale(${a.subject}${tail})`]);
     } else {
       const args = [a.subject, src.slice(a.en.start, a.en.end)]
         .concat(a.want.map((c) => (a.values[c] ? src.slice(a.values[c].start, a.values[c].end) : 'undefined')));
-      edits.push([node.start, node.end, `window.IntMapLang.t(${args.join(',')})`]);
+      edits.push([node.start, node.end, `IntMapLang.t(${args.join(',')})`]);
     }
   }
   if (!edits.length) continue;
   edits.sort((x, y) => y[0] - x[0]);
   for (const [s, e, text] of edits) src = src.slice(0, s) + text + src.slice(e);
   totalRewritten += edits.length;
-  if (!CHECK) writeFileSync(p, src);
+  if (!CHECK) writeFileSync(p, ensureImport(src, 'js/' + f, 'IntMapLang', 'js/lang-registry.js'));
   console.log(`${CHECK ? 'would rewrite' : 'rewrote'} ${String(edits.length).padStart(3)}  ${f}`);
 }
 

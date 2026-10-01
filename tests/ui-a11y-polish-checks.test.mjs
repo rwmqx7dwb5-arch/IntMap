@@ -27,7 +27,8 @@ globalThis.IntMapSafe = globalThis.IntMapSafe || { html: (s) => String(s) };
 await import(pathToFileURL(join(ROOT, 'js/lang-registry.js')).href);   /* the real pick() / pickArgs() */
 await import(pathToFileURL(join(ROOT, 'js/place-framing.js')).href);
 await import(pathToFileURL(join(ROOT, 'js/atlas-geo-resolve.js')).href);
-await import(pathToFileURL(join(ROOT, 'js/search-geocode.js')).href);
+/* (module-graph) the factory is the module's export (it was window.IntMapModules.searchGeocode) */
+const { searchGeocode } = await import(pathToFileURL(join(ROOT, 'js/search-geocode.js')).href);
 window.IntMapNominatimGate = { nominatimSlot: () => Promise.resolve(true) };
 
 /* ── the captured answers (live, 2026-09-27, q=Kyoto, en), trimmed to the fields the adapters read ── */
@@ -63,7 +64,7 @@ async function searchKyoto(lang, order) {
   const byId = { 'ms-input': Object.assign(new El('input'), { value: 'Kyoto' }), 'ms-results': new El('div') };
   globalThis.document = { getElementById: (id) => byId[id] || null, createElement: (t) => new El(t) };
   const HOST = { lang, countryStats: {}, BUILTIN_GAZETTEER: null, t: (k) => k };
-  await window.IntMapModules.searchGeocode(HOST).doGeocode();
+  await searchGeocode(HOST).doGeocode();
   return byId['ms-results'].children.filter((c) => c.className === 'ms-item').map((r) => ({
     label: r._text, sub: (r.children.find((c) => c.className === 'ms-kind') || { textContent: '' }).textContent,
   }));

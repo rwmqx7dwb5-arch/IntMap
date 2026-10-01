@@ -27,16 +27,18 @@
  *  (Meinel & Meinel). That is a CLEAR-SKY figure: it is the sun the site's own horizon allows, not a
  *  weather forecast, and the panel says so rather than implying a yield.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.insolation=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function insolation(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const isMobile=HOST.isMobile, warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear,
         demElevAt=HOST.demElevAt, _demZoomForSpan=HOST._demZoomForSpan;
 
   window.IntMapInsolation=(function(){
     if(!GE().hasRenderer()) return { shade(){}, analyse(){}, clear(){}, state:()=>({}) };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     const D=Math.PI/180, R_EARTH=6371008.8, CIRC=2*Math.PI*R_EARTH;
     const mX=lng=>(180+lng)/360;
     const mY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*D/2)))/360;
@@ -347,4 +349,4 @@ window.IntMapModules.insolation=function(HOST){
       isPainted:()=>painted,
       state:()=>({ painted, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z}:null, last:lastShade }) };
   })();
-};
+}

@@ -21,7 +21,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { timeBorders } from './time-borders.mjs';
+import { createRequire } from 'node:module';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -118,9 +118,9 @@ export function census(bundle = eraBundle()) {
    never a substitution — and a base the record already draws on its own is already in `census()`,
    so only the ones it does not are returned here.
    ⚠ AND THE RULE FOR WHERE THE NAME STOPS IS NOT WRITTEN HERE. js/time-borders.js owns it
-   (`window.IntMapEraName`), because that file is what decides what the READER is shown: it
+   (`IntMapEraName`, an export), because that file is what decides what the READER is shown: it
    localizes the two halves separately and puts the bracket back, so a census that simply stripped
-   the bracket would ask about a spelling nobody is ever shown. The module is EVALUATED for it
+   the bracket would ask about a spelling nobody is ever shown. The module is IMPORTED for it
    (#R505) rather than read, and nothing about the rule is restated in this file.
    ⚠ THE BOXES AND THE YEARS ARE THE GLOSSED FEATURE'S. That is the whole safeguard: the base
    answer still has to agree with WHERE the map drew the shape and WHEN (#R515), and the only
@@ -128,7 +128,7 @@ export function census(bundle = eraBundle()) {
 let _eraName = null;
 export function eraNameRule() {
   if (_eraName) return _eraName;
-  const R = timeBorders().window.IntMapEraName;
+  const R = createRequire(import.meta.url)(fileURLToPath(new URL('../../js/time-borders.js', import.meta.url))).IntMapEraName;
   if (!R || typeof R.split !== 'function' || typeof R.join !== 'function' || typeof R.compose !== 'function') {
     throw new Error('js/time-borders.js publishes no IntMapEraName — the `Base (Gloss)` rule is unreadable, and a build that restated it would be one judgement in two files (#R536)');
   }

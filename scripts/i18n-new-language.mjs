@@ -72,7 +72,8 @@ const head = `/* ===============================================================
  *      node scripts/i18n-audit.mjs --todo ${code}
  *      node scripts/i18n-audit.mjs --gate        # what CI runs
  * ========================================================================== */
-window.IntMapLang.define('${code}', {
+import { IntMapLang } from '../lang-registry.js';
+IntMapLang.define('${code}', {
   /* ① the keyed table — ${universe.length} strings, gathered from EVERY file that declares one
      (js/locales/ui.en.js plus the six modules scripts/i18n-keyed-audit.mjs lists). */
   ui: {

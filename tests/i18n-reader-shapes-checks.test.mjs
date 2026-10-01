@@ -349,8 +349,9 @@ test('R224 ④ Simplified Chinese is registered and regenerates byte-for-byte', 
   assert.match(read('js/locales/_langs.js'), /"zh-hans"/, 'zh-hans is in the generated language list');
   const hansFull = read('js/locales/ui.zh-hans.js');
   /* ⚠ the STRINGS, not the header — that comment names the Traditional spellings it replaces */
-  const hans = hansFull.slice(hansFull.indexOf("window.IntMapLang.define('zh-hans'"));
-  assert.match(hansFull, /window\.IntMapLang\.define\('zh-hans', \{/);
+  /* (module-graph) the table calls the imported registry; either spelling of the call is the table's start */
+  const hans = hansFull.slice(hansFull.indexOf("IntMapLang.define('zh-hans'"));
+  assert.match(hansFull, /(?:window\.)?\bIntMapLang\.define\('zh-hans', \{/);
   /* the mainland vocabulary actually landed — a character map alone would have left 网路 / 資訊 */
   for (const w of ['信息', '屏幕', '文件', '默认', '设置', '用户']) assert.ok(hans.includes(w), `missing ${w}`);
   for (const w of ['網路', '資訊', '螢幕', '檔案', '預設', '選單', '使用者']) assert.ok(!hans.includes(w), `Traditional ${w} survived`);

@@ -11,9 +11,9 @@
    load the same module with a plain <script src>. */
 import './legal-text.js';
 
-window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.legal=function(HOST){
+
+export function legal(HOST){
   function textOf(which){
     var T=window.IntMapLegalText;
     if(!T) return '';                                   /* the shell never renders without it */
@@ -36,4 +36,4 @@ window.IntMapModules.legal=function(HOST){
     const lt=document.getElementById('link-terms'); if(lt) lt.onclick=(e)=>{ e.preventDefault(); openLegal('terms'); };
     const lp=document.getElementById('link-privacy'); if(lp) lp.onclick=(e)=>{ e.preventDefault(); openLegal('privacy'); };
   })();
-};
+}

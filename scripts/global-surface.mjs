@@ -7,6 +7,9 @@
  *                 writable, plus three attached after the literal);
  *    · WINDOW   — every `window.NAME =` a js/ or src/ file performs (301 IntMap* names at #R795,
  *                 683 names in all).
+ *    · READS    — (module-graph) every read of one of those published names from js/ or src/, by name:
+ *                 the REACH through the global, which the WINDOW register cannot see (one name read
+ *                 1,800 times counts once there). 6,410 reads at the start of module-graph.
  *  Neither is a line count. A feature that moves out of the shell but keeps every HOST getter it
  *  read and publishes one more window global has not become independent — it has moved. This is
  *  the instrument that says so, and it replaces the line ceilings tests/news-module-split-checks.test.mjs (#R168) #8 (and twenty copies)
@@ -31,6 +34,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import { codeOnly as codeOnlyOf } from './code-only.mjs';
+import { windowReads, exportedGlobals } from './module-graph.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 export const BASELINE = join(ROOT, 'tests', 'global-surface-baseline.json');
@@ -288,8 +292,11 @@ export function measure(root) {
     hostWritable: host.writable,
     window: Array.from(win.keys()).sort(),
     unread: unreadPublications(root),
+    /* (module-graph) name → how many times js/ and src/ read it back off the global */
+    reads: windowReads(root || ROOT, new Set(win.keys())),
   };
 }
+const sumOf = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
 
 function diff(label, before, after) {
   const b = new Set(before), a = new Set(after);
@@ -309,10 +316,30 @@ export function check(root) {
     for (const x of d.added) { ok = false; lines.push(`  + ${d.label} ${x}  — new coupling: name it (DEV-NOTES) and run --update, or route it through the module's own dependencies`); }
     for (const x of d.removed) { ok = false; lines.push(`  − ${d.label} ${x}  — gone: run --update so the baseline records the smaller surface`); }
   }
+  /* ══ (module-graph) THE REACH, BY NAME, BOTH WAYS ══════════════════════════════════════════════
+     A read that appears is a new edge through the global — the thing the import graph exists to make
+     visible — so it is named in review like a new publication; a read that is gone fails until the
+     baseline records the smaller reach (#R194: a ceiling that does not follow the measurement asserts
+     nothing). The diff is per NAME, so it says which global gained or lost readers. */
+  const br = base.reads || {}, cr = cur.reads;
+  for (const name of [...new Set([...Object.keys(br), ...Object.keys(cr)])].sort()) {
+    const was = br[name] || 0, now = cr[name] || 0;
+    if (now > was) { ok = false; lines.push(`  + ${now - was} read(s) of window.${name} (${was} → ${now})  — a new edge through the global: import it from its owner (node scripts/module-graph.mjs --plan says whether the owner exports it yet), or name it in dev-notes and run --update`); }
+    if (now < was) { ok = false; lines.push(`  − ${was - now} read(s) of window.${name} (${was} → ${now})  — run --update so the baseline records the smaller reach`); }
+  }
+  /* …and one rule that is not a ratchet: a global whose owner EXPORTS it has an import edge, and a
+     module that still reads it off the global is reaching around that edge. Zero, always. */
+  for (const g of exportedGlobals(root || ROOT)) {
+    for (const r of g.readers) {
+      if (r.exempt) continue;
+      ok = false;
+      lines.push(`  ! ${r.rel} reads window.${g.name} ${r.reads}× — ${g.owner} exports it: node scripts/module-graph.mjs --migrate ${g.name} --write`);
+    }
+  }
   const u = diff('unread window global', base.unread || [], cur.unread);
   for (const x of u.added) { ok = false; lines.push(`  + ${u.label} ${x}  — published, and nothing reads it: remove the publication, or give it its reader (a console-only diagnostic says so in dev-notes and runs --update)`); }
   for (const x of u.removed) { ok = false; lines.push(`  − ${u.label} ${x}  — now read or gone: run --update so the baseline records it`); }
-  lines.unshift(`global surface: IM_HOST ${cur.host.length} members (${cur.hostWritable.length} writable) · window ${cur.window.length} names, ${cur.unread.length} unread` + (ok ? ' — matches the baseline' : ''));
+  lines.unshift(`global surface: IM_HOST ${cur.host.length} members (${cur.hostWritable.length} writable) · window ${cur.window.length} names, ${cur.unread.length} unread · ${sumOf(cur.reads)} reads of ${Object.keys(cur.reads).length} of them from js/ and src/` + (ok ? ' — matches the baseline' : ''));
   return { ok, lines };
 }
 
@@ -321,7 +348,7 @@ if (process.argv[1] && process.argv[1].endsWith('global-surface.mjs')) {
   if (arg === '--update') {
     const cur = measure();
     writeFileSync(BASELINE, JSON.stringify({ '//': 'written by scripts/global-surface.mjs --update — names, not counts, so a diff names the member that changed', ...cur }, null, 1) + '\n');
-    console.log(`baseline written: IM_HOST ${cur.host.length} (${cur.hostWritable.length} writable) · window ${cur.window.length}`);
+    console.log(`baseline written: IM_HOST ${cur.host.length} (${cur.hostWritable.length} writable) · window ${cur.window.length} · reads ${sumOf(cur.reads)}`);
   } else if (arg === '--check') {
     const r = check();
     for (const l of r.lines) (r.ok ? console.log : console.error)(l);
@@ -332,5 +359,6 @@ if (process.argv[1] && process.argv[1].endsWith('global-surface.mjs')) {
     console.log(`window:  ${cur.window.length} names published by js/ and src/`);
     const im = cur.window.filter((n) => /^IntMap/.test(n)).length;
     console.log(`         ${im} of them IntMap*`);
+    console.log(`reads:   ${sumOf(cur.reads)} reads of ${Object.keys(cur.reads).length} published names from js/ and src/`);
   }
 }

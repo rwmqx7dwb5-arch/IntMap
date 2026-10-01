@@ -8,7 +8,8 @@
  *    · js/lang-registry.js  — append { code: 'zh', label: '<its own name>', html: 'zh' } to LANGS
  *    · src/main.js          — import '../js/locales/ui.zh.js'; beside the others
  * ========================================================================== */
-window.IntMapLang.define('zh', {
+import { IntMapLang } from '../lang-registry.js';
+IntMapLang.define('zh', {
   /* ① the keyed table — Settings, tabs, layer names, the static UI */
   ui: {
       /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════

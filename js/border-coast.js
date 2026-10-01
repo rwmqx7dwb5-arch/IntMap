@@ -25,7 +25,9 @@
  *  do not, so a run [a,b] is read off the ring CLOSED — the same walk the marks were measured on.
  *  Reading it off the raw ring would slide every run by one on one of the records.
  * ==========================================================================*/
-window.IntMapBorderCoast = (function () {
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+export const IntMapBorderCoast = (function () {
   let _D = null, _P = null;
   const _arrived = [];
 
@@ -177,7 +179,7 @@ window.IntMapBorderCoast = (function () {
     if (moving) return null;
     if (viewMemo !== undefined) return viewMemo;
     try {
-      const e = window.IntMapGeoEngine;
+      const e = IntMapGeoEngine;
       if (!e || e.camera.getZoom() < 8) return (viewMemo = null);
       const b = e.camera.getBounds(); if (!b) return (viewMemo = null);
       return (viewMemo = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
@@ -235,15 +237,15 @@ window.IntMapBorderCoast = (function () {
           queue.length = 0; attempted.clear();
           if (detailView()) detailArrived();
         };
-        window.IntMapGeoEngine.events.on('movestart', () => {
+        IntMapGeoEngine.events.on('movestart', () => {
           moving = true; viewMemo = undefined;
           for (const path of queue) pending.delete(path); queue.length = 0;
           /* Restore the complete fallback before panning exposes a region outside
              the old detailed viewport. Source geometry never disappears mid-pan. */
           if (usedDetail) { usedDetail = false; for (const cb of _arrived) { try { cb(); } catch (_) {} } }
         });
-        window.IntMapGeoEngine.events.on('moveend', () => { moving = false; changed(); });
-        if (window.IntMapTime && typeof window.IntMapTime.on === 'function') window.IntMapTime.on(changed);
+        IntMapGeoEngine.events.on('moveend', () => { moving = false; changed(); });
+        if (IntMapTime && typeof IntMapTime.on === 'function') IntMapTime.on(changed);
         listening = true;
       } catch (_) {}
     }
@@ -283,3 +285,4 @@ window.IntMapBorderCoast = (function () {
 
   return { load, onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, geometryKey, loaded: () => !!_D };
 })();
+globalThis.IntMapBorderCoast = IntMapBorderCoast;   /* (module-graph) the compat window: importers get the binding above */

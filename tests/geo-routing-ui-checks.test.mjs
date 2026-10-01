@@ -13,7 +13,6 @@
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installSafe } from './helpers/safe-html.mjs';
@@ -21,6 +20,7 @@ import { until } from './helpers/wx-ecmwf-page.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { ROOT, isolate, read } from './helpers/geo-shared.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 import { resolveValue as zResolve, tokens as zTokens } from '../scripts/z-layers.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
@@ -56,36 +56,18 @@ describe('§ #R291 · the route store and panel', () => {
      describing the handler that was deleted). So the negative checks read a comment-free copy. */
   const bare = (p) => codeOnly(read(p));
 
-  /* ── the browser shim these four modules need, and nothing more ─────────────────────────────────
-     `pick` / `t` reproduce js/lang-registry.js's positional rule for the five languages the call
-     sites carry; a language past them falls to English, exactly as the registry does when its inline
-     table has no row. Nothing under test depends on WHICH language it gets — only that it gets one. */
-  const IDX = { en: 0, jp: 1, de: 2, ru: 3, es: 4 };
+  /* ── the browser these modules need, and nothing more ──────────────────────────────────────────
+     (module-graph) Each file is IMPORTED as the module it is into a fresh `window` — no longer read as
+     text into `new Function('window', …)` with a five-language stand-in for the registry on it. Its
+     language edge is the REAL js/lang-registry.js, with the shipped language list declared. */
+  langRegistry();
   function makeWindow() {
     const w = {};
-    w.IntMapLang = {
-      pick(get) {
-        const f = function () {
-          const i = IDX[(() => { try { return get(); } catch { return 'en'; } })()];
-          const v = (i != null && i > 0) ? arguments[i] : null;
-          return (v != null && v !== '') ? v : arguments[0];
-        };
-        f.arr = (a) => (Array.isArray(a) ? f.apply(null, a) : String(a == null ? '' : a));
-        return f;
-      },
-      t(lang, ...a) { const i = IDX[lang]; return (i != null && a[i] != null && a[i] !== '') ? a[i] : a[0]; },
-      pickArgs() { return function () { return Array.prototype.slice.call(arguments); }; },
-      locale(l, d) { return ({ en: 'en-GB', jp: 'ja-JP', de: 'de-DE', ru: 'ru-RU', es: 'es-ES' })[l] || d || 'en'; },
-    };
     installSafe(w);   /* js/routing-cards.js escapes through window.IntMapSafe — the shipped one, not a stub */
     return w;
   }
-  function load(w, ...files) {
-    for (const f of files) {
-      const src = readFileSync(resolve(ROOT, f), 'utf8');
-      // eslint-disable-next-line no-new-func
-      new Function('window', 'Intl', 'Date', 'Math', 'console', src)(w, Intl, Date, Math, console);
-    }
+  async function load(w, ...files) {
+    for (const f of files) await importModule(f, { globals: { window: w } });
     return w;
   }
   function fresh() {
@@ -94,8 +76,8 @@ describe('§ #R291 · the route store and panel', () => {
   const PLACE = (lng, lat, name) => ({ lng, lat, name, kind: 'place' });
 
   /* ══ ① THE STORE IS THE ONE PLACE THE JOURNEY LIVES ═══════════════════════════════════════════ */
-  test('R291 ① the store holds a journey, and only a resolved place counts as a point', () => {
-    const w = fresh(); const S = w.IntMapRouteStore;
+  test('R291 ① the store holds a journey, and only a resolved place counts as a point', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore;
     assert.equal(S._pure.ready(S.get()), false, 'an empty store is not routable');
     S.setText('from', 'Tok');
     assert.equal(S._pure.ready(S.get()), false, 'half-typed text is not a place');
@@ -112,8 +94,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ② THE DEFECT §4.4 NAMES: a confirmed coordinate behind an edited label ───────────────────── */
-  test('R291 ② editing the text invalidates the coordinate that was confirmed for it', () => {
-    const w = fresh(); const S = w.IntMapRouteStore;
+  test('R291 ② editing the text invalidates the coordinate that was confirmed for it', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore;
     S.setPlace('to', PLACE(139.638, 35.4658, 'Yokohama'));
     assert.ok(S.get().to.place, 'the place is confirmed');
     S.setText('to', 'Yokoham');                       /* one character deleted */
@@ -126,8 +108,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ③ SWAP REVERSES THE ITINERARY (§5.3) — the old panel exchanged only A and B ──────────────── */
-  test('R291 ③ A → 1 → 2 → B swapped is B → 2 → 1 → A, not B → 1 → 2 → A', () => {
-    const w = fresh(); const S = w.IntMapRouteStore;
+  test('R291 ③ A → 1 → 2 → B swapped is B → 2 → 1 → A, not B → 1 → 2 → A', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore;
     S.setPlace('from', PLACE(0, 0, 'A'));
     S.setPlace('to', PLACE(3, 3, 'B'));
     S.addVia(PLACE(1, 1, '1')); S.addVia(PLACE(2, 2, '2'));
@@ -138,8 +120,8 @@ describe('§ #R291 · the route store and panel', () => {
     assert.deepEqual(S._pure.points(S.get()).map((p) => p.name), ['A', '1', '2', 'B'], 'and back again');
   });
 
-  test('R291 ④ a stop moves within the list, and the ends never move', () => {
-    const w = fresh(); const S = w.IntMapRouteStore;
+  test('R291 ④ a stop moves within the list, and the ends never move', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore;
     S.setPlace('from', PLACE(0, 0, 'A')); S.setPlace('to', PLACE(9, 9, 'B'));
     ['1', '2', '3'].forEach((n, i) => S.addVia(PLACE(i + 1, i + 1, n)));
     S.moveVia(2, 0);
@@ -151,8 +133,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ⑤ A STALE ANSWER MUST NOT BECOME THE STATE (§8.3/§23) ────────────────────────────────────── */
-  test('R291 ⑤ a result from a superseded request is refused by the store', () => {
-    const w = fresh(); const S = w.IntMapRouteStore;
+  test('R291 ⑤ a result from a superseded request is refused by the store', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore;
     S.setPlace('from', PLACE(0, 0, 'A')); S.setPlace('to', PLACE(1, 1, 'B'));
     const first = S.begin('a');
     const second = S.begin('b');                        /* the reader changed something */
@@ -169,8 +151,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ⑥ THE REQUEST IS DERIVED, SO ATLAS AND THE PANEL CANNOT BUILD DIFFERENT ONES (§17) ───────── */
-  test('R291 ⑥ the request options come out of the state, once', () => {
-    const w = fresh(); const S = w.IntMapRouteStore;
+  test('R291 ⑥ the request options come out of the state, once', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore;
     S.setPlace('from', PLACE(11, 51, 'A')); S.setPlace('to', PLACE(12, 52, 'B'));
     S.addVia(PLACE(11.5, 51.5, '1'));
     S.setMode('driving'); S.setAvoid('toll', true);
@@ -191,8 +173,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ⑦ THE TIME THE READER TYPED IS IN THE APP'S ZONE, NOT THE DEVICE'S (§7.1) ────────────────── */
-  test('R291 ⑦ a departure time is written in the clock timezone the app is set to', () => {
-    const w = fresh(); const S = w.IntMapRouteStore;
+  test('R291 ⑦ a departure time is written in the clock timezone the app is set to', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore;
     S.setPlace('from', PLACE(0, 0, 'A')); S.setPlace('to', PLACE(1, 1, 'B'));
     S.setWhen('depart', '2026-08-21T14:30');
     const tokyo = S._pure.whenISO(S.get(), 'Asia/Tokyo');
@@ -211,8 +193,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ══ ⑧ WHAT EACH PROVIDER CAN DO IS DATA, AND THE UI READS IT (§8.1/§14.1) ════════════════════ */
-  test('R291 ⑧ provider capabilities decide what may be offered, and none of them has traffic', () => {
-    const w = fresh(); const P = w.IntMapRouteProviders;
+  test('R291 ⑧ provider capabilities decide what may be offered, and none of them has traffic', async () => {
+    const w = await fresh(); const P = w.IntMapRouteProviders;
     assert.equal(P.supports('driving', 'liveTraffic'), false);
     assert.equal(P.supports('transit', 'liveTraffic'), false);
     /* ⚠ (#R347) THIS ASSERTION MOVED FROM A SPELLING TO A PROPERTY. It used to read
@@ -239,8 +221,8 @@ describe('§ #R291 · the route store and panel', () => {
       'the stop limit is derived from a provider, not a made-up constant');
   });
 
-  test('R291 ⑨ choosing a provider by capability says what choosing it costs', () => {
-    const w = fresh(); const P = w.IntMapRouteProviders;
+  test('R291 ⑨ choosing a provider by capability says what choosing it costs', async () => {
+    const w = await fresh(); const P = w.IntMapRouteProviders;
     const plain = P.forRequest({ mode: 'driving' });
     assert.equal(plain.provider.id, 'osrm');
     assert.deepEqual(plain.lost, [], 'a plain A→B keeps its alternatives');
@@ -258,8 +240,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ══ ⑩ THE SHARED RENDER LAYER (§17) ═════════════════════════════════════════════════════════ */
-  test('R291 ⑩ distances follow the measurement-units setting, in one place', () => {
-    const w = fresh(); const C = w.IntMapRouteCards;
+  test('R291 ⑩ distances follow the measurement-units setting, in one place', async () => {
+    const w = await fresh(); const C = w.IntMapRouteCards;
     assert.equal(C.distance(31_000, { lang: 'en', units: 'metric' }), '31 km');
     /* the two systems round the same way — one decimal under ten, whole numbers above */
     assert.equal(C.distance(31_000, { lang: 'en', units: 'imperial' }), '19 mi');
@@ -272,8 +254,8 @@ describe('§ #R291 · the route store and panel', () => {
     assert.match(C.duration(90 * 60, { lang: 'jp' }), /時間/, 'and it is translated');
   });
 
-  test('R291 ⑪ an arrival time is a clock time in the app’s zone, and says so when it lands tomorrow', () => {
-    const w = fresh(); const C = w.IntMapRouteCards;
+  test('R291 ⑪ an arrival time is a clock time in the app’s zone, and says so when it lands tomorrow', async () => {
+    const w = await fresh(); const C = w.IntMapRouteCards;
     const start = Date.UTC(2026, 7, 21, 22, 0, 0);
     assert.equal(C.clock(start, { lang: 'en', tz: 'UTC' }), '22:00');
     assert.equal(C.clock(start, { lang: 'en', tz: 'Asia/Tokyo' }), '07:00', 'the same instant, the app’s zone');
@@ -284,8 +266,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ⑫ «LIVE» IS EARNED, NEVER ASSUMED (§13.1) ────────────────────────────────────────────────── */
-  test('R291 ⑫ real-time, partly real-time and timetable are three different answers', () => {
-    const w = fresh(); const C = w.IntMapRouteCards;
+  test('R291 ⑫ real-time, partly real-time and timetable are three different answers', async () => {
+    const w = await fresh(); const C = w.IntMapRouteCards;
     const walk = { walk: 1, mode: 'WALK', duration: 300 };
     const live = (delay) => ({ walk: 0, mode: 'RAIL', duration: 900, rt: true, delay });
     const sched = { walk: 0, mode: 'BUS', duration: 900, rt: false, delay: 0 };
@@ -305,8 +287,8 @@ describe('§ #R291 · the route store and panel', () => {
     assert.match(C.legBadge(live(5), { lang: 'en' }), /rt-badge/);
   });
 
-  test('R291 ⑬ an alternative card is selectable, labelled and not distinguished by colour alone', () => {
-    const w = fresh(); const C = w.IntMapRouteCards;
+  test('R291 ⑬ an alternative card is selectable, labelled and not distinguished by colour alone', async () => {
+    const w = await fresh(); const C = w.IntMapRouteCards;
     const alts = [{ duration: 2160, distance: 31000, label: 'Fastest', color: '#1a73e8', roads: ['A1'] },
                   { duration: 2460, distance: 39000, label: '+5 min', color: '#e8710a', roads: ['E83'] }];
     const html = C.altCards(alts, { lang: 'en', units: 'metric', sel: 1, setId: 'rs7', startMs: Date.UTC(2026, 0, 1, 9, 0) });
@@ -329,8 +311,8 @@ describe('§ #R291 · the route store and panel', () => {
     assert.match(html, /arrive/, 'and the arrival time');
   });
 
-  test('R291 ⑭ a turn is a button with an icon, a sentence and a spoken lane description', () => {
-    const w = fresh(); const C = w.IntMapRouteCards;
+  test('R291 ⑭ a turn is a button with an icon, a sentence and a spoken lane description', async () => {
+    const w = await fresh(); const C = w.IntMapRouteCards;
     const mv = () => ({ icon: '→', text: 'Turn right onto A1', lane: '▯▮▮', key: 'right' });
     const html = C.stepRows([{ distance: 1200 }], { lang: 'en', units: 'metric', maneuver: mv, step: 0 });
     assert.match(html, /<button type="button" class="rt-step on"/, 'a step is a button, not a div with a click');
@@ -341,8 +323,8 @@ describe('§ #R291 · the route store and panel', () => {
     assert.match(C.stepRows([{ distance: 5 }], { lang: 'en', units: 'metric', maneuver: mv }), /aria-current="false"/);
   });
 
-  test('R291 ⑮ the honest notes exist for every shortfall, and none of them claims traffic', () => {
-    const w = fresh(); const C = w.IntMapRouteCards;
+  test('R291 ⑮ the honest notes exist for every shortfall, and none of them claims traffic', async () => {
+    const w = await fresh(); const C = w.IntMapRouteCards;
     for (const k of ['roadTypical', 'altsViaOsrm', 'altsAvoid', 'avoidDropped', 'areaDropped',
       'motorwayPref', 'shapeGap', 'jrEstimate', 'transitTimetable', 'transitLive']) {
       assert.match(C.note(k, { lang: 'en', mode: 'driving' }), /rt-note/, k + ' must have a sentence');
@@ -355,8 +337,8 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ══ ⑯ EXPORT AND SHARE (§16) ════════════════════════════════════════════════════════════════ */
-  test('R291 ⑯ GPX and GeoJSON keep the shapes older files had, and gain the metadata', () => {
-    const w = fresh(); const X = w.IntMapRouteExport;
+  test('R291 ⑯ GPX and GeoJSON keep the shapes older files had, and gain the metadata', async () => {
+    const w = await fresh(); const X = w.IntMapRouteExport;
     const payload = {
       coords: [[139.7, 35.6], [139.6, 35.5]], distance: 31000, duration: 2160,
       mode: 'driving', provider: 'osrm', avoid: ['toll'], avoidAreas: 1, liveTraffic: false,
@@ -378,8 +360,8 @@ describe('§ #R291 · the route store and panel', () => {
     assert.equal(X.gpx({ coords: [] }), null, 'no route is not an empty file');
   });
 
-  test('R291 ⑰ a shared route carries the places and NOT the geometry, and survives a round trip', () => {
-    const w = fresh(); const S = w.IntMapRouteStore; const X = w.IntMapRouteExport;
+  test('R291 ⑰ a shared route carries the places and NOT the geometry, and survives a round trip', async () => {
+    const w = await fresh(); const S = w.IntMapRouteStore; const X = w.IntMapRouteExport;
     S.setPlace('from', PLACE(139.76712345, 35.68123456, 'Tokyo Station'));
     S.setPlace('to', PLACE(135.5, 34.7335, 'Shin-Osaka'));
     S.addVia(PLACE(136.8816, 35.1706, 'Nagoya'));
@@ -511,7 +493,7 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ㉓ NOTHING IS FABRICATED, AND NOTHING SILENTLY IGNORED (§0/§8.4) ─────────────────────────── */
-  test('R291 ㉓ an option that could not be applied is reported, not swallowed', () => {
+  test('R291 ㉓ an option that could not be applied is reported, not swallowed', async () => {
     const r = read('js/routing.js');
     assert.match(r, /opts\._avoidDropped=true; opts\._areaDropped=true;/,
       'a keep-out area that could not be applied is distinguishable from an avoid option that could not');
@@ -534,7 +516,7 @@ describe('§ #R291 · the route store and panel', () => {
        that carries traffic is USABLE. That is a question about the table, not about the strings. */
     const cards = bare('js/routing-cards.js');
     const claims = /渋滞考慮|traffic-aware|with live traffic/.test(cards);
-    const w2 = fresh();
+    const w2 = await fresh();
     assert.equal(w2.IntMapRouteProviders.supports('driving', 'traffic'), false,
       'no traffic provider is usable in this checkout (none is configured)');
     assert.equal(claims, false,
@@ -599,9 +581,9 @@ describe('§ #R291 · the route store and panel', () => {
   });
 
   /* ⚠ ㉗ THE GEOCODER OFFERS CANDIDATES; IT DOES NOT CHOOSE (§4.1) ─────────────────────────────── */
-  test('R291 ㉗ the place search ranks a list instead of confirming one hit', () => {
+  test('R291 ㉗ the place search ranks a list instead of confirming one hit', async () => {
     const w = makeWindow();
-    const g = load(w, 'js/routing-geocode.js').IntMapRouteGeocode;
+    const g = (await load(w, 'js/routing-geocode.js')).IntMapRouteGeocode;
     /* a coordinate is a place, and it never leaves the browser */
     const ll = g.parseLatLng('35.6812, 139.7671');
     assert.equal(ll.lat, 35.6812); assert.equal(ll.lng, 139.7671); assert.equal(ll.kind, 'coord');
@@ -651,8 +633,8 @@ describe('§ #R291 · the route store and panel', () => {
      Found by PRODUCTION VERIFICATION: compute a route, switch the app to Japanese, and the card still
      read 「Fastest」. Every other string on it is produced at render time; this one was a STRING baked
      when the route was computed, which is the «translation held as data» shape one level up. */
-  test('R291 ㉗c an alternative’s differentiator is a descriptor, so it re-renders in the new language', () => {
-    const w = fresh(); const C = w.IntMapRouteCards;
+  test('R291 ㉗c an alternative’s differentiator is a descriptor, so it re-renders in the new language', async () => {
+    const w = await fresh(); const C = w.IntMapRouteCards;
     const fastest = { duration: 2160, distance: 31000, labelKey: { k: 'fastest', avoid: null }, label: 'Fastest' };
     const delta = { duration: 2460, distance: 39000, labelKey: { k: 'delta', min: 5, avoid: ['toll'] }, label: '+5 min · avoids tolls' };
     assert.equal(C.altLabel(fastest, { lang: 'en' }), 'Fastest');

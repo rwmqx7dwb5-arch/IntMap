@@ -404,7 +404,15 @@ test('R388 ⑪ railways is a lazy module and is not on the startup path', () => 
   /* (#R798) the registry entry */
   assert.equal(LAZY_REGISTRY["railways"].publishes, 'IntMapRailways');
   assert.equal((String(LAZY_REGISTRY["railways"] && LAZY_REGISTRY["railways"].load).match(/import\('([^']+)'\)/) || [])[1], './railways.js');
-  assert.match(String(LAZY_REGISTRY["railways"].mount), /window\.IntMapModules\.railways\(IM_HOST\)/);
+  /* (module-graph) the loader hands mount() the namespace its own import() resolved to and the
+     exported factory is called with the host — pinned, then run against a recording namespace. */
+  assert.match(String(LAZY_REGISTRY["railways"].mount), /\bm\.railways\(IM_HOST\)/);
+  {
+    const host = {}, seen = [];
+    LAZY_REGISTRY["railways"].mount(host, { railways: (h) => { seen.push(h); return {}; } });
+    assert.equal(seen.length, 1, 'mount() must call the exported railways factory exactly once');
+    assert.equal(seen[0], host, 'mount() must hand the factory the host it was given');
+  }
   assert.ok(lz.length > 0);
   /* #R340: assert the absence directly rather than trusting that js/*.js is all eager */
   const main = code('src/main.js');

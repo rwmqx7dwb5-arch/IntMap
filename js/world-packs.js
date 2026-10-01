@@ -29,20 +29,23 @@
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each — see js/data-door.js */
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
 /* (startup-lazy-layers) THE FIVE LAYERS, FETCHED THE FIRST TIME ONE OF THEM IS ASKED FOR. The rows, the
    toolkit every member of the family shares and the share-link state are js/world-packs-rows.js, which is
    eager; this factory is mounted by js/lazy-modules.js (`worldPacksBody`) and reads that toolkit off
    `window.IntMapWorld._kit` — the SAME functions, handed over rather than re-declared (see `_ui` there). */
-window.IntMapModules.worldPacksBody=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+export function worldPacksBody(HOST){
+  const GE=()=>IntMapGeoEngine;
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const K=window.IntMapWorld&&window.IntMapWorld._kit;
   if(!K) return;   /* no renderer: js/world-packs-rows.js built no rows and published no toolkit, so nothing can ask for a layer */
   /* the language helpers are the registry's own, declared here as every file declares them — the i18n
      instruments recognise a translation call by the helper the FILE declares (scripts/i18n-helpers.mjs) */
-  const L=window.IntMapLang.pick(()=>HOST.lang);
-  const LA=window.IntMapLang.pickArgs();
+  const L=IntMapLang.pick(()=>HOST.lang);
+  const LA=IntMapLang.pickArgs();
   const { BTN, D, LBL, ROW, SEL, STATE, centroidOf, countryAt, countryAtWhere, countryName, greatCircle, hiResCountries, makePanel, mapClick, noteBlock, nowYear, onRestyle, onYear, owid, owidRange, pct, ptInRing, rampLegend, relabel, row, setVis, usdExact, usdShort, whenDrawable, withCountryGeo, withCountrySource }=K;
   /* the encoder is bound HERE, not taken from the kit: a name handed over through `K` is judged by
      scripts/output-taint.mjs across every file that defines an `esc` (a CSV quoter among them), so the
@@ -3518,7 +3521,7 @@ window.IntMapModules.worldPacksBody=function(HOST){
 
       async function loadMA(list){
         const names=list.map(k=>MA[k]).filter(Boolean); if(!names.length) return;
-        const u=relay('ma='+encodeURIComponent(names.join(','))+'&lang='+encodeURIComponent(window.IntMapLang.htmlTag(HOST.lang)||'en'));
+        const u=relay('ma='+encodeURIComponent(names.join(','))+'&lang='+encodeURIComponent(IntMapLang.htmlTag(HOST.lang)||'en'));
         if(!u) throw new Error('no relay');
         const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('meteoalarm '+r.status);
         const j=await r.json();
@@ -5143,7 +5146,7 @@ window.IntMapModules.worldPacksBody=function(HOST){
          printed under the word 「発表」 would be #R269's defect in miniature. */
       function stampAt(v){ const t=(typeof v==='number')?v:Date.parse(String(v||''));
         if(!isFinite(t)) return '';
-        try{ return new Date(t).toLocaleString(window.IntMapLang.locale(HOST.lang,'en-US'),
+        try{ return new Date(t).toLocaleString(IntMapLang.locale(HOST.lang,'en-US'),
           {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
       function stampLine(pr){
         const issued=stampAt(pr.at)||stampAt(FEED_AT[pr.feed]);
@@ -5873,8 +5876,8 @@ window.IntMapModules.worldPacksBody=function(HOST){
         try{ paintFlood(null,null,fn); }catch(_){} }
 
       function fmtT(ms){ try{ return new Date(ms).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return new Date(ms).toISOString().slice(0,16).replace('T',' '); } }
-      function when(){ try{ const st=window.IntMapTime.state(); return st.isLive?Date.now():+new Date(st.when); }catch(_){ return Date.now(); } }
-      const isLive=()=>{ try{ return window.IntMapTime.isLive(); }catch(_){ return true; } };
+      function when(){ try{ const st=IntMapTime.state(); return st.isLive?Date.now():+new Date(st.when); }catch(_){ return Date.now(); } }
+      const isLive=()=>{ try{ return IntMapTime.isLive(); }catch(_){ return true; } };
       /* ══ (#R216) THE DATE FIELD AND THE PLAY BUTTON ═══════════════════════════════════════════════
          Local time in the field, because a tide table is read in local time; the master clock stores
          the instant. Steps are the shape of the phenomenon — an hour, and 6h12m, which is a quarter
@@ -5902,7 +5905,7 @@ window.IntMapModules.worldPacksBody=function(HOST){
           +'<input class="wp-t-when" type="datetime-local" step="3600" aria-label="'+esc(L('Date and time','日時'))+'" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
           +'<button class="wp-t-live" style="'+TB+(live?'background:var(--primary-fill);color:#fff;border-color:var(--primary-color);':'')+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
           +'</div>'; }
-      function setWhen(ms){ try{ window.IntMapTime.set(new Date(snapHour(ms)),{allowFuture:true,source:'tides'}); }catch(_){} }
+      function setWhen(ms){ try{ IntMapTime.set(new Date(snapHour(ms)),{allowFuture:true,source:'tides'}); }catch(_){} }
       function stopPlay(){ if(playTmr){ stopTick(playTmr); playTmr=0; } }
       function togglePlay(){
         if(playTmr){ stopPlay(); }
@@ -5921,7 +5924,7 @@ window.IntMapModules.worldPacksBody=function(HOST){
         if(w) w.onchange=()=>{ const d=new Date(w.value); if(!isNaN(d.getTime())){ stopPlay(); setWhen(+d); } };
         b.querySelectorAll('.wp-t-step').forEach(x=>x.onclick=()=>{ stopPlay(); setWhen(when()+parseFloat(x.getAttribute('data-d'))*3600e3); });
         const pb=b.querySelector('.wp-t-play'); if(pb) pb.onclick=togglePlay;
-        const lb=b.querySelector('.wp-t-live'); if(lb) lb.onclick=()=>{ stopPlay(); try{ window.IntMapTime.setNow({source:'tides'}); }catch(_){} }; }
+        const lb=b.querySelector('.wp-t-live'); if(lb) lb.onclick=()=>{ stopPlay(); try{ IntMapTime.setNow({source:'tides'}); }catch(_){} }; }
       /* every open of this panel goes through here, so the controls are never missing from one of them */
       function openTide(bodyHTML,note){ const b=panel.open(timeBar()+bodyHTML+(note==null?SRCNOTE():note)); wireTime(b); return b; }
 
@@ -6356,4 +6359,4 @@ window.IntMapModules.worldPacksBody=function(HOST){
   /* the facade was published before these five existed — hand it their entry points now, exactly what
      `Object.assign(…, STATE)` gave it when this file was eager */
   Object.assign(window.IntMapWorld,STATE);
-};
+}

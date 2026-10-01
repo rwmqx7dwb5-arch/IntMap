@@ -67,9 +67,12 @@ function el({ title, text, id, hostId }) {
 function sweepOver(nodes) {
   const body = liftFunction(SRC, '_uiNameSweep');
   const doc = { querySelectorAll: (sel) => (sel === GENERIC ? nodes : []) };
-  const win = { IntMapLang: { t: (_l, en) => en } };
-  const fn = new Function('document', 'window', 'HOST', '_name', '_rowLbl',
-    body + '\n;return _uiNameSweep;')(doc, win, { lang: 'en' },
+  /* (module-graph) the registry is the file's imported binding `IntMapLang`, so the lifted body gets it as a
+     parameter of that name; window stays supplied for anything still read off it */
+  const lang = { t: (_l, en) => en };
+  const win = { IntMapLang: lang };
+  const fn = new Function('document', 'window', 'IntMapLang', 'HOST', '_name', '_rowLbl',
+    body + '\n;return _uiNameSweep;')(doc, win, lang, { lang: 'en' },
     (e, txt) => { e.setAttribute('aria-label', txt); e.setAttribute('data-imname', '1'); },
     () => '');
   fn();

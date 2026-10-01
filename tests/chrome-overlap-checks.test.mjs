@@ -75,8 +75,10 @@ test('R428 ① a band that the chrome covers neither shows nor claims space', ()
       coords: { project: (c) => ({ x: c[0], y: c[1] }) },
     } };
     const doc = { elementFromPoint: (x, y) => (coveredRect && x >= coveredRect.x0 && x <= coveredRect.x1 && y >= coveredRect.y0 && y <= coveredRect.y1) ? chrome : canvas };
-    new Function('window', 'document', 'bandBox', liftFunction(s, 'declutterNewsBands') + '\nreturn declutterNewsBands;')(
-      win, doc, () => ({ w: 120, h: 19 }))([
+    /* (module-graph) the engine is the file's imported binding `IntMapGeoEngine`, handed to the lifted body
+       under that name (window stays supplied for whatever is still read off it) */
+    new Function('window', 'document', 'IntMapGeoEngine', 'bandBox', liftFunction(s, 'declutterNewsBands') + '\nreturn declutterNewsBands;')(
+      win, doc, win.IntMapGeoEngine, () => ({ w: 120, h: 19 }))([
       /* A is higher priority (placed) and sits under the chrome; B is 10 px lower and collides with A */
       { type: 'Feature', geometry: { type: 'Point', coordinates: [850, 20] }, properties: { fid: 'A', mapped: 'true', short: 'Reykjavik' } },
       { type: 'Feature', geometry: { type: 'Point', coordinates: [850, 30] }, properties: { fid: 'B', mapped: 'true', short: 'Oslo' } },

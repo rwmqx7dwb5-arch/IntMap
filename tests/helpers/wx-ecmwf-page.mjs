@@ -27,6 +27,7 @@
  * ==========================================================================*/
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { importModule } from './import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -214,8 +215,14 @@ export async function coldWxModel(opt) {
   globalThis.document = page.doc;
   globalThis.fetch = page.fetch;
   bust++;
-  const mine = bust;
-  const load = (rel) => importShipped(rel, mine);
+  /* (module-graph) the modules IMPORT the clock, the renderer seam and the language registry, so the
+     page's stubs for them are handed at those import edges — left on page.win they would be bypassed and
+     the module would run against the real engine (no renderer: nothing drawn) and the real clock */
+  const edges = {};
+  if (page.win.IntMapTime) edges['js/chronos.js'] = { IntMapTime: page.win.IntMapTime };
+  if (page.win.IntMapGeoEngine) edges['js/geo-engine.js'] = { IntMapGeoEngine: page.win.IntMapGeoEngine };
+  if (page.win.IntMapLang) edges['js/lang-registry.js'] = { IntMapLang: page.win.IntMapLang };
+  const load = (rel) => importModule(rel, { mocks: edges });
   await load('js/wx-models.js');
   await load('js/wx-ecmwf.js');
   return { page, calls: page.calls, ENG: page.win.IntMapWxEngine, load };

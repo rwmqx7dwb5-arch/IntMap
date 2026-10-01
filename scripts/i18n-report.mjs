@@ -59,7 +59,7 @@ function keyedTable(code) {
   const keys = new Set();
   /* the file is one call: IntMapLang.define('xx', { ui: { … } }). Parse it and read the ui object's
      property names — no eval, and a syntax error is reported rather than swallowed. */
-  const ast = parse(src, { ecmaVersion: 2022 });
+  const ast = parse(src, { ecmaVersion: 2022, sourceType: 'module' });   /* (module-graph) a locale table imports the registry */
   walk.simple(ast, {
     Property(n) {
       if (n.key && (n.key.name === 'ui' || n.key.value === 'ui') && n.value && n.value.type === 'ObjectExpression') {
@@ -79,7 +79,7 @@ function inlineTable(code) {
   const rows = new Map();
   if (!existsSync(p)) return rows;
   const src = readFileSync(p, 'utf8');
-  const ast = parse(src, { ecmaVersion: 2022 });
+  const ast = parse(src, { ecmaVersion: 2022, sourceType: 'module' });   /* (module-graph) a locale table imports the registry */
   walk.simple(ast, {
     Property(n) {
       if (n.key && (n.key.name === 'inline' || n.key.value === 'inline') && n.value && n.value.type === 'ObjectExpression') {
@@ -148,7 +148,8 @@ function main() {
     lines.push(` *    · js/lang-registry.js  — append { code: '${code}', label: '<its own name>', html: '${code}' } to LANGS`);
     lines.push(` *    · src/main.js          — import '../js/locales/ui.${code}.js'; beside the others`);
     lines.push(' * ========================================================================== */');
-    lines.push(`window.IntMapLang.define('${code}', {`);
+    lines.push(`import { IntMapLang } from '../lang-registry.js';`);
+    lines.push(`IntMapLang.define('${code}', {`);
     lines.push('  /* ① the keyed table — Settings, tabs, layer names, the static UI */');
     lines.push('  ui: {' + uiBody + '},');
     lines.push('  /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.');

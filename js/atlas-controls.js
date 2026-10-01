@@ -14,6 +14,7 @@
  *  tests/atlas-console-kernel-checks.test.mjs (#R199) re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+import { IntMapLang } from './lang-registry.js';
 export function makeAtlasControls(HOST, CTX) {
   const L=CTX.L, R=CTX.R, _ctlTogHtml=CTX._ctlTogHtml, esc=CTX.esc, note=CTX.note, warn=CTX.warn;
     /* ---- generic UI helpers for the full-control action set ---- */
@@ -155,19 +156,19 @@ export function makeAtlasControls(HOST, CTX) {
        exactly what this function wrote and nothing that any other file authored deliberately. */
     function _name(el,txt){ try{ el.setAttribute('aria-label',txt); el.setAttribute('data-imname','1'); }catch(_){} }
     function _uiNameSweep(){ try{ const jp=HOST.lang==='jp';
-      document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) _name(b,(window.IntMapLang.t(HOST.lang,'favorite: ','お気に入り: ','Favorit: ','избранное: ','favorito: '))+l2); });
-      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) _name(i2,(window.IntMapLang.t(HOST.lang,'opacity: ','不透明度: ','Deckkraft: ','непрозрачность: ','opacidad: '))+l2); });
+      document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) _name(b,(IntMapLang.t(HOST.lang,'favorite: ','お気に入り: ','Favorit: ','избранное: ','favorito: '))+l2); });
+      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) _name(i2,(IntMapLang.t(HOST.lang,'opacity: ','不透明度: ','Deckkraft: ','непрозрачность: ','opacidad: '))+l2); });
       document.querySelectorAll('input.dl-date:not([aria-label])').forEach(i2=>{ let l2=_rowLbl(i2);
         if(!l2){ const lg=i2.closest('[id^="data-legend-"]'); if(lg) l2=lg.id.replace(/^data-legend-/,''); }   /* date inputs live in the layer's LEGEND, not its row */
-        if(l2) _name(i2,(window.IntMapLang.t(HOST.lang,'date: ','日付: ','Datum: ','дата: ','fecha: '))+l2); });
+        if(l2) _name(i2,(IntMapLang.t(HOST.lang,'date: ','日付: ','Datum: ','дата: ','fecha: '))+l2); });
       document.querySelectorAll('#layer-dropdown input[type=checkbox]:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) _name(i2,l2); });
       document.querySelectorAll('button.layer-popup-x:not([aria-label])').forEach(b=>{ let nm2='';
         const box=b.closest('[id^="data-legend-"]')||b.closest('[id$="-legend"]')||b.closest('[id^="legend"]')||b.closest('.layer-popup')||b.closest('.data-legend');
         if(box){ /* first heading candidate that contains REAL text (skip the ⋮⋮ drag handle) */
           let t3=''; try{ [].slice.call(box.querySelectorAll('b, strong, .lgd-t, span')).some(h=>{ const x2=String(h.textContent||'').replace(/\s+/g,' ').trim(); if(/\p{L}/u.test(x2)&&x2.length>=2){ t3=x2; return true; } return false; }); }catch(_){}
           nm2=(t3||String(box.id||'').replace(/^data-legend-/,'')).slice(0,32); }
-        _name(b,(window.IntMapLang.t(HOST.lang,'close legend: ','凡例を閉じる: ','Legende schließen: ','закрыть легенду: ','cerrar leyenda: '))+(nm2||'legend')); });
-      document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ _name(i2,window.IntMapLang.t(HOST.lang,'sea level rise (m)','海面上昇 (m)','Meeresspiegelanstieg (m)','подъём уровня моря (м)','subida del nivel del mar (m)')); });
+        _name(b,(IntMapLang.t(HOST.lang,'close legend: ','凡例を閉じる: ','Legende schließen: ','закрыть легенду: ','cerrar leyenda: '))+(nm2||'legend')); });
+      document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ _name(i2,IntMapLang.t(HOST.lang,'sea level rise (m)','海面上昇 (m)','Meeresspiegelanstieg (m)','подъём уровня моря (м)','subida del nivel del mar (m)')); });
       /* generic, in this order, because an element's OWN name outranks anything this sweep can guess:
          (1) a title with real content IS the name — copy it; (2) only a button whose WHOLE text is a
          close glyph is a close button; (3) an icon-only button without a title gets NOTHING.
@@ -186,8 +187,8 @@ export function makeAtlasControls(HOST, CTX) {
         const t2=(b.textContent||'').replace(/\s+/g,''); if(!/^[××✖xX]$/.test(t2)) return;   /* no glyph (incl. empty = icon only) ⇒ not shown to be a close button ⇒ leave it unnamed */
         if(b.id&&b.id.length>3) return;
         const host=b.closest&&b.closest('[id]'); if(!host||!host.id) return;
-        _name(b,(window.IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
-      document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ _name(i2,window.IntMapLang.t(HOST.lang,'file: ','ファイル: ','Datei: ','файл: ','archivo: ')+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
+        _name(b,(IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
+      document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ _name(i2,IntMapLang.t(HOST.lang,'file: ','ファイル: ','Datei: ','файл: ','archivo: ')+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
       /* unnamed generic checkboxes/radios outside the layer panel: take the row text they sit in */
       document.querySelectorAll('input[type=checkbox]:not([aria-label]), input[type=radio]:not([aria-label])').forEach(i2=>{ try{
         if(i2.closest('#layer-dropdown')||i2.closest('#atlas-panel')) return; const l2=_rowLbl(i2); if(l2) _name(i2,l2); }catch(_){} });

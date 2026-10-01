@@ -485,7 +485,8 @@ test('R409 ②: a share link that still names dl-wars opens dl-ww1 and dl-ww2', 
    layer's closure; «none of them writes the clock» is a claim over every one of their paths. */
 test('R409 ③: only toggle() writes window.IntMapTime — the slider, the transport and play do not', () => {
   const src = codeOnly(raw('js/war-layer.js'));
-  const writes = [...src.matchAll(/window\.IntMapTime\.(set|setYear|setNow|setIndex)\s*\(/g)];
+  /* (module-graph) the clock is an imported binding now; either spelling is a write, so neither goes blind */
+  const writes = [...src.matchAll(/(?:window\.)?\bIntMapTime\.(set|setYear|setNow|setIndex)\s*\(/g)];
   assert.equal(writes.length, 1, 'js/war-layer.js writes the master clock ' + writes.length + ' time(s); exactly one — the seed in toggle() — is allowed');
   /* the one write is inside toggle(), not inside the control wiring or the play loop */
   const fnAt = (name) => { const i = src.indexOf(name); assert.ok(i > 0, name + ' is gone'); return i; };
@@ -712,7 +713,7 @@ test('R409 ⑬: each war row carries a label span that the favourites bar can re
    ⚠ SPELLING, ON PURPOSE: the handler is subscribed inside the DOM-bound layer instance. */
 test('R409 ⑭: the clock handler only follows an instant that lands inside this war', () => {
   const src = codeOnly(raw('js/war-layer.js'));
-  const i = src.indexOf('window.IntMapTime.on(');
+  const i = src.indexOf('IntMapTime.on(');   /* (module-graph) the imported clock binding */
   assert.ok(i > 0, 'the layer no longer subscribes to the master clock at all');
   const h = src.slice(i, i + 520);
   assert.ok(/if \(d < sp\[0\] \|\| d > sp\[1\]\) return;/.test(h), 'the clock handler no longer refuses an instant outside this war');

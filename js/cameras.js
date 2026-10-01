@@ -14,9 +14,11 @@
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 import { fetchViaProxy } from './proxy-fetch.js';   /* (own-fetch-relay) the app's ONE relay ladder — the 511 lists ride fetch-relay */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.cameras=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function cameras(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -26,7 +28,7 @@ window.IntMapModules.cameras=function(HOST){
   const satToast=HOST.satToast;
   (function(){
     if(!GE().hasRenderer()) return;
-    const LLw=window.IntMapLang.pick(()=>HOST.lang);
+    const LLw=IntMapLang.pick(()=>HOST.lang);
     const lbl=()=>LLw('Live cameras','ライブカメラ','Live-Kameras','Веб-камеры','Cámaras en vivo');
     let on=false, popup=null, fetching=false, lastBox=null, lastZoom=-1, moveT=null, camById={}, tflDone=false, caltransDone=false, finlandDone=false, otcmDone=false, oneStopDone=false, refreshTimer=null, _osDataT=null;
     function fc(){ const a=[]; for(const k in camById) a.push(camById[k]); return {type:'FeatureCollection',features:a}; }
@@ -218,4 +220,4 @@ window.IntMapModules.cameras=function(HOST){
     window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.textContent='📷 '+lbl(); try{ if(on) updateLegend(); }catch(_){} });
     if(document.readyState!=='loading') setTimeout(buildUI,900); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,900));
   })();
-};
+}

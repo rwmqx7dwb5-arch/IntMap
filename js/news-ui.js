@@ -1,4 +1,6 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 /* ============================================================================
  *  IntMap · News feed, pins & reader  (#R168)
  * ----------------------------------------------------------------------------
@@ -11,9 +13,9 @@ import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is �
  *  references to closure variables became HOST.<member> reads (Architecture.md §3.1). The
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.newsUi=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function newsUi(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -123,7 +125,7 @@ window.IntMapModules.newsUi=function(HOST){
 
   function formatCustomDate(s){ const d=HOST.parseDate(s),tz=tzOpt(),now=new Date(); const a=ymd(d,tz),today=ymd(now,tz),yest=ymd(new Date(now.getTime()-864e5),tz),time=hm(d,tz);
     /* (#R37) localize "today"/"yesterday" for ALL four languages — the old en?…:… else-branch showed Japanese to DE/RU. */
-    const TODAY=window.IntMapLang.t(HOST.lang,'today','今日','heute','сегодня','hoy'), YEST=window.IntMapLang.t(HOST.lang,'yesterday','昨日','gestern','вчера','ayer');
+    const TODAY=IntMapLang.t(HOST.lang,'today','今日','heute','сегодня','hoy'), YEST=IntMapLang.t(HOST.lang,'yesterday','昨日','gestern','вчера','ayer');
     if(a===today)return `${TODAY} ${time}`; if(a===yest)return `${YEST} ${time}`; const[,M,D]=a.split('-'); return `${+M}/${+D} ${time}`; }
 
   let hoveredNewsId=null, hoveredDashId=null;
@@ -133,7 +135,7 @@ window.IntMapModules.newsUi=function(HOST){
        `GE` falls back to nothing only if the engine has not been constructed yet (it is built in
        map.on('load') before the first call), in which case we simply return and the existing
        styledata re-run creates the layers. */
-    const GE=window.IntMapGeoEngine;
+    const GE=IntMapGeoEngine;
     /* (#R170) ready() → canDraw(). ready() means "the renderer has fully settled, tiles and all", which is
        false for most of the time a user spends panning — so the news pin layer, like every dl-* layer, was
        waiting for an idle frame it might not get for seconds. Creating sources/layers only needs a parsed
@@ -228,8 +230,8 @@ window.IntMapModules.newsUi=function(HOST){
        which is the same duplication that let the pin builder drift (see js/news-feed.js). */
     function _srcCountLabel(n){
       return String(n===1
-        ? window.IntMapLang.t(HOST.lang,'1 source','1媒体','1 Quelle','1 источник','1 fuente')
-        : window.IntMapLang.t(HOST.lang,'{n} sources','{n}媒体','{n} Quellen','{n} источников','{n} fuentes')).replace('{n}',n);
+        ? IntMapLang.t(HOST.lang,'1 source','1媒体','1 Quelle','1 источник','1 fuente')
+        : IntMapLang.t(HOST.lang,'{n} sources','{n}媒体','{n} Quellen','{n} источников','{n} fuentes')).replace('{n}',n);
     }
     function _newsTipHTML(p){
       const isEv=p.ev==='1', n=+p.evSources||0;
@@ -291,9 +293,9 @@ window.IntMapModules.newsUi=function(HOST){
          per-outlet link list of its own. An article pin is unchanged. */
       const isEv=pr.ev==='1'&&!!pr.evId, nSrc=+pr.evSources||0;
       const readLbl=isEv
-        ? window.IntMapLang.t(HOST.lang,'Open event','出来事を開く','Ereignis öffnen','Открыть событие','Abrir suceso')
-        : window.IntMapLang.t(HOST.lang,'Read article','記事を読む','Artikel lesen','Читать статью','Leer el artículo');
-      const closeLbl=window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar');
+        ? IntMapLang.t(HOST.lang,'Open event','出来事を開く','Ereignis öffnen','Открыть событие','Abrir suceso')
+        : IntMapLang.t(HOST.lang,'Read article','記事を読む','Artikel lesen','Читать статью','Leer el artículo');
+      const closeLbl=IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar');
       const foot=isEv&&nSrc>0 ? (IntMapSafe.html(pr.publisher||'')+' · '+IntMapSafe.html(_srcCountLabel(nSrc))) : IntMapSafe.html(pr.publisher||'');
       pop.innerHTML=`<div class="mnp-head"><span class="mnp-loc">${pr.name?('['+IntMapSafe.html(pr.name)+']'):''}</span><span class="mnp-date">${formatCustomDate(pr.pubDate)}</span></div><div class="mnp-title">${IntMapSafe.html(pr.title||'')}</div><div class="mnp-pub">${foot}</div><div class="mnp-actions">${(isEv||link)?`<button class="mnp-read" type="button">${readLbl}</button>`:''}<button class="mnp-close" type="button">${closeLbl}</button></div>`;   /* (#R138 SEC) escape external news fields */
       const rb=pop.querySelector('.mnp-read'); if(rb) rb.onclick=()=>{ back.classList.remove('show'); _openNewsFeature(pr); };   /* (#R138 SEC) http(s) only — never open a javascript: link (inside _openNewsFeature) */
@@ -346,7 +348,7 @@ window.IntMapModules.newsUi=function(HOST){
           _xhrNewsId=f.id; try{GE().layers.setFeatureState({source:'news-points',id:f.id},{hover:true});}catch(_){} }
         _xhrLink=pr.link||null; _xhrProps=pr;
         const el=HOST.ensureMapTooltip(); window.showMapTooltip(el); el.style.pointerEvents='auto'; el.style.cursor='pointer';
-        window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(window.IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`);
+        window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`);
         try{ HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); }catch(_){}
       } else { if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; _xhrProps=null; if(HOST.mapTooltipEl){ window.hideMapTooltip(HOST.mapTooltipEl); HOST.mapTooltipEl.style.pointerEvents='none'; } }
     }catch(_){} }
@@ -483,7 +485,7 @@ window.IntMapModules.newsUi=function(HOST){
       if(n==null){ try{ n=HOST.dockedCount?HOST.dockedCount():df.querySelectorAll('.im-docked').length; }catch(_){ n=df.querySelectorAll('.im-docked').length; } }
       const old=df.querySelector('.dock-empty');
       if(n){ if(old) old.remove(); return; }
-      const txt=window.IntMapLang.t(HOST.lang,
+      const txt=IntMapLang.t(HOST.lang,
         'Legends and tool windows will appear here instead of over the map.',
         '凡例やツール窓は、地図の上ではなくここに表示されます。',
         'Legenden und Werkzeugfenster erscheinen hier statt über der Karte.',
@@ -536,7 +538,7 @@ window.IntMapModules.newsUi=function(HOST){
        shared with News/Info); leaving Countries cancels an active pick so the crosshair/handler never lingers. */
     { const cpk=document.getElementById('csearch-pick'); if(cpk) cpk.classList.toggle('on-tab', HOST.mode==='stats'); }
     if(!document.body.classList.contains('ws-mode') && HOST.mode!=='stats' && window.__countryPickActive && window.__countryPickActive()){ try{ window.__countryPick(false); }catch(_){} }
-    { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (HOST.mode==='stats'||HOST.mode==='info'||HOST.mode==='monitors') ? (window.IntMapLang.t(HOST.lang,'Filter…','絞り込み...','Filtern…','Фильтр…','Filtrar…')) : HOST.t('searchPh'); }
+    { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (HOST.mode==='stats'||HOST.mode==='info'||HOST.mode==='monitors') ? (IntMapLang.t(HOST.lang,'Filter…','絞り込み...','Filtern…','Фильтр…','Filtrar…')) : HOST.t('searchPh'); }
 
     /* (#R11) No tab selected → blank sidebar content (map stays prominent). News pins still load when the
        user opens the News tab. (#R19) The blank state now hosts the opt-in Apple-style widget board. */
@@ -580,8 +582,8 @@ window.IntMapModules.newsUi=function(HOST){
          there, the way every category chip beside it does. ⚠ no count when it is zero — a chip that
          reads 「★ 保存 0」 invites a click that shows an empty list. */
       const _sv=(function(){ try{ const st=window.IntMapNewsEvents&&window.IntMapNewsEvents.state(); return (st&&+st.savedCount)||0; }catch(_){ return 0; } })();
-      document.getElementById('newsfilter-all').textContent = window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все','Todo');
-      document.getElementById('newsfilter-saved').innerHTML = IntMapSafe.html(window.IntMapLang.t(HOST.lang,'★ Saved','★ 保存済み','★ Gespeichert','★ Сохранённые','★ Guardado'))+(_sv?('<span class="news-cat-n">'+_sv+'</span>'):'');
+      document.getElementById('newsfilter-all').textContent = IntMapLang.t(HOST.lang,'All','すべて','Alle','Все','Todo');
+      document.getElementById('newsfilter-saved').innerHTML = IntMapSafe.html(IntMapLang.t(HOST.lang,'★ Saved','★ 保存済み','★ Gespeichert','★ Сохранённые','★ Guardado'))+(_sv?('<span class="news-cat-n">'+_sv+'</span>'):'');
       document.getElementById('newsfilter-all').classList.toggle('active', HOST.mode==='news');
       document.getElementById('newsfilter-saved').classList.toggle('active', HOST.mode==='saved');
       HOST.startNews(); return;
@@ -605,9 +607,9 @@ window.IntMapModules.newsUi=function(HOST){
       /* (#R416) `mapped==='publisher'` cannot occur any more — the publisher pin mode is gone — but
          the class stays reachable for the saved snapshots #R30 restores, which still carry it. */
       const chipCls=(item.analysis.mapped===true)?'loc-chip':((item.analysis.mapped==='publisher')?'loc-chip publisher':'loc-chip unmapped');
-      const readLabel = window.IntMapLang.t(HOST.lang,'Read ↗','記事を読む ↗','Lesen ↗','Читать ↗','Leer ↗');
-      card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}" data-effect="private" aria-label="${window.IntMapLang.t(HOST.lang,'Bookmark','ブックマーク')}">★</button>
-        <div class="news-head"><span class="${chipCls}" title="${IntMapSafe.html(item.analysis.name||'')}">${IntMapSafe.html(item.analysis.name)||(window.IntMapLang.t(HOST.lang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida'))}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
+      const readLabel = IntMapLang.t(HOST.lang,'Read ↗','記事を読む ↗','Lesen ↗','Читать ↗','Leer ↗');
+      card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}" data-effect="private" aria-label="${IntMapLang.t(HOST.lang,'Bookmark','ブックマーク')}">★</button>
+        <div class="news-head"><span class="${chipCls}" title="${IntMapSafe.html(item.analysis.name||'')}">${IntMapSafe.html(item.analysis.name)||(IntMapLang.t(HOST.lang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida'))}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
         <div class="news-title">${HOST.newsTitleHTML(item)}</div>
         <div class="news-foot"><small class="news-pub"${item.publisher?' role="link" tabindex="0" title="'+IntMapSafe.html(item.publisher+' — Wikipedia ↗')+'"':''}>${IntMapSafe.html(item.publisher)}</small><button class="btn-read">${readLabel}</button></div>`;   /* (#R138 SEC) name/publisher from external RSS → escape (newsTitleHTML self-escapes) */
       /* (#R386) 出来事のカードは `.news-item` を**発展させたもの**で、別のカードではない
@@ -669,8 +671,8 @@ window.IntMapModules.newsUi=function(HOST){
      Reader⇄Web and ✨translate are this surface's own buttons and ride in as `extra`; ‹ back and the
      route to Atlas belong to every reading surface and come from the builder. */
   function readerBar(item,mode){
-    const back=window.IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
-    const other=mode==='reader'?(window.IntMapLang.t(HOST.lang,'🌐 Web','🌐 ページ表示','🌐 Web','🌐 Веб','🌐 Web')):(window.IntMapLang.t(HOST.lang,'📖 Reader','📖 リーダー','📖 Leseansicht','📖 Читалка','📖 Lector'));
+    const back=IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
+    const other=mode==='reader'?(IntMapLang.t(HOST.lang,'🌐 Web','🌐 ページ表示','🌐 Web','🌐 Веб','🌐 Web')):(IntMapLang.t(HOST.lang,'📖 Reader','📖 リーダー','📖 Leseansicht','📖 Читалка','📖 Lector'));
     const extra=`<button class="nrp-mode" id="nrp-mode-btn">${other}</button>${mode==='reader'?`<button class="nrp-mode" id="nrp-translate-btn">✨ ${HOST.t('aiTranslate')}</button>`:''}`;
     return HOST.readerBar({back,extra,publisher:item.publisher});
   }
@@ -686,23 +688,23 @@ window.IntMapModules.newsUi=function(HOST){
     if(mode==='web'){
       pane.innerHTML=`${readerBar(item,'web')}
         <h1 class="nrp-title">${HOST.escForReader(item.title)}</h1>${metaRow}
-        <div class="nrp-webwrap"><div class="nrp-webnote" id="nrp-webnote">${window.IntMapLang.t(HOST.lang,'Loading page…','ページを読み込み中…','Seite lädt…','Загрузка страницы…','Cargando página…')}</div><iframe class="nrp-iframe" src="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe></div>
-        <a class="nrp-orig" href="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" target="_blank" rel="noopener">${window.IntMapLang.t(HOST.lang,'Open in new tab','新しいタブで開く','In neuem Tab öffnen','Открыть в новой вкладке','Abrir en pestaña nueva')} ↗</a>`;
+        <div class="nrp-webwrap"><div class="nrp-webnote" id="nrp-webnote">${IntMapLang.t(HOST.lang,'Loading page…','ページを読み込み中…','Seite lädt…','Загрузка страницы…','Cargando página…')}</div><iframe class="nrp-iframe" src="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe></div>
+        <a class="nrp-orig" href="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" target="_blank" rel="noopener">${IntMapLang.t(HOST.lang,'Open in new tab','新しいタブで開く','In neuem Tab öffnen','Открыть в новой вкладке','Abrir en pestaña nueva')} ↗</a>`;
       const ifr=pane.querySelector('.nrp-iframe'); const note=pane.querySelector('#nrp-webnote');
       if(ifr){ ifr.addEventListener('load',()=>{ if(note) note.style.display='none'; });
-        setTimeout(()=>{ if(note&&note.style.display!=='none') note.innerHTML=window.IntMapLang.t(HOST.lang,'This site blocks embedding. Try “📖 Reader” or open it in a new tab.','このサイトは埋め込み表示を許可していません。「📖 リーダー」か「新しいタブで開く」をお使いください。','Diese Seite erlaubt kein Einbetten. Nutze „📖 Reader“ oder öffne sie in einem neuen Tab.','Сайт запрещает встраивание. Используйте «📖 Читалка» или откройте в новой вкладке.','Este sitio bloquea la inserción. Prueba «📖 Lector» o ábrelo en una pestaña nueva.'); }, 5000); }
+        setTimeout(()=>{ if(note&&note.style.display!=='none') note.innerHTML=IntMapLang.t(HOST.lang,'This site blocks embedding. Try “📖 Reader” or open it in a new tab.','このサイトは埋め込み表示を許可していません。「📖 リーダー」か「新しいタブで開く」をお使いください。','Diese Seite erlaubt kein Einbetten. Nutze „📖 Reader“ oder öffne sie in einem neuen Tab.','Сайт запрещает встраивание. Используйте «📖 Читалка» или откройте в новой вкладке.','Este sitio bloquea la inserción. Prueba «📖 Lector» o ábrelo en una pestaña nueva.'); }, 5000); }
     } else {
       const locName=(item.analysis&&item.analysis.name)?item.analysis.name:'';
       const bodyHtml=(res.blocks&&res.blocks.length)
         ? res.blocks.map(b=> b.t==='h' ? `<h3>${HOST.escForReader(b.v)}</h3>` : `<p>${HOST.escForReader(b.v)}</p>`).join('')
-        : `<p>${window.IntMapLang.t(HOST.lang,'Could not extract text — use “🌐 Web” above to open the page.','本文を自動取得できませんでした。上の「🌐 ページ表示」で元ページを開けます。','Text konnte nicht extrahiert werden — öffne die Seite über „🌐 Web“ oben.','Не удалось извлечь текст — откройте страницу через «🌐 Веб» выше.','No se pudo extraer el texto — abre la página con «🌐 Web» arriba.')}</p>`;
+        : `<p>${IntMapLang.t(HOST.lang,'Could not extract text — use “🌐 Web” above to open the page.','本文を自動取得できませんでした。上の「🌐 ページ表示」で元ページを開けます。','Text konnte nicht extrahiert werden — öffne die Seite über „🌐 Web“ oben.','Не удалось извлечь текст — откройте страницу через «🌐 Веб» выше.','No se pudo extraer el texto — abre la página con «🌐 Web» arriba.')}</p>`;
       const heroHtml=res.hero?`<img class="nrp-hero" alt="" src="${HOST.escForReader(IntMapSafe.url(res.hero))}" onerror="this.style.display='none'">`:'';
       const locHtml=locName?`<span class="nrp-loc" id="nrp-loc" role="button" tabindex="0">${HOST.escForReader(locName)}</span>`:'';
       pane.innerHTML=`${readerBar(item,'reader')}
         ${heroHtml}${locHtml}
         <h1 class="nrp-title">${HOST.escForReader(item.title)}</h1>${metaRow}
         <div class="nrp-body">${bodyHtml}</div>
-        <a class="nrp-orig" href="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" target="_blank" rel="noopener">${window.IntMapLang.t(HOST.lang,'Open original','元記事を開く','Original öffnen','Открыть оригинал','Abrir original')} ↗</a>`;
+        <a class="nrp-orig" href="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" target="_blank" rel="noopener">${IntMapLang.t(HOST.lang,'Open original','元記事を開く','Original öffnen','Открыть оригинал','Abrir original')} ↗</a>`;
       const locEl=pane.querySelector('#nrp-loc');
       if(locEl) locEl.onclick=()=>{ if(item.analysis&&item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
     }
@@ -744,4 +746,4 @@ window.IntMapModules.newsUi=function(HOST){
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */
   return { renderUI, setupIntelLayers, appendNewsBatch, renderReaderMode, _spreadDupNewsPins };
-};
+}

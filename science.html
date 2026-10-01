@@ -39,10 +39,10 @@
      glob, so scripts/i18n-langs.mjs writes the same list here on every build and js/lang-registry.js
      reads it. Without this line a new language reaches the app and never reaches these pages —
      exactly the defect #R231 found and fixed once already, by hand. -->
-<script src="./js/locales/_langs.js"></script>
-<script src="./js/lang-registry.js"></script>
-<script src="./js/page-i18n.js"></script>
-<script>
+<script type="module" src="./js/locales/_langs.js"></script>
+<script type="module" src="./js/lang-registry.js"></script>
+<script type="module" src="./js/page-i18n.js"></script>
+<script type="module">
   window.IntMapPageI18N.mount({ page: 'science', root: '#pg-root' });
 </script>
 </body>

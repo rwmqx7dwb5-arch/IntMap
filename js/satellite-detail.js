@@ -32,14 +32,16 @@
  *  · Every value that reaches the DOM goes through window.IntMapSafe (#R138).
  *  · Five languages inline (standing rule 3).
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.satelliteDetail=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function satelliteDetail(HOST){
+  const GE=()=>IntMapGeoEngine;
   const SATS=()=>window.IntMapSatellites;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+  const L=IntMapLang.pick(()=>HOST.lang);
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
 
-  const n0=(v)=>(v==null||!isFinite(v))?'':Math.round(v).toLocaleString(window.IntMapLang.locale(HOST.lang));
+  const n0=(v)=>(v==null||!isFinite(v))?'':Math.round(v).toLocaleString(IntMapLang.locale(HOST.lang));
   const KM=(v)=>(v==null||!isFinite(v))?'':n0(v)+' km';
 
   /* ─── ORBIT CLASS, derived. Conventional thresholds, applied to the numbers actually in hand. */
@@ -68,15 +70,15 @@ window.IntMapModules.satelliteDetail=function(HOST){
     return { apoKm:a*(1+e)-RE, periKm:a*(1-e)-RE, aKm:a };
   }
 
-  const clock=(ms)=>{ try{ return new Date(ms).toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }catch(_){ return ''; } };
+  const clock=(ms)=>{ try{ return new Date(ms).toLocaleTimeString(IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }catch(_){ return ''; } };
   function inTxt(ms){ const s=Math.max(0,Math.round((ms-Date.now())/1000));
-    if(s<60) return s+(window.IntMapLang.t(HOST.lang,' s',' 秒後',' Sek',' с',' s'));
-    const m=Math.floor(s/60); if(m<60) return m+(window.IntMapLang.t(HOST.lang,' min',' 分後',' Min',' мин',' min'))+' '+String(s%60).padStart(2,'0')+(window.IntMapLang.t(HOST.lang,' s',' 秒',' Sek',' с',' s'));
-    return Math.floor(m/60)+(window.IntMapLang.t(HOST.lang,' h',' 時間',' Std',' ч',' h'))+' '+String(m%60).padStart(2,'0')+(window.IntMapLang.t(HOST.lang,' min',' 分後',' Min',' мин',' min')); }
+    if(s<60) return s+(IntMapLang.t(HOST.lang,' s',' 秒後',' Sek',' с',' s'));
+    const m=Math.floor(s/60); if(m<60) return m+(IntMapLang.t(HOST.lang,' min',' 分後',' Min',' мин',' min'))+' '+String(s%60).padStart(2,'0')+(IntMapLang.t(HOST.lang,' s',' 秒',' Sek',' с',' s'));
+    return Math.floor(m/60)+(IntMapLang.t(HOST.lang,' h',' 時間',' Std',' ч',' h'))+' '+String(m%60).padStart(2,'0')+(IntMapLang.t(HOST.lang,' min',' 分後',' Min',' мин',' min')); }
   function ageTxt(h){ if(h==null||!isFinite(h)) return '';
-    if(h<1) return Math.round(h*60)+(window.IntMapLang.t(HOST.lang,' min',' 分前',' Min',' мин',' min'));
-    if(h<48) return h.toFixed(1)+(window.IntMapLang.t(HOST.lang,' h',' 時間前',' Std',' ч',' h'));
-    return (h/24).toFixed(1)+(window.IntMapLang.t(HOST.lang,' d',' 日前',' T',' сут',' d')); }
+    if(h<1) return Math.round(h*60)+(IntMapLang.t(HOST.lang,' min',' 分前',' Min',' мин',' min'));
+    if(h<48) return h.toFixed(1)+(IntMapLang.t(HOST.lang,' h',' 時間前',' Std',' ч',' h'));
+    return (h/24).toFixed(1)+(IntMapLang.t(HOST.lang,' d',' 日前',' T',' сут',' d')); }
 
   /* ─── the card itself ─── */
   let el=null, curId=null, pass=null, passFor=null, passBusy=false;
@@ -141,7 +143,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
                         pass.inProgress?L('now','現在','jetzt','сейчас','ahora'):(clock(pass.riseMs)+' · '+inTxt(pass.riseMs)))
         +row(L('Max elevation','最大仰角','Höchststand','Максимум','Punto más alto'), (pass.maxEl==null?'':pass.maxEl.toFixed(1)+'° · '+clock(pass.maxMs)))
         +row(L('Sets','消失','Untergang','Заход','Se pone'), pass.setMs?clock(pass.setMs):'')
-        +row(L('Duration','継続時間','Dauer','Длительность','Duración'), pass.durationS?(Math.floor(pass.durationS/60)+(window.IntMapLang.t(HOST.lang,' min ',' 分 ',' Min ',' мин ',' min '))+String(pass.durationS%60).padStart(2,'0')+(window.IntMapLang.t(HOST.lang,' s',' 秒',' Sek',' с',' s'))):'');
+        +row(L('Duration','継続時間','Dauer','Длительность','Duración'), pass.durationS?(Math.floor(pass.durationS/60)+(IntMapLang.t(HOST.lang,' min ',' 分 ',' Min ',' мин ',' min '))+String(pass.durationS%60).padStart(2,'0')+(IntMapLang.t(HOST.lang,' s',' 秒',' Sek',' с',' s'))):'');
     } else passHTML='<button type="button" class="acp-mini" data-satp="pass">'+S(L('Compute the next pass from here','ここからの次回通過を計算','Nächsten Überflug berechnen','Рассчитать следующий пролёт','Calcular el próximo paso'))+'</button>';
 
     return '<div class="acp-badges">'+badge+sun+'</div>'
@@ -157,7 +159,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
       +row(L('Footprint radius','可視範囲の半径','Sichtbarkeitsradius','Радиус зоны видимости','Radio de cobertura'),
            KM(6371*Math.acos(6378.137/(6378.137+Math.max(1,f.altKm)))))
       +sec(L('The orbit','軌道','Die Bahn','Орбита','La órbita'))
-      +row(L('Period','周期','Umlaufzeit','Период','Periodo'), f.periodMin==null?'':(f.periodMin.toFixed(2)+(window.IntMapLang.t(HOST.lang,' min',' 分',' Min',' мин',' min'))+' · '+(1440/f.periodMin).toFixed(2)+(window.IntMapLang.t(HOST.lang,' rev/day',' 周/日',' Uml./Tag',' витк/сут',' rev/día'))))
+      +row(L('Period','周期','Umlaufzeit','Период','Periodo'), f.periodMin==null?'':(f.periodMin.toFixed(2)+(IntMapLang.t(HOST.lang,' min',' 分',' Min',' мин',' min'))+' · '+(1440/f.periodMin).toFixed(2)+(IntMapLang.t(HOST.lang,' rev/day',' 周/日',' Uml./Tag',' витк/сут',' rev/día'))))
       +row(L('Inclination','軌道傾斜角','Bahnneigung','Наклонение','Inclinación'), f.inclDeg==null?'':f.inclDeg.toFixed(3)+'°')
       +row(L('Eccentricity','離心率','Exzentrizität','Эксцентриситет','Excentricidad'), f.ecc==null?'':f.ecc.toFixed(6))
       +row(L('Apogee / perigee','遠地点 / 近地点','Apogäum / Perigäum','Апогей / перигей','Apogeo / perigeo'), ap?(KM(ap.apoKm)+' / '+KM(ap.periKm)):'')
@@ -231,4 +233,4 @@ window.IntMapModules.satelliteDetail=function(HOST){
   const API={ open, refresh, close, isOpen, current, gotoSat, _orbitClass:orbitClass, _apsides:apsides };
   window.IntMapSatPanel=API;
   return API;
-};
+}

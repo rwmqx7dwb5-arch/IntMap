@@ -111,8 +111,9 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', (
          take the last name (and the comment lines above it) out of list #1, whatever that name is. */
       re: /,\n(?:[ \t]*--[^\n]*\n)*[ \t]*'[a-z0-9_]+'\n(\]\) as t;)/,
       to: (_m, tail) => '\n' + tail },
+    /* (module-graph) the static pages load their scripts as modules; the mutation still removes the tag */
     { rule: 'legal', file: 'privacy.html',
-      from: '<script src="./js/legal-text.js"></script>\n', to: '' },
+      from: '<script type="module" src="./js/legal-text.js"></script>\n', to: '' },
     { rule: 'doc-index', file: 'docs/README.md',
       from: '[`MAP-LAYERS.md`](MAP-LAYERS.md)', to: '[`(removed)`](nothing.md)' },
   ];

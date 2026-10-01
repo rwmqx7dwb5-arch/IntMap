@@ -12,7 +12,8 @@
    5 languages, clickable like place labels. [lng, lat, minzoom, en, jp, de, ru, es] */
 /* @i18n-entity-data  sea and ocean NAMES, one row per water body, pinned by [lng,lat]  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
    against the row carrying a coordinate / ISO code / ticker / domain) */
-window.SEA_LABELS=[
+import { IntMapLang } from './lang-registry.js';
+export const SEA_LABELS = [
   [-160,32,0.5,'North Pacific Ocean','北太平洋','Nordpazifik','Северная часть Тихого океана','Océano Pacífico Norte'],
   [-125,-30,0.5,'South Pacific Ocean','南太平洋','Südpazifik','Южная часть Тихого океана','Océano Pacífico Sur'],
   [-40,36,0.5,'North Atlantic Ocean','北大西洋','Nordatlantik','Северная Атлантика','Océano Atlántico Norte'],
@@ -135,8 +136,9 @@ window.SEA_LABELS=[
   [144.8,-38.1,7,'Port Phillip Bay','ポートフィリップ湾','Port Phillip Bay','Залив Порт-Филлип','Bahía de Port Phillip'],
   [174.9,-36.9,7,'Hauraki Gulf','ハウラキ湾','Hauraki Gulf','Залив Хаураки','Golfo de Hauraki']
 ];
+globalThis.SEA_LABELS = SEA_LABELS;   /* (module-graph) the compat window: importers get the binding above */
 
-window.IntMapTables=(function(){
+export const IntMapTables = (function(){
   /* =============================================================================
    *  SATELLITE IMAGERY ENGINE
    *  (1) Multi-provider registry — free built-ins + Pro/BYOK; dynamic URL builder.
@@ -151,7 +153,7 @@ window.IntMapTables=(function(){
      IntMapLang.pickArgs(): the SAME array, written as a call, resolved by `L.arr()` through pick()
      itself. ⚠ One radius group read `grp.g[HOST.lang]` with no `||` fallback at all, so the German,
      Russian, Spanish, French, Korean and Chinese optgroup labels rendered the string 「undefined」. */
-  const LA=window.IntMapLang.pickArgs();
+  const LA=IntMapLang.pickArgs();
   const SAT_PROVIDERS=[
     { id:'esri', tier:'free', short:'Esri', name:LA('Esri World Imagery','Esri 衛星画像','Esri Satellitenbilder','Спутниковые снимки Esri','Imágenes satelitales de Esri'),
       dated:false, maxzoom:19, attribution:'Imagery © Esri, Maxar, Earthstar Geographics',
@@ -658,3 +660,4 @@ window.IntMapTables=(function(){
   };
   return {SAT_PROVIDERS,_ORG_GZ,_DEMONYM_GZ,sourceDict,_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM,GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS,RADIUS_PRESETS,CO_SECTORS,CO_CC,_DASH_BADGE,NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS,COMM_CATEGORIES,NEWS_COUNTRY_FEEDS};
 })();
+globalThis.IntMapTables = IntMapTables;   /* (module-graph) the compat window: importers get the binding above */

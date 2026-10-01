@@ -22,12 +22,14 @@
  *  a party: `col` is null and the fill's opacity goes to 0 for that feature, so 1789 shows ten states
  *  on an otherwise empty map, which is what happened.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.usElections=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function usElections(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
-  const LA=window.IntMapLang.pickArgs();
-  const GE=()=>window.IntMapGeoEngine;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+  const LA=IntMapLang.pickArgs();
+  const GE=()=>IntMapGeoEngine;
+  const L=IntMapLang.pick(()=>HOST.lang);
   const IDS=['usel-fill','usel-line'];
   const SRC='usel-src';
   let data=null, geo=null, year=null, on=false, loading=null, popup=null;
@@ -110,7 +112,7 @@ window.IntMapModules.usElections=function(HOST){
   function stateHtml(e,st,name){
     const esc=(x)=>HOST.escapeHtml(String(x==null?'':x));
     const sv=(e.sv&&e.sv[st])||null;
-    const nf=(n)=>{ try{ return Number(n).toLocaleString(window.IntMapLang.locale(HOST.lang,'en-US')); }catch(_){ return String(n); } };
+    const nf=(n)=>{ try{ return Number(n).toLocaleString(IntMapLang.locale(HOST.lang,'en-US')); }catch(_){ return String(n); } };
     const evTot=(sv&&sv.e)?sv.e.reduce((a,b)=>a+(b||0),0):0;
     let h='<div class="usel-pop"><b class="usel-pop-h">'+esc(name)+'</b>'
       +'<div class="usel-pop-y">'+e.y+(evTot?(' · '+L('Electoral votes','選挙人票','Wahlmännerstimmen','Голоса выборщиков','Votos electorales')+' <b>'+evTot+'</b>'):'')+'</div>';
@@ -290,4 +292,4 @@ window.IntMapModules.usElections=function(HOST){
   window.IntMapUSElections={ toggle, setYear:(y)=>{ year=+y; if(on) apply(); }, year:()=>year,
     years:()=>((data&&data.elections.map(e=>e.y))||[]), isOn:()=>on };
   return window.IntMapUSElections;
-};
+}

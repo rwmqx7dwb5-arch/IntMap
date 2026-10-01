@@ -16,6 +16,7 @@
  * ==========================================================================*/
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { parse as acornParse } from 'acorn';
+import { posix } from 'node:path';
 
 /**
  * (#R175) THE PAGE — what `index.html` alone used to be.
@@ -77,10 +78,9 @@ export function appShell(root) {
    src/main.js; the deferred half and the carried one are the registry's (src/main.js imports them).
    One question, so a test does not have to know which half a key moved to. */
 export function bootGuardKnows(root, key) {
-  const main = readFileSync(new URL('src/main.js', root), 'utf8');
-  const m = /const MODULE_FACTORIES = \[([\s\S]*?)\];/.exec(main);
-  const eager = m ? [...m[1].matchAll(/'([A-Za-z0-9_$]+)'/g)].map((x) => x[1]) : [];
-  if (eager.includes(key)) return true;
+  /* (module-graph) the eager half is no longer a list in src/main.js: a factory is an export, and the
+     shell imports it by name — a missing one is a link error, so «known» means «imported and called». */
+  if (Object.values(factoryCalls(root)).some((names) => names.includes(key))) return true;
   if (lazyModules(root).some((x) => x.name === key && x.factory)) return true;
   const c = /const CARRIED_NAMES = Object\.freeze\(\[([^\]]*)\]\)/.exec(readFileSync(new URL('js/lazy-modules.js', root), 'utf8'));
   return !!c && [...c[1].matchAll(/'([A-Za-z0-9_$]+)'/g)].some((x) => x[1] === key);
@@ -124,11 +124,17 @@ export function lazyModules(root) {
         if (k === 'publishes' && q.value.type === 'Literal') global = String(q.value.value);
         if (k === 'self' && q.value.type === 'Literal') self = !!q.value.value;
         if (k === 'load') walk(q.value, (m) => { if (m.type === 'ImportExpression' && m.source.type === 'Literal' && typeof m.source.value === 'string') file = m.source.value.replace(/^\.\//, 'js/'); });
-        if (k === 'mount') walk(q.value, (m) => {
-          if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && !m.callee.computed
-            && m.callee.property.type === 'Identifier' && m.callee.property.name === name
-            && isWindowProp(m.callee.object, 'IntMapModules')) factory = true;
-        });
+        if (k === 'mount') {
+          /* (module-graph) `mount: (IM_HOST, m) => { … m.<name>(IM_HOST) … }` — the factory is called on the
+             namespace the loader's own import() resolved to, which the mount receives second */
+          const fn = q.value;
+          const ns = fn && fn.params && fn.params[1] && fn.params[1].type === 'Identifier' ? fn.params[1].name : null;
+          walk(fn, (m) => {
+            if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && !m.callee.computed
+              && m.callee.property.type === 'Identifier' && m.callee.property.name === name
+              && ((ns && m.callee.object.type === 'Identifier' && m.callee.object.name === ns) || isWindowProp(m.callee.object, 'IntMapModules'))) factory = true;
+          });
+        }
       }
       out.push({ name, file, global, factory: factory && !self });
     }
@@ -154,12 +160,13 @@ export function lazyModules(root) {
    @returns {Record<string, Record<string, string[]>>} file → factory → globals it publishes */
 export function publishedGlobals(root, files) {
   const out = {};
+  let calls = null;
   for (const rel of (files || jsFiles(root))) {
     const u = new URL(rel, root);
     if (!existsSync(u)) continue;
     const ast = parse(readFileSync(u, 'utf8'));
     for (const st of ast.body) {
-      const fac = moduleFactory(st);
+      const fac = moduleFactory(st, (calls ||= factoryCalls(root))[rel]);
       if (!fac) continue;
       const pub = [...new Set(runsWithTheFactory(fac.fn.body, []))];
       if (pub.length) ((out[rel] ||= {})[fac.name] = pub);
@@ -168,8 +175,66 @@ export function publishedGlobals(root, files) {
   return out;
 }
 
-/** `window.IntMapModules.<name>=function(HOST){…}` as a top-level statement, or null */
-function moduleFactory(st) {
+/* (module-graph) WHICH EXPORTS ARE FACTORIES. Until the registry was dissolved a factory was spelled
+   `window.IntMapModules.<name>=function(HOST){…}`; it is `export function <name>(HOST){…}` now, which
+   is also how every other exported function is spelled. What still tells them apart is a FACT, not a
+   spelling: a factory is instantiated by the shell — js/app-body.js calls it (with IM_HOST, or with nothing for the
+   GL layer kinds and the tooltip), another module hands it the host it was given, or
+   js/lazy-modules.js mounts it. @returns {Record<string, string[]>} file → factory names */
+export function factoryCalls(root) {
+  const out = {};
+  const body = new URL('js/app-body.js', root);
+  if (existsSync(body)) {
+    const ast = parse(readFileSync(body, 'utf8'));
+    const from = new Map();   /* imported local name → file */
+    for (const st of ast.body) if (st.type === 'ImportDeclaration' && /^\.\//.test(st.source.value)) {
+      for (const sp of st.specifiers) if (sp.type === 'ImportSpecifier') from.set(sp.local.name, 'js/' + st.source.value.slice(2));
+    }
+    walk(ast, (n) => {
+      if (n.type !== 'CallExpression' || n.callee.type !== 'Identifier' || !from.has(n.callee.name)) return;
+
+      const file = from.get(n.callee.name);
+      (out[file] ||= []).includes(n.callee.name) || out[file].push(n.callee.name);
+    });
+  }
+  /* …and a factory one module hands the host it was given (js/label-occlusion.js → tileWarm(HOST)) */
+  /* only callers in the START-UP graph (static imports from src/main.js): a lazy caller such as the Atlas
+     kernel instantiates its modules when it arrives, which is not a fact about boot */
+  const eager = new Set();
+  for (const stack = ['src/main.js']; stack.length;) {
+    const rel = stack.pop();
+    if (eager.has(rel) || !existsSync(new URL(rel, root))) continue;
+    eager.add(rel);
+    for (const st of parse(readFileSync(new URL(rel, root), 'utf8')).body) {
+      if ((st.type === 'ImportDeclaration' || ((st.type === 'ExportNamedDeclaration' || st.type === 'ExportAllDeclaration') && st.source)) && st.source.value.startsWith('.')) {
+        stack.push(posix.join(posix.dirname(rel), st.source.value));
+      }
+    }
+  }
+  for (const rel of jsFiles(root)) {
+    if (rel === 'js/app-body.js' || !eager.has(rel)) continue;
+    const ast = parse(readFileSync(new URL(rel, root), 'utf8'));
+    const from = new Map();
+    for (const st of ast.body) if (st.type === 'ImportDeclaration' && st.source.value.startsWith('.')) {
+      for (const sp of st.specifiers) if (sp.type === 'ImportSpecifier') from.set(sp.local.name, posix.join(posix.dirname(rel), st.source.value));
+    }
+    if (!from.size) continue;
+    walk(ast, (n) => {
+      if (n.type !== 'CallExpression' || n.callee.type !== 'Identifier' || !from.has(n.callee.name)) return;
+      if (!n.arguments.some((x) => x.type === 'Identifier' && (x.name === 'HOST' || x.name === 'IM_HOST'))) return;
+      const file = from.get(n.callee.name);
+      (out[file] ||= []).includes(n.callee.name) || out[file].push(n.callee.name);
+    });
+  }
+  for (const m of lazyModules(root)) if (m.factory && m.file) (out[m.file] ||= []).includes(m.name) || out[m.file].push(m.name);
+  return out;
+}
+
+/** a factory as a top-level statement — `export function <name>(…){…}` named by factoryCalls(), or the
+    old `window.IntMapModules.<name>=function(HOST){…}` — or null */
+function moduleFactory(st, names) {
+  if (st.type === 'ExportNamedDeclaration' && st.declaration && st.declaration.type === 'FunctionDeclaration'
+    && names && names.includes(st.declaration.id.name)) return { name: st.declaration.id.name, fn: st.declaration };
   if (st.type !== 'ExpressionStatement' || st.expression.type !== 'AssignmentExpression') return null;
   const L = st.expression.left, R = st.expression.right;
   if (L.type !== 'MemberExpression' || L.computed || L.property.type !== 'Identifier') return null;
@@ -362,6 +427,10 @@ export function asClassicScript(src) {
       return '';
     })
     .replace(/^[ \t]*import\s+['"][^'"]+['"];?[ \t]*$/gm, '');
-  const shim = names.length ? 'var ' + names.map((n) => n + ' = function () { }').join(', ') + ';\n' : '';
-  return shim + body;
+  /* (module-graph) a bound name resolves to what the sandbox supplies under it on `window` — js/chronos.js,
+     js/lang-registry.js and js/geo-engine.js still publish the object they export there, so a sandbox that
+     hands in `window.IntMapLang` is handing the import its value — and to the no-op only otherwise. The
+     `export` keyword on a top-level declaration is dropped for the same reason the import lines are. */
+  const shim = names.length ? 'var ' + names.map((n) => n + ' = (typeof window !== "undefined" && window && window.' + n + ' !== undefined) ? window.' + n + ' : function () { }').join(', ') + ';\n' : '';
+  return shim + body.replace(/^([ \t]*)export\s+(?=(?:async\s+)?function\b|const\b|let\b|var\b|class\b)/gm, '$1');
 }

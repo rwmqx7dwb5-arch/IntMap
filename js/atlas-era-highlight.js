@@ -17,6 +17,7 @@
  *  `deps.GE` is the engine getter, `deps.resolveCountrySync` the console's own country resolver
  *  (the gloss «Japan» is resolved by the same rule as the reader's «Japan»).
  * ==========================================================================*/
+import { IntMapEraName } from './time-borders.js';
 export function makeEraHighlight(deps) {
   const GE = deps.GE, resolveCountrySync = deps.resolveCountrySync;
   /** The era geometries for one ISO3 code, or null when the map is at the live date / holds no shape. */
@@ -26,7 +27,7 @@ export function makeEraHighlight(deps) {
     const out = [];
     try { const g = TB.geomForCode && TB.geomForCode(code); if (g) out.push({ name: String(code), geo: g }); } catch (_) { /* no era shape → modern polygon below */ }
     try {
-      const fc = TB.currentFC && TB.currentFC(); const EN = window.IntMapEraName;
+      const fc = TB.currentFC && TB.currentFC(); const EN = IntMapEraName;
       (fc && fc.features || []).forEach((f) => {
         const nm = String((f.properties && (f.properties.NAME || f.properties.name)) || ''); const p = EN && EN.split(nm);
         if (!p || !p.gloss || !f.geometry) return;

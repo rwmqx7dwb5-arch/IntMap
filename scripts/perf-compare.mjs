@@ -51,7 +51,9 @@ if (ARM_B === null) {
   process.exit(1);
 }
 
-const url = (arm) => BASE + '/' + (arm || '');
+/* (module-graph) a full URL is an arm on its own — the header's «two different builds» case, which this
+   line used to prefix with BASE and so could not express */
+const url = (arm) => (/^https?:\/\//.test(arm || '') ? arm : BASE + '/' + (arm || ''));
 
 /* ── one rep of one scenario, in a context of its own ─────────────────────── */
 async function openArm(browser, arm) {

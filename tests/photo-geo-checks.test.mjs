@@ -346,11 +346,14 @@ test('R527 ⑩: the feature is registered everywhere one has to be, and nothing 
   assert.equal(LAZY_REGISTRY["photoGeo"].publishes, 'IntMapPhotoGeo', 'the loader knows which global it publishes');   /* (#R798) */
   assert.ok(loader.includes("import('./photo-geo.js')"),
     'the fetch is a single-quoted literal, which is what scripts/static-checks.mjs reads');
-  assert.ok(loader.includes("window.IntMapPhotoGeo=window.IntMapModules.photoGeo(IM_HOST);"),
+  /* (module-graph) the mount instantiates the factory off the namespace the loader's import() resolved to */
+  assert.ok(loader.includes("window.IntMapPhotoGeo=m.photoGeo(IM_HOST);"),
     'and the mount instantiates the factory');
   const entry = src('src/main.js');
   assert.ok(LAZY_NAMES.includes('photoGeo'), 'the boot guard knows it is deferred…');   /* (#R798) derived from the registry */
   assert.ok(!/const MODULE_FACTORIES = \[[^\]]*'photoGeo'/.test(entry), '…and does not expect it at boot');
+  /* (module-graph) the factory registry is gone: «expected at boot» is now a static import by the eager shell */
+  assert.ok(!/from '\.\/photo-geo[\w-]*\.js'/.test(src('js/app-body.js')), '…and the eager shell does not import it');
   /* nothing may pull the computation into the shell */
   for (const f of ['photo-geo.js', 'photo-geo-terrain.js', 'photo-geo-match.js', 'photo-geo-search.js',
     'photo-geo-skyline.js', 'photo-geo-exif.js', 'photo-geo-worker-client.js', 'photo-geo-worker.js'])

@@ -60,6 +60,9 @@
  *  reporting emptiness. `null` is a real answer here and the pool is written to expect it.
  * ==========================================================================*/
 
+import { IntMapLang } from './lang-registry.js';
+import { IntMapRefData } from './reference-data.js';
+import { SEA_LABELS } from './tables.js';
 export function makeAtlasViewSubject(CTX) {
   const GE = CTX.GE, geo = CTX.geo, countryStats = CTX.countryStats, cName = CTX.cName;
 
@@ -290,7 +293,7 @@ export function makeAtlasViewSubject(CTX) {
   function waterInView(box) {
     if (!box) return null;
     let rows = null;
-    try { rows = window.SEA_LABELS || null; } catch (_) {}
+    try { rows = (CTX.seas !== undefined ? CTX.seas : SEA_LABELS) || null; } catch (_) {}   /* (module-graph) injectable; the shipped table by default */
     if (!rows || !rows.length) return null;
     /* ⚠⚠⚠ THE ROW IS RESOLVED THROUGH `pick().arr()`, NOT THROUGH A COLUMN MAP. The first version
        indexed the five positional columns with `{en:3, jp:4, de:5, ru:6, es:7}` — which
@@ -302,7 +305,7 @@ export function makeAtlasViewSubject(CTX) {
        ⚠ THE ENGLISH COLUMN IS STILL CARRIED SEPARATELY as `en`, because `waterKind` is written
        against the English spellings and must never be handed a translated one. */
     let L = null;
-    try { L = window.IntMapLang.pick(() => (CTX.lang ? CTX.lang() : 'en')); } catch (_) {}
+    try { L = IntMapLang.pick(() => (CTX.lang ? CTX.lang() : 'en')); } catch (_) {}
     const list = [];
     for (const r of rows) {
       if (!r || r.length < 4 || !isFinite(r[0]) || !isFinite(r[1])) continue;
@@ -475,7 +478,7 @@ export function makeAtlasViewSubject(CTX) {
   function sitesInView(box) {
     if (!box || !/^(country|region|city|street)$/.test(box.scale)) return [];
     let rows = null;
-    try { rows = (window.IntMapRefData && window.IntMapRefData.dashCards) || null; } catch (_) {}
+    try { rows = (IntMapRefData && IntMapRefData.dashCards) || null; } catch (_) {}
     if (!rows || !rows.length) return [];
     const hit = [];
     for (const r of rows) {

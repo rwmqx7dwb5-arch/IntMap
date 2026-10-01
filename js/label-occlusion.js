@@ -16,6 +16,7 @@
  *  word-for-word what it was. A real ES module: no window.IntMapModules entry, no src/main.js order.
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { tileWarm } from './tile-warm.js';
 
 export function makeLabelOcclusion(HOST, CTX) {
   const GE=CTX.GE, isMobile=CTX.isMobile;
@@ -147,7 +148,7 @@ export function makeLabelOcclusion(HOST, CTX) {
      `move` handlers and their order relative to the rest of this file's handlers is observable.
      ⚠ The five values it needs (mapType, satState, satProviderById, satBuildTiles, isMobile) are
      handed over through HOST rather than closed over — see scripts/check-split-scope.mjs. */
-  try{ window.IntMapModules.tileWarm(HOST); }catch(_){}
+  try{ tileWarm(HOST); }catch(_){}
   /* ⚠⚠ (#R229) THE TWO GESTURE-TIME QUALITY CUTS THAT USED TO MOUNT HERE ARE GONE — see src/main.js.
      js/render-scale.js (#R202) dropped the map to 70 % resolution while the camera moved and
      js/glass-motion.js (#R221) took the frosting off every panel for the same window. Neither was

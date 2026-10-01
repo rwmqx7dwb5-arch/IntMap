@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — it was a hand-written 12 s here */
 import { readWithin } from './fetch-deadline.js';
+import { IntMapTime } from './chronos.js';
 export function makeTimeCountries(HOST, CTX) {
   const countryStats=CTX.countryStats, loadCountryData=CTX.loadCountryData, renderStats=CTX.renderStats, searchVal=CTX.searchVal;
   /* ============================================================================
@@ -144,7 +145,7 @@ export function makeTimeCountries(HOST, CTX) {
        from rather than on the date they asked for, which is the shape #R410 spent a round on. So the day-dependent
        half is factored out here, called from both places, and `curWhen` is what the second caller compares against. */
     let curWhen=null;
-    function applyHist(){ const w=window.IntMapTime.when(); curWhen=+new Date(w);
+    function applyHist(){ const w=IntMapTime.when(); curWhen=+new Date(w);
       try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(w); }catch(_){}
       try{ if(window.IntMapHistId) window.IntMapHistId.apply(w); }catch(_){} }
     function repaint(){
@@ -161,7 +162,7 @@ export function makeTimeCountries(HOST, CTX) {
          the years below the Maddison floor, where the modern names come back. */
       try{ window.dispatchEvent(new CustomEvent('intmap-hist-identity',{detail:{year:curYear}})); }catch(_){}
     }
-    window.IntMapTime.on(e=>{ clearTimeout(deb); const my=++seq;
+    IntMapTime.on(e=>{ clearTimeout(deb); const my=++seq;
       deb=setTimeout(async()=>{
         const y=e.year;
         if(e.isLive || y>=new Date().getFullYear()){ if(curYear!=null||window._imTimePreWB){ window._imTimePreWB=null; restore(); repaint(); } return; }
@@ -170,7 +171,7 @@ export function makeTimeCountries(HOST, CTX) {
           if(curYear!=null){ restore(); } window._imTimePreWB=y; window._imTimeYear=null; repaint(); return; }
         window._imTimePreWB=null;
         if(y===curYear){   /* same year → the country annual data really is unchanged, so none of the work below runs… */
-          const w=+new Date(window.IntMapTime.when());
+          const w=+new Date(IntMapTime.when());
           if(w!==curWhen){ applyHist(); repaint(); }   /* …but the DAY moved, and both registries are keyed on the day (#R425) */
           return; }
         try{ if(!HOST.countryDataLoaded) await loadCountryData(); }catch(_){}

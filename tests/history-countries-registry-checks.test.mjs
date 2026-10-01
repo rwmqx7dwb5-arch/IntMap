@@ -11,9 +11,9 @@
  *  hid its successors for its WHOLE lifespan — the Baltic states vanished from the list in 1938 while
  *  the map drew them.
  *
- *  ⚠ js/history.js is a plain script that hangs factories off `window`; it is RUN here with a stub
- *  window, which is the difference between asking how a table is spelled and asking what a reader is
- *  shown. js/time-countries.js is a real ES module and is imported and run with a stub clock.
+ *  ⚠ js/history.js exports its factories (module-graph); it is IMPORTED and RUN here with a stub language
+ *  registry, which is the difference between asking how a table is spelled and asking what a reader is
+ *  shown. js/time-countries.js is imported and run with a stub clock at its chronos.js import edge.
  *  ⚠ Where a check still reads source it says why: js/time-borders.js `tagSame` and its identity
  *  listener live inside the border layer's closure and write into a live renderer; js/countries-ui.js
  *  is the Countries tab's DOM.
@@ -22,37 +22,39 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { clockFloor } from './helpers/hist-scale.mjs';
-import { makeTimeCountries } from '../js/time-countries.js';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
 const YMIN = clockFloor();
 const DAY = 86400000;
 
-/* js/history.js, run with a stub window (#R380 ⑤ built this stub; #R410 and #R425 reused it) */
-const MODULES = (() => {
-  const win = { IntMapModules: {}, IntMapLang: { pickArgs: () => function () { return Array.prototype.slice.call(arguments); } } };
-  new Function('window', R('js/history.js'))(win);
-  return win.IntMapModules;
-})();
+/* js/history.js, imported with a stub language registry (#R380 ⑤ built this stub; #R410 and #R425 reused it).
+   (module-graph) the factories are the module's exports and the stub is handed at its import edge —
+   pickArgs() hands back the tuple itself, which is what the checks below read names out of. */
+const LANG_STUB = { 'js/lang-registry.js': { IntMapLang: { pickArgs: () => function () { return Array.prototype.slice.call(arguments); } } } };
+const MODULES = await importModule('js/history.js', { mocks: LANG_STUB });
 const HS = MODULES;
 const MOD = MODULES;
 
-/* the Maddison module of js/history.js, run in a context whose `fetch` serves `file` — so the floor
-   it answers before and after the file lands is ASKED, not read out of a declaration */
+/* the Maddison module of js/history.js, whose `fetch` serves `file` — so the floor it answers before
+   and after the file lands is ASKED, not read out of a declaration. (module-graph) the exported factory;
+   `fetch` is the browser's global, read when load() is called, so it is lent for exactly that call. */
 function maddison(file) {
-  const win = { IntMapModules: {}, IntMapLang: { pickArgs: () => function () { return Array.prototype.slice.call(arguments); } } };
-  win.window = win;
-  const ctx = vm.createContext({ window: win, fetch: async () => ({ ok: true, json: async () => file }) });
-  vm.runInContext(R('js/history.js'), ctx, { filename: 'js/history.js' });
-  return win.IntMapModules.maddison();
+  const M = MODULES.maddison();
+  const load = M.load;
+  M.load = () => {
+    const prev = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true, json: async () => file });
+    try { return load(); } finally { globalThis.fetch = prev; }
+  };
+  return M;
 }
 
 /* ══ the Maddison floor ═════════════════════════════════════════════════════════════════════ */
@@ -351,7 +353,7 @@ const madStub = (minYear = 1850) => ({
    one test and handed back in `restoreGlobals()` — every caller does so in a `finally`, so no other
    test in this file sees them. Options: `when` (a mutable instant the clock reports), `hist` (stub
    registries recording what they are asked to apply) and `minYear` (the Maddison floor). */
-function boot(opts = {}) {
+async function boot(opts = {}) {
   const countryStats = {};
   for (const k of Object.keys(PRESENT)) countryStats[k] = { ...PRESENT[k] };
   const subs = [], events = [];
@@ -374,6 +376,9 @@ function boot(opts = {}) {
   globalThis.document = win.document;
   const HOST = { countryDataLoaded: true };
   const CTX = { countryStats, loadCountryData: () => Promise.resolve(), renderStats: () => {}, searchVal: () => '' };
+  /* (module-graph) js/time-countries.js imports the clock; the stub is handed at that import edge, and a
+     fresh evaluation per boot keeps one test's subscriptions out of the next */
+  const { makeTimeCountries } = await importModule('js/time-countries.js', { mocks: { 'js/chronos.js': { IntMapTime: win.IntMapTime } } });
   makeTimeCountries(HOST, CTX);
   const api = win.IntMapTimeCountries;
   const restoreGlobals = () => { globalThis.window = prevWin; globalThis.fetch = prevFetch; globalThis.document = prevDoc; };
@@ -393,7 +398,7 @@ test('R410 ④: both ends of the identity announcement exist', async () => {
      repaint()'s body). Every path that changes the identities in the table — the overlay, the return
      to Now, and a year below the Maddison floor where the modern names come BACK — must announce it,
      once per repaint. */
-  const { subs, api, events, restoreGlobals } = boot();
+  const { subs, api, events, restoreGlobals } = await boot();
   try {
     const said = () => events.filter((t) => t === 'intmap-hist-identity').length;
     subs[0]({ year: 1860, isLive: false, when: new Date(Date.UTC(1860, 6, 1)) });
@@ -426,7 +431,7 @@ test('R410 ⑤: both files read the same floor, so neither renames a year the ot
   /* EVALUATED, the list's half (was: a regex for the Maddison-derived floor in js/time-countries.js):
      the SAME year is overlaid or left alone according to what IntMapMaddison.minYear says. */
   for (const [minYear, want] of [[1850, 1860], [1870, null]]) {
-    const { subs, api, restoreGlobals } = boot({ minYear });
+    const { subs, api, restoreGlobals } = await boot({ minYear });
     try {
       subs[0]({ year: 1860, isLive: false });
       await settle(700);
@@ -563,7 +568,7 @@ test('R425 ⑤: a move inside one year still re-applies the registries the day k
      overlay is run with stub registries that record the instants they are asked to apply. */
   const H = recorder();
   const MARCH = new Date(Date.UTC(1940, 2, 1, 12)), AUGUST = new Date(Date.UTC(1940, 7, 1, 12));
-  const { subs, api, clock, events, restoreGlobals } = boot({ when: MARCH, hist: H });
+  const { subs, api, clock, events, restoreGlobals } = await boot({ when: MARCH, hist: H });
   try {
     subs[0]({ year: 1940, isLive: false });
     await settle(700);
@@ -598,7 +603,7 @@ test('R425 ⑤: a move inside one year still re-applies the registries the day k
    after a travelled year has been overlaid. Below the World Bank's 1960 floor there is no second
    overlay pass, so the row stays present-day for ever. */
 test('R393 ①: a country row created after the travel does not keep its present-day figures', async () => {
-  const { countryStats, subs, api, restoreGlobals } = boot();
+  const { countryStats, subs, api, restoreGlobals } = await boot();
   try {
     assert.equal(subs.length, 1, 'the module no longer subscribes to the clock');
     /* travel to 1860 — below the World Bank floor, so there is exactly ONE overlay pass */
@@ -624,7 +629,7 @@ test('R393 ①: a country row created after the travel does not keep its present
 });
 
 test('R393 ②: reapply() answers false when the clock is not travelling, and touches nothing', async () => {
-  const { countryStats, subs, api, restoreGlobals } = boot();
+  const { countryStats, subs, api, restoreGlobals } = await boot();
   try {
     subs[0]({ year: 1860, isLive: false, when: new Date(Date.UTC(1860, 6, 1)) });
     await settle(700);
@@ -635,7 +640,7 @@ test('R393 ②: reapply() answers false when the clock is not travelling, and to
   } finally { restoreGlobals(); }
 });
 
-test('R393 ③: the idle upgrade pass asks the time engine to bring its new rows into the year', () => {
+test('R393 ③: the idle upgrade pass asks the time engine to bring its new rows into the year', async () => {
   /* ⚠ SPELLING, ON PURPOSE, FOR THE CALLER: `upgrade` is the Countries tab's idle DOM pass (it fetches
      the 10 m file and rebuilds rows), so «it calls reapply() after creating rows» is read from it. */
   const src = codeOnly(R('js/countries-ui.js'));
@@ -647,7 +652,7 @@ test('R393 ③: the idle upgrade pass asks the time engine to bring its new rows
     'the upgrade creates rows without asking the time engine to bring them into the year on screen');
   /* and the engine really offers it (a call to a method that does not exist is a silent no-op).
      EVALUATED (was: a regex for the module's return literal). */
-  const { api, restoreGlobals } = boot();
+  const { api, restoreGlobals } = await boot();
   try { assert.equal(typeof api.reapply, 'function', 'js/time-countries.js no longer exports reapply'); }
   finally { restoreGlobals(); }
 });

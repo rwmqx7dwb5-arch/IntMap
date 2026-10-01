@@ -55,7 +55,6 @@
  * ==========================================================================*/
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
-import vm from 'node:vm';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WHO_DON } from './lib/upstream-cadence.mjs';
@@ -149,17 +148,16 @@ export function buildTaxonIndex(countries) {
    The disease name for those items exists in exactly one place: the DON's own title.
 
    ⚠⚠⚠ THE RULE ITSELF IS NOT WRITTEN HERE ANY MORE (#R660). It is `window.IntMapWhoDonName` in
-   `js/outbreaks.js`, and this script EVALUATES that file to get it — the same thing
+   `js/outbreaks.js` (an export), and this script IMPORTS that file to get it — the same thing
    scripts/build-whs.mjs does with js/lang-registry.js. #R650 kept the rule here and asserted that
    the layer «never re-derives a name»; the layer's live tail was in fact taking
    `EmergencyEvent.Title` raw, so the two readers disagreed on 26 of WHO's newest 100 items and a
    corpus rebuild could not reach the one a reader actually saw. One implementation, two readers
    (.agents/rules/no-ad-hoc-hardcoding.md §2.3). */
+/* (module-graph) js/outbreaks.js exports the rule; imported, not re-evaluated from its text */
+const { IntMapWhoDonName } = await import('../js/outbreaks.js');
 const NAME = (() => {
-  const ctx = vm.createContext({ window: {} });
-  vm.runInContext(readFileSync(join(ROOT, 'js', 'outbreaks.js'), 'utf8'), ctx,
-    { filename: 'js/outbreaks.js' });
-  const n = ctx.window.IntMapWhoDonName;
+  const n = IntMapWhoDonName;
   if (!n || typeof n.eventName !== 'function' || typeof n.donName !== 'function') {
     throw new Error('js/outbreaks.js no longer publishes window.IntMapWhoDonName');
   }

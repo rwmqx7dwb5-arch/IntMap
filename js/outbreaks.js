@@ -57,7 +57,10 @@
    ⚠ THIS BLOCK IS AT TOP LEVEL ON PURPOSE. Everything below is inside the module factory and needs a
    renderer, a HOST and js/world-packs.js; `vm` can run none of that. Nothing here touches the DOM,
    the map or `HOST`. */
-window.IntMapWhoDonName = (function () {
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+export const IntMapWhoDonName = (function () {
   const NORM = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
   /* ⚠⚠ THE SPACE THAT MATTERS IS THE ONE AFTER THE DASH, NOT THE ONE BEFORE IT (#R660). #R650 wrote
@@ -146,10 +149,11 @@ window.IntMapWhoDonName = (function () {
 
   return { NORM, eventName, donName };
 })();
+globalThis.IntMapWhoDonName = IntMapWhoDonName;   /* (module-graph) the compat window: importers get the binding above */
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.outbreaks = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
+
+export function outbreaks(HOST) {
+  const GE = () => IntMapGeoEngine;
 
   window.IntMapOutbreaks = (function () {
     if (!GE().hasRenderer()) return { state: () => ({ on: false }) };
@@ -162,8 +166,8 @@ window.IntMapModules.outbreaks = function (HOST) {
        name takes the whole file out of scripts/i18n-audit.mjs's universe — the audit finds a
        CallExpression whose callee is `IntMapLang.pick…`, so an aliased helper does not merely go
        untranslated, it stops being COUNTED (#R548, #R546). */
-    const LA = window.IntMapLang.pickArgs();
-    const L = window.IntMapLang.pick(() => HOST.lang);
+    const LA = IntMapLang.pickArgs();
+    const L = IntMapLang.pick(() => HOST.lang);
 
     const DATA_URL = 'data/who-don.json.gz';
     const WHO_API = 'https://www.who.int/api/news/diseaseoutbreaknews';
@@ -207,7 +211,7 @@ window.IntMapModules.outbreaks = function (HOST) {
        reader has moved to — the layer answers about that day and re-renders when it moves. */
     function clockDay() {
       try {
-        const st = window.IntMapTime.state();
+        const st = IntMapTime.state();
         const d = st.isLive ? new Date() : new Date(st.when);
         return isFinite(d.getTime()) ? d : new Date();
       } catch (_) { return new Date(); }
@@ -283,7 +287,7 @@ window.IntMapModules.outbreaks = function (HOST) {
                or names it a bare year, and one as «Mpox (monkeypox)- Democratic Republic of the
                Congo». A layer whose newest items are named by a different rule than its archive is a
                layer whose pathogen filter disagrees with itself. */
-            c: c.sort(), d: window.IntMapWhoDonName.donName(d, places()),
+            c: c.sort(), d: IntMapWhoDonName.donName(d, places()),
             e: ev && ev.EventId ? String(ev.EventId).trim() : null,
           });
           added++;
@@ -450,7 +454,7 @@ window.IntMapModules.outbreaks = function (HOST) {
         names: () => LA('Disease outbreaks (WHO)', '感染症アウトブレイク（WHO）', 'Krankheitsausbrüche (WHO)', 'Вспышки болезней (ВОЗ)', 'Brotes de enfermedades (OMS)'),
       });
 
-    const fmt = (n) => { try { return Number(n).toLocaleString(window.IntMapLang.locale(HOST.lang)); } catch (_) { return String(n); } };
+    const fmt = (n) => { try { return Number(n).toLocaleString(IntMapLang.locale(HOST.lang)); } catch (_) { return String(n); } };
     const UNKNOWN = () => L.arr(LA('not extracted yet', '未抽出', 'noch nicht ausgelesen', 'ещё не извлечено', 'aún sin extraer'));
     const NOTSTATED = () => L.arr(LA('not stated by WHO', 'WHO は記載していない', 'von der WHO nicht genannt', 'ВОЗ не указывает', 'la OMS no lo indica'));
 
@@ -669,7 +673,7 @@ window.IntMapModules.outbreaks = function (HOST) {
     });
 
     /* ⚠ ONE clock, one subscription. Moving the time axis re-selects the window and repaints. */
-    try { window.IntMapTime.on(() => { if (on) render(); }); } catch (_) { }
+    try { IntMapTime.on(() => { if (on) render(); }); } catch (_) { }
 
     /* the layer row, under the same "World data" heading the family shares */
     function buildUI() {
@@ -864,4 +868,4 @@ window.IntMapModules.outbreaks = function (HOST) {
     };
     function p2(s) { return s || null; }
   })();
-};
+}

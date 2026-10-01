@@ -31,9 +31,11 @@
  * ==========================================================================*/
 import { PANDEMIC_PRESETS, createPandemicModel, defaultPandemicParams, describePandemicParams, checkPandemicParams, paramBounds, PANDEMIC_PARAMS } from './pandemic-model.js';
 import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
 (function () {
-  const GE = () => window.IntMapGeoEngine;
+  const GE = () => IntMapGeoEngine;
   /* ⚠ THE LANGUAGE COMES FROM THE HOST THROUGH bind(), like every other dependency here. Reading
      it off a global would be a second source of truth for the reader's language, and the one this
      module invented would be the one that went stale.
@@ -44,7 +46,7 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
   let _pick = null;
   const L = function () {
     try {
-      if (!_pick) _pick = window.IntMapLang.pick(function () { return (deps && deps.lang && deps.lang()) || 'en'; });
+      if (!_pick) _pick = IntMapLang.pick(function () { return (deps && deps.lang && deps.lang()) || 'en'; });
       return _pick.apply(null, arguments);
     } catch (_) { return arguments[0]; }
   };

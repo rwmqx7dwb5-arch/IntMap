@@ -31,10 +31,12 @@
  *  adding to. What inline style remains is per-instance geometry a stylesheet cannot know — a
  *  candidate popup's measured position, an alternative's own colour.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.routeUi = function (HOST) {
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function routeUi(HOST) {
   return (function () {
-    const L = window.IntMapLang.pick(() => HOST.lang);
+    const L = IntMapLang.pick(() => HOST.lang);
     const ST = () => window.IntMapRouteStore;
     const RT = () => window.IntMapRouting;
     const CD = () => window.IntMapRouteCards;
@@ -451,7 +453,7 @@ window.IntMapModules.routeUi = function (HOST) {
       const other = (which === 'from') ? s.to.place : s.from.place;
       if (other) return [other.lng, other.lat];
       if (herePos) return [herePos.lng, herePos.lat];
-      try { const c = window.IntMapGeoEngine.camera.getCenter(); return [c.lng, c.lat]; } catch (_) { return null; }
+      try { const c = IntMapGeoEngine.camera.getCenter(); return [c.lng, c.lat]; } catch (_) { return null; }
     }
     function recentsAndHere() {
       const out = [];
@@ -1294,4 +1296,4 @@ window.IntMapModules.routeUi = function (HOST) {
     window.IntMapRouteUI = API;
     return API;
   })();
-};
+}

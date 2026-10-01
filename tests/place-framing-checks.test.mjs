@@ -43,22 +43,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 /* ── js/search-geocode.js — the framing decision, exercised without a map ─────────────────────── */
-function loadSearch() {
+async function loadSearch() {
   // js/place-framing.js is PURE — no map, no HOST, no renderer — so the whole decision runs here.
   // It lives outside js/search-geocode.js because that factory's body may contain only
   // declarations (tests/r169-checks #4), and publishing a global from it is a statement that runs.
-  const win = {};
-  new Function('window', read('js/place-framing.js'))(win);
-  return win.IntMapPlaceFraming;
+  // (module-graph) it imports the language registry, so it is IMPORTED (a fresh evaluation each call,
+  // over the real registry) and what it publishes is read back off the window it ran in.
+  delete globalThis.IntMapPlaceFraming;
+  await importModule('js/place-framing.js');
+  return globalThis.window.IntMapPlaceFraming;
 }
 
-test('R183: a search result is framed by what it is, never at the old flat zoom 9', () => {
-  const S = loadSearch();
+test('R183: a search result is framed by what it is, never at the old flat zoom 9', async () => {
+  const S = await loadSearch();
   // Every `raw` below is the shape Nominatim's jsonv2 actually returns, taken from live responses.
   const nom = (o) => Object.assign({ lat: '0', lon: '0' }, o);
 
@@ -103,8 +106,8 @@ test('R183: a search result is framed by what it is, never at the old flat zoom 
   assert.equal(S.framingFor(amazon).bounds, null, 'a river is framed by class, not by its 20°-wide box');
 });
 
-test('R183: every zoom in the table is a real zoom, and nothing is left at the old default of 9', () => {
-  const S = loadSearch();
+test('R183: every zoom in the table is a real zoom, and nothing is left at the old default of 9', async () => {
+  const S = await loadSearch();
   const T = S.zoomTable();
   for (const [k, v] of Object.entries(T)) {
     assert.ok(typeof v === 'number' && v > 0 && v <= 20, `${k} → ${v}`);
@@ -127,12 +130,7 @@ const EXT = (() => {
   vm.runInContext(read('js/country-extent.js'), ctx);
   return ctx.window.IntMapCountryExtent;
 })();
-const FRAMING = (() => {
-  const ctx = { window: {} };
-  vm.createContext(ctx);
-  vm.runInContext(read('js/place-framing.js'), ctx);
-  return ctx.window.IntMapPlaceFraming;
-})();
+const FRAMING = await loadSearch();
 
 /* 同梱の実在国境。`feats` は [name, …, y0,m0,d0, y1,m1,d1, polys] で polys[i] は環の添字列。 */
 const CSHAPES = (() => {

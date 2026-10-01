@@ -33,21 +33,23 @@
  *  · Every value that reaches the DOM goes through window.IntMapSafe (#R138).
  *  · Five languages inline (standing rule 3), the way js/drone-nav.js does it.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.aircraftDetail=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function aircraftDetail(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const L=IntMapLang.pick(()=>HOST.lang);
   /* (#R251) …and the ARRAY form, for the emitter-category table below — see `pickArgs` in
      js/lang-registry.js. `CAT` held its five languages as a bare array literal, which is not a call,
      so none of its sixteen rows was in the inline universe and fr/ko/zh/zh-hans read English. */
-  const LA=window.IntMapLang.pickArgs();
+  const LA=IntMapLang.pickArgs();
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   const U=(v)=>{ try{ return window.IntMapSafe.url(String(v||'')); }catch(_){ return ''; } };
   const KT=0.514444, FT=3.28084;
 
   /* ─── unit helpers. The tooltip has always shown metres AND feet side by side because aviation is
          flown in feet and the rest of IntMap is metric; the card keeps that rather than picking a side. */
-  const n0=(v)=>Math.round(v).toLocaleString(window.IntMapLang.locale(HOST.lang));
+  const n0=(v)=>Math.round(v).toLocaleString(IntMapLang.locale(HOST.lang));
   const altTxt=(m)=>m==null?'':n0(m)+' m · '+n0(m*FT)+' ft';
   const spdTxt=(ms)=>ms==null?'':n0(ms)+' m/s · '+n0(ms*3.6)+' km/h · '+n0(ms/KT)+' kn';
   const degTxt=(d)=>d==null?'':(Math.round(d*10)/10)+'°';
@@ -286,7 +288,7 @@ window.IntMapModules.aircraftDetail=function(HOST){
 
   function agoStr(sec){ const s=Math.max(0,Math.round(Date.now()/1000-sec));
     const U5=HOST.lang==='jp'?['秒前','分前','時間前']:HOST.lang==='de'?['s her','min her','h her']:HOST.lang==='ru'?['с назад','мин назад','ч назад']:HOST.lang==='es'?['s atrás','min atrás','h atrás']:['s ago','m ago','h ago'];
-    const sep=window.IntMapLang.t(HOST.lang,' ','');
+    const sep=IntMapLang.t(HOST.lang,' ','');
     if(s<60) return s+sep+U5[0]; if(s<3600) return Math.floor(s/60)+sep+U5[1]; return Math.floor(s/3600)+sep+U5[2]; }
 
   function render(photo,pending){
@@ -363,4 +365,4 @@ window.IntMapModules.aircraftDetail=function(HOST){
   }
 
   return { open, update, close, isOpen, current, setTrack, flyFrom, initialConditions, simKeyFor, _photoFor:photoFor };
-};
+}

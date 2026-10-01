@@ -17,6 +17,7 @@ import { join, basename } from 'node:path';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { scanAll, scanFile, VALUE_BUDGET, IMAP_GLOBAL_FILES, ENGINE_FILE } from '../scripts/engine-coupling.mjs';
+import { factoryCalls } from './app-source.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const R = (p) => readFileSync(new URL(p, ROOT), 'utf8');
@@ -68,14 +69,55 @@ test('R180 ①: the renderer is held or tested as a value in exactly ONE place',
 /* ⚠ READ, NOT RUN: a factory's parameter list is a property of its declaration; the factories run only
    inside the booted app shell. */
 test('R180 ①: no module receives the renderer as a parameter any more', () => {
+  /* (module-graph) a factory is an EXPORTED function now (`export function foo(HOST)`, or a function
+     bound by `export const` / named in `export { … }`), not a `window.IntMapModules.foo=function(…)`
+     assignment — the old regex matched nothing and passed blind. The exports are read off the parsed
+     module, and the registry spelling is still refused should it ever come back. */
   const offenders = [];
+  const seen = new Map();   /* 'js/<file>' → Set of exported function names this scan inspected */
   for (const f of readdirSync(new URL('js', ROOT)).filter((x) => x.endsWith('.js'))) {
     const src = R('js/' + f);
     for (const m of src.matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function\s*\(([^)]*)\)/g)) {
       const first = m[2].split(',')[0].trim();
       if (first === 'map') offenders.push(`${f}:${m[1]}`);
     }
+    const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
+    const fns = new Map();   /* top-level name → function node */
+    const isFn = (n) => n && (n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression' || n.type === 'FunctionDeclaration');
+    const exported = [];
+    for (const st of ast.body) {
+      const d = st.type === 'ExportNamedDeclaration' ? st.declaration : st;
+      if (d && d.type === 'FunctionDeclaration' && d.id) fns.set(d.id.name, d);
+      if (d && d.type === 'VariableDeclaration') for (const v of d.declarations) if (v.id.type === 'Identifier' && isFn(v.init)) fns.set(v.id.name, v.init);
+      if (st.type !== 'ExportNamedDeclaration') continue;
+      if (st.declaration && st.declaration.type === 'FunctionDeclaration') exported.push([st.declaration.id.name, st.declaration.id.name]);
+      if (st.declaration && st.declaration.type === 'VariableDeclaration') for (const v of st.declaration.declarations) {
+        if (v.id.type === 'Identifier') exported.push([v.id.name, v.id.name]);
+        /* `export const { a, b } = (() => { function a(…){…} … return { a, b }; })()` — the functions are
+           declared inside the closure; find them there by name */
+        if (v.id.type === 'ObjectPattern') for (const p of v.id.properties) {
+          if (p.type !== 'Property' || p.value.type !== 'Identifier') continue;
+          const local = p.value.name;
+          walk.full(v.init, (n) => { if (n.type === 'FunctionDeclaration' && n.id && n.id.name === local && !fns.has('\0' + local)) fns.set('\0' + local, n); });
+          exported.push([local, '\0' + local]);
+        }
+      }
+      if (!st.source) for (const sp of st.specifiers || []) exported.push([sp.exported.name, sp.local.name]);
+    }
+    for (const [name, local] of exported) {
+      const fn = fns.get(local);
+      if (!fn) continue;
+      (seen.get('js/' + f) || seen.set('js/' + f, new Set()).get('js/' + f)).add(name);
+      const first = fn.params[0];
+      if (first && first.type === 'Identifier' && first.name === 'map') offenders.push(`${f}:${name}`);
+    }
   }
+  /* the scan is not blind: every factory the shell calls by name was one of the functions it inspected */
+  const unseen = [];
+  for (const [file, names] of Object.entries(factoryCalls(ROOT))) {
+    for (const n of names) if (!(seen.get(file) || new Set()).has(n)) unseen.push(`${file}:${n}`);
+  }
+  assert.deepEqual(unseen, [], 'factories the app calls that this scan did not inspect');
   assert.deepEqual(offenders, [], 'the module contract was the largest block of #R179\'s 112 held ' +
     'references: every factory was handed the raw renderer whether it wanted one or not');
 });

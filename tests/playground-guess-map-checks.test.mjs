@@ -22,7 +22,10 @@ function harness({ failCreate = false, failDestroy = false } = {}) {
   }
   const context = vm.createContext({
     HOST: { lang: 'en' }, document: { createElement: element },
-    window: { IntMapLang: { t: (_lang, en) => en }, cartoTiles: () => [],
+    /* (module-graph) js/playground.js imports IntMapLang and the lifted fragment reads the bare binding,
+       so the stub that used to sit on window is bound under that name */
+    IntMapLang: { t: (_lang, en) => en },
+    window: { cartoTiles: () => [],
       _pgWorldExplorer: () => restarts++ },
     shell() {
       const ov = element(), card = element(); ov.appendChild(card);

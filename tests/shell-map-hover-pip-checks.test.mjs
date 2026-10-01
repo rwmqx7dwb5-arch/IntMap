@@ -12,7 +12,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -38,7 +39,8 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
  *  ./runtime.js), which `vm.runInContext` cannot evaluate — the precedent rig in
  *  tests/r498-checks.test.mjs works because js/mobile-map-input.js has no import statement. So the
  *  real file is loaded the way the browser loads it, with `import()`, over a stubbed window, and
- *  `IntMapModules.layerRegistry` is called to get the real `window._imPipGeo`.
+ *  its exported `layerRegistry` factory is called to get the real `window._imPipGeo` (module-graph:
+ *  the renderer stub is handed at its js/geo-engine.js import edge; the language registry is the real one).
  *
  *  The real geometry is data/ecoregions_2017.geojson (847 features, 614k vertices, 5,213 holes and
  *  shapes that touch both sides of the antimeridian) — the same SHAPE of data as countryGeo, and
@@ -57,15 +59,15 @@ async function shippedPip() {
   g.addEventListener = () => {};
   if (!('navigator' in g)) Object.defineProperty(g, 'navigator', { value: { language: 'en' }, configurable: true });
   g.localStorage = { getItem: () => null, setItem() {} };
-  g.IntMapLang = { pick: () => (en) => en, pickArgs: () => (en) => en, t: (_l, en) => en };
-  g.IntMapGeoEngine = { hasRenderer: () => false, ready: () => false,
+  langRegistry();
+  const engine = { hasRenderer: () => false, ready: () => false,
     layers: { has: () => false, get: () => null, getLayout: () => 'none', sourceData: () => null },
     coords: { project: () => null, queryRenderedFeatures: () => [] },
     render: { canvas: () => null }, events: { on() {}, onLayer() {} }, camera: {} };
-  await import(pathToFileURL(join(ROOT, 'js/map-ui.js')).href);
-  assert.equal(typeof g.window.IntMapModules?.layerRegistry, 'function',
-    'js/map-ui.js no longer registers IntMapModules.layerRegistry');
-  g.window.IntMapModules.layerRegistry({ lang: 'en', canDraw: () => false, demElevAt: () => null });
+  const M = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine } } });
+  assert.equal(typeof M.layerRegistry, 'function',
+    'js/map-ui.js no longer exports the layerRegistry factory');
+  M.layerRegistry({ lang: 'en', canDraw: () => false, demElevAt: () => null });
   assert.equal(typeof g.window._imPipGeo, 'function',
     'the shared point-in-polygon window._imPipGeo is gone from js/map-ui.js');
   return g.window._imPipGeo;

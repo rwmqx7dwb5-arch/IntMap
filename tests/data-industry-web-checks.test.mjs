@@ -87,8 +87,19 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
       assert.ok(published.has(m), `${name} takes \`${m}\` from the toolkit and js/world-packs-rows.js does not publish it`);
     }
   }
-  /* the module is imported after world-packs, which is what makes the line above true at boot */
-  const main = read('src/main.js');
-  assert.ok(main.indexOf('js/world-packs-rows.js') < main.indexOf('js/industry-web.js'), 'world-packs is imported first');
-  assert.match(read('js/app-body.js'), /window\.IntMapModules\.industryWeb\(IM_HOST\);/, 'and the factory is instantiated');
+  /* the module is instantiated after world-packs, which is what makes the line above true at boot.
+     (module-graph) Both are exported factories js/app-body.js calls by name; `window.IntMapWorld` is
+     published when worldPacks(HOST) RUNS, so the order that matters is the order of the two CALLS. */
+  const bodyAst = acorn.parse(read('js/app-body.js'), { ecmaVersion: 'latest', sourceType: 'module' });
+  const firstCall = (name) => {
+    let at = -1;
+    walk.simple(bodyAst, { CallExpression(n) { if (n.callee.type === 'Identifier' && n.callee.name === name && (at < 0 || n.start < at)) at = n.start; } });
+    return at;
+  };
+  const wpAt = firstCall('worldPacks'), iwAt = firstCall('industryWeb');
+  assert.ok(wpAt >= 0 && iwAt >= 0, 'js/app-body.js instantiates both worldPacks and industryWeb');
+  assert.ok(wpAt < iwAt, 'world-packs is instantiated first');
+  /* (module-graph) the factory is the module's export, imported by name and called with the host */
+  assert.match(read('js/app-body.js'), /^import \{ industryWeb \} from '\.\/industry-web\.js';/m, 'the factory is imported from its module');
+  assert.match(read('js/app-body.js'), /(?<![\w.$])industryWeb\(IM_HOST\);/, 'and the factory is instantiated');
 });

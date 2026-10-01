@@ -299,8 +299,10 @@ test('R451 ① the reading surface bar is built in one place, and it carries the
      reads off HOST, and the markup it returns is what is asked — not whether the function's text
      contains two class names. */
   const HOST = { lang: 'jp', escForReader: (s) => String(s).replace(/</g, '&lt;') };
-  const win = { IntMapLang: { t: (lang, ...forms) => (lang === 'jp' ? forms[1] : forms[0]) } };
-  const html = new Function('HOST', 'window', bar + '\nreturn readerBar;')(HOST, win)({ publisher: 'NHK <World>' });
+  /* (module-graph) the lifted function reads the bare imported `IntMapLang` now; it is handed in by name */
+  const LANG = { t: (lang, ...forms) => (lang === 'jp' ? forms[1] : forms[0]) };
+  const win = { IntMapLang: LANG };
+  const html = new Function('HOST', 'window', 'IntMapLang', bar + '\nreturn readerBar;')(HOST, win, LANG)({ publisher: 'NHK <World>' });
   assert.match(html, /^<div class="nrp-bar">/, 'the shared bar is one nrp-bar');
   assert.match(html, /<button class="nrp-back" id="nrp-back-btn">‹ 戻る<\/button>/, 'the shared bar no longer draws the back button');
   assert.match(html, /<button class="nrp-atlas" type="button" title="Atlasに聞く">Atlasに聞く<\/button><\/div>$/,

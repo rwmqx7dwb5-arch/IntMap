@@ -29,14 +29,16 @@
  *  they always did (see the ⚠ note in js/seismic.js `onClick`). Nothing about event semantics
  *  changes here; only who is standing in front of the canvas.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 window.IntMapPick=(function(){
   'use strict';
-  const GE=()=>window.IntMapGeoEngine;
+  const GE=()=>IntMapGeoEngine;
   function lang(){ try{ const s=JSON.parse(localStorage.getItem('intmap_settings')||'{}');
-      if(s&&window.IntMapLang.has(s.lang)) return window.IntMapLang.normalise(s.lang); }catch(_){}
+      if(s&&IntMapLang.has(s.lang)) return IntMapLang.normalise(s.lang); }catch(_){}
     try{ const l=window.IntMapI18N&&window.IntMapI18N.lang&&window.IntMapI18N.lang(); if(l) return l; }catch(_){}
     return 'en'; }
-  const L=window.IntMapLang.pick(()=>lang());
+  const L=IntMapLang.pick(()=>lang());
 
   let live=null, bar=null;
 

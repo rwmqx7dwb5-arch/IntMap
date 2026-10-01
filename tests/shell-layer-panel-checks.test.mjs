@@ -88,8 +88,9 @@ test('R296 ⑦ the classic layer dropdown has no way to be shown, and no setting
   assert.match(body, /window\.imLayerPanel='right';/, "and the one value is still declared");
 
   /* the search box that only existed inside it went with it */
-  assert.doesNotMatch(code(read('js/map-extras.js')), /IntMapModules\.layerSearch\s*=/, 'the classic search module is gone');
-  assert.doesNotMatch(body, /IntMapModules\.layerSearch\(/, 'and is not instantiated');
+  /* (module-graph) negatives over BOTH spellings: the registry assignment and the exported factory */
+  assert.doesNotMatch(code(read('js/map-extras.js')), /IntMapModules\.layerSearch\s*=|export\s+function\s+layerSearch\b/, 'the classic search module is gone');
+  assert.doesNotMatch(body, /(?:IntMapModules\.|(?<![\w.$]))layerSearch\(/, 'and is not instantiated');
 });
 
 /* ═══ ⑧ THE FOUR TOOL ROWS, AND WHERE EACH FEATURE WENT ══════════════════════════════════════ */
@@ -126,10 +127,14 @@ test('R296 ⑧ nothing lost a feature when four rows were removed', () => {
   for (const g of ['IntMapRF', 'IntMapDisaster', 'IntMapEarthReplay'])
     assert.doesNotMatch(sims, new RegExp('window\\.' + g + '='), g + ' is gone');
   const body = code(read('js/app-body.js'));
-  for (const g of ['rf', 'disaster', 'earthReplay'])
-    assert.doesNotMatch(body, new RegExp('IntMapModules\\.' + g + '\\(IM_HOST\\)'), g + ' is not instantiated');
+  /* (module-graph) a factory is now an export called by its bare name — the negatives match BOTH spellings */
+  for (const g of ['rf', 'disaster', 'earthReplay']) {
+    assert.doesNotMatch(body, new RegExp('(?:IntMapModules\\.|(?<![\\w.$]))' + g + '\\(IM_HOST\\)'), g + ' is not instantiated');
+    assert.doesNotMatch(sims, new RegExp('export function ' + g + '\\('), g + ' is not exported by js/sims.js');
+  }
   /* …and transitReach STAYS, because the reachable-area panel calls it */
-  assert.match(body, /IntMapModules\.transitReach\(IM_HOST\)/, 'the rail model still loads');
+  assert.match(body, /^import \{[^}]*\btransitReach\b[^}]*\} from '\.\/sims\.js';/m, 'app-body imports the rail model factory');
+  assert.match(body, /(?<![\w.$])transitReach\(IM_HOST\)/, 'the rail model still loads');
 });
 }
 

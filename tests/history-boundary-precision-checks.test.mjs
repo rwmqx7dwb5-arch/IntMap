@@ -26,6 +26,7 @@ import { refineCShapes, cutCShapesRing } from '../scripts/build-cshapes.mjs';
 import { geometryOf, repoolGeometry, previousPrecision, generatedPrecision } from '../scripts/histborders/precision.mjs';
 import { eligible, check, planDetailBuild, detailAssets } from '../scripts/build-border-detail.mjs';
 import { detailPolys } from '../scripts/build-hist-admin1.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 /* ══ #R710 — precision replacement preserves what the record says ═══════════════════════════ */
 const square = [[0,0],[1,0],[1,1],[0,1],[0,0]];
@@ -131,27 +132,31 @@ test('#R710 all shipped refined datasets state the build target separately from 
 });
 
 /* ══ #R711 — the unsimplified source, the eligibility of detail, and the runtime reader ══════ */
-const borderCoastSrc = readFileSync(new URL('../js/border-coast.js', import.meta.url), 'utf8');
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const ring = [[0,0],[1,0],[1,1],[0,1],[0,0]];
 const fine = [[0,0],[0.5,0.0001],[1,0],[1,1],[0,1],[0,0]];
 
-function harness(count = 1, wrongKey = false) {
+/* (module-graph) js/border-coast.js is IMPORTED fresh per harness: the camera and the clock it imports
+   are handed in at its own import edges, and `window`/`fetch` are the page it runs in. */
+async function harness(count = 1, wrongKey = false) {
   let zoom = 9, bounds = [-2,-2,2,2], arrivals = 0;
   const listeners = {}, calls = [], waiting = [];
   const d = { rings: Array.from({length:count}, (_, i) => ring.map(p => [p[0] + i * 0.01,p[1]])),
     feats: Array.from({length:count}, (_, i) => ['unit',null,1800,1,1,1900,1,1,[[i]]]) };
-  const w = { __TEST: d, __IMBCOAST: { sets: { test: { global: '__TEST', rings: count, draw: Array(count).fill(1) } } },
-    IntMapGeoEngine: { camera: { getZoom: () => zoom, getBounds: () => ({ getWest:()=>bounds[0],getSouth:()=>bounds[1],getEast:()=>bounds[2],getNorth:()=>bounds[3] }) },
-      events: { on: (name, cb) => { listeners[name] = cb; } } }, IntMapTime: { on: cb => { listeners.date = cb; } } };
+  const w = { __TEST: d, __IMBCOAST: { sets: { test: { global: '__TEST', rings: count, draw: Array(count).fill(1) } } } };
+  const engine = { camera: { getZoom: () => zoom, getBounds: () => ({ getWest:()=>bounds[0],getSouth:()=>bounds[1],getEast:()=>bounds[2],getNorth:()=>bounds[3] }) },
+    events: { on: (name, cb) => { listeners[name] = cb; } } };
+  const clock = { on: cb => { listeners.date = cb; } };
   let index;
   const fetch = async path => {
     calls.push(path);
     if (path.endsWith('index.json')) return { ok:true, json:async()=>index };
     return new Promise(resolve => waiting.push(resolve));
   };
-  new Function('window','fetch','setTimeout','clearTimeout','AbortController',borderCoastSrc)(w,fetch,setTimeout,clearTimeout,AbortController);
-  const bc = w.IntMapBorderCoast;
+  const { IntMapBorderCoast: bc } = await importModule('js/border-coast.js', {
+    globals: { window: w, fetch },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine }, 'js/chronos.js': { IntMapTime: clock } },
+  });
   const keys = d.rings.map(r => bc.geometryKey([[r]]));
   index = {v:1,sets:{__TEST:Object.fromEntries(keys.map((key,i)=>[i,[wrongKey?'stale':key,[['chunk'+i+'.json',[-2,-2,2,2]]]]]))}};
   bc.onArrive(() => arrivals++);
@@ -189,7 +194,7 @@ test('#R711 the real Florida small hole cannot disappear behind an increased tot
 });
 
 test('#R711 detail is fetched only for a visible high-zoom outline and replaces its line after arrival', async () => {
-  const h=harness();await h.bc.load();
+  const h=await harness();await h.bc.load();
   h.move(4);assert.deepEqual(h.bc.lineGeom(h.d,0,[1]).coordinates,[ring]);await pause(0);assert.equal(h.calls.length,0);
   h.move(9,[20,20,21,21]);h.bc.lineGeom(h.d,0,[1]);await pause(0);assert.equal(h.calls.length,0);
   h.move(9,[-2,-2,2,2]);h.bc.lineGeom(h.d,0,[1]);await pause(0);
@@ -203,7 +208,7 @@ test('#R711 detail is fetched only for a visible high-zoom outline and replaces 
 });
 
 test('#R711 only intersecting spatial fragments are fetched, and partial arrival keeps a complete fallback', async () => {
-  const h=harness();await h.bc.load();
+  const h=await harness();await h.bc.load();
   h.index.sets.__TEST[0][1].push(['far.json',[30,30,35,35]],['near.json',[0,0,1,1]]);
   h.bc.lineGeom(h.d,0,[1]);await pause(0);h.bc.lineGeom(h.d,0,[1]);await pause(0);
   assert.equal(h.waiting.length,2);assert.ok(!h.calls.some(p=>p.endsWith('far.json')));
@@ -214,24 +219,24 @@ test('#R711 only intersecting spatial fragments are fetched, and partial arrival
 });
 
 test('#R711 stale detail index cannot override a corrected outline', async () => {
-  const h=harness(1,true);await h.bc.load();h.bc.lineGeom(h.d,0,[1]);await pause(0);
+  const h=await harness(1,true);await h.bc.load();h.bc.lineGeom(h.d,0,[1]);await pause(0);
   assert.deepEqual(h.bc.lineGeom(h.d,0,[1]).coordinates,[ring]);await pause(0);
   assert.equal(h.calls.length,1);
 });
 
 test('#R711 a hidden subdivision fallback does not fetch detail while live tiles supply its boundary', async () => {
-  const h=harness();await h.bc.load();
+  const h=await harness();await h.bc.load();
   assert.deepEqual(h.bc.lineGeom(h.d,0,[1],false).coordinates,[ring]);await pause(0);
   assert.equal(h.calls.length,0);
 });
 
 test('#R711 zero-tolerance source geometry does not download an irrelevant OHM detail index', async () => {
-  const h=harness();h.d.precision={targetTolerance:0};await h.bc.load();
+  const h=await harness();h.d.precision={targetTolerance:0};await h.bc.load();
   assert.deepEqual(h.bc.lineGeom(h.d,0,[1]).coordinates,[ring]);await pause(0);assert.equal(h.calls.length,0);
 });
 
 for (const change of ['zoom out','date change']) test('#R711 '+change+' discards queued requests and late completion uses current view', async () => {
-  const h=harness(6);await h.bc.load();h.bc.lineGeom(h.d,0,[1]);await pause(0);
+  const h=await harness(6);await h.bc.load();h.bc.lineGeom(h.d,0,[1]);await pause(0);
   for(let i=0;i<6;i++)h.bc.lineGeom(h.d,i,Array(6).fill(1));await pause(0);
   assert.equal(h.waiting.length,4);
   if(change==='zoom out')h.move(4);else h.listeners.date();
@@ -241,7 +246,7 @@ for (const change of ['zoom out','date change']) test('#R711 '+change+' discards
 });
 
 test('#R711 failed detail keeps the coarse line and is retried only on a new view', async () => {
-  const h=harness();await h.bc.load();h.bc.lineGeom(h.d,0,[1]);await pause(0);h.bc.lineGeom(h.d,0,[1]);await pause(0);
+  const h=await harness();await h.bc.load();h.bc.lineGeom(h.d,0,[1]);await pause(0);h.bc.lineGeom(h.d,0,[1]);await pause(0);
   h.respond(0,false);await pause(0);
   for(let i=0;i<3;i++)assert.deepEqual(h.bc.lineGeom(h.d,0,[1]).coordinates,[ring]);await pause(0);
   assert.equal(h.calls.length,2);
@@ -266,12 +271,13 @@ test('#R711 the offline gate rejects missing/stale assets rather than accepting 
   }finally{rmSync(root,{recursive:true,force:true});}
 });
 
-test('#R711 LF and CRLF checkouts measure the same generated bytes without hiding manifest drift', () => {
+test('#R711 LF and CRLF checkouts measure the same generated bytes without hiding manifest drift', async () => {
   const root=mkdtempSync(join(tmpdir(),'intmap-r712-detail-eol-'));
   try {
     const out=join(root,'data/border-detail');mkdirSync(out,{recursive:true});
-    const w={};new Function('window',readFileSync(new URL('../js/border-coast.js',import.meta.url),'utf8'))(w);
-    const ring=[[0,0],[1,0],[1,1],[0,1],[0,0]],key=w.IntMapBorderCoast.geometryKey([[ring]]);
+    /* (module-graph) the key is the IMPORTED reader's, not one read off a window */
+    const { IntMapBorderCoast } = await importModule('js/border-coast.js', { globals: { window: {} } });
+    const ring=[[0,0],[1,0],[1,1],[0,1],[0,0]],key=IntMapBorderCoast.geometryKey([[ring]]);
     const index={v:1,targetTolerance:0.0005,decimals:5,inlandKm:6,source:'OpenHistoricalMap (CC0)',sets:{},stats:{}};
     const body=JSON.stringify({lines:{[key]:[ring]},relations:{[key]:1}});
     const hash=createHash('sha256').update(body).digest('hex').slice(0,16);

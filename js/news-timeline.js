@@ -9,11 +9,14 @@
 
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.newsTimeline=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function newsTimeline(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -37,7 +40,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        decides (js/chronos.js), so a copy here is a second list that can disagree with it, and the way
        it disagrees is silent: a slider that stops at 1900 over a kernel that reaches 1850 simply
        cannot be dragged to 1850, and nothing anywhere reports a fault. Read it live. */
-    const YMIN=()=>{ try{ const m=+window.IntMapTime.min; return isFinite(m)?m:1850; }catch(_){ return 1850; } };
+    const YMIN=()=>{ try{ const m=+IntMapTime.min; return isFinite(m)?m:1850; }catch(_){ return 1850; } };
     /* ══ ⚠⚠⚠ (#R604) THE YEAR RAIL IS NOT LINEAR ANY MORE, AND THAT IS FORCED BY THE FLOOR ═══════
        #R604 lowered the kernel's floor from 1850 to 1 so the era subdivisions can be asked for in
        any century they exist in (js/chronos.js). A rail that maps one year to one step then spends
@@ -92,7 +95,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       nameDateNote.textContent=L5('[?] marks a historical name whose start date is unknown.','[?] は、その地名が使われ始めた時期が不明であることを示します。','[?] kennzeichnet einen historischen Namen, dessen erste Verwendung zeitlich unbekannt ist.','[?] отмечает историческое название, время начала использования которого неизвестно.','[?] indica un nombre histórico cuya fecha de inicio de uso se desconoce.');
     }
     if(namesToggle) namesToggle.addEventListener('change',()=>{
-      try{ refreshNameDateNote(window.IntMapTime.state()); }catch(_){} });
+      try{ refreshNameDateNote(IntMapTime.state()); }catch(_){} });
     /* The mobile attribution pill is positioned from the live sheet geometry. Reserve its
        measured rectangle instead of assuming its height or repeating the sheet offset here. */
     const mapCredit=document.getElementById('map-credit');
@@ -303,7 +306,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        live) and pushes it to the master clock. (#R139) When that date is TODAY, times AFTER the current moment are NOT
        selectable (no future) — a PAST date is fully scrubbable 0–24h. Time-of-day data (day/night terminator, sun/shadow)
        then syncs to it, exactly like Year/Date already sync. */
-    function _timeBase(){ const st=window.IntMapTime.state(); return st.isLive?new Date():new Date(st.when); }
+    function _timeBase(){ const st=IntMapTime.state(); return st.isLive?new Date():new Date(st.when); }
     /* ⚠ (#R210) THE TIME SLIDER IS NO LONGER CLIPPED AT "now" ══════════════════════════════════════
        「今日の中で、現在時刻以降を選択できないスライダーの仕様にするのはやめて。」 #R139 capped today at
        the current minute on the reasoning that the app must not claim to know the future. That is
@@ -322,7 +325,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        reader sees in the same zone, so scrubbing past midnight stays on the day on screen. */
     function _applyTimeOfDay(mins){ try{ const base=_timeBase(); mins=Math.max(0,Math.min(_timeMaxMins(),mins|0));
       const f=zFields(base); f.h=Math.floor(mins/60); f.m=mins%60;
-      window.IntMapTime.set(zInstant(f),{allowFuture:true,source:'ui'}); }catch(_){} }
+      IntMapTime.set(zInstant(f),{allowFuture:true,source:'ui'}); }catch(_){} }
     /* (#R137) genuine, visible time-of-day effect: the day/night terminator for the selected instant (computed via the
        existing Earth-Replay solar math). Drawn while the Time tab is open; cleared otherwise. Fully guarded. */
     /* (#R180) through the contract. This held window.__imap under the name `m` and drove it raw —
@@ -365,9 +368,9 @@ window.IntMapModules.newsTimeline=function(HOST){
        ⚠ AND `Date.UTC` IS NOT USED. It maps a year under 100 to 1900+y (#R602 paid for that four
        times in one round, #R695 twice more), which is reachable here now. */
     function _dateText(d){ try{ const f=zFields(d);
-      return HS().dateText(f.Y,f.M,f.D,window.IntMapLang.locale(HOST.lang,'en-US'));
+      return HS().dateText(f.Y,f.M,f.D,IntMapLang.locale(HOST.lang,'en-US'));
     }catch(_){ return d.toLocaleDateString(); } }
-    const L5=window.IntMapLang.pick(()=>HOST.lang);
+    const L5=IntMapLang.pick(()=>HOST.lang);
     /* ⚠ (#R679) A YEAR BELOW 1 IS NOT A NUMBER THE READER CAN READ. This was
        `y+'年'` for jp and the bare number for the other eight, which is right for
        every year the clock could reach until this round and renders «−322» now.
@@ -375,7 +378,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        not a table of ours — js/hist-scale.js `yearText` asks the platform. The tag
        comes from the registry because a call site gets it wrong: `htmlTag('zh')`
        is `zh-Hant`, and a bare `zh` handed to ICU resolves to Simplified. */
-    const _yTag=()=>{ try{ return window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } };
+    const _yTag=()=>{ try{ return IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } };
     const yLabel=(y)=>{ try{ return HS().yearText(y,_yTag(),HOST.lang==='jp'?'年':null); }
       catch(_){ return HOST.lang==='jp'?(y+'年'):(''+y); } };
     /* ══ (#R421) THE BORDER-CHANGE STEPPER ══════════════════════════════════════════════════════
@@ -403,9 +406,9 @@ window.IntMapModules.newsTimeline=function(HOST){
         if(bStepPrev) bStepPrev.disabled=!r[1];
         if(bStepNext) bStepNext.disabled=!r[2]; }).catch(function(){}); }
     function _bsStep(dir){ const TB=_TB(); if(!TB||!TB.changeAfter) return;
-      let st; try{ st=window.IntMapTime.state(); }catch(_){ return; }
+      let st; try{ st=IntMapTime.state(); }catch(_){ return; }
       (dir<0?TB.changeBefore(st.when):TB.changeAfter(st.when)).then(function(d){
-        if(d) try{ window.IntMapTime.set(d,{source:'ui'}); }catch(_){} }).catch(function(){}); }
+        if(d) try{ IntMapTime.set(d,{source:'ui'}); }catch(_){} }).catch(function(){}); }
     /* (#R290) `on()`, `kEra()`, `HBY` and `hbAt()` lived here to fill the 「反映内容」 chips — the
        Köppen era, the historical-borders snapshot and which of the year-driven layers were on.
        That block is gone (see the note further down), and so is everything that only fed it. */
@@ -430,7 +433,7 @@ window.IntMapModules.newsTimeline=function(HOST){
          in the same frame.
          → the badge is no longer written by `localizeChrome`; `refreshUI` owns it, beside the other
          element that makes the same claim, so one instant can only produce one word (`sideWord`). */
-      if(badge) badge.textContent=sideWord(window.IntMapTime.state().when);
+      if(badge) badge.textContent=sideWord(IntMapTime.state().when);
       /* (#R289) 「Chronosボタンは、いまは「過去の世界を見る／1900年から現在」となっていますが、
          「Chronos／地図の時間を操作」にして。」 — the collapsed entry point, same name, same shape. */
       try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
@@ -461,12 +464,12 @@ window.IntMapModules.newsTimeline=function(HOST){
       return b; }
     /* which step the CLOCK is standing on (− 1 when it is outside the model's window) */
     function fcAtClock(){ if(!fcReady()) return -1;
-      const st=window.IntMapTime.state(); const ms=st.when.getTime();
+      const st=IntMapTime.state(); const ms=st.when.getTime();
       const i=fcNearest(ms); if(i<0) return -1;
       const t=fcMs(i); return (t!=null&&Math.abs(t-ms)<=3600000)?i:-1; }
     function fcGo(i){ const n=fcCount(); if(!n) return;
       i=Math.max(0,Math.min(n-1,i)); const t=fcMs(i); if(t==null) return;
-      window.IntMapTime.set(new Date(t),{allowFuture:true,source:'ui'}); }
+      IntMapTime.set(new Date(t),{allowFuture:true,source:'ui'}); }
     /* the SAME icon declaration the weather legends read (#R284), so the two views of one clock can
        never disagree about which button is 「再生」 and which is 「次へ」 */
     /* (#R293) the transport plays the CLOCK, not the model's index: one interval, one writer */
@@ -494,9 +497,9 @@ window.IntMapModules.newsTimeline=function(HOST){
         if(a==='first'){ fcStop(); fcGo(0); }
         else if(a==='prev'){ fcStop(); fcGo((i<0?0:i)-1); }
         else if(a==='next'){ fcStop(); fcGo((i<0?-1:i)+1); }
-        else if(a==='now'){ fcStop(); window.IntMapTime.setNow({source:'ui'}); }
+        else if(a==='now'){ fcStop(); IntMapTime.setNow({source:'ui'}); }
         else if(a==='play'){ if(fcPlaying()) fcStop(); else fcPlay(); }
-        buildPlayer(); refreshUI(window.IntMapTime.state()); }; });
+        buildPlayer(); refreshUI(IntMapTime.state()); }; });
     }
     /* built once and only its VALUE re-set afterwards — the same rule the year <select> follows
        (#R266): rebuilding the list would close the dropdown under the finger that opened it. */
@@ -511,7 +514,7 @@ window.IntMapModules.newsTimeline=function(HOST){
           +ZONES.map(opt).join('')+'</optgroup>';
         zoneSel.setAttribute('data-built',sig); }
       zoneSel.value=zone;
-      if(zoneLbl){ try{ zoneLbl.title=zoneOffText(window.IntMapTime.when()); }catch(_){} }
+      if(zoneLbl){ try{ zoneLbl.title=zoneOffText(IntMapTime.when()); }catch(_){} }
     }
     /* ══ ⚠⚠⚠ (#R293) 「Chronosの地図中心の標準時にする機能、機能していない」 — THE THIRD TIME, AND THE
        THIRD DIFFERENT CAUSE ═══════════════════════════════════════════════════════════════════
@@ -548,13 +551,13 @@ window.IntMapModules.newsTimeline=function(HOST){
     function zoneEnsure(n){ if(zone!=='map') return;
       let TZ=null; try{ TZ=window.IntMapTimeZones; }catch(_){}
       if(!TZ||!TZ.ensure){ if((n|0)<60) setTimeout(()=>zoneEnsure((n|0)+1),200); return; }
-      try{ if(TZ.ready&&TZ.ready()){ refreshUI(window.IntMapTime.state()); return; }
-        TZ.ensure().then(()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
+      try{ if(TZ.ready&&TZ.ready()){ refreshUI(IntMapTime.state()); return; }
+        TZ.ensure().then(()=>{ try{ refreshUI(IntMapTime.state()); }catch(_){} });
       }catch(_){} }
     if(zoneSel) zoneSel.addEventListener('change',()=>{ zone=zoneSel.value||'user';
       try{ localStorage.setItem(ZKEY,zone); }catch(_){}
       zoneEnsure();
-      try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
+      try{ refreshUI(IntMapTime.state()); }catch(_){} });
     /* the ruler's marks, from the rail itself — one owner for both rows below */
     function _yearTicks(a,b){ try{ return HS().niceTicks(a,b,64); }catch(_){ return [a,b]; } }
     function buildScale(){ if(!scale){ buildTicks(); return; } const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
@@ -677,7 +680,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
       buildScale(); buildPlayer();
-      try{ refreshUI(window.IntMapTime.state()); }catch(_){}
+      try{ refreshUI(IntMapTime.state()); }catch(_){}
     }
     /* (#R290) 「反映内容を表示する箇所はいらない」 — `buildSynced` built the 「Applied」 label and one
        chip per time-aware subsystem. It is gone with its markup. The hook other modules poke when
@@ -685,7 +688,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        rebuilt is not a TypeError (js/time-countries.js calls it defensively already). */
     window._imTimeSyncedRefresh=()=>{};
     /* WRITE side: inputs → kernel */
-    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(window.IntMapTime.state()); }catch(_){} } _tmSyncTerminator(); };
+    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
     if(bStepPrev) bStepPrev.onclick=()=>_bsStep(-1);   /* (#R421) */
     if(bStepNext) bStepNext.onclick=()=>_bsStep(1);
@@ -696,10 +699,10 @@ window.IntMapModules.newsTimeline=function(HOST){
        「時刻」 tab, which is where the model's transport now lives (「わざわざ分けるな」, twice over) */
     window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode('time'); }catch(_){} };
     slider.addEventListener('input',()=>{ if(_self) return;
-      if(mode==='year'){ const y=p2y(parseInt(slider.value,10)); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) window.IntMapTime.setYear(y,{source:'ui'}); }
+      if(mode==='year'){ const y=p2y(parseInt(slider.value,10)); if(y>=curY) IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) IntMapTime.setYear(y,{source:'ui'}); }
       else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */
-      else { window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
-    if(datePicker) datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ window.IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) window.IntMapTime.set(d,{source:'ui'}); } });
+      else { IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
+    if(datePicker) datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) IntMapTime.set(d,{source:'ui'}); } });
     if(timePicker) timePicker.addEventListener('change',()=>{ if(_self) return; const v=timePicker.value; if(!v) return; const p=String(v).split(':'); _applyTimeOfDay((+p[0]||0)*60+(+p[1]||0)); });   /* (#R137) */
     /* ══ (#R378) the direct picker WRITES the master clock, like every other input in this panel ══
        ⚠ IT IS DEBOUNCED, AND THE REASON IS THE CONTROL'S OWN TYPING BEHAVIOUR. A native date field
@@ -714,16 +717,16 @@ window.IntMapModules.newsTimeline=function(HOST){
        would silently answer «now» for every hour it offers past this one. */
     let jumpTimer=0;
     function jumpCommit(){ jumpTimer=0; if(!jumpEl) return;
-      if(!jumpEl.value){ window.IntMapTime.setNow({source:'ui'}); return; }   /* cleared = live, as `#ntl-date` already means */
-      const d=jumpParse(jumpEl.value); if(!d){ try{ refreshUI(window.IntMapTime.state()); }catch(_){} return; }
-      window.IntMapTime.set(new Date(Math.min(d.getTime(),fcMaxMs())),{allowFuture:true,source:'ui'}); }
+      if(!jumpEl.value){ IntMapTime.setNow({source:'ui'}); return; }   /* cleared = live, as `#ntl-date` already means */
+      const d=jumpParse(jumpEl.value); if(!d){ try{ refreshUI(IntMapTime.state()); }catch(_){} return; }
+      IntMapTime.set(new Date(Math.min(d.getTime(),fcMaxMs())),{allowFuture:true,source:'ui'}); }
     if(jumpEl){ const jumpQueue=()=>{ if(_self) return; clearTimeout(jumpTimer); jumpTimer=setTimeout(jumpCommit,320); };
       jumpEl.addEventListener('input',jumpQueue);
       jumpEl.addEventListener('change',jumpQueue);
       /* the field is not rewritten while it has focus (see refreshUI), so leaving it is where the
          clock's answer — clamped floor, clamped ceiling, another control's instant — is reconciled */
-      jumpEl.addEventListener('blur',()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} }); }
-    if(btnNow) btnNow.onclick=()=>window.IntMapTime.setNow({source:'ui'});
+      jumpEl.addEventListener('blur',()=>{ try{ refreshUI(IntMapTime.state()); }catch(_){} }); }
+    if(btnNow) btnNow.onclick=()=>IntMapTime.setNow({source:'ui'});
     /* READ side: kernel → this widget's UI */
     function refreshUI(e){ _self=true; try{
       refreshNameDateNote(e);
@@ -799,7 +802,7 @@ window.IntMapModules.newsTimeline=function(HOST){
     try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{ try{
       if(ev.type==='meta'){ buildPlayer(); if(datePicker) datePicker.max=fcMaxISO(); }
     }catch(_){} }); }catch(_){}
-    window.IntMapTime.on(e=>{ refreshUI(e);
+    IntMapTime.on(e=>{ refreshUI(e);
       /* Refetch the news feed only when the DAY (or live-state) actually changed. */
       const key=e.isLive?'live':e.iso;
       if(key!==window._imTimeNewsKey){ window._imTimeNewsKey=key;
@@ -809,7 +812,7 @@ window.IntMapModules.newsTimeline=function(HOST){
              now (was news/saved only), so pins on the map also reflect the date, not the last-loaded latest set. */
           HOST.globalData=[];
           /* (#R171) source data through IntMapGeoEngine — this file no longer names the renderer. */
-          try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); HOST.newsFeatures=[]; } }catch(_){}
+          try{ const E=IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); HOST.newsFeatures=[]; } }catch(_){}
           try{ fetchData(); }catch(_){}
         },230); } });
     /* (#R101) close the popup when the user starts operating elsewhere on the map (pan / zoom / click-away). */
@@ -817,7 +820,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       function wireMap(){ try{ const E=GE(); if(E&&E.hasRenderer()){ E.events.on('dragstart',closeIf); E.events.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); E.events.on('click',closeIf); E.events.on('styledata',()=>{ try{ _tmSyncTerminator(); }catch(_){} }); return true; } }catch(_){} return false; }
       if(!wireMap()) setTimeout(wireMap,1500);
       document.addEventListener('pointerdown',ev=>{ try{ if(tl.classList.contains('collapsed')) return; if(ev.target&&ev.target.closest&&ev.target.closest('#news-timeline')) return; closeIf(); }catch(_){} },true); })();
-    window.addEventListener('intmap-lang',()=>{ try{ localizeChrome(); refreshUI(window.IntMapTime.state()); }catch(_){} });
+    window.addEventListener('intmap-lang',()=>{ try{ localizeChrome(); refreshUI(IntMapTime.state()); }catch(_){} });
     /* init */
     /* (#R293) the date picker reaches as far as the MODEL does — 「時刻」 can now name a future
        instant, and a picker that stopped at today would be the one control that could not follow */
@@ -835,11 +838,11 @@ window.IntMapModules.newsTimeline=function(HOST){
     /* …and 「地図中心の」 has to keep meaning the centre it is centred on now */
     (function followCamera(n){ try{ const E=GE();
       if(E&&E.hasRenderer()){ E.events.on('moveend',()=>{ try{ if(zone==='map'&&!tl.classList.contains('collapsed'))
-        refreshUI(window.IntMapTime.state()); }catch(_){} }); return; }
+        refreshUI(IntMapTime.state()); }catch(_){} }); return; }
     }catch(_){}
       if((n|0)<40) setTimeout(()=>followCamera((n|0)+1),300); })(0);
     /* the metadata is a 3 kB JSON with no SDK behind it, so the transport can be honest from boot */
     try{ (window.IntMapECMWF||{meta:()=>Promise.resolve()}).meta()
       .then(()=>{ buildPlayer(); if(datePicker) datePicker.max=fcMaxISO(); }).catch(()=>{}); }catch(_){}
   })();
-};
+}

@@ -61,9 +61,12 @@ test('R467 ② every writer of the account sheet goes through a callee the instr
   const src = R('js/auth-ui.js');
   /* ⚠ BOTH WRITERS OF #am-pass. The markup template sets the placeholder and the tab switcher
      rewrites it a moment later, so a fix to one of them is invisible on screen. */
+  /* (module-graph) the callee is the IMPORTED registry binding — `IntMapLang.t(` with the import edge
+     present — which is what the instruments resolve now that the readers no longer reach for `window.IntMapLang` */
+  assert.match(src, /^import \{ IntMapLang \} from '\.\/lang-registry\.js';/m, 'js/auth-ui.js imports the language registry');
   for (const en of ['Display name', 'Password', 'Password (min. 8 chars, incl. a number)', 'Log In', 'Create account']) {
-    assert.match(src, new RegExp('window\\.IntMapLang\\.t\\(HOST\\.lang,\\s*\'' + esc(en) + '\''),
-      `${en} must be spelled window.IntMapLang.t(HOST.lang, …)`);
+    assert.match(src, new RegExp('(?<![\\w.$])IntMapLang\\.t\\(HOST\\.lang,\\s*\'' + esc(en) + '\''),
+      `${en} must be spelled IntMapLang.t(HOST.lang, …)`);
     assert.doesNotMatch(src, new RegExp('_authL\\(\\s*\'' + esc(en) + '\'\\s*,'),
       `${en} must not go back behind the lazy wrapper _authL`);
   }

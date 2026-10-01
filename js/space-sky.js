@@ -51,9 +51,11 @@
 import { everyTick, stopTick } from './runtime.js';
 /* (startup-lazy-layers) data/stars.bin, one read and one decoder for both skies */
 import { loadStarCatalogue } from './star-catalogue.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 window.IntMapSky=(function(){
   'use strict';
-  const GE=()=>window.IntMapGeoEngine;
+  const GE=()=>IntMapGeoEngine;
   const D2R=Math.PI/180, R2D=180/Math.PI;
 
   /* ── astronomy ─────────────────────────────────────────────────────────────────────────────── */
@@ -240,7 +242,7 @@ window.IntMapSky=(function(){
   function mapClock(){
     /* ⚠ (#R200) `T.now` is not on window.IntMapTime (see js/theme-sky.js) — the star field had been
        drawn for the wall clock since #R187 whatever the master clock said. `when()` is the real one. */
-    try{ const T=window.IntMapTime; if(T&&T.when) { const d=T.when(); const ms=(d instanceof Date)?d.getTime():+d; if(isFinite(ms)) return ms; } }catch(_){}
+    try{ const T=IntMapTime; if(T&&T.when) { const d=T.when(); const ms=(d instanceof Date)?d.getTime():+d; if(isFinite(ms)) return ms; } }catch(_){}
     return Date.now();
   }
   /* Dark theme + a globe + an engine with no sky of its own. `forced` is the manual override the
@@ -445,7 +447,7 @@ window.IntMapSky=(function(){
       try{ GE().events.on(ev,schedule); }catch(_){} }); }catch(_){}
     window.addEventListener('resize',schedule);
     window.addEventListener('intmap-theme',schedule);
-    try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(schedule); }catch(_){}
+    try{ if(IntMapTime&&IntMapTime.on) IntMapTime.on(schedule); }catch(_){}
     /* The sky turns 15° an hour; a repaint every 30 s keeps it within a quarter of a degree of the
        truth without asking for a frame the camera did not ask for. */
     /* (#R408) …on the one wheel (js/runtime.js), and the hidden tab is ITS answer now — it skips

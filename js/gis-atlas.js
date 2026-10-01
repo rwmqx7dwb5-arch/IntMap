@@ -36,6 +36,7 @@ import { FACETS, account } from './data-governance.js';
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
+import { IntMapLang } from './lang-registry.js';
 
 export function makeGisAtlas(core) {
   return (function () {
@@ -71,7 +72,7 @@ export function makeGisAtlas(core) {
        the op's id and the numbers it measured, and both are data. */
     function L(en, jp) {
       try {
-        const M = (typeof window !== 'undefined') ? window.IntMapLang : null;
+        const M = (typeof window !== 'undefined') ? IntMapLang : null;
         const lang = (typeof window !== 'undefined' && window.IntMapHost && window.IntMapHost.lang) || (M && M.current && M.current()) || 'en';
         if (M && typeof M.t === 'function') return M.t(lang, en, jp);
       } catch (_) { }

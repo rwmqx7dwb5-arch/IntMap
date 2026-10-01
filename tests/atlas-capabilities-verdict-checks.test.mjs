@@ -22,19 +22,26 @@ import path from 'node:path';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { capabilityEntry } from './helpers/atlas-kernel.mjs';
+import { importModule, swappable } from './helpers/import-module.mjs';
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-/* ⚠ (consolidation) loading js/geo-engine.js PUBLISHES window.IntMapGeoEngine as a side effect. In
-   its own process that was harmless; beside the #R742 / #R768 checks it left the real engine behind
-   every stub they restore, and its `render.drawn()` turned their negatives into `not_rendering`.
-   Only the facade factory is wanted (#R740, #R768 ⑤), so it is loaded ONCE, here, and the global is put back the way it was found. */
+/* ⚠ (consolidation) loading js/geo-engine.js PUBLISHES window.IntMapGeoEngine as a side effect (its compat
+   window). Only the facade factory is wanted (#R740, #R768 ⑤), so it is loaded ONCE, here, read off the
+   module's export, and the global is put back the way it was found. */
 const _geBefore = window.IntMapGeoEngine;
-await import('../js/geo-engine.js');
-const ENGINE = window.IntMapGeoEngine;
+const { IntMapGeoEngine: ENGINE } = await import('../js/geo-engine.js');
 if (_geBefore === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = _geBefore;
+/* (module-graph) js/atlas-capabilities.js IMPORTS the engine — it no longer reads window.IntMapGeoEngine —
+   so every stub renderer below is handed to it at that import edge: ONE swappable seat, set per case and
+   put back after it. Between cases the seat is empty — an engine with no method to ask. */
+const engineSeat = swappable();
+let _seated = null;
+const seatEngine = (r) => { _seated = r || null; engineSeat.set(r || {}); };
+const seatedEngine = () => _seated;
+const capabilitiesWithSeat = () => importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engineSeat.value } } });
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  *  from tests/r740-isochrone-verdict-checks.test.mjs
@@ -73,7 +80,7 @@ if (_geBefore === undefined) delete window.IntMapGeoEngine; else window.IntMapGe
 
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+const { makeAtlasCapabilities } = await capabilitiesWithSeat();   /* (module-graph) the engine edge is the seat above */
 
 /* js/map-tools.js:1042 — `const SRC='im-iso-src'`, drawn as im-iso-fill / im-iso-line / im-iso-ctr */
 const ISO_SRC = 'im-iso-src';
@@ -113,9 +120,9 @@ function polygons(n) {
 }
 
 function withMap(sources, fn) {
-  const had = window.IntMapGeoEngine;
-  window.IntMapGeoEngine = renderer(sources);
-  try { return fn(); } finally { if (had === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = had; }
+  const had = seatedEngine();
+  seatEngine(renderer(sources));
+  try { return fn(); } finally { seatEngine(had); }
 }
 
 /* ── the camera half (the fourth case of the same shape, below) ──────────────────────────────────
@@ -138,19 +145,19 @@ function camRenderer(cam) {
   };
 }
 function withCamera(cam, fn) {
-  const had = window.IntMapGeoEngine;
-  window.IntMapGeoEngine = camRenderer(cam);
-  try { return fn(); } finally { if (had === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = had; }
+  const had = seatedEngine();
+  seatEngine(camRenderer(cam));
+  try { return fn(); } finally { seatEngine(had); }
 }
 /* What `cameraNow()` produced for that camera — taken from the SHIPPED observer, not retyped.
    ⚠ It installs and restores around the AWAIT: the camera observer is async (#R726 — it waits for
    the flight to land), and a `try/finally` that returns the promise restores the engine before the
    observer ever reads it, which yields a null snapshot and a verdict about nothing. */
 async function snapshot(cam) {
-  const had = window.IntMapGeoEngine;
-  window.IntMapGeoEngine = camRenderer(cam);
+  const had = seatedEngine();
+  seatEngine(camRenderer(cam));
   try { return await CAPS.resolve('view.flyTo').observe(); }
-  finally { if (had === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = had; }
+  finally { seatEngine(had); }
 }
 
 /* The camera the production turn was in: Europe is on the screen, zoom 4, north-up, flat. */
@@ -575,7 +582,7 @@ test("R740 ㉑: every branch of the shipped flyTo case declares the destination 
  * ==========================================================================*/
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+const { makeAtlasCapabilities } = await capabilitiesWithSeat();   /* (module-graph) the engine edge is the seat above */
 const { makeEraHighlight } = await import('../js/atlas-era-highlight.js');
 
 const CAPS = makeAtlasCapabilities({ lang: 'en' });
@@ -614,14 +621,14 @@ function supplier(s) {
 /* one observation of a map in state `s` — taken from the SHIPPED observer, with the SHIPPED painter
    declaration installed exactly where js/atlas-console.js installs it. */
 function observe(s) {
-  const hadP = window._imAtlasPaint, hadG = window.IntMapGeoEngine;
-  window._imAtlasPaint = makeEraHighlight({ GE: () => window.IntMapGeoEngine, resolveCountrySync: () => null })
+  const hadP = window._imAtlasPaint, hadG = seatedEngine();
+  window._imAtlasPaint = makeEraHighlight({ GE: () => seatedEngine(), resolveCountrySync: () => null })
     .paintState(supplier(s));
-  window.IntMapGeoEngine = renderer();
+  seatEngine(renderer());
   try { return hl.observe(); }
   finally {
     if (hadP === undefined) delete window._imAtlasPaint; else window._imAtlasPaint = hadP;
-    if (hadG === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = hadG;
+    seatEngine(hadG);
   }
 }
 
@@ -798,7 +805,7 @@ test('R742 ⑦: an observation that could not be taken is not read as agreement'
  * ==========================================================================*/
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+const { makeAtlasCapabilities } = await capabilitiesWithSeat();   /* (module-graph) the engine edge is the seat above */
 
 const CAPS = makeAtlasCapabilities({ lang: 'en' });
 const fly = CAPS.resolve('view.flyTo');
@@ -837,12 +844,12 @@ function renderer(mode, camera) {
    verify). The observation is where 「was the page drawing?」 is taken, so a verdict asked without it
    is a verdict that never saw the map — which is why this drives both halves rather than the second. */
 async function verdict(mode, { before, after, args, raw }) {
-  const had = window.IntMapGeoEngine;
-  window.IntMapGeoEngine = renderer(mode, after);
+  const had = seatedEngine();
+  seatEngine(renderer(mode, after));
   try {
     await fly.observe();
     return fly.verify({}, args, before, after, raw === undefined ? { ok: true } : raw, 'view.flyTo');
-  } finally { if (had === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = had; }
+  } finally { seatEngine(had); }
 }
 
 /* the production shape: the reader asked for a place, and the camera is exactly where it was */
@@ -871,13 +878,13 @@ test('R768 ③ the probe may only weaken a claim — an engine that cannot answe
 test('R768 ③b a verdict asked without an observation claims nothing either', () => {
   /* the reading belongs to the observer, so a caller that skips it must not inherit the LAST
      operation's answer. (It is one slot — see the declaration beside CAMERA_SETTLE_MS.) */
-  const had = window.IntMapGeoEngine;
-  window.IntMapGeoEngine = renderer('asleep', CAM);
+  const had = seatedEngine();
+  seatEngine(renderer('asleep', CAM));
   try {
     const v = fly.verify({}, STUCK.args, STUCK.before, STUCK.after, { ok: true }, 'view.flyTo');
     assert.equal(typeof v.then, 'undefined', 'the camera verdict is synchronous — every camera capability shares it');
     assert.ok(v.code === 'no_change' || v.code === 'not_rendering');
-  } finally { if (had === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = had; }
+  } finally { seatEngine(had); }
 });
 
 test('R768 ④ a camera that DID move is still complete, even on a page that is not drawing', async () => {

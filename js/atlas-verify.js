@@ -17,6 +17,7 @@
 import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a clock — see the file header there */
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and behind the app's ONE one-a-second floor — js/nominatim-gate.js */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* for its `featureNames` — the ONE rule for a Nominatim feature's names */
+import { IntMapLang } from './lang-registry.js';
 
 export function makeAtlasVerify(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc;   /* ⚠ tests/atlas-console-kernel-checks.test.mjs #R199 ② requires the CTX rebinds to be the factory's FIRST statement */
@@ -305,7 +306,7 @@ export function makeAtlasVerify(HOST, CTX) {
       const store=(HOST&&HOST.countryStats)||null; if(!store) return null;
       const n=Object.keys(store).length; if(!n) return null;
       if(_ctryIdx&&_ctryFor===store&&_ctryN===n) return _ctryIdx;   /* the store is filled IN PLACE as each scale lands, so the key count is what changes */
-      let langs=[]; try{ langs=(window.IntMapLang&&window.IntMapLang.codes&&window.IntMapLang.codes())||[]; }catch(_){ langs=[]; }
+      let langs=[]; try{ langs=(IntMapLang&&IntMapLang.codes&&IntMapLang.codes())||[]; }catch(_){ langs=[]; }
       const map=new Map(), dup=new Set();
       const put=(nm,code)=>{ if(typeof nm!=='string') return; const k=_atlNorm(nm); if(!k||k.length<2) return;
         const prev=map.get(k); if(prev!==undefined&&prev!==code){ dup.add(k); return; } map.set(k,code); };

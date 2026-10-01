@@ -35,21 +35,18 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
  *  #R511's single-purpose gate instead of putting a second one beside it (CONSTITUTION.md §5).
  *
  *  ⚠ THESE DRIVE THE SHIPPED MODULES, AND THEY EVALUATE THEM (#R505). The renderer is reached
- *  through its own registration on `window.IntMapModules` — the door the app uses — so a module that
+ *  through its own export — the door the app's lazy loader uses (module-graph) — so a module that
  *  parses but throws on evaluation fails here rather than in production. What is asserted is what it
  *  RETURNS and what its HTML CONTAINS, never how either is spelled in the source.
  * ==========================================================================*/
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-/* ⚠ these two export NOTHING: a lazily-loaded module registers its factory on window.IntMapModules
-   (the shape js/atlas-query.js has), because an export no js/ module imports by name is dead code
-   under tests/r175 ③ — and the only file that could import them statically is js/atlas-console.js,
-   whose chunk is exactly what the lazy split was for. Reaching them THROUGH the registration is also
-   what proves the module evaluates rather than merely parses (#R505). */
-await import('../js/atlas-chart.js');
-await import('../js/atlas-answer-view.js');
-const makeAtlasChart = globalThis.window.IntMapModules.atlasChart;
-const makeAtlasAnswerView = globalThis.window.IntMapModules.atlasAnswerView;
+/* (module-graph) these two EXPORT their factories now, and js/lazy-modules.js's mount calls the export off
+   the namespace its own import() resolved to — so the test takes them off the namespace the same import
+   resolves to. Importing the module (not reading it) is still what proves it evaluates rather than merely
+   parses (#R505). */
+const { atlasChart: makeAtlasChart } = await import('../js/atlas-chart.js');
+const { atlasAnswerView: makeAtlasAnswerView } = await import('../js/atlas-answer-view.js');
 const { makeAtlasAgent } = await import('../js/atlas-agent.js');
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
 const { makeAtlasSchemas } = await import('../js/atlas-schemas.js');
@@ -333,7 +330,13 @@ test('R543 ⑬: what it could not do is reported, never claimed — and an empty
   /* a page with none of the controls on it, no renderer, no clock and no kernel */
   const bare = { getElementById: () => null, querySelectorAll: () => [] };
   const AV = makeAtlasAnswerView({}, { GE: () => null, time: null, os: null, doc: bare });
-  const r = AV.apply(SNAP, { duration: 0 });
+  /* (module-graph) the module falls back to `window.IntMapTime` / `IntMapOS` when the context has none, and
+     this process's import graph now evaluates js/chronos.js, which publishes the real clock on the global.
+     The premise is a page with NO clock, so the window it reads is a bare one for the length of the call. */
+  const pageWindow = globalThis.window;
+  let r;
+  globalThis.window = {};
+  try { r = AV.apply(SNAP, { duration: 0 }); } finally { globalThis.window = pageWindow; }
   assert.equal(r.ok, false, 'nothing could be applied, so it does not report success');
   assert.ok(r.skipped.some((s) => s.startsWith('time')), 'a missing clock is skipped with a reason');
   assert.ok(r.skipped.some((s) => s.startsWith('camera')), 'so is a missing renderer');

@@ -9,14 +9,16 @@
  *  EVENTS_DB and everything around it moved verbatim. ⚠ The published global is `__imAnalysis…`,
  *  not `IntMap…` — js/atlas-controls.js discovers `window.IntMap*` by enumeration.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.analysisEvents=function(HOST){
-  const LWE=window.IntMapLang.pick(()=>HOST.lang);
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function analysisEvents(HOST){
+  const LWE=IntMapLang.pick(()=>HOST.lang);
   /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. `EV_LBL` was `['War','戦争']`
      read as `jp?[1]:[0]`, i.e. English on every language but Japanese, and invisible to every
      instrument because an array literal is not a call. */
-  const LA=window.IntMapLang.pickArgs();
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const LA=IntMapLang.pickArgs();
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -581,11 +583,11 @@ window.IntMapModules.analysisEvents=function(HOST){
         const feats=list.map((e,i)=>({type:'Feature',id:'ev'+i,geometry:{type:'Point',coordinates:e.loc},properties:{fid:'ev'+i,type:e.tp,color:EV_COLORS[e.tp]||'#007aff',title:LWE.arr(e.nm)+' ('+e.y+')',body:LWE.arr(e.ds),layerRef:''}}));
         if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:feats});
       }catch(_){}
-      const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(window.IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares'))+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(window.IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Sucesos'))+'</button></div>';
-      const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(window.IntMapLang.t(HOST.lang,'Years','年代','Jahre','Годы','Años'))+
-        ' <input type="number" aria-label="'+(window.IntMapLang.t(HOST.lang,'From year','開始年'))+'" value="'+yMin+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'min\',this.value)"> –'+
-        ' <input type="number" aria-label="'+(window.IntMapLang.t(HOST.lang,'To year','終了年'))+'" value="'+yMax+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'max\',this.value)">'+
-        ' <span>'+list.length+(window.IntMapLang.t(HOST.lang,' events','件',' Ereignisse',' событий',' sucesos'))+'</span></div>';
+      const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares'))+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Sucesos'))+'</button></div>';
+      const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(IntMapLang.t(HOST.lang,'Years','年代','Jahre','Годы','Años'))+
+        ' <input type="number" aria-label="'+(IntMapLang.t(HOST.lang,'From year','開始年'))+'" value="'+yMin+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'min\',this.value)"> –'+
+        ' <input type="number" aria-label="'+(IntMapLang.t(HOST.lang,'To year','終了年'))+'" value="'+yMax+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'max\',this.value)">'+
+        ' <span>'+list.length+(IntMapLang.t(HOST.lang,' events','件',' Ereignisse',' событий',' sucesos'))+'</span></div>';
       const esc=(s)=>window.IntMapSafe.html(s);
       const cards=list.map(e=>{
         const nm=LWE.arr(e.nm), d=LWE.arr(e.ds), tl=EV_LBL[e.tp]?LWE.arr(EV_LBL[e.tp]):e.tp;
@@ -613,4 +615,4 @@ window.IntMapModules.analysisEvents=function(HOST){
        shell holds, so a facade never calls itself back. */
     window.__imAnalysisEvents={ render:window._renderEventsArchive, evYear:window._evYear };
   })();
-};
+}

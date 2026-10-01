@@ -66,11 +66,13 @@
  * ==========================================================================*/
 import { makeAtlasAdmin1 } from './atlas-admin1.js';
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.netHealthLive = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
-  const L = window.IntMapLang.pick(() => HOST.lang);
+
+export function netHealthLive(HOST) {
+  const GE = () => IntMapGeoEngine;
+  const L = IntMapLang.pick(() => HOST.lang);
   /* ⚠ `pickArgs()` BUILDS A NAME TABLE (an array); it does not RESOLVE one. Calling .replace()
      on its return value throws — and because every use of it here was the LAST statement of its
      block, the legend rendered normally with its coverage line silently missing. Found only by
@@ -394,7 +396,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
         const cc = String(p.code || '');
         const head = '<div style="font-weight:600;margin-bottom:3px">' + HOST.escapeHtml(String(p.nm || cc)) + '</div>';
         const body = '<div style="font-size:11px">' + HOST.escapeHtml(
-          window.IntMapLang.t(HOST.lang, '{p}% below its own recent normal — {s} ({l})', '通常水準より {p}% 低下 — {s}（{l}）',
+          IntMapLang.t(HOST.lang, '{p}% below its own recent normal — {s} ({l})', '通常水準より {p}% 低下 — {s}（{l}）',
             '{p} % unter dem eigenen jüngsten Normalwert — {s} ({l})', 'На {p}% ниже собственной недавней нормы — {s} ({l})',
             '{p} % por debajo de su nivel normal reciente — {s} ({l})')
             .replace('{p}', String(Math.round((+p.v || 0) * 100))).replace('{s}', String(p.ds || '')).replace('{l}', String(p.lvl || ''))) + '</div>';
@@ -406,7 +408,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
           const r = await routingFor(cc);
           if (r && pop) {
             const extra = '<div style="margin-top:5px;font-size:11px;opacity:.85">' + HOST.escapeHtml(
-              window.IntMapLang.t(HOST.lang, '{a} ASNs, {b} IPv4 and {c} IPv6 prefixes visible in RIPE routing data ({d})',
+              IntMapLang.t(HOST.lang, '{a} ASNs, {b} IPv4 and {c} IPv6 prefixes visible in RIPE routing data ({d})',
                 'RIPE の経路データで見えている ASN {a}・IPv4 プレフィクス {b}・IPv6 プレフィクス {c}（{d}）',
                 '{a} ASNs, {b} IPv4- und {c} IPv6-Präfixe in RIPE-Routingdaten sichtbar ({d})',
                 'В данных маршрутизации RIPE видно {a} ASN, {b} префиксов IPv4 и {c} префиксов IPv6 ({d})',
@@ -486,7 +488,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
     }
     if (st.ok === null) return '';
     if (!S.obs.length) return L('No outage alerts in the last three hours', '直近3時間の障害アラートはありません', 'Keine Ausfallwarnungen in den letzten drei Stunden', 'За последние три часа предупреждений о сбоях нет', 'Sin alertas de corte en las últimas tres horas');
-    return window.IntMapLang.t(HOST.lang, '{a} alerts, {b} drawn, {c} not placed', 'アラート {a} 件／描画 {b} 件／配置できず {c} 件',
+    return IntMapLang.t(HOST.lang, '{a} alerts, {b} drawn, {c} not placed', 'アラート {a} 件／描画 {b} 件／配置できず {c} 件',
       '{a} Warnungen, {b} gezeichnet, {c} nicht verortet', 'Предупреждений {a}, показано {b}, не размещено {c}',
       '{a} alertas, {b} dibujadas, {c} sin ubicar')
       .replace('{a}', String(S.obs.length)).replace('{b}', String(S.painted)).replace('{c}', String(S.missed));
@@ -512,7 +514,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
   function probeLine() {
     if (STATUS.ripeatlas.ok === false) return unreachableLine();
     const p = S.probes; if (!p) return '';
-    return window.IntMapLang.t(HOST.lang, 'showing {n} of {t} probes that report «{s}»', '«{s}» を報告しているプローブ {t} 台のうち {n} 台を表示',
+    return IntMapLang.t(HOST.lang, 'showing {n} of {t} probes that report «{s}»', '«{s}» を報告しているプローブ {t} 台のうち {n} 台を表示',
       'zeige {n} von {t} Sonden, die «{s}» melden', 'показано {n} из {t} зондов, сообщающих «{s}»', 'mostrando {n} de {t} sondas que informan «{s}»')
       .replace('{n}', String(p.pts.length)).replace('{t}', String(p.total)).replace('{s}', p.statusName || '?');
   }
@@ -620,4 +622,4 @@ window.IntMapModules.netHealthLive = function (HOST) {
 
   window.__imNetHealth = API;
   return API;
-};
+}

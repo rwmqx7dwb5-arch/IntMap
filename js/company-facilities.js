@@ -47,10 +47,12 @@
  *  · Every value that reaches the DOM goes through window.IntMapSafe (#R138).
  *  · Five languages inline (standing rule 5); the other four answer from the inline table.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.companyFacilities=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never a raw handle */
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function companyFacilities(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never a raw handle */
+  const L=IntMapLang.pick(()=>HOST.lang);
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   function _canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
 
@@ -526,4 +528,4 @@ window.IntMapModules.companyFacilities=function(HOST){
     layerIds:()=>({source:SRC,cluster:CLU,count:CNT,point:PT,label:LBL}) };
   window.IntMapCompanyFacilities=API;
   return API;
-};
+}

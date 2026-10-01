@@ -47,6 +47,7 @@
  *  are OUR OWN FILES, shipped with the app and served from our own origin — the same trust the
  *  markup they replaced had. Nothing here ever renders a string that came from a fetch.
  * ========================================================================== */
+import { IntMapLang } from './lang-registry.js';
 window.IntMapPageI18N = (function () {
   'use strict';
 
@@ -72,7 +73,7 @@ window.IntMapPageI18N = (function () {
      must not lose its languages — so the five are kept as the answer of last resort. */
   var LANGS = (function () {
     try {
-      var rows = window.IntMapLang && window.IntMapLang.list ? window.IntMapLang.list() : null;
+      var rows = IntMapLang && IntMapLang.list ? IntMapLang.list() : null;
       if (rows && rows.length) return rows.map(function (l) { return { code: String(l.html).toLowerCase(), label: l.label }; });
     } catch (e) {}
     return [
@@ -157,7 +158,7 @@ window.IntMapPageI18N = (function () {
   function normalise(c) {
     c = String(c || '').toLowerCase();
     try {
-      var LR = window.IntMapLang;
+      var LR = IntMapLang;
       if (LR && LR.has && LR.has(c)) return String(LR.htmlTag(c)).toLowerCase();
     } catch (e) {}
     return (c === 'jp') ? 'ja' : c;

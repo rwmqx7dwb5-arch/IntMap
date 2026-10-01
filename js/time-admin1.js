@@ -108,10 +108,14 @@
  *  layer row says it in nine languages, and a country the record is silent about is
  *  drawn with no subdivision line — which is the true statement.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.timeAdmin1 = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;   /* the renderer, through the contract — never the raw handle */
-  const BC = () => window.IntMapBorderCoast; /* (#R564) which edges are border — js/border-coast.js */
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapBorderCoast } from './border-coast.js';
+
+export function timeAdmin1(HOST) {
+  const GE = () => IntMapGeoEngine;   /* the renderer, through the contract — never the raw handle */
+  const BC = () => IntMapBorderCoast; /* (#R564) which edges are border — js/border-coast.js */
   /* ⚠ (#R241/#R502) THE TUPLE IS BUILT BY `LA(…)` AND RESOLVED BY `_LT.arr(…)`, AND THOSE ARE TWO
      DIFFERENT JOBS. `pickArgs()` returns the array it is given — it exists so the strings appear to
      the translation instruments as a CallExpression rather than an invisible array literal; it does
@@ -122,8 +126,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
      the order the language menu shows: `IntMapLang.index()` reports fr=7 and ko=8 with the two
      Chinese scripts at 5 and 6, so a tuple written en/ja/de/ru/es/fr/ko/zh/zh — the natural order —
      hands French text to a Traditional-Chinese reader. */
-  const LA = window.IntMapLang.pickArgs();
-  const _LT = window.IntMapLang.pick(() => HOST.lang);
+  const LA = IntMapLang.pickArgs();
+  const _LT = IntMapLang.pick(() => HOST.lang);
 
   /* (#R170/#R421) "Is it safe to addSource/addLayer right now?" — the app-wide predicate, and the
      wait that goes with it. A one-shot `once('idle')` never fires on a busy map, so the wait polls;
@@ -133,7 +137,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
   function whenStyleReady() { return GE().whenCanDraw(); }
 
   return (function () {
-    if (!GE().hasRenderer() || !window.IntMapTime) return {};
+    if (!GE().hasRenderer() || !IntMapTime) return {};
 
     /* ══ (#R564) THE DEEPER TIER'S ZOOM, AND WHY IT IS 6 ═══════════════════════════════════════
        The second tier is admin_level 5-6 — Prussian Regierungsbezirke, United States counties,
@@ -721,7 +725,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
     function nameOf(f) {
       const nm = f[9] || {};
       let tag = 'en';
-      try { tag = window.IntMapLang.htmlTag(HOST.lang) || 'en'; } catch (_) { try { tag = String(HOST.lang || 'en'); } catch (__) {} }
+      try { tag = IntMapLang.htmlTag(HOST.lang) || 'en'; } catch (_) { try { tag = String(HOST.lang || 'en'); } catch (__) {} }
       return nm[tag] || nm.en || f[0] || '';
     }
 
@@ -873,7 +877,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        ⚠ THE SAME "IS THIS TRAVELLING?" TEST AS THE COUNTRY BORDER, so the two halves of
        one map can never disagree about which era they are in: live, or the present year,
        is Now — everything else is the past and the modern line steps aside. */
-    window.IntMapTime.on(e => {
+    IntMapTime.on(e => {
       clearTimeout(_tick);
       if (e.isLive || e.year >= new Date().getFullYear()) { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _applyNow(); return; }
       const w = e.when; lastWhen = w;
@@ -922,7 +926,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
     (function warm() {
       const pf = () => { T1.load().catch(() => {}); };
       try {
-        window.IntMapTime.onIntent(() => {
+        IntMapTime.onIntent(() => {
           try { if (!window.IntMapMemBudget.maySpeculate(HOST.isMobile)) return; } catch (_) { return; }
           if (typeof requestIdleCallback === 'function') requestIdleCallback(pf, { timeout: 8000 }); else setTimeout(pf, 3500);
         });
@@ -1066,8 +1070,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          that answered 1850 while the label bundle was still downloading would understate the layer
          to Atlas and to the panel — and would go on understating it forever on a page that never
          fetches the bundle at all. */
-      range: () => { const kern = (function(){ try { const m = +window.IntMapTime.min; return isFinite(m) ? m : 1; } catch (_) { return 1; } })();
+      range: () => { const kern = (function(){ try { const m = +IntMapTime.min; return isFinite(m) ? m : 1; } catch (_) { return 1; } })();
         try { const d = T1.data(); return { min: Math.min(kern, (d && d.since) || kern), max: new Date().getFullYear() }; } catch (_) { return { min: kern, max: new Date().getFullYear() }; } }
     };
   })();
-};
+}

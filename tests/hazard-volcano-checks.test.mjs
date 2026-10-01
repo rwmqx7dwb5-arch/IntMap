@@ -13,11 +13,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
 import { gunzipSync } from 'node:zlib';
 import { LAZY_NAMES } from '../js/lazy-modules.js';
 import { readLF } from '../scripts/eol.mjs';
-import { asClassicScript } from './app-source.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
@@ -539,24 +538,13 @@ test('#R432 ② the volcanoes beyond the Holocene list are real GVP records with
    with a stub `fetch` that serves USGS-shaped rows and asks the real `statusIndex()` what it made
    of them. The rows below are the shapes the live feed actually carries (measured 2026-08-25),
    not a paraphrase of them. */
-function boot(usgsMonRows, elevatedRows) {
-  const ctx = vm.createContext({
-    console, setTimeout, clearTimeout, Promise, JSON, Math, Date, Map, Set, Array, Object, String,
-    Number, isFinite, URL, AbortController,
-  });
-  ctx.window = ctx;
-  ctx.document = { baseURI: 'https://example.invalid/' };
-  const pick = () => {
-    const fn = function () { return arguments[0] == null ? '' : String(arguments[0]); };
-    fn.arr = (a) => (Array.isArray(a) ? fn.apply(null, a) : (a == null ? '' : String(a)));
-    return fn;
-  };
-  ctx.IntMapLang = { pick, pickArgs: () => function () { return Array.prototype.slice.call(arguments); },
-    locale: () => 'en-GB' };
-  ctx.IntMapSafe = { html: (v) => String(v) };
-  ctx.__imVolcLayer = { data: () => LAYER, count: () => LAYER.features.length };
+async function boot(usgsMonRows, elevatedRows) {
+  /* (module-graph) IMPORTED, not run as text in a vm: js/volcano-intel.js is an ES module that exports
+     its factory. The browser it runs in is installed on the global (this file's process); the language
+     registry is the REAL one (`lang: 'en'`), and the engine edge answers nothing — the sandbox this
+     replaced had no renderer either. */
   const answer = (body) => Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
-  ctx.fetch = (url) => {
+  const fetch = (url) => {
     const u = String(url);
     if (u.includes('getMonitoredVolcanoes')) return answer(usgsMonRows);
     if (u.includes('getElevatedVolcanoes')) return answer(elevatedRows || []);
@@ -564,8 +552,16 @@ function boot(usgsMonRows, elevatedRows) {
     if (u.includes('jma.go.jp')) return answer([]);
     return Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve(null) });
   };
-  vm.runInContext(asClassicScript(rd('js/volcano-intel.js')), ctx);
-  return ctx.window.IntMapModules.volcanoIntel({ lang: 'en' });
+  const { volcanoIntel } = await importModule('js/volcano-intel.js', {
+    globals: {
+      document: { baseURI: 'https://example.invalid/' },
+      IntMapSafe: { html: (v) => String(v) },
+      __imVolcLayer: { data: () => LAYER, count: () => LAYER.features.length },
+      fetch,
+    },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: undefined } },
+  });
+  return volcanoIntel({ lang: 'en' });
 }
 
 /* the two AVO/CVO bulletins, AVO's Korovin, GVP's Atka, and Yellowstone — the shapes measured live */
@@ -577,7 +573,7 @@ const YELLOWSTONE = { volcano_name: 'Yellowstone', vnum: '325010', alert_level: 
 const keys = (idx) => [...idx.keys()].sort((a, b) => a - b).join(',');
 
 test('#R432 ③ a row that names no volcano makes no key, and AVO’s number lands on the Smithsonian’s volcano', async () => {
-  const V = boot([BULLETIN_AVO, BULLETIN_CVO, ATKA, KOROVIN, YELLOWSTONE]);
+  const V = await boot([BULLETIN_AVO, BULLETIN_CVO, ATKA, KOROVIN, YELLOWSTONE]);
   await V.warm();
   const idx = V.statusIndex();
 
@@ -609,14 +605,14 @@ test('#R432 ③b when two USGS rows share one GVP dot, the more severe one is th
      for both. Returning whichever came first in the array would let an ORANGE cone hide behind a
      GREEN complex, which is a defect the reconciliation would otherwise have introduced. */
   const loud = { ...KOROVIN, alert_level: 'WATCH', color_code: 'ORANGE', sent_unixtime: 1800000000 };
-  const V = boot([ATKA, loud]);
+  const V = await boot([ATKA, loud]);
   await V.warm();
   const st = V.statusIndex().get(311160);
   assert.equal(st.rank, 3, 'the quiet row won: ' + JSON.stringify({ label: st.label, unit: st.unit }));
   assert.equal(st.unit, 'Korovin', 'the severe row’s own unit name is not what the card would print');
 
   /* …and the order in the array does not decide it */
-  const W = boot([loud, ATKA]);
+  const W = await boot([loud, ATKA]);
   await W.warm();
   assert.equal(W.statusIndex().get(311160).rank, 3, 'the answer depends on the order USGS listed them');
 });
@@ -643,7 +639,7 @@ test('#R432 ④ the build derives the second set from the feed and keeps ONE cop
 });
 
 test('#R432 ⑤ the live spec watches every feed the module has', async () => {
-  const V = boot([ATKA]);
+  const V = await boot([ATKA]);
   await V.warm();
   const declared = Object.keys(V.feeds());
   assert.ok(declared.length >= 5, 'the module lost a feed: ' + declared.join(', '));

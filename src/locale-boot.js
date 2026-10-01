@@ -34,10 +34,11 @@
    set in the app; this is imported for the beta marks, and so that the app and the two reading
    pages (which load the same file as a <script src>) cannot disagree about them. */
 import '../js/locales/_langs.js';
+import { IntMapLang } from '../js/lang-registry.js';
 
 (function () {
   'use strict';
-  var LANG = window.IntMapLang;
+  var LANG = IntMapLang;
   if (!LANG || !LANG.declare) return;
 
   /* ⚠ THE GLOB IS LAZY ON PURPOSE (no `{eager:true}`): Vite turns this into a map of

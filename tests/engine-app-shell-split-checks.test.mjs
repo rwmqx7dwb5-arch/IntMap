@@ -29,7 +29,7 @@
 // The RW contract (which module may WRITE which host member) lives in r165-checks.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appShell } from './app-source.mjs';
+import { appShell, factoryCalls, bootGuardKnows } from './app-source.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { readFileSync } from 'node:fs';
 import * as acorn from 'acorn';
@@ -77,7 +77,10 @@ const MODULES = {
 const NAMES = Object.keys(MODULES);
 const rx = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const shimOf = (m, n) => `function ${n}(){ return ${MODULES[m].k}.${n}.apply(this,arguments); }`;
-const callOf = (m) => `const ${MODULES[m].k}=window.IntMapModules.${m}(IM_HOST);`;
+/* (module-graph) the registry is gone: a factory is an export, and app-body calls it by its imported name */
+const callOf = (m) => `const ${MODULES[m].k}=${m}(IM_HOST);`;
+const callsOf = (src, m) => (code(src).match(new RegExp(`(?<![\\w$.])${rx(m)}\\(IM_HOST\\)`, 'g')) || []).length;
+const importsByName = (src, m, file) => new RegExp(`^import \\{[^}]*\\b${rx(m)}\\b[^}]*\\} from '\\./${rx(file.slice(3))}';$`, 'm').test(src);
 
 /* Closure values these modules read that are REASSIGNED at runtime → live host getters, never a
    bare identifier inside a js/ file. A captured copy would silently go stale (the #R162 shape). */
@@ -101,17 +104,18 @@ test('R169 #1 all eleven files are loaded and every factory is declared and inst
   for (const m of NAMES) {
     const { file } = MODULES[m];
     const src = rd(file);
-    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
-    assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
-      `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${m}=function(HOST){`),
-      `${file} declares the ${m} factory taking (HOST)`);
+    /* (module-graph) «loaded» is «imported by name by the file that instantiates it» — a missing file or
+       export is then a link error; «extends the registry without clobbering» is «does not touch it at all» */
+    assert.ok(importsByName(rd('js/app-body.js'), m, file), `js/app-body.js imports ${m} from ${file}, so the file is in the module graph`);
+    assert.doesNotMatch(code(src), /\bIntMapModules\b/, `${file} does not touch the retired window.IntMapModules registry`);
+    assert.ok(src.includes(`export function ${m}(HOST){`),
+      `${file} exports the ${m} factory taking (HOST)`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
-    const calls = html.split(callOf(m)).length - 1;
+    assert.equal(html.split(callOf(m)).length - 1, 1, `index.html binds ${m} once: ${callOf(m)}`);
+    const calls = callsOf(html, m);
     assert.equal(calls, 1, `index.html must instantiate ${m} exactly once (found ${calls})`);
-    const defined = [...src.matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)].map((x) => x[1]);
-    assert.deepEqual(defined, [m], `${file} defines exactly one factory`);
-    assert.match(html, new RegExp(`'${m}'`), `the boot guard names the ${m} factory, so a missing file cannot hide`);
+    assert.deepEqual(factoryCalls(root)[file], [m], `${file} defines exactly one factory`);
+    assert.ok(bootGuardKnows(root, m), `the boot guard knows the ${m} factory, so a missing file cannot hide`);
   }
 });
 
@@ -174,7 +178,7 @@ test('R169 #3 POSITION: the eleven calls sit together after the map is built, be
 
   // The #R169 block must follow the #R168 block — both are declaration-only, but keeping them in
   // one place is what makes "everything is instantiated here" a checkable statement.
-  const r168 = lf.indexOf('const IM_COMMUNITY=window.IntMapModules.community(IM_HOST);');
+  const r168 = lf.indexOf('const IM_COMMUNITY=community(IM_HOST);');
   assert.ok(r168 > 0 && at[0].i > r168, 'the #R169 block sits directly after the #R168 block');
 
   // Nothing may CALL a moved name while the closure is still evaluating and before the factories
@@ -230,12 +234,12 @@ test('R169 #4 DECLARATION-ONLY: a factory body does nothing while it runs', () =
   // anything would read closure state at factory time — the #R167 dead-zone trap.
   for (const m of NAMES) {
     const src = rd(MODULES[m].file);
-    const ast = acorn.parse(src, { ecmaVersion: 'latest', locations: true });
+    /* (module-graph) the factory is `export function <m>(HOST){…}` now, so the file parses as a module */
+    const ast = acorn.parse(src, { ecmaVersion: 'latest', locations: true, sourceType: 'module' });
     let body = null;
     for (const st of ast.body) {
-      if (st.type !== 'ExpressionStatement' || st.expression.type !== 'AssignmentExpression') continue;
-      const { left, right } = st.expression;
-      if (left.type === 'MemberExpression' && left.property.name === m && /Function/.test(right.type)) body = right.body.body;
+      const d = st.type === 'ExportNamedDeclaration' ? st.declaration : null;
+      if (d && d.type === 'FunctionDeclaration' && d.id.name === m) body = d.body.body;
     }
     assert.ok(body, `${MODULES[m].file}: found the ${m} factory body`);
     const doers = body.filter((st) => st.type !== 'FunctionDeclaration' && st.type !== 'VariableDeclaration' && st.type !== 'ReturnStatement');

@@ -70,6 +70,7 @@
  * ==========================================================================*/
 
 import { makeGisSources } from './gis-sources.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 
 export function makeGisLayers() {
   return (function () {
@@ -89,8 +90,10 @@ export function makeGisLayers() {
       return _ownSources;
     }
 
-    /* Read at call time — never captured. In Node all three are absent and stay absent. */
-    function GE() { try { return (typeof window !== 'undefined' && window.IntMapGeoEngine) || null; } catch (_) { return null; } }
+    /* Read at call time — never captured. In Node there is no map, so all three answer absent. */
+    /* (module-graph) the engine is an import now, so it is always THERE; «no map» is the engine's own answer
+       (hasRenderer), not whether a global happens to exist — which is what the headless runtime relied on */
+    function GE() { try { const E = IntMapGeoEngine; return (E && (typeof E.hasRenderer !== 'function' || E.hasRenderer())) ? E : null; } catch (_) { return null; } }
     function REG() { try { return (typeof window !== 'undefined' && window.IntMapLayers) || null; } catch (_) { return null; } }
     function DATA() { try { return (typeof window !== 'undefined' && window.IntMapData) || null; } catch (_) { return null; } }
     /* (#R819) 後段の条件を実行するのは、この app の 1 つだけの filter である。⚠ IT IS REACHED THE WAY

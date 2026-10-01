@@ -250,18 +250,23 @@ test('⑩ the module is imported, registered, and instantiated exactly once', ()
      COMMENT naming the file can satisfy — and #R604 added one above the imports, so the "twin is
      imported first" claim below started reading a sentence instead of a statement. `codeOnly()` is
      what the rest of this suite uses for exactly this. */
-  const MAINC = codeOnly(MAIN);
-  assert.match(MAINC, /import '\.\.\/js\/time-admin1\.js';/, 'src/main.js imports it');
-  assert.match(MAIN, /'timeAdmin1'/, 'it is in MODULE_FACTORIES, so a missing file is reported at boot');
-  assert.match(TA, /window\.IntMapModules\.timeAdmin1\s*=\s*function/, 'it registers the factory');
-  const inst = APP.match(/window\.IntMapTimeAdmin1\s*=\s*window\.IntMapModules\.timeAdmin1\(/g) || [];
+  /* (module-graph) the factory registry and MODULE_FACTORIES are gone: the eager shell (js/app-body.js)
+     imports the exported factory by name, so a missing file is a LINK error at boot rather than a
+     registry miss — and src/main.js no longer lists a file with no top-level side effects */
+  const APPC = codeOnly(APP);
+  assert.match(APPC, /^import \{ timeAdmin1 \} from '\.\/time-admin1\.js';/m, 'the eager shell imports it, so a missing file fails at boot');
+  assert.match(TA, /^export function timeAdmin1\(HOST\)/m, 'it exports the factory');
+  const inst = APPC.match(/window\.IntMapTimeAdmin1\s*=\s*timeAdmin1\(/g) || [];
   assert.equal(inst.length, 1, 'instantiated exactly once');
-  /* the country twin is imported before it, because app-body instantiates them in that order */
-  assert.ok(MAINC.indexOf("js/time-borders.js") < MAINC.indexOf("js/time-admin1.js"), 'after its twin');
+  /* the country twin comes first, because app-body instantiates them in that order — (module-graph) with
+     no registration at import time, the order that matters is the order of the two instantiations */
+  const twin = APPC.search(/window\.IntMapTimeBorders\s*=\s*timeBorders\(IM_HOST\)/);
+  assert.ok(twin >= 0 && twin < APPC.search(/window\.IntMapTimeAdmin1\s*=\s*timeAdmin1\(/), 'after its twin');
 });
 
 test('⑪ the clock is read as an INSTANT, and the debounce is the country side\'s number', () => {
-  assert.match(TA, /window\.IntMapTime\.on\(/, 'it subscribes to Chronos');
+  assert.match(TA, /^import \{ IntMapTime \} from '\.\/chronos\.js';/m, 'it imports Chronos (module-graph)');
+  assert.match(TA, /\bIntMapTime\.on\(/, 'it subscribes to Chronos');
   assert.ok(!/e\.iso/.test(TA), "must not read e.iso — that is UTC and shifts the reader's day (#R421)");
   assert.match(TA, /go\(w\)[\s\S]{0,40}\},\s*45\)/, 'the 45 ms coalescing #R122 measured');
   assert.match(TA, /e\.when/, 'the whole instant, not e.year');
@@ -354,7 +359,7 @@ test('⑬ nine languages, in the order IntMapLang actually uses', () => {
   /* the two Chinese slots are the same script, so they are told apart by not being each other */
   assert.notEqual(slots[5], slots[6], 'zh-Hant and zh-Hans must be two sentences, not one written twice');
   /* and it must RESOLVE, not hand the caller the array pickArgs() returns unchanged. */
-  assert.match(TA, /const _LT\s*=\s*window\.IntMapLang\.pick\(\(\)\s*=>\s*HOST\.lang\)/,
+  assert.match(TA, /const _LT\s*=\s*IntMapLang\.pick\(\(\)\s*=>\s*HOST\.lang\)/,
     'the chooser is pick(getLang) with a LIVE accessor, not a captured value');
 });
 

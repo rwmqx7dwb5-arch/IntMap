@@ -7,13 +7,15 @@
  *  end of boot, so the factory only has to hand the function back.
  * ==========================================================================*/
 
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules.mobileUI=function(HOST){
+
+export function mobileUI(HOST){
   /* (#R172) CAMERA + EVENTS THROUGH IntMapGeoEngine — this module no longer names the renderer.
      Everything it did to the map was camera work: read the bearing/pitch for the compass, pad the view
      for the bottom sheet, cancel an in-flight ease when the finger grabs it again, and resize. */
-  const _GE=()=>window.IntMapGeoEngine;
+  const _GE=()=>IntMapGeoEngine;
   const _cam=()=>{ try{ const E=_GE(); return (E&&E.camera)?E.camera:null; }catch(_){ return null; } };
   /* =====================================================================
    *  iOS-native mobile UI controller — built from scratch.
@@ -90,7 +92,7 @@ window.IntMapModules.mobileUI=function(HOST){
        NOT relabel the mobile proxies, so the phone kept Globe/Flat/Satellite in the previous language
        until something else called syncControls. js/lang-registry.js already knows every code and
        js/lang-registry.js `syncChrome` already creates every button, so ask it. */
-    (window.IntMapLang ? window.IntMapLang.codes() : ['en','jp','de','ru','es'])
+    (IntMapLang ? IntMapLang.codes() : ['en','jp','de','ru','es'])
       .forEach(code=>{ const b=document.getElementById('lang-'+code); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
     /* (#R8 JP/EN) Re-label the mobile segment/tool proxies on EVERY language change — not just the lang
        toggle buttons. Changing language via the Settings dropdown (or any programmatic switch) used to
@@ -381,13 +383,13 @@ window.IntMapModules.mobileUI=function(HOST){
     try{ window.IntMapBasemapSwitch && window.IntMapBasemapSwitch.install(); }catch(_){ }
   }
   return initMobileUI;
-};
+}
 
-window.IntMapModules.layoutReflow=function(HOST){
+export function layoutReflow(HOST){
   const applySidebarStyle=HOST.applySidebarStyle;
   /* (#R172) the resize below goes through IntMapGeoEngine too — this is a SEPARATE factory closure from
      mobileUI above, so it needs its own handle (the split-scope check catches exactly this). */
-  const _GE=()=>window.IntMapGeoEngine;
+  const _GE=()=>IntMapGeoEngine;
   /* (#R21) Narrow-desktop watcher: body.ms-narrow drops the search pill to a second row whenever
      the visible map area is too narrow for pill + view buttons side-by-side. */
   (function(){
@@ -521,7 +523,7 @@ window.IntMapModules.layoutReflow=function(HOST){
         ctx.font=[cs.fontStyle,cs.fontWeight,cs.fontSize,cs.fontFamily].join(' ');
         return ctx.measureText(txt).width<=inp.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0); }catch(_){ return true; } };
       const fit=()=>{ if(!inp.clientWidth) return;   /* the collapsed phone FAB has no field to fit */
-        const want=fits(full)?full:window.IntMapLang.t(HOST.lang,'Search places','地名を検索');
+        const want=fits(full)?full:IntMapLang.t(HOST.lang,'Search places','地名を検索');
         if(inp.placeholder!==want){ mine=want; inp.placeholder=want; } };
       new MutationObserver(()=>{ if(inp.placeholder!==mine){ full=inp.placeholder; fit(); } }).observe(inp,{attributes:true,attributeFilter:['placeholder']});
       new ResizeObserver(fit).observe(inp); fit(); }
@@ -544,7 +546,7 @@ window.IntMapModules.layoutReflow=function(HOST){
          and it is set ONCE on an element that outlives the language, so it also has to follow it.
          Found by tests/r251.spec.js, which reads `title` as well as text. */
       const h=document.createElement('div'); h.id='sb-resizer';
-      const _ht=()=>{ h.title=window.IntMapLang.t(HOST.lang,'Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar'); };
+      const _ht=()=>{ h.title=IntMapLang.t(HOST.lang,'Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar'); };
       _ht(); window.addEventListener('intmap-lang',()=>setTimeout(_ht,30));
       h.style.cssText='position:absolute;top:0;right:-3px;width:8px;height:100%;cursor:col-resize;z-index:calc(var(--z-dropdown) - 100);touch-action:none;';
       sb.appendChild(h);
@@ -578,4 +580,4 @@ window.IntMapModules.layoutReflow=function(HOST){
       if(!el||el.nodeType!==1) return; el.classList.add('sb-on'); clearTimeout(el.__sbT); el.__sbT=setTimeout(()=>{ try{ el.classList.remove('sb-on'); }catch(_){} },900); };
     window.addEventListener('scroll',ping,{passive:true,capture:true});
   })();
-};
+}

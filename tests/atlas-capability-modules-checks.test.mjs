@@ -206,7 +206,11 @@ test('atlas-capability-modules ⑤: the generated files agree with the entries, 
   /* js/atlas-capabilities.js is EAGER: it imports nothing, and its generated region is rows — data, never a run */
   const capSrc = read('js/atlas-capabilities.js');
   const capAst = parseSource(capSrc, { sourceType: 'module' });
-  assert.deepEqual(capAst.body.filter((s) => s.type === 'ImportDeclaration').map((s) => s.source.value), [], 'the eager registry imports nothing — no entry, no run');
+  /* (module-graph) it now IMPORTS the clock and the engine it used to read off window — those two edges and
+     no other: still no entry module, no run (an atlas-cap* / atlas-caps* import is exactly the defect) */
+  const capImports = capAst.body.filter((s) => s.type === 'ImportDeclaration').map((s) => s.source.value);
+  assert.deepEqual(capImports.filter((v) => /atlas-cap/.test(v)), [], 'the eager registry imports no entry, no run');
+  assert.deepEqual(capImports.sort(), ['./chronos.js', './geo-engine.js'], 'the eager registry imports only the shared clock and engine — no entry, no run');
   const b = capSrc.indexOf('/* ⚠ GENERATED ROWS — BEGIN'), e = capSrc.indexOf('/* ⚠ GENERATED ROWS — END */');
   assert.ok(b > 0 && e > b, 'the generated region is where the rows are');
   const region = capSrc.slice(capSrc.indexOf('var T = ', b) + 'var T = '.length, capSrc.lastIndexOf(';', e));

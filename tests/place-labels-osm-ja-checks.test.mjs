@@ -11,19 +11,20 @@
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
-import { asClassicScript } from './app-source.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { isRefusable, stripGenericTail, isLatinName, KEEP, FIELD } from '../scripts/build-osm-ja-rejects.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 /* ── the module, run, with a renderer stub that records what `text-field` it is handed ─────────── */
-function bootPlaceLabels(lang) {
+/* (module-graph) js/place-labels.js is IMPORTED: the renderer stub is handed at its geo-engine.js import
+   edge; the language registry and the sea-label table are its real imports; each boot gets its own window */
+async function bootPlaceLabels(lang) {
   const setLayout = [];
   const noop = () => { };
   const layers = {
@@ -31,27 +32,23 @@ function bootPlaceLabels(lang) {
     add: noop, setPaint: noop, setSourceData: noop,
     setLayout: (id, prop, val) => { setLayout.push({ id, prop, val }); }
   };
-  const ctx = vm.createContext({});
+  const ctx = {};
   ctx.window = ctx;
-  ctx.console = console;
-  ctx.setTimeout = noop;
-  ctx.document = { baseURI: 'https://example.invalid/' };
   ctx.matchMedia = () => ({ matches: false });
-  ctx._imCanDraw = () => true;
-  ctx.isMobile = () => false;
-  ctx.IntMapGeoEngine = {
+  ctx.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
+  const engine = {
     hasRenderer: () => true, layers, camera: { getZoom: () => 6 },
     coords: { querySourceFeatures: () => [] }, events: { on: noop }
   };
-  ctx.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
-  ctx.IntMapLang = { pick: () => ({ arr: (a) => a[0] }) };
-  ctx.SEA_LABELS = [];
-  vm.runInContext(asClassicScript(rd('js/place-labels.js')), ctx);
+  const { placeLabels } = await importModule('js/place-labels.js', {
+    globals: { window: ctx, document: { baseURI: 'https://example.invalid/' } },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine } },
+  });
   const HOST = {
     lang, mapType: 'std', namesOn: true, geoLabelsOn: true, poiOn: true, userTheme: 'dark',
     mapLabelsViaVector: () => true, canDraw: () => true, _stabIdx: { water: new Map() }
   };
-  const api = ctx.window.IntMapModules.placeLabels(HOST);
+  const api = placeLabels(HOST);
   api.ensurePlaceLabels();           /* this is what publishes the resolver the popup asks */
   api.applyLabelLang();
   const field = setLayout.filter((s) => s.prop === 'text-field' && s.id === 'ofm-city').pop();
@@ -71,8 +68,8 @@ function compile(e) {
 }
 const draw = (expr, properties) => compile(expr).evaluate({ zoom: 12 }, { type: 1, properties });
 
-const JP = bootPlaceLabels('jp');
-const EN = bootPlaceLabels('en');
+const JP = await bootPlaceLabels('jp');
+const EN = await bootPlaceLabels('en');
 /* the shipped rows, read as the PACKED records they are — `name|name:ja`, one per upstream
    record, which is why the i18n pair audit sees a key and not a translation (#R251's PACKED). */
 const TABLE = [...rd('js/place-labels.js').matchAll(/\n {4}("(?:[^"\\]|\\.)*")/g)]

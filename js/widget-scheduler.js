@@ -32,6 +32,8 @@
  *  is the deliberate exception (nothing sets it today) rather than the default.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 
 window.IntMapWidgetScheduler = (function () {
   'use strict';
@@ -361,9 +363,9 @@ window.IntMapWidgetScheduler = (function () {
       document.addEventListener('visibilitychange', function () { if (!document.hidden) { WC.invalidateContext(); sweep(); } });
       window.addEventListener('online', function () { Object.keys(groups).forEach(function (k) { var g = groups[k]; if (g.status === 'offline') { g.fails = 0; g.nextRetryAt = 0; } }); sweep(); WC.emit('online'); });
       window.addEventListener('offline', function () { WC.emit('online'); });
-      var E = window.IntMapGeoEngine;
+      var E = IntMapGeoEngine;
       if (E && E.hasRenderer && E.hasRenderer() && E.events) { E.events.on('moveend', onMoveEnd); }
-      if (window.IntMapTime && window.IntMapTime.on) window.IntMapTime.on(function () { WC.invalidateContext(); fireEvent('chronos'); });
+      if (IntMapTime && IntMapTime.on) IntMapTime.on(function () { WC.invalidateContext(); fireEvent('chronos'); });
       /* ⚠ A LANGUAGE CHANGE IS A RE-RENDER, NOT A RE-FETCH (§12.16). Every renderer formats from the
          context it is handed, so the same bytes render in the new language. A theme change is not
          even that — the CSS carries it (§12.17). */

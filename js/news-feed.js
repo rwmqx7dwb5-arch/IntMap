@@ -7,9 +7,12 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.newsFeed=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapTables } from './tables.js';
+
+export function newsFeed(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -106,7 +109,7 @@ window.IntMapModules.newsFeed=function(HOST){
     if(_imCanDraw()) HOST.setupIntelLayers();
     /* (#R79b) don't paint pins for a hidden News window (they'd appear with no window controlling them) */
     /* (#R171) source data through IntMapGeoEngine — this file no longer names the renderer. */
-    try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST._wsNewsHidden()?[]:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} } }catch(_){}
+    try{ const E=IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST._wsNewsHidden()?[]:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} } }catch(_){}
     HOST.appendNewsBatch();
     if(_samePrefix(place,HOST.newsFiltered)) _restorePlace(feed,place);
     HOST.updateOcclusion();
@@ -159,7 +162,7 @@ window.IntMapModules.newsFeed=function(HOST){
   async function aiTranslateTitles(){
     if(_translateBusy) return;
     if(!HOST.aiGate()) return;
-    const target=window.IntMapLang.t(HOST.lang,'English','Japanese','German','Russian','Spanish');
+    const target=IntMapLang.t(HOST.lang,'English','Japanese','German','Russian','Spanish');
     const todo=HOST.computeFilteredNews().filter(it=>it.analysis && !it.analysis._titleTried).slice(0,120);
     /* (#R9/#20) Spinner + progress + result toast — mirrors the AI-locate "detecting" UI so it's
        obvious the translation is running and when it finished. */
@@ -204,7 +207,7 @@ window.IntMapModules.newsFeed=function(HOST){
     return ` after:${HOST.ymdISO(start)} before:${HOST.ymdISO(end)}`;
   }
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS}=window.IntMapTables;
+  const {NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS}=IntMapTables;
   function feedUrls(){
     /* (#R37) per-language Google News locale so DE/RU get German/Russian feeds (not the JP feed via the old else). */
     const p=({en:'hl=en-US&gl=US&ceid=US:en', jp:'hl=ja&gl=JP&ceid=JP:ja', de:'hl=de&gl=DE&ceid=DE:de', ru:'hl=ru&gl=RU&ceid=RU:ru', es:'hl=es&gl=ES&ceid=ES:es'})[HOST.lang]||'hl=en-US&gl=US&ceid=US:en';   /* (#R40) +Spanish news edition */
@@ -253,7 +256,7 @@ window.IntMapModules.newsFeed=function(HOST){
        undated items too — so the feed shows genuine period news around that date, or NOTHING (never latest-as-past). */
     try{ if(typeof HOST.newsDate!=='undefined' && HOST.newsDate){ const t0=HOST.newsDate.getTime(), win=DATE_WINDOW_DAYS*864e5;   /* ±8 days (the fetch query uses ±3; allow timezone slack) */
       uniq=uniq.filter(it=>{ const pd=HOST.parseDate(it.pubDate); return pd && isFinite(pd) && Math.abs(pd-t0)<=win; }); } }catch(_){}
-    return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():window.IntMapLang.t(HOST.lang,'News','報道','Nachrichten','Новости','Noticias'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:HOST.analyzeContext(title,publisher,it.link,desc) }; });
+    return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():IntMapLang.t(HOST.lang,'News','報道','Nachrichten','Новости','Noticias'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:HOST.analyzeContext(title,publisher,it.link,desc) }; });
   }
   /* ===== Server-baked news (FAST PATH) =====
      The `refresh-news` Edge Function pre-fetches + pre-analyses the default feeds every
@@ -278,7 +281,7 @@ window.IntMapModules.newsFeed=function(HOST){
     const subjectLoc=(r.subject_lng!=null&&r.subject_lat!=null)?[r.subject_lng,r.subject_lat]:null;
     const pubLoc=(r.pub_lng!=null&&r.pub_lat!=null)?[r.pub_lng,r.pub_lat]:null;
     const subjectName=HOST.lang==='jp'?(r.subject_name_jp||r.subject_name_en):(r.subject_name_en||r.subject_name_jp);
-    const pubName=r.pub_label?((window.IntMapLang.t(HOST.lang,'Source: ','発信: ','Quelle: ','Источник: ','Fuente: '))+r.pub_label):null;
+    const pubName=r.pub_label?((IntMapLang.t(HOST.lang,'Source: ','発信: ','Quelle: ','Источник: ','Fuente: '))+r.pub_label):null;
     const short=HOST.lang==='jp'?(r.short_jp||r.short_en||''):(r.short_en||r.short_jp||'');
     const subjectType=r.subject_type||((_isCountrySubject(r.subject_name_en)||_isCountrySubject(subjectName))?'country':'');   /* (#R124) derive country-type from the name when the server omits it */
     const analysis={ subjectLoc, subjectName, subjectType, pubLoc, pubName, short, _title:r.title, _pub:r.publisher||'' };
@@ -390,4 +393,4 @@ window.IntMapModules.newsFeed=function(HOST){
     }catch(e){ if(HOST.globalData.length===0&&feed&&(HOST.mode==='news'||HOST.mode==='saved')) feed.innerHTML=`<div class="empty-msg" style="color:var(--threat-unmapped);">${HOST.t('networkError')}</div>`; console.warn('fetchData failed:',e); }
   }
   return { aiTranslateTitles, fetchData, loadNewsFromSupabase, startNews, newsFeatureOf };
-};
+}

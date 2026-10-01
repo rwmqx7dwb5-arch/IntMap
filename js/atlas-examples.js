@@ -73,6 +73,7 @@
  *  the ceiling is never raised — a subject moves out instead.
  * ==========================================================================*/
 import { makeAtlasViewSubject } from './atlas-view-subject.js';   /* (#R392) what the reader is looking at */
+import { IntMapTime } from './chronos.js';
 
 export function makeAtlasExamples(HOST, CTX) {
   const L=CTX.L, GE=CTX.GE, codeAtPoint=CTX.codeAtPoint, countryStats=CTX.countryStats,
@@ -84,7 +85,7 @@ export function makeAtlasExamples(HOST, CTX) {
      question from 「which of these sentences is eligible」, and because this file is already 690
      lines of pool. `geo` is the country polygons Atlas already holds — passed in rather than
      re-fetched, so this costs no network and no startup bytes. */
-  const VIEW = makeAtlasViewSubject({ GE:GE, geo:CTX.geo, countryStats:countryStats, cName:cName,
+  const VIEW = makeAtlasViewSubject({ GE:GE, geo:CTX.geo, countryStats:countryStats, cName:cName, seas:CTX.seas,
                                       lang:()=>HOST.lang });
 
     /* ══ the measured extremes ════════════════════════════════════════════════════════════════
@@ -142,7 +143,7 @@ export function makeAtlasExamples(HOST, CTX) {
       const nm=st?cName(st):null;
       const ly=onLayers(), ids=new Set(ly.map(x=>x.id));
       let year=null, live=true;
-      try{ const t=window.IntMapTime.state(); live=!!t.isLive; year=t.year; }catch(_){}
+      try{ const t=IntMapTime.state(); live=!!t.isLive; year=t.year; }catch(_){}
       /* ══ ⚠⚠⚠ (#R337) 「まだほぼ定型文みたいなものしかない。もっとその場所にあったものに。」 ═══════
          #R313's pool asks about EXTREMES — top ten on density, top eight on area — so a country
          that is extreme in nothing had three of its four chips filled from the always-eligible
@@ -1166,7 +1167,7 @@ export function makeAtlasExamples(HOST, CTX) {
          the instant, so a change that does not alter the four chips still redraws nothing. */
       try{ document.addEventListener('change',(e)=>{ const t=e&&e.target;
         if(t&&t.type==='checkbox'&&t.id&&/^(dl-|wp-dl-|beta-dl-|bx-|eco-dl-|l9-dl-)/.test(t.id)) bump(); },true); }catch(_){}
-      try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>bump()); }catch(_){}
+      try{ if(IntMapTime&&IntMapTime.on) IntMapTime.on(()=>bump()); }catch(_){}
       /* ⚠⚠⚠ (#R392) …AND WHEN THE TILES FINALLY ARRIVE. The view pool reads what the vector tiles
          name on the ground, and the tiles land AFTER the 600 ms camera debounce has already fired.
          MEASURED in a real browser on this round's own verification pass: at Kansas z=10 and at

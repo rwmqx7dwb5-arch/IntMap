@@ -16,7 +16,10 @@
  *  The model, its forecast axis and its colour scales live in js/wx-ecmwf.js; the particle renderer
  *  lives in js/wx-wind.js. This file is what wires them to the map and to the panel UI.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
 
   /* ══ ⚠⚠ (#R284) THE PLAYER'S ICONS ARE DRAWN, AND NO TWO OF THEM ARE THE SAME ═══════════════
      「ECMWFの時間UIはボタンがくそ。アイコンが分かりにくすぎるし、再生ボタンと次に行くボタンが同じ
@@ -133,8 +136,8 @@ window.IntMapModules=window.IntMapModules||{};
     return { svg:_svg, IC:IC, b:_b, timeUI:_timeUI, wireTimeUI:_wireTimeUI };
   })();
 
-window.IntMapModules.wind=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function wind(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const IC=window.IntMapWxPlayer.IC, _b=window.IntMapWxPlayer.b;   /* (#R284) one declaration, two views of one clock */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const satToast=HOST.satToast, isMobile=HOST.isMobile;
@@ -145,7 +148,7 @@ window.IntMapModules.wind=function(HOST){
      which asks the pointer and the screen); three files that copied the predicate by hand each dropped
      a clause of it (#R499). The fallback is this file's own `isMobile`, so nothing is worse than today. */
   const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return typeof isMobile==='function'&&isMobile(); } };
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+  const L=IntMapLang.pick(()=>HOST.lang);
   window.Wind=(function(){
     const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){},setOpacity(){}};
     const EC=()=>window.IntMapECMWF;
@@ -1036,17 +1039,17 @@ window.IntMapModules.wind=function(HOST){
           styleLoaded:(()=>{try{return GE().ready();}catch(_){return null;}})() }, st); }
     };
   })();
-};
+}
 
-window.IntMapModules.weatherEC=function(HOST){
- const GE=()=>window.IntMapGeoEngine;
+export function weatherEC(HOST){
+ const GE=()=>IntMapGeoEngine;
   const IC=window.IntMapWxPlayer.IC, _b=window.IntMapWxPlayer.b;   /* (#R284) …the same declaration */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const satToast=HOST.satToast, t=HOST.t;
   window.IntMapWeatherEC=(function(){
     if(!GE().hasRenderer()) return { open(){}, toggle(){} };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
-    const LA=window.IntMapLang.pickArgs();
+    const L=IntMapLang.pick(()=>HOST.lang);
+    const LA=IntMapLang.pickArgs();
     /* ══ ⚠⚠⚠ (#R356) WHICH MODEL A LAYER READS IS THE LAYER'S OWN ANSWER ═══════════════════════
        `EC()` used to be `window.IntMapECMWF` and there was nothing else it could be. It is now
        「the instance THIS layer is reading」, because 「モデル選択はレイヤーごとに保持」: a reader
@@ -1926,7 +1929,7 @@ window.IntMapModules.weatherEC=function(HOST){
     /* (#R293) the master clock moved, so the 「いつの絵か」 line and the transport have to be re-read.
        The AXIS itself is moved by js/wx-ecmwf.js's own subscription — one writer, and this is the
        reader. (#R288's `applyMonth` wiring went with the reanalysis source it existed for.) */
-    (function wireClock(n){ try{ const C=window.IntMapTime;
+    (function wireClock(n){ try{ const C=IntMapTime;
       if(C&&C.on){ C.on(()=>{ try{ if(anyOn()){ touchTime(); } }catch(_){} }); return; }
     }catch(_){}
       if((n|0)<60) setTimeout(()=>wireClock((n|0)+1),200); })(0);
@@ -2077,15 +2080,15 @@ window.IntMapModules.weatherEC=function(HOST){
       isobars:isobarsOn, setIsobars,
       _layers:LAYERS, _state:state };
   })();
-};
+}
 
-window.IntMapModules.weatherPanel=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+export function weatherPanel(HOST){
+  const GE=()=>IntMapGeoEngine;
   const t=HOST.t, fmtTemp=HOST.fmtTemp;
   window.IntMapWeather=(function(){
     if(!GE().hasRenderer()) return { open(){} };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
-    const LA=window.IntMapLang.pickArgs();
+    const L=IntMapLang.pick(()=>HOST.lang);
+    const LA=IntMapLang.pickArgs();
     function wx(code){ const M={
       0:{i:'☀️',d:LA('Clear sky','快晴','Klarer Himmel','Ясно','Despejado')},1:{i:'🌤',d:LA('Mainly clear','晴れ','Überwiegend klar','Преим. ясно','Mayormente despejado')},
       2:{i:'⛅',d:LA('Partly cloudy','一部曇り','Teilweise bewölkt','Переменная облачность','Parcialmente nublado')},3:{i:'☁️',d:LA('Overcast','曇り','Bedeckt','Пасмурно','Nublado')},
@@ -2168,7 +2171,7 @@ window.IntMapModules.weatherPanel=function(HOST){
     /* the instant the numbers are FOR, on the reader's clock — see the note beside `upd` below */
     function fmtInstant(iso){
       try{ if(window.IntMapECMWF) return window.IntMapECMWF.fmt(iso,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'}); }catch(_){}
-      try{ return new Date(iso).toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB'),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; }
+      try{ return new Date(iso).toLocaleString(IntMapLang.locale(HOST.lang,'en-GB'),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; }
     }
 
     /* ⚠ (#R276) THE MODEL IS NAMED, AND IT IS NAMED CORRECTLY. Open-Meteo's forecast endpoint with
@@ -2230,4 +2233,4 @@ window.IntMapModules.weatherPanel=function(HOST){
        so the Atlas weather capability can hand the model the same words instead of a bare number. */
     return { open, close, describe:(code)=>{ try{ return String(wx(code).desc||''); }catch(_){ return ''; } } };
   })();
-};
+}

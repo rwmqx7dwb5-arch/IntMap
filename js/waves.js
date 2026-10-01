@@ -50,12 +50,14 @@ import './waves-gl.js';
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.waves = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
-  const L = window.IntMapLang.pick(() => HOST.lang);
-  const LA = window.IntMapLang.pickArgs();
+
+export function waves(HOST) {
+  const GE = () => IntMapGeoEngine;
+  const L = IntMapLang.pick(() => HOST.lang);
+  const LA = IntMapLang.pickArgs();
   const WXM = () => window.IntMapWxModels;
   const ENG = () => window.IntMapWxEngine;
   const PAL = () => window.IntMapWavePalette;
@@ -574,4 +576,4 @@ window.IntMapModules.waves = function (HOST) {
     _variables: () => [VAR_H, VAR_P], _ticks: () => TICKS_M.slice(), _gridFor: gridFor, _rowsAreFlipped: rowsAreFlipped, _orient: orient,
     _anchorFor: anchorFor, _layerId: () => LYR
   };
-};
+}

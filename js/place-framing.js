@@ -20,6 +20,7 @@
  *  Everything here came from REAL geocoder responses, not from reasoning about the schema.
  *  Atlas reuses this table rather than inventing a second one.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 (function(){
   /* ===== (#R183) HOW CLOSE TO GO ============================================================
      「地名検索時のズームは、対象に応じてズームレベルを最適なものにするように。」
@@ -346,7 +347,7 @@
      ⚠ BUILT WHEN ASKED, NOT AT LOAD: this file loads before js/lang-registry.js (src/main.js), and the
      tuples are `pickArgs` calls so scripts/i18n-audit.mjs counts every one of them (#R241). */
   function classNames(){
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     return {
       continent:LA('Continent','大陸'), ocean:LA('Ocean','大洋'), sea:LA('Sea','海'), archipelago:LA('Archipelago','諸島'),
       desert:LA('Desert / dunes','砂漠・砂丘'), plain:LA('Plain','平野'),

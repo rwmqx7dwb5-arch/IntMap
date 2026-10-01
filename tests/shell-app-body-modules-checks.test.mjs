@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { CARRIED_NAMES, LAZY_NAMES } from '../js/lazy-modules.js';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 import * as acorn from 'acorn';
-import { appShell, appSource, bootGuardKnows, lazyFiles, publishedGlobals } from './app-source.mjs';
+import { appShell, appSource, bootGuardKnows, factoryCalls, lazyFiles, lazyModules, publishedGlobals } from './app-source.mjs';
 import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -234,7 +234,9 @@ test('R200 ④b: the names the layers menu hands back are HOISTED, because they 
     assert.doesNotMatch(CORE, new RegExp(`const \\{[^}]*\\b${nm}\\b[^}]*\\} = make`), `${nm} must not come back as a const`);
   }
   assert.match(read('js/map-ui.js'), /const layerCbInfo=HOST\.layerCbInfo/, 'js/map-ui.js still captures it at factory time…');
-  const mount = CORE.indexOf('window.IntMapModules.layerSidebar(IM_HOST);');
+  /* (module-graph) the registry is gone: app-body mounts it by the name it imports it under */
+  const mountAt = /(?<![\w$.])layerSidebar\(IM_HOST\);/.exec(CORE);
+  const mount = mountAt ? mountAt.index : -1;
   const fill = CORE.indexOf('_IM_LFAVS = makeLayerFavs(');
   assert.ok(mount > 0 && fill > 0 && mount < fill,
     '…and it is mounted BEFORE the favourites block, which is the ordering that makes the shim necessary');
@@ -318,9 +320,12 @@ test('R162 #1 index.html loads every extracted file, before the main script body
   const mainAt = html.lastIndexOf("window.addEventListener('DOMContentLoaded'");
   assert.ok(mainAt > 0, 'the main DOMContentLoaded body still exists');
   for (const f of need) {
-    /* (#R175) the tag became an import in src/main.js — same question, new mechanism. */
-    const tag = `import '../${f}';`;
-    assert.ok(html.includes(tag), `index.html loads ${f}`);
+    /* (#R175) the tag became an import in src/main.js — same question, new mechanism.
+       (module-graph) …or a static import in js/app-body.js itself, for a file with no top-level side effect
+       that src/main.js stopped listing: an imported module is evaluated before its importer's body runs,
+       so «before the main body» holds by the module semantics (and the import line still precedes it here). */
+    const tag = [`import '../${f}';`, ` from './${f.slice(3)}';`].find((x) => html.includes(x));
+    assert.ok(tag, `index.html loads ${f}`);
     assert.ok(html.indexOf(tag) < mainAt, `${f} is loaded BEFORE the main script body runs`);
     assert.ok(existsSync(new URL(f, root)), `${f} exists on disk`);
   }
@@ -345,27 +350,35 @@ test('R162 #2 the moved code is GONE from index.html (no stale duplicate copy)',
 test('R162 #3 index.html binds each extracted global back into the closure', () => {
   assert.ok(html.includes('const i18n=window.IntMapI18N;'), 'i18n rebound');
   assert.ok(html.includes('const _BUILTIN_GZ=window.IntMapGazetteer.builtin, _EXTRA_GZ=window.IntMapGazetteer.extra;'), 'gazetteer rebound');
-  assert.ok(html.includes('const DEFAULT_DASH_CARDS=window.IntMapRefData.dashCards;'), 'dash cards rebound');
-  assert.ok(html.includes('const DATA_SOURCES=window.IntMapRefData.dataSources;'), 'data sources rebound');
+  /* (module-graph) js/reference-data.js EXPORTS IntMapRefData now, and the shell rebinds from the import */
+  assert.ok(html.includes('const DEFAULT_DASH_CARDS=IntMapRefData.dashCards;'), 'dash cards rebound');
+  assert.ok(html.includes('const DATA_SOURCES=IntMapRefData.dataSources;'), 'data sources rebound');
+  assert.match(rd('js/app-body.js'), /^import \{ IntMapRefData \} from '\.\/reference-data\.js';$/m, '…from the binding js/reference-data.js exports');
 });
 
 /* spelling kept: browser script (js/history.js, js/monitors.js, js/layer-previews.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R162 #4 each factory is instantiated with exactly its declared dependencies', () => {
+  /* (module-graph) the registry is gone: each factory is `export function name(params){` and the shell calls
+     it by the name it imports it under — the dependencies it is handed are unchanged */
   const calls = {
-    'window.IntMapMaddison=window.IntMapModules.maddison();': ['js/history.js', 'maddison', []],
-    'window.IntMapHistStates=window.IntMapModules.histStates(countryStats);': ['js/history.js', 'histStates', ['countryStats']],
-    'window.IntMapHistId=window.IntMapModules.histId(countryStats);': ['js/history.js', 'histId', ['countryStats']],
+    'window.IntMapMaddison=maddison();': ['js/history.js', 'maddison', []],
+    'window.IntMapHistStates=histStates(countryStats);': ['js/history.js', 'histStates', ['countryStats']],
+    'window.IntMapHistId=histId(countryStats);': ['js/history.js', 'histId', ['countryStats']],
     // (#R163) the private host object became the shared IM_HOST and the parameter was renamed H → HOST
     // (#R180) …and the renderer parameter is gone: no module receives the raw handle any more.
-    'window.IntMapMonitors=window.IntMapModules.monitors(IM_HOST);': ['js/monitors.js', 'monitors', ['HOST']],
+    'window.IntMapMonitors=monitors(IM_HOST);': ['js/monitors.js', 'monitors', ['HOST']],
     /* (#R225) one argument fewer: geoLayersDB went with the geopolitics layers it described */
-    'window.IntMapLayerPreviews=window.IntMapModules.layerPreviews(countryStats,loadCountryData);':
+    'window.IntMapLayerPreviews=layerPreviews(countryStats,loadCountryData);':
       ['js/layer-previews.js', 'layerPreviews', ['countryStats', 'loadCountryData']],
   };
+  const body = rd('js/app-body.js');
   for (const [call, [file, name, params]] of Object.entries(calls)) {
     assert.ok(html.includes(call), `index.html instantiates ${name}`);
+    assert.equal((code(html).match(new RegExp(`(?<![\\w$.])${name}\\(`, 'g')) || []).length, 1, `index.html instantiates ${name} exactly once`);
+    assert.match(body, new RegExp(`^import \\{[^}]*\\b${name}\\b[^}]*\\} from '\\./${file.slice(3).replace('.', '\\.')}';$`, 'm'),
+      `js/app-body.js imports ${name} from ${file}`);
     const src = rd(file);
-    const sig = `window.IntMapModules.${name}=function(${params.join(',')}){`;
+    const sig = `export function ${name}(${params.join(',')}){`;
     assert.ok(src.includes(sig), `${file} declares ${name} taking (${params.join(',')})`);
   }
 });
@@ -432,9 +445,14 @@ test('R162 #6 the extracted files define the globals the app depends on', () => 
      now instead of being a literal, so the assertion is on the assignment rather than on `={`. */
   assert.ok(/window\.IntMapI18N\s*=/.test(rd('js/i18n.js')), 'i18n.js sets window.IntMapI18N');
   assert.ok(rd('js/gazetteer.js').includes('window.IntMapGazetteer='), 'gazetteer.js sets window.IntMapGazetteer');
-  assert.ok(rd('js/reference-data.js').includes('window.IntMapRefData='), 'reference-data.js sets window.IntMapRefData');
-  for (const f of ['js/layer-previews.js', 'js/history.js', 'js/monitors.js']) {
-    assert.ok(rd(f).includes('window.IntMapModules=window.IntMapModules||{};'), `${f} extends IntMapModules without clobbering it`);
+  /* (module-graph) the owner EXPORTS it, and keeps publishing the same object on the global (compat window) */
+  assert.ok(rd('js/reference-data.js').includes('export const IntMapRefData = ') && /^globalThis\.IntMapRefData = IntMapRefData;/m.test(rd('js/reference-data.js')),
+    'reference-data.js sets window.IntMapRefData');
+  /* (module-graph) «extends the registry without clobbering it» → the registry is gone: the file does not
+     touch it at all, and exports its factories instead */
+  for (const [f, names] of [['js/layer-previews.js', ['layerPreviews']], ['js/history.js', ['maddison', 'histStates', 'histId']], ['js/monitors.js', ['monitors']]]) {
+    assert.doesNotMatch(code(rd(f)), /\bIntMapModules\b/, `${f} does not touch the retired window.IntMapModules registry`);
+    for (const n of names) assert.match(rd(f), new RegExp(`^export function ${n}\\(`, 'm'), `${f} exports its ${n} factory`);
   }
   // a missing file must announce itself instead of surfacing as "undefined" much later
   assert.ok(html.includes('required module file(s) failed to load'), 'index.html fails loudly if a module file is missing');
@@ -561,17 +579,22 @@ test('#R170 every factory that calls _imCanDraw() declares it in that same facto
   // The migration first inserted the helper only into each file's FIRST factory; files like
   // js/sims.js hold eight, so seven of them referenced a name that resolves to nothing at runtime.
   // scripts/check-split-scope.mjs caught it — this keeps it caught if the helper is ever moved.
-  const SIG = /^window\.IntMapModules\.\w+ ?= ?function ?\([^)]*\) ?\{[^\n]*$/gm;
+  /* (module-graph) a factory is `export function name(…){` now; the old registry spelling matched nothing
+     after the migration, which would have left this check passing on zero factories — so it also counts */
+  const SIG = /^(?:export function \w+ ?|window\.IntMapModules\.\w+ ?= ?function ?)\([^)]*\) ?\{[^\n]*$/gm;
   const bad = [];
+  const unscanned = [];
   for (const f of JS_FILES) {
     const src = R('js/' + f);
     if (!src.includes('_imCanDraw()')) continue;
     const starts = [...src.matchAll(SIG)].map(m => m.index + m[0].length);
+    if (!starts.length) unscanned.push(f);
     for (let i = 0; i < starts.length; i++) {
       const seg = src.slice(starts[i], i + 1 < starts.length ? starts[i + 1] : src.length);
       if (seg.includes('_imCanDraw()') && !seg.includes('function _imCanDraw()')) bad.push(f + ' factory#' + (i + 1));
     }
   }
+  assert.deepEqual(unscanned, [], 'these files use _imCanDraw() but the factory-signature scan found no factory in them');
   assert.deepEqual(bad, [], 'these factories use _imCanDraw() without declaring it');
 });
 
@@ -654,6 +677,15 @@ const ALL_FACS = Object.values(MOVED).flat();
 /* (#R209) …of which these are fetched on demand: the factories whose file the loader import()s. */
 const LAZY_FACS = new Set(Object.entries(MOVED).filter(([f]) => LAZY.includes(f)).flatMap(([, v]) => v));
 
+/* (module-graph) the registry is gone. app-body calls a factory by the name it imports it under (`f(IM_HOST)`)
+   and the loader on the namespace its import() resolved to (`m.f(IM_HOST)`); both are counted in code only,
+   with a word boundary so `fooLos(` is not `los(`. */
+const HTML_CODE = code(html);
+const FACTORIES = factoryCalls(root);
+const callCount = (f) => (HTML_CODE.match(new RegExp(`(?<![\\w$.])(?:m\\.)?${f}\\(IM_HOST\\)`, 'g')) || []).length;
+const callAt = (f) => { const m = new RegExp(`(?<![\\w$.])${f}\\(IM_HOST\\)`).exec(HTML_CODE); return m ? m.index : -1; };
+const importsByName = (f, file) => new RegExp(`^import \\{[^}]*\\b${f}\\b[^}]*\\} from '\\./${file.slice(3).replace('.', '\\.')}';$`, 'm').test(rd('js/app-body.js'));
+
 /* The order the 41 blocks occupied in the closure — i.e. the order their factory calls must appear
    in index.html. Interleaved with the earlier rounds' calls, which are not listed here. */
 const ORDER = [
@@ -682,20 +714,21 @@ const LIVE = {
 test('R166 #1 all seven files are loaded and every factory they define is instantiated', () => {
   for (const [file, facs] of Object.entries(MOVED)) {
     const src = rd(file);
-    assert.ok(html.includes(`import '../${file}';`) || LAZY.includes(file),
-      `src/main.js imports ${file}, or js/lazy-modules.js fetches it on demand (#R175/#R209)`);
-    assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
-      `${file} extends IntMapModules without clobbering what earlier files put there`);
+    /* (module-graph) an eager file is reached because js/app-body.js imports its factories BY NAME (a link
+       error if one is missing); «extends the registry without clobbering» is «does not touch it at all» */
+    assert.ok(LAZY.includes(file) || facs.every((f) => importsByName(f, file)),
+      `js/app-body.js imports every factory of ${file}, or js/lazy-modules.js fetches it on demand (#R175/#R209)`);
+    assert.doesNotMatch(code(src), /\bIntMapModules\b/, `${file} does not touch the retired window.IntMapModules registry`);
     // Comment-blanked: every header says "this file adds no <style>" in prose.
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
     for (const f of facs) {
-      assert.ok(src.includes(`window.IntMapModules.${f}=function(HOST){`),
+      assert.ok(src.includes(`export function ${f}(HOST){`),
         `${file} declares the ${f} factory taking (HOST)`);
-      const calls = html.split(`window.IntMapModules.${f}(IM_HOST);`).length - 1;
+      const calls = callCount(f);
       assert.equal(calls, 1, `index.html must call ${f} exactly once (found ${calls})`);
     }
     // The file defines these factories and no others, so the lists above cannot drift silently.
-    const defined = [...src.matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)].map((m) => m[1]);
+    const defined = FACTORIES[file] || [];
     assert.deepEqual(defined.slice().sort(), facs.slice().sort(), `${file} defines exactly its declared factories`);
   }
 });
@@ -722,13 +755,13 @@ test('R166 #2 ORDER: the 41 calls appear exactly where their blocks used to run'
   const order = ORDER.filter((f) => !LAZY_FACS.has(f));
   const seen = ALL_FACS
     .filter((f) => !LAZY_FACS.has(f))
-    .map((f) => ({ f, at: html.indexOf(`window.IntMapModules.${f}(IM_HOST);`) }))
+    .map((f) => ({ f, at: callAt(f) }))
     .filter((x) => x.at >= 0)
     .sort((a, b) => a.at - b.at)
     .map((x) => x.f);
   assert.deepEqual(seen, order, 'factory call order in index.html must match the original block order');
   /* …and each excluded one is still instantiated exactly once — by the loader. #1 counts them. */
-  for (const f of lazyFacs) assert.ok(html.includes(`window.IntMapModules.${f}(IM_HOST);`), `${f} is still instantiated`);
+  for (const f of lazyFacs) assert.ok(new RegExp(`\\bm\\.${f}\\(IM_HOST\\);`).test(html), `${f} is still instantiated`);
 });
 
 /* spelling kept: page markup / inline script (index.html) — only a browser document runs it. */
@@ -815,13 +848,6 @@ const JS = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f
      MODULE_FACTORIES  … 起動時に存在する（eager な import 閉包に居る）
      LAZY_FACTORIES    … js/lazy-modules.js に頼めば来る（tests/r209 ③ がその等式を持つ）
      CARRIED_FACTORIES … 誰も単体では取りに行かない。別の遅延モジュールが static import する。 */
-function listFrom(src, name) {
-  const re = new RegExp('const\\s+' + name + '\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*;');
-  const m = src.match(re);
-  assert.ok(m, `src/main.js が ${name} を宣言している`);
-  return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
-}
-
 /* コメントを外してから読む。⚠ この回の調査用スクリプトは最初これを忘れ、散文の中の
    「#R280's shape」のアポストロフィを引用符と読んで、存在しないファクトリを3件報告した。 */
 function stripComments(src) { return codeOnly(src); }
@@ -846,31 +872,57 @@ function eagerClosure() {
 }
 
 test('R408 ④: js/ が登録する全ファクトリが、3つの一覧のちょうど1つに載っている', () => {
+  /* (module-graph) レジストリ（window.IntMapModules）と MODULE_FACTORIES は無くなった。ファクトリは名前で
+     export され、起動時のものは js/app-body.js（と js/label-occlusion.js）が名前で import して呼ぶ——欠けて
+     いれば link error で、起動ガードの一覧はそれ自体が要らなくなった。残る3分類はそのまま測る:
+       起動時（MODULE の後継）… シェルが import して呼ぶもの（factoryCalls − 遅延）と、eager なファイルが
+                                 provideLayerKind で engine に渡す GL レイヤー種（solid3d・limbLayer・orbitPoints）
+       LAZY    … js/lazy-modules.js が mount するもの（LAZY_NAMES）
+       CARRIED … 単体では取りに行かれず、遅延モジュールに static import されて provideLayerKind で渡るもの */
   const main = stripComments(rd('src/main.js'));
-  const where = new Map();
-  for (const k of listFrom(main, 'MODULE_FACTORIES')) where.set(k, 'MODULE');
-  /* (#R798) the two deferred lists are the registry's, imported by the entry */
-  for (const k of LAZY_NAMES) where.set(k, 'LAZY');
-  for (const k of CARRIED_NAMES) where.set(k, 'CARRIED');
-
-  const reg = new Map();
+  assert.doesNotMatch(main, /\bMODULE_FACTORIES\b/, '手で持つ eager 一覧は残っていない（import が一覧である）');
+  const root = new URL('../', import.meta.url);
+  const lazyMounted = new Map(lazyModules(root).filter((m) => m.factory).map((m) => [m.name, m.file]));
+  /* GL レイヤー種: provideLayerKind('name', fn) を呼ぶファイルが、その種の持ち主 */
+  const kinds = new Map();
   for (const f of JS) {
-    for (const m of stripComments(rd(f)).matchAll(/window\.IntMapModules\.([A-Za-z0-9_$]+)\s*=/g)) reg.set(m[1], f);
+    for (const m of stripComments(rd(f)).matchAll(/provideLayerKind\(\s*'([A-Za-z0-9_$]+)'\s*,\s*([A-Za-z0-9_$]+)\s*\)/g)) {
+      kinds.set(m[1], f);
+      assert.equal(m[2], m[1], `${f}: 種 ${m[1]} は同じ名前の関数を渡す`);
+      assert.doesNotMatch(rd(f), new RegExp(`^export (?:async )?function ${m[1]}\\b`, 'm'), `${f}: 種 ${m[1]} は export しない（engine の _kinds だけが持つ）`);
+    }
   }
+  assert.ok(kinds.size >= 1, 'provideLayerKind による受け渡しが読めている');
+  const eager = eagerClosure();
+
+  const where = new Map();
+  const reg = new Map();
+  for (const [f, names] of Object.entries(factoryCalls(root))) for (const k of names) {
+    reg.set(k, f);
+    if (!lazyMounted.has(k)) where.set(k, 'MODULE');
+  }
+  for (const [k, f] of kinds) { reg.set(k, f); if (eager.has(f)) where.set(k, 'MODULE'); }
   assert.ok(reg.size >= 130, `js/ が登録するファクトリは ${reg.size} 件 — 数えられている`);
+  /* (#R798) the two deferred lists are the registry's, imported by the entry — ちょうど1つ、を測る */
+  const doubled = [];
+  for (const k of LAZY_NAMES) { if (where.has(k)) doubled.push(`${k}: ${where.get(k)} と LAZY`); where.set(k, 'LAZY'); }
+  for (const k of CARRIED_NAMES) { if (where.has(k)) doubled.push(`${k}: ${where.get(k)} と CARRIED`); where.set(k, 'CARRIED'); }
+  assert.deepEqual(doubled, [], '2つの一覧に載っているファクトリ');
 
   const unlisted = [...reg.keys()].filter((k) => !where.has(k)).sort();
   assert.deepEqual(unlisted, [],
     'どの一覧にも無いファクトリは、改名しても起動ガードが黙る（#R280 の形）');
 
-  const ghosts = [...where.keys()].filter((k) => !reg.has(k)).sort();
+  /* ghosts: LAZY は loader が実際に mount し、CARRIED は実際に provideLayerKind で渡されている */
+  const ghosts = [...where.keys()].filter((k) => !reg.has(k)
+    || (where.get(k) === 'LAZY' && !lazyMounted.has(k))
+    || (where.get(k) === 'CARRIED' && !kinds.has(k))).sort();
   assert.deepEqual(ghosts, [],
     '一覧が、もう誰も登録していない名前を持っている');
 
   /* ⚠ そして「どの一覧か」も検査する。起動時に存在しないものを MODULE_FACTORIES に置くと
      `missingFactories` が毎回の清潔な起動で非空になり（#R209）、逆に起動時に存在するものを
      LAZY / CARRIED に置くと、消えても誰も報告しない。 */
-  const eager = eagerClosure();
   const misplaced = [];
   for (const [k, f] of reg) {
     const w = where.get(k);
@@ -935,9 +987,16 @@ test('R196 ①b js/tile-warm.js carries the prefetch block, and takes its five v
   /* (#R200) …from js/label-occlusion.js now: the mount sat inside the label/occlusion block, which
      left js/app-body.js this round. The call did not move relative to the code around it — the file
      did — so this asks the file that holds it. */
-  assert.match(rd('js/label-occlusion.js'), /window\.IntMapModules\.tileWarm\(HOST\)/, 'the block that always mounted it still does');
-  assert.ok(rd('src/main.js').includes("import '../js/tile-warm.js';"), 'the entry imports it');
+  /* (module-graph) the registry is gone: the block calls the factory by the name it imports, and that named
+     import (in a file js/app-body.js imports) is what puts js/tile-warm.js in the module graph — src/main.js
+     stopped listing it (no top-level side effect). A missing file or export is a link error, which is the
+     guard MODULE_FACTORIES used to be. */
+  const occ = rd('js/label-occlusion.js');
+  assert.equal((occ.match(/(?<![\w$.])tileWarm\(HOST\)/g) || []).length, 1, 'the block that always mounted it still does');
+  assert.match(occ, /^import \{ tileWarm \} from '\.\/tile-warm\.js';$/m, 'the entry imports it');
+  assert.match(rd('js/app-body.js'), /^import \{ makeLabelOcclusion \} from '\.\/label-occlusion\.js';$/m, '…through the file js/app-body.js imports');
+  assert.match(w, /^export function tileWarm\(HOST\)\{/m, '…which exports the factory by that name');
   assert.ok(rd('src/main.js').includes("import '../js/geodesy.js';"), 'the entry imports js/geodesy.js');
-  assert.match(rd('src/main.js'), /'satProto', 'tileWarm',/, 'the factory guard knows about tileWarm');
+  assert.ok(bootGuardKnows(new URL('../', import.meta.url), 'tileWarm'), 'the factory guard knows about tileWarm');
 });
 }

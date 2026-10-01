@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT } from './helpers/geo-shared.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R801 · the relay spend   (was tests/r801-relay-spend-checks.test.mjs)
@@ -238,11 +239,11 @@ test('R801 the page reads the relay status, not the body code, so spend_ceiling 
      handler, and the relay is made to refuse by its shared buckets. What the page reports is then the
      answer to the question the round asked: does a refusal the page never heard of (`spend_ceiling`,
      `limiter_unavailable`) arrive as a fact it already knows? */
+  /* (module-graph) the three files are IMPORTED into one page window; their language edge is the real
+     js/lang-registry.js (nothing asserted here is a sentence, so no stand-in registry is needed). */
   const w = { SUPABASE_URL: 'https://edge.test' };
-  w.IntMapLang = { t: (l, ...a) => a[0], pick: () => (...a) => a[0], pickArgs: () => (...a) => a, locale: () => 'en-GB' };
   for (const f of ['js/routing-providers.js', 'js/routing-errors.js', 'js/routing-traffic.js']) {
-    // eslint-disable-next-line no-new-func
-    new Function('window', src(f))(w);
+    await importModule(f, { globals: { window: w } });
   }
   const T = w.IntMapRouteTraffic;
   let rpc = ALLOW;

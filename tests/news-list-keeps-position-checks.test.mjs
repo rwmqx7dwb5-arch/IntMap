@@ -14,14 +14,13 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = readLF(resolve(ROOT, 'js/news-feed.js'));
 
 const H = 100;          /* one card's height in the model */
 const VIEW = 500;       /* the feed's visible height */
@@ -49,7 +48,10 @@ function makeCard(feed, item) {
 }
 const items = (from, n) => Array.from({ length: n }, (_, i) => ({ link: `https://example.invalid/${from + i}`, title: `t${from + i}` }));
 
-function boot(list) {
+/* (module-graph) js/news-feed.js is IMPORTED with the fake window/document as its browser; its renderer, language
+   registry and tables are the real modules it imports (no renderer is attached, so the map half is a no-op, as
+   it was when the vm context carried no engine) */
+async function boot(list) {
   const feed = makeFeed();
   const HOST = {
     lang: 'en', NEWS_BATCH: 30, globalData: list, newsFiltered: [], renderedCount: 0, newsFeatures: [],
@@ -63,10 +65,10 @@ function boot(list) {
     clearMarkers() {}, _spreadDupNewsPins() {}, setupIntelLayers() {}, updateOcclusion() {},
     scheduleNewsDeclutter() {}, _wsNewsHidden: () => false, canDraw: () => false, t: (k) => k,
   };
-  const window = { IntMapModules: {}, IntMapTables: {}, IntMapMapTypography: { bandText: (s) => s } };
+  const window = { IntMapMapTypography: { bandText: (s) => s } };
   const document = { getElementById: (id) => (id === 'live-news-feed' ? feed : null) };
-  vm.runInNewContext(SRC, { window, document, console, setTimeout, clearTimeout });
-  const api = window.IntMapModules.newsFeed(HOST);
+  const M = await importModule('js/news-feed.js', { globals: { window, document } });
+  const api = M.newsFeed(HOST);
   return { feed, HOST, api };
 }
 /* what the reader sees: the first card whose bottom is below the feed's top, and how far into it */
@@ -84,8 +86,8 @@ function readIntoSecondBatch(env) {
   return firstVisible(env.feed);
 }
 
-test('news-list-keeps-position: the same list redrawn keeps the depth and the card the reader was on', () => {
-  const env = boot(items(1, 75));
+test('news-list-keeps-position: the same list redrawn keeps the depth and the card the reader was on', async () => {
+  const env = await boot(items(1, 75));
   const before = readIntoSecondBatch(env);
   env.api.startNews();                              /* the auth event's redraw */
   assert.equal(env.HOST.renderedCount, 60, 'the second batch is still there');
@@ -98,8 +100,8 @@ test('news-list-keeps-position: the same list redrawn keeps the depth and the ca
   assert.notEqual(env.feed.children[0], cardsAfterFirst[0], 'the cards are rebuilt (their text can depend on settings), not frozen');
 });
 
-test('news-list-keeps-position: the same items as NEW objects (a refetch that brought nothing new) still keep the place', () => {
-  const env = boot(items(1, 75));
+test('news-list-keeps-position: the same items as NEW objects (a refetch that brought nothing new) still keep the place', async () => {
+  const env = await boot(items(1, 75));
   const before = readIntoSecondBatch(env);
   env.HOST.list = items(1, 75);                     /* equal identity (link), different objects */
   env.HOST.globalData = env.HOST.list;
@@ -108,8 +110,8 @@ test('news-list-keeps-position: the same items as NEW objects (a refetch that br
   assert.deepEqual(firstVisible(env.feed), before);
 });
 
-test('news-list-keeps-position: a list whose head changed starts from the top, as before', () => {
-  const env = boot(items(1, 75));
+test('news-list-keeps-position: a list whose head changed starts from the top, as before', async () => {
+  const env = await boot(items(1, 75));
   readIntoSecondBatch(env);
   env.HOST.list = items(0, 76);                     /* a fresh article at the top */
   env.api.startNews();
@@ -118,8 +120,8 @@ test('news-list-keeps-position: a list whose head changed starts from the top, a
   assert.equal(firstVisible(env.feed).title, 't0');
 });
 
-test('news-list-keeps-position: a narrower list (a new query / category) starts from the top', () => {
-  const env = boot(items(1, 75));
+test('news-list-keeps-position: a narrower list (a new query / category) starts from the top', async () => {
+  const env = await boot(items(1, 75));
   readIntoSecondBatch(env);
   env.HOST.list = items(1, 40);                     /* shorter than the depth read so far */
   env.api.startNews();
@@ -127,8 +129,8 @@ test('news-list-keeps-position: a narrower list (a new query / category) starts 
   assert.equal(env.feed.scrollTop, 0);
 });
 
-test('news-list-keeps-position: a counter reset underneath the cards is not mistaken for the same list (no duplicate cards)', () => {
-  const env = boot(items(1, 75));
+test('news-list-keeps-position: a counter reset underneath the cards is not mistaken for the same list (no duplicate cards)', async () => {
+  const env = await boot(items(1, 75));
   readIntoSecondBatch(env);
   env.HOST.renderedCount = 0;                       /* what the outlet-filter save path in js/app-body.js does */
   env.api.startNews();
@@ -136,8 +138,8 @@ test('news-list-keeps-position: a counter reset underneath the cards is not mist
   assert.equal(env.feed.children.length, env.HOST.renderedCount);
 });
 
-test('news-list-keeps-position: a hidden list (reader pane open over it) keeps its depth even though nothing can be measured', () => {
-  const env = boot(items(1, 75));
+test('news-list-keeps-position: a hidden list (reader pane open over it) keeps its depth even though nothing can be measured', async () => {
+  const env = await boot(items(1, 75));
   readIntoSecondBatch(env);
   env.feed.hidden = true;
   env.api.startNews();

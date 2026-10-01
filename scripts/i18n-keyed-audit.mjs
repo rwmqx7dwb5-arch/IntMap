@@ -55,7 +55,7 @@ function localeKeys(code) {
   const p = join(LOCALES, `ui.${code}.js`);
   const out = new Map();
   if (!existsSync(p)) return out;
-  const ast = parse(readFileSync(p, 'utf8'), { ecmaVersion: 2022 });
+  const ast = parse(readFileSync(p, 'utf8'), { ecmaVersion: 2022, sourceType: 'module' });   /* (module-graph) a locale table imports the registry */
   const src = readFileSync(p, 'utf8');
   walk.simple(ast, {
     Property(n) {

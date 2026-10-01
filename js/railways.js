@@ -42,14 +42,16 @@
  * ==========================================================================*/
 import { RailSchema } from './rail-schema.js';
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.railways = function (HOST) {
+
+export function railways(HOST) {
   /* the shared vocabulary — the same object scripts/rail/build.mjs classifies with */
   const { AXES, UNKNOWN_COLOUR, gaugeBucket, elecBucket, speedBucket, tracksBucket, decodeLines, decodePoints } = RailSchema;
-  const GE = () => window.IntMapGeoEngine;
-  const L = window.IntMapLang.pick(() => HOST.lang);
-  const LA = window.IntMapLang.pickArgs();
+  const GE = () => IntMapGeoEngine;
+  const L = IntMapLang.pick(() => HOST.lang);
+  const LA = IntMapLang.pickArgs();
   const S = (v) => { try { return window.IntMapSafe.html(v == null ? '' : String(v)); } catch (_) { return ''; } };
   /* the house's own draw-guard, declared in this factory because that is where it is called (#R170) */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
@@ -690,4 +692,4 @@ window.IntMapModules.railways = function (HOST) {
     count: () => (world ? world.features.length : 0),
   };
   return window.IntMapRailways;
-};
+}

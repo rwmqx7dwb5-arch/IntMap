@@ -30,6 +30,7 @@ import { declaredCapabilityIds } from './helpers/atlas-registry.mjs';
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
 import { parse } from 'acorn';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 /* the repository root, shared by every section below (each used to derive its own) */
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -317,8 +318,12 @@ test('R318 ④c: a required point that was not given is asked for, never invente
   assert.notEqual(r2.status, 'needs_input');
 });
 
-test('R318 ④d: a route computed and not drawn is not_rendered, not success', () => {
-  const cap = CAPS.resolve('routing.route');
+test('R318 ④d: a route computed and not drawn is not_rendered, not success', async () => {
+  /* (module-graph) the registry IMPORTS the engine now; this verdict is the route observer's own, so the
+     engine edge is handed «no renderer to ask» (null) — what an absent window.IntMapGeoEngine used to be.
+     The real engine with no map answers observable:false, which (rightly) turns a negative into unobserved. */
+  const { makeAtlasCapabilities: noEngine } = await importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: null } } });
+  const cap = noEngine({}).resolve('routing.route');
   const v = (after) => cap.verify({}, {}, null, after, { ok: true, html: '' });
   assert.equal(v({ hasRoute: true, painted: true, visible: true }).status, 'completed');
   assert.equal(v({ hasRoute: true, painted: false, visible: false }).status, 'partial');
@@ -368,24 +373,22 @@ test('R318 ④g: unknown capabilities and bad arguments are refused, not shrugge
 
 /* ══ ⑦ NINE LANGUAGES ════════════════════════════════════════════════════════════════════════ */
 
-test('R318 ⑦a: the model is told the language it must answer in, in ENGLISH, for all nine', () => {
-  /* RUN, not read (consolidation). The registry and the transport are classic scripts; they are
-     evaluated in one context in the order a page loads them (the generated language list, then
-     js/lang-registry.js, then js/ai-core.js), and the line the model receives is asked for each code. */
-  const ctx = { localStorage: { getItem: () => null, setItem() {} }, navigator: { language: 'en' } };
-  ctx.window = ctx;
-  vm.createContext(ctx);
-  for (const f of ['js/locales/_langs.js', 'js/lang-registry.js', 'js/ai-core.js']) vm.runInContext(read(f), ctx, { filename: f });
+test('R318 ⑦a: the model is told the language it must answer in, in ENGLISH, for all nine', async () => {
+  /* RUN, not read (consolidation). (module-graph) The registry is js/lang-registry.js itself with the
+     shipped language list declared, and js/ai-core.js is IMPORTED — its own import of the registry is that
+     same instance — and the line the model receives is asked for each code. */
+  const IntMapLang = langRegistry();
+  const { aiCore } = await importModule('js/ai-core.js');
   const WANT = { en: 'English', jp: 'Japanese', de: 'German', ru: 'Russian', es: 'Spanish',
     zh: 'Traditional Chinese', 'zh-hans': 'Simplified Chinese', fr: 'French', ko: 'Korean' };
-  assert.deepEqual(Object.keys(WANT).sort(), [...ctx.window.IntMapLang.codes()].sort(), 'the nine are the registry\'s nine');
+  assert.deepEqual(Object.keys(WANT).sort(), [...IntMapLang.codes()].sort(), 'the nine are the registry\'s nine');
   for (const [code, name] of Object.entries(WANT)) {
-    assert.equal(ctx.window.IntMapLang.englishName(code), name, 'the derived name is gone');
-    assert.equal(ctx.window.IntMapLang.codeForEnglishName(name), code, 'and its inverse');
+    assert.equal(IntMapLang.englishName(code), name, 'the derived name is gone');
+    assert.equal(IntMapLang.codeForEnglishName(name), code, 'and its inverse');
     /* the defect this replaced: a five-argument t() whose 6th..9th languages fell into the inline
        table, where 'English' is correctly translated — and therefore asked for the wrong language.
        (#R318) the two helpers moved to js/ai-core.js — the transport is what carries them. */
-    const AI = ctx.window.IntMapModules.aiCore({ lang: code, aiConfig: {} });
+    const AI = aiCore({ lang: code, aiConfig: {} });
     assert.equal(AI._aiLangName(), name, 'js/ai-core.js no longer derives the name — ' + code + ' is asked for ' + AI._aiLangName());
     assert.ok(AI._aiLangLine().includes('in ' + name + ' only'), 'the reply-language lock did not travel with it (' + code + ')');
   }
@@ -414,12 +417,10 @@ test('R318 ⑦c: every language has a locale file and a region tag', () => {
   const CODES = ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko'];
   CODES.forEach((c) => assert.ok(existsSync(join(ROOT, 'js/locales/ui.' + c + '.js')), `no locale file for ${c}`));
   /* RUN, not read (consolidation): the registry is evaluated and ASKED for each code's tag. A code with
-     no REGION entry answers with its bare html tag (`fr`), which is the defect — so a region is `xx-YY`. */
-  const ctx = { localStorage: { getItem: () => null, setItem() {} }, navigator: { language: 'en' } };
-  ctx.window = ctx;
-  vm.createContext(ctx);
-  for (const f of ['js/locales/_langs.js', 'js/lang-registry.js']) vm.runInContext(read(f), ctx, { filename: f });
-  CODES.forEach((c) => assert.match(ctx.window.IntMapLang.locale(c), /^[a-z]{2}-[A-Z][A-Za-z]+$/, `REGION has no entry for ${c}`));
+     no REGION entry answers with its bare html tag (`fr`), which is the defect — so a region is `xx-YY`.
+     (module-graph) the registry is the shipped module with the shipped language list, not a vm copy. */
+  const IntMapLang = langRegistry();
+  CODES.forEach((c) => assert.match(IntMapLang.locale(c), /^[a-z]{2}-[A-Z][A-Za-z]+$/, `REGION has no entry for ${c}`));
 });
 
 test('R318 ⑦d: the capability search can rank a request written in any script', () => {

@@ -38,6 +38,7 @@
  *  ⚠ IT NEVER REJECTS. A locale that fails to arrive must leave the reader with English (the
  *  designed per-key fallback), not with a pill that does nothing — so the failure path applies too.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 (function () {
   'use strict';
 
@@ -54,7 +55,7 @@
   /* Run `apply` only once `code`'s strings can be read. Synchronous when they already can be —
      the five-language case and every repeat switch — so nothing about the common path changes. */
   function when(code, apply) {
-    var LANG = window.IntMapLang;
+    var LANG = IntMapLang;
     if (!LANG || !LANG.ensure) { apply(); return; }
     var c = LANG.normalise(code);
     if (LANG.isLoaded(c)) { _want = null; apply(); return; }
@@ -68,10 +69,10 @@
   function pending() { return _want; }
 
   try {
-    window.IntMapLang.onDefine(function (code) {
+    IntMapLang.onDefine(function (code) {
       if (!_repaint || !_getLang) return;
       /* only the language actually on screen; a background prefetch must not repaint anything */
-      try { if (window.IntMapLang.normalise(_getLang()) !== code) return; } catch (e) { return; }
+      try { if (IntMapLang.normalise(_getLang()) !== code) return; } catch (e) { return; }
       try { _repaint(); } catch (e) {}
     });
   } catch (e) {}

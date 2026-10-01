@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
+import { uiLocale } from './helpers/layer-locale-tables.mjs';
 import * as M from '../js/layer-manifest.js';
 import { whenBoxes } from '../js/layer-rows.js';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
@@ -28,11 +28,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* comments and strings blanked, so prose that QUOTES an old pattern is not the pattern */
 
-/* the keyed UI table of one language, by running its locale file */
+/* the keyed UI table of one language, by running its locale file. (module-graph) the file is an ES module
+   that imports the registry; the shared reader imports it and reads back what it handed define() */
 function uiTable(code) {
-  let got = null;
-  const sandbox = { window: { IntMapLang: { define: (c, t) => { if (c === code) got = t.ui; } } } };
-  vm.runInNewContext(read('js/locales/ui.' + code + '.js'), sandbox);
+  const got = uiLocale(code).ui;
   assert.ok(got, 'js/locales/ui.' + code + '.js defines no ui table');
   return got;
 }

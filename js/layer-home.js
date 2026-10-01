@@ -38,8 +38,9 @@
  *  spends that mark instead of flying. Timing is not used to tell the two apart — the restore poll
  *  runs for up to 5.5 s while its own `_restoring` flag clears at 1.6 s.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
 (function () {
-  const GE = () => window.IntMapGeoEngine;
+  const GE = () => IntMapGeoEngine;
 
   /* checkbox id → a function that answers 「where does this layer's data live?」 as
      [[west,south],[east,north]], or null when it cannot answer yet. */

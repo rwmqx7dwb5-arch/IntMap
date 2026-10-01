@@ -67,6 +67,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCALES = path.join(ROOT, 'js', 'locales');
@@ -123,7 +124,8 @@ function keyedTable(code) {
   const p = path.join(LOCALES, 'ui.' + code + '.js');
   const out = new Map();
   if (!existsSync(p)) return out;
-  walk.simple(parse(readFileSync(p, 'utf8'), { ecmaVersion: 2022 }), {
+  /* (module-graph) a locale file imports the registry it defines into, so it is parsed as the module it is */
+  walk.simple(parse(readFileSync(p, 'utf8'), { ecmaVersion: 2022, sourceType: 'module' }), {
     Property(n) {
       if (!(n.key && (n.key.name === 'ui' || n.key.value === 'ui')
         && n.value && n.value.type === 'ObjectExpression')) return;
@@ -208,7 +210,9 @@ test('#R474 ④ the two stars are different characters, so a byte comparison wou
 /* js/lang-switch.js, RUN against a language registry whose loading this test controls: which codes
    are loaded, and when (and whether) a fetch settles. Only the registry is a stand-in — the switch
    is the shipped file, evaluated. */
-function langSwitch(loaded) {
+/* (module-graph) the switch IMPORTS the registry now, so the stand-in is handed at that import edge, and the
+   shipped module is imported (not run from its text) with a fake window to publish IntMapLangSwitch on */
+async function langSwitch(loaded) {
   const fetches = new Map(), hooks = [];
   const LANG = {
     normalise: (c) => String(c),
@@ -216,15 +220,15 @@ function langSwitch(loaded) {
     ensure: (c) => new Promise((ok, no) => fetches.set(c, { ok: () => { loaded.push(c); ok(); }, no })),
     onDefine: (fn) => { hooks.push(fn); },
   };
-  const win = { IntMapLang: LANG };
+  const win = {};
   win.window = win;
-  new Function('window', read('js/lang-switch.js'))(win);
+  await importModule('js/lang-switch.js', { globals: { window: win }, mocks: { 'js/lang-registry.js': { IntMapLang: LANG } } });
   return { SW: win.IntMapLangSwitch, fetches, define: (c) => hooks.forEach((h) => h(c)) };
 }
 const settled = () => new Promise((r) => setTimeout(r, 0));
 
 test('R233 i18n: switching language waits for that language\'s table before repainting', async () => {
-  const { SW, fetches, define } = langSwitch(['en']);
+  const { SW, fetches, define } = await langSwitch(['en']);
   assert.equal(typeof SW?.when, 'function', 'the module publishes the switch');
 
   let applied = 0;
@@ -258,7 +262,8 @@ test('R233 i18n: switching language waits for that language\'s table before repa
   assert.match(body, /window\.IntMapLangSwitch\.when\(lang,/,
     'setLang goes through the switch rather than repainting immediately');
   /* the exact defect: currentLang assigned, then updateI18n(), with nothing awaited between them */
-  assert.doesNotMatch(body, /currentLang=lang;\s*\n?\s*try\{ window\.IntMapLang\.codes\(\)/,
+  /* (module-graph) the registry is an import in app-body now, so the repaint is spelt either way — both are refused */
+  assert.doesNotMatch(body, /currentLang=lang;\s*\n?\s*try\{ (?:window\.)?IntMapLang\.codes\(\)/,
     'setLang must not assign the language and repaint before the strings can be read');
 
   assert.match(body, /IntMapLangSwitch\.bind\(\(\)=>currentLang, updateI18n\)/,

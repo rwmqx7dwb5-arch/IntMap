@@ -14,6 +14,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { importModule, swappable } from './helpers/import-module.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R783 · what a supplier reaches   (was tests/r783-supplier-reach-checks.test.mjs)
@@ -205,9 +206,10 @@ const stubEl = () => ({
 });
 
 /* ⚠ ONE `window` FOR THE WHOLE FILE, AND THAT IS NOT TIDINESS. js/layer-packs.js and
-   js/aviation-live.js publish their factories onto `window` at MODULE SCOPE, and an ES module body
-   runs once per process — so a boot() that handed out a fresh object would find `IntMapModules`
-   undefined from the second test onwards, and the suite would measure the harness. boot() therefore
+   js/aviation-live.js are evaluated once (their factories are exports — module-graph), and module-scope
+   code in them and in what they import reads the `window` that existed at evaluation — so a boot() that
+   handed out a fresh object would leave them looking at the first one, and the suite would measure the
+   harness. boot() therefore
    resets the mutable half (registry, engine, kernels, feed) on the same object and re-runs the
    factories, which is what a page reload does to them anyway. */
 const W = {};
@@ -224,6 +226,23 @@ W.localStorage = { getItem: () => null, setItem() { }, removeItem() { } };
 W.IntMapLang = { pick: () => ((...a) => a[0]), pickArgs: () => ((...a) => a[0]), t: (l, ...a) => a[0] };
 W.IntMapLabelScale = { sub: (x) => x, main: (x) => x };
 W.SUPABASE_URL = 'https://example.supabase.co';
+
+/* (module-graph) the modules under test IMPORT the renderer contract (and layer-packs the language
+   registry), so the per-boot engine reaches them at those import edges. An import binding is fixed once
+   the module is evaluated, and these modules are evaluated ONCE (see above) — so the edge carries a
+   swappable stub, and boot() swaps in its fresh engine exactly where it used to reassign window's. */
+const GE = swappable();
+const EDGES = { 'js/geo-engine.js': { IntMapGeoEngine: GE.value }, 'js/lang-registry.js': { IntMapLang: W.IntMapLang } };
+let MODS = null;
+async function modules() {
+  if (MODS) return MODS;
+  const S = await importModule('js/gis-sources.js', { mocks: EDGES });
+  const L = await importModule('js/gis-layers.js', { mocks: { ...EDGES, 'js/gis-sources.js': S } });
+  const P = await importModule('js/layer-packs.js', { mocks: EDGES });
+  const A = await importModule('js/aviation-live.js', { mocks: EDGES });
+  MODS = { makeGisSources: S.makeGisSources, makeGisLayers: L.makeGisLayers, betaPack2: P.betaPack2, aviationLive: A.aviationLive };
+  return MODS;
+}
 
 async function boot(opts) {
   const o = opts || {};
@@ -246,6 +265,7 @@ async function boot(opts) {
     },
     coords: {}, scene: { getStyle: () => ({ sources: {} }) },
   };
+  GE.set(w.IntMapGeoEngine);
   /* the lazy modules the pack's bundles ask for */
   w.IntMapDataCenters = { features: () => ({ type: 'FeatureCollection', features: [fc(2.3, 48.9, { n: 'Paris DC' }), fc(139.8, 35.7, { n: 'Tokyo DC' })] }) };
   w.IntMapRailways = { load: (cb) => cb({ type: 'FeatureCollection', features: [fc(7.4, 46.9, { gauge: 1435 }), fc(139.7, 35.7, { gauge: 1067 })] }) };
@@ -255,16 +275,13 @@ async function boot(opts) {
   const { makeGisDatasets } = await import('../js/gis-datasets.js');
   const { makeGisOps } = await import('../js/gis-ops.js');
   const { makeGisRaster } = await import('../js/gis-raster.js');
-  const { makeGisSources } = await import('../js/gis-sources.js');
-  const { makeGisLayers } = await import('../js/gis-layers.js');
+  const { makeGisSources, makeGisLayers, betaPack2, aviationLive } = await modules();
   w.IntMapData = makeGisDatasets();
   w.IntMapGisOps = makeGisOps();
   w.IntMapGisRaster = makeGisRaster();
   w.IntMapGisSources = makeGisSources();
   w.IntMapGisLayers = makeGisLayers();
 
-  await import('../js/layer-packs.js');
-  await import('../js/aviation-live.js');
   /* js/aviation-{codec,model}.js publish onto `globalThis` when there is one, because they are also
      the Edge Function's and the Worker's copies (scripts/sync-aviation.mjs) — and in a browser that
      IS `window`. Node is the one place where the two are different objects. */
@@ -278,8 +295,8 @@ async function boot(opts) {
     lang: 'en', proj: 'mercator', countryGeo: null, imToast() { }, canDraw: () => true,
     layerCbInfo: {}, saveSettings() { }, renderLayerFavs() { }, loadCountryData() { }, countryStats: {},
   };
-  if (o.packs !== false) w.IntMapModules.betaPack2(HOST);
-  const av = (o.aviation === false) ? null : w.IntMapModules.aviationLive(HOST);
+  if (o.packs !== false) betaPack2(HOST);
+  const av = (o.aviation === false) ? null : aviationLive(HOST);
   return { w, reg, feed, codec, av, sources: w.IntMapGisSources, model: w.IntMapAviationModel || globalThis.IntMapAviationModel };
 }
 

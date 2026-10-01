@@ -31,6 +31,7 @@ import { makeAtlasAdmin1 } from '../js/atlas-admin1.js';
 import { makeAtlasGeoLedger } from '../js/atlas-geo-ledger.js';
 import { makeAtlasAgent } from '../js/atlas-agent.js';
 import { NominatimGate as GATE } from '../js/nominatim-gate.js';
+import { importModule, swappable } from './helpers/import-module.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the sections below (each used to declare its own copy) */
@@ -89,21 +90,21 @@ const ENGINE = read('js/geo-engine.js');
    spellings. They now RUN the shipped observers (js/atlas-capabilities.js OBSERVERS) over the shipped
    façade (js/geo-engine.js makeFacade) wrapped around an adapter that holds exactly what is given — so
    an observer that calls a method the façade does not have gets the same `[]`/`null` it got in
-   production. `window` and `window.IntMapGeoEngine` are installed for one test and put back after,
-   because this file used to run without either. */
+   production. `window` is installed for one test and put back after, because this file used to run
+   without it. (module-graph) js/atlas-capabilities.js IMPORTS the engine, so the façade is seated at that
+   import edge (one swappable seat, emptied after the test) and the factory is js/geo-engine.js's export. */
+const engineSeat = swappable();
 async function withFacade(adapter, fn) {
   const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, 'window') ? globalThis.window : undefined;
   if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-  const hadGE = window.IntMapGeoEngine;
+  const hadGE = engineSeat.get();
   try {
-    await import('../js/geo-engine.js');   /* publishes window.IntMapGeoEngine (once per process) */
-    const factory = window.IntMapGeoEngine && window.IntMapGeoEngine.makeFacade ? window.IntMapGeoEngine : withFacade.factory;
-    withFacade.factory = factory;
-    const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
-    window.IntMapGeoEngine = factory.makeFacade(adapter);
-    return await fn(makeAtlasCapabilities({}).OBSERVERS);
+    const { IntMapGeoEngine: factory } = await import('../js/geo-engine.js');
+    if (!withFacade.caps) withFacade.caps = await importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engineSeat.value } } });
+    engineSeat.set(factory.makeFacade(adapter));
+    return await fn(withFacade.caps.makeAtlasCapabilities({}).OBSERVERS);
   } finally {
-    if (hadGE === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = hadGE;
+    engineSeat.set(hadGE);
     if (hadWindow === undefined) delete globalThis.window;
   }
 }

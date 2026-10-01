@@ -257,7 +257,7 @@ test('#R518 ③ the record is genuinely multilingual, not English nine times', (
   for (const c of Object.keys(per)) assert.ok(per[c] >= 200, c + ' has only ' + per[c] + ' names');
 });
 
-test('#R518 ③ tagSame reads the record\'s own name BEFORE _eraLocName', () => {
+test('#R518 ③ tagSame reads the record\'s own name BEFORE _eraLocName', async () => {
   /* ⚠ SPELLING, ON PURPOSE, FOR THE ORDER INSIDE `tagSame`: its else-branch writes the label into a
      collection a live renderer holds, and the ORDER has to be read off the expression — the comment
      above it names `_eraLocName` first, so a positional comparison passes whichever way it runs. */
@@ -266,7 +266,7 @@ test('#R518 ③ tagSame reads the record\'s own name BEFORE _eraLocName', () => 
   assert.match(TB, /const own=\(f\.properties\._i18n&&\(f\.properties\._i18n\[lg\]\|\|null\)\)\|\|null;/,
     'tagSame no longer reads _i18n for the current language');
   /* ⚠ AND hbFC MUST ACTUALLY PUT IT THERE — asked of the FEATURE, not of the spelling (#R695). */
-  const { api } = timeBorders({ lang: 'jp', year: 1800 });
+  const { api } = await timeBorders({ lang: 'jp', year: 1800 });
   const feat = api.histNameFor('histBorders', 'Kahlur State', 'Q860407', { en: 'Kahlur State', jp: 'カフルール' });
   assert.equal(feat && feat.en, 'Kahlur State', 'hbFC no longer attaches the name tuple to the feature');
   assert.equal(feat.jp, 'カフルール', "the record's own name must survive the merge, whatever the table says");
@@ -305,7 +305,7 @@ test('#R518 ④ the change-date API asks BOTH records', async () => {
   /* EVALUATED (was: regexes that `_allBounds` names hbBounds and csBounds and that the three change
      functions call it). Each record is handed one transition the other does not have; the stepper
      must walk onto both, forwards and backwards, and list both. */
-  const { api, window: w } = timeBorders({ lang: 'en', year: 1870 });
+  const { api, window: w } = await timeBorders({ lang: 'en', year: 1870 });
   const HSc = w.IntMapHistScale;
   w.__HISTB = { window: [1689, 1885], rings: [], feats: [[{ en: 'H' }, null, 1870, 5, 6, 1880, 2, 3, []]] };
   w.__CSHAPES = { rings: [], feats: [['C', 2, 1900, 3, 4, 1950, 1, 1, []]] };
@@ -365,6 +365,9 @@ function clickHarness() {
     _LTB: { arr: n => Array.isArray(n) ? n[0] : n },
     _VANISHED: [], _GW2ISO: { 123: 'AAA' }, _ERA_WIKI: {},
     _ERA_LOC: [], _COLONIZER: {}, _normNm: n => n.toLowerCase().trim(),
+    /* (module-graph) the lifted functions read the clock by its imported name; this harness has no clock,
+       as its `window` never had one — declared, so the module's own `IntMapTime&&…` guard is what answers */
+    IntMapTime: undefined,
   };
   vm.createContext(ctx);
   vm.runInContext(['_bbox', '_bboxArea', '_contains', 'featureAt', 'hnFor', '_eraLocName', 'resolveHist'].map(n => functions.get(n)).join('\n'), ctx);
@@ -525,13 +528,13 @@ test('#R690 ② the builder derives the floor instead of spelling one', () => {
 
 /* HB_MIN exists only because `go()` must decide whether to inject a 13 MB file before it can read it.
    ⚠ SPELLING, ON PURPOSE, FOR THE COPY: it is that copy's equality with the bundle that is asserted. */
-test('#R690 ③ HB_MIN and HB_MAX are the bundle\'s own window, to the year', () => {
+test('#R690 ③ HB_MIN and HB_MAX are the bundle\'s own window, to the year', async () => {
   const m = /const HB_MIN=(-?\d+), ?HB_MAX=(\d+);/.exec(TB);
   assert.ok(m, 'js/time-borders.js no longer declares the band');
   assert.equal(+m[1], HB.window[0], 'HB_MIN has drifted from the bundle\'s derived floor');
   assert.equal(+m[2], HB.window[1], 'HB_MAX has drifted from the bundle\'s own top');
   /* ⚠ (#R695) the stepper's reach is ASKED OF THE FUNCTION */
-  const { api } = timeBorders({ lang: 'en' });
+  const { api } = await timeBorders({ lang: 'en' });
   const r = api.range();
   assert.ok(r && Number.isFinite(r.min) && Number.isFinite(r.max), 'the stepper publishes no reach at all');
   assert.ok(r.min <= HB.window[0], 'the published range starts above this record — its band is unreachable from the stepper');
@@ -622,7 +625,7 @@ test('#R690 ⑧ the widened half carries the source\'s own names, not English ni
    draws the label is a synchronous clock subscriber — so the label named the PREVIOUS sheet. ORDER is
    the subject, which no amount of source-reading can see. */
 test('#R698 ② changeAt answers from the date, not from what has already been drawn', async () => {
-  const { api, window: w } = timeBorders({ lang: 'jp', year: 500 });
+  const { api, window: w } = await timeBorders({ lang: 'jp', year: 500 });
   const HSc = w.IntMapHistScale;
   /* the era bundle, published the way the <script> tag publishes it — nothing here fetches */
   w.__HISTERAS = { rings: [], snaps: [{ y: -122999 }, { y: -2999 }, { y: 500 }, { y: 600 }, { y: 1650 }] };
@@ -660,15 +663,13 @@ const CSHAPES = bundleJson('cshapes.js');
 const HISTERAS = bundleJson('hist-eras.js');
 const IMBCOAST = bundleJson('border-coast.js');
 /* js/border-coast.js indexes the marks BY RING IDENTITY, so it must see the very objects the bundles
-   pooled — without it every year silently falls through to the snapshot tier (measured: «1700» x4). */
-const bcWin = { __IMBCOAST: IMBCOAST, __HISTB: HISTB, __CSHAPES: CSHAPES, __HISTERAS: HISTERAS };
-vm.runInContext(rd('js/border-coast.js'),
-  vm.createContext({ window: bcWin, Map, Array, console,
-    document: { createElement: () => ({ style: {} }), head: { appendChild() {} } } }),
-  { filename: 'js/border-coast.js' });
-const seamTB = timeBorders({ year: 1700, lang: 'en' });
-seamTB.window.__HISTB = HISTB; seamTB.window.__CSHAPES = CSHAPES; seamTB.window.__HISTERAS = HISTERAS;
-seamTB.window.IntMapBorderCoast = bcWin.IntMapBorderCoast;
+   pooled — without it every year silently falls through to the snapshot tier (measured: «1700» x4).
+   (module-graph) js/time-borders.js IMPORTS js/border-coast.js now — the real module, one per page, and
+   both read the page's ONE window (as in the browser), so the marks and the bundles are published on the
+   window the seam instance runs in, and `yearAt` measures with that window installed as the page's (the
+   other checks in this file each install a window of their own). */
+const seamTB = await timeBorders({ year: 1700, lang: 'en' });
+Object.assign(seamTB.window, { __IMBCOAST: IMBCOAST, __HISTB: HISTB, __CSHAPES: CSHAPES, __HISTERAS: HISTERAS });
 
 const REGION = { iberia: [-10, 36, 3, 44], japan: [129, 30, 146, 46] };
 const RAD = Math.PI / 180;
@@ -717,6 +718,7 @@ const recordOf = (key) => String(key).replace(/-?\d+$/, '') || 'snapshot';
 const CACHE = new Map();
 async function yearAt(y) {
   if (CACHE.has(y)) return CACHE.get(y);
+  globalThis.window = seamTB.window;          /* (module-graph) the page this instance runs in — see above */
   await seamTB.api._go(y);                     /* the module's own dispatch decides; nothing here does */
   const fc = seamTB.api.currentFC();
   const paths = ((fc && fc.features) || []).flatMap((f) => ringsOf(f.geometry));

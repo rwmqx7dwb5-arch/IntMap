@@ -16,6 +16,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
 import { LAZY_NAMES } from '../js/lazy-modules.js';
+import { parse } from 'acorn';
+import { importModule } from './helpers/import-module.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -37,7 +39,6 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  *  PGA contour file and the PGA coverage's parameter block. Public domain (USGS).
  * ==========================================================================*/
 const FIX = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/fixtures/shakemap-napa.json'), 'utf8'));
-const SRC = fs.readFileSync(path.join(ROOT, 'js/shakemap.js'), 'utf8');
 
 /* ── the stub world ──────────────────────────────────────────────────────── */
 function canvasStub(rec) {
@@ -71,13 +72,10 @@ function makeWindow(rec) {
        rather than the spelling of its source */
     render: { claim: (id, key, o) => { (rec.claims = rec.claims || []).push({ id, key, clear: o && o.clear }); } }
   };
+  /* (module-graph) the renderer and the language registry are the module's IMPORTS now — handed at the import
+     edge by load() below; the window keeps only what the module still reads off window */
+  rec.GEO = GEO;
   const win = {
-    IntMapModules: {},
-    IntMapGeoEngine: GEO,
-    IntMapLang: {
-      pickArgs: () => function () { return Array.prototype.slice.call(arguments); },
-      pick: () => ({ arr: a => a[0] })
-    },
     IntMapSafe: { html: s => String(s) },
     dispatchEvent: () => true,
     CustomEvent: function (n, o) { this.type = n; this.detail = o && o.detail; },
@@ -90,13 +88,12 @@ function makeWindow(rec) {
 const PROD = FIX.products.reduce((b, p) => (!b || +p.preferredWeight > +b.preferredWeight) ? p : b, null);
 const U = k => PROD.contents[k].url;
 
-function load(rec) {
+/* (module-graph) the shipped module is IMPORTED (not run from its text): the stub window/document/fetch are its
+   browser, the stub renderer is its geo-engine.js import edge, and the language registry is the real one. Node's
+   own URL stays the global (the module loader resolves through it); the module only revokes blob: URLs. */
+async function load(rec) {
   const win = makeWindow(rec);
-  const g = globalThis;
-  g.window = win;
-  g.document = { createElement: () => canvasStub(rec) };
-  g.URL = win.URL;
-  g.fetch = async (url) => {
+  const fetch = async (url) => {
     const body = ({
       [U('download/cont_mmi.json')]: FIX.contMmi,
       [U('download/coverage_mmi_low_res.covjson')]: FIX.covMmi,
@@ -113,14 +110,17 @@ function load(rec) {
     if (!body) throw new Error('unstubbed fetch: ' + url);
     return { ok: true, json: async () => body };
   };
-  new Function('window', SRC)(win);
-  return win.IntMapModules.shakeMap({ lang: 'en' });
+  const M = await importModule('js/shakemap.js', {
+    globals: { window: win, document: { createElement: () => canvasStub(rec) }, fetch },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: rec.GEO } },
+  });
+  return M.shakeMap({ lang: 'en' });
 }
 
 /* ── ① the product USGS itself prefers, not the first one in the array ──────
    The feed happens to be sorted today; `preferredWeight` is the statement. */
-test('R546 ① the preferred ShakeMap product is chosen by preferredWeight, not by position', () => {
-  const rec = {}, M = load(rec);
+test('R546 ① the preferred ShakeMap product is chosen by preferredWeight, not by position', async () => {
+  const rec = {}, M = await load(rec);
   assert.ok(FIX.products.length >= 2, 'fixture must carry more than one product to make this measurable');
   const shuffled = FIX.products.slice().reverse();
   const best = M._preferred(shuffled);
@@ -133,8 +133,8 @@ test('R546 ① the preferred ShakeMap product is chosen by preferredWeight, not 
 /* ── ② the roster is DISCOVERED, and the byte-identical alias collapses ─────
    `cont_mi.json` and `cont_mmi.json` are the same bytes and only one of them has
    a grid. Two identical entries in a picker is the defect this guards. */
-test('R546 ② the metric roster comes out of the product, drops the gridless byte-identical alias, and opens on intensity', () => {
-  const rec = {}, M = load(rec);
+test('R546 ② the metric roster comes out of the product, drops the gridless byte-identical alias, and opens on intensity', async () => {
+  const rec = {}, M = await load(rec);
   const keys = M._roster(PROD).map(m => m.key);
   const files = Object.keys(PROD.contents).filter(k => /^download\/cont_[a-z0-9]+\.json$/.test(k));
   assert.ok(files.length > keys.length, 'the product must contain an alias for this to measure anything');
@@ -145,8 +145,8 @@ test('R546 ② the metric roster comes out of the product, drops the gridless by
 });
 
 /* ── ③ ⚠ THE UNIT TRAP. The grid is ln(g); the contours are %g. ─────────────*/
-test('R546 ③ a grid value is converted by the symbol the product declares, and an unknown symbol is refused rather than guessed', () => {
-  const rec = {}, M = load(rec);
+test('R546 ③ a grid value is converted by the symbol the product declares, and an unknown symbol is refused rather than guessed', async () => {
+  const rec = {}, M = await load(rec);
   const sym = FIX.pgaParameters[Object.keys(FIX.pgaParameters)[0]].unit.symbol.value;
   assert.match(sym, /^ln\(/, 'the fixture must still be the logarithmic case');
   const c = M._toContourUnit(sym);
@@ -160,8 +160,8 @@ test('R546 ③ a grid value is converted by the symbol the product declares, and
 });
 
 /* ── ④ the grid answers for real places, and refuses outside its footprint ──*/
-test('R546 ④ the intensity grid samples the real Napa field, and a point outside the footprint is null rather than zero', () => {
-  const rec = {}, M = load(rec);
+test('R546 ④ the intensity grid samples the real Napa field, and a point outside the footprint is null rather than zero', async () => {
+  const rec = {}, M = await load(rec);
   const g = M._readCoverage(FIX.covMmi);
   assert.equal(g.param, 'MMI');
   const napa = g.at(-122.2869, 38.2975), sf = g.at(-122.4194, 37.7749), sac = g.at(-121.4944, 38.5816);
@@ -177,8 +177,8 @@ test('R546 ④ the intensity grid samples the real Napa field, and a point outsi
    Measured on the PIXELS: a step in the field must appear in the row Mercator
    puts it in. The lat-linear row is computed too, and the two must differ —
    otherwise this test could not tell the bug from the fix. */
-test('R546 ⑤ the painted field is placed in Mercator rows, and the lat-linear placement it replaces is measurably different', () => {
-  const rec = {}, M = load(rec);
+test('R546 ⑤ the painted field is placed in Mercator rows, and the lat-linear placement it replaces is measurably different', async () => {
+  const rec = {}, M = await load(rec);
   const south = 20, north = 60, stepLat = 40 + (10 / 3);   /* an asymmetric latitude inside the box */
   const ny = 401, nx = 4;
   const vals = [];
@@ -206,7 +206,7 @@ test('R546 ⑤ the painted field is placed in Mercator rows, and the lat-linear 
 
 /* ── ⑥ the alpha ends where USGS's own lowest contour ends ──────────────────*/
 test('R546 ⑥ nothing is painted below the lowest level USGS chose to draw', async () => {
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   await M.open('nc72282711');
   const levels = M.state().levels;
   assert.ok(levels.length > 3);
@@ -250,7 +250,7 @@ test('R546 ⑥ nothing is painted below the lowest level USGS chose to draw', as
    The rule is upstream's, so it has to be measured against a metric that really
    lacks `preferredPalette` rather than against a name written here. */
 test('R546 ⑦ the field is painted only where the product ships a colour scale, and the contours are drawn either way', async () => {
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   await M.open('nc72282711', 'mmi');
   let st = M.state();
   assert.equal(st.open, true);
@@ -280,7 +280,7 @@ test('R546 ⑦ the field is painted only where the product ships a colour scale,
 
 /* ── ⑧ the colours on the map are USGS's, per level ─────────────────────────*/
 test('R546 ⑧ every contour level carries its own colour from the product, and the legend hands them through unchanged', async () => {
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   await M.open('nc72282711', 'mmi');
   const leg = M.legend();
   assert.ok(leg.length >= 5);
@@ -296,7 +296,7 @@ test('R546 ⑧ every contour level carries its own colour from the product, and 
 
 /* ── ⑨ exposure counts by SAMPLING, and says what its number is made of ─────*/
 test('R546 ⑨ exposure counts the cities the intensity grid puts above the cut, and nothing outside the footprint', async () => {
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   const win = globalThis.window;
   /* [type, terms, lng, lat, en, ja, pop, iso2] — the gazetteer's own row shape */
   win.IntMapGazetteer = {
@@ -334,7 +334,7 @@ test('R546 ⑨ exposure counts the cities the intensity grid puts above the cut,
    `open:true`, and no intensity surface at all. The stub renderer here accepts
    anything, so the guard has to be the shape of the definition itself. */
 test('R546 ⑫ the image source definition carries only the properties an image source has', async () => {
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   await M.open('nc72282711', 'mmi');
   const def = rec.layers.sources['shk-field-src'];
   assert.ok(def, 'the surface source must have been created');
@@ -354,11 +354,23 @@ test('R546 ⑩ ShakeMap is lazy: the shell does not carry it', () => {
      lazy module is missing from it. An earlier form of this check simply looked
      for the name anywhere in the file, which would have called the correct
      registration a defect. */
-  const main = fs.readFileSync(path.join(ROOT, 'src/main.js'), 'utf8');
-  const listOf = n => { const m = new RegExp('const ' + n + '\\s*=\\s*\\[([^\\]]*)\\]').exec(main); return m ? m[1].split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')) : null; };
-  const eager = listOf('MODULE_FACTORIES'), lazy = LAZY_NAMES.slice();   /* (#R798) the deferred list is the registry's */
-  assert.ok(eager && eager.length > 10 && lazy && lazy.length > 10, 'both lists must be readable');
-  assert.ok(!eager.includes('shakeMap'), 'js/shakemap.js must not join the eager module list (check:perf counts it)');
+  /* (module-graph) MODULE_FACTORIES is gone: the boot cost is now the STATIC IMPORT GRAPH of src/main.js, and
+     the eager factories are the ones js/app-body.js imports by name. Both are read off the files' imports. */
+  const imports = rel => parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'), { ecmaVersion: 'latest', sourceType: 'module' }).body
+    .filter(st => (st.type === 'ImportDeclaration' || ((st.type === 'ExportNamedDeclaration' || st.type === 'ExportAllDeclaration') && st.source)) && st.source.value.startsWith('.'));
+  const graph = new Set();
+  for (const stack = ['src/main.js']; stack.length;) {
+    const rel = stack.pop();
+    if (graph.has(rel) || !fs.existsSync(path.join(ROOT, rel))) continue;
+    graph.add(rel);
+    for (const st of imports(rel)) stack.push(path.posix.join(path.posix.dirname(rel), st.source.value));
+  }
+  const eager = imports('js/app-body.js').flatMap(st => (st.specifiers || []).filter(sp => sp.type === 'ImportSpecifier').map(sp => sp.imported.name));
+  const lazy = LAZY_NAMES.slice();   /* (#R798) the deferred list is the registry's */
+  assert.ok(graph.size > 10 && eager.length > 10 && lazy && lazy.length > 10, 'both lists must be readable');
+  assert.ok(graph.has('js/app-body.js'), 'the start-up graph must be walked through to the application body');
+  assert.ok(!graph.has('js/shakemap.js'), 'js/shakemap.js must not join the start-up import graph (check:perf counts it)');
+  assert.ok(!eager.includes('shakeMap'), 'js/app-body.js must not instantiate shakeMap at boot');
   assert.ok(lazy.includes('shakeMap'), 'and it must be in the lazy ledger the loader is checked against');
   const loader = fs.readFileSync(path.join(ROOT, 'js/lazy-modules.js'), 'utf8');
   assert.ok(loader.includes('./shakemap.js'), 'it has to be reachable through IntMapLazy, or nothing can open it');
@@ -374,7 +386,7 @@ test('R546 ⑪ the capability points at the module that exists and at the source
   assert.ok(cap, 'the registry must carry the capability');
   assert.ok((cap.lazyModules || []).includes('shakeMap'), 'its lazy column must name the module lazy-modules.js can load');
   assert.ok(LAZY_NAMES.includes('shakeMap'), '…which is a name the loader really has');
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   await M.open('nc72282711', 'mmi');
   const drawn = Object.keys(rec.layers.sources);
   /* (atlas-observer-undo) the observer no longer types the id: the module claims it under the key the row writes */

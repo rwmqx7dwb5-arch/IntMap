@@ -15,12 +15,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { test } from 'node:test';
+import { afterEach, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { installDevice } from './helpers/ui-device.mjs';
+import { importModule, swappable, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -175,14 +176,31 @@ test('R210 ③: a click can be claimed, and the label side asks after everyone e
 const R = (p) => readLF(join(ROOT, p));
 const CODE = (p) => codeOnly(R(p));
 
-/** run the REAL js/mobile-map-input.js in `g` and return the factory's API for `HOST` */
+/* (module-graph) js/mobile-map-input.js is IMPORTED — the real module, once — and its exported factory is
+   mounted per rig. Each rig's renderer is handed at the file's js/geo-engine.js import edge (swappable);
+   the language registry is the real one. The BROWSER each rig fakes and counts (window, document, the
+   timer, the style and resize questions) is what the module reads as globals when its handlers run, so
+   it is installed on globalThis for that test and put back by the afterEach below — Node's own timers
+   must not stay replaced past the test that faked them. */
+const ENGINE = swappable();
+langRegistry();
+const MOBIN = await importModule('js/mobile-map-input.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: ENGINE.value } } });
+const BROWSER = ['window', 'document', 'setTimeout', 'clearTimeout', 'getComputedStyle', 'ResizeObserver'];
+let savedGlobals = null;
+afterEach(() => {
+  if (!savedGlobals) return;
+  for (const [k, d] of savedGlobals) { if (d) Object.defineProperty(globalThis, k, d); else delete globalThis[k]; }
+  savedGlobals = null;
+});
+
+/** run the REAL js/mobile-map-input.js against `g` and return the factory's API for `HOST` */
 function mobileInput(g, HOST) {
   g.window = g;
-  vm.createContext(g);
-  vm.runInContext(R('js/mobile-map-input.js'), g, { filename: 'mobile-map-input.js' });
-  assert.ok(g.window.IntMapModules && g.window.IntMapModules.mobileMapInput,
-    'js/mobile-map-input.js no longer registers its factory on window.IntMapModules');
-  return g.window.IntMapModules.mobileMapInput(HOST);
+  if (!savedGlobals) savedGlobals = BROWSER.map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]);
+  for (const k of BROWSER) if (k in g) Object.defineProperty(globalThis, k, { value: g[k], configurable: true, writable: true, enumerable: true });
+  ENGINE.set(g.IntMapGeoEngine);
+  assert.equal(typeof MOBIN.mobileMapInput, 'function', 'js/mobile-map-input.js no longer exports its factory');
+  return MOBIN.mobileMapInput(HOST);
 }
 
 /** the source of the balanced `{…}` / `(…)` region that starts at `i` */
@@ -414,8 +432,11 @@ test('R498 ③ every phone-COST gate asks the device; the phone-CAPABILITY gate 
     'the long-press block is back in the shell');
   assert.match(b, /IM_MOBIN\.longPress\(\);/, 'and it is mounted from the position it occupied');
   assert.match(b, /IM_MOBIN\.crosshair\(\);/, 'so is the crosshair half');
-  assert.match(CODE('src/main.js'), /import '\.\.\/js\/mobile-map-input\.js';/,
+  /* (module-graph) the module is loaded because the shell IMPORTS its factory (src/main.js no longer lists
+     side-effect-free files) — and the instance both mounts use is made from it */
+  assert.match(b, /^import \{ mobileMapInput \} from '\.\/mobile-map-input\.js';/m,
     'the module is not loaded, so both mounts would throw before the app finished starting');
+  assert.match(b, /const IM_MOBIN=mobileMapInput\(IM_HOST\);/, 'and IM_MOBIN is the factory\'s instance');
 
   /* layout is still layout */
   assert.match(CODE('js/map-readout.js'), /function updateCoord\(lng,lat\)\{ if\(HOST\.isMobile\(\)\) return;/,

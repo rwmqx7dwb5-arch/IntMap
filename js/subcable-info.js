@@ -37,8 +37,10 @@
    js/data-layers.js. Registering it as a body factory would have made the check
    pass by widening it, and would have said something untrue about when this
    file runs. */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 window.IntMapSubcableInfo = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
+  const GE = () => IntMapGeoEngine;
   /* ⚠ `window.IntMapLang.t(HOST.lang, …)` IN FULL AT EVERY CALL SITE, and not
      behind a local `L`. scripts/i18n-helpers.mjs proves which local names carry
      the translation helper; a name bound to an ARROW that forwards to it is not
@@ -69,31 +71,31 @@ window.IntMapSubcableInfo = function (HOST) {
 
   /* ── the strings, in every language the app has ───────────────────────────── */
   const T = {
-    cable: () => window.IntMapLang.t(HOST.lang, 'Submarine cable', '海底ケーブル', 'Seekabel', 'Подводный кабель', 'Cable submarino'),
-    landing: () => window.IntMapLang.t(HOST.lang, 'Landing point', '陸揚げ地点', 'Anlandepunkt', 'Точка выхода на берег', 'Punto de amarre'),
-    status: () => window.IntMapLang.t(HOST.lang, 'Status', '状態', 'Status', 'Статус', 'Estado'),
-    inService: () => window.IntMapLang.t(HOST.lang, 'In service', '運用中', 'In Betrieb', 'В эксплуатации', 'En servicio'),
-    planned: () => window.IntMapLang.t(HOST.lang, 'Planned', '計画中', 'Geplant', 'Планируется', 'Planificado'),
-    rfs: () => window.IntMapLang.t(HOST.lang, 'Ready for service', '運用開始', 'Betriebsbereit', 'Готовность к работе', 'Listo para el servicio'),
-    owners: () => window.IntMapLang.t(HOST.lang, 'Owners', '所有者', 'Eigentümer', 'Владельцы', 'Propietarios'),
-    supplier: () => window.IntMapLang.t(HOST.lang, 'Supplier', '敷設事業者', 'Lieferant', 'Поставщик', 'Proveedor'),
-    length: () => window.IntMapLang.t(HOST.lang, 'Length', '総延長', 'Länge', 'Длина', 'Longitud'),
-    landings: () => window.IntMapLang.t(HOST.lang, 'Landing points', '陸揚げ地点', 'Anlandepunkte', 'Точки выхода на берег', 'Puntos de amarre'),
-    countries: () => window.IntMapLang.t(HOST.lang, 'Countries', '接続国・地域', 'Länder', 'Страны', 'Países'),
-    routeQuality: () => window.IntMapLang.t(HOST.lang, 'Route quality', '経路の精度', 'Routenqualität', 'Точность трассы', 'Calidad de la ruta'),
-    routeSource: () => window.IntMapLang.t(HOST.lang, 'Route source', '経路の出典', 'Routenquelle', 'Источник трассы', 'Fuente de la ruta'),
-    verifiedElsewhere: () => window.IntMapLang.t(HOST.lang, 'Surveyed sections', '実測区間の出典', 'Vermessene Abschnitte', 'Съёмочные участки', 'Tramos levantados'),
-    checked: () => window.IntMapLang.t(HOST.lang, 'Data last checked', 'データ最終確認日', 'Daten zuletzt geprüft', 'Данные проверены', 'Datos verificados'),
-    coords: () => window.IntMapLang.t(HOST.lang, 'Coordinates', '座標', 'Koordinaten', 'Координаты', 'Coordenadas'),
-    cablesHere: () => window.IntMapLang.t(HOST.lang, 'Cables landing here', 'ここに接続するケーブル', 'Hier anlandende Kabel', 'Кабели здесь', 'Cables que amarran aquí'),
-    unknown: () => window.IntMapLang.t(HOST.lang, 'Unknown', '不明', 'Unbekannt', 'Неизвестно', 'Desconocido'),
-    verified: () => window.IntMapLang.t(HOST.lang, 'Verified', '実測', 'Verifiziert', 'Подтверждено', 'Verificado'),
-    reconstructed: () => window.IntMapLang.t(HOST.lang, 'Reconstructed', '再構築', 'Rekonstruiert', 'Реконструировано', 'Reconstruido'),
-    estimated: () => window.IntMapLang.t(HOST.lang, 'Estimated', '推定', 'Geschätzt', 'Оценка', 'Estimado'),
+    cable: () => IntMapLang.t(HOST.lang, 'Submarine cable', '海底ケーブル', 'Seekabel', 'Подводный кабель', 'Cable submarino'),
+    landing: () => IntMapLang.t(HOST.lang, 'Landing point', '陸揚げ地点', 'Anlandepunkt', 'Точка выхода на берег', 'Punto de amarre'),
+    status: () => IntMapLang.t(HOST.lang, 'Status', '状態', 'Status', 'Статус', 'Estado'),
+    inService: () => IntMapLang.t(HOST.lang, 'In service', '運用中', 'In Betrieb', 'В эксплуатации', 'En servicio'),
+    planned: () => IntMapLang.t(HOST.lang, 'Planned', '計画中', 'Geplant', 'Планируется', 'Planificado'),
+    rfs: () => IntMapLang.t(HOST.lang, 'Ready for service', '運用開始', 'Betriebsbereit', 'Готовность к работе', 'Listo para el servicio'),
+    owners: () => IntMapLang.t(HOST.lang, 'Owners', '所有者', 'Eigentümer', 'Владельцы', 'Propietarios'),
+    supplier: () => IntMapLang.t(HOST.lang, 'Supplier', '敷設事業者', 'Lieferant', 'Поставщик', 'Proveedor'),
+    length: () => IntMapLang.t(HOST.lang, 'Length', '総延長', 'Länge', 'Длина', 'Longitud'),
+    landings: () => IntMapLang.t(HOST.lang, 'Landing points', '陸揚げ地点', 'Anlandepunkte', 'Точки выхода на берег', 'Puntos de amarre'),
+    countries: () => IntMapLang.t(HOST.lang, 'Countries', '接続国・地域', 'Länder', 'Страны', 'Países'),
+    routeQuality: () => IntMapLang.t(HOST.lang, 'Route quality', '経路の精度', 'Routenqualität', 'Точность трассы', 'Calidad de la ruta'),
+    routeSource: () => IntMapLang.t(HOST.lang, 'Route source', '経路の出典', 'Routenquelle', 'Источник трассы', 'Fuente de la ruta'),
+    verifiedElsewhere: () => IntMapLang.t(HOST.lang, 'Surveyed sections', '実測区間の出典', 'Vermessene Abschnitte', 'Съёмочные участки', 'Tramos levantados'),
+    checked: () => IntMapLang.t(HOST.lang, 'Data last checked', 'データ最終確認日', 'Daten zuletzt geprüft', 'Данные проверены', 'Datos verificados'),
+    coords: () => IntMapLang.t(HOST.lang, 'Coordinates', '座標', 'Koordinaten', 'Координаты', 'Coordenadas'),
+    cablesHere: () => IntMapLang.t(HOST.lang, 'Cables landing here', 'ここに接続するケーブル', 'Hier anlandende Kabel', 'Кабели здесь', 'Cables que amarran aquí'),
+    unknown: () => IntMapLang.t(HOST.lang, 'Unknown', '不明', 'Unbekannt', 'Неизвестно', 'Desconocido'),
+    verified: () => IntMapLang.t(HOST.lang, 'Verified', '実測', 'Verifiziert', 'Подтверждено', 'Verificado'),
+    reconstructed: () => IntMapLang.t(HOST.lang, 'Reconstructed', '再構築', 'Rekonstruiert', 'Реконструировано', 'Reconstruido'),
+    estimated: () => IntMapLang.t(HOST.lang, 'Estimated', '推定', 'Geschätzt', 'Оценка', 'Estimado'),
     /* ⚠ THE NUMBER IS A PLACEHOLDER, NOT A CONCATENATION. `n + ' cables here'`
        is not a literal, so the inline table can never hold it and every language
        past the five positional ones would read English for ever — invisibly. */
-    nCables: (n) => window.IntMapLang.t(HOST.lang, '{n} cables here', 'ここに {n} 本', '{n} Kabel hier', '{n} кабеля здесь', '{n} cables aquí').replace('{n}', String(n)),
+    nCables: (n) => IntMapLang.t(HOST.lang, '{n} cables here', 'ここに {n} 本', '{n} Kabel hier', '{n} кабеля здесь', '{n} cables aquí').replace('{n}', String(n)),
   };
 
   const QUALITY = { verified: T.verified, reconstructed: T.reconstructed, estimated: T.estimated };
@@ -120,7 +122,7 @@ window.IntMapSubcableInfo = function (HOST) {
      data actually carries is printed unchanged — §11 again: not knowing the
      translation is not permission to show something else. */
   function langTag() {
-    try { return (window.IntMapLang && window.IntMapLang.htmlTag) ? window.IntMapLang.htmlTag(HOST.lang) : 'en'; }
+    try { return (IntMapLang && IntMapLang.htmlTag) ? IntMapLang.htmlTag(HOST.lang) : 'en'; }
     catch (_) { return 'en'; }
   }
   /* the reader's own word for an ISO region, or the English name we were given */
@@ -145,7 +147,7 @@ window.IntMapSubcableInfo = function (HOST) {
     const y = m.rfsYear;
     try {
       if (y && m.rfsMonth) return new Intl.DateTimeFormat(langTag(), { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m.rfsMonth - 1, 1)));
-      if (y && m.rfsQuarter) return window.IntMapLang.t(HOST.lang, 'Q{q} {y}', '{y}年 第{q}四半期', '{q}. Quartal {y}', '{q} кв. {y}', 'T{q} {y}').replace('{q}', String(m.rfsQuarter)).replace('{y}', String(y));
+      if (y && m.rfsQuarter) return IntMapLang.t(HOST.lang, 'Q{q} {y}', '{y}年 第{q}四半期', '{q}. Quartal {y}', '{q} кв. {y}', 'T{q} {y}').replace('{q}', String(m.rfsQuarter)).replace('{y}', String(y));
       if (y && String(m.rfs).trim() === String(y)) return new Intl.DateTimeFormat(langTag(), { year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(y, 0, 1)));
     } catch (_) {}
     return m.rfs;
@@ -228,7 +230,7 @@ window.IntMapSubcableInfo = function (HOST) {
     const m = (meta && meta.landingPoints && meta.landingPoints[props.id]) || null;
     const name = m ? landingName(m, props.name || props.id) : (props.name || props.id);
     let body = '';
-    if (m && m.country) body += row(window.IntMapLang.t(HOST.lang, 'Country', '国・地域', 'Land', 'Страна', 'País'), esc(regionName(m.cc, m.country)));
+    if (m && m.country) body += row(IntMapLang.t(HOST.lang, 'Country', '国・地域', 'Land', 'Страна', 'País'), esc(regionName(m.cc, m.country)));
     const lat = lngLat.lat, lon = lngLat.lng;
     body += row(T.coords(), esc(Math.abs(lat).toFixed(4) + '°' + (lat >= 0 ? 'N' : 'S') + ' ' + Math.abs(lon).toFixed(4) + '°' + (lon >= 0 ? 'E' : 'W')));
     if (m && m.cables && m.cables.length) {

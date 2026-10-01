@@ -15,6 +15,7 @@
  * ==========================================================================*/
 import { str, bool, num, one, list, lat, lng, loose } from './atlas-caps.js';
 import { routeFacts } from './atlas-result-facts.js';
+import { IntMapLang } from './lang-registry.js';
 
 export default [
   /* ⚠ (#R740) `isochrone`, NOT `paint` — a reachable area that is on the map is rendered whether
@@ -144,7 +145,7 @@ export default [
           if(r&&r.transit){
             const totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min'); const tf=r.transfers||0;
             const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?'🚶':/SUBWAY|METRO/.test(m)?'🚇':/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?'🚊':/BUS|COACH/.test(m)?'🚌':/FERRY|BOAT/.test(m)?'⛴':/HIGHSPEED|LONG_DISTANCE/.test(m)?'🚄':/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?'🚆':'🚈'; };
-            const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
+            const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
             const seq=(r.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
             /* ⚠ (#R291) NOT WRITTEN HERE ANY MORE (§17): this and js/routing.js's `legRows()` had drifted apart — Atlas badged a live leg, the panel did not. */
             const _cardOpt=()=>({lang:HOST.lang,units:(typeof HOST.unitMode!=='undefined'?HOST.unitMode:'metric'),tz:(HOST.userTZ&&HOST.userTZ!=='auto')?HOST.userTZ:''});

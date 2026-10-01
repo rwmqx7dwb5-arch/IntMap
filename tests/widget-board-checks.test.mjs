@@ -6,12 +6,12 @@
 //   #6  AQI / UV widgets — rebuilt iOS-style: whole card takes the category colour, 6-tier AQI, luminance-based text colour
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 import { appSource } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
-test('R154 #6 AQI / UV widgets — iOS colour-fill rebuild', () => {
+test('R154 #6 AQI / UV widgets — iOS colour-fill rebuild', async () => {
   /* ⚠ (#R292) THIS CHECK MOVED HOUSE. The widget board is a platform now (js/widget-*.js), so the
      spellings below — `_wgtColor`, `_TINT_A`, `.wgt-colored` — no longer exist. What #R154 asked for
      does: the AQI and UV cards still take their category's colour, the AQI scale is still all six
@@ -21,11 +21,13 @@ test('R154 #6 AQI / UV widgets — iOS colour-fill rebuild', () => {
      #R188 spent two rounds undoing. */
   /* js/widget-defs-data.js, RUN: the platform around it (js/widget-core.js's define/el/L) is a
      recorder, so the two definitions it registers and the helpers it exports are asked directly.
-     L() hands back its arguments, so a label's language slots can be counted. */
+     L() hands back its arguments, so a label's language slots can be counted.
+     (module-graph) IMPORTED: the file is a module now; its registry import is the real one. */
   const defs = [];
   const win = { IntMapWidgetCore: { el: () => ({}), L: (...a) => a, define: (d) => { defs.push(d); } }, IntMapWidgetRender: {} };
   win.window = win;
-  new Function('window', readFileSync(new URL('js/widget-defs-data.js', root), 'utf8'))(win);
+  langRegistry();
+  await importModule('js/widget-defs-data.js', { globals: { window: win } });
   const D = win.IntMapWidgetDefsData, def = (id) => defs.find((d) => d.id === id);
   assert.ok(def('env.aqi') && def('env.uv'), 'the AQI and UV cards are both registered');
   assert.equal(def('env.aqi').tone({ data: { us_aqi: 350 } }), 'sev' + D.aqiCat(350).level,

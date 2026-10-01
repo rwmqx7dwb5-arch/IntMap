@@ -45,15 +45,16 @@
  *  through `window.IntMapModules` after setting `globalThis.window` — which is also how it proves
  *  the module EVALUATES rather than merely parses (#R505).
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.atlasChart = function (HOST, CTX) {
+import { IntMapLang } from './lang-registry.js';
+
+export function atlasChart(HOST, CTX) {
   /* Self-sufficient by construction: js/lazy-modules.js mounts a lazy module with HOST alone, and a
      renderer that could only be built from js/atlas-console.js's closure could not be mounted that
      way. `CTX` is still honoured when the console builds it directly, so there is one implementation
      either way rather than a lazy copy and an eager copy (CONSTITUTION.md §5 — Atlas is ONE system).
      ⚠ The bare `L` binding is shape ④ of scripts/i18n-helpers.mjs: `npm run check:i18n` reads the
      five positional arguments below, and a language added later needs no edit in this file. */
-  const L = (CTX && CTX.L) || window.IntMapLang.pick(function () { try { return HOST ? HOST.lang : 'en'; } catch (_) { return 'en'; } });
+  const L = (CTX && CTX.L) || IntMapLang.pick(function () { try { return HOST ? HOST.lang : 'en'; } catch (_) { return 'en'; } });
   const esc = (CTX && CTX.esc) || ((s) => window.IntMapSafe.html(s));
 
   /* ⚠ EVERY PLOTTED MARK CARRIES `data-mark`. The chart observer (js/atlas-capabilities.js) counts
@@ -84,7 +85,7 @@ window.IntMapModules.atlasChart = function (HOST, CTX) {
         number" (#R492: 数の区切りはロケールに訊く). ──────────────────────────────────────────── */
   const _nf = {};
   function locale() {
-    try { return window.IntMapWidgetCore ? window.IntMapWidgetCore.locale() : window.IntMapLang.locale(HOST && HOST.lang, 'en-GB'); }
+    try { return window.IntMapWidgetCore ? window.IntMapWidgetCore.locale() : IntMapLang.locale(HOST && HOST.lang, 'en-GB'); }
     catch (_) { return 'en-GB'; }
   }
   function num(v, opts) {
@@ -382,4 +383,4 @@ window.IntMapModules.atlasChart = function (HOST, CTX) {
   }
 
   return { render, niceScale, KINDS, MIN_TREND, MIN_COMPARE, MAXW };
-};
+}

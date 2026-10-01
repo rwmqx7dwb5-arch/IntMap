@@ -30,8 +30,9 @@ const require = createRequire(import.meta.url);
 function parse(src, sourceType) {
   return acorn.parse(src, { ecmaVersion: 'latest', sourceType, allowHashBang: true, allowReturnOutsideFunction: true });
 }
-/* the source text of the first function declaration / const declarator with this name */
-function lift(src, name, sourceType = 'script') {
+/* the source text of the first function declaration / const declarator with this name
+   (module-graph: every js/ file is an ES module now, so the default parse is a module's) */
+function lift(src, name, sourceType = 'module') {
   let hit = null;
   walk.full(parse(src, sourceType), (n) => {
     if (hit) return;

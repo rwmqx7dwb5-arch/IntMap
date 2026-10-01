@@ -54,10 +54,12 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.droneNav=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function droneNav(HOST){
+  const GE=()=>IntMapGeoEngine;
+  const L=IntMapLang.pick(()=>HOST.lang);
   /* ⚠⚠⚠ (#R248) THE FOURTEENTH SHAPE — this file held FOUR readers that turned the language into
      an ARRAY POSITION with a ternary chain ending in `:0`, i.e. a language→POSITION map written as
      an EXPRESSION rather than as the object scripts/i18n-langmap-audit.mjs looks for, so no
@@ -66,7 +68,7 @@ window.IntMapModules.droneNav=function(HOST){
      and unlike a short `L(…)` call there was no inline-table fallback to save it. All four now go
      through `L.arr()`, which IS `pick()` applied to the array (js/lang-registry.js), and the tuples
      themselves are `LA(…)` calls so that the gate can see them at all. */
-  const LA=window.IntMapLang.pickArgs();
+  const LA=IntMapLang.pickArgs();
 
   /* ---- geodesy (spherical; the same radius the rest of the app measures with) ---------------- */
   const R_EARTH=6371008.8, D2R=Math.PI/180, R2D=180/Math.PI;
@@ -622,7 +624,7 @@ window.IntMapModules.droneNav=function(HOST){
         +st.violations.map(v=>`<div class="dn-vio dn-${esc(v.severity)}" role="button" tabindex="0" data-at="${v.at}"><b>${esc(kindLabel(v.kind))}</b> <span class="dn-vio-at">${v.toKm?('· '+v.fromKm.toFixed(2)+'–'+v.toKm.toFixed(2)+' km'):''}</span><br>${esc(v.text)}</div>`).join('')
       : `<div class="dn-ok">✓ ${L('Every condition is met.','すべての飛行条件を満たしています。','Alle Bedingungen erfüllt.','Все условия выполнены.','Se cumplen todas las condiciones.')}</div>`);
     const specRows=SPEC_FIELDS.map(f=>`<label class="dn-spec"><span>${esc(specLabel(f))}</span><input type="number" data-spec="${f.k}" step="${f.step}" min="${f.min}" max="${f.max}" inputmode="decimal" value="${esc(route.spec[f.k])}"><i>${f.unit}</i></label>`).join('');
-    const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button aria-label="${window.IntMapLang.t(HOST.lang,'Delete','削除','Löschen','Удалить','Eliminar')}" type="button" class="dn-del" data-drop="${esc(r.id)}">×</button></div>`).join('')}</div>`:'';
+    const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button aria-label="${IntMapLang.t(HOST.lang,'Delete','削除','Löschen','Удалить','Eliminar')}" type="button" class="dn-del" data-drop="${esc(r.id)}">×</button></div>`).join('')}</div>`:'';
     const ops=opsSection();
 
     p.innerHTML=`<div class="tp-header"><span class="tp-title">🛸 ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>
@@ -924,4 +926,4 @@ window.IntMapModules.droneNav=function(HOST){
     if(window.IntMapShareState) window.IntMapShareState.register('drone',_io);
     else (window._imShareEarly||(window._imShareEarly=[])).push(['drone',_io]); } }catch(_){}
   return API;
-};
+}

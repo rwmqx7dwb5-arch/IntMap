@@ -1,22 +1,24 @@
 /* ============================================================================
- *  IntMap · ENTRY — the module graph that replaced sixty <script src> tags  (#R175)
+ *  IntMap · ENTRY — the page's one module script  (#R175 → module-graph)
  * ----------------------------------------------------------------------------
- *  Every file below used to be a CLASSIC <script src="js/…"> in index.html, executed in document order
- *  at parse time. They are ES modules now, imported here in the IDENTICAL order — and that swap is safe
- *  for a mechanically checked reason rather than a hopeful one: an AST sweep of all 58 files finds ZERO
- *  top-level declarations, and therefore zero cross-file lexical dependencies. Every one of them is a
- *  pure side-effect module that publishes itself on `window` and reads its collaborators back off
- *  `window` / IM_HOST — the discipline the #R162–#R169 splits established. A module's top-level
- *  `const`/`function` is module-PRIVATE where a classic script's is global, so having none of either is
- *  exactly the property that makes this conversion incapable of changing a single name resolution.
- *  tests/layer-boot-graph-checks.test.mjs (#R175) re-runs that sweep on every commit, so it cannot quietly stop being true.
+ *  #R175 turned sixty <script src> tags into ES modules imported here IN THE SAME ORDER, which was safe
+ *  because no file had a top-level declaration: every one published itself on `window` and read its
+ *  collaborators back off `window`. That made this list LOAD-BEARING — the only place the program said
+ *  who needed whom — and it grew to 136 lines plus a 107-name list of factories checked after boot.
  *
- *  ORDER IS LOAD-BEARING — several files call factories an earlier file registered on
- *  window.IntMapModules — and the same test pins this list against index.html's own module-check list.
+ *  ⚠ WHAT THIS LIST IS NOW (module-graph). Files say what they need with `import`, and a module is
+ *  evaluated after everything it imports — so ORDER IS DERIVED FROM THE IMPORT GRAPH. Factories are
+ *  exports that js/app-body.js imports by name (a missing one is a link error, not a console line).
+ *  A file whose top level only declares is reached through whoever imports it and is NOT listed here.
+ *  What remains are files that still DO something when evaluated (publish on `window`, attach a
+ *  listener, register rows) and whose readers have not all moved to `import` yet — the migration's
+ *  remaining work, not an order to memorise. `node scripts/module-graph.mjs --entry` says, for every
+ *  line, why it is still here; `--entry --write` removes the ones that no longer carry anything.
+ *  The four slots tests/layer-boot-graph-checks.test.mjs pins (vendor and the engine first, newsgeo
+ *  the first feature module, app-body last) stay where they are, for the reasons beside them.
  *
  *  Boot sequence, unchanged in effect: a type="module" script is deferred, so this runs after the
- *  document is parsed and BEFORE DOMContentLoaded fires. That is exactly when the classic tags used to
- *  finish, and exactly what index.html's main body waits for.
+ *  document is parsed and BEFORE DOMContentLoaded fires — what index.html's main body waits for.
  * ==========================================================================*/
 import './vendor.js';
 
@@ -129,9 +131,6 @@ import '../js/reference-data.js';
 import '../js/layer-previews.js';
 import '../js/history.js';
 import '../js/hist-cities.js';
-import '../js/hist-places.js';   /* (#R427) the country's era name, then the CITY's — see js/hist-cities.js. Eager and tiny — only the clock subscriber and the expression builder; the 6,474-city record is fetched the first time the reader leaves «now». */
-import '../js/monitors.js';
-import '../js/companies.js';
 /* (#R311) js/stats-compare.js is on-demand now (js/lazy-modules.js); js/compare.js below is the MAP-compare window, a different feature, and stays. */
 import '../js/compare.js';
 /* (#R291) the routing subsystem — five pure modules then the router; the PANEL is lazy. Architecture.md §8.4. */
@@ -145,12 +144,6 @@ import '../js/routing-export.js';
    check:perf priced «eager for provider selection» at 22 kB of boot JS. DEV-NOTES #R347. */
 import '../js/routing-errors.js';
 import '../js/routing-time.js';
-import '../js/routing.js';
-/* (#R184) the six route ANALYSES (elevation, borders, conditions along the way, the schedule,
-   alternative differences, and routing on OSM's record of a historical network). The three
-   capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
-   built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
-import '../js/routing-ops.js';
 /* (hist-bundles-off-main) the ONE door to the ring-pooled historical records (data/cshapes.js,
    data/hist-borders.js, data/hist-eras.js, data/hist-admin*.js and the gap records): they are fetched,
    parsed and asked on a Worker it owns, and the page holds only what an instant draws. Read by
@@ -159,7 +152,6 @@ import '../js/routing-ops.js';
 import '../js/hist-bundles.js';
 import '../js/border-coast.js';
 import '../js/time-borders.js';
-import '../js/time-admin1.js';   /* (#R564) js/border-coast.js first: it is the ONE reader of data/border-coast.js (which edges of a historical outline are boundary rather than the record own copy of the coastline), and BOTH time modules call it — copying it into the second caller is what AGENTS.md 3.9 forbids. (#R530) …and the subdivisions of that same year — a factory on window.IntMapModules instantiated once from js/app-body.js, exactly like its twin, and the owner of window._applyAdmin1. The 41.5 MB bundle it reads (data/hist-admin1.js) is NOT here: fetched at idle, and not at all on a phone or Data Saver, for the reasons #R192/#R201 measured for data/cshapes.js. */
 /* (#R192) the main-thread side of the satellite tile worker (src/sat-worker.js) — it publishes
    window.IntMapSatWorker and starts nothing until js/app-body.js asks for a tile. */
 import './sat-worker-client.js';
@@ -171,15 +163,7 @@ import './tsunami-worker-client.js';
 import './aviation-worker-client.js';
 import './radiation-worker-client.js';   /* (#R568) …and the radioactive-plume solver's, which publishes window.IntMapRadiationWorker and starts nothing until the dispersion panel (js/sims.js) asks for a run. The physics is js/radiation-model.js, imported by js/sims.js AND by src/radiation-worker.js — one copy, on whichever thread ends up running it. */
 import '../js/data-layers.js';
-import '../js/workspace.js';
 import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */
-import '../js/wb-layers.js';
-import '../js/us-elections.js';
-import '../js/elections.js';
-import '../js/war-fronts.js';
-import '../js/net-health.js';   /* (#R588) …and the national-elections layer beside the presidential one: a different question (parliaments, by district) on a different data contract. (#R349) …and the two world wars' Layers ROW — the layer itself (js/war-layer.js) is lazy */
-import '../js/beta-overlays.js';
-import '../js/cameras.js';
 /* (#R224) js/atlas-console.js is NOT imported here any more — it is the ninth on-demand module
    (js/lazy-modules.js), fetched the first time anything reaches for Atlas. 658 kB of the boot
    bundle, for a panel most sessions never open. See LAZY_FACTORIES below.
@@ -201,7 +185,6 @@ import '../js/river-course.js';
    what the map draws must be runnable in a test without a renderer (tests/hazard-other-geometry-kernel-checks.test.mjs (#R218)). */
 import '../js/streamline.js';
 import '../js/map-ui.js';
-import '../js/map-tools.js';
 /* (#R192) "where is the land" — the bundled 1-bit world mask (data/land-mask.png). Ahead of the
    seismic simulator because that is its first caller, but it is a fact about the Earth and not
    about earthquakes: anything else that needs a land/sea sign asks here rather than growing a
@@ -236,60 +219,30 @@ import '../js/geodesy.js';
    no DOM, no renderer and no state, so it costs one `window.` assignment and is verified in Node
    against real earthquakes instead of against a screenshot. */
 import '../js/fault-geometry.js';
-/* (#R196) index.html's ELEVENTH split — the service-worker tile cache and the directional prefetch.
-   It only registers a factory; js/app-body.js calls it from the exact point the code used to occupy,
-   because it attaches `moveend`/`move` handlers whose order relative to the shell's is observable. */
-import '../js/tile-warm.js';
 
-/* (#R192) the tsunami propagation model — linear long waves over the real sea floor, initialised
-   from the same event the seismic panel is already describing. After seismic.js because that is
-   what hands it an event; it registers itself and computes nothing until asked. */
-import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
 /* (#R276) the forecast model (axis, .om URLs, decoded field, colour scales) and the WebGL particle renderer that draws the wind from it — both publish a window global synchronously and js/weather.js reads both, so they precede it. (#R356) js/wx-models.js is the registry of WHICH models exist (pure data and pure functions; no network, no SDK) and js/wx-ecmwf.js is now the multi-model engine that builds its instances from it — window.IntMapECMWF is the default instance and window.IntMapWxEngine builds the rest on demand, so the registry precedes the engine. */
 import '../js/wx-ecmwf.js';
 import '../js/wx-wind.js';   /* (#R293) js/wx-reanalysis.js went with the MERRA-2 source it existed for — 「気温レイヤーで、MERRA-2 再解析は削除。」 */
 import '../js/weather.js';
-import '../js/layer-packs.js';   /* (#R254) …which imports js/datacenters.js itself — see the note there */
 /* (#R211) the sixth pack — trade, energy, warnings, tides, crops. Same shape as layer-packs.js
    (a factory on window.IntMapModules, instantiated once from js/app-body.js). Its ROWS must be eager:
    the progress gate and the session restore both key off those rows existing. (startup-lazy-layers)
    …and only its rows are: the five layers (js/world-packs.js) are fetched by js/lazy-modules.js the
    first time one of those rows is switched on — see js/world-packs-rows.js. */
 import '../js/world-packs-rows.js';
-/* (#R213) 「業界を選べば、そのなかでの利害関係や実際の数値が人物相関図的にマッピングされるレイヤー」 —
-   the seventh member of the same family, and its own file because standing instruction 13 says new work
-   leaves the core. It must come AFTER world-packs.js: it reuses that module's panel/row toolkit through
-   `window.IntMapWorld._ui` rather than carrying a second copy of it, and it says so out loud if the
-   toolkit is not there instead of half-building a layer. */
-import '../js/industry-web.js';
 /* (#R222) the field DECODER before the layer that reads it: a plain window module with no HOST, so
    nothing here depends on load order beyond "defined before first use". Both ocean-current layers
    (the World-data plate and the older data-layers row) read the same grid through it. */
 import '../js/ocean-currents-field.js';
-import '../js/ocean-currents.js';
 import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R650) …and the WHO Disease Outbreak News layer. */
-import '../js/precip-annual.js';   /* (#R266) 年降水量 — CHELSA 1 km normal + GPCC per-year, both bundled rasters */
-/* (#R322) the SHELL only. #R311 measured that two of this file's five factories build Layers-panel
-   buttons at boot, so it cannot be deferred whole; the five bodies live in
-   js/analysis-{timeseries,research,correlate,world-events,edu}.js and js/lazy-modules.js fetches each
-   one when its facade is first called. Adding them here would download all five at boot again. */
-import '../js/analysis-panels.js';
 import '../js/sims.js';
 import '../js/tables.js';
 import '../js/legal.js';        /* …which imports js/legal-text.js — the words privacy.html / terms.html also read */
-import '../js/feedback.js';
-import '../js/onboarding.js';
-import '../js/mobile-ui.js';
 /* (#R231) the phone's base-map square + its popover — the five view controls, lifted out of the Map &
    layers sheet ("レイヤー選択欄から分離"). After js/mobile-ui.js because initMobileUI() installs it. */
 import '../js/basemap-switch.js';
-import '../js/news-timeline.js';
-import '../js/dash-extended.js';
-import '../js/map-extras.js';
 import '../js/countries-ui.js';
 import '../js/news-ui.js';
-import '../js/companies-ui.js';
-import '../js/tool-panel.js';
 import '../js/solid3d.js';
 /* (#R202) the orbit-point custom layer, behind IntMapGeoEngine.layers.addOrbit — the same shape as
    solid3d.js: a MapLibre adapter implementation detail that only js/geo-engine.js reaches for. */
@@ -309,41 +262,6 @@ import '../js/limb-layer.js';
    ⚠ THE RULE THIS BREAKS IS NOT ABOUT RENDERING. It is 「勝手なことを確認せずにやるな」 — do not
    decide anything on the reader's behalf without asking first. Anything that changes what the app
    looks like is theirs to approve, before it is written. */
-/* (#R311) js/volume3d.js is on-demand (js/lazy-modules.js): `#btn-tool-volume` and Atlas's volume3d action await it. */
-import '../js/view-controls.js';
-import '../js/drone-nav.js';
-/* (#R184) the ten operational capabilities that hang off js/drone-nav.js's #R174 seams — wind at
-   altitude, the radio link, restricted areas, the return-leg reserve, landing sites, route
-   comparison, return-to-home and multi-aircraft conflicts. After the planner, because it attaches
-   to the planner's published API. */
-import '../js/drone-ops.js';
-/* (#R184/#R311) js/aircraft-detail.js, js/satellites-live.js and js/satellite-detail.js are on-demand
-   (js/lazy-modules.js): the aircraft click fetches the first, the `dl-sats` row the other two. The
-   satellite layer is the one module here with a real npm dependency of its own (satellite.js, MIT —
-   SGP4/SDP4 is not something to hand-roll), which now lands in that chunk rather than in the boot one. */
-import '../js/auth-ui.js';
-import '../js/community.js';
-import '../js/satellite.js';
-import '../js/ai-core.js';
-import '../js/place-labels.js';
-import '../js/window-manager.js';
-import '../js/search-geocode.js';
-import '../js/news-context.js';
-import '../js/news-feed.js';
-/* (#R207) the news OUTLET filter — the picker in Settings and the predicate the feed is filtered by.
-   Registers a factory only; js/app-body.js calls it where the other settings pickers are wired. */
-import '../js/news-sources.js';
-import '../js/article-reader.js';
-import '../js/community-board.js';
-/* (#R311) the map hover tooltip — one surface used by every hover handler in the app, moved out of
-   js/app-body.js because one surface has one owner. See that file. */
-import '../js/map-tooltip.js';
-/* (#R498) the mobile touch-input surface — the long-press, the crosshair, the centre readout and the
-   "Add point" pill. Registers a factory only; js/app-body.js mounts its two halves at the two
-   positions their blocks occupied. Out of the shell for the reason js/map-tooltip.js is. */
-import '../js/mobile-map-input.js';
-import '../js/map-readout.js';
-import '../js/elevation-profile.js';
 /* (#R186) the real night sky behind the globe (stars from the bundled Bright Star Catalogue, the Sun
    at its true position) and the coarse whole-Earth satellite base that removes the blank-tile wait.
    Both publish a window API and do nothing until app-body starts them, so their position in this
@@ -380,15 +298,6 @@ import '../js/ephemeris.js';
 /* (#R219) the distance ladder out of the solar system — published radii from the Kuiper cliff to the
    particle horizon, so «zoom out past the planets» has a measured object on every step instead of an
    empty claim. Pure data + arithmetic, verified in Node (tests/engine-space-checks.test.mjs (#R219)). */
-/* (startup-lazy-layers) …imported by js/space.js — see above. What stays eager is the WAY IN: the zoom-floor
-   gesture, its gauge and window.IntMapSpace (js/space-approach.js); the explorer itself is fetched by
-   js/lazy-modules.js (`spaceBody`) when that gesture starts or Atlas asks for it. */
-import '../js/space-approach.js';
-/* (#R195) the `imapsat://` tile protocol — 259 lines of Esri fetching, placeholder detection,
-   ancestor cropping and the @2x stitch, lifted out of js/app-body.js. Like every module here it only
-   registers a factory; js/app-body.js calls it from the exact point the code used to occupy, because
-   the style object below that point reads the flag the factory sets. */
-import '../js/sat-proto.js';
 
 /* (#R175) LAST, deliberately: js/app-body.js is index.html's old inline body, and it must register its
    DOMContentLoaded listener only after every module above has published its globals — exactly the order
@@ -396,58 +305,21 @@ import '../js/sat-proto.js';
 import '../js/app-body.js';
 import { LAZY_NAMES, CARRIED_NAMES } from '../js/lazy-modules.js';
 
-/* ── (#R162/#R163) THE REQUIRED-MODULE GUARD, moved here verbatim from the inline <script> that used to
-      sit right after the tag block. It has to run after every import above and before the app's
-      DOMContentLoaded body, which is precisely where it now sits. A file that failed to load says so
-      loudly instead of surfacing later as "cannot read property of undefined"; the FACTORY list is
-      checked as well as the namespace, because one missing file leaves the namespace itself present (an
-      earlier file created it) while the feature it carries is gone. ── */
-const MODULE_FACTORIES = [
-  'maddison', 'histStates', 'histId', 'layerPreviews', 'monitors', 'companies',
-  'compare', 'routing', 'timeBorders', 'timeAdmin1', 'histPlaces',   /* (#R530) the subdivisions of the year on the clock — js/time-admin1.js */
-  'dataLayers', 'workspace', 'widgets', 'wbLayers', 'betaOverlays', 'cameras',
-  'layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup',
-  'geojsonUpload', 'viewHash', 'share', 'projView', 'drawTool',
-  'isolate', 'seaRoute', 'outline', 'moveShape', 'isochrone',
-  'arc3d', 'objectList', 'wind', 'weatherEC', 'weatherPanel', 'earthSky',
-  'landCover', 'betaPack2', 'religionLang', 'timeZones', 'gibsScience', 'timeSeries',
-  'aiResearch', 'correlate', 'worldEvents', 'edu', 'radiation', 'popArea',
-  'sun', 'transitReach',
-  'legal', 'feedback', 'onboarding', 'progressCtl', 'mobileUI', 'mobileMapInput', 'layoutReflow',
-  'newsTimeline', 'dashExtended', 'locate', 'annotations', 'layerHoverPopup',
-  'runwaySearch', 'terrain', 'railSeaOverlays', 'countriesUi', 'newsUi', 'companiesUi',
-  'toolPanel', 'authUi', 'community', 'satellite', 'aiCore', 'placeLabels',
-  'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
-  'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
-  'droneOps', 'routingOps',
-  'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'outbreaks', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule; the line ceiling was retired in #R795); why, in DEV-NOTES #R408. tests/shell-app-body-modules-checks.test.mjs #R408 ④ derives the comparison now, so a fifth cannot sit here unread. */
-];
-/* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
-   These files are not in the import list above: they are fetched by js/lazy-modules.js the
-   first time the user reaches for the feature. The guard below therefore CANNOT check them at boot
-   — `typeof M[k] !== 'function'` is the correct answer for a module nobody has asked for, and
-   reporting it would make every clean boot look broken.
-   ⚠ THE CHECK IS NOT DROPPED, IT IS MOVED. js/lazy-modules.js verifies, at the moment each one
-   lands, that the factory registered AND that the global it owns was published, and records any
-   failure in window.__imLazyCheck.failed — which tests/r209.spec.js asserts is empty after asking
-   for every one of them. Naming them here keeps ONE list of every factory the program has, so a
-   file that is deleted or renamed still has somewhere to be missing from. (#R311) six more.
-   ⚠ (#R322) …and five that are HALVES of a factory that is still eager. `timeSeries`, `aiResearch`,
-   `correlate`, `worldEvents` and `edu` stay in MODULE_FACTORIES above, because js/analysis-panels.js
-   still registers all five at boot — it is their BODIES that moved, into the five `analysis*` keys
-   below, and the boot guard cannot see those for the same reason it cannot see the others.
-   (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
-   GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
-   the aircraft layer, aircraft search or an Atlas aviation command asks for it. (#R353) …and the two volcano modules — see js/lazy-modules.js and docs/VOLCANO-INTELLIGENCE.md. (#R354) …and the three company-atlas modules — docs/COMPANIES.md §3. */
+/* ── (#R162/#R163 → module-graph) THE REQUIRED-MODULE GUARD ─────────────────────────────────────
+   It used to hold MODULE_FACTORIES — 107 names, checked AFTER boot against window.IntMapModules,
+   because a factory was a string key on a shared object and nothing else could say one was missing.
+   Factories are exports now, and js/app-body.js imports each one BY NAME from the file that defines
+   it: a missing file or a misspelt factory is a link error, refused by the bundler at build time and
+   by the browser before a single module evaluates. That failure can no longer reach a booted page,
+   so `missingFactories` is always empty — the field stays because the browser specs and the
+   production smoke assert exactly that, and an empty answer is the true one.
+   What a link cannot check is the globals still published for readers that reach them through
+   `window` rather than `import`; those stay checked here until their last reader moves. ── */
 /* (#R798) the deferred half and the carried one are DERIVED from js/lazy-modules.js's registry —
    one definition per module, and this guard reads it rather than keeping a second list. */
 const LAZY_FACTORIES = LAZY_NAMES.slice(); const CARRIED_FACTORIES = CARRIED_NAMES.slice();
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
-  const M = window.IntMapModules || {};
-  const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');
-  if (missFac.length) console.error('[IntMap] module factories missing: ' + missFac.join(', ') + ' — the matching js/ file did not load');
-  window.__imModuleCheck = { missing: miss, missingFactories: missFac, lazy: LAZY_FACTORIES.slice(), carried: CARRIED_FACTORIES.slice() };
+  window.__imModuleCheck = { missing: miss, missingFactories: [], lazy: LAZY_FACTORIES.slice(), carried: CARRIED_FACTORIES.slice() };
 })();

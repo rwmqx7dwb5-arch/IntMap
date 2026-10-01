@@ -40,9 +40,10 @@ import './widget-defs-markets.js';
 import './widget-defs-map.js';
 import './widget-layout.js';
 import './widget-gallery.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.widgets=function(HOST){
+
+export function widgets(HOST){
   'use strict';
 
   var WC = window.IntMapWidgetCore;
@@ -103,7 +104,7 @@ window.IntMapModules.widgets=function(HOST){
   });
   /* the layer registry has no event of its own, so the board re-reads it when the map settles */
   try {
-    var E = window.IntMapGeoEngine;
+    var E = IntMapGeoEngine;
     if (E && E.hasRenderer && E.hasRenderer() && E.events) {
       E.events.on('idle', function () { if (built && LAY.boardShown()) { WC.invalidateContext(); WC.emit('layers'); } });
     }
@@ -122,4 +123,4 @@ window.IntMapModules.widgets=function(HOST){
 
   if (document.readyState !== 'loading') setTimeout(sync, 0);
   else document.addEventListener('DOMContentLoaded', function () { setTimeout(sync, 0); });
-};
+}

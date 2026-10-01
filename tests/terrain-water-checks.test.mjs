@@ -44,7 +44,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { tokens as zTokens } from '../scripts/z-layers.mjs';
-import { lazyFiles } from './app-source.mjs';
+import { lazyFiles, factoryCalls } from './app-source.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -65,8 +65,10 @@ const load = (p) => { const w = {}; new Function('window', read(p))(w); return w
 const entry = read('src/main.js');
 const LAZY = lazyFiles(new URL('../', import.meta.url));
 const reached = (rel) => entry.includes(`import '../${rel}';`) || LAZY.includes(rel);
-const body = [read('js/app-body.js'), read('js/geo-engine.js'), read('js/camera-math.js')].join(String.fromCharCode(10));
-const instantiated = () => body + String.fromCharCode(10) + read('js/lazy-modules.js');
+/* (module-graph) a factory is an export now, CALLED by name with IM_HOST from js/app-body.js or from a
+   lazy entry's mount — factoryCalls() reads those calls off the AST */
+const FACTORIES = factoryCalls(new URL('../', import.meta.url));
+const instantiated = (file, name) => (FACTORIES[file] || []).includes(name);
 const water = read('js/terrain-water.js');
 
 /* ── ④ the terrain/water solver ─────────────────────────────────────────────────────────────────
@@ -76,7 +78,8 @@ test('R176 ④: water is priority-flood + volume routing, and the inflow is exac
   /* ⚠ READ, NOT RUN: the routing solver lives inside the terrain panel factory together with its DEM fetch and renderer images; the shallow-water physics that replaced most of it is run in #R265/#R267 below. */
   assert.ok(existsSync(join(ROOT, 'js/terrain-water.js')), 'the simulator has its own file');
   assert.ok(reached('js/terrain-water.js'), 'loaded by the Vite entry, or fetched on demand by js/lazy-modules.js');
-  assert.match(instantiated(), /window\.IntMapModules\.terrainWater\((IM_HOST)\);/, 'and instantiated');
+  assert.ok(instantiated('js/terrain-water.js', 'terrainWater'), 'and instantiated');
+  assert.match(read('js/lazy-modules.js'), /m\.terrainWater\((IM_HOST)\);/, '…with the host');
   assert.match(water, /function Heap\(cap\)\{/, 'a real min-heap, so the flood is O(n log n)');
   assert.match(water, /filled\[nk\]=Math\.max\(surf\[nk\],filled\[k\]\);/, 'priority-flood fills to the spill level');
   assert.match(water, /parent\[nk\]=k;/, 'and the pop order doubles as the drainage tree');

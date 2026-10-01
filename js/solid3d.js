@@ -38,8 +38,10 @@
  *  the same three calls with its own primitive.
  * ==========================================================================*/
 import { LIFTED_GLSL } from './lifted-projection.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.solid3d=function(){
+
+import { IntMapGeoEngine } from './geo-engine.js';
+
+function solid3d(){
   const R=6371008.8, D2R=Math.PI/180;
   /* the WGS84 equatorial circumference MapLibre's mercator is built on — one mercator unit of altitude at
      latitude φ is MERC_CIRC·cos φ metres (see the altitude-unit note in render) */
@@ -370,4 +372,7 @@ void main(){
     };
   }
   return { makeLayer };
-};
+}
+
+/* (module-graph) handed to the renderer seam, which draws this kind when asked (js/geo-engine.js provideLayerKind) */
+IntMapGeoEngine.provideLayerKind('solid3d', solid3d);

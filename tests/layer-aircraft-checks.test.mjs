@@ -270,7 +270,6 @@ const body = [readFileSync(join(ROOT, 'js/app-body.js'), 'utf8'),
                  ⚠ THIS JOIN, NOT appShell(): r168 #8 counts the SHELL'S LINES from appShell, and
                  putting 375 lines back into it would undo the move this file is following. */
               readFileSync(join(ROOT, 'js/camera-math.js'), 'utf8')].join('\n');
-const entry = readFileSync(join(ROOT, 'src/main.js'), 'utf8');
 const panel = readFileSync(join(ROOT, 'js/aircraft-detail.js'), 'utf8');
 const sim = readFileSync(join(ROOT, 'js/flight-sim.js'), 'utf8');
 
@@ -309,13 +308,15 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
   /* (#R798) the mount is an entry of the registry; its spelling is the static gate's business */
   assert.ok(LAZY_REGISTRY.aircraftDetail && typeof LAZY_REGISTRY.aircraftDetail.mount === 'function' && LAZY_REGISTRY.aircraftDetail.publishes === 'IntMapAircraftPanel',
     'the factory is instantiated by the registry and publishes the panel');
-  assert.ok(loader.includes('window.IntMapModules.aircraftDetail(IM_HOST)'), 'the factory is instantiated');
-  assert.ok(!body.includes('window.IntMapModules.aircraftDetail('),
-    'js/app-body.js instantiates it at boot as well — the module is then in the boot bundle regardless');
+  /* (module-graph) the mount calls the export off the namespace its own import() resolved to */
+  assert.ok(loader.includes('m.aircraftDetail(IM_HOST)'), 'the factory is instantiated');
+  assert.ok(!/(?:window\.IntMapModules\.)?\baircraftDetail\(/.test(body) && !/from '\.\/aircraft-detail\.js'/.test(body),
+    'js/app-body.js instantiates (or imports) it at boot as well — the module is then in the boot bundle regardless');
   assert.match(dl, /IntMapLazy\.need\('aircraftDetail'\)/,
     'the aircraft click does not fetch the card module first — it would reach a global that has not been downloaded');
-  const inList = (name, list) => new RegExp(`const ${list} = \\[[^\\]]*'${name}'`).test(entry);
-  assert.ok(inList('droneNav', 'MODULE_FACTORIES'), 'droneNav is covered by the boot-time required-module guard');
+  /* (module-graph) the boot-time guard was src/main.js's MODULE_FACTORIES list; a boot factory is now an
+     export js/app-body.js imports by name, so a missing one is a link error — the import IS the guard */
+  assert.match(body, /^import \{ droneNav \} from '\.\/drone-nav\.js';/m, 'droneNav is covered by the boot-time required-module guard');
   assert.ok(LAZY_NAMES.includes('aircraftDetail'),
     'aircraftDetail is covered by the deferred half of that guard — one list still knows every factory');
 });

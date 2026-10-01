@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -41,18 +42,16 @@ function fakeDocument() {
 }
 const el = (declares) => ({ closest: (sel) => (sel === '[data-time-intent]' && declares ? {} : null) });
 
-function loadClock(withDoc = true) {
+/* (module-graph) the kernel is IMPORTED, a fresh instance per call, into a browser that has this document
+   (or none at all — a worker, node); the clock is its export */
+async function loadClock(withDoc = true) {
   const document = withDoc ? fakeDocument() : undefined;
-  const window = {};
-  const ctx = { window, Date, Math, Number, String, Object, console };
-  if (document) ctx.document = document;
-  vm.createContext(ctx);
-  vm.runInContext(rd('js/chronos.js'), ctx);
-  return { T: window.IntMapTime, document };
+  const { IntMapTime } = await importModule('js/chronos.js', { globals: { window: {}, document } });
+  return { T: IntMapTime, document };
 }
 
-test('① intent fires once; a late subscriber is called at once; unsubscribe works', () => {
-  const { T } = loadClock();
+test('① intent fires once; a late subscriber is called at once; unsubscribe works', async () => {
+  const { T } = await loadClock();
   assert.equal(T.intended(), null, 'nothing is intended at evaluation');
   let a = 0, b = 0, c = 0;
   T.onIntent(() => a++);
@@ -66,8 +65,8 @@ test('① intent fires once; a late subscriber is called at once; unsubscribe wo
   assert.equal(c, 1, 'a subscriber arriving after the intent is called at once — import order must not decide a warm-up');
 });
 
-test('① the clock: a past year is an intent; the present, a future instant and this year are not', () => {
-  const { T } = loadClock(false);   /* also proves the kernel still evaluates with no document (workers, node) */
+test('① the clock: a past year is an intent; the present, a future instant and this year are not', async () => {
+  const { T } = await loadClock(false);   /* also proves the kernel still evaluates with no document (workers, node) */
   let n = 0; T.onIntent(() => n++);
   T.setNow({ source: 'ui' });
   T.set(new Date(Date.now() + 3 * 864e5), { allowFuture: true, source: 'tides' });
@@ -80,8 +79,8 @@ test('① the clock: a past year is an intent; the present, a future instant and
   assert.equal(T.intended().source, 'clock:os', 'and records who moved the clock');
 });
 
-test('① the UI: a pointerdown or focus inside [data-time-intent] counts, elsewhere does not, then the listeners go', () => {
-  const { T, document } = loadClock();
+test('① the UI: a pointerdown or focus inside [data-time-intent] counts, elsewhere does not, then the listeners go', async () => {
+  const { T, document } = await loadClock();
   const before = document.L.length;
   assert.ok(document.L.some((x) => x.t === 'pointerdown' && x.c === true), 'a capture pointerdown listener is installed');
   assert.ok(document.L.some((x) => x.t === 'focusin' && x.c === true), 'and a capture focusin listener');
@@ -132,12 +131,13 @@ test('② the rule lives in one place: neither history file carries its own copy
 });
 
 /* ── ③ the shipped warm blocks, run ─────────────────────────────────────────────────────────────── */
-function runWarm(file, { may, extra }) {
+async function runWarm(file, { may, extra }) {
   const src = liftFunction(codeOnly(rd(file)), 'warm');
-  const { T } = loadClock(false);
+  const { T } = await loadClock(false);
   const calls = [], idle = [];
   const env = Object.assign({
-    window: { IntMapTime: T, IntMapMemBudget: { maySpeculate: () => may } },
+    /* (module-graph) the warm block reads the clock under the name its module imports it as */
+    IntMapTime: T, window: { IntMapTime: T, IntMapMemBudget: { maySpeculate: () => may } },
     HOST: { isMobile: () => false },
     requestIdleCallback: (fn, o) => { idle.push(o); calls.push('idle'); fn(); },
     setTimeout: () => { calls.push('timer'); },
@@ -158,8 +158,8 @@ const TA_STUBS = (calls) => ({
 });
 
 for (const [file, stubs, first] of [['js/time-borders.js', TB_STUBS, 'csLoad'], ['js/time-admin1.js', TA_STUBS, 'T1']]) {
-  test('③ ' + file + ': nothing at boot; after the intent, the head start through an idle callback', () => {
-    const r = runWarm(file, { may: true, extra: stubs });
+  test('③ ' + file + ': nothing at boot; after the intent, the head start through an idle callback', async () => {
+    const r = await runWarm(file, { may: true, extra: stubs });
     assert.deepEqual(r.calls, [], 'evaluating the module fetched something before any intent');
     r.T.intent('test');
     assert.equal(r.calls[0], 'idle', 'the warm-up must go through requestIdleCallback, not run on the intent\'s own event');
@@ -167,8 +167,8 @@ for (const [file, stubs, first] of [['js/time-borders.js', TB_STUBS, 'csLoad'], 
     assert.ok(r.idle[0] && r.idle[0].timeout > 0, 'with a ceiling, so a permanently busy page still gets it');
     if (file === 'js/time-admin1.js') assert.ok(!r.calls.includes('T2') && !r.calls.includes('T3'), 'the deeper tiers are never warmed');
   });
-  test('③ ' + file + ': a phone or a metered connection gets no speculative copy even after the intent', () => {
-    const r = runWarm(file, { may: false, extra: stubs });
+  test('③ ' + file + ': a phone or a metered connection gets no speculative copy even after the intent', async () => {
+    const r = await runWarm(file, { may: false, extra: stubs });
     r.T.intent('test');
     assert.deepEqual(r.calls, [], 'maySpeculate said no, and something was fetched anyway');
   });

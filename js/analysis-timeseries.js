@@ -13,28 +13,29 @@
  * ==========================================================================*/
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — it was a hand-written 20 s here */
 import { readWithin } from './fetch-deadline.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.analysisTimeSeries=function(HOST){
+import { IntMapLang } from './lang-registry.js';
+
+export function analysisTimeSeries(HOST){
   window.__imAnalysisTimeSeries=(function(){
     const jp=()=>HOST.lang==='jp';
-    const LP=window.IntMapLang.pick(()=>HOST.lang);
+    const LP=IntMapLang.pick(()=>HOST.lang);
     /* (#R241) the ARRAY form of the language helper — see `pickArgs` in js/lang-registry.js.
        These tables held their translations as a bare array indexed by the language's position:
        no inline-table fallback (so fr/ko/zh got element 0 for ever) and invisible to every
        translation instrument. Written as a call, they are ordinary L(…) sites to the audits. */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
     const IND=[
       {id:'NY.GDP.MKTP.CD', label:LA('GDP (US$)','GDP（米ドル）','BIP (US$)','ВВП (долл. США)','PIB (US$)'), fmt:v=>'$'+short(v)},
       {id:'NY.GDP.PCAP.CD', label:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita'), fmt:v=>'$'+Math.round(v).toLocaleString()},
       {id:'SP.POP.TOTL', label:LA('Population','人口','Bevölkerung','Население','Población'), fmt:v=>short(v)},
-      {id:'SP.DYN.LE00.IN', label:LA('Life expectancy','平均寿命','Lebenserwartung','Ожидаемая продолжительность жизни','Esperanza de vida'), fmt:v=>v.toFixed(1)+(window.IntMapLang.t(HOST.lang," yr"," 歳"," J."," лет"," años"))},
+      {id:'SP.DYN.LE00.IN', label:LA('Life expectancy','平均寿命','Lebenserwartung','Ожидаемая продолжительность жизни','Esperanza de vida'), fmt:v=>v.toFixed(1)+(IntMapLang.t(HOST.lang," yr"," 歳"," J."," лет"," años"))},
       {id:'MS.MIL.XPND.GD.ZS', label:LA('Military (% GDP)','軍事費（対GDP）','Militär (% BIP)','Военные расходы (% ВВП)','Militar (% PIB)'), fmt:v=>v.toFixed(2)+'%'},
       {id:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], label:LA('CO₂ per capita (t)','1人当たりCO₂ (t)','CO₂ pro Kopf (t)','CO₂ на душу населения (т)','CO₂ per cápita (t)'), fmt:v=>v.toFixed(2)}   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values → "データなし") — successor first, old code as fallback */
     ];
     let modal=null;
     function ensureModal(){ if(modal) return modal; modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='timeseries-modal';
-      modal.innerHTML='<div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;"><button id="ts-x" type="button" aria-label="'+window.IntMapSafe.html(window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar'))+'" data-i18n-aria="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;line-height:1;cursor:pointer;">×</button><h3 id="ts-title" style="margin:0 0 4px;font-size:18px;"></h3><p id="ts-sub" style="margin:0 0 12px;color:var(--text-muted);font-size:12px;"></p><div id="ts-body"></div></div>';
+      modal.innerHTML='<div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;"><button id="ts-x" type="button" aria-label="'+window.IntMapSafe.html(IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar'))+'" data-i18n-aria="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;line-height:1;cursor:pointer;">×</button><h3 id="ts-title" style="margin:0 0 4px;font-size:18px;"></h3><p id="ts-sub" style="margin:0 0 12px;color:var(--text-muted);font-size:12px;"></p><div id="ts-body"></div></div>';
       document.body.appendChild(modal);
       modal.querySelector('#ts-x').onclick=()=>{ modal.style.display='none'; };
       modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
@@ -66,7 +67,7 @@ window.IntMapModules.analysisTimeSeries=function(HOST){
        wireCharts() can drive the crosshair after the HTML is injected. */
     const TS_W=500, TS_H=92;
     function chart(series,label,fmt){
-      if(!series||series.length<2) return '<div style="color:var(--text-muted);font-size:11px;padding:3px 0 9px;">'+label+': '+(window.IntMapLang.t(HOST.lang,"no data","データなし","Keine Daten","Нет данных","Sin datos"))+'</div>';
+      if(!series||series.length<2) return '<div style="color:var(--text-muted);font-size:11px;padding:3px 0 9px;">'+label+': '+(IntMapLang.t(HOST.lang,"no data","データなし","Keine Daten","Нет данных","Sin datos"))+'</div>';
       const W=TS_W,H=TS_H,padL=8,padR=8,padT=14,padB=16; const ys=series.map(s=>s.v); let minV=Math.min(...ys), maxV=Math.max(...ys); const y0=series[0].y, y1=series[series.length-1].y;
       /* (#R110) 0-baseline guide line ("CountriesのTime-seriesには、0の場所に補助線を引いて…プラスマイナス系指標のように"):
          extend the axis down to 0 so the zero line is visible whenever the data crosses zero, or is all-positive but
@@ -121,14 +122,14 @@ window.IntMapModules.analysisTimeSeries=function(HOST){
     }); }
     async function open(){ const cur=window._cpCurrent||{}; const code=cur.code; if(!code) return;
       const m=ensureModal(); m.style.display='flex';
-      m.querySelector('#ts-title').textContent=(window.IntMapLang.t(HOST.lang,"Time-series — ","時系列グラフ — ","Zeitreihe — ","Временной ряд — ","Serie temporal — "))+(cur.name||code);
-      m.querySelector('#ts-sub').textContent=window.IntMapLang.t(HOST.lang,"Source: World Bank Open Data","出典: 世界銀行オープンデータ","Quelle: World Bank Open Data","Источник: World Bank Open Data","Fuente: World Bank Open Data");
-      const body=m.querySelector('#ts-body'); body.innerHTML=window.IntMapLang.t(HOST.lang,"Loading…","読み込み中…","Wird geladen…","Загрузка…","Cargando…");
+      m.querySelector('#ts-title').textContent=(IntMapLang.t(HOST.lang,"Time-series — ","時系列グラフ — ","Zeitreihe — ","Временной ряд — ","Serie temporal — "))+(cur.name||code);
+      m.querySelector('#ts-sub').textContent=IntMapLang.t(HOST.lang,"Source: World Bank Open Data","出典: 世界銀行オープンデータ","Quelle: World Bank Open Data","Источник: World Bank Open Data","Fuente: World Bank Open Data");
+      const body=m.querySelector('#ts-body'); body.innerHTML=IntMapLang.t(HOST.lang,"Loading…","読み込み中…","Wird geladen…","Загрузка…","Cargando…");
       const results=await Promise.all(IND.map(ind=>fetchInd(code,ind.id)));
       const html=IND.map((ind,i)=>chart(results[i],LP.arr(ind.label),ind.fmt)).join('');
-      body.innerHTML=html || (window.IntMapLang.t(HOST.lang,"No data available","データがありません","Keine Daten verfügbar","Данные недоступны","No hay datos disponibles"));
+      body.innerHTML=html || (IntMapLang.t(HOST.lang,"No data available","データがありません","Keine Daten verfügbar","Данные недоступны","No hay datos disponibles"));
       try{ wireCharts(body); }catch(_){}
     }
     return { open };
   })();
-};
+}

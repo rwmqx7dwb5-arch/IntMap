@@ -22,7 +22,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
-import { asClassicScript } from './app-source.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,8 +30,12 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
 /* js/map-typography.js, EVALUATED on top of the real language registry. The page's <html lang> is
    the BCP-47 TAG (what the document really carries), the name-key table and the renderer's setter are
-   recording stubs, and window.addEventListener keeps its listeners so a language change can be fired. */
-function typography(tag) {
+   recording stubs, and window.addEventListener keeps its listeners so a language change can be fired.
+   (module-graph) IMPORTED, fresh per call: the registry is the real shared module (its shipped language
+   list declared by langRegistry()), the renderer is handed at the module's own geo-engine.js import edge.
+   The module reads `document`/`window` when CALLED, so each result is used before the next call. */
+const REAL_LANG = langRegistry();
+async function typography(tag) {
   const listeners = {}, keysAskedFor = [], handed = [];
   /* (startup-lazy-layers) the page's FontFaceSet, as css/fonts.css really declares it — the faces this
      origin bundles, which js/map-typography.js `webFonts()` must not ask Google Fonts for */
@@ -40,12 +44,10 @@ function typography(tag) {
     fonts: { forEach: (fn) => bundled.forEach(fn) } } };
   w.window = w;
   w.addEventListener = (ev, fn) => { (listeners[ev] ||= []).push(fn); };
-  const ctx = vm.createContext(w);
-  for (const p of ['js/locales/_langs.js', 'js/lang-registry.js']) vm.runInContext(read(p), ctx, { filename: p });
   w.IntMapOsmNameKeys = (l) => { keysAskedFor.push(l); return l === 'jp' ? ['name:ja', 'name:en', 'name:latin'] : ['name:' + l, 'name:en']; };
-  w.IntMapGeoEngine = { scene: { setCjkFontFamily: (f) => { handed.push(f); return true; } } };
-  vm.runInContext(read('js/map-typography.js'), ctx, { filename: 'js/map-typography.js' });
-  return { T: w.IntMapMapTypography, L: w.IntMapLang, keysAskedFor, handed, fire: (ev) => (listeners[ev] || []).forEach((f) => f()) };
+  const GE = { scene: { setCjkFontFamily: (f) => { handed.push(f); return true; } } };
+  await importModule('js/map-typography.js', { globals: { window: w, document: w.document }, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GE } } });
+  return { T: w.IntMapMapTypography, L: REAL_LANG, keysAskedFor, handed, fire: (ev) => (listeners[ev] || []).forEach((f) => f()) };
 }
 
 /* ═══════════════════════ #R252 · from r252-checks.test.mjs ═══════════════════════ */
@@ -176,7 +178,7 @@ test('#R252 ⑤ the admin-1 label is painted from js/border-style.js, not from a
 });
 
 /* ── ⑦ THE MAP’S CJK FACE FOLLOWS THE LANGUAGE ─────────────────────────────────────────────── */
-test('#R252 ⑦ the local-ideograph family is settable at runtime and is set on every language change', () => {
+test('#R252 ⑦ the local-ideograph family is settable at runtime and is set on every language change', async () => {
   /* spelling kept: js/geo-engine.js is the adapter over a live MapLibre map (its glyph manager); the setter's body is read off its text. */
   const ge = code(read('js/geo-engine.js'));
   assert.match(ge, /setCjkFontFamily\(fam\)\{/, 'the adapter cannot change the CJK face');
@@ -191,7 +193,7 @@ test('#R252 ⑦ the local-ideograph family is settable at runtime and is set on 
 
   /* (tests-by-topic) the typography half is RUN: a language change is fired, and what the renderer
      is handed is recorded. */
-  const t = typography('zh-Hans');
+  const t = await typography('zh-Hans');
   t.fire('intmap-lang');
   assert.equal(t.handed.length, 1,
     'nothing asks the renderer to follow the language — the face stays the one the map was built with');
@@ -199,7 +201,7 @@ test('#R252 ⑦ the local-ideograph family is settable at runtime and is set on 
     'the sync does not hand over cjkFamily() — a second answer to «which face» would drift from css/fonts.css');
   /* and the family it hands over is still per-language */
   assert.match(t.handed[0], /^'Noto Sans SC'/, 'cjkFamily() no longer puts the Simplified face first for zh-hans');
-  assert.match(typography('ja').T.cjkFamily(), /^'Noto Sans JP'/, '…and the Japanese one first for Japanese');
+  assert.match((await typography('ja')).T.cjkFamily(), /^'Noto Sans JP'/, '…and the Japanese one first for Japanese');
 });
 }
 
@@ -220,7 +222,7 @@ const rd = read;
 const NL = String.fromCharCode(10);
 
 /* the module, run, with a renderer stub that records every `text-field` it is handed. */
-function boot(lang, mode) {
+async function boot(lang, mode) {
   const setLayout = [];
   const noop = () => { };
   const layers = {
@@ -228,28 +230,31 @@ function boot(lang, mode) {
     add: noop, setPaint: noop, setSourceData: noop,
     setLayout: (id, prop, val) => { setLayout.push({ id, prop, val }); }
   };
-  const ctx = vm.createContext({});
-  ctx.window = ctx;
-  ctx.console = console;
-  ctx.setTimeout = noop;
-  ctx.document = { baseURI: 'https://example.invalid/' };
-  ctx.matchMedia = () => ({ matches: false });
-  ctx._imCanDraw = () => true;
-  ctx.isMobile = () => false;
-  ctx.imLabelLang = mode;
-  ctx.IntMapGeoEngine = {
-    hasRenderer: () => true, layers, camera: { getZoom: () => 6 },
-    coords: { querySourceFeatures: () => [] }, events: { on: noop }
-  };
-  ctx.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
-  ctx.IntMapLang = { pick: () => ({ arr: (a) => a[0] }) };
-  ctx.SEA_LABELS = [];
-  vm.runInContext(asClassicScript(rd('js/place-labels.js')), ctx);
+  /* (module-graph) IMPORTED: the renderer, the registry and the sea-label table are handed at the
+     module's own import edges; what it still reads off `window` is the page. */
+  const win = { console };
+  win.window = win;
+  win.matchMedia = () => ({ matches: false });
+  win._imCanDraw = () => true;
+  win.isMobile = () => false;
+  win.imLabelLang = mode;
+  win.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
+  const M = await importModule('js/place-labels.js', {
+    globals: { window: win, document: { baseURI: 'https://example.invalid/' } },
+    mocks: {
+      'js/geo-engine.js': { IntMapGeoEngine: {
+        hasRenderer: () => true, layers, camera: { getZoom: () => 6 },
+        coords: { querySourceFeatures: () => [] }, events: { on: noop }
+      } },
+      'js/lang-registry.js': { IntMapLang: { pick: () => ({ arr: (a) => a[0] }) } },
+      'js/tables.js': { SEA_LABELS: [] },
+    },
+  });
   const HOST = {
     lang, mapType: 'std', namesOn: true, geoLabelsOn: true, poiOn: true, userTheme: 'dark',
     mapLabelsViaVector: () => true, canDraw: () => true, _stabIdx: { water: new Map() }
   };
-  const api = ctx.window.IntMapModules.placeLabels(HOST);
+  const api = M.placeLabels(HOST);
   api.ensurePlaceLabels();
   api.applyLabelLang();
   const byId = new Map();
@@ -276,12 +281,17 @@ const NAMELESS_LOCAL = { 'name:en': 'Tokyo' };
 const NO_READER_NAME = { name: 'Kabasakal' };
                   /* nothing but the endonym */
 
-const EN_BOTH = boot('en', 'ui+local');
-const JP_BOTH = boot('jp', 'ui+local');
-const FR_BOTH = boot('fr', 'ui+local');
+/* (module-graph) booted on first use INSIDE a test, not by top-level await: node:test starts the tests
+   already registered while a top-level await is pending, and two evaluations installing two pages
+   (window/document) at once would read each other's. Tests run one at a time. */
+let _both = null;
+const both = () => (_both ||= (async () => ({
+  EN_BOTH: await boot('en', 'ui+local'), JP_BOTH: await boot('jp', 'ui+local'), FR_BOTH: await boot('fr', 'ui+local'),
+}))());
 
 /* ══ ① THE TWO LINES ════════════════════════════════════════════════════════════════════════════ */
-test('#R772 ① the reader language on line 1, the tile own name on line 2', () => {
+test('#R772 ① the reader language on line 1, the tile own name on line 2', async () => {
+  const { EN_BOTH, JP_BOTH } = await both();
   assert.equal(draw(EN_BOTH.get('ofm-city'), TOKYO), 'Tokyo' + NL + '東京');
   assert.equal(draw(JP_BOTH.get('ofm-city'), PARIS), 'パリ' + NL + 'Paris');
   /* the endonym is the SECOND line, never the first: a reader who set English reads English first. */
@@ -290,7 +300,8 @@ test('#R772 ① the reader language on line 1, the tile own name on line 2', () 
 
 /* ══ ② ONE LINE WHEN THE SECOND WOULD SAY THE SAME THING ════════════════════════════════════════
    «Paris / Paris» is the failure this guards, and it is the common case in Europe — not an edge. */
-test('#R772 ② no doubled line when the reader language and the endonym agree', () => {
+test('#R772 ② no doubled line when the reader language and the endonym agree', async () => {
+  const { EN_BOTH, FR_BOTH } = await both();
   assert.equal(draw(EN_BOTH.get('ofm-city'), PARIS), 'Paris');
   assert.equal(draw(FR_BOTH.get('ofm-city'), PARIS), 'Paris');
   /* a feature with no reader-language name falls to `name`, so both halves are the endonym → one line */
@@ -298,7 +309,8 @@ test('#R772 ② no doubled line when the reader language and the endonym agree',
 });
 
 /* ══ ③ NO TRAILING BLANK LINE WHEN THERE IS NO ENDONYM ══════════════════════════════════════════ */
-test('#R772 ③ a row with no name draws one line, not a line and an empty one', () => {
+test('#R772 ③ a row with no name draws one line, not a line and an empty one', async () => {
+  const { EN_BOTH } = await both();
   const s = draw(EN_BOTH.get('ofm-city'), NAMELESS_LOCAL);
   assert.equal(s, 'Tokyo');
   assert.ok(!s.includes(NL), 'the label ends in a newline: ' + JSON.stringify(s));
@@ -306,14 +318,14 @@ test('#R772 ③ a row with no name draws one line, not a line and an empty one',
 
 /* ══ ④ THE OTHER THREE MODES ARE UNTOUCHED ══════════════════════════════════════════════════════
    A new option must not be a change to the ones already chosen by readers. */
-test('#R772 ④ ui / local / en still produce exactly one line, unchanged', () => {
+test('#R772 ④ ui / local / en still produce exactly one line, unchanged', async () => {
   const cases = [
     ['ui', 'en', TOKYO, 'Tokyo'], ['ui', 'jp', PARIS, 'パリ'],
     ['local', 'en', TOKYO, '東京'], ['local', 'jp', PARIS, 'Paris'],
     ['en', 'jp', TOKYO, 'Tokyo']
   ];
   for (const [mode, lang, props, want] of cases) {
-    const got = draw(boot(lang, mode).get('ofm-city'), props);
+    const got = draw((await boot(lang, mode)).get('ofm-city'), props);
     assert.equal(got, want, 'mode=' + mode + ' lang=' + lang);
   }
 });
@@ -322,7 +334,8 @@ test('#R772 ④ ui / local / en still produce exactly one line, unchanged', () =
    The report is about place-name labels, and there are several layers that draw one. A fix applied
    to the city layer alone would leave the country, the prefecture, the POI and the water names in
    one language beside two-line city names — the shape #R429 records. */
-test('#R772 ⑤ the second line reaches every layer that draws a tile name', () => {
+test('#R772 ⑤ the second line reaches every layer that draws a tile name', async () => {
+  const { EN_BOTH } = await both();
   for (const id of ['ofm-country', 'ofm-admin1', 'ofm-city', 'ofm-other', 'ofm-poi', 'ofm-river', 'ofm-water']) {
     assert.ok(EN_BOTH.has(id), 'no text-field written for ' + id);
     assert.equal(draw(EN_BOTH.get(id), TOKYO), 'Tokyo' + NL + '東京', id);
@@ -336,7 +349,8 @@ test('#R772 ⑤ the second line reaches every layer that draws a tile name', () 
    the operators it does NOT implement. `format` — the operator that would have let the second line
    be smaller — is in that set, so choosing it would have blanked every label on the Cesium engine
    with nothing failing. The list is read from that file rather than restated here. */
-test('#R772 ⑥ the expression uses no operator the Cesium evaluator refuses', () => {
+test('#R772 ⑥ the expression uses no operator the Cesium evaluator refuses', async () => {
+  const { EN_BOTH } = await both();
   const m = rd('js/cesium-style.js').match(/const UNSUPPORTED=new Set\(\[([^\]]*)\]\)/);
   assert.ok(m, 'cesium-style.js no longer declares UNSUPPORTED — this check has lost its subject');
   const unsupported = new Set([...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
@@ -356,19 +370,19 @@ test('#R772 ⑥ the expression uses no operator the Cesium evaluator refuses', (
    in index.html and a branch in js/place-labels.js, and the three are written in three files — a
    default naming a mode nobody implements would draw the reader's language with no second line and
    nothing would say so. All three are read here; the behaviour half is RUN. */
-test('#R772 ⑧ the default mode is ui+local, is offered, and draws two lines', () => {
+test('#R772 ⑧ the default mode is ui+local, is offered, and draws two lines', async () => {
   const m = rd('js/app-body.js').match(/window\.imLabelLang\s*=\s*'([^']+)'/);
   assert.ok(m, 'js/app-body.js no longer sets an initial imLabelLang');
   assert.equal(m[1], 'ui+local', 'the shipped default is not the bilingual mode');
   const sel = rd('index.html').match(/<select id="setting-label-lang">([\s\S]*?)<\/select>/)[1];
   assert.ok(sel.includes('value="' + m[1] + '"'), 'the default is not one of the offered options');
-  assert.equal(draw(boot('en', m[1]).get('ofm-city'), TOKYO), 'Tokyo' + NL + '東京');
+  assert.equal(draw((await boot('en', m[1])).get('ofm-city'), TOKYO), 'Tokyo' + NL + '東京');
 });
 
 /* ══ ⑦ THE SETTING OFFERS EXACTLY THE MODES THE RENDERER IMPLEMENTS ═════════════════════════════
    Both halves are discovered: the options from index.html, the behaviour by RUNNING each one. An
    option nobody implements draws the wrong labels silently; a mode nobody can choose is dead code. */
-test('#R772 ⑦ every option in the settings select is a mode that behaves distinctly', () => {
+test('#R772 ⑦ every option in the settings select is a mode that behaves distinctly', async () => {
   const sel = rd('index.html').match(/<select id="setting-label-lang">([\s\S]*?)<\/select>/);
   assert.ok(sel, 'the Place-name labels select is gone from index.html');
   const opts = [...sel[1].matchAll(/<option value="([^"]+)" data-i18n="([^"]+)"/g)].map((m) => ({ v: m[1], k: m[2] }));
@@ -382,12 +396,14 @@ test('#R772 ⑦ every option in the settings select is a mode that behaves disti
      records. The pair has to differ SOMEWHERE, and jp/en over these two features is where. */
   const seen = new Map();
   for (const o of opts) {
-    const sig = JSON.stringify(['en', 'jp'].map((L) => {
-      const b = boot(L, o.v);
-      return [draw(b.get('ofm-city'), TOKYO), draw(b.get('ofm-city'), PARIS)];
-    }));
-    assert.ok(!seen.has(sig), 'options ' + seen.get(sig) + ' and ' + o.v + ' draw the same labels');
-    seen.set(sig, o.v);
+    const sig = [];
+    for (const L of ['en', 'jp']) {
+      const b = await boot(L, o.v);
+      sig.push([draw(b.get('ofm-city'), TOKYO), draw(b.get('ofm-city'), PARIS)]);
+    }
+    const sigs = JSON.stringify(sig);
+    assert.ok(!seen.has(sigs), 'options ' + seen.get(sigs) + ' and ' + o.v + ' draw the same labels');
+    seen.set(sigs, o.v);
   }
 });
 }
@@ -497,12 +513,12 @@ function makeEngine() {
   return { eng, layers, labels: () => sources.get('imtb-lbl-src') || null };
 }
 
-function loadModule() {
+async function loadModule() {
   const noop = () => {};
   const E = makeEngine();
   const win = {
     addEventListener: noop, setTimeout: (f) => { try { f(); } catch (_) {} return 0; }, clearTimeout: noop, setInterval: () => 0,
-    IntMapModules: {}, IntMapGeoEngine: E.eng, IntMapTime: { on: noop }, _applyBorders: noop,
+    _applyBorders: noop,
     document: {
       getElementById: () => null,
       createElement: () => { const el = {}; queueMicrotask(() => { try { el.onerror && el.onerror(); } catch (_) {} }); return el; },
@@ -512,13 +528,20 @@ function loadModule() {
   };
   win.window = win;
   const ctx = vm.createContext(win);
-  /* the real registry, the real scales, the real border/coast marks — and all three shipped
-     bundles, so every tier of the record answers (CShapes, OpenHistoricalMap, the era sheets). */
-  for (const p of ['js/locales/_langs.js', 'js/lang-registry.js', 'js/label-scale.js', 'js/hist-scale.js',
-    'js/hist-bundles.js', 'js/border-coast.js', 'data/cshapes.js', 'data/hist-borders.js', 'data/hist-eras.js']) vm.runInContext(rd(p), ctx);
-  vm.runInContext(rd('js/time-borders.js'), ctx);
+  /* the real scales — and all three shipped bundles, so every tier of the record answers (CShapes,
+     OpenHistoricalMap, the era sheets). These are classic scripts that publish on `window`. */
+  for (const p of ['js/label-scale.js', 'js/hist-scale.js',
+    'js/hist-bundles.js', 'data/cshapes.js', 'data/hist-borders.js', 'data/hist-eras.js']) vm.runInContext(rd(p), ctx);
+  /* (module-graph) the real registry, the real border/coast marks and the module itself are IMPORTED;
+     the recorder and the clock are handed at their import edges — border-coast.js gets the same ones,
+     as it did when both ran on the one fake window. No network: fetch rejects, as a missing one threw. */
+  const page = { window: win, document: win.document, navigator: win.navigator, fetch: () => Promise.reject(new Error('offline')) };
+  const edges = { 'js/geo-engine.js': { IntMapGeoEngine: E.eng }, 'js/chronos.js': { IntMapTime: { on: noop } } };
+  langRegistry();
+  const { IntMapBorderCoast } = await importModule('js/border-coast.js', { globals: page, mocks: edges });
+  const M = await importModule('js/time-borders.js', { globals: page, mocks: { ...edges, 'js/border-coast.js': { IntMapBorderCoast } } });
   const HOST = { lang: 'en', canDraw: () => true, isMobile: () => false };
-  return { mod: ctx.window.IntMapModules.timeBorders(HOST), E, win: ctx.window };
+  return { mod: M.timeBorders(HOST), E, win };
 }
 
 /* ── geometry the CHECK owns: what the record says, asked of the record, not of the module ─────── */
@@ -588,8 +611,10 @@ const SHEETS = (() => {
 
 /* one walk of the record, shared by every check below: the drawn label points beside the parts the
    record says the same names are made of */
-const WALK = await (async () => {
-  const { mod, E } = loadModule();
+/* (module-graph) walked on first use inside a test, not by top-level await — see both() above */
+let _walk = null;
+const walk = () => (_walk ||= (async () => {
+  const { mod, E } = await loadModule();
   const out = [];
   for (const y of SHEETS) {
     await mod._go(y);
@@ -612,9 +637,10 @@ const WALK = await (async () => {
     out.push({ y, key: mod.current(), parts: by, pts, total: lbl.features.length });
   }
   return out;
-})();
+})());
 
-test('#R707 the record answered every tier, so the checks below are looking at something', () => {
+test('#R707 the record answered every tier, so the checks below are looking at something', async () => {
+  const WALK = await walk();
   assert.equal(WALK.length, SHEETS.length, 'a sheet produced no label collection at all');
   const keys = new Set(WALK.map((s) => String(s.key).replace(/[0-9-]/g, '')));
   assert.ok(keys.has('cs') && keys.has('hb'), 'the CShapes and OpenHistoricalMap tiers did not both answer: ' + [...keys].join('/'));
@@ -622,7 +648,8 @@ test('#R707 the record answered every tier, so the checks below are looking at s
 });
 
 /* ── ① the label that existed before has not moved ─────────────────────────────────────────────── */
-test('R707 ①: every name still has its old anchor — the pole of its largest part, to the digit', () => {
+test('R707 ①: every name still has its old anchor — the pole of its largest part, to the digit', async () => {
+  const WALK = await walk();
   let checked = 0;
   const nameless = [];
   for (const sh of WALK) {
@@ -647,7 +674,8 @@ test('R707 ①: every name still has its old anchor — the pole of its largest 
   assert.equal(nameless.length, 0, 'names with geometry and no label at all: ' + nameless.join(', '));
 });
 
-test('R707 ①: a polity the record draws in one piece still gets exactly one label', () => {
+test('R707 ①: a polity the record draws in one piece still gets exactly one label', async () => {
+  const WALK = await walk();
   let single = 0;
   for (const sh of WALK) {
     for (const [nm, ps] of sh.parts) {
@@ -661,7 +689,8 @@ test('R707 ①: a polity the record draws in one piece still gets exactly one la
 });
 
 /* ── ② one name never lands twice on the same ground, and never off its own ────────────────────── */
-test('R707 ②: no part carries two of a polity\'s names, and no name stands off its polity', () => {
+test('R707 ②: no part carries two of a polity\'s names, and no name stands off its polity', async () => {
+  const WALK = await walk();
   let extra = 0;
   for (const sh of WALK) {
     for (const [nm, pts] of sh.pts) {
@@ -682,7 +711,8 @@ test('R707 ②: no part carries two of a polity\'s names, and no name stands off
 });
 
 /* ── ③ the defect itself: a huge territory far from the body that names it ─────────────────────── */
-test('R707 ③: where the RECORD puts a vast territory far from its polity, the polity gets another chance', () => {
+test('R707 ③: where the RECORD puts a vast territory far from its polity, the polity gets another chance', async () => {
+  const WALK = await walk();
   /* The situation is described in the record's own terms and NOT in the module's: a part of at
      least a million square kilometres whose centre stands more than 3,000 km from the centre of
      the part that carries the name. Both numbers are far above anything the module tests, so this
@@ -710,7 +740,8 @@ test('R707 ③: where the RECORD puts a vast territory far from its polity, the 
 });
 
 /* ── ④ and nothing small buys a name ───────────────────────────────────────────────────────────── */
-test('R707 ④: a small island never gets a name of its own, and no sheet fills up with names', () => {
+test('R707 ④: a small island never gets a name of its own, and no sheet fills up with names', async () => {
+  const WALK = await walk();
   /* 200,000 km² is BELOW the module's own floor on purpose: this check is not a copy of that number
      but a statement about what must never happen, and it would catch the #R520 thicket whatever the
      floor were set to. Every island named in that report is far under it — Hokkaidō 78,061 km²,
@@ -743,7 +774,8 @@ test('R707 ④: a small island never gets a name of its own, and no sheet fills 
 });
 
 /* ── ④b an added name stands CLEAR of the territory that already carries it ────────────────────── */
-test('R707 ④: a second name never lands on a territory the first one already reaches across', () => {
+test('R707 ④: a second name never lands on a territory the first one already reaches across', async () => {
+  const WALK = await walk();
   /* ⚠ THIS IS NOT THE MODULE'S RULE WRITTEN TWICE (#R536). The module requires the two centres to
      stand apart by the sum of BOTH radii; this requires only the FIRST — a strictly weaker
      statement, which any correct implementation satisfies and which a spacing-blind one does not.
@@ -775,7 +807,8 @@ test('R707 ④: a second name never lands on a territory the first one already r
 });
 
 /* ── ⑤ every point of a name is still the same feature, in its own object ──────────────────────── */
-test('R707 ⑤: the added points read exactly what the first one does, and own their properties', () => {
+test('R707 ⑤: the added points read exactly what the first one does, and own their properties', async () => {
+  const WALK = await walk();
   let pairs = 0;
   for (const sh of WALK) {
     for (const [nm, pts] of sh.pts) {
@@ -800,30 +833,34 @@ test('R707 ⑤: the added points read exactly what the first one does, and own t
  * A reader test calling lineGeom itself cannot catch a missing source repaint. */
 {
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-function harness(global,years){
+async function harness(global,years){
  const sources=new Map(),layers=new Map(),writes=[],callbacks=[],detail=new Map();
  const rings=[0,10].map(x=>[[x,0],[x+1,0],[x+1,1],[x,1],[x,0]]);
  const d={rings,feats:years.map((y,i)=>[global==='__HISTB'?{en:'Unit '+i}:'Unit '+i,i+1,y,1,1,y+9,12,31,[[i]]])};
  const geometry=(idx)=>({type:'MultiLineString',coordinates:[detail.get(idx)||rings[idx]]});
  const bc={load:async()=>({}),marks:()=>[1,1],onArrive:cb=>callbacks.push(cb),lineGeom:(_d,i)=>geometry(i),wholeLines:fc=>({type:'FeatureCollection',features:fc.features.map(f=>({type:'Feature',properties:{},geometry:{type:'MultiLineString',coordinates:f.geometry.coordinates}}))})};
  const noop=()=>{};
- const w={window:null,[global]:d,IntMapModules:{},IntMapBorderCoast:bc,
-  IntMapTime:{on:noop},addEventListener:noop,setTimeout:()=>0,clearTimeout:noop,setInterval:()=>0,
+ const w={window:null,[global]:d,addEventListener:noop,setTimeout:()=>0,clearTimeout:noop,setInterval:()=>0,
   _applyBorders:noop,navigator:{language:'en'},
   document:{getElementById:()=>null,createElement:()=>({}),head:{appendChild:noop},documentElement:{setAttribute:noop}},
-  IntMapGeoEngine:{hasRenderer:()=>true,ready:()=>true,
+ };
+ const GE={hasRenderer:()=>true,ready:()=>true,
    layers:{hasSource:id=>sources.has(id),addSource:(id,s)=>sources.set(id,s.data),setSourceData:(id,s)=>{sources.set(id,s);writes.push(id);},has:id=>layers.has(id),get:id=>layers.get(id),add:l=>layers.set(l.id,l),setLayout:noop,setPaint:noop,getLayout:()=>undefined,move:noop},
    events:{on:noop,onLayer:noop,clickLayers:()=>[]},coords:{queryRenderedFeatures:()=>[]},render:{canvas:()=>({style:{}})}
-  }
  };
  w.window=w;const ctx=vm.createContext(w);
- for(const p of ['js/locales/_langs.js','js/lang-registry.js','js/label-scale.js','js/hist-scale.js','js/hist-bundles.js','js/time-borders.js'])vm.runInContext(read(p),ctx);
- const mod=w.IntMapModules.timeBorders({lang:'en',canDraw:()=>true,isMobile:()=>false});
+ for(const p of ['js/label-scale.js','js/hist-scale.js','js/hist-bundles.js'])vm.runInContext(read(p),ctx);
+ /* (module-graph) the module is IMPORTED over the real registry; the renderer, the clock and the
+    border/coast store are handed at its import edges (they were window stubs). No network. */
+ langRegistry();
+ const M=await importModule('js/time-borders.js',{globals:{window:w,document:w.document,navigator:w.navigator,fetch:()=>Promise.reject(new Error('offline'))},
+  mocks:{'js/geo-engine.js':{IntMapGeoEngine:GE},'js/chronos.js':{IntMapTime:{on:noop}},'js/border-coast.js':{IntMapBorderCoast:bc}}});
+ const mod=M.timeBorders({lang:'en',canDraw:()=>true,isMobile:()=>false});
  return {mod,sources,writes,rings, async arrive(idx){const r=rings[idx];detail.set(idx,[r[0],[r[0][0]+0.5,0.0002],...r.slice(1)]);await Promise.resolve();callbacks.forEach(cb=>cb());},fine:idx=>detail.get(idx)};
 }
 for(const [global,years] of [['__HISTB',[1840,1850]],['__CSHAPES',[1890,1900]]]){
  test('#R711 '+global+': arrival repaints current line without resetting territory, labels or clock',async()=>{
-  const h=harness(global,years);await h.mod._go(years[0]+2);
+  const h=await harness(global,years);await h.mod._go(years[0]+2);
   assert.ok(h.sources.get('imtb-ln-src')?.features.length,'country line was initially drawn');
   const territory=h.sources.get('imtb-src'),labels=h.sources.get('imtb-lbl-src'),current=h.mod.currentFC(),date=h.mod.current();
   h.writes.length=0;await h.arrive(0);
@@ -833,7 +870,7 @@ for(const [global,years] of [['__HISTB',[1840,1850]],['__CSHAPES',[1890,1900]]])
   assert.equal(h.mod.currentFC(),current);assert.equal(h.mod.current(),date);
  });
  test('#R711 '+global+': a reply from the prior date never restores the prior territory',async()=>{
-  const h=harness(global,years);await h.mod._go(years[0]+2);await h.mod._go(years[1]+2);
+  const h=await harness(global,years);await h.mod._go(years[0]+2);await h.mod._go(years[1]+2);
   const current=h.mod.currentFC(),territory=h.sources.get('imtb-src'),labels=h.sources.get('imtb-lbl-src');
   h.writes.length=0;await h.arrive(0);
   assert.deepEqual(h.writes,['imtb-ln-src']);
@@ -852,7 +889,7 @@ for(const [global,years] of [['__HISTB',[1840,1850]],['__CSHAPES',[1890,1900]]])
 /* spelling kept: browser script (js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('#R253 ③ the place popup copies the NAME, and says so in every language', () => {
   const ui = code(read('js/map-ui.js'));
-  assert.match(ui, /class="plc-copy"[^>]*>\$\{window\.IntMapLang\.t\(HOST\.lang,'Copy name'/,
+  assert.match(ui, /class="plc-copy"[^>]*>\$\{IntMapLang\.t\(HOST\.lang,'Copy name'/,   /* (module-graph) the registry is an import */
     'the copy button is back to a bare “Copy” — it must name what it copies');
   /* the four languages whose translations live in a table rather than in the argument list */
   for (const f of ['ui.fr.js', 'ui.ko.js', 'ui.zh.js', 'ui.zh-hans.js']) {
@@ -865,13 +902,13 @@ test('#R253 ③ the place popup copies the NAME, and says so in every language',
 });
 
 /* ── ⑦ THE FACE FOLLOWS THE LABEL ───────────────────────────────────────────────────────────── */
-test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which family a stack means', () => {
+test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which family a stack means', async () => {
   const pl = code(read('js/place-labels.js'));
 
   /* (tests-by-topic) js/map-typography.js is RUN below (typography()), once per registered language,
      with <html lang> set to the TAG the document really carries. */
   /* the language is the APP's code, read back from the one registry list — not the BCP-47 tag */
-  const ja = typography('ja');
+  const ja = await typography('ja');
   ja.T.placeFont();
   assert.deepEqual(ja.keysAskedFor, ['jp'],
     'the html tag is no longer walked back through IntMapLang.LANGS — 「ja」 reached the name-key table instead of 「jp」 '
@@ -884,7 +921,7 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
   assert.deepEqual(JSON.parse(JSON.stringify(pf[1])), ['any', ['has', 'name:ja']],   /* (another realm's arrays) */
     'the condition is a second copy of the language→key list instead of the one place-labels builds text-field from');
   for (const tag of ['zh-Hant', 'zh-Hans', 'en', 'fr']) {
-    const e = typography(tag).T.placeFont();
+    const e = (await typography(tag)).T.placeFont();
     assert.equal(e[0], 'case', `${tag}: the Chinese settings are exempted again — Noto Sans TC cannot draw 区/渋/峠, so a Japanese place `
       + 'name under a Traditional UI goes back to two faces');
   }
@@ -896,7 +933,7 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
      that defect straight back. Every face is collected from what the module RETURNS, per language. */
   const faces = new Set();
   for (const l of ja.L.LANGS) {
-    const t = typography(l.html);
+    const t = await typography(l.html);
     for (const f of t.T.readerFont()) faces.add(f);
     const e = t.T.placeFont();
     for (const f of e[2][1].concat(e[3][1])) faces.add(f);
@@ -913,7 +950,7 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
      Noto face a language's labels can emit must be in THAT language's request — otherwise the family
      named in text-font would not exist on that reader's page. */
   for (const l of ja.L.LANGS) {
-    const t = typography(l.html);
+    const t = await typography(l.html);
     const asked = new Set(t.T.webFonts().map((w) => w.family));
     const e = t.T.placeFont();
     for (const f of t.T.readerFont().concat(e[2][1], e[3][1])) {
@@ -922,7 +959,7 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
     for (const w of t.T.webFonts()) assert.match(w.href, /^https:\/\/fonts\.googleapis\.com\/css2\?family=Noto\+Sans\+(JP|SC|TC):wght@400;500;600;700&display=swap$/);
   }
   /* …and a family no label on this reader's map can use is not requested (TC was 480 kB of rules on every page) */
-  assert.ok(!typography('ja').T.webFonts().some((w) => w.family === 'Noto Sans TC'), 'a Japanese page asks for Noto Sans TC again');
+  assert.ok(!(await typography('ja')).T.webFonts().some((w) => w.family === 'Noto Sans TC'), 'a Japanese page asks for Noto Sans TC again');
   assert.doesNotMatch(read('index.html'), /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com/,
     'the Noto rule sheets are render-blocking again (1.39 MB of CSS before the first paint)');
 

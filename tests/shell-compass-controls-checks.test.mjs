@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
@@ -354,11 +354,13 @@ const read = (p) => readLF(resolve(ROOT, p));
    「日本語設定でも座標標高常時表示欄にNEと表示されますが、ちゃんと北東と書くように。（ほかの言語でも。）」
    The sixteen English abbreviations were written out in SIX files. Fixing the readout alone would
    have left the other five saying 「NE」 in Japanese — the same defect with a smaller blast radius. */
-test('R289 ① the sixteen compass points are one table, and every reader goes through it', () => {
+test('R289 ① the sixteen compass points are one table, and every reader goes through it', async () => {
   /* (tests-by-topic) THE SHIPPED FILE IS RUN, not its object literal cut out with a regex: the table
-     is read back through the API every caller uses (langs() / table() / point()). */
+     is read back through the API every caller uses (langs() / table() / point()).
+     (module-graph) it is IMPORTED, with the real language registry it imports for normalising codes. */
+  langRegistry();
   const w = {}; w.window = w;
-  vm.runInContext(read('js/compass.js'), vm.createContext(w), { filename: 'js/compass.js' });
+  await importModule('js/compass.js', { globals: { window: w } });
   const C = w.IntMapCompass;
   assert.ok(C && typeof C.point === 'function', 'js/compass.js publishes window.IntMapCompass');
   const table = Object.fromEntries(C.langs().map((c) => [c, C.table(c)]));

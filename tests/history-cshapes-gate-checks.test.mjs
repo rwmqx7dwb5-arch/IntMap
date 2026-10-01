@@ -22,6 +22,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LICENCE, CITATION } from '../scripts/build-cshapes.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = join(ROOT, 'scripts', 'build-cshapes.mjs');
@@ -233,9 +234,10 @@ test('#R700 ⑰ a bundle whose src no longer names the upstream fails', () => {
    ⚠ EVALUATED, NOT READ (#R505). What is asserted is what the shipped resolver DECIDES: both
    readers of the registry — the in-app dialog and the Sources page — call `useText`, so if the
    licence and the citation come back from it, they are on the reader's screen. */
-test('#R700 ⑱ the shipped registry hands the reader the licence and the citation', () => {
-  const w = {};
-  new Function('window', readFileSync(join(ROOT, 'js', 'reference-data.js'), 'utf8'))(w);
+test('#R700 ⑱ the shipped registry hands the reader the licence and the citation', async () => {
+  /* (module-graph) the registry is IMPORTED — the module the dialog and the Sources page import */
+  const { IntMapRefData } = await importModule('js/reference-data.js');
+  const w = { IntMapRefData };
   const text = w.IntMapRefData.useText(LICENCE.source, 'en');
   assert.ok(text.includes(LICENCE.licence), 'the Sources entry never says it is ' + LICENCE.licence);
   assert.ok(text.includes(CITATION), 'the Sources entry does not carry the publisher\'s citation');

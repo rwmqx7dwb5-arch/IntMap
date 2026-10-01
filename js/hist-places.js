@@ -3,16 +3,19 @@
  * The city label's visibility, typography, scale and colours remain their owners.
  * Dates are approximate vocabulary periods; points are upstream representative points.
  */
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.histPlaces = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function histPlaces(HOST) {
+  const GE = () => IntMapGeoEngine;
   const HS = () => window.IntMapHistScale;
   const SOURCE = 'imhp-src', LABEL = 'imhp-lbl', CITY = 'ofm-city';
   const empty = () => ({ type: 'FeatureCollection', features: [] });
   let data = null, pending = null, controller = null, disposed = false, painting = false;
   let fc = empty(), key = '', popup = null;
   const byId = new Map();
-  const text = (en, jp) => window.IntMapLang.t(HOST.lang, en, jp);
+  const text = (en, jp) => IntMapLang.t(HOST.lang, en, jp);
   const escape = value => window.IntMapSafe.html(String(value == null ? '' : value));
   /* Pleiades explicitly documents [-1000,-1] as 1000–1 BCE, not JS years:
      https://pleiades.stoa.org/vocabularies/time-periods/1st-millennium-bce */
@@ -20,12 +23,12 @@ window.IntMapModules.histPlaces = function (HOST) {
   const namesAt = (p, year) => p.names.filter(n => astro(n.s) <= year && astro(n.e) >= year);
   function when() {
     if (disposed) return null;
-    const clock = window.IntMapTime;
+    const clock = IntMapTime;
     return clock && !clock.isLive() ? clock.when() : null;
   }
   function label(names) {
     const mode = window.imLabelLang || 'ui';
-    const lang = mode === 'en' ? 'en' : window.IntMapLang.htmlTag(HOST.lang);
+    const lang = mode === 'en' ? 'en' : IntMapLang.htmlTag(HOST.lang);
     const own = names.find(n => n.l === lang && (n.a || n.r));
     if (mode === 'local') return (own && (own.a || own.r)) || (names.find(n => n.a) || names[0]).a || names[0].r;
     return (own && (own.r || own.a)) || names[0].r || names[0].a;
@@ -51,7 +54,7 @@ window.IntMapModules.histPlaces = function (HOST) {
   }
   function close() { if (popup) popup.remove(); popup = null; }
   function period(n) {
-    const tag = window.IntMapLang.htmlTag(HOST.lang);
+    const tag = IntMapLang.htmlTag(HOST.lang);
     return HS().yearText(astro(n.s), tag) + ' – ' + HS().yearText(astro(n.e), tag);
   }
   function card(p, names) {
@@ -158,7 +161,7 @@ window.IntMapModules.histPlaces = function (HOST) {
     return pending;
   }
   function refresh() { if (disposed) return; if (when() && !data) ensure(); else apply(); }
-  const stopClock = window.IntMapTime.on(refresh);
+  const stopClock = IntMapTime.on(refresh);
   GE().events.on('styledata', apply);
   GE().events.on('load', apply);
   /* The shared place reader owns exact and padded hits, hover, ownership and
@@ -194,4 +197,4 @@ window.IntMapModules.histPlaces = function (HOST) {
     coverage: () => ({ active: !!when(), places: when() ? fc.features.length : 0,
       source: data ? data.source.publisher : null, asOf: data ? data.asOf : null,
       datePrecision: 'approximate-source-period', coordinatePrecision: 'source-representative-point' }) };
-};
+}
