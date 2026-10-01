@@ -76,6 +76,7 @@
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own —
    (#R796) reached through the ACTIVE SCOPE the register hands to start(), so this file imports nothing
    from it: `S.every('tick', …)` is that wheel, tagged with this capability's name and released on stop. */
+import SATS_LAYER from './layers/dl-sats.js';   /* (layer-descriptor) the layer's declaration — its time contract (`time.bands`) is read below */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satellitesLive=function(HOST){
   /* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
@@ -431,31 +432,12 @@ window.IntMapModules.satellitesLive=function(HOST){
      The panel already prints it; it now prints the truth about the frame being drawn. */
   function clockNow(){ try{ const T=window.IntMapTime; if(T&&T.when) return T.when(); }catch(_){} return new Date(); }
   /* ══ ⚠⚠⚠ (restored-layers-under-load) AN ELEMENT SET SPEAKS FOR THE DAYS AROUND ITS EPOCH, NOT FOR AN ERA ══
-     SGP4 will turn any element set into a position at any instant, and until this round the layer drew
-     whatever came out: with the clock at 1914-06-28 it drew **5,234** objects, at 1991-06-25 **8,355**
-     — 2026 element sets run back 112 and 35 years. No source states those positions; they are made by
-     the arithmetic (.agents/rules/historical-verification.md §2 ③). So an object is computed and drawn
-     only while the instant is inside the span its OWN element set is good for, judged per element set
-     (each has its own epoch) — and never before the year its international designator says it was
-     launched (`98067A` → 1998; the epoch window alone could reach back before a launch for a young
-     high orbit).
-     THE SPAN, MEASURED (not quoted): the repository's own catalogue history — 61 snapshots of
-     data/tle/catalogue.tle, 2026-08-01 … 2026-09-30, the same satellite.js 7.1.0 — each object's older
-     element set propagated to the epoch of its newest one and compared with the newest set there.
-     Criterion: half the objects within 100 km and nine in ten within 1,000 km (a dot that is still on
-     the right place at a world view, and a footprint that still covers the right ground).
-         band (mean motion)        median / p90 error at the age              span kept
-         LEO   > 11 rev/day        5 d: 38 / 394 km   · 7 d: 115 / 2,473 km    5 days
-         MEO/HEO 1.5–11 rev/day    60 d: 18 / 226 km  (the longest age measured) 60 days
-         GEO   ≤ 1.5 rev/day       14 d: 85 / 253 km  · 21 d: 185 / 480 km     14 days
-     ⚠ ESTIMATE where it reaches past the measurement: the history runs FORWARD from older sets; the
-       span is applied the same way backwards (the clock in the past), and MEO/HEO is capped at the
-       60 days the history covers, not at a limit it showed. EXPIRES when satellite.js's propagator
-       changes, when the catalogue source changes, or when a longer history lets the MEO/HEO cap be
-       measured — re-run the measurement in dev-notes/2026-10-01-restored-layers-under-load.md.
-       This table is the ONE copy; everything that propagates asks `_elementSpan()`.
-     The «a few days either side» use — playing the clock to watch the objects move — stays inside it. */
-  const _SPAN_BANDS=[ [11, 5], [1.5, 60], [-Infinity, 14] ];   /* [mean motion above (rev/day), days] — see above */
+     An object is computed and drawn only while the instant is inside the span its OWN element set is good
+     for, and never before the year its international designator says it was launched. (layer-descriptor)
+     THE SPAN IS THE LAYER'S TIME CONTRACT, so it is stated where the layer is declared: js/layers/dl-sats.js
+     `time.bands`, with the measurement that produced it, its estimate and its expiry. This reads it; it is
+     the ONE copy, and everything that propagates asks `_elementSpan()`. */
+  const _SPAN_BANDS=SATS_LAYER.time.bands;   /* [mean motion above (rev/day), days] — js/layers/dl-sats.js */
   const _DAY_MS=86400000;
   function _elementSpan(s){
     if(s._span) return s._span;

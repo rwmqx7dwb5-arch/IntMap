@@ -24,6 +24,9 @@
  *  ⚠ IT IS A MIGRATION RECORD, NOT A GATE. After the manifest exists it is the source of truth and
  *  the document is generated from it; the spec tests/layer-manifest.spec.js is what holds the
  *  two equal. Run this again only to re-derive the manifest from a document you trust.
+ *  ⚠ (layer-descriptor) AND `--write` HAS NO TARGET ANY MORE. The SHELVES block it wrote was split into one
+ *  declaration per layer (js/layers/<id>.js, by scripts/layer-descriptor-migrate.mjs); js/layer-manifest.js
+ *  derives the list from them. `--write` stops with that sentence instead of writing a block nothing reads.
  * ==========================================================================*/
 import { spawn, execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -137,6 +140,7 @@ if (argv.includes('--write')) {
   const MF = join(ROOT, 'js', 'layer-manifest.js');
   const src = readFileSync(MF, 'utf8');
   const a = src.indexOf('/* ── BEGIN SHELVES'), b = src.indexOf('/* ── END SHELVES ── */');
+  if (a < 0 || b < 0) { console.error('js/layer-manifest.js holds no SHELVES block — the list is js/layers/<id>.js now (scripts/layer-descriptor-migrate.mjs)'); process.exit(1); }
   const head = src.slice(0, src.indexOf('\n', a) + 1);
   writeFileSync(MF, head + out + src.slice(b));
   console.log('wrote', rows.length, 'layers on', panel.length, 'shelves →', MF);

@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import * as SAT from 'satellite.js';
+import SATS_LAYER from '../js/layers/dl-sats.js';   /* (layer-descriptor) the time contract the layer reads its span bands from */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -48,10 +49,10 @@ function lift(S, initial, when) {
     if (hit && !stmts.includes(n)) stmts.push(n);
   });
   /* `setSats` REPLACES the catalogue the way load() / setGroup() do */
-  return new Function('SAT', 'initial', 'clockNow', 'sunAt',
+  return new Function('SAT', 'SATS_LAYER', 'initial', 'clockNow', 'sunAt',
     `let sats = initial;
      ${stmts.sort((a, b) => a.start - b.start).map((n) => src.slice(n.start, n.end)).join('\n')}
-     return { propagateAll, span: _elementSpan, diverged: () => _diverged, setSats: (x) => { sats = x; } };`)(S, initial, () => when, () => null);
+     return { propagateAll, span: _elementSpan, diverged: () => _diverged, setSats: (x) => { sats = x; } };`)(S, SATS_LAYER, initial, () => when, () => null);
 }
 
 function counted() {

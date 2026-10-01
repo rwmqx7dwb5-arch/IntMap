@@ -12,6 +12,7 @@
 `§7.x` 参照はそのまま通る。
 
 ここに残すのは**契約**——「レイヤーを1本足すときに必ず読むもの」だけである。
+**レイヤーを 1 本足す手順は「宣言を 1 本書く」**（下の §7.3）。
 
 ⚠ **火山は主題ごとの正本を別に持つ**——同梱カタログの構成（GVP 完新世の全件＋観測機関が現在レベルを公表している座）と GVP 番号による結合、USGS 自身の番号との突き合わせ、現在の警戒レベルの4段
 （USGS／気象庁／週間報告／沈黙）、火山灰 SIGMET、公表されたハザード域だけを描く規則、SO₂、
@@ -27,11 +28,37 @@
 「新しいレイヤーはどの棚に入るか」、§7.5 は基図・投影・初期カメラの組み立て。レイヤーを1本足すときは
 あちらを開くほうが早い——`§7.1`〜`§7.10` のうち **§7.3 と §7.4 以外はすべてあのファイル**にある。
 
-### 7.3 レイヤー・データ契約 `window.IntMapLayers`
+### 7.3 レイヤーの宣言（`js/layers/<id>.js`）とレイヤー・データ契約 `window.IntMapLayers`
+
+**レイヤーとは 1 つの宣言である。** 1 レイヤー＝1 ファイル `js/layers/<id>.js`（`export default { … }`）。
+書けること・検査・導出の正本は `scripts/lib/layer-descriptor.mjs`、欄の一覧と各欄を読む者は
+[`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) §7.2。宣言は 3 つのことを 1 か所で述べる:
+
+- **どこに立つか**——`id`・`shelf`・`order`（棚そのものの並びは `js/layers/_shelves.js`）
+- **行の事実**——`key`・`label`・`rest`・`on`・`share`・`html`・`lazy`。レイヤー欄の一覧はここから**導出**され
+  （索引を書くときに `deriveShelves`）、`js/layer-manifest.js` がそれを読み手に渡す（手で持つ一覧は無い）
+- **他の登録簿の中の同じレイヤー**——`registry`（`IntMapLayers`）・`state`（共有リンクの状態）・`commands`（`IntMapOS`）・
+  `atlas`（能力の項目）・`sources`（出典の行）・`time`（Chronos の契約）。それぞれの登録簿が別の綴りで持っていた
+  同じレイヤーを、宣言が 1 つに結ぶ
+
+**レイヤーを 1 本足す:**
+
+1. `js/layers/<id>.js` を書く（`id`・`shelf`・`order` と、上の欄のうちそのレイヤーに当てはまるもの）
+2. 行を作るモジュールを書く（行のハンドラ・凡例・名前の組み立ては行の持ち主に残る）。`IntMapLayers` に
+   登録したら、その id を宣言の `registry` に書く——描かれているものを Atlas が読めるかはこれで決まる
+3. それだけ。`js/layer-manifest.js` の生成領域（宣言から導いた一覧と宣言の値の写し）は `npm run build` が書き直し（`node scripts/layer-descriptors.mjs --write`）、
+   門（`tests/layer-descriptor-checks.test.mjs`）が、宣言の形・棚・位置の重なり・索引の鮮度・各欄の結び目を
+   それを持つ登録簿と照らす。結び目の欄は主張で、照らせない主張（実行時に組み立てる登録）は書かない
+
+⚠ `label` の無い行の**名前**は、今も行を作るモジュールの `L.arr(LA(…))` が持つ——翻訳の門はその呼び出しで
+翻訳を見つけるので、名前をデータへ移すと門の母集合から外れる（MAP-LAYERS §7.2）。
+
+**以下は、宣言の `registry` が指す実行時の契約** `window.IntMapLayers`:
+
 
 - API ＝ `register` / `state` / **`sampleAt(lng,lat)`** / `featuresIn(bounds)` /
   **`featuresInSource(srcId, bounds)`** / **`loaderOf(id)`** / **`narrow(features, bounds)`** /
-  `legend` / `time` / `source`。
+  **`declaration(id)`** / `legend` / `time` / `source`。
 - ⚠⚠⚠ **登録は「読者に見せる文」と「その文を作った数量」の両方を渡す。** 数値の場から答える行は
   `sampleAt` ではなく **`measure(lng,lat)`** を実装し、`{value, unit}`（数量）または
   `{code, label}`（分類）を返す。`sampleAt()` はそこから表示用の文を作り、行に `number` / `unit` /
@@ -50,7 +77,9 @@
   ⚠ **箱の中の地物を拾う判定は幾何の種類に依らない。** 以前は `geometry.type==='Point'` で絞って
   いたので、**線と面は必ず 0 件**だった。`featuresInSource` はレイヤー行を持たないレンダラの source
   にも同じ窓を開ける（`js/gis-layers.js` が地図のレイヤーをデータセットにするときに使う）。
-- **新しいレイヤーを足したら、同じ変更の中でここへ登録すること**（これが Atlas から使えるかどうかを決める）。
+- **新しいレイヤーを足したら、同じ変更の中でここへ登録し、その id を宣言の `registry` に書くこと**（これが Atlas から
+  使えるかどうかを決める）。`declaration(id)` は宣言を返す——チェックボックスの id でも登録した id でも同じもの。
+  `declarationOf(id)`（供給元が何を持つか）とは別の問い。
 - 消費側は Atlas の `stateContext` に入る実データ行・`layerData` アクション・`analyze` の証拠集め。
 - **凡例の名前は「表」で渡す。** `window._registerLayerOpacity(id, names, …)` の `names` は
   **言語ごとの配列**であって解決済み文字列ではない（文字列を渡すと `names[1]` が2文字目になる）。

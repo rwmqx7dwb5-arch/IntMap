@@ -7,9 +7,9 @@
 ## 12. 壊れやすい部分・注意すべき部分
 
 - **`reorganizeLayerPanel()` は DOM を大量に並べ替える。** タップ中に走ると行がずれて誤タップの原因になる。
-- **レイヤーの一覧・棚・既定値は `js/layer-manifest.js` の 1 か所。** 行を足すなら manifest に 1 行足す——
-  足さなくても行はベータへ掃かれて描かれるが、manifest を読む全員（タイル盤・共有リンク・お気に入り・
-  セッション復元）がその行を知らず、`tests/layer-manifest.spec.js` が落ちる。基本表示の行を
+- **レイヤーの一覧・棚・既定値は宣言 `js/layers/<id>.js` が持ち、`js/layer-manifest.js` はそこから導出する。** 行を足すなら
+  宣言を 1 本足す——足さなくても行はベータへ掃かれて描かれるが、一覧を読む全員（タイル盤・共有リンク・お気に入り・
+  セッション復元）がその行を知らず、`tests/layer-manifest.spec.js` が落ちる。`js/layer-manifest.js` の GENERATED LAYERS の領域は生成物で、手で書かない。基本表示の行を
   `index.html` に書き戻さない（既定の tick と `window.IntMapDefaultOn` が再び 2 か所になる）。
 - **ケッペンのメモリ**：携帯は必ず軽量 `*_4k.png` を使い、作業キャンバスは 2048² へ直接デコードする。
 - **ヘッドレスプレビューは `document.hidden`** なので WebGL の `load` が発火せず `requestAnimationFrame` も
