@@ -98,7 +98,10 @@ export function reachedNames(src) {
   /* every regex metacharacter, not only `$` — an identifier cannot carry most of them, but a partial
      escape is right until the day it is not (CodeQL js/incomplete-sanitization) */
   const rx = (t) => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  for (const v of ns) for (const m of src.matchAll(new RegExp('(?<![\\w$.])' + rx(v) + '\\s*\\.\\s*([A-Za-z_$][\\w$]*)', 'g'))) names.add(m[1]);
+  /* `kit.x` — but not `other.kit.x` (a property that happens to share the name). ⚠ A SPREAD IS A READ:
+     `out.push(...kit.x(…))` puts three dots before the name, and the old `(?<![\w$.])` refused it as if it
+     were a member access (measured: scripts/layer-descriptors.mjs's two reads came out dead). */
+  for (const v of ns) for (const m of src.matchAll(new RegExp('(?<![\\w$])(?<!(?:^|[^.])\\.)' + rx(v) + '\\s*\\.\\s*([A-Za-z_$][\\w$]*)', 'g'))) names.add(m[1]);
   return names;
 }
 

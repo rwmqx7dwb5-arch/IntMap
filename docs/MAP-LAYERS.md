@@ -667,28 +667,64 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 呼ばない。携帯では同じタイル盤が「Map & layers」シートに載る。**「どちらのレイヤー欄を使うか」という
 設定は無い。**
 
-⚠⚠ **どのレイヤーが在るかの正本は `js/layer-manifest.js` である（DOM ではない）。**
-`#layer-dropdown` の**全チェックボックス**（174 個）を、パネルが見せる順に、パネルが載せる棚の上で宣言する
-純データ（DOM も `window` も持たない）。1 行 1 レイヤーで、欄は次のとおり:
+⚠⚠⚠ **レイヤーは 1 つの宣言である——`js/layers/<id>.js`。** `#layer-dropdown` の**全チェックボックス**（174 個）が
+それぞれ 1 本のファイルを持ち、`export default { … }` で自分のことを述べる。何を書けるかの正本は
+`scripts/lib/layer-descriptor.mjs`（欄・検査・導出）で、棚の一覧とその並びだけは 1 つのレイヤーが述べられない事実なので
+`js/layers/_shelves.js` が持つ。**どのレイヤーが在るかは、ディレクトリが答える**——一覧に足す行は無い。
 
 | 欄 | 意味 |
 |---|---|
-| `id` | チェックボックスの id（セッション・共有リンク・お気に入り・Atlas が持つ鍵） |
+| `id` | チェックボックスの id（セッション・共有リンク・お気に入り・Atlas が持つ鍵）。ファイル名と同じ |
+| `shelf` | 載る棚（`_shelves.js` のキー） |
+| `order` | 棚の中の位置（昇順）。移行時に 10 刻みで振ったので、間に新しい行を差し込める |
 | `key` | 棚の並べ替えが使う短い名前（`climate`・`wbgini`・`nightside` …）。無い行もある |
-| `label` | 名前の i18n キー（行が `data-i18n` で名乗るとき）。**136 行は行を作るモジュールが名前を組み立てるので無い** |
-| `rest` | 棚の中の「その他N件」に畳む（#R469） |
+| `label` | 名前の i18n キー（行が `data-i18n` で名乗るとき）。**136 行は行を作るモジュールが名前を組み立てるので無い**（下の ⚠） |
+| `rest` | 棚の中の「その他N件」に畳む |
 | `on` | 初回訪問者に ON（`window.IntMapDefaultOn` はここから導く） |
 | `share` | 共有リンクの `&l=` が運ぶ |
-| `html` | 行そのものを manifest が書く（`js/layer-rows.js`。以前は `index.html` の markup） |
+| `html` | 行そのものを宣言から書く（`js/layer-rows.js`。以前は `index.html` の markup） |
 | `lazy` | その行を ON にすると読まれる遅延モジュール（`js/lazy-modules.js` の `LAZY_REGISTRY`） |
+| `registry` | `window.IntMapLayers` に登録する id（Atlas が「描かれているもの」を読む入口） |
+| `state` | 共有リンクがモジュールの状態を運ぶ鍵（`window.IntMapShareState`） |
+| `commands` | そのレイヤーを操作するカーネル命令（`window.IntMapOS`） |
+| `atlas` | そのレイヤー専用の Atlas の能力（`js/atlas-cap-<namespace>.js` の項目 id） |
+| `sources` | 描く元の出典（`js/reference-data.js` の `DATA_SOURCES` の `n`） |
+| `time` | データが何時について答えられるか（Chronos の契約）。いまは `{ kind: 'elements', bands }`——地物ごとに元期の周りの有効幅を持つ（衛星。`js/satellites-live.js` がここから読む） |
 
-棚は `SHELVES` の並び＝パネルの並びで、`base`（常設スイッチ）・18 の `lyrGrp*`・`lyrGrpOthers`（ベータ）・
-`hidden`（行を持たない箱）。**この一覧を読む側**: `reorganizeLayerPanel`（`GROUPS=layerGroups()`・
-`OTHERS_IDS=betaKeys()`・`rowFor` は manifest の id で引く）、`js/data-layers.js` 先頭の 5 つの
-`window.IntMap*` 一覧、タイル盤（`rowsFromDropdown()`）、共有リンク（`sharedIds()`）、お気に入り、
-セッション復元（`whenBoxes`）。Atlas が DOM を数えずに一覧を得る入口は `catalog()`
-（`[{ id, key, shelf, label, rest, on, share, lazy }]`。名前は `label` の i18n か、行が組み立てた名前）。
+**行の欄（`id`〜`lazy`）から一覧が導出される**（`scripts/lib/layer-descriptor.mjs` の `deriveShelves` を索引を書くときに走らせ、`js/layer-manifest.js` がそれを渡す）——`SHELVES`・`LAYERS` とそこからの一覧
+（`layerGroups()`・`betaKeys()`・`basicRows()`・`defaultOn()`・`sharedIds()`・`htmlRows()`・`catalog()` …）は
+宣言に移る前と**1 バイトも違わない**（`tests/layer-descriptor-checks.test.mjs` ① が、手書きの一覧から撮った写真
+`tests/fixtures/layer-descriptor-before.json` と文字列として比べる）。**この一覧を読む側**は変わらない:
+`reorganizeLayerPanel`（`GROUPS=layerGroups()`・`OTHERS_IDS=betaKeys()`・`rowFor` は id で引く）、
+`js/data-layers.js` 先頭の 5 つの `window.IntMap*` 一覧、タイル盤（`rowsFromDropdown()`）、共有リンク（`sharedIds()`）、
+お気に入り、セッション復元（`whenBoxes`）。
+宣言そのもの（結び目の欄を含む）は `layerDeclaration(id)` が返す——チェックボックスの id でも、
+そのレイヤーが `IntMapLayers` に登録する id でも同じ宣言になる。import できないモジュール（`js/outbreaks.js` は
+`vm` でスクリプトとしても評価される）は `window.IntMapLayers.declaration(id)` で同じものを訊く。
 ⚠ Atlas の `layerCatalog()`（`js/atlas-console.js`）はまだ DOM を歩いている——作り替えは Atlas 側の回。
+
+**結び目の欄（`registry`〜`sources`）は主張であり、主張にはそれを拒める読み手がある。**
+`scripts/layer-descriptors.mjs --check` が、各欄をそれを持つ登録簿と突き合わせる——`IntMapLayers.register('<id>'` の
+リテラル（または宣言から読んだ `register(X.registry[i]`）、`ShareState.register`、`IntMapOS.register`、能力の項目、
+出典の行、`LAZY_REGISTRY`、en と jp の UI 表。⚠ **実行時に組み立てる登録**（`R.id + '.toggle'`・`'gx-' + L.id`）は
+ファイルと照らせないので**主張しない**。⚠ **逆向き（どの宣言にも主張されない登録）は数えて印字するだけ**
+（`--report`）——`elevation`（常時 ON）・`news`（ニュース欄の点）・`choropleth`（系統全体の代弁）は行ではなく、
+主張を要求すれば作り話の主張が返ってくる。
+
+⚠ **名前を宣言へ移していない理由。** `label` の無い 136 行の名前は、行を作るモジュールの `L.arr(LA(…))` が
+呼び出しの場で持っている。翻訳の門（`scripts/i18n-audit.mjs`）はその**呼び出し**で翻訳を見つけるので、名前を
+データへ移すと翻訳が「訳されない」のではなく「数えられない」状態になる。名前を移すには、先に門へ宣言を読む面を足す。
+
+**ディレクトリが一覧である。** 宣言の集合から導いた一覧と各宣言の値は、`scripts/layer-descriptors.mjs --write` が
+`js/layer-manifest.js` の **GENERATED LAYERS の印のあいだ**に書く。Node（検査）とブラウザが同じ一覧を読むためで
+（`js/` の中では `import.meta.glob` を書けない——`src/locale-boot.js` の見出し）、`npm run build` が最初に書き直す
+（`prebuild`）ので、ビルドがディレクトリと食い違う一覧を出荷することはない。コミットされた領域が古ければ門が落ちる。
+⚠ **写すのであって import しない。** 174 本の import にすると起動経路のモジュールが 177 増え（`check:perf` の
+`eager.modules` 291 → 468。バイトは減っていた）、写しを持つ索引モジュールにしても 1 つ増えた（292）——能力の行を
+`js/atlas-capabilities.js` の中へ写す `scripts/atlas-caps.mjs` と同じ理由で、manifest の中へ写す。起動経路のモジュール数は
+移行前と同じ。値を書くのは宣言のファイルだけで、領域が違えば門が落ちる。注記は写さない。
+`npm run build` が最初に書き直す（`prebuild`）ので、ビルドがディレクトリと食い違う一覧を出荷することはない。
+コミットされた索引が古ければ門が落ちる。
 
 **スタイルが受け取れる前に来た ON/OFF は預かられる（`holdUntilDrawable`・`js/layer-rows.js`）。**
 指・共有リンクの `&l=`（`js/map-ui.js`）・セッション復元（`js/session-tabs.js`）・既定 ON の発火
@@ -814,8 +850,10 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 `#layer-dropdown` という要素は残っていて、それは UI ではなくレジストリである——行を作るのは今も各モジュールの
 `buildUI()` で（ハンドラ・凡例・スライダーを持つのは行の持ち主）、**状態**（チェック）は今もその箱にある。
 **常時 `display:none`**（表示させる `.show` クラスは存在しない）。
-**新しいレイヤーは、manifest に 1 行足し、行をこれまでどおりここに追加する。** manifest に無い行も
-ベータへ掃かれて描かれるが、`tests/layer-manifest.spec.js` が落ちる——manifest を読む全員がその行を知らない。
+**新しいレイヤーは、`js/layers/<id>.js` を 1 本足し、行をこれまでどおりここに追加する。** 宣言の無い行も
+ベータへ掃かれて描かれるが、`tests/layer-manifest.spec.js` が落ちる——一覧を読む全員がその行を知らない。
+一時コピーに宣言を 1 本足しただけで、棚・位置・共有・生成行・目録の全部に届き門が通ることは
+`tests/layer-descriptor-checks.test.mjs` ③ が実際に足して確かめている。
 
 **`layerGroups()` の各要素は `[キー, 短い名前の配列, 名指しされた件数]` の3つ組**（旧 `GROUPS` と同じ形）。
 棚の中の並びは**利用者が挙げた順**で、`rest` の無い先頭の行だけがカテゴリを開いたときに並ぶ。

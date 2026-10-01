@@ -173,7 +173,15 @@ window.IntMapModules.outbreaks = function (HOST) {
     const SRC = 'who-don-src';
     const LYR_HALO = 'who-don-halo', LYR_PT = 'who-don-pt', LYR_LB = 'who-don-lb';
     const LYR = [LYR_HALO, LYR_PT, LYR_LB];
-    const CB_ID = 'wp-dl-outbreaks';
+    /* (layer-descriptor) THIS LAYER'S DECLARATION — js/layers/wp-dl-outbreaks.js. The row id, the id it registers
+       with IntMapLayers and the key its state travels under in a share link were three spellings written into
+       this file (`wp-dl-outbreaks`, `outbreaks`, `outbreaks`) that nothing joined; the two below are read from
+       the one declaration, and scripts/layer-descriptors.mjs checks every link it states.
+       ⚠ ASKED OF THE REGISTRY, NOT IMPORTED: this file is also evaluated as a SCRIPT (scripts/build-who-don.mjs
+       runs the top-level name rule in `vm`), where an import statement does not parse. */
+    const LAYER = window.IntMapLayers && window.IntMapLayers.declaration && window.IntMapLayers.declaration('wp-dl-outbreaks');
+    if (!LAYER) return { state: () => ({ on: false, err: 'no layer registry' }) };
+    const CB_ID = LAYER.id;
 
     /* ── the window the clock opens ──────────────────────────────────────────────────────────────
        A DON is an EPISODE of a continuing outbreak, not a state that persists, so «what is on the
@@ -682,7 +690,7 @@ window.IntMapModules.outbreaks = function (HOST) {
 
     /* the choice travels in a share link, like the rest of the family (#R211) */
     try {
-      window.IntMapShareState && window.IntMapShareState.register('outbreaks', {
+      window.IntMapShareState && window.IntMapShareState.register(LAYER.state, {
         get() { return on ? { w: winDays == null ? 0 : winDays, p: pathogen || '', s: sel || '' } : null; },
         set(v) {
           if (!v) return;
@@ -709,7 +717,7 @@ window.IntMapModules.outbreaks = function (HOST) {
 
     /* the layer registry — how Atlas reads what is actually drawn (js/map-ui.js `register`) */
     try {
-      window.IntMapLayers && window.IntMapLayers.register('outbreaks', {
+      window.IntMapLayers && window.IntMapLayers.register(LAYER.registry[0], {
         label: () => L.arr(LA('Disease outbreaks (WHO)', '感染症アウトブレイク（WHO）', 'Krankheitsausbrüche (WHO)', 'Вспышки болезней (ВОЗ)', 'Brotes de enfermedades (OMS)')),
         on: () => on,
         featuresIn: (bounds) => {

@@ -3306,6 +3306,18 @@ that refactor as a photograph (`tests/fixtures/atlas-one-declaration-before.json
 claims, and `SYS()` in two languages against it. `tests/helpers/lift-function.mjs` gained `liftLiteral` for
 the `const NAME={…}` tables those checks evaluate.
 
+**A layer is one declaration, and the list derived from them is checked as bytes** (layer-descriptor).
+`tests/layer-descriptor-checks.test.mjs` compares everything `js/layer-manifest.js` hands its readers
+(`scripts/lib/layer-derived.mjs`) with the photograph of the hand-kept list at 281e584c
+(`tests/fixtures/layer-descriptor-before.json`) as one string; runs `scripts/layer-descriptors.mjs --check` (schema,
+shelves, positions, index freshness, and every link against the registry that holds it); and, in a scratch copy,
+adds ONE `js/layers/<id>.js` and asserts it reaches the shelf, the share set, the generated rows and the catalogue,
+then breaks the declarations eight ways and asserts the gate names each.
+⚠ **A gate that WRITES must unlink before it writes when it may run in a scratch copy.** The copy's files are
+hard links into the checkout; `writeFileSync` on one writes the real file. Measured: the first run of that test's ③
+wrote its probe layer into the real tree through `--write` (the index file it wrote then; the generated region of `js/layer-manifest.js` now). `scripts/layer-descriptors.mjs` unlinks
+first now, and the test lists the index among the paths `mutate()` puts back.
+
 **A capability's code is its ENTRY, and a check reads the entry, not a `case`** (atlas-capability-modules).
 There is no dispatch switch: each capability is one entry — `{ row, schema, run }` — in
 `js/atlas-cap-<namespace>.js`, and the registry rows (copied into `js/atlas-capabilities.js` between its `GENERATED ROWS` markers), the dispatch

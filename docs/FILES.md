@@ -480,10 +480,14 @@ coastline.js                      **海までの距離**（#R495）— data/coas
                                   ⚠ js/coast-line.js（上）は描画用のレイヤーで、こちらは計測用。別物。
 grid-style.js                     経緯線のスタイル層
 layer-home.js                     カメラを動かしてよいレイヤーの表 window.IntMapLayerHome
-layer-manifest.js                 **どのレイヤーが在るか**の正本（layer-manifest）— `#layer-dropdown` の全チェックボックスの
-                                  id・棚・並び・「その他N件」・名前の i18n キー・既定 ON・共有リンク・遅延モジュール。
-                                  DOM も window も持たない純データ（Node の検査がそのまま import する）。棚の並べ替え
-                                  （reorganizeLayerPanel）・既定 ON の一覧・タイル盤・共有リンク・お気に入りがここを読む
+layers/                           **レイヤーの宣言** — 1 レイヤー 1 ファイル `<id>.js`（174 本）＋棚の一覧 `_shelves.js`
+layer-manifest.js                 **どのレイヤーが在るか**（layer-manifest）— js/layers/ の宣言から導出する。`#layer-dropdown` の
+                                  全チェックボックスの id・棚・並び・「その他N件」・名前の i18n キー・既定 ON・共有リンク・
+                                  遅延モジュール、と宣言そのもの（`layerDeclaration`）。⚠ 一覧と宣言の値は GENERATED LAYERS の印の
+                                  あいだに写される生成物（`node scripts/layer-descriptors.mjs --write`・`npm run build` が先に書く。
+                                  import しないのは起動経路のモジュール数のため）。DOM も window も持たない
+                                  （Node の検査がそのまま import する）。棚の並べ替え（reorganizeLayerPanel）・既定 ON の一覧・
+                                  タイル盤・共有リンク・お気に入りがここを読む
 layer-rows.js                     manifest の DOM 側 — 基本表示 10 行を manifest から書く（index.html から移った）＋
                                   `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）＋
                                   `holdUntilDrawable`（スタイルが受け取れる前のレイヤーの `change` を預かり、受け取れる
@@ -1611,6 +1615,14 @@ scripts/
                                   （ブラウザは暖まるほど速くなる）。床（アプリのレイヤー全部非表示）は
                                   **最後に**測る。指・起動・スナップショットは `mobile-trace.mjs` から
                                   import する（写しを持たない）。
+  lib/layer-descriptor.mjs        **レイヤーとは何か** — 1 レイヤー＝1 宣言（js/layers/<id>.js）に書ける欄・宣言の検査・
+                                  宣言の集合からレイヤー欄の SHELVES を導く関数。ブラウザには配らない（導出は生成時に済む）
+  layer-descriptors.mjs           レイヤーの宣言の**索引と門** — js/layers/ を発見して js/layer-manifest.js の生成領域を書き（`--write`）、
+                                  宣言の形・棚・位置の重なり・索引の鮮度・結び目（registry・state・commands・atlas・
+                                  sources・lazy・label）をそれを持つ登録簿と照らす（`--check`）。`--report` は主張されない登録
+  layer-descriptor-migrate.mjs    **移行の記録**（ゲートではない）。手書きの manifest の SHELVES を 1 レイヤー 1 宣言に分け、
+                                  注記を行と棚へ運び、登録の証拠から結び目を書いた（`--rev 281e584c`）
+  lib/layer-derived.mjs           レイヤー欄の読み手が受け取る全部を 1 つの値にする（移行前後のバイト一致の比較に使う）
   layer-manifest-extract.mjs      **移行の記録**（ゲートではない・layer-manifest）。移行前のビルドを起動して
                                   `#layer-dropdown` の全行を読み、1 行ずつ新しいページで ON にして
                                   `IntMapLazy.need` を観測し、`js/layer-manifest.js` の SHELVES を書いた。

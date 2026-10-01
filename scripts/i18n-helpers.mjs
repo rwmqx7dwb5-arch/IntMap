@@ -66,7 +66,19 @@ let _cache = null;
 export function parseAll() {
   if (_cache) return _cache;
   const out = new Map();
-  for (const f of readdirSync(JS).filter((n) => n.endsWith('.js')).sort()) {
+  /* (layer-descriptor) THE SAME UNIVERSE AS scripts/i18n-pair-audit.mjs's walk: every .js under js/, subdirectories
+     included, except the locale tables themselves. This read js/*.js only while js/ had no code directory; when
+     js/layers/ arrived the pair audit (which walks the tree) asked `context('layers/<id>.js')` and got null — two
+     instruments disagreeing about which files exist. Keys are paths relative to js/ (`layers/dl-sats.js`), which
+     is what every caller already prefixes with `js/`. */
+  const rels = [];
+  (function walkDir(dir, rel) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isDirectory()) { if (e.name !== 'locales') walkDir(join(dir, e.name), rel + e.name + '/'); }
+      else if (e.name.endsWith('.js')) rels.push(rel + e.name);
+    }
+  })(JS, '');
+  for (const f of rels.sort()) {
     const src = readFileSync(join(JS, f), 'utf8');
     let ast;
     /* `locations` so scripts/i18n-positional-audit.mjs can report a line without re-parsing */

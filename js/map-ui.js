@@ -18,7 +18,7 @@
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick, tickKey } from './runtime.js';
-import { sharedIds, LAYERS, BASE, HIDDEN, BETA } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
+import { sharedIds, LAYERS, BASE, HIDDEN, BETA, layerDeclaration } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung; (fetch-deadline-layer) and each rung's clock */
 import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
 
@@ -692,7 +692,11 @@ window.IntMapModules.layerRegistry=function(HOST){
     function narrow(features,bounds){ if(!Array.isArray(features)) return null; if(!bounds) return features.slice();
       const b=bounds, w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
       return features.filter(f=>{ try{ return _geomInBox(f&&f.geometry,w,e,so,n); }catch(_){ return false; } }); }
-    return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, declarationOf, loaderOf, narrow, context };
+    /* (layer-descriptor) WHAT A LAYER IS — its declaration (js/layers/<id>.js), asked by its checkbox id or by any id it
+       registers here. `declarationOf` (above) is a different question: what a SUPPLIER holds (gis-sources). A module
+       that is also evaluated as a script (js/outbreaks.js) reads its own ids through this, since it cannot import. */
+    const declaration=(id)=>layerDeclaration(String(id||''));
+    return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, declarationOf, loaderOf, narrow, context, declaration };
   })();
 };
 

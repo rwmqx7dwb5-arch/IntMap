@@ -15,7 +15,7 @@
 **慎重に（壊れやすい中核）**
 
 - `reorganizeLayerPanel()` / `_refreshActiveLayers()` / レイヤーパネルの DOM 順序とスクロール補正。
-- `js/layer-manifest.js` の `SHELVES`（棚・並び・畳み・既定 ON・共有）と、それを読む `js/layer-rows.js`。
+- レイヤーの宣言 `js/layers/<id>.js` と棚 `js/layers/_shelves.js`、そこから一覧を導く `js/layer-manifest.js`、それを読む `js/layer-rows.js`。
 - チェックボックスの決定論的トグル（`#layer-dropdown` の pointerdown/click ハンドラ）。
 - `applyTheme()` / `_reassertBase()` / `styledata` の自己修復まわり。
 - 投影・3D・compare の同期。Isolate のマスク順序。

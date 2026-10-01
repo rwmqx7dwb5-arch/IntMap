@@ -1,0 +1,9 @@
+/* (layer-descriptor) one layer, declared once — see scripts/lib/layer-descriptor.mjs for what each field means */
+export default {
+  id: 'cb-rail2',
+  shelf: 'base',
+  order: 80,
+  label: 'railLayer',
+  on: true,
+  html: true,
+};

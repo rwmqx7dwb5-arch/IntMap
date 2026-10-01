@@ -1,0 +1,6532 @@
+{
+ "SHELVES": [
+  {
+   "key": "base",
+   "layers": [
+    {
+     "id": "cb-names",
+     "label": "placeNames",
+     "on": true,
+     "html": true
+    },
+    {
+     "id": "cb-geolabels",
+     "label": "geoLabels",
+     "on": true,
+     "html": true
+    },
+    {
+     "id": "cb-poi",
+     "label": "poiLabels",
+     "on": true,
+     "html": true
+    },
+    {
+     "id": "cb-borders",
+     "label": "borders",
+     "on": true,
+     "html": true
+    },
+    {
+     "id": "cb-coast",
+     "label": "coastline",
+     "html": true
+    },
+    {
+     "id": "cb-admin1",
+     "label": "adminBounds",
+     "on": true,
+     "html": true
+    },
+    {
+     "id": "cb-roads",
+     "label": "roadsLayer",
+     "on": true,
+     "html": true
+    },
+    {
+     "id": "cb-rail2",
+     "label": "railLayer",
+     "on": true,
+     "html": true
+    },
+    {
+     "id": "cb-grid",
+     "label": "gridLayer",
+     "html": true
+    },
+    {
+     "id": "dl-nightside",
+     "key": "nightside",
+     "label": "lyrNightSide",
+     "share": true
+    },
+    {
+     "id": "beta-dl-bldg3d",
+     "key": "bldg3d",
+     "share": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpClimate",
+   "layers": [
+    {
+     "id": "dl-climate",
+     "key": "climate",
+     "label": "lyrClimate",
+     "on": true,
+     "share": true
+    },
+    {
+     "id": "dl-wind",
+     "key": "wind",
+     "label": "lyrWind",
+     "share": true
+    },
+    {
+     "id": "dl-annprecip",
+     "key": "annprecip",
+     "share": true
+    },
+    {
+     "id": "dl-ec-temp",
+     "key": "ec-temp",
+     "share": true
+    },
+    {
+     "id": "dl-ec-precip",
+     "key": "ec-precip",
+     "share": true
+    },
+    {
+     "id": "dl-radar",
+     "key": "radar",
+     "label": "lyrRadar",
+     "share": true
+    },
+    {
+     "id": "dl-ec-slp",
+     "key": "ec-slp",
+     "share": true
+    },
+    {
+     "id": "dl-ec-gust",
+     "key": "ec-gust",
+     "share": true
+    },
+    {
+     "id": "dl-snow",
+     "key": "snow",
+     "label": "lyrSnow",
+     "share": true
+    },
+    {
+     "id": "dl-ec-cloud",
+     "key": "ec-cloud",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "dl-ec-dew",
+     "key": "ec-dew",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "dl-aod",
+     "key": "aod",
+     "label": "lyrAOD",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "dl-ec-cape",
+     "key": "ec-cape",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "bx-wbpm25",
+     "key": "wbpm25",
+     "rest": true
+    },
+    {
+     "id": "bx-wbco2",
+     "key": "wbco2",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpOrbit",
+   "layers": [
+    {
+     "id": "dl-sats",
+     "key": "sats",
+     "label": "lyrSats",
+     "share": true,
+     "lazy": [
+      "satellitesLive"
+     ]
+    },
+    {
+     "id": "l9-dl-aurora",
+     "key": "aurora",
+     "share": true
+    },
+    {
+     "id": "fac-dl-osmspace",
+     "key": "osmspace",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpMaritime",
+   "layers": [
+    {
+     "id": "dl-sst",
+     "key": "sst",
+     "label": "lyrSST",
+     "share": true
+    },
+    {
+     "id": "dl-waves",
+     "key": "waves",
+     "share": true,
+     "lazy": [
+      "waves"
+     ]
+    },
+    {
+     "id": "wp-dl-currents",
+     "key": "currents",
+     "share": true
+    },
+    {
+     "id": "gx-gxsstanom",
+     "key": "gxsstanom",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "wp-dl-tides",
+     "key": "tides",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "worldPacksBody"
+     ]
+    },
+    {
+     "id": "gx-gxseaice",
+     "key": "gxseaice",
+     "rest": true,
+     "share": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpTerrain",
+   "layers": [
+    {
+     "id": "eco-dl-plates",
+     "key": "plates",
+     "share": true
+    },
+    {
+     "id": "dl-relief",
+     "key": "relief",
+     "label": "lyrRelief",
+     "share": true
+    },
+    {
+     "id": "dl-sealevel",
+     "key": "sealevel",
+     "label": "lyrSeaLevel",
+     "share": true
+    },
+    {
+     "id": "dl-hillshade",
+     "key": "hillshade",
+     "label": "lyrHillshade",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "gx-gxrelief",
+     "key": "gxrelief",
+     "rest": true,
+     "share": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpNature",
+   "layers": [
+    {
+     "id": "eco-dl-worldcover",
+     "key": "worldcover",
+     "share": true
+    },
+    {
+     "id": "eco-dl-ecoregions",
+     "key": "ecoregions",
+     "share": true
+    },
+    {
+     "id": "gx-gxndvi",
+     "key": "gxndvi",
+     "share": true
+    },
+    {
+     "id": "bx-wbforest",
+     "key": "wbforest",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpDemo",
+   "layers": [
+    {
+     "id": "dl-popgrid",
+     "key": "popgrid",
+     "label": "lyrPopGrid",
+     "share": true
+    },
+    {
+     "id": "dl-nightsat",
+     "key": "nightsat",
+     "label": "lyrNightSat",
+     "share": true
+    },
+    {
+     "id": "dl-tfr",
+     "key": "tfr",
+     "label": "lyrTFR",
+     "share": true
+    },
+    {
+     "id": "dl-pop",
+     "key": "pop",
+     "label": "lyrPop",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "bx-wbpopgrow",
+     "key": "wbpopgrow",
+     "rest": true
+    },
+    {
+     "id": "bx-wbaging",
+     "key": "wbaging",
+     "rest": true
+    },
+    {
+     "id": "bx-wbfert",
+     "key": "wbfert",
+     "rest": true
+    },
+    {
+     "id": "bx-wbadofert",
+     "key": "wbadofert",
+     "rest": true
+    },
+    {
+     "id": "bx-wburb",
+     "key": "wburb",
+     "rest": true
+    },
+    {
+     "id": "bx-wbrural",
+     "key": "wbrural",
+     "rest": true
+    },
+    {
+     "id": "bx-wbdensity",
+     "key": "wbdensity",
+     "rest": true
+    },
+    {
+     "id": "bx-wbref",
+     "key": "wbref",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpHazard",
+   "layers": [
+    {
+     "id": "wp-dl-alerts",
+     "key": "alerts",
+     "share": true,
+     "lazy": [
+      "worldPacksBody"
+     ]
+    },
+    {
+     "id": "bx-eq",
+     "key": "eq"
+    },
+    {
+     "id": "beta-dl-volc2",
+     "key": "volc2",
+     "share": true
+    },
+    {
+     "id": "dl-thermal",
+     "key": "thermal",
+     "label": "lyrThermal",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "fac-dl-osmemg",
+     "key": "osmemg",
+     "rest": true
+    },
+    {
+     "id": "beta-dl-radobs",
+     "key": "radobs",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "radiationLayer"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpPolitics",
+   "layers": [
+    {
+     "id": "dl-dem",
+     "key": "dem",
+     "label": "lyrDem",
+     "share": true
+    },
+    {
+     "id": "beta-dl-cpi",
+     "key": "cpi",
+     "share": true
+    },
+    {
+     "id": "dl-eez",
+     "key": "eez",
+     "label": "lyrEEZ",
+     "share": true
+    },
+    {
+     "id": "dl-uselect",
+     "key": "uselect",
+     "share": true
+    },
+    {
+     "id": "dl-eu",
+     "key": "eu",
+     "label": "lyrEU",
+     "share": true
+    },
+    {
+     "id": "dl-ww2",
+     "key": "ww2",
+     "share": true,
+     "lazy": [
+      "warLayer"
+     ]
+    },
+    {
+     "id": "dl-elect",
+     "key": "elect",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "dl-ww1",
+     "key": "ww1",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "warLayer"
+     ]
+    },
+    {
+     "id": "dl-korea",
+     "key": "korea",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "warLayer"
+     ]
+    },
+    {
+     "id": "dl-vietnam",
+     "key": "vietnam",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "warLayer"
+     ]
+    },
+    {
+     "id": "dl-mideast",
+     "key": "mideast",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "warLayer"
+     ]
+    },
+    {
+     "id": "dl-yugoslavia",
+     "key": "yugoslavia",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "warLayer"
+     ]
+    },
+    {
+     "id": "dl-tz",
+     "key": "tz",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "bx-wbwomparl",
+     "key": "wbwomparl",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmdiplo",
+     "key": "osmdiplo",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpSecurity",
+   "layers": [
+    {
+     "id": "dl-milSpend",
+     "key": "milSpend",
+     "label": "lyrMilSpend",
+     "share": true
+    },
+    {
+     "id": "dl-nato",
+     "key": "nato",
+     "label": "lyrNATO",
+     "share": true
+    },
+    {
+     "id": "beta-dl-ukrfront",
+     "key": "ukrfront",
+     "share": true
+    },
+    {
+     "id": "bx-wbmilgdp",
+     "key": "wbmilgdp",
+     "rest": true
+    },
+    {
+     "id": "bx-wbmilppl",
+     "key": "wbmilppl",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmmil",
+     "key": "osmmil",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpHealth",
+   "layers": [
+    {
+     "id": "beta-dl-lifeexp",
+     "key": "lifeexp",
+     "share": true
+    },
+    {
+     "id": "bx-wbinfmort",
+     "key": "wbinfmort"
+    },
+    {
+     "id": "bx-wbsuicide",
+     "key": "wbsuicide"
+    },
+    {
+     "id": "bx-wbsmoke",
+     "key": "wbsmoke"
+    },
+    {
+     "id": "bx-wbalcohol",
+     "key": "wbalcohol"
+    },
+    {
+     "id": "bx-wbwater",
+     "key": "wbwater"
+    },
+    {
+     "id": "bx-wbhealth",
+     "key": "wbhealth",
+     "rest": true
+    },
+    {
+     "id": "bx-wbphys",
+     "key": "wbphys",
+     "rest": true
+    },
+    {
+     "id": "bx-wbbeds",
+     "key": "wbbeds",
+     "rest": true
+    },
+    {
+     "id": "bx-wbu5mort",
+     "key": "wbu5mort",
+     "rest": true
+    },
+    {
+     "id": "bx-wblife",
+     "key": "wblife",
+     "rest": true
+    },
+    {
+     "id": "bx-wbsan",
+     "key": "wbsan",
+     "rest": true
+    },
+    {
+     "id": "bx-wboverwt",
+     "key": "wboverwt",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmhealth",
+     "key": "osmhealth",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmwater",
+     "key": "osmwater",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpTech",
+   "layers": [
+    {
+     "id": "dl-subcables",
+     "key": "subcables",
+     "label": "lyrSubcables",
+     "on": true,
+     "share": true
+    },
+    {
+     "id": "beta-dl-dc",
+     "key": "dc",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "dataCenters"
+     ]
+    },
+    {
+     "id": "dl-nethlth",
+     "key": "nethlth",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "netHealthLive"
+     ]
+    },
+    {
+     "id": "dl-netreach",
+     "key": "netreach",
+     "rest": true,
+     "share": true,
+     "lazy": [
+      "netHealthLive"
+     ]
+    },
+    {
+     "id": "bx-wbnet",
+     "key": "wbnet",
+     "rest": true
+    },
+    {
+     "id": "bx-wbmobile",
+     "key": "wbmobile",
+     "rest": true
+    },
+    {
+     "id": "bx-wbbbnd",
+     "key": "wbbbnd",
+     "rest": true
+    },
+    {
+     "id": "bx-wbrnd",
+     "key": "wbrnd",
+     "rest": true
+    },
+    {
+     "id": "bx-wbresearch",
+     "key": "wbresearch",
+     "rest": true
+    },
+    {
+     "id": "bx-wbpatent",
+     "key": "wbpatent",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmtelecom",
+     "key": "osmtelecom",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpEconomy",
+   "layers": [
+    {
+     "id": "dl-gdppc",
+     "key": "gdppc",
+     "label": "lyrGDPpc",
+     "share": true
+    },
+    {
+     "id": "wp-dl-trade",
+     "key": "trade",
+     "share": true,
+     "lazy": [
+      "worldPacksBody"
+     ]
+    },
+    {
+     "id": "bx-wbgini",
+     "key": "wbgini"
+    },
+    {
+     "id": "wp-dl-industry",
+     "key": "industry",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "bx-wbgdpgrow",
+     "key": "wbgdpgrow",
+     "rest": true
+    },
+    {
+     "id": "bx-wbinfl",
+     "key": "wbinfl",
+     "rest": true
+    },
+    {
+     "id": "bx-wbtrade",
+     "key": "wbtrade",
+     "rest": true
+    },
+    {
+     "id": "bx-wbtax",
+     "key": "wbtax",
+     "rest": true
+    },
+    {
+     "id": "bx-wbdebt",
+     "key": "wbdebt",
+     "rest": true
+    },
+    {
+     "id": "bx-wbmanuf",
+     "key": "wbmanuf",
+     "rest": true
+    },
+    {
+     "id": "bx-wbhitech",
+     "key": "wbhitech",
+     "rest": true
+    },
+    {
+     "id": "bx-wbfdi",
+     "key": "wbfdi",
+     "rest": true
+    },
+    {
+     "id": "bx-wbunemp",
+     "key": "wbunemp",
+     "rest": true
+    },
+    {
+     "id": "bx-wbgni",
+     "key": "wbgni",
+     "rest": true
+    },
+    {
+     "id": "bx-wbpov",
+     "key": "wbpov",
+     "rest": true
+    },
+    {
+     "id": "bx-wbflfp",
+     "key": "wbflfp",
+     "rest": true
+    },
+    {
+     "id": "bx-wbremit",
+     "key": "wbremit",
+     "rest": true
+    },
+    {
+     "id": "bx-wbtour",
+     "key": "wbtour",
+     "rest": true
+    },
+    {
+     "id": "beta-dl-pharma",
+     "key": "pharma",
+     "rest": true,
+     "share": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpSociety",
+   "layers": [
+    {
+     "id": "dl-hdi",
+     "key": "hdi",
+     "label": "lyrHDI",
+     "share": true
+    },
+    {
+     "id": "bx-wbhomicide",
+     "key": "wbhomicide"
+    },
+    {
+     "id": "beta-dl-cat-language",
+     "key": "cat-language",
+     "share": true
+    },
+    {
+     "id": "beta-dl-whs",
+     "key": "whs",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "bx-wblit",
+     "key": "wblit",
+     "rest": true
+    },
+    {
+     "id": "bx-wbschool",
+     "key": "wbschool",
+     "rest": true
+    },
+    {
+     "id": "bx-wbtert",
+     "key": "wbtert",
+     "rest": true
+    },
+    {
+     "id": "bx-wbedu",
+     "key": "wbedu",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmedu",
+     "key": "osmedu",
+     "rest": true
+    },
+    {
+     "id": "beta-dl-cat-religion",
+     "key": "cat-religion",
+     "rest": true,
+     "share": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpTransport",
+   "layers": [
+    {
+     "id": "dl-planes",
+     "key": "planes",
+     "label": "lyrPlanes",
+     "share": true,
+     "lazy": [
+      "aviationLive"
+     ]
+    },
+    {
+     "id": "beta-dl-rail",
+     "key": "rail",
+     "share": true,
+     "lazy": [
+      "railways"
+     ]
+    },
+    {
+     "id": "dl-ships",
+     "key": "ships",
+     "label": "lyrShips",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "ox-oxrail",
+     "key": "oxrail",
+     "rest": true
+    },
+    {
+     "id": "ox-oxsea",
+     "key": "oxsea",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmair",
+     "key": "osmair",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmport",
+     "key": "osmport",
+     "rest": true
+    },
+    {
+     "id": "dl-webcams",
+     "key": "webcams",
+     "rest": true,
+     "share": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpAgri",
+   "layers": [
+    {
+     "id": "wp-dl-crops",
+     "key": "crops",
+     "share": true,
+     "lazy": [
+      "worldPacksBody"
+     ]
+    },
+    {
+     "id": "bx-wbagremp",
+     "key": "wbagremp"
+    },
+    {
+     "id": "bx-wbunder",
+     "key": "wbunder"
+    },
+    {
+     "id": "bx-wbagri",
+     "key": "wbagri",
+     "rest": true
+    },
+    {
+     "id": "gx-gxsoil",
+     "key": "gxsoil",
+     "rest": true,
+     "share": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpEnergy",
+   "layers": [
+    {
+     "id": "wp-dl-energy",
+     "key": "energy",
+     "share": true,
+     "lazy": [
+      "worldPacksBody"
+     ]
+    },
+    {
+     "id": "bx-wbrenew",
+     "key": "wbrenew"
+    },
+    {
+     "id": "bx-wbelec",
+     "key": "wbelec"
+    },
+    {
+     "id": "fac-dl-osmpower",
+     "key": "osmpower",
+     "rest": true
+    },
+    {
+     "id": "fac-dl-osmextract",
+     "key": "osmextract",
+     "rest": true
+    },
+    {
+     "id": "l9-dl-dams",
+     "key": "dams",
+     "rest": true,
+     "share": true
+    },
+    {
+     "id": "bx-wbcook",
+     "key": "wbcook",
+     "rest": true
+    },
+    {
+     "id": "bx-wbelecuse",
+     "key": "wbelecuse",
+     "rest": true
+    },
+    {
+     "id": "bx-wbrenelec",
+     "key": "wbrenelec",
+     "rest": true
+    },
+    {
+     "id": "bx-wbenergy",
+     "key": "wbenergy",
+     "rest": true
+    }
+   ]
+  },
+  {
+   "key": "lyrGrpIndic",
+   "layers": []
+  },
+  {
+   "key": "lyrGrpOthersReal",
+   "layers": []
+  },
+  {
+   "key": "lyrGrpOthers",
+   "layers": [
+    {
+     "id": "dl-precip",
+     "key": "precip",
+     "label": "lyrPrecip",
+     "share": true
+    },
+    {
+     "id": "dl-ec-wind",
+     "key": "ec-wind",
+     "share": true
+    },
+    {
+     "id": "beta-dl-volcash",
+     "share": true,
+     "lazy": [
+      "volcanoLayers"
+     ]
+    },
+    {
+     "id": "beta-dl-volchaz",
+     "share": true,
+     "lazy": [
+      "volcanoLayers"
+     ]
+    },
+    {
+     "id": "beta-dl-volcso2",
+     "share": true,
+     "lazy": [
+      "volcanoLayers"
+     ]
+    },
+    {
+     "id": "beta-dl-unemp",
+     "share": true
+    },
+    {
+     "id": "beta-dl-internet",
+     "share": true
+    },
+    {
+     "id": "beta-dl-precip",
+     "share": true
+    },
+    {
+     "id": "beta-dl-spin",
+     "share": true
+    },
+    {
+     "id": "wp-dl-outbreaks",
+     "share": true
+    },
+    {
+     "id": "bx-heat"
+    }
+   ]
+  },
+  {
+   "key": "hidden",
+   "layers": [
+    {
+     "id": "cb-countries",
+     "label": "countries",
+     "html": true
+    },
+    {
+     "id": "dl-contours",
+     "label": "lyrContours",
+     "share": true
+    }
+   ]
+  }
+ ],
+ "LAYERS": [
+  {
+   "shelf": "base",
+   "id": "cb-names",
+   "label": "placeNames",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-geolabels",
+   "label": "geoLabels",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-poi",
+   "label": "poiLabels",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-borders",
+   "label": "borders",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-coast",
+   "label": "coastline",
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-admin1",
+   "label": "adminBounds",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-roads",
+   "label": "roadsLayer",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-rail2",
+   "label": "railLayer",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-grid",
+   "label": "gridLayer",
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "dl-nightside",
+   "key": "nightside",
+   "label": "lyrNightSide",
+   "share": true
+  },
+  {
+   "shelf": "base",
+   "id": "beta-dl-bldg3d",
+   "key": "bldg3d",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-climate",
+   "key": "climate",
+   "label": "lyrClimate",
+   "on": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-wind",
+   "key": "wind",
+   "label": "lyrWind",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-annprecip",
+   "key": "annprecip",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-ec-temp",
+   "key": "ec-temp",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-ec-precip",
+   "key": "ec-precip",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-radar",
+   "key": "radar",
+   "label": "lyrRadar",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-ec-slp",
+   "key": "ec-slp",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-ec-gust",
+   "key": "ec-gust",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-snow",
+   "key": "snow",
+   "label": "lyrSnow",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-ec-cloud",
+   "key": "ec-cloud",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-ec-dew",
+   "key": "ec-dew",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-aod",
+   "key": "aod",
+   "label": "lyrAOD",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "dl-ec-cape",
+   "key": "ec-cape",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "bx-wbpm25",
+   "key": "wbpm25",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpClimate",
+   "id": "bx-wbco2",
+   "key": "wbco2",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpOrbit",
+   "id": "dl-sats",
+   "key": "sats",
+   "label": "lyrSats",
+   "share": true,
+   "lazy": [
+    "satellitesLive"
+   ]
+  },
+  {
+   "shelf": "lyrGrpOrbit",
+   "id": "l9-dl-aurora",
+   "key": "aurora",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOrbit",
+   "id": "fac-dl-osmspace",
+   "key": "osmspace",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpMaritime",
+   "id": "dl-sst",
+   "key": "sst",
+   "label": "lyrSST",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpMaritime",
+   "id": "dl-waves",
+   "key": "waves",
+   "share": true,
+   "lazy": [
+    "waves"
+   ]
+  },
+  {
+   "shelf": "lyrGrpMaritime",
+   "id": "wp-dl-currents",
+   "key": "currents",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpMaritime",
+   "id": "gx-gxsstanom",
+   "key": "gxsstanom",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpMaritime",
+   "id": "wp-dl-tides",
+   "key": "tides",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "shelf": "lyrGrpMaritime",
+   "id": "gx-gxseaice",
+   "key": "gxseaice",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTerrain",
+   "id": "eco-dl-plates",
+   "key": "plates",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTerrain",
+   "id": "dl-relief",
+   "key": "relief",
+   "label": "lyrRelief",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTerrain",
+   "id": "dl-sealevel",
+   "key": "sealevel",
+   "label": "lyrSeaLevel",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTerrain",
+   "id": "dl-hillshade",
+   "key": "hillshade",
+   "label": "lyrHillshade",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTerrain",
+   "id": "gx-gxrelief",
+   "key": "gxrelief",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpNature",
+   "id": "eco-dl-worldcover",
+   "key": "worldcover",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpNature",
+   "id": "eco-dl-ecoregions",
+   "key": "ecoregions",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpNature",
+   "id": "gx-gxndvi",
+   "key": "gxndvi",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpNature",
+   "id": "bx-wbforest",
+   "key": "wbforest",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "dl-popgrid",
+   "key": "popgrid",
+   "label": "lyrPopGrid",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "dl-nightsat",
+   "key": "nightsat",
+   "label": "lyrNightSat",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "dl-tfr",
+   "key": "tfr",
+   "label": "lyrTFR",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "dl-pop",
+   "key": "pop",
+   "label": "lyrPop",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wbpopgrow",
+   "key": "wbpopgrow",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wbaging",
+   "key": "wbaging",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wbfert",
+   "key": "wbfert",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wbadofert",
+   "key": "wbadofert",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wburb",
+   "key": "wburb",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wbrural",
+   "key": "wbrural",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wbdensity",
+   "key": "wbdensity",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpDemo",
+   "id": "bx-wbref",
+   "key": "wbref",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHazard",
+   "id": "wp-dl-alerts",
+   "key": "alerts",
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "shelf": "lyrGrpHazard",
+   "id": "bx-eq",
+   "key": "eq"
+  },
+  {
+   "shelf": "lyrGrpHazard",
+   "id": "beta-dl-volc2",
+   "key": "volc2",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpHazard",
+   "id": "dl-thermal",
+   "key": "thermal",
+   "label": "lyrThermal",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpHazard",
+   "id": "fac-dl-osmemg",
+   "key": "osmemg",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHazard",
+   "id": "beta-dl-radobs",
+   "key": "radobs",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "radiationLayer"
+   ]
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-dem",
+   "key": "dem",
+   "label": "lyrDem",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "beta-dl-cpi",
+   "key": "cpi",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-eez",
+   "key": "eez",
+   "label": "lyrEEZ",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-uselect",
+   "key": "uselect",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-eu",
+   "key": "eu",
+   "label": "lyrEU",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-ww2",
+   "key": "ww2",
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-elect",
+   "key": "elect",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-ww1",
+   "key": "ww1",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-korea",
+   "key": "korea",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-vietnam",
+   "key": "vietnam",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-mideast",
+   "key": "mideast",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-yugoslavia",
+   "key": "yugoslavia",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "dl-tz",
+   "key": "tz",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "bx-wbwomparl",
+   "key": "wbwomparl",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpPolitics",
+   "id": "fac-dl-osmdiplo",
+   "key": "osmdiplo",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSecurity",
+   "id": "dl-milSpend",
+   "key": "milSpend",
+   "label": "lyrMilSpend",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpSecurity",
+   "id": "dl-nato",
+   "key": "nato",
+   "label": "lyrNATO",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpSecurity",
+   "id": "beta-dl-ukrfront",
+   "key": "ukrfront",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpSecurity",
+   "id": "bx-wbmilgdp",
+   "key": "wbmilgdp",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSecurity",
+   "id": "bx-wbmilppl",
+   "key": "wbmilppl",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSecurity",
+   "id": "fac-dl-osmmil",
+   "key": "osmmil",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "beta-dl-lifeexp",
+   "key": "lifeexp",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbinfmort",
+   "key": "wbinfmort"
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbsuicide",
+   "key": "wbsuicide"
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbsmoke",
+   "key": "wbsmoke"
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbalcohol",
+   "key": "wbalcohol"
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbwater",
+   "key": "wbwater"
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbhealth",
+   "key": "wbhealth",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbphys",
+   "key": "wbphys",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbbeds",
+   "key": "wbbeds",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbu5mort",
+   "key": "wbu5mort",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wblife",
+   "key": "wblife",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wbsan",
+   "key": "wbsan",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "bx-wboverwt",
+   "key": "wboverwt",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "fac-dl-osmhealth",
+   "key": "osmhealth",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpHealth",
+   "id": "fac-dl-osmwater",
+   "key": "osmwater",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "dl-subcables",
+   "key": "subcables",
+   "label": "lyrSubcables",
+   "on": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "beta-dl-dc",
+   "key": "dc",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "dataCenters"
+   ]
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "dl-nethlth",
+   "key": "nethlth",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "netHealthLive"
+   ]
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "dl-netreach",
+   "key": "netreach",
+   "rest": true,
+   "share": true,
+   "lazy": [
+    "netHealthLive"
+   ]
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "bx-wbnet",
+   "key": "wbnet",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "bx-wbmobile",
+   "key": "wbmobile",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "bx-wbbbnd",
+   "key": "wbbbnd",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "bx-wbrnd",
+   "key": "wbrnd",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "bx-wbresearch",
+   "key": "wbresearch",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "bx-wbpatent",
+   "key": "wbpatent",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTech",
+   "id": "fac-dl-osmtelecom",
+   "key": "osmtelecom",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "dl-gdppc",
+   "key": "gdppc",
+   "label": "lyrGDPpc",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "wp-dl-trade",
+   "key": "trade",
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbgini",
+   "key": "wbgini"
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "wp-dl-industry",
+   "key": "industry",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbgdpgrow",
+   "key": "wbgdpgrow",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbinfl",
+   "key": "wbinfl",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbtrade",
+   "key": "wbtrade",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbtax",
+   "key": "wbtax",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbdebt",
+   "key": "wbdebt",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbmanuf",
+   "key": "wbmanuf",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbhitech",
+   "key": "wbhitech",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbfdi",
+   "key": "wbfdi",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbunemp",
+   "key": "wbunemp",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbgni",
+   "key": "wbgni",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbpov",
+   "key": "wbpov",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbflfp",
+   "key": "wbflfp",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbremit",
+   "key": "wbremit",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "bx-wbtour",
+   "key": "wbtour",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEconomy",
+   "id": "beta-dl-pharma",
+   "key": "pharma",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "dl-hdi",
+   "key": "hdi",
+   "label": "lyrHDI",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "bx-wbhomicide",
+   "key": "wbhomicide"
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "beta-dl-cat-language",
+   "key": "cat-language",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "beta-dl-whs",
+   "key": "whs",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "bx-wblit",
+   "key": "wblit",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "bx-wbschool",
+   "key": "wbschool",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "bx-wbtert",
+   "key": "wbtert",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "bx-wbedu",
+   "key": "wbedu",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "fac-dl-osmedu",
+   "key": "osmedu",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpSociety",
+   "id": "beta-dl-cat-religion",
+   "key": "cat-religion",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "dl-planes",
+   "key": "planes",
+   "label": "lyrPlanes",
+   "share": true,
+   "lazy": [
+    "aviationLive"
+   ]
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "beta-dl-rail",
+   "key": "rail",
+   "share": true,
+   "lazy": [
+    "railways"
+   ]
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "dl-ships",
+   "key": "ships",
+   "label": "lyrShips",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "ox-oxrail",
+   "key": "oxrail",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "ox-oxsea",
+   "key": "oxsea",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "fac-dl-osmair",
+   "key": "osmair",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "fac-dl-osmport",
+   "key": "osmport",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpTransport",
+   "id": "dl-webcams",
+   "key": "webcams",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpAgri",
+   "id": "wp-dl-crops",
+   "key": "crops",
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "shelf": "lyrGrpAgri",
+   "id": "bx-wbagremp",
+   "key": "wbagremp"
+  },
+  {
+   "shelf": "lyrGrpAgri",
+   "id": "bx-wbunder",
+   "key": "wbunder"
+  },
+  {
+   "shelf": "lyrGrpAgri",
+   "id": "bx-wbagri",
+   "key": "wbagri",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpAgri",
+   "id": "gx-gxsoil",
+   "key": "gxsoil",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "wp-dl-energy",
+   "key": "energy",
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "bx-wbrenew",
+   "key": "wbrenew"
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "bx-wbelec",
+   "key": "wbelec"
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "fac-dl-osmpower",
+   "key": "osmpower",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "fac-dl-osmextract",
+   "key": "osmextract",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "l9-dl-dams",
+   "key": "dams",
+   "rest": true,
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "bx-wbcook",
+   "key": "wbcook",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "bx-wbelecuse",
+   "key": "wbelecuse",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "bx-wbrenelec",
+   "key": "wbrenelec",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpEnergy",
+   "id": "bx-wbenergy",
+   "key": "wbenergy",
+   "rest": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "dl-precip",
+   "key": "precip",
+   "label": "lyrPrecip",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "dl-ec-wind",
+   "key": "ec-wind",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "beta-dl-volcash",
+   "share": true,
+   "lazy": [
+    "volcanoLayers"
+   ]
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "beta-dl-volchaz",
+   "share": true,
+   "lazy": [
+    "volcanoLayers"
+   ]
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "beta-dl-volcso2",
+   "share": true,
+   "lazy": [
+    "volcanoLayers"
+   ]
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "beta-dl-unemp",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "beta-dl-internet",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "beta-dl-precip",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "beta-dl-spin",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "wp-dl-outbreaks",
+   "share": true
+  },
+  {
+   "shelf": "lyrGrpOthers",
+   "id": "bx-heat"
+  },
+  {
+   "shelf": "hidden",
+   "id": "cb-countries",
+   "label": "countries",
+   "html": true
+  },
+  {
+   "shelf": "hidden",
+   "id": "dl-contours",
+   "label": "lyrContours",
+   "share": true
+  }
+ ],
+ "BETA": "lyrGrpOthers",
+ "BASE": "base",
+ "HIDDEN": "hidden",
+ "layerGroups": [
+  [
+   "lyrGrpClimate",
+   [
+    "climate",
+    "wind",
+    "annprecip",
+    "ec-temp",
+    "ec-precip",
+    "radar",
+    "ec-slp",
+    "ec-gust",
+    "snow",
+    "ec-cloud",
+    "ec-dew",
+    "aod",
+    "ec-cape",
+    "wbpm25",
+    "wbco2"
+   ],
+   9
+  ],
+  [
+   "lyrGrpOrbit",
+   [
+    "sats",
+    "aurora",
+    "osmspace"
+   ],
+   2
+  ],
+  [
+   "lyrGrpMaritime",
+   [
+    "sst",
+    "waves",
+    "currents",
+    "gxsstanom",
+    "tides",
+    "gxseaice"
+   ],
+   3
+  ],
+  [
+   "lyrGrpTerrain",
+   [
+    "plates",
+    "relief",
+    "sealevel",
+    "hillshade",
+    "gxrelief"
+   ],
+   3
+  ],
+  [
+   "lyrGrpNature",
+   [
+    "worldcover",
+    "ecoregions",
+    "gxndvi",
+    "wbforest"
+   ],
+   3
+  ],
+  [
+   "lyrGrpDemo",
+   [
+    "popgrid",
+    "nightsat",
+    "tfr",
+    "pop",
+    "wbpopgrow",
+    "wbaging",
+    "wbfert",
+    "wbadofert",
+    "wburb",
+    "wbrural",
+    "wbdensity",
+    "wbref"
+   ],
+   3
+  ],
+  [
+   "lyrGrpHazard",
+   [
+    "alerts",
+    "eq",
+    "volc2",
+    "thermal",
+    "osmemg",
+    "radobs"
+   ],
+   3
+  ],
+  [
+   "lyrGrpPolitics",
+   [
+    "dem",
+    "cpi",
+    "eez",
+    "uselect",
+    "eu",
+    "ww2",
+    "elect",
+    "ww1",
+    "korea",
+    "vietnam",
+    "mideast",
+    "yugoslavia",
+    "tz",
+    "wbwomparl",
+    "osmdiplo"
+   ],
+   6
+  ],
+  [
+   "lyrGrpSecurity",
+   [
+    "milSpend",
+    "nato",
+    "ukrfront",
+    "wbmilgdp",
+    "wbmilppl",
+    "osmmil"
+   ],
+   3
+  ],
+  [
+   "lyrGrpHealth",
+   [
+    "lifeexp",
+    "wbinfmort",
+    "wbsuicide",
+    "wbsmoke",
+    "wbalcohol",
+    "wbwater",
+    "wbhealth",
+    "wbphys",
+    "wbbeds",
+    "wbu5mort",
+    "wblife",
+    "wbsan",
+    "wboverwt",
+    "osmhealth",
+    "osmwater"
+   ],
+   6
+  ],
+  [
+   "lyrGrpTech",
+   [
+    "subcables",
+    "dc",
+    "nethlth",
+    "netreach",
+    "wbnet",
+    "wbmobile",
+    "wbbbnd",
+    "wbrnd",
+    "wbresearch",
+    "wbpatent",
+    "osmtelecom"
+   ],
+   1
+  ],
+  [
+   "lyrGrpEconomy",
+   [
+    "gdppc",
+    "trade",
+    "wbgini",
+    "industry",
+    "wbgdpgrow",
+    "wbinfl",
+    "wbtrade",
+    "wbtax",
+    "wbdebt",
+    "wbmanuf",
+    "wbhitech",
+    "wbfdi",
+    "wbunemp",
+    "wbgni",
+    "wbpov",
+    "wbflfp",
+    "wbremit",
+    "wbtour",
+    "pharma"
+   ],
+   3
+  ],
+  [
+   "lyrGrpSociety",
+   [
+    "hdi",
+    "wbhomicide",
+    "cat-language",
+    "whs",
+    "wblit",
+    "wbschool",
+    "wbtert",
+    "wbedu",
+    "osmedu",
+    "cat-religion"
+   ],
+   3
+  ],
+  [
+   "lyrGrpTransport",
+   [
+    "planes",
+    "rail",
+    "ships",
+    "oxrail",
+    "oxsea",
+    "osmair",
+    "osmport",
+    "webcams"
+   ],
+   2
+  ],
+  [
+   "lyrGrpAgri",
+   [
+    "crops",
+    "wbagremp",
+    "wbunder",
+    "wbagri",
+    "gxsoil"
+   ],
+   3
+  ],
+  [
+   "lyrGrpEnergy",
+   [
+    "energy",
+    "wbrenew",
+    "wbelec",
+    "osmpower",
+    "osmextract",
+    "dams",
+    "wbcook",
+    "wbelecuse",
+    "wbrenelec",
+    "wbenergy"
+   ],
+   3
+  ],
+  [
+   "lyrGrpIndic",
+   [],
+   0
+  ],
+  [
+   "lyrGrpOthersReal",
+   [],
+   0
+  ]
+ ],
+ "betaKeys": [
+  "precip",
+  "ec-wind",
+  "beta-dl-volcash",
+  "beta-dl-volchaz",
+  "beta-dl-volcso2",
+  "beta-dl-unemp",
+  "beta-dl-internet",
+  "beta-dl-precip",
+  "beta-dl-spin",
+  "wp-dl-outbreaks",
+  "bx-heat"
+ ],
+ "basicRows": [
+  "cb-names",
+  "cb-geolabels",
+  "cb-poi",
+  "cb-borders",
+  "cb-coast",
+  "cb-admin1",
+  "cb-roads",
+  "cb-rail2",
+  "cb-grid"
+ ],
+ "basicLayers": [
+  "cb-names",
+  "cb-geolabels",
+  "cb-poi",
+  "cb-borders",
+  "cb-coast",
+  "cb-admin1",
+  "cb-roads",
+  "cb-rail2",
+  "cb-grid",
+  "dl-nightside",
+  "beta-dl-bldg3d"
+ ],
+ "hiddenRows": [
+  "cb-countries",
+  "dl-contours"
+ ],
+ "defaultLayers": [
+  "dl-climate",
+  "dl-subcables"
+ ],
+ "defaultOn": [
+  "cb-names",
+  "cb-geolabels",
+  "cb-poi",
+  "cb-borders",
+  "cb-admin1",
+  "cb-roads",
+  "cb-rail2",
+  "dl-climate",
+  "dl-subcables"
+ ],
+ "sharedIds": [
+  "dl-nightside",
+  "beta-dl-bldg3d",
+  "dl-climate",
+  "dl-wind",
+  "dl-annprecip",
+  "dl-ec-temp",
+  "dl-ec-precip",
+  "dl-radar",
+  "dl-ec-slp",
+  "dl-ec-gust",
+  "dl-snow",
+  "dl-ec-cloud",
+  "dl-ec-dew",
+  "dl-aod",
+  "dl-ec-cape",
+  "dl-sats",
+  "l9-dl-aurora",
+  "dl-sst",
+  "dl-waves",
+  "wp-dl-currents",
+  "gx-gxsstanom",
+  "wp-dl-tides",
+  "gx-gxseaice",
+  "eco-dl-plates",
+  "dl-relief",
+  "dl-sealevel",
+  "dl-hillshade",
+  "gx-gxrelief",
+  "eco-dl-worldcover",
+  "eco-dl-ecoregions",
+  "gx-gxndvi",
+  "dl-popgrid",
+  "dl-nightsat",
+  "dl-tfr",
+  "dl-pop",
+  "wp-dl-alerts",
+  "beta-dl-volc2",
+  "dl-thermal",
+  "beta-dl-radobs",
+  "dl-dem",
+  "beta-dl-cpi",
+  "dl-eez",
+  "dl-uselect",
+  "dl-eu",
+  "dl-ww2",
+  "dl-elect",
+  "dl-ww1",
+  "dl-korea",
+  "dl-vietnam",
+  "dl-mideast",
+  "dl-yugoslavia",
+  "dl-tz",
+  "dl-milSpend",
+  "dl-nato",
+  "beta-dl-ukrfront",
+  "beta-dl-lifeexp",
+  "dl-subcables",
+  "beta-dl-dc",
+  "dl-nethlth",
+  "dl-netreach",
+  "dl-gdppc",
+  "wp-dl-trade",
+  "wp-dl-industry",
+  "beta-dl-pharma",
+  "dl-hdi",
+  "beta-dl-cat-language",
+  "beta-dl-whs",
+  "beta-dl-cat-religion",
+  "dl-planes",
+  "beta-dl-rail",
+  "dl-ships",
+  "dl-webcams",
+  "wp-dl-crops",
+  "gx-gxsoil",
+  "wp-dl-energy",
+  "l9-dl-dams",
+  "dl-precip",
+  "dl-ec-wind",
+  "beta-dl-volcash",
+  "beta-dl-volchaz",
+  "beta-dl-volcso2",
+  "beta-dl-unemp",
+  "beta-dl-internet",
+  "beta-dl-precip",
+  "beta-dl-spin",
+  "wp-dl-outbreaks",
+  "dl-contours"
+ ],
+ "htmlRows": [
+  {
+   "shelf": "base",
+   "id": "cb-names",
+   "label": "placeNames",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-geolabels",
+   "label": "geoLabels",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-poi",
+   "label": "poiLabels",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-borders",
+   "label": "borders",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-coast",
+   "label": "coastline",
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-admin1",
+   "label": "adminBounds",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-roads",
+   "label": "roadsLayer",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-rail2",
+   "label": "railLayer",
+   "on": true,
+   "html": true
+  },
+  {
+   "shelf": "base",
+   "id": "cb-grid",
+   "label": "gridLayer",
+   "html": true
+  },
+  {
+   "shelf": "hidden",
+   "id": "cb-countries",
+   "label": "countries",
+   "html": true
+  }
+ ],
+ "rows": [
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-names\" checked> <span data-i18n=\"placeNames\">T:placeNames</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-geolabels\" checked> <span data-i18n=\"geoLabels\">T:geoLabels</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-poi\" checked> <span data-i18n=\"poiLabels\">T:poiLabels</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-borders\" checked> <span data-i18n=\"borders\">T:borders</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-coast\"> <span data-i18n=\"coastline\">T:coastline</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-admin1\" checked> <span data-i18n=\"adminBounds\">T:adminBounds</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-roads\" checked> <span data-i18n=\"roadsLayer\">T:roadsLayer</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-rail2\" checked> <span data-i18n=\"railLayer\">T:railLayer</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-grid\"> <span data-i18n=\"gridLayer\">T:gridLayer</span></label>",
+  "<label class=\"layer-option\"><input type=\"checkbox\" id=\"cb-countries\"> <span data-i18n=\"countries\">T:countries</span></label>"
+ ],
+ "catalog": [
+  {
+   "id": "cb-names",
+   "key": null,
+   "shelf": "base",
+   "label": "placeNames",
+   "rest": false,
+   "on": true,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-geolabels",
+   "key": null,
+   "shelf": "base",
+   "label": "geoLabels",
+   "rest": false,
+   "on": true,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-poi",
+   "key": null,
+   "shelf": "base",
+   "label": "poiLabels",
+   "rest": false,
+   "on": true,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-borders",
+   "key": null,
+   "shelf": "base",
+   "label": "borders",
+   "rest": false,
+   "on": true,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-coast",
+   "key": null,
+   "shelf": "base",
+   "label": "coastline",
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-admin1",
+   "key": null,
+   "shelf": "base",
+   "label": "adminBounds",
+   "rest": false,
+   "on": true,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-roads",
+   "key": null,
+   "shelf": "base",
+   "label": "roadsLayer",
+   "rest": false,
+   "on": true,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-rail2",
+   "key": null,
+   "shelf": "base",
+   "label": "railLayer",
+   "rest": false,
+   "on": true,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-grid",
+   "key": null,
+   "shelf": "base",
+   "label": "gridLayer",
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-nightside",
+   "key": "nightside",
+   "shelf": "base",
+   "label": "lyrNightSide",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-bldg3d",
+   "key": "bldg3d",
+   "shelf": "base",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-climate",
+   "key": "climate",
+   "shelf": "lyrGrpClimate",
+   "label": "lyrClimate",
+   "rest": false,
+   "on": true,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-wind",
+   "key": "wind",
+   "shelf": "lyrGrpClimate",
+   "label": "lyrWind",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-annprecip",
+   "key": "annprecip",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-temp",
+   "key": "ec-temp",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-precip",
+   "key": "ec-precip",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-radar",
+   "key": "radar",
+   "shelf": "lyrGrpClimate",
+   "label": "lyrRadar",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-slp",
+   "key": "ec-slp",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-gust",
+   "key": "ec-gust",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-snow",
+   "key": "snow",
+   "shelf": "lyrGrpClimate",
+   "label": "lyrSnow",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-cloud",
+   "key": "ec-cloud",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-dew",
+   "key": "ec-dew",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-aod",
+   "key": "aod",
+   "shelf": "lyrGrpClimate",
+   "label": "lyrAOD",
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-cape",
+   "key": "ec-cape",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbpm25",
+   "key": "wbpm25",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbco2",
+   "key": "wbco2",
+   "shelf": "lyrGrpClimate",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-sats",
+   "key": "sats",
+   "shelf": "lyrGrpOrbit",
+   "label": "lyrSats",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "satellitesLive"
+   ]
+  },
+  {
+   "id": "l9-dl-aurora",
+   "key": "aurora",
+   "shelf": "lyrGrpOrbit",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmspace",
+   "key": "osmspace",
+   "shelf": "lyrGrpOrbit",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-sst",
+   "key": "sst",
+   "shelf": "lyrGrpMaritime",
+   "label": "lyrSST",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-waves",
+   "key": "waves",
+   "shelf": "lyrGrpMaritime",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "waves"
+   ]
+  },
+  {
+   "id": "wp-dl-currents",
+   "key": "currents",
+   "shelf": "lyrGrpMaritime",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "gx-gxsstanom",
+   "key": "gxsstanom",
+   "shelf": "lyrGrpMaritime",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "wp-dl-tides",
+   "key": "tides",
+   "shelf": "lyrGrpMaritime",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "id": "gx-gxseaice",
+   "key": "gxseaice",
+   "shelf": "lyrGrpMaritime",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "eco-dl-plates",
+   "key": "plates",
+   "shelf": "lyrGrpTerrain",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-relief",
+   "key": "relief",
+   "shelf": "lyrGrpTerrain",
+   "label": "lyrRelief",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-sealevel",
+   "key": "sealevel",
+   "shelf": "lyrGrpTerrain",
+   "label": "lyrSeaLevel",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-hillshade",
+   "key": "hillshade",
+   "shelf": "lyrGrpTerrain",
+   "label": "lyrHillshade",
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "gx-gxrelief",
+   "key": "gxrelief",
+   "shelf": "lyrGrpTerrain",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "eco-dl-worldcover",
+   "key": "worldcover",
+   "shelf": "lyrGrpNature",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "eco-dl-ecoregions",
+   "key": "ecoregions",
+   "shelf": "lyrGrpNature",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "gx-gxndvi",
+   "key": "gxndvi",
+   "shelf": "lyrGrpNature",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbforest",
+   "key": "wbforest",
+   "shelf": "lyrGrpNature",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-popgrid",
+   "key": "popgrid",
+   "shelf": "lyrGrpDemo",
+   "label": "lyrPopGrid",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-nightsat",
+   "key": "nightsat",
+   "shelf": "lyrGrpDemo",
+   "label": "lyrNightSat",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-tfr",
+   "key": "tfr",
+   "shelf": "lyrGrpDemo",
+   "label": "lyrTFR",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-pop",
+   "key": "pop",
+   "shelf": "lyrGrpDemo",
+   "label": "lyrPop",
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbpopgrow",
+   "key": "wbpopgrow",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbaging",
+   "key": "wbaging",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbfert",
+   "key": "wbfert",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbadofert",
+   "key": "wbadofert",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wburb",
+   "key": "wburb",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbrural",
+   "key": "wbrural",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbdensity",
+   "key": "wbdensity",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbref",
+   "key": "wbref",
+   "shelf": "lyrGrpDemo",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "wp-dl-alerts",
+   "key": "alerts",
+   "shelf": "lyrGrpHazard",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "id": "bx-eq",
+   "key": "eq",
+   "shelf": "lyrGrpHazard",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-volc2",
+   "key": "volc2",
+   "shelf": "lyrGrpHazard",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-thermal",
+   "key": "thermal",
+   "shelf": "lyrGrpHazard",
+   "label": "lyrThermal",
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmemg",
+   "key": "osmemg",
+   "shelf": "lyrGrpHazard",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-radobs",
+   "key": "radobs",
+   "shelf": "lyrGrpHazard",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "radiationLayer"
+   ]
+  },
+  {
+   "id": "dl-dem",
+   "key": "dem",
+   "shelf": "lyrGrpPolitics",
+   "label": "lyrDem",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-cpi",
+   "key": "cpi",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-eez",
+   "key": "eez",
+   "shelf": "lyrGrpPolitics",
+   "label": "lyrEEZ",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-uselect",
+   "key": "uselect",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-eu",
+   "key": "eu",
+   "shelf": "lyrGrpPolitics",
+   "label": "lyrEU",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ww2",
+   "key": "ww2",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "id": "dl-elect",
+   "key": "elect",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ww1",
+   "key": "ww1",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "id": "dl-korea",
+   "key": "korea",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "id": "dl-vietnam",
+   "key": "vietnam",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "id": "dl-mideast",
+   "key": "mideast",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "id": "dl-yugoslavia",
+   "key": "yugoslavia",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "warLayer"
+   ]
+  },
+  {
+   "id": "dl-tz",
+   "key": "tz",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbwomparl",
+   "key": "wbwomparl",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmdiplo",
+   "key": "osmdiplo",
+   "shelf": "lyrGrpPolitics",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-milSpend",
+   "key": "milSpend",
+   "shelf": "lyrGrpSecurity",
+   "label": "lyrMilSpend",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-nato",
+   "key": "nato",
+   "shelf": "lyrGrpSecurity",
+   "label": "lyrNATO",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-ukrfront",
+   "key": "ukrfront",
+   "shelf": "lyrGrpSecurity",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbmilgdp",
+   "key": "wbmilgdp",
+   "shelf": "lyrGrpSecurity",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbmilppl",
+   "key": "wbmilppl",
+   "shelf": "lyrGrpSecurity",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmmil",
+   "key": "osmmil",
+   "shelf": "lyrGrpSecurity",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-lifeexp",
+   "key": "lifeexp",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbinfmort",
+   "key": "wbinfmort",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbsuicide",
+   "key": "wbsuicide",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbsmoke",
+   "key": "wbsmoke",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbalcohol",
+   "key": "wbalcohol",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbwater",
+   "key": "wbwater",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbhealth",
+   "key": "wbhealth",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbphys",
+   "key": "wbphys",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbbeds",
+   "key": "wbbeds",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbu5mort",
+   "key": "wbu5mort",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wblife",
+   "key": "wblife",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbsan",
+   "key": "wbsan",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wboverwt",
+   "key": "wboverwt",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmhealth",
+   "key": "osmhealth",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmwater",
+   "key": "osmwater",
+   "shelf": "lyrGrpHealth",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-subcables",
+   "key": "subcables",
+   "shelf": "lyrGrpTech",
+   "label": "lyrSubcables",
+   "rest": false,
+   "on": true,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-dc",
+   "key": "dc",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "dataCenters"
+   ]
+  },
+  {
+   "id": "dl-nethlth",
+   "key": "nethlth",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "netHealthLive"
+   ]
+  },
+  {
+   "id": "dl-netreach",
+   "key": "netreach",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "netHealthLive"
+   ]
+  },
+  {
+   "id": "bx-wbnet",
+   "key": "wbnet",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbmobile",
+   "key": "wbmobile",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbbbnd",
+   "key": "wbbbnd",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbrnd",
+   "key": "wbrnd",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbresearch",
+   "key": "wbresearch",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbpatent",
+   "key": "wbpatent",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmtelecom",
+   "key": "osmtelecom",
+   "shelf": "lyrGrpTech",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-gdppc",
+   "key": "gdppc",
+   "shelf": "lyrGrpEconomy",
+   "label": "lyrGDPpc",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "wp-dl-trade",
+   "key": "trade",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "id": "bx-wbgini",
+   "key": "wbgini",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "wp-dl-industry",
+   "key": "industry",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbgdpgrow",
+   "key": "wbgdpgrow",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbinfl",
+   "key": "wbinfl",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbtrade",
+   "key": "wbtrade",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbtax",
+   "key": "wbtax",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbdebt",
+   "key": "wbdebt",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbmanuf",
+   "key": "wbmanuf",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbhitech",
+   "key": "wbhitech",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbfdi",
+   "key": "wbfdi",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbunemp",
+   "key": "wbunemp",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbgni",
+   "key": "wbgni",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbpov",
+   "key": "wbpov",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbflfp",
+   "key": "wbflfp",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbremit",
+   "key": "wbremit",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbtour",
+   "key": "wbtour",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-pharma",
+   "key": "pharma",
+   "shelf": "lyrGrpEconomy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-hdi",
+   "key": "hdi",
+   "shelf": "lyrGrpSociety",
+   "label": "lyrHDI",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbhomicide",
+   "key": "wbhomicide",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-cat-language",
+   "key": "cat-language",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-whs",
+   "key": "whs",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wblit",
+   "key": "wblit",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbschool",
+   "key": "wbschool",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbtert",
+   "key": "wbtert",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbedu",
+   "key": "wbedu",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmedu",
+   "key": "osmedu",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-cat-religion",
+   "key": "cat-religion",
+   "shelf": "lyrGrpSociety",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-planes",
+   "key": "planes",
+   "shelf": "lyrGrpTransport",
+   "label": "lyrPlanes",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "aviationLive"
+   ]
+  },
+  {
+   "id": "beta-dl-rail",
+   "key": "rail",
+   "shelf": "lyrGrpTransport",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "railways"
+   ]
+  },
+  {
+   "id": "dl-ships",
+   "key": "ships",
+   "shelf": "lyrGrpTransport",
+   "label": "lyrShips",
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "ox-oxrail",
+   "key": "oxrail",
+   "shelf": "lyrGrpTransport",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "ox-oxsea",
+   "key": "oxsea",
+   "shelf": "lyrGrpTransport",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmair",
+   "key": "osmair",
+   "shelf": "lyrGrpTransport",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmport",
+   "key": "osmport",
+   "shelf": "lyrGrpTransport",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-webcams",
+   "key": "webcams",
+   "shelf": "lyrGrpTransport",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "wp-dl-crops",
+   "key": "crops",
+   "shelf": "lyrGrpAgri",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "id": "bx-wbagremp",
+   "key": "wbagremp",
+   "shelf": "lyrGrpAgri",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbunder",
+   "key": "wbunder",
+   "shelf": "lyrGrpAgri",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbagri",
+   "key": "wbagri",
+   "shelf": "lyrGrpAgri",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "gx-gxsoil",
+   "key": "gxsoil",
+   "shelf": "lyrGrpAgri",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "wp-dl-energy",
+   "key": "energy",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "worldPacksBody"
+   ]
+  },
+  {
+   "id": "bx-wbrenew",
+   "key": "wbrenew",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbelec",
+   "key": "wbelec",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmpower",
+   "key": "osmpower",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "fac-dl-osmextract",
+   "key": "osmextract",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "l9-dl-dams",
+   "key": "dams",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbcook",
+   "key": "wbcook",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbelecuse",
+   "key": "wbelecuse",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbrenelec",
+   "key": "wbrenelec",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "bx-wbenergy",
+   "key": "wbenergy",
+   "shelf": "lyrGrpEnergy",
+   "label": null,
+   "rest": true,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-precip",
+   "key": "precip",
+   "shelf": "lyrGrpOthers",
+   "label": "lyrPrecip",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "dl-ec-wind",
+   "key": "ec-wind",
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-volcash",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "volcanoLayers"
+   ]
+  },
+  {
+   "id": "beta-dl-volchaz",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "volcanoLayers"
+   ]
+  },
+  {
+   "id": "beta-dl-volcso2",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": [
+    "volcanoLayers"
+   ]
+  },
+  {
+   "id": "beta-dl-unemp",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-internet",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-precip",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "beta-dl-spin",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "wp-dl-outbreaks",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  },
+  {
+   "id": "bx-heat",
+   "key": null,
+   "shelf": "lyrGrpOthers",
+   "label": null,
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "cb-countries",
+   "key": null,
+   "shelf": "hidden",
+   "label": "countries",
+   "rest": false,
+   "on": false,
+   "share": false,
+   "lazy": []
+  },
+  {
+   "id": "dl-contours",
+   "key": null,
+   "shelf": "hidden",
+   "label": "lyrContours",
+   "rest": false,
+   "on": false,
+   "share": true,
+   "lazy": []
+  }
+ ],
+ "layerFor": [
+  [
+   "cb-names",
+   "cb-names"
+  ],
+  [
+   "cb-geolabels",
+   "cb-geolabels"
+  ],
+  [
+   "cb-poi",
+   "cb-poi"
+  ],
+  [
+   "cb-borders",
+   "cb-borders"
+  ],
+  [
+   "cb-coast",
+   "cb-coast"
+  ],
+  [
+   "cb-admin1",
+   "cb-admin1"
+  ],
+  [
+   "cb-roads",
+   "cb-roads"
+  ],
+  [
+   "cb-rail2",
+   "cb-rail2"
+  ],
+  [
+   "cb-grid",
+   "cb-grid"
+  ],
+  [
+   "dl-nightside",
+   "dl-nightside"
+  ],
+  [
+   "nightside",
+   "dl-nightside"
+  ],
+  [
+   "beta-dl-bldg3d",
+   "beta-dl-bldg3d"
+  ],
+  [
+   "bldg3d",
+   "beta-dl-bldg3d"
+  ],
+  [
+   "dl-climate",
+   "dl-climate"
+  ],
+  [
+   "climate",
+   "dl-climate"
+  ],
+  [
+   "dl-wind",
+   "dl-wind"
+  ],
+  [
+   "wind",
+   "dl-wind"
+  ],
+  [
+   "dl-annprecip",
+   "dl-annprecip"
+  ],
+  [
+   "annprecip",
+   "dl-annprecip"
+  ],
+  [
+   "dl-ec-temp",
+   "dl-ec-temp"
+  ],
+  [
+   "ec-temp",
+   "dl-ec-temp"
+  ],
+  [
+   "dl-ec-precip",
+   "dl-ec-precip"
+  ],
+  [
+   "ec-precip",
+   "dl-ec-precip"
+  ],
+  [
+   "dl-radar",
+   "dl-radar"
+  ],
+  [
+   "radar",
+   "dl-radar"
+  ],
+  [
+   "dl-ec-slp",
+   "dl-ec-slp"
+  ],
+  [
+   "ec-slp",
+   "dl-ec-slp"
+  ],
+  [
+   "dl-ec-gust",
+   "dl-ec-gust"
+  ],
+  [
+   "ec-gust",
+   "dl-ec-gust"
+  ],
+  [
+   "dl-snow",
+   "dl-snow"
+  ],
+  [
+   "snow",
+   "dl-snow"
+  ],
+  [
+   "dl-ec-cloud",
+   "dl-ec-cloud"
+  ],
+  [
+   "ec-cloud",
+   "dl-ec-cloud"
+  ],
+  [
+   "dl-ec-dew",
+   "dl-ec-dew"
+  ],
+  [
+   "ec-dew",
+   "dl-ec-dew"
+  ],
+  [
+   "dl-aod",
+   "dl-aod"
+  ],
+  [
+   "aod",
+   "dl-aod"
+  ],
+  [
+   "dl-ec-cape",
+   "dl-ec-cape"
+  ],
+  [
+   "ec-cape",
+   "dl-ec-cape"
+  ],
+  [
+   "bx-wbpm25",
+   "bx-wbpm25"
+  ],
+  [
+   "wbpm25",
+   "bx-wbpm25"
+  ],
+  [
+   "bx-wbco2",
+   "bx-wbco2"
+  ],
+  [
+   "wbco2",
+   "bx-wbco2"
+  ],
+  [
+   "dl-sats",
+   "dl-sats"
+  ],
+  [
+   "sats",
+   "dl-sats"
+  ],
+  [
+   "l9-dl-aurora",
+   "l9-dl-aurora"
+  ],
+  [
+   "aurora",
+   "l9-dl-aurora"
+  ],
+  [
+   "fac-dl-osmspace",
+   "fac-dl-osmspace"
+  ],
+  [
+   "osmspace",
+   "fac-dl-osmspace"
+  ],
+  [
+   "dl-sst",
+   "dl-sst"
+  ],
+  [
+   "sst",
+   "dl-sst"
+  ],
+  [
+   "dl-waves",
+   "dl-waves"
+  ],
+  [
+   "waves",
+   "dl-waves"
+  ],
+  [
+   "wp-dl-currents",
+   "wp-dl-currents"
+  ],
+  [
+   "currents",
+   "wp-dl-currents"
+  ],
+  [
+   "gx-gxsstanom",
+   "gx-gxsstanom"
+  ],
+  [
+   "gxsstanom",
+   "gx-gxsstanom"
+  ],
+  [
+   "wp-dl-tides",
+   "wp-dl-tides"
+  ],
+  [
+   "tides",
+   "wp-dl-tides"
+  ],
+  [
+   "gx-gxseaice",
+   "gx-gxseaice"
+  ],
+  [
+   "gxseaice",
+   "gx-gxseaice"
+  ],
+  [
+   "eco-dl-plates",
+   "eco-dl-plates"
+  ],
+  [
+   "plates",
+   "eco-dl-plates"
+  ],
+  [
+   "dl-relief",
+   "dl-relief"
+  ],
+  [
+   "relief",
+   "dl-relief"
+  ],
+  [
+   "dl-sealevel",
+   "dl-sealevel"
+  ],
+  [
+   "sealevel",
+   "dl-sealevel"
+  ],
+  [
+   "dl-hillshade",
+   "dl-hillshade"
+  ],
+  [
+   "hillshade",
+   "dl-hillshade"
+  ],
+  [
+   "gx-gxrelief",
+   "gx-gxrelief"
+  ],
+  [
+   "gxrelief",
+   "gx-gxrelief"
+  ],
+  [
+   "eco-dl-worldcover",
+   "eco-dl-worldcover"
+  ],
+  [
+   "worldcover",
+   "eco-dl-worldcover"
+  ],
+  [
+   "eco-dl-ecoregions",
+   "eco-dl-ecoregions"
+  ],
+  [
+   "ecoregions",
+   "eco-dl-ecoregions"
+  ],
+  [
+   "gx-gxndvi",
+   "gx-gxndvi"
+  ],
+  [
+   "gxndvi",
+   "gx-gxndvi"
+  ],
+  [
+   "bx-wbforest",
+   "bx-wbforest"
+  ],
+  [
+   "wbforest",
+   "bx-wbforest"
+  ],
+  [
+   "dl-popgrid",
+   "dl-popgrid"
+  ],
+  [
+   "popgrid",
+   "dl-popgrid"
+  ],
+  [
+   "dl-nightsat",
+   "dl-nightsat"
+  ],
+  [
+   "nightsat",
+   "dl-nightsat"
+  ],
+  [
+   "dl-tfr",
+   "dl-tfr"
+  ],
+  [
+   "tfr",
+   "dl-tfr"
+  ],
+  [
+   "dl-pop",
+   "dl-pop"
+  ],
+  [
+   "pop",
+   "dl-pop"
+  ],
+  [
+   "bx-wbpopgrow",
+   "bx-wbpopgrow"
+  ],
+  [
+   "wbpopgrow",
+   "bx-wbpopgrow"
+  ],
+  [
+   "bx-wbaging",
+   "bx-wbaging"
+  ],
+  [
+   "wbaging",
+   "bx-wbaging"
+  ],
+  [
+   "bx-wbfert",
+   "bx-wbfert"
+  ],
+  [
+   "wbfert",
+   "bx-wbfert"
+  ],
+  [
+   "bx-wbadofert",
+   "bx-wbadofert"
+  ],
+  [
+   "wbadofert",
+   "bx-wbadofert"
+  ],
+  [
+   "bx-wburb",
+   "bx-wburb"
+  ],
+  [
+   "wburb",
+   "bx-wburb"
+  ],
+  [
+   "bx-wbrural",
+   "bx-wbrural"
+  ],
+  [
+   "wbrural",
+   "bx-wbrural"
+  ],
+  [
+   "bx-wbdensity",
+   "bx-wbdensity"
+  ],
+  [
+   "wbdensity",
+   "bx-wbdensity"
+  ],
+  [
+   "bx-wbref",
+   "bx-wbref"
+  ],
+  [
+   "wbref",
+   "bx-wbref"
+  ],
+  [
+   "wp-dl-alerts",
+   "wp-dl-alerts"
+  ],
+  [
+   "alerts",
+   "wp-dl-alerts"
+  ],
+  [
+   "bx-eq",
+   "bx-eq"
+  ],
+  [
+   "eq",
+   "bx-eq"
+  ],
+  [
+   "beta-dl-volc2",
+   "beta-dl-volc2"
+  ],
+  [
+   "volc2",
+   "beta-dl-volc2"
+  ],
+  [
+   "dl-thermal",
+   "dl-thermal"
+  ],
+  [
+   "thermal",
+   "dl-thermal"
+  ],
+  [
+   "fac-dl-osmemg",
+   "fac-dl-osmemg"
+  ],
+  [
+   "osmemg",
+   "fac-dl-osmemg"
+  ],
+  [
+   "beta-dl-radobs",
+   "beta-dl-radobs"
+  ],
+  [
+   "radobs",
+   "beta-dl-radobs"
+  ],
+  [
+   "dl-dem",
+   "dl-dem"
+  ],
+  [
+   "dem",
+   "dl-dem"
+  ],
+  [
+   "beta-dl-cpi",
+   "beta-dl-cpi"
+  ],
+  [
+   "cpi",
+   "beta-dl-cpi"
+  ],
+  [
+   "dl-eez",
+   "dl-eez"
+  ],
+  [
+   "eez",
+   "dl-eez"
+  ],
+  [
+   "dl-uselect",
+   "dl-uselect"
+  ],
+  [
+   "uselect",
+   "dl-uselect"
+  ],
+  [
+   "dl-eu",
+   "dl-eu"
+  ],
+  [
+   "eu",
+   "dl-eu"
+  ],
+  [
+   "dl-ww2",
+   "dl-ww2"
+  ],
+  [
+   "ww2",
+   "dl-ww2"
+  ],
+  [
+   "dl-elect",
+   "dl-elect"
+  ],
+  [
+   "elect",
+   "dl-elect"
+  ],
+  [
+   "dl-ww1",
+   "dl-ww1"
+  ],
+  [
+   "ww1",
+   "dl-ww1"
+  ],
+  [
+   "dl-korea",
+   "dl-korea"
+  ],
+  [
+   "korea",
+   "dl-korea"
+  ],
+  [
+   "dl-vietnam",
+   "dl-vietnam"
+  ],
+  [
+   "vietnam",
+   "dl-vietnam"
+  ],
+  [
+   "dl-mideast",
+   "dl-mideast"
+  ],
+  [
+   "mideast",
+   "dl-mideast"
+  ],
+  [
+   "dl-yugoslavia",
+   "dl-yugoslavia"
+  ],
+  [
+   "yugoslavia",
+   "dl-yugoslavia"
+  ],
+  [
+   "dl-tz",
+   "dl-tz"
+  ],
+  [
+   "tz",
+   "dl-tz"
+  ],
+  [
+   "bx-wbwomparl",
+   "bx-wbwomparl"
+  ],
+  [
+   "wbwomparl",
+   "bx-wbwomparl"
+  ],
+  [
+   "fac-dl-osmdiplo",
+   "fac-dl-osmdiplo"
+  ],
+  [
+   "osmdiplo",
+   "fac-dl-osmdiplo"
+  ],
+  [
+   "dl-milSpend",
+   "dl-milSpend"
+  ],
+  [
+   "milSpend",
+   "dl-milSpend"
+  ],
+  [
+   "dl-nato",
+   "dl-nato"
+  ],
+  [
+   "nato",
+   "dl-nato"
+  ],
+  [
+   "beta-dl-ukrfront",
+   "beta-dl-ukrfront"
+  ],
+  [
+   "ukrfront",
+   "beta-dl-ukrfront"
+  ],
+  [
+   "bx-wbmilgdp",
+   "bx-wbmilgdp"
+  ],
+  [
+   "wbmilgdp",
+   "bx-wbmilgdp"
+  ],
+  [
+   "bx-wbmilppl",
+   "bx-wbmilppl"
+  ],
+  [
+   "wbmilppl",
+   "bx-wbmilppl"
+  ],
+  [
+   "fac-dl-osmmil",
+   "fac-dl-osmmil"
+  ],
+  [
+   "osmmil",
+   "fac-dl-osmmil"
+  ],
+  [
+   "beta-dl-lifeexp",
+   "beta-dl-lifeexp"
+  ],
+  [
+   "lifeexp",
+   "beta-dl-lifeexp"
+  ],
+  [
+   "bx-wbinfmort",
+   "bx-wbinfmort"
+  ],
+  [
+   "wbinfmort",
+   "bx-wbinfmort"
+  ],
+  [
+   "bx-wbsuicide",
+   "bx-wbsuicide"
+  ],
+  [
+   "wbsuicide",
+   "bx-wbsuicide"
+  ],
+  [
+   "bx-wbsmoke",
+   "bx-wbsmoke"
+  ],
+  [
+   "wbsmoke",
+   "bx-wbsmoke"
+  ],
+  [
+   "bx-wbalcohol",
+   "bx-wbalcohol"
+  ],
+  [
+   "wbalcohol",
+   "bx-wbalcohol"
+  ],
+  [
+   "bx-wbwater",
+   "bx-wbwater"
+  ],
+  [
+   "wbwater",
+   "bx-wbwater"
+  ],
+  [
+   "bx-wbhealth",
+   "bx-wbhealth"
+  ],
+  [
+   "wbhealth",
+   "bx-wbhealth"
+  ],
+  [
+   "bx-wbphys",
+   "bx-wbphys"
+  ],
+  [
+   "wbphys",
+   "bx-wbphys"
+  ],
+  [
+   "bx-wbbeds",
+   "bx-wbbeds"
+  ],
+  [
+   "wbbeds",
+   "bx-wbbeds"
+  ],
+  [
+   "bx-wbu5mort",
+   "bx-wbu5mort"
+  ],
+  [
+   "wbu5mort",
+   "bx-wbu5mort"
+  ],
+  [
+   "bx-wblife",
+   "bx-wblife"
+  ],
+  [
+   "wblife",
+   "bx-wblife"
+  ],
+  [
+   "bx-wbsan",
+   "bx-wbsan"
+  ],
+  [
+   "wbsan",
+   "bx-wbsan"
+  ],
+  [
+   "bx-wboverwt",
+   "bx-wboverwt"
+  ],
+  [
+   "wboverwt",
+   "bx-wboverwt"
+  ],
+  [
+   "fac-dl-osmhealth",
+   "fac-dl-osmhealth"
+  ],
+  [
+   "osmhealth",
+   "fac-dl-osmhealth"
+  ],
+  [
+   "fac-dl-osmwater",
+   "fac-dl-osmwater"
+  ],
+  [
+   "osmwater",
+   "fac-dl-osmwater"
+  ],
+  [
+   "dl-subcables",
+   "dl-subcables"
+  ],
+  [
+   "subcables",
+   "dl-subcables"
+  ],
+  [
+   "beta-dl-dc",
+   "beta-dl-dc"
+  ],
+  [
+   "dc",
+   "beta-dl-dc"
+  ],
+  [
+   "dl-nethlth",
+   "dl-nethlth"
+  ],
+  [
+   "nethlth",
+   "dl-nethlth"
+  ],
+  [
+   "dl-netreach",
+   "dl-netreach"
+  ],
+  [
+   "netreach",
+   "dl-netreach"
+  ],
+  [
+   "bx-wbnet",
+   "bx-wbnet"
+  ],
+  [
+   "wbnet",
+   "bx-wbnet"
+  ],
+  [
+   "bx-wbmobile",
+   "bx-wbmobile"
+  ],
+  [
+   "wbmobile",
+   "bx-wbmobile"
+  ],
+  [
+   "bx-wbbbnd",
+   "bx-wbbbnd"
+  ],
+  [
+   "wbbbnd",
+   "bx-wbbbnd"
+  ],
+  [
+   "bx-wbrnd",
+   "bx-wbrnd"
+  ],
+  [
+   "wbrnd",
+   "bx-wbrnd"
+  ],
+  [
+   "bx-wbresearch",
+   "bx-wbresearch"
+  ],
+  [
+   "wbresearch",
+   "bx-wbresearch"
+  ],
+  [
+   "bx-wbpatent",
+   "bx-wbpatent"
+  ],
+  [
+   "wbpatent",
+   "bx-wbpatent"
+  ],
+  [
+   "fac-dl-osmtelecom",
+   "fac-dl-osmtelecom"
+  ],
+  [
+   "osmtelecom",
+   "fac-dl-osmtelecom"
+  ],
+  [
+   "dl-gdppc",
+   "dl-gdppc"
+  ],
+  [
+   "gdppc",
+   "dl-gdppc"
+  ],
+  [
+   "wp-dl-trade",
+   "wp-dl-trade"
+  ],
+  [
+   "trade",
+   "wp-dl-trade"
+  ],
+  [
+   "bx-wbgini",
+   "bx-wbgini"
+  ],
+  [
+   "wbgini",
+   "bx-wbgini"
+  ],
+  [
+   "wp-dl-industry",
+   "wp-dl-industry"
+  ],
+  [
+   "industry",
+   "wp-dl-industry"
+  ],
+  [
+   "bx-wbgdpgrow",
+   "bx-wbgdpgrow"
+  ],
+  [
+   "wbgdpgrow",
+   "bx-wbgdpgrow"
+  ],
+  [
+   "bx-wbinfl",
+   "bx-wbinfl"
+  ],
+  [
+   "wbinfl",
+   "bx-wbinfl"
+  ],
+  [
+   "bx-wbtrade",
+   "bx-wbtrade"
+  ],
+  [
+   "wbtrade",
+   "bx-wbtrade"
+  ],
+  [
+   "bx-wbtax",
+   "bx-wbtax"
+  ],
+  [
+   "wbtax",
+   "bx-wbtax"
+  ],
+  [
+   "bx-wbdebt",
+   "bx-wbdebt"
+  ],
+  [
+   "wbdebt",
+   "bx-wbdebt"
+  ],
+  [
+   "bx-wbmanuf",
+   "bx-wbmanuf"
+  ],
+  [
+   "wbmanuf",
+   "bx-wbmanuf"
+  ],
+  [
+   "bx-wbhitech",
+   "bx-wbhitech"
+  ],
+  [
+   "wbhitech",
+   "bx-wbhitech"
+  ],
+  [
+   "bx-wbfdi",
+   "bx-wbfdi"
+  ],
+  [
+   "wbfdi",
+   "bx-wbfdi"
+  ],
+  [
+   "bx-wbunemp",
+   "bx-wbunemp"
+  ],
+  [
+   "wbunemp",
+   "bx-wbunemp"
+  ],
+  [
+   "bx-wbgni",
+   "bx-wbgni"
+  ],
+  [
+   "wbgni",
+   "bx-wbgni"
+  ],
+  [
+   "bx-wbpov",
+   "bx-wbpov"
+  ],
+  [
+   "wbpov",
+   "bx-wbpov"
+  ],
+  [
+   "bx-wbflfp",
+   "bx-wbflfp"
+  ],
+  [
+   "wbflfp",
+   "bx-wbflfp"
+  ],
+  [
+   "bx-wbremit",
+   "bx-wbremit"
+  ],
+  [
+   "wbremit",
+   "bx-wbremit"
+  ],
+  [
+   "bx-wbtour",
+   "bx-wbtour"
+  ],
+  [
+   "wbtour",
+   "bx-wbtour"
+  ],
+  [
+   "beta-dl-pharma",
+   "beta-dl-pharma"
+  ],
+  [
+   "pharma",
+   "beta-dl-pharma"
+  ],
+  [
+   "dl-hdi",
+   "dl-hdi"
+  ],
+  [
+   "hdi",
+   "dl-hdi"
+  ],
+  [
+   "bx-wbhomicide",
+   "bx-wbhomicide"
+  ],
+  [
+   "wbhomicide",
+   "bx-wbhomicide"
+  ],
+  [
+   "beta-dl-cat-language",
+   "beta-dl-cat-language"
+  ],
+  [
+   "cat-language",
+   "beta-dl-cat-language"
+  ],
+  [
+   "beta-dl-whs",
+   "beta-dl-whs"
+  ],
+  [
+   "whs",
+   "beta-dl-whs"
+  ],
+  [
+   "bx-wblit",
+   "bx-wblit"
+  ],
+  [
+   "wblit",
+   "bx-wblit"
+  ],
+  [
+   "bx-wbschool",
+   "bx-wbschool"
+  ],
+  [
+   "wbschool",
+   "bx-wbschool"
+  ],
+  [
+   "bx-wbtert",
+   "bx-wbtert"
+  ],
+  [
+   "wbtert",
+   "bx-wbtert"
+  ],
+  [
+   "bx-wbedu",
+   "bx-wbedu"
+  ],
+  [
+   "wbedu",
+   "bx-wbedu"
+  ],
+  [
+   "fac-dl-osmedu",
+   "fac-dl-osmedu"
+  ],
+  [
+   "osmedu",
+   "fac-dl-osmedu"
+  ],
+  [
+   "beta-dl-cat-religion",
+   "beta-dl-cat-religion"
+  ],
+  [
+   "cat-religion",
+   "beta-dl-cat-religion"
+  ],
+  [
+   "dl-planes",
+   "dl-planes"
+  ],
+  [
+   "planes",
+   "dl-planes"
+  ],
+  [
+   "beta-dl-rail",
+   "beta-dl-rail"
+  ],
+  [
+   "rail",
+   "beta-dl-rail"
+  ],
+  [
+   "dl-ships",
+   "dl-ships"
+  ],
+  [
+   "ships",
+   "dl-ships"
+  ],
+  [
+   "ox-oxrail",
+   "ox-oxrail"
+  ],
+  [
+   "oxrail",
+   "ox-oxrail"
+  ],
+  [
+   "ox-oxsea",
+   "ox-oxsea"
+  ],
+  [
+   "oxsea",
+   "ox-oxsea"
+  ],
+  [
+   "fac-dl-osmair",
+   "fac-dl-osmair"
+  ],
+  [
+   "osmair",
+   "fac-dl-osmair"
+  ],
+  [
+   "fac-dl-osmport",
+   "fac-dl-osmport"
+  ],
+  [
+   "osmport",
+   "fac-dl-osmport"
+  ],
+  [
+   "dl-webcams",
+   "dl-webcams"
+  ],
+  [
+   "webcams",
+   "dl-webcams"
+  ],
+  [
+   "wp-dl-crops",
+   "wp-dl-crops"
+  ],
+  [
+   "crops",
+   "wp-dl-crops"
+  ],
+  [
+   "bx-wbagremp",
+   "bx-wbagremp"
+  ],
+  [
+   "wbagremp",
+   "bx-wbagremp"
+  ],
+  [
+   "bx-wbunder",
+   "bx-wbunder"
+  ],
+  [
+   "wbunder",
+   "bx-wbunder"
+  ],
+  [
+   "bx-wbagri",
+   "bx-wbagri"
+  ],
+  [
+   "wbagri",
+   "bx-wbagri"
+  ],
+  [
+   "gx-gxsoil",
+   "gx-gxsoil"
+  ],
+  [
+   "gxsoil",
+   "gx-gxsoil"
+  ],
+  [
+   "wp-dl-energy",
+   "wp-dl-energy"
+  ],
+  [
+   "energy",
+   "wp-dl-energy"
+  ],
+  [
+   "bx-wbrenew",
+   "bx-wbrenew"
+  ],
+  [
+   "wbrenew",
+   "bx-wbrenew"
+  ],
+  [
+   "bx-wbelec",
+   "bx-wbelec"
+  ],
+  [
+   "wbelec",
+   "bx-wbelec"
+  ],
+  [
+   "fac-dl-osmpower",
+   "fac-dl-osmpower"
+  ],
+  [
+   "osmpower",
+   "fac-dl-osmpower"
+  ],
+  [
+   "fac-dl-osmextract",
+   "fac-dl-osmextract"
+  ],
+  [
+   "osmextract",
+   "fac-dl-osmextract"
+  ],
+  [
+   "l9-dl-dams",
+   "l9-dl-dams"
+  ],
+  [
+   "dams",
+   "l9-dl-dams"
+  ],
+  [
+   "bx-wbcook",
+   "bx-wbcook"
+  ],
+  [
+   "wbcook",
+   "bx-wbcook"
+  ],
+  [
+   "bx-wbelecuse",
+   "bx-wbelecuse"
+  ],
+  [
+   "wbelecuse",
+   "bx-wbelecuse"
+  ],
+  [
+   "bx-wbrenelec",
+   "bx-wbrenelec"
+  ],
+  [
+   "wbrenelec",
+   "bx-wbrenelec"
+  ],
+  [
+   "bx-wbenergy",
+   "bx-wbenergy"
+  ],
+  [
+   "wbenergy",
+   "bx-wbenergy"
+  ],
+  [
+   "dl-precip",
+   "dl-precip"
+  ],
+  [
+   "precip",
+   "dl-precip"
+  ],
+  [
+   "dl-ec-wind",
+   "dl-ec-wind"
+  ],
+  [
+   "ec-wind",
+   "dl-ec-wind"
+  ],
+  [
+   "beta-dl-volcash",
+   "beta-dl-volcash"
+  ],
+  [
+   "beta-dl-volchaz",
+   "beta-dl-volchaz"
+  ],
+  [
+   "beta-dl-volcso2",
+   "beta-dl-volcso2"
+  ],
+  [
+   "beta-dl-unemp",
+   "beta-dl-unemp"
+  ],
+  [
+   "beta-dl-internet",
+   "beta-dl-internet"
+  ],
+  [
+   "beta-dl-precip",
+   "beta-dl-precip"
+  ],
+  [
+   "beta-dl-spin",
+   "beta-dl-spin"
+  ],
+  [
+   "wp-dl-outbreaks",
+   "wp-dl-outbreaks"
+  ],
+  [
+   "bx-heat",
+   "bx-heat"
+  ],
+  [
+   "cb-countries",
+   "cb-countries"
+  ],
+  [
+   "dl-contours",
+   "dl-contours"
+  ]
+ ],
+ "isLayer": [
+  [
+   "cb-names",
+   true
+  ],
+  [
+   "cb-geolabels",
+   true
+  ],
+  [
+   "cb-poi",
+   true
+  ],
+  [
+   "cb-borders",
+   true
+  ],
+  [
+   "cb-coast",
+   true
+  ],
+  [
+   "cb-admin1",
+   true
+  ],
+  [
+   "cb-roads",
+   true
+  ],
+  [
+   "cb-rail2",
+   true
+  ],
+  [
+   "cb-grid",
+   true
+  ],
+  [
+   "dl-nightside",
+   true
+  ],
+  [
+   "beta-dl-bldg3d",
+   true
+  ],
+  [
+   "dl-climate",
+   true
+  ],
+  [
+   "dl-wind",
+   true
+  ],
+  [
+   "dl-annprecip",
+   true
+  ],
+  [
+   "dl-ec-temp",
+   true
+  ],
+  [
+   "dl-ec-precip",
+   true
+  ],
+  [
+   "dl-radar",
+   true
+  ],
+  [
+   "dl-ec-slp",
+   true
+  ],
+  [
+   "dl-ec-gust",
+   true
+  ],
+  [
+   "dl-snow",
+   true
+  ],
+  [
+   "dl-ec-cloud",
+   true
+  ],
+  [
+   "dl-ec-dew",
+   true
+  ],
+  [
+   "dl-aod",
+   true
+  ],
+  [
+   "dl-ec-cape",
+   true
+  ],
+  [
+   "bx-wbpm25",
+   true
+  ],
+  [
+   "bx-wbco2",
+   true
+  ],
+  [
+   "dl-sats",
+   true
+  ],
+  [
+   "l9-dl-aurora",
+   true
+  ],
+  [
+   "fac-dl-osmspace",
+   true
+  ],
+  [
+   "dl-sst",
+   true
+  ],
+  [
+   "dl-waves",
+   true
+  ],
+  [
+   "wp-dl-currents",
+   true
+  ],
+  [
+   "gx-gxsstanom",
+   true
+  ],
+  [
+   "wp-dl-tides",
+   true
+  ],
+  [
+   "gx-gxseaice",
+   true
+  ],
+  [
+   "eco-dl-plates",
+   true
+  ],
+  [
+   "dl-relief",
+   true
+  ],
+  [
+   "dl-sealevel",
+   true
+  ],
+  [
+   "dl-hillshade",
+   true
+  ],
+  [
+   "gx-gxrelief",
+   true
+  ],
+  [
+   "eco-dl-worldcover",
+   true
+  ],
+  [
+   "eco-dl-ecoregions",
+   true
+  ],
+  [
+   "gx-gxndvi",
+   true
+  ],
+  [
+   "bx-wbforest",
+   true
+  ],
+  [
+   "dl-popgrid",
+   true
+  ],
+  [
+   "dl-nightsat",
+   true
+  ],
+  [
+   "dl-tfr",
+   true
+  ],
+  [
+   "dl-pop",
+   true
+  ],
+  [
+   "bx-wbpopgrow",
+   true
+  ],
+  [
+   "bx-wbaging",
+   true
+  ],
+  [
+   "bx-wbfert",
+   true
+  ],
+  [
+   "bx-wbadofert",
+   true
+  ],
+  [
+   "bx-wburb",
+   true
+  ],
+  [
+   "bx-wbrural",
+   true
+  ],
+  [
+   "bx-wbdensity",
+   true
+  ],
+  [
+   "bx-wbref",
+   true
+  ],
+  [
+   "wp-dl-alerts",
+   true
+  ],
+  [
+   "bx-eq",
+   true
+  ],
+  [
+   "beta-dl-volc2",
+   true
+  ],
+  [
+   "dl-thermal",
+   true
+  ],
+  [
+   "fac-dl-osmemg",
+   true
+  ],
+  [
+   "beta-dl-radobs",
+   true
+  ],
+  [
+   "dl-dem",
+   true
+  ],
+  [
+   "beta-dl-cpi",
+   true
+  ],
+  [
+   "dl-eez",
+   true
+  ],
+  [
+   "dl-uselect",
+   true
+  ],
+  [
+   "dl-eu",
+   true
+  ],
+  [
+   "dl-ww2",
+   true
+  ],
+  [
+   "dl-elect",
+   true
+  ],
+  [
+   "dl-ww1",
+   true
+  ],
+  [
+   "dl-korea",
+   true
+  ],
+  [
+   "dl-vietnam",
+   true
+  ],
+  [
+   "dl-mideast",
+   true
+  ],
+  [
+   "dl-yugoslavia",
+   true
+  ],
+  [
+   "dl-tz",
+   true
+  ],
+  [
+   "bx-wbwomparl",
+   true
+  ],
+  [
+   "fac-dl-osmdiplo",
+   true
+  ],
+  [
+   "dl-milSpend",
+   true
+  ],
+  [
+   "dl-nato",
+   true
+  ],
+  [
+   "beta-dl-ukrfront",
+   true
+  ],
+  [
+   "bx-wbmilgdp",
+   true
+  ],
+  [
+   "bx-wbmilppl",
+   true
+  ],
+  [
+   "fac-dl-osmmil",
+   true
+  ],
+  [
+   "beta-dl-lifeexp",
+   true
+  ],
+  [
+   "bx-wbinfmort",
+   true
+  ],
+  [
+   "bx-wbsuicide",
+   true
+  ],
+  [
+   "bx-wbsmoke",
+   true
+  ],
+  [
+   "bx-wbalcohol",
+   true
+  ],
+  [
+   "bx-wbwater",
+   true
+  ],
+  [
+   "bx-wbhealth",
+   true
+  ],
+  [
+   "bx-wbphys",
+   true
+  ],
+  [
+   "bx-wbbeds",
+   true
+  ],
+  [
+   "bx-wbu5mort",
+   true
+  ],
+  [
+   "bx-wblife",
+   true
+  ],
+  [
+   "bx-wbsan",
+   true
+  ],
+  [
+   "bx-wboverwt",
+   true
+  ],
+  [
+   "fac-dl-osmhealth",
+   true
+  ],
+  [
+   "fac-dl-osmwater",
+   true
+  ],
+  [
+   "dl-subcables",
+   true
+  ],
+  [
+   "beta-dl-dc",
+   true
+  ],
+  [
+   "dl-nethlth",
+   true
+  ],
+  [
+   "dl-netreach",
+   true
+  ],
+  [
+   "bx-wbnet",
+   true
+  ],
+  [
+   "bx-wbmobile",
+   true
+  ],
+  [
+   "bx-wbbbnd",
+   true
+  ],
+  [
+   "bx-wbrnd",
+   true
+  ],
+  [
+   "bx-wbresearch",
+   true
+  ],
+  [
+   "bx-wbpatent",
+   true
+  ],
+  [
+   "fac-dl-osmtelecom",
+   true
+  ],
+  [
+   "dl-gdppc",
+   true
+  ],
+  [
+   "wp-dl-trade",
+   true
+  ],
+  [
+   "bx-wbgini",
+   true
+  ],
+  [
+   "wp-dl-industry",
+   true
+  ],
+  [
+   "bx-wbgdpgrow",
+   true
+  ],
+  [
+   "bx-wbinfl",
+   true
+  ],
+  [
+   "bx-wbtrade",
+   true
+  ],
+  [
+   "bx-wbtax",
+   true
+  ],
+  [
+   "bx-wbdebt",
+   true
+  ],
+  [
+   "bx-wbmanuf",
+   true
+  ],
+  [
+   "bx-wbhitech",
+   true
+  ],
+  [
+   "bx-wbfdi",
+   true
+  ],
+  [
+   "bx-wbunemp",
+   true
+  ],
+  [
+   "bx-wbgni",
+   true
+  ],
+  [
+   "bx-wbpov",
+   true
+  ],
+  [
+   "bx-wbflfp",
+   true
+  ],
+  [
+   "bx-wbremit",
+   true
+  ],
+  [
+   "bx-wbtour",
+   true
+  ],
+  [
+   "beta-dl-pharma",
+   true
+  ],
+  [
+   "dl-hdi",
+   true
+  ],
+  [
+   "bx-wbhomicide",
+   true
+  ],
+  [
+   "beta-dl-cat-language",
+   true
+  ],
+  [
+   "beta-dl-whs",
+   true
+  ],
+  [
+   "bx-wblit",
+   true
+  ],
+  [
+   "bx-wbschool",
+   true
+  ],
+  [
+   "bx-wbtert",
+   true
+  ],
+  [
+   "bx-wbedu",
+   true
+  ],
+  [
+   "fac-dl-osmedu",
+   true
+  ],
+  [
+   "beta-dl-cat-religion",
+   true
+  ],
+  [
+   "dl-planes",
+   true
+  ],
+  [
+   "beta-dl-rail",
+   true
+  ],
+  [
+   "dl-ships",
+   true
+  ],
+  [
+   "ox-oxrail",
+   true
+  ],
+  [
+   "ox-oxsea",
+   true
+  ],
+  [
+   "fac-dl-osmair",
+   true
+  ],
+  [
+   "fac-dl-osmport",
+   true
+  ],
+  [
+   "dl-webcams",
+   true
+  ],
+  [
+   "wp-dl-crops",
+   true
+  ],
+  [
+   "bx-wbagremp",
+   true
+  ],
+  [
+   "bx-wbunder",
+   true
+  ],
+  [
+   "bx-wbagri",
+   true
+  ],
+  [
+   "gx-gxsoil",
+   true
+  ],
+  [
+   "wp-dl-energy",
+   true
+  ],
+  [
+   "bx-wbrenew",
+   true
+  ],
+  [
+   "bx-wbelec",
+   true
+  ],
+  [
+   "fac-dl-osmpower",
+   true
+  ],
+  [
+   "fac-dl-osmextract",
+   true
+  ],
+  [
+   "l9-dl-dams",
+   true
+  ],
+  [
+   "bx-wbcook",
+   true
+  ],
+  [
+   "bx-wbelecuse",
+   true
+  ],
+  [
+   "bx-wbrenelec",
+   true
+  ],
+  [
+   "bx-wbenergy",
+   true
+  ],
+  [
+   "dl-precip",
+   true
+  ],
+  [
+   "dl-ec-wind",
+   true
+  ],
+  [
+   "beta-dl-volcash",
+   true
+  ],
+  [
+   "beta-dl-volchaz",
+   true
+  ],
+  [
+   "beta-dl-volcso2",
+   true
+  ],
+  [
+   "beta-dl-unemp",
+   true
+  ],
+  [
+   "beta-dl-internet",
+   true
+  ],
+  [
+   "beta-dl-precip",
+   true
+  ],
+  [
+   "beta-dl-spin",
+   true
+  ],
+  [
+   "wp-dl-outbreaks",
+   true
+  ],
+  [
+   "bx-heat",
+   true
+  ],
+  [
+   "cb-countries",
+   true
+  ],
+  [
+   "dl-contours",
+   true
+  ],
+  [
+   "no-such-layer",
+   false
+  ]
+ ]
+}
